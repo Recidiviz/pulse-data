@@ -25,7 +25,7 @@ from recidiviz.case_triage.authorization import AuthorizationStore
 from recidiviz.case_triage.exceptions import CaseTriageSecretForbiddenException
 
 
-IMPERSONATED_EMAIL_KEY = 'impersonated_email'
+IMPERSONATED_EMAIL_KEY = "impersonated_email"
 
 
 class ImpersonateUser(View):
@@ -36,7 +36,10 @@ class ImpersonateUser(View):
         self.authorization_store = authorization_store
 
     def dispatch_request(self, *_args: Any, **_kwargs: Any) -> Response:
-        if 'user_info' not in session or session['user_info']['email'] not in self.authorization_store.admin_users:
+        if (
+            "user_info" not in session
+            or session["user_info"]["email"] not in self.authorization_store.admin_users
+        ):
             raise CaseTriageSecretForbiddenException()
         impersonated_email = request.args.get(IMPERSONATED_EMAIL_KEY)
         if impersonated_email:

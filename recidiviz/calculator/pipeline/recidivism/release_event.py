@@ -25,19 +25,22 @@ import attr
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
-from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
-from recidiviz.common.constants.state.state_supervision_violation import \
-    StateSupervisionViolationType
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodSupervisionType,
+)
+from recidiviz.common.constants.state.state_supervision_violation import (
+    StateSupervisionViolationType,
+)
 
 
 class ReincarcerationReturnType(Enum):
     # The person returned to incarceration on a new admission after being free.
-    NEW_ADMISSION = 'NEW_ADMISSION'
+    NEW_ADMISSION = "NEW_ADMISSION"
 
     # The person returned to incarceration because their supervision was
     # revoked. Note this covers all reasons for revocation, including new
     # crimes that may have factored into the revocation decision.
-    REVOCATION = 'REVOCATION'
+    REVOCATION = "REVOCATION"
 
 
 @attr.s
@@ -102,26 +105,26 @@ class ReleaseEvent(IdentifierEvent):
         if stay_length is None:
             return None
         if stay_length < 12:
-            return '<12'
+            return "<12"
         if stay_length < 24:
-            return '12-24'
+            return "12-24"
         if stay_length < 36:
-            return '24-36'
+            return "24-36"
         if stay_length < 48:
-            return '36-48'
+            return "36-48"
         if stay_length < 60:
-            return '48-60'
+            return "48-60"
         if stay_length < 72:
-            return '60-72'
+            return "60-72"
         if stay_length < 84:
-            return '72-84'
+            return "72-84"
         if stay_length < 96:
-            return '84-96'
+            return "84-96"
         if stay_length < 108:
-            return '96-108'
+            return "96-108"
         if stay_length < 120:
-            return '108-120'
-        return '120<'
+            return "108-120"
+        return "120<"
 
 
 @attr.s
@@ -141,12 +144,15 @@ class RecidivismReleaseEvent(ReleaseEvent):
 
     # StateSupervisionPeriodSupervisionType enum for the type of
     # supervision the person was on before they returned to incarceration.
-    from_supervision_type: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(default=None)
+    from_supervision_type: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(
+        default=None
+    )
 
     # StateSupervisionViolationType enum for the type of violation that
     # eventually caused the revocation of supervision
-    source_violation_type: Optional[StateSupervisionViolationType] = \
-        attr.ib(default=None)
+    source_violation_type: Optional[StateSupervisionViolationType] = attr.ib(
+        default=None
+    )
 
     @property
     def days_at_liberty(self):
@@ -158,8 +164,11 @@ class RecidivismReleaseEvent(ReleaseEvent):
         delta = return_date - release_date
 
         if delta.days < 0:
-            logging.warning("Release date on RecidivismReleaseEvent is before admission date: %s."
-                            "The identifier step is not properly classifying releases.", self)
+            logging.warning(
+                "Release date on RecidivismReleaseEvent is before admission date: %s."
+                "The identifier step is not properly classifying releases.",
+                self,
+            )
 
         return delta.days
 

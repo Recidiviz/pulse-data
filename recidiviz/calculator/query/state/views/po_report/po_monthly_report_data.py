@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Data to populate the monthly PO report email."""
-# pylint: disable=trailing-whitespace,line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.calculator.query import bq_utils
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
@@ -23,7 +23,7 @@ from recidiviz.calculator.query.state.dataset_config import PO_REPORT_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-PO_MONTHLY_REPORT_DATA_VIEW_NAME = 'po_monthly_report_data'
+PO_MONTHLY_REPORT_DATA_VIEW_NAME = "po_monthly_report_data"
 
 PO_MONTHLY_REPORT_DATA_DESCRIPTION = """
  Monthly data regarding an officer's success in discharging people from supervision, recommending early discharge
@@ -32,8 +32,7 @@ PO_MONTHLY_REPORT_DATA_DESCRIPTION = """
 
 # TODO(#3514): handle officers with caseloads across multiple districts
 # TODO(#5034): Make deterministic and reduce complexity to be covered by metric output comparison script
-PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = \
-    """
+PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
     /*{description}*/
     WITH report_data_per_officer AS (
       SELECT
@@ -187,8 +186,8 @@ PO_MONTHLY_REPORT_DATA_VIEW_BUILDER = MetricBigQueryViewBuilder(
     view_id=PO_MONTHLY_REPORT_DATA_VIEW_NAME,
     should_materialize=True,
     view_query_template=PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE,
-    dimensions=['state_code', 'review_month', 'officer_external_id', 'district'],
-    district_dimension=bq_utils.unnest_district(district_column='district'),
+    dimensions=["state_code", "review_month", "officer_external_id", "district"],
+    district_dimension=bq_utils.unnest_district(district_column="district"),
     description=PO_MONTHLY_REPORT_DATA_DESCRIPTION,
     po_report_dataset=PO_REPORT_DATASET,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
@@ -196,6 +195,6 @@ PO_MONTHLY_REPORT_DATA_VIEW_BUILDER = MetricBigQueryViewBuilder(
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         PO_MONTHLY_REPORT_DATA_VIEW_BUILDER.build_and_print()

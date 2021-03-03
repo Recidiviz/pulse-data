@@ -52,6 +52,8 @@ jobs:
         run: pipenv run mypy recidiviz
       - name: Pylint
         run: pipenv run ./recidiviz/tools/travis/run_pylint.sh
+      - name: Black
+        run: pipenv run black . --check
       - name: Yarn caching
         uses: actions/cache@v2
         id: yarn-caching

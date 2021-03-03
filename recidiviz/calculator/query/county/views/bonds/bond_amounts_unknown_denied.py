@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """View that creates a Bond table with amounts and UNKNOWN or DENIED."""
-# pylint: disable=line-too-long
+
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
@@ -31,10 +31,9 @@ from recidiviz.persistence.database.schema.county.schema import Bond
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-BOND_AMOUNTS_UNKNOWN_DENIED_VIEW_NAME = 'bond_amounts_unknown_denied'
+BOND_AMOUNTS_UNKNOWN_DENIED_VIEW_NAME = "bond_amounts_unknown_denied"
 
-BOND_AMOUNTS_UNKNOWN_DENIED_DESCRIPTION = \
-"""
+BOND_AMOUNTS_UNKNOWN_DENIED_DESCRIPTION = """
 Create a Bond Amount table where:
 If Bond.amount_dollars is present, keep it.
 If Bond.bond_type = '{bond_type_not_required}' OR Bond.status = '{bond_status_posted}',
@@ -60,7 +59,7 @@ Constraints:
 Only one of `unknown` and `denied` can be True.
 If `amount_dollars` is not NULL,  `unknown` and `denied` must both be False.
 
-TODO(rasmi): This may be easier or more readable if unknown/denied are written
+NOTE: This may be easier or more readable if unknown/denied are written
 as an enum unknown_or_denied column, then broken out into BOOL columns.
 """.format(
     bond_type_not_required=bond_type_not_required,
@@ -68,11 +67,10 @@ as an enum unknown_or_denied column, then broken out into BOOL columns.
     bond_type_secured=bond_type_secured,
     present_without_info=present_without_info,
     bond_type_denied=bond_type_denied,
-    bond_status_revoked=bond_status_revoked
+    bond_status_revoked=bond_status_revoked,
 )
 
-BOND_AMOUNTS_UNKNOWN_DENIED_QUERY_TEMPLATE = \
-"""
+BOND_AMOUNTS_UNKNOWN_DENIED_QUERY_TEMPLATE = """
 /*{description}*/
 SELECT NewBond.booking_id, NewBond.bond_type, NewBond.status, NewBond.amount_dollars,
   CASE
@@ -110,9 +108,9 @@ BOND_AMOUNTS_UNKNOWN_DENIED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     bond_status_revoked=bond_status_revoked,
     bond_status_posted=bond_status_posted,
     base_dataset=dataset_config.COUNTY_BASE_DATASET,
-    bond_table=Bond.__tablename__
+    bond_table=Bond.__tablename__,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         BOND_AMOUNTS_UNKNOWN_DENIED_VIEW_BUILDER.build_and_print()

@@ -21,17 +21,17 @@ from unittest import TestCase
 from mock import patch
 from more_itertools import one
 
-from recidiviz.ingest.scrape import (constants, scrape_phase, sessions)
-from recidiviz.persistence.database.base_schema import \
-    JailsBase
+from recidiviz.ingest.scrape import constants, scrape_phase, sessions
+from recidiviz.persistence.database.base_schema import JailsBase
 from recidiviz.persistence.database.schema.county.schema import ScraperSuccess
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.utils import regions
 from recidiviz.tests.utils import fakes
 from recidiviz.utils.regions import Region
 
-_REGION_CODE = 'us_al_jackson'
+_REGION_CODE = "us_al_jackson"
 _TODAY = datetime.date(2000, 1, 1)
+
 
 class TestScraperStop(TestCase):
     """Tests for requests to the Scraper Stop API."""
@@ -49,12 +49,12 @@ class TestScraperStop(TestCase):
         mock_get_region.return_value = _mock_region()
 
         session = sessions.ScrapeSession.new(
-            key=None, region=_REGION_CODE,
+            key=None,
+            region=_REGION_CODE,
             scrape_type=constants.ScrapeType.BACKGROUND,
-            phase=scrape_phase.ScrapePhase.RELEASE
+            phase=scrape_phase.ScrapePhase.RELEASE,
         )
-        session.start = datetime.datetime.strptime("2000-01-01 9:01",
-                                                   "%Y-%d-%m %H:%M")
+        session.start = datetime.datetime.strptime("2000-01-01 9:01", "%Y-%d-%m %H:%M")
 
         sessions.update_phase(session, scrape_phase.ScrapePhase.DONE)
 
@@ -69,13 +69,13 @@ class TestScraperStop(TestCase):
 def _mock_region():
     return Region(
         region_code=_REGION_CODE,
-        shared_queue='queue',
-        agency_name='the agency',
-        agency_type='benevolent',
-        base_url='localhost:3000',
-        names_file='names.txt',
-        timezone='America/Chicago',
-        environment='production',
-        jurisdiction_id='01071001',
+        shared_queue="queue",
+        agency_name="the agency",
+        agency_type="benevolent",
+        base_url="localhost:3000",
+        names_file="names.txt",
+        timezone="America/Chicago",
+        environment="production",
+        jurisdiction_id="01071001",
         is_stoppable=False,
     )

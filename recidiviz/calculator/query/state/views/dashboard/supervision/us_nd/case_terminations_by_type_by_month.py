@@ -23,7 +23,7 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-CASE_TERMINATIONS_BY_TYPE_BY_MONTH_VIEW_NAME = 'case_terminations_by_type_by_month'
+CASE_TERMINATIONS_BY_TYPE_BY_MONTH_VIEW_NAME = "case_terminations_by_type_by_month"
 
 CASE_TERMINATIONS_BY_TYPE_BY_MONTH_DESCRIPTION = """
     Supervision period termination count split by termination reason, month, district, and supervision type.
@@ -55,15 +55,14 @@ def _get_query_prep_statement(reference_views_dataset: str) -> str:
 
     """.format(
         reference_views_dataset=reference_views_dataset,
-        district_dimension=bq_utils.unnest_district(
-            district_column='supervision_site'),
+        district_dimension=bq_utils.unnest_district(district_column="supervision_site"),
         supervision_type_dimension=bq_utils.unnest_supervision_type(
-            supervision_type_column='supervision_period.supervision_type'),
+            supervision_type_column="supervision_period.supervision_type"
+        ),
     )
 
 
-CASE_TERMINATIONS_BY_TYPE_BY_MONTH_QUERY_TEMPLATE = \
-    f"""
+CASE_TERMINATIONS_BY_TYPE_BY_MONTH_QUERY_TEMPLATE = f"""
     /*{{description}}*/
     {_get_query_prep_statement(reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET)}
     SELECT
@@ -101,11 +100,11 @@ CASE_TERMINATIONS_BY_TYPE_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=CASE_TERMINATIONS_BY_TYPE_BY_MONTH_VIEW_NAME,
     view_query_template=CASE_TERMINATIONS_BY_TYPE_BY_MONTH_QUERY_TEMPLATE,
-    dimensions=['state_code', 'year', 'month', 'supervision_type', 'district'],
+    dimensions=["state_code", "year", "month", "supervision_type", "district"],
     description=CASE_TERMINATIONS_BY_TYPE_BY_MONTH_DESCRIPTION,
 )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         CASE_TERMINATIONS_BY_TYPE_BY_MONTH_VIEW_BUILDER.build_and_print()

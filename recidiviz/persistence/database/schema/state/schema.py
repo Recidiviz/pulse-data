@@ -50,11 +50,12 @@ from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import relationship
 
 from recidiviz.common.constants.state import (
-    enum_canonical_strings as state_enum_strings
+    enum_canonical_strings as state_enum_strings,
 )
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
-from recidiviz.persistence.database.schema.history_table_shared_columns_mixin \
-    import HistoryTableSharedColumns
+from recidiviz.persistence.database.schema.history_table_shared_columns_mixin import (
+    HistoryTableSharedColumns,
+)
 
 from recidiviz.persistence.database.schema.shared_enums import (
     gender,
@@ -77,7 +78,8 @@ state_assessment_class = Enum(
     state_enum_strings.state_assessment_class_sex_offense,
     state_enum_strings.state_assessment_class_social,
     state_enum_strings.state_assessment_class_substance_abuse,
-    name='state_assessment_class')
+    name="state_assessment_class",
+)
 
 state_assessment_type = Enum(
     state_enum_strings.state_assessment_type_asi,
@@ -101,7 +103,8 @@ state_assessment_type = Enum(
     state_enum_strings.state_assessment_type_oras_static,
     state_enum_strings.state_assessment_type_oras_supplemental_reentry,
     enum_strings.internal_unknown,
-    name='state_assessment_type')
+    name="state_assessment_type",
+)
 
 state_assessment_level = Enum(
     enum_strings.external_unknown,
@@ -112,7 +115,8 @@ state_assessment_level = Enum(
     state_enum_strings.state_assessment_level_moderate,
     state_enum_strings.state_assessment_level_high,
     state_enum_strings.state_assessment_level_very_high,
-    name='state_assessment_level')
+    name="state_assessment_level",
+)
 
 state_sentence_status = Enum(
     state_enum_strings.state_sentence_status_commuted,
@@ -124,7 +128,8 @@ state_sentence_status = Enum(
     state_enum_strings.state_sentence_status_suspended,
     state_enum_strings.state_sentence_status_revoked,
     state_enum_strings.state_sentence_status_vacated,
-    name='state_sentence_status')
+    name="state_sentence_status",
+)
 
 state_supervision_type = Enum(
     state_enum_strings.state_supervision_type_civil_commitment,
@@ -135,7 +140,8 @@ state_supervision_type = Enum(
     state_enum_strings.state_supervision_type_post_confinement,
     state_enum_strings.state_supervision_type_pre_confinement,
     state_enum_strings.state_supervision_type_probation,
-    name='state_supervision_type')
+    name="state_supervision_type",
+)
 
 state_supervision_case_type = Enum(
     state_enum_strings.state_supervision_case_type_alcohol_drug,
@@ -147,7 +153,8 @@ state_supervision_case_type = Enum(
     state_enum_strings.state_supervision_case_type_serious_mental_illness,
     state_enum_strings.state_supervision_case_type_sex_offense,
     state_enum_strings.state_supervision_case_type_veterans_court,
-    name='state_supervision_case_type')
+    name="state_supervision_case_type",
+)
 
 state_charge_classification_type = Enum(
     state_enum_strings.state_charge_classification_type_civil,
@@ -156,14 +163,16 @@ state_charge_classification_type = Enum(
     state_enum_strings.state_charge_classification_type_infraction,
     state_enum_strings.state_charge_classification_type_misdemeanor,
     state_enum_strings.state_charge_classification_type_other,
-    name='state_charge_classification_type')
+    name="state_charge_classification_type",
+)
 
 state_fine_status = Enum(
     enum_strings.external_unknown,
     state_enum_strings.state_fine_status_paid,
     enum_strings.present_without_info,
     state_enum_strings.state_fine_status_unpaid,
-    name='state_fine_status')
+    name="state_fine_status",
+)
 
 state_incarceration_type = Enum(
     enum_strings.external_unknown,
@@ -171,18 +180,21 @@ state_incarceration_type = Enum(
     state_enum_strings.state_incarceration_type_federal_prison,
     state_enum_strings.state_incarceration_type_out_of_state,
     state_enum_strings.state_incarceration_type_state_prison,
-    name='state_incarceration_type')
+    name="state_incarceration_type",
+)
 
 state_court_case_status = Enum(
     enum_strings.external_unknown,
     enum_strings.present_without_info,
     # TODO(#1697): Add values here
-    name='state_court_case_status')
+    name="state_court_case_status",
+)
 
 state_court_type = Enum(
     enum_strings.present_without_info,
     # TODO(#1697): Add values here,
-    name='state_court_type')
+    name="state_court_type",
+)
 
 state_agent_type = Enum(
     enum_strings.present_without_info,
@@ -192,7 +204,8 @@ state_agent_type = Enum(
     state_enum_strings.state_agent_supervision_officer,
     state_enum_strings.state_agent_unit_supervisor,
     enum_strings.internal_unknown,
-    name='state_agent_type')
+    name="state_agent_type",
+)
 
 state_person_alias_type = Enum(
     state_enum_strings.state_person_alias_alias_type_affiliation_name,
@@ -200,20 +213,23 @@ state_person_alias_type = Enum(
     state_enum_strings.state_person_alias_alias_type_given_name,
     state_enum_strings.state_person_alias_alias_type_maiden_name,
     state_enum_strings.state_person_alias_alias_type_nickname,
-    name='state_person_alias_type')
+    name="state_person_alias_type",
+)
 
 state_incarceration_period_status = Enum(
     enum_strings.external_unknown,
     state_enum_strings.state_incarceration_period_status_in_custody,
     state_enum_strings.state_incarceration_period_status_not_in_custody,
     enum_strings.present_without_info,
-    name='state_incarceration_period_status')
+    name="state_incarceration_period_status",
+)
 
 state_incarceration_facility_security_level = Enum(
     state_enum_strings.state_incarceration_facility_security_level_maximum,
     state_enum_strings.state_incarceration_facility_security_level_medium,
     state_enum_strings.state_incarceration_facility_security_level_minimum,
-    name='state_incarceration_facility_security_level')
+    name="state_incarceration_facility_security_level",
+)
 
 state_incarceration_period_admission_reason = Enum(
     state_enum_strings.state_incarceration_period_admission_reason_admitted_in_error,
@@ -229,7 +245,8 @@ state_incarceration_period_admission_reason = Enum(
     state_enum_strings.state_incarceration_period_admission_reason_temporary_custody,
     state_enum_strings.state_incarceration_period_admission_reason_transfer,
     state_enum_strings.state_incarceration_period_admission_reason_transferred_from_out_of_state,
-    name='state_incarceration_period_admission_reason')
+    name="state_incarceration_period_admission_reason",
+)
 
 state_incarceration_period_release_reason = Enum(
     state_enum_strings.state_incarceration_period_release_reason_commuted,
@@ -249,7 +266,7 @@ state_incarceration_period_release_reason = Enum(
     state_enum_strings.state_incarceration_period_release_reason_transfer,
     state_enum_strings.state_incarceration_period_release_reason_transferred_out_of_state,
     state_enum_strings.state_incarceration_period_release_reason_vacated,
-    name='state_incarceration_period_release_reason'
+    name="state_incarceration_period_release_reason",
 )
 
 state_supervision_period_status = Enum(
@@ -257,7 +274,8 @@ state_supervision_period_status = Enum(
     state_enum_strings.state_supervision_period_status_terminated,
     state_enum_strings.state_supervision_period_status_under_supervision,
     enum_strings.present_without_info,
-    name='state_supervision_period_status')
+    name="state_supervision_period_status",
+)
 
 state_supervision_period_admission_reason = Enum(
     enum_strings.external_unknown,
@@ -270,7 +288,8 @@ state_supervision_period_admission_reason = Enum(
     state_enum_strings.state_supervision_period_admission_reason_transfer_within_state,
     state_enum_strings.state_supervision_period_admission_reason_return_from_absconsion,
     state_enum_strings.state_supervision_period_admission_reason_return_from_suspension,
-    name='state_supervision_period_admission_reason')
+    name="state_supervision_period_admission_reason",
+)
 
 state_supervision_level = Enum(
     enum_strings.external_unknown,
@@ -287,7 +306,8 @@ state_supervision_level = Enum(
     state_enum_strings.state_supervision_period_supervision_level_limited,
     state_enum_strings.state_supervision_period_supervision_level_electronic_monitoring_only,
     state_enum_strings.state_supervision_period_supervision_level_unsupervised,
-    name='state_supervision_level')
+    name="state_supervision_level",
+)
 
 state_supervision_period_termination_reason = Enum(
     enum_strings.external_unknown,
@@ -306,7 +326,8 @@ state_supervision_period_termination_reason = Enum(
     state_enum_strings.state_supervision_period_termination_reason_return_to_incarceration,
     state_enum_strings.state_supervision_period_termination_reason_revocation,
     state_enum_strings.state_supervision_period_termination_reason_suspension,
-    name='state_supervision_period_termination_reason')
+    name="state_supervision_period_termination_reason",
+)
 
 state_supervision_period_supervision_type = Enum(
     enum_strings.external_unknown,
@@ -316,7 +337,8 @@ state_supervision_period_supervision_type = Enum(
     state_enum_strings.state_supervision_period_supervision_type_parole,
     state_enum_strings.state_supervision_period_supervision_type_probation,
     state_enum_strings.state_supervision_period_supervision_type_dual,
-    name='state_supervision_period_supervision_type')
+    name="state_supervision_period_supervision_type",
+)
 
 state_incarceration_incident_type = Enum(
     enum_strings.present_without_info,
@@ -327,7 +349,8 @@ state_incarceration_incident_type = Enum(
     state_enum_strings.state_incarceration_incident_type_positive,
     state_enum_strings.state_incarceration_incident_type_report,
     state_enum_strings.state_incarceration_incident_type_violence,
-    name='state_incarceration_incident_type')
+    name="state_incarceration_incident_type",
+)
 
 state_incarceration_incident_outcome_type = Enum(
     state_enum_strings.state_incarceration_incident_outcome_cell_confinement,
@@ -343,7 +366,8 @@ state_incarceration_incident_outcome_type = Enum(
     state_enum_strings.state_incarceration_incident_outcome_solitary,
     state_enum_strings.state_incarceration_incident_outcome_treatment,
     state_enum_strings.state_incarceration_incident_outcome_warning,
-    name='state_incarceration_incident_outcome_type')
+    name="state_incarceration_incident_outcome_type",
+)
 
 state_supervision_violation_type = Enum(
     state_enum_strings.state_supervision_violation_type_absconded,
@@ -353,13 +377,15 @@ state_supervision_violation_type = Enum(
     state_enum_strings.state_supervision_violation_type_misdemeanor,
     state_enum_strings.state_supervision_violation_type_municipal,
     state_enum_strings.state_supervision_violation_type_technical,
-    name='state_supervision_violation_type')
+    name="state_supervision_violation_type",
+)
 
 state_supervision_violation_response_type = Enum(
     state_enum_strings.state_supervision_violation_response_type_citation,
     state_enum_strings.state_supervision_violation_response_type_violation_report,
     state_enum_strings.state_supervision_violation_response_type_permanent_decision,
-    name='state_supervision_violation_response_type')
+    name="state_supervision_violation_response_type",
+)
 
 state_supervision_violation_response_decision = Enum(
     state_enum_strings.state_supervision_violation_response_decision_community_service,
@@ -379,26 +405,29 @@ state_supervision_violation_response_decision = Enum(
     state_enum_strings.state_supervision_violation_response_decision_treatment_in_field,
     state_enum_strings.state_supervision_violation_response_decision_warning,
     state_enum_strings.state_supervision_violation_response_decision_warrant_issued,
-    name='state_supervision_violation_response_decision')
+    name="state_supervision_violation_response_decision",
+)
 
 state_supervision_violation_response_revocation_type = Enum(
     state_enum_strings.state_supervision_violation_response_revocation_type_reincarceration,
     state_enum_strings.state_supervision_violation_response_revocation_type_return_to_supervision,
     state_enum_strings.state_supervision_violation_response_revocation_type_shock_incarceration,
     state_enum_strings.state_supervision_violation_response_revocation_type_treatment_in_prison,
-    name='state_supervision_violation_response_revocation_type')
+    name="state_supervision_violation_response_revocation_type",
+)
 
 state_supervision_violation_response_deciding_body_type = Enum(
     state_enum_strings.state_supervision_violation_response_deciding_body_type_court,
     state_enum_strings.state_supervision_violation_response_deciding_body_parole_board,
     state_enum_strings.state_supervision_violation_response_deciding_body_type_supervision_officer,
-    name='state_supervision_violation_response_deciding_body_type')
+    name="state_supervision_violation_response_deciding_body_type",
+)
 
 state_parole_decision_outcome = Enum(
     enum_strings.external_unknown,
     state_enum_strings.state_parole_decision_parole_denied,
     state_enum_strings.state_parole_decision_parole_granted,
-    name='state_parole_decision_outcome'
+    name="state_parole_decision_outcome",
 )
 state_program_assignment_participation_status = Enum(
     enum_strings.external_unknown,
@@ -407,7 +436,8 @@ state_program_assignment_participation_status = Enum(
     state_enum_strings.state_program_assignment_participation_status_discharged,
     state_enum_strings.state_program_assignment_participation_status_in_progress,
     state_enum_strings.state_program_assignment_participation_status_pending,
-    name='state_program_assignment_participation_status')
+    name="state_program_assignment_participation_status",
+)
 
 state_program_assignment_discharge_reason = Enum(
     enum_strings.external_unknown,
@@ -418,7 +448,8 @@ state_program_assignment_discharge_reason = Enum(
     state_enum_strings.state_program_assignment_discharge_reason_opted_out,
     state_enum_strings.state_program_assignment_discharge_reason_program_transfer,
     state_enum_strings.state_program_assignment_discharge_reason_reincarcerated,
-    name='state_program_assignment_discharge_reason')
+    name="state_program_assignment_discharge_reason",
+)
 
 state_specialized_purpose_for_incarceration = Enum(
     enum_strings.external_unknown,
@@ -427,21 +458,21 @@ state_specialized_purpose_for_incarceration = Enum(
     state_enum_strings.state_specialized_purpose_for_incarceration_parole_board_hold,
     state_enum_strings.state_specialized_purpose_for_incarceration_shock_incarceration,
     state_enum_strings.state_specialized_purpose_for_incarceration_treatment_in_prison,
-    name='state_specialized_purpose_for_incarceration'
+    name="state_specialized_purpose_for_incarceration",
 )
 
 state_early_discharge_decision = Enum(
     state_enum_strings.state_early_discharge_decision_request_denied,
     state_enum_strings.state_early_discharge_decision_sentence_termination_granted,
     state_enum_strings.state_early_discharge_decision_unsupervised_probation_granted,
-    name='state_early_discharge_decision'
+    name="state_early_discharge_decision",
 )
 
 state_early_discharge_decision_status = Enum(
     state_enum_strings.state_early_discharge_decision_status_pending,
     state_enum_strings.state_early_discharge_decision_status_decided,
     state_enum_strings.state_early_discharge_decision_status_invalid,
-    name='state_early_discharge_decision_status'
+    name="state_early_discharge_decision_status",
 )
 
 state_acting_body_type = Enum(
@@ -449,7 +480,7 @@ state_acting_body_type = Enum(
     state_enum_strings.state_acting_body_type_parole_board,
     state_enum_strings.state_acting_body_type_sentenced_person,
     state_enum_strings.state_acting_body_type_supervision_officer,
-    name='state_acting_body_type'
+    name="state_acting_body_type",
 )
 
 state_custodial_authority = Enum(
@@ -458,7 +489,7 @@ state_custodial_authority = Enum(
     state_enum_strings.state_custodial_authority_other_state,
     state_enum_strings.state_custodial_authority_supervision_authority,
     state_enum_strings.state_custodial_authority_state_prison,
-    name='state_custodial_authority'
+    name="state_custodial_authority",
 )
 
 state_supervision_contact_location = Enum(
@@ -471,7 +502,7 @@ state_supervision_contact_location = Enum(
     state_enum_strings.state_supervision_contact_location_residence,
     state_enum_strings.state_supervision_contact_location_supervision_office,
     state_enum_strings.state_supervision_contact_location_treatment_provider,
-    name='state_supervision_contact_location'
+    name="state_supervision_contact_location",
 )
 
 state_supervision_contact_status = Enum(
@@ -479,7 +510,7 @@ state_supervision_contact_status = Enum(
     enum_strings.external_unknown,
     state_enum_strings.state_supervision_contact_status_attempted,
     state_enum_strings.state_supervision_contact_status_completed,
-    name='state_supervision_contact_status'
+    name="state_supervision_contact_status",
 )
 
 state_supervision_contact_reason = Enum(
@@ -488,7 +519,7 @@ state_supervision_contact_reason = Enum(
     state_enum_strings.state_supervision_contact_reason_emergency_contact,
     state_enum_strings.state_supervision_contact_reason_general_contact,
     state_enum_strings.state_supervision_contact_reason_initial_contact,
-    name='state_supervision_contact_reason'
+    name="state_supervision_contact_reason",
 )
 
 state_supervision_contact_type = Enum(
@@ -498,191 +529,210 @@ state_supervision_contact_type = Enum(
     state_enum_strings.state_supervision_contact_type_telephone,
     state_enum_strings.state_supervision_contact_type_written_message,
     state_enum_strings.state_supervision_contact_type_virtual,
-    name='state_supervision_contact_type'
+    name="state_supervision_contact_type",
 )
 
 # Join tables
 
-state_supervision_sentence_incarceration_period_association_table = \
-    Table('state_supervision_sentence_incarceration_period_association',
-          StateBase.metadata,
-          Column('supervision_sentence_id',
-                 Integer,
-                 ForeignKey(
-                     'state_supervision_sentence.supervision_sentence_id'),
-                 index=True),
-          Column('incarceration_period_id',
-                 Integer,
-                 ForeignKey(
-                     'state_incarceration_period.incarceration_period_id'),
-                 index=True))
+state_supervision_sentence_incarceration_period_association_table = Table(
+    "state_supervision_sentence_incarceration_period_association",
+    StateBase.metadata,
+    Column(
+        "supervision_sentence_id",
+        Integer,
+        ForeignKey("state_supervision_sentence.supervision_sentence_id"),
+        index=True,
+    ),
+    Column(
+        "incarceration_period_id",
+        Integer,
+        ForeignKey("state_incarceration_period.incarceration_period_id"),
+        index=True,
+    ),
+)
 
-state_supervision_sentence_supervision_period_association_table = \
-    Table('state_supervision_sentence_supervision_period_association',
-          StateBase.metadata,
-          Column('supervision_sentence_id',
-                 Integer,
-                 ForeignKey(
-                     'state_supervision_sentence.supervision_sentence_id'),
-                 index=True),
-          Column('supervision_period_id',
-                 Integer,
-                 ForeignKey(
-                     'state_supervision_period.supervision_period_id'),
-                 index=True))
+state_supervision_sentence_supervision_period_association_table = Table(
+    "state_supervision_sentence_supervision_period_association",
+    StateBase.metadata,
+    Column(
+        "supervision_sentence_id",
+        Integer,
+        ForeignKey("state_supervision_sentence.supervision_sentence_id"),
+        index=True,
+    ),
+    Column(
+        "supervision_period_id",
+        Integer,
+        ForeignKey("state_supervision_period.supervision_period_id"),
+        index=True,
+    ),
+)
 
-state_incarceration_sentence_incarceration_period_association_table = \
-    Table('state_incarceration_sentence_incarceration_period_association',
-          StateBase.metadata,
-          Column('incarceration_sentence_id',
-                 Integer,
-                 ForeignKey(
-                     'state_incarceration_sentence.incarceration_sentence_id'),
-                 index=True),
-          Column('incarceration_period_id',
-                 Integer,
-                 ForeignKey(
-                     'state_incarceration_period.incarceration_period_id'),
-                 index=True))
+state_incarceration_sentence_incarceration_period_association_table = Table(
+    "state_incarceration_sentence_incarceration_period_association",
+    StateBase.metadata,
+    Column(
+        "incarceration_sentence_id",
+        Integer,
+        ForeignKey("state_incarceration_sentence.incarceration_sentence_id"),
+        index=True,
+    ),
+    Column(
+        "incarceration_period_id",
+        Integer,
+        ForeignKey("state_incarceration_period.incarceration_period_id"),
+        index=True,
+    ),
+)
 
-state_incarceration_sentence_supervision_period_association_table = \
-    Table('state_incarceration_sentence_supervision_period_association',
-          StateBase.metadata,
-          Column('incarceration_sentence_id',
-                 Integer,
-                 ForeignKey(
-                     'state_incarceration_sentence.incarceration_sentence_id'),
-                 index=True),
-          Column('supervision_period_id',
-                 Integer,
-                 ForeignKey(
-                     'state_supervision_period.supervision_period_id'),
-                 index=True))
+state_incarceration_sentence_supervision_period_association_table = Table(
+    "state_incarceration_sentence_supervision_period_association",
+    StateBase.metadata,
+    Column(
+        "incarceration_sentence_id",
+        Integer,
+        ForeignKey("state_incarceration_sentence.incarceration_sentence_id"),
+        index=True,
+    ),
+    Column(
+        "supervision_period_id",
+        Integer,
+        ForeignKey("state_supervision_period.supervision_period_id"),
+        index=True,
+    ),
+)
 
-state_supervision_period_supervision_violation_association_table = \
-    Table('state_supervision_period_supervision_violation_association',
-          StateBase.metadata,
-          Column('supervision_period_id',
-                 Integer,
-                 ForeignKey(
-                     'state_supervision_period.supervision_period_id'),
-                 index=True),
-          Column('supervision_violation_id',
-                 Integer,
-                 ForeignKey(
-                     'state_supervision_violation.supervision_violation_id'),
-                 index=True))
+state_supervision_period_supervision_violation_association_table = Table(
+    "state_supervision_period_supervision_violation_association",
+    StateBase.metadata,
+    Column(
+        "supervision_period_id",
+        Integer,
+        ForeignKey("state_supervision_period.supervision_period_id"),
+        index=True,
+    ),
+    Column(
+        "supervision_violation_id",
+        Integer,
+        ForeignKey("state_supervision_violation.supervision_violation_id"),
+        index=True,
+    ),
+)
 
-state_supervision_period_program_assignment_association_table = \
-    Table('state_supervision_period_program_assignment_association',
-          StateBase.metadata,
-          Column('supervision_period_id',
-                 Integer,
-                 ForeignKey(
-                     'state_supervision_period.supervision_period_id'),
-                 index=True),
-          Column('program_assignment_id',
-                 Integer,
-                 ForeignKey(
-                     'state_program_assignment.program_assignment_id'),
-                 index=True))
+state_supervision_period_program_assignment_association_table = Table(
+    "state_supervision_period_program_assignment_association",
+    StateBase.metadata,
+    Column(
+        "supervision_period_id",
+        Integer,
+        ForeignKey("state_supervision_period.supervision_period_id"),
+        index=True,
+    ),
+    Column(
+        "program_assignment_id",
+        Integer,
+        ForeignKey("state_program_assignment.program_assignment_id"),
+        index=True,
+    ),
+)
 
-state_supervision_period_supervision_contact_association_table = \
-    Table('state_supervision_period_supervision_contact_association',
-          StateBase.metadata,
-          Column('supervision_period_id',
-                 Integer,
-                 ForeignKey('state_supervision_period.supervision_period_id'),
-                 index=True),
-          Column('supervision_contact_id',
-                 Integer,
-                 ForeignKey('state_supervision_contact.supervision_contact_id'),
-                 index=True))
+state_supervision_period_supervision_contact_association_table = Table(
+    "state_supervision_period_supervision_contact_association",
+    StateBase.metadata,
+    Column(
+        "supervision_period_id",
+        Integer,
+        ForeignKey("state_supervision_period.supervision_period_id"),
+        index=True,
+    ),
+    Column(
+        "supervision_contact_id",
+        Integer,
+        ForeignKey("state_supervision_contact.supervision_contact_id"),
+        index=True,
+    ),
+)
 
-state_incarceration_period_program_assignment_association_table = \
-    Table('state_incarceration_period_program_assignment_association',
-          StateBase.metadata,
-          Column('incarceration_period_id',
-                 Integer,
-                 ForeignKey(
-                     'state_incarceration_period.incarceration_period_id'),
-                 index=True),
-          Column('program_assignment_id',
-                 Integer,
-                 ForeignKey(
-                     'state_program_assignment.program_assignment_id'),
-                 index=True))
+state_incarceration_period_program_assignment_association_table = Table(
+    "state_incarceration_period_program_assignment_association",
+    StateBase.metadata,
+    Column(
+        "incarceration_period_id",
+        Integer,
+        ForeignKey("state_incarceration_period.incarceration_period_id"),
+        index=True,
+    ),
+    Column(
+        "program_assignment_id",
+        Integer,
+        ForeignKey("state_program_assignment.program_assignment_id"),
+        index=True,
+    ),
+)
 
-state_charge_incarceration_sentence_association_table = \
-    Table('state_charge_incarceration_sentence_association',
-          StateBase.metadata,
-          Column('charge_id',
-                 Integer,
-                 ForeignKey('state_charge.charge_id'),
-                 index=True),
-          Column('incarceration_sentence_id',
-                 Integer,
-                 ForeignKey(
-                     'state_incarceration_sentence.incarceration_sentence_id'),
-                 index=True))
+state_charge_incarceration_sentence_association_table = Table(
+    "state_charge_incarceration_sentence_association",
+    StateBase.metadata,
+    Column("charge_id", Integer, ForeignKey("state_charge.charge_id"), index=True),
+    Column(
+        "incarceration_sentence_id",
+        Integer,
+        ForeignKey("state_incarceration_sentence.incarceration_sentence_id"),
+        index=True,
+    ),
+)
 
-state_charge_supervision_sentence_association_table = \
-    Table('state_charge_supervision_sentence_association',
-          StateBase.metadata,
-          Column('charge_id',
-                 Integer,
-                 ForeignKey('state_charge.charge_id'),
-                 index=True),
-          Column('supervision_sentence_id',
-                 Integer,
-                 ForeignKey(
-                     'state_supervision_sentence.supervision_sentence_id'),
-                 index=True))
+state_charge_supervision_sentence_association_table = Table(
+    "state_charge_supervision_sentence_association",
+    StateBase.metadata,
+    Column("charge_id", Integer, ForeignKey("state_charge.charge_id"), index=True),
+    Column(
+        "supervision_sentence_id",
+        Integer,
+        ForeignKey("state_supervision_sentence.supervision_sentence_id"),
+        index=True,
+    ),
+)
 
-state_charge_fine_association_table = \
-    Table('state_charge_fine_association',
-          StateBase.metadata,
-          Column('charge_id',
-                 Integer,
-                 ForeignKey('state_charge.charge_id'),
-                 index=True),
-          Column('fine_id',
-                 Integer,
-                 ForeignKey(
-                     'state_fine.fine_id'),
-                 index=True))
+state_charge_fine_association_table = Table(
+    "state_charge_fine_association",
+    StateBase.metadata,
+    Column("charge_id", Integer, ForeignKey("state_charge.charge_id"), index=True),
+    Column("fine_id", Integer, ForeignKey("state_fine.fine_id"), index=True),
+)
 
-state_parole_decision_decision_agent_association_table = \
-    Table('state_parole_decision_decision_agent_association',
-          StateBase.metadata,
-          Column('parole_decision_id',
-                 Integer,
-                 ForeignKey(
-                     'state_parole_decision.parole_decision_id'),
-                 index=True),
-          Column('agent_id',
-                 Integer,
-                 ForeignKey('state_agent.agent_id'),
-                 index=True),
-          )
+state_parole_decision_decision_agent_association_table = Table(
+    "state_parole_decision_decision_agent_association",
+    StateBase.metadata,
+    Column(
+        "parole_decision_id",
+        Integer,
+        ForeignKey("state_parole_decision.parole_decision_id"),
+        index=True,
+    ),
+    Column("agent_id", Integer, ForeignKey("state_agent.agent_id"), index=True),
+)
 
-state_supervision_violation_response_decision_agent_association_table = \
-    Table('state_supervision_violation_response_decision_agent_association',
-          StateBase.metadata,
-          Column('supervision_violation_response_id',
-                 Integer,
-                 ForeignKey(
-                     'state_supervision_violation_response.'
-                     'supervision_violation_response_id'),
-                 index=True),
-          Column('agent_id',
-                 Integer,
-                 ForeignKey('state_agent.agent_id'),
-                 index=True),
-          )
+state_supervision_violation_response_decision_agent_association_table = Table(
+    "state_supervision_violation_response_decision_agent_association",
+    StateBase.metadata,
+    Column(
+        "supervision_violation_response_id",
+        Integer,
+        ForeignKey(
+            "state_supervision_violation_response." "supervision_violation_response_id"
+        ),
+        index=True,
+    ),
+    Column("agent_id", Integer, ForeignKey("state_agent.agent_id"), index=True),
+)
 
-SchemaPeriodType = TypeVar('SchemaPeriodType', 'StateSupervisionPeriod', 'StateIncarcerationPeriod')
-SchemaSentenceType = TypeVar('SchemaSentenceType', 'StateSupervisionSentence', 'StateIncarcerationSentence')
+SchemaPeriodType = TypeVar(
+    "SchemaPeriodType", "StateSupervisionPeriod", "StateIncarcerationPeriod"
+)
+SchemaSentenceType = TypeVar(
+    "SchemaSentenceType", "StateSupervisionSentence", "StateIncarcerationSentence"
+)
 
 
 # Shared mixin columns
@@ -693,17 +743,17 @@ class _ReferencesStatePersonSharedColumns:
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _ReferencesStatePersonSharedColumns:
-            raise Exception(f'[{cls}] cannot be instantiated')
+            raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)
 
     @declared_attr
     def person_id(self):
-        return Column(Integer,
-                      ForeignKey('state_person.person_id',
-                                 deferrable=True,
-                                 initially='DEFERRED'),
-                      index=True,
-                      nullable=False)
+        return Column(
+            Integer,
+            ForeignKey("state_person.person_id", deferrable=True, initially="DEFERRED"),
+            index=True,
+            nullable=False,
+        )
 
 
 class _ReferencesStateSentenceGroupSharedColumns:
@@ -713,21 +763,25 @@ class _ReferencesStateSentenceGroupSharedColumns:
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _ReferencesStateSentenceGroupSharedColumns:
-            raise Exception(f'[{cls}] cannot be instantiated')
+            raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)
 
     @declared_attr
     def sentence_group_id(self):
         return Column(
             Integer,
-            ForeignKey('state_sentence_group.sentence_group_id',
-                       deferrable=True,
-                       initially='DEFERRED'),
+            ForeignKey(
+                "state_sentence_group.sentence_group_id",
+                deferrable=True,
+                initially="DEFERRED",
+            ),
             index=True,
-            nullable=False)
+            nullable=False,
+        )
 
 
 # StatePersonExternalId
+
 
 class _StatePersonExternalIdSharedColumns(_ReferencesStatePersonSharedColumns):
     """A mixin which defines all columns common to StatePersonExternalId and
@@ -736,7 +790,7 @@ class _StatePersonExternalIdSharedColumns(_ReferencesStatePersonSharedColumns):
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _StatePersonExternalIdSharedColumns:
-            raise Exception(f'[{cls}] cannot be instantiated')
+            raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)
 
     external_id = Column(String(255), nullable=False, index=True)
@@ -744,36 +798,45 @@ class _StatePersonExternalIdSharedColumns(_ReferencesStatePersonSharedColumns):
     id_type = Column(String(255), nullable=False)
 
 
-class StatePersonExternalId(StateBase,
-                            _StatePersonExternalIdSharedColumns):
+class StatePersonExternalId(StateBase, _StatePersonExternalIdSharedColumns):
     """Represents a StatePersonExternalId in the SQL schema"""
-    __tablename__ = 'state_person_external_id'
+
+    __tablename__ = "state_person_external_id"
     __table_args__ = (
-        UniqueConstraint('state_code', 'id_type', 'external_id',
-                name='person_external_ids_unique_within_type_and_region',
-                deferrable=True, initially='DEFERRED'),
+        UniqueConstraint(
+            "state_code",
+            "id_type",
+            "external_id",
+            name="person_external_ids_unique_within_type_and_region",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
     )
 
     person_external_id_id = Column(Integer, primary_key=True)
 
 
-class StatePersonExternalIdHistory(StateBase,
-                                   _StatePersonExternalIdSharedColumns,
-                                   HistoryTableSharedColumns):
+class StatePersonExternalIdHistory(
+    StateBase, _StatePersonExternalIdSharedColumns, HistoryTableSharedColumns
+):
     """Represents the historical state of a StatePersonExternalId"""
-    __tablename__ = 'state_person_external_id_history'
+
+    __tablename__ = "state_person_external_id_history"
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
     person_external_id_history_id = Column(Integer, primary_key=True)
 
     person_external_id_id = Column(
-        Integer, ForeignKey(
-            'state_person_external_id.person_external_id_id'),
-        nullable=False, index=True)
+        Integer,
+        ForeignKey("state_person_external_id.person_external_id_id"),
+        nullable=False,
+        index=True,
+    )
 
 
 # StatePersonAlias
+
 
 class _StatePersonAliasSharedColumns(_ReferencesStatePersonSharedColumns):
     """A mixin which defines all columns common to StatePersonAlias and
@@ -783,7 +846,7 @@ class _StatePersonAliasSharedColumns(_ReferencesStatePersonSharedColumns):
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _StatePersonAliasSharedColumns:
-            raise Exception(f'[{cls}] cannot be instantiated')
+            raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)
 
     state_code = Column(String(255), nullable=False, index=True)
@@ -792,31 +855,35 @@ class _StatePersonAliasSharedColumns(_ReferencesStatePersonSharedColumns):
     alias_type_raw_text = Column(String(255))
 
 
-class StatePersonAlias(StateBase,
-                       _StatePersonAliasSharedColumns):
+class StatePersonAlias(StateBase, _StatePersonAliasSharedColumns):
     """Represents a StatePersonAlias in the SQL schema"""
-    __tablename__ = 'state_person_alias'
+
+    __tablename__ = "state_person_alias"
 
     person_alias_id = Column(Integer, primary_key=True)
 
 
-class StatePersonAliasHistory(StateBase,
-                              _StatePersonAliasSharedColumns,
-                              HistoryTableSharedColumns):
+class StatePersonAliasHistory(
+    StateBase, _StatePersonAliasSharedColumns, HistoryTableSharedColumns
+):
     """Represents the historical state of a StatePersonAlias"""
-    __tablename__ = 'state_person_alias_history'
+
+    __tablename__ = "state_person_alias_history"
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
     person_alias_history_id = Column(Integer, primary_key=True)
 
     person_alias_id = Column(
-        Integer, ForeignKey(
-            'state_person_alias.person_alias_id'),
-        nullable=False, index=True)
+        Integer,
+        ForeignKey("state_person_alias.person_alias_id"),
+        nullable=False,
+        index=True,
+    )
 
 
 # StatePersonRace
+
 
 class _StatePersonRaceSharedColumns(_ReferencesStatePersonSharedColumns):
     """A mixin which defines all columns common to StatePersonRace and
@@ -825,7 +892,7 @@ class _StatePersonRaceSharedColumns(_ReferencesStatePersonSharedColumns):
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _StatePersonRaceSharedColumns:
-            raise Exception(f'[{cls}] cannot be instantiated')
+            raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)
 
     state_code = Column(String(255), nullable=False, index=True)
@@ -833,31 +900,35 @@ class _StatePersonRaceSharedColumns(_ReferencesStatePersonSharedColumns):
     race_raw_text = Column(String(255))
 
 
-class StatePersonRace(StateBase,
-                      _StatePersonRaceSharedColumns):
+class StatePersonRace(StateBase, _StatePersonRaceSharedColumns):
     """Represents a StatePersonRace in the SQL schema"""
-    __tablename__ = 'state_person_race'
+
+    __tablename__ = "state_person_race"
 
     person_race_id = Column(Integer, primary_key=True)
 
 
-class StatePersonRaceHistory(StateBase,
-                             _StatePersonRaceSharedColumns,
-                             HistoryTableSharedColumns):
+class StatePersonRaceHistory(
+    StateBase, _StatePersonRaceSharedColumns, HistoryTableSharedColumns
+):
     """Represents the historical state of a StatePersonRace"""
-    __tablename__ = 'state_person_race_history'
+
+    __tablename__ = "state_person_race_history"
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
     person_race_history_id = Column(Integer, primary_key=True)
 
     person_race_id = Column(
-        Integer, ForeignKey(
-            'state_person_race.person_race_id'),
-        nullable=False, index=True)
+        Integer,
+        ForeignKey("state_person_race.person_race_id"),
+        nullable=False,
+        index=True,
+    )
 
 
 # StatePersonEthnicity
+
 
 class _StatePersonEthnicitySharedColumns(_ReferencesStatePersonSharedColumns):
     """A mixin which defines all columns common to StatePersonEthnicity and
@@ -866,7 +937,7 @@ class _StatePersonEthnicitySharedColumns(_ReferencesStatePersonSharedColumns):
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _StatePersonEthnicitySharedColumns:
-            raise Exception(f'[{cls}] cannot be instantiated')
+            raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)
 
     state_code = Column(String(255), nullable=False, index=True)
@@ -874,31 +945,35 @@ class _StatePersonEthnicitySharedColumns(_ReferencesStatePersonSharedColumns):
     ethnicity_raw_text = Column(String(255))
 
 
-class StatePersonEthnicity(StateBase,
-                           _StatePersonEthnicitySharedColumns):
+class StatePersonEthnicity(StateBase, _StatePersonEthnicitySharedColumns):
     """Represents a state person in the SQL schema"""
-    __tablename__ = 'state_person_ethnicity'
+
+    __tablename__ = "state_person_ethnicity"
 
     person_ethnicity_id = Column(Integer, primary_key=True)
 
 
-class StatePersonEthnicityHistory(StateBase,
-                                  _StatePersonEthnicitySharedColumns,
-                                  HistoryTableSharedColumns):
+class StatePersonEthnicityHistory(
+    StateBase, _StatePersonEthnicitySharedColumns, HistoryTableSharedColumns
+):
     """Represents the historical state of a state person ethnicity"""
-    __tablename__ = 'state_person_ethnicity_history'
+
+    __tablename__ = "state_person_ethnicity_history"
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
     person_ethnicity_history_id = Column(Integer, primary_key=True)
 
     person_ethnicity_id = Column(
-        Integer, ForeignKey(
-            'state_person_ethnicity.person_ethnicity_id'),
-        nullable=False, index=True)
+        Integer,
+        ForeignKey("state_person_ethnicity.person_ethnicity_id"),
+        nullable=False,
+        index=True,
+    )
 
 
 # StatePerson
+
 
 class _StatePersonSharedColumns:
     """A mixin which defines all columns common to StatePerson and
@@ -907,7 +982,7 @@ class _StatePersonSharedColumns:
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _StatePersonSharedColumns:
-            raise Exception(f'[{cls}] cannot be instantiated')
+            raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)
 
     state_code = Column(String(255), nullable=False, index=True)
@@ -927,51 +1002,53 @@ class _StatePersonSharedColumns:
     @declared_attr
     def supervising_officer_id(self):
         return Column(
-            Integer,
-            ForeignKey('state_agent.agent_id'),
-            index=True,
-            nullable=True)
+            Integer, ForeignKey("state_agent.agent_id"), index=True, nullable=True
+        )
 
 
 class StatePerson(StateBase, _StatePersonSharedColumns):
     """Represents a StatePerson in the state SQL schema"""
-    __tablename__ = 'state_person'
+
+    __tablename__ = "state_person"
 
     person_id = Column(Integer, primary_key=True)
 
-    external_ids = \
-        relationship('StatePersonExternalId', backref='person', lazy='selectin')
-    aliases = relationship(
-        'StatePersonAlias', backref='person', lazy='selectin')
-    races = relationship('StatePersonRace', backref='person', lazy='selectin')
+    external_ids = relationship(
+        "StatePersonExternalId", backref="person", lazy="selectin"
+    )
+    aliases = relationship("StatePersonAlias", backref="person", lazy="selectin")
+    races = relationship("StatePersonRace", backref="person", lazy="selectin")
     ethnicities = relationship(
-        'StatePersonEthnicity', backref='person', lazy='selectin')
-    assessments = relationship(
-        'StateAssessment', backref='person', lazy='selectin')
+        "StatePersonEthnicity", backref="person", lazy="selectin"
+    )
+    assessments = relationship("StateAssessment", backref="person", lazy="selectin")
     program_assignments = relationship(
-        'StateProgramAssignment', backref='person', lazy='selectin')
+        "StateProgramAssignment", backref="person", lazy="selectin"
+    )
     sentence_groups = relationship(
-        'StateSentenceGroup', backref='person', lazy='selectin')
-    supervising_officer = relationship(
-        'StateAgent', uselist=False, lazy='selectin')
+        "StateSentenceGroup", backref="person", lazy="selectin"
+    )
+    supervising_officer = relationship("StateAgent", uselist=False, lazy="selectin")
 
 
-class StatePersonHistory(StateBase,
-                         _StatePersonSharedColumns,
-                         HistoryTableSharedColumns):
+class StatePersonHistory(
+    StateBase, _StatePersonSharedColumns, HistoryTableSharedColumns
+):
     """Represents the historical state of a StatePerson"""
-    __tablename__ = 'state_person_history'
+
+    __tablename__ = "state_person_history"
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
     person_history_id = Column(Integer, primary_key=True)
 
     person_id = Column(
-        Integer, ForeignKey('state_person.person_id'),
-        nullable=False, index=True)
+        Integer, ForeignKey("state_person.person_id"), nullable=False, index=True
+    )
 
 
 # StateBond
+
 
 class _StateBondSharedColumns(_ReferencesStatePersonSharedColumns):
     """A mixin which defines all columns common to StateBond and
@@ -980,7 +1057,7 @@ class _StateBondSharedColumns(_ReferencesStatePersonSharedColumns):
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _StateBondSharedColumns:
-            raise Exception(f'[{cls}] cannot be instantiated')
+            raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)
 
     external_id = Column(String(255), index=True)
@@ -995,36 +1072,40 @@ class _StateBondSharedColumns(_ReferencesStatePersonSharedColumns):
     bond_agent = Column(String(255))
 
 
-class StateBond(StateBase,
-                _StateBondSharedColumns):
+class StateBond(StateBase, _StateBondSharedColumns):
     """Represents a StateBond in the SQL schema"""
-    __tablename__ = 'state_bond'
+
+    __tablename__ = "state_bond"
     __table_args__ = (
-        UniqueConstraint('state_code', 'external_id',
-                     name='bond_external_ids_unique_within_state', deferrable=True, initially='DEFERRED'),
+        UniqueConstraint(
+            "state_code",
+            "external_id",
+            name="bond_external_ids_unique_within_state",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
     )
     bond_id = Column(Integer, primary_key=True)
 
-    person = relationship('StatePerson', uselist=False)
+    person = relationship("StatePerson", uselist=False)
 
 
-class StateBondHistory(StateBase,
-                       _StateBondSharedColumns,
-                       HistoryTableSharedColumns):
+class StateBondHistory(StateBase, _StateBondSharedColumns, HistoryTableSharedColumns):
     """Represents the historical state of a StateBond"""
-    __tablename__ = 'state_bond_history'
+
+    __tablename__ = "state_bond_history"
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
     bond_history_id = Column(Integer, primary_key=True)
 
     bond_id = Column(
-        Integer, ForeignKey('state_bond.bond_id'),
-        nullable=False,
-        index=True)
+        Integer, ForeignKey("state_bond.bond_id"), nullable=False, index=True
+    )
 
 
 # StateCourtCase
+
 
 class _StateCourtCaseSharedColumns(_ReferencesStatePersonSharedColumns):
     """A mixin which defines all columns common to StateCourtCase and
@@ -1034,7 +1115,7 @@ class _StateCourtCaseSharedColumns(_ReferencesStatePersonSharedColumns):
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _StateCourtCaseSharedColumns:
-            raise Exception(f'[{cls}] cannot be instantiated')
+            raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)
 
     external_id = Column(String(255), index=True)
@@ -1052,39 +1133,41 @@ class _StateCourtCaseSharedColumns(_ReferencesStatePersonSharedColumns):
     @declared_attr
     def judge_id(self):
         return Column(
-            Integer,
-            ForeignKey('state_agent.agent_id'),
-            index=True,
-            nullable=True)
+            Integer, ForeignKey("state_agent.agent_id"), index=True, nullable=True
+        )
 
 
-class StateCourtCase(StateBase,
-                     _StateCourtCaseSharedColumns):
+class StateCourtCase(StateBase, _StateCourtCaseSharedColumns):
     """Represents a StateCourtCase in the SQL schema"""
-    __tablename__ = 'state_court_case'
+
+    __tablename__ = "state_court_case"
 
     court_case_id = Column(Integer, primary_key=True)
-    person = relationship('StatePerson', uselist=False)
-    judge = relationship('StateAgent', uselist=False, lazy='selectin')
+    person = relationship("StatePerson", uselist=False)
+    judge = relationship("StateAgent", uselist=False, lazy="selectin")
 
 
-class StateCourtCaseHistory(StateBase,
-                            _StateCourtCaseSharedColumns,
-                            HistoryTableSharedColumns):
+class StateCourtCaseHistory(
+    StateBase, _StateCourtCaseSharedColumns, HistoryTableSharedColumns
+):
     """Represents the historical state of a StateCourtCase"""
-    __tablename__ = 'state_court_case_history'
+
+    __tablename__ = "state_court_case_history"
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
     court_case_history_id = Column(Integer, primary_key=True)
 
     court_case_id = Column(
-        Integer, ForeignKey(
-            'state_court_case.court_case_id'),
-        nullable=False, index=True)
+        Integer,
+        ForeignKey("state_court_case.court_case_id"),
+        nullable=False,
+        index=True,
+    )
 
 
 # StateCharge
+
 
 class _StateChargeSharedColumns(_ReferencesStatePersonSharedColumns):
     """A mixin which defines all columns common to StateCharge and
@@ -1093,7 +1176,7 @@ class _StateChargeSharedColumns(_ReferencesStatePersonSharedColumns):
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _StateChargeSharedColumns:
-            raise Exception(f'[{cls}] cannot be instantiated')
+            raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)
 
     external_id = Column(String(255), index=True)
@@ -1119,49 +1202,46 @@ class _StateChargeSharedColumns(_ReferencesStatePersonSharedColumns):
 
     @declared_attr
     def court_case_id(self):
-        return Column(Integer,
-                      ForeignKey('state_court_case.court_case_id'),
-                      index=True)
+        return Column(Integer, ForeignKey("state_court_case.court_case_id"), index=True)
 
     @declared_attr
     def bond_id(self):
-        return Column(Integer,
-                      ForeignKey('state_bond.bond_id'),
-                      index=True)
+        return Column(Integer, ForeignKey("state_bond.bond_id"), index=True)
 
 
-class StateCharge(StateBase,
-                  _StateChargeSharedColumns):
+class StateCharge(StateBase, _StateChargeSharedColumns):
     """Represents a StateCharge in the SQL schema"""
-    __tablename__ = 'state_charge'
+
+    __tablename__ = "state_charge"
 
     charge_id = Column(Integer, primary_key=True)
 
     # Cross-entity relationships
-    person = relationship('StatePerson', uselist=False)
+    person = relationship("StatePerson", uselist=False)
     court_case = relationship(
-        'StateCourtCase', uselist=False, backref='charges', lazy='selectin')
-    bond = relationship(
-        'StateBond', uselist=False, backref='charges', lazy='selectin')
+        "StateCourtCase", uselist=False, backref="charges", lazy="selectin"
+    )
+    bond = relationship("StateBond", uselist=False, backref="charges", lazy="selectin")
 
 
-class StateChargeHistory(StateBase,
-                         _StateChargeSharedColumns,
-                         HistoryTableSharedColumns):
+class StateChargeHistory(
+    StateBase, _StateChargeSharedColumns, HistoryTableSharedColumns
+):
     """Represents the historical state of a StateCharge"""
-    __tablename__ = 'state_charge_history'
+
+    __tablename__ = "state_charge_history"
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
     charge_history_id = Column(Integer, primary_key=True)
 
     charge_id = Column(
-        Integer, ForeignKey('state_charge.charge_id'),
-        nullable=False,
-        index=True)
+        Integer, ForeignKey("state_charge.charge_id"), nullable=False, index=True
+    )
 
 
 # StateAssessment
+
 
 class _StateAssessmentSharedColumns(_ReferencesStatePersonSharedColumns):
     """A mixin which defines all columns common to StateAssessment and
@@ -1170,7 +1250,7 @@ class _StateAssessmentSharedColumns(_ReferencesStatePersonSharedColumns):
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _StateAssessmentSharedColumns:
-            raise Exception(f'[{cls}] cannot be instantiated')
+            raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)
 
     external_id = Column(String(255), index=True)
@@ -1189,55 +1269,58 @@ class _StateAssessmentSharedColumns(_ReferencesStatePersonSharedColumns):
     def incarceration_period_id(self):
         return Column(
             Integer,
-            ForeignKey('state_incarceration_period.incarceration_period_id'),
+            ForeignKey("state_incarceration_period.incarceration_period_id"),
             index=True,
-            nullable=True)
+            nullable=True,
+        )
 
     @declared_attr
     def supervision_period_id(self):
         return Column(
             Integer,
-            ForeignKey('state_supervision_period.supervision_period_id'),
+            ForeignKey("state_supervision_period.supervision_period_id"),
             index=True,
-            nullable=True)
+            nullable=True,
+        )
 
     @declared_attr
     def conducting_agent_id(self):
         return Column(
-            Integer,
-            ForeignKey('state_agent.agent_id'),
-            index=True,
-            nullable=True)
+            Integer, ForeignKey("state_agent.agent_id"), index=True, nullable=True
+        )
 
 
-class StateAssessment(StateBase,
-                      _StateAssessmentSharedColumns):
+class StateAssessment(StateBase, _StateAssessmentSharedColumns):
     """Represents a StateAssessment in the SQL schema"""
-    __tablename__ = 'state_assessment'
+
+    __tablename__ = "state_assessment"
 
     assessment_id = Column(Integer, primary_key=True)
 
-    conducting_agent = relationship(
-        'StateAgent', uselist=False, lazy='selectin')
+    conducting_agent = relationship("StateAgent", uselist=False, lazy="selectin")
 
 
-class StateAssessmentHistory(StateBase,
-                             _StateAssessmentSharedColumns,
-                             HistoryTableSharedColumns):
+class StateAssessmentHistory(
+    StateBase, _StateAssessmentSharedColumns, HistoryTableSharedColumns
+):
     """Represents the historical state of a StateAssessment"""
-    __tablename__ = 'state_assessment_history'
+
+    __tablename__ = "state_assessment_history"
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
     assessment_history_id = Column(Integer, primary_key=True)
 
     assessment_id = Column(
-        Integer, ForeignKey(
-            'state_assessment.assessment_id'),
-        nullable=False, index=True)
+        Integer,
+        ForeignKey("state_assessment.assessment_id"),
+        nullable=False,
+        index=True,
+    )
 
 
 # StateSentenceGroup
+
 
 class _StateSentenceGroupSharedColumns(_ReferencesStatePersonSharedColumns):
     """A mixin which defines all columns common to StateSentenceGroup and
@@ -1246,7 +1329,7 @@ class _StateSentenceGroupSharedColumns(_ReferencesStatePersonSharedColumns):
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _StateSentenceGroupSharedColumns:
-            raise Exception(f'[{cls}] cannot be instantiated')
+            raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)
 
     external_id = Column(String(255), index=True)
@@ -1260,52 +1343,63 @@ class _StateSentenceGroupSharedColumns(_ReferencesStatePersonSharedColumns):
     is_life = Column(Boolean)
 
 
-class StateSentenceGroup(StateBase,
-                         _StateSentenceGroupSharedColumns):
+class StateSentenceGroup(StateBase, _StateSentenceGroupSharedColumns):
     """Represents a StateSentenceGroup in the SQL schema"""
-    __tablename__ = 'state_sentence_group'
+
+    __tablename__ = "state_sentence_group"
     __table_args__ = (
-        UniqueConstraint('state_code', 'external_id',
-                         name='sentence_group_external_ids_unique_within_state', deferrable=True, initially='DEFERRED'),
+        UniqueConstraint(
+            "state_code",
+            "external_id",
+            name="sentence_group_external_ids_unique_within_state",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
     )
 
     sentence_group_id = Column(Integer, primary_key=True)
 
     supervision_sentences = relationship(
-        'StateSupervisionSentence', backref='sentence_group', lazy='selectin')
+        "StateSupervisionSentence", backref="sentence_group", lazy="selectin"
+    )
     incarceration_sentences = relationship(
-        'StateIncarcerationSentence', backref='sentence_group', lazy='selectin')
-    fines = relationship('StateFine', backref='sentence_group', lazy='selectin')
+        "StateIncarcerationSentence", backref="sentence_group", lazy="selectin"
+    )
+    fines = relationship("StateFine", backref="sentence_group", lazy="selectin")
 
 
-class StateSentenceGroupHistory(StateBase,
-                                _StateSentenceGroupSharedColumns,
-                                HistoryTableSharedColumns):
+class StateSentenceGroupHistory(
+    StateBase, _StateSentenceGroupSharedColumns, HistoryTableSharedColumns
+):
     """Represents the historical state of a StateSentenceGroup"""
-    __tablename__ = 'state_sentence_group_history'
+
+    __tablename__ = "state_sentence_group_history"
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
     sentence_group_history_id = Column(Integer, primary_key=True)
 
     sentence_group_id = Column(
-        Integer, ForeignKey(
-            'state_sentence_group.sentence_group_id'),
-        nullable=False, index=True)
+        Integer,
+        ForeignKey("state_sentence_group.sentence_group_id"),
+        nullable=False,
+        index=True,
+    )
 
 
 # StateSupervisionSentence
 
+
 class _StateSupervisionSentenceSharedColumns(
-        _ReferencesStatePersonSharedColumns,
-        _ReferencesStateSentenceGroupSharedColumns):
+    _ReferencesStatePersonSharedColumns, _ReferencesStateSentenceGroupSharedColumns
+):
     """A mixin which defines all columns common to StateSupervisionSentence and
     StateSupervisionSentenceHistory"""
 
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _StateSupervisionSentenceSharedColumns:
-            raise Exception(f'[{cls}] cannot be instantiated')
+            raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)
 
     external_id = Column(String(255), index=True)
@@ -1325,52 +1419,60 @@ class _StateSupervisionSentenceSharedColumns(
 
 class StateSupervisionSentence(StateBase, _StateSupervisionSentenceSharedColumns):
     """Represents a StateSupervisionSentence in the SQL schema"""
-    __tablename__ = 'state_supervision_sentence'
+
+    __tablename__ = "state_supervision_sentence"
 
     supervision_sentence_id = Column(Integer, primary_key=True)
 
-    person = relationship('StatePerson', uselist=False)
+    person = relationship("StatePerson", uselist=False)
     charges = relationship(
-        'StateCharge',
+        "StateCharge",
         secondary=state_charge_supervision_sentence_association_table,
-        backref='supervision_sentences',
-        lazy='selectin')
+        backref="supervision_sentences",
+        lazy="selectin",
+    )
     incarceration_periods = relationship(
-        'StateIncarcerationPeriod',
-        secondary=
-        state_supervision_sentence_incarceration_period_association_table,
-        backref='supervision_sentences',
-        lazy='selectin')
+        "StateIncarcerationPeriod",
+        secondary=state_supervision_sentence_incarceration_period_association_table,
+        backref="supervision_sentences",
+        lazy="selectin",
+    )
     supervision_periods = relationship(
-        'StateSupervisionPeriod',
-        secondary=
-        state_supervision_sentence_supervision_period_association_table,
-        backref='supervision_sentences',
-        lazy='selectin')
-    early_discharges = relationship('StateEarlyDischarge', backref='supervision_sentence', lazy='selectin')
+        "StateSupervisionPeriod",
+        secondary=state_supervision_sentence_supervision_period_association_table,
+        backref="supervision_sentences",
+        lazy="selectin",
+    )
+    early_discharges = relationship(
+        "StateEarlyDischarge", backref="supervision_sentence", lazy="selectin"
+    )
 
 
-class StateSupervisionSentenceHistory(StateBase,
-                                      _StateSupervisionSentenceSharedColumns,
-                                      HistoryTableSharedColumns):
+class StateSupervisionSentenceHistory(
+    StateBase, _StateSupervisionSentenceSharedColumns, HistoryTableSharedColumns
+):
     """Represents the historical state of a StateSupervisionSentence"""
-    __tablename__ = 'state_supervision_sentence_history'
+
+    __tablename__ = "state_supervision_sentence_history"
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
     supervision_sentence_history_id = Column(Integer, primary_key=True)
 
     supervision_sentence_id = Column(
-        Integer, ForeignKey(
-            'state_supervision_sentence.supervision_sentence_id'),
-        nullable=False, index=True)
+        Integer,
+        ForeignKey("state_supervision_sentence.supervision_sentence_id"),
+        nullable=False,
+        index=True,
+    )
 
 
 # StateIncarcerationSentence
 
+
 class _StateIncarcerationSentenceSharedColumns(
-        _ReferencesStatePersonSharedColumns,
-        _ReferencesStateSentenceGroupSharedColumns):
+    _ReferencesStatePersonSharedColumns, _ReferencesStateSentenceGroupSharedColumns
+):
     """A mixin which defines all columns common to StateIncarcerationSentence
     and StateIncarcerationSentenceHistory
     """
@@ -1378,7 +1480,7 @@ class _StateIncarcerationSentenceSharedColumns(
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _StateIncarcerationSentenceSharedColumns:
-            raise Exception(f'[{cls}] cannot be instantiated')
+            raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)
 
     external_id = Column(String(255), index=True)
@@ -1404,56 +1506,64 @@ class _StateIncarcerationSentenceSharedColumns(
     earned_time_days = Column(Integer)
 
 
-class StateIncarcerationSentence(StateBase,
-                                 _StateIncarcerationSentenceSharedColumns):
+class StateIncarcerationSentence(StateBase, _StateIncarcerationSentenceSharedColumns):
     """Represents a StateIncarcerationSentence in the SQL schema"""
-    __tablename__ = 'state_incarceration_sentence'
+
+    __tablename__ = "state_incarceration_sentence"
 
     incarceration_sentence_id = Column(Integer, primary_key=True)
 
-    person = relationship('StatePerson', uselist=False)
+    person = relationship("StatePerson", uselist=False)
     charges = relationship(
-        'StateCharge',
+        "StateCharge",
         secondary=state_charge_incarceration_sentence_association_table,
-        backref='incarceration_sentences',
-        lazy='selectin')
+        backref="incarceration_sentences",
+        lazy="selectin",
+    )
     incarceration_periods = relationship(
-        'StateIncarcerationPeriod',
+        "StateIncarcerationPeriod",
         secondary=state_incarceration_sentence_incarceration_period_association_table,
-        backref='incarceration_sentences',
-        lazy='selectin')
+        backref="incarceration_sentences",
+        lazy="selectin",
+    )
 
     supervision_periods = relationship(
-        'StateSupervisionPeriod',
+        "StateSupervisionPeriod",
         secondary=state_incarceration_sentence_supervision_period_association_table,
-        backref='incarceration_sentences',
-        lazy='selectin')
+        backref="incarceration_sentences",
+        lazy="selectin",
+    )
 
-    early_discharges = relationship('StateEarlyDischarge', backref='incarceration_sentence', lazy='selectin')
+    early_discharges = relationship(
+        "StateEarlyDischarge", backref="incarceration_sentence", lazy="selectin"
+    )
 
 
 class StateIncarcerationSentenceHistory(
-        StateBase,
-        _StateIncarcerationSentenceSharedColumns,
-        HistoryTableSharedColumns):
+    StateBase, _StateIncarcerationSentenceSharedColumns, HistoryTableSharedColumns
+):
     """Represents the historical state of a StateIncarcerationSentence"""
-    __tablename__ = 'state_incarceration_sentence_history'
+
+    __tablename__ = "state_incarceration_sentence_history"
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
     incarceration_sentence_history_id = Column(Integer, primary_key=True)
 
     incarceration_sentence_id = Column(
-        Integer, ForeignKey(
-            'state_incarceration_sentence.incarceration_sentence_id'),
-        nullable=False, index=True)
+        Integer,
+        ForeignKey("state_incarceration_sentence.incarceration_sentence_id"),
+        nullable=False,
+        index=True,
+    )
 
 
 # StateFine
 
+
 class _StateFineSharedColumns(
-        _ReferencesStatePersonSharedColumns,
-        _ReferencesStateSentenceGroupSharedColumns):
+    _ReferencesStatePersonSharedColumns, _ReferencesStateSentenceGroupSharedColumns
+):
     """A mixin which defines all columns common to StateFine and
     StateFineHistory
     """
@@ -1461,7 +1571,7 @@ class _StateFineSharedColumns(
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _StateFineSharedColumns:
-            raise Exception(f'[{cls}] cannot be instantiated')
+            raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)
 
     external_id = Column(String(255), index=True)
@@ -1473,45 +1583,48 @@ class _StateFineSharedColumns(
     fine_dollars = Column(Integer)
 
 
-class StateFine(StateBase,
-                _StateFineSharedColumns):
+class StateFine(StateBase, _StateFineSharedColumns):
     """Represents a StateFine in the SQL schema"""
-    __tablename__ = 'state_fine'
+
+    __tablename__ = "state_fine"
     __table_args__ = (
-        UniqueConstraint('state_code', 'external_id',
-                name='fine_external_ids_unique_within_state',
-                deferrable=True, initially='DEFERRED'),
+        UniqueConstraint(
+            "state_code",
+            "external_id",
+            name="fine_external_ids_unique_within_state",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
     )
     fine_id = Column(Integer, primary_key=True)
 
-    person = relationship('StatePerson', uselist=False)
+    person = relationship("StatePerson", uselist=False)
     charges = relationship(
-        'StateCharge',
+        "StateCharge",
         secondary=state_charge_fine_association_table,
-        backref='fines',
-        lazy='selectin')
+        backref="fines",
+        lazy="selectin",
+    )
 
 
-class StateFineHistory(StateBase,
-                       _StateFineSharedColumns,
-                       HistoryTableSharedColumns):
+class StateFineHistory(StateBase, _StateFineSharedColumns, HistoryTableSharedColumns):
     """Represents the historical state of a StateFine"""
-    __tablename__ = 'state_fine_history'
+
+    __tablename__ = "state_fine_history"
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
     fine_history_id = Column(Integer, primary_key=True)
 
     fine_id = Column(
-        Integer, ForeignKey(
-            'state_fine.fine_id'),
-        nullable=False, index=True)
+        Integer, ForeignKey("state_fine.fine_id"), nullable=False, index=True
+    )
 
 
 # StateIncarcerationPeriod
 
-class _StateIncarcerationPeriodSharedColumns(
-        _ReferencesStatePersonSharedColumns):
+
+class _StateIncarcerationPeriodSharedColumns(_ReferencesStatePersonSharedColumns):
     """A mixin which defines all columns common to StateIncarcerationPeriod and
     StateIncarcerationPeriodHistory
     """
@@ -1519,7 +1632,7 @@ class _StateIncarcerationPeriodSharedColumns(
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _StateIncarcerationPeriodSharedColumns:
-            raise Exception(f'[{cls}] cannot be instantiated')
+            raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)
 
     external_id = Column(String(255), index=True)
@@ -1533,20 +1646,17 @@ class _StateIncarcerationPeriodSharedColumns(
     county_code = Column(String(255), index=True)
     facility = Column(String(255))
     housing_unit = Column(String(255))
-    facility_security_level = \
-        Column(state_incarceration_facility_security_level)
+    facility_security_level = Column(state_incarceration_facility_security_level)
     facility_security_level_raw_text = Column(String(255))
-    admission_reason = \
-        Column(state_incarceration_period_admission_reason)
+    admission_reason = Column(state_incarceration_period_admission_reason)
     admission_reason_raw_text = Column(String(255))
-    projected_release_reason = \
-        Column(state_incarceration_period_release_reason)
+    projected_release_reason = Column(state_incarceration_period_release_reason)
     projected_release_reason_raw_text = Column(String(255))
-    release_reason = \
-        Column(state_incarceration_period_release_reason)
+    release_reason = Column(state_incarceration_period_release_reason)
     release_reason_raw_text = Column(String(255))
-    specialized_purpose_for_incarceration = \
-        Column(state_specialized_purpose_for_incarceration)
+    specialized_purpose_for_incarceration = Column(
+        state_specialized_purpose_for_incarceration
+    )
     specialized_purpose_for_incarceration_raw_text = Column(String(255))
     custodial_authority = Column(state_custodial_authority)
     custodial_authority_raw_text = Column(String(255))
@@ -1555,60 +1665,73 @@ class _StateIncarcerationPeriodSharedColumns(
     def source_supervision_violation_response_id(self):
         return Column(
             Integer,
-            ForeignKey('state_supervision_violation_response.'
-                       'supervision_violation_response_id'),
+            ForeignKey(
+                "state_supervision_violation_response."
+                "supervision_violation_response_id"
+            ),
             index=True,
-            nullable=True)
+            nullable=True,
+        )
 
 
-class StateIncarcerationPeriod(StateBase,
-                               _StateIncarcerationPeriodSharedColumns):
+class StateIncarcerationPeriod(StateBase, _StateIncarcerationPeriodSharedColumns):
     """Represents a StateIncarcerationPeriod in the SQL schema"""
-    __tablename__ = 'state_incarceration_period'
+
+    __tablename__ = "state_incarceration_period"
     __table_args__ = (
-        UniqueConstraint('state_code', 'external_id',
-                         name='incarceration_period_external_ids_unique_within_state',
-                         deferrable=True, initially='DEFERRED'),
+        UniqueConstraint(
+            "state_code",
+            "external_id",
+            name="incarceration_period_external_ids_unique_within_state",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
     )
     incarceration_period_id = Column(Integer, primary_key=True)
 
-    person = relationship('StatePerson', uselist=False)
+    person = relationship("StatePerson", uselist=False)
     incarceration_incidents = relationship(
-        'StateIncarcerationIncident',
-        backref='incarceration_period',
-        lazy='selectin')
+        "StateIncarcerationIncident", backref="incarceration_period", lazy="selectin"
+    )
     parole_decisions = relationship(
-        'StateParoleDecision', backref='incarceration_period', lazy='selectin')
+        "StateParoleDecision", backref="incarceration_period", lazy="selectin"
+    )
     assessments = relationship(
-        'StateAssessment', backref='incarceration_period', lazy='selectin')
+        "StateAssessment", backref="incarceration_period", lazy="selectin"
+    )
     program_assignments = relationship(
-        'StateProgramAssignment',
-        secondary=
-        state_incarceration_period_program_assignment_association_table,
-        backref='incarceration_periods',
-        lazy='selectin')
+        "StateProgramAssignment",
+        secondary=state_incarceration_period_program_assignment_association_table,
+        backref="incarceration_periods",
+        lazy="selectin",
+    )
 
     source_supervision_violation_response = relationship(
-        'StateSupervisionViolationResponse', uselist=False, lazy='selectin')
+        "StateSupervisionViolationResponse", uselist=False, lazy="selectin"
+    )
 
 
-class StateIncarcerationPeriodHistory(StateBase,
-                                      _StateIncarcerationPeriodSharedColumns,
-                                      HistoryTableSharedColumns):
+class StateIncarcerationPeriodHistory(
+    StateBase, _StateIncarcerationPeriodSharedColumns, HistoryTableSharedColumns
+):
     """Represents the historical state of a StateIncarcerationPeriod"""
-    __tablename__ = 'state_incarceration_period_history'
+
+    __tablename__ = "state_incarceration_period_history"
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
     incarceration_period_history_id = Column(Integer, primary_key=True)
 
     incarceration_period_id = Column(
-        Integer, ForeignKey(
-            'state_incarceration_period.incarceration_period_id'),
-        nullable=False, index=True)
+        Integer,
+        ForeignKey("state_incarceration_period.incarceration_period_id"),
+        nullable=False,
+        index=True,
+    )
 
 
 # StateSupervisionPeriod
+
 
 class _StateSupervisionPeriodSharedColumns(_ReferencesStatePersonSharedColumns):
     """A mixin which defines all columns common to StateSupervisionPeriod and
@@ -1618,7 +1741,7 @@ class _StateSupervisionPeriodSharedColumns(_ReferencesStatePersonSharedColumns):
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _StateSupervisionPeriodSharedColumns:
-            raise Exception(f'[{cls}] cannot be instantiated')
+            raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)
 
     external_id = Column(String(255), index=True)
@@ -1626,7 +1749,9 @@ class _StateSupervisionPeriodSharedColumns(_ReferencesStatePersonSharedColumns):
     status_raw_text = Column(String(255))
     supervision_type = Column(state_supervision_type)
     supervision_type_raw_text = Column(String(255))
-    supervision_period_supervision_type = Column(state_supervision_period_supervision_type)
+    supervision_period_supervision_type = Column(
+        state_supervision_period_supervision_type
+    )
     supervision_period_supervision_type_raw_text = Column(String(255))
     start_date = Column(Date)
     termination_date = Column(Date)
@@ -1649,66 +1774,75 @@ class _StateSupervisionPeriodSharedColumns(_ReferencesStatePersonSharedColumns):
     @declared_attr
     def supervising_officer_id(self):
         return Column(
-            Integer,
-            ForeignKey('state_agent.agent_id'),
-            index=True,
-            nullable=True)
+            Integer, ForeignKey("state_agent.agent_id"), index=True, nullable=True
+        )
 
 
-class StateSupervisionPeriod(StateBase,
-                             _StateSupervisionPeriodSharedColumns):
+class StateSupervisionPeriod(StateBase, _StateSupervisionPeriodSharedColumns):
     """Represents a StateSupervisionPeriod in the SQL schema"""
-    __tablename__ = 'state_supervision_period'
+
+    __tablename__ = "state_supervision_period"
 
     supervision_period_id = Column(Integer, primary_key=True)
 
-    person = relationship('StatePerson', uselist=False)
-    supervising_officer = relationship('StateAgent', uselist=False, lazy='selectin')
+    person = relationship("StatePerson", uselist=False)
+    supervising_officer = relationship("StateAgent", uselist=False, lazy="selectin")
     # TODO(#2668): Deprecated - Delete this column from our schema.
-    supervision_violations = relationship('StateSupervisionViolation', backref='supervision_period', lazy='selectin')
+    supervision_violations = relationship(
+        "StateSupervisionViolation", backref="supervision_period", lazy="selectin"
+    )
     # TODO(#2697): Rename `supervision_violation_entries` to
     # `supervision_violations` once the 1:many relationship
     # `supervision_violations` above has been removed from our db/schema object.
     supervision_violation_entries = relationship(
-        'StateSupervisionViolation',
-        secondary=
-        state_supervision_period_supervision_violation_association_table,
-        backref='supervision_periods',
-        lazy='selectin')
-    assessments = relationship('StateAssessment', backref='supervision_period', lazy='selectin')
+        "StateSupervisionViolation",
+        secondary=state_supervision_period_supervision_violation_association_table,
+        backref="supervision_periods",
+        lazy="selectin",
+    )
+    assessments = relationship(
+        "StateAssessment", backref="supervision_period", lazy="selectin"
+    )
     program_assignments = relationship(
-        'StateProgramAssignment',
+        "StateProgramAssignment",
         secondary=state_supervision_period_program_assignment_association_table,
-        backref='supervision_periods',
-        lazy='selectin')
-    case_type_entries = relationship('StateSupervisionCaseTypeEntry', backref='supervision_period', lazy='selectin')
+        backref="supervision_periods",
+        lazy="selectin",
+    )
+    case_type_entries = relationship(
+        "StateSupervisionCaseTypeEntry", backref="supervision_period", lazy="selectin"
+    )
     supervision_contacts = relationship(
-        'StateSupervisionContact',
+        "StateSupervisionContact",
         secondary=state_supervision_period_supervision_contact_association_table,
-        backref='supervision_periods',
-        lazy='selectin')
+        backref="supervision_periods",
+        lazy="selectin",
+    )
 
 
-class StateSupervisionPeriodHistory(StateBase,
-                                    _StateSupervisionPeriodSharedColumns,
-                                    HistoryTableSharedColumns):
+class StateSupervisionPeriodHistory(
+    StateBase, _StateSupervisionPeriodSharedColumns, HistoryTableSharedColumns
+):
     """Represents the historical state of a StateSupervisionPeriod"""
-    __tablename__ = 'state_supervision_period_history'
+
+    __tablename__ = "state_supervision_period_history"
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
     supervision_period_history_id = Column(Integer, primary_key=True)
 
     supervision_period_id = Column(
-        Integer, ForeignKey(
-            'state_supervision_period.supervision_period_id'),
-        nullable=False, index=True)
+        Integer,
+        ForeignKey("state_supervision_period.supervision_period_id"),
+        nullable=False,
+        index=True,
+    )
 
 
 # StateSupervisionCaseTypeEntry
 
-class _StateSupervisionCaseTypeEntrySharedColumns(
-        _ReferencesStatePersonSharedColumns):
+
+class _StateSupervisionCaseTypeEntrySharedColumns(_ReferencesStatePersonSharedColumns):
     """A mixin which defines all columns common to
     StateSupervisionCaseTypeEntry and StateSupervisionCaseTypeEntryHistory
     """
@@ -1716,7 +1850,7 @@ class _StateSupervisionCaseTypeEntrySharedColumns(
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _StateSupervisionCaseTypeEntrySharedColumns:
-            raise Exception(f'[{cls}] cannot be instantiated')
+            raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)
 
     case_type = Column(state_supervision_case_type)
@@ -1727,51 +1861,61 @@ class _StateSupervisionCaseTypeEntrySharedColumns(
     def supervision_period_id(self):
         return Column(
             Integer,
-            ForeignKey('state_supervision_period.supervision_period_id'),
+            ForeignKey("state_supervision_period.supervision_period_id"),
             index=True,
-            nullable=True)
+            nullable=True,
+        )
 
 
 class StateSupervisionCaseTypeEntry(
-        StateBase, _StateSupervisionCaseTypeEntrySharedColumns):
+    StateBase, _StateSupervisionCaseTypeEntrySharedColumns
+):
     """Represents a StateSupervisionCaseTypeEntry in the SQL schema"""
-    __tablename__ = 'state_supervision_case_type_entry'
+
+    __tablename__ = "state_supervision_case_type_entry"
     __table_args__ = (
-        UniqueConstraint('state_code', 'external_id',
-            name='supervision_case_type_entry_external_ids_unique_within_state',
-            deferrable=True, initially='DEFERRED'),
+        UniqueConstraint(
+            "state_code",
+            "external_id",
+            name="supervision_case_type_entry_external_ids_unique_within_state",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
     )
 
     supervision_case_type_entry_id = Column(Integer, primary_key=True)
 
-    person = relationship('StatePerson', uselist=False)
+    person = relationship("StatePerson", uselist=False)
 
     external_id = Column(String(255), index=True)
 
 
 # TODO(#4136): Update historical column names here -- or downgrade and upgrade?
 class StateSupervisionCaseTypeEntryHistory(
-        StateBase, _StateSupervisionCaseTypeEntrySharedColumns,
-        HistoryTableSharedColumns):
+    StateBase, _StateSupervisionCaseTypeEntrySharedColumns, HistoryTableSharedColumns
+):
     """Represents the historical state of a StateSupervisionCaseTypeEntry"""
-    __tablename__ = 'state_supervision_case_type_entry_history'
+
+    __tablename__ = "state_supervision_case_type_entry_history"
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
-    supervision_case_type_entry_history_id = Column(
-        Integer, primary_key=True)
+    supervision_case_type_entry_history_id = Column(Integer, primary_key=True)
 
     supervision_case_type_entry_id = Column(
-        Integer, ForeignKey(
-            'state_supervision_case_type_entry'
-            '.supervision_case_type_entry_id'),
-        nullable=False, index=True)
+        Integer,
+        ForeignKey(
+            "state_supervision_case_type_entry" ".supervision_case_type_entry_id"
+        ),
+        nullable=False,
+        index=True,
+    )
 
 
 # StateIncarcerationIncident
 
-class _StateIncarcerationIncidentSharedColumns(
-        _ReferencesStatePersonSharedColumns):
+
+class _StateIncarcerationIncidentSharedColumns(_ReferencesStatePersonSharedColumns):
     """A mixin which defines all columns common to StateIncarcerationIncident
     and StateIncarcerationIncidentHistory
     """
@@ -1779,7 +1923,7 @@ class _StateIncarcerationIncidentSharedColumns(
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _StateIncarcerationIncidentSharedColumns:
-            raise Exception(f'[{cls}] cannot be instantiated')
+            raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)
 
     external_id = Column(String(255), index=True)
@@ -1795,62 +1939,69 @@ class _StateIncarcerationIncidentSharedColumns(
     def incarceration_period_id(self):
         return Column(
             Integer,
-            ForeignKey('state_incarceration_period.incarceration_period_id'),
+            ForeignKey("state_incarceration_period.incarceration_period_id"),
             index=True,
-            nullable=True)
+            nullable=True,
+        )
 
     @declared_attr
     def responding_officer_id(self):
         return Column(
-            Integer,
-            ForeignKey('state_agent.agent_id'),
-            index=True,
-            nullable=True)
+            Integer, ForeignKey("state_agent.agent_id"), index=True, nullable=True
+        )
 
 
-class StateIncarcerationIncident(StateBase,
-                                 _StateIncarcerationIncidentSharedColumns):
+class StateIncarcerationIncident(StateBase, _StateIncarcerationIncidentSharedColumns):
     """Represents a StateIncarcerationIncident in the SQL schema"""
-    __tablename__ = 'state_incarceration_incident'
+
+    __tablename__ = "state_incarceration_incident"
     __table_args__ = (
-        UniqueConstraint('state_code', 'external_id',
-                         name='incarceration_incident_external_ids_unique_within_state',
-                         deferrable=True, initially='DEFERRED'),
+        UniqueConstraint(
+            "state_code",
+            "external_id",
+            name="incarceration_incident_external_ids_unique_within_state",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
     )
 
     incarceration_incident_id = Column(Integer, primary_key=True)
 
-    person = relationship('StatePerson', uselist=False)
-    responding_officer = relationship(
-        'StateAgent', uselist=False, lazy='selectin')
+    person = relationship("StatePerson", uselist=False)
+    responding_officer = relationship("StateAgent", uselist=False, lazy="selectin")
 
     incarceration_incident_outcomes = relationship(
-        'StateIncarcerationIncidentOutcome',
-        backref='incarceration_incident',
-        lazy='selectin')
+        "StateIncarcerationIncidentOutcome",
+        backref="incarceration_incident",
+        lazy="selectin",
+    )
 
 
 class StateIncarcerationIncidentHistory(
-        StateBase,
-        _StateIncarcerationIncidentSharedColumns,
-        HistoryTableSharedColumns):
+    StateBase, _StateIncarcerationIncidentSharedColumns, HistoryTableSharedColumns
+):
     """Represents the historical state of a StateIncarcerationIncident"""
-    __tablename__ = 'state_incarceration_incident_history'
+
+    __tablename__ = "state_incarceration_incident_history"
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
     incarceration_incident_history_id = Column(Integer, primary_key=True)
 
     incarceration_incident_id = Column(
-        Integer, ForeignKey(
-            'state_incarceration_incident.incarceration_incident_id'),
-        nullable=False, index=True)
+        Integer,
+        ForeignKey("state_incarceration_incident.incarceration_incident_id"),
+        nullable=False,
+        index=True,
+    )
 
 
 # StateIncarcerationIncidentOutcome
 
+
 class _StateIncarcerationIncidentOutcomeSharedColumns(
-        _ReferencesStatePersonSharedColumns):
+    _ReferencesStatePersonSharedColumns
+):
     """A mixin which defines all columns common to
     StateIncarcerationIncidentOutcome and
     StateIncarcerationIncidentOutcomeHistory
@@ -1859,7 +2010,7 @@ class _StateIncarcerationIncidentOutcomeSharedColumns(
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _StateIncarcerationIncidentOutcomeSharedColumns:
-            raise Exception(f'[{cls}] cannot be instantiated')
+            raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)
 
     external_id = Column(String(255), index=True)
@@ -1876,51 +2027,60 @@ class _StateIncarcerationIncidentOutcomeSharedColumns(
     def incarceration_incident_id(self):
         return Column(
             Integer,
-            ForeignKey(
-                'state_incarceration_incident.incarceration_incident_id'),
+            ForeignKey("state_incarceration_incident.incarceration_incident_id"),
             index=True,
-            nullable=True)
+            nullable=True,
+        )
 
 
 class StateIncarcerationIncidentOutcome(
-        StateBase,
-        _StateIncarcerationIncidentOutcomeSharedColumns):
+    StateBase, _StateIncarcerationIncidentOutcomeSharedColumns
+):
     """Represents a StateIncarcerationIncidentOutcome in the SQL schema"""
-    __tablename__ = 'state_incarceration_incident_outcome'
+
+    __tablename__ = "state_incarceration_incident_outcome"
     __table_args__ = (
-        UniqueConstraint('state_code', 'external_id',
-                         name='incarceration_incident_outcome_external_ids_unique_within_state',
-                         deferrable=True, initially='DEFERRED'),
+        UniqueConstraint(
+            "state_code",
+            "external_id",
+            name="incarceration_incident_outcome_external_ids_unique_within_state",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
     )
 
     incarceration_incident_outcome_id = Column(Integer, primary_key=True)
 
-    person = relationship('StatePerson', uselist=False)
+    person = relationship("StatePerson", uselist=False)
 
 
 class StateIncarcerationIncidentOutcomeHistory(
-        StateBase,
-        _StateIncarcerationIncidentOutcomeSharedColumns,
-        HistoryTableSharedColumns):
+    StateBase,
+    _StateIncarcerationIncidentOutcomeSharedColumns,
+    HistoryTableSharedColumns,
+):
     """Represents the historical state of a StateIncarcerationIncidentOutcome"""
-    __tablename__ = 'state_incarceration_incident_outcome_history'
+
+    __tablename__ = "state_incarceration_incident_outcome_history"
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
-    incarceration_incident_outcome_history_id = Column(
-        Integer, primary_key=True)
+    incarceration_incident_outcome_history_id = Column(Integer, primary_key=True)
 
     incarceration_incident_outcome_id = Column(
-        Integer, ForeignKey(
-            'state_incarceration_incident_outcome.'
-            'incarceration_incident_outcome_id'),
-        nullable=False, index=True)
+        Integer,
+        ForeignKey(
+            "state_incarceration_incident_outcome." "incarceration_incident_outcome_id"
+        ),
+        nullable=False,
+        index=True,
+    )
 
 
 # StateParoleDecision
 
-class _StateParoleDecisionSharedColumns(
-        _ReferencesStatePersonSharedColumns):
+
+class _StateParoleDecisionSharedColumns(_ReferencesStatePersonSharedColumns):
     """A mixin which defines all columns common to StateParoleDecision and
     StateParoleDecisionHistory
     """
@@ -1928,7 +2088,7 @@ class _StateParoleDecisionSharedColumns(
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _StateParoleDecisionSharedColumns:
-            raise Exception(f'[{cls}] cannot be instantiated')
+            raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)
 
     external_id = Column(String(255), index=True)
@@ -1946,49 +2106,60 @@ class _StateParoleDecisionSharedColumns(
     def incarceration_period_id(self):
         return Column(
             Integer,
-            ForeignKey('state_incarceration_period.incarceration_period_id'),
+            ForeignKey("state_incarceration_period.incarceration_period_id"),
             index=True,
-            nullable=True)
+            nullable=True,
+        )
 
 
-class StateParoleDecision(StateBase,
-                          _StateParoleDecisionSharedColumns):
+class StateParoleDecision(StateBase, _StateParoleDecisionSharedColumns):
     """Represents a StateParoleDecision in the SQL schema"""
-    __tablename__ = 'state_parole_decision'
+
+    __tablename__ = "state_parole_decision"
     __table_args__ = (
-        UniqueConstraint('state_code', 'external_id',
-            name='parole_decision_external_ids_unique_within_state',
-            deferrable=True, initially='DEFERRED'),
+        UniqueConstraint(
+            "state_code",
+            "external_id",
+            name="parole_decision_external_ids_unique_within_state",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
     )
     parole_decision_id = Column(Integer, primary_key=True)
 
-    person = relationship('StatePerson', uselist=False)
+    person = relationship("StatePerson", uselist=False)
     decision_agents = relationship(
-        'StateAgent',
+        "StateAgent",
         secondary=state_parole_decision_decision_agent_association_table,
-        lazy='selectin')
+        lazy="selectin",
+    )
 
 
-class StateParoleDecisionHistory(StateBase,
-                                 _StateParoleDecisionSharedColumns,
-                                 HistoryTableSharedColumns):
+class StateParoleDecisionHistory(
+    StateBase, _StateParoleDecisionSharedColumns, HistoryTableSharedColumns
+):
     """Represents the historical state of a StateParoleDecision"""
-    __tablename__ = 'state_parole_decision_history'
+
+    __tablename__ = "state_parole_decision_history"
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
     parole_decision_history_id = Column(Integer, primary_key=True)
 
     parole_decision_id = Column(
-        Integer, ForeignKey(
-            'state_parole_decision.parole_decision_id'),
-        nullable=False, index=True)
+        Integer,
+        ForeignKey("state_parole_decision.parole_decision_id"),
+        nullable=False,
+        index=True,
+    )
 
 
 # StateSupervisionViolationTypeEntry
 
+
 class _StateSupervisionViolationTypeEntrySharedColumns(
-        _ReferencesStatePersonSharedColumns):
+    _ReferencesStatePersonSharedColumns
+):
     """A mixin which defines all columns common to
     StateSupervisionViolationTypeEntry and
     StateSupervisionViolationTypeEntryHistory
@@ -1997,7 +2168,7 @@ class _StateSupervisionViolationTypeEntrySharedColumns(
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _StateSupervisionViolationTypeEntrySharedColumns:
-            raise Exception(f'[{cls}] cannot be instantiated')
+            raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)
 
     state_code = Column(String(255), nullable=False, index=True)
@@ -2008,50 +2179,56 @@ class _StateSupervisionViolationTypeEntrySharedColumns(
     def supervision_violation_id(self):
         return Column(
             Integer,
-            ForeignKey('state_supervision_violation.'
-                       'supervision_violation_id'),
+            ForeignKey("state_supervision_violation." "supervision_violation_id"),
             index=True,
-            nullable=True)
+            nullable=True,
+        )
 
 
 class StateSupervisionViolationTypeEntry(
-        StateBase,
-        _StateSupervisionViolationTypeEntrySharedColumns):
-    """Represents a StateSupervisionViolationTypeEntry in the SQL schema.
-    """
-    __tablename__ = 'state_supervision_violation_type_entry'
+    StateBase, _StateSupervisionViolationTypeEntrySharedColumns
+):
+    """Represents a StateSupervisionViolationTypeEntry in the SQL schema."""
 
-    supervision_violation_type_entry_id = Column(Integer,
-                                                 primary_key=True)
+    __tablename__ = "state_supervision_violation_type_entry"
 
-    person = relationship('StatePerson', uselist=False)
+    supervision_violation_type_entry_id = Column(Integer, primary_key=True)
+
+    person = relationship("StatePerson", uselist=False)
 
 
 class StateSupervisionViolationTypeEntryHistory(
-        StateBase,
-        _StateSupervisionViolationTypeEntrySharedColumns,
-        HistoryTableSharedColumns):
+    StateBase,
+    _StateSupervisionViolationTypeEntrySharedColumns,
+    HistoryTableSharedColumns,
+):
     """Represents the historical state of a
     StateSupervisionViolationTypeEntry.
     """
-    __tablename__ = 'state_supervision_violation_type_entry_history'
+
+    __tablename__ = "state_supervision_violation_type_entry_history"
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
-    supervision_violation_type_history_id = Column(Integer,
-                                                   primary_key=True)
+    supervision_violation_type_history_id = Column(Integer, primary_key=True)
 
     supervision_violation_type_entry_id = Column(
-        Integer, ForeignKey(
-            'state_supervision_violation_type_entry.'
-            'supervision_violation_type_entry_id'),
-        nullable=False, index=True)
+        Integer,
+        ForeignKey(
+            "state_supervision_violation_type_entry."
+            "supervision_violation_type_entry_id"
+        ),
+        nullable=False,
+        index=True,
+    )
 
 
 # StateSupervisionViolatedConditionEntry
 
+
 class _StateSupervisionViolatedConditionEntrySharedColumns(
-        _ReferencesStatePersonSharedColumns):
+    _ReferencesStatePersonSharedColumns
+):
     """A mixin which defines all columns common to
     StateSupervisionViolatedConditionEntry and
     StateSupervisionViolatedConditionEntryHistory
@@ -2060,7 +2237,7 @@ class _StateSupervisionViolatedConditionEntrySharedColumns(
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _StateSupervisionViolatedConditionEntrySharedColumns:
-            raise Exception(f'[{cls}] cannot be instantiated')
+            raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)
 
     state_code = Column(String(255), nullable=False, index=True)
@@ -2070,50 +2247,54 @@ class _StateSupervisionViolatedConditionEntrySharedColumns(
     def supervision_violation_id(self):
         return Column(
             Integer,
-            ForeignKey('state_supervision_violation.'
-                       'supervision_violation_id'),
+            ForeignKey("state_supervision_violation." "supervision_violation_id"),
             index=True,
-            nullable=True)
+            nullable=True,
+        )
 
 
 class StateSupervisionViolatedConditionEntry(
-        StateBase,
-        _StateSupervisionViolatedConditionEntrySharedColumns):
-    """Represents a StateSupervisionViolatedConditionEntry in the SQL schema.
-    """
-    __tablename__ = 'state_supervision_violated_condition_entry'
+    StateBase, _StateSupervisionViolatedConditionEntrySharedColumns
+):
+    """Represents a StateSupervisionViolatedConditionEntry in the SQL schema."""
 
-    supervision_violated_condition_entry_id = Column(Integer,
-                                                     primary_key=True)
+    __tablename__ = "state_supervision_violated_condition_entry"
 
-    person = relationship('StatePerson', uselist=False)
+    supervision_violated_condition_entry_id = Column(Integer, primary_key=True)
+
+    person = relationship("StatePerson", uselist=False)
 
 
 class StateSupervisionViolatedConditionEntryHistory(
-        StateBase,
-        _StateSupervisionViolatedConditionEntrySharedColumns,
-        HistoryTableSharedColumns):
+    StateBase,
+    _StateSupervisionViolatedConditionEntrySharedColumns,
+    HistoryTableSharedColumns,
+):
     """Represents the historical state of a
     StateSupervisionViolatedConditionEntry
     """
-    __tablename__ = 'state_supervision_violated_condition_entry_history'
+
+    __tablename__ = "state_supervision_violated_condition_entry_history"
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
-    supervision_violated_condition_entry_history_id = Column(Integer,
-                                                             primary_key=True)
+    supervision_violated_condition_entry_history_id = Column(Integer, primary_key=True)
 
     supervision_violated_condition_entry_id = Column(
-        Integer, ForeignKey(
-            'state_supervision_violated_condition_entry.'
-            'supervision_violated_condition_entry_id'),
-        nullable=False, index=True)
+        Integer,
+        ForeignKey(
+            "state_supervision_violated_condition_entry."
+            "supervision_violated_condition_entry_id"
+        ),
+        nullable=False,
+        index=True,
+    )
 
 
 # StateSupervisionViolation
 
-class _StateSupervisionViolationSharedColumns(
-        _ReferencesStatePersonSharedColumns):
+
+class _StateSupervisionViolationSharedColumns(_ReferencesStatePersonSharedColumns):
     """A mixin which defines all columns common to StateSupervisionViolation and
     StateSupervisionViolationHistory
     """
@@ -2121,7 +2302,7 @@ class _StateSupervisionViolationSharedColumns(
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _StateSupervisionViolationSharedColumns:
-            raise Exception(f'[{cls}] cannot be instantiated')
+            raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)
 
     external_id = Column(String(255), index=True)
@@ -2138,59 +2319,72 @@ class _StateSupervisionViolationSharedColumns(
     def supervision_period_id(self):
         return Column(
             Integer,
-            ForeignKey('state_supervision_period.supervision_period_id'),
+            ForeignKey("state_supervision_period.supervision_period_id"),
             index=True,
-            nullable=True)
+            nullable=True,
+        )
 
 
-class StateSupervisionViolation(StateBase,
-                                _StateSupervisionViolationSharedColumns):
+class StateSupervisionViolation(StateBase, _StateSupervisionViolationSharedColumns):
     """Represents a StateSupervisionViolation in the SQL schema"""
-    __tablename__ = 'state_supervision_violation'
+
+    __tablename__ = "state_supervision_violation"
     __table_args__ = (
-        UniqueConstraint('state_code', 'external_id',
-            name='supervision_violation_external_ids_unique_within_state',
-            deferrable=True, initially='DEFERRED'),
+        UniqueConstraint(
+            "state_code",
+            "external_id",
+            name="supervision_violation_external_ids_unique_within_state",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
     )
 
     supervision_violation_id = Column(Integer, primary_key=True)
 
-    person = relationship('StatePerson', uselist=False)
+    person = relationship("StatePerson", uselist=False)
 
     supervision_violation_types = relationship(
-        'StateSupervisionViolationTypeEntry',
-        backref='supervision_violation',
-        lazy='selectin')
+        "StateSupervisionViolationTypeEntry",
+        backref="supervision_violation",
+        lazy="selectin",
+    )
     supervision_violated_conditions = relationship(
-        'StateSupervisionViolatedConditionEntry',
-        backref='supervision_violation',
-        lazy='selectin')
+        "StateSupervisionViolatedConditionEntry",
+        backref="supervision_violation",
+        lazy="selectin",
+    )
     supervision_violation_responses = relationship(
-        'StateSupervisionViolationResponse',
-        backref='supervision_violation',
-        lazy='selectin')
+        "StateSupervisionViolationResponse",
+        backref="supervision_violation",
+        lazy="selectin",
+    )
 
 
-class StateSupervisionViolationHistory(StateBase,
-                                       _StateSupervisionViolationSharedColumns,
-                                       HistoryTableSharedColumns):
+class StateSupervisionViolationHistory(
+    StateBase, _StateSupervisionViolationSharedColumns, HistoryTableSharedColumns
+):
     """Represents the historical state of a StateSupervisionViolation"""
-    __tablename__ = 'state_supervision_violation_history'
+
+    __tablename__ = "state_supervision_violation_history"
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
     supervision_violation_history_id = Column(Integer, primary_key=True)
 
     supervision_violation_id = Column(
-        Integer, ForeignKey(
-            'state_supervision_violation.supervision_violation_id'),
-        nullable=False, index=True)
+        Integer,
+        ForeignKey("state_supervision_violation.supervision_violation_id"),
+        nullable=False,
+        index=True,
+    )
 
 
 # StateSupervisionViolationResponseDecisionEntry
 
+
 class _StateSupervisionViolationResponseDecisionEntrySharedColumns(
-        _ReferencesStatePersonSharedColumns):
+    _ReferencesStatePersonSharedColumns
+):
     """A mixin which defines all columns common to
     StateSupervisionViolationResponseDecisionEntry and
     StateSupervisionViolationResponseDecisionEntryHistory
@@ -2199,66 +2393,76 @@ class _StateSupervisionViolationResponseDecisionEntrySharedColumns(
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _StateSupervisionViolationResponseDecisionEntrySharedColumns:
-            raise Exception(f'[{cls}] cannot be instantiated')
+            raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)
 
     state_code = Column(String(255), nullable=False, index=True)
     decision = Column(state_supervision_violation_response_decision)
     decision_raw_text = Column(String(255))
-    revocation_type = \
-        Column(state_supervision_violation_response_revocation_type)
+    revocation_type = Column(state_supervision_violation_response_revocation_type)
     revocation_type_raw_text = Column(String(255))
 
     @declared_attr
     def supervision_violation_response_id(self):
         return Column(
             Integer,
-            ForeignKey('state_supervision_violation_response.'
-                       'supervision_violation_response_id'),
+            ForeignKey(
+                "state_supervision_violation_response."
+                "supervision_violation_response_id"
+            ),
             index=True,
-            nullable=True)
+            nullable=True,
+        )
 
 
 class StateSupervisionViolationResponseDecisionEntry(
-        StateBase,
-        _StateSupervisionViolationResponseDecisionEntrySharedColumns):
+    StateBase, _StateSupervisionViolationResponseDecisionEntrySharedColumns
+):
     """Represents a StateSupervisionViolationResponseDecisionEntry in the
     SQL schema.
     """
-    __tablename__ = 'state_supervision_violation_response_decision_entry'
 
-    supervision_violation_response_decision_entry_id = \
-        Column(Integer, primary_key=True)
+    __tablename__ = "state_supervision_violation_response_decision_entry"
 
-    person = relationship('StatePerson', uselist=False)
+    supervision_violation_response_decision_entry_id = Column(Integer, primary_key=True)
+
+    person = relationship("StatePerson", uselist=False)
 
 
 class StateSupervisionViolationResponseDecisionEntryHistory(
-        StateBase,
-        _StateSupervisionViolationResponseDecisionEntrySharedColumns,
-        HistoryTableSharedColumns):
+    StateBase,
+    _StateSupervisionViolationResponseDecisionEntrySharedColumns,
+    HistoryTableSharedColumns,
+):
     """Represents the historical state of a
     StateSupervisionViolationResponseDecisionEntry.
     """
-    __tablename__ = \
-        'state_supervision_violation_response_decision_entry_history'
+
+    __tablename__ = "state_supervision_violation_response_decision_entry_history"
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
     supervision_violation_response_decision_entry_history_id = Column(
-        Integer, primary_key=True)
+        Integer, primary_key=True
+    )
 
     supervision_violation_response_decision_entry_id = Column(
-        Integer, ForeignKey(
-            'state_supervision_violation_response_decision_entry.'
-            'supervision_violation_response_decision_entry_id'),
-        nullable=False, index=True)
+        Integer,
+        ForeignKey(
+            "state_supervision_violation_response_decision_entry."
+            "supervision_violation_response_decision_entry_id"
+        ),
+        nullable=False,
+        index=True,
+    )
 
 
 # StateSupervisionViolationResponse
 
+
 class _StateSupervisionViolationResponseSharedColumns(
-        _ReferencesStatePersonSharedColumns):
+    _ReferencesStatePersonSharedColumns
+):
     """A mixin which defines all columns common to
     StateSupervisionViolationResponse and
     StateSupervisionViolationResponseHistory
@@ -2267,7 +2471,7 @@ class _StateSupervisionViolationResponseSharedColumns(
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _StateSupervisionViolationResponseSharedColumns:
-            raise Exception(f'[{cls}] cannot be instantiated')
+            raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)
 
     external_id = Column(String(255), index=True)
@@ -2279,11 +2483,9 @@ class _StateSupervisionViolationResponseSharedColumns(
     # TODO(#2668): DEPRECATED - DELETE IN FOLLOW-UP PR
     decision = Column(state_supervision_violation_response_decision)
     decision_raw_text = Column(String(255))
-    revocation_type = \
-        Column(state_supervision_violation_response_revocation_type)
+    revocation_type = Column(state_supervision_violation_response_revocation_type)
     revocation_type_raw_text = Column(String(255))
-    deciding_body_type = \
-        Column(state_supervision_violation_response_deciding_body_type)
+    deciding_body_type = Column(state_supervision_violation_response_deciding_body_type)
     deciding_body_type_raw_text = Column(String(255))
     is_draft = Column(Boolean)
 
@@ -2291,56 +2493,68 @@ class _StateSupervisionViolationResponseSharedColumns(
     def supervision_violation_id(self):
         return Column(
             Integer,
-            ForeignKey('state_supervision_violation.supervision_violation_id'),
+            ForeignKey("state_supervision_violation.supervision_violation_id"),
             index=True,
-            nullable=True)
+            nullable=True,
+        )
 
 
 class StateSupervisionViolationResponse(
-        StateBase,
-        _StateSupervisionViolationResponseSharedColumns):
+    StateBase, _StateSupervisionViolationResponseSharedColumns
+):
     """Represents a StateSupervisionViolationResponse in the SQL schema"""
-    __tablename__ = 'state_supervision_violation_response'
+
+    __tablename__ = "state_supervision_violation_response"
     __table_args__ = (
-        UniqueConstraint('state_code', 'external_id',
-            name='supervision_violation_response_external_ids_unique_within_state',
-            deferrable=True, initially='DEFERRED'),
+        UniqueConstraint(
+            "state_code",
+            "external_id",
+            name="supervision_violation_response_external_ids_unique_within_state",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
     )
 
     supervision_violation_response_id = Column(Integer, primary_key=True)
 
-    person = relationship('StatePerson', uselist=False)
+    person = relationship("StatePerson", uselist=False)
     supervision_violation_response_decisions = relationship(
-        'StateSupervisionViolationResponseDecisionEntry',
-        backref='supervision_violation_response',
-        lazy='selectin')
+        "StateSupervisionViolationResponseDecisionEntry",
+        backref="supervision_violation_response",
+        lazy="selectin",
+    )
     decision_agents = relationship(
-        'StateAgent',
-        secondary=
-        state_supervision_violation_response_decision_agent_association_table,
-        lazy='selectin')
+        "StateAgent",
+        secondary=state_supervision_violation_response_decision_agent_association_table,
+        lazy="selectin",
+    )
 
 
 class StateSupervisionViolationResponseHistory(
-        StateBase,
-        _StateSupervisionViolationResponseSharedColumns,
-        HistoryTableSharedColumns):
+    StateBase,
+    _StateSupervisionViolationResponseSharedColumns,
+    HistoryTableSharedColumns,
+):
     """Represents the historical state of a StateSupervisionViolationResponse"""
-    __tablename__ = 'state_supervision_violation_response_history'
+
+    __tablename__ = "state_supervision_violation_response_history"
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
-    supervision_violation_response_history_id = Column(Integer,
-                                                       primary_key=True)
+    supervision_violation_response_history_id = Column(Integer, primary_key=True)
 
     supervision_violation_response_id = Column(
-        Integer, ForeignKey(
-            'state_supervision_violation_response.'
-            'supervision_violation_response_id'),
-        nullable=False, index=True)
+        Integer,
+        ForeignKey(
+            "state_supervision_violation_response." "supervision_violation_response_id"
+        ),
+        nullable=False,
+        index=True,
+    )
 
 
 # StateAgent
+
 
 class _StateAgentSharedColumns:
     """A mixin which defines all columns common to StateAgent and
@@ -2350,7 +2564,7 @@ class _StateAgentSharedColumns:
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _StateAgentSharedColumns:
-            raise Exception(f'[{cls}] cannot be instantiated')
+            raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)
 
     external_id = Column(String(255), index=True)
@@ -2360,31 +2574,30 @@ class _StateAgentSharedColumns:
     full_name = Column(String(255))
 
 
-class StateAgent(StateBase,
-                 _StateAgentSharedColumns):
+class StateAgent(StateBase, _StateAgentSharedColumns):
     """Represents a StateAgent in the SQL schema"""
-    __tablename__ = 'state_agent'
+
+    __tablename__ = "state_agent"
 
     agent_id = Column(Integer, primary_key=True)
 
 
-class StateAgentHistory(StateBase,
-                        _StateAgentSharedColumns,
-                        HistoryTableSharedColumns):
+class StateAgentHistory(StateBase, _StateAgentSharedColumns, HistoryTableSharedColumns):
     """Represents the historical state of a StateAgent"""
-    __tablename__ = 'state_agent_history'
+
+    __tablename__ = "state_agent_history"
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
     agent_history_id = Column(Integer, primary_key=True)
 
     agent_id = Column(
-        Integer, ForeignKey(
-            'state_agent.agent_id'),
-        nullable=False, index=True)
+        Integer, ForeignKey("state_agent.agent_id"), nullable=False, index=True
+    )
 
 
 # StateProgramAssignment
+
 
 class _StateProgramAssignmentSharedColumns(_ReferencesStatePersonSharedColumns):
     """A mixin which defines all columns common to StateProgramAssignment and
@@ -2394,7 +2607,7 @@ class _StateProgramAssignmentSharedColumns(_ReferencesStatePersonSharedColumns):
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _StateProgramAssignmentSharedColumns:
-            raise Exception(f'[{cls}] cannot be instantiated')
+            raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)
 
     external_id = Column(String(255), index=True)
@@ -2404,7 +2617,9 @@ class _StateProgramAssignmentSharedColumns(_ReferencesStatePersonSharedColumns):
     program_id = Column(String(255))
     program_location_id = Column(String(255))
 
-    participation_status = Column(state_program_assignment_participation_status, nullable=False)
+    participation_status = Column(
+        state_program_assignment_participation_status, nullable=False
+    )
     participation_status_raw_text = Column(String(255))
     discharge_reason = Column(state_program_assignment_discharge_reason)
     discharge_reason_raw_text = Column(String(255))
@@ -2416,42 +2631,49 @@ class _StateProgramAssignmentSharedColumns(_ReferencesStatePersonSharedColumns):
     @declared_attr
     def referring_agent_id(self):
         return Column(
-            Integer,
-            ForeignKey('state_agent.agent_id'),
-            index=True,
-            nullable=True)
+            Integer, ForeignKey("state_agent.agent_id"), index=True, nullable=True
+        )
 
 
 class StateProgramAssignment(StateBase, _StateProgramAssignmentSharedColumns):
     """Represents a StateProgramAssignment in the SQL schema."""
-    __tablename__ = 'state_program_assignment'
+
+    __tablename__ = "state_program_assignment"
     __table_args__ = (
-        UniqueConstraint('state_code', 'external_id',
-            name='program_assignment_external_ids_unique_within_state',
-            deferrable=True, initially='DEFERRED'),
+        UniqueConstraint(
+            "state_code",
+            "external_id",
+            name="program_assignment_external_ids_unique_within_state",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
     )
 
     program_assignment_id = Column(Integer, primary_key=True)
-    referring_agent = relationship('StateAgent', uselist=False, lazy='selectin')
+    referring_agent = relationship("StateAgent", uselist=False, lazy="selectin")
 
 
-class StateProgramAssignmentHistory(StateBase,
-                                    _StateProgramAssignmentSharedColumns,
-                                    HistoryTableSharedColumns):
+class StateProgramAssignmentHistory(
+    StateBase, _StateProgramAssignmentSharedColumns, HistoryTableSharedColumns
+):
     """Represents the historical state of a StateProgramAssignment"""
-    __tablename__ = 'state_program_assignment_history'
+
+    __tablename__ = "state_program_assignment_history"
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
     program_assignment_history_id = Column(Integer, primary_key=True)
 
     program_assignment_id = Column(
-        Integer, ForeignKey(
-            'state_program_assignment.program_assignment_id'),
-        nullable=False, index=True)
+        Integer,
+        ForeignKey("state_program_assignment.program_assignment_id"),
+        nullable=False,
+        index=True,
+    )
 
 
 # StateEarlyDischarge
+
 
 class _StateEarlyDischargeSharedColumns(_ReferencesStatePersonSharedColumns):
     """A mixin which defines all columns common to StateEarlyDischarge and
@@ -2461,7 +2683,7 @@ class _StateEarlyDischargeSharedColumns(_ReferencesStatePersonSharedColumns):
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _StateEarlyDischargeSharedColumns:
-            raise Exception(f'[{cls}] cannot be instantiated')
+            raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)
 
     external_id = Column(String(255), index=True)
@@ -2483,46 +2705,69 @@ class _StateEarlyDischargeSharedColumns(_ReferencesStatePersonSharedColumns):
     def supervision_sentence_id(self):
         return Column(
             Integer,
-            ForeignKey('state_supervision_sentence.supervision_sentence_id', deferrable=True, initially='DEFERRED'),
+            ForeignKey(
+                "state_supervision_sentence.supervision_sentence_id",
+                deferrable=True,
+                initially="DEFERRED",
+            ),
             index=True,
-            nullable=True)
+            nullable=True,
+        )
 
     @declared_attr
     def incarceration_sentence_id(self):
         return Column(
             Integer,
-            ForeignKey('state_incarceration_sentence.incarceration_sentence_id', deferrable=True, initially='DEFERRED'),
+            ForeignKey(
+                "state_incarceration_sentence.incarceration_sentence_id",
+                deferrable=True,
+                initially="DEFERRED",
+            ),
             index=True,
-            nullable=True)
+            nullable=True,
+        )
 
 
 class StateEarlyDischarge(StateBase, _StateEarlyDischargeSharedColumns):
     """Represents a StateEarlyDischarge in the SQL schema."""
-    __tablename__ = 'state_early_discharge'
+
+    __tablename__ = "state_early_discharge"
     __table_args__ = (
-        UniqueConstraint('state_code', 'external_id',
-            name='early_discharge_external_ids_unique_within_state',
-            deferrable=True, initially='DEFERRED'),
+        UniqueConstraint(
+            "state_code",
+            "external_id",
+            name="early_discharge_external_ids_unique_within_state",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
     )
 
     early_discharge_id = Column(Integer, primary_key=True)
 
-    person = relationship('StatePerson', uselist=False)
+    person = relationship("StatePerson", uselist=False)
 
 
-class StateEarlyDischargeHistory(StateBase, _StateEarlyDischargeSharedColumns, HistoryTableSharedColumns):
+class StateEarlyDischargeHistory(
+    StateBase, _StateEarlyDischargeSharedColumns, HistoryTableSharedColumns
+):
     """Represents the historical state of a StateEarlyDischarge"""
-    __tablename__ = 'state_early_discharge_history'
+
+    __tablename__ = "state_early_discharge_history"
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
     early_discharge_history_id = Column(Integer, primary_key=True)
 
     early_discharge_id = Column(
-        Integer, ForeignKey('state_early_discharge.early_discharge_id'), nullable=False, index=True)
+        Integer,
+        ForeignKey("state_early_discharge.early_discharge_id"),
+        nullable=False,
+        index=True,
+    )
 
 
 # StateSupervisionContact
+
 
 class _StateSupervisionContactSharedColumns(_ReferencesStatePersonSharedColumns):
     """A mixin which defines all columns common to StateSupervisionContact and
@@ -2532,7 +2777,7 @@ class _StateSupervisionContactSharedColumns(_ReferencesStatePersonSharedColumns)
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _StateSupervisionContactSharedColumns:
-            raise Exception(f'[{cls}] cannot be instantiated')
+            raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)
 
     external_id = Column(String(255), index=True)
@@ -2552,31 +2797,45 @@ class _StateSupervisionContactSharedColumns(_ReferencesStatePersonSharedColumns)
 
     @declared_attr
     def contacted_agent_id(self):
-        return Column(Integer, ForeignKey('state_agent.agent_id'), index=True, nullable=True)
+        return Column(
+            Integer, ForeignKey("state_agent.agent_id"), index=True, nullable=True
+        )
 
 
 class StateSupervisionContact(StateBase, _StateSupervisionContactSharedColumns):
     """Represents a StateSupervisionContact in the SQL schema."""
-    __tablename__ = 'state_supervision_contact'
+
+    __tablename__ = "state_supervision_contact"
     __table_args__ = (
-        UniqueConstraint('state_code', 'external_id',
-            name='supervision_contact_external_ids_unique_within_state',
-            deferrable=True, initially='DEFERRED'),
+        UniqueConstraint(
+            "state_code",
+            "external_id",
+            name="supervision_contact_external_ids_unique_within_state",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
     )
 
     supervision_contact_id = Column(Integer, primary_key=True)
 
-    person = relationship('StatePerson', uselist=False)
-    contacted_agent = relationship('StateAgent', uselist=False, lazy='selectin')
+    person = relationship("StatePerson", uselist=False)
+    contacted_agent = relationship("StateAgent", uselist=False, lazy="selectin")
 
 
-class StateSupervisionContactHistory(StateBase, _StateSupervisionContactSharedColumns, HistoryTableSharedColumns):
+class StateSupervisionContactHistory(
+    StateBase, _StateSupervisionContactSharedColumns, HistoryTableSharedColumns
+):
     """Represents the historical state of a StateSupervisionContact"""
-    __tablename__ = 'state_supervision_contact_history'
+
+    __tablename__ = "state_supervision_contact_history"
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
     supervision_contact_history_id = Column(Integer, primary_key=True)
 
     supervision_contact_id = Column(
-        Integer, ForeignKey('state_supervision_contact.supervision_contact_id'), nullable=False, index=True)
+        Integer,
+        ForeignKey("state_supervision_contact.supervision_contact_id"),
+        nullable=False,
+        index=True,
+    )

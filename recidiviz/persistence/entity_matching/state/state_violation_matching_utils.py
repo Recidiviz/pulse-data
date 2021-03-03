@@ -16,8 +16,9 @@
 # ============================================================================
 """Specific entity matching utils for StateSupervisionViolation entities and its children."""
 
-from recidiviz.common.constants.state.state_supervision_violation_response import \
-    StateSupervisionViolationResponseRevocationType
+from recidiviz.common.constants.state.state_supervision_violation_response import (
+    StateSupervisionViolationResponseRevocationType,
+)
 from recidiviz.persistence.database.schema.state import schema
 
 
@@ -28,12 +29,15 @@ def revoked_to_prison(svr: schema.StateSupervisionViolationResponse) -> bool:
     reincarceration_types = [
         StateSupervisionViolationResponseRevocationType.REINCARCERATION.value,
         StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION.value,
-        StateSupervisionViolationResponseRevocationType.TREATMENT_IN_PRISON.value]
+        StateSupervisionViolationResponseRevocationType.TREATMENT_IN_PRISON.value,
+    ]
     non_reincarceration_types = [
-        StateSupervisionViolationResponseRevocationType.RETURN_TO_SUPERVISION.value]
+        StateSupervisionViolationResponseRevocationType.RETURN_TO_SUPERVISION.value
+    ]
     if svr.revocation_type in reincarceration_types:
         return True
     if svr.revocation_type in non_reincarceration_types:
         return False
     raise ValueError(
-        f"Unexpected StateSupervisionViolationRevocationType {svr.revocation_type} for [{svr}].")
+        f"Unexpected StateSupervisionViolationRevocationType {svr.revocation_type} for [{svr}]."
+    )

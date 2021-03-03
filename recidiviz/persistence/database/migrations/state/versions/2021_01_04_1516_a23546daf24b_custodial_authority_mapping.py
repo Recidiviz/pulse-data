@@ -11,8 +11,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'a23546daf24b'
-down_revision = 'dd6deec65b5b'
+revision = "a23546daf24b"
+down_revision = "dd6deec65b5b"
 branch_labels = None
 depends_on = None
 
@@ -56,25 +56,33 @@ DOWNGRADE_QUERY_US_PA = """UPDATE {table_id} SET custodial_authority =
                       WHERE state_code = 'US_PA' AND custodial_authority_raw_text IS NOT NULL;"""
 
 TABLES_TO_UPDATE = [
-    'state_incarceration_period_history',
-    'state_incarceration_period',
-    'state_supervision_period_history',
-    'state_supervision_period',
+    "state_incarceration_period_history",
+    "state_incarceration_period",
+    "state_supervision_period_history",
+    "state_supervision_period",
 ]
 
-CUSTODIAL_AUTHORITY_VALUES = ['FEDERAL', 'OTHER_COUNTRY', 'OTHER_STATE', 'SUPERVISION_AUTHORITY', 'STATE_PRISON']
-ENUM_TYPE = sa.Enum(*CUSTODIAL_AUTHORITY_VALUES, name='state_custodial_authority')
+CUSTODIAL_AUTHORITY_VALUES = [
+    "FEDERAL",
+    "OTHER_COUNTRY",
+    "OTHER_STATE",
+    "SUPERVISION_AUTHORITY",
+    "STATE_PRISON",
+]
+ENUM_TYPE = sa.Enum(*CUSTODIAL_AUTHORITY_VALUES, name="state_custodial_authority")
 
 
 def upgrade():
-    sa.Enum(*CUSTODIAL_AUTHORITY_VALUES, name='state_custodial_authority').create(bind=op.get_bind())
+    sa.Enum(*CUSTODIAL_AUTHORITY_VALUES, name="state_custodial_authority").create(
+        bind=op.get_bind()
+    )
 
     connection = op.get_bind()
 
     # Set custodial_authority values to valid enum values
     for table_id in TABLES_TO_UPDATE:
         # Set custodial_authority values for the supervision tables
-        if 'supervision' in table_id:
+        if "supervision" in table_id:
             # Set custodial_authority value for US_ID
             connection.execute(UPDATE_QUERY_US_ID.format(table_id=table_id))
 
@@ -82,11 +90,14 @@ def upgrade():
             connection.execute(UPDATE_QUERY_US_PA.format(table_id=table_id))
 
         # Convert the custodial_authority column to an enum
-        op.alter_column(table_id, 'custodial_authority',
-                        existing_type=sa.VARCHAR(length=255),
-                        type_=ENUM_TYPE,
-                        existing_nullable=True,
-                        postgresql_using='custodial_authority::state_custodial_authority')
+        op.alter_column(
+            table_id,
+            "custodial_authority",
+            existing_type=sa.VARCHAR(length=255),
+            type_=ENUM_TYPE,
+            existing_nullable=True,
+            postgresql_using="custodial_authority::state_custodial_authority",
+        )
 
 
 def downgrade():
@@ -94,17 +105,20 @@ def downgrade():
 
     for table_id in TABLES_TO_UPDATE:
         # Convert the custodial_authority column back to a string
-        op.alter_column(table_id, 'custodial_authority',
-                        existing_type=ENUM_TYPE,
-                        type_=sa.VARCHAR(length=255),
-                        existing_nullable=True)
+        op.alter_column(
+            table_id,
+            "custodial_authority",
+            existing_type=ENUM_TYPE,
+            type_=sa.VARCHAR(length=255),
+            existing_nullable=True,
+        )
 
         # Set custodial_authority values for the supervision tables
-        if 'supervision' in table_id:
+        if "supervision" in table_id:
             # Set original custodial_authority value for US_ID
             connection.execute(DOWNGRADE_QUERY_US_ID.format(table_id=table_id))
 
             # Set original custodial_authority value for US_PA
             connection.execute(DOWNGRADE_QUERY_US_PA.format(table_id=table_id))
 
-    op.execute('DROP TYPE state_custodial_authority;')
+    op.execute("DROP TYPE state_custodial_authority;")

@@ -31,37 +31,55 @@ import pytest
 from recidiviz import IngestInfo
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct import regions
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
-    GcsfsDirectIngestController
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsDirectIngestFileType,\
-    GcsfsIngestViewExportArgs
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import (
+    GcsfsDirectIngestController,
+)
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
+    GcsfsDirectIngestFileType,
+    GcsfsIngestViewExportArgs,
+)
 from recidiviz.persistence.database.base_schema import OperationsBase, StateBase
 from recidiviz.persistence.database.schema.operations import schema as operations_schema
 from recidiviz.persistence.database.schema.state import dao
-from recidiviz.persistence.database.schema_entity_converter.state.\
-    schema_entity_converter import StateSchemaToEntityConverter
+from recidiviz.persistence.database.schema_entity_converter.state.schema_entity_converter import (
+    StateSchemaToEntityConverter,
+)
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import person_has_id, \
-    print_entity_trees, prune_dangling_placeholders_from_tree
+from recidiviz.persistence.entity.entity_utils import (
+    person_has_id,
+    print_entity_trees,
+    prune_dangling_placeholders_from_tree,
+)
 from recidiviz.persistence.entity.state.entities import StatePerson
-from recidiviz.persistence.persistence import OVERALL_THRESHOLD, ENUM_THRESHOLD, ENTITY_MATCHING_THRESHOLD, \
-    DATABASE_INVARIANT_THRESHOLD
+from recidiviz.persistence.persistence import (
+    OVERALL_THRESHOLD,
+    ENUM_THRESHOLD,
+    ENTITY_MATCHING_THRESHOLD,
+    DATABASE_INVARIANT_THRESHOLD,
+)
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest.direct import fixture_util
-from recidiviz.tests.ingest.direct.direct_ingest_util import \
-    run_task_queues_to_empty, build_gcsfs_controller_for_tests, ingest_args_for_fixture_file, \
-    path_for_fixture_file
-from recidiviz.tests.persistence.entity.state.entities_test_utils import \
-    clear_db_ids, assert_no_unexpected_entities_in_db
-from recidiviz.tests.utils.test_utils import print_visible_header_label, \
-    is_running_in_ci
+from recidiviz.tests.ingest.direct.direct_ingest_util import (
+    run_task_queues_to_empty,
+    build_gcsfs_controller_for_tests,
+    ingest_args_for_fixture_file,
+    path_for_fixture_file,
+)
+from recidiviz.tests.persistence.entity.state.entities_test_utils import (
+    clear_db_ids,
+    assert_no_unexpected_entities_in_db,
+)
+from recidiviz.tests.utils.test_utils import (
+    print_visible_header_label,
+    is_running_in_ci,
+)
 from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils.regions import Region
 
 
 @pytest.mark.uses_db
-@freeze_time('2019-09-27')
+@freeze_time("2019-09-27")
 class BaseDirectIngestControllerTests(unittest.TestCase):
     """Class with basic functionality for tests of all region-specific
     GcsfsDirectIngestControllers.
@@ -92,9 +110,9 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
     def setUp(self) -> None:
         self.maxDiff = 250000
 
-        self.metadata_patcher = patch('recidiviz.utils.metadata.project_id')
+        self.metadata_patcher = patch("recidiviz.utils.metadata.project_id")
         self.mock_project_id_fn = self.metadata_patcher.start()
-        self.mock_project_id_fn.return_value = 'recidiviz-staging'
+        self.mock_project_id_fn.return_value = "recidiviz-staging"
 
         local_postgres_helpers.use_on_disk_postgresql_database(self.schema_base())
         local_postgres_helpers.use_on_disk_postgresql_database(OperationsBase)
@@ -104,20 +122,23 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
             self.fixture_path_prefix(),
             run_async=False,
             max_delay_sec_between_files=0,
-            regions_module=regions
+            regions_module=regions,
         )
 
         # Set entity matching error threshold to a diminishingly small number
         # for tests. We cannot set it to 0 because we throw when errors *equal*
         # the error threshold.
         self.entity_matching_error_threshold_patcher = patch.dict(
-            'recidiviz.persistence.persistence.SYSTEM_TYPE_TO_ERROR_THRESHOLD',
-            {SystemLevel.STATE: {
-                OVERALL_THRESHOLD: 0,
-                ENUM_THRESHOLD: 0,
-                ENTITY_MATCHING_THRESHOLD: 0,
-                DATABASE_INVARIANT_THRESHOLD: 0,
-            }})
+            "recidiviz.persistence.persistence.SYSTEM_TYPE_TO_ERROR_THRESHOLD",
+            {
+                SystemLevel.STATE: {
+                    OVERALL_THRESHOLD: 0,
+                    ENUM_THRESHOLD: 0,
+                    ENTITY_MATCHING_THRESHOLD: 0,
+                    DATABASE_INVARIANT_THRESHOLD: 0,
+                }
+            },
+        )
 
         self.entity_matching_error_threshold_patcher.start()
 
@@ -129,24 +150,27 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls) -> None:
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(cls.temp_db_dir)
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.temp_db_dir
+        )
 
     @classmethod
     def fixture_path_prefix(cls) -> str:
-        return os.path.join('direct', 'regions', cls.region_code().lower())
+        return os.path.join("direct", "regions", cls.region_code().lower())
 
-    def run_parse_file_test(self,
-                            expected: IngestInfo,
-                            fixture_file_name: str) -> IngestInfo:
+    def run_parse_file_test(
+        self, expected: IngestInfo, fixture_file_name: str
+    ) -> IngestInfo:
         """Runs a test that reads and parses a given fixture file. Returns the
         parsed IngestInfo object for tests to run further validations."""
-        args = ingest_args_for_fixture_file(self.controller,
-                                            f'{fixture_file_name}.csv')
+        args = ingest_args_for_fixture_file(self.controller, f"{fixture_file_name}.csv")
 
         if not isinstance(self.controller.fs.gcs_file_system, FakeGCSFileSystem):
-            raise ValueError(f"Controller fs must have type "
-                             f"FakeGCSFileSystem. Found instead "
-                             f"type [{type(self.controller.fs.gcs_file_system)}]")
+            raise ValueError(
+                f"Controller fs must have type "
+                f"FakeGCSFileSystem. Found instead "
+                f"type [{type(self.controller.fs.gcs_file_system)}]"
+            )
 
         if self.controller.region.are_ingest_view_exports_enabled_in_env():
             now = datetime.datetime.now()
@@ -157,22 +181,28 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
                 upper_bound_datetime_prev=yesterday,
             )
 
-            self.controller.file_metadata_manager.register_ingest_file_export_job(ingest_file_export_job_args)
-            self.controller.ingest_view_export_manager.export_view_for_args(ingest_file_export_job_args)
+            self.controller.file_metadata_manager.register_ingest_file_export_job(
+                ingest_file_export_job_args
+            )
+            self.controller.ingest_view_export_manager.export_view_for_args(
+                ingest_file_export_job_args
+            )
         else:
-            fixture_util.add_direct_ingest_path(self.controller.fs.gcs_file_system, args.file_path)
+            fixture_util.add_direct_ingest_path(
+                self.controller.fs.gcs_file_system, args.file_path
+            )
 
         # pylint:disable=protected-access
         fixture_contents_handle = self.controller._get_contents_handle(args)
 
         if fixture_contents_handle is None:
-            self.fail('fixture_contents_handle should not be None')
+            self.fail("fixture_contents_handle should not be None")
         final_info = self.controller._parse(args, fixture_contents_handle)
 
-        print_visible_header_label('FINAL')
+        print_visible_header_label("FINAL")
         print(final_info)
 
-        print_visible_header_label('EXPECTED')
+        print_visible_header_label("EXPECTED")
         print(expected)
 
         self.assertEqual(expected, final_info)
@@ -183,8 +213,9 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
     def invalidate_ingest_view_metadata() -> None:
         session = SessionFactory.for_schema_base(OperationsBase)
         try:
-            session.query(operations_schema.DirectIngestIngestFileMetadata) \
-                .update({operations_schema.DirectIngestIngestFileMetadata.is_invalidated: True})
+            session.query(operations_schema.DirectIngestIngestFileMetadata).update(
+                {operations_schema.DirectIngestIngestFileMetadata.is_invalidated: True}
+            )
             session.commit()
         except Exception as e:
             session.rollback()
@@ -196,22 +227,26 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
         """Runs ingest for a the ingest view file with the given unnormalized file name."""
         get_region_patcher = patch(
             "recidiviz.persistence.entity_matching.state."
-            "base_state_matching_delegate.get_region")
+            "base_state_matching_delegate.get_region"
+        )
         mock_get_region = get_region_patcher.start()
         mock_get_region.return_value = self._fake_region()
 
-        environ_patcher = patch.dict(
-            'os.environ', {'PERSIST_LOCALLY': 'true'}
-        )
+        environ_patcher = patch.dict("os.environ", {"PERSIST_LOCALLY": "true"})
         environ_patcher.start()
 
-        file_type = GcsfsDirectIngestFileType.INGEST_VIEW \
-            if self.controller.region.is_raw_vs_ingest_file_name_detection_enabled() else None
+        file_type = (
+            GcsfsDirectIngestFileType.INGEST_VIEW
+            if self.controller.region.is_raw_vs_ingest_file_name_detection_enabled()
+            else None
+        )
 
         if not isinstance(self.controller.fs.gcs_file_system, FakeGCSFileSystem):
-            raise ValueError(f"Controller fs must have type "
-                             f"FakeGCSFileSystem. Found instead "
-                             f"type [{type(self.controller.fs.gcs_file_system)}]")
+            raise ValueError(
+                f"Controller fs must have type "
+                f"FakeGCSFileSystem. Found instead "
+                f"type [{type(self.controller.fs.gcs_file_system)}]"
+            )
 
         if self.controller.region.are_ingest_view_exports_enabled_in_env():
             now = datetime.datetime.utcnow()
@@ -222,13 +257,16 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
                 upper_bound_datetime_prev=yesterday,
             )
 
-            self.controller.file_metadata_manager.register_ingest_file_export_job(ingest_file_export_job_args)
-            self.controller.ingest_view_export_manager.export_view_for_args(ingest_file_export_job_args)
+            self.controller.file_metadata_manager.register_ingest_file_export_job(
+                ingest_file_export_job_args
+            )
+            self.controller.ingest_view_export_manager.export_view_for_args(
+                ingest_file_export_job_args
+            )
         else:
-            file_path = path_for_fixture_file(self.controller,
-                                              filename,
-                                              file_type=file_type,
-                                              should_normalize=True)
+            file_path = path_for_fixture_file(
+                self.controller, filename, file_type=file_type, should_normalize=True
+            )
             self.controller.fs.gcs_file_system.test_add_path(file_path, filename)
 
         run_task_queues_to_empty(self.controller)
@@ -236,29 +274,28 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
         get_region_patcher.stop()
         environ_patcher.stop()
 
-
-
     def _do_ingest_job_rerun_for_tags(self, file_tags: List[str]) -> None:
         self.invalidate_ingest_view_metadata()
         for file_tag in file_tags:
-            self._run_ingest_job_for_filename(f'{file_tag}.csv')
+            self._run_ingest_job_for_filename(f"{file_tag}.csv")
 
     @staticmethod
     def convert_and_clear_db_ids(db_entities: List[StateBase]) -> List[Entity]:
         converted = StateSchemaToEntityConverter().convert_all(
-            db_entities, populate_back_edges=True)
+            db_entities, populate_back_edges=True
+        )
         clear_db_ids(converted)
         return converted
 
     def assert_expected_db_people(
-            self,
-            expected_db_people: List[StatePerson],
-            debug: bool = False,
-            single_person_to_debug: Optional[str] = None,
-            # TODO(#2492): Once we properly clean up dangling placeholders,
-            #  delete this.
-            ignore_dangling_placeholders: bool = False,
-            print_tree_structure_only: bool = False,
+        self,
+        expected_db_people: List[StatePerson],
+        debug: bool = False,
+        single_person_to_debug: Optional[str] = None,
+        # TODO(#2492): Once we properly clean up dangling placeholders,
+        #  delete this.
+        ignore_dangling_placeholders: bool = False,
+        print_tree_structure_only: bool = False,
     ) -> None:
         """Asserts that the set of expected people matches all the people that currently exist in the database.
 
@@ -274,38 +311,54 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
         """
 
         if debug:
-            print('\n\n************** ASSERTING *************')
+            print("\n\n************** ASSERTING *************")
         session = SessionFactory.for_schema_base(StateBase)
         found_people_from_db = dao.read_people(session)
-        found_people = cast(List[StatePerson], self.convert_and_clear_db_ids(found_people_from_db))
+        found_people = cast(
+            List[StatePerson], self.convert_and_clear_db_ids(found_people_from_db)
+        )
 
         if ignore_dangling_placeholders:
             pruned_found_people = []
             for person in found_people:
-                pruned_person = cast(StatePerson, prune_dangling_placeholders_from_tree(person))
+                pruned_person = cast(
+                    StatePerson, prune_dangling_placeholders_from_tree(person)
+                )
                 if pruned_person is not None:
                     pruned_found_people.append(pruned_person)
             found_people = pruned_found_people
 
             pruned_expected_people: List[StatePerson] = []
             for person in expected_db_people:
-                pruned_expected_person = cast(StatePerson, prune_dangling_placeholders_from_tree(person))
+                pruned_expected_person = cast(
+                    StatePerson, prune_dangling_placeholders_from_tree(person)
+                )
                 if pruned_expected_person is not None:
                     pruned_expected_people.append(pruned_expected_person)
             expected_db_people = pruned_expected_people
 
         if debug:
             if is_running_in_ci():
-                self.fail('The |debug| flag should only be used for local debugging.')
+                self.fail("The |debug| flag should only be used for local debugging.")
             if single_person_to_debug is not None:
-                found_people = [p for p in found_people if person_has_id(p, single_person_to_debug)]
-                expected_db_people = [p for p in expected_db_people if person_has_id(p, single_person_to_debug)]
+                found_people = [
+                    p for p in found_people if person_has_id(p, single_person_to_debug)
+                ]
+                expected_db_people = [
+                    p
+                    for p in expected_db_people
+                    if person_has_id(p, single_person_to_debug)
+                ]
 
-            print_visible_header_label('FINAL')
-            print_entity_trees(found_people, print_tree_structure_only=print_tree_structure_only)
+            print_visible_header_label("FINAL")
+            print_entity_trees(
+                found_people, print_tree_structure_only=print_tree_structure_only
+            )
 
-            print_visible_header_label('EXPECTED')
-            print_entity_trees(expected_db_people, print_tree_structure_only=print_tree_structure_only)
+            print_visible_header_label("EXPECTED")
+            print_entity_trees(
+                expected_db_people, print_tree_structure_only=print_tree_structure_only
+            )
 
         self.assertCountEqual(found_people, expected_db_people)
 
@@ -313,6 +366,7 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
 
     def _fake_region(self) -> Region:
         fake_region = create_autospec(Region)
-        fake_region.get_enum_overrides.return_value = \
+        fake_region.get_enum_overrides.return_value = (
             self.controller.get_enum_overrides()
+        )
         return fake_region

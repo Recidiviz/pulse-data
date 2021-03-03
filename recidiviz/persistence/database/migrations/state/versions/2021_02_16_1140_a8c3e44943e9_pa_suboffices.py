@@ -11,8 +11,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'a8c3e44943e9'
-down_revision = 'cfee400e144c'
+revision = "a8c3e44943e9"
+down_revision = "cfee400e144c"
 branch_labels = None
 depends_on = None
 
@@ -99,11 +99,13 @@ WHERE sp.supervision_period_id = old_sp.supervision_period_id;
 
 def upgrade():
     with op.get_context().autocommit_block():
-        op.execute(UPGRADE_QUERY.format(table_name='state_supervision_period'))
-        op.execute(UPGRADE_QUERY.format(table_name='state_supervision_period_history'))
+        op.execute(UPGRADE_QUERY.format(table_name="state_supervision_period"))
+        op.execute(UPGRADE_QUERY.format(table_name="state_supervision_period_history"))
 
 
 def downgrade():
     with op.get_context().autocommit_block():
-        op.execute(DOWNGRADE_QUERY.format(table_name='state_supervision_period'))
-        op.execute(DOWNGRADE_QUERY.format(table_name='state_supervision_period_history'))
+        op.execute(DOWNGRADE_QUERY.format(table_name="state_supervision_period"))
+        op.execute(
+            DOWNGRADE_QUERY.format(table_name="state_supervision_period_history")
+        )

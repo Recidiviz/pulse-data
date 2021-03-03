@@ -20,13 +20,26 @@ from typing import Dict, Callable, Any, Type, Union, TypeVar, Generic
 
 import attr
 
-from recidiviz.common.attr_utils import is_forward_ref, is_list, is_str, is_date, is_enum, is_int, is_attr_decorated
-from recidiviz.common.str_field_utils import normalize, parse_date, parse_int, parse_bool
+from recidiviz.common.attr_utils import (
+    is_forward_ref,
+    is_list,
+    is_str,
+    is_date,
+    is_enum,
+    is_int,
+    is_attr_decorated,
+)
+from recidiviz.common.str_field_utils import (
+    normalize,
+    parse_date,
+    parse_int,
+    parse_bool,
+)
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.common.constants.enum_parser import EnumParser
 from recidiviz.utils.types import T
 
-EntityT = TypeVar('EntityT', bound=Entity)
+EntityT = TypeVar("EntityT", bound=Entity)
 
 
 @attr.s
@@ -38,9 +51,11 @@ class EntityFieldConverter(Generic[T]):
         return self.conversion_function(field_value)
 
 
-def entity_deserialize(cls: Type[EntityT],
-                       converter_overrides: Dict[str, EntityFieldConverter],
-                       **kwargs: Union[str, EnumParser]) -> EntityT:
+def entity_deserialize(
+    cls: Type[EntityT],
+    converter_overrides: Dict[str, EntityFieldConverter],
+    **kwargs: Union[str, EnumParser],
+) -> EntityT:
     """Factory function that parses ingested versions of the Entity constructor args into database-ready, normalized
     values and uses the normalized values to construct an instance of the object.
 
@@ -50,13 +65,17 @@ def entity_deserialize(cls: Type[EntityT],
 
     if not is_attr_decorated(cls):
         raise ValueError(
-            f'Can only deserialize attrs classes with entity_deserialize() - found class [{cls}].')
+            f"Can only deserialize attrs classes with entity_deserialize() - found class [{cls}]."
+        )
 
     if not issubclass(cls, Entity):
         raise ValueError(
-            f'Can only deserialize Entity classes with entity_deserialize() - found class [{cls}].')
+            f"Can only deserialize Entity classes with entity_deserialize() - found class [{cls}]."
+        )
 
-    def convert_field_value(field: attr.Attribute, field_value: Union[str, EnumParser]) -> Any:
+    def convert_field_value(
+        field: attr.Attribute, field_value: Union[str, EnumParser]
+    ) -> Any:
         if field_value is None:
             return None
 
@@ -70,15 +89,19 @@ def entity_deserialize(cls: Type[EntityT],
         if field.name in converter_overrides:
             converter = converter_overrides[field.name]
             if not isinstance(field_value, converter.field_type):
-                raise ValueError(f'Found converter for field [{field.name}] in the converter_overrides, but expected '
-                                 f'field type [{converter.field_type}] does not match actual field type '
-                                 f'[{type(field_value)}]')
+                raise ValueError(
+                    f"Found converter for field [{field.name}] in the converter_overrides, but expected "
+                    f"field type [{converter.field_type}] does not match actual field type "
+                    f"[{type(field_value)}]"
+                )
             return converter.convert(field_value)
 
         if isinstance(field_value, EnumParser):
             if is_enum(field):
                 return field_value.parse()
-            raise ValueError(f'Found field value [{field_value}] for field that is not an enum [{field}].')
+            raise ValueError(
+                f"Found field value [{field_value}] for field that is not an enum [{field}]."
+            )
 
         if isinstance(field_value, str):
             if is_str(field):
@@ -90,7 +113,7 @@ def entity_deserialize(cls: Type[EntityT],
             if field.type in {bool, Union[bool, None]}:
                 return parse_bool(field_value)
 
-        raise ValueError(f'Unsupported field {field.name}')
+        raise ValueError(f"Unsupported field {field.name}")
 
     converted_args = {}
     for field_name, field_ in attr.fields_dict(cls).items():

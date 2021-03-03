@@ -20,22 +20,35 @@ from typing import List, Optional
 
 import attr
 
-from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import SupervisionCaseCompliance
-from recidiviz.calculator.pipeline.utils.event_utils import AssessmentEventMixin, IdentifierEventWithSingularDate
-from recidiviz.calculator.pipeline.utils.supervision_period_index import _is_official_supervision_admission
+from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import (
+    SupervisionCaseCompliance,
+)
+from recidiviz.calculator.pipeline.utils.event_utils import (
+    AssessmentEventMixin,
+    IdentifierEventWithSingularDate,
+)
+from recidiviz.calculator.pipeline.utils.supervision_period_index import (
+    _is_official_supervision_admission,
+)
 from recidiviz.common.attr_mixins import BuildableAttr
-from recidiviz.common.constants.state.state_assessment import \
-    StateAssessmentType, StateAssessmentLevel
-from recidiviz.common.constants.state.state_case_type import \
-    StateSupervisionCaseType
-from recidiviz.common.constants.state.state_supervision_period import \
-    StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType, StateSupervisionLevel, \
-    StateSupervisionPeriodAdmissionReason
-from recidiviz.common.constants.state.state_supervision_violation import \
-    StateSupervisionViolationType
-from recidiviz.common.constants.state.state_supervision_violation_response \
-    import StateSupervisionViolationResponseRevocationType, \
-    StateSupervisionViolationResponseDecision
+from recidiviz.common.constants.state.state_assessment import (
+    StateAssessmentType,
+    StateAssessmentLevel,
+)
+from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodTerminationReason,
+    StateSupervisionPeriodSupervisionType,
+    StateSupervisionLevel,
+    StateSupervisionPeriodAdmissionReason,
+)
+from recidiviz.common.constants.state.state_supervision_violation import (
+    StateSupervisionViolationType,
+)
+from recidiviz.common.constants.state.state_supervision_violation_response import (
+    StateSupervisionViolationResponseRevocationType,
+    StateSupervisionViolationResponseDecision,
+)
 
 
 # TODO(#5307): Convert all "bucket" language to use "event"
@@ -55,7 +68,9 @@ class SupervisionTimeBucket(IdentifierEventWithSingularDate, AssessmentEventMixi
     # TODO(#2891): Consider moving this out of the base class, and making the supervision type specific to each
     #   bucket type
     # The type of supervision the person was on on the last day of the time bucket
-    supervision_type: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(default=None)
+    supervision_type: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(
+        default=None
+    )
 
     # Level of supervision
     supervision_level: Optional[StateSupervisionLevel] = attr.ib(default=None)
@@ -106,8 +121,11 @@ class SupervisionTimeBucket(IdentifierEventWithSingularDate, AssessmentEventMixi
 @attr.s(frozen=True)
 class ViolationHistoryBucket(BuildableAttr):
     """Base class for including the most severe violation type and subtype features on a SupervisionTimeBucket."""
+
     # The most severe violation type leading up to the date of the event the bucket describes
-    most_severe_violation_type: Optional[StateSupervisionViolationType] = attr.ib(default=None)
+    most_severe_violation_type: Optional[StateSupervisionViolationType] = attr.ib(
+        default=None
+    )
 
     # A string subtype that provides further insight into the most_severe_violation_type above.
     most_severe_violation_type_subtype: Optional[str] = attr.ib(default=None)
@@ -116,7 +134,9 @@ class ViolationHistoryBucket(BuildableAttr):
     response_count: Optional[int] = attr.ib(default=0)
 
     # The most severe decision on the responses that were included in determining the most severe type/subtype
-    most_severe_response_decision: Optional[StateSupervisionViolationResponseDecision] = attr.ib(default=None)
+    most_severe_response_decision: Optional[
+        StateSupervisionViolationResponseDecision
+    ] = attr.ib(default=None)
 
 
 @attr.s(frozen=True)
@@ -136,17 +156,23 @@ class SupervisionDowngradeBucket(BuildableAttr):
 
 
 @attr.s(frozen=True)
-class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket, ViolationHistoryBucket):
+class RevocationReturnSupervisionTimeBucket(
+    SupervisionTimeBucket, ViolationHistoryBucket
+):
     """Models a SupervisionTimeBucket where the person was incarcerated for a revocation."""
 
     # The type of revocation of supervision
-    revocation_type: Optional[StateSupervisionViolationResponseRevocationType] = attr.ib(default=None)
+    revocation_type: Optional[
+        StateSupervisionViolationResponseRevocationType
+    ] = attr.ib(default=None)
 
     # A string subtype that provides further insight into the revocation_type above.
     revocation_type_subtype: Optional[str] = attr.ib(default=None)
 
     # StateSupervisionViolationType enum for the type of violation that eventually caused the revocation of supervision
-    source_violation_type: Optional[StateSupervisionViolationType] = attr.ib(default=None)
+    source_violation_type: Optional[StateSupervisionViolationType] = attr.ib(
+        default=None
+    )
 
     # A string representation of the violations recorded in the period leading up to the revocation
     violation_history_description: Optional[str] = attr.ib(default=None)
@@ -158,7 +184,9 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket, ViolationHist
     violation_type_frequency_counter: Optional[List[List[str]]] = attr.ib(default=None)
 
     # The most severe decision on the most recent response leading up to the revocation
-    most_recent_response_decision: Optional[StateSupervisionViolationResponseDecision] = attr.ib(default=None)
+    most_recent_response_decision: Optional[
+        StateSupervisionViolationResponseDecision
+    ] = attr.ib(default=None)
 
     # TODO(#3600): This field should be removed because the daily output makes this unnecessary
     # True if the stint of time on supervision this month included the last day of the month
@@ -169,7 +197,7 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket, ViolationHist
 
     @is_on_supervision_last_day_of_month.default
     def _default_is_on_supervision_last_day_of_month(self) -> None:
-        raise ValueError('Must set is_on_supervision_last_day_of_month!')
+        raise ValueError("Must set is_on_supervision_last_day_of_month!")
 
     @property
     def revocation_admission_date(self) -> date:
@@ -181,8 +209,9 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket, ViolationHist
 
 
 @attr.s(frozen=True)
-class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket, ViolationHistoryBucket,
-                                               SupervisionDowngradeBucket):
+class NonRevocationReturnSupervisionTimeBucket(
+    SupervisionTimeBucket, ViolationHistoryBucket, SupervisionDowngradeBucket
+):
     """Models a SupervisionTimeBucket where the person was not incarcerated for a revocation."""
 
     # TODO(#3600): This field should be removed because the daily output makes this unnecessary
@@ -197,7 +226,7 @@ class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket, ViolationH
 
     @is_on_supervision_last_day_of_month.default
     def _default_is_on_supervision_last_day_of_month(self) -> None:
-        raise ValueError('Must set is_on_supervision_last_day_of_month!')
+        raise ValueError("Must set is_on_supervision_last_day_of_month!")
 
     @property
     def date_of_supervision(self) -> date:
@@ -251,6 +280,7 @@ class ProjectedSupervisionCompletionBucket(SupervisionTimeBucket):
     Describes whether or not the supervision was successfully completed or not, as well as other details about the time
     on supervision.
     """
+
     # Whether or not the supervision was completed successfully
     successful_completion: bool = attr.ib(default=True)
 
@@ -266,7 +296,9 @@ class SupervisionStartBucket(SupervisionTimeBucket):
     """Models details regarding the start of supervision."""
 
     # The reason for supervision admission
-    admission_reason: Optional[StateSupervisionPeriodAdmissionReason] = attr.ib(default=None)
+    admission_reason: Optional[StateSupervisionPeriodAdmissionReason] = attr.ib(
+        default=None
+    )
 
     @property
     def start_date(self) -> date:
@@ -284,8 +316,11 @@ class SupervisionTerminationBucket(SupervisionTimeBucket, ViolationHistoryBucket
     Describes the reason for termination, and the change in assessment score between first reassessment and termination
     of supervision.
     """
+
     # The reason for supervision termination
-    termination_reason: Optional[StateSupervisionPeriodTerminationReason] = attr.ib(default=None)
+    termination_reason: Optional[StateSupervisionPeriodTerminationReason] = attr.ib(
+        default=None
+    )
 
     # Change in scores between the assessment right before termination and first reliable assessment while on
     # supervision. The first "reliable" assessment is determined by state-specific logic.

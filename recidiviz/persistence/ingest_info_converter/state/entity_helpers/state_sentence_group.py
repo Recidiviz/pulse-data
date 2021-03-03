@@ -24,9 +24,10 @@ from recidiviz.persistence.entity.state import entities
 
 
 def copy_fields_to_builder(
-        sentence_group_builder: entities.StateSentenceGroup.Builder,
-        proto: StateSentenceGroup,
-        metadata: IngestMetadata) -> None:
+    sentence_group_builder: entities.StateSentenceGroup.Builder,
+    proto: StateSentenceGroup,
+    metadata: IngestMetadata,
+) -> None:
     """Mutates the provided |sentence_group_builder| by converting an
     ingest_info proto StateSentenceGroup.
 
@@ -35,15 +36,21 @@ def copy_fields_to_builder(
     new = sentence_group_builder
 
     # Enum mappings
-    new.status = EnumParser(getattr(proto, 'status'), StateSentenceStatus, metadata.enum_overrides)
-    new.status_raw_text = getattr(proto, 'status')
+    new.status = EnumParser(
+        getattr(proto, "status"), StateSentenceStatus, metadata.enum_overrides
+    )
+    new.status_raw_text = getattr(proto, "status")
 
     # 1-to-1 mappings
-    state_sentence_group_id = getattr(proto, 'state_sentence_group_id')
-    new.external_id = None if common_utils.is_generated_id(state_sentence_group_id) else state_sentence_group_id
-    new.date_imposed = getattr(proto, 'date_imposed')
+    state_sentence_group_id = getattr(proto, "state_sentence_group_id")
+    new.external_id = (
+        None
+        if common_utils.is_generated_id(state_sentence_group_id)
+        else state_sentence_group_id
+    )
+    new.date_imposed = getattr(proto, "date_imposed")
     new.state_code = metadata.region
-    new.county_code = getattr(proto, 'county_code')
-    new.min_length_days = getattr(proto, 'min_length')
-    new.max_length_days = getattr(proto, 'max_length')
-    new.is_life = getattr(proto, 'is_life')
+    new.county_code = getattr(proto, "county_code")
+    new.min_length_days = getattr(proto, "min_length")
+    new.max_length_days = getattr(proto, "max_length")
+    new.is_life = getattr(proto, "is_life")

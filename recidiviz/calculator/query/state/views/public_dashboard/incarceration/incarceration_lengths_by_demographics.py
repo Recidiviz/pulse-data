@@ -16,17 +16,21 @@
 # =============================================================================
 """Incarceration lengths in years for releases from incarceration in the last 36 months, where the release is someone's
 first release from an incarceration for a new charge."""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
-from recidiviz.calculator.query.state import dataset_config, state_specific_query_strings
+from recidiviz.calculator.query.state import (
+    dataset_config,
+    state_specific_query_strings,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_NAME = 'incarceration_lengths_by_demographics'
+INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_NAME = (
+    "incarceration_lengths_by_demographics"
+)
 
-INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_DESCRIPTION = \
-    """Years spent incarcerated for people released from prison in the last 36 months. Release must have one of the
+INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_DESCRIPTION = """Years spent incarcerated for people released from prison in the last 36 months. Release must have one of the
      following release reasons:
         COMMUTED, COMPASSIONATE, CONDITIONAL_RELEASE, SENTENCE_SERVED, DEATH
      and the original admission reason on the period of incarceration must be one of the following:
@@ -36,8 +40,7 @@ INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_DESCRIPTION = \
     """
 
 # TODO(#3657): Update this query exclude US_ND releases from 'CPP' once we are classifying transfers to CPP as releases
-INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
-    """
+INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
     /*{description}*/
     WITH releases AS (
         SELECT
@@ -97,19 +100,28 @@ INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
     view_id=INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_NAME,
     view_query_template=INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE,
-    dimensions=['state_code', 'metric_period_months', 'race_or_ethnicity', 'gender', 'age_bucket'],
+    dimensions=[
+        "state_code",
+        "metric_period_months",
+        "race_or_ethnicity",
+        "gender",
+        "age_bucket",
+    ],
     description=INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     metric_period_condition=bq_utils.metric_period_condition(),
-    unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
-    gender_dimension=bq_utils.unnest_column('gender', 'gender'),
-    age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),
-    state_specific_race_or_ethnicity_groupings=
-    state_specific_query_strings.state_specific_race_or_ethnicity_groupings('prioritized_race_or_ethnicity'),
+    unnested_race_or_ethnicity_dimension=bq_utils.unnest_column(
+        "race_or_ethnicity", "race_or_ethnicity"
+    ),
+    gender_dimension=bq_utils.unnest_column("gender", "gender"),
+    age_dimension=bq_utils.unnest_column("age_bucket", "age_bucket"),
+    state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(
+        "prioritized_race_or_ethnicity"
+    ),
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_BUILDER.build_and_print()

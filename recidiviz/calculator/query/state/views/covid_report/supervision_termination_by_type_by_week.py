@@ -15,20 +15,22 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Supervision terminations by week, with subset of discharge terminations"""
-# pylint: disable=trailing-whitespace,line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_VIEW_NAME = 'supervision_terminations_by_type_by_week'
+SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_VIEW_NAME = (
+    "supervision_terminations_by_type_by_week"
+)
 
-SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_DESCRIPTION = \
+SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_DESCRIPTION = (
     """ Supervision terminations by week, with subset of discharge terminations """
+)
 
 # TODO(#4155): Use the supervision_termination_metrics instead of the raw state_supervision_period table
-SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_QUERY_TEMPLATE = \
-    """
+SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_QUERY_TEMPLATE = """
     /*{description}*/
     WITH supervision_periods_for_report AS (
       SELECT * FROM `{project_id}.{base_dataset}.state_supervision_period` 
@@ -108,9 +110,9 @@ SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_VIEW_BUILDER = SimpleBigQueryViewBuilde
     description=SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_DESCRIPTION,
     base_dataset=dataset_config.STATE_BASE_DATASET,
     covid_report_dataset=dataset_config.COVID_REPORT_DATASET,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_VIEW_BUILDER.build_and_print()

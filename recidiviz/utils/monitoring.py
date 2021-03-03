@@ -71,7 +71,6 @@ def push_region_tag(region_code: str):
 
 
 def with_region_tag(func):
-
     @wraps(func)
     def set_region_tag(region_code, *args, **kwargs):
         with push_region_tag(region_code):
@@ -107,23 +106,25 @@ def exponential_buckets(start: float, factor: float, count: int) -> List[float]:
 
 
 class TagKey:
-    ENTITY_TYPE = 'entity_type'
-    ERROR = 'error'
-    RAW_DATA_IMPORT_TAG = 'raw_data_import_tag'
-    INGEST_VIEW_EXPORT_TAG = 'ingest_view_export_tag'
-    INGEST_TASK_TAG = 'ingest_task_tag'
-    PERSISTED = 'persisted'
-    REASON = 'reason'
-    REGION = 'region'
-    SHOULD_PERSIST = 'should_persist'
-    STATUS = 'status'
-    VALIDATION_CHECK_TYPE = 'validation_check_type'
-    VALIDATION_VIEW_ID = 'validation_view_id'
-    CREATE_UPDATE_VIEWS_NAMESPACE = 'create_update_views_namespace'
-    CREATE_UPDATE_RAW_DATA_LATEST_VIEWS_FILE_TAG = 'create_update_raw_data_latest_views_file_tag'
-    METRIC_VIEW_EXPORT_NAME = 'metric_view_export_name'
+    ENTITY_TYPE = "entity_type"
+    ERROR = "error"
+    RAW_DATA_IMPORT_TAG = "raw_data_import_tag"
+    INGEST_VIEW_EXPORT_TAG = "ingest_view_export_tag"
+    INGEST_TASK_TAG = "ingest_task_tag"
+    PERSISTED = "persisted"
+    REASON = "reason"
+    REGION = "region"
+    SHOULD_PERSIST = "should_persist"
+    STATUS = "status"
+    VALIDATION_CHECK_TYPE = "validation_check_type"
+    VALIDATION_VIEW_ID = "validation_view_id"
+    CREATE_UPDATE_VIEWS_NAMESPACE = "create_update_views_namespace"
+    CREATE_UPDATE_RAW_DATA_LATEST_VIEWS_FILE_TAG = (
+        "create_update_raw_data_latest_views_file_tag"
+    )
+    METRIC_VIEW_EXPORT_NAME = "metric_view_export_name"
 
     # Code related tags
-    FUNCTION = 'function'
-    MODULE = 'module'
-    RECURSION_DEPTH = 'recursion_depth'
+    FUNCTION = "function"
+    MODULE = "module"
+    RECURSION_DEPTH = "recursion_depth"

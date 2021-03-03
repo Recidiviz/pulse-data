@@ -24,12 +24,15 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
-INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW_NAME = 'incarceration_release_prior_to_admission'
+INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW_NAME = (
+    "incarceration_release_prior_to_admission"
+)
 
-INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_DESCRIPTION = """ Incarceration release dates prior to admission dates """
+INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_DESCRIPTION = (
+    """ Incarceration release dates prior to admission dates """
+)
 
-INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_QUERY_TEMPLATE = \
-    """
+INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT *, state_code as region_code
     FROM `{project_id}.{state_dataset}.state_incarceration_period`
@@ -47,6 +50,6 @@ INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW_BUILDER = SimpleBigQueryViewBuilde
     state_dataset=state_dataset_config.STATE_BASE_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW_BUILDER.build_and_print()

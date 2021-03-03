@@ -29,11 +29,14 @@ from recidiviz.ingest.scrape import constants
 from recidiviz.ingest.scrape.errors import ScraperError
 
 
-def validate_scraped_data(cls: 'ScrapedData', _attribute: attr.Attribute, _value: Any) -> None:
+def validate_scraped_data(
+    cls: "ScrapedData", _attribute: attr.Attribute, _value: Any
+) -> None:
     if cls.persist and not (cls.ingest_info or cls.single_counts):
         raise ScraperError(
             "If persisting, at least one of ingest_info or single_counts "
-            "must be set.")
+            "must be set."
+        )
 
 
 @attr.s(frozen=True)
@@ -42,10 +45,12 @@ class ScrapedData:
 
     # The ingest info scraped from the content
     ingest_info: Optional[IngestInfo] = attr.ib(
-        default=None, validator=validate_scraped_data)
+        default=None, validator=validate_scraped_data
+    )
     # Any single counts we might collect during scraping
     single_counts: List[SingleCount] = attr.ib(
-        factory=list, validator=validate_scraped_data)
+        factory=list, validator=validate_scraped_data
+    )
     # Whether to persist the `ingest_info` now. Set this to `False` if the data
     # for a person or booking is spread across multiple pages and you need to
     # pass this on to the next page instead of persisting it.
@@ -62,8 +67,7 @@ class Task:
     endpoint: str = attr.ib()
 
     # The expected response type to be used when parsing the response
-    response_type: constants.ResponseType = \
-        attr.ib(default=constants.ResponseType.HTML)
+    response_type: constants.ResponseType = attr.ib(default=constants.ResponseType.HTML)
     # Any http headers to be sent in the request
     headers: Optional[Dict[str, str]] = attr.ib(default=None)
     # Any cookies to be sent with the request. Cookies from any prior requests
@@ -84,12 +88,13 @@ class Task:
     content: Optional[str] = attr.ib(default=None)
 
     @staticmethod
-    def evolve(next_task: 'Task', **kwds: Any) -> 'Task':
+    def evolve(next_task: "Task", **kwds: Any) -> "Task":
         """Convenience so that other modules don't need to import attr."""
         return attr.evolve(next_task, **kwds)
 
     def to_serializable(self) -> Any:
         return cattr.unstructure(self)
+
 
 @attr.s(frozen=True)
 class QueueRequest:
@@ -98,6 +103,7 @@ class QueueRequest:
     This is the object that is serialized and put on the queue, it should never
     be instantiated directly by the child scraper.
     """
+
     # The type of scrape being performed (currently only background scrapes are
     # performed)
     scrape_type: constants.ScrapeType = attr.ib()
@@ -116,5 +122,5 @@ class QueueRequest:
         return cattr.unstructure(self)
 
     @classmethod
-    def from_serializable(cls, serializable: Any) -> 'QueueRequest':
+    def from_serializable(cls, serializable: Any) -> "QueueRequest":
         return cattr.structure(serializable, cls)

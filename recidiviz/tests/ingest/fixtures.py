@@ -39,24 +39,20 @@ def as_string(region_directory: str, filename: str) -> str:
     Returns:
         The contents of the fixture file as a string
     """
-    subdir = 'scrape/regions'
-    if 'vendor' in region_directory:
-        subdir = 'scrape'
-    elif any(d in region_directory
-             for d in ('aggregate', 'extractor', 'direct')):
-        subdir = ''
+    subdir = "scrape/regions"
+    if "vendor" in region_directory:
+        subdir = "scrape"
+    elif any(d in region_directory for d in ("aggregate", "extractor", "direct")):
+        subdir = ""
 
-    relative_path = os.path.join(
-        subdir,
-        region_directory,
-        'fixtures',
-        filename
-    )
+    relative_path = os.path.join(subdir, region_directory, "fixtures", filename)
 
     return as_string_from_relative_path(relative_path)
 
+
 def file_path_from_relative_path(relative_path: str) -> str:
     return os.path.join(os.path.dirname(__file__), relative_path)
+
 
 def as_string_from_relative_path(relative_path: str) -> str:
     """Returns the contents of the given fixture file as a string.
@@ -90,7 +86,7 @@ def as_dict(region_directory: str, filename: str) -> Dict[str, Any]:
 
 
 # TODO(#647): Refactor this to be usable outside the `ingest` module
-def as_filepath(filename: str, subdir: str = 'fixtures') -> str:
+def as_filepath(filename: str, subdir: str = "fixtures") -> str:
     """Returns the filepath for the fixture file.
 
     Assumes the |filename| is in the |subdir| subdirectory relative to the
@@ -100,20 +96,23 @@ def as_filepath(filename: str, subdir: str = 'fixtures') -> str:
     module = inspect.getmodule(frame[0])
 
     if module is None:
-        raise ValueError('Module is unexpectedly None')
+        raise ValueError("Module is unexpectedly None")
 
     caller_filepath = module.__file__
 
-    return os.path.abspath(
-        os.path.join(caller_filepath, '..', subdir, filename))
+    return os.path.abspath(os.path.join(caller_filepath, "..", subdir, filename))
 
 
-def as_html(region_directory: str, filename: str) -> Any:  # No types defined out of lxml library
+def as_html(
+    region_directory: str, filename: str
+) -> Any:  # No types defined out of lxml library
     content_string = as_string(region_directory, filename)
     return html.fromstring(content_string)
 
 
-def as_html5(region_directory: str, filename: str) -> Any:  # No types defined out of lxml library
+def as_html5(
+    region_directory: str, filename: str
+) -> Any:  # No types defined out of lxml library
     content_string = as_string(region_directory, filename)
     html5_etree = html5lib.parse(content_string)
     html5_string = ElementTree.tostring(html5_etree)

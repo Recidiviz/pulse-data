@@ -11,8 +11,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'dd6deec65b5b'
-down_revision = 'be48397d71ec'
+revision = "dd6deec65b5b"
+down_revision = "be48397d71ec"
 branch_labels = None
 depends_on = None
 
@@ -42,10 +42,10 @@ UPDATE_QUERY_US_PA = """UPDATE {table_id}
 
 # Note: custodial_authority column is currently empty for all rows in state_incarceration_period
 TABLES_TO_UPDATE = [
-    'state_incarceration_period_history',
-    'state_incarceration_period',
-    'state_supervision_period_history',
-    'state_supervision_period',
+    "state_incarceration_period_history",
+    "state_incarceration_period",
+    "state_supervision_period_history",
+    "state_supervision_period",
 ]
 
 
@@ -54,11 +54,15 @@ def upgrade():
 
     for table_id in TABLES_TO_UPDATE:
         # Add custodial_authority_raw_text column
-        op.add_column(table_id,
-                      sa.Column('custodial_authority_raw_text', sa.String(length=255), nullable=True))
+        op.add_column(
+            table_id,
+            sa.Column(
+                "custodial_authority_raw_text", sa.String(length=255), nullable=True
+            ),
+        )
 
         # Set custodial_authority_raw_text values for the supervision tables
-        if 'supervision' in table_id:
+        if "supervision" in table_id:
             # Set custodial_authority_raw_text value for US_ID
             connection.execute(UPDATE_QUERY_US_ID.format(table_id=table_id))
 
@@ -68,4 +72,4 @@ def upgrade():
 
 def downgrade():
     for table_id in TABLES_TO_UPDATE:
-        op.drop_column(table_id, 'custodial_authority_raw_text')
+        op.drop_column(table_id, "custodial_authority_raw_text")

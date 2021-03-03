@@ -25,19 +25,17 @@ import random
 import zlib
 from typing import Union, Optional
 
-from recidiviz.ingest.models.ingest_info import IngestInfo, IngestObject, \
-    PLURALS
-from recidiviz.ingest.models.ingest_object_hierarchy import \
-    get_ancestor_class_sequence
+from recidiviz.ingest.models.ingest_info import IngestInfo, IngestObject, PLURALS
+from recidiviz.ingest.models.ingest_object_hierarchy import get_ancestor_class_sequence
 from recidiviz.ingest.scrape.task_params import ScrapedData
 from recidiviz.utils import environment
 from recidiviz.utils import secrets
 
 # We add a random session in order to rotate the IPs from luminati.
-PROXY_USER_TEMPLATE = '{}-session-{}'
+PROXY_USER_TEMPLATE = "{}-session-{}"
 
 
-def get_value_from_html_tree(html_tree, attribute_value, attribute_name='id'):
+def get_value_from_html_tree(html_tree, attribute_value, attribute_name="id"):
     """Retrieves the value of an html tag from the given html tree. The
     tag is chosen based on a given attribute value on an attribute
     name that can optionally be set, but is 'id' by default.. If there
@@ -54,16 +52,16 @@ def get_value_from_html_tree(html_tree, attribute_value, attribute_name='id'):
         A string representing the value of the id from the html page.
 
     """
-    html_obj = html_tree.cssselect('[{}={}]'.format(attribute_name,
-                                                    attribute_value))
+    html_obj = html_tree.cssselect("[{}={}]".format(attribute_name, attribute_value))
     if html_obj:
-        return html_obj[0].get('value')
+        return html_obj[0].get("value")
     return None
 
 
 def _one(ingest_object: str, parent: Optional[IngestObject]):
-    none_found = ValueError(f"IngestInfo did not have a single {ingest_object} "
-                            f"as expected.")
+    none_found = ValueError(
+        f"IngestInfo did not have a single {ingest_object} " f"as expected."
+    )
     if parent is None:
         raise none_found
     if ingest_object in PLURALS:
@@ -71,8 +69,9 @@ def _one(ingest_object: str, parent: Optional[IngestObject]):
         if not lst:
             raise none_found
         if len(lst) > 1:
-            raise ValueError(f"IngestInfo had {len(lst)} {ingest_object}s, "
-                             f"expected one.")
+            raise ValueError(
+                f"IngestInfo had {len(lst)} {ingest_object}s, " f"expected one."
+            )
         return lst[0]
     elt = getattr(parent, ingest_object)
     if elt is None:
@@ -80,8 +79,9 @@ def _one(ingest_object: str, parent: Optional[IngestObject]):
     return elt
 
 
-def one(ingest_object: str,
-        ingest_info_or_scraped_data: Union[IngestInfo, ScrapedData]):
+def one(
+    ingest_object: str, ingest_info_or_scraped_data: Union[IngestInfo, ScrapedData]
+):
     """Convenience function to return the single descendant of an IngestInfo
     object. For example, |one('arrest', ingest_info)| returns the single arrest
     of the single booking of the single person in |ingest_info| and raises an
@@ -124,8 +124,8 @@ def get_proxies(use_test=False):
     if not environment.in_gcp() or use_test:
         return None
 
-    user_var = 'proxy_user'
-    pass_var = 'proxy_password'
+    user_var = "proxy_user"
+    pass_var = "proxy_password"
 
     proxy_url = secrets.get_secret("proxy_url")
 
@@ -136,17 +136,16 @@ def get_proxies(use_test=False):
     # so collisions can still happen so we increase the integer to reduce the
     # odds.
     base_proxy_user = secrets.get_secret(user_var)
-    proxy_user = PROXY_USER_TEMPLATE.format(
-        base_proxy_user, random.random())
+    proxy_user = PROXY_USER_TEMPLATE.format(base_proxy_user, random.random())
     proxy_password = secrets.get_secret(pass_var)
 
     if (base_proxy_user is None) or (proxy_password is None):
         raise Exception("No proxy user/pass")
 
     proxy_credentials = proxy_user + ":" + proxy_password
-    proxy_request_url = 'http://' + proxy_credentials + "@" + proxy_url
+    proxy_request_url = "http://" + proxy_credentials + "@" + proxy_url
 
-    proxies = {'http': proxy_request_url, 'https': proxy_request_url}
+    proxies = {"http": proxy_request_url, "https": proxy_request_url}
 
     return proxies
 
@@ -172,15 +171,17 @@ def get_headers():
     """
     in_prod = environment.in_gcp()
     if not in_prod:
-        user_agent_string = ('For any issues, concerns, or rate constraints,'
-                             'e-mail alerts@recidiviz.com')
+        user_agent_string = (
+            "For any issues, concerns, or rate constraints,"
+            "e-mail alerts@recidiviz.com"
+        )
     else:
         user_agent_string = secrets.get_secret("user_agent")
 
     if not user_agent_string:
         raise Exception("No user agent string")
 
-    headers = {'User-Agent': user_agent_string}
+    headers = {"User-Agent": user_agent_string}
     return headers
 
 

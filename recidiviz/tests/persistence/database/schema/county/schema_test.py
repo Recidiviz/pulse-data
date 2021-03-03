@@ -18,9 +18,7 @@
 
 from recidiviz.common.constants.county import booking, sentence, charge, hold
 from recidiviz.persistence.database.schema.county import schema
-from recidiviz.tests.persistence.database.schema.schema_test import (
-    TestSchemaEnums
-)
+from recidiviz.tests.persistence.database.schema.schema_test import TestSchemaEnums
 
 
 class TestCountySchemaEnums(TestSchemaEnums):
@@ -35,17 +33,16 @@ class TestCountySchemaEnums(TestSchemaEnums):
         # If a schema enum does not correspond to a persistence layer enum,
         # it should be mapped to None.
         county_enums_mapping = {
-            'admission_reason': booking.AdmissionReason,
-            'classification': booking.Classification,
-            'custody_status': booking.CustodyStatus,
-            'release_reason': booking.ReleaseReason,
-            'hold_status': hold.HoldStatus,
-            'sentence_status': sentence.SentenceStatus,
-            'sentence_relationship_type': None,
-            'charge_class': charge.ChargeClass,
+            "admission_reason": booking.AdmissionReason,
+            "classification": booking.Classification,
+            "custody_status": booking.CustodyStatus,
+            "release_reason": booking.ReleaseReason,
+            "hold_status": hold.HoldStatus,
+            "sentence_status": sentence.SentenceStatus,
+            "sentence_relationship_type": None,
+            "charge_class": charge.ChargeClass,
         }
 
-        merged_mapping = {**self.SHARED_ENUMS_TEST_MAPPING,
-                          **county_enums_mapping}
+        merged_mapping = {**self.SHARED_ENUMS_TEST_MAPPING, **county_enums_mapping}
 
         self.check_persistence_and_schema_enums_match(merged_mapping, schema)

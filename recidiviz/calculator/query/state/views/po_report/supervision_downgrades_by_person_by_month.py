@@ -21,12 +21,15 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-SUPERVISION_DOWNGRADES_BY_PERSON_BY_MONTH_VIEW_NAME = 'supervision_downgrade_by_person_by_month'
+SUPERVISION_DOWNGRADES_BY_PERSON_BY_MONTH_VIEW_NAME = (
+    "supervision_downgrade_by_person_by_month"
+)
 
-SUPERVISION_DOWNGRADES_BY_PERSON_BY_MONTH_DESCRIPTION = 'Supervision downgrades by person by month'
+SUPERVISION_DOWNGRADES_BY_PERSON_BY_MONTH_DESCRIPTION = (
+    "Supervision downgrades by person by month"
+)
 
-SUPERVISION_DOWNGRADES_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = \
-    """
+SUPERVISION_DOWNGRADES_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = """
     /*{description}*/
     WITH latest_downgrade_date AS (
         SELECT
@@ -58,6 +61,6 @@ SUPERVISION_DOWNGRADES_BY_PERSON_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuild
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         SUPERVISION_DOWNGRADES_BY_PERSON_BY_MONTH_VIEW_BUILDER.build_and_print()

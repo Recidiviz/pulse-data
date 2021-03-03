@@ -31,20 +31,23 @@ from http import HTTPStatus
 from flask import Blueprint, request, url_for
 
 from recidiviz.ingest.models.scrape_key import ScrapeKey
-from recidiviz.ingest.scrape import (docket, ingest_utils, scrape_phase,
-                                     sessions, tracker)
+from recidiviz.ingest.scrape import (
+    docket,
+    ingest_utils,
+    scrape_phase,
+    sessions,
+    tracker,
+)
 from recidiviz.ingest.scrape.constants import BATCH_PUBSUB_TYPE
-from recidiviz.ingest.scrape.scraper_cloud_task_manager import \
-    ScraperCloudTaskManager
-from recidiviz.utils import (monitoring, pubsub_helper, regions,
-                             structured_logging)
+from recidiviz.ingest.scrape.scraper_cloud_task_manager import ScraperCloudTaskManager
+from recidiviz.utils import monitoring, pubsub_helper, regions, structured_logging
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.params import get_str_param_value, get_str_param_values
 
-scraper_control = Blueprint('scraper_control', __name__)
+scraper_control = Blueprint("scraper_control", __name__)
 
 
-@scraper_control.route('/start')
+@scraper_control.route("/start")
 @requires_gae_auth
 def scraper_start():
     """Request handler to start one or several running scrapers
@@ -73,20 +76,26 @@ def scraper_start():
     def _start_scraper(region, scrape_type):
         scrape_key = ScrapeKey(region, scrape_type)
 
-        most_recent_session = \
-            next(sessions.get_sessions(region_code=scrape_key.region_code,
-                                       include_closed=True,
-                                       most_recent_only=True,
-                                       scrape_type=scrape_key.scrape_type),
-                 None)
-        if most_recent_session and not \
-                most_recent_session.phase.has_persisted():
-            raise Exception("Session already running for region [%s]. Could "
-                            "not start a new session" % region)
+        most_recent_session = next(
+            sessions.get_sessions(
+                region_code=scrape_key.region_code,
+                include_closed=True,
+                most_recent_only=True,
+                scrape_type=scrape_key.scrape_type,
+            ),
+            None,
+        )
+        if most_recent_session and not most_recent_session.phase.has_persisted():
+            raise Exception(
+                "Session already running for region [%s]. Could "
+                "not start a new session" % region
+            )
 
         logging.info(
             "Purging pubsub queue for scrape_key: [%s] and pubsub_type: [%s]",
-            scrape_key, BATCH_PUBSUB_TYPE)
+            scrape_key,
+            BATCH_PUBSUB_TYPE,
+        )
         pubsub_helper.purge(scrape_key, BATCH_PUBSUB_TYPE)
 
         logging.info("Starting new scraper for: [%s]", scrape_key)
@@ -109,7 +118,8 @@ def scraper_start():
         # the start scraper request.
         load_docket_thread = threading.Thread(
             target=structured_logging.with_context(docket.load_target_list),
-            args=(scrape_key, given_names, surname))
+            args=(scrape_key, given_names, surname),
+        )
         load_docket_thread.start()
 
         # Start scraper, if the docket is empty this will wait for a bounded
@@ -128,13 +138,17 @@ def scraper_start():
     # If a timezone wasn't provided start all regions. If it was only start
     # regions that match the timezone.
     scrape_regions = ingest_utils.validate_regions(
-        region_value, timezone=timezone, stripes=stripe_value)
+        region_value, timezone=timezone, stripes=stripe_value
+    )
     scrape_types = ingest_utils.validate_scrape_types(
-        get_str_param_values("scrape_type", request.args))
+        get_str_param_values("scrape_type", request.args)
+    )
 
     if not scrape_regions or not scrape_types:
-        return ('Missing or invalid parameters, or no regions found, see logs.',
-                HTTPStatus.BAD_REQUEST)
+        return (
+            "Missing or invalid parameters, or no regions found, see logs.",
+            HTTPStatus.BAD_REQUEST,
+        )
 
     given_names = get_str_param_value("given_names", request.args, "")
     surname = get_str_param_value("surname", request.args, "")
@@ -145,7 +159,9 @@ def scraper_start():
         future_to_args = {
             executor.submit(
                 structured_logging.with_context(_start_scraper),
-                region_code, scrape_type): (region_code, scrape_type)
+                region_code,
+                scrape_type,
+            ): (region_code, scrape_type)
             for scrape_type in scrape_types
             for region_code in scrape_regions
         }
@@ -158,13 +174,17 @@ def scraper_start():
                     future.result()
                 except Exception:
                     logging.exception(
-                        'An exception occured when starting region [%s] for '
-                        '[%s]',
-                        region_code, scrape_type)
+                        "An exception occured when starting region [%s] for " "[%s]",
+                        region_code,
+                        scrape_type,
+                    )
                     failed_starts.append((region_code, scrape_type))
                 else:
-                    logging.info('Finished starting region [%s] for [%s].',
-                                 region_code, scrape_type)
+                    logging.info(
+                        "Finished starting region [%s] for [%s].",
+                        region_code,
+                        scrape_type,
+                    )
 
     if failed_starts:
         # This causes the whole request to be retried. Any regions whose session
@@ -172,12 +192,14 @@ def scraper_start():
         # call when we check for open sessions. Any regions we failed to start
         # likely still had sessions opened and thus will be skipped, but it is
         # worth retrying anyway.
-        return ('Failed to start regions: {}'.format(failed_starts),
-                HTTPStatus.INTERNAL_SERVER_ERROR)
-    return ('', HTTPStatus.OK)
+        return (
+            "Failed to start regions: {}".format(failed_starts),
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+    return ("", HTTPStatus.OK)
 
 
-@scraper_control.route('/stop')
+@scraper_control.route("/stop")
 @requires_gae_auth
 def scraper_stop():
     """Request handler to stop one or several running scrapers.
@@ -205,17 +227,17 @@ def scraper_stop():
     """
     timezone = ingest_utils.lookup_timezone(request.args.get("timezone"))
     stripe = get_str_param_values("stripe", request.args)
-    respect_is_stoppable = get_str_param_value("respect_is_stoppable",
-                                               request.args)
+    respect_is_stoppable = get_str_param_value("respect_is_stoppable", request.args)
 
     # If a timezone wasn't provided stop all regions. If it was only stop
     # regions that match the timezone. If stripe provided, stop only regions
     # with matching stripe
     scrape_regions = ingest_utils.validate_regions(
-        get_str_param_values("region", request.args), timezone=timezone,
-        stripes=stripe)
+        get_str_param_values("region", request.args), timezone=timezone, stripes=stripe
+    )
     scrape_types = ingest_utils.validate_scrape_types(
-        get_str_param_values("scrape_type", request.args))
+        get_str_param_values("scrape_type", request.args)
+    )
 
     next_phase = scrape_phase.next_phase(request.endpoint)
     next_phase_url = url_for(next_phase) if next_phase else None
@@ -228,35 +250,37 @@ def scraper_stop():
             session = sessions.get_current_session(key)
             if not session:
                 logging.info(
-                    "No [%s] scrape to stop for region: [%s]", scrape_type,
-                    region)
+                    "No [%s] scrape to stop for region: [%s]", scrape_type, region
+                )
                 continue
 
             region_scraper = regions.get_region(region).get_ingestor()
-            was_stopped = region_scraper.stop_scrape(scrape_type,
-                                                     respect_is_stoppable)
+            was_stopped = region_scraper.stop_scrape(scrape_type, respect_is_stoppable)
             if was_stopped:
                 closed_sessions = sessions.close_session(key)
                 for closed_session in closed_sessions:
-                    sessions.update_phase(closed_session,
-                                          scrape_phase.ScrapePhase.PERSIST)
+                    sessions.update_phase(
+                        closed_session, scrape_phase.ScrapePhase.PERSIST
+                    )
                 if next_phase:
-                    logging.info("Enqueueing %s for region [%s].",
-                                 next_phase, region)
+                    logging.info("Enqueueing %s for region [%s].", next_phase, region)
                     ScraperCloudTaskManager().create_scraper_phase_task(
-                        region_code=region,
-                        url=next_phase_url)
+                        region_code=region, url=next_phase_url
+                    )
 
     if not scrape_regions or not scrape_types:
-        return ('Missing or invalid parameters, see service logs.',
-                HTTPStatus.BAD_REQUEST)
+        return (
+            "Missing or invalid parameters, see service logs.",
+            HTTPStatus.BAD_REQUEST,
+        )
 
     failed_stops = []
     with futures.ThreadPoolExecutor() as executor:
         # Start all of the calls.
         future_to_regions = {
-            executor.submit(structured_logging.with_context(_stop_scraper),
-                            region_code): region_code
+            executor.submit(
+                structured_logging.with_context(_stop_scraper), region_code
+            ): region_code
             for region_code in scrape_regions
         }
 
@@ -268,13 +292,17 @@ def scraper_stop():
                     future.result()
                 except Exception:
                     logging.exception(
-                        'An exception occured when stopping region [%s] for '
-                        '[%s]',
-                        region_code, scrape_types)
+                        "An exception occured when stopping region [%s] for " "[%s]",
+                        region_code,
+                        scrape_types,
+                    )
                     failed_stops.append(region_code)
                 else:
-                    logging.info('Finished stopping region [%s] for [%s].',
-                                 region_code, scrape_types)
+                    logging.info(
+                        "Finished stopping region [%s] for [%s].",
+                        region_code,
+                        scrape_types,
+                    )
 
     if failed_stops:
         # This causes the whole request to be retried. Any regions whose session
@@ -282,12 +310,14 @@ def scraper_stop():
         # call as we won't find any sessions to close. Any regions we failed to
         # start likely still had their sessions closed and thus will be skipped,
         # but it is worth retrying anyway.
-        return ('Failed to stop regions: {}'.format(failed_stops),
-                HTTPStatus.INTERNAL_SERVER_ERROR)
-    return ('', HTTPStatus.OK)
+        return (
+            "Failed to stop regions: {}".format(failed_stops),
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+    return ("", HTTPStatus.OK)
 
 
-@scraper_control.route('/resume')
+@scraper_control.route("/resume")
 @requires_gae_auth
 def scraper_resume():
     """Request handler to resume one or several stopped scrapers
@@ -308,13 +338,17 @@ def scraper_resume():
         N/A
     """
     scrape_regions = ingest_utils.validate_regions(
-        get_str_param_values("region", request.args))
+        get_str_param_values("region", request.args)
+    )
     scrape_types = ingest_utils.validate_scrape_types(
-        get_str_param_values("scrape_type", request.args))
+        get_str_param_values("scrape_type", request.args)
+    )
 
     if not scrape_regions or not scrape_types:
-        return ('Missing or invalid parameters, see service logs.',
-                HTTPStatus.BAD_REQUEST)
+        return (
+            "Missing or invalid parameters, see service logs.",
+            HTTPStatus.BAD_REQUEST,
+        )
 
     for region in scrape_regions:
 
@@ -330,4 +364,4 @@ def scraper_resume():
             scraper = regions.get_region(region).get_ingestor()
             scraper.resume_scrape(scrape_type)
 
-    return ('', HTTPStatus.OK)
+    return ("", HTTPStatus.OK)

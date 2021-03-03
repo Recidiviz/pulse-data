@@ -35,7 +35,7 @@ from recidiviz.common.date import munge_date_string
 
 def parse_dollars(dollar_string: str) -> int:
     """Parses a string and returns an int dollar amount"""
-    clean_string = dollar_string.strip(' ').strip('$')
+    clean_string = dollar_string.strip(" ").strip("$")
     if not clean_string:
         return 0
     try:
@@ -63,15 +63,12 @@ def parse_int(int_string: str) -> int:
 # TODO(#2365): All usages of this function should pass in a datetime, otherwise
 #  the value returned for strings like '9M 10D' depend on the date the code is
 #  being executed, leading to flaky tests.
-def parse_days(
-        time_string: str,
-        from_dt: Optional[datetime.datetime] = None
-) -> int:
+def parse_days(time_string: str, from_dt: Optional[datetime.datetime] = None) -> int:
     """
     Converts the given string into an int number of days, using |from_dt|
     as a base for any relative dates.
     """
-    if time_string == '' or time_string.isspace():
+    if time_string == "" or time_string.isspace():
         return 0
     try:
         return int(time_string)
@@ -85,50 +82,59 @@ def parse_days(
     raise ValueError("Cannot parse time duration: %s" % time_string)
 
 
-def safe_parse_days_from_duration_str(duration_str: str, start_dt_str: Optional[str] = None) -> Optional[int]:
+def safe_parse_days_from_duration_str(
+    duration_str: str, start_dt_str: Optional[str] = None
+) -> Optional[int]:
     """Same as safe_parse_days_from_duration_pieces below, but processes a concatenated duration string directly
     (e.g. '2Y 4D' or '1M 14D').
     """
-    pieces = duration_str.upper().split(' ')
+    pieces = duration_str.upper().split(" ")
     years_str = None
     months_str = None
     days_str = None
     for piece in pieces:
-        if piece.endswith('D'):
-            days_str = piece.rstrip('D')
-        elif piece.endswith('M'):
-            months_str = piece.rstrip('M')
-        elif piece.endswith('Y'):
-            years_str = piece.rstrip('Y')
+        if piece.endswith("D"):
+            days_str = piece.rstrip("D")
+        elif piece.endswith("M"):
+            months_str = piece.rstrip("M")
+        elif piece.endswith("Y"):
+            years_str = piece.rstrip("Y")
         else:
             # Not a valid string - can't parse
             return None
 
     return safe_parse_days_from_duration_pieces(
-        years_str=years_str, months_str=months_str, days_str=days_str,
-        start_dt_str=start_dt_str)
+        years_str=years_str,
+        months_str=months_str,
+        days_str=days_str,
+        start_dt_str=start_dt_str,
+    )
+
 
 def safe_parse_days_from_duration_pieces(
-        years_str: Optional[str] = None,
-        months_str: Optional[str] = None,
-        days_str: Optional[str] = None,
-        start_dt_str: Optional[str] = None) -> Optional[int]:
+    years_str: Optional[str] = None,
+    months_str: Optional[str] = None,
+    days_str: Optional[str] = None,
+    start_dt_str: Optional[str] = None,
+) -> Optional[int]:
     """Same as parse_days_from_duration_pieces below, but returns None if a number of days cannot be parsed."""
     try:
         return parse_days_from_duration_pieces(
             years_str=years_str,
             months_str=months_str,
             days_str=days_str,
-            start_dt_str=start_dt_str)
+            start_dt_str=start_dt_str,
+        )
     except ValueError:
         return None
 
 
 def parse_days_from_duration_pieces(
-        years_str: Optional[str] = None,
-        months_str: Optional[str] = None,
-        days_str: Optional[str] = None,
-        start_dt_str: Optional[str] = None) -> int:
+    years_str: Optional[str] = None,
+    months_str: Optional[str] = None,
+    days_str: Optional[str] = None,
+    start_dt_str: Optional[str] = None,
+) -> int:
     """Returns a number of days specified by the given duration strings. If a
     start date is specified, will calculate the number of days after that date,
     otherwise, assumes that a month is 30 days long and a year is 365.25 days
@@ -148,8 +154,7 @@ def parse_days_from_duration_pieces(
     """
 
     if not any((years_str, months_str, days_str)):
-        raise ValueError(
-            'One of (years_str, months_str, days_str) must be nonnull')
+        raise ValueError("One of (years_str, months_str, days_str) must be nonnull")
 
     years = parse_int(years_str) if years_str else 0
     months = parse_int(months_str) if months_str else 0
@@ -158,17 +163,16 @@ def parse_days_from_duration_pieces(
     if start_dt_str and not is_str_field_none(start_dt_str):
         start_dt = parse_datetime(start_dt_str)
         if start_dt:
-            end_dt = start_dt + relativedelta(years=years,
-                                              months=months,
-                                              days=days)
+            end_dt = start_dt + relativedelta(years=years, months=months, days=days)
             if end_dt:
                 return (end_dt - start_dt).days
 
     return int(years * 365.25) + (months * 30) + days
 
 
-def safe_parse_date_from_date_pieces(year: Optional[str], month: Optional[str], day: Optional[str]) \
-        -> Optional[datetime.date]:
+def safe_parse_date_from_date_pieces(
+    year: Optional[str], month: Optional[str], day: Optional[str]
+) -> Optional[datetime.date]:
     """Same as parse_date_from_date_pieces below, but returns None if a given string field cannot be parsed."""
     try:
         return parse_date_from_date_pieces(year, month, day)
@@ -176,8 +180,9 @@ def safe_parse_date_from_date_pieces(year: Optional[str], month: Optional[str], 
         return None
 
 
-def parse_date_from_date_pieces(year: Optional[str], month: Optional[str], day: Optional[str]) \
-        -> Optional[datetime.date]:
+def parse_date_from_date_pieces(
+    year: Optional[str], month: Optional[str], day: Optional[str]
+) -> Optional[datetime.date]:
     """Parses a date from the provided year, month, and day strings."""
     if year and month and day:
         return datetime.date(year=int(year), month=int(month), day=int(day))
@@ -206,35 +211,43 @@ def _is_str_field_zeros(str_field: str) -> bool:
 
 
 def parse_datetime(
-        date_string: str, from_dt: Optional[datetime.datetime] = None
-    ) -> Optional[datetime.datetime]:
+    date_string: str, from_dt: Optional[datetime.datetime] = None
+) -> Optional[datetime.datetime]:
     """
     Parses a string into a datetime.datetime object, using |from_dt| as a base
     for any relative dates.
     """
-    if date_string == '' or date_string.isspace() or _is_str_field_zeros(date_string) or is_str_field_none(date_string):
+    if (
+        date_string == ""
+        or date_string.isspace()
+        or _is_str_field_zeros(date_string)
+        or is_str_field_none(date_string)
+    ):
         return None
 
     if is_yyyymmdd_date(date_string):
         as_date = parse_yyyymmdd_date(date_string)
         if not as_date:
-            raise ValueError(f'Parsed date for string [{date_string}] is unexpectedly None.')
-        return datetime.datetime(year=as_date.year, month=as_date.month, day=as_date.day)
+            raise ValueError(
+                f"Parsed date for string [{date_string}] is unexpectedly None."
+            )
+        return datetime.datetime(
+            year=as_date.year, month=as_date.month, day=as_date.day
+        )
 
-    settings: Dict[str, Any] = {'PREFER_DAY_OF_MONTH': 'first'}
+    settings: Dict[str, Any] = {"PREFER_DAY_OF_MONTH": "first"}
     if from_dt:
-        settings['RELATIVE_BASE'] = from_dt
+        settings["RELATIVE_BASE"] = from_dt
 
     date_string = munge_date_string(date_string)
 
     # Only special-case strings that start with a - (to avoid parsing regular
     # timestamps like '2016-05-14') and that include non punctuation (to avoid
     # ingested values like '--')
-    if date_string.startswith('-') and _has_non_punctuation(date_string):
+    if date_string.startswith("-") and _has_non_punctuation(date_string):
         parsed = parse_datetime_with_negative_component(date_string, settings)
     else:
-        parsed = dateparser.parse(
-            date_string, languages=['en'], settings=settings)
+        parsed = dateparser.parse(date_string, languages=["en"], settings=settings)
     if parsed:
         return parsed
 
@@ -245,8 +258,9 @@ def _has_non_punctuation(date_string: str) -> bool:
     return any(ch not in string.punctuation for ch in date_string)
 
 
-def parse_datetime_with_negative_component(date_string: str,
-                                           settings: Dict[str, Any]) -> Optional[datetime.datetime]:
+def parse_datetime_with_negative_component(
+    date_string: str, settings: Dict[str, Any]
+) -> Optional[datetime.datetime]:
     """Handles relative date strings that have negative values in them, like
     '2 year -5month'.
 
@@ -259,17 +273,18 @@ def parse_datetime_with_negative_component(date_string: str,
     manually convert '-5month' into 'in 5month' to achieve the desired effect.
     """
     parsed_date = None
-    latest_relative = settings.get('RELATIVE_BASE', datetime.datetime.now())
+    latest_relative = settings.get("RELATIVE_BASE", datetime.datetime.now())
 
-    components = date_string.split(' ')
+    components = date_string.split(" ")
     for component in components:
-        settings['RELATIVE_BASE'] = latest_relative
+        settings["RELATIVE_BASE"] = latest_relative
 
         updated_component = component
-        if updated_component.startswith('-'):
-            updated_component = updated_component.replace('-', 'in ')
+        if updated_component.startswith("-"):
+            updated_component = updated_component.replace("-", "in ")
         parsed_date = dateparser.parse(
-            updated_component, languages=['en'], settings=settings)
+            updated_component, languages=["en"], settings=settings
+        )
 
         latest_relative = parsed_date
 
@@ -278,7 +293,7 @@ def parse_datetime_with_negative_component(date_string: str,
 
 def is_yyyymmdd_date(date_string: str) -> bool:
     try:
-        datetime.datetime.strptime(date_string, '%Y%m%d')
+        datetime.datetime.strptime(date_string, "%Y%m%d")
     except ValueError:
         return False
 
@@ -289,11 +304,11 @@ def parse_yyyymmdd_date(date_str: str) -> Optional[datetime.date]:
     if not is_yyyymmdd_date(date_str):
         return None
 
-    return datetime.datetime.strptime(date_str, '%Y%m%d').date()
+    return datetime.datetime.strptime(date_str, "%Y%m%d").date()
 
 
 def parse_date(
-        date_string: str, from_dt: Optional[datetime.datetime] = None
+    date_string: str, from_dt: Optional[datetime.datetime] = None
 ) -> Optional[datetime.date]:
     """
     Parses a string into a datetime.date object, using |from_dt| as a base for
@@ -313,14 +328,14 @@ def normalize(s: str, remove_punctuation: bool = False) -> str:
     """Normalizes whitespace within the provided string by converting all groups
     of whitespaces into ' ', and uppercases the string."""
     if remove_punctuation:
-        translation = str.maketrans(dict.fromkeys(string.punctuation, ' '))
+        translation = str.maketrans(dict.fromkeys(string.punctuation, " "))
         label_without_punctuation = s.translate(translation)
         if not label_without_punctuation.isspace():
             s = label_without_punctuation
 
-    if s is None or s == '' or s.isspace():
+    if s is None or s == "" or s.isspace():
         raise ValueError("Cannot normalize None or empty/whitespace string")
-    return ' '.join(s.split()).upper()
+    return " ".join(s.split()).upper()
 
 
 def normalize_truncated(message: str) -> str:
@@ -331,15 +346,15 @@ def normalize_truncated(message: str) -> str:
 def is_str_field_none(s: str) -> bool:
     """Returns True if the string value should be parsed as None."""
     return normalize(s, remove_punctuation=True) in {
-        'N A',
-        'NONE',
-        'NONE SET',
-        'NOT SPECIFIED'
+        "N A",
+        "NONE",
+        "NONE SET",
+        "NOT SPECIFIED",
     }
 
 
-_FIRST_CAP_REGEX = re.compile('(.)([A-Z][a-z]+)')
-_ALL_CAP_REGEX = re.compile('([a-z0-9])([A-Z])')
+_FIRST_CAP_REGEX = re.compile("(.)([A-Z][a-z]+)")
+_ALL_CAP_REGEX = re.compile("([a-z0-9])([A-Z])")
 
 
 def to_snake_case(capital_case_name: str) -> str:
@@ -348,18 +363,22 @@ def to_snake_case(capital_case_name: str) -> str:
     https://stackoverflow.com/questions/1175208/
     elegant-python-function-to-convert-camelcase-to-snake-case.
     """
-    s1 = _FIRST_CAP_REGEX.sub(r'\1_\2', capital_case_name)
-    return _ALL_CAP_REGEX.sub(r'\1_\2', s1).lower()
+    s1 = _FIRST_CAP_REGEX.sub(r"\1_\2", capital_case_name)
+    return _ALL_CAP_REGEX.sub(r"\1_\2", s1).lower()
 
 
-def sorted_list_from_str(value: str, delimiter: str = ',') -> List[str]:
+def sorted_list_from_str(value: str, delimiter: str = ",") -> List[str]:
     """Converts a string with delimiter-separated values into a sorted list containing those values as separate
     entries.
     """
     if not value:
         return []
 
-    unsorted = [result_str.strip() for result_str in value.split(delimiter) if result_str.strip()]
+    unsorted = [
+        result_str.strip()
+        for result_str in value.split(delimiter)
+        if result_str.strip()
+    ]
     return sorted(unsorted)
 
 
@@ -373,12 +392,16 @@ def normalize_flat_json(json_str: str) -> str:
     normalized_values_dict = {}
     loaded_json = json.loads(json_str)
     if not isinstance(loaded_json, dict):
-        raise ValueError(f'JSON must have top-level type dict, found [{type(loaded_json)}].')
+        raise ValueError(
+            f"JSON must have top-level type dict, found [{type(loaded_json)}]."
+        )
     for k, v in loaded_json.items():
         normalized_value = None
         if v:
             if not isinstance(v, str):
-                raise ValueError(f'Unexpected value type [{type(v)}] for field [{k}]. Expected value type str.')
+                raise ValueError(
+                    f"Unexpected value type [{type(v)}] for field [{k}]. Expected value type str."
+                )
             normalized_value = normalize(v)
         normalized_values_dict[k] = normalized_value
 

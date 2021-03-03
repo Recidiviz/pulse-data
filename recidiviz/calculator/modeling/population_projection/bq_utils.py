@@ -22,31 +22,31 @@ import pandas as pd
 def store_simulation_results(project_id, dataset, table_name, table_schema, data):
     """Append the new results to the BigQuery table in the spark output dataset"""
 
-    if project_id not in ['recidiviz-staging', 'recidiviz-123']:
+    if project_id not in ["recidiviz-staging", "recidiviz-123"]:
         raise ValueError(f"`{project_id}` is not a supported gcloud BigQuery project")
 
     # Reorder the columns to match the schema ordering
-    column_order = [column['name'] for column in table_schema]
+    column_order = [column["name"] for column in table_schema]
     data = data[column_order]
 
     # Append the results in BigQuery
     data.to_gbq(
-        destination_table=f'{dataset}.{table_name}',
+        destination_table=f"{dataset}.{table_name}",
         project_id=project_id,
-        if_exists='append',
+        if_exists="append",
         chunksize=100000,
-        table_schema=table_schema
+        table_schema=table_schema,
     )
 
 
 def add_simulation_date_column(df):
     # Convert the fractional year column into the integer year and month columns
-    df['year'] = round(df['year'], 5)
-    df['month'] = (12 * (df['year'] % 1)).round(0).astype(int) + 1
-    df['year'] = df['year'].astype(int)
-    df['day'] = 1
+    df["year"] = round(df["year"], 5)
+    df["month"] = (12 * (df["year"] % 1)).round(0).astype(int) + 1
+    df["year"] = df["year"].astype(int)
+    df["day"] = 1
 
-    df['simulation_date'] = pd.to_datetime(df[['year', 'month', 'day']]).dt.date
+    df["simulation_date"] = pd.to_datetime(df[["year", "month", "day"]]).dt.date
 
-    df = df.drop(['year', 'month', 'day'], axis=1)
+    df = df.drop(["year", "month", "day"], axis=1)
     return df

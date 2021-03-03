@@ -24,18 +24,23 @@ from http import HTTPStatus
 
 import googleapiclient.errors
 
-from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import CloudSqlToBQConfig
+from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
+    CloudSqlToBQConfig,
+)
 from recidiviz.persistence.database.sqladmin_client import sqladmin_client
-from recidiviz.persistence.database.sqlalchemy_engine_manager import \
-    SQLAlchemyEngineManager, SchemaType
+from recidiviz.persistence.database.sqlalchemy_engine_manager import (
+    SQLAlchemyEngineManager,
+    SchemaType,
+)
 from recidiviz.utils import metadata
 
 
 SECONDS_BETWEEN_OPERATION_STATUS_CHECKS = 3
 
 
-def create_export_context(schema_type: SchemaType, export_uri: str,
-                          export_query: str) -> dict:
+def create_export_context(
+    schema_type: SchemaType, export_uri: str, export_query: str
+) -> dict:
     """Creates the exportContext configuration for the export operation.
 
     See here for details:
@@ -51,14 +56,12 @@ def create_export_context(schema_type: SchemaType, export_uri: str,
     """
 
     export_context = {
-        'exportContext': {
-            'kind': 'sql#exportContext',
-            'fileType': 'CSV',
-            'uri': export_uri,
-            'databases': [SQLAlchemyEngineManager.get_db_name(schema_type)],
-            'csvExportOptions': {
-                'selectQuery': export_query
-            }
+        "exportContext": {
+            "kind": "sql#exportContext",
+            "fileType": "CSV",
+            "uri": export_uri,
+            "databases": [SQLAlchemyEngineManager.get_db_name(schema_type)],
+            "csvExportOptions": {"selectQuery": export_query},
         }
     }
 
@@ -88,27 +91,32 @@ def wait_until_operation_finished(operation_id: str) -> bool:
 
     while operation_in_progress:
         operation = get_operation_with_retries(operation_id)
-        operation_status = operation['status']
+        operation_status = operation["status"]
 
         # See: https://cloud.google.com/sql/docs/postgres/admin-api/rest/v1beta4/operations#SqlOperationStatus
-        if operation_status in {'PENDING', 'RUNNING', 'UNKNOWN', 'SQL_OPERATION_STATUS_UNSPECIFIED'}:
+        if operation_status in {
+            "PENDING",
+            "RUNNING",
+            "UNKNOWN",
+            "SQL_OPERATION_STATUS_UNSPECIFIED",
+        }:
             time.sleep(SECONDS_BETWEEN_OPERATION_STATUS_CHECKS)
-        elif operation_status == 'DONE':
+        elif operation_status == "DONE":
             operation_in_progress = False
 
-        logging.debug("Operation [%s] status: [%s]",
-                      operation_id, operation_status)
+        logging.debug("Operation [%s] status: [%s]", operation_id, operation_status)
 
         # An operation object may also include an error property.
-        if 'error' in operation:
-            errors = operation['error'].get('errors', [])
+        if "error" in operation:
+            errors = operation["error"].get("errors", [])
             for error in errors:
                 logging.error(
                     "Operation %s finished with error: %s, %s\n%s",
                     operation_id,
-                    error.get('kind'),
-                    error.get('code'),
-                    error.get('message'))
+                    error.get("kind"),
+                    error.get("code"),
+                    error.get("message"),
+                )
         else:
             logging.info("Operation [%s] succeeded.", operation_id)
             operation_success = True
@@ -121,14 +129,20 @@ def get_operation_with_retries(operation_id: str) -> Dict[str, Any]:
     while num_retries > 0:
         # We need to guard here for possible 404 HttpErrors if the operation hasn't started yet
         try:
-            get_operation = sqladmin_client().operations().get(
-                project=metadata.project_id(), operation=operation_id)
+            get_operation = (
+                sqladmin_client()
+                .operations()
+                .get(project=metadata.project_id(), operation=operation_id)
+            )
             return get_operation.execute()
         except googleapiclient.errors.HttpError as error:
             # If we get a 404 HttpError, wait a few seconds and then retry getting the operation instance.
             if error.resp.status == HTTPStatus.NOT_FOUND and num_retries > 0:
-                logging.debug("HttpError when requesting operation_id [%s]. Retrying request: %s",
-                              operation_id, num_retries)
+                logging.debug(
+                    "HttpError when requesting operation_id [%s]. Retrying request: %s",
+                    operation_id,
+                    num_retries,
+                )
                 time.sleep(SECONDS_BETWEEN_OPERATION_STATUS_CHECKS)
                 num_retries -= 1
             else:
@@ -156,12 +170,12 @@ def export_table(table_name: str, cloud_sql_to_bq_config: CloudSqlToBQConfig) ->
     export_context = create_export_context(schema_type, export_uri, export_query)
 
     project_id = metadata.project_id()
-    instance_id = \
-        SQLAlchemyEngineManager.get_stripped_cloudsql_instance_id(schema_type)
-    export_request = sqladmin_client().instances().export(
-        project=project_id,
-        instance=instance_id,
-        body=export_context)
+    instance_id = SQLAlchemyEngineManager.get_stripped_cloudsql_instance_id(schema_type)
+    export_request = (
+        sqladmin_client()
+        .instances()
+        .export(project=project_id, instance=instance_id, body=export_context)
+    )
 
     logging.info("GCS URI [%s] in project [%s]", export_uri, project_id)
     logging.info("Starting export: [%s]", str(export_request.to_json()))
@@ -174,10 +188,15 @@ def export_table(table_name: str, cloud_sql_to_bq_config: CloudSqlToBQConfig) ->
 
     # We need to block until the operation is done because
     # the Cloud SQL API only supports one operation at a time.
-    operation_id = response['name']
-    logging.info("Waiting for export operation [%s] to complete for table [%s] "
-                 "in database [%s] in project [%s]",
-                 operation_id, table_name, instance_id, project_id)
+    operation_id = response["name"]
+    logging.info(
+        "Waiting for export operation [%s] to complete for table [%s] "
+        "in database [%s] in project [%s]",
+        operation_id,
+        table_name,
+        instance_id,
+        project_id,
+    )
     operation_success = wait_until_operation_finished(operation_id)
 
     return operation_success

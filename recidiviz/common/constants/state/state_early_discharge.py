@@ -25,8 +25,12 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 @unique
 class StateEarlyDischargeDecision(EntityEnum, metaclass=EntityEnumMeta):
     REQUEST_DENIED = state_enum_strings.state_early_discharge_decision_request_denied
-    SENTENCE_TERMINATION_GRANTED = state_enum_strings.state_early_discharge_decision_sentence_termination_granted
-    UNSUPERVISED_PROBATION_GRANTED = state_enum_strings.state_early_discharge_decision_unsupervised_probation_granted
+    SENTENCE_TERMINATION_GRANTED = (
+        state_enum_strings.state_early_discharge_decision_sentence_termination_granted
+    )
+    UNSUPERVISED_PROBATION_GRANTED = (
+        state_enum_strings.state_early_discharge_decision_unsupervised_probation_granted
+    )
 
     @staticmethod
     def _get_default_map():
@@ -45,14 +49,14 @@ class StateEarlyDischargeDecisionStatus(EntityEnum, metaclass=EntityEnumMeta):
 
 
 _STATE_EARLY_DISCHARGE_DECISION_MAP = {
-    'REQUEST DENIED': StateEarlyDischargeDecision.REQUEST_DENIED,
-    'SENTENCE TERMINATION GRANTED': StateEarlyDischargeDecision.SENTENCE_TERMINATION_GRANTED,
-    'UNSUPERVISED PROBATION GRANTED': StateEarlyDischargeDecision.UNSUPERVISED_PROBATION_GRANTED,
+    "REQUEST DENIED": StateEarlyDischargeDecision.REQUEST_DENIED,
+    "SENTENCE TERMINATION GRANTED": StateEarlyDischargeDecision.SENTENCE_TERMINATION_GRANTED,
+    "UNSUPERVISED PROBATION GRANTED": StateEarlyDischargeDecision.UNSUPERVISED_PROBATION_GRANTED,
 }
 
 
 _STATE_EARLY_DISCHARGE_DECISION_STATUS_MAP = {
-    'PENDING': StateEarlyDischargeDecisionStatus.PENDING,
-    'DECIDED': StateEarlyDischargeDecisionStatus.DECIDED,
-    'INVALID': StateEarlyDischargeDecisionStatus.INVALID,
+    "PENDING": StateEarlyDischargeDecisionStatus.PENDING,
+    "DECIDED": StateEarlyDischargeDecisionStatus.DECIDED,
+    "INVALID": StateEarlyDischargeDecisionStatus.INVALID,
 }

@@ -24,89 +24,119 @@ from recidiviz import IngestInfo
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
-from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
-    BaseDirectIngestController
-from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
-    to_normalized_unprocessed_file_path, SPLIT_FILE_SUFFIX, to_normalized_unprocessed_file_path_from_normalized_path, \
-    DirectIngestGCSFileSystem
-from recidiviz.ingest.direct.controllers.direct_ingest_ingest_view_export_manager import \
-    DirectIngestIngestViewExportManager
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import DirectIngestRawFileImportManager
-from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import DirectIngestPreProcessedIngestViewCollector
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_job_prioritizer \
-    import GcsfsDirectIngestJobPrioritizer
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
-    GcsfsIngestArgs, filename_parts_from_path, \
-    gcsfs_direct_ingest_storage_directory_path_for_region, \
-    gcsfs_direct_ingest_directory_path_for_region, GcsfsDirectIngestFileType, GcsfsRawDataBQImportArgs, \
-    GcsfsIngestViewExportArgs, gcsfs_direct_ingest_temporary_output_directory_path
+from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
+    BaseDirectIngestController,
+)
+from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
+    to_normalized_unprocessed_file_path,
+    SPLIT_FILE_SUFFIX,
+    to_normalized_unprocessed_file_path_from_normalized_path,
+    DirectIngestGCSFileSystem,
+)
+from recidiviz.ingest.direct.controllers.direct_ingest_ingest_view_export_manager import (
+    DirectIngestIngestViewExportManager,
+)
+from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
+    DirectIngestRawFileImportManager,
+)
+from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import (
+    DirectIngestPreProcessedIngestViewCollector,
+)
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_job_prioritizer import (
+    GcsfsDirectIngestJobPrioritizer,
+)
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
+    GcsfsIngestArgs,
+    filename_parts_from_path,
+    gcsfs_direct_ingest_storage_directory_path_for_region,
+    gcsfs_direct_ingest_directory_path_for_region,
+    GcsfsDirectIngestFileType,
+    GcsfsRawDataBQImportArgs,
+    GcsfsIngestViewExportArgs,
+    gcsfs_direct_ingest_temporary_output_directory_path,
+)
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
-from recidiviz.cloud_storage.gcsfs_path import \
-    GcsfsFilePath, GcsfsDirectoryPath
-from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import \
-    PostgresDirectIngestFileMetadataManager
-from recidiviz.ingest.direct.direct_ingest_controller_utils import check_is_region_launched_in_env
-from recidiviz.persistence.entity.operations.entities import DirectIngestIngestFileMetadata
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
+from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import (
+    PostgresDirectIngestFileMetadataManager,
+)
+from recidiviz.ingest.direct.direct_ingest_controller_utils import (
+    check_is_region_launched_in_env,
+)
+from recidiviz.persistence.entity.operations.entities import (
+    DirectIngestIngestFileMetadata,
+)
 from recidiviz.utils import trace
 
 
 class GcsfsDirectIngestController(
-        BaseDirectIngestController[GcsfsIngestArgs, GcsfsFileContentsHandle]):
+    BaseDirectIngestController[GcsfsIngestArgs, GcsfsFileContentsHandle]
+):
     """Controller for parsing and persisting a file in the GCS filesystem."""
 
     _MAX_STORAGE_FILE_RENAME_TRIES = 10
     _DEFAULT_MAX_PROCESS_JOB_WAIT_TIME_SEC = 300
     _INGEST_FILE_SPLIT_LINE_LIMIT = 2500
 
-    def __init__(self,
-                 region_name: str,
-                 system_level: SystemLevel,
-                 ingest_directory_path: Optional[str] = None,
-                 storage_directory_path: Optional[str] = None,
-                 max_delay_sec_between_files: Optional[int] = None):
+    def __init__(
+        self,
+        region_name: str,
+        system_level: SystemLevel,
+        ingest_directory_path: Optional[str] = None,
+        storage_directory_path: Optional[str] = None,
+        max_delay_sec_between_files: Optional[int] = None,
+    ):
         super().__init__(region_name, system_level)
         self.fs = DirectIngestGCSFileSystem(GcsfsFactory.build())
         self.max_delay_sec_between_files = max_delay_sec_between_files
 
         if not ingest_directory_path:
-            ingest_directory_path = \
-                gcsfs_direct_ingest_directory_path_for_region(region_name,
-                                                              system_level)
-        self.ingest_directory_path = \
-            GcsfsDirectoryPath.from_absolute_path(ingest_directory_path)
+            ingest_directory_path = gcsfs_direct_ingest_directory_path_for_region(
+                region_name, system_level
+            )
+        self.ingest_directory_path = GcsfsDirectoryPath.from_absolute_path(
+            ingest_directory_path
+        )
 
         if not storage_directory_path:
-            storage_directory_path = \
+            storage_directory_path = (
                 gcsfs_direct_ingest_storage_directory_path_for_region(
-                    region_name, system_level)
+                    region_name, system_level
+                )
+            )
 
-        self.storage_directory_path = \
-            GcsfsDirectoryPath.from_absolute_path(storage_directory_path)
+        self.storage_directory_path = GcsfsDirectoryPath.from_absolute_path(
+            storage_directory_path
+        )
 
-        self.temp_output_directory_path = \
-            GcsfsDirectoryPath.from_absolute_path(gcsfs_direct_ingest_temporary_output_directory_path())
+        self.temp_output_directory_path = GcsfsDirectoryPath.from_absolute_path(
+            gcsfs_direct_ingest_temporary_output_directory_path()
+        )
 
-        ingest_job_file_type_filter = \
-            GcsfsDirectIngestFileType.INGEST_VIEW \
-            if self.region.is_raw_vs_ingest_file_name_detection_enabled() else None
-        self.file_prioritizer = \
-            GcsfsDirectIngestJobPrioritizer(
-                self.fs,
-                self.ingest_directory_path,
-                self.get_file_tag_rank_list(),
-                ingest_job_file_type_filter)
+        ingest_job_file_type_filter = (
+            GcsfsDirectIngestFileType.INGEST_VIEW
+            if self.region.is_raw_vs_ingest_file_name_detection_enabled()
+            else None
+        )
+        self.file_prioritizer = GcsfsDirectIngestJobPrioritizer(
+            self.fs,
+            self.ingest_directory_path,
+            self.get_file_tag_rank_list(),
+            ingest_job_file_type_filter,
+        )
 
         self.ingest_file_split_line_limit = self._INGEST_FILE_SPLIT_LINE_LIMIT
 
         self.file_metadata_manager = PostgresDirectIngestFileMetadataManager(
-            region_code=self.region.region_code)
+            region_code=self.region.region_code
+        )
 
         self.raw_file_import_manager = DirectIngestRawFileImportManager(
             region=self.region,
             fs=self.fs,
             ingest_directory_path=self.ingest_directory_path,
             temp_output_directory_path=self.temp_output_directory_path,
-            big_query_client=BigQueryClientImpl()
+            big_query_client=BigQueryClientImpl(),
         )
 
         self.ingest_view_export_manager = DirectIngestIngestViewExportManager(
@@ -115,7 +145,9 @@ class GcsfsDirectIngestController(
             ingest_directory_path=self.ingest_directory_path,
             file_metadata_manager=self.file_metadata_manager,
             big_query_client=BigQueryClientImpl(),
-            view_collector=DirectIngestPreProcessedIngestViewCollector(self.region, self.get_file_tag_rank_list()),
+            view_collector=DirectIngestPreProcessedIngestViewCollector(
+                self.region, self.get_file_tag_rank_list()
+            ),
             launched_file_tags=self.get_file_tag_rank_list(),
         )
 
@@ -129,26 +161,29 @@ class GcsfsDirectIngestController(
         May be called from any worker/queue.
         """
         if self.fs.is_processed_file(path):
-            logging.info("File [%s] is already processed, returning.",
-                         path.abs_path())
+            logging.info("File [%s] is already processed, returning.", path.abs_path())
             return
 
         if self.fs.is_normalized_file_path(path):
             parts = filename_parts_from_path(path)
 
-            if parts.is_file_split and \
-                    parts.file_split_size and \
-                    parts.file_split_size <= self.ingest_file_split_line_limit:
+            if (
+                parts.is_file_split
+                and parts.file_split_size
+                and parts.file_split_size <= self.ingest_file_split_line_limit
+            ):
                 self.kick_scheduler(just_finished_job=False)
-                logging.info("File [%s] is already normalized and split split "
-                             "with correct size, kicking scheduler.",
-                             path.abs_path())
+                logging.info(
+                    "File [%s] is already normalized and split split "
+                    "with correct size, kicking scheduler.",
+                    path.abs_path(),
+                )
                 return
 
         logging.info("Creating cloud task to schedule next job.")
         self.cloud_task_manager.create_direct_ingest_handle_new_files_task(
-            region=self.region,
-            can_start_ingest=start_ingest)
+            region=self.region, can_start_ingest=start_ingest
+        )
 
     def _register_all_new_paths_in_metadata(self, paths: List[GcsfsFilePath]) -> None:
         for path in paths:
@@ -166,44 +201,60 @@ class GcsfsDirectIngestController(
         """
         if not can_start_ingest and self.region.is_ingest_launched_in_env():
             raise ValueError(
-                'The can_start_ingest flag should only be used for regions where ingest is not yet launched in a '
-                'particular environment. If we want to be able to selectively pause ingest processing for a state, we '
-                'will first have to build a config that is respected by both the /ensure_all_file_paths_normalized '
-                'endpoint and any cloud functions that trigger ingest.')
+                "The can_start_ingest flag should only be used for regions where ingest is not yet launched in a "
+                "particular environment. If we want to be able to selectively pause ingest processing for a state, we "
+                "will first have to build a config that is respected by both the /ensure_all_file_paths_normalized "
+                "endpoint and any cloud functions that trigger ingest."
+            )
 
-        unnormalized_paths = self.fs.get_unnormalized_file_paths(self.ingest_directory_path)
+        unnormalized_paths = self.fs.get_unnormalized_file_paths(
+            self.ingest_directory_path
+        )
 
-        unnormalized_path_file_type = GcsfsDirectIngestFileType.RAW_DATA \
-            if self.region.is_raw_vs_ingest_file_name_detection_enabled() else GcsfsDirectIngestFileType.UNSPECIFIED
+        unnormalized_path_file_type = (
+            GcsfsDirectIngestFileType.RAW_DATA
+            if self.region.is_raw_vs_ingest_file_name_detection_enabled()
+            else GcsfsDirectIngestFileType.UNSPECIFIED
+        )
 
         for path in unnormalized_paths:
-            logging.info("File [%s] is not yet seen, normalizing.",
-                         path.abs_path())
-            self.fs.mv_path_to_normalized_path(path, file_type=unnormalized_path_file_type)
+            logging.info("File [%s] is not yet seen, normalizing.", path.abs_path())
+            self.fs.mv_path_to_normalized_path(
+                path, file_type=unnormalized_path_file_type
+            )
 
         if unnormalized_paths:
             logging.info(
                 "Normalized at least one path - returning, will handle "
-                "normalized files separately.")
+                "normalized files separately."
+            )
             # Normalizing file paths will cause the cloud function that calls
             # this function to be re-triggered.
             return
 
         if not can_start_ingest:
-            logging.warning("Ingest not configured to start post-file normalization - returning.")
+            logging.warning(
+                "Ingest not configured to start post-file normalization - returning."
+            )
             return
 
         check_is_region_launched_in_env(self.region)
 
         unprocessed_raw_paths = []
 
-        ingest_file_type_filter = GcsfsDirectIngestFileType.INGEST_VIEW \
-            if self.region.is_raw_vs_ingest_file_name_detection_enabled() else None
-        unprocessed_ingest_view_paths = self.fs.get_unprocessed_file_paths(self.ingest_directory_path,
-                                                                           file_type_filter=ingest_file_type_filter)
+        ingest_file_type_filter = (
+            GcsfsDirectIngestFileType.INGEST_VIEW
+            if self.region.is_raw_vs_ingest_file_name_detection_enabled()
+            else None
+        )
+        unprocessed_ingest_view_paths = self.fs.get_unprocessed_file_paths(
+            self.ingest_directory_path, file_type_filter=ingest_file_type_filter
+        )
         if self.region.is_raw_vs_ingest_file_name_detection_enabled():
             unprocessed_raw_paths = self.fs.get_unprocessed_file_paths(
-                self.ingest_directory_path, file_type_filter=GcsfsDirectIngestFileType.RAW_DATA)
+                self.ingest_directory_path,
+                file_type_filter=GcsfsDirectIngestFileType.RAW_DATA,
+            )
             self._register_all_new_paths_in_metadata(unprocessed_raw_paths)
 
             if self.region.are_ingest_view_exports_enabled_in_env():
@@ -217,14 +268,20 @@ class GcsfsDirectIngestController(
 
         if did_split:
             if self.region.are_ingest_view_exports_enabled_in_env():
-                post_split_unprocessed_ingest_view_paths = \
-                    self.fs.get_unprocessed_file_paths(self.ingest_directory_path,
-                                                       file_type_filter=GcsfsDirectIngestFileType.INGEST_VIEW)
-                self._register_all_new_paths_in_metadata(post_split_unprocessed_ingest_view_paths)
+                post_split_unprocessed_ingest_view_paths = (
+                    self.fs.get_unprocessed_file_paths(
+                        self.ingest_directory_path,
+                        file_type_filter=GcsfsDirectIngestFileType.INGEST_VIEW,
+                    )
+                )
+                self._register_all_new_paths_in_metadata(
+                    post_split_unprocessed_ingest_view_paths
+                )
 
             logging.info(
                 "Split at least one path - returning, will handle split "
-                "files separately.")
+                "files separately."
+            )
             # Writing new split files to storage will cause the cloud function
             # that calls this function to be re-triggered.
             return
@@ -238,25 +295,34 @@ class GcsfsDirectIngestController(
         """
         check_is_region_launched_in_env(self.region)
         if not self.region.are_raw_data_bq_imports_enabled_in_env():
-            raise ValueError(f'Raw data imports not enabled for region [{self.region.region_code}]')
+            raise ValueError(
+                f"Raw data imports not enabled for region [{self.region.region_code}]"
+            )
 
         if not self.fs.exists(data_import_args.raw_data_file_path):
             logging.warning(
                 "File path [%s] no longer exists - might have already been "
-                "processed or deleted", data_import_args.raw_data_file_path)
+                "processed or deleted",
+                data_import_args.raw_data_file_path,
+            )
             self.kick_scheduler(just_finished_job=True)
             return
 
-        file_metadata = self.file_metadata_manager.get_file_metadata(data_import_args.raw_data_file_path)
+        file_metadata = self.file_metadata_manager.get_file_metadata(
+            data_import_args.raw_data_file_path
+        )
 
         if file_metadata.processed_time:
-            logging.warning('File [%s] is already marked as processed. Skipping file processing.',
-                            data_import_args.raw_data_file_path.file_name)
+            logging.warning(
+                "File [%s] is already marked as processed. Skipping file processing.",
+                data_import_args.raw_data_file_path.file_name,
+            )
             self.kick_scheduler(just_finished_job=True)
             return
 
-        self.raw_file_import_manager.import_raw_file_to_big_query(data_import_args.raw_data_file_path,
-                                                                  file_metadata)
+        self.raw_file_import_manager.import_raw_file_to_big_query(
+            data_import_args.raw_data_file_path, file_metadata
+        )
 
         if not self.region.are_ingest_view_exports_enabled_in_env():
             # TODO(#3162) This is a stopgap measure for regions that have only partially launched. Delete once SQL
@@ -267,29 +333,45 @@ class GcsfsDirectIngestController(
             if parts.file_tag in ingest_file_tags:
                 self.fs.copy(
                     data_import_args.raw_data_file_path,
-                    GcsfsFilePath.from_absolute_path(to_normalized_unprocessed_file_path_from_normalized_path(
-                        data_import_args.raw_data_file_path.abs_path(),
-                        file_type_override=GcsfsDirectIngestFileType.INGEST_VIEW
-                    ))
+                    GcsfsFilePath.from_absolute_path(
+                        to_normalized_unprocessed_file_path_from_normalized_path(
+                            data_import_args.raw_data_file_path.abs_path(),
+                            file_type_override=GcsfsDirectIngestFileType.INGEST_VIEW,
+                        )
+                    ),
                 )
 
-        processed_path = self.fs.mv_path_to_processed_path(data_import_args.raw_data_file_path)
-        self.file_metadata_manager.mark_file_as_processed(path=data_import_args.raw_data_file_path)
+        processed_path = self.fs.mv_path_to_processed_path(
+            data_import_args.raw_data_file_path
+        )
+        self.file_metadata_manager.mark_file_as_processed(
+            path=data_import_args.raw_data_file_path
+        )
 
         self.fs.mv_path_to_storage(processed_path, self.storage_directory_path)
         self.kick_scheduler(just_finished_job=True)
 
-    def do_ingest_view_export(self, ingest_view_export_args: GcsfsIngestViewExportArgs) -> None:
+    def do_ingest_view_export(
+        self, ingest_view_export_args: GcsfsIngestViewExportArgs
+    ) -> None:
         check_is_region_launched_in_env(self.region)
         if not self.region.are_ingest_view_exports_enabled_in_env():
-            raise ValueError(f'Ingest view exports not enabled for region [{self.region.region_code}]. Passed args: '
-                             f'{ingest_view_export_args}')
+            raise ValueError(
+                f"Ingest view exports not enabled for region [{self.region.region_code}]. Passed args: "
+                f"{ingest_view_export_args}"
+            )
 
-        did_export = self.ingest_view_export_manager.export_view_for_args(ingest_view_export_args)
-        if not did_export or not self.file_metadata_manager.get_ingest_view_metadata_pending_export():
+        did_export = self.ingest_view_export_manager.export_view_for_args(
+            ingest_view_export_args
+        )
+        if (
+            not did_export
+            or not self.file_metadata_manager.get_ingest_view_metadata_pending_export()
+        ):
             logging.info("Creating cloud task to schedule next job.")
-            self.cloud_task_manager.create_direct_ingest_handle_new_files_task(region=self.region,
-                                                                               can_start_ingest=True)
+            self.cloud_task_manager.create_direct_ingest_handle_new_files_task(
+                region=self.region, can_start_ingest=True
+            )
 
     # ============== #
     # JOB SCHEDULING #
@@ -318,18 +400,26 @@ class GcsfsDirectIngestController(
         if not self.region.are_raw_data_bq_imports_enabled_in_env():
             return False
 
-        queue_info = self.cloud_task_manager.get_bq_import_export_queue_info(self.region)
+        queue_info = self.cloud_task_manager.get_bq_import_export_queue_info(
+            self.region
+        )
 
         did_schedule = False
-        tasks_to_schedule = [GcsfsRawDataBQImportArgs(path)
-                             for path in self.raw_file_import_manager.get_unprocessed_raw_files_to_import()]
+        tasks_to_schedule = [
+            GcsfsRawDataBQImportArgs(path)
+            for path in self.raw_file_import_manager.get_unprocessed_raw_files_to_import()
+        ]
         for task_args in tasks_to_schedule:
             # If the file path has not actually been discovered by the metadata manager yet, it likely was just added
             # and a subsequent call to handle_files will register it and trigger another call to this function so we can
             # schedule the appropriate job.
-            discovered = self.file_metadata_manager.has_file_been_discovered(task_args.raw_data_file_path)
+            discovered = self.file_metadata_manager.has_file_been_discovered(
+                task_args.raw_data_file_path
+            )
             if discovered and not queue_info.has_task_already_scheduled(task_args):
-                self.cloud_task_manager.create_direct_ingest_raw_data_import_task(self.region, task_args)
+                self.cloud_task_manager.create_direct_ingest_raw_data_import_task(
+                    self.region, task_args
+                )
                 did_schedule = True
 
         return queue_info.has_raw_data_import_jobs_queued() or did_schedule
@@ -342,37 +432,50 @@ class GcsfsDirectIngestController(
         if not self.region.are_ingest_view_exports_enabled_in_env():
             return False
 
-        queue_info = self.cloud_task_manager.get_bq_import_export_queue_info(self.region)
+        queue_info = self.cloud_task_manager.get_bq_import_export_queue_info(
+            self.region
+        )
         if queue_info.has_ingest_view_export_jobs_queued():
             # Since we schedule all export jobs at once, after all raw files have been processed, we wait for all of the
             # export jobs to be done before checking if we need to schedule more.
             return True
 
         did_schedule = False
-        tasks_to_schedule = self.ingest_view_export_manager.get_ingest_view_export_task_args()
+        tasks_to_schedule = (
+            self.ingest_view_export_manager.get_ingest_view_export_task_args()
+        )
 
         rank_list = self.get_file_tag_rank_list()
-        ingest_view_name_rank = {ingest_view_name: i for i, ingest_view_name in enumerate(rank_list)}
+        ingest_view_name_rank = {
+            ingest_view_name: i for i, ingest_view_name in enumerate(rank_list)
+        }
 
         # Filter out views that aren't in ingest view tags.
         filtered_tasks_to_schedule = []
         for args in tasks_to_schedule:
             if args.ingest_view_name not in ingest_view_name_rank:
                 logging.warning(
-                    'Skipping ingest view task export for [%s] - not in controller ingest tags.',
-                    args.ingest_view_name)
+                    "Skipping ingest view task export for [%s] - not in controller ingest tags.",
+                    args.ingest_view_name,
+                )
                 continue
             filtered_tasks_to_schedule.append(args)
 
         tasks_to_schedule = filtered_tasks_to_schedule
 
         # Sort by tag order and export datetime
-        tasks_to_schedule.sort(key=lambda args: (ingest_view_name_rank[args.ingest_view_name],
-                                                 args.upper_bound_datetime_to_export))
+        tasks_to_schedule.sort(
+            key=lambda args: (
+                ingest_view_name_rank[args.ingest_view_name],
+                args.upper_bound_datetime_to_export,
+            )
+        )
 
         for task_args in tasks_to_schedule:
             if not queue_info.has_task_already_scheduled(task_args):
-                self.cloud_task_manager.create_direct_ingest_ingest_view_export_task(self.region, task_args)
+                self.cloud_task_manager.create_direct_ingest_ingest_view_export_task(
+                    self.region, task_args
+                )
                 did_schedule = True
 
         return did_schedule
@@ -398,8 +501,9 @@ class GcsfsDirectIngestController(
             # subsequent call to handle_files will register it and trigger another call to this function so we can
             # schedule the appropriate job.
             logging.info(
-                'Found args [%s] for a file that has not been discovered by the metadata manager yet - not scheduling.',
-                args)
+                "Found args [%s] for a file that has not been discovered by the metadata manager yet - not scheduling.",
+                args,
+            )
             return None
 
         return args
@@ -410,22 +514,25 @@ class GcsfsDirectIngestController(
             return 0
 
         now = datetime.datetime.utcnow()
-        file_upload_time: datetime.datetime = \
-            filename_parts_from_path(args.file_path).utc_upload_datetime
+        file_upload_time: datetime.datetime = filename_parts_from_path(
+            args.file_path
+        ).utc_upload_datetime
 
-        max_delay_sec = self.max_delay_sec_between_files \
-            if self.max_delay_sec_between_files is not None \
+        max_delay_sec = (
+            self.max_delay_sec_between_files
+            if self.max_delay_sec_between_files is not None
             else self._DEFAULT_MAX_PROCESS_JOB_WAIT_TIME_SEC
-        max_wait_from_file_upload_time = \
-            file_upload_time + datetime.timedelta(seconds=max_delay_sec)
+        )
+        max_wait_from_file_upload_time = file_upload_time + datetime.timedelta(
+            seconds=max_delay_sec
+        )
 
         if max_wait_from_file_upload_time <= now:
             wait_time = 0
         else:
             wait_time = (max_wait_from_file_upload_time - now).seconds
 
-        logging.info("Waiting [%s] sec for [%s]",
-                     wait_time, self._job_tag(args))
+        logging.info("Waiting [%s] sec for [%s]", wait_time, self._job_tag(args))
         return wait_time
 
     def _on_job_scheduled(self, ingest_args: GcsfsIngestArgs) -> None:
@@ -436,74 +543,90 @@ class GcsfsDirectIngestController(
     # =================== #
 
     def _job_tag(self, args: GcsfsIngestArgs) -> str:
-        return f'{self.region.region_code}/{args.file_path.file_name}:' \
-            f'{args.ingest_time}'
+        return (
+            f"{self.region.region_code}/{args.file_path.file_name}:"
+            f"{args.ingest_time}"
+        )
 
     def _get_contents_handle(
-            self, args: GcsfsIngestArgs) -> Optional[GcsfsFileContentsHandle]:
+        self, args: GcsfsIngestArgs
+    ) -> Optional[GcsfsFileContentsHandle]:
         return self._get_contents_handle_from_path(args.file_path)
 
     def _get_contents_handle_from_path(
-            self, path: GcsfsFilePath) -> Optional[GcsfsFileContentsHandle]:
+        self, path: GcsfsFilePath
+    ) -> Optional[GcsfsFileContentsHandle]:
         return self.fs.download_to_temp_file(path)
 
     @abc.abstractmethod
-    def _are_contents_empty(self,
-                            args: GcsfsIngestArgs,
-                            contents_handle: GcsfsFileContentsHandle) -> bool:
+    def _are_contents_empty(
+        self, args: GcsfsIngestArgs, contents_handle: GcsfsFileContentsHandle
+    ) -> bool:
         pass
 
     def _can_proceed_with_ingest_for_contents(
-            self,
-            args: GcsfsIngestArgs,
-            contents_handle: GcsfsFileContentsHandle) -> bool:
+        self, args: GcsfsIngestArgs, contents_handle: GcsfsFileContentsHandle
+    ) -> bool:
         parts = filename_parts_from_path(args.file_path)
-        return self._are_contents_empty(args, contents_handle) or \
-            not self._must_split_contents(parts.file_type, args.file_path)
+        return self._are_contents_empty(
+            args, contents_handle
+        ) or not self._must_split_contents(parts.file_type, args.file_path)
 
-    def _must_split_contents(self,
-                             file_type: GcsfsDirectIngestFileType,
-                             path: GcsfsFilePath) -> bool:
-        if self.region.is_raw_vs_ingest_file_name_detection_enabled() and \
-                file_type == GcsfsDirectIngestFileType.RAW_DATA:
+    def _must_split_contents(
+        self, file_type: GcsfsDirectIngestFileType, path: GcsfsFilePath
+    ) -> bool:
+        if (
+            self.region.is_raw_vs_ingest_file_name_detection_enabled()
+            and file_type == GcsfsDirectIngestFileType.RAW_DATA
+        ):
             return False
 
-        return not self._file_meets_file_line_limit(self.ingest_file_split_line_limit, path)
+        return not self._file_meets_file_line_limit(
+            self.ingest_file_split_line_limit, path
+        )
 
     @abc.abstractmethod
-    def _file_meets_file_line_limit(
-            self,
-            line_limit: int,
-            path: GcsfsFilePath) -> bool:
+    def _file_meets_file_line_limit(self, line_limit: int, path: GcsfsFilePath) -> bool:
         """Subclasses should implement to determine whether the file meets the
         expected line limit"""
 
     @abc.abstractmethod
-    def _parse(self,
-               args: GcsfsIngestArgs,
-               contents_handle: GcsfsFileContentsHandle) -> IngestInfo:
+    def _parse(
+        self, args: GcsfsIngestArgs, contents_handle: GcsfsFileContentsHandle
+    ) -> IngestInfo:
         pass
 
     def _should_split_file(self, path: GcsfsFilePath) -> bool:
         """Returns a handle to the contents of this path if this file should be split, None otherwise."""
         parts = filename_parts_from_path(path)
 
-        if self.region.is_raw_vs_ingest_file_name_detection_enabled() and \
-                parts.file_type != GcsfsDirectIngestFileType.INGEST_VIEW:
-            raise ValueError(f'Should not be attempting to split files other than ingest view files, found path with '
-                             f'file type: {parts.file_type}')
+        if (
+            self.region.is_raw_vs_ingest_file_name_detection_enabled()
+            and parts.file_type != GcsfsDirectIngestFileType.INGEST_VIEW
+        ):
+            raise ValueError(
+                f"Should not be attempting to split files other than ingest view files, found path with "
+                f"file type: {parts.file_type}"
+            )
 
         if parts.file_tag not in self.get_file_tag_rank_list():
-            logging.info("File tag [%s] for path [%s] not in rank list - not splitting.",
-                         parts.file_tag,
-                         path.abs_path())
+            logging.info(
+                "File tag [%s] for path [%s] not in rank list - not splitting.",
+                parts.file_tag,
+                path.abs_path(),
+            )
             return False
 
-        if parts.is_file_split and \
-                parts.file_split_size and \
-                parts.file_split_size <= self.ingest_file_split_line_limit:
-            logging.info("File [%s] already split with size [%s].",
-                         path.abs_path(), parts.file_split_size)
+        if (
+            parts.is_file_split
+            and parts.file_split_size
+            and parts.file_split_size <= self.ingest_file_split_line_limit
+        ):
+            logging.info(
+                "File [%s] already split with size [%s].",
+                path.abs_path(),
+                parts.file_split_size,
+            )
             return False
 
         return self._must_split_contents(parts.file_type, path)
@@ -533,15 +656,21 @@ class GcsfsDirectIngestController(
         for i, split_contents_path in enumerate(split_contents_paths):
             upload_path = self._create_split_file_path(path, output_dir, split_num=i)
 
-            logging.info("Copying split [%s] to direct ingest directory at path [%s].", i, upload_path.abs_path())
+            logging.info(
+                "Copying split [%s] to direct ingest directory at path [%s].",
+                i,
+                upload_path.abs_path(),
+            )
 
             upload_paths.append(upload_path)
             try:
                 self.fs.mv(split_contents_path, upload_path)
             except Exception as e:
                 logging.error(
-                    'Threw error while copying split files from temp bucket - attempting to clean up before rethrowing.'
-                    ' [%s]', e)
+                    "Threw error while copying split files from temp bucket - attempting to clean up before rethrowing."
+                    " [%s]",
+                    e,
+                )
                 for p in upload_paths:
                     self.fs.delete(p)
                 raise e
@@ -550,44 +679,62 @@ class GcsfsDirectIngestController(
         # the metadata manager in an inconsistent state.
         if self.region.are_ingest_view_exports_enabled_in_env():
             if not isinstance(original_metadata, DirectIngestIngestFileMetadata):
-                raise ValueError('Attempting to split a non-ingest view type file')
+                raise ValueError("Attempting to split a non-ingest view type file")
 
-            logging.info('Registering [%s] split files with the metadata manager.', len(upload_paths))
+            logging.info(
+                "Registering [%s] split files with the metadata manager.",
+                len(upload_paths),
+            )
 
             for upload_path in upload_paths:
-                ingest_file_metadata = self.file_metadata_manager.register_ingest_file_split(original_metadata,
-                                                                                             upload_path)
-                self.file_metadata_manager.mark_ingest_view_exported(ingest_file_metadata)
+                ingest_file_metadata = (
+                    self.file_metadata_manager.register_ingest_file_split(
+                        original_metadata, upload_path
+                    )
+                )
+                self.file_metadata_manager.mark_ingest_view_exported(
+                    ingest_file_metadata
+                )
 
             self.file_metadata_manager.mark_file_as_processed(path)
 
-        logging.info("Done splitting file [%s] into [%s] paths, moving it to storage.",
-                     path.abs_path(), len(split_contents_paths))
+        logging.info(
+            "Done splitting file [%s] into [%s] paths, moving it to storage.",
+            path.abs_path(),
+            len(split_contents_paths),
+        )
 
         self.fs.mv_path_to_storage(path, self.storage_directory_path)
 
         return True
 
-    def _create_split_file_path(self,
-                                original_file_path: GcsfsFilePath,
-                                output_dir: GcsfsDirectoryPath,
-                                split_num: int) -> GcsfsFilePath:
+    def _create_split_file_path(
+        self,
+        original_file_path: GcsfsFilePath,
+        output_dir: GcsfsDirectoryPath,
+        split_num: int,
+    ) -> GcsfsFilePath:
         parts = filename_parts_from_path(original_file_path)
 
         rank_str = str(split_num + 1).zfill(5)
         updated_file_name = (
-            f'{parts.stripped_file_name}_{rank_str}'
-            f'_{SPLIT_FILE_SUFFIX}_size{self.ingest_file_split_line_limit}'
-            f'.{parts.extension}')
+            f"{parts.stripped_file_name}_{rank_str}"
+            f"_{SPLIT_FILE_SUFFIX}_size{self.ingest_file_split_line_limit}"
+            f".{parts.extension}"
+        )
 
-        file_type = GcsfsDirectIngestFileType.INGEST_VIEW \
-            if self.region.is_raw_vs_ingest_file_name_detection_enabled() else GcsfsDirectIngestFileType.UNSPECIFIED
+        file_type = (
+            GcsfsDirectIngestFileType.INGEST_VIEW
+            if self.region.is_raw_vs_ingest_file_name_detection_enabled()
+            else GcsfsDirectIngestFileType.UNSPECIFIED
+        )
 
         return GcsfsFilePath.from_directory_and_file_name(
             output_dir,
-            to_normalized_unprocessed_file_path(updated_file_name,
-                                                file_type=file_type,
-                                                dt=parts.utc_upload_datetime))
+            to_normalized_unprocessed_file_path(
+                updated_file_name, file_type=file_type, dt=parts.utc_upload_datetime
+            ),
+        )
 
     @abc.abstractmethod
     def _split_file(self, path: GcsfsFilePath) -> List[GcsfsFilePath]:
@@ -602,59 +749,71 @@ class GcsfsDirectIngestController(
 
         parts = filename_parts_from_path(args.file_path)
         self._move_processed_files_to_storage_as_necessary(
-            last_processed_date_str=parts.date_str)
+            last_processed_date_str=parts.date_str
+        )
 
     def _is_last_job_for_day(self, args: GcsfsIngestArgs) -> bool:
         """Returns True if the file handled in |args| is the last file for that
         upload date."""
         parts = filename_parts_from_path(args.file_path)
         upload_date, date_str = parts.utc_upload_datetime, parts.date_str
-        more_jobs_expected = \
-            self.file_prioritizer.are_more_jobs_expected_for_day(date_str)
+        more_jobs_expected = self.file_prioritizer.are_more_jobs_expected_for_day(
+            date_str
+        )
         if more_jobs_expected:
             return False
         next_job_args = self.file_prioritizer.get_next_job_args(date_str)
         if next_job_args:
             next_job_date = filename_parts_from_path(
-                next_job_args.file_path).utc_upload_datetime
+                next_job_args.file_path
+            ).utc_upload_datetime
             return next_job_date > upload_date
         return True
 
     def _move_processed_files_to_storage_as_necessary(
-            self, last_processed_date_str: str) -> None:
+        self, last_processed_date_str: str
+    ) -> None:
+        """Moves files that have already been ingested/processed, up to and including the given date, into storage,
+        if there is nothing more left to ingest/process, i.e. we are not expecting more files."""
         next_args = self.file_prioritizer.get_next_job_args()
 
         should_move_last_processed_date = False
         if not next_args:
-            are_more_jobs_expected = \
+            are_more_jobs_expected = (
                 self.file_prioritizer.are_more_jobs_expected_for_day(
-                    last_processed_date_str)
+                    last_processed_date_str
+                )
+            )
             if not are_more_jobs_expected:
                 should_move_last_processed_date = True
         else:
-            next_date_str = \
-                filename_parts_from_path(next_args.file_path).date_str
+            next_date_str = filename_parts_from_path(next_args.file_path).date_str
             if next_date_str < last_processed_date_str:
-                logging.info("Found a file [%s] from a date previous to our "
-                             "last processed date - not moving anything to "
-                             "storage.")
+                logging.info(
+                    "Found a file [%s] from a date previous to our "
+                    "last processed date - not moving anything to "
+                    "storage."
+                )
                 return
 
             # If there are still more to process on this day, do not move files
             # from this day.
-            should_move_last_processed_date = \
-                next_date_str != last_processed_date_str
+            should_move_last_processed_date = next_date_str != last_processed_date_str
 
         # Note: at this point, we expect RAW file type files to already have been moved once they were imported to BQ.
-        file_type_to_move = GcsfsDirectIngestFileType.INGEST_VIEW \
-            if self.region.is_raw_vs_ingest_file_name_detection_enabled() else None
+        file_type_to_move = (
+            GcsfsDirectIngestFileType.INGEST_VIEW
+            if self.region.is_raw_vs_ingest_file_name_detection_enabled()
+            else None
+        )
 
         self.fs.mv_processed_paths_before_date_to_storage(
             self.ingest_directory_path,
             self.storage_directory_path,
             file_type_filter=file_type_to_move,
             date_str_bound=last_processed_date_str,
-            include_bound=should_move_last_processed_date)
+            include_bound=should_move_last_processed_date,
+        )
 
     @staticmethod
     def file_tag(file_path: GcsfsFilePath) -> str:

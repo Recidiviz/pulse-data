@@ -20,94 +20,117 @@ from datetime import date
 
 import pytest
 
-from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_type_identification import \
-    us_nd_get_post_incarceration_supervision_type
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_type_identification import (
+    us_nd_get_post_incarceration_supervision_type,
+)
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
-from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodStatus, \
-    StateIncarcerationPeriodAdmissionReason, StateIncarcerationPeriodReleaseReason
-from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodStatus,
+    StateIncarcerationPeriodAdmissionReason,
+    StateIncarcerationPeriodReleaseReason,
+)
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodSupervisionType,
+)
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
 class TestUsNdSupervisionTypeIdentification(unittest.TestCase):
     """Tests the us_nd_get_post_incarceration_supervision_type function."""
+
     def test_us_nd_get_post_incarceration_supervision_type_parole(self):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
-            external_id='2',
+            external_id="2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='US_ND',
-            facility='PRISON',
+            state_code="US_ND",
+            facility="PRISON",
             admission_date=date(2008, 12, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
-            admission_reason_raw_text='Revocation',
+            admission_reason_raw_text="Revocation",
             release_date=date(2008, 12, 21),
-            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE)
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+        )
 
-        parole_raw_text_values = ['RPAR', 'PARL', 'PV']
+        parole_raw_text_values = ["RPAR", "PARL", "PV"]
 
         for value in parole_raw_text_values:
             incarceration_period.release_reason_raw_text = value
-            supervision_type_at_release = us_nd_get_post_incarceration_supervision_type(incarceration_period)
+            supervision_type_at_release = us_nd_get_post_incarceration_supervision_type(
+                incarceration_period
+            )
 
-            self.assertEqual(StateSupervisionPeriodSupervisionType.PAROLE, supervision_type_at_release)
+            self.assertEqual(
+                StateSupervisionPeriodSupervisionType.PAROLE,
+                supervision_type_at_release,
+            )
 
     def test_us_nd_get_post_incarceration_supervision_type_probation(self):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
-            external_id='2',
+            external_id="2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='US_ND',
-            facility='PRISON',
+            state_code="US_ND",
+            facility="PRISON",
             admission_date=date(2008, 12, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
-            admission_reason_raw_text='Revocation',
+            admission_reason_raw_text="Revocation",
             release_date=date(2008, 12, 21),
-            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE)
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+        )
 
-        parole_raw_text_values = ['RPRB', 'NPROB', 'NPRB', 'PRB']
+        parole_raw_text_values = ["RPRB", "NPROB", "NPRB", "PRB"]
 
         for value in parole_raw_text_values:
             incarceration_period.release_reason_raw_text = value
-            supervision_type_at_release = us_nd_get_post_incarceration_supervision_type(incarceration_period)
+            supervision_type_at_release = us_nd_get_post_incarceration_supervision_type(
+                incarceration_period
+            )
 
-            self.assertEqual(StateSupervisionPeriodSupervisionType.PROBATION, supervision_type_at_release)
+            self.assertEqual(
+                StateSupervisionPeriodSupervisionType.PROBATION,
+                supervision_type_at_release,
+            )
 
     def test_us_nd_get_post_incarceration_supervision_type_no_supervision(self):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
-            external_id='2',
+            external_id="2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='US_ND',
-            facility='PRISON',
+            state_code="US_ND",
+            facility="PRISON",
             admission_date=date(2008, 12, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
-            admission_reason_raw_text='Revocation',
+            admission_reason_raw_text="Revocation",
             release_date=date(2008, 12, 21),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-            release_reason_raw_text='X')
+            release_reason_raw_text="X",
+        )
 
-        supervision_type_at_release = us_nd_get_post_incarceration_supervision_type(incarceration_period)
+        supervision_type_at_release = us_nd_get_post_incarceration_supervision_type(
+            incarceration_period
+        )
 
         self.assertIsNone(supervision_type_at_release)
 
     def test_us_nd_get_post_incarceration_supervision_type_unexpected_raw_text(self):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
-            external_id='2',
+            external_id="2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='US_ND',
-            facility='PRISON',
+            state_code="US_ND",
+            facility="PRISON",
             admission_date=date(2008, 12, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
-            admission_reason_raw_text='Revocation',
+            admission_reason_raw_text="Revocation",
             release_date=date(2008, 12, 21),
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-            release_reason_raw_text='NOT A VALID RAW TEXT VALUE')
+            release_reason_raw_text="NOT A VALID RAW TEXT VALUE",
+        )
 
         with pytest.raises(ValueError):
             _ = us_nd_get_post_incarceration_supervision_type(incarceration_period)

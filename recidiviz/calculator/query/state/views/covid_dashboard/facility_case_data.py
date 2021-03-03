@@ -15,18 +15,19 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Daily case counts for each unique facility ID."""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-FACILITY_CASE_DATA_VIEW_NAME = 'facility_case_data'
+FACILITY_CASE_DATA_VIEW_NAME = "facility_case_data"
 
-FACILITY_CASE_DATA_VIEW_DESCRIPTION = """Daily case counts for each unique facility ID."""
+FACILITY_CASE_DATA_VIEW_DESCRIPTION = (
+    """Daily case counts for each unique facility ID."""
+)
 
-FACILITY_CASE_DATA_VIEW_QUERY_TEMPLATE = \
-    """
+FACILITY_CASE_DATA_VIEW_QUERY_TEMPLATE = """
     /*{description}*/
     WITH cases AS (
     SELECT
@@ -56,10 +57,10 @@ FACILITY_CASE_DATA_VIEW_BUILDER = MetricBigQueryViewBuilder(
     view_id=FACILITY_CASE_DATA_VIEW_NAME,
     view_query_template=FACILITY_CASE_DATA_VIEW_QUERY_TEMPLATE,
     description=FACILITY_CASE_DATA_VIEW_DESCRIPTION,
-    dimensions=['facility_id', 'date'],
-    covid_dashboard_reference_dataset=dataset_config.COVID_DASHBOARD_REFERENCE_DATASET
+    dimensions=["facility_id", "date"],
+    covid_dashboard_reference_dataset=dataset_config.COVID_DASHBOARD_REFERENCE_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         FACILITY_CASE_DATA_VIEW_BUILDER.build_and_print()

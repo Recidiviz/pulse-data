@@ -287,14 +287,9 @@ inbound pull request.
 
 #### Autoformatting
 
-`autopep8` can be used to autoformat files that you change to help automatically meet some of the standards defined by `pylint`. It can either be run manually with `autopep8 --(diff|inplace) files...` or as part of your editor:
+We use `black` to ensure consistent formatting across the code base. There is a pre-commit hook that will format all of your files automatically. It is defined in `githooks/pre-commit` and is installed by `./initial_pipenv_setup_mac.sh`.
 
-- Vim: add `au FileType python setlocal formatprg=autopep8\ -` to your vimrc; reformat using `gq` and related commands
-- VSCode: uses `autopep8` by default for formatting
-
-Some default configuration for `autopep8` exists in the `[pycodestyle]` section of `setup.cfg`.
-
-**NOTE:** We currently use `autopep8` because it introduces the least change to the code base. We may consider moving to a more opinionated formatter (e.g. Black) in the future but would require significant modification to existing code.
+You can also set up your editor to run `black` on save, see [the black docs](https://black.readthedocs.io/en/stable/editor_integration.html). In VSCode just add `"editor.formatOnSave": true, "python.formatting.provider": "black",` to `.vscode/settings.json`. How easy was that!
 
 #### Static type checking
 

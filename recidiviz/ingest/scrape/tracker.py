@@ -45,18 +45,23 @@ def iterate_docket_item(scrape_key, return_immediately=False):
     """
 
     docket_item = docket.get_new_docket_item(
-        scrape_key, return_immediately=return_immediately)
+        scrape_key, return_immediately=return_immediately
+    )
 
     if not docket_item:
         logging.info("No items in docket for [%s]. Ending scrape.", scrape_key)
         return None
 
     item_content = json.loads(docket_item.message.data.decode())
-    item_added = sessions.add_docket_item_to_current_session(docket_item.ack_id,
-                                                             scrape_key)
+    item_added = sessions.add_docket_item_to_current_session(
+        docket_item.ack_id, scrape_key
+    )
     if not item_added:
-        logging.error("Failed to update session for scraper [%s] "
-                      "with docket item [%s].", scrape_key, str(item_content))
+        logging.error(
+            "Failed to update session for scraper [%s] " "with docket item [%s].",
+            scrape_key,
+            str(item_content),
+        )
         return None
 
     return item_content

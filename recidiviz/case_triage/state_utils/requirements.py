@@ -20,7 +20,7 @@ from recidiviz.case_triage.state_utils.types import PolicyRequirements
 from recidiviz.case_triage.state_utils.us_id import us_id_policy_requirements
 
 
-CASE_TRIAGE_STATES = ['US_ID']
+CASE_TRIAGE_STATES = ["US_ID"]
 
 
 def policy_requirements_for_state(state: str) -> PolicyRequirements:

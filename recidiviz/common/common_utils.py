@@ -30,7 +30,7 @@ from recidiviz.utils import environment
 
 GENERATED_ID_SUFFIX = "_GENERATE"
 RETRY_SLEEP = 30
-DELIMITER = ':'
+DELIMITER = ":"
 
 
 def create_generated_id() -> str:
@@ -56,12 +56,11 @@ def get_external_id(*, synthetic_id: str) -> str:
 
 
 def get_trace_id_from_flask() -> Optional[str]:
-    """Get trace_id from flask request headers.
-    """
+    """Get trace_id from flask request headers."""
     if flask is None or not flask.request:
         return None
 
-    header = flask.request.headers.get('X_CLOUD_TRACE_CONTEXT')
+    header = flask.request.headers.get("X_CLOUD_TRACE_CONTEXT")
 
     if header is None:
         return None
@@ -71,14 +70,11 @@ def get_trace_id_from_flask() -> Optional[str]:
     return trace_id
 
 
-ReturnType = TypeVar('ReturnType')
+ReturnType = TypeVar("ReturnType")
 
 
 def retry_grpc(
-    num_retries: int,
-    fn: Callable[..., ReturnType],
-    *args: Any,
-    **kwargs: Any
+    num_retries: int, fn: Callable[..., ReturnType], *args: Any, **kwargs: Any
 ) -> ReturnType:
     """Retries a function call some number of times"""
     time_to_sleep = random.uniform(5, RETRY_SLEEP)
@@ -88,16 +84,17 @@ def retry_grpc(
         except exceptions.InternalServerError as e:
             if i == num_retries:
                 raise
-            if 'GOAWAY' in str(e) or 'Deadline Exceeded' in str(e):
-                logging.exception('Received exception: ')
+            if "GOAWAY" in str(e) or "Deadline Exceeded" in str(e):
+                logging.exception("Received exception: ")
                 if environment.in_gcp():
-                    logging.warning('Sleeping %.2f seconds and retrying',
-                                    time_to_sleep)
+                    logging.warning("Sleeping %.2f seconds and retrying", time_to_sleep)
                     time.sleep(time_to_sleep)
                     continue
             else:
                 raise
-    raise exceptions.ServiceUnavailable(f"Function unsuccessful {num_retries + 1} times")
+    raise exceptions.ServiceUnavailable(
+        f"Function unsuccessful {num_retries + 1} times"
+    )
 
 
 def check_all_objs_have_type(objs: Iterable[Any], expected_type: Type) -> None:
@@ -106,13 +103,19 @@ def check_all_objs_have_type(objs: Iterable[Any], expected_type: Type) -> None:
 
 
 def date_intersects_with_span(
-        *, point_in_time: datetime.date, start_date: datetime.date, end_date: datetime.date) -> bool:
+    *, point_in_time: datetime.date, start_date: datetime.date, end_date: datetime.date
+) -> bool:
     """Returns true if the provided |point_in_time| is within [start_date, end_date)"""
     return start_date <= point_in_time < end_date
 
 
 def date_spans_overlap_exclusive(
-        *, start_1: datetime.date, end_1: datetime.date, start_2: datetime.date, end_2: datetime.date) -> bool:
+    *,
+    start_1: datetime.date,
+    end_1: datetime.date,
+    start_2: datetime.date,
+    end_2: datetime.date,
+) -> bool:
     """Returns true if the provided spans overlap. Spans which share a single date are not considered overlapping.
 
     The only exception to this is if one of the provided spans actually has the same start/end date.
@@ -120,13 +123,22 @@ def date_spans_overlap_exclusive(
     other span.
     """
     if start_1 == end_1:
-        return date_intersects_with_span(point_in_time=start_1, start_date=start_2, end_date=end_2)
+        return date_intersects_with_span(
+            point_in_time=start_1, start_date=start_2, end_date=end_2
+        )
     if start_2 == end_2:
-        return date_intersects_with_span(point_in_time=start_2, start_date=start_1, end_date=end_1)
+        return date_intersects_with_span(
+            point_in_time=start_2, start_date=start_1, end_date=end_1
+        )
     return start_1 < end_2 and end_1 > start_2
 
 
 def date_spans_overlap_inclusive(
-        *, start_1: datetime.date, end_1: datetime.date, start_2: datetime.date, end_2: datetime.date) -> bool:
+    *,
+    start_1: datetime.date,
+    end_1: datetime.date,
+    start_2: datetime.date,
+    end_2: datetime.date,
+) -> bool:
     """Returns true if the provided spans overlap. Spans which share a single date are considered overlapping."""
     return start_1 <= end_2 and end_1 >= start_2

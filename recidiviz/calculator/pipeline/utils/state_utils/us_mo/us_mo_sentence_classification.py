@@ -25,8 +25,11 @@ import attr
 
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
-from recidiviz.persistence.entity.state.entities import StateIncarcerationSentence, StateSupervisionSentence, \
-    SentenceType
+from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationSentence,
+    StateSupervisionSentence,
+    SentenceType,
+)
 
 
 @attr.s(frozen=True)
@@ -53,7 +56,7 @@ class UsMoSentenceStatus(BuildableAttr):
 
     @person_external_id.default
     def _get_person_external_id(self) -> str:
-        return self.sentence_external_id.split('-')[0]
+        return self.sentence_external_id.split("-")[0]
 
     # If True, this is a status that denotes a start to some period of supervision related to this sentence.
     # Note: these are not always present when a period of supervision starts - sometimes only an 'incarceration out'
@@ -62,7 +65,7 @@ class UsMoSentenceStatus(BuildableAttr):
 
     @is_supervision_in_status.default
     def _get_is_supervision_in_status(self) -> bool:
-        return '5I' in self.status_code
+        return "5I" in self.status_code
 
     # If True, this is a status that denotes an end to some period of supervision related to this sentence.
     # Note: these are not always present when a period of supervision ends - sometimes only an 'incarceration in'
@@ -71,7 +74,7 @@ class UsMoSentenceStatus(BuildableAttr):
 
     @is_supervision_out_status.default
     def _get_is_supervision_out_status(self) -> bool:
-        return '5O' in self.status_code
+        return "5O" in self.status_code
 
     # If True, this is a status that denotes a start to some period of incarceration related to this sentence.
     # Note: these are not always present when a period of incarceration starts - sometimes only a 'supervision out'
@@ -80,7 +83,7 @@ class UsMoSentenceStatus(BuildableAttr):
 
     @is_incarceration_in_status.default
     def _get_is_incarceration_in_status(self) -> bool:
-        return '0I' in self.status_code
+        return "0I" in self.status_code
 
     # If True, this is a status that denotes an end to some period of incarceration related to this sentence.
     # Note: these are not always present when a period of incarceration ends - sometimes only a 'supervision in'
@@ -89,17 +92,19 @@ class UsMoSentenceStatus(BuildableAttr):
 
     @is_incarceration_out_status.default
     def _get_is_incarceration_out_status(self) -> bool:
-        return '0O' in self.status_code
+        return "0O" in self.status_code
 
     # Indicates whether the status is related to the start or end of a sentencing investigation/assessment
     is_investigation_status: bool = attr.ib()
 
     @is_investigation_status.default
     def _get_is_investigation_status(self) -> bool:
-        return self.status_code.startswith('05I5') or \
-               self.status_code.startswith('25I5') or \
-               self.status_code.startswith('35I5') or \
-               self.status_code.startswith('95O5')
+        return (
+            self.status_code.startswith("05I5")
+            or self.status_code.startswith("25I5")
+            or self.status_code.startswith("35I5")
+            or self.status_code.startswith("95O5")
+        )
 
     # Indicates that this is a status that marks the beginning of a period of lifetime supervision (usually implemented
     # as electronic monitoring).
@@ -108,16 +113,15 @@ class UsMoSentenceStatus(BuildableAttr):
     @is_lifetime_supervision_start_status.default
     def _get_is_lifetime_supervision_start_status(self) -> bool:
         return self.status_code in (
-            '35I6010',  # Release from DMH for SVP Supv
-            '35I6020',  # Lifetime Supervision Revisit
-            '40O6010',  # Release for SVP Commit Hearing
-            '40O6020',  # Release for Lifetime Supv
-
+            "35I6010",  # Release from DMH for SVP Supv
+            "35I6020",  # Lifetime Supervision Revisit
+            "40O6010",  # Release for SVP Commit Hearing
+            "40O6020",  # Release for Lifetime Supv
             # These indicate a transition to lifetime supervision (electronic monitoring). They are still serving
             # the sentence in this case.
-            '90O1070',  # Director's Rel Comp-Life Supv
-            '95O1020',  # Court Prob Comp-Lifetime Supv
-            '95O2060'   # Parole / CR Comp-Lifetime Supv
+            "90O1070",  # Director's Rel Comp-Life Supv
+            "95O1020",  # Court Prob Comp-Lifetime Supv
+            "95O2060",  # Parole / CR Comp-Lifetime Supv
         )
 
     # Statuses that start with '9' are often though not exclusively used to indicate that a sentence has been
@@ -127,7 +131,7 @@ class UsMoSentenceStatus(BuildableAttr):
 
     @is_sentence_termination_status_candidate.default
     def _get_is_sentence_termination_status_candidate(self) -> bool:
-        return self.status_code.startswith('9')
+        return self.status_code.startswith("9")
 
     # If True, the presence of this status in association with a sentence means the sentence has been terminated and
     # this person is no longer serving it. This includes both successful completions and unsuccessful completions (e.g.
@@ -136,15 +140,17 @@ class UsMoSentenceStatus(BuildableAttr):
 
     @is_sentence_termimination_status.default
     def _get_is_sentence_termination_status(self) -> bool:
-        return \
-            self.is_sentence_termination_status_candidate and \
-            not self.is_investigation_status and \
-            not self.is_lifetime_supervision_start_status and \
-            self.status_code not in (
+        return (
+            self.is_sentence_termination_status_candidate
+            and not self.is_investigation_status
+            and not self.is_lifetime_supervision_start_status
+            and self.status_code
+            not in (
                 # These are usually paired with a Court Probation - Revisit. Do not mean the sentence has completed.
-                '95O1040',  # Resentenced
-                '95O2120'   # Prob Rev-Codes Not Applicable
+                "95O1040",  # Resentenced
+                "95O2120",  # Prob Rev-Codes Not Applicable
             )
+        )
 
     # Indicates that this status is critical for determining the supervision type associated with this sentence on a
     # given date.
@@ -153,10 +159,10 @@ class UsMoSentenceStatus(BuildableAttr):
     @is_supervision_type_critical_status.default
     def _get_is_supervision_type_critical_status(self) -> bool:
         result = (
-            self.is_supervision_in_status or
-            self.is_supervision_out_status or
-            self.is_incarceration_out_status or
-            self.is_sentence_termimination_status
+            self.is_supervision_in_status
+            or self.is_supervision_out_status
+            or self.is_incarceration_out_status
+            or self.is_sentence_termimination_status
         ) and not self.is_investigation_status
         return result
 
@@ -169,44 +175,47 @@ class UsMoSentenceStatus(BuildableAttr):
         """Calculates what supervision type should be associated with this sentence if this status that is found to be
         the most recent critical status for determining supervision type.
         """
-        if self.is_incarceration_in_status or self.is_supervision_out_status or self.is_sentence_termimination_status:
+        if (
+            self.is_incarceration_in_status
+            or self.is_supervision_out_status
+            or self.is_sentence_termimination_status
+        ):
             return None
 
         if self.status_code in (
-                # Called parole, but MO classifies interstate 'Parole' as probation
-                '35I4100',  # IS Compact-Parole-Revisit
-                '40O7400',  # IS Compact Parole to Missouri
-
-                # The term 'Field' does not always exclusively mean probation, but in the case of interstate transfer
-                # statuses, it does.
-                '75I3000',  # MO Field-Interstate Returned
+            # Called parole, but MO classifies interstate 'Parole' as probation
+            "35I4100",  # IS Compact-Parole-Revisit
+            "40O7400",  # IS Compact Parole to Missouri
+            # The term 'Field' does not always exclusively mean probation, but in the case of interstate transfer
+            # statuses, it does.
+            "75I3000",  # MO Field-Interstate Returned
         ):
             return StateSupervisionType.PROBATION
 
         if self.status_code in (
-                # In July 2008, MO transitioned people in CRC transitional facilities from the control of the DAI
-                # (incarceration) to the parole board. If we see this status it means someone is on parole.
-                '40O6000'   # Converted-CRC DAI to CRC Field
+            # In July 2008, MO transitioned people in CRC transitional facilities from the control of the DAI
+            # (incarceration) to the parole board. If we see this status it means someone is on parole.
+            "40O6000"  # Converted-CRC DAI to CRC Field
         ):
             return StateSupervisionType.PAROLE
 
         if self.is_lifetime_supervision_start_status:
             return StateSupervisionType.PAROLE
 
-        if 'Prob' in self.status_description:
+        if "Prob" in self.status_description:
             return StateSupervisionType.PROBATION
-        if 'Court Parole' in self.status_description:
+        if "Court Parole" in self.status_description:
             # Confirmed from MO that 'Court Parole' should be treated as a probation sentence
             return StateSupervisionType.PROBATION
-        if 'Diversion Sup' in self.status_description:
+        if "Diversion Sup" in self.status_description:
             return StateSupervisionType.PROBATION
-        if 'Parole' in self.status_description:
+        if "Parole" in self.status_description:
             return StateSupervisionType.PAROLE
-        if 'Board' in self.status_description:
+        if "Board" in self.status_description:
             return StateSupervisionType.PAROLE
-        if 'Conditional Release' in self.status_description:
+        if "Conditional Release" in self.status_description:
             return StateSupervisionType.PAROLE
-        if 'CR ' in self.status_description:
+        if "CR " in self.status_description:
             # CR stands for Conditional Release
             return StateSupervisionType.PAROLE
 
@@ -237,13 +246,13 @@ class UsMoSentenceMixin(Generic[SentenceType]):
 
     @base_sentence.default
     def _base_sentence(self) -> SentenceType:
-        raise ValueError('Must set base_sentence')
+        raise ValueError("Must set base_sentence")
 
     sentence_statuses: List[UsMoSentenceStatus] = attr.ib()
 
     @sentence_statuses.default
     def _sentence_statuses(self) -> List[UsMoSentenceStatus]:
-        raise ValueError('Must set sentence_statuses')
+        raise ValueError("Must set sentence_statuses")
 
     # Time span objects that represent time spans where a sentence has a given supervision type
     supervision_type_spans: List[SupervisionTypeSpan] = attr.ib()
@@ -257,11 +266,17 @@ class UsMoSentenceMixin(Generic[SentenceType]):
             return []
 
         if not self.sentence_statuses:
-            logging.warning('No sentence statuses in the reftable for sentence [%s]', self.base_sentence.external_id)
+            logging.warning(
+                "No sentence statuses in the reftable for sentence [%s]",
+                self.base_sentence.external_id,
+            )
             return []
 
-        all_critical_statuses = [status for status in self.sentence_statuses
-                                 if status.is_supervision_type_critical_status]
+        all_critical_statuses = [
+            status
+            for status in self.sentence_statuses
+            if status.is_supervision_type_critical_status
+        ]
         critical_statuses_by_day = defaultdict(list)
 
         for s in all_critical_statuses:
@@ -273,63 +288,88 @@ class UsMoSentenceMixin(Generic[SentenceType]):
         supervision_type_spans = []
         for i, critical_day in enumerate(critical_days):
             start_date = critical_day
-            end_date = critical_days[i+1] if i < len(critical_days) - 1 else None
+            end_date = critical_days[i + 1] if i < len(critical_days) - 1 else None
 
-            supervision_type = \
-                self._get_sentence_supervision_type_from_critical_day_statuses(critical_statuses_by_day[critical_day])
-            supervision_type_spans.append(SupervisionTypeSpan(start_date=start_date,
-                                                              end_date=end_date,
-                                                              supervision_type=supervision_type))
+            supervision_type = (
+                self._get_sentence_supervision_type_from_critical_day_statuses(
+                    critical_statuses_by_day[critical_day]
+                )
+            )
+            supervision_type_spans.append(
+                SupervisionTypeSpan(
+                    start_date=start_date,
+                    end_date=end_date,
+                    supervision_type=supervision_type,
+                )
+            )
 
         return supervision_type_spans
 
     @supervision_type_spans.validator
-    def _supervision_type_spans_validator(self,
-                                          _attribute: attr.Attribute,
-                                          supervision_type_spans: List[SupervisionTypeSpan]) -> None:
+    def _supervision_type_spans_validator(
+        self,
+        _attribute: attr.Attribute,
+        supervision_type_spans: List[SupervisionTypeSpan],
+    ) -> None:
         if supervision_type_spans is None:
-            raise ValueError('Spans list should not be None')
+            raise ValueError("Spans list should not be None")
 
         if not supervision_type_spans:
             return
 
         last_span = supervision_type_spans[-1]
         if last_span.end_date is not None:
-            raise ValueError('Must end span list with an open span')
+            raise ValueError("Must end span list with an open span")
 
         for not_last_span in supervision_type_spans[:-1]:
             if not_last_span.end_date is None:
-                raise ValueError('Intermediate span must not have None end date')
+                raise ValueError("Intermediate span must not have None end date")
 
     @staticmethod
-    def _get_sentence_supervision_type_from_critical_day_statuses(critical_day_statuses: List[UsMoSentenceStatus]) \
-        -> Optional[StateSupervisionType]:
+    def _get_sentence_supervision_type_from_critical_day_statuses(
+        critical_day_statuses: List[UsMoSentenceStatus],
+    ) -> Optional[StateSupervisionType]:
         """Given a set of 'supervision type critical' statuses, returns the supervision type for the
         SupervisionTypeSpan starting on that day."""
 
         # Status external ids are the sentence id with the status sequence number appended - larger sequence numbers
         # should be given precedence.
-        critical_day_statuses.sort(key=lambda s: s.sentence_status_external_id, reverse=True)
-        supervision_type = critical_day_statuses[0].supervision_type_status_classification
+        critical_day_statuses.sort(
+            key=lambda s: s.sentence_status_external_id, reverse=True
+        )
+        supervision_type = critical_day_statuses[
+            0
+        ].supervision_type_status_classification
 
-        if supervision_type is None or supervision_type != StateSupervisionType.INTERNAL_UNKNOWN:
+        if (
+            supervision_type is None
+            or supervision_type != StateSupervisionType.INTERNAL_UNKNOWN
+        ):
             return supervision_type
 
         # If the most recent status in a day does not give us enough information to tell the supervision type, look to
         # other statuses on that day.
         for status in critical_day_statuses:
-            if status.supervision_type_status_classification is not None and \
-                    status.supervision_type_status_classification != StateSupervisionType.INTERNAL_UNKNOWN:
+            if (
+                status.supervision_type_status_classification is not None
+                and status.supervision_type_status_classification
+                != StateSupervisionType.INTERNAL_UNKNOWN
+            ):
                 return status.supervision_type_status_classification
 
         return supervision_type
 
-    def _get_overlapping_supervision_type_span_index(self, supervision_type_day: date) -> Optional[int]:
+    def _get_overlapping_supervision_type_span_index(
+        self, supervision_type_day: date
+    ) -> Optional[int]:
         """Returns the index of the span in this sentence's supervision_type_spans list that overlaps in time with the
         provided date, or None if there are no overlapping spans."""
-        filtered_spans = [(i, span) for i, span in enumerate(self.supervision_type_spans)
-                          if span.start_date <= supervision_type_day and
-                          (span.end_date is None or supervision_type_day < span.end_date)]
+        filtered_spans = [
+            (i, span)
+            for i, span in enumerate(self.supervision_type_spans)
+            if span.start_date <= supervision_type_day
+            and (span.end_date is None or supervision_type_day < span.end_date)
+        ]
 
         if not filtered_spans:
             return None
@@ -340,15 +380,16 @@ class UsMoSentenceMixin(Generic[SentenceType]):
         return filtered_spans[0][0]
 
     def get_sentence_supervision_type_on_day(
-            self,
-            supervision_type_day: date
+        self, supervision_type_day: date
     ) -> Optional[StateSupervisionType]:
         """Calculates the supervision type to be associated with this sentence on a given day, or None if the sentence
         has been completed/terminated, if the person is incarcerated on this date, or if there are no statuses for this
         person on/before a given date.
         """
 
-        overlapping_span_index = self._get_overlapping_supervision_type_span_index(supervision_type_day)
+        overlapping_span_index = self._get_overlapping_supervision_type_span_index(
+            supervision_type_day
+        )
 
         if overlapping_span_index is None:
             return None
@@ -358,7 +399,10 @@ class UsMoSentenceMixin(Generic[SentenceType]):
 
         while overlapping_span_index >= 0:
             span = self.supervision_type_spans[overlapping_span_index]
-            if span.supervision_type is not None and span.supervision_type != StateSupervisionType.INTERNAL_UNKNOWN:
+            if (
+                span.supervision_type is not None
+                and span.supervision_type != StateSupervisionType.INTERNAL_UNKNOWN
+            ):
                 return span.supervision_type
 
             # If the most recent status status is INTERNAL_UNKNOWN, we look back at previous statuses until we can
@@ -368,9 +412,9 @@ class UsMoSentenceMixin(Generic[SentenceType]):
         return self.supervision_type_spans[overlapping_span_index].supervision_type
 
     def get_most_recent_supervision_type_before_upper_bound_day(
-            self,
-            upper_bound_exclusive_date: date,
-            lower_bound_inclusive_date: Optional[date]
+        self,
+        upper_bound_exclusive_date: date,
+        lower_bound_inclusive_date: Optional[date],
     ) -> Optional[Tuple[date, StateSupervisionType]]:
         """Finds the most recent nonnull type associated this sentence, preceding the provided date. An optional lower
         bound may be provided to limit the lookback window.
@@ -378,7 +422,9 @@ class UsMoSentenceMixin(Generic[SentenceType]):
         Returns a tuple (last valid date of that supervision type span, supervision type).
         """
         upper_bound_inclusive_day = upper_bound_exclusive_date - timedelta(days=1)
-        overlapping_span_index = self._get_overlapping_supervision_type_span_index(upper_bound_inclusive_day)
+        overlapping_span_index = self._get_overlapping_supervision_type_span_index(
+            upper_bound_inclusive_day
+        )
 
         if overlapping_span_index is None:
             return None
@@ -386,14 +432,24 @@ class UsMoSentenceMixin(Generic[SentenceType]):
         while overlapping_span_index >= 0:
             span = self.supervision_type_spans[overlapping_span_index]
 
-            last_supervision_type_day_exclusive = \
-                min(upper_bound_exclusive_date, span.end_date) if span.end_date else upper_bound_exclusive_date
-            last_supervision_type_day_inclusive = last_supervision_type_day_exclusive - timedelta(days=1)
+            last_supervision_type_day_exclusive = (
+                min(upper_bound_exclusive_date, span.end_date)
+                if span.end_date
+                else upper_bound_exclusive_date
+            )
+            last_supervision_type_day_inclusive = (
+                last_supervision_type_day_exclusive - timedelta(days=1)
+            )
 
-            if lower_bound_inclusive_date and last_supervision_type_day_inclusive < lower_bound_inclusive_date:
+            if (
+                lower_bound_inclusive_date
+                and last_supervision_type_day_inclusive < lower_bound_inclusive_date
+            ):
                 return None
 
-            supervision_type = self.get_sentence_supervision_type_on_day(span.start_date)
+            supervision_type = self.get_sentence_supervision_type_on_day(
+                span.start_date
+            )
 
             if supervision_type is not None:
                 return last_supervision_type_day_inclusive, supervision_type
@@ -404,47 +460,53 @@ class UsMoSentenceMixin(Generic[SentenceType]):
 
 
 @attr.s
-class UsMoIncarcerationSentence(StateIncarcerationSentence, UsMoSentenceMixin[StateIncarcerationSentence]):
-
+class UsMoIncarcerationSentence(
+    StateIncarcerationSentence, UsMoSentenceMixin[StateIncarcerationSentence]
+):
     @classmethod
-    def from_incarceration_sentence(cls,
-                                    sentence: StateIncarcerationSentence,
-                                    sentence_statuses_raw: List[Dict[str, Any]],
-                                    subclass_args: Optional[Dict[str, Any]] = None) -> 'UsMoIncarcerationSentence':
+    def from_incarceration_sentence(
+        cls,
+        sentence: StateIncarcerationSentence,
+        sentence_statuses_raw: List[Dict[str, Any]],
+        subclass_args: Optional[Dict[str, Any]] = None,
+    ) -> "UsMoIncarcerationSentence":
         subclass_args = subclass_args if subclass_args else {}
-        sentence_statuses_converted = [UsMoSentenceStatus.build_from_dictionary(status_dict_raw)
-                                       for status_dict_raw in sentence_statuses_raw]
+        sentence_statuses_converted = [
+            UsMoSentenceStatus.build_from_dictionary(status_dict_raw)
+            for status_dict_raw in sentence_statuses_raw
+        ]
 
         sentence_dict = {
             **sentence.__dict__,
-            'base_sentence': sentence,
-            'sentence_statuses': sentence_statuses_converted,
-            **subclass_args
+            "base_sentence": sentence,
+            "sentence_statuses": sentence_statuses_converted,
+            **subclass_args,
         }
 
-        return cls(
-            **sentence_dict  # type: ignore
-        )
+        return cls(**sentence_dict)  # type: ignore
 
 
 @attr.s
-class UsMoSupervisionSentence(StateSupervisionSentence, UsMoSentenceMixin[StateSupervisionSentence]):
-
+class UsMoSupervisionSentence(
+    StateSupervisionSentence, UsMoSentenceMixin[StateSupervisionSentence]
+):
     @classmethod
-    def from_supervision_sentence(cls,
-                                  sentence: StateSupervisionSentence,
-                                  sentence_statuses_raw: List[Dict[str, Any]],
-                                  subclass_args: Optional[Dict[str, Any]] = None) -> 'UsMoSupervisionSentence':
+    def from_supervision_sentence(
+        cls,
+        sentence: StateSupervisionSentence,
+        sentence_statuses_raw: List[Dict[str, Any]],
+        subclass_args: Optional[Dict[str, Any]] = None,
+    ) -> "UsMoSupervisionSentence":
         subclass_args = subclass_args if subclass_args else {}
-        sentence_statuses_converted = [UsMoSentenceStatus.build_from_dictionary(status_dict_raw)
-                                       for status_dict_raw in sentence_statuses_raw]
+        sentence_statuses_converted = [
+            UsMoSentenceStatus.build_from_dictionary(status_dict_raw)
+            for status_dict_raw in sentence_statuses_raw
+        ]
         sentence_dict = {
             **sentence.__dict__,
-            'base_sentence': sentence,
-            'sentence_statuses': sentence_statuses_converted,
-            **subclass_args
+            "base_sentence": sentence,
+            "sentence_statuses": sentence_statuses_converted,
+            **subclass_args,
         }
 
-        return cls(
-            **sentence_dict  # type: ignore
-        )
+        return cls(**sentence_dict)  # type: ignore

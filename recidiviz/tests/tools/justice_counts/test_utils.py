@@ -21,8 +21,12 @@ import os
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
+
 def gcs_path(filepath: str) -> GcsfsFilePath:
-    return GcsfsFilePath.from_absolute_path(os.path.join('gs://justice_counts', filepath))
+    return GcsfsFilePath.from_absolute_path(
+        os.path.join("gs://justice_counts", filepath)
+    )
+
 
 def prepare_files(fs: FakeGCSFileSystem, manifest_filepath: str) -> GcsfsFilePath:
     """Makes the file system aware of all files for the report and returns the manifest filepath."""

@@ -21,10 +21,9 @@ from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     fn,
-    parse_external_id
+    parse_external_id,
 )
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings \
-    import EnumMappings
+from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
 
 
 def convert(proto, metadata: IngestMetadata) -> entities.Hold:
@@ -32,15 +31,14 @@ def convert(proto, metadata: IngestMetadata) -> entities.Hold:
     new = entities.Hold.builder()
 
     enum_fields = {
-        'status': HoldStatus,
+        "status": HoldStatus,
     }
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 
-    new.status = enum_mappings.get(HoldStatus,
-                                   default=HoldStatus.PRESENT_WITHOUT_INFO)
-    new.status_raw_text = fn(normalize, 'status', proto)
+    new.status = enum_mappings.get(HoldStatus, default=HoldStatus.PRESENT_WITHOUT_INFO)
+    new.status_raw_text = fn(normalize, "status", proto)
 
-    new.external_id = fn(parse_external_id, 'hold_id', proto)
-    new.jurisdiction_name = fn(normalize, 'jurisdiction_name', proto)
+    new.external_id = fn(parse_external_id, "hold_id", proto)
+    new.jurisdiction_name = fn(normalize, "jurisdiction_name", proto)
 
     return new.build()

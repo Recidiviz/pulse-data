@@ -42,8 +42,7 @@ from typing import Set, cast
 from recidiviz.ingest.scrape import constants, scraper as scraper_module
 from recidiviz.ingest.scrape.ingest_utils import validate_regions
 from recidiviz.ingest.scrape.task_params import QueueRequest
-from recidiviz.persistence.database.base_schema import \
-    JailsBase
+from recidiviz.persistence.database.base_schema import JailsBase
 from recidiviz.tests.utils.fakes import use_in_memory_sqlite_database
 from recidiviz.utils import regions
 
@@ -64,26 +63,32 @@ def add_task(queue, _self, task_name, request) -> None:
 
 
 def start_scrape(queue, self, scrape_type):
-    add_task(queue, self, self.get_initial_task_method(),
-             QueueRequest(scrape_type=scrape_type,
-                          scraper_start_time=datetime.now(),
-                          next_task=self.get_initial_task()))
+    add_task(
+        queue,
+        self,
+        self.get_initial_task_method(),
+        QueueRequest(
+            scrape_type=scrape_type,
+            scraper_start_time=datetime.now(),
+            next_task=self.get_initial_task(),
+        ),
+    )
 
 
 def run_scraper(args) -> None:
     use_in_memory_sqlite_database(JailsBase)
 
-    region_codes = validate_regions(args.region.split(','))
+    region_codes = validate_regions(args.region.split(","))
     if not region_codes:
         sys.exit(1)
     failed_regions = []
     valid_region_codes = cast(Set[str], region_codes)
     for region_code in valid_region_codes:
-        logging.info('***')
-        logging.info('***')
+        logging.info("***")
+        logging.info("***")
         logging.info("Starting scraper for region: [%s]", region_code)
-        logging.info('***')
-        logging.info('***')
+        logging.info("***")
+        logging.info("***")
         try:
             run_scraper_for_region(regions.get_region(region_code), args)
         except Exception:
@@ -91,10 +96,11 @@ def run_scraper(args) -> None:
             failed_regions.append(region_code)
 
     if failed_regions:
-        logging.info('***')
-        logging.info("The following regions raised errors during scraping: "
-                     "[%s]",
-                     failed_regions)
+        logging.info("***")
+        logging.info(
+            "The following regions raised errors during scraping: " "[%s]",
+            failed_regions,
+        )
 
 
 def run_scraper_for_region(region, args) -> None:
@@ -110,18 +116,19 @@ def run_scraper_for_region(region, args) -> None:
     task_queue: deque = deque()
 
     # We use this to bind the method to the instance.
-    scraper.add_task = types.MethodType(
-        partial(add_task, task_queue), scraper)
-    scraper.start_scrape = types.MethodType(
-        partial(start_scrape, task_queue), scraper)
+    scraper.add_task = types.MethodType(partial(add_task, task_queue), scraper)
+    scraper.start_scrape = types.MethodType(partial(start_scrape, task_queue), scraper)
 
     scraper.start_scrape(constants.ScrapeType.BACKGROUND)
 
     num_tasks_run = 0
     while task_queue and (num_tasks_run < args.num_tasks or args.run_forever):
-        logging.info('***')
-        logging.info("Running task [%d] of [%s] tasks", num_tasks_run,
-                     'infinite' if args.run_forever else args.num_tasks)
+        logging.info("***")
+        logging.info(
+            "Running task [%d] of [%s] tasks",
+            num_tasks_run,
+            "infinite" if args.run_forever else args.num_tasks,
+        )
 
         # run the task
         if args.lifo:
@@ -137,8 +144,10 @@ def run_scraper_for_region(region, args) -> None:
 
         # increment and sleep
         num_tasks_run += 1
-        logging.info("Sleeping [%s] seconds before sending another request",
-                     args.sleep_between_requests)
+        logging.info(
+            "Sleeping [%s] seconds before sending another request",
+            args.sleep_between_requests,
+        )
         time.sleep(args.sleep_between_requests)
 
     logging.info("Completed the test run!")
@@ -147,35 +156,55 @@ def run_scraper_for_region(region, args) -> None:
 def _create_parser() -> argparse.ArgumentParser:
     """Creates the CLI argument parser."""
     parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--region', required=True,
-                        help="The comma separated list of regions to test, or"
-                             "'all' to test all regions")
-    parser.add_argument(
-        '--num_tasks', required=False, default=5, type=int,
-        help="The number of tasks to complete"
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument(
-        '--sleep_between_requests', required=False, default=1, type=float,
-        help="The number of seconds to sleep in between requests"
+        "--region",
+        required=True,
+        help="The comma separated list of regions to test, or"
+        "'all' to test all regions",
     )
     parser.add_argument(
-        '--run_forever', required=False, action='store_true',
-        help="If set, ignore num_tasks and run until completion"
+        "--num_tasks",
+        required=False,
+        default=5,
+        type=int,
+        help="The number of tasks to complete",
     )
     parser.add_argument(
-        '--no_fail_fast', required=False, dest='fail_fast',
-        action='store_false', help="Continue running after an error"
+        "--sleep_between_requests",
+        required=False,
+        default=1,
+        type=float,
+        help="The number of seconds to sleep in between requests",
     )
     parser.add_argument(
-        '--log', required=False, default='INFO', type=logging.getLevelName,
-        help="Set the logging level"
+        "--run_forever",
+        required=False,
+        action="store_true",
+        help="If set, ignore num_tasks and run until completion",
     )
     parser.add_argument(
-        '--lifo', required=False, action='store_true',
+        "--no_fail_fast",
+        required=False,
+        dest="fail_fast",
+        action="store_false",
+        help="Continue running after an error",
+    )
+    parser.add_argument(
+        "--log",
+        required=False,
+        default="INFO",
+        type=logging.getLevelName,
+        help="Set the logging level",
+    )
+    parser.add_argument(
+        "--lifo",
+        required=False,
+        action="store_true",
         help="If true uses a last-in-first-out queue for webpage navigation ("
-             "as opposed to first-in-first-out). This can be used to enforce "
-             "depth first navigation"
+        "as opposed to first-in-first-out). This can be used to enforce "
+        "depth first navigation",
     )
     return parser
 
@@ -185,7 +214,7 @@ def _configure_logging(level) -> None:
     root.setLevel(level)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     arg_parser = _create_parser()
     arguments = arg_parser.parse_args()
 

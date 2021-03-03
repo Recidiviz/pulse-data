@@ -31,7 +31,8 @@ class JsonDataExtractor(DataExtractor):
     """Data extractor for JSON files."""
 
     def extract_and_populate_data(
-            self, content: Union[Dict, List], ingest_info: IngestInfo = None):
+        self, content: Union[Dict, List], ingest_info: IngestInfo = None
+    ):
         """This function does all the work of taking the users yaml file
         and content and returning a populated data class.  This function
         iterates through every field in the object and builds a model based on
@@ -56,29 +57,31 @@ class JsonDataExtractor(DataExtractor):
             self._extract_list(content, ingest_info, seen_map, current_key)
         elif isinstance(content, dict):
             for k, v in content.items():
-                lookup_key = '{}.{}'.format(current_key,
-                                            k) if current_key else k
+                lookup_key = "{}.{}".format(current_key, k) if current_key else k
                 if v is None or isinstance(v, str):
-                    self._set_value_if_key_exists(lookup_key, v, ingest_info,
-                                                  seen_map)
+                    self._set_value_if_key_exists(lookup_key, v, ingest_info, seen_map)
                 elif isinstance(v, dict):
                     self._extract(v, ingest_info, seen_map, lookup_key)
                 elif isinstance(v, list):
                     self._extract_list(v, ingest_info, seen_map, lookup_key)
                 elif isinstance(v, (float, int)):
                     self._set_value_if_key_exists(
-                        lookup_key, str(v), ingest_info, seen_map)
+                        lookup_key, str(v), ingest_info, seen_map
+                    )
                 else:
-                    logging.error("JSON value was not an object, array, int, "
-                                  "float, or string: %s", v)
+                    logging.error(
+                        "JSON value was not an object, array, int, "
+                        "float, or string: %s",
+                        v,
+                    )
         else:
             logging.error("%s is not a valid JSON value", content)
 
-    def _set_value_if_key_exists(self, lookup_key, value, ingest_info,
-                                 seen_map):
+    def _set_value_if_key_exists(self, lookup_key, value, ingest_info, seen_map):
         if lookup_key in self.keys:
-            self._set_or_create_object(ingest_info, self.keys[lookup_key],
-                                       [value], seen_map)
+            self._set_or_create_object(
+                ingest_info, self.keys[lookup_key], [value], seen_map
+            )
 
     def _extract_list(self, content, ingest_info, seen_map, current_key=None):
         for value in content:

@@ -32,15 +32,16 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
-CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW_NAME = 'case_termination_by_type_comparison'
+CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW_NAME = "case_termination_by_type_comparison"
 
-CASE_TERMINATIONS_BY_TYPE_COMPARISON_DESCRIPTION = """Supervision case termination count comparison per month"""
+CASE_TERMINATIONS_BY_TYPE_COMPARISON_DESCRIPTION = (
+    """Supervision case termination count comparison per month"""
+)
 
 # TODO(#4948): This validation currently ignores rows that are NULL. We should later fix this
 # to ensure that the only rows that are NULL are the ones that we expect (i.e. ones that don't
 # feed into the table just yet).
-CASE_TERMINATIONS_BY_TYPE_COMPARISON_QUERY_TEMPLATE = \
-    """
+CASE_TERMINATIONS_BY_TYPE_COMPARISON_QUERY_TEMPLATE = """
     /*{description}*/
     WITH by_month as (
       SELECT
@@ -84,9 +85,9 @@ CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=CASE_TERMINATIONS_BY_TYPE_COMPARISON_QUERY_TEMPLATE,
     description=CASE_TERMINATIONS_BY_TYPE_COMPARISON_DESCRIPTION,
     view_dataset=state_dataset_config.DASHBOARD_VIEWS_DATASET,
-    po_report_dataset=state_dataset_config.PO_REPORT_DATASET
+    po_report_dataset=state_dataset_config.PO_REPORT_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW_BUILDER.build_and_print()

@@ -41,12 +41,12 @@ from recidiviz.tests.ingest.fixtures import as_filepath
 # Float between [0, 1] which sets the required fuzzy matching certainty
 _FUZZY_MATCH_CUTOFF = 0.75
 
-_FIPS = pd.read_csv(as_filepath('fips.csv', subdir='data_sets'),
-                    dtype={'fips': str})
+_FIPS = pd.read_csv(as_filepath("fips.csv", subdir="data_sets"), dtype={"fips": str})
 
 
-def add_column_to_df(df: pd.DataFrame, county_names: pd.Series,
-                     state: us.states) -> pd.DataFrame:
+def add_column_to_df(
+    df: pd.DataFrame, county_names: pd.Series, state: us.states
+) -> pd.DataFrame:
     """Add a new fips column to |df|.
 
     The provided |county_names| must be the same length as |df| and map each
@@ -69,12 +69,11 @@ def get_fips_for(state: us.states) -> pd.DataFrame:
 
     fips = fips[fips.state_code == int(state.fips)]
     if fips.empty:
-        raise FipsMergingError(
-            "Failed to find FIPS codes for state: {}".format(state))
+        raise FipsMergingError("Failed to find FIPS codes for state: {}".format(state))
 
-    fips['county_name'] = fips['county_name'].apply(_sanitize_county_name)
-    fips = fips.set_index('county_name')
-    return fips[['fips']]
+    fips["county_name"] = fips["county_name"].apply(_sanitize_county_name)
+    fips = fips.set_index("county_name")
+    return fips[["fips"]]
 
 
 def validate_county_code(county_code: str) -> None:
@@ -82,25 +81,31 @@ def validate_county_code(county_code: str) -> None:
     Validate county_code is in proper format without spelling errors,
     county_code should be in lower case. It accepts and will not raise error for state codes, ex. 'us_ny'
     """
-    cleaned_county_code = re.sub('^us_[a-z]{2}_', '', county_code)
-    if re.search('^us_[a-z]{2}', cleaned_county_code) is not None:
+    cleaned_county_code = re.sub("^us_[a-z]{2}_", "", county_code)
+    if re.search("^us_[a-z]{2}", cleaned_county_code) is not None:
         return
     # TODO(#6040): remove code for 'st_mary_parish' and 'translyvania' once issue fixed
-    if cleaned_county_code in ['st_mary_parish', 'translyvania', 'carter_vendengine']:
+    if cleaned_county_code in ["st_mary_parish", "translyvania", "carter_vendengine"]:
         return
 
     df_fips = _FIPS.copy()
-    sanitized_counties = [_sanitize_county_name(row['county_name']) for _, row in df_fips.iterrows()]
+    sanitized_counties = [
+        _sanitize_county_name(row["county_name"]) for _, row in df_fips.iterrows()
+    ]
 
     if cleaned_county_code not in sanitized_counties:
-        raise ValueError(f'county_code does could not be found in sanitized fips: {county_code}')
+        raise ValueError(
+            f"county_code does could not be found in sanitized fips: {county_code}"
+        )
 
 
 def _standardize_raw_state(state: str) -> str:
     """adds 'US_' to front of state and makes it uppercase, ex. US_WI"""
     if len(state) != 2:
-        raise ValueError(f'state should only have 2 characters, current character count: {len(state)}')
-    return f'US_{state}'.upper()
+        raise ValueError(
+            f"state should only have 2 characters, current character count: {len(state)}"
+        )
+    return f"US_{state}".upper()
 
 
 def get_state_and_county_for_fips(fips: int) -> Tuple[str, str]:
@@ -108,10 +113,10 @@ def get_state_and_county_for_fips(fips: int) -> Tuple[str, str]:
 
     # Copy _FIPS to allow mutating the view created after filtering by state
     df_fips = _FIPS.copy()
-    df_fips['fips'] = pd.to_numeric(df_fips['fips'])
+    df_fips["fips"] = pd.to_numeric(df_fips["fips"])
     df_fips = df_fips[df_fips.fips == fips]
     if df_fips.empty:
-        raise FipsMergingError(f'Failed to find FIPS code: {fips}')
+        raise FipsMergingError(f"Failed to find FIPS code: {fips}")
     raw_state = df_fips.iloc[0, 0]
     raw_county = df_fips.iloc[0, 3]
 
@@ -120,16 +125,16 @@ def get_state_and_county_for_fips(fips: int) -> Tuple[str, str]:
 
 def _sanitize_county_name(county_name: str) -> str:
     """To ease fuzzy matching, ensure county_names fit a common shape. returns in lower case,
-        ex. 'York Parish' -> 'york'. For county names, capitalized 'City' is kept and lower case 'city' is removed."""
-    county = county_name.replace(' city', '')
-    county = county.lower().replace(' county', '')
-    county = county.replace('.', '')
-    county = county.replace("'", '')
-    county = county.replace(' borough', '')
-    county = county.replace(' city and borough', '')
-    county = county.replace(' census area', '')
-    county = county.replace(' municipality', '')
-    county = county.replace(' parish', '')
-    county = county.replace(' municipio', '')
-    county = county.replace(' ', '_')
+    ex. 'York Parish' -> 'york'. For county names, capitalized 'City' is kept and lower case 'city' is removed."""
+    county = county_name.replace(" city", "")
+    county = county.lower().replace(" county", "")
+    county = county.replace(".", "")
+    county = county.replace("'", "")
+    county = county.replace(" borough", "")
+    county = county.replace(" city and borough", "")
+    county = county.replace(" census area", "")
+    county = county.replace(" municipality", "")
+    county = county.replace(" parish", "")
+    county = county.replace(" municipio", "")
+    county = county.replace(" ", "_")
     return county

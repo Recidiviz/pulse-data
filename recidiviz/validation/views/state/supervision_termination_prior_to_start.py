@@ -24,12 +24,15 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
-SUPERVISION_TERMINATION_PRIOR_TO_START_VIEW_NAME = 'supervision_termination_prior_to_start'
+SUPERVISION_TERMINATION_PRIOR_TO_START_VIEW_NAME = (
+    "supervision_termination_prior_to_start"
+)
 
-SUPERVISION_TERMINATION_PRIOR_TO_START_DESCRIPTION = """ Supervision termination dates prior to start dates """
+SUPERVISION_TERMINATION_PRIOR_TO_START_DESCRIPTION = (
+    """ Supervision termination dates prior to start dates """
+)
 
-SUPERVISION_TERMINATION_PRIOR_TO_START_QUERY_TEMPLATE = \
-    """
+SUPERVISION_TERMINATION_PRIOR_TO_START_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT *, state_code as region_code
     FROM `{project_id}.{state_dataset}.state_supervision_period`
@@ -47,6 +50,6 @@ SUPERVISION_TERMINATION_PRIOR_TO_START_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     state_dataset=state_dataset_config.STATE_BASE_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         SUPERVISION_TERMINATION_PRIOR_TO_START_VIEW_BUILDER.build_and_print()

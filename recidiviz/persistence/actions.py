@@ -26,10 +26,10 @@ from recidiviz.persistence import persistence
 from recidiviz.utils import monitoring
 from recidiviz.utils.auth.gae import requires_gae_auth
 
-actions = Blueprint('actions', __name__)
+actions = Blueprint("actions", __name__)
 
 
-@actions.route("/v1/records", methods=['POST'])
+@actions.route("/v1/records", methods=["POST"])
 @requires_gae_auth
 def write_record() -> Tuple[str, HTTPStatus]:
     ingest_info = None
@@ -42,4 +42,4 @@ def write_record() -> Tuple[str, HTTPStatus]:
 
         persistence.write(ingest_info, metadata)  # type: ignore
 
-        return '', HTTPStatus.NOT_IMPLEMENTED
+        return "", HTTPStatus.NOT_IMPLEMENTED

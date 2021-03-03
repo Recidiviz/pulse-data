@@ -24,13 +24,14 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
-REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_NAME = 'revocations_by_period_dashboard_comparison'
+REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_NAME = (
+    "revocations_by_period_dashboard_comparison"
+)
 
 REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_DESCRIPTION = """ 
 Compares counts of revocations by source violation type between the dashboard and the public dashboard. """
 
-REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_QUERY_TEMPLATE = \
-    """
+REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_QUERY_TEMPLATE = """
     /*{description}*/
     WITH dashboard_revocations_all_districts AS (
       SELECT * FROM `{project_id}.{dashboard_dataset}.revocations_by_period`
@@ -74,9 +75,9 @@ REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER = SimpleBigQueryViewBuil
     view_query_template=REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_QUERY_TEMPLATE,
     description=REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_DESCRIPTION,
     dashboard_dataset=state_dataset_config.DASHBOARD_VIEWS_DATASET,
-    public_dashboard_dataset=state_dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET
+    public_dashboard_dataset=state_dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER.build_and_print()

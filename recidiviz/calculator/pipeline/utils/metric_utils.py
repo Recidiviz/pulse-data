@@ -25,7 +25,15 @@ import attr
 from google.cloud import bigquery
 
 from recidiviz.common.attr_mixins import BuildableAttr
-from recidiviz.common.attr_utils import is_enum, is_list, is_date, is_str, is_int, is_float, is_bool
+from recidiviz.common.attr_utils import (
+    is_enum,
+    is_list,
+    is_date,
+    is_str,
+    is_int,
+    is_float,
+    is_bool,
+)
 from recidiviz.common.constants.person_characteristics import Gender
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 
@@ -42,6 +50,7 @@ class RecidivizMetric(BuildableAttr):
     required characteristics for normalization as well as optional
     characteristics for slicing the data.
     """
+
     # Required characteristics
 
     # The type of metric described
@@ -75,21 +84,20 @@ class RecidivizMetric(BuildableAttr):
     updated_on: Optional[date] = attr.ib(default=None)
 
     @staticmethod
-    def build_from_metric_key_group(metric_key: Dict[str, Any],
-                                    job_id: str) -> \
-            Optional['RecidivizMetric']:
-        """Builds a RecidivizMetric object from the given arguments.
-        """
+    def build_from_metric_key_group(
+        metric_key: Dict[str, Any], job_id: str
+    ) -> Optional["RecidivizMetric"]:
+        """Builds a RecidivizMetric object from the given arguments."""
 
         if not metric_key:
             raise ValueError("The metric_key is empty.")
 
-        metric_key['job_id'] = job_id
-        metric_key['created_on'] = date.today()
+        metric_key["job_id"] = job_id
+        metric_key["created_on"] = date.today()
 
-        recidiviz_metric = cast(RecidivizMetric,
-                                RecidivizMetric.
-                                build_from_dictionary(metric_key))
+        recidiviz_metric = cast(
+            RecidivizMetric, RecidivizMetric.build_from_dictionary(metric_key)
+        )
 
         return recidiviz_metric
 
@@ -97,6 +105,7 @@ class RecidivizMetric(BuildableAttr):
     def bq_schema_for_metric_table(cls) -> List[bigquery.SchemaField]:
         """Returns the necessary BigQuery schema for the RecidivizMetric, which is a list of SchemaField objects
         containing the column name and value type for each attribute on the RecidivizMetric."""
+
         def schema_type_for_attribute(attribute: Any) -> str:
             # Race and ethnicity fields are the only ones that support list form. These are converted to
             # comma-separated lists stored as strings in BigQuery.
@@ -112,13 +121,18 @@ class RecidivizMetric(BuildableAttr):
                 return bigquery.enums.SqlTypeNames.BOOLEAN.value
             raise ValueError(f"Unhandled attribute type for attribute: {attribute}")
 
-        return [bigquery.SchemaField(field, schema_type_for_attribute(attribute), mode='NULLABLE')
-                for field, attribute in attr.fields_dict(cls).items()]
+        return [
+            bigquery.SchemaField(
+                field, schema_type_for_attribute(attribute), mode="NULLABLE"
+            )
+            for field, attribute in attr.fields_dict(cls).items()
+        ]
 
 
 @attr.s
 class PersonLevelMetric(BuildableAttr):
     """Base class for modeling a person-level metric."""
+
     # The external_id of StatePerson for person-specific metrics
     person_id: Optional[int] = attr.ib(default=None)
 
@@ -168,10 +182,10 @@ def json_serializable_metric_key(metric_key: Dict[str, Any]) -> Dict[str, Any]:
         if isinstance(v, Enum) and v is not None:
             serializable_dict[key] = v.value
         elif isinstance(v, datetime.date) and v is not None:
-            serializable_dict[key] = v.strftime('%Y-%m-%d')
+            serializable_dict[key] = v.strftime("%Y-%m-%d")
         elif isinstance(v, list):
             # These are the only metric fields that support lists
-            if  key == 'violation_type_frequency_counter':
+            if key == "violation_type_frequency_counter":
                 values = []
                 for violation_type_list in v:
                     values.append(f"[{', '.join(sorted(violation_type_list))}]")
@@ -179,7 +193,7 @@ def json_serializable_metric_key(metric_key: Dict[str, Any]) -> Dict[str, Any]:
                 raise ValueError(f"Unexpected list in metric_key for key: {key}")
 
             if values:
-                serializable_dict[key] = ','.join(sorted(filter(None, values)))
+                serializable_dict[key] = ",".join(sorted(filter(None, values)))
 
         else:
             serializable_dict[key] = v

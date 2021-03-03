@@ -21,13 +21,12 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-POPULATION_TRANSITIONS_VIEW_NAME = 'population_transitions'
+POPULATION_TRANSITIONS_VIEW_NAME = "population_transitions"
 
-POPULATION_TRANSITIONS_VIEW_DESCRIPTION = \
-    """"Historical total population by compartment, outflow compartment, and compartment duration (months)"""
+POPULATION_TRANSITIONS_VIEW_DESCRIPTION = """"Historical total population by compartment, outflow compartment, 
+and compartment duration (months)"""
 
-POPULATION_TRANSITIONS_QUERY_TEMPLATE = \
-    """
+POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
     WITH cohorts_per_run_date AS (
       SELECT
           CASE WHEN compartment = 'INCARCERATION - GENERAL' AND previously_incarcerated
@@ -143,9 +142,9 @@ POPULATION_TRANSITIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=POPULATION_TRANSITIONS_VIEW_DESCRIPTION,
     analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
     population_projection_dataset=dataset_config.POPULATION_PROJECTION_DATASET,
-    should_materialize=True
+    should_materialize=True,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         POPULATION_TRANSITIONS_VIEW_BUILDER.build_and_print()

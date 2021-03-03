@@ -18,23 +18,25 @@
 StateSupervisionViolationResponseDecisionEntry to a persistence entity.
 """
 
-from recidiviz.common.constants.state.state_supervision_violation_response \
-    import StateSupervisionViolationResponseRevocationType, \
-    StateSupervisionViolationResponseDecision
+from recidiviz.common.constants.state.state_supervision_violation_response import (
+    StateSupervisionViolationResponseRevocationType,
+    StateSupervisionViolationResponseDecision,
+)
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.common.str_field_utils import normalize
-from recidiviz.ingest.models.ingest_info_pb2 import \
-    StateSupervisionViolationResponseDecisionEntry
+from recidiviz.ingest.models.ingest_info_pb2 import (
+    StateSupervisionViolationResponseDecisionEntry,
+)
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.utils.converter_utils import \
-    fn, parse_region_code_with_override
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import \
-    EnumMappings
+from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
+    fn,
+    parse_region_code_with_override,
+)
+from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
 
 
 def convert(
-        proto: StateSupervisionViolationResponseDecisionEntry,
-        metadata: IngestMetadata
+    proto: StateSupervisionViolationResponseDecisionEntry, metadata: IngestMetadata
 ) -> entities.StateSupervisionViolationResponseDecisionEntry:
     """Converts an ingest_info proto
     StateSupervisionViolationResponseDecisionEntry to a persistence entity.
@@ -42,22 +44,21 @@ def convert(
     new = entities.StateSupervisionViolationResponseDecisionEntry.builder()
 
     enum_fields = {
-        'decision': StateSupervisionViolationResponseDecision,
-        'revocation_type': StateSupervisionViolationResponseRevocationType,
+        "decision": StateSupervisionViolationResponseDecision,
+        "revocation_type": StateSupervisionViolationResponseRevocationType,
     }
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 
     # Enum mappings
-    new.decision = \
-        enum_mappings.get(StateSupervisionViolationResponseDecision)
-    new.decision_raw_text = fn(normalize, 'decision', proto)
+    new.decision = enum_mappings.get(StateSupervisionViolationResponseDecision)
+    new.decision_raw_text = fn(normalize, "decision", proto)
 
-    new.revocation_type = \
-        enum_mappings.get(StateSupervisionViolationResponseRevocationType)
-    new.revocation_type_raw_text = fn(normalize, 'revocation_type', proto)
+    new.revocation_type = enum_mappings.get(
+        StateSupervisionViolationResponseRevocationType
+    )
+    new.revocation_type_raw_text = fn(normalize, "revocation_type", proto)
 
     # 1-to-1 mappings
-    new.state_code = parse_region_code_with_override(
-        proto, 'state_code', metadata)
+    new.state_code = parse_region_code_with_override(proto, "state_code", metadata)
 
     return new.build()

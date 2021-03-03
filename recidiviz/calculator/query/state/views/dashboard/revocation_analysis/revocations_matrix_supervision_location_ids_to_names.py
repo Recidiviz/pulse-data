@@ -21,13 +21,13 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-REVOCATIONS_MATRIX_SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME = 'revocations_matrix_supervision_location_ids_to_names'
+REVOCATIONS_MATRIX_SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME = (
+    "revocations_matrix_supervision_location_ids_to_names"
+)
 
-REVOCATIONS_MATRIX_SUPERVISION_LOCATION_IDS_TO_NAMES_DESCRIPTION = \
-    """ Mapping of supervision locations to view names only for locations present in revocations matrix data."""
+REVOCATIONS_MATRIX_SUPERVISION_LOCATION_IDS_TO_NAMES_DESCRIPTION = """ Mapping of supervision locations to view names only for locations present in revocations matrix data."""
 
-REVOCATIONS_MATRIX_SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = \
-    """
+REVOCATIONS_MATRIX_SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT
       names.*
@@ -59,6 +59,6 @@ REVOCATIONS_MATRIX_SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER = SimpleBigQue
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         REVOCATIONS_MATRIX_SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER.build_and_print()

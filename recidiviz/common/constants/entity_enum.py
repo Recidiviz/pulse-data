@@ -27,13 +27,16 @@ from recidiviz.common.str_field_utils import normalize
 from recidiviz.utils import monitoring
 from recidiviz.utils.types import ClsT
 
-m_enum_errors = measure.MeasureInt("converter/enum_error_count",
-                                   "The number of enum errors", "1")
-enum_errors_view = view.View("recidiviz/converter/enum_error_count",
-                             "The sum of enum errors",
-                             [monitoring.TagKey.REGION,
-                              monitoring.TagKey.ENTITY_TYPE],
-                             m_enum_errors, aggregation.SumAggregation())
+m_enum_errors = measure.MeasureInt(
+    "converter/enum_error_count", "The number of enum errors", "1"
+)
+enum_errors_view = view.View(
+    "recidiviz/converter/enum_error_count",
+    "The sum of enum errors",
+    [monitoring.TagKey.REGION, monitoring.TagKey.ENTITY_TYPE],
+    m_enum_errors,
+    aggregation.SumAggregation(),
+)
 monitoring.register_views([enum_errors_view])
 
 
@@ -41,10 +44,10 @@ class EnumParsingError(Exception):
     """Raised if an MappableEnum can't be built from the provided string."""
 
     def __init__(self, cls: type, string_to_parse: str):
-        msg = "Could not parse {0} when building {1}".format(string_to_parse,
-                                                             cls)
+        msg = "Could not parse {0} when building {1}".format(string_to_parse, cls)
         self.entity_type = cls
         super().__init__(msg)
+
 
 class EntityEnumMeta(EnumMeta):
     """Metaclass for mappable enums."""
@@ -53,18 +56,19 @@ class EntityEnumMeta(EnumMeta):
     # https://stackoverflow.com/questions/47615318/
     # what-is-the-best-practice-for-metaclass-methods-that-call-each-other
     # pylint: disable=no-value-for-parameter, not-an-iterable
-    def parse(cls: Type[ClsT],
-              label: str,
-              enum_overrides: 'EnumOverrides') -> Optional[ClsT]:
+    def parse(
+        cls: Type[ClsT], label: str, enum_overrides: "EnumOverrides"
+    ) -> Optional[ClsT]:
         try:
             return cls._parse_to_enum(label, enum_overrides)
         except EnumParsingError:
             with monitoring.measurements(
-                    {monitoring.TagKey.ENTITY_TYPE: cls.__name__}) as m:
+                {monitoring.TagKey.ENTITY_TYPE: cls.__name__}
+            ) as m:
                 m.measure_int_put(m_enum_errors, 1)
             raise
 
-    def can_parse(cls: Type[ClsT], label: str, enum_overrides: 'EnumOverrides') -> bool:
+    def can_parse(cls: Type[ClsT], label: str, enum_overrides: "EnumOverrides") -> bool:
         """Checks if the given string will parse into this enum.
 
         Convenience method to be used by a child scraper to tell if a given
@@ -80,11 +84,13 @@ class EntityEnumMeta(EnumMeta):
         if not text:
             return None
         for inst in cls:
-            if re.search(inst.value.replace('_', ' '), text, re.I):
+            if re.search(inst.value.replace("_", " "), text, re.I):
                 return inst
         return None
 
-    def _parse_to_enum(cls: Type[ClsT], label: str, enum_overrides: 'EnumOverrides') -> Optional['EntityEnum']:
+    def _parse_to_enum(
+        cls: Type[ClsT], label: str, enum_overrides: "EnumOverrides"
+    ) -> Optional["EntityEnum"]:
         """Attempts to parse |label| using the default map of |cls| and the
         provided |override_map|. Ignores punctuation by treating punctuation as
         a separator, e.g. `(N/A)` will map to the same value as `N A`."""
@@ -110,7 +116,9 @@ class EntityEnumMeta(EnumMeta):
         except KeyError as e:
             raise EnumParsingError(cls, label) from e
 
-    def parse_from_canonical_string(cls: Type[ClsT], label: Optional[str]) -> Optional[ClsT]:
+    def parse_from_canonical_string(
+        cls: Type[ClsT], label: Optional[str]
+    ) -> Optional[ClsT]:
         """Attempts to parse |label| using the enum canonical strings.
         Only accepts exact, case-sensitive matches. Returns `None` if
         |label| is empty."""
@@ -131,7 +139,7 @@ class EntityEnum(Enum, metaclass=EntityEnumMeta):
     """
 
     @staticmethod
-    def _get_default_map() -> Dict[str, 'EntityEnum']:
+    def _get_default_map() -> Dict[str, "EntityEnum"]:
         raise NotImplementedError
 
     @classmethod
@@ -139,4 +147,4 @@ class EntityEnum(Enum, metaclass=EntityEnumMeta):
         return cls.parse_from_canonical_string(name.upper())
 
 
-EntityEnumT = TypeVar('EntityEnumT', bound=EntityEnum)
+EntityEnumT = TypeVar("EntityEnumT", bound=EntityEnum)

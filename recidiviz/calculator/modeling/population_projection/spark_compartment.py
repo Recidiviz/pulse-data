@@ -25,7 +25,9 @@ import pandas as pd
 class SparkCompartment(ABC):
     """Encapsulate all the logic for one compartment within the simulation"""
 
-    def __init__(self, outflows_data: pd.DataFrame, starting_ts: int, policy_ts: int, tag: str):
+    def __init__(
+        self, outflows_data: pd.DataFrame, starting_ts: int, policy_ts: int, tag: str
+    ):
         # the first ts of the projection
         self.ts_start = starting_ts
 
@@ -45,7 +47,9 @@ class SparkCompartment(ABC):
         self.tag = tag
 
         # validation features
-        self.error = pd.DataFrame(0, index=outflows_data.index, columns=outflows_data.columns)
+        self.error = pd.DataFrame(
+            0, index=outflows_data.index, columns=outflows_data.columns
+        )
         self.outflows = pd.DataFrame(index=outflows_data.index)
 
     def initialize_edges(self, edges: List):
@@ -55,7 +59,9 @@ class SparkCompartment(ABC):
     def step_forward(self):
         """Simulate one time step in the projection"""
         if self.edges is None:
-            raise ValueError(f"Compartment {self.tag} needs initialized edges before running the simulation")
+            raise ValueError(
+                f"Compartment {self.tag} needs initialized edges before running the simulation"
+            )
 
     @abstractmethod
     def ingest_incoming_cohort(self, influx: Dict[str, int]):
@@ -69,13 +75,15 @@ class SparkCompartment(ABC):
         # increase the `current_ts` by 1 to simulate the population at the beginning of the next ts
         self.current_ts += 1
 
-    def get_error(self, unit='abs'):
-        if unit == 'abs':
+    def get_error(self, unit="abs"):
+        if unit == "abs":
             return self.error.sort_index(axis=1).transpose()
-        if unit == 'mse':
+        if unit == "mse":
             mse_error = deepcopy(self.error)
             for outflow in mse_error:
-                mse_error[outflow] = (mse_error[outflow] / 100)**2 * self.outflows_data[outflow]
+                mse_error[outflow] = (
+                    mse_error[outflow] / 100
+                ) ** 2 * self.outflows_data[outflow]
             return mse_error.sort_index(axis=1).transpose()
 
-        raise RuntimeError('unrecognized unit')
+        raise RuntimeError("unrecognized unit")

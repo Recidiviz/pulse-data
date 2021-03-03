@@ -20,17 +20,26 @@ import os
 import unittest
 
 
-PIPFILE_LOCK_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
-    os.path.dirname(__file__))))), 'Pipfile.lock')
+PIPFILE_LOCK_PATH = os.path.join(
+    os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+    ),
+    "Pipfile.lock",
+)
 
-SETUP_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
-    os.path.dirname(__file__))))), 'setup.py')
+SETUP_PATH = os.path.join(
+    os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+    ),
+    "setup.py",
+)
 
 
 class TestSetupFilePinnedDependencies(unittest.TestCase):
     """Tests that dependencies pinned at certain versions are pinned at the version in the Pipfile.lock file."""
+
     def test_setup_file_pinned_dependencies(self) -> None:
-        pinned_dependencies = ['protobuf', 'dill']
+        pinned_dependencies = ["protobuf", "dill"]
 
         for dependency in pinned_dependencies:
             pipfile_dependency = pipfile_version_for_dependency(dependency)
@@ -39,18 +48,26 @@ class TestSetupFilePinnedDependencies(unittest.TestCase):
                 for line in setup_file:
                     if dependency in line:
                         # Remove whitespace, quotation marks, and commas
-                        dependency_with_version = line.strip().replace("'", "").replace(",", "")
+                        dependency_with_version = (
+                            line.strip()
+                            .replace('"', "")
+                            .replace("'", "")
+                            .replace(",", "")
+                        )
 
-                        if dependency_with_version.startswith('#'):
+                        if dependency_with_version.startswith("#"):
                             # Skip comments that mention the dependency
                             continue
 
-                        self.assertEqual(pipfile_dependency, dependency_with_version,
-                                         "Try verifying the package's version in setup.py or running pipenv sync --dev "
-                                         "before running this test again.")
+                        self.assertEqual(
+                            pipfile_dependency,
+                            dependency_with_version,
+                            "Try verifying the package's version in setup.py or running pipenv sync --dev "
+                            "before running this test again.",
+                        )
 
     def test_setup_file_non_pinned_dependency(self) -> None:
-        dependency = 'cattrs'
+        dependency = "cattrs"
 
         pipfile_dependency = pipfile_version_for_dependency(dependency)
 
@@ -58,7 +75,9 @@ class TestSetupFilePinnedDependencies(unittest.TestCase):
             for line in setup_file:
                 if dependency in line:
                     # Remove whitespace, quotation marks, and commas
-                    dependency_with_version = line.strip().replace("'", "").replace(",", "")
+                    dependency_with_version = (
+                        line.strip().replace('"', "").replace("'", "").replace(",", "")
+                    )
 
                     # This dependency is not pinned at a particular version, so these should not be equal
                     self.assertNotEqual(pipfile_dependency, dependency_with_version)
@@ -74,11 +93,11 @@ def pipfile_version_for_dependency(dependency: str) -> str:
         pipfile_data = json.load(pipfile_lock_json)
 
         if pipfile_data:
-            default_data = pipfile_data.get('default')
+            default_data = pipfile_data.get("default")
             if default_data:
                 dependency_data = default_data.get(dependency)
                 if dependency_data:
-                    pipfile_version = dependency_data.get('version')
+                    pipfile_version = dependency_data.get("version")
 
     if not pipfile_version:
         raise ValueError("Dataflow pipeline dependent on a package not in the Pipfile.")

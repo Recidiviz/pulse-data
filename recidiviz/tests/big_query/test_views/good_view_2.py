@@ -16,19 +16,25 @@
 # =============================================================================
 """A test view builder file for big_query_view_collector_test.py"""
 
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import DirectIngestPreProcessedIngestView
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import DirectIngestRegionRawFileConfig
-from recidiviz.tests.big_query.fake_big_query_view_builder import FakeBigQueryViewBuilder
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    DirectIngestPreProcessedIngestView,
+)
+from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
+    DirectIngestRegionRawFileConfig,
+)
+from recidiviz.tests.big_query.fake_big_query_view_builder import (
+    FakeBigQueryViewBuilder,
+)
 from recidiviz.utils.metadata import local_project_id_override
 
-with local_project_id_override('my-project-id'):
+with local_project_id_override("my-project-id"):
     GOOD_VIEW_2 = DirectIngestPreProcessedIngestView(
-        ingest_view_name='ingest_view_name',
-        view_query_template='SELECT * FROM table1',
+        ingest_view_name="ingest_view_name",
+        view_query_template="SELECT * FROM table1",
         region_raw_table_config=DirectIngestRegionRawFileConfig(
-            region_code='us_xx',
-            yaml_config_file_dir='/a/path/to/a/dir',
-            raw_file_configs={}
+            region_code="us_xx",
+            yaml_config_file_dir="/a/path/to/a/dir",
+            raw_file_configs={},
         ),
         order_by_cols=None,
         is_detect_row_deletion_view=False,

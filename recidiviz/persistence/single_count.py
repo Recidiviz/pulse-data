@@ -23,10 +23,8 @@ from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.common.jid import validate_jid
 from recidiviz.ingest.models.ingest_info import to_string
 from recidiviz.ingest.models.single_count import SingleCount
-from recidiviz.persistence.database.schema.aggregate.schema import \
-    SingleCountAggregate
-from recidiviz.persistence.database.schema_utils import \
-    schema_base_for_system_level
+from recidiviz.persistence.database.schema.aggregate.schema import SingleCountAggregate
+from recidiviz.persistence.database.schema_utils import schema_base_for_system_level
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.persistence_utils import should_persist
 
@@ -50,7 +48,8 @@ def store_single_count(sc: SingleCount, jurisdiction_id: str) -> bool:
         return True
 
     session = SessionFactory.for_schema_base(
-        schema_base_for_system_level(SystemLevel.COUNTY))
+        schema_base_for_system_level(SystemLevel.COUNTY)
+    )
     session.add(sca)
     session.commit()
 

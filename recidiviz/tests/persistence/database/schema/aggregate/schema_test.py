@@ -16,9 +16,7 @@
 # =============================================================================
 """Tests for aggregate-specific SQLAlchemy enums."""
 from recidiviz.persistence.database.schema.aggregate import schema
-from recidiviz.tests.persistence.database.schema.schema_test import (
-    TestSchemaEnums
-)
+from recidiviz.tests.persistence.database.schema.schema_test import TestSchemaEnums
 
 
 class TestAggregateSchemaEnums(TestSchemaEnums):
@@ -33,10 +31,9 @@ class TestAggregateSchemaEnums(TestSchemaEnums):
         # If a schema enum does not correspond to a persistence layer enum,
         # it should be mapped to None.
         aggregate_enums_mapping = {
-            'time_granularity': None,
+            "time_granularity": None,
         }
 
-        merged_mapping = {**self.SHARED_ENUMS_TEST_MAPPING,
-                          **aggregate_enums_mapping}
+        merged_mapping = {**self.SHARED_ENUMS_TEST_MAPPING, **aggregate_enums_mapping}
 
         self.check_persistence_and_schema_enums_match(merged_mapping, schema)

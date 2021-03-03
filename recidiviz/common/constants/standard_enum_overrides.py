@@ -24,8 +24,11 @@ from recidiviz.common.constants.bond import BondStatus, BondType
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.county.charge import ChargeClass
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.constants.person_characteristics import ETHNICITY_MAP, \
-    Ethnicity, Race
+from recidiviz.common.constants.person_characteristics import (
+    ETHNICITY_MAP,
+    Ethnicity,
+    Race,
+)
 
 
 # TODO(#2056): Move this logic into the converters themselves.
@@ -45,13 +48,13 @@ def get_standard_enum_overrides() -> EnumOverrides:
         if ethnicity_enum is Ethnicity.HISPANIC:
             overrides_builder.add(ethnicity_string, ethnicity_enum, Race)
 
-    overrides_builder.add('OUT ON BOND', BondStatus.POSTED, BondType)
+    overrides_builder.add("OUT ON BOND", BondStatus.POSTED, BondType)
     overrides_builder.add_mapper(_felony_mapper, ChargeClass, ChargeStatus)
 
     return overrides_builder.build()
 
 
 def _felony_mapper(status: str) -> Optional[ChargeClass]:
-    if 'FELONY' in status or 'MURDER' in status:
+    if "FELONY" in status or "MURDER" in status:
         return ChargeClass.FELONY
     return None

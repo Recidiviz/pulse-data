@@ -23,10 +23,12 @@ from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StateAgent
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
-    fn, parse_external_id, parse_region_code_with_override)
+    fn,
+    parse_external_id,
+    parse_region_code_with_override,
+)
 from recidiviz.persistence.ingest_info_converter.utils.names import parse_name
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings \
-    import EnumMappings
+from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
 
 
 def convert(proto: StateAgent, metadata: IngestMetadata) -> entities.StateAgent:
@@ -34,17 +36,19 @@ def convert(proto: StateAgent, metadata: IngestMetadata) -> entities.StateAgent:
     new = entities.StateAgent.builder()
 
     enum_fields = {
-        'agent_type': StateAgentType,
+        "agent_type": StateAgentType,
     }
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 
     # enum values
-    new.agent_type = enum_mappings.get(StateAgentType, default=StateAgentType.PRESENT_WITHOUT_INFO)
-    new.agent_type_raw_text = fn(normalize, 'agent_type', proto)
+    new.agent_type = enum_mappings.get(
+        StateAgentType, default=StateAgentType.PRESENT_WITHOUT_INFO
+    )
+    new.agent_type_raw_text = fn(normalize, "agent_type", proto)
 
     # 1-to-1 mappings
-    new.external_id = fn(parse_external_id, 'state_agent_id', proto)
-    new.state_code = parse_region_code_with_override(proto, 'state_code', metadata)
+    new.external_id = fn(parse_external_id, "state_agent_id", proto)
+    new.state_code = parse_region_code_with_override(proto, "state_code", metadata)
     new.full_name = parse_name(proto)
 
     return new.build()

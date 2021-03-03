@@ -30,12 +30,13 @@ from recidiviz.ingest.views.metadata_helpers import (
     get_enum_property_names,
     get_non_enum_property_names,
 )
-from recidiviz.persistence.database.schema_utils import get_state_database_entity_with_name
+from recidiviz.persistence.database.schema_utils import (
+    get_state_database_entity_with_name,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-STATE_PERSON_ENUM_QUERY_TEMPLATE = \
-    """
+STATE_PERSON_ENUM_QUERY_TEMPLATE = """
 WITH person_ids AS (
   SELECT
     DISTINCT person_id AS matching_id
@@ -55,8 +56,7 @@ GROUP BY state_code, `{column_name}`
 ORDER BY state_code, `{column_name}`;
 """
 
-STATE_PERSON_NON_ENUM_QUERY_TEMPLATE = \
-    """
+STATE_PERSON_NON_ENUM_QUERY_TEMPLATE = """
 WITH table_rows AS (
   SELECT
     `{project_id}.state.state_person`.state_code,
@@ -79,41 +79,54 @@ GROUP BY state_code, `{column_name}`
 ORDER BY state_code, `{column_name}`;
 """
 
-STATE_PERSON_ENTITY_NAME = 'StatePerson'
-STATE_PERSON_TABLE_NAME = 'state_person'
+STATE_PERSON_ENTITY_NAME = "StatePerson"
+STATE_PERSON_TABLE_NAME = "state_person"
 
 
-class StatePersonBigQueryViewCollector(BigQueryViewCollector[SimpleBigQueryViewBuilder]):
+class StatePersonBigQueryViewCollector(
+    BigQueryViewCollector[SimpleBigQueryViewBuilder]
+):
+    """A BigQueryViewCollector that prepares view builders to produce metadata about
+    enums on the StatePerson* tables."""
+
     def collect_view_builders(self) -> List[SimpleBigQueryViewBuilder]:
-        table_column_checker = BigQueryTableChecker('state', STATE_PERSON_TABLE_NAME)
+        table_column_checker = BigQueryTableChecker("state", STATE_PERSON_TABLE_NAME)
         entity = get_state_database_entity_with_name(STATE_PERSON_ENTITY_NAME)
         builders = [
             SimpleBigQueryViewBuilder(
                 dataset_id=VIEWS_DATASET,
-                view_id=f'ingest_state_metadata__{STATE_PERSON_TABLE_NAME}__{col}',
+                view_id=f"ingest_state_metadata__{STATE_PERSON_TABLE_NAME}__{col}",
                 view_query_template=STATE_PERSON_ENUM_QUERY_TEMPLATE,
                 table_name=STATE_PERSON_TABLE_NAME,
                 column_name=col,
-                should_build_predicate=table_column_checker.get_has_column_predicate(col),
+                should_build_predicate=table_column_checker.get_has_column_predicate(
+                    col
+                ),
             )
-            for col in get_enum_property_names(entity) if col not in METADATA_EXCLUDED_PROPERTIES
+            for col in get_enum_property_names(entity)
+            if col not in METADATA_EXCLUDED_PROPERTIES
         ]
-        builders.extend([
-            SimpleBigQueryViewBuilder(
-                dataset_id=VIEWS_DATASET,
-                view_id=f'ingest_state_metadata__{STATE_PERSON_TABLE_NAME}__{col}',
-                view_query_template=STATE_PERSON_NON_ENUM_QUERY_TEMPLATE,
-                table_name=STATE_PERSON_TABLE_NAME,
-                column_name=col,
-                should_build_predicate=table_column_checker.get_has_column_predicate(col),
-            )
-            for col in get_non_enum_property_names(entity) if col not in METADATA_EXCLUDED_PROPERTIES
-        ])
+        builders.extend(
+            [
+                SimpleBigQueryViewBuilder(
+                    dataset_id=VIEWS_DATASET,
+                    view_id=f"ingest_state_metadata__{STATE_PERSON_TABLE_NAME}__{col}",
+                    view_query_template=STATE_PERSON_NON_ENUM_QUERY_TEMPLATE,
+                    table_name=STATE_PERSON_TABLE_NAME,
+                    column_name=col,
+                    should_build_predicate=table_column_checker.get_has_column_predicate(
+                        col
+                    ),
+                )
+                for col in get_non_enum_property_names(entity)
+                if col not in METADATA_EXCLUDED_PROPERTIES
+            ]
+        )
 
         return builders
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         collector = StatePersonBigQueryViewCollector()
         for builder in collector.collect_view_builders():

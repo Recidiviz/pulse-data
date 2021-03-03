@@ -22,19 +22,23 @@ from unittest import TestCase
 from more_itertools import one
 
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.schema_entity_converter. \
-    base_schema_entity_converter import (
-        BaseSchemaEntityConverter,
-        FieldNameType)
+from recidiviz.persistence.database.schema_entity_converter.base_schema_entity_converter import (
+    BaseSchemaEntityConverter,
+    FieldNameType,
+)
 from recidiviz.persistence.entity.entity_utils import SchemaEdgeDirectionChecker
-from recidiviz.tests.persistence.database.schema_entity_converter \
-    import test_entities as entities
-from recidiviz.tests.persistence.database.schema_entity_converter \
-    import test_schema as schema
-from recidiviz.tests.persistence.database.schema_entity_converter.\
-    test_base_schema import TestBase
-from recidiviz.tests.persistence.database.schema_entity_converter. \
-    test_entities import RootType
+from recidiviz.tests.persistence.database.schema_entity_converter import (
+    test_entities as entities,
+)
+from recidiviz.tests.persistence.database.schema_entity_converter import (
+    test_schema as schema,
+)
+from recidiviz.tests.persistence.database.schema_entity_converter.test_base_schema import (
+    TestBase,
+)
+from recidiviz.tests.persistence.database.schema_entity_converter.test_entities import (
+    RootType,
+)
 from recidiviz.tests.utils import fakes
 
 
@@ -52,8 +56,7 @@ class _TestSchemaEntityConverter(BaseSchemaEntityConverter):
     ]
 
     def __init__(self):
-        direction_checker = SchemaEdgeDirectionChecker(self.CLASS_HIERARCHY,
-                                                       entities)
+        direction_checker = SchemaEdgeDirectionChecker(self.CLASS_HIERARCHY, entities)
         super().__init__(direction_checker)
 
     def _get_schema_module(self) -> ModuleType:
@@ -62,8 +65,7 @@ class _TestSchemaEntityConverter(BaseSchemaEntityConverter):
     def _get_entities_module(self) -> ModuleType:
         return entities
 
-    def _should_skip_field(
-            self, entity_cls: Type, field: FieldNameType) -> bool:
+    def _should_skip_field(self, entity_cls: Type, field: FieldNameType) -> bool:
         return False
 
     def _populate_indirect_back_edges(self, _):
@@ -91,7 +93,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         self.assertEqual(len(session.query(schema.Child).all()), 0)
 
         parent = entities.Parent.new_with_defaults(
-            full_name='Krusty the Clown',
+            full_name="Krusty the Clown",
         )
         converter = _TestSchemaEntityConverter()
         schema_parent = converter.convert(parent)
@@ -103,9 +105,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         parents = session.query(schema.Parent).all()
         self.assertEqual(len(parents), 1)
 
-        child = entities.Child.new_with_defaults(
-            full_name='Child name'
-        )
+        child = entities.Child.new_with_defaults(full_name="Child name")
 
         schema_child = converter.convert(child)
         parents[0].children.append(schema_child)
@@ -116,11 +116,9 @@ class TestBaseSchemaEntityConverter(TestCase):
         self.assertEqual(len(children[0].parents), 1)
 
         parent2 = entities.Parent.new_with_defaults(
-            full_name='Krusty the Clown 2',
+            full_name="Krusty the Clown 2",
         )
-        children[0].parents = [
-            converter.convert(parent2)
-        ]
+        children[0].parents = [converter.convert(parent2)]
 
         session.commit()
 
@@ -133,7 +131,7 @@ class TestBaseSchemaEntityConverter(TestCase):
 
     def test_add_behavior_2(self):
         parent = entities.Parent.new_with_defaults(
-            full_name='Krusty the Clown',
+            full_name="Krusty the Clown",
         )
         converter = _TestSchemaEntityConverter()
         schema_parent = converter.convert(parent)
@@ -162,9 +160,7 @@ class TestBaseSchemaEntityConverter(TestCase):
 
     def test_convert_single_node(self):
         parent = entities.Parent.new_with_defaults(
-            parent_id=1234,
-            full_name='Krusty the Clown',
-            children=[]
+            parent_id=1234, full_name="Krusty the Clown", children=[]
         )
         converter = _TestSchemaEntityConverter()
         schema_parent = converter.convert(parent)
@@ -185,8 +181,7 @@ class TestBaseSchemaEntityConverter(TestCase):
 
     def test_convert_single_node_no_primary_key(self):
         parent = entities.Parent.new_with_defaults(
-            full_name='Krusty the Clown',
-            children=[]
+            full_name="Krusty the Clown", children=[]
         )
         converter = _TestSchemaEntityConverter()
         schema_parent = converter.convert(parent)
@@ -230,8 +225,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         self.assertEqual(set(expected_parent_names), set(parent_names))
 
     def _run_nuclear_family_test(self, parent_entities, child_entities):
-        schema_parents = \
-            _TestSchemaEntityConverter().convert_all(parent_entities)
+        schema_parents = _TestSchemaEntityConverter().convert_all(parent_entities)
 
         session = SessionFactory.for_schema_base(TestBase)
         for parent in schema_parents:
@@ -260,34 +254,28 @@ class TestBaseSchemaEntityConverter(TestCase):
 
         def __init__(self):
             self.root = entities.Root.new_with_defaults(
-                root_id=314,
-                type=RootType.SIMPSONS,
-                parents=[])
+                root_id=314, type=RootType.SIMPSONS, parents=[]
+            )
 
             self.homer = entities.Parent.new_with_defaults(
-                parent_id=1011,
-                full_name='Homer Simpson',
-                children=[])
+                parent_id=1011, full_name="Homer Simpson", children=[]
+            )
 
             self.marge = entities.Parent.new_with_defaults(
-                parent_id=1213,
-                full_name='Marge Simpson',
-                children=[])
+                parent_id=1213, full_name="Marge Simpson", children=[]
+            )
 
             self.bart = entities.Child.new_with_defaults(
-                child_id=123,
-                full_name='Bart Simpson',
-                parents=[])
+                child_id=123, full_name="Bart Simpson", parents=[]
+            )
 
             self.lisa = entities.Child.new_with_defaults(
-                child_id=456,
-                full_name='Lisa Simpson',
-                parents=[])
+                child_id=456, full_name="Lisa Simpson", parents=[]
+            )
 
             self.maggie = entities.Child.new_with_defaults(
-                child_id=789,
-                full_name='Maggie Simpson',
-                parents=[])
+                child_id=789, full_name="Maggie Simpson", parents=[]
+            )
 
             self.parent_entities = [self.homer, self.marge]
             self.child_entities = [self.bart, self.lisa, self.maggie]
@@ -306,8 +294,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         family.lisa.parents = family.parent_entities
         family.maggie.parents = family.parent_entities
 
-        self._run_nuclear_family_test(family.parent_entities,
-                                      family.child_entities)
+        self._run_nuclear_family_test(family.parent_entities, family.child_entities)
 
     def test_convert_many_to_many_partial_graph_1(self):
         """
@@ -320,8 +307,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         family.homer.children = family.child_entities
         family.marge.children = family.child_entities
 
-        self._run_nuclear_family_test(family.parent_entities,
-                                      family.child_entities)
+        self._run_nuclear_family_test(family.parent_entities, family.child_entities)
 
     def test_convert_many_to_many_partial_graph_2(self):
         """
@@ -336,8 +322,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         family.lisa.parents = [family.homer]
         family.maggie.parents = [family.homer]
 
-        self._run_nuclear_family_test(family.parent_entities,
-                                      family.child_entities)
+        self._run_nuclear_family_test(family.parent_entities, family.child_entities)
 
     def test_convert_many_to_many_partial_graph_3(self):
         """
@@ -353,8 +338,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         family.lisa.parents = family.parent_entities
         family.maggie.parents = family.parent_entities
 
-        self._run_nuclear_family_test(family.parent_entities,
-                                      family.child_entities)
+        self._run_nuclear_family_test(family.parent_entities, family.child_entities)
 
     def test_simple_tree(self):
         """
@@ -418,9 +402,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         self.assertEqual(len(family.homer.children), 0)
         family.root.parents = [family.homer]
         family.homer.children = [family.bart, family.maggie]
-        toy = entities.Toy.new_with_defaults(
-            toy_id=456789,
-            name='Skateboard')
+        toy = entities.Toy.new_with_defaults(toy_id=456789, name="Skateboard")
         family.bart.favorite_toy = toy
         family.maggie.favorite_toy = toy
 
@@ -442,9 +424,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         converted_root = _TestSchemaEntityConverter().convert(one(db_roots))
         self.assertEqual(len(converted_root.parents), 1)
         self.assertEqual(len(converted_root.parents[0].children), 2)
-        self.assertEqual(converted_root.parents[0].children[0].favorite_toy,
-                         toy)
-        self.assertEqual(converted_root.parents[0].children[1].favorite_toy,
-                         toy)
+        self.assertEqual(converted_root.parents[0].children[0].favorite_toy, toy)
+        self.assertEqual(converted_root.parents[0].children[1].favorite_toy, toy)
 
     # TODO(#1894): Write more unit tests for bugfixes in #1816

@@ -30,16 +30,18 @@ _NOW = datetime.datetime(2000, 1, 1)
 class TestConverterUtils(TestCase):
     """Test conversion util methods."""
 
-    @patch('recidiviz.persistence.ingest_info_converter.utils.converter_utils.'
-           'datetime.datetime')
+    @patch(
+        "recidiviz.persistence.ingest_info_converter.utils.converter_utils."
+        "datetime.datetime"
+    )
     def test_parseAge(self, mock_datetime):
         mock_datetime.now.return_value = _NOW
 
-        expected_birthdate = datetime.date(
-            year=_NOW.date().year - 1000, month=1, day=1)
-        assert converter_utils.calculate_birthdate_from_age('1000') == \
-               expected_birthdate
+        expected_birthdate = datetime.date(year=_NOW.date().year - 1000, month=1, day=1)
+        assert (
+            converter_utils.calculate_birthdate_from_age("1000") == expected_birthdate
+        )
 
     def test_parseBadAge(self):
         with pytest.raises(ValueError):
-            converter_utils.calculate_birthdate_from_age('ABC')
+            converter_utils.calculate_birthdate_from_age("ABC")

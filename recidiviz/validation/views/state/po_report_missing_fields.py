@@ -24,7 +24,7 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
-PO_REPORT_MISSING_FIELDS_VIEW_NAME = 'po_report_missing_fields'
+PO_REPORT_MISSING_FIELDS_VIEW_NAME = "po_report_missing_fields"
 
 PO_REPORT_MISSING_FIELDS_DESCRIPTION = """
   All PO report rows with missing data for required columns
@@ -32,29 +32,46 @@ PO_REPORT_MISSING_FIELDS_DESCRIPTION = """
 
 PO_REPORT_REQUIRED_FIELDS = [
     # report metadata
-    'officer_given_name', 'email_address',
+    "officer_given_name",
+    "email_address",
     # pos discharges
-    'pos_discharges', 'pos_discharges_last_month', 'pos_discharges_district_average', 'pos_discharges_state_average',
+    "pos_discharges",
+    "pos_discharges_last_month",
+    "pos_discharges_district_average",
+    "pos_discharges_state_average",
     # supervision downgrades
-    'supervision_downgrade_clients', 'supervision_downgrade_clients_last_month',
-    'supervision_downgrades_district_average', 'supervision_downgrades_state_average',
+    "supervision_downgrade_clients",
+    "supervision_downgrade_clients_last_month",
+    "supervision_downgrades_district_average",
+    "supervision_downgrades_state_average",
     # earned discharges
-    'earned_discharges', 'earned_discharges_last_month', 'earned_discharges_district_average',
-    'earned_discharges_state_average',
+    "earned_discharges",
+    "earned_discharges_last_month",
+    "earned_discharges_district_average",
+    "earned_discharges_state_average",
     # technical revocations
-    'technical_revocations', 'technical_revocations_last_month', 'technical_revocations_district_average',
-    'technical_revocations_state_average',
+    "technical_revocations",
+    "technical_revocations_last_month",
+    "technical_revocations_district_average",
+    "technical_revocations_state_average",
     # absconsions
-    'absconsions', 'absconsions_last_month', 'absconsions_district_average', 'absconsions_state_average',
+    "absconsions",
+    "absconsions_last_month",
+    "absconsions_district_average",
+    "absconsions_state_average",
     # crime revocations
-    'crime_revocations', 'crime_revocations_last_month', 'crime_revocations_district_average',
-    'crime_revocations_state_average',
+    "crime_revocations",
+    "crime_revocations_last_month",
+    "crime_revocations_district_average",
+    "crime_revocations_state_average",
     # assessments
-    'assessments', 'assessment_percent',
+    "assessments",
+    "assessment_percent",
     # face to face contact
-    'facetoface', 'facetoface_percent',
+    "facetoface",
+    "facetoface_percent",
 ]
-PO_REPORT_COMPARISON_COLUMNS = PO_REPORT_REQUIRED_FIELDS + ['total_rows']
+PO_REPORT_COMPARISON_COLUMNS = PO_REPORT_REQUIRED_FIELDS + ["total_rows"]
 
 PO_REPORT_MISSING_FIELDS_QUERY_TEMPLATE = """
     /*{description}*/
@@ -72,11 +89,14 @@ PO_REPORT_MISSING_FIELDS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=PO_REPORT_MISSING_FIELDS_QUERY_TEMPLATE,
     description=PO_REPORT_MISSING_FIELDS_DESCRIPTION,
     po_report_dataset=state_dataset_config.PO_REPORT_DATASET,
-    non_null_column_count=',\n  '.join(
-        [f'SUM(IF({col} IS NOT NULL, 1, 0)) AS {col}' for col in PO_REPORT_REQUIRED_FIELDS]
-    )
+    non_null_column_count=",\n  ".join(
+        [
+            f"SUM(IF({col} IS NOT NULL, 1, 0)) AS {col}"
+            for col in PO_REPORT_REQUIRED_FIELDS
+        ]
+    ),
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         PO_REPORT_MISSING_FIELDS_VIEW_BUILDER.build_and_print()

@@ -17,4 +17,4 @@
 """Various BigQuery datasets."""
 
 # Where the base tables for the operations schema live
-OPERATIONS_BASE_DATASET: str = 'operations'
+OPERATIONS_BASE_DATASET: str = "operations"

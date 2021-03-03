@@ -21,15 +21,12 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-US_ID_TOTAL_JAIL_POPULATION_VIEW_NAME = 'us_id_total_jail_population'
+US_ID_TOTAL_JAIL_POPULATION_VIEW_NAME = "us_id_total_jail_population"
 
-US_ID_TOTAL_JAIL_POPULATION_VIEW_DESCRIPTION = \
-    """"US_ID historical county jail population by compartment and run_date. For US_ID, this represents the subset of 
-    the total county jail population that is not under IDOC custody.
-    """
+US_ID_TOTAL_JAIL_POPULATION_VIEW_DESCRIPTION = """"US_ID historical county jail population by compartment and run_date.
+For US_ID, this represents the subset of the total county jail population that is not under IDOC custody."""
 
-US_ID_TOTAL_JAIL_POPULATION_QUERY_TEMPLATE = \
-    """
+US_ID_TOTAL_JAIL_POPULATION_QUERY_TEMPLATE = """
     WITH incarceration_population AS (
       -- Fetch the total incarceration history for each run date and time step
       SELECT
@@ -74,9 +71,9 @@ US_ID_TOTAL_JAIL_POPULATION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=US_ID_TOTAL_JAIL_POPULATION_QUERY_TEMPLATE,
     description=US_ID_TOTAL_JAIL_POPULATION_VIEW_DESCRIPTION,
     population_projection_dataset=dataset_config.POPULATION_PROJECTION_DATASET,
-    should_materialize=False
+    should_materialize=False,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         US_ID_TOTAL_JAIL_POPULATION_VIEW_BUILDER.build_and_print()

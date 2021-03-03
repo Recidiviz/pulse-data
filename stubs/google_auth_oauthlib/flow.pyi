@@ -19,16 +19,20 @@ from typing import Any, List
 
 from google.auth.credentials import Credentials
 
-
 _DEFAULT_AUTH_PROMPT_MESSAGE: str
 _DEFAULT_WEB_SUCCESS_MESSAGE: str
 
 class InstalledAppFlow:
     @classmethod
     def from_client_secrets_file(
-        cls, client_secrets_file: str, scopes: List[str], **kwargs: Any) -> 'InstalledAppFlow': ...
+        cls, client_secrets_file: str, scopes: List[str], **kwargs: Any
+    ) -> "InstalledAppFlow": ...
     def run_local_server(
-        self, host: str = "localhost", port: int = 8080,
+        self,
+        host: str = "localhost",
+        port: int = 8080,
         authorization_prompt_message: str = _DEFAULT_AUTH_PROMPT_MESSAGE,
-        success_message: str = _DEFAULT_WEB_SUCCESS_MESSAGE, open_browser: bool = True,
-        **kwargs: Any) -> Credentials: ...
+        success_message: str = _DEFAULT_WEB_SUCCESS_MESSAGE,
+        open_browser: bool = True,
+        **kwargs: Any
+    ) -> Credentials: ...

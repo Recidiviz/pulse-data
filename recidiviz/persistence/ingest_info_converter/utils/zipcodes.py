@@ -39,21 +39,30 @@ import uszipcode.search
 # Do not download the zipcode database file for normal operations - use saved file instead.
 # TODO(#4015): Build mechanism for refreshing this file
 
+
 def download_simple_db_file(db_file_dir):
     logging.info("Copying saved zipcodes DB file to library database")
 
-    with open(os.path.join(os.path.dirname(__file__), 'zip_code_simple_db.sqlite'), 'rb') as f_source:
-        with uszipcode.db.atomic_write(uszipcode.db.get_simple_db_file_path(db_file_dir).abspath,
-                                       mode="wb", overwrite=True) as f_dest:
+    with open(
+        os.path.join(os.path.dirname(__file__), "zip_code_simple_db.sqlite"), "rb"
+    ) as f_source:
+        with uszipcode.db.atomic_write(
+            uszipcode.db.get_simple_db_file_path(db_file_dir).abspath,
+            mode="wb",
+            overwrite=True,
+        ) as f_dest:
             shutil.copyfileobj(f_source, f_dest)
 
     logging.info("Complete!")
+
 
 # Override the prior implementation
 uszipcode.search.download_simple_db_file = download_simple_db_file
 
 _ZIP_CODE_SEARCH_ENGINE: SearchEngine = None
 _SESSION_MAKER: sessionmaker = None
+
+
 def _get_zipcode_globals() -> Tuple[SearchEngine, sessionmaker]:
     global _ZIP_CODE_SEARCH_ENGINE, _SESSION_MAKER
 

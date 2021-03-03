@@ -22,32 +22,42 @@ the value represents an indicator of whether the person should contribute to tha
 """
 from typing import List, Dict, Tuple, Any, Optional, Type
 
-from recidiviz.calculator.pipeline.program.metrics import ProgramMetricType, ProgramMetric,\
-    ProgramParticipationMetric, ProgramReferralMetric
-from recidiviz.calculator.pipeline.program.program_event import ProgramEvent, \
-    ProgramReferralEvent, ProgramParticipationEvent
-from recidiviz.calculator.pipeline.utils.calculator_utils import produce_standard_metric_combinations
+from recidiviz.calculator.pipeline.program.metrics import (
+    ProgramMetricType,
+    ProgramMetric,
+    ProgramParticipationMetric,
+    ProgramReferralMetric,
+)
+from recidiviz.calculator.pipeline.program.program_event import (
+    ProgramEvent,
+    ProgramReferralEvent,
+    ProgramParticipationEvent,
+)
+from recidiviz.calculator.pipeline.utils.calculator_utils import (
+    produce_standard_metric_combinations,
+)
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.persistence.entity.state.entities import StatePerson
 
 EVENT_TO_METRIC_TYPES: Dict[Type[ProgramEvent], ProgramMetricType] = {
     ProgramReferralEvent: ProgramMetricType.PROGRAM_REFERRAL,
-    ProgramParticipationEvent: ProgramMetricType.PROGRAM_PARTICIPATION
+    ProgramParticipationEvent: ProgramMetricType.PROGRAM_PARTICIPATION,
 }
 
 EVENT_TO_METRIC_CLASSES: Dict[Type[ProgramEvent], Type[ProgramMetric]] = {
     ProgramReferralEvent: ProgramReferralMetric,
-    ProgramParticipationEvent: ProgramParticipationMetric
+    ProgramParticipationEvent: ProgramParticipationMetric,
 }
 
 
-def map_program_combinations(person: StatePerson,
-                             program_events:
-                             List[ProgramEvent],
-                             metric_inclusions: Dict[ProgramMetricType, bool],
-                             calculation_end_month: Optional[str],
-                             calculation_month_count: int,
-                             person_metadata: PersonMetadata) -> List[Tuple[Dict[str, Any], Any]]:
+def map_program_combinations(
+    person: StatePerson,
+    program_events: List[ProgramEvent],
+    metric_inclusions: Dict[ProgramMetricType, bool],
+    calculation_end_month: Optional[str],
+    calculation_month_count: int,
+    person_metadata: PersonMetadata,
+) -> List[Tuple[Dict[str, Any], Any]]:
     """Transforms ProgramEvents and a StatePerson into metric combinations.
 
     Takes in a StatePerson and all of her ProgramEvents and returns an array of "program combinations". These are
@@ -70,12 +80,14 @@ def map_program_combinations(person: StatePerson,
     Returns:
         A list of key-value tuples representing specific metric combinations and the value corresponding to that metric.
     """
-    return produce_standard_metric_combinations(pipeline='program',
-                                                person=person,
-                                                identifier_events=program_events,
-                                                metric_inclusions=metric_inclusions,
-                                                calculation_end_month=calculation_end_month,
-                                                calculation_month_count=calculation_month_count,
-                                                person_metadata=person_metadata,
-                                                event_to_metric_types=EVENT_TO_METRIC_TYPES,
-                                                event_to_metric_classes=EVENT_TO_METRIC_CLASSES)
+    return produce_standard_metric_combinations(
+        pipeline="program",
+        person=person,
+        identifier_events=program_events,
+        metric_inclusions=metric_inclusions,
+        calculation_end_month=calculation_end_month,
+        calculation_month_count=calculation_month_count,
+        person_metadata=person_metadata,
+        event_to_metric_types=EVENT_TO_METRIC_TYPES,
+        event_to_metric_classes=EVENT_TO_METRIC_CLASSES,
+    )

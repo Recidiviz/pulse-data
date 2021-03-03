@@ -18,21 +18,33 @@
 from typing import List
 
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
-from recidiviz.calculator.query.state.views.dashboard.program_evaluation.us_nd.ftr_referrals_by_month import \
-    FTR_REFERRALS_BY_MONTH_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.dashboard.program_evaluation.us_nd.ftr_referrals_by_age_by_period import \
-    FTR_REFERRALS_BY_AGE_BY_PERIOD_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.dashboard.program_evaluation.us_nd.ftr_referrals_by_gender_by_period \
-    import FTR_REFERRALS_BY_GENDER_BY_PERIOD_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.dashboard.program_evaluation.us_nd.ftr_referrals_by_lsir_by_period import \
-    FTR_REFERRALS_BY_LSIR_BY_PERIOD_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.dashboard.program_evaluation.us_nd.ftr_referrals_by_participation_status \
-    import FTR_REFERRALS_BY_PARTICIPATION_STATUS_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.dashboard.program_evaluation.us_nd.ftr_referrals_by_period import \
-    FTR_REFERRALS_BY_PERIOD_VIEW_BUILDER
-# pylint: disable=line-too-long
-from recidiviz.calculator.query.state.views.dashboard.program_evaluation.us_nd.ftr_referrals_by_race_and_ethnicity_by_period import \
-    FTR_REFERRALS_BY_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_BUILDER
+from recidiviz.calculator.query.state.views.dashboard.program_evaluation.us_nd.ftr_referrals_by_month import (
+    FTR_REFERRALS_BY_MONTH_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.dashboard.program_evaluation.us_nd.ftr_referrals_by_age_by_period import (
+    FTR_REFERRALS_BY_AGE_BY_PERIOD_VIEW_BUILDER,
+)
+
+
+from recidiviz.calculator.query.state.views.dashboard.program_evaluation.us_nd.ftr_referrals_by_gender_by_period import (
+    FTR_REFERRALS_BY_GENDER_BY_PERIOD_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.dashboard.program_evaluation.us_nd.ftr_referrals_by_lsir_by_period import (
+    FTR_REFERRALS_BY_LSIR_BY_PERIOD_VIEW_BUILDER,
+)
+
+
+from recidiviz.calculator.query.state.views.dashboard.program_evaluation.us_nd.ftr_referrals_by_participation_status import (
+    FTR_REFERRALS_BY_PARTICIPATION_STATUS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.dashboard.program_evaluation.us_nd.ftr_referrals_by_period import (
+    FTR_REFERRALS_BY_PERIOD_VIEW_BUILDER,
+)
+
+
+from recidiviz.calculator.query.state.views.dashboard.program_evaluation.us_nd.ftr_referrals_by_race_and_ethnicity_by_period import (
+    FTR_REFERRALS_BY_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_BUILDER,
+)
 
 PROGRAM_EVALUATION_VIEW_BUILDERS: List[MetricBigQueryViewBuilder] = [
     FTR_REFERRALS_BY_MONTH_VIEW_BUILDER,
@@ -41,5 +53,5 @@ PROGRAM_EVALUATION_VIEW_BUILDERS: List[MetricBigQueryViewBuilder] = [
     FTR_REFERRALS_BY_GENDER_BY_PERIOD_VIEW_BUILDER,
     FTR_REFERRALS_BY_LSIR_BY_PERIOD_VIEW_BUILDER,
     FTR_REFERRALS_BY_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_BUILDER,
-    FTR_REFERRALS_BY_PARTICIPATION_STATUS_VIEW_BUILDER
+    FTR_REFERRALS_BY_PARTICIPATION_STATUS_VIEW_BUILDER,
 ]

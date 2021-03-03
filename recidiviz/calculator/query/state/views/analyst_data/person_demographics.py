@@ -16,20 +16,24 @@
 # =============================================================================
 """Person level demographics - age, race, gender"""
 # pylint: disable=trailing-whitespace
-# pylint: disable=line-too-long
+
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config \
-    import STATE_BASE_DATASET, REFERENCE_VIEWS_DATASET, ANALYST_VIEWS_DATASET, STATIC_REFERENCE_TABLES_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    STATE_BASE_DATASET,
+    REFERENCE_VIEWS_DATASET,
+    ANALYST_VIEWS_DATASET,
+    STATIC_REFERENCE_TABLES_DATASET,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-PERSON_DEMOGRAPHICS_VIEW_NAME = 'person_demographics'
+PERSON_DEMOGRAPHICS_VIEW_NAME = "person_demographics"
 
-PERSON_DEMOGRAPHICS_VIEW_DESCRIPTION = \
+PERSON_DEMOGRAPHICS_VIEW_DESCRIPTION = (
     """Person level demographics - age, race, gender"""
+)
 
-PERSON_DEMOGRAPHICS_QUERY_TEMPLATE = \
-    """
+PERSON_DEMOGRAPHICS_QUERY_TEMPLATE = """
     /*{description}*/
     WITH race_or_ethnicity_cte AS 
     (
@@ -76,9 +80,9 @@ PERSON_DEMOGRAPHICS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     base_dataset=STATE_BASE_DATASET,
     reference_views_dataset=REFERENCE_VIEWS_DATASET,
     static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
-    should_materialize=True
+    should_materialize=True,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         PERSON_DEMOGRAPHICS_VIEW_BUILDER.build_and_print()

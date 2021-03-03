@@ -16,4 +16,4 @@
 # =============================================================================
 """Dataset configuration for ingest documentation"""
 
-VIEWS_DATASET: str = 'ingest_metadata'
+VIEWS_DATASET: str = "ingest_metadata"

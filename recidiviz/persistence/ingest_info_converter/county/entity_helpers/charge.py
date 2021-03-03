@@ -15,55 +15,62 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Converts an ingest_info proto Charge to a persistence entity."""
-from recidiviz.common.constants.charge import (ChargeStatus)
+from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.county.charge import ChargeClass, ChargeDegree
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
-    fn, parse_external_id)
-from recidiviz.common.str_field_utils import parse_dollars, parse_bool, \
-    normalize, parse_date
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings \
-    import EnumMappings
+    fn,
+    parse_external_id,
+)
+from recidiviz.common.str_field_utils import (
+    parse_dollars,
+    parse_bool,
+    normalize,
+    parse_date,
+)
+from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
 
 
 def copy_fields_to_builder(
-        new: entities.Charge.Builder, proto, metadata: IngestMetadata) -> None:
+    new: entities.Charge.Builder, proto, metadata: IngestMetadata
+) -> None:
     """Mutates the provided |charge_builder| by converting an ingest_info proto
-     Charge.
+    Charge.
 
-     Note: This will not copy children into the Builder!
-     """
+    Note: This will not copy children into the Builder!
+    """
 
     enum_fields = {
-        'degree': ChargeDegree,
-        'charge_class': ChargeClass,
-        'status': ChargeStatus,
+        "degree": ChargeDegree,
+        "charge_class": ChargeClass,
+        "status": ChargeStatus,
     }
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 
     # Enum values
     new.degree = enum_mappings.get(ChargeDegree)
-    new.degree_raw_text = fn(normalize, 'degree', proto)
+    new.degree_raw_text = fn(normalize, "degree", proto)
     new.charge_class = enum_mappings.get(ChargeClass)
-    new.class_raw_text = fn(normalize, 'charge_class', proto)
-    new.status = enum_mappings.get(ChargeStatus,
-                                   default=ChargeStatus.PRESENT_WITHOUT_INFO)
-    new.status_raw_text = fn(normalize, 'status', proto)
+    new.class_raw_text = fn(normalize, "charge_class", proto)
+    new.status = enum_mappings.get(
+        ChargeStatus, default=ChargeStatus.PRESENT_WITHOUT_INFO
+    )
+    new.status_raw_text = fn(normalize, "status", proto)
 
     # 1-to-1 mappings
-    new.external_id = fn(parse_external_id, 'charge_id', proto)
-    new.offense_date = fn(parse_date, 'offense_date', proto)
-    new.statute = fn(normalize, 'statute', proto)
-    new.name = fn(normalize, 'name', proto)
+    new.external_id = fn(parse_external_id, "charge_id", proto)
+    new.offense_date = fn(parse_date, "offense_date", proto)
+    new.statute = fn(normalize, "statute", proto)
+    new.name = fn(normalize, "name", proto)
     if new.charge_class is None:
         new.charge_class = ChargeClass.find_in_string(new.name)
-    new.attempted = fn(parse_bool, 'attempted', proto)
-    new.level = fn(normalize, 'level', proto)
-    new.fee_dollars = fn(parse_dollars, 'fee_dollars', proto)
-    new.charging_entity = fn(normalize, 'charging_entity', proto)
-    new.case_number = fn(normalize, 'case_number', proto)
-    new.court_type = fn(normalize, 'court_type', proto)
-    new.next_court_date = fn(parse_date, 'next_court_date', proto)
-    new.judge_name = fn(normalize, 'judge_name', proto)
-    new.charge_notes = fn(normalize, 'charge_notes', proto)
+    new.attempted = fn(parse_bool, "attempted", proto)
+    new.level = fn(normalize, "level", proto)
+    new.fee_dollars = fn(parse_dollars, "fee_dollars", proto)
+    new.charging_entity = fn(normalize, "charging_entity", proto)
+    new.case_number = fn(normalize, "case_number", proto)
+    new.court_type = fn(normalize, "court_type", proto)
+    new.next_court_date = fn(parse_date, "next_court_date", proto)
+    new.judge_name = fn(normalize, "judge_name", proto)
+    new.charge_notes = fn(normalize, "charge_notes", proto)

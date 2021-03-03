@@ -35,15 +35,19 @@ class CloudSQLClient:
         """The Google Cloud project id for this client."""
 
     @abc.abstractmethod
-    def import_gcs_csv(self,
-                       instance_name: str,
-                       table_name: str,
-                       gcs_uri: GcsfsFilePath,
-                       columns: List[str]) -> Optional[str]:
+    def import_gcs_csv(
+        self,
+        instance_name: str,
+        table_name: str,
+        gcs_uri: GcsfsFilePath,
+        columns: List[str],
+    ) -> Optional[str]:
         """Triggers a Cloud SQL Import operation and returns the associated operation id or None if unsuccesful."""
 
     @abc.abstractmethod
-    def wait_until_operation_completed(self, operation_id: str, seconds_to_wait: int = 30) -> bool:
+    def wait_until_operation_completed(
+        self, operation_id: str, seconds_to_wait: int = 30
+    ) -> bool:
         """Returns True if the operation succeeded and False if failed or the timeout was met."""
 
 
@@ -55,21 +59,25 @@ class CloudSQLClientImpl:
             project_id = metadata.project_id()
 
         if not project_id:
-            raise ValueError('Must provide a project_id if metadata.project_id() returns None')
+            raise ValueError(
+                "Must provide a project_id if metadata.project_id() returns None"
+            )
 
         self._project_id = project_id
-        self.service = discovery.build('sqladmin', 'v1beta4')
+        self.service = discovery.build("sqladmin", "v1beta4")
 
     @property
     def project_id(self) -> str:
         return self._project_id
 
-    def import_gcs_csv(self,
-                       instance_name: str,
-                       table_name: str,
-                       gcs_uri: GcsfsFilePath,
-                       columns: List[str]) -> Optional[str]:
-        logging.debug('Starting Cloud SQL import operation.')
+    def import_gcs_csv(
+        self,
+        instance_name: str,
+        table_name: str,
+        gcs_uri: GcsfsFilePath,
+        columns: List[str],
+    ) -> Optional[str]:
+        logging.debug("Starting Cloud SQL import operation.")
         req = self.service.instances().import_(
             project=self.project_id,
             instance=instance_name,
@@ -81,35 +89,43 @@ class CloudSQLClientImpl:
                     },
                     "database": "postgres",
                     "fileType": "CSV",
-                    "uri": f'gs://{gcs_uri.abs_path()}',
+                    "uri": f"gs://{gcs_uri.abs_path()}",
                 },
-            }
+            },
         )
         resp = req.execute()
-        return resp.get('name')
+        return resp.get("name")
 
-    def wait_until_operation_completed(self, operation_id: str, seconds_to_wait: int = 30) -> bool:
+    def wait_until_operation_completed(
+        self, operation_id: str, seconds_to_wait: int = 30
+    ) -> bool:
+        """Sleeps until the Cloud SQL operation with the given id has finished,
+        returning whether or not it finished successfully/healthily."""
         start = time.time()
         while time.time() - start < seconds_to_wait:
-            logging.debug('Issuing new Cloud SQL operation get request.')
+            logging.debug("Issuing new Cloud SQL operation get request.")
             req = self.service.operations().get(
                 project=self.project_id,
                 operation=operation_id,
             )
             resp = req.execute()
 
-            status = resp.get('status')
-            if status == 'DONE':
-                error = resp.get('error')
+            status = resp.get("status")
+            if status == "DONE":
+                error = resp.get("error")
                 if not error:
                     return True
-                logging.error('Error running CloudSQL operation: %s', error)
+                logging.error("Error running CloudSQL operation: %s", error)
                 return False
-            if status == 'SQL_OPERATION_STATUS_UNSPECIFIED':
+            if status == "SQL_OPERATION_STATUS_UNSPECIFIED":
                 return False
-            if status not in ['PENDING', 'RUNNING']:
-                logging.warning('Found unexpected status for Cloud SQL operation: %s', status)
+            if status not in ["PENDING", "RUNNING"]:
+                logging.warning(
+                    "Found unexpected status for Cloud SQL operation: %s", status
+                )
 
             time.sleep(1)
-        logging.warning('Cloud SQL operation passed specified timeout but will continue in the background.')
+        logging.warning(
+            "Cloud SQL operation passed specified timeout but will continue in the background."
+        )
         return False

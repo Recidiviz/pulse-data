@@ -15,21 +15,22 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Assigns a severity to each Charge record."""
-# pylint: disable=line-too-long
+
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
-from recidiviz.calculator.query.county.views.charges.charge_class_severity_ranks import CHARGE_CLASS_SEVERITY_RANKS_VIEW_BUILDER
+from recidiviz.calculator.query.county.views.charges.charge_class_severity_ranks import (
+    CHARGE_CLASS_SEVERITY_RANKS_VIEW_BUILDER,
+)
 from recidiviz.common.constants.enum_canonical_strings import external_unknown
 
 from recidiviz.persistence.database.schema.county.schema import Charge
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-CHARGES_AND_SEVERITY_VIEW_NAME = 'charges_and_severity'
+CHARGES_AND_SEVERITY_VIEW_NAME = "charges_and_severity"
 
-CHARGES_AND_SEVERITY_DESCRIPTION = \
-"""
+CHARGES_AND_SEVERITY_DESCRIPTION = """
 Assigns a numeric column "severity" to each charge.
 Charge class severity is defined in `{views_dataset}.charge_class_severity_ranks`.
 The lower the number, the more severe the charge class (1 is most severe, 8 is least).
@@ -37,8 +38,7 @@ The lower the number, the more severe the charge class (1 is most severe, 8 is l
     views_dataset=dataset_config.VIEWS_DATASET
 )
 
-CHARGES_AND_SEVERITY_QUERY_TEMPLATE = \
-"""
+CHARGES_AND_SEVERITY_QUERY_TEMPLATE = """
 /*{description}*/
 SELECT charge_id, booking_id, class, severity
 FROM (
@@ -63,9 +63,9 @@ CHARGES_AND_SEVERITY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     base_dataset=dataset_config.COUNTY_BASE_DATASET,
     views_dataset=dataset_config.VIEWS_DATASET,
     charge_table=Charge.__tablename__,
-    charge_class_severity_ranks_view=CHARGE_CLASS_SEVERITY_RANKS_VIEW_BUILDER.view_id
+    charge_class_severity_ranks_view=CHARGE_CLASS_SEVERITY_RANKS_VIEW_BUILDER.view_id,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         CHARGES_AND_SEVERITY_VIEW_BUILDER.build_and_print()

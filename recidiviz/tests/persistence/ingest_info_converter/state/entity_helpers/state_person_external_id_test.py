@@ -21,12 +21,11 @@ import unittest
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.state.entity_helpers import \
-    state_person_external_id
-
-_EMPTY_METADATA = IngestMetadata.new_with_defaults(
-    region='us_nd'
+from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
+    state_person_external_id,
 )
+
+_EMPTY_METADATA = IngestMetadata.new_with_defaults(region="us_nd")
 
 
 class StatePersonExternalIdConverterTest(unittest.TestCase):
@@ -35,20 +34,19 @@ class StatePersonExternalIdConverterTest(unittest.TestCase):
     def testParseStatePersonExternalId(self) -> None:
         # Arrange
         ingest_external_id = ingest_info_pb2.StatePersonExternalId(
-            state_person_external_id_id='state_id:12345',
-            id_type='state_id',
-            state_code='us_nd',
+            state_person_external_id_id="state_id:12345",
+            id_type="state_id",
+            state_code="us_nd",
         )
 
         # Act
-        result = state_person_external_id.convert(ingest_external_id,
-                                                  _EMPTY_METADATA)
+        result = state_person_external_id.convert(ingest_external_id, _EMPTY_METADATA)
 
         # Assert
         expected_result = entities.StatePersonExternalId(
-            external_id='12345',
-            id_type='STATE_ID',
-            state_code='US_ND',
+            external_id="12345",
+            id_type="STATE_ID",
+            state_code="US_ND",
         )
 
         self.assertEqual(result, expected_result)
@@ -56,20 +54,19 @@ class StatePersonExternalIdConverterTest(unittest.TestCase):
     def testParseStatePersonExternalIdWithWhitespace(self) -> None:
         # Arrange
         ingest_external_id = ingest_info_pb2.StatePersonExternalId(
-            state_person_external_id_id='state_id: 123a',
-            id_type='state_id',
-            state_code='us_nd',
+            state_person_external_id_id="state_id: 123a",
+            id_type="state_id",
+            state_code="us_nd",
         )
 
         # Act
-        result = state_person_external_id.convert(ingest_external_id,
-                                                  _EMPTY_METADATA)
+        result = state_person_external_id.convert(ingest_external_id, _EMPTY_METADATA)
 
         # Assert
         expected_result = entities.StatePersonExternalId(
-            external_id='123A',
-            id_type='STATE_ID',
-            state_code='US_ND',
+            external_id="123A",
+            id_type="STATE_ID",
+            state_code="US_ND",
         )
 
         self.assertEqual(result, expected_result)

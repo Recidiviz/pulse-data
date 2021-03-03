@@ -40,8 +40,7 @@ from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.params import get_str_param_value
 
-scrape_aggregate_reports_blueprint = Blueprint(
-    'scrape_aggregate_reports', __name__)
+scrape_aggregate_reports_blueprint = Blueprint("scrape_aggregate_reports", __name__)
 
 
 class ScrapeAggregateError(Exception):
@@ -50,38 +49,37 @@ class ScrapeAggregateError(Exception):
 
 # GCP has globally unique names for buckets, so we instead have to prepend
 # the buckets with the gcp project.
-HISTORICAL_BUCKET = '{}-processed-state-aggregates'
-UPLOAD_BUCKET = '{}-state-aggregate-reports'
+HISTORICAL_BUCKET = "{}-processed-state-aggregates"
+UPLOAD_BUCKET = "{}-state-aggregate-reports"
 
 
-@scrape_aggregate_reports_blueprint.route('/scrape_state')
+@scrape_aggregate_reports_blueprint.route("/scrape_state")
 @requires_gae_auth
 def scrape_aggregate_reports():
     """Calls state aggregates"""
 
     # Please add new states in alphabetical order
     state_to_scraper = {
-        'california': ca_aggregate_site_scraper.get_urls_to_download,
-        'florida': fl_aggregate_site_scraper.get_urls_to_download,
-        'georgia': ga_aggregate_site_scraper.get_urls_to_download,
-        'hawaii': hi_aggregate_site_scraper.get_urls_to_download,
-        'kentucky': ky_aggregate_site_scraper.get_urls_to_download,
-        'new_york': ny_aggregate_site_scraper.get_urls_to_download,
-        'tennessee': tn_aggregate_site_scraper.get_urls_to_download,
-        'texas': tx_aggregate_site_scraper.get_urls_to_download,
+        "california": ca_aggregate_site_scraper.get_urls_to_download,
+        "florida": fl_aggregate_site_scraper.get_urls_to_download,
+        "georgia": ga_aggregate_site_scraper.get_urls_to_download,
+        "hawaii": hi_aggregate_site_scraper.get_urls_to_download,
+        "kentucky": ky_aggregate_site_scraper.get_urls_to_download,
+        "new_york": ny_aggregate_site_scraper.get_urls_to_download,
+        "tennessee": tn_aggregate_site_scraper.get_urls_to_download,
+        "texas": tx_aggregate_site_scraper.get_urls_to_download,
     }
-    state = get_str_param_value('state', request.args)
+    state = get_str_param_value("state", request.args)
     # We want to always download the pdf if it is NY because they always have
     # the same name.
-    always_download = (state == 'new_york')
-    is_ca = (state == 'california')
-    verify_ssl = (state != 'kentucky')
+    always_download = state == "new_york"
+    is_ca = state == "california"
+    verify_ssl = state != "kentucky"
     urls = state_to_scraper[state]()
     gcp_project = metadata.project_id()
     historical_bucket = HISTORICAL_BUCKET.format(gcp_project)
     upload_bucket = UPLOAD_BUCKET.format(gcp_project)
-    fs = gcsfs.GCSFileSystem(project=gcp_project,
-                             cache_timeout=GCSFS_NO_CACHING)
+    fs = gcsfs.GCSFileSystem(project=gcp_project, cache_timeout=GCSFS_NO_CACHING)
     logging.info("Scraping all pdfs for %s", state)
 
     for url in urls:
@@ -92,26 +90,32 @@ def scrape_aggregate_reports():
             # the name since california sends post requests with the same url.
             pdf_name = state
             if is_ca:
-                pdf_name += str(post_data['year'])
+                pdf_name += str(post_data["year"])
         else:
-            pdf_name = urlparse(url).path.replace('/', '_').lower()
+            pdf_name = urlparse(url).path.replace("/", "_").lower()
         historical_path = os.path.join(historical_bucket, state, pdf_name)
-        file_to_upload = _get_file_to_upload(historical_path, fs, url, pdf_name, always_download, post_data, verify_ssl)
+        file_to_upload = _get_file_to_upload(
+            historical_path, fs, url, pdf_name, always_download, post_data, verify_ssl
+        )
         if file_to_upload:
             upload_path = os.path.join(upload_bucket, state, pdf_name)
             fs.put(file_to_upload, upload_path)
             logging.info("Successfully downloaded %s", url)
         else:
-            logging.info(
-                "Skipping %s because the file already exists", url)
+            logging.info("Skipping %s because the file already exists", url)
 
-    return '', HTTPStatus.OK
+    return "", HTTPStatus.OK
 
 
 def _get_file_to_upload(
-        path: str, fs: gcsfs.GCSFileSystem, url: str, pdf_name: str,
-        always_download: bool, post_data: Dict, verify_ssl: bool) \
-        -> Optional[str]:
+    path: str,
+    fs: gcsfs.GCSFileSystem,
+    url: str,
+    pdf_name: str,
+    always_download: bool,
+    post_data: Dict,
+    verify_ssl: bool,
+) -> Optional[str]:
     """This function checks first whether it needs to download, and then
     returns the locally downloaded pdf"""
     # First check if the path doesn't exist at all
@@ -123,10 +127,9 @@ def _get_file_to_upload(
             response = requests.get(url, verify=verify_ssl)
         if response.status_code == 200:
             path_to_download = os.path.join(tempfile.gettempdir(), pdf_name)
-            with open(path_to_download, 'wb') as f:
+            with open(path_to_download, "wb") as f:
                 # Need to use content since PDF needs to write raw bytes.
                 f.write(response.content)
         else:
-            raise ScrapeAggregateError(
-                "Could not download file {}".format(pdf_name))
+            raise ScrapeAggregateError("Could not download file {}".format(pdf_name))
     return path_to_download

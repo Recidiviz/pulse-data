@@ -27,14 +27,19 @@ from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema.state.dao import SessionIsDirtyError
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database_invariant_validator.database_invariant_validator import validate_invariants
-from recidiviz.tests.persistence.database.schema.state.schema_test_utils import generate_external_id, generate_person
+from recidiviz.persistence.database_invariant_validator.database_invariant_validator import (
+    validate_invariants,
+)
+from recidiviz.tests.persistence.database.schema.state.schema_test_utils import (
+    generate_external_id,
+    generate_person,
+)
 from recidiviz.tools.postgres import local_postgres_helpers
 
-EXTERNAL_ID_1 = 'EXTERNAL_ID_1'
-EXTERNAL_ID_2 = 'EXTERNAL_ID_2'
-ID_TYPE_1 = 'ID_TYPE_1'
-ID_TYPE_2 = 'ID_TYPE_2'
+EXTERNAL_ID_1 = "EXTERNAL_ID_1"
+EXTERNAL_ID_2 = "EXTERNAL_ID_2"
+ID_TYPE_1 = "ID_TYPE_1"
+ID_TYPE_2 = "ID_TYPE_2"
 
 
 @pytest.mark.uses_db
@@ -51,14 +56,16 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
         local_postgres_helpers.use_on_disk_postgresql_database(StateBase)
 
         self.system_level = SystemLevel.STATE
-        self.state_code = 'US_XX'
+        self.state_code = "US_XX"
 
     def tearDown(self) -> None:
         local_postgres_helpers.teardown_on_disk_postgresql_database(StateBase)
 
     @classmethod
     def tearDownClass(cls) -> None:
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(cls.temp_db_dir)
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.temp_db_dir
+        )
 
     def test_clean_session(self) -> None:
         # Arrange
@@ -76,12 +83,12 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
         session = SessionFactory.for_schema_base(StateBase)
 
         db_external_id = generate_external_id(
-            state_code=self.state_code,
-            external_id=EXTERNAL_ID_1, id_type=ID_TYPE_1)
+            state_code=self.state_code, external_id=EXTERNAL_ID_1, id_type=ID_TYPE_1
+        )
 
         db_person = generate_person(
-            state_code=self.state_code,
-            external_ids=[db_external_id])
+            state_code=self.state_code, external_ids=[db_external_id]
+        )
 
         session.add(db_person)
 
@@ -89,22 +96,27 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
 
         # Act
         with self.assertRaises(SessionIsDirtyError) as e:
-            _ = validate_invariants(session, self.system_level, self.state_code, output_people)
+            _ = validate_invariants(
+                session, self.system_level, self.state_code, output_people
+            )
 
         # Assert
-        self.assertEqual(str(e.exception), 'Session unexpectedly dirty - flush before querying the database.')
+        self.assertEqual(
+            str(e.exception),
+            "Session unexpectedly dirty - flush before querying the database.",
+        )
 
     def test_add_person_simple(self) -> None:
         # Arrange
         session = SessionFactory.for_schema_base(StateBase)
 
         db_external_id = generate_external_id(
-            state_code=self.state_code,
-            external_id=EXTERNAL_ID_1, id_type=ID_TYPE_1)
+            state_code=self.state_code, external_id=EXTERNAL_ID_1, id_type=ID_TYPE_1
+        )
 
         db_person = generate_person(
-            state_code=self.state_code,
-            external_ids=[db_external_id])
+            state_code=self.state_code, external_ids=[db_external_id]
+        )
 
         session.add(db_person)
         session.flush()
@@ -112,7 +124,9 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
         output_people = [db_person]
 
         # Act
-        errors = validate_invariants(session, self.system_level, self.state_code, output_people)
+        errors = validate_invariants(
+            session, self.system_level, self.state_code, output_people
+        )
 
         # Assert
         self.assertEqual(0, errors)
@@ -123,16 +137,16 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
         session = SessionFactory.for_schema_base(StateBase)
 
         db_external_id = generate_external_id(
-            state_code=self.state_code,
-            external_id=EXTERNAL_ID_1, id_type=ID_TYPE_1)
+            state_code=self.state_code, external_id=EXTERNAL_ID_1, id_type=ID_TYPE_1
+        )
 
         db_external_id_2 = generate_external_id(
-            state_code=self.state_code,
-            external_id=EXTERNAL_ID_2, id_type=ID_TYPE_1)
+            state_code=self.state_code, external_id=EXTERNAL_ID_2, id_type=ID_TYPE_1
+        )
 
         db_person = generate_person(
-            state_code=self.state_code,
-            external_ids=[db_external_id, db_external_id_2])
+            state_code=self.state_code, external_ids=[db_external_id, db_external_id_2]
+        )
 
         session.add(db_person)
         session.flush()
@@ -140,7 +154,9 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
         output_people = [db_person]
 
         # Act
-        errors = validate_invariants(session, self.system_level, self.state_code, output_people)
+        errors = validate_invariants(
+            session, self.system_level, self.state_code, output_people
+        )
 
         # Assert
         self.assertEqual(1, errors)
@@ -148,20 +164,20 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
 
     def test_add_person_two_ids_same_type_us_pa(self) -> None:
         # Arrange
-        self.state_code = 'US_PA'
+        self.state_code = "US_PA"
         session = SessionFactory.for_schema_base(StateBase)
 
         db_external_id = generate_external_id(
-            state_code=self.state_code,
-            external_id=EXTERNAL_ID_1, id_type=ID_TYPE_1)
+            state_code=self.state_code, external_id=EXTERNAL_ID_1, id_type=ID_TYPE_1
+        )
 
         db_external_id_2 = generate_external_id(
-            state_code=self.state_code,
-            external_id=EXTERNAL_ID_2, id_type=ID_TYPE_1)
+            state_code=self.state_code, external_id=EXTERNAL_ID_2, id_type=ID_TYPE_1
+        )
 
         db_person = generate_person(
-            state_code=self.state_code,
-            external_ids=[db_external_id, db_external_id_2])
+            state_code=self.state_code, external_ids=[db_external_id, db_external_id_2]
+        )
 
         session.add(db_person)
         session.flush()
@@ -169,7 +185,9 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
         output_people = [db_person]
 
         # Act
-        errors = validate_invariants(session, self.system_level, self.state_code, output_people)
+        errors = validate_invariants(
+            session, self.system_level, self.state_code, output_people
+        )
 
         # Assert
         self.assertEqual(0, errors)
@@ -180,19 +198,19 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
         arrange_session = SessionFactory.for_schema_base(StateBase)
 
         db_external_id = generate_external_id(
-            state_code=self.state_code,
-            external_id=EXTERNAL_ID_1, id_type=ID_TYPE_1)
+            state_code=self.state_code, external_id=EXTERNAL_ID_1, id_type=ID_TYPE_1
+        )
 
         db_person = generate_person(
-            state_code=self.state_code,
-            external_ids=[db_external_id])
+            state_code=self.state_code, external_ids=[db_external_id]
+        )
 
         arrange_session.add(db_person)
         arrange_session.commit()
 
         db_external_id_2 = generate_external_id(
-            state_code=self.state_code,
-            external_id=EXTERNAL_ID_2, id_type=ID_TYPE_1)
+            state_code=self.state_code, external_id=EXTERNAL_ID_2, id_type=ID_TYPE_1
+        )
 
         # Act
         session = SessionFactory.for_schema_base(StateBase)
@@ -206,7 +224,9 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
 
         output_people = [person_to_update]
 
-        errors = validate_invariants(session, self.system_level, self.state_code, output_people)
+        errors = validate_invariants(
+            session, self.system_level, self.state_code, output_people
+        )
 
         # Assert
         self.assertEqual(1, errors)
@@ -215,20 +235,20 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
     def test_add_two_people_same_id_type(self) -> None:
         # Arrange
         db_external_id = generate_external_id(
-            state_code=self.state_code,
-            external_id=EXTERNAL_ID_1, id_type=ID_TYPE_1)
+            state_code=self.state_code, external_id=EXTERNAL_ID_1, id_type=ID_TYPE_1
+        )
 
         db_person = generate_person(
-            state_code=self.state_code,
-            external_ids=[db_external_id])
+            state_code=self.state_code, external_ids=[db_external_id]
+        )
 
         db_external_id_2 = generate_external_id(
-            state_code=self.state_code,
-            external_id=EXTERNAL_ID_2, id_type=ID_TYPE_1)
+            state_code=self.state_code, external_id=EXTERNAL_ID_2, id_type=ID_TYPE_1
+        )
 
         db_person_2 = generate_person(
-            state_code=self.state_code,
-            external_ids=[db_external_id_2])
+            state_code=self.state_code, external_ids=[db_external_id_2]
+        )
 
         # Act
         session = SessionFactory.for_schema_base(StateBase)
@@ -239,7 +259,9 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
 
         output_people = [db_person, db_person_2]
 
-        errors = validate_invariants(session, self.system_level, self.state_code, output_people)
+        errors = validate_invariants(
+            session, self.system_level, self.state_code, output_people
+        )
 
         # Assert
         self.assertEqual(0, errors)

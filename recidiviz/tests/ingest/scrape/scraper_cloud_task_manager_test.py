@@ -24,14 +24,15 @@ from freezegun import freeze_time
 from google.cloud import tasks_v2
 from mock import patch, call
 
-from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import \
-    SCRAPER_PHASE_QUEUE_V2
-from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import \
-    QUEUES_REGION
+from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
+    SCRAPER_PHASE_QUEUE_V2,
+)
+from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import (
+    QUEUES_REGION,
+)
 from recidiviz.ingest.scrape import scraper_cloud_task_manager
 from recidiviz.ingest.scrape.constants import ScrapeType, TaskType
-from recidiviz.ingest.scrape.scraper_cloud_task_manager import \
-    ScraperCloudTaskManager
+from recidiviz.ingest.scrape.scraper_cloud_task_manager import ScraperCloudTaskManager
 from recidiviz.ingest.scrape.task_params import QueueRequest, Task
 
 CLOUD_TASK_MANAGER_PACKAGE_NAME = scraper_cloud_task_manager.__name__
@@ -41,28 +42,26 @@ class TestScraperCloudTaskManager(unittest.TestCase):
     """Tests for ScraperCloudTaskManager"""
 
     def task_path(self, project, queues_region, queue, task_id):
-        return f'queue_path/{project}/{queues_region}/{queue}/{task_id}'
+        return f"queue_path/{project}/{queues_region}/{queue}/{task_id}"
 
-    @patch('google.cloud.tasks_v2.CloudTasksClient')
+    @patch("google.cloud.tasks_v2.CloudTasksClient")
     def test_purge_scrape_tasks(self, mock_client):
         # Arrange
-        region_code = 'us_ca_san_francisco'
-        project_id = 'recidiviz-456'
+        region_code = "us_ca_san_francisco"
+        project_id = "recidiviz-456"
 
-        queue_name = 'test-queue-name'
-        queue_path = f'queue_path/{project_id}/{QUEUES_REGION}/{queue_name}'
+        queue_name = "test-queue-name"
+        queue_path = f"queue_path/{project_id}/{QUEUES_REGION}/{queue_name}"
 
         task1 = tasks_v2.types.task_pb2.Task(
-            name=self.task_path(project_id,
-                                QUEUES_REGION,
-                                queue_name,
-                                'us_ca_san_francisco-12345')
+            name=self.task_path(
+                project_id, QUEUES_REGION, queue_name, "us_ca_san_francisco-12345"
+            )
         )
         task2 = tasks_v2.types.task_pb2.Task(
-            name=self.task_path(project_id,
-                                QUEUES_REGION,
-                                queue_name,
-                                'us_ca_san_francisco-12345')
+            name=self.task_path(
+                project_id, QUEUES_REGION, queue_name, "us_ca_san_francisco-12345"
+            )
         )
 
         mock_client.return_value.list_tasks.return_value = [task1, task2]
@@ -71,164 +70,152 @@ class TestScraperCloudTaskManager(unittest.TestCase):
         mock_client.return_value.queue_path.return_value = queue_path
 
         # Act
-        ScraperCloudTaskManager(project_id=project_id). \
-            purge_scrape_tasks(region_code=region_code,
-                               queue_name=queue_name)
+        ScraperCloudTaskManager(project_id=project_id).purge_scrape_tasks(
+            region_code=region_code, queue_name=queue_name
+        )
 
         # Assert
         mock_client.return_value.queue_path.assert_called_with(
-            project_id,
-            QUEUES_REGION,
-            queue_name)
+            project_id, QUEUES_REGION, queue_name
+        )
         mock_client.return_value.list_tasks.assert_called_with(parent=queue_path)
         self.assertEqual(
             mock_client.return_value.delete_task.mock_calls,
             [
                 call(name=task1.name),
                 call(name=task2.name),
-            ]
+            ],
         )
 
-    @patch('google.cloud.tasks_v2.CloudTasksClient')
+    @patch("google.cloud.tasks_v2.CloudTasksClient")
     def test_list_scrape_tasks(self, mock_client):
         # Arrange
-        region_code = 'us_ca_san_francisco'
-        project_id = 'recidiviz-456'
+        region_code = "us_ca_san_francisco"
+        project_id = "recidiviz-456"
 
-        queue_name = 'test-queue-name'
-        queue_path = f'queue_path/{project_id}/{QUEUES_REGION}/{queue_name}'
+        queue_name = "test-queue-name"
+        queue_path = f"queue_path/{project_id}/{QUEUES_REGION}/{queue_name}"
 
         mock_client.return_value.task_path.side_effect = self.task_path
         mock_client.return_value.queue_path.return_value = queue_path
 
         task1 = tasks_v2.types.task_pb2.Task(
-            name=self.task_path(project_id,
-                                QUEUES_REGION,
-                                queue_name,
-                                'us_ca_san_francisco-12345')
+            name=self.task_path(
+                project_id, QUEUES_REGION, queue_name, "us_ca_san_francisco-12345"
+            )
         )
         task2 = tasks_v2.types.task_pb2.Task(
-            name=self.task_path(project_id,
-                                QUEUES_REGION,
-                                queue_name,
-                                'us_ca_san_mateo-12345')
+            name=self.task_path(
+                project_id, QUEUES_REGION, queue_name, "us_ca_san_mateo-12345"
+            )
         )
 
         mock_client.return_value.list_tasks.return_value = [task1, task2]
 
         # Act
-        tasks = ScraperCloudTaskManager(project_id=project_id). \
-            list_scrape_tasks(region_code=region_code,
-                              queue_name=queue_name)
+        tasks = ScraperCloudTaskManager(project_id=project_id).list_scrape_tasks(
+            region_code=region_code, queue_name=queue_name
+        )
 
         # Assert
         mock_client.return_value.queue_path.assert_called_with(
-            project_id,
-            QUEUES_REGION,
-            queue_name)
+            project_id, QUEUES_REGION, queue_name
+        )
         mock_client.return_value.list_tasks.assert_called_with(parent=queue_path)
 
         self.assertCountEqual(tasks, [task1])
 
-    @patch(f'{CLOUD_TASK_MANAGER_PACKAGE_NAME}.uuid')
-    @patch('google.cloud.tasks_v2.CloudTasksClient')
-    @freeze_time('2019-04-14')
+    @patch(f"{CLOUD_TASK_MANAGER_PACKAGE_NAME}.uuid")
+    @patch("google.cloud.tasks_v2.CloudTasksClient")
+    @freeze_time("2019-04-14")
     def test_create_scrape_task(self, mock_client, mock_uuid):
         # Arrange
-        uuid = 'random-uuid'
+        uuid = "random-uuid"
         mock_uuid.uuid4.return_value = uuid
 
-        region_code = 'us_ca_san_francisco'
-        project_id = 'recidiviz-456'
+        region_code = "us_ca_san_francisco"
+        project_id = "recidiviz-456"
 
-        queue_name = 'test-queue-name'
-        queue_path = f'queue_path/{project_id}/{QUEUES_REGION}/{queue_name}'
-        task_id = 'us_ca_san_francisco-random-uuid'
-        task_path = f'{queue_path}/{task_id}'
-        url = '/my_scrape/task'
+        queue_name = "test-queue-name"
+        queue_path = f"queue_path/{project_id}/{QUEUES_REGION}/{queue_name}"
+        task_id = "us_ca_san_francisco-random-uuid"
+        task_path = f"{queue_path}/{task_id}"
+        url = "/my_scrape/task"
 
         body = {
-            'region': region_code,
-            'params': QueueRequest(
-                next_task=Task(
-                    task_type=TaskType.INITIAL,
-                    endpoint='www.google.com'
-                ),
+            "region": region_code,
+            "params": QueueRequest(
+                next_task=Task(task_type=TaskType.INITIAL, endpoint="www.google.com"),
                 scrape_type=ScrapeType.BACKGROUND,
-                scraper_start_time=datetime.datetime.now()
-            ).to_serializable()
+                scraper_start_time=datetime.datetime.now(),
+            ).to_serializable(),
         }
         task = tasks_v2.types.task_pb2.Task(
             name=task_path,
             app_engine_http_request={
-                'http_method': 'POST',
-                'relative_uri': url,
-                'body': json.dumps(body).encode()
-            }
+                "http_method": "POST",
+                "relative_uri": url,
+                "body": json.dumps(body).encode(),
+            },
         )
 
         mock_client.return_value.task_path.return_value = task_path
         mock_client.return_value.queue_path.return_value = queue_path
 
         # Act
-        ScraperCloudTaskManager(project_id=project_id). \
-            create_scrape_task(region_code=region_code,
-                               queue_name=queue_name,
-                               url=url,
-                               body=body)
+        ScraperCloudTaskManager(project_id=project_id).create_scrape_task(
+            region_code=region_code, queue_name=queue_name, url=url, body=body
+        )
 
         # Assert
         mock_client.return_value.queue_path.assert_called_with(
-            project_id,
-            QUEUES_REGION,
-            queue_name)
+            project_id, QUEUES_REGION, queue_name
+        )
         mock_client.return_value.task_path.assert_called_with(
-            project_id,
-            QUEUES_REGION,
-            queue_name,
-            task_id)
+            project_id, QUEUES_REGION, queue_name, task_id
+        )
         mock_client.return_value.create_task.assert_called_with(
-            parent=queue_path, task=task)
+            parent=queue_path, task=task
+        )
 
-    @patch(f'{CLOUD_TASK_MANAGER_PACKAGE_NAME}.uuid')
-    @patch('google.cloud.tasks_v2.CloudTasksClient')
+    @patch(f"{CLOUD_TASK_MANAGER_PACKAGE_NAME}.uuid")
+    @patch("google.cloud.tasks_v2.CloudTasksClient")
     def test_create_scraper_phase_task(self, mock_client, mock_uuid):
         # Arrange
-        uuid = 'random-uuid'
+        uuid = "random-uuid"
         mock_uuid.uuid4.return_value = uuid
 
-        region_code = 'us_ca_san_francisco'
-        project_id = 'recidiviz-456'
+        region_code = "us_ca_san_francisco"
+        project_id = "recidiviz-456"
 
-        queue_path = f'queue_path/{project_id}/{QUEUES_REGION}'
-        task_id = 'us_ca_san_francisco-random-uuid'
-        task_path = f'{queue_path}/{task_id}'
-        url = '/my_enqueue/phase'
+        queue_path = f"queue_path/{project_id}/{QUEUES_REGION}"
+        task_id = "us_ca_san_francisco-random-uuid"
+        task_path = f"{queue_path}/{task_id}"
+        url = "/my_enqueue/phase"
 
         task = tasks_v2.types.task_pb2.Task(
             name=task_path,
             app_engine_http_request={
-                'http_method': 'GET',
-                'relative_uri': f'{url}?region={region_code}',
-            }
+                "http_method": "GET",
+                "relative_uri": f"{url}?region={region_code}",
+            },
         )
 
         mock_client.return_value.task_path.return_value = task_path
         mock_client.return_value.queue_path.return_value = queue_path
 
         # Act
-        ScraperCloudTaskManager(project_id=project_id). \
-            create_scraper_phase_task(region_code=region_code, url=url)
+        ScraperCloudTaskManager(project_id=project_id).create_scraper_phase_task(
+            region_code=region_code, url=url
+        )
 
         # Assert
         mock_client.return_value.queue_path.assert_called_with(
-            project_id,
-            QUEUES_REGION,
-            SCRAPER_PHASE_QUEUE_V2)
+            project_id, QUEUES_REGION, SCRAPER_PHASE_QUEUE_V2
+        )
         mock_client.return_value.task_path.assert_called_with(
-            project_id,
-            QUEUES_REGION,
-            SCRAPER_PHASE_QUEUE_V2,
-            task_id)
+            project_id, QUEUES_REGION, SCRAPER_PHASE_QUEUE_V2, task_id
+        )
         mock_client.return_value.create_task.assert_called_with(
-            parent=queue_path, task=task)
+            parent=queue_path, task=task
+        )

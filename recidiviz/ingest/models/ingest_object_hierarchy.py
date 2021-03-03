@@ -28,144 +28,216 @@ AncestorChoiceKey = str
 
 @attr.s
 class AncestorTypeChoices:
-    key: 'AncestorChoiceKey' = attr.ib()
-    ancestor_choices: Set['AncestorClassName'] = attr.ib(factory=list)
+    key: "AncestorChoiceKey" = attr.ib()
+    ancestor_choices: Set["AncestorClassName"] = attr.ib(factory=list)
 
 
-VALID_ANCESTOR_CHOICE_KEYS: Set['AncestorChoiceKey'] = {'state_sentence'}
+VALID_ANCESTOR_CHOICE_KEYS: Set["AncestorChoiceKey"] = {"state_sentence"}
 
 
 _HIERARCHY_MAP: Dict[
-    'AncestorClassName', Sequence[
-        Union['AncestorClassName', 'AncestorTypeChoices']]] = {
-            'person': (),
-            'booking': ('person',),
-            'arrest': ('person', 'booking'),
-            'charge': ('person', 'booking'),
-            'hold': ('person', 'booking'),
-            'bond': ('person', 'booking', 'charge'),
-            'sentence': ('person', 'booking', 'charge'),
-            'state_person': (),
-            'state_person_race': ('state_person',),
-            'state_person_ethnicity': ('state_person',),
-            'state_alias': ('state_person',),
-            'state_person_external_id': ('state_person',),
-            'state_assessment': ('state_person',),
-            'state_sentence_group': ('state_person',),
-            'state_program_assignment': ('state_person',),
-            'state_supervision_sentence': ('state_person',
-                                           'state_sentence_group',),
-            'state_incarceration_sentence': ('state_person',
-                                             'state_sentence_group',),
-            'state_fine': ('state_person', 'state_sentence_group',),
-            'state_early_discharge': (
-                'state_person', 'state_sentence_group',
-                AncestorTypeChoices(
-                    key='state_sentence',
-                    ancestor_choices={'state_incarceration_sentence',
-                                      'state_supervision_sentence'})),
-            'state_incarceration_period': (
-                'state_person', 'state_sentence_group',
-                AncestorTypeChoices(
-                    key='state_sentence',
-                    ancestor_choices={'state_incarceration_sentence',
-                                      'state_supervision_sentence'})),
-            'state_supervision_period': (
-                'state_person', 'state_sentence_group',
-                AncestorTypeChoices(
-                    key='state_sentence',
-                    ancestor_choices={'state_incarceration_sentence',
-                                      'state_supervision_sentence'})),
-            # TODO(#1883): It's a hack that we assume the parent of a
-            #  state_incarceration_period is an state_incarceration_sentence
-            #  here. In theory parent could be state_supervision_sentence that
-            #  has a revocation edge into a state_incarceration_period.
-            'state_incarceration_incident': (
-                'state_person', 'state_sentence_group',
-                'state_incarceration_sentence',
-                'state_incarceration_period'),
-            'state_incarceration_incident_outcome': (
-                'state_person', 'state_sentence_group',
-                'state_incarceration_sentence',
-                'state_incarceration_period', 'state_incarceration_incident'),
-            'state_charge': (
-                'state_person', 'state_sentence_group',
-                AncestorTypeChoices(
-                    key='state_sentence',
-                    ancestor_choices={'state_incarceration_sentence',
-                                      'state_supervision_sentence',
-                                      'fine'})),
-            'state_court_case': (
-                'state_person', 'state_sentence_group',
-                AncestorTypeChoices(
-                    key='state_sentence',
-                    ancestor_choices={'state_incarceration_sentence',
-                                      'state_supervision_sentence',
-                                      'fine'}),
-                'state_charge'),
-            'state_supervision_violation': (
-                'state_person', 'state_sentence_group',
-                AncestorTypeChoices(
-                    key='state_sentence',
-                    ancestor_choices={'state_incarceration_sentence',
-                                      'state_supervision_sentence'}),
-                'state_supervision_period'),
-            'state_supervision_violation_type_entry': (
-                'state_person', 'state_sentence_group',
-                AncestorTypeChoices(
-                    key='state_sentence',
-                    ancestor_choices={'state_incarceration_sentence',
-                                      'state_supervision_sentence'}),
-                'state_supervision_period',
-                'state_supervision_violation'),
-            'state_supervision_violation_response': (
-                'state_person', 'state_sentence_group',
-                AncestorTypeChoices(
-                    key='state_sentence',
-                    ancestor_choices={'state_incarceration_sentence',
-                                      'state_supervision_sentence'}),
-                'state_supervision_period',
-                'state_supervision_violation'),
-            'state_supervision_violation_response_decision_entry': (
-                'state_person', 'state_sentence_group',
-                AncestorTypeChoices(
-                    key='state_sentence',
-                    ancestor_choices={'state_incarceration_sentence',
-                                      'state_supervision_sentence'}),
-                'state_supervision_period',
-                'state_supervision_violation',
-                'state_supervision_violation_response'),
-            # TODO(#1883): The entry here for |state_agent| is a hack. StateAgent
-            #  can have multiple ancestor paths depending on what type of agent
-            #  it is. We need to update the extractor code to just generate
-            #  buckets of objects of a given type, with some encoding about
-            #  parent relationships. However, this is fine for the ND MVP, since
-            #  we only create one type of StateAgent right now.
-            'state_agent': (
-                'state_person', 'state_sentence_group',
-                AncestorTypeChoices(
-                    key='state_sentence',
-                    ancestor_choices={'state_incarceration_sentence',
-                                      'state_supervision_sentence',
-                                      'fine'}),
-                'state_charge', 'state_court_case'),
-            'state_supervision_case_type_entry': ('state_person', 'state_sentence_group', 'state_supervision_sentence',
-                                                  'state_supervision_period',),
-            'state_supervision_contact': (
-                'state_person', 'state_sentence_group',
-                AncestorTypeChoices(
-                    key='state_sentence',
-                    ancestor_choices={'state_incarceration_sentence', 'state_supervision_sentence'}),
-                'state_supervision_period')
-            }
+    "AncestorClassName", Sequence[Union["AncestorClassName", "AncestorTypeChoices"]]
+] = {
+    "person": (),
+    "booking": ("person",),
+    "arrest": ("person", "booking"),
+    "charge": ("person", "booking"),
+    "hold": ("person", "booking"),
+    "bond": ("person", "booking", "charge"),
+    "sentence": ("person", "booking", "charge"),
+    "state_person": (),
+    "state_person_race": ("state_person",),
+    "state_person_ethnicity": ("state_person",),
+    "state_alias": ("state_person",),
+    "state_person_external_id": ("state_person",),
+    "state_assessment": ("state_person",),
+    "state_sentence_group": ("state_person",),
+    "state_program_assignment": ("state_person",),
+    "state_supervision_sentence": (
+        "state_person",
+        "state_sentence_group",
+    ),
+    "state_incarceration_sentence": (
+        "state_person",
+        "state_sentence_group",
+    ),
+    "state_fine": (
+        "state_person",
+        "state_sentence_group",
+    ),
+    "state_early_discharge": (
+        "state_person",
+        "state_sentence_group",
+        AncestorTypeChoices(
+            key="state_sentence",
+            ancestor_choices={
+                "state_incarceration_sentence",
+                "state_supervision_sentence",
+            },
+        ),
+    ),
+    "state_incarceration_period": (
+        "state_person",
+        "state_sentence_group",
+        AncestorTypeChoices(
+            key="state_sentence",
+            ancestor_choices={
+                "state_incarceration_sentence",
+                "state_supervision_sentence",
+            },
+        ),
+    ),
+    "state_supervision_period": (
+        "state_person",
+        "state_sentence_group",
+        AncestorTypeChoices(
+            key="state_sentence",
+            ancestor_choices={
+                "state_incarceration_sentence",
+                "state_supervision_sentence",
+            },
+        ),
+    ),
+    # TODO(#1883): It's a hack that we assume the parent of a
+    #  state_incarceration_period is an state_incarceration_sentence
+    #  here. In theory parent could be state_supervision_sentence that
+    #  has a revocation edge into a state_incarceration_period.
+    "state_incarceration_incident": (
+        "state_person",
+        "state_sentence_group",
+        "state_incarceration_sentence",
+        "state_incarceration_period",
+    ),
+    "state_incarceration_incident_outcome": (
+        "state_person",
+        "state_sentence_group",
+        "state_incarceration_sentence",
+        "state_incarceration_period",
+        "state_incarceration_incident",
+    ),
+    "state_charge": (
+        "state_person",
+        "state_sentence_group",
+        AncestorTypeChoices(
+            key="state_sentence",
+            ancestor_choices={
+                "state_incarceration_sentence",
+                "state_supervision_sentence",
+                "fine",
+            },
+        ),
+    ),
+    "state_court_case": (
+        "state_person",
+        "state_sentence_group",
+        AncestorTypeChoices(
+            key="state_sentence",
+            ancestor_choices={
+                "state_incarceration_sentence",
+                "state_supervision_sentence",
+                "fine",
+            },
+        ),
+        "state_charge",
+    ),
+    "state_supervision_violation": (
+        "state_person",
+        "state_sentence_group",
+        AncestorTypeChoices(
+            key="state_sentence",
+            ancestor_choices={
+                "state_incarceration_sentence",
+                "state_supervision_sentence",
+            },
+        ),
+        "state_supervision_period",
+    ),
+    "state_supervision_violation_type_entry": (
+        "state_person",
+        "state_sentence_group",
+        AncestorTypeChoices(
+            key="state_sentence",
+            ancestor_choices={
+                "state_incarceration_sentence",
+                "state_supervision_sentence",
+            },
+        ),
+        "state_supervision_period",
+        "state_supervision_violation",
+    ),
+    "state_supervision_violation_response": (
+        "state_person",
+        "state_sentence_group",
+        AncestorTypeChoices(
+            key="state_sentence",
+            ancestor_choices={
+                "state_incarceration_sentence",
+                "state_supervision_sentence",
+            },
+        ),
+        "state_supervision_period",
+        "state_supervision_violation",
+    ),
+    "state_supervision_violation_response_decision_entry": (
+        "state_person",
+        "state_sentence_group",
+        AncestorTypeChoices(
+            key="state_sentence",
+            ancestor_choices={
+                "state_incarceration_sentence",
+                "state_supervision_sentence",
+            },
+        ),
+        "state_supervision_period",
+        "state_supervision_violation",
+        "state_supervision_violation_response",
+    ),
+    # TODO(#1883): The entry here for |state_agent| is a hack. StateAgent
+    #  can have multiple ancestor paths depending on what type of agent
+    #  it is. We need to update the extractor code to just generate
+    #  buckets of objects of a given type, with some encoding about
+    #  parent relationships. However, this is fine for the ND MVP, since
+    #  we only create one type of StateAgent right now.
+    "state_agent": (
+        "state_person",
+        "state_sentence_group",
+        AncestorTypeChoices(
+            key="state_sentence",
+            ancestor_choices={
+                "state_incarceration_sentence",
+                "state_supervision_sentence",
+                "fine",
+            },
+        ),
+        "state_charge",
+        "state_court_case",
+    ),
+    "state_supervision_case_type_entry": (
+        "state_person",
+        "state_sentence_group",
+        "state_supervision_sentence",
+        "state_supervision_period",
+    ),
+    "state_supervision_contact": (
+        "state_person",
+        "state_sentence_group",
+        AncestorTypeChoices(
+            key="state_sentence",
+            ancestor_choices={
+                "state_incarceration_sentence",
+                "state_supervision_sentence",
+            },
+        ),
+        "state_supervision_period",
+    ),
+}
 
 
 def get_ancestor_class_sequence(
-        class_name: 'AncestorClassName',
-        ancestor_chain: Dict['AncestorClassName', str] = None,
-        enforced_ancestor_choices:
-        Dict['AncestorChoiceKey', 'AncestorClassName'] = None) \
-        -> Sequence['AncestorClassName']:
+    class_name: "AncestorClassName",
+    ancestor_chain: Dict["AncestorClassName", str] = None,
+    enforced_ancestor_choices: Dict["AncestorChoiceKey", "AncestorClassName"] = None,
+) -> Sequence["AncestorClassName"]:
     """Returns the sequence of ancestor classes leading from the root of the
     object graph, a Person type, all the way to the given |class_name|.
 
@@ -213,19 +285,22 @@ def get_ancestor_class_sequence(
             if step.key not in VALID_ANCESTOR_CHOICE_KEYS:
                 raise ValueError(
                     f"Invalid ancestor choice key of [{step.key}], must be one "
-                    f"of [{VALID_ANCESTOR_CHOICE_KEYS}]")
+                    f"of [{VALID_ANCESTOR_CHOICE_KEYS}]"
+                )
 
             # First, pick if we've selected one of the choices via the
             # ancestor chain
-            choices_ancestor_chain_overlap = \
-                step.ancestor_choices.intersection(ancestor_chain.keys())
+            choices_ancestor_chain_overlap = step.ancestor_choices.intersection(
+                ancestor_chain.keys()
+            )
             if choices_ancestor_chain_overlap:
                 if len(choices_ancestor_chain_overlap) > 1:
                     raise ValueError(
                         "There are multiple valid ancestor choices in the "
                         "given ancestor chain. Valid choices are: "
                         f"[{step.ancestor_choices}]. Ancestor chain includes: "
-                        f"[{ancestor_chain.keys()}]")
+                        f"[{ancestor_chain.keys()}]"
+                    )
                 hierarchy_sequence.append(one(choices_ancestor_chain_overlap))
                 continue
 
@@ -236,20 +311,23 @@ def get_ancestor_class_sequence(
                     f"[{step.ancestor_choices}], there is neither overlap with "
                     f"the ancestor chain [{ancestor_chain.keys()}] nor a "
                     f"declared choice. We don't have enough information to "
-                    f"construct the ancestor hierarchy for this object.")
+                    f"construct the ancestor hierarchy for this object."
+                )
 
             if step.key not in enforced_ancestor_choices:
                 raise ValueError(
                     f"The enforced choices [{enforced_ancestor_choices}] don't "
                     f"contain a mapping for [{step.key}]. We don't have enough "
                     "information to construct the ancestor hierarchy for this "
-                    "object.")
+                    "object."
+                )
 
             choice = enforced_ancestor_choices[step.key]
             if choice not in _HIERARCHY_MAP:
                 raise ValueError(
                     f"Invalid ancestor choice value of [{choice}], must be a "
-                    "valid type listed in the hierarchy map.")
+                    "valid type listed in the hierarchy map."
+                )
             hierarchy_sequence.append(choice)
         else:
             raise ValueError(f"Unknown type [{type(step)}] in hierarchy map.")

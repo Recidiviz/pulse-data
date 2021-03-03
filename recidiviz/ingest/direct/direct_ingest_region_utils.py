@@ -24,13 +24,14 @@ _REGIONS_DIR = os.path.dirname(recidiviz.ingest.direct.regions.__file__)
 
 
 def get_existing_region_dir_paths() -> List[str]:
-    """ Returns list of paths to all region directories in ingest/direct/regions.
-    """
+    """Returns list of paths to all region directories in ingest/direct/regions."""
     return [os.path.join(_REGIONS_DIR, d) for d in get_existing_region_dir_names()]
 
 
 def get_existing_region_dir_names() -> List[str]:
-    """ Returns list of region directories existing in ingest/direct/regions.
-    """
-    return [d for d in os.listdir(_REGIONS_DIR) if os.path.isdir(os.path.join(_REGIONS_DIR, d))
-            and not d.startswith('__')]
+    """Returns list of region directories existing in ingest/direct/regions."""
+    return [
+        d
+        for d in os.listdir(_REGIONS_DIR)
+        if os.path.isdir(os.path.join(_REGIONS_DIR, d)) and not d.startswith("__")
+    ]

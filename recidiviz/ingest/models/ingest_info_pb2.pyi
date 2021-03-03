@@ -49,155 +49,386 @@ class IngestInfo(google.protobuf.message.Message):
     STATE_PROGRAM_ASSIGNMENTS_FIELD_NUMBER: builtins.int
     STATE_EARLY_DISCHARGES_FIELD_NUMBER: builtins.int
     STATE_SUPERVISION_CONTACTS_FIELD_NUMBER: builtins.int
-
     @property
-    def people(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Person]: ...
-
+    def people(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___Person
+    ]: ...
     @property
-    def bookings(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Booking]: ...
-
+    def bookings(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___Booking
+    ]: ...
     @property
-    def arrests(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Arrest]: ...
-
+    def arrests(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___Arrest
+    ]: ...
     @property
-    def charges(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Charge]: ...
-
+    def charges(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___Charge
+    ]: ...
     @property
-    def holds(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Hold]: ...
-
+    def holds(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___Hold
+    ]: ...
     @property
-    def bonds(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Bond]: ...
-
+    def bonds(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___Bond
+    ]: ...
     @property
-    def sentences(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Sentence]: ...
-
+    def sentences(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___Sentence
+    ]: ...
     @property
-    def sentence_relationships(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___SentenceRelationship]: ...
-
+    def sentence_relationships(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___SentenceRelationship
+    ]: ...
     @property
-    def state_people(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___StatePerson]: ...
-
+    def state_people(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___StatePerson
+    ]: ...
     @property
-    def state_person_races(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___StatePersonRace]: ...
-
+    def state_person_races(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___StatePersonRace
+    ]: ...
     @property
-    def state_person_ethnicities(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___StatePersonEthnicity]: ...
-
+    def state_person_ethnicities(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___StatePersonEthnicity
+    ]: ...
     @property
-    def state_aliases(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___StateAlias]: ...
-
+    def state_aliases(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___StateAlias
+    ]: ...
     @property
-    def state_person_external_ids(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___StatePersonExternalId]: ...
-
+    def state_person_external_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___StatePersonExternalId
+    ]: ...
     @property
-    def state_assessments(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___StateAssessment]: ...
-
+    def state_assessments(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___StateAssessment
+    ]: ...
     @property
-    def state_sentence_groups(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___StateSentenceGroup]: ...
-
+    def state_sentence_groups(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___StateSentenceGroup
+    ]: ...
     @property
-    def state_supervision_sentences(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___StateSupervisionSentence]: ...
-
+    def state_supervision_sentences(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___StateSupervisionSentence
+    ]: ...
     @property
-    def state_incarceration_sentences(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___StateIncarcerationSentence]: ...
-
+    def state_incarceration_sentences(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___StateIncarcerationSentence
+    ]: ...
     @property
-    def state_fines(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___StateFine]: ...
-
+    def state_fines(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___StateFine
+    ]: ...
     @property
-    def state_charges(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___StateCharge]: ...
-
+    def state_charges(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___StateCharge
+    ]: ...
     @property
-    def state_court_cases(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___StateCourtCase]: ...
-
+    def state_court_cases(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___StateCourtCase
+    ]: ...
     @property
-    def state_bonds(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___StateBond]: ...
-
+    def state_bonds(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___StateBond
+    ]: ...
     @property
-    def state_incarceration_periods(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___StateIncarcerationPeriod]: ...
-
+    def state_incarceration_periods(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___StateIncarcerationPeriod
+    ]: ...
     @property
-    def state_supervision_periods(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___StateSupervisionPeriod]: ...
-
+    def state_supervision_periods(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___StateSupervisionPeriod
+    ]: ...
     @property
-    def state_supervision_case_type_entries(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___StateSupervisionCaseTypeEntry]: ...
-
+    def state_supervision_case_type_entries(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___StateSupervisionCaseTypeEntry
+    ]: ...
     @property
-    def state_incarceration_incidents(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___StateIncarcerationIncident]: ...
-
+    def state_incarceration_incidents(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___StateIncarcerationIncident
+    ]: ...
     @property
-    def state_incarceration_incident_outcomes(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___StateIncarcerationIncidentOutcome]: ...
-
+    def state_incarceration_incident_outcomes(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___StateIncarcerationIncidentOutcome
+    ]: ...
     @property
-    def state_parole_decisions(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___StateParoleDecision]: ...
-
+    def state_parole_decisions(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___StateParoleDecision
+    ]: ...
     @property
-    def state_supervision_violations(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___StateSupervisionViolation]: ...
-
+    def state_supervision_violations(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___StateSupervisionViolation
+    ]: ...
     @property
-    def state_supervision_violation_type_entries(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___StateSupervisionViolationTypeEntry]: ...
-
+    def state_supervision_violation_type_entries(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___StateSupervisionViolationTypeEntry
+    ]: ...
     @property
-    def state_supervision_violated_condition_entries(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___StateSupervisionViolatedConditionEntry]: ...
-
+    def state_supervision_violated_condition_entries(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___StateSupervisionViolatedConditionEntry
+    ]: ...
     @property
-    def state_supervision_violation_responses(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___StateSupervisionViolationResponse]: ...
-
+    def state_supervision_violation_responses(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___StateSupervisionViolationResponse
+    ]: ...
     @property
-    def state_supervision_violation_response_decision_entries(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___StateSupervisionViolationResponseDecisionEntry]: ...
-
+    def state_supervision_violation_response_decision_entries(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___StateSupervisionViolationResponseDecisionEntry
+    ]: ...
     @property
-    def state_agents(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___StateAgent]: ...
-
+    def state_agents(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___StateAgent
+    ]: ...
     @property
-    def state_program_assignments(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___StateProgramAssignment]: ...
-
+    def state_program_assignments(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___StateProgramAssignment
+    ]: ...
     @property
-    def state_early_discharges(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___StateEarlyDischarge]: ...
-
+    def state_early_discharges(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___StateEarlyDischarge
+    ]: ...
     @property
-    def state_supervision_contacts(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___StateSupervisionContact]: ...
-
-    def __init__(self,
+    def state_supervision_contacts(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___StateSupervisionContact
+    ]: ...
+    def __init__(
+        self,
         *,
-        people : typing.Optional[typing.Iterable[global___Person]] = ...,
-        bookings : typing.Optional[typing.Iterable[global___Booking]] = ...,
-        arrests : typing.Optional[typing.Iterable[global___Arrest]] = ...,
-        charges : typing.Optional[typing.Iterable[global___Charge]] = ...,
-        holds : typing.Optional[typing.Iterable[global___Hold]] = ...,
-        bonds : typing.Optional[typing.Iterable[global___Bond]] = ...,
-        sentences : typing.Optional[typing.Iterable[global___Sentence]] = ...,
-        sentence_relationships : typing.Optional[typing.Iterable[global___SentenceRelationship]] = ...,
-        state_people : typing.Optional[typing.Iterable[global___StatePerson]] = ...,
-        state_person_races : typing.Optional[typing.Iterable[global___StatePersonRace]] = ...,
-        state_person_ethnicities : typing.Optional[typing.Iterable[global___StatePersonEthnicity]] = ...,
-        state_aliases : typing.Optional[typing.Iterable[global___StateAlias]] = ...,
-        state_person_external_ids : typing.Optional[typing.Iterable[global___StatePersonExternalId]] = ...,
-        state_assessments : typing.Optional[typing.Iterable[global___StateAssessment]] = ...,
-        state_sentence_groups : typing.Optional[typing.Iterable[global___StateSentenceGroup]] = ...,
-        state_supervision_sentences : typing.Optional[typing.Iterable[global___StateSupervisionSentence]] = ...,
-        state_incarceration_sentences : typing.Optional[typing.Iterable[global___StateIncarcerationSentence]] = ...,
-        state_fines : typing.Optional[typing.Iterable[global___StateFine]] = ...,
-        state_charges : typing.Optional[typing.Iterable[global___StateCharge]] = ...,
-        state_court_cases : typing.Optional[typing.Iterable[global___StateCourtCase]] = ...,
-        state_bonds : typing.Optional[typing.Iterable[global___StateBond]] = ...,
-        state_incarceration_periods : typing.Optional[typing.Iterable[global___StateIncarcerationPeriod]] = ...,
-        state_supervision_periods : typing.Optional[typing.Iterable[global___StateSupervisionPeriod]] = ...,
-        state_supervision_case_type_entries : typing.Optional[typing.Iterable[global___StateSupervisionCaseTypeEntry]] = ...,
-        state_incarceration_incidents : typing.Optional[typing.Iterable[global___StateIncarcerationIncident]] = ...,
-        state_incarceration_incident_outcomes : typing.Optional[typing.Iterable[global___StateIncarcerationIncidentOutcome]] = ...,
-        state_parole_decisions : typing.Optional[typing.Iterable[global___StateParoleDecision]] = ...,
-        state_supervision_violations : typing.Optional[typing.Iterable[global___StateSupervisionViolation]] = ...,
-        state_supervision_violation_type_entries : typing.Optional[typing.Iterable[global___StateSupervisionViolationTypeEntry]] = ...,
-        state_supervision_violated_condition_entries : typing.Optional[typing.Iterable[global___StateSupervisionViolatedConditionEntry]] = ...,
-        state_supervision_violation_responses : typing.Optional[typing.Iterable[global___StateSupervisionViolationResponse]] = ...,
-        state_supervision_violation_response_decision_entries : typing.Optional[typing.Iterable[global___StateSupervisionViolationResponseDecisionEntry]] = ...,
-        state_agents : typing.Optional[typing.Iterable[global___StateAgent]] = ...,
-        state_program_assignments : typing.Optional[typing.Iterable[global___StateProgramAssignment]] = ...,
-        state_early_discharges : typing.Optional[typing.Iterable[global___StateEarlyDischarge]] = ...,
-        state_supervision_contacts : typing.Optional[typing.Iterable[global___StateSupervisionContact]] = ...,
-        ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"arrests",b"arrests",u"bonds",b"bonds",u"bookings",b"bookings",u"charges",b"charges",u"holds",b"holds",u"people",b"people",u"sentence_relationships",b"sentence_relationships",u"sentences",b"sentences",u"state_agents",b"state_agents",u"state_aliases",b"state_aliases",u"state_assessments",b"state_assessments",u"state_bonds",b"state_bonds",u"state_charges",b"state_charges",u"state_court_cases",b"state_court_cases",u"state_early_discharges",b"state_early_discharges",u"state_fines",b"state_fines",u"state_incarceration_incident_outcomes",b"state_incarceration_incident_outcomes",u"state_incarceration_incidents",b"state_incarceration_incidents",u"state_incarceration_periods",b"state_incarceration_periods",u"state_incarceration_sentences",b"state_incarceration_sentences",u"state_parole_decisions",b"state_parole_decisions",u"state_people",b"state_people",u"state_person_ethnicities",b"state_person_ethnicities",u"state_person_external_ids",b"state_person_external_ids",u"state_person_races",b"state_person_races",u"state_program_assignments",b"state_program_assignments",u"state_sentence_groups",b"state_sentence_groups",u"state_supervision_case_type_entries",b"state_supervision_case_type_entries",u"state_supervision_contacts",b"state_supervision_contacts",u"state_supervision_periods",b"state_supervision_periods",u"state_supervision_sentences",b"state_supervision_sentences",u"state_supervision_violated_condition_entries",b"state_supervision_violated_condition_entries",u"state_supervision_violation_response_decision_entries",b"state_supervision_violation_response_decision_entries",u"state_supervision_violation_responses",b"state_supervision_violation_responses",u"state_supervision_violation_type_entries",b"state_supervision_violation_type_entries",u"state_supervision_violations",b"state_supervision_violations"]) -> None: ...
+        people: typing.Optional[typing.Iterable[global___Person]] = ...,
+        bookings: typing.Optional[typing.Iterable[global___Booking]] = ...,
+        arrests: typing.Optional[typing.Iterable[global___Arrest]] = ...,
+        charges: typing.Optional[typing.Iterable[global___Charge]] = ...,
+        holds: typing.Optional[typing.Iterable[global___Hold]] = ...,
+        bonds: typing.Optional[typing.Iterable[global___Bond]] = ...,
+        sentences: typing.Optional[typing.Iterable[global___Sentence]] = ...,
+        sentence_relationships: typing.Optional[
+            typing.Iterable[global___SentenceRelationship]
+        ] = ...,
+        state_people: typing.Optional[typing.Iterable[global___StatePerson]] = ...,
+        state_person_races: typing.Optional[
+            typing.Iterable[global___StatePersonRace]
+        ] = ...,
+        state_person_ethnicities: typing.Optional[
+            typing.Iterable[global___StatePersonEthnicity]
+        ] = ...,
+        state_aliases: typing.Optional[typing.Iterable[global___StateAlias]] = ...,
+        state_person_external_ids: typing.Optional[
+            typing.Iterable[global___StatePersonExternalId]
+        ] = ...,
+        state_assessments: typing.Optional[
+            typing.Iterable[global___StateAssessment]
+        ] = ...,
+        state_sentence_groups: typing.Optional[
+            typing.Iterable[global___StateSentenceGroup]
+        ] = ...,
+        state_supervision_sentences: typing.Optional[
+            typing.Iterable[global___StateSupervisionSentence]
+        ] = ...,
+        state_incarceration_sentences: typing.Optional[
+            typing.Iterable[global___StateIncarcerationSentence]
+        ] = ...,
+        state_fines: typing.Optional[typing.Iterable[global___StateFine]] = ...,
+        state_charges: typing.Optional[typing.Iterable[global___StateCharge]] = ...,
+        state_court_cases: typing.Optional[
+            typing.Iterable[global___StateCourtCase]
+        ] = ...,
+        state_bonds: typing.Optional[typing.Iterable[global___StateBond]] = ...,
+        state_incarceration_periods: typing.Optional[
+            typing.Iterable[global___StateIncarcerationPeriod]
+        ] = ...,
+        state_supervision_periods: typing.Optional[
+            typing.Iterable[global___StateSupervisionPeriod]
+        ] = ...,
+        state_supervision_case_type_entries: typing.Optional[
+            typing.Iterable[global___StateSupervisionCaseTypeEntry]
+        ] = ...,
+        state_incarceration_incidents: typing.Optional[
+            typing.Iterable[global___StateIncarcerationIncident]
+        ] = ...,
+        state_incarceration_incident_outcomes: typing.Optional[
+            typing.Iterable[global___StateIncarcerationIncidentOutcome]
+        ] = ...,
+        state_parole_decisions: typing.Optional[
+            typing.Iterable[global___StateParoleDecision]
+        ] = ...,
+        state_supervision_violations: typing.Optional[
+            typing.Iterable[global___StateSupervisionViolation]
+        ] = ...,
+        state_supervision_violation_type_entries: typing.Optional[
+            typing.Iterable[global___StateSupervisionViolationTypeEntry]
+        ] = ...,
+        state_supervision_violated_condition_entries: typing.Optional[
+            typing.Iterable[global___StateSupervisionViolatedConditionEntry]
+        ] = ...,
+        state_supervision_violation_responses: typing.Optional[
+            typing.Iterable[global___StateSupervisionViolationResponse]
+        ] = ...,
+        state_supervision_violation_response_decision_entries: typing.Optional[
+            typing.Iterable[global___StateSupervisionViolationResponseDecisionEntry]
+        ] = ...,
+        state_agents: typing.Optional[typing.Iterable[global___StateAgent]] = ...,
+        state_program_assignments: typing.Optional[
+            typing.Iterable[global___StateProgramAssignment]
+        ] = ...,
+        state_early_discharges: typing.Optional[
+            typing.Iterable[global___StateEarlyDischarge]
+        ] = ...,
+        state_supervision_contacts: typing.Optional[
+            typing.Iterable[global___StateSupervisionContact]
+        ] = ...,
+    ) -> None: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "arrests",
+            b"arrests",
+            "bonds",
+            b"bonds",
+            "bookings",
+            b"bookings",
+            "charges",
+            b"charges",
+            "holds",
+            b"holds",
+            "people",
+            b"people",
+            "sentence_relationships",
+            b"sentence_relationships",
+            "sentences",
+            b"sentences",
+            "state_agents",
+            b"state_agents",
+            "state_aliases",
+            b"state_aliases",
+            "state_assessments",
+            b"state_assessments",
+            "state_bonds",
+            b"state_bonds",
+            "state_charges",
+            b"state_charges",
+            "state_court_cases",
+            b"state_court_cases",
+            "state_early_discharges",
+            b"state_early_discharges",
+            "state_fines",
+            b"state_fines",
+            "state_incarceration_incident_outcomes",
+            b"state_incarceration_incident_outcomes",
+            "state_incarceration_incidents",
+            b"state_incarceration_incidents",
+            "state_incarceration_periods",
+            b"state_incarceration_periods",
+            "state_incarceration_sentences",
+            b"state_incarceration_sentences",
+            "state_parole_decisions",
+            b"state_parole_decisions",
+            "state_people",
+            b"state_people",
+            "state_person_ethnicities",
+            b"state_person_ethnicities",
+            "state_person_external_ids",
+            b"state_person_external_ids",
+            "state_person_races",
+            b"state_person_races",
+            "state_program_assignments",
+            b"state_program_assignments",
+            "state_sentence_groups",
+            b"state_sentence_groups",
+            "state_supervision_case_type_entries",
+            b"state_supervision_case_type_entries",
+            "state_supervision_contacts",
+            b"state_supervision_contacts",
+            "state_supervision_periods",
+            b"state_supervision_periods",
+            "state_supervision_sentences",
+            b"state_supervision_sentences",
+            "state_supervision_violated_condition_entries",
+            b"state_supervision_violated_condition_entries",
+            "state_supervision_violation_response_decision_entries",
+            b"state_supervision_violation_response_decision_entries",
+            "state_supervision_violation_responses",
+            b"state_supervision_violation_responses",
+            "state_supervision_violation_type_entries",
+            b"state_supervision_violation_type_entries",
+            "state_supervision_violations",
+            b"state_supervision_violations",
+        ],
+    ) -> None: ...
+
 global___IngestInfo = IngestInfo
 
 class Person(google.protobuf.message.Message):
@@ -229,27 +460,92 @@ class Person(google.protobuf.message.Message):
     middle_names: typing.Text = ...
     name_suffix: typing.Text = ...
     jurisdiction_id: typing.Text = ...
-    booking_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-
-    def __init__(self,
+    booking_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    def __init__(
+        self,
         *,
-        person_id : typing.Optional[typing.Text] = ...,
-        surname : typing.Optional[typing.Text] = ...,
-        given_names : typing.Optional[typing.Text] = ...,
-        birthdate : typing.Optional[typing.Text] = ...,
-        gender : typing.Optional[typing.Text] = ...,
-        age : typing.Optional[typing.Text] = ...,
-        race : typing.Optional[typing.Text] = ...,
-        ethnicity : typing.Optional[typing.Text] = ...,
-        place_of_residence : typing.Optional[typing.Text] = ...,
-        full_name : typing.Optional[typing.Text] = ...,
-        middle_names : typing.Optional[typing.Text] = ...,
-        name_suffix : typing.Optional[typing.Text] = ...,
-        jurisdiction_id : typing.Optional[typing.Text] = ...,
-        booking_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"age",b"age",u"birthdate",b"birthdate",u"ethnicity",b"ethnicity",u"full_name",b"full_name",u"gender",b"gender",u"given_names",b"given_names",u"jurisdiction_id",b"jurisdiction_id",u"middle_names",b"middle_names",u"name_suffix",b"name_suffix",u"person_id",b"person_id",u"place_of_residence",b"place_of_residence",u"race",b"race",u"surname",b"surname"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"age",b"age",u"birthdate",b"birthdate",u"booking_ids",b"booking_ids",u"ethnicity",b"ethnicity",u"full_name",b"full_name",u"gender",b"gender",u"given_names",b"given_names",u"jurisdiction_id",b"jurisdiction_id",u"middle_names",b"middle_names",u"name_suffix",b"name_suffix",u"person_id",b"person_id",u"place_of_residence",b"place_of_residence",u"race",b"race",u"surname",b"surname"]) -> None: ...
+        person_id: typing.Optional[typing.Text] = ...,
+        surname: typing.Optional[typing.Text] = ...,
+        given_names: typing.Optional[typing.Text] = ...,
+        birthdate: typing.Optional[typing.Text] = ...,
+        gender: typing.Optional[typing.Text] = ...,
+        age: typing.Optional[typing.Text] = ...,
+        race: typing.Optional[typing.Text] = ...,
+        ethnicity: typing.Optional[typing.Text] = ...,
+        place_of_residence: typing.Optional[typing.Text] = ...,
+        full_name: typing.Optional[typing.Text] = ...,
+        middle_names: typing.Optional[typing.Text] = ...,
+        name_suffix: typing.Optional[typing.Text] = ...,
+        jurisdiction_id: typing.Optional[typing.Text] = ...,
+        booking_ids: typing.Optional[typing.Iterable[typing.Text]] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "age",
+            b"age",
+            "birthdate",
+            b"birthdate",
+            "ethnicity",
+            b"ethnicity",
+            "full_name",
+            b"full_name",
+            "gender",
+            b"gender",
+            "given_names",
+            b"given_names",
+            "jurisdiction_id",
+            b"jurisdiction_id",
+            "middle_names",
+            b"middle_names",
+            "name_suffix",
+            b"name_suffix",
+            "person_id",
+            b"person_id",
+            "place_of_residence",
+            b"place_of_residence",
+            "race",
+            b"race",
+            "surname",
+            b"surname",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "age",
+            b"age",
+            "birthdate",
+            b"birthdate",
+            "booking_ids",
+            b"booking_ids",
+            "ethnicity",
+            b"ethnicity",
+            "full_name",
+            b"full_name",
+            "gender",
+            b"gender",
+            "given_names",
+            b"given_names",
+            "jurisdiction_id",
+            b"jurisdiction_id",
+            "middle_names",
+            b"middle_names",
+            "name_suffix",
+            b"name_suffix",
+            "person_id",
+            b"person_id",
+            "place_of_residence",
+            b"place_of_residence",
+            "race",
+            b"race",
+            "surname",
+            b"surname",
+        ],
+    ) -> None: ...
+
 global___Person = Person
 
 class Booking(google.protobuf.message.Message):
@@ -280,28 +576,93 @@ class Booking(google.protobuf.message.Message):
     classification: typing.Text = ...
     total_bond_amount: typing.Text = ...
     arrest_id: typing.Text = ...
-    charge_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-    hold_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-
-    def __init__(self,
+    charge_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    hold_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    def __init__(
+        self,
         *,
-        booking_id : typing.Optional[typing.Text] = ...,
-        admission_date : typing.Optional[typing.Text] = ...,
-        admission_reason : typing.Optional[typing.Text] = ...,
-        projected_release_date : typing.Optional[typing.Text] = ...,
-        release_date : typing.Optional[typing.Text] = ...,
-        release_reason : typing.Optional[typing.Text] = ...,
-        custody_status : typing.Optional[typing.Text] = ...,
-        facility : typing.Optional[typing.Text] = ...,
-        facility_id : typing.Optional[typing.Text] = ...,
-        classification : typing.Optional[typing.Text] = ...,
-        total_bond_amount : typing.Optional[typing.Text] = ...,
-        arrest_id : typing.Optional[typing.Text] = ...,
-        charge_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        hold_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"admission_date",b"admission_date",u"admission_reason",b"admission_reason",u"arrest_id",b"arrest_id",u"booking_id",b"booking_id",u"classification",b"classification",u"custody_status",b"custody_status",u"facility",b"facility",u"facility_id",b"facility_id",u"projected_release_date",b"projected_release_date",u"release_date",b"release_date",u"release_reason",b"release_reason",u"total_bond_amount",b"total_bond_amount"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"admission_date",b"admission_date",u"admission_reason",b"admission_reason",u"arrest_id",b"arrest_id",u"booking_id",b"booking_id",u"charge_ids",b"charge_ids",u"classification",b"classification",u"custody_status",b"custody_status",u"facility",b"facility",u"facility_id",b"facility_id",u"hold_ids",b"hold_ids",u"projected_release_date",b"projected_release_date",u"release_date",b"release_date",u"release_reason",b"release_reason",u"total_bond_amount",b"total_bond_amount"]) -> None: ...
+        booking_id: typing.Optional[typing.Text] = ...,
+        admission_date: typing.Optional[typing.Text] = ...,
+        admission_reason: typing.Optional[typing.Text] = ...,
+        projected_release_date: typing.Optional[typing.Text] = ...,
+        release_date: typing.Optional[typing.Text] = ...,
+        release_reason: typing.Optional[typing.Text] = ...,
+        custody_status: typing.Optional[typing.Text] = ...,
+        facility: typing.Optional[typing.Text] = ...,
+        facility_id: typing.Optional[typing.Text] = ...,
+        classification: typing.Optional[typing.Text] = ...,
+        total_bond_amount: typing.Optional[typing.Text] = ...,
+        arrest_id: typing.Optional[typing.Text] = ...,
+        charge_ids: typing.Optional[typing.Iterable[typing.Text]] = ...,
+        hold_ids: typing.Optional[typing.Iterable[typing.Text]] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "admission_date",
+            b"admission_date",
+            "admission_reason",
+            b"admission_reason",
+            "arrest_id",
+            b"arrest_id",
+            "booking_id",
+            b"booking_id",
+            "classification",
+            b"classification",
+            "custody_status",
+            b"custody_status",
+            "facility",
+            b"facility",
+            "facility_id",
+            b"facility_id",
+            "projected_release_date",
+            b"projected_release_date",
+            "release_date",
+            b"release_date",
+            "release_reason",
+            b"release_reason",
+            "total_bond_amount",
+            b"total_bond_amount",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "admission_date",
+            b"admission_date",
+            "admission_reason",
+            b"admission_reason",
+            "arrest_id",
+            b"arrest_id",
+            "booking_id",
+            b"booking_id",
+            "charge_ids",
+            b"charge_ids",
+            "classification",
+            b"classification",
+            "custody_status",
+            b"custody_status",
+            "facility",
+            b"facility",
+            "facility_id",
+            b"facility_id",
+            "hold_ids",
+            b"hold_ids",
+            "projected_release_date",
+            b"projected_release_date",
+            "release_date",
+            b"release_date",
+            "release_reason",
+            b"release_reason",
+            "total_bond_amount",
+            b"total_bond_amount",
+        ],
+    ) -> None: ...
+
 global___Booking = Booking
 
 class Arrest(google.protobuf.message.Message):
@@ -318,18 +679,51 @@ class Arrest(google.protobuf.message.Message):
     officer_name: typing.Text = ...
     officer_id: typing.Text = ...
     agency: typing.Text = ...
-
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        arrest_id : typing.Optional[typing.Text] = ...,
-        arrest_date : typing.Optional[typing.Text] = ...,
-        location : typing.Optional[typing.Text] = ...,
-        officer_name : typing.Optional[typing.Text] = ...,
-        officer_id : typing.Optional[typing.Text] = ...,
-        agency : typing.Optional[typing.Text] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"agency",b"agency",u"arrest_date",b"arrest_date",u"arrest_id",b"arrest_id",u"location",b"location",u"officer_id",b"officer_id",u"officer_name",b"officer_name"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"agency",b"agency",u"arrest_date",b"arrest_date",u"arrest_id",b"arrest_id",u"location",b"location",u"officer_id",b"officer_id",u"officer_name",b"officer_name"]) -> None: ...
+        arrest_id: typing.Optional[typing.Text] = ...,
+        arrest_date: typing.Optional[typing.Text] = ...,
+        location: typing.Optional[typing.Text] = ...,
+        officer_name: typing.Optional[typing.Text] = ...,
+        officer_id: typing.Optional[typing.Text] = ...,
+        agency: typing.Optional[typing.Text] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "agency",
+            b"agency",
+            "arrest_date",
+            b"arrest_date",
+            "arrest_id",
+            b"arrest_id",
+            "location",
+            b"location",
+            "officer_id",
+            b"officer_id",
+            "officer_name",
+            b"officer_name",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "agency",
+            b"agency",
+            "arrest_date",
+            b"arrest_date",
+            "arrest_id",
+            b"arrest_id",
+            "location",
+            b"location",
+            "officer_id",
+            b"officer_id",
+            "officer_name",
+            b"officer_name",
+        ],
+    ) -> None: ...
+
 global___Arrest = Arrest
 
 class Charge(google.protobuf.message.Message):
@@ -372,31 +766,116 @@ class Charge(google.protobuf.message.Message):
     charge_notes: typing.Text = ...
     bond_id: typing.Text = ...
     sentence_id: typing.Text = ...
-
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        charge_id : typing.Optional[typing.Text] = ...,
-        offense_date : typing.Optional[typing.Text] = ...,
-        statute : typing.Optional[typing.Text] = ...,
-        name : typing.Optional[typing.Text] = ...,
-        attempted : typing.Optional[typing.Text] = ...,
-        degree : typing.Optional[typing.Text] = ...,
-        charge_class : typing.Optional[typing.Text] = ...,
-        level : typing.Optional[typing.Text] = ...,
-        fee_dollars : typing.Optional[typing.Text] = ...,
-        charging_entity : typing.Optional[typing.Text] = ...,
-        status : typing.Optional[typing.Text] = ...,
-        number_of_counts : typing.Optional[typing.Text] = ...,
-        court_type : typing.Optional[typing.Text] = ...,
-        case_number : typing.Optional[typing.Text] = ...,
-        next_court_date : typing.Optional[typing.Text] = ...,
-        judge_name : typing.Optional[typing.Text] = ...,
-        charge_notes : typing.Optional[typing.Text] = ...,
-        bond_id : typing.Optional[typing.Text] = ...,
-        sentence_id : typing.Optional[typing.Text] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"attempted",b"attempted",u"bond_id",b"bond_id",u"case_number",b"case_number",u"charge_class",b"charge_class",u"charge_id",b"charge_id",u"charge_notes",b"charge_notes",u"charging_entity",b"charging_entity",u"court_type",b"court_type",u"degree",b"degree",u"fee_dollars",b"fee_dollars",u"judge_name",b"judge_name",u"level",b"level",u"name",b"name",u"next_court_date",b"next_court_date",u"number_of_counts",b"number_of_counts",u"offense_date",b"offense_date",u"sentence_id",b"sentence_id",u"status",b"status",u"statute",b"statute"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"attempted",b"attempted",u"bond_id",b"bond_id",u"case_number",b"case_number",u"charge_class",b"charge_class",u"charge_id",b"charge_id",u"charge_notes",b"charge_notes",u"charging_entity",b"charging_entity",u"court_type",b"court_type",u"degree",b"degree",u"fee_dollars",b"fee_dollars",u"judge_name",b"judge_name",u"level",b"level",u"name",b"name",u"next_court_date",b"next_court_date",u"number_of_counts",b"number_of_counts",u"offense_date",b"offense_date",u"sentence_id",b"sentence_id",u"status",b"status",u"statute",b"statute"]) -> None: ...
+        charge_id: typing.Optional[typing.Text] = ...,
+        offense_date: typing.Optional[typing.Text] = ...,
+        statute: typing.Optional[typing.Text] = ...,
+        name: typing.Optional[typing.Text] = ...,
+        attempted: typing.Optional[typing.Text] = ...,
+        degree: typing.Optional[typing.Text] = ...,
+        charge_class: typing.Optional[typing.Text] = ...,
+        level: typing.Optional[typing.Text] = ...,
+        fee_dollars: typing.Optional[typing.Text] = ...,
+        charging_entity: typing.Optional[typing.Text] = ...,
+        status: typing.Optional[typing.Text] = ...,
+        number_of_counts: typing.Optional[typing.Text] = ...,
+        court_type: typing.Optional[typing.Text] = ...,
+        case_number: typing.Optional[typing.Text] = ...,
+        next_court_date: typing.Optional[typing.Text] = ...,
+        judge_name: typing.Optional[typing.Text] = ...,
+        charge_notes: typing.Optional[typing.Text] = ...,
+        bond_id: typing.Optional[typing.Text] = ...,
+        sentence_id: typing.Optional[typing.Text] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "attempted",
+            b"attempted",
+            "bond_id",
+            b"bond_id",
+            "case_number",
+            b"case_number",
+            "charge_class",
+            b"charge_class",
+            "charge_id",
+            b"charge_id",
+            "charge_notes",
+            b"charge_notes",
+            "charging_entity",
+            b"charging_entity",
+            "court_type",
+            b"court_type",
+            "degree",
+            b"degree",
+            "fee_dollars",
+            b"fee_dollars",
+            "judge_name",
+            b"judge_name",
+            "level",
+            b"level",
+            "name",
+            b"name",
+            "next_court_date",
+            b"next_court_date",
+            "number_of_counts",
+            b"number_of_counts",
+            "offense_date",
+            b"offense_date",
+            "sentence_id",
+            b"sentence_id",
+            "status",
+            b"status",
+            "statute",
+            b"statute",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "attempted",
+            b"attempted",
+            "bond_id",
+            b"bond_id",
+            "case_number",
+            b"case_number",
+            "charge_class",
+            b"charge_class",
+            "charge_id",
+            b"charge_id",
+            "charge_notes",
+            b"charge_notes",
+            "charging_entity",
+            b"charging_entity",
+            "court_type",
+            b"court_type",
+            "degree",
+            b"degree",
+            "fee_dollars",
+            b"fee_dollars",
+            "judge_name",
+            b"judge_name",
+            "level",
+            b"level",
+            "name",
+            b"name",
+            "next_court_date",
+            b"next_court_date",
+            "number_of_counts",
+            b"number_of_counts",
+            "offense_date",
+            b"offense_date",
+            "sentence_id",
+            b"sentence_id",
+            "status",
+            b"status",
+            "statute",
+            b"statute",
+        ],
+    ) -> None: ...
+
 global___Charge = Charge
 
 class Hold(google.protobuf.message.Message):
@@ -407,15 +886,36 @@ class Hold(google.protobuf.message.Message):
     hold_id: typing.Text = ...
     jurisdiction_name: typing.Text = ...
     status: typing.Text = ...
-
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        hold_id : typing.Optional[typing.Text] = ...,
-        jurisdiction_name : typing.Optional[typing.Text] = ...,
-        status : typing.Optional[typing.Text] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"hold_id",b"hold_id",u"jurisdiction_name",b"jurisdiction_name",u"status",b"status"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"hold_id",b"hold_id",u"jurisdiction_name",b"jurisdiction_name",u"status",b"status"]) -> None: ...
+        hold_id: typing.Optional[typing.Text] = ...,
+        jurisdiction_name: typing.Optional[typing.Text] = ...,
+        status: typing.Optional[typing.Text] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "hold_id",
+            b"hold_id",
+            "jurisdiction_name",
+            b"jurisdiction_name",
+            "status",
+            b"status",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "hold_id",
+            b"hold_id",
+            "jurisdiction_name",
+            b"jurisdiction_name",
+            "status",
+            b"status",
+        ],
+    ) -> None: ...
+
 global___Hold = Hold
 
 class Bond(google.protobuf.message.Message):
@@ -430,17 +930,46 @@ class Bond(google.protobuf.message.Message):
     bond_type: typing.Text = ...
     status: typing.Text = ...
     bond_agent: typing.Text = ...
-
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        bond_id : typing.Optional[typing.Text] = ...,
-        amount : typing.Optional[typing.Text] = ...,
-        bond_type : typing.Optional[typing.Text] = ...,
-        status : typing.Optional[typing.Text] = ...,
-        bond_agent : typing.Optional[typing.Text] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"amount",b"amount",u"bond_agent",b"bond_agent",u"bond_id",b"bond_id",u"bond_type",b"bond_type",u"status",b"status"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"amount",b"amount",u"bond_agent",b"bond_agent",u"bond_id",b"bond_id",u"bond_type",b"bond_type",u"status",b"status"]) -> None: ...
+        bond_id: typing.Optional[typing.Text] = ...,
+        amount: typing.Optional[typing.Text] = ...,
+        bond_type: typing.Optional[typing.Text] = ...,
+        status: typing.Optional[typing.Text] = ...,
+        bond_agent: typing.Optional[typing.Text] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "amount",
+            b"amount",
+            "bond_agent",
+            b"bond_agent",
+            "bond_id",
+            b"bond_id",
+            "bond_type",
+            b"bond_type",
+            "status",
+            b"status",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "amount",
+            b"amount",
+            "bond_agent",
+            b"bond_agent",
+            "bond_id",
+            b"bond_id",
+            "bond_type",
+            b"bond_type",
+            "status",
+            b"status",
+        ],
+    ) -> None: ...
+
 global___Bond = Bond
 
 class Sentence(google.protobuf.message.Message):
@@ -473,26 +1002,91 @@ class Sentence(google.protobuf.message.Message):
     date_imposed: typing.Text = ...
     completion_date: typing.Text = ...
     projected_completion_date: typing.Text = ...
-
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        sentence_id : typing.Optional[typing.Text] = ...,
-        min_length : typing.Optional[typing.Text] = ...,
-        max_length : typing.Optional[typing.Text] = ...,
-        is_life : typing.Optional[typing.Text] = ...,
-        is_probation : typing.Optional[typing.Text] = ...,
-        is_suspended : typing.Optional[typing.Text] = ...,
-        fine_dollars : typing.Optional[typing.Text] = ...,
-        parole_possible : typing.Optional[typing.Text] = ...,
-        post_release_supervision_length : typing.Optional[typing.Text] = ...,
-        sentencing_region : typing.Optional[typing.Text] = ...,
-        status : typing.Optional[typing.Text] = ...,
-        date_imposed : typing.Optional[typing.Text] = ...,
-        completion_date : typing.Optional[typing.Text] = ...,
-        projected_completion_date : typing.Optional[typing.Text] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"completion_date",b"completion_date",u"date_imposed",b"date_imposed",u"fine_dollars",b"fine_dollars",u"is_life",b"is_life",u"is_probation",b"is_probation",u"is_suspended",b"is_suspended",u"max_length",b"max_length",u"min_length",b"min_length",u"parole_possible",b"parole_possible",u"post_release_supervision_length",b"post_release_supervision_length",u"projected_completion_date",b"projected_completion_date",u"sentence_id",b"sentence_id",u"sentencing_region",b"sentencing_region",u"status",b"status"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"completion_date",b"completion_date",u"date_imposed",b"date_imposed",u"fine_dollars",b"fine_dollars",u"is_life",b"is_life",u"is_probation",b"is_probation",u"is_suspended",b"is_suspended",u"max_length",b"max_length",u"min_length",b"min_length",u"parole_possible",b"parole_possible",u"post_release_supervision_length",b"post_release_supervision_length",u"projected_completion_date",b"projected_completion_date",u"sentence_id",b"sentence_id",u"sentencing_region",b"sentencing_region",u"status",b"status"]) -> None: ...
+        sentence_id: typing.Optional[typing.Text] = ...,
+        min_length: typing.Optional[typing.Text] = ...,
+        max_length: typing.Optional[typing.Text] = ...,
+        is_life: typing.Optional[typing.Text] = ...,
+        is_probation: typing.Optional[typing.Text] = ...,
+        is_suspended: typing.Optional[typing.Text] = ...,
+        fine_dollars: typing.Optional[typing.Text] = ...,
+        parole_possible: typing.Optional[typing.Text] = ...,
+        post_release_supervision_length: typing.Optional[typing.Text] = ...,
+        sentencing_region: typing.Optional[typing.Text] = ...,
+        status: typing.Optional[typing.Text] = ...,
+        date_imposed: typing.Optional[typing.Text] = ...,
+        completion_date: typing.Optional[typing.Text] = ...,
+        projected_completion_date: typing.Optional[typing.Text] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "completion_date",
+            b"completion_date",
+            "date_imposed",
+            b"date_imposed",
+            "fine_dollars",
+            b"fine_dollars",
+            "is_life",
+            b"is_life",
+            "is_probation",
+            b"is_probation",
+            "is_suspended",
+            b"is_suspended",
+            "max_length",
+            b"max_length",
+            "min_length",
+            b"min_length",
+            "parole_possible",
+            b"parole_possible",
+            "post_release_supervision_length",
+            b"post_release_supervision_length",
+            "projected_completion_date",
+            b"projected_completion_date",
+            "sentence_id",
+            b"sentence_id",
+            "sentencing_region",
+            b"sentencing_region",
+            "status",
+            b"status",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "completion_date",
+            b"completion_date",
+            "date_imposed",
+            b"date_imposed",
+            "fine_dollars",
+            b"fine_dollars",
+            "is_life",
+            b"is_life",
+            "is_probation",
+            b"is_probation",
+            "is_suspended",
+            b"is_suspended",
+            "max_length",
+            b"max_length",
+            "min_length",
+            b"min_length",
+            "parole_possible",
+            b"parole_possible",
+            "post_release_supervision_length",
+            b"post_release_supervision_length",
+            "projected_completion_date",
+            b"projected_completion_date",
+            "sentence_id",
+            b"sentence_id",
+            "sentencing_region",
+            b"sentencing_region",
+            "status",
+            b"status",
+        ],
+    ) -> None: ...
+
 global___Sentence = Sentence
 
 class SentenceRelationship(google.protobuf.message.Message):
@@ -505,16 +1099,41 @@ class SentenceRelationship(google.protobuf.message.Message):
     sentence_a_id: typing.Text = ...
     sentence_b_id: typing.Text = ...
     relationship_type: typing.Text = ...
-
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        sentence_relationship_id : typing.Optional[typing.Text] = ...,
-        sentence_a_id : typing.Optional[typing.Text] = ...,
-        sentence_b_id : typing.Optional[typing.Text] = ...,
-        relationship_type : typing.Optional[typing.Text] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"relationship_type",b"relationship_type",u"sentence_a_id",b"sentence_a_id",u"sentence_b_id",b"sentence_b_id",u"sentence_relationship_id",b"sentence_relationship_id"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"relationship_type",b"relationship_type",u"sentence_a_id",b"sentence_a_id",u"sentence_b_id",b"sentence_b_id",u"sentence_relationship_id",b"sentence_relationship_id"]) -> None: ...
+        sentence_relationship_id: typing.Optional[typing.Text] = ...,
+        sentence_a_id: typing.Optional[typing.Text] = ...,
+        sentence_b_id: typing.Optional[typing.Text] = ...,
+        relationship_type: typing.Optional[typing.Text] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "relationship_type",
+            b"relationship_type",
+            "sentence_a_id",
+            b"sentence_a_id",
+            "sentence_b_id",
+            b"sentence_b_id",
+            "sentence_relationship_id",
+            b"sentence_relationship_id",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "relationship_type",
+            b"relationship_type",
+            "sentence_a_id",
+            b"sentence_a_id",
+            "sentence_b_id",
+            b"sentence_b_id",
+            "sentence_relationship_id",
+            b"sentence_relationship_id",
+        ],
+    ) -> None: ...
+
 global___SentenceRelationship = SentenceRelationship
 
 class StatePerson(google.protobuf.message.Message):
@@ -550,41 +1169,134 @@ class StatePerson(google.protobuf.message.Message):
     age: typing.Text = ...
     current_address: typing.Text = ...
     residency_status: typing.Text = ...
-    state_person_race_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-    state_person_ethnicity_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-    state_alias_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-    state_person_external_ids_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-    state_assessment_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-    state_sentence_group_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-    state_program_assignment_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
+    state_person_race_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    state_person_ethnicity_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    state_alias_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    state_person_external_ids_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    state_assessment_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    state_sentence_group_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    state_program_assignment_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
     supervising_officer_id: typing.Text = ...
     state_code: typing.Text = ...
-
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        state_person_id : typing.Optional[typing.Text] = ...,
-        full_name : typing.Optional[typing.Text] = ...,
-        surname : typing.Optional[typing.Text] = ...,
-        given_names : typing.Optional[typing.Text] = ...,
-        middle_names : typing.Optional[typing.Text] = ...,
-        name_suffix : typing.Optional[typing.Text] = ...,
-        birthdate : typing.Optional[typing.Text] = ...,
-        gender : typing.Optional[typing.Text] = ...,
-        age : typing.Optional[typing.Text] = ...,
-        current_address : typing.Optional[typing.Text] = ...,
-        residency_status : typing.Optional[typing.Text] = ...,
-        state_person_race_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        state_person_ethnicity_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        state_alias_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        state_person_external_ids_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        state_assessment_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        state_sentence_group_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        state_program_assignment_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        supervising_officer_id : typing.Optional[typing.Text] = ...,
-        state_code : typing.Optional[typing.Text] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"age",b"age",u"birthdate",b"birthdate",u"current_address",b"current_address",u"full_name",b"full_name",u"gender",b"gender",u"given_names",b"given_names",u"middle_names",b"middle_names",u"name_suffix",b"name_suffix",u"residency_status",b"residency_status",u"state_code",b"state_code",u"state_person_id",b"state_person_id",u"supervising_officer_id",b"supervising_officer_id",u"surname",b"surname"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"age",b"age",u"birthdate",b"birthdate",u"current_address",b"current_address",u"full_name",b"full_name",u"gender",b"gender",u"given_names",b"given_names",u"middle_names",b"middle_names",u"name_suffix",b"name_suffix",u"residency_status",b"residency_status",u"state_alias_ids",b"state_alias_ids",u"state_assessment_ids",b"state_assessment_ids",u"state_code",b"state_code",u"state_person_ethnicity_ids",b"state_person_ethnicity_ids",u"state_person_external_ids_ids",b"state_person_external_ids_ids",u"state_person_id",b"state_person_id",u"state_person_race_ids",b"state_person_race_ids",u"state_program_assignment_ids",b"state_program_assignment_ids",u"state_sentence_group_ids",b"state_sentence_group_ids",u"supervising_officer_id",b"supervising_officer_id",u"surname",b"surname"]) -> None: ...
+        state_person_id: typing.Optional[typing.Text] = ...,
+        full_name: typing.Optional[typing.Text] = ...,
+        surname: typing.Optional[typing.Text] = ...,
+        given_names: typing.Optional[typing.Text] = ...,
+        middle_names: typing.Optional[typing.Text] = ...,
+        name_suffix: typing.Optional[typing.Text] = ...,
+        birthdate: typing.Optional[typing.Text] = ...,
+        gender: typing.Optional[typing.Text] = ...,
+        age: typing.Optional[typing.Text] = ...,
+        current_address: typing.Optional[typing.Text] = ...,
+        residency_status: typing.Optional[typing.Text] = ...,
+        state_person_race_ids: typing.Optional[typing.Iterable[typing.Text]] = ...,
+        state_person_ethnicity_ids: typing.Optional[typing.Iterable[typing.Text]] = ...,
+        state_alias_ids: typing.Optional[typing.Iterable[typing.Text]] = ...,
+        state_person_external_ids_ids: typing.Optional[
+            typing.Iterable[typing.Text]
+        ] = ...,
+        state_assessment_ids: typing.Optional[typing.Iterable[typing.Text]] = ...,
+        state_sentence_group_ids: typing.Optional[typing.Iterable[typing.Text]] = ...,
+        state_program_assignment_ids: typing.Optional[
+            typing.Iterable[typing.Text]
+        ] = ...,
+        supervising_officer_id: typing.Optional[typing.Text] = ...,
+        state_code: typing.Optional[typing.Text] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "age",
+            b"age",
+            "birthdate",
+            b"birthdate",
+            "current_address",
+            b"current_address",
+            "full_name",
+            b"full_name",
+            "gender",
+            b"gender",
+            "given_names",
+            b"given_names",
+            "middle_names",
+            b"middle_names",
+            "name_suffix",
+            b"name_suffix",
+            "residency_status",
+            b"residency_status",
+            "state_code",
+            b"state_code",
+            "state_person_id",
+            b"state_person_id",
+            "supervising_officer_id",
+            b"supervising_officer_id",
+            "surname",
+            b"surname",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "age",
+            b"age",
+            "birthdate",
+            b"birthdate",
+            "current_address",
+            b"current_address",
+            "full_name",
+            b"full_name",
+            "gender",
+            b"gender",
+            "given_names",
+            b"given_names",
+            "middle_names",
+            b"middle_names",
+            "name_suffix",
+            b"name_suffix",
+            "residency_status",
+            b"residency_status",
+            "state_alias_ids",
+            b"state_alias_ids",
+            "state_assessment_ids",
+            b"state_assessment_ids",
+            "state_code",
+            b"state_code",
+            "state_person_ethnicity_ids",
+            b"state_person_ethnicity_ids",
+            "state_person_external_ids_ids",
+            b"state_person_external_ids_ids",
+            "state_person_id",
+            b"state_person_id",
+            "state_person_race_ids",
+            b"state_person_race_ids",
+            "state_program_assignment_ids",
+            b"state_program_assignment_ids",
+            "state_sentence_group_ids",
+            b"state_sentence_group_ids",
+            "supervising_officer_id",
+            b"supervising_officer_id",
+            "surname",
+            b"surname",
+        ],
+    ) -> None: ...
+
 global___StatePerson = StatePerson
 
 class StatePersonRace(google.protobuf.message.Message):
@@ -595,15 +1307,36 @@ class StatePersonRace(google.protobuf.message.Message):
     state_person_race_id: typing.Text = ...
     race: typing.Text = ...
     state_code: typing.Text = ...
-
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        state_person_race_id : typing.Optional[typing.Text] = ...,
-        race : typing.Optional[typing.Text] = ...,
-        state_code : typing.Optional[typing.Text] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"race",b"race",u"state_code",b"state_code",u"state_person_race_id",b"state_person_race_id"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"race",b"race",u"state_code",b"state_code",u"state_person_race_id",b"state_person_race_id"]) -> None: ...
+        state_person_race_id: typing.Optional[typing.Text] = ...,
+        race: typing.Optional[typing.Text] = ...,
+        state_code: typing.Optional[typing.Text] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "race",
+            b"race",
+            "state_code",
+            b"state_code",
+            "state_person_race_id",
+            b"state_person_race_id",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "race",
+            b"race",
+            "state_code",
+            b"state_code",
+            "state_person_race_id",
+            b"state_person_race_id",
+        ],
+    ) -> None: ...
+
 global___StatePersonRace = StatePersonRace
 
 class StatePersonEthnicity(google.protobuf.message.Message):
@@ -614,15 +1347,36 @@ class StatePersonEthnicity(google.protobuf.message.Message):
     state_person_ethnicity_id: typing.Text = ...
     ethnicity: typing.Text = ...
     state_code: typing.Text = ...
-
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        state_person_ethnicity_id : typing.Optional[typing.Text] = ...,
-        ethnicity : typing.Optional[typing.Text] = ...,
-        state_code : typing.Optional[typing.Text] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"ethnicity",b"ethnicity",u"state_code",b"state_code",u"state_person_ethnicity_id",b"state_person_ethnicity_id"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"ethnicity",b"ethnicity",u"state_code",b"state_code",u"state_person_ethnicity_id",b"state_person_ethnicity_id"]) -> None: ...
+        state_person_ethnicity_id: typing.Optional[typing.Text] = ...,
+        ethnicity: typing.Optional[typing.Text] = ...,
+        state_code: typing.Optional[typing.Text] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "ethnicity",
+            b"ethnicity",
+            "state_code",
+            b"state_code",
+            "state_person_ethnicity_id",
+            b"state_person_ethnicity_id",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "ethnicity",
+            b"ethnicity",
+            "state_code",
+            b"state_code",
+            "state_person_ethnicity_id",
+            b"state_person_ethnicity_id",
+        ],
+    ) -> None: ...
+
 global___StatePersonEthnicity = StatePersonEthnicity
 
 class StateAlias(google.protobuf.message.Message):
@@ -643,20 +1397,61 @@ class StateAlias(google.protobuf.message.Message):
     middle_names: typing.Text = ...
     name_suffix: typing.Text = ...
     alias_type: typing.Text = ...
-
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        state_alias_id : typing.Optional[typing.Text] = ...,
-        state_code : typing.Optional[typing.Text] = ...,
-        full_name : typing.Optional[typing.Text] = ...,
-        surname : typing.Optional[typing.Text] = ...,
-        given_names : typing.Optional[typing.Text] = ...,
-        middle_names : typing.Optional[typing.Text] = ...,
-        name_suffix : typing.Optional[typing.Text] = ...,
-        alias_type : typing.Optional[typing.Text] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"alias_type",b"alias_type",u"full_name",b"full_name",u"given_names",b"given_names",u"middle_names",b"middle_names",u"name_suffix",b"name_suffix",u"state_alias_id",b"state_alias_id",u"state_code",b"state_code",u"surname",b"surname"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"alias_type",b"alias_type",u"full_name",b"full_name",u"given_names",b"given_names",u"middle_names",b"middle_names",u"name_suffix",b"name_suffix",u"state_alias_id",b"state_alias_id",u"state_code",b"state_code",u"surname",b"surname"]) -> None: ...
+        state_alias_id: typing.Optional[typing.Text] = ...,
+        state_code: typing.Optional[typing.Text] = ...,
+        full_name: typing.Optional[typing.Text] = ...,
+        surname: typing.Optional[typing.Text] = ...,
+        given_names: typing.Optional[typing.Text] = ...,
+        middle_names: typing.Optional[typing.Text] = ...,
+        name_suffix: typing.Optional[typing.Text] = ...,
+        alias_type: typing.Optional[typing.Text] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "alias_type",
+            b"alias_type",
+            "full_name",
+            b"full_name",
+            "given_names",
+            b"given_names",
+            "middle_names",
+            b"middle_names",
+            "name_suffix",
+            b"name_suffix",
+            "state_alias_id",
+            b"state_alias_id",
+            "state_code",
+            b"state_code",
+            "surname",
+            b"surname",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "alias_type",
+            b"alias_type",
+            "full_name",
+            b"full_name",
+            "given_names",
+            b"given_names",
+            "middle_names",
+            b"middle_names",
+            "name_suffix",
+            b"name_suffix",
+            "state_alias_id",
+            b"state_alias_id",
+            "state_code",
+            b"state_code",
+            "surname",
+            b"surname",
+        ],
+    ) -> None: ...
+
 global___StateAlias = StateAlias
 
 class StatePersonExternalId(google.protobuf.message.Message):
@@ -667,15 +1462,36 @@ class StatePersonExternalId(google.protobuf.message.Message):
     state_person_external_id_id: typing.Text = ...
     id_type: typing.Text = ...
     state_code: typing.Text = ...
-
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        state_person_external_id_id : typing.Optional[typing.Text] = ...,
-        id_type : typing.Optional[typing.Text] = ...,
-        state_code : typing.Optional[typing.Text] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"id_type",b"id_type",u"state_code",b"state_code",u"state_person_external_id_id",b"state_person_external_id_id"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"id_type",b"id_type",u"state_code",b"state_code",u"state_person_external_id_id",b"state_person_external_id_id"]) -> None: ...
+        state_person_external_id_id: typing.Optional[typing.Text] = ...,
+        id_type: typing.Optional[typing.Text] = ...,
+        state_code: typing.Optional[typing.Text] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "id_type",
+            b"id_type",
+            "state_code",
+            b"state_code",
+            "state_person_external_id_id",
+            b"state_person_external_id_id",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "id_type",
+            b"id_type",
+            "state_code",
+            b"state_code",
+            "state_person_external_id_id",
+            b"state_person_external_id_id",
+        ],
+    ) -> None: ...
+
 global___StatePersonExternalId = StatePersonExternalId
 
 class StateAssessment(google.protobuf.message.Message):
@@ -698,21 +1514,66 @@ class StateAssessment(google.protobuf.message.Message):
     assessment_level: typing.Text = ...
     assessment_metadata: typing.Text = ...
     conducting_agent_id: typing.Text = ...
-
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        state_assessment_id : typing.Optional[typing.Text] = ...,
-        assessment_class : typing.Optional[typing.Text] = ...,
-        assessment_type : typing.Optional[typing.Text] = ...,
-        assessment_date : typing.Optional[typing.Text] = ...,
-        state_code : typing.Optional[typing.Text] = ...,
-        assessment_score : typing.Optional[typing.Text] = ...,
-        assessment_level : typing.Optional[typing.Text] = ...,
-        assessment_metadata : typing.Optional[typing.Text] = ...,
-        conducting_agent_id : typing.Optional[typing.Text] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"assessment_class",b"assessment_class",u"assessment_date",b"assessment_date",u"assessment_level",b"assessment_level",u"assessment_metadata",b"assessment_metadata",u"assessment_score",b"assessment_score",u"assessment_type",b"assessment_type",u"conducting_agent_id",b"conducting_agent_id",u"state_assessment_id",b"state_assessment_id",u"state_code",b"state_code"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"assessment_class",b"assessment_class",u"assessment_date",b"assessment_date",u"assessment_level",b"assessment_level",u"assessment_metadata",b"assessment_metadata",u"assessment_score",b"assessment_score",u"assessment_type",b"assessment_type",u"conducting_agent_id",b"conducting_agent_id",u"state_assessment_id",b"state_assessment_id",u"state_code",b"state_code"]) -> None: ...
+        state_assessment_id: typing.Optional[typing.Text] = ...,
+        assessment_class: typing.Optional[typing.Text] = ...,
+        assessment_type: typing.Optional[typing.Text] = ...,
+        assessment_date: typing.Optional[typing.Text] = ...,
+        state_code: typing.Optional[typing.Text] = ...,
+        assessment_score: typing.Optional[typing.Text] = ...,
+        assessment_level: typing.Optional[typing.Text] = ...,
+        assessment_metadata: typing.Optional[typing.Text] = ...,
+        conducting_agent_id: typing.Optional[typing.Text] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "assessment_class",
+            b"assessment_class",
+            "assessment_date",
+            b"assessment_date",
+            "assessment_level",
+            b"assessment_level",
+            "assessment_metadata",
+            b"assessment_metadata",
+            "assessment_score",
+            b"assessment_score",
+            "assessment_type",
+            b"assessment_type",
+            "conducting_agent_id",
+            b"conducting_agent_id",
+            "state_assessment_id",
+            b"state_assessment_id",
+            "state_code",
+            b"state_code",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "assessment_class",
+            b"assessment_class",
+            "assessment_date",
+            b"assessment_date",
+            "assessment_level",
+            b"assessment_level",
+            "assessment_metadata",
+            b"assessment_metadata",
+            "assessment_score",
+            b"assessment_score",
+            "assessment_type",
+            b"assessment_type",
+            "conducting_agent_id",
+            b"conducting_agent_id",
+            "state_assessment_id",
+            b"state_assessment_id",
+            "state_code",
+            b"state_code",
+        ],
+    ) -> None: ...
+
 global___StateAssessment = StateAssessment
 
 class StateSentenceGroup(google.protobuf.message.Message):
@@ -736,26 +1597,83 @@ class StateSentenceGroup(google.protobuf.message.Message):
     min_length: typing.Text = ...
     max_length: typing.Text = ...
     is_life: typing.Text = ...
-    state_supervision_sentence_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-    state_incarceration_sentence_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-    state_fine_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-
-    def __init__(self,
+    state_supervision_sentence_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    state_incarceration_sentence_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    state_fine_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    def __init__(
+        self,
         *,
-        state_sentence_group_id : typing.Optional[typing.Text] = ...,
-        status : typing.Optional[typing.Text] = ...,
-        date_imposed : typing.Optional[typing.Text] = ...,
-        state_code : typing.Optional[typing.Text] = ...,
-        county_code : typing.Optional[typing.Text] = ...,
-        min_length : typing.Optional[typing.Text] = ...,
-        max_length : typing.Optional[typing.Text] = ...,
-        is_life : typing.Optional[typing.Text] = ...,
-        state_supervision_sentence_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        state_incarceration_sentence_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        state_fine_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"county_code",b"county_code",u"date_imposed",b"date_imposed",u"is_life",b"is_life",u"max_length",b"max_length",u"min_length",b"min_length",u"state_code",b"state_code",u"state_sentence_group_id",b"state_sentence_group_id",u"status",b"status"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"county_code",b"county_code",u"date_imposed",b"date_imposed",u"is_life",b"is_life",u"max_length",b"max_length",u"min_length",b"min_length",u"state_code",b"state_code",u"state_fine_ids",b"state_fine_ids",u"state_incarceration_sentence_ids",b"state_incarceration_sentence_ids",u"state_sentence_group_id",b"state_sentence_group_id",u"state_supervision_sentence_ids",b"state_supervision_sentence_ids",u"status",b"status"]) -> None: ...
+        state_sentence_group_id: typing.Optional[typing.Text] = ...,
+        status: typing.Optional[typing.Text] = ...,
+        date_imposed: typing.Optional[typing.Text] = ...,
+        state_code: typing.Optional[typing.Text] = ...,
+        county_code: typing.Optional[typing.Text] = ...,
+        min_length: typing.Optional[typing.Text] = ...,
+        max_length: typing.Optional[typing.Text] = ...,
+        is_life: typing.Optional[typing.Text] = ...,
+        state_supervision_sentence_ids: typing.Optional[
+            typing.Iterable[typing.Text]
+        ] = ...,
+        state_incarceration_sentence_ids: typing.Optional[
+            typing.Iterable[typing.Text]
+        ] = ...,
+        state_fine_ids: typing.Optional[typing.Iterable[typing.Text]] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "county_code",
+            b"county_code",
+            "date_imposed",
+            b"date_imposed",
+            "is_life",
+            b"is_life",
+            "max_length",
+            b"max_length",
+            "min_length",
+            b"min_length",
+            "state_code",
+            b"state_code",
+            "state_sentence_group_id",
+            b"state_sentence_group_id",
+            "status",
+            b"status",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "county_code",
+            b"county_code",
+            "date_imposed",
+            b"date_imposed",
+            "is_life",
+            b"is_life",
+            "max_length",
+            b"max_length",
+            "min_length",
+            b"min_length",
+            "state_code",
+            b"state_code",
+            "state_fine_ids",
+            b"state_fine_ids",
+            "state_incarceration_sentence_ids",
+            b"state_incarceration_sentence_ids",
+            "state_sentence_group_id",
+            b"state_sentence_group_id",
+            "state_supervision_sentence_ids",
+            b"state_supervision_sentence_ids",
+            "status",
+            b"status",
+        ],
+    ) -> None: ...
+
 global___StateSentenceGroup = StateSentenceGroup
 
 class StateSupervisionSentence(google.protobuf.message.Message):
@@ -786,31 +1704,104 @@ class StateSupervisionSentence(google.protobuf.message.Message):
     county_code: typing.Text = ...
     min_length: typing.Text = ...
     max_length: typing.Text = ...
-    state_charge_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-    state_incarceration_period_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-    state_supervision_period_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-    state_early_discharge_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-
-    def __init__(self,
+    state_charge_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    state_incarceration_period_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    state_supervision_period_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    state_early_discharge_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    def __init__(
+        self,
         *,
-        state_supervision_sentence_id : typing.Optional[typing.Text] = ...,
-        status : typing.Optional[typing.Text] = ...,
-        supervision_type : typing.Optional[typing.Text] = ...,
-        date_imposed : typing.Optional[typing.Text] = ...,
-        start_date : typing.Optional[typing.Text] = ...,
-        projected_completion_date : typing.Optional[typing.Text] = ...,
-        completion_date : typing.Optional[typing.Text] = ...,
-        state_code : typing.Optional[typing.Text] = ...,
-        county_code : typing.Optional[typing.Text] = ...,
-        min_length : typing.Optional[typing.Text] = ...,
-        max_length : typing.Optional[typing.Text] = ...,
-        state_charge_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        state_incarceration_period_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        state_supervision_period_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        state_early_discharge_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"completion_date",b"completion_date",u"county_code",b"county_code",u"date_imposed",b"date_imposed",u"max_length",b"max_length",u"min_length",b"min_length",u"projected_completion_date",b"projected_completion_date",u"start_date",b"start_date",u"state_code",b"state_code",u"state_supervision_sentence_id",b"state_supervision_sentence_id",u"status",b"status",u"supervision_type",b"supervision_type"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"completion_date",b"completion_date",u"county_code",b"county_code",u"date_imposed",b"date_imposed",u"max_length",b"max_length",u"min_length",b"min_length",u"projected_completion_date",b"projected_completion_date",u"start_date",b"start_date",u"state_charge_ids",b"state_charge_ids",u"state_code",b"state_code",u"state_early_discharge_ids",b"state_early_discharge_ids",u"state_incarceration_period_ids",b"state_incarceration_period_ids",u"state_supervision_period_ids",b"state_supervision_period_ids",u"state_supervision_sentence_id",b"state_supervision_sentence_id",u"status",b"status",u"supervision_type",b"supervision_type"]) -> None: ...
+        state_supervision_sentence_id: typing.Optional[typing.Text] = ...,
+        status: typing.Optional[typing.Text] = ...,
+        supervision_type: typing.Optional[typing.Text] = ...,
+        date_imposed: typing.Optional[typing.Text] = ...,
+        start_date: typing.Optional[typing.Text] = ...,
+        projected_completion_date: typing.Optional[typing.Text] = ...,
+        completion_date: typing.Optional[typing.Text] = ...,
+        state_code: typing.Optional[typing.Text] = ...,
+        county_code: typing.Optional[typing.Text] = ...,
+        min_length: typing.Optional[typing.Text] = ...,
+        max_length: typing.Optional[typing.Text] = ...,
+        state_charge_ids: typing.Optional[typing.Iterable[typing.Text]] = ...,
+        state_incarceration_period_ids: typing.Optional[
+            typing.Iterable[typing.Text]
+        ] = ...,
+        state_supervision_period_ids: typing.Optional[
+            typing.Iterable[typing.Text]
+        ] = ...,
+        state_early_discharge_ids: typing.Optional[typing.Iterable[typing.Text]] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "completion_date",
+            b"completion_date",
+            "county_code",
+            b"county_code",
+            "date_imposed",
+            b"date_imposed",
+            "max_length",
+            b"max_length",
+            "min_length",
+            b"min_length",
+            "projected_completion_date",
+            b"projected_completion_date",
+            "start_date",
+            b"start_date",
+            "state_code",
+            b"state_code",
+            "state_supervision_sentence_id",
+            b"state_supervision_sentence_id",
+            "status",
+            b"status",
+            "supervision_type",
+            b"supervision_type",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "completion_date",
+            b"completion_date",
+            "county_code",
+            b"county_code",
+            "date_imposed",
+            b"date_imposed",
+            "max_length",
+            b"max_length",
+            "min_length",
+            b"min_length",
+            "projected_completion_date",
+            b"projected_completion_date",
+            "start_date",
+            b"start_date",
+            "state_charge_ids",
+            b"state_charge_ids",
+            "state_code",
+            b"state_code",
+            "state_early_discharge_ids",
+            b"state_early_discharge_ids",
+            "state_incarceration_period_ids",
+            b"state_incarceration_period_ids",
+            "state_supervision_period_ids",
+            b"state_supervision_period_ids",
+            "state_supervision_sentence_id",
+            b"state_supervision_sentence_id",
+            "status",
+            b"status",
+            "supervision_type",
+            b"supervision_type",
+        ],
+    ) -> None: ...
+
 global___StateSupervisionSentence = StateSupervisionSentence
 
 class StateIncarcerationSentence(google.protobuf.message.Message):
@@ -857,39 +1848,144 @@ class StateIncarcerationSentence(google.protobuf.message.Message):
     initial_time_served: typing.Text = ...
     good_time: typing.Text = ...
     earned_time: typing.Text = ...
-    state_charge_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-    state_incarceration_period_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-    state_supervision_period_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-    state_early_discharge_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-
-    def __init__(self,
+    state_charge_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    state_incarceration_period_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    state_supervision_period_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    state_early_discharge_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    def __init__(
+        self,
         *,
-        state_incarceration_sentence_id : typing.Optional[typing.Text] = ...,
-        status : typing.Optional[typing.Text] = ...,
-        incarceration_type : typing.Optional[typing.Text] = ...,
-        date_imposed : typing.Optional[typing.Text] = ...,
-        start_date : typing.Optional[typing.Text] = ...,
-        projected_min_release_date : typing.Optional[typing.Text] = ...,
-        projected_max_release_date : typing.Optional[typing.Text] = ...,
-        completion_date : typing.Optional[typing.Text] = ...,
-        parole_eligibility_date : typing.Optional[typing.Text] = ...,
-        state_code : typing.Optional[typing.Text] = ...,
-        county_code : typing.Optional[typing.Text] = ...,
-        min_length : typing.Optional[typing.Text] = ...,
-        max_length : typing.Optional[typing.Text] = ...,
-        is_life : typing.Optional[typing.Text] = ...,
-        is_capital_punishment : typing.Optional[typing.Text] = ...,
-        parole_possible : typing.Optional[typing.Text] = ...,
-        initial_time_served : typing.Optional[typing.Text] = ...,
-        good_time : typing.Optional[typing.Text] = ...,
-        earned_time : typing.Optional[typing.Text] = ...,
-        state_charge_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        state_incarceration_period_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        state_supervision_period_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        state_early_discharge_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"completion_date",b"completion_date",u"county_code",b"county_code",u"date_imposed",b"date_imposed",u"earned_time",b"earned_time",u"good_time",b"good_time",u"incarceration_type",b"incarceration_type",u"initial_time_served",b"initial_time_served",u"is_capital_punishment",b"is_capital_punishment",u"is_life",b"is_life",u"max_length",b"max_length",u"min_length",b"min_length",u"parole_eligibility_date",b"parole_eligibility_date",u"parole_possible",b"parole_possible",u"projected_max_release_date",b"projected_max_release_date",u"projected_min_release_date",b"projected_min_release_date",u"start_date",b"start_date",u"state_code",b"state_code",u"state_incarceration_sentence_id",b"state_incarceration_sentence_id",u"status",b"status"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"completion_date",b"completion_date",u"county_code",b"county_code",u"date_imposed",b"date_imposed",u"earned_time",b"earned_time",u"good_time",b"good_time",u"incarceration_type",b"incarceration_type",u"initial_time_served",b"initial_time_served",u"is_capital_punishment",b"is_capital_punishment",u"is_life",b"is_life",u"max_length",b"max_length",u"min_length",b"min_length",u"parole_eligibility_date",b"parole_eligibility_date",u"parole_possible",b"parole_possible",u"projected_max_release_date",b"projected_max_release_date",u"projected_min_release_date",b"projected_min_release_date",u"start_date",b"start_date",u"state_charge_ids",b"state_charge_ids",u"state_code",b"state_code",u"state_early_discharge_ids",b"state_early_discharge_ids",u"state_incarceration_period_ids",b"state_incarceration_period_ids",u"state_incarceration_sentence_id",b"state_incarceration_sentence_id",u"state_supervision_period_ids",b"state_supervision_period_ids",u"status",b"status"]) -> None: ...
+        state_incarceration_sentence_id: typing.Optional[typing.Text] = ...,
+        status: typing.Optional[typing.Text] = ...,
+        incarceration_type: typing.Optional[typing.Text] = ...,
+        date_imposed: typing.Optional[typing.Text] = ...,
+        start_date: typing.Optional[typing.Text] = ...,
+        projected_min_release_date: typing.Optional[typing.Text] = ...,
+        projected_max_release_date: typing.Optional[typing.Text] = ...,
+        completion_date: typing.Optional[typing.Text] = ...,
+        parole_eligibility_date: typing.Optional[typing.Text] = ...,
+        state_code: typing.Optional[typing.Text] = ...,
+        county_code: typing.Optional[typing.Text] = ...,
+        min_length: typing.Optional[typing.Text] = ...,
+        max_length: typing.Optional[typing.Text] = ...,
+        is_life: typing.Optional[typing.Text] = ...,
+        is_capital_punishment: typing.Optional[typing.Text] = ...,
+        parole_possible: typing.Optional[typing.Text] = ...,
+        initial_time_served: typing.Optional[typing.Text] = ...,
+        good_time: typing.Optional[typing.Text] = ...,
+        earned_time: typing.Optional[typing.Text] = ...,
+        state_charge_ids: typing.Optional[typing.Iterable[typing.Text]] = ...,
+        state_incarceration_period_ids: typing.Optional[
+            typing.Iterable[typing.Text]
+        ] = ...,
+        state_supervision_period_ids: typing.Optional[
+            typing.Iterable[typing.Text]
+        ] = ...,
+        state_early_discharge_ids: typing.Optional[typing.Iterable[typing.Text]] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "completion_date",
+            b"completion_date",
+            "county_code",
+            b"county_code",
+            "date_imposed",
+            b"date_imposed",
+            "earned_time",
+            b"earned_time",
+            "good_time",
+            b"good_time",
+            "incarceration_type",
+            b"incarceration_type",
+            "initial_time_served",
+            b"initial_time_served",
+            "is_capital_punishment",
+            b"is_capital_punishment",
+            "is_life",
+            b"is_life",
+            "max_length",
+            b"max_length",
+            "min_length",
+            b"min_length",
+            "parole_eligibility_date",
+            b"parole_eligibility_date",
+            "parole_possible",
+            b"parole_possible",
+            "projected_max_release_date",
+            b"projected_max_release_date",
+            "projected_min_release_date",
+            b"projected_min_release_date",
+            "start_date",
+            b"start_date",
+            "state_code",
+            b"state_code",
+            "state_incarceration_sentence_id",
+            b"state_incarceration_sentence_id",
+            "status",
+            b"status",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "completion_date",
+            b"completion_date",
+            "county_code",
+            b"county_code",
+            "date_imposed",
+            b"date_imposed",
+            "earned_time",
+            b"earned_time",
+            "good_time",
+            b"good_time",
+            "incarceration_type",
+            b"incarceration_type",
+            "initial_time_served",
+            b"initial_time_served",
+            "is_capital_punishment",
+            b"is_capital_punishment",
+            "is_life",
+            b"is_life",
+            "max_length",
+            b"max_length",
+            "min_length",
+            b"min_length",
+            "parole_eligibility_date",
+            b"parole_eligibility_date",
+            "parole_possible",
+            b"parole_possible",
+            "projected_max_release_date",
+            b"projected_max_release_date",
+            "projected_min_release_date",
+            b"projected_min_release_date",
+            "start_date",
+            b"start_date",
+            "state_charge_ids",
+            b"state_charge_ids",
+            "state_code",
+            b"state_code",
+            "state_early_discharge_ids",
+            b"state_early_discharge_ids",
+            "state_incarceration_period_ids",
+            b"state_incarceration_period_ids",
+            "state_incarceration_sentence_id",
+            b"state_incarceration_sentence_id",
+            "state_supervision_period_ids",
+            b"state_supervision_period_ids",
+            "status",
+            b"status",
+        ],
+    ) -> None: ...
+
 global___StateIncarcerationSentence = StateIncarcerationSentence
 
 class StateFine(google.protobuf.message.Message):
@@ -907,20 +2003,57 @@ class StateFine(google.protobuf.message.Message):
     state_code: typing.Text = ...
     county_code: typing.Text = ...
     fine_dollars: typing.Text = ...
-    state_charge_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-
-    def __init__(self,
+    state_charge_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    def __init__(
+        self,
         *,
-        state_fine_id : typing.Optional[typing.Text] = ...,
-        status : typing.Optional[typing.Text] = ...,
-        date_paid : typing.Optional[typing.Text] = ...,
-        state_code : typing.Optional[typing.Text] = ...,
-        county_code : typing.Optional[typing.Text] = ...,
-        fine_dollars : typing.Optional[typing.Text] = ...,
-        state_charge_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"county_code",b"county_code",u"date_paid",b"date_paid",u"fine_dollars",b"fine_dollars",u"state_code",b"state_code",u"state_fine_id",b"state_fine_id",u"status",b"status"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"county_code",b"county_code",u"date_paid",b"date_paid",u"fine_dollars",b"fine_dollars",u"state_charge_ids",b"state_charge_ids",u"state_code",b"state_code",u"state_fine_id",b"state_fine_id",u"status",b"status"]) -> None: ...
+        state_fine_id: typing.Optional[typing.Text] = ...,
+        status: typing.Optional[typing.Text] = ...,
+        date_paid: typing.Optional[typing.Text] = ...,
+        state_code: typing.Optional[typing.Text] = ...,
+        county_code: typing.Optional[typing.Text] = ...,
+        fine_dollars: typing.Optional[typing.Text] = ...,
+        state_charge_ids: typing.Optional[typing.Iterable[typing.Text]] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "county_code",
+            b"county_code",
+            "date_paid",
+            b"date_paid",
+            "fine_dollars",
+            b"fine_dollars",
+            "state_code",
+            b"state_code",
+            "state_fine_id",
+            b"state_fine_id",
+            "status",
+            b"status",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "county_code",
+            b"county_code",
+            "date_paid",
+            b"date_paid",
+            "fine_dollars",
+            b"fine_dollars",
+            "state_charge_ids",
+            b"state_charge_ids",
+            "state_code",
+            b"state_code",
+            "state_fine_id",
+            b"state_fine_id",
+            "status",
+            b"status",
+        ],
+    ) -> None: ...
+
 global___StateFine = StateFine
 
 class StateCharge(google.protobuf.message.Message):
@@ -965,32 +2098,121 @@ class StateCharge(google.protobuf.message.Message):
     charging_entity: typing.Text = ...
     state_court_case_id: typing.Text = ...
     state_bond_id: typing.Text = ...
-
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        state_charge_id : typing.Optional[typing.Text] = ...,
-        status : typing.Optional[typing.Text] = ...,
-        offense_date : typing.Optional[typing.Text] = ...,
-        date_charged : typing.Optional[typing.Text] = ...,
-        state_code : typing.Optional[typing.Text] = ...,
-        county_code : typing.Optional[typing.Text] = ...,
-        ncic_code : typing.Optional[typing.Text] = ...,
-        statute : typing.Optional[typing.Text] = ...,
-        description : typing.Optional[typing.Text] = ...,
-        attempted : typing.Optional[typing.Text] = ...,
-        classification_type : typing.Optional[typing.Text] = ...,
-        classification_subtype : typing.Optional[typing.Text] = ...,
-        offense_type : typing.Optional[typing.Text] = ...,
-        is_violent : typing.Optional[typing.Text] = ...,
-        counts : typing.Optional[typing.Text] = ...,
-        charge_notes : typing.Optional[typing.Text] = ...,
-        is_controlling : typing.Optional[typing.Text] = ...,
-        charging_entity : typing.Optional[typing.Text] = ...,
-        state_court_case_id : typing.Optional[typing.Text] = ...,
-        state_bond_id : typing.Optional[typing.Text] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"attempted",b"attempted",u"charge_notes",b"charge_notes",u"charging_entity",b"charging_entity",u"classification_subtype",b"classification_subtype",u"classification_type",b"classification_type",u"counts",b"counts",u"county_code",b"county_code",u"date_charged",b"date_charged",u"description",b"description",u"is_controlling",b"is_controlling",u"is_violent",b"is_violent",u"ncic_code",b"ncic_code",u"offense_date",b"offense_date",u"offense_type",b"offense_type",u"state_bond_id",b"state_bond_id",u"state_charge_id",b"state_charge_id",u"state_code",b"state_code",u"state_court_case_id",b"state_court_case_id",u"status",b"status",u"statute",b"statute"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"attempted",b"attempted",u"charge_notes",b"charge_notes",u"charging_entity",b"charging_entity",u"classification_subtype",b"classification_subtype",u"classification_type",b"classification_type",u"counts",b"counts",u"county_code",b"county_code",u"date_charged",b"date_charged",u"description",b"description",u"is_controlling",b"is_controlling",u"is_violent",b"is_violent",u"ncic_code",b"ncic_code",u"offense_date",b"offense_date",u"offense_type",b"offense_type",u"state_bond_id",b"state_bond_id",u"state_charge_id",b"state_charge_id",u"state_code",b"state_code",u"state_court_case_id",b"state_court_case_id",u"status",b"status",u"statute",b"statute"]) -> None: ...
+        state_charge_id: typing.Optional[typing.Text] = ...,
+        status: typing.Optional[typing.Text] = ...,
+        offense_date: typing.Optional[typing.Text] = ...,
+        date_charged: typing.Optional[typing.Text] = ...,
+        state_code: typing.Optional[typing.Text] = ...,
+        county_code: typing.Optional[typing.Text] = ...,
+        ncic_code: typing.Optional[typing.Text] = ...,
+        statute: typing.Optional[typing.Text] = ...,
+        description: typing.Optional[typing.Text] = ...,
+        attempted: typing.Optional[typing.Text] = ...,
+        classification_type: typing.Optional[typing.Text] = ...,
+        classification_subtype: typing.Optional[typing.Text] = ...,
+        offense_type: typing.Optional[typing.Text] = ...,
+        is_violent: typing.Optional[typing.Text] = ...,
+        counts: typing.Optional[typing.Text] = ...,
+        charge_notes: typing.Optional[typing.Text] = ...,
+        is_controlling: typing.Optional[typing.Text] = ...,
+        charging_entity: typing.Optional[typing.Text] = ...,
+        state_court_case_id: typing.Optional[typing.Text] = ...,
+        state_bond_id: typing.Optional[typing.Text] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "attempted",
+            b"attempted",
+            "charge_notes",
+            b"charge_notes",
+            "charging_entity",
+            b"charging_entity",
+            "classification_subtype",
+            b"classification_subtype",
+            "classification_type",
+            b"classification_type",
+            "counts",
+            b"counts",
+            "county_code",
+            b"county_code",
+            "date_charged",
+            b"date_charged",
+            "description",
+            b"description",
+            "is_controlling",
+            b"is_controlling",
+            "is_violent",
+            b"is_violent",
+            "ncic_code",
+            b"ncic_code",
+            "offense_date",
+            b"offense_date",
+            "offense_type",
+            b"offense_type",
+            "state_bond_id",
+            b"state_bond_id",
+            "state_charge_id",
+            b"state_charge_id",
+            "state_code",
+            b"state_code",
+            "state_court_case_id",
+            b"state_court_case_id",
+            "status",
+            b"status",
+            "statute",
+            b"statute",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "attempted",
+            b"attempted",
+            "charge_notes",
+            b"charge_notes",
+            "charging_entity",
+            b"charging_entity",
+            "classification_subtype",
+            b"classification_subtype",
+            "classification_type",
+            b"classification_type",
+            "counts",
+            b"counts",
+            "county_code",
+            b"county_code",
+            "date_charged",
+            b"date_charged",
+            "description",
+            b"description",
+            "is_controlling",
+            b"is_controlling",
+            "is_violent",
+            b"is_violent",
+            "ncic_code",
+            b"ncic_code",
+            "offense_date",
+            b"offense_date",
+            "offense_type",
+            b"offense_type",
+            "state_bond_id",
+            b"state_bond_id",
+            "state_charge_id",
+            b"state_charge_id",
+            "state_code",
+            b"state_code",
+            "state_court_case_id",
+            b"state_court_case_id",
+            "status",
+            b"status",
+            "statute",
+            b"statute",
+        ],
+    ) -> None: ...
+
 global___StateCharge = StateCharge
 
 class StateCourtCase(google.protobuf.message.Message):
@@ -1015,22 +2237,71 @@ class StateCourtCase(google.protobuf.message.Message):
     judicial_district_code: typing.Text = ...
     court_fee_dollars: typing.Text = ...
     judge_id: typing.Text = ...
-
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        state_court_case_id : typing.Optional[typing.Text] = ...,
-        status : typing.Optional[typing.Text] = ...,
-        court_type : typing.Optional[typing.Text] = ...,
-        date_convicted : typing.Optional[typing.Text] = ...,
-        next_court_date : typing.Optional[typing.Text] = ...,
-        state_code : typing.Optional[typing.Text] = ...,
-        county_code : typing.Optional[typing.Text] = ...,
-        judicial_district_code : typing.Optional[typing.Text] = ...,
-        court_fee_dollars : typing.Optional[typing.Text] = ...,
-        judge_id : typing.Optional[typing.Text] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"county_code",b"county_code",u"court_fee_dollars",b"court_fee_dollars",u"court_type",b"court_type",u"date_convicted",b"date_convicted",u"judge_id",b"judge_id",u"judicial_district_code",b"judicial_district_code",u"next_court_date",b"next_court_date",u"state_code",b"state_code",u"state_court_case_id",b"state_court_case_id",u"status",b"status"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"county_code",b"county_code",u"court_fee_dollars",b"court_fee_dollars",u"court_type",b"court_type",u"date_convicted",b"date_convicted",u"judge_id",b"judge_id",u"judicial_district_code",b"judicial_district_code",u"next_court_date",b"next_court_date",u"state_code",b"state_code",u"state_court_case_id",b"state_court_case_id",u"status",b"status"]) -> None: ...
+        state_court_case_id: typing.Optional[typing.Text] = ...,
+        status: typing.Optional[typing.Text] = ...,
+        court_type: typing.Optional[typing.Text] = ...,
+        date_convicted: typing.Optional[typing.Text] = ...,
+        next_court_date: typing.Optional[typing.Text] = ...,
+        state_code: typing.Optional[typing.Text] = ...,
+        county_code: typing.Optional[typing.Text] = ...,
+        judicial_district_code: typing.Optional[typing.Text] = ...,
+        court_fee_dollars: typing.Optional[typing.Text] = ...,
+        judge_id: typing.Optional[typing.Text] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "county_code",
+            b"county_code",
+            "court_fee_dollars",
+            b"court_fee_dollars",
+            "court_type",
+            b"court_type",
+            "date_convicted",
+            b"date_convicted",
+            "judge_id",
+            b"judge_id",
+            "judicial_district_code",
+            b"judicial_district_code",
+            "next_court_date",
+            b"next_court_date",
+            "state_code",
+            b"state_code",
+            "state_court_case_id",
+            b"state_court_case_id",
+            "status",
+            b"status",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "county_code",
+            b"county_code",
+            "court_fee_dollars",
+            b"court_fee_dollars",
+            "court_type",
+            b"court_type",
+            "date_convicted",
+            b"date_convicted",
+            "judge_id",
+            b"judge_id",
+            "judicial_district_code",
+            b"judicial_district_code",
+            "next_court_date",
+            b"next_court_date",
+            "state_code",
+            b"state_code",
+            "state_court_case_id",
+            b"state_court_case_id",
+            "status",
+            b"status",
+        ],
+    ) -> None: ...
+
 global___StateCourtCase = StateCourtCase
 
 class StateBond(google.protobuf.message.Message):
@@ -1051,20 +2322,61 @@ class StateBond(google.protobuf.message.Message):
     county_code: typing.Text = ...
     amount: typing.Text = ...
     bond_agent: typing.Text = ...
-
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        state_bond_id : typing.Optional[typing.Text] = ...,
-        status : typing.Optional[typing.Text] = ...,
-        bond_type : typing.Optional[typing.Text] = ...,
-        date_paid : typing.Optional[typing.Text] = ...,
-        state_code : typing.Optional[typing.Text] = ...,
-        county_code : typing.Optional[typing.Text] = ...,
-        amount : typing.Optional[typing.Text] = ...,
-        bond_agent : typing.Optional[typing.Text] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"amount",b"amount",u"bond_agent",b"bond_agent",u"bond_type",b"bond_type",u"county_code",b"county_code",u"date_paid",b"date_paid",u"state_bond_id",b"state_bond_id",u"state_code",b"state_code",u"status",b"status"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"amount",b"amount",u"bond_agent",b"bond_agent",u"bond_type",b"bond_type",u"county_code",b"county_code",u"date_paid",b"date_paid",u"state_bond_id",b"state_bond_id",u"state_code",b"state_code",u"status",b"status"]) -> None: ...
+        state_bond_id: typing.Optional[typing.Text] = ...,
+        status: typing.Optional[typing.Text] = ...,
+        bond_type: typing.Optional[typing.Text] = ...,
+        date_paid: typing.Optional[typing.Text] = ...,
+        state_code: typing.Optional[typing.Text] = ...,
+        county_code: typing.Optional[typing.Text] = ...,
+        amount: typing.Optional[typing.Text] = ...,
+        bond_agent: typing.Optional[typing.Text] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "amount",
+            b"amount",
+            "bond_agent",
+            b"bond_agent",
+            "bond_type",
+            b"bond_type",
+            "county_code",
+            b"county_code",
+            "date_paid",
+            b"date_paid",
+            "state_bond_id",
+            b"state_bond_id",
+            "state_code",
+            b"state_code",
+            "status",
+            b"status",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "amount",
+            b"amount",
+            "bond_agent",
+            b"bond_agent",
+            "bond_type",
+            b"bond_type",
+            "county_code",
+            b"county_code",
+            "date_paid",
+            b"date_paid",
+            "state_bond_id",
+            b"state_bond_id",
+            "state_code",
+            b"state_code",
+            "status",
+            b"status",
+        ],
+    ) -> None: ...
+
 global___StateBond = StateBond
 
 class StateIncarcerationPeriod(google.protobuf.message.Message):
@@ -1104,37 +2416,130 @@ class StateIncarcerationPeriod(google.protobuf.message.Message):
     release_reason: typing.Text = ...
     specialized_purpose_for_incarceration: typing.Text = ...
     custodial_authority: typing.Text = ...
-    state_incarceration_incident_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-    state_parole_decision_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-    state_assessment_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-    state_program_assignment_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
+    state_incarceration_incident_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    state_parole_decision_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    state_assessment_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    state_program_assignment_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
     source_supervision_violation_response_id: typing.Text = ...
-
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        state_incarceration_period_id : typing.Optional[typing.Text] = ...,
-        status : typing.Optional[typing.Text] = ...,
-        incarceration_type : typing.Optional[typing.Text] = ...,
-        admission_date : typing.Optional[typing.Text] = ...,
-        release_date : typing.Optional[typing.Text] = ...,
-        state_code : typing.Optional[typing.Text] = ...,
-        county_code : typing.Optional[typing.Text] = ...,
-        facility : typing.Optional[typing.Text] = ...,
-        housing_unit : typing.Optional[typing.Text] = ...,
-        facility_security_level : typing.Optional[typing.Text] = ...,
-        admission_reason : typing.Optional[typing.Text] = ...,
-        projected_release_reason : typing.Optional[typing.Text] = ...,
-        release_reason : typing.Optional[typing.Text] = ...,
-        specialized_purpose_for_incarceration : typing.Optional[typing.Text] = ...,
-        custodial_authority : typing.Optional[typing.Text] = ...,
-        state_incarceration_incident_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        state_parole_decision_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        state_assessment_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        state_program_assignment_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        source_supervision_violation_response_id : typing.Optional[typing.Text] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"admission_date",b"admission_date",u"admission_reason",b"admission_reason",u"county_code",b"county_code",u"custodial_authority",b"custodial_authority",u"facility",b"facility",u"facility_security_level",b"facility_security_level",u"housing_unit",b"housing_unit",u"incarceration_type",b"incarceration_type",u"projected_release_reason",b"projected_release_reason",u"release_date",b"release_date",u"release_reason",b"release_reason",u"source_supervision_violation_response_id",b"source_supervision_violation_response_id",u"specialized_purpose_for_incarceration",b"specialized_purpose_for_incarceration",u"state_code",b"state_code",u"state_incarceration_period_id",b"state_incarceration_period_id",u"status",b"status"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"admission_date",b"admission_date",u"admission_reason",b"admission_reason",u"county_code",b"county_code",u"custodial_authority",b"custodial_authority",u"facility",b"facility",u"facility_security_level",b"facility_security_level",u"housing_unit",b"housing_unit",u"incarceration_type",b"incarceration_type",u"projected_release_reason",b"projected_release_reason",u"release_date",b"release_date",u"release_reason",b"release_reason",u"source_supervision_violation_response_id",b"source_supervision_violation_response_id",u"specialized_purpose_for_incarceration",b"specialized_purpose_for_incarceration",u"state_assessment_ids",b"state_assessment_ids",u"state_code",b"state_code",u"state_incarceration_incident_ids",b"state_incarceration_incident_ids",u"state_incarceration_period_id",b"state_incarceration_period_id",u"state_parole_decision_ids",b"state_parole_decision_ids",u"state_program_assignment_ids",b"state_program_assignment_ids",u"status",b"status"]) -> None: ...
+        state_incarceration_period_id: typing.Optional[typing.Text] = ...,
+        status: typing.Optional[typing.Text] = ...,
+        incarceration_type: typing.Optional[typing.Text] = ...,
+        admission_date: typing.Optional[typing.Text] = ...,
+        release_date: typing.Optional[typing.Text] = ...,
+        state_code: typing.Optional[typing.Text] = ...,
+        county_code: typing.Optional[typing.Text] = ...,
+        facility: typing.Optional[typing.Text] = ...,
+        housing_unit: typing.Optional[typing.Text] = ...,
+        facility_security_level: typing.Optional[typing.Text] = ...,
+        admission_reason: typing.Optional[typing.Text] = ...,
+        projected_release_reason: typing.Optional[typing.Text] = ...,
+        release_reason: typing.Optional[typing.Text] = ...,
+        specialized_purpose_for_incarceration: typing.Optional[typing.Text] = ...,
+        custodial_authority: typing.Optional[typing.Text] = ...,
+        state_incarceration_incident_ids: typing.Optional[
+            typing.Iterable[typing.Text]
+        ] = ...,
+        state_parole_decision_ids: typing.Optional[typing.Iterable[typing.Text]] = ...,
+        state_assessment_ids: typing.Optional[typing.Iterable[typing.Text]] = ...,
+        state_program_assignment_ids: typing.Optional[
+            typing.Iterable[typing.Text]
+        ] = ...,
+        source_supervision_violation_response_id: typing.Optional[typing.Text] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "admission_date",
+            b"admission_date",
+            "admission_reason",
+            b"admission_reason",
+            "county_code",
+            b"county_code",
+            "custodial_authority",
+            b"custodial_authority",
+            "facility",
+            b"facility",
+            "facility_security_level",
+            b"facility_security_level",
+            "housing_unit",
+            b"housing_unit",
+            "incarceration_type",
+            b"incarceration_type",
+            "projected_release_reason",
+            b"projected_release_reason",
+            "release_date",
+            b"release_date",
+            "release_reason",
+            b"release_reason",
+            "source_supervision_violation_response_id",
+            b"source_supervision_violation_response_id",
+            "specialized_purpose_for_incarceration",
+            b"specialized_purpose_for_incarceration",
+            "state_code",
+            b"state_code",
+            "state_incarceration_period_id",
+            b"state_incarceration_period_id",
+            "status",
+            b"status",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "admission_date",
+            b"admission_date",
+            "admission_reason",
+            b"admission_reason",
+            "county_code",
+            b"county_code",
+            "custodial_authority",
+            b"custodial_authority",
+            "facility",
+            b"facility",
+            "facility_security_level",
+            b"facility_security_level",
+            "housing_unit",
+            b"housing_unit",
+            "incarceration_type",
+            b"incarceration_type",
+            "projected_release_reason",
+            b"projected_release_reason",
+            "release_date",
+            b"release_date",
+            "release_reason",
+            b"release_reason",
+            "source_supervision_violation_response_id",
+            b"source_supervision_violation_response_id",
+            "specialized_purpose_for_incarceration",
+            b"specialized_purpose_for_incarceration",
+            "state_assessment_ids",
+            b"state_assessment_ids",
+            "state_code",
+            b"state_code",
+            "state_incarceration_incident_ids",
+            b"state_incarceration_incident_ids",
+            "state_incarceration_period_id",
+            b"state_incarceration_period_id",
+            "state_parole_decision_ids",
+            b"state_parole_decision_ids",
+            "state_program_assignment_ids",
+            b"state_program_assignment_ids",
+            "status",
+            b"status",
+        ],
+    ) -> None: ...
+
 global___StateIncarcerationPeriod = StateIncarcerationPeriod
 
 class StateSupervisionPeriod(google.protobuf.message.Message):
@@ -1173,38 +2578,135 @@ class StateSupervisionPeriod(google.protobuf.message.Message):
     supervision_level: typing.Text = ...
     supervising_officer_id: typing.Text = ...
     custodial_authority: typing.Text = ...
-    conditions: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-    state_supervision_violation_entry_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-    state_assessment_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-    state_program_assignment_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-    state_supervision_case_type_entry_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-    state_supervision_contact_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-
-    def __init__(self,
+    conditions: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    state_supervision_violation_entry_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    state_assessment_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    state_program_assignment_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    state_supervision_case_type_entry_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    state_supervision_contact_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    def __init__(
+        self,
         *,
-        state_supervision_period_id : typing.Optional[typing.Text] = ...,
-        status : typing.Optional[typing.Text] = ...,
-        supervision_type : typing.Optional[typing.Text] = ...,
-        supervision_period_supervision_type : typing.Optional[typing.Text] = ...,
-        start_date : typing.Optional[typing.Text] = ...,
-        termination_date : typing.Optional[typing.Text] = ...,
-        state_code : typing.Optional[typing.Text] = ...,
-        county_code : typing.Optional[typing.Text] = ...,
-        supervision_site : typing.Optional[typing.Text] = ...,
-        admission_reason : typing.Optional[typing.Text] = ...,
-        termination_reason : typing.Optional[typing.Text] = ...,
-        supervision_level : typing.Optional[typing.Text] = ...,
-        supervising_officer_id : typing.Optional[typing.Text] = ...,
-        custodial_authority : typing.Optional[typing.Text] = ...,
-        conditions : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        state_supervision_violation_entry_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        state_assessment_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        state_program_assignment_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        state_supervision_case_type_entry_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        state_supervision_contact_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"admission_reason",b"admission_reason",u"county_code",b"county_code",u"custodial_authority",b"custodial_authority",u"start_date",b"start_date",u"state_code",b"state_code",u"state_supervision_period_id",b"state_supervision_period_id",u"status",b"status",u"supervising_officer_id",b"supervising_officer_id",u"supervision_level",b"supervision_level",u"supervision_period_supervision_type",b"supervision_period_supervision_type",u"supervision_site",b"supervision_site",u"supervision_type",b"supervision_type",u"termination_date",b"termination_date",u"termination_reason",b"termination_reason"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"admission_reason",b"admission_reason",u"conditions",b"conditions",u"county_code",b"county_code",u"custodial_authority",b"custodial_authority",u"start_date",b"start_date",u"state_assessment_ids",b"state_assessment_ids",u"state_code",b"state_code",u"state_program_assignment_ids",b"state_program_assignment_ids",u"state_supervision_case_type_entry_ids",b"state_supervision_case_type_entry_ids",u"state_supervision_contact_ids",b"state_supervision_contact_ids",u"state_supervision_period_id",b"state_supervision_period_id",u"state_supervision_violation_entry_ids",b"state_supervision_violation_entry_ids",u"status",b"status",u"supervising_officer_id",b"supervising_officer_id",u"supervision_level",b"supervision_level",u"supervision_period_supervision_type",b"supervision_period_supervision_type",u"supervision_site",b"supervision_site",u"supervision_type",b"supervision_type",u"termination_date",b"termination_date",u"termination_reason",b"termination_reason"]) -> None: ...
+        state_supervision_period_id: typing.Optional[typing.Text] = ...,
+        status: typing.Optional[typing.Text] = ...,
+        supervision_type: typing.Optional[typing.Text] = ...,
+        supervision_period_supervision_type: typing.Optional[typing.Text] = ...,
+        start_date: typing.Optional[typing.Text] = ...,
+        termination_date: typing.Optional[typing.Text] = ...,
+        state_code: typing.Optional[typing.Text] = ...,
+        county_code: typing.Optional[typing.Text] = ...,
+        supervision_site: typing.Optional[typing.Text] = ...,
+        admission_reason: typing.Optional[typing.Text] = ...,
+        termination_reason: typing.Optional[typing.Text] = ...,
+        supervision_level: typing.Optional[typing.Text] = ...,
+        supervising_officer_id: typing.Optional[typing.Text] = ...,
+        custodial_authority: typing.Optional[typing.Text] = ...,
+        conditions: typing.Optional[typing.Iterable[typing.Text]] = ...,
+        state_supervision_violation_entry_ids: typing.Optional[
+            typing.Iterable[typing.Text]
+        ] = ...,
+        state_assessment_ids: typing.Optional[typing.Iterable[typing.Text]] = ...,
+        state_program_assignment_ids: typing.Optional[
+            typing.Iterable[typing.Text]
+        ] = ...,
+        state_supervision_case_type_entry_ids: typing.Optional[
+            typing.Iterable[typing.Text]
+        ] = ...,
+        state_supervision_contact_ids: typing.Optional[
+            typing.Iterable[typing.Text]
+        ] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "admission_reason",
+            b"admission_reason",
+            "county_code",
+            b"county_code",
+            "custodial_authority",
+            b"custodial_authority",
+            "start_date",
+            b"start_date",
+            "state_code",
+            b"state_code",
+            "state_supervision_period_id",
+            b"state_supervision_period_id",
+            "status",
+            b"status",
+            "supervising_officer_id",
+            b"supervising_officer_id",
+            "supervision_level",
+            b"supervision_level",
+            "supervision_period_supervision_type",
+            b"supervision_period_supervision_type",
+            "supervision_site",
+            b"supervision_site",
+            "supervision_type",
+            b"supervision_type",
+            "termination_date",
+            b"termination_date",
+            "termination_reason",
+            b"termination_reason",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "admission_reason",
+            b"admission_reason",
+            "conditions",
+            b"conditions",
+            "county_code",
+            b"county_code",
+            "custodial_authority",
+            b"custodial_authority",
+            "start_date",
+            b"start_date",
+            "state_assessment_ids",
+            b"state_assessment_ids",
+            "state_code",
+            b"state_code",
+            "state_program_assignment_ids",
+            b"state_program_assignment_ids",
+            "state_supervision_case_type_entry_ids",
+            b"state_supervision_case_type_entry_ids",
+            "state_supervision_contact_ids",
+            b"state_supervision_contact_ids",
+            "state_supervision_period_id",
+            b"state_supervision_period_id",
+            "state_supervision_violation_entry_ids",
+            b"state_supervision_violation_entry_ids",
+            "status",
+            b"status",
+            "supervising_officer_id",
+            b"supervising_officer_id",
+            "supervision_level",
+            b"supervision_level",
+            "supervision_period_supervision_type",
+            b"supervision_period_supervision_type",
+            "supervision_site",
+            b"supervision_site",
+            "supervision_type",
+            b"supervision_type",
+            "termination_date",
+            b"termination_date",
+            "termination_reason",
+            b"termination_reason",
+        ],
+    ) -> None: ...
+
 global___StateSupervisionPeriod = StateSupervisionPeriod
 
 class StateSupervisionCaseTypeEntry(google.protobuf.message.Message):
@@ -1215,15 +2717,36 @@ class StateSupervisionCaseTypeEntry(google.protobuf.message.Message):
     state_supervision_case_type_entry_id: typing.Text = ...
     case_type: typing.Text = ...
     state_code: typing.Text = ...
-
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        state_supervision_case_type_entry_id : typing.Optional[typing.Text] = ...,
-        case_type : typing.Optional[typing.Text] = ...,
-        state_code : typing.Optional[typing.Text] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"case_type",b"case_type",u"state_code",b"state_code",u"state_supervision_case_type_entry_id",b"state_supervision_case_type_entry_id"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"case_type",b"case_type",u"state_code",b"state_code",u"state_supervision_case_type_entry_id",b"state_supervision_case_type_entry_id"]) -> None: ...
+        state_supervision_case_type_entry_id: typing.Optional[typing.Text] = ...,
+        case_type: typing.Optional[typing.Text] = ...,
+        state_code: typing.Optional[typing.Text] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "case_type",
+            b"case_type",
+            "state_code",
+            b"state_code",
+            "state_supervision_case_type_entry_id",
+            b"state_supervision_case_type_entry_id",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "case_type",
+            b"case_type",
+            "state_code",
+            b"state_code",
+            "state_supervision_case_type_entry_id",
+            b"state_supervision_case_type_entry_id",
+        ],
+    ) -> None: ...
+
 global___StateSupervisionCaseTypeEntry = StateSupervisionCaseTypeEntry
 
 class StateIncarcerationIncident(google.protobuf.message.Message):
@@ -1245,22 +2768,69 @@ class StateIncarcerationIncident(google.protobuf.message.Message):
     location_within_facility: typing.Text = ...
     incident_details: typing.Text = ...
     responding_officer_id: typing.Text = ...
-    state_incarceration_incident_outcome_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-
-    def __init__(self,
+    state_incarceration_incident_outcome_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    def __init__(
+        self,
         *,
-        state_incarceration_incident_id : typing.Optional[typing.Text] = ...,
-        incident_type : typing.Optional[typing.Text] = ...,
-        incident_date : typing.Optional[typing.Text] = ...,
-        state_code : typing.Optional[typing.Text] = ...,
-        facility : typing.Optional[typing.Text] = ...,
-        location_within_facility : typing.Optional[typing.Text] = ...,
-        incident_details : typing.Optional[typing.Text] = ...,
-        responding_officer_id : typing.Optional[typing.Text] = ...,
-        state_incarceration_incident_outcome_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"facility",b"facility",u"incident_date",b"incident_date",u"incident_details",b"incident_details",u"incident_type",b"incident_type",u"location_within_facility",b"location_within_facility",u"responding_officer_id",b"responding_officer_id",u"state_code",b"state_code",u"state_incarceration_incident_id",b"state_incarceration_incident_id"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"facility",b"facility",u"incident_date",b"incident_date",u"incident_details",b"incident_details",u"incident_type",b"incident_type",u"location_within_facility",b"location_within_facility",u"responding_officer_id",b"responding_officer_id",u"state_code",b"state_code",u"state_incarceration_incident_id",b"state_incarceration_incident_id",u"state_incarceration_incident_outcome_ids",b"state_incarceration_incident_outcome_ids"]) -> None: ...
+        state_incarceration_incident_id: typing.Optional[typing.Text] = ...,
+        incident_type: typing.Optional[typing.Text] = ...,
+        incident_date: typing.Optional[typing.Text] = ...,
+        state_code: typing.Optional[typing.Text] = ...,
+        facility: typing.Optional[typing.Text] = ...,
+        location_within_facility: typing.Optional[typing.Text] = ...,
+        incident_details: typing.Optional[typing.Text] = ...,
+        responding_officer_id: typing.Optional[typing.Text] = ...,
+        state_incarceration_incident_outcome_ids: typing.Optional[
+            typing.Iterable[typing.Text]
+        ] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "facility",
+            b"facility",
+            "incident_date",
+            b"incident_date",
+            "incident_details",
+            b"incident_details",
+            "incident_type",
+            b"incident_type",
+            "location_within_facility",
+            b"location_within_facility",
+            "responding_officer_id",
+            b"responding_officer_id",
+            "state_code",
+            b"state_code",
+            "state_incarceration_incident_id",
+            b"state_incarceration_incident_id",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "facility",
+            b"facility",
+            "incident_date",
+            b"incident_date",
+            "incident_details",
+            b"incident_details",
+            "incident_type",
+            b"incident_type",
+            "location_within_facility",
+            b"location_within_facility",
+            "responding_officer_id",
+            b"responding_officer_id",
+            "state_code",
+            b"state_code",
+            "state_incarceration_incident_id",
+            b"state_incarceration_incident_id",
+            "state_incarceration_incident_outcome_ids",
+            b"state_incarceration_incident_outcome_ids",
+        ],
+    ) -> None: ...
+
 global___StateIncarcerationIncident = StateIncarcerationIncident
 
 class StateIncarcerationIncidentOutcome(google.protobuf.message.Message):
@@ -1281,20 +2851,61 @@ class StateIncarcerationIncidentOutcome(google.protobuf.message.Message):
     state_code: typing.Text = ...
     outcome_description: typing.Text = ...
     punishment_length_days: typing.Text = ...
-
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        state_incarceration_incident_outcome_id : typing.Optional[typing.Text] = ...,
-        outcome_type : typing.Optional[typing.Text] = ...,
-        date_effective : typing.Optional[typing.Text] = ...,
-        hearing_date : typing.Optional[typing.Text] = ...,
-        report_date : typing.Optional[typing.Text] = ...,
-        state_code : typing.Optional[typing.Text] = ...,
-        outcome_description : typing.Optional[typing.Text] = ...,
-        punishment_length_days : typing.Optional[typing.Text] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"date_effective",b"date_effective",u"hearing_date",b"hearing_date",u"outcome_description",b"outcome_description",u"outcome_type",b"outcome_type",u"punishment_length_days",b"punishment_length_days",u"report_date",b"report_date",u"state_code",b"state_code",u"state_incarceration_incident_outcome_id",b"state_incarceration_incident_outcome_id"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"date_effective",b"date_effective",u"hearing_date",b"hearing_date",u"outcome_description",b"outcome_description",u"outcome_type",b"outcome_type",u"punishment_length_days",b"punishment_length_days",u"report_date",b"report_date",u"state_code",b"state_code",u"state_incarceration_incident_outcome_id",b"state_incarceration_incident_outcome_id"]) -> None: ...
+        state_incarceration_incident_outcome_id: typing.Optional[typing.Text] = ...,
+        outcome_type: typing.Optional[typing.Text] = ...,
+        date_effective: typing.Optional[typing.Text] = ...,
+        hearing_date: typing.Optional[typing.Text] = ...,
+        report_date: typing.Optional[typing.Text] = ...,
+        state_code: typing.Optional[typing.Text] = ...,
+        outcome_description: typing.Optional[typing.Text] = ...,
+        punishment_length_days: typing.Optional[typing.Text] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "date_effective",
+            b"date_effective",
+            "hearing_date",
+            b"hearing_date",
+            "outcome_description",
+            b"outcome_description",
+            "outcome_type",
+            b"outcome_type",
+            "punishment_length_days",
+            b"punishment_length_days",
+            "report_date",
+            b"report_date",
+            "state_code",
+            b"state_code",
+            "state_incarceration_incident_outcome_id",
+            b"state_incarceration_incident_outcome_id",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "date_effective",
+            b"date_effective",
+            "hearing_date",
+            b"hearing_date",
+            "outcome_description",
+            b"outcome_description",
+            "outcome_type",
+            b"outcome_type",
+            "punishment_length_days",
+            b"punishment_length_days",
+            "report_date",
+            b"report_date",
+            "state_code",
+            b"state_code",
+            "state_incarceration_incident_outcome_id",
+            b"state_incarceration_incident_outcome_id",
+        ],
+    ) -> None: ...
+
 global___StateIncarcerationIncidentOutcome = StateIncarcerationIncidentOutcome
 
 class StateParoleDecision(google.protobuf.message.Message):
@@ -1316,22 +2927,67 @@ class StateParoleDecision(google.protobuf.message.Message):
     decision_outcome: typing.Text = ...
     decision_reasoning: typing.Text = ...
     corrective_action: typing.Text = ...
-    decision_agent_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-
-    def __init__(self,
+    decision_agent_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    def __init__(
+        self,
         *,
-        state_parole_decision_id : typing.Optional[typing.Text] = ...,
-        decision_date : typing.Optional[typing.Text] = ...,
-        corrective_action_deadline : typing.Optional[typing.Text] = ...,
-        state_code : typing.Optional[typing.Text] = ...,
-        county_code : typing.Optional[typing.Text] = ...,
-        decision_outcome : typing.Optional[typing.Text] = ...,
-        decision_reasoning : typing.Optional[typing.Text] = ...,
-        corrective_action : typing.Optional[typing.Text] = ...,
-        decision_agent_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"corrective_action",b"corrective_action",u"corrective_action_deadline",b"corrective_action_deadline",u"county_code",b"county_code",u"decision_date",b"decision_date",u"decision_outcome",b"decision_outcome",u"decision_reasoning",b"decision_reasoning",u"state_code",b"state_code",u"state_parole_decision_id",b"state_parole_decision_id"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"corrective_action",b"corrective_action",u"corrective_action_deadline",b"corrective_action_deadline",u"county_code",b"county_code",u"decision_agent_ids",b"decision_agent_ids",u"decision_date",b"decision_date",u"decision_outcome",b"decision_outcome",u"decision_reasoning",b"decision_reasoning",u"state_code",b"state_code",u"state_parole_decision_id",b"state_parole_decision_id"]) -> None: ...
+        state_parole_decision_id: typing.Optional[typing.Text] = ...,
+        decision_date: typing.Optional[typing.Text] = ...,
+        corrective_action_deadline: typing.Optional[typing.Text] = ...,
+        state_code: typing.Optional[typing.Text] = ...,
+        county_code: typing.Optional[typing.Text] = ...,
+        decision_outcome: typing.Optional[typing.Text] = ...,
+        decision_reasoning: typing.Optional[typing.Text] = ...,
+        corrective_action: typing.Optional[typing.Text] = ...,
+        decision_agent_ids: typing.Optional[typing.Iterable[typing.Text]] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "corrective_action",
+            b"corrective_action",
+            "corrective_action_deadline",
+            b"corrective_action_deadline",
+            "county_code",
+            b"county_code",
+            "decision_date",
+            b"decision_date",
+            "decision_outcome",
+            b"decision_outcome",
+            "decision_reasoning",
+            b"decision_reasoning",
+            "state_code",
+            b"state_code",
+            "state_parole_decision_id",
+            b"state_parole_decision_id",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "corrective_action",
+            b"corrective_action",
+            "corrective_action_deadline",
+            b"corrective_action_deadline",
+            "county_code",
+            b"county_code",
+            "decision_agent_ids",
+            b"decision_agent_ids",
+            "decision_date",
+            b"decision_date",
+            "decision_outcome",
+            b"decision_outcome",
+            "decision_reasoning",
+            b"decision_reasoning",
+            "state_code",
+            b"state_code",
+            "state_parole_decision_id",
+            b"state_parole_decision_id",
+        ],
+    ) -> None: ...
+
 global___StateParoleDecision = StateParoleDecision
 
 class StateSupervisionViolatedConditionEntry(google.protobuf.message.Message):
@@ -1342,15 +2998,38 @@ class StateSupervisionViolatedConditionEntry(google.protobuf.message.Message):
     state_supervision_violated_condition_entry_id: typing.Text = ...
     condition: typing.Text = ...
     state_code: typing.Text = ...
-
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        state_supervision_violated_condition_entry_id : typing.Optional[typing.Text] = ...,
-        condition : typing.Optional[typing.Text] = ...,
-        state_code : typing.Optional[typing.Text] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"condition",b"condition",u"state_code",b"state_code",u"state_supervision_violated_condition_entry_id",b"state_supervision_violated_condition_entry_id"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"condition",b"condition",u"state_code",b"state_code",u"state_supervision_violated_condition_entry_id",b"state_supervision_violated_condition_entry_id"]) -> None: ...
+        state_supervision_violated_condition_entry_id: typing.Optional[
+            typing.Text
+        ] = ...,
+        condition: typing.Optional[typing.Text] = ...,
+        state_code: typing.Optional[typing.Text] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "condition",
+            b"condition",
+            "state_code",
+            b"state_code",
+            "state_supervision_violated_condition_entry_id",
+            b"state_supervision_violated_condition_entry_id",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "condition",
+            b"condition",
+            "state_code",
+            b"state_code",
+            "state_supervision_violated_condition_entry_id",
+            b"state_supervision_violated_condition_entry_id",
+        ],
+    ) -> None: ...
+
 global___StateSupervisionViolatedConditionEntry = StateSupervisionViolatedConditionEntry
 
 class StateSupervisionViolationTypeEntry(google.protobuf.message.Message):
@@ -1361,15 +3040,36 @@ class StateSupervisionViolationTypeEntry(google.protobuf.message.Message):
     state_supervision_violation_type_entry_id: typing.Text = ...
     violation_type: typing.Text = ...
     state_code: typing.Text = ...
-
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        state_supervision_violation_type_entry_id : typing.Optional[typing.Text] = ...,
-        violation_type : typing.Optional[typing.Text] = ...,
-        state_code : typing.Optional[typing.Text] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"state_code",b"state_code",u"state_supervision_violation_type_entry_id",b"state_supervision_violation_type_entry_id",u"violation_type",b"violation_type"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"state_code",b"state_code",u"state_supervision_violation_type_entry_id",b"state_supervision_violation_type_entry_id",u"violation_type",b"violation_type"]) -> None: ...
+        state_supervision_violation_type_entry_id: typing.Optional[typing.Text] = ...,
+        violation_type: typing.Optional[typing.Text] = ...,
+        state_code: typing.Optional[typing.Text] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "state_code",
+            b"state_code",
+            "state_supervision_violation_type_entry_id",
+            b"state_supervision_violation_type_entry_id",
+            "violation_type",
+            b"violation_type",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "state_code",
+            b"state_code",
+            "state_supervision_violation_type_entry_id",
+            b"state_supervision_violation_type_entry_id",
+            "violation_type",
+            b"violation_type",
+        ],
+    ) -> None: ...
+
 global___StateSupervisionViolationTypeEntry = StateSupervisionViolationTypeEntry
 
 class StateSupervisionViolation(google.protobuf.message.Message):
@@ -1391,25 +3091,80 @@ class StateSupervisionViolation(google.protobuf.message.Message):
     is_violent: typing.Text = ...
     is_sex_offense: typing.Text = ...
     violated_conditions: typing.Text = ...
-    state_supervision_violation_response_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-    state_supervision_violated_condition_entry_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-    state_supervision_violation_type_entry_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-
-    def __init__(self,
+    state_supervision_violation_response_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    state_supervision_violated_condition_entry_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    state_supervision_violation_type_entry_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    def __init__(
+        self,
         *,
-        state_supervision_violation_id : typing.Optional[typing.Text] = ...,
-        violation_type : typing.Optional[typing.Text] = ...,
-        violation_date : typing.Optional[typing.Text] = ...,
-        state_code : typing.Optional[typing.Text] = ...,
-        is_violent : typing.Optional[typing.Text] = ...,
-        is_sex_offense : typing.Optional[typing.Text] = ...,
-        violated_conditions : typing.Optional[typing.Text] = ...,
-        state_supervision_violation_response_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        state_supervision_violated_condition_entry_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        state_supervision_violation_type_entry_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"is_sex_offense",b"is_sex_offense",u"is_violent",b"is_violent",u"state_code",b"state_code",u"state_supervision_violation_id",b"state_supervision_violation_id",u"violated_conditions",b"violated_conditions",u"violation_date",b"violation_date",u"violation_type",b"violation_type"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"is_sex_offense",b"is_sex_offense",u"is_violent",b"is_violent",u"state_code",b"state_code",u"state_supervision_violated_condition_entry_ids",b"state_supervision_violated_condition_entry_ids",u"state_supervision_violation_id",b"state_supervision_violation_id",u"state_supervision_violation_response_ids",b"state_supervision_violation_response_ids",u"state_supervision_violation_type_entry_ids",b"state_supervision_violation_type_entry_ids",u"violated_conditions",b"violated_conditions",u"violation_date",b"violation_date",u"violation_type",b"violation_type"]) -> None: ...
+        state_supervision_violation_id: typing.Optional[typing.Text] = ...,
+        violation_type: typing.Optional[typing.Text] = ...,
+        violation_date: typing.Optional[typing.Text] = ...,
+        state_code: typing.Optional[typing.Text] = ...,
+        is_violent: typing.Optional[typing.Text] = ...,
+        is_sex_offense: typing.Optional[typing.Text] = ...,
+        violated_conditions: typing.Optional[typing.Text] = ...,
+        state_supervision_violation_response_ids: typing.Optional[
+            typing.Iterable[typing.Text]
+        ] = ...,
+        state_supervision_violated_condition_entry_ids: typing.Optional[
+            typing.Iterable[typing.Text]
+        ] = ...,
+        state_supervision_violation_type_entry_ids: typing.Optional[
+            typing.Iterable[typing.Text]
+        ] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "is_sex_offense",
+            b"is_sex_offense",
+            "is_violent",
+            b"is_violent",
+            "state_code",
+            b"state_code",
+            "state_supervision_violation_id",
+            b"state_supervision_violation_id",
+            "violated_conditions",
+            b"violated_conditions",
+            "violation_date",
+            b"violation_date",
+            "violation_type",
+            b"violation_type",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "is_sex_offense",
+            b"is_sex_offense",
+            "is_violent",
+            b"is_violent",
+            "state_code",
+            b"state_code",
+            "state_supervision_violated_condition_entry_ids",
+            b"state_supervision_violated_condition_entry_ids",
+            "state_supervision_violation_id",
+            b"state_supervision_violation_id",
+            "state_supervision_violation_response_ids",
+            b"state_supervision_violation_response_ids",
+            "state_supervision_violation_type_entry_ids",
+            b"state_supervision_violation_type_entry_ids",
+            "violated_conditions",
+            b"violated_conditions",
+            "violation_date",
+            b"violation_date",
+            "violation_type",
+            b"violation_type",
+        ],
+    ) -> None: ...
+
 global___StateSupervisionViolation = StateSupervisionViolation
 
 class StateSupervisionViolationResponseDecisionEntry(google.protobuf.message.Message):
@@ -1422,17 +3177,46 @@ class StateSupervisionViolationResponseDecisionEntry(google.protobuf.message.Mes
     decision: typing.Text = ...
     revocation_type: typing.Text = ...
     state_code: typing.Text = ...
-
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        state_supervision_violation_response_decision_entry_id : typing.Optional[typing.Text] = ...,
-        decision : typing.Optional[typing.Text] = ...,
-        revocation_type : typing.Optional[typing.Text] = ...,
-        state_code : typing.Optional[typing.Text] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"decision",b"decision",u"revocation_type",b"revocation_type",u"state_code",b"state_code",u"state_supervision_violation_response_decision_entry_id",b"state_supervision_violation_response_decision_entry_id"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"decision",b"decision",u"revocation_type",b"revocation_type",u"state_code",b"state_code",u"state_supervision_violation_response_decision_entry_id",b"state_supervision_violation_response_decision_entry_id"]) -> None: ...
-global___StateSupervisionViolationResponseDecisionEntry = StateSupervisionViolationResponseDecisionEntry
+        state_supervision_violation_response_decision_entry_id: typing.Optional[
+            typing.Text
+        ] = ...,
+        decision: typing.Optional[typing.Text] = ...,
+        revocation_type: typing.Optional[typing.Text] = ...,
+        state_code: typing.Optional[typing.Text] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "decision",
+            b"decision",
+            "revocation_type",
+            b"revocation_type",
+            "state_code",
+            b"state_code",
+            "state_supervision_violation_response_decision_entry_id",
+            b"state_supervision_violation_response_decision_entry_id",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "decision",
+            b"decision",
+            "revocation_type",
+            b"revocation_type",
+            "state_code",
+            b"state_code",
+            "state_supervision_violation_response_decision_entry_id",
+            b"state_supervision_violation_response_decision_entry_id",
+        ],
+    ) -> None: ...
+
+global___StateSupervisionViolationResponseDecisionEntry = (
+    StateSupervisionViolationResponseDecisionEntry
+)
 
 class StateSupervisionViolationResponse(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
@@ -1456,25 +3240,80 @@ class StateSupervisionViolationResponse(google.protobuf.message.Message):
     revocation_type: typing.Text = ...
     deciding_body_type: typing.Text = ...
     is_draft: typing.Text = ...
-    decision_agent_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-    state_supervision_violation_response_decision_entry_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-
-    def __init__(self,
+    decision_agent_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    state_supervision_violation_response_decision_entry_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    def __init__(
+        self,
         *,
-        state_supervision_violation_response_id : typing.Optional[typing.Text] = ...,
-        response_type : typing.Optional[typing.Text] = ...,
-        response_subtype : typing.Optional[typing.Text] = ...,
-        response_date : typing.Optional[typing.Text] = ...,
-        state_code : typing.Optional[typing.Text] = ...,
-        decision : typing.Optional[typing.Text] = ...,
-        revocation_type : typing.Optional[typing.Text] = ...,
-        deciding_body_type : typing.Optional[typing.Text] = ...,
-        is_draft : typing.Optional[typing.Text] = ...,
-        decision_agent_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        state_supervision_violation_response_decision_entry_ids : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"deciding_body_type",b"deciding_body_type",u"decision",b"decision",u"is_draft",b"is_draft",u"response_date",b"response_date",u"response_subtype",b"response_subtype",u"response_type",b"response_type",u"revocation_type",b"revocation_type",u"state_code",b"state_code",u"state_supervision_violation_response_id",b"state_supervision_violation_response_id"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"deciding_body_type",b"deciding_body_type",u"decision",b"decision",u"decision_agent_ids",b"decision_agent_ids",u"is_draft",b"is_draft",u"response_date",b"response_date",u"response_subtype",b"response_subtype",u"response_type",b"response_type",u"revocation_type",b"revocation_type",u"state_code",b"state_code",u"state_supervision_violation_response_decision_entry_ids",b"state_supervision_violation_response_decision_entry_ids",u"state_supervision_violation_response_id",b"state_supervision_violation_response_id"]) -> None: ...
+        state_supervision_violation_response_id: typing.Optional[typing.Text] = ...,
+        response_type: typing.Optional[typing.Text] = ...,
+        response_subtype: typing.Optional[typing.Text] = ...,
+        response_date: typing.Optional[typing.Text] = ...,
+        state_code: typing.Optional[typing.Text] = ...,
+        decision: typing.Optional[typing.Text] = ...,
+        revocation_type: typing.Optional[typing.Text] = ...,
+        deciding_body_type: typing.Optional[typing.Text] = ...,
+        is_draft: typing.Optional[typing.Text] = ...,
+        decision_agent_ids: typing.Optional[typing.Iterable[typing.Text]] = ...,
+        state_supervision_violation_response_decision_entry_ids: typing.Optional[
+            typing.Iterable[typing.Text]
+        ] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "deciding_body_type",
+            b"deciding_body_type",
+            "decision",
+            b"decision",
+            "is_draft",
+            b"is_draft",
+            "response_date",
+            b"response_date",
+            "response_subtype",
+            b"response_subtype",
+            "response_type",
+            b"response_type",
+            "revocation_type",
+            b"revocation_type",
+            "state_code",
+            b"state_code",
+            "state_supervision_violation_response_id",
+            b"state_supervision_violation_response_id",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "deciding_body_type",
+            b"deciding_body_type",
+            "decision",
+            b"decision",
+            "decision_agent_ids",
+            b"decision_agent_ids",
+            "is_draft",
+            b"is_draft",
+            "response_date",
+            b"response_date",
+            "response_subtype",
+            b"response_subtype",
+            "response_type",
+            b"response_type",
+            "revocation_type",
+            b"revocation_type",
+            "state_code",
+            b"state_code",
+            "state_supervision_violation_response_decision_entry_ids",
+            b"state_supervision_violation_response_decision_entry_ids",
+            "state_supervision_violation_response_id",
+            b"state_supervision_violation_response_id",
+        ],
+    ) -> None: ...
+
 global___StateSupervisionViolationResponse = StateSupervisionViolationResponse
 
 class StateAgent(google.protobuf.message.Message):
@@ -1495,20 +3334,61 @@ class StateAgent(google.protobuf.message.Message):
     given_names: typing.Text = ...
     middle_names: typing.Text = ...
     name_suffix: typing.Text = ...
-
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        state_agent_id : typing.Optional[typing.Text] = ...,
-        agent_type : typing.Optional[typing.Text] = ...,
-        state_code : typing.Optional[typing.Text] = ...,
-        full_name : typing.Optional[typing.Text] = ...,
-        surname : typing.Optional[typing.Text] = ...,
-        given_names : typing.Optional[typing.Text] = ...,
-        middle_names : typing.Optional[typing.Text] = ...,
-        name_suffix : typing.Optional[typing.Text] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"agent_type",b"agent_type",u"full_name",b"full_name",u"given_names",b"given_names",u"middle_names",b"middle_names",u"name_suffix",b"name_suffix",u"state_agent_id",b"state_agent_id",u"state_code",b"state_code",u"surname",b"surname"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"agent_type",b"agent_type",u"full_name",b"full_name",u"given_names",b"given_names",u"middle_names",b"middle_names",u"name_suffix",b"name_suffix",u"state_agent_id",b"state_agent_id",u"state_code",b"state_code",u"surname",b"surname"]) -> None: ...
+        state_agent_id: typing.Optional[typing.Text] = ...,
+        agent_type: typing.Optional[typing.Text] = ...,
+        state_code: typing.Optional[typing.Text] = ...,
+        full_name: typing.Optional[typing.Text] = ...,
+        surname: typing.Optional[typing.Text] = ...,
+        given_names: typing.Optional[typing.Text] = ...,
+        middle_names: typing.Optional[typing.Text] = ...,
+        name_suffix: typing.Optional[typing.Text] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "agent_type",
+            b"agent_type",
+            "full_name",
+            b"full_name",
+            "given_names",
+            b"given_names",
+            "middle_names",
+            b"middle_names",
+            "name_suffix",
+            b"name_suffix",
+            "state_agent_id",
+            b"state_agent_id",
+            "state_code",
+            b"state_code",
+            "surname",
+            b"surname",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "agent_type",
+            b"agent_type",
+            "full_name",
+            b"full_name",
+            "given_names",
+            b"given_names",
+            "middle_names",
+            b"middle_names",
+            "name_suffix",
+            b"name_suffix",
+            "state_agent_id",
+            b"state_agent_id",
+            "state_code",
+            b"state_code",
+            "surname",
+            b"surname",
+        ],
+    ) -> None: ...
+
 global___StateAgent = StateAgent
 
 class StateProgramAssignment(google.protobuf.message.Message):
@@ -1535,23 +3415,76 @@ class StateProgramAssignment(google.protobuf.message.Message):
     discharge_reason: typing.Text = ...
     referral_metadata: typing.Text = ...
     referring_agent_id: typing.Text = ...
-
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        state_program_assignment_id : typing.Optional[typing.Text] = ...,
-        participation_status : typing.Optional[typing.Text] = ...,
-        referral_date : typing.Optional[typing.Text] = ...,
-        start_date : typing.Optional[typing.Text] = ...,
-        discharge_date : typing.Optional[typing.Text] = ...,
-        state_code : typing.Optional[typing.Text] = ...,
-        program_id : typing.Optional[typing.Text] = ...,
-        program_location_id : typing.Optional[typing.Text] = ...,
-        discharge_reason : typing.Optional[typing.Text] = ...,
-        referral_metadata : typing.Optional[typing.Text] = ...,
-        referring_agent_id : typing.Optional[typing.Text] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"discharge_date",b"discharge_date",u"discharge_reason",b"discharge_reason",u"participation_status",b"participation_status",u"program_id",b"program_id",u"program_location_id",b"program_location_id",u"referral_date",b"referral_date",u"referral_metadata",b"referral_metadata",u"referring_agent_id",b"referring_agent_id",u"start_date",b"start_date",u"state_code",b"state_code",u"state_program_assignment_id",b"state_program_assignment_id"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"discharge_date",b"discharge_date",u"discharge_reason",b"discharge_reason",u"participation_status",b"participation_status",u"program_id",b"program_id",u"program_location_id",b"program_location_id",u"referral_date",b"referral_date",u"referral_metadata",b"referral_metadata",u"referring_agent_id",b"referring_agent_id",u"start_date",b"start_date",u"state_code",b"state_code",u"state_program_assignment_id",b"state_program_assignment_id"]) -> None: ...
+        state_program_assignment_id: typing.Optional[typing.Text] = ...,
+        participation_status: typing.Optional[typing.Text] = ...,
+        referral_date: typing.Optional[typing.Text] = ...,
+        start_date: typing.Optional[typing.Text] = ...,
+        discharge_date: typing.Optional[typing.Text] = ...,
+        state_code: typing.Optional[typing.Text] = ...,
+        program_id: typing.Optional[typing.Text] = ...,
+        program_location_id: typing.Optional[typing.Text] = ...,
+        discharge_reason: typing.Optional[typing.Text] = ...,
+        referral_metadata: typing.Optional[typing.Text] = ...,
+        referring_agent_id: typing.Optional[typing.Text] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "discharge_date",
+            b"discharge_date",
+            "discharge_reason",
+            b"discharge_reason",
+            "participation_status",
+            b"participation_status",
+            "program_id",
+            b"program_id",
+            "program_location_id",
+            b"program_location_id",
+            "referral_date",
+            b"referral_date",
+            "referral_metadata",
+            b"referral_metadata",
+            "referring_agent_id",
+            b"referring_agent_id",
+            "start_date",
+            b"start_date",
+            "state_code",
+            b"state_code",
+            "state_program_assignment_id",
+            b"state_program_assignment_id",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "discharge_date",
+            b"discharge_date",
+            "discharge_reason",
+            b"discharge_reason",
+            "participation_status",
+            b"participation_status",
+            "program_id",
+            b"program_id",
+            "program_location_id",
+            b"program_location_id",
+            "referral_date",
+            b"referral_date",
+            "referral_metadata",
+            b"referral_metadata",
+            "referring_agent_id",
+            b"referring_agent_id",
+            "start_date",
+            b"start_date",
+            "state_code",
+            b"state_code",
+            "state_program_assignment_id",
+            b"state_program_assignment_id",
+        ],
+    ) -> None: ...
+
 global___StateProgramAssignment = StateProgramAssignment
 
 class StateEarlyDischarge(google.protobuf.message.Message):
@@ -1574,21 +3507,66 @@ class StateEarlyDischarge(google.protobuf.message.Message):
     state_code: typing.Text = ...
     county_code: typing.Text = ...
     decision_status: typing.Text = ...
-
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        state_early_discharge_id : typing.Optional[typing.Text] = ...,
-        request_date : typing.Optional[typing.Text] = ...,
-        decision_date : typing.Optional[typing.Text] = ...,
-        decision : typing.Optional[typing.Text] = ...,
-        deciding_body_type : typing.Optional[typing.Text] = ...,
-        requesting_body_type : typing.Optional[typing.Text] = ...,
-        state_code : typing.Optional[typing.Text] = ...,
-        county_code : typing.Optional[typing.Text] = ...,
-        decision_status : typing.Optional[typing.Text] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"county_code",b"county_code",u"deciding_body_type",b"deciding_body_type",u"decision",b"decision",u"decision_date",b"decision_date",u"decision_status",b"decision_status",u"request_date",b"request_date",u"requesting_body_type",b"requesting_body_type",u"state_code",b"state_code",u"state_early_discharge_id",b"state_early_discharge_id"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"county_code",b"county_code",u"deciding_body_type",b"deciding_body_type",u"decision",b"decision",u"decision_date",b"decision_date",u"decision_status",b"decision_status",u"request_date",b"request_date",u"requesting_body_type",b"requesting_body_type",u"state_code",b"state_code",u"state_early_discharge_id",b"state_early_discharge_id"]) -> None: ...
+        state_early_discharge_id: typing.Optional[typing.Text] = ...,
+        request_date: typing.Optional[typing.Text] = ...,
+        decision_date: typing.Optional[typing.Text] = ...,
+        decision: typing.Optional[typing.Text] = ...,
+        deciding_body_type: typing.Optional[typing.Text] = ...,
+        requesting_body_type: typing.Optional[typing.Text] = ...,
+        state_code: typing.Optional[typing.Text] = ...,
+        county_code: typing.Optional[typing.Text] = ...,
+        decision_status: typing.Optional[typing.Text] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "county_code",
+            b"county_code",
+            "deciding_body_type",
+            b"deciding_body_type",
+            "decision",
+            b"decision",
+            "decision_date",
+            b"decision_date",
+            "decision_status",
+            b"decision_status",
+            "request_date",
+            b"request_date",
+            "requesting_body_type",
+            b"requesting_body_type",
+            "state_code",
+            b"state_code",
+            "state_early_discharge_id",
+            b"state_early_discharge_id",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "county_code",
+            b"county_code",
+            "deciding_body_type",
+            b"deciding_body_type",
+            "decision",
+            b"decision",
+            "decision_date",
+            b"decision_date",
+            "decision_status",
+            b"decision_status",
+            "request_date",
+            b"request_date",
+            "requesting_body_type",
+            b"requesting_body_type",
+            "state_code",
+            b"state_code",
+            "state_early_discharge_id",
+            b"state_early_discharge_id",
+        ],
+    ) -> None: ...
+
 global___StateEarlyDischarge = StateEarlyDischarge
 
 class StateSupervisionContact(google.protobuf.message.Message):
@@ -1613,20 +3591,69 @@ class StateSupervisionContact(google.protobuf.message.Message):
     verified_employment: typing.Text = ...
     state_code: typing.Text = ...
     contacted_agent_id: typing.Text = ...
-
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        state_supervision_contact_id : typing.Optional[typing.Text] = ...,
-        contact_date : typing.Optional[typing.Text] = ...,
-        contact_reason : typing.Optional[typing.Text] = ...,
-        contact_type : typing.Optional[typing.Text] = ...,
-        location : typing.Optional[typing.Text] = ...,
-        resulted_in_arrest : typing.Optional[typing.Text] = ...,
-        status : typing.Optional[typing.Text] = ...,
-        verified_employment : typing.Optional[typing.Text] = ...,
-        state_code : typing.Optional[typing.Text] = ...,
-        contacted_agent_id : typing.Optional[typing.Text] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"contact_date",b"contact_date",u"contact_reason",b"contact_reason",u"contact_type",b"contact_type",u"contacted_agent_id",b"contacted_agent_id",u"location",b"location",u"resulted_in_arrest",b"resulted_in_arrest",u"state_code",b"state_code",u"state_supervision_contact_id",b"state_supervision_contact_id",u"status",b"status",u"verified_employment",b"verified_employment"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"contact_date",b"contact_date",u"contact_reason",b"contact_reason",u"contact_type",b"contact_type",u"contacted_agent_id",b"contacted_agent_id",u"location",b"location",u"resulted_in_arrest",b"resulted_in_arrest",u"state_code",b"state_code",u"state_supervision_contact_id",b"state_supervision_contact_id",u"status",b"status",u"verified_employment",b"verified_employment"]) -> None: ...
+        state_supervision_contact_id: typing.Optional[typing.Text] = ...,
+        contact_date: typing.Optional[typing.Text] = ...,
+        contact_reason: typing.Optional[typing.Text] = ...,
+        contact_type: typing.Optional[typing.Text] = ...,
+        location: typing.Optional[typing.Text] = ...,
+        resulted_in_arrest: typing.Optional[typing.Text] = ...,
+        status: typing.Optional[typing.Text] = ...,
+        verified_employment: typing.Optional[typing.Text] = ...,
+        state_code: typing.Optional[typing.Text] = ...,
+        contacted_agent_id: typing.Optional[typing.Text] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "contact_date",
+            b"contact_date",
+            "contact_reason",
+            b"contact_reason",
+            "contact_type",
+            b"contact_type",
+            "contacted_agent_id",
+            b"contacted_agent_id",
+            "location",
+            b"location",
+            "resulted_in_arrest",
+            b"resulted_in_arrest",
+            "state_code",
+            b"state_code",
+            "state_supervision_contact_id",
+            b"state_supervision_contact_id",
+            "status",
+            b"status",
+            "verified_employment",
+            b"verified_employment",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "contact_date",
+            b"contact_date",
+            "contact_reason",
+            b"contact_reason",
+            "contact_type",
+            b"contact_type",
+            "contacted_agent_id",
+            b"contacted_agent_id",
+            "location",
+            b"location",
+            "resulted_in_arrest",
+            b"resulted_in_arrest",
+            "state_code",
+            b"state_code",
+            "state_supervision_contact_id",
+            b"state_supervision_contact_id",
+            "status",
+            b"status",
+            "verified_employment",
+            b"verified_employment",
+        ],
+    ) -> None: ...
+
 global___StateSupervisionContact = StateSupervisionContact

@@ -22,8 +22,7 @@ from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.state.entity_helpers import \
-    state_agent
+from recidiviz.persistence.ingest_info_converter.state.entity_helpers import state_agent
 
 _EMPTY_METADATA = IngestMetadata.new_with_defaults()
 
@@ -34,10 +33,10 @@ class StateAgentConverterTest(unittest.TestCase):
     def testParseStateAgent(self):
         # Arrange
         ingest_agent = ingest_info_pb2.StateAgent(
-            agent_type='JUDGE',
-            state_agent_id='AGENT_ID',
-            state_code='us_nd',
-            full_name='Judge Joe Brown',
+            agent_type="JUDGE",
+            state_agent_id="AGENT_ID",
+            state_code="us_nd",
+            full_name="Judge Joe Brown",
         )
 
         # Act
@@ -46,9 +45,9 @@ class StateAgentConverterTest(unittest.TestCase):
         # Assert
         expected_result = entities.StateAgent(
             agent_type=StateAgentType.JUDGE,
-            agent_type_raw_text='JUDGE',
-            external_id='AGENT_ID',
-            state_code='US_ND',
+            agent_type_raw_text="JUDGE",
+            external_id="AGENT_ID",
+            state_code="US_ND",
             full_name='{"full_name": "JUDGE JOE BROWN"}',
         )
 
@@ -56,7 +55,9 @@ class StateAgentConverterTest(unittest.TestCase):
 
     def testParseStateAgentNoType(self):
         # Arrange
-        ingest_agent = ingest_info_pb2.StateAgent(state_agent_id='AGENT_ID', state_code='us_nd')
+        ingest_agent = ingest_info_pb2.StateAgent(
+            state_agent_id="AGENT_ID", state_code="us_nd"
+        )
 
         # Act
         result = state_agent.convert(ingest_agent, _EMPTY_METADATA)
@@ -64,8 +65,8 @@ class StateAgentConverterTest(unittest.TestCase):
         # Assert
         expected_result = entities.StateAgent.new_with_defaults(
             agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
-            external_id='AGENT_ID',
-            state_code='US_ND',
+            external_id="AGENT_ID",
+            state_code="US_ND",
         )
 
         self.assertEqual(result, expected_result)

@@ -43,6 +43,7 @@ class Html5BaseScraper(BaseScraper):
         return html.fromstring(html5_string)
 
     @abc.abstractmethod
-    def populate_data(self, content, task: Task,
-                      ingest_info: IngestInfo) -> ScrapedData:
+    def populate_data(
+        self, content, task: Task, ingest_info: IngestInfo
+    ) -> ScrapedData:
         pass

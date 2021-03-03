@@ -19,20 +19,22 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
 
-from recidiviz.calculator.query.county.views.population.population_admissions_releases_race_gender_all import \
-    POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_ALL_VIEW_BUILDER
-from recidiviz.calculator.query.county.views.population.resident_population_counts import \
-    RESIDENT_POPULATION_COUNTS_VIEW_BUILDER
+from recidiviz.calculator.query.county.views.population.population_admissions_releases_race_gender_all import (
+    POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_ALL_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.county.views.population.resident_population_counts import (
+    RESIDENT_POPULATION_COUNTS_VIEW_BUILDER,
+)
+
 # Exclude all data <= CUTOFF_YEAR.
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 CUTOFF_YEAR = 1999
 
-JAIL_POP_AND_RESIDENT_POP_VIEW_NAME = 'jail_pop_and_resident_pop'
+JAIL_POP_AND_RESIDENT_POP_VIEW_NAME = "jail_pop_and_resident_pop"
 
-JAIL_POP_AND_RESIDENT_POP_DESCRIPTION = \
-"""
+JAIL_POP_AND_RESIDENT_POP_DESCRIPTION = """
 Combines jail population and resident population counts into one table.
 Joined based on fips-year-race-gender combinations.
 
@@ -41,8 +43,7 @@ All years <= {cutoff_year} are excluded.
     cutoff_year=CUTOFF_YEAR
 )
 
-JAIL_POP_AND_RESIDENT_POP_QUERY_TEMPLATE = \
-"""
+JAIL_POP_AND_RESIDENT_POP_QUERY_TEMPLATE = """
 /*{description}*/
 
 SELECT PopulationRaceGender.day,
@@ -75,12 +76,11 @@ JAIL_POP_AND_RESIDENT_POP_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=JAIL_POP_AND_RESIDENT_POP_QUERY_TEMPLATE,
     description=JAIL_POP_AND_RESIDENT_POP_DESCRIPTION,
     views_dataset=dataset_config.VIEWS_DATASET,
-    population_admissions_releases_race_gender_all_view=
-    POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_ALL_VIEW_BUILDER.view_id,
+    population_admissions_releases_race_gender_all_view=POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_ALL_VIEW_BUILDER.view_id,
     resident_population_counts_view=RESIDENT_POPULATION_COUNTS_VIEW_BUILDER.view_id,
-    cutoff_year=str(CUTOFF_YEAR)
+    cutoff_year=str(CUTOFF_YEAR),
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         JAIL_POP_AND_RESIDENT_POP_VIEW_BUILDER.build_and_print()

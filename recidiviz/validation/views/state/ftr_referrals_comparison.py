@@ -25,12 +25,13 @@ from recidiviz.validation.views import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-FTR_REFERRALS_COMPARISON_VIEW_NAME = 'ftr_referrals_comparison'
+FTR_REFERRALS_COMPARISON_VIEW_NAME = "ftr_referrals_comparison"
 
-FTR_REFERRALS_COMPARISON_DESCRIPTION = """FTR program referral count comparison per metric period"""
+FTR_REFERRALS_COMPARISON_DESCRIPTION = (
+    """FTR program referral count comparison per metric period"""
+)
 
-FTR_REFERRALS_COMPARISON_QUERY_TEMPLATE = \
-    """
+FTR_REFERRALS_COMPARISON_QUERY_TEMPLATE = """
     /*{description}*/
     WITH by_age as (
       SELECT state_code as region_code, metric_period_months, SUM(count) as referral_count
@@ -71,6 +72,6 @@ FTR_REFERRALS_COMPARISON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_dataset=state_dataset_config.DASHBOARD_VIEWS_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         FTR_REFERRALS_COMPARISON_VIEW_BUILDER.build_and_print()

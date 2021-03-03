@@ -27,6 +27,7 @@ from recidiviz.common.constants.state.state_assessment import StateAssessmentTyp
 @attr.s
 class IdentifierEvent(BuildableAttr):
     """Base class for events created by the identifier step of each pipeline."""
+
     # The state where the event took place
     state_code: str = attr.ib()
 
@@ -35,6 +36,7 @@ class IdentifierEvent(BuildableAttr):
 class IdentifierEventWithSingularDate(IdentifierEvent):
     """Base class for events created by the identifier step of each pipeline, where the event has a singular date it
     can be associated with."""
+
     # Date of the event
     event_date: datetime.date = attr.ib()
 
@@ -43,7 +45,7 @@ class IdentifierEventWithSingularDate(IdentifierEvent):
 class AssessmentEventMixin:
     """Attribute that enables an event to be able to calculate the score bucket from assessment information."""
 
-    DEFAULT_ASSESSMENT_SCORE_BUCKET = 'NOT_ASSESSED'
+    DEFAULT_ASSESSMENT_SCORE_BUCKET = "NOT_ASSESSED"
 
     @property
     def assessment_score_bucket(self) -> str:
@@ -57,55 +59,57 @@ class AssessmentEventMixin:
             DEFAULT_ASSESSMENT_SCORE_BUCKET if the assessment type is not supported or if the object is missing
                 assessment information.
         """
-        state_code = getattr(self, 'state_code')
-        assessment_score = getattr(self, 'assessment_score')
-        assessment_level = getattr(self, 'assessment_level')
-        assessment_type = getattr(self, 'assessment_type')
+        state_code = getattr(self, "state_code")
+        assessment_score = getattr(self, "assessment_score")
+        assessment_level = getattr(self, "assessment_level")
+        assessment_type = getattr(self, "assessment_type")
 
         if assessment_type:
             if assessment_type == StateAssessmentType.LSIR:
-                if state_code == 'US_PA':
+                if state_code == "US_PA":
                     # The score buckets for US_PA have changed over time, so we defer to the assessment_level
                     if assessment_level:
                         return assessment_level.value
                 else:
                     if assessment_score:
                         if assessment_score < 24:
-                            return '0-23'
+                            return "0-23"
                         if assessment_score <= 29:
-                            return '24-29'
+                            return "24-29"
                         if assessment_score <= 38:
-                            return '30-38'
-                        return '39+'
+                            return "30-38"
+                        return "39+"
 
             elif assessment_type in [
-                    StateAssessmentType.ORAS,
-                    StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
-                    StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
-                    StateAssessmentType.ORAS_MISDEMEANOR_ASSESSMENT,
-                    StateAssessmentType.ORAS_MISDEMEANOR_SCREENING,
-                    StateAssessmentType.ORAS_PRE_TRIAL,
-                    StateAssessmentType.ORAS_PRISON_SCREENING,
-                    StateAssessmentType.ORAS_PRISON_INTAKE,
-                    StateAssessmentType.ORAS_REENTRY,
-                    StateAssessmentType.ORAS_STATIC,
-                    StateAssessmentType.ORAS_SUPPLEMENTAL_REENTRY
+                StateAssessmentType.ORAS,
+                StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
+                StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
+                StateAssessmentType.ORAS_MISDEMEANOR_ASSESSMENT,
+                StateAssessmentType.ORAS_MISDEMEANOR_SCREENING,
+                StateAssessmentType.ORAS_PRE_TRIAL,
+                StateAssessmentType.ORAS_PRISON_SCREENING,
+                StateAssessmentType.ORAS_PRISON_INTAKE,
+                StateAssessmentType.ORAS_REENTRY,
+                StateAssessmentType.ORAS_STATIC,
+                StateAssessmentType.ORAS_SUPPLEMENTAL_REENTRY,
             ]:
                 if assessment_level:
                     return assessment_level.value
             elif assessment_type in [
-                    StateAssessmentType.INTERNAL_UNKNOWN,
-                    StateAssessmentType.ASI,
-                    StateAssessmentType.CSSM,
-                    StateAssessmentType.HIQ,
-                    StateAssessmentType.PA_RST,
-                    StateAssessmentType.PSA,
-                    StateAssessmentType.SORAC,
-                    StateAssessmentType.STATIC_99,
-                    StateAssessmentType.TCU_DRUG_SCREEN
+                StateAssessmentType.INTERNAL_UNKNOWN,
+                StateAssessmentType.ASI,
+                StateAssessmentType.CSSM,
+                StateAssessmentType.HIQ,
+                StateAssessmentType.PA_RST,
+                StateAssessmentType.PSA,
+                StateAssessmentType.SORAC,
+                StateAssessmentType.STATIC_99,
+                StateAssessmentType.TCU_DRUG_SCREEN,
             ]:
                 logging.warning("Assessment type %s is unsupported.", assessment_type)
             else:
-                raise ValueError(f"Unexpected unsupported StateAssessmentType: {assessment_type}")
+                raise ValueError(
+                    f"Unexpected unsupported StateAssessmentType: {assessment_type}"
+                )
 
         return self.DEFAULT_ASSESSMENT_SCORE_BUCKET

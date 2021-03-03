@@ -21,19 +21,27 @@ from typing import Optional, Dict, Any, cast
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric, PersonLevelMetric, RecidivizMetricType
-from recidiviz.common.constants.state.state_incarceration_period import \
-    StateIncarcerationPeriodAdmissionReason, \
-    StateIncarcerationPeriodReleaseReason, StateSpecializedPurposeForIncarceration
-from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
+from recidiviz.calculator.pipeline.utils.metric_utils import (
+    RecidivizMetric,
+    PersonLevelMetric,
+    RecidivizMetricType,
+)
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodAdmissionReason,
+    StateIncarcerationPeriodReleaseReason,
+    StateSpecializedPurposeForIncarceration,
+)
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodSupervisionType,
+)
 
 
 class IncarcerationMetricType(RecidivizMetricType):
     """The type of incarceration metrics."""
 
-    INCARCERATION_ADMISSION = 'INCARCERATION_ADMISSION'
-    INCARCERATION_POPULATION = 'INCARCERATION_POPULATION'
-    INCARCERATION_RELEASE = 'INCARCERATION_RELEASE'
+    INCARCERATION_ADMISSION = "INCARCERATION_ADMISSION"
+    INCARCERATION_POPULATION = "INCARCERATION_POPULATION"
+    INCARCERATION_RELEASE = "INCARCERATION_RELEASE"
 
 
 @attr.s
@@ -43,6 +51,7 @@ class IncarcerationMetric(RecidivizMetric, PersonLevelMetric):
     Contains all of the identifying characteristics of the metric, including required characteristics for normalization
     as well as optional characteristics for slicing the data.
     """
+
     # Required characteristics
 
     # The type of IncarcerationMetric
@@ -63,18 +72,20 @@ class IncarcerationMetric(RecidivizMetric, PersonLevelMetric):
     county_of_residence: Optional[str] = attr.ib(default=None)
 
     @staticmethod
-    def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> Optional['IncarcerationMetric']:
-        """Builds a IncarcerationMetric object from the given arguments.
-        """
+    def build_from_metric_key_group(
+        metric_key: Dict[str, Any], job_id: str
+    ) -> Optional["IncarcerationMetric"]:
+        """Builds a IncarcerationMetric object from the given arguments."""
 
         if not metric_key:
             raise ValueError("The metric_key is empty.")
 
-        metric_key['job_id'] = job_id
-        metric_key['created_on'] = date.today()
+        metric_key["job_id"] = job_id
+        metric_key["created_on"] = date.today()
 
-        incarceration_metric = cast(IncarcerationMetric,
-                                    IncarcerationMetric.build_from_dictionary(metric_key))
+        incarceration_metric = cast(
+            IncarcerationMetric, IncarcerationMetric.build_from_dictionary(metric_key)
+        )
 
         return incarceration_metric
 
@@ -82,10 +93,13 @@ class IncarcerationMetric(RecidivizMetric, PersonLevelMetric):
 @attr.s
 class IncarcerationPopulationMetric(IncarcerationMetric):
     """Subclass of IncarcerationMetric that contains incarceration population information on a given date."""
+
     # Required characteristics
 
     # The type of IncarcerationMetric
-    metric_type: IncarcerationMetricType = attr.ib(init=False, default=IncarcerationMetricType.INCARCERATION_POPULATION)
+    metric_type: IncarcerationMetricType = attr.ib(
+        init=False, default=IncarcerationMetricType.INCARCERATION_POPULATION
+    )
 
     # Date of the incarceration population count
     date_of_stay: date = attr.ib(default=None)
@@ -101,35 +115,43 @@ class IncarcerationPopulationMetric(IncarcerationMetric):
     most_serious_offense_statute: Optional[str] = attr.ib(default=None)
 
     # The most recent "official" admission reason for this time of incarceration
-    admission_reason: Optional[StateIncarcerationPeriodAdmissionReason] = attr.ib(default=None)
+    admission_reason: Optional[StateIncarcerationPeriodAdmissionReason] = attr.ib(
+        default=None
+    )
 
     # Raw text value of the most recent "official" admission reason for this time of incarceration
     admission_reason_raw_text: Optional[str] = attr.ib(default=None)
 
     # Supervision type at the time of admission, if any.
-    supervision_type_at_admission: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(default=None)
+    supervision_type_at_admission: Optional[
+        StateSupervisionPeriodSupervisionType
+    ] = attr.ib(default=None)
 
     # Area of jurisdictional coverage of the court that sentenced the person to this incarceration
     judicial_district_code: Optional[str] = attr.ib(default=None)
 
     # TODO(#3275): Rename to purpose_for_incarceration
     # Specialized purpose for incarceration
-    specialized_purpose_for_incarceration: Optional[StateSpecializedPurposeForIncarceration] = attr.ib(default=None)
+    specialized_purpose_for_incarceration: Optional[
+        StateSpecializedPurposeForIncarceration
+    ] = attr.ib(default=None)
 
     @staticmethod
-    def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> \
-            Optional['IncarcerationPopulationMetric']:
-        """Builds a IncarcerationPopulationMetric object from the given arguments.
-        """
+    def build_from_metric_key_group(
+        metric_key: Dict[str, Any], job_id: str
+    ) -> Optional["IncarcerationPopulationMetric"]:
+        """Builds a IncarcerationPopulationMetric object from the given arguments."""
 
         if not metric_key:
             raise ValueError("The metric_key is empty.")
 
-        metric_key['job_id'] = job_id
-        metric_key['created_on'] = date.today()
+        metric_key["job_id"] = job_id
+        metric_key["created_on"] = date.today()
 
-        incarceration_metric = cast(IncarcerationPopulationMetric,
-                                    IncarcerationPopulationMetric.build_from_dictionary(metric_key))
+        incarceration_metric = cast(
+            IncarcerationPopulationMetric,
+            IncarcerationPopulationMetric.build_from_dictionary(metric_key),
+        )
 
         return incarceration_metric
 
@@ -137,43 +159,54 @@ class IncarcerationPopulationMetric(IncarcerationMetric):
 @attr.s
 class IncarcerationAdmissionMetric(IncarcerationMetric):
     """Subclass of IncarcerationMetric that contains admission information."""
+
     # Required characteristics
 
     # The type of IncarcerationMetric
-    metric_type: IncarcerationMetricType = attr.ib(init=False, default=IncarcerationMetricType.INCARCERATION_ADMISSION)
+    metric_type: IncarcerationMetricType = attr.ib(
+        init=False, default=IncarcerationMetricType.INCARCERATION_ADMISSION
+    )
 
     # Most relevant admission reason for a continuous stay in prison. For example, in some states, if the initial
     # incarceration period has an admission reason of TEMPORARY_CUSTODY, the admission reason is drawn from the
     # subsequent admission period, if present.
-    admission_reason: Optional[StateIncarcerationPeriodAdmissionReason] = attr.ib(default=None)
+    admission_reason: Optional[StateIncarcerationPeriodAdmissionReason] = attr.ib(
+        default=None
+    )
 
     # Admission reason raw text
     admission_reason_raw_text: Optional[str] = attr.ib(default=None)
 
     # TODO(#3275): Rename to purpose_for_incarceration
     # Specialized purpose for incarceration
-    specialized_purpose_for_incarceration: Optional[StateSpecializedPurposeForIncarceration] = attr.ib(default=None)
+    specialized_purpose_for_incarceration: Optional[
+        StateSpecializedPurposeForIncarceration
+    ] = attr.ib(default=None)
 
     # Supervision type at the time of admission, if any.
-    supervision_type_at_admission: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(default=None)
+    supervision_type_at_admission: Optional[
+        StateSupervisionPeriodSupervisionType
+    ] = attr.ib(default=None)
 
     # Admission date
     admission_date: Optional[date] = attr.ib(default=None)
 
     @staticmethod
-    def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> \
-            Optional['IncarcerationAdmissionMetric']:
-        """Builds a IncarcerationAdmissionMetric object from the given arguments.
-        """
+    def build_from_metric_key_group(
+        metric_key: Dict[str, Any], job_id: str
+    ) -> Optional["IncarcerationAdmissionMetric"]:
+        """Builds a IncarcerationAdmissionMetric object from the given arguments."""
 
         if not metric_key:
             raise ValueError("The metric_key is empty.")
 
-        metric_key['job_id'] = job_id
-        metric_key['created_on'] = date.today()
+        metric_key["job_id"] = job_id
+        metric_key["created_on"] = date.today()
 
-        incarceration_metric = cast(IncarcerationAdmissionMetric,
-                                    IncarcerationAdmissionMetric.build_from_dictionary(metric_key))
+        incarceration_metric = cast(
+            IncarcerationAdmissionMetric,
+            IncarcerationAdmissionMetric.build_from_dictionary(metric_key),
+        )
 
         return incarceration_metric
 
@@ -181,47 +214,60 @@ class IncarcerationAdmissionMetric(IncarcerationMetric):
 @attr.s
 class IncarcerationReleaseMetric(IncarcerationMetric):
     """Subclass of IncarcerationMetric that contains release information."""
+
     # Required characteristics
 
     # The type of IncarcerationMetric
-    metric_type: IncarcerationMetricType = attr.ib(init=False, default=IncarcerationMetricType.INCARCERATION_RELEASE)
+    metric_type: IncarcerationMetricType = attr.ib(
+        init=False, default=IncarcerationMetricType.INCARCERATION_RELEASE
+    )
 
     # Release date
     release_date: Optional[date] = attr.ib(default=None)
 
     # Release reason
-    release_reason: Optional[StateIncarcerationPeriodReleaseReason] = attr.ib(default=None)
+    release_reason: Optional[StateIncarcerationPeriodReleaseReason] = attr.ib(
+        default=None
+    )
 
     # Release reason raw text
     release_reason_raw_text: Optional[str] = attr.ib(default=None)
 
     # Type of incarceration the release was from
-    purpose_for_incarceration: Optional[StateSpecializedPurposeForIncarceration] = attr.ib(default=None)
+    purpose_for_incarceration: Optional[
+        StateSpecializedPurposeForIncarceration
+    ] = attr.ib(default=None)
 
     # Supervision type at the time of release, if any.
-    supervision_type_at_release: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(default=None)
+    supervision_type_at_release: Optional[
+        StateSupervisionPeriodSupervisionType
+    ] = attr.ib(default=None)
 
     # Most relevant admission reason for a continuous stay in prison. For example, in some states, if the initial
     # incarceration period has an admission reason of TEMPORARY_CUSTODY, the admission reason is drawn from the
     # subsequent admission period, if present.
-    admission_reason: Optional[StateIncarcerationPeriodAdmissionReason] = attr.ib(default=None)
+    admission_reason: Optional[StateIncarcerationPeriodAdmissionReason] = attr.ib(
+        default=None
+    )
 
     # The length, in days, of the continuous stay in prison.
     total_days_incarcerated: Optional[int] = attr.ib(default=None)
 
     @staticmethod
-    def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> \
-            Optional['IncarcerationReleaseMetric']:
-        """Builds a IncarcerationReleaseMetric object from the given arguments.
-        """
+    def build_from_metric_key_group(
+        metric_key: Dict[str, Any], job_id: str
+    ) -> Optional["IncarcerationReleaseMetric"]:
+        """Builds a IncarcerationReleaseMetric object from the given arguments."""
 
         if not metric_key:
             raise ValueError("The metric_key is empty.")
 
-        metric_key['job_id'] = job_id
-        metric_key['created_on'] = date.today()
+        metric_key["job_id"] = job_id
+        metric_key["created_on"] = date.today()
 
-        incarceration_metric = cast(IncarcerationReleaseMetric,
-                                    IncarcerationReleaseMetric.build_from_dictionary(metric_key))
+        incarceration_metric = cast(
+            IncarcerationReleaseMetric,
+            IncarcerationReleaseMetric.build_from_dictionary(metric_key),
+        )
 
         return incarceration_metric

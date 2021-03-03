@@ -24,16 +24,17 @@ from typing import Tuple
 import flask
 from flask import request
 
-from recidiviz.calculator.pipeline.utils.calculate_cloud_task_manager import \
-    CalculateCloudTaskManager
+from recidiviz.calculator.pipeline.utils.calculate_cloud_task_manager import (
+    CalculateCloudTaskManager,
+)
 from recidiviz.calculator.pipeline.utils.execution_utils import get_dataflow_job_with_id
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils import pubsub_helper, metadata
 
-dataflow_monitor_blueprint = flask.Blueprint('dataflow_monitor', __name__)
+dataflow_monitor_blueprint = flask.Blueprint("dataflow_monitor", __name__)
 
 
-@dataflow_monitor_blueprint.route('/monitor', methods=['POST'])
+@dataflow_monitor_blueprint.route("/monitor", methods=["POST"])
 @requires_gae_auth
 def handle_dataflow_monitor_task() -> Tuple[str, HTTPStatus]:
     """Worker function to publish a message to a Pub/Sub topic once a Dataflow
@@ -46,36 +47,46 @@ def handle_dataflow_monitor_task() -> Tuple[str, HTTPStatus]:
     json_data = request.get_data(as_text=True)
     data = json.loads(json_data)
     project_id = metadata.project_id()
-    job_id = data['job_id']
-    location = data['location']
-    topic_dashed = data['topic']
-    topic = topic_dashed.replace('-', '.')
+    job_id = data["job_id"]
+    location = data["location"]
+    topic_dashed = data["topic"]
+    topic = topic_dashed.replace("-", ".")
 
     job = get_dataflow_job_with_id(project_id, job_id, location)
 
     if job:
-        state = job['currentState']
+        state = job["currentState"]
 
-        if state == 'JOB_STATE_DONE':
+        if state == "JOB_STATE_DONE":
             # Job was successful. Publish success message.
-            logging.info("Job %s successfully completed. Triggering "
-                         "dashboard export.", job_id)
+            logging.info(
+                "Job %s successfully completed. Triggering " "dashboard export.", job_id
+            )
             message = "Dataflow job {} complete".format(job_id)
             pubsub_helper.publish_message_to_topic(message, topic)
 
-        elif state in ['JOB_STATE_STOPPED', 'JOB_STATE_RUNNING',
-                       'JOB_STATE_PENDING', 'JOB_STATE_QUEUED']:
-            logging.info("Job %s has state: %s. Continuing "
-                         "to monitor progress.", job_id, state)
+        elif state in [
+            "JOB_STATE_STOPPED",
+            "JOB_STATE_RUNNING",
+            "JOB_STATE_PENDING",
+            "JOB_STATE_QUEUED",
+        ]:
+            logging.info(
+                "Job %s has state: %s. Continuing " "to monitor progress.",
+                job_id,
+                state,
+            )
             # Job has not completed yet. Re-queue monitor task.
             CalculateCloudTaskManager().create_dataflow_monitor_task(
-                job_id,
-                location,
-                topic_dashed)
+                job_id, location, topic_dashed
+            )
         else:
-            logging.warning("Dataflow job %s has state: %s. Killing the"
-                            "monitor tasks.", job_id, state)
+            logging.warning(
+                "Dataflow job %s has state: %s. Killing the" "monitor tasks.",
+                job_id,
+                state,
+            )
     else:
         logging.warning("Dataflow job %s not found.", job_id)
 
-    return '', HTTPStatus.OK
+    return "", HTTPStatus.OK

@@ -39,23 +39,23 @@ def attr_to_json_dict(attr_obj: attr.Attribute) -> Dict[str, Any]:
     and __classname__ fields to reconstruct the object using the same Converter
     used to unstructure it here."""
     converter = cattr.Converter()
-    converter.register_unstructure_hook( # type: ignore[misc]
-        datetime.datetime,
-        lambda d: datetime_to_serializable(d))
+    converter.register_unstructure_hook(  # type: ignore[misc]
+        datetime.datetime, lambda d: datetime_to_serializable(d)
+    )
     attr_dict = cattr.unstructure(attr_obj)
-    attr_dict['__classname__'] = attr_obj.__class__.__name__
-    attr_dict['__module__'] = attr_obj.__module__
+    attr_dict["__classname__"] = attr_obj.__class__.__name__
+    attr_dict["__module__"] = attr_obj.__module__
     return attr_dict
 
 
 def attr_from_json_dict(attr_dict: Dict[str, Any]) -> attr.Attribute:
     """Converts a JSON dict created by |attr_to_json_dict| above into the attr
     object it was originally created from."""
-    module = importlib.import_module(attr_dict.pop('__module__'))
-    cls = getattr(module, attr_dict.pop('__classname__'))
+    module = importlib.import_module(attr_dict.pop("__module__"))
+    cls = getattr(module, attr_dict.pop("__classname__"))
 
     converter = cattr.Converter()
     converter.register_structure_hook(
-        datetime.datetime,
-        lambda date_str, _: serializable_to_datetime(date_str))
+        datetime.datetime, lambda date_str, _: serializable_to_datetime(date_str)
+    )
     return converter.structure(attr_dict, cls)

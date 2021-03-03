@@ -27,23 +27,38 @@ import logging
 import pandas as pd
 
 
-def add_enum_override(scraper_name: str, from_field: str, enum_string: str, action: str, mapped_enum: str) -> None:
+def add_enum_override(
+    scraper_name: str, from_field: str, enum_string: str, action: str, mapped_enum: str
+) -> None:
     """Add one enum mapping to a single scraper file."""
     logging.info(scraper_name)
-    scraper_file = f"recidiviz/ingest/scrape/regions/{scraper_name}/{scraper_name}_scraper.py"
+    scraper_file = (
+        f"recidiviz/ingest/scrape/regions/{scraper_name}/{scraper_name}_scraper.py"
+    )
     with open(scraper_file) as file:
         lines = file.readlines()
-    index = next((i for i, line in enumerate(lines) if "return overrides_builder.build()" in line), None)
+    index = next(
+        (
+            i
+            for i, line in enumerate(lines)
+            if "return overrides_builder.build()" in line
+        ),
+        None,
+    )
     if index and lines[index - 1].isspace():
         index -= 1
     action = action.strip()
-    if action == 'add':
+    if action == "add":
         if from_field == mapped_enum.split(".")[0]:
-            new_enum_override = f"        overrides_builder.add('{enum_string}', {mapped_enum})\n"
+            new_enum_override = (
+                f"        overrides_builder.add('{enum_string}', {mapped_enum})\n"
+            )
         else:
             new_enum_override = f"        overrides_builder.add('{enum_string}', {mapped_enum}, {from_field})\n"
-    elif action == 'ignore':
-        new_enum_override = f"        overrides_builder.ignore('{enum_string}', {from_field})\n"
+    elif action == "ignore":
+        new_enum_override = (
+            f"        overrides_builder.ignore('{enum_string}', {from_field})\n"
+        )
     else:
         raise ValueError(f"Unknown action [{action}], expected 'add' or 'ignore'.")
     if index:
@@ -53,27 +68,47 @@ def add_enum_override(scraper_name: str, from_field: str, enum_string: str, acti
             "    def get_enum_overrides(self) -> EnumOverrides:\n",
             "        overrides_builder = super().get_enum_overrides().to_builder()\n",
             new_enum_override,
-            "        return overrides_builder.build()\n"]
+            "        return overrides_builder.build()\n",
+        ]
         lines.extend(override_builder)
-    with open(scraper_file, 'w') as file:
+    with open(scraper_file, "w") as file:
         file.writelines(lines)
 
 
 def main(df: pd.DataFrame) -> None:
-    for _, (scraper_name, from_field, enum_string, action, mapped_enum, everyone) in df.iterrows():
+    for _, (
+        scraper_name,
+        from_field,
+        enum_string,
+        action,
+        mapped_enum,
+        everyone,
+    ) in df.iterrows():
         if everyone:
-            logging.warning("Update the default map for %s to map '%s' to %s.",
-                            from_field, enum_string, mapped_enum)
+            logging.warning(
+                "Update the default map for %s to map '%s' to %s.",
+                from_field,
+                enum_string,
+                mapped_enum,
+            )
         else:
-            add_enum_override(scraper_name, from_field, enum_string, action, mapped_enum)
+            add_enum_override(
+                scraper_name, from_field, enum_string, action, mapped_enum
+            )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--file_path')
+    parser.add_argument("--file_path")
     args = parser.parse_args()
     enum_df = pd.read_csv(args.file_path)
-    usecols = ['scraper_name', 'from_field', 'enum_string', 'action',
-               'mapped_enum', 'everyone']
+    usecols = [
+        "scraper_name",
+        "from_field",
+        "enum_string",
+        "action",
+        "mapped_enum",
+        "everyone",
+    ]
     enum_df = enum_df[enum_df["implemented"] < 1][usecols]
     main(enum_df)

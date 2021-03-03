@@ -19,13 +19,10 @@ from typing import Optional
 
 from .reference import Reference
 
-
 class BaseRepository:
     pass
 
-
 class Repository(BaseRepository):
     def __init__(self, path: Optional[str] = None, flags: int = 0): ...
-
     @property
     def head(self) -> Reference: ...

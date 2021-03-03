@@ -44,9 +44,10 @@ def client(project_id: str) -> bigquery.Client:
 # https://github.com/googleapis/python-storage/issues/253
 BIG_QUERY_CLIENT_MAX_CONNECTIONS = 10
 
+
 class BigQueryClient:
     """Interface for a wrapper around the bigquery.Client with convenience functions for querying, creating, copying and
-     exporting BigQuery tables and views.
+    exporting BigQuery tables and views.
     """
 
     @property
@@ -59,9 +60,11 @@ class BigQueryClient:
         """Returns a BigQuery DatasetReference for the dataset with the given dataset name."""
 
     @abc.abstractmethod
-    def create_dataset_if_necessary(self,
-                                    dataset_ref: bigquery.DatasetReference,
-                                    default_table_expiration_ms: Optional[int] = None) -> None:
+    def create_dataset_if_necessary(
+        self,
+        dataset_ref: bigquery.DatasetReference,
+        default_table_expiration_ms: Optional[int] = None,
+    ) -> None:
         """Create a BigQuery dataset if it does not exist, with the optional dataset table expiration if provided."""
 
     @abc.abstractmethod
@@ -75,10 +78,12 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
-    def delete_dataset(self,
-                       dataset_ref: bigquery.DatasetReference,
-                       delete_contents: bool = False,
-                       not_found_ok: bool = False) -> None:
+    def delete_dataset(
+        self,
+        dataset_ref: bigquery.DatasetReference,
+        delete_contents: bool = False,
+        not_found_ok: bool = False,
+    ) -> None:
         """Deletes a BigQuery dataset
         Args:
             dataset_ref: The BigQuery dataset to delete
@@ -108,9 +113,8 @@ class BigQueryClient:
 
     @abc.abstractmethod
     def table_exists(
-            self,
-            dataset_ref: bigquery.DatasetReference,
-            table_id: str) -> bool:
+        self, dataset_ref: bigquery.DatasetReference, table_id: str
+    ) -> bool:
         """Check whether or not a BigQuery Table or View exists in a Dataset.
 
         Args:
@@ -123,9 +127,8 @@ class BigQueryClient:
 
     @abc.abstractmethod
     def get_table(
-            self,
-            dataset_ref: bigquery.DatasetReference,
-            table_id: str) -> bigquery.Table:
+        self, dataset_ref: bigquery.DatasetReference, table_id: str
+    ) -> bigquery.Table:
         """Fetches the Table for a BigQuery Table or View in the dataset. Throws if it does not exist.
 
         Args:
@@ -152,10 +155,12 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
-    def create_or_update_view(self,
-                              # TODO(#3020): BigQueryView now encodes dataset information, remove this parameter.
-                              dataset_ref: bigquery.DatasetReference,
-                              view: BigQueryView) -> bigquery.Table:
+    def create_or_update_view(
+        self,
+        # TODO(#3020): BigQueryView now encodes dataset information, remove this parameter.
+        dataset_ref: bigquery.DatasetReference,
+        view: BigQueryView,
+    ) -> bigquery.Table:
         """Create a View if it does not exist, or update its query if it does.
 
         This runs synchronously and waits for the job to complete.
@@ -169,12 +174,14 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
-    def load_table_from_table_async(self,
-                                    source_dataset_id: str,
-                                    source_table_id: str,
-                                    destination_dataset_id: str,
-                                    destination_table_id: str,
-                                    allow_field_additions: bool = False) -> bigquery.QueryJob:
+    def load_table_from_table_async(
+        self,
+        source_dataset_id: str,
+        source_table_id: str,
+        destination_dataset_id: str,
+        destination_table_id: str,
+        allow_field_additions: bool = False,
+    ) -> bigquery.QueryJob:
         """Loads data from a source table and writes to a destination table.
 
         This starts the job, but does not wait until it completes. It will raise an error if the destination table
@@ -197,11 +204,12 @@ class BigQueryClient:
 
     @abc.abstractmethod
     def load_table_from_cloud_storage_async(
-            self,
-            source_uri: str,
-            destination_dataset_ref: bigquery.DatasetReference,
-            destination_table_id: str,
-            destination_table_schema: List[bigquery.SchemaField]) -> bigquery.job.LoadJob:
+        self,
+        source_uri: str,
+        destination_dataset_ref: bigquery.DatasetReference,
+        destination_table_id: str,
+        destination_table_schema: List[bigquery.SchemaField],
+    ) -> bigquery.job.LoadJob:
         """Loads a table from CSV data in GCS to BigQuery.
 
         Given a desired table name, source data URI and destination schema, loads the table into BigQuery.
@@ -226,12 +234,13 @@ class BigQueryClient:
 
     @abc.abstractmethod
     def export_table_to_cloud_storage_async(
-            self,
-            source_table_dataset_ref: bigquery.dataset.DatasetReference,
-            source_table_id: str,
-            destination_uri: str,
-            destination_format: bigquery.DestinationFormat,
-            print_header: bool) -> Optional[bigquery.ExtractJob]:
+        self,
+        source_table_dataset_ref: bigquery.dataset.DatasetReference,
+        source_table_id: str,
+        destination_uri: str,
+        destination_format: bigquery.DestinationFormat,
+        print_header: bool,
+    ) -> Optional[bigquery.ExtractJob]:
         """Exports the table corresponding to the given view to the path in Google Cloud Storage denoted by
         |destination_uri|.
 
@@ -253,9 +262,9 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
-    def export_query_results_to_cloud_storage(self,
-                                              export_configs: List[ExportQueryConfig],
-                                              print_header: bool) -> None:
+    def export_query_results_to_cloud_storage(
+        self, export_configs: List[ExportQueryConfig], print_header: bool
+    ) -> None:
         """Exports the queries to cloud storage according to the given configs.
 
         This is a three-step process. First, each query is executed and the entire result is loaded into a temporary
@@ -273,8 +282,11 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
-    def run_query_async(self, query_str: str, query_parameters: List[bigquery.ScalarQueryParameter] = None) \
-            -> bigquery.QueryJob:
+    def run_query_async(
+        self,
+        query_str: str,
+        query_parameters: List[bigquery.ScalarQueryParameter] = None,
+    ) -> bigquery.QueryJob:
         """Runs a query in BigQuery asynchronously.
 
         It is the caller's responsibility to wait for the resulting job to complete.
@@ -294,10 +306,12 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
-    def paged_read_and_process(self,
-                               query_job: bigquery.QueryJob,
-                               page_size: int,
-                               process_fn: Callable[[bigquery.table.Row], None]) -> None:
+    def paged_read_and_process(
+        self,
+        query_job: bigquery.QueryJob,
+        page_size: int,
+        process_fn: Callable[[bigquery.table.Row], None],
+    ) -> None:
         """Reads the given result set from the given query job in pages to limit how many rows are read into memory at
         any given time, processing the results of each row with the given callable.
 
@@ -308,10 +322,12 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
-    def copy_view(self,
-                  view: BigQueryView,
-                  destination_client: 'BigQueryClient',
-                  destination_dataset_ref: bigquery.DatasetReference) -> bigquery.Table:
+    def copy_view(
+        self,
+        view: BigQueryView,
+        destination_client: "BigQueryClient",
+        destination_dataset_ref: bigquery.DatasetReference,
+    ) -> bigquery.Table:
         """Copies a view from this client's project to a destination project and dataset. If the dataset does not
         already exist, a new one will be created.
 
@@ -329,12 +345,14 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
-    def create_table_from_query_async(self,
-                                      dataset_id: str,
-                                      table_id: str,
-                                      query: str,
-                                      query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
-                                      overwrite: Optional[bool] = False) -> bigquery.QueryJob:
+    def create_table_from_query_async(
+        self,
+        dataset_id: str,
+        table_id: str,
+        query: str,
+        query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
+        overwrite: Optional[bool] = False,
+    ) -> bigquery.QueryJob:
         """Creates a table at the given location with the output from the given query. If overwrite is False, a
         'duplicate' error is returned in the job result if the table already exists and contains data. If overwrite is
         True, overwrites the table if it already exists.
@@ -351,14 +369,16 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
-    def insert_into_table_from_table_async(self,
-                                           source_dataset_id: str,
-                                           source_table_id: str,
-                                           destination_dataset_id: str,
-                                           destination_table_id: str,
-                                           source_data_filter_clause: Optional[str] = None,
-                                           hydrate_missing_columns_with_null: bool = False,
-                                           allow_field_additions: bool = False) -> bigquery.QueryJob:
+    def insert_into_table_from_table_async(
+        self,
+        source_dataset_id: str,
+        source_table_id: str,
+        destination_dataset_id: str,
+        destination_table_id: str,
+        source_data_filter_clause: Optional[str] = None,
+        hydrate_missing_columns_with_null: bool = False,
+        allow_field_additions: bool = False,
+    ) -> bigquery.QueryJob:
         """Inserts rows from the source table into the destination table. May include an optional filter clause
         to only insert a subset of rows into the destination table.
 
@@ -383,11 +403,12 @@ class BigQueryClient:
 
     @abc.abstractmethod
     def insert_into_table_from_cloud_storage_async(
-            self,
-            source_uri: str,
-            destination_dataset_ref: bigquery.DatasetReference,
-            destination_table_id: str,
-            destination_table_schema: List[bigquery.SchemaField]) -> bigquery.job.LoadJob:
+        self,
+        source_uri: str,
+        destination_dataset_ref: bigquery.DatasetReference,
+        destination_table_id: str,
+        destination_table_schema: List[bigquery.SchemaField],
+    ) -> bigquery.job.LoadJob:
         """Inserts rows from CSV data in GCS into a table in BigQuery.
 
         Given a desired table name, source data URI and destination schema, inserts the data into the BigQuery table.
@@ -409,15 +430,15 @@ class BigQueryClient:
 
     @abc.abstractmethod
     def insert_into_table_from_query(
-            self,
-            *,
-            destination_dataset_id: str,
-            destination_table_id: str,
-            query: str,
-            query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
-            allow_field_additions: bool = False,
-            write_disposition: bigquery.WriteDisposition = bigquery.WriteDisposition.WRITE_APPEND) \
-            -> bigquery.QueryJob:
+        self,
+        *,
+        destination_dataset_id: str,
+        destination_table_id: str,
+        query: str,
+        query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
+        allow_field_additions: bool = False,
+        write_disposition: bigquery.WriteDisposition = bigquery.WriteDisposition.WRITE_APPEND,
+    ) -> bigquery.QueryJob:
         """Inserts the results of the given query into the table at the given location. Creates a table if one does not
         yet exist. If |allow_field_additions| is set to False and the table exists, the schema of the query result must
         match the schema of the destination table.
@@ -437,7 +458,9 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
-    def delete_from_table_async(self, dataset_id: str, table_id: str, filter_clause: str) -> bigquery.QueryJob:
+    def delete_from_table_async(
+        self, dataset_id: str, table_id: str, filter_clause: str
+    ) -> bigquery.QueryJob:
         """Deletes rows from the given table that match the filter clause.
 
         Args:
@@ -461,8 +484,9 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
-    def create_table_with_schema(self, dataset_id: str, table_id: str, schema_fields: List[bigquery.SchemaField]) -> \
-            bigquery.Table:
+    def create_table_with_schema(
+        self, dataset_id: str, table_id: str, schema_fields: List[bigquery.SchemaField]
+    ) -> bigquery.Table:
         """Creates a table in the given dataset with the given schema fields. Raises an error if a table with the same
         table_id already exists in the dataset.
 
@@ -476,8 +500,12 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
-    def add_missing_fields_to_schema(self, dataset_id: str, table_id: str,
-                                     desired_schema_fields: List[bigquery.SchemaField]) -> None:
+    def add_missing_fields_to_schema(
+        self,
+        dataset_id: str,
+        table_id: str,
+        desired_schema_fields: List[bigquery.SchemaField],
+    ) -> None:
         """Updates the schema of the table to include the schema_fields if they are not already present in the
         Table's schema. Does not update the type or mode of any existing schema fields, and does not delete existing
         schema fields.
@@ -489,9 +517,12 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
-    def remove_unused_fields_from_schema(self, dataset_id: str, table_id: str,
-                                         desired_schema_fields: List[bigquery.SchemaField]) -> \
-            Optional[bigquery.QueryJob]:
+    def remove_unused_fields_from_schema(
+        self,
+        dataset_id: str,
+        table_id: str,
+        desired_schema_fields: List[bigquery.SchemaField],
+    ) -> Optional[bigquery.QueryJob]:
         """Updates the schema of the table to drop any columns not in desired_schema_fields. This will not add any
         fields to the table's schema.
 
@@ -506,8 +537,12 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
-    def update_schema(self, dataset_id: str, table_id: str,
-                      desired_schema_fields: List[bigquery.SchemaField]) -> None:
+    def update_schema(
+        self,
+        dataset_id: str,
+        table_id: str,
+        desired_schema_fields: List[bigquery.SchemaField],
+    ) -> None:
         """Updates the schema of the table to match the desired_schema_fields. This may result in both adding and
         dropping fields from the table's schema. Raises an exception if fields in desired_schema_fields conflict with
         existing fields' modes or types.
@@ -534,14 +569,16 @@ class BigQueryClientImpl(BigQueryClient):
     """
 
     # Location of the GCP project that must be the same for bigquery.Client calls
-    LOCATION = 'US'
+    LOCATION = "US"
 
     def __init__(self, project_id: Optional[str] = None):
         if not project_id:
             project_id = metadata.project_id()
 
         if not project_id:
-            raise ValueError('Must provide a project_id if metadata.project_id() returns None')
+            raise ValueError(
+                "Must provide a project_id if metadata.project_id() returns None"
+            )
 
         self._project_id = project_id
         self.client = client(self._project_id)
@@ -551,11 +588,15 @@ class BigQueryClientImpl(BigQueryClient):
         return self._project_id
 
     def dataset_ref_for_id(self, dataset_id: str) -> bigquery.DatasetReference:
-        return bigquery.DatasetReference.from_string(dataset_id, default_project=self._project_id)
+        return bigquery.DatasetReference.from_string(
+            dataset_id, default_project=self._project_id
+        )
 
-    def create_dataset_if_necessary(self,
-                                    dataset_ref: bigquery.DatasetReference,
-                                    default_table_expiration_ms: Optional[int] = None) -> bigquery.Dataset:
+    def create_dataset_if_necessary(
+        self,
+        dataset_ref: bigquery.DatasetReference,
+        default_table_expiration_ms: Optional[int] = None,
+    ) -> bigquery.Dataset:
         try:
             dataset = self.client.get_dataset(dataset_ref)
         except exceptions.NotFound:
@@ -563,8 +604,11 @@ class BigQueryClientImpl(BigQueryClient):
             dataset = bigquery.Dataset(dataset_ref)
 
             if default_table_expiration_ms:
-                logging.info("Setting default table expiration to %d milliseconds for dataset [%s].",
-                             default_table_expiration_ms, str(dataset_ref))
+                logging.info(
+                    "Setting default table expiration to %d milliseconds for dataset [%s].",
+                    default_table_expiration_ms,
+                    str(dataset_ref),
+                )
                 dataset.default_table_expiration_ms = default_table_expiration_ms
             return self.client.create_dataset(dataset)
 
@@ -578,11 +622,15 @@ class BigQueryClientImpl(BigQueryClient):
             logging.warning("Dataset [%s] does not exist", str(dataset_ref))
             return False
 
-    def delete_dataset(self,
-                       dataset_ref: bigquery.DatasetReference,
-                       delete_contents: bool = False,
-                       not_found_ok: bool = False) -> None:
-        return self.client.delete_dataset(dataset_ref, delete_contents=delete_contents, not_found_ok=not_found_ok)
+    def delete_dataset(
+        self,
+        dataset_ref: bigquery.DatasetReference,
+        delete_contents: bool = False,
+        not_found_ok: bool = False,
+    ) -> None:
+        return self.client.delete_dataset(
+            dataset_ref, delete_contents=delete_contents, not_found_ok=not_found_ok
+        )
 
     def get_dataset(self, dataset_ref: bigquery.DatasetReference) -> bigquery.Dataset:
         return self.client.get_dataset(dataset_ref)
@@ -590,30 +638,35 @@ class BigQueryClientImpl(BigQueryClient):
     def list_datasets(self) -> Iterator[bigquery.dataset.DatasetListItem]:
         return self.client.list_datasets()
 
-    def table_exists(self, dataset_ref: bigquery.DatasetReference, table_id: str) -> bool:
+    def table_exists(
+        self, dataset_ref: bigquery.DatasetReference, table_id: str
+    ) -> bool:
         table_ref = dataset_ref.table(table_id)
 
         try:
             self.client.get_table(table_ref)
             return True
         except exceptions.NotFound:
-            logging.warning("Table [%s] does not exist in dataset [%s]", table_id, str(dataset_ref))
+            logging.warning(
+                "Table [%s] does not exist in dataset [%s]", table_id, str(dataset_ref)
+            )
             return False
 
     def list_tables(self, dataset_id: str) -> Iterator[bigquery.table.TableListItem]:
         return self.client.list_tables(dataset_id)
 
     def get_table(
-            self,
-            dataset_ref: bigquery.DatasetReference,
-            table_id: str) -> bigquery.Table:
+        self, dataset_ref: bigquery.DatasetReference, table_id: str
+    ) -> bigquery.Table:
         table_ref = dataset_ref.table(table_id)
         return self.client.get_table(table_ref)
 
     def create_table(self, table: bigquery.Table) -> bigquery.Table:
         return self.client.create_table(table, exists_ok=False)
 
-    def create_or_update_view(self, dataset_ref: bigquery.DatasetReference, view: BigQueryView) -> bigquery.Table:
+    def create_or_update_view(
+        self, dataset_ref: bigquery.DatasetReference, view: BigQueryView
+    ) -> bigquery.Table:
         bq_view = bigquery.Table(view)
         bq_view.view_query = view.view_query
 
@@ -623,33 +676,40 @@ class BigQueryClientImpl(BigQueryClient):
             logging.info("Creating view %s", str(bq_view))
             return self.client.create_table(bq_view)
 
-        if table.table_type == 'TABLE':
+        if table.table_type == "TABLE":
             raise ValueError(
-                f'Cannot call create_or_update_view on table {view.view_id} in dataset {dataset_ref.dataset_id}.')
+                f"Cannot call create_or_update_view on table {view.view_id} in dataset {dataset_ref.dataset_id}."
+            )
 
         logging.info("Updating existing view [%s]", str(bq_view))
-        return self.client.update_table(bq_view, ['view_query'])
+        return self.client.update_table(bq_view, ["view_query"])
 
     def load_table_from_cloud_storage_async(
-            self,
-            source_uri: str,
-            destination_dataset_ref: bigquery.DatasetReference,
-            destination_table_id: str,
-            destination_table_schema: List[bigquery.SchemaField]) -> bigquery.job.LoadJob:
+        self,
+        source_uri: str,
+        destination_dataset_ref: bigquery.DatasetReference,
+        destination_table_id: str,
+        destination_table_schema: List[bigquery.SchemaField],
+    ) -> bigquery.job.LoadJob:
 
-        return self._load_table_from_cloud_storage_async(source_uri=source_uri,
-                                                         destination_dataset_ref=destination_dataset_ref,
-                                                         destination_table_id=destination_table_id,
-                                                         destination_table_schema=destination_table_schema,
-                                                         write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE)
+        return self._load_table_from_cloud_storage_async(
+            source_uri=source_uri,
+            destination_dataset_ref=destination_dataset_ref,
+            destination_table_id=destination_table_id,
+            destination_table_schema=destination_table_schema,
+            write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
+        )
 
     def _load_table_from_cloud_storage_async(
-            self,
-            source_uri: str,
-            destination_dataset_ref: bigquery.DatasetReference,
-            destination_table_id: str,
-            destination_table_schema: List[bigquery.SchemaField],
-            write_disposition: bigquery.WriteDisposition) -> bigquery.job.LoadJob:
+        self,
+        source_uri: str,
+        destination_dataset_ref: bigquery.DatasetReference,
+        destination_table_id: str,
+        destination_table_schema: List[bigquery.SchemaField],
+        write_disposition: bigquery.WriteDisposition,
+    ) -> bigquery.job.LoadJob:
+        """Triggers a load job, i.e. a job that will copy all of the data from the given Cloud Storage source into
+        the given BigQuery destination. Returns once the job has been started."""
 
         self.create_dataset_if_necessary(destination_dataset_ref)
 
@@ -662,30 +722,38 @@ class BigQueryClientImpl(BigQueryClient):
         job_config.write_disposition = write_disposition
 
         load_job = self.client.load_table_from_uri(
-            source_uri,
-            destination_table_ref,
-            job_config=job_config
+            source_uri, destination_table_ref, job_config=job_config
         )
 
-        logging.info("Started load job [%s] for table [%s.%s.%s]",
-                     load_job.job_id,
-                     destination_table_ref.project, destination_table_ref.dataset_id, destination_table_ref.table_id)
+        logging.info(
+            "Started load job [%s] for table [%s.%s.%s]",
+            load_job.job_id,
+            destination_table_ref.project,
+            destination_table_ref.dataset_id,
+            destination_table_ref.table_id,
+        )
 
         return load_job
 
     def export_table_to_cloud_storage_async(
-            self,
-            source_table_dataset_ref: bigquery.DatasetReference,
-            source_table_id: str,
-            destination_uri: str,
-            destination_format: bigquery.DestinationFormat,
-            print_header: bool) -> Optional[bigquery.ExtractJob]:
+        self,
+        source_table_dataset_ref: bigquery.DatasetReference,
+        source_table_id: str,
+        destination_uri: str,
+        destination_format: bigquery.DestinationFormat,
+        print_header: bool,
+    ) -> Optional[bigquery.ExtractJob]:
         if not print_header and destination_format != bigquery.DestinationFormat.CSV:
             raise ValueError(
-                f'Export called incorrectly with print_header=False and destination_format={destination_format}')
+                f"Export called incorrectly with print_header=False and destination_format={destination_format}"
+            )
 
         if not self.table_exists(source_table_dataset_ref, source_table_id):
-            logging.error("Table [%s] does not exist in dataset [%s]", source_table_id, str(source_table_dataset_ref))
+            logging.error(
+                "Table [%s] does not exist in dataset [%s]",
+                source_table_id,
+                str(source_table_dataset_ref),
+            )
             return None
 
         table_ref = source_table_dataset_ref.table(source_table_id)
@@ -699,12 +767,12 @@ class BigQueryClientImpl(BigQueryClient):
             destination_uri,
             # Location must match that of the source table.
             location=self.LOCATION,
-            job_config=job_config
+            job_config=job_config,
         )
 
-    def export_query_results_to_cloud_storage(self,
-                                              export_configs: List[ExportQueryConfig],
-                                              print_header: bool) -> None:
+    def export_query_results_to_cloud_storage(
+        self, export_configs: List[ExportQueryConfig], print_header: bool
+    ) -> None:
         query_jobs = []
         for export_config in export_configs:
             query_job = self.create_table_from_query_async(
@@ -712,16 +780,16 @@ class BigQueryClientImpl(BigQueryClient):
                 table_id=export_config.intermediate_table_name,
                 query=export_config.query,
                 query_parameters=export_config.query_parameters,
-                overwrite=True
+                overwrite=True,
             )
             if query_job is not None:
                 query_jobs.append(query_job)
 
-        logging.info('Waiting on [%d] query jobs to finish', len(query_jobs))
+        logging.info("Waiting on [%d] query jobs to finish", len(query_jobs))
         for job in query_jobs:
             job.result()
 
-        logging.info('Completed [%d] query jobs.', len(query_jobs))
+        logging.info("Completed [%d] query jobs.", len(query_jobs))
 
         extract_jobs = []
         for export_config in export_configs:
@@ -735,25 +803,34 @@ class BigQueryClientImpl(BigQueryClient):
             if extract_job is not None:
                 extract_jobs.append(extract_job)
 
-        logging.info('Waiting on [%d] extract jobs to finish', len(extract_jobs))
+        logging.info("Waiting on [%d] extract jobs to finish", len(extract_jobs))
         for job in extract_jobs:
             job.result()
-        logging.info('Completed [%d] extract jobs.', len(extract_jobs))
+        logging.info("Completed [%d] extract jobs.", len(extract_jobs))
 
-        logging.info('Deleting [%d] temporary intermediate tables.', len(export_configs))
+        logging.info(
+            "Deleting [%d] temporary intermediate tables.", len(export_configs)
+        )
         for export_config in export_configs:
-            self.delete_table(dataset_id=export_config.intermediate_dataset_id,
-                              table_id=export_config.intermediate_table_name)
-        logging.info('Done deleting temporary intermediate tables.')
+            self.delete_table(
+                dataset_id=export_config.intermediate_dataset_id,
+                table_id=export_config.intermediate_table_name,
+            )
+        logging.info("Done deleting temporary intermediate tables.")
 
     def delete_table(self, dataset_id: str, table_id: str) -> None:
         dataset_ref = self.dataset_ref_for_id(dataset_id)
         table_ref = dataset_ref.table(table_id)
-        logging.info('Deleting table/view [%s] from dataset [%s].', table_id, dataset_id)
+        logging.info(
+            "Deleting table/view [%s] from dataset [%s].", table_id, dataset_id
+        )
         self.client.delete_table(table_ref)
 
-    def run_query_async(self, query_str: str, query_parameters: List[bigquery.ScalarQueryParameter] = None) \
-            -> bigquery.QueryJob:
+    def run_query_async(
+        self,
+        query_str: str,
+        query_parameters: List[bigquery.ScalarQueryParameter] = None,
+    ) -> bigquery.QueryJob:
         job_config = bigquery.QueryJobConfig()
         job_config.query_parameters = query_parameters or []
 
@@ -763,35 +840,50 @@ class BigQueryClientImpl(BigQueryClient):
             job_config=job_config,
         )
 
-    def paged_read_and_process(self,
-                               query_job: bigquery.QueryJob,
-                               page_size: int,
-                               process_fn: Callable[[bigquery.table.Row], None]) -> None:
-        logging.debug("Querying for first page of results to perform %s...", process_fn.__name__)
+    def paged_read_and_process(
+        self,
+        query_job: bigquery.QueryJob,
+        page_size: int,
+        process_fn: Callable[[bigquery.table.Row], None],
+    ) -> None:
+        logging.debug(
+            "Querying for first page of results to perform %s...", process_fn.__name__
+        )
 
         start_index = 0
 
         while True:
-            page_rows: bigquery.table.RowIterator = query_job.result(max_results=page_size, start_index=start_index)
-            logging.debug("Retrieved result set from query page of size [%d] starting at index [%d]",
-                          page_size, start_index)
+            page_rows: bigquery.table.RowIterator = query_job.result(
+                max_results=page_size, start_index=start_index
+            )
+            logging.debug(
+                "Retrieved result set from query page of size [%d] starting at index [%d]",
+                page_size,
+                start_index,
+            )
 
             rows_processed = 0
             for row in page_rows:
                 process_fn(row)
                 rows_processed += 1
 
-            logging.debug("Processed [%d] rows from query page starting at index [%d]", rows_processed, start_index)
+            logging.debug(
+                "Processed [%d] rows from query page starting at index [%d]",
+                rows_processed,
+                start_index,
+            )
             if rows_processed == 0:
                 break
 
             start_index += rows_processed
             logging.debug("Processed [%d] rows...", start_index)
 
-    def copy_view(self,
-                  view: BigQueryView,
-                  destination_client: BigQueryClient,
-                  destination_dataset_ref: bigquery.DatasetReference) -> bigquery.Table:
+    def copy_view(
+        self,
+        view: BigQueryView,
+        destination_client: BigQueryClient,
+        destination_dataset_ref: bigquery.DatasetReference,
+    ) -> bigquery.Table:
 
         if destination_client.table_exists(destination_dataset_ref, view.view_id):
             raise ValueError(f"Table [{view.view_id}] already exists in dataset!")
@@ -801,23 +893,30 @@ class BigQueryClientImpl(BigQueryClient):
 
         new_view_ref = destination_dataset_ref.table(view.view_id)
         new_view = bigquery.Table(new_view_ref)
-        new_view.view_query = view.view_query.format(destination_client.project_id,
-                                                     destination_dataset_ref.dataset_id,
-                                                     view.view_id)
+        new_view.view_query = view.view_query.format(
+            destination_client.project_id,
+            destination_dataset_ref.dataset_id,
+            view.view_id,
+        )
         table = destination_client.create_table(new_view)
         logging.info("Created %s", new_view_ref)
         return table
 
-    def create_table_from_query_async(self,
-                                      dataset_id: str,
-                                      table_id: str,
-                                      query: str,
-                                      query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
-                                      overwrite: Optional[bool] = False) -> bigquery.QueryJob:
+    def create_table_from_query_async(
+        self,
+        dataset_id: str,
+        table_id: str,
+        query: str,
+        query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
+        overwrite: Optional[bool] = False,
+    ) -> bigquery.QueryJob:
         # If overwrite is False, errors if the table already exists and contains data. Else, overwrites the table if
         # it already exists.
-        write_disposition = (bigquery.job.WriteDisposition.WRITE_TRUNCATE if overwrite
-                             else bigquery.job.WriteDisposition.WRITE_EMPTY)
+        write_disposition = (
+            bigquery.job.WriteDisposition.WRITE_TRUNCATE
+            if overwrite
+            else bigquery.job.WriteDisposition.WRITE_EMPTY
+        )
 
         logging.info("Creating table: %s with query: %s", table_id, query)
 
@@ -826,40 +925,47 @@ class BigQueryClientImpl(BigQueryClient):
             destination_table_id=table_id,
             query=query,
             query_parameters=query_parameters,
-            write_disposition=write_disposition
+            write_disposition=write_disposition,
         )
 
-    def load_table_from_table_async(self,
-                                    source_dataset_id: str,
-                                    source_table_id: str,
-                                    destination_dataset_id: str,
-                                    destination_table_id: str,
-                                    allow_field_additions: bool = False) -> bigquery.QueryJob:
-        return self._load_table_from_table_async(source_dataset_id=source_dataset_id,
-                                                 source_table_id=source_table_id,
-                                                 destination_dataset_id=destination_dataset_id,
-                                                 destination_table_id=destination_table_id,
-                                                 allow_field_additions=allow_field_additions,
-                                                 write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE)
+    def load_table_from_table_async(
+        self,
+        source_dataset_id: str,
+        source_table_id: str,
+        destination_dataset_id: str,
+        destination_table_id: str,
+        allow_field_additions: bool = False,
+    ) -> bigquery.QueryJob:
+        return self._load_table_from_table_async(
+            source_dataset_id=source_dataset_id,
+            source_table_id=source_table_id,
+            destination_dataset_id=destination_dataset_id,
+            destination_table_id=destination_table_id,
+            allow_field_additions=allow_field_additions,
+            write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
+        )
 
-    def _load_table_from_table_async(self,
-                                     source_dataset_id: str,
-                                     source_table_id: str,
-                                     destination_dataset_id: str,
-                                     destination_table_id: str,
-                                     source_data_filter_clause: Optional[str] = None,
-                                     allow_field_additions: bool = False,
-                                     hydrate_missing_columns_with_null: bool = False,
-                                     write_disposition: bigquery.WriteDisposition =
-                                     bigquery.WriteDisposition.WRITE_APPEND) -> bigquery.QueryJob:
+    def _load_table_from_table_async(
+        self,
+        source_dataset_id: str,
+        source_table_id: str,
+        destination_dataset_id: str,
+        destination_table_id: str,
+        source_data_filter_clause: Optional[str] = None,
+        allow_field_additions: bool = False,
+        hydrate_missing_columns_with_null: bool = False,
+        write_disposition: bigquery.WriteDisposition = bigquery.WriteDisposition.WRITE_APPEND,
+    ) -> bigquery.QueryJob:
         """Loads data from a source table to a destination table, depending on the write_disposition passed in
-            it can either append or overwrite the destination table. Defaults to WRITE_APPEND.
+        it can either append or overwrite the destination table. Defaults to WRITE_APPEND.
         """
         dataset_ref = self.dataset_ref_for_id(destination_dataset_id)
 
         if not self.table_exists(dataset_ref, destination_table_id):
-            raise ValueError(f"Destination table [{self.project_id}.{destination_dataset_id}.{destination_table_id}]"
-                             f" does not exist!")
+            raise ValueError(
+                f"Destination table [{self.project_id}.{destination_dataset_id}.{destination_table_id}]"
+                f" does not exist!"
+            )
 
         source_table = self.get_table(dataset_ref, source_table_id)
         destination_table = self.get_table(dataset_ref, destination_table_id)
@@ -867,49 +973,61 @@ class BigQueryClientImpl(BigQueryClient):
         select_columns = "*"
 
         if hydrate_missing_columns_with_null:
-            schema_fields_missing_from_source = self._get_excess_schema_fields(source_table.schema,
-                                                                               destination_table.schema)
+            schema_fields_missing_from_source = self._get_excess_schema_fields(
+                source_table.schema, destination_table.schema
+            )
             if schema_fields_missing_from_source:
-                missing_columns = [f'CAST(NULL AS {missing_column.field_type}) AS {missing_column.name}'
-                                   for missing_column in schema_fields_missing_from_source]
-                select_columns += ", {null_columns}".format(null_columns=', '.join(missing_columns))
+                missing_columns = [
+                    f"CAST(NULL AS {missing_column.field_type}) AS {missing_column.name}"
+                    for missing_column in schema_fields_missing_from_source
+                ]
+                select_columns += ", {null_columns}".format(
+                    null_columns=", ".join(missing_columns)
+                )
 
         query = "SELECT {columns} FROM `{project_id}.{source_dataset_id}.{source_table_id}`".format(
             columns=select_columns,
             project_id=self.project_id,
             source_dataset_id=source_dataset_id,
-            source_table_id=source_table_id
+            source_table_id=source_table_id,
         )
 
         if source_data_filter_clause:
             self.validate_source_data_filter_clause(source_data_filter_clause)
             query = f"{query} {source_data_filter_clause}"
 
-        logging.info("Copying data from: %s.%s to: %s.%s", source_dataset_id, source_table_id,
-                     destination_dataset_id, destination_table_id)
+        logging.info(
+            "Copying data from: %s.%s to: %s.%s",
+            source_dataset_id,
+            source_table_id,
+            destination_dataset_id,
+            destination_table_id,
+        )
 
         return self.insert_into_table_from_query(
             destination_dataset_id=destination_dataset_id,
             destination_table_id=destination_table_id,
             query=query,
             allow_field_additions=allow_field_additions,
-            write_disposition=write_disposition
+            write_disposition=write_disposition,
         )
 
     @staticmethod
     def validate_source_data_filter_clause(filter_clause: str) -> None:
-        if not filter_clause.startswith('WHERE'):
-            raise ValueError(f'Found filter clause [{filter_clause}] that does not begin with WHERE')
+        if not filter_clause.startswith("WHERE"):
+            raise ValueError(
+                f"Found filter clause [{filter_clause}] that does not begin with WHERE"
+            )
 
     def insert_into_table_from_query(
-            self,
-            *,
-            destination_dataset_id: str,
-            destination_table_id: str,
-            query: str,
-            query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
-            allow_field_additions: bool = False,
-            write_disposition: bigquery.WriteDisposition = bigquery.WriteDisposition.WRITE_APPEND
+        self,
+        *,
+        destination_dataset_id: str,
+        destination_table_id: str,
+        query: str,
+        query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
+        allow_field_additions: bool = False,
+        write_disposition: bigquery.WriteDisposition = bigquery.WriteDisposition.WRITE_APPEND,
     ) -> bigquery.QueryJob:
         destination_dataset_ref = self.dataset_ref_for_id(destination_dataset_id)
 
@@ -922,9 +1040,13 @@ class BigQueryClientImpl(BigQueryClient):
         job_config.query_parameters = query_parameters or []
 
         if allow_field_additions:
-            job_config.schema_update_options = [bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION]
+            job_config.schema_update_options = [
+                bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION
+            ]
 
-        logging.info("Inserting into table [%s] result of query: %s", destination_table_id, query)
+        logging.info(
+            "Inserting into table [%s] result of query: %s", destination_table_id, query
+        )
 
         return self.client.query(
             query=query,
@@ -932,63 +1054,93 @@ class BigQueryClientImpl(BigQueryClient):
             job_config=job_config,
         )
 
-    def insert_into_table_from_table_async(self,
-                                           source_dataset_id: str,
-                                           source_table_id: str,
-                                           destination_dataset_id: str,
-                                           destination_table_id: str,
-                                           source_data_filter_clause: Optional[str] = None,
-                                           hydrate_missing_columns_with_null: bool = False,
-                                           allow_field_additions: bool = False) -> bigquery.QueryJob:
+    def insert_into_table_from_table_async(
+        self,
+        source_dataset_id: str,
+        source_table_id: str,
+        destination_dataset_id: str,
+        destination_table_id: str,
+        source_data_filter_clause: Optional[str] = None,
+        hydrate_missing_columns_with_null: bool = False,
+        allow_field_additions: bool = False,
+    ) -> bigquery.QueryJob:
 
-        return self._load_table_from_table_async(source_dataset_id=source_dataset_id,
-                                                 source_table_id=source_table_id,
-                                                 destination_dataset_id=destination_dataset_id,
-                                                 destination_table_id=destination_table_id,
-                                                 source_data_filter_clause=source_data_filter_clause,
-                                                 hydrate_missing_columns_with_null=hydrate_missing_columns_with_null,
-                                                 allow_field_additions=allow_field_additions,
-                                                 write_disposition=bigquery.WriteDisposition.WRITE_APPEND)
+        return self._load_table_from_table_async(
+            source_dataset_id=source_dataset_id,
+            source_table_id=source_table_id,
+            destination_dataset_id=destination_dataset_id,
+            destination_table_id=destination_table_id,
+            source_data_filter_clause=source_data_filter_clause,
+            hydrate_missing_columns_with_null=hydrate_missing_columns_with_null,
+            allow_field_additions=allow_field_additions,
+            write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
+        )
 
     def insert_into_table_from_cloud_storage_async(
-            self,
-            source_uri: str,
-            destination_dataset_ref: bigquery.DatasetReference,
-            destination_table_id: str,
-            destination_table_schema: List[bigquery.SchemaField]) -> bigquery.job.LoadJob:
-        return self._load_table_from_cloud_storage_async(source_uri=source_uri,
-                                                         destination_dataset_ref=destination_dataset_ref,
-                                                         destination_table_id=destination_table_id,
-                                                         destination_table_schema=destination_table_schema,
-                                                         write_disposition=bigquery.WriteDisposition.WRITE_APPEND)
+        self,
+        source_uri: str,
+        destination_dataset_ref: bigquery.DatasetReference,
+        destination_table_id: str,
+        destination_table_schema: List[bigquery.SchemaField],
+    ) -> bigquery.job.LoadJob:
+        return self._load_table_from_cloud_storage_async(
+            source_uri=source_uri,
+            destination_dataset_ref=destination_dataset_ref,
+            destination_table_id=destination_table_id,
+            destination_table_schema=destination_table_schema,
+            write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
+        )
 
-    def delete_from_table_async(self, dataset_id: str, table_id: str, filter_clause: str) -> bigquery.QueryJob:
-        if not filter_clause.startswith('WHERE'):
-            raise ValueError("Cannot delete from a table without a valid filter clause starting with WHERE.")
+    def delete_from_table_async(
+        self, dataset_id: str, table_id: str, filter_clause: str
+    ) -> bigquery.QueryJob:
+        if not filter_clause.startswith("WHERE"):
+            raise ValueError(
+                "Cannot delete from a table without a valid filter clause starting with WHERE."
+            )
 
-        delete_query = f"DELETE FROM `{self.project_id}.{dataset_id}.{table_id}` {filter_clause}"
+        delete_query = (
+            f"DELETE FROM `{self.project_id}.{dataset_id}.{table_id}` {filter_clause}"
+        )
 
-        logging.info("Deleting data from %s.%s matching this filter: %s", dataset_id, table_id, filter_clause)
+        logging.info(
+            "Deleting data from %s.%s matching this filter: %s",
+            dataset_id,
+            table_id,
+            filter_clause,
+        )
 
         return self.client.query(delete_query)
 
     def materialize_view_to_table(self, view: BigQueryView) -> None:
         if view.materialized_view_table_id is None:
-            raise ValueError("Trying to materialize a view that does not have a set materialized_view_table_id.")
+            raise ValueError(
+                "Trying to materialize a view that does not have a set materialized_view_table_id."
+            )
 
-        logging.info("Materializing %s into a table with the table_id: %s",
-                     view.view_id, view.materialized_view_table_id)
+        logging.info(
+            "Materializing %s into a table with the table_id: %s",
+            view.view_id,
+            view.materialized_view_table_id,
+        )
 
         create_job = self.create_table_from_query_async(
-            view.dataset_id, view.materialized_view_table_id, view.select_query, overwrite=True)
+            view.dataset_id,
+            view.materialized_view_table_id,
+            view.select_query,
+            overwrite=True,
+        )
         create_job.result()
 
-    def create_table_with_schema(self, dataset_id: str, table_id: str, schema_fields: List[bigquery.SchemaField]) -> \
-            bigquery.Table:
+    def create_table_with_schema(
+        self, dataset_id: str, table_id: str, schema_fields: List[bigquery.SchemaField]
+    ) -> bigquery.Table:
         dataset_ref = self.dataset_ref_for_id(dataset_id)
 
         if self.table_exists(dataset_ref, table_id):
-            raise ValueError(f"Trying to create a table that already exists: {dataset_id}.{table_id}.")
+            raise ValueError(
+                f"Trying to create a table that already exists: {dataset_id}.{table_id}."
+            )
 
         table_ref = bigquery.TableReference(dataset_ref, table_id)
         table = bigquery.Table(table_ref, schema_fields)
@@ -1004,20 +1156,34 @@ class BigQueryClientImpl(BigQueryClient):
         """Returns any fields from extended_schema not named in base_schema."""
         table_schema_field_names = {field.name for field in base_schema}
         desired_schema_field_names = {field.name for field in extended_schema}
-        missing_desired_field_names = desired_schema_field_names - table_schema_field_names
-        return [field for field in extended_schema if field.name in missing_desired_field_names]
+        missing_desired_field_names = (
+            desired_schema_field_names - table_schema_field_names
+        )
+        return [
+            field
+            for field in extended_schema
+            if field.name in missing_desired_field_names
+        ]
 
-    def add_missing_fields_to_schema(self, dataset_id: str, table_id: str,
-                                     desired_schema_fields: List[bigquery.SchemaField]) -> None:
+    def add_missing_fields_to_schema(
+        self,
+        dataset_id: str,
+        table_id: str,
+        desired_schema_fields: List[bigquery.SchemaField],
+    ) -> None:
         dataset_ref = self.dataset_ref_for_id(dataset_id)
 
         if not self.table_exists(dataset_ref, table_id):
-            raise ValueError(f"Cannot add schema fields to a table that does not exist: {dataset_id}.{table_id}")
+            raise ValueError(
+                f"Cannot add schema fields to a table that does not exist: {dataset_id}.{table_id}"
+            )
 
         table = self.get_table(dataset_ref, table_id)
         existing_table_schema = table.schema
 
-        missing_fields = self._get_excess_schema_fields(table.schema, desired_schema_fields)
+        missing_fields = self._get_excess_schema_fields(
+            table.schema, desired_schema_fields
+        )
 
         updated_table_schema = existing_table_schema.copy()
 
@@ -1027,49 +1193,74 @@ class BigQueryClientImpl(BigQueryClient):
             else:
                 # A field with this name should already be in the existing schema. Assert they are of the same
                 # field_type and mode.
-                existing_field_with_name = next(existing_field for existing_field in existing_table_schema
-                                                if existing_field.name == field.name)
+                existing_field_with_name = next(
+                    existing_field
+                    for existing_field in existing_table_schema
+                    if existing_field.name == field.name
+                )
 
                 if not existing_field_with_name:
-                    raise ValueError("Set comparison of field names is not working. This should be in the"
-                                     " missing_field_names set.")
+                    raise ValueError(
+                        "Set comparison of field names is not working. This should be in the"
+                        " missing_field_names set."
+                    )
 
                 if field.field_type != existing_field_with_name.field_type:
-                    raise ValueError("Trying to change the field type of an existing field. Existing field "
-                                     f"{existing_field_with_name.name} has type {existing_field_with_name.field_type}. "
-                                     f"Cannot change this type to {field.field_type}.")
+                    raise ValueError(
+                        "Trying to change the field type of an existing field. Existing field "
+                        f"{existing_field_with_name.name} has type {existing_field_with_name.field_type}. "
+                        f"Cannot change this type to {field.field_type}."
+                    )
 
                 if field.mode != existing_field_with_name.mode:
-                    raise ValueError(f"Cannot change the mode of field {existing_field_with_name} to {field.mode}.")
+                    raise ValueError(
+                        f"Cannot change the mode of field {existing_field_with_name} to {field.mode}."
+                    )
 
         if updated_table_schema == existing_table_schema:
-            logging.info("Schema for table %s.%s already contains all of the desired fields.",
-                         dataset_id, table_id)
+            logging.info(
+                "Schema for table %s.%s already contains all of the desired fields.",
+                dataset_id,
+                table_id,
+            )
             return
 
         # Update the table schema with the missing fields
-        logging.info("Updating schema of table %s to: %s", table_id, updated_table_schema)
+        logging.info(
+            "Updating schema of table %s to: %s", table_id, updated_table_schema
+        )
         table.schema = updated_table_schema
-        self.client.update_table(table, ['schema'])
+        self.client.update_table(table, ["schema"])
 
-    def remove_unused_fields_from_schema(self, dataset_id: str, table_id: str,
-                                         desired_schema_fields: List[bigquery.SchemaField]) -> \
-            Optional[bigquery.QueryJob]:
+    def remove_unused_fields_from_schema(
+        self,
+        dataset_id: str,
+        table_id: str,
+        desired_schema_fields: List[bigquery.SchemaField],
+    ) -> Optional[bigquery.QueryJob]:
         """Compares the schema of the given table to the desired schema fields and drops any unused columns."""
         dataset_ref = self.dataset_ref_for_id(dataset_id)
 
         if not self.table_exists(dataset_ref, table_id):
-            raise ValueError(f"Cannot remove schema fields from a table that does not exist: {dataset_id}.{table_id}")
+            raise ValueError(
+                f"Cannot remove schema fields from a table that does not exist: {dataset_id}.{table_id}"
+            )
 
         table = self.get_table(dataset_ref, table_id)
 
-        deprecated_fields = self._get_excess_schema_fields(desired_schema_fields, table.schema)
+        deprecated_fields = self._get_excess_schema_fields(
+            desired_schema_fields, table.schema
+        )
 
         if not deprecated_fields:
-            logging.info("Schema for table %s.%s has no excess fields to drop.", dataset_id, table_id)
+            logging.info(
+                "Schema for table %s.%s has no excess fields to drop.",
+                dataset_id,
+                table_id,
+            )
             return None
 
-        columns_to_drop = ', '.join([field.name for field in deprecated_fields])
+        columns_to_drop = ", ".join([field.name for field in deprecated_fields])
 
         rebuild_query = f"""
             SELECT * EXCEPT({columns_to_drop})
@@ -1084,11 +1275,18 @@ class BigQueryClientImpl(BigQueryClient):
             write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
         )
 
-    def update_schema(self, dataset_id: str, table_id: str, desired_schema_fields: List[bigquery.SchemaField]) -> None:
+    def update_schema(
+        self,
+        dataset_id: str,
+        table_id: str,
+        desired_schema_fields: List[bigquery.SchemaField],
+    ) -> None:
         dataset_ref = self.dataset_ref_for_id(dataset_id)
 
         if not self.table_exists(dataset_ref, table_id):
-            raise ValueError(f"Cannot update schema fields for a table that does not exist: {dataset_id}.{table_id}")
+            raise ValueError(
+                f"Cannot update schema fields for a table that does not exist: {dataset_id}.{table_id}"
+            )
 
         table = self.get_table(dataset_ref, table_id)
 
@@ -1100,15 +1298,21 @@ class BigQueryClientImpl(BigQueryClient):
             if field.name in desired_schema_map:
                 desired_field = desired_schema_map[field.name]
                 if field.field_type != desired_field.field_type:
-                    raise ValueError("Trying to change the field type of an existing field. Existing field "
-                                     f"{desired_field.name} has type {desired_field.field_type}. "
-                                     f"Cannot change this type to {field.field_type}.")
+                    raise ValueError(
+                        "Trying to change the field type of an existing field. Existing field "
+                        f"{desired_field.name} has type {desired_field.field_type}. "
+                        f"Cannot change this type to {field.field_type}."
+                    )
 
                 if field.mode != desired_field.mode:
-                    raise ValueError(f"Cannot change the mode of field {desired_field} to {field.mode}.")
+                    raise ValueError(
+                        f"Cannot change the mode of field {desired_field} to {field.mode}."
+                    )
 
         # Remove any deprecated fields first as it involves copying the entire view
-        removal_job = self.remove_unused_fields_from_schema(dataset_id, table_id, desired_schema_fields)
+        removal_job = self.remove_unused_fields_from_schema(
+            dataset_id, table_id, desired_schema_fields
+        )
 
         if removal_job:
             # Wait for the removal job to complete before running the job to add fields

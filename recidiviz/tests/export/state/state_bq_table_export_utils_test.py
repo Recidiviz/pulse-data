@@ -20,7 +20,9 @@ import unittest
 
 from google.cloud import bigquery
 
-from recidiviz.export.state.state_bq_table_export_utils import state_table_export_query_str
+from recidiviz.export.state.state_bq_table_export_utils import (
+    state_table_export_query_str,
+)
 
 
 class StateBQTableExportUtilsTest(unittest.TestCase):
@@ -28,40 +30,46 @@ class StateBQTableExportUtilsTest(unittest.TestCase):
 
     def test_state_table_export_query_str(self) -> None:
         query = state_table_export_query_str(
-            bigquery.table.TableListItem({
-                "tableReference": {
-                    "projectId": "recidiviz-456",
-                    "datasetId": "state",
-                    "tableId": "state_person_race"
+            bigquery.table.TableListItem(
+                {
+                    "tableReference": {
+                        "projectId": "recidiviz-456",
+                        "datasetId": "state",
+                        "tableId": "state_person_race",
+                    }
                 }
-            }),
-            state_codes=['us_pa']
+            ),
+            state_codes=["us_pa"],
         )
 
-        expected_query = \
-            "SELECT state_person_race.state_code,state_person_race.race,state_person_race.race_raw_text," \
-            "state_person_race.person_race_id,state_person_race.person_id " \
-            "FROM `recidiviz-456.state.state_person_race` state_person_race " \
+        expected_query = (
+            "SELECT state_person_race.state_code,state_person_race.race,state_person_race.race_raw_text,"
+            "state_person_race.person_race_id,state_person_race.person_id "
+            "FROM `recidiviz-456.state.state_person_race` state_person_race "
             "WHERE state_code IN ('US_PA');"
+        )
         self.assertEqual(query, expected_query)
 
     def test_state_table_export_query_str_association_table(self) -> None:
         query = state_table_export_query_str(
-            bigquery.table.TableListItem({
-                "tableReference": {
-                    "projectId": "recidiviz-456",
-                    "datasetId": "state",
-                    "tableId": "state_incarceration_sentence_supervision_period_association"
+            bigquery.table.TableListItem(
+                {
+                    "tableReference": {
+                        "projectId": "recidiviz-456",
+                        "datasetId": "state",
+                        "tableId": "state_incarceration_sentence_supervision_period_association",
+                    }
                 }
-            }),
-            state_codes=['us_pa']
+            ),
+            state_codes=["us_pa"],
         )
 
-        expected_query = \
-            "SELECT state_incarceration_sentence_supervision_period_association.incarceration_sentence_id," \
-            "state_incarceration_sentence_supervision_period_association.supervision_period_id," \
-            "state_incarceration_sentence_supervision_period_association.state_code AS state_code " \
-            "FROM `recidiviz-456.state.state_incarceration_sentence_supervision_period_association` " \
-            "state_incarceration_sentence_supervision_period_association " \
+        expected_query = (
+            "SELECT state_incarceration_sentence_supervision_period_association.incarceration_sentence_id,"
+            "state_incarceration_sentence_supervision_period_association.supervision_period_id,"
+            "state_incarceration_sentence_supervision_period_association.state_code AS state_code "
+            "FROM `recidiviz-456.state.state_incarceration_sentence_supervision_period_association` "
+            "state_incarceration_sentence_supervision_period_association "
             "WHERE state_code IN ('US_PA');"
+        )
         self.assertEqual(query, expected_query)

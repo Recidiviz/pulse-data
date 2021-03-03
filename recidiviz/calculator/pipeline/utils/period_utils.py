@@ -21,13 +21,14 @@ from typing import List, Callable
 from recidiviz.persistence.entity.state.entities import PeriodType
 
 
-def sort_periods_by_set_dates_and_statuses(periods: List[PeriodType],
-                                           is_active_period_function: Callable[[PeriodType], int]) -> None:
+def sort_periods_by_set_dates_and_statuses(
+    periods: List[PeriodType], is_active_period_function: Callable[[PeriodType], int]
+) -> None:
     """Sorts periods chronologically by the start and end dates according to this logic:
-        - Sorts by start_date_inclusive, if set, else by end_date_exclusive
-        - For periods with the same start_date_inclusive:
-            - If neither have a end_date_exclusive, sorts by the status
-            - Else, sorts by end_date_exclusive, with unset end_date_exclusives before set end_date_exclusives
+    - Sorts by start_date_inclusive, if set, else by end_date_exclusive
+    - For periods with the same start_date_inclusive:
+        - If neither have a end_date_exclusive, sorts by the status
+        - Else, sorts by end_date_exclusive, with unset end_date_exclusives before set end_date_exclusives
     """
 
     def _sort_period_by_external_id(p_a: PeriodType, p_b: PeriodType) -> int:
@@ -40,7 +41,7 @@ def sort_periods_by_set_dates_and_statuses(periods: List[PeriodType],
 
     def _sort_by_nonnull_end_dates(period_a: PeriodType, period_b: PeriodType) -> int:
         if not period_a.end_date_exclusive or not period_b.end_date_exclusive:
-            raise ValueError('Expected nonnull ending dates')
+            raise ValueError("Expected nonnull ending dates")
         if period_a.end_date_exclusive != period_b.end_date_exclusive:
             return (period_a.end_date_exclusive - period_b.end_date_exclusive).days
         # They have the same start and end dates. Sort by external_id.
@@ -57,30 +58,52 @@ def sort_periods_by_set_dates_and_statuses(periods: List[PeriodType],
             return 1
         if period_b_active:
             return -1
-        raise ValueError('One status should have UNDER_SUPERVISION at this point')
+        raise ValueError("One status should have UNDER_SUPERVISION at this point")
 
     def _sort_equal_start_date(period_a: PeriodType, period_b: PeriodType) -> int:
         if period_a.start_date_inclusive != period_b.start_date_inclusive:
-            raise ValueError('Expected equal start dates')
+            raise ValueError("Expected equal start dates")
         if period_a.end_date_exclusive and period_b.end_date_exclusive:
             return _sort_by_nonnull_end_dates(period_a, period_b)
-        if period_a.start_date_inclusive is None or period_b.start_date_inclusive is None:
+        if (
+            period_a.start_date_inclusive is None
+            or period_b.start_date_inclusive is None
+        ):
             raise ValueError(
-                'Start dates expected to be equal and nonnull at this point otherwise we would have a '
-                'period that has a null ending and null starting reason.')
+                "Start dates expected to be equal and nonnull at this point otherwise we would have a "
+                "period that has a null ending and null starting reason."
+            )
         if period_a.end_date_exclusive is None and period_b.end_date_exclusive is None:
             return _sort_by_active_status(period_a, period_b)
         # Sort by end dates, with unset end dates coming first if the following period is greater than 0 days
         # long (we assume in this case that we forgot to close this open period).
         if period_a.end_date_exclusive:
-            return 1 if (period_a.end_date_exclusive - period_a.start_date_inclusive).days else -1
+            return (
+                1
+                if (period_a.end_date_exclusive - period_a.start_date_inclusive).days
+                else -1
+            )
         if period_b.end_date_exclusive:
-            return -1 if (period_b.end_date_exclusive - period_b.start_date_inclusive).days else 1
-        raise ValueError("At least one of the periods is expected to have a end_date_exclusive at this point.")
+            return (
+                -1
+                if (period_b.end_date_exclusive - period_b.start_date_inclusive).days
+                else 1
+            )
+        raise ValueError(
+            "At least one of the periods is expected to have a end_date_exclusive at this point."
+        )
 
-    def _sort_share_date_not_starting(period_a: PeriodType, period_b: PeriodType) -> int:
-        both_a_set = (period_a.start_date_inclusive is not None and period_a.end_date_exclusive is not None)
-        both_b_set = (period_b.start_date_inclusive is not None and period_b.end_date_exclusive is not None)
+    def _sort_share_date_not_starting(
+        period_a: PeriodType, period_b: PeriodType
+    ) -> int:
+        both_a_set = (
+            period_a.start_date_inclusive is not None
+            and period_a.end_date_exclusive is not None
+        )
+        both_b_set = (
+            period_b.start_date_inclusive is not None
+            and period_b.end_date_exclusive is not None
+        )
 
         if not both_a_set and not both_b_set:
             # One has an start date and the other has an end date on the same day. Order the start before the end.
@@ -103,21 +126,31 @@ def sort_periods_by_set_dates_and_statuses(periods: List[PeriodType],
             # These share an end date, and period_b does not have a start date. Order the period with the set, earlier
             # start date first.
             return -1
-        raise ValueError("It should not be possible to reach this point. If either, but not both, period_a or period_b"
-                         " only have one date set, and they don't have equal None start dates, then we expect either"
-                         "period_a or period_b to have a missing start_date_inclusive here.")
+        raise ValueError(
+            "It should not be possible to reach this point. If either, but not both, period_a or period_b"
+            " only have one date set, and they don't have equal None start dates, then we expect either"
+            "period_a or period_b to have a missing start_date_inclusive here."
+        )
 
     def _sort_function(period_a: PeriodType, period_b: PeriodType) -> int:
         if period_a.start_date_inclusive == period_b.start_date_inclusive:
             return _sort_equal_start_date(period_a, period_b)
 
         # Sort by start_date_inclusive, if set, or end_date_exclusive if not set
-        date_a = period_a.start_date_inclusive if period_a.start_date_inclusive else period_a.end_date_exclusive
-        date_b = period_b.start_date_inclusive if period_b.start_date_inclusive else period_b.end_date_exclusive
+        date_a = (
+            period_a.start_date_inclusive
+            if period_a.start_date_inclusive
+            else period_a.end_date_exclusive
+        )
+        date_b = (
+            period_b.start_date_inclusive
+            if period_b.start_date_inclusive
+            else period_b.end_date_exclusive
+        )
         if not date_a:
-            raise ValueError(f'Found period with no starting or ending date {period_a}')
+            raise ValueError(f"Found period with no starting or ending date {period_a}")
         if not date_b:
-            raise ValueError(f'Found period with no starting or ending date {period_b}')
+            raise ValueError(f"Found period with no starting or ending date {period_b}")
         if date_a == date_b:
             return _sort_share_date_not_starting(period_a, period_b)
 

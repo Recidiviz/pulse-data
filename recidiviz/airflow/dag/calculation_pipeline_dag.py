@@ -29,81 +29,89 @@ try:
     from recidiviz_dataflow_operator import RecidivizDataflowTemplateOperator  # type: ignore
     from yaml_dict import YAMLDict  # type: ignore
 except ImportError:
-    from recidiviz.airflow.dag.recidiviz_dataflow_operator import RecidivizDataflowTemplateOperator
+    from recidiviz.airflow.dag.recidiviz_dataflow_operator import (
+        RecidivizDataflowTemplateOperator,
+    )
     from recidiviz.utils.yaml_dict import YAMLDict
 
 
 # Need a disable pointless statement because Python views the chaining operator ('>>') as a "pointless" statement
 # pylint: disable=W0104 pointless-statement
 
-project_id = os.environ.get('GCP_PROJECT_ID')
-config_file = os.environ.get('CONFIG_FILE')
+project_id = os.environ.get("GCP_PROJECT_ID")
+config_file = os.environ.get("CONFIG_FILE")
 
 default_args = {
-    'start_date': datetime.date.today().strftime('%Y-%m-%d'),
-    'email': ['alerts@recidiviz.org'],
-    'email_on_failure': True
+    "start_date": datetime.date.today().strftime("%Y-%m-%d"),
+    "email": ["alerts@recidiviz.org"],
+    "email_on_failure": True,
 }
 
 CASE_TRIAGE_STATES = [
-    'US_ID',
+    "US_ID",
 ]
 
 
 def trigger_export_operator(export_name: str) -> PubSubPublishOperator:
     # TODO(#4593) Migrate to IAPHTTPOperator
     return PubSubPublishOperator(
-        task_id=f'trigger_{export_name.lower()}_bq_metric_export',
+        task_id=f"trigger_{export_name.lower()}_bq_metric_export",
         project=project_id,
-        topic='v1.export.view.data',
-        messages=[{'data': b64encode(bytes(export_name, 'utf-8')).decode()}],
+        topic="v1.export.view.data",
+        messages=[{"data": b64encode(bytes(export_name, "utf-8")).decode()}],
     )
 
 
 def get_zone_for_region(pipeline_region: str) -> str:
-    if pipeline_region in {'us-west1', 'us-west3', 'us-central1'}:
-        return pipeline_region + '-a'
+    if pipeline_region in {"us-west1", "us-west3", "us-central1"}:
+        return pipeline_region + "-a"
 
-    if pipeline_region == 'us-east1':
-        return 'us-east1-b' # For some reason, 'us-east1-a' doesn't exist
+    if pipeline_region == "us-east1":
+        return "us-east1-b"  # For some reason, 'us-east1-a' doesn't exist
 
-    raise ValueError(f'Unexpected region: {pipeline_region}')
+    raise ValueError(f"Unexpected region: {pipeline_region}")
 
 
-with models.DAG(dag_id="{}_calculation_pipeline_dag".format(project_id),
-                default_args=default_args,
-                schedule_interval=None) as dag:
+with models.DAG(
+    dag_id="{}_calculation_pipeline_dag".format(project_id),
+    default_args=default_args,
+    schedule_interval=None,
+) as dag:
     if config_file is None:
-        raise Exception('Configuration file not specified')
+        raise Exception("Configuration file not specified")
 
-    pipelines = YAMLDict.from_path(config_file).pop_dicts('daily_pipelines')
+    pipelines = YAMLDict.from_path(config_file).pop_dicts("daily_pipelines")
 
-    covid_export = trigger_export_operator('COVID_DASHBOARD')
-    case_triage_export = trigger_export_operator('CASE_TRIAGE')
+    covid_export = trigger_export_operator("COVID_DASHBOARD")
+    case_triage_export = trigger_export_operator("CASE_TRIAGE")
 
-    states_to_trigger = {pipeline.peek('state_code', str) for pipeline in pipelines}
+    states_to_trigger = {pipeline.peek("state_code", str) for pipeline in pipelines}
 
-    state_trigger_export_operators = {state_code: trigger_export_operator(state_code)
-                                      for state_code in states_to_trigger}
+    state_trigger_export_operators = {
+        state_code: trigger_export_operator(state_code)
+        for state_code in states_to_trigger
+    }
 
     for pipeline in pipelines:
-        region = pipeline.pop('region', str)
+        region = pipeline.pop("region", str)
         zone = get_zone_for_region(region)
-        state_code = pipeline.pop('state_code', str)
+        state_code = pipeline.pop("state_code", str)
 
         dataflow_default_args = default_args.copy()
-        dataflow_default_args.update({
-            'project': project_id,
-            'region': region,
-            'zone': zone,
-            'tempLocation': f'gs://{project_id}-dataflow-templates/staging/',
-        })
+        dataflow_default_args.update(
+            {
+                "project": project_id,
+                "region": region,
+                "zone": zone,
+                "tempLocation": f"gs://{project_id}-dataflow-templates/staging/",
+            }
+        )
 
-        pipeline_name = pipeline.pop('job_name', str)
+        pipeline_name = pipeline.pop("job_name", str)
 
         calculation_pipeline = RecidivizDataflowTemplateOperator(
             task_id=pipeline_name,
-            template=f'gs://{project_id}-dataflow-templates/templates/{pipeline_name}',
+            template=f"gs://{project_id}-dataflow-templates/templates/{pipeline_name}",
             job_name=pipeline_name,
             dataflow_default_options=dataflow_default_args,
         )
@@ -115,5 +123,5 @@ with models.DAG(dag_id="{}_calculation_pipeline_dag".format(project_id),
             calculation_pipeline >> case_triage_export
 
     # These exports don't depend on pipeline output.
-    _ = trigger_export_operator('INGEST_METADATA')
-    _ = trigger_export_operator('JUSTICE_COUNTS')
+    _ = trigger_export_operator("INGEST_METADATA")
+    _ = trigger_export_operator("JUSTICE_COUNTS")

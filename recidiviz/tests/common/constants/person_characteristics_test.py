@@ -32,8 +32,8 @@ class TestCommonConstantsPersonCharacteristics(TestCase):
     """Test person constants."""
 
     def test_parseGenderEnum(self):
-        assert Gender.parse('Male', EnumOverrides.empty()) == Gender.MALE
+        assert Gender.parse("Male", EnumOverrides.empty()) == Gender.MALE
 
     def test_parseBadGenderEnum(self):
         with pytest.raises(EnumParsingError):
-            Gender.parse('ABD', EnumOverrides.empty())
+            Gender.parse("ABD", EnumOverrides.empty())

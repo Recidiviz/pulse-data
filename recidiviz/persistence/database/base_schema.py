@@ -22,24 +22,30 @@ from recidiviz.persistence.database.database_entity import DatabaseEntity
 
 # Defines the base class for all table classes for the Jails schema.
 # For actual schema definitions, see /aggregate/schema.py and /county/schema.py.
-JailsBase: DeclarativeMeta = declarative_base(cls=DatabaseEntity, name='JailsBase')
+JailsBase: DeclarativeMeta = declarative_base(cls=DatabaseEntity, name="JailsBase")
 
 
 # Defines the base class for all table classes in the state schema.
 # For actual schema definitions, see /state/schema.py.
-StateBase: DeclarativeMeta = declarative_base(cls=DatabaseEntity, name='StateBase')
+StateBase: DeclarativeMeta = declarative_base(cls=DatabaseEntity, name="StateBase")
 
 
 # Defines the base class for all table classes in the shared operations schema.
 # For actual schema definitions, see /operations/schema.py.
-OperationsBase: DeclarativeMeta = declarative_base(cls=DatabaseEntity, name='OperationsBase')
+OperationsBase: DeclarativeMeta = declarative_base(
+    cls=DatabaseEntity, name="OperationsBase"
+)
 
 
 # Defines the base class for all table classes in the justice counts schema.
 # For actual schema definitions, see /justice_counts/schema.py.
-JusticeCountsBase: DeclarativeMeta = declarative_base(cls=DatabaseEntity, name='JusticeCountsBase')
+JusticeCountsBase: DeclarativeMeta = declarative_base(
+    cls=DatabaseEntity, name="JusticeCountsBase"
+)
 
 
 # Defines the base class for all table classes in the case triage schema.
 # For actual schema definitions, see /case_triage/schema.py.
-CaseTriageBase: DeclarativeMeta = declarative_base(cls=DatabaseEntity, name='CaseTriageBase')
+CaseTriageBase: DeclarativeMeta = declarative_base(
+    cls=DatabaseEntity, name="CaseTriageBase"
+)

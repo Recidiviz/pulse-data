@@ -22,18 +22,27 @@ from typing import Any, Dict, Optional, cast
 
 import attr
 
-from recidiviz.calculator.pipeline.recidivism.release_event import ReincarcerationReturnType
-from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric, PersonLevelMetric, RecidivizMetricType
-from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
-from recidiviz.common.constants.state.state_supervision_violation import \
-    StateSupervisionViolationType
+from recidiviz.calculator.pipeline.recidivism.release_event import (
+    ReincarcerationReturnType,
+)
+from recidiviz.calculator.pipeline.utils.metric_utils import (
+    RecidivizMetric,
+    PersonLevelMetric,
+    RecidivizMetricType,
+)
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodSupervisionType,
+)
+from recidiviz.common.constants.state.state_supervision_violation import (
+    StateSupervisionViolationType,
+)
 
 
 class ReincarcerationRecidivismMetricType(RecidivizMetricType):
     """The type of reincarceration recidivism metrics."""
 
-    REINCARCERATION_COUNT = 'REINCARCERATION_COUNT'
-    REINCARCERATION_RATE = 'REINCARCERATION_RATE'
+    REINCARCERATION_COUNT = "REINCARCERATION_COUNT"
+    REINCARCERATION_RATE = "REINCARCERATION_RATE"
 
 
 # TODO(#1841): Implement rearrest recidivism metrics
@@ -45,6 +54,7 @@ class ReincarcerationRecidivismMetric(RecidivizMetric, PersonLevelMetric):
     Contains all of the identifying characteristics of the metric, including required characteristics for normalization
     as well as optional characteristics for slicing the data.
     """
+
     # Required characteristics
 
     # The type of ReincarcerationRecidivismMetric
@@ -73,18 +83,21 @@ class ReincarcerationRecidivismMetric(RecidivizMetric, PersonLevelMetric):
     source_violation_type: StateSupervisionViolationType = attr.ib(default=None)
 
     @staticmethod
-    def build_from_metric_key_group(metric_key: Dict[str, Any],
-                                    job_id: str) -> Optional['ReincarcerationRecidivismMetric']:
+    def build_from_metric_key_group(
+        metric_key: Dict[str, Any], job_id: str
+    ) -> Optional["ReincarcerationRecidivismMetric"]:
         """Builds a ReincarcerationRecidivismMetric object from the given arguments."""
 
         if not metric_key:
             raise ValueError("The metric_key is empty.")
 
-        metric_key['job_id'] = job_id
-        metric_key['created_on'] = date.today()
+        metric_key["job_id"] = job_id
+        metric_key["created_on"] = date.today()
 
-        recidivism_metric = cast(ReincarcerationRecidivismMetric,
-                                 ReincarcerationRecidivismMetric.build_from_dictionary(metric_key))
+        recidivism_metric = cast(
+            ReincarcerationRecidivismMetric,
+            ReincarcerationRecidivismMetric.build_from_dictionary(metric_key),
+        )
 
         return recidivism_metric
 
@@ -96,10 +109,12 @@ class ReincarcerationRecidivismCountMetric(ReincarcerationRecidivismMetric):
     A recidivism count metric contains the number of reincarceration returns in a given window, with a start and end
     date.
     """
+
     # Required characteristics
 
-    metric_type: ReincarcerationRecidivismMetricType = \
-        attr.ib(init=False, default=ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT)
+    metric_type: ReincarcerationRecidivismMetricType = attr.ib(
+        init=False, default=ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT
+    )
 
     # Year
     year: int = attr.ib(default=None)
@@ -114,17 +129,20 @@ class ReincarcerationRecidivismCountMetric(ReincarcerationRecidivismMetric):
     reincarceration_date: date = attr.ib(default=None)
 
     @staticmethod
-    def build_from_metric_key_group(metric_key: Dict[str, Any],
-                                    job_id: str) -> Optional['ReincarcerationRecidivismCountMetric']:
+    def build_from_metric_key_group(
+        metric_key: Dict[str, Any], job_id: str
+    ) -> Optional["ReincarcerationRecidivismCountMetric"]:
 
         if not metric_key:
             raise ValueError("The metric_key is empty.")
 
-        metric_key['job_id'] = job_id
-        metric_key['created_on'] = date.today()
+        metric_key["job_id"] = job_id
+        metric_key["created_on"] = date.today()
 
-        recidivism_metric = cast(ReincarcerationRecidivismCountMetric,
-                                 ReincarcerationRecidivismCountMetric.build_from_dictionary(metric_key))
+        recidivism_metric = cast(
+            ReincarcerationRecidivismCountMetric,
+            ReincarcerationRecidivismCountMetric.build_from_dictionary(metric_key),
+        )
 
         return recidivism_metric
 
@@ -136,11 +154,13 @@ class ReincarcerationRecidivismRateMetric(ReincarcerationRecidivismMetric):
     A recidivism rate metric contains a recidivism rate, including the numerator of total instances of recidivism and a
     denominator of total instances of release from incarceration.
     """
+
     # Required characteristics
 
     # The type of ReincarcerationRecidivismMetric
-    metric_type: ReincarcerationRecidivismMetricType = \
-        attr.ib(init=False, default=ReincarcerationRecidivismMetricType.REINCARCERATION_RATE)
+    metric_type: ReincarcerationRecidivismMetricType = attr.ib(
+        init=False, default=ReincarcerationRecidivismMetricType.REINCARCERATION_RATE
+    )
 
     # The integer year during which the persons were released
     release_cohort: int = attr.ib(default=None)  # non-nullable
@@ -157,8 +177,9 @@ class ReincarcerationRecidivismRateMetric(ReincarcerationRecidivismMetric):
     release_date: date = attr.ib(default=None)  # non-nullable
 
     @staticmethod
-    def build_from_metric_key_group(metric_key: Dict[str, Any],
-                                    job_id: str) -> Optional['ReincarcerationRecidivismRateMetric']:
+    def build_from_metric_key_group(
+        metric_key: Dict[str, Any], job_id: str
+    ) -> Optional["ReincarcerationRecidivismRateMetric"]:
         """Constructs a RecidivismMetric object from a dictionary containing all required values and the corresponding
         group of ReleaseEvents, with 1s representing RecidivismReleaseEvents, and 0s representing
         NonRecidivismReleaseEvents.
@@ -167,10 +188,12 @@ class ReincarcerationRecidivismRateMetric(ReincarcerationRecidivismMetric):
         if not metric_key:
             raise ValueError("The metric_key is empty.")
 
-        metric_key['job_id'] = job_id
-        metric_key['created_on'] = date.today()
+        metric_key["job_id"] = job_id
+        metric_key["created_on"] = date.today()
 
-        recidivism_metric = cast(ReincarcerationRecidivismRateMetric,
-                                 ReincarcerationRecidivismRateMetric.build_from_dictionary(metric_key))
+        recidivism_metric = cast(
+            ReincarcerationRecidivismRateMetric,
+            ReincarcerationRecidivismRateMetric.build_from_dictionary(metric_key),
+        )
 
         return recidivism_metric

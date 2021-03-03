@@ -25,19 +25,19 @@ import requests
 
 def get_iap_client_id(airflow_uri: str) -> str:
     redirect_response = requests.get(airflow_uri, allow_redirects=False)
-    redirect_location = redirect_response.headers['location']
+    redirect_location = redirect_response.headers["location"]
 
     # Extract the client_id query parameter from the redirect.
     parsed = urllib.parse.urlparse(redirect_location)
     query_string = urllib.parse.parse_qs(parsed.query)
-    return query_string['client_id'][0]
+    return query_string["client_id"][0]
 
 
 def main() -> None:
     json_input = json.load(sys.stdin)
-    client_id = get_iap_client_id(json_input['airflow_uri'])
-    json.dump({'iap_client_id': client_id}, sys.stdout)
+    client_id = get_iap_client_id(json_input["airflow_uri"])
+    json.dump({"iap_client_id": client_id}, sys.stdout)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

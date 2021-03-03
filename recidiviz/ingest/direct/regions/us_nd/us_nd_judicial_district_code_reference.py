@@ -22,31 +22,32 @@ from typing import Optional
 
 _JUDICIAL_DISTRICT_CODE_MAPPINGS = {
     # ND Jurisdictions
-    'SE': 'SOUTHEAST',
-    'EAST': 'EAST_CENTRAL',
-    'SC': 'SOUTH_CENTRAL',
-    'NW': 'NORTHWEST',
-    'NE': 'NORTHEAST',
-    'SW': 'SOUTHWEST',
-    'NEC': 'NORTHEAST_CENTRAL',
-    'NC': 'NORTH_CENTRAL',
-
+    "SE": "SOUTHEAST",
+    "EAST": "EAST_CENTRAL",
+    "SC": "SOUTH_CENTRAL",
+    "NW": "NORTHWEST",
+    "NE": "NORTHEAST",
+    "SW": "SOUTHWEST",
+    "NEC": "NORTHEAST_CENTRAL",
+    "NC": "NORTH_CENTRAL",
     # Non-ND Jurisidctions
-    'OOS': 'OUT_OF_STATE',
-    'OS': 'OUT_OF_STATE',
-    'FD': 'FEDERAL',
+    "OOS": "OUT_OF_STATE",
+    "OS": "OUT_OF_STATE",
+    "FD": "FEDERAL",
 }
 
 
 def normalized_judicial_district_code(
-        judicial_district_code: Optional[str]) -> Optional[str]:
+    judicial_district_code: Optional[str],
+) -> Optional[str]:
     if not judicial_district_code:
         return None
 
     if judicial_district_code not in _JUDICIAL_DISTRICT_CODE_MAPPINGS:
         logging.warning(
             "Found new judicial district code not in reference cache: [%s]",
-            judicial_district_code)
+            judicial_district_code,
+        )
         return judicial_district_code
 
     return _JUDICIAL_DISTRICT_CODE_MAPPINGS[judicial_district_code]

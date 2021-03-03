@@ -31,35 +31,35 @@ from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.params import get_str_param_values
 from recidiviz.utils.regions import Region, RemovedFromWebsite, get_region
 
-infer_release_blueprint = Blueprint('infer_release', __name__)
+infer_release_blueprint = Blueprint("infer_release", __name__)
 
 
-@infer_release_blueprint.route('/release')
+@infer_release_blueprint.route("/release")
 @requires_gae_auth
 def infer_release():
     """Runs infer release for the given regions."""
-    region_codes = \
-        validate_regions(get_str_param_values('region', request.args))
+    region_codes = validate_regions(get_str_param_values("region", request.args))
     regions = [get_region(region_code) for region_code in region_codes]
 
     for region in regions:
-        with monitoring.push_tags(
-                {monitoring.TagKey.REGION: region.region_code}):
-            if region.agency_type != 'jail':
+        with monitoring.push_tags({monitoring.TagKey.REGION: region.region_code}):
+            if region.agency_type != "jail":
                 continue
 
-            session = sessions.get_most_recent_completed_session(
-                region.region_code)
+            session = sessions.get_most_recent_completed_session(region.region_code)
             if session:
-                logging.info("Got most recent completed session for [%s] with "
-                             "start time [%s]",
-                             region.region_code, session.start)
+                logging.info(
+                    "Got most recent completed session for [%s] with "
+                    "start time [%s]",
+                    region.region_code,
+                    session.start,
+                )
                 persistence.infer_release_on_open_bookings(
-                    region.region_code, session.start,
-                    _get_custody_status(region))
+                    region.region_code, session.start, _get_custody_status(region)
+                )
                 sessions.update_phase(session, scrape_phase.ScrapePhase.DONE)
 
-    return '', HTTPStatus.OK
+    return "", HTTPStatus.OK
 
 
 def _get_custody_status(region: Region):
@@ -70,4 +70,6 @@ def _get_custody_status(region: Region):
         return CustodyStatus.REMOVED_WITHOUT_INFO
     raise ValueError(
         "RemovedFromWebsite value {} not mapped to a ReleaseReason".format(
-            removed_from_website))
+            removed_from_website
+        )
+    )

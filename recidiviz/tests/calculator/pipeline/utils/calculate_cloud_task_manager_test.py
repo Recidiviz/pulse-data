@@ -27,13 +27,15 @@ from google.protobuf import timestamp_pb2
 from mock import patch
 
 from recidiviz.calculator.pipeline.utils import calculate_cloud_task_manager
-from recidiviz.calculator.pipeline.utils.calculate_cloud_task_manager import \
-    CalculateCloudTaskManager
-from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import (
-    QUEUES_REGION
+from recidiviz.calculator.pipeline.utils.calculate_cloud_task_manager import (
+    CalculateCloudTaskManager,
 )
-from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import \
-    JOB_MONITOR_QUEUE_V2
+from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import (
+    QUEUES_REGION,
+)
+from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
+    JOB_MONITOR_QUEUE_V2,
+)
 
 CLOUD_TASK_MANAGER_PACKAGE_NAME = calculate_cloud_task_manager.__name__
 
@@ -42,65 +44,68 @@ class TestCalculateCloudTaskManager(unittest.TestCase):
     """Tests for CalculateCloudTaskManager"""
 
     def setUp(self) -> None:
-        self.metadata_patcher = patch('recidiviz.utils.metadata.project_id')
+        self.metadata_patcher = patch("recidiviz.utils.metadata.project_id")
         self.mock_project_id_fn = self.metadata_patcher.start()
-        self.mock_project_id = 'recidiviz-456'
+        self.mock_project_id = "recidiviz-456"
         self.mock_project_id_fn.return_value = self.mock_project_id
 
     def tearDown(self) -> None:
         self.metadata_patcher.stop()
 
-    @patch(f'{CLOUD_TASK_MANAGER_PACKAGE_NAME}.uuid')
-    @patch('google.cloud.tasks_v2.CloudTasksClient')
-    @freeze_time('2019-04-14')
-    def test_create_dataflow_monitor_task(self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock) -> None:
+    @patch(f"{CLOUD_TASK_MANAGER_PACKAGE_NAME}.uuid")
+    @patch("google.cloud.tasks_v2.CloudTasksClient")
+    @freeze_time("2019-04-14")
+    def test_create_dataflow_monitor_task(
+        self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock
+    ) -> None:
         # Arrange
         delay_sec = 300
         now_utc_timestamp = int(datetime.datetime.now().timestamp())
 
-        uuid = 'random-uuid'
+        uuid = "random-uuid"
         mock_uuid.uuid4.return_value = uuid
 
-        job_id = '12345'
-        location = 'fake_location'
-        topic = 'fake.topic'
+        job_id = "12345"
+        location = "fake_location"
+        topic = "fake.topic"
         body = {
-            'project_id': self.mock_project_id,
-            'job_id': job_id,
-            'location': location,
-            'topic': topic,
+            "project_id": self.mock_project_id,
+            "job_id": job_id,
+            "location": location,
+            "topic": topic,
         }
 
-        queue_path = f'queue_path/{self.mock_project_id}/{QUEUES_REGION}'
+        queue_path = f"queue_path/{self.mock_project_id}/{QUEUES_REGION}"
 
-        task_id = '12345-2019-04-14-random-uuid'
-        task_path = f'{queue_path}/{task_id}'
+        task_id = "12345-2019-04-14-random-uuid"
+        task_path = f"{queue_path}/{task_id}"
         task = tasks_v2.types.task_pb2.Task(
             name=task_path,
             schedule_time=timestamp_pb2.Timestamp(
-                seconds=(now_utc_timestamp + delay_sec)),
+                seconds=(now_utc_timestamp + delay_sec)
+            ),
             app_engine_http_request={
-                'http_method': 'POST',
-                'relative_uri': '/dataflow_monitor/monitor',
-                'body': json.dumps(body).encode()
-            }
+                "http_method": "POST",
+                "relative_uri": "/dataflow_monitor/monitor",
+                "body": json.dumps(body).encode(),
+            },
         )
 
         mock_client.return_value.task_path.return_value = task_path
         mock_client.return_value.queue_path.return_value = queue_path
 
         # Act
-        CalculateCloudTaskManager().create_dataflow_monitor_task(job_id, location, topic)
+        CalculateCloudTaskManager().create_dataflow_monitor_task(
+            job_id, location, topic
+        )
 
         # Assert
         mock_client.return_value.queue_path.assert_called_with(
-            self.mock_project_id,
-            QUEUES_REGION,
-            JOB_MONITOR_QUEUE_V2)
+            self.mock_project_id, QUEUES_REGION, JOB_MONITOR_QUEUE_V2
+        )
         mock_client.return_value.task_path.assert_called_with(
-            self.mock_project_id,
-            QUEUES_REGION,
-            JOB_MONITOR_QUEUE_V2,
-            task_id)
+            self.mock_project_id, QUEUES_REGION, JOB_MONITOR_QUEUE_V2, task_id
+        )
         mock_client.return_value.create_task.assert_called_with(
-            parent=queue_path, task=task)
+            parent=queue_path, task=task
+        )

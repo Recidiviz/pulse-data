@@ -39,8 +39,7 @@ from recidiviz.ingest.views.metadata_helpers import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-NON_ENUM_COUNTER_STATE_QUERY_TEMPLATE = \
-    """
+NON_ENUM_COUNTER_STATE_QUERY_TEMPLATE = """
 WITH table_rows AS (
   SELECT
     state_code,
@@ -58,8 +57,7 @@ GROUP BY state_code, {column_name}
 ORDER BY state_code;
 """
 
-NON_ENUM_COUNTER_WITH_PLACEHOLDERS_STATE_QUERY_TEMPLATE = \
-    """
+NON_ENUM_COUNTER_WITH_PLACEHOLDERS_STATE_QUERY_TEMPLATE = """
 WITH table_rows AS (
   SELECT
     state_code,
@@ -79,34 +77,44 @@ ORDER BY state_code;
 """
 
 
-class StateTableNonEnumCounterBigQueryViewCollector(BigQueryViewCollector[SimpleBigQueryViewBuilder]):
+class StateTableNonEnumCounterBigQueryViewCollector(
+    BigQueryViewCollector[SimpleBigQueryViewBuilder]
+):
+    """A BigQueryViewCollector that prepares view builders to produce metadata about
+    non-enum columns on tables in the state schema."""
+
     def collect_view_builders(self) -> List[SimpleBigQueryViewBuilder]:
         builders = []
         for entity, table_name in get_state_tables():
             if table_name in METADATA_TABLES_WITH_CUSTOM_COUNTERS:
                 continue
-            has_placeholders = 'external_id' in entity.get_column_property_names()
-            table_column_checker = BigQueryTableChecker('state', table_name)
+            has_placeholders = "external_id" in entity.get_column_property_names()
+            table_column_checker = BigQueryTableChecker("state", table_name)
             for col in get_non_enum_property_names(entity):
                 if col in METADATA_EXCLUDED_PROPERTIES:
                     continue
-                template = NON_ENUM_COUNTER_WITH_PLACEHOLDERS_STATE_QUERY_TEMPLATE if has_placeholders \
+                template = (
+                    NON_ENUM_COUNTER_WITH_PLACEHOLDERS_STATE_QUERY_TEMPLATE
+                    if has_placeholders
                     else NON_ENUM_COUNTER_STATE_QUERY_TEMPLATE
+                )
 
                 builders.append(
                     SimpleBigQueryViewBuilder(
                         dataset_id=VIEWS_DATASET,
-                        view_id=f'ingest_state_metadata__{table_name}__{col}',
+                        view_id=f"ingest_state_metadata__{table_name}__{col}",
                         view_query_template=template,
                         table_name=table_name,
                         column_name=col,
-                        should_build_predicate=table_column_checker.get_has_column_predicate(col),
+                        should_build_predicate=table_column_checker.get_has_column_predicate(
+                            col
+                        ),
                     )
                 )
         return builders
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         collector = StateTableNonEnumCounterBigQueryViewCollector()
         for builder in collector.collect_view_builders():

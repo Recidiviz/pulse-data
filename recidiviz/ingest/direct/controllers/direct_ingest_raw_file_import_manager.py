@@ -33,16 +33,28 @@ from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.cloud_functions.cloud_function_utils import GCSFS_NO_CACHING
 from recidiviz.common import attr_validators
 from recidiviz.ingest.direct import regions
-from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import DirectIngestGCSFileSystem
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration import UPDATE_DATETIME_AGNOSTIC_DATETIME
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration_collector import \
-    DirectIngestRawTableMigrationCollector
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import filename_parts_from_path, \
-    GcsfsDirectIngestFileType
+from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
+    DirectIngestGCSFileSystem,
+)
+from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration import (
+    UPDATE_DATETIME_AGNOSTIC_DATETIME,
+)
+from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration_collector import (
+    DirectIngestRawTableMigrationCollector,
+)
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
+    filename_parts_from_path,
+    GcsfsDirectIngestFileType,
+)
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
-from recidiviz.ingest.direct.controllers.gcsfs_csv_reader import GcsfsCsvReader, COMMON_RAW_FILE_ENCODINGS
-from recidiviz.ingest.direct.controllers.gcsfs_csv_reader_delegates import ReadOneGcsfsCsvReaderDelegate, \
-    SplittingGcsfsCsvReaderDelegate
+from recidiviz.ingest.direct.controllers.gcsfs_csv_reader import (
+    GcsfsCsvReader,
+    COMMON_RAW_FILE_ENCODINGS,
+)
+from recidiviz.ingest.direct.controllers.gcsfs_csv_reader_delegates import (
+    ReadOneGcsfsCsvReaderDelegate,
+    SplittingGcsfsCsvReaderDelegate,
+)
 from recidiviz.persistence.entity.operations.entities import DirectIngestFileMetadata
 from recidiviz.utils import metadata
 from recidiviz.utils.regions import Region
@@ -115,55 +127,70 @@ class DirectIngestRawFileConfig:
 
     def encodings_to_try(self) -> List[str]:
         """Returns an ordered list of encodings we should try for this file."""
-        return [self.encoding] + [encoding for encoding in COMMON_RAW_FILE_ENCODINGS
-                                  if encoding.upper() != self.encoding.upper()]
+        return [self.encoding] + [
+            encoding
+            for encoding in COMMON_RAW_FILE_ENCODINGS
+            if encoding.upper() != self.encoding.upper()
+        ]
 
     @property
     def datetime_cols(self) -> List[str]:
         return [column.name for column in self.columns if column.is_datetime]
 
     @classmethod
-    def from_yaml_dict(cls,
-                       region_code: str,
-                       file_tag: str,
-                       file_path: str,
-                       default_encoding: str,
-                       default_separator: str,
-                       file_config_dict: YAMLDict,
-                       yaml_filename: str) -> 'DirectIngestRawFileConfig':
+    def from_yaml_dict(
+        cls,
+        region_code: str,
+        file_tag: str,
+        file_path: str,
+        default_encoding: str,
+        default_separator: str,
+        file_config_dict: YAMLDict,
+        yaml_filename: str,
+    ) -> "DirectIngestRawFileConfig":
         """Returns a DirectIngestRawFileConfig built from a YAMLDict"""
-        primary_key_cols = file_config_dict.pop('primary_key_cols', list)
+        primary_key_cols = file_config_dict.pop("primary_key_cols", list)
         # TODO(#5399): Migrate raw file configs for all legacy regions to have file descriptions
-        if region_code.upper() in {'US_PA'}:
-            file_description = file_config_dict.pop_optional('file_description', str)\
-                               or 'LEGACY_FILE_MISSING_DESCRIPTION'
+        if region_code.upper() in {"US_PA"}:
+            file_description = (
+                file_config_dict.pop_optional("file_description", str)
+                or "LEGACY_FILE_MISSING_DESCRIPTION"
+            )
         else:
-            file_description = file_config_dict.pop('file_description', str)
+            file_description = file_config_dict.pop("file_description", str)
         # TODO(#5399): Migrate raw file configs for all legacy regions to have column descriptions
-        if region_code.upper() in {'US_PA'}:
-            columns = file_config_dict.pop_optional('columns', list) or []
+        if region_code.upper() in {"US_PA"}:
+            columns = file_config_dict.pop_optional("columns", list) or []
         else:
-            columns = file_config_dict.pop('columns', list)
+            columns = file_config_dict.pop("columns", list)
 
-        column_names = [column['name'] for column in columns]
+        column_names = [column["name"] for column in columns]
         if len(column_names) != len(set(column_names)):
-            raise ValueError(f'Found duplicate columns in raw_file [{file_tag}]')
+            raise ValueError(f"Found duplicate columns in raw_file [{file_tag}]")
 
-        missing_columns = set(primary_key_cols) - {column['name'] for column in columns}
+        missing_columns = set(primary_key_cols) - {column["name"] for column in columns}
         # TODO(#5399): Remove exempted region codes once legacy primary keys are documented
-        if missing_columns and region_code.upper() not in {'US_PA'}:
-            raise ValueError(f'Column(s) marked as primary keys not listed in'
-                             f' columns list for file [{yaml_filename}]: {missing_columns}')
+        if missing_columns and region_code.upper() not in {"US_PA"}:
+            raise ValueError(
+                f"Column(s) marked as primary keys not listed in"
+                f" columns list for file [{yaml_filename}]: {missing_columns}"
+            )
 
-        supplemental_order_by_clause = file_config_dict.pop_optional('supplemental_order_by_clause', str)
-        encoding = file_config_dict.pop_optional('encoding', str)
-        separator = file_config_dict.pop_optional('separator', str)
-        ignore_quotes = file_config_dict.pop_optional('ignore_quotes', bool)
-        always_historical_export = file_config_dict.pop_optional('always_historical_export', bool)
+        supplemental_order_by_clause = file_config_dict.pop_optional(
+            "supplemental_order_by_clause", str
+        )
+        encoding = file_config_dict.pop_optional("encoding", str)
+        separator = file_config_dict.pop_optional("separator", str)
+        ignore_quotes = file_config_dict.pop_optional("ignore_quotes", bool)
+        always_historical_export = file_config_dict.pop_optional(
+            "always_historical_export", bool
+        )
 
         if len(file_config_dict) > 0:
-            raise ValueError(f'Found unexpected config values for raw file'
-                             f'[{file_tag}]: {repr(file_config_dict.get())}')
+            raise ValueError(
+                f"Found unexpected config values for raw file"
+                f"[{file_tag}]: {repr(file_config_dict.get())}"
+            )
 
         return DirectIngestRawFileConfig(
             file_tag=file_tag,
@@ -171,14 +198,22 @@ class DirectIngestRawFileConfig:
             file_description=file_description,
             primary_key_cols=primary_key_cols,
             columns=[
-                RawTableColumnInfo(name=column['name'],
-                                   is_datetime=column.get('is_datetime', False),
-                                   description=column.get('description', None)) for column in columns],
-            supplemental_order_by_clause=supplemental_order_by_clause if supplemental_order_by_clause else '',
+                RawTableColumnInfo(
+                    name=column["name"],
+                    is_datetime=column.get("is_datetime", False),
+                    description=column.get("description", None),
+                )
+                for column in columns
+            ],
+            supplemental_order_by_clause=supplemental_order_by_clause
+            if supplemental_order_by_clause
+            else "",
             encoding=encoding if encoding else default_encoding,
             separator=separator if separator else default_separator,
             ignore_quotes=ignore_quotes if ignore_quotes else False,
-            always_historical_export=always_historical_export if always_historical_export else False
+            always_historical_export=always_historical_export
+            if always_historical_export
+            else False,
         )
 
 
@@ -193,11 +228,13 @@ class DirectIngestRegionRawFileConfig:
     raw_file_configs: Dict[str, DirectIngestRawFileConfig] = attr.ib()
 
     def _region_ingest_dir(self) -> str:
-        return os.path.join(os.path.dirname(self.region_module.__file__), f'{self.region_code.lower()}')
+        return os.path.join(
+            os.path.dirname(self.region_module.__file__), f"{self.region_code.lower()}"
+        )
 
     @yaml_config_file_dir.default
     def _config_file_dir(self) -> str:
-        return os.path.join(self._region_ingest_dir(), 'raw_data')
+        return os.path.join(self._region_ingest_dir(), "raw_data")
 
     @raw_file_configs.default
     def _raw_data_file_configs(self) -> Dict[str, DirectIngestRawFileConfig]:
@@ -206,14 +243,18 @@ class DirectIngestRegionRawFileConfig:
     def _get_raw_data_file_configs(self) -> Dict[str, DirectIngestRawFileConfig]:
         """Returns list of file tags we expect to see on raw files for this region."""
         if os.path.isdir(self.yaml_config_file_dir):
-            default_filename = f'{self.region_code}_default.yaml'
-            default_file_path = os.path.join(self.yaml_config_file_dir, default_filename)
+            default_filename = f"{self.region_code}_default.yaml"
+            default_file_path = os.path.join(
+                self.yaml_config_file_dir, default_filename
+            )
             if not os.path.exists(default_file_path):
-                raise ValueError(f'Missing default raw data configs for region: {self.region_code}')
+                raise ValueError(
+                    f"Missing default raw data configs for region: {self.region_code}"
+                )
 
             default_contents = YAMLDict.from_path(default_file_path)
-            default_encoding = default_contents.pop('default_encoding', str)
-            default_separator = default_contents.pop('default_separator', str)
+            default_encoding = default_contents.pop("default_encoding", str)
+            default_separator = default_contents.pop("default_separator", str)
 
             raw_data_configs = {}
             for filename in os.listdir(self.yaml_config_file_dir):
@@ -225,25 +266,31 @@ class DirectIngestRegionRawFileConfig:
 
                 yaml_contents = YAMLDict.from_path(yaml_file_path)
 
-                file_tag = yaml_contents.pop('file_tag', str)
+                file_tag = yaml_contents.pop("file_tag", str)
                 if not file_tag:
-                    raise ValueError(f'Missing file_tag in [{yaml_file_path}]')
-                if filename != f'{self.region_code.lower()}_{file_tag}.yaml':
-                    raise ValueError(f'Mismatched file_tag [{file_tag}] and filename [{filename}]'
-                                     f' in [{yaml_file_path}]')
+                    raise ValueError(f"Missing file_tag in [{yaml_file_path}]")
+                if filename != f"{self.region_code.lower()}_{file_tag}.yaml":
+                    raise ValueError(
+                        f"Mismatched file_tag [{file_tag}] and filename [{filename}]"
+                        f" in [{yaml_file_path}]"
+                    )
                 if file_tag in raw_data_configs:
-                    raise ValueError(f'Found file tag [{file_tag}] in [{yaml_file_path}]'
-                                     f' that is already defined in another yaml file.')
+                    raise ValueError(
+                        f"Found file tag [{file_tag}] in [{yaml_file_path}]"
+                        f" that is already defined in another yaml file."
+                    )
 
-                raw_data_configs[file_tag] = DirectIngestRawFileConfig.from_yaml_dict(self.region_code,
-                                                                                      file_tag,
-                                                                                      yaml_file_path,
-                                                                                      default_encoding,
-                                                                                      default_separator,
-                                                                                      yaml_contents,
-                                                                                      filename)
+                raw_data_configs[file_tag] = DirectIngestRawFileConfig.from_yaml_dict(
+                    self.region_code,
+                    file_tag,
+                    yaml_file_path,
+                    default_encoding,
+                    default_separator,
+                    yaml_contents,
+                    filename,
+                )
         else:
-            raise ValueError(f'Missing raw data configs for region: {self.region_code}')
+            raise ValueError(f"Missing raw data configs for region: {self.region_code}")
         return raw_data_configs
 
     raw_file_tags: Set[str] = attr.ib()
@@ -253,8 +300,8 @@ class DirectIngestRegionRawFileConfig:
         return set(self.raw_file_configs.keys())
 
 
-_FILE_ID_COL_NAME = 'file_id'
-_UPDATE_DATETIME_COL_NAME = 'update_datetime'
+_FILE_ID_COL_NAME = "file_id"
+_UPDATE_DATETIME_COL_NAME = "update_datetime"
 _DEFAULT_BQ_UPLOAD_CHUNK_SIZE = 250000
 
 # The number of seconds of spacing we need to have between each table load operation to avoid going over the
@@ -267,131 +314,161 @@ class DirectIngestRawFileImportManager:
     file.
     """
 
-    def __init__(self,
-                 *,
-                 region: Region,
-                 fs: DirectIngestGCSFileSystem,
-                 ingest_directory_path: GcsfsDirectoryPath,
-                 temp_output_directory_path: GcsfsDirectoryPath,
-                 big_query_client: BigQueryClient,
-                 region_raw_file_config: Optional[DirectIngestRegionRawFileConfig] = None,
-                 upload_chunk_size: int = _DEFAULT_BQ_UPLOAD_CHUNK_SIZE):
+    def __init__(
+        self,
+        *,
+        region: Region,
+        fs: DirectIngestGCSFileSystem,
+        ingest_directory_path: GcsfsDirectoryPath,
+        temp_output_directory_path: GcsfsDirectoryPath,
+        big_query_client: BigQueryClient,
+        region_raw_file_config: Optional[DirectIngestRegionRawFileConfig] = None,
+        upload_chunk_size: int = _DEFAULT_BQ_UPLOAD_CHUNK_SIZE,
+    ):
 
         self.region = region
         self.fs = fs
         self.ingest_directory_path = ingest_directory_path
         self.temp_output_directory_path = temp_output_directory_path
         self.big_query_client = big_query_client
-        self.region_raw_file_config = region_raw_file_config \
-            if region_raw_file_config \
-            else DirectIngestRegionRawFileConfig(region_code=self.region.region_code,
-                                                 region_module=self.region.region_module)
-        self.upload_chunk_size = upload_chunk_size
-        self.csv_reader = GcsfsCsvReader(gcsfs.GCSFileSystem(project=metadata.project_id(),
-                                                             cache_timeout=GCSFS_NO_CACHING))
-        self.raw_table_migrations = \
-            DirectIngestRawTableMigrationCollector(
+        self.region_raw_file_config = (
+            region_raw_file_config
+            if region_raw_file_config
+            else DirectIngestRegionRawFileConfig(
                 region_code=self.region.region_code,
-                regions_module_override=self.region.region_module
-            ).collect_raw_table_migration_queries()
+                region_module=self.region.region_module,
+            )
+        )
+        self.upload_chunk_size = upload_chunk_size
+        self.csv_reader = GcsfsCsvReader(
+            gcsfs.GCSFileSystem(
+                project=metadata.project_id(), cache_timeout=GCSFS_NO_CACHING
+            )
+        )
+        self.raw_table_migrations = DirectIngestRawTableMigrationCollector(
+            region_code=self.region.region_code,
+            regions_module_override=self.region.region_module,
+        ).collect_raw_table_migration_queries()
 
     def get_unprocessed_raw_files_to_import(self) -> List[GcsfsFilePath]:
         if not self.region.are_raw_data_bq_imports_enabled_in_env():
-            raise ValueError(f'Cannot import raw files for region [{self.region.region_code}]')
+            raise ValueError(
+                f"Cannot import raw files for region [{self.region.region_code}]"
+            )
 
-        unprocessed_paths = self.fs.get_unprocessed_file_paths(self.ingest_directory_path,
-                                                               GcsfsDirectIngestFileType.RAW_DATA)
+        unprocessed_paths = self.fs.get_unprocessed_file_paths(
+            self.ingest_directory_path, GcsfsDirectIngestFileType.RAW_DATA
+        )
         paths_to_import = []
         for path in unprocessed_paths:
             parts = filename_parts_from_path(path)
             if parts.file_tag in self.region_raw_file_config.raw_file_tags:
                 paths_to_import.append(path)
             else:
-                logging.warning('Unrecognized raw file tag [%s] for region [%s].',
-                                parts.file_tag, self.region.region_code)
+                logging.warning(
+                    "Unrecognized raw file tag [%s] for region [%s].",
+                    parts.file_tag,
+                    self.region.region_code,
+                )
 
         return paths_to_import
 
     @classmethod
     def raw_tables_dataset_for_region(cls, region_code: str) -> str:
-        return f'{region_code.lower()}_raw_data'
+        return f"{region_code.lower()}_raw_data"
 
-    def import_raw_file_to_big_query(self,
-                                     path: GcsfsFilePath,
-                                     file_metadata: DirectIngestFileMetadata) -> None:
+    def import_raw_file_to_big_query(
+        self, path: GcsfsFilePath, file_metadata: DirectIngestFileMetadata
+    ) -> None:
         """Import a raw data file at the given path to the appropriate raw data table in BigQuery."""
 
         if not self.region.are_raw_data_bq_imports_enabled_in_env():
-            raise ValueError(f'Cannot import raw files for region [{self.region.region_code}]')
+            raise ValueError(
+                f"Cannot import raw files for region [{self.region.region_code}]"
+            )
 
         parts = filename_parts_from_path(path)
         if parts.file_tag not in self.region_raw_file_config.raw_file_tags:
             raise ValueError(
-                f'Attempting to import raw file with tag [{parts.file_tag}] unspecified by [{self.region.region_code}] '
-                f'config.')
+                f"Attempting to import raw file with tag [{parts.file_tag}] unspecified by [{self.region.region_code}] "
+                f"config."
+            )
 
         if parts.file_type != GcsfsDirectIngestFileType.RAW_DATA:
-            raise ValueError(f'Unexpected file type [{parts.file_type}] for path [{parts.file_tag}].')
+            raise ValueError(
+                f"Unexpected file type [{parts.file_type}] for path [{parts.file_tag}]."
+            )
 
-        logging.info('Beginning BigQuery upload of raw file [%s]', path.abs_path())
+        logging.info("Beginning BigQuery upload of raw file [%s]", path.abs_path())
 
         temp_output_paths = self._upload_contents_to_temp_gcs_paths(path, file_metadata)
         self._load_contents_to_bigquery(path, temp_output_paths)
 
         migration_queries: List[str] = []
         if (parts.file_tag, parts.utc_upload_datetime) in self.raw_table_migrations:
-            migration_queries.extend(self.raw_table_migrations[(parts.file_tag, parts.utc_upload_datetime)])
+            migration_queries.extend(
+                self.raw_table_migrations[(parts.file_tag, parts.utc_upload_datetime)]
+            )
 
-        if (parts.file_tag, UPDATE_DATETIME_AGNOSTIC_DATETIME) in self.raw_table_migrations:
+        if (
+            parts.file_tag,
+            UPDATE_DATETIME_AGNOSTIC_DATETIME,
+        ) in self.raw_table_migrations:
             # There are migration that should be run on all versions of the file
-            migration_queries.extend(self.raw_table_migrations[(parts.file_tag, UPDATE_DATETIME_AGNOSTIC_DATETIME)])
+            migration_queries.extend(
+                self.raw_table_migrations[
+                    (parts.file_tag, UPDATE_DATETIME_AGNOSTIC_DATETIME)
+                ]
+            )
 
         for migration_query in migration_queries:
             self.big_query_client.run_query_async(query_str=migration_query)
 
-        logging.info('Completed BigQuery import of [%s]', path.abs_path())
+        logging.info("Completed BigQuery import of [%s]", path.abs_path())
 
     def _upload_contents_to_temp_gcs_paths(
-            self,
-            path: GcsfsFilePath,
-            file_metadata: DirectIngestFileMetadata) -> List[Tuple[GcsfsFilePath, List[str]]]:
+        self, path: GcsfsFilePath, file_metadata: DirectIngestFileMetadata
+    ) -> List[Tuple[GcsfsFilePath, List[str]]]:
         """Uploads the contents of the file at the provided path to one or more GCS files, with whitespace stripped and
         additional metadata columns added.
         Returns a list of tuple pairs containing the destination paths and corrected CSV columns for that file.
         """
 
-        logging.info('Starting chunked upload of contents to GCS')
+        logging.info("Starting chunked upload of contents to GCS")
 
         parts = filename_parts_from_path(path)
         file_config = self.region_raw_file_config.raw_file_configs[parts.file_tag]
 
         columns = self._get_validated_columns(path, file_config)
 
-        delegate = DirectIngestRawDataSplittingGcsfsCsvReaderDelegate(path,
-                                                                      self.fs,
-                                                                      file_metadata,
-                                                                      self.temp_output_directory_path)
+        delegate = DirectIngestRawDataSplittingGcsfsCsvReaderDelegate(
+            path, self.fs, file_metadata, self.temp_output_directory_path
+        )
 
-        self.csv_reader.streaming_read(path,
-                                       delegate=delegate,
-                                       chunk_size=self.upload_chunk_size,
-                                       encodings_to_try=file_config.encodings_to_try(),
-                                       index_col=False,
-                                       header=None,
-                                       skiprows=1,
-                                       usecols=columns,
-                                       names=columns,
-                                       keep_default_na=False,
-                                       **self._common_read_csv_kwargs(file_config))
+        self.csv_reader.streaming_read(
+            path,
+            delegate=delegate,
+            chunk_size=self.upload_chunk_size,
+            encodings_to_try=file_config.encodings_to_try(),
+            index_col=False,
+            header=None,
+            skiprows=1,
+            usecols=columns,
+            names=columns,
+            keep_default_na=False,
+            **self._common_read_csv_kwargs(file_config),
+        )
 
         return delegate.output_paths_with_columns
 
-    def _load_contents_to_bigquery(self,
-                                   path: GcsfsFilePath,
-                                   temp_paths_with_columns: List[Tuple[GcsfsFilePath, List[str]]]) -> None:
+    def _load_contents_to_bigquery(
+        self,
+        path: GcsfsFilePath,
+        temp_paths_with_columns: List[Tuple[GcsfsFilePath, List[str]]],
+    ) -> None:
         """Loads the contents in the given handle to the appropriate table in BigQuery."""
 
-        logging.info('Starting chunked load of contents to BigQuery')
+        logging.info("Starting chunked load of contents to BigQuery")
         temp_output_paths = [path for path, _ in temp_paths_with_columns]
         temp_path_to_load_job: Dict[GcsfsFilePath, bigquery.LoadJob] = {}
         dataset_id = self.raw_tables_dataset_for_region(self.region.region_code)
@@ -402,22 +479,28 @@ class DirectIngestRawFileImportManager:
                     # Note: If this sleep becomes a serious performance issue, we could refactor to intersperse reading
                     # chunks to temp paths with starting each load job. In this case, we'd have to be careful to delete
                     # any partially uploaded uploaded portion of the file if we fail to parse a chunk in the middle.
-                    logging.info('Sleeping for [%s] seconds to avoid exceeding per-table update rate quotas.',
-                                 _PER_TABLE_UPDATE_RATE_LIMITING_SEC)
+                    logging.info(
+                        "Sleeping for [%s] seconds to avoid exceeding per-table update rate quotas.",
+                        _PER_TABLE_UPDATE_RATE_LIMITING_SEC,
+                    )
                     time.sleep(_PER_TABLE_UPDATE_RATE_LIMITING_SEC)
 
                 parts = filename_parts_from_path(path)
                 load_job = self.big_query_client.insert_into_table_from_cloud_storage_async(
                     source_uri=temp_output_path.uri(),
-                    destination_dataset_ref=self.big_query_client.dataset_ref_for_id(dataset_id),
+                    destination_dataset_ref=self.big_query_client.dataset_ref_for_id(
+                        dataset_id
+                    ),
                     destination_table_id=parts.file_tag,
-                    destination_table_schema=self._create_raw_table_schema_from_columns(columns),
+                    destination_table_schema=self._create_raw_table_schema_from_columns(
+                        columns
+                    ),
                 )
-                logging.info('Load job [%s] for chunk [%d] started', load_job.job_id, i)
+                logging.info("Load job [%s] for chunk [%d] started", load_job.job_id, i)
 
                 temp_path_to_load_job[temp_output_path] = load_job
         except Exception as e:
-            logging.error('Failed to start load jobs - cleaning up temp paths')
+            logging.error("Failed to start load jobs - cleaning up temp paths")
             self._delete_temp_output_paths(temp_output_paths)
             raise e
 
@@ -427,38 +510,49 @@ class DirectIngestRawFileImportManager:
             self._delete_temp_output_paths(temp_output_paths)
 
     @staticmethod
-    def _wait_for_jobs(temp_path_to_load_job: Dict[GcsfsFilePath, bigquery.LoadJob]) -> None:
+    def _wait_for_jobs(
+        temp_path_to_load_job: Dict[GcsfsFilePath, bigquery.LoadJob]
+    ) -> None:
         for temp_output_path, load_job in temp_path_to_load_job.items():
             try:
-                logging.info('Waiting for load of [%s]', temp_output_path.abs_path())
+                logging.info("Waiting for load of [%s]", temp_output_path.abs_path())
                 load_job.result()
-                logging.info('BigQuery load of [%s] complete', temp_output_path.abs_path())
+                logging.info(
+                    "BigQuery load of [%s] complete", temp_output_path.abs_path()
+                )
             except BadRequest as e:
-                logging.error('Insert job [%s] for path [%s] failed with errors: [%s]',
-                              load_job.job_id, temp_output_path, load_job.errors)
+                logging.error(
+                    "Insert job [%s] for path [%s] failed with errors: [%s]",
+                    load_job.job_id,
+                    temp_output_path,
+                    load_job.errors,
+                )
                 raise e
 
     def _delete_temp_output_paths(self, temp_output_paths: List[GcsfsFilePath]) -> None:
         for temp_output_path in temp_output_paths:
-            logging.info('Deleting temp file [%s].', temp_output_path.abs_path())
+            logging.info("Deleting temp file [%s].", temp_output_path.abs_path())
             self.fs.delete(temp_output_path)
 
     @staticmethod
     def remove_column_non_printable_characters(columns: List[str]) -> List[str]:
         """Removes all non-printable characters that occasionally show up in column names. This is known to happen in
-        random columns """
+        random columns"""
         fixed_columns = []
         for col in columns:
-            fixed_col = ''.join([x for x in col if x in string.printable])
+            fixed_col = "".join([x for x in col if x in string.printable])
             if fixed_col != col:
-                logging.info('Found non-printable characters in column [%s]. Original: [%s]',
-                             fixed_col, col.__repr__())
+                logging.info(
+                    "Found non-printable characters in column [%s]. Original: [%s]",
+                    fixed_col,
+                    col.__repr__(),
+                )
             fixed_columns.append(fixed_col)
         return fixed_columns
 
-    def _get_validated_columns(self,
-                               path: GcsfsFilePath,
-                               file_config: DirectIngestRawFileConfig) -> List[str]:
+    def _get_validated_columns(
+        self, path: GcsfsFilePath, file_config: DirectIngestRawFileConfig
+    ) -> List[str]:
         """Returns a list of normalized column names for the raw data file at the given path."""
         # TODO(#3020): We should not derive the columns from what we get in the uploaded raw data CSV - we should
         # instead define the set of columns we expect to see in each input CSV (with mandatory documentation) and update
@@ -466,12 +560,17 @@ class DirectIngestRawFileImportManager:
         # to gracefully any raw data re-imports where a new column gets introduced in a later file.
 
         delegate = ReadOneGcsfsCsvReaderDelegate()
-        self.csv_reader.streaming_read(path, delegate=delegate, chunk_size=1, nrows=1,
-                                       **self._common_read_csv_kwargs(file_config))
+        self.csv_reader.streaming_read(
+            path,
+            delegate=delegate,
+            chunk_size=1,
+            nrows=1,
+            **self._common_read_csv_kwargs(file_config),
+        )
         df = delegate.df
 
         if not isinstance(df, pd.DataFrame):
-            raise ValueError(f'Unexpected type for DataFrame: [{type(df)}]')
+            raise ValueError(f"Unexpected type for DataFrame: [{type(df)}]")
 
         columns = self.remove_column_non_printable_characters(df.columns)
 
@@ -481,16 +580,18 @@ class DirectIngestRawFileImportManager:
         normalized_columns = set()
         for i, column_name in enumerate(columns):
             if not column_name:
-                raise ValueError(f'Found empty column name in [{file_config.file_tag}]')
+                raise ValueError(f"Found empty column name in [{file_config.file_tag}]")
 
             column_name = self._convert_non_allowable_bq_column_chars(column_name)
 
             # BQ doesn't allow column names to begin with a number, so we prepend an underscore in that case
             if column_name[0] in string.digits:
-                column_name = '_' + column_name
+                column_name = "_" + column_name
 
             if column_name in normalized_columns:
-                raise ValueError(f'Multiple columns with name [{column_name}] after normalization.')
+                raise ValueError(
+                    f"Multiple columns with name [{column_name}] after normalization."
+                )
             normalized_columns.add(column_name)
             columns[i] = column_name
 
@@ -499,44 +600,59 @@ class DirectIngestRawFileImportManager:
     @staticmethod
     def _convert_non_allowable_bq_column_chars(column_name: str) -> str:
         def is_bq_allowable_column_char(x: str) -> bool:
-            return x in string.ascii_letters or x in string.digits or x == '_'
-        column_name = "".join([c if is_bq_allowable_column_char(c) else '_' for c in column_name])
+            return x in string.ascii_letters or x in string.digits or x == "_"
+
+        column_name = "".join(
+            [c if is_bq_allowable_column_char(c) else "_" for c in column_name]
+        )
         return column_name
 
     @staticmethod
-    def _create_raw_table_schema_from_columns(columns: List[str]) -> List[bigquery.SchemaField]:
+    def _create_raw_table_schema_from_columns(
+        columns: List[str],
+    ) -> List[bigquery.SchemaField]:
         """Creates schema for use in `to_gbq` based on the provided columns."""
         schema = []
         for name in columns:
             typ_str = bigquery.enums.SqlTypeNames.STRING.value
-            mode = 'NULLABLE'
+            mode = "NULLABLE"
             if name == _FILE_ID_COL_NAME:
-                mode = 'REQUIRED'
+                mode = "REQUIRED"
                 typ_str = bigquery.enums.SqlTypeNames.INTEGER.value
             if name == _UPDATE_DATETIME_COL_NAME:
-                mode = 'REQUIRED'
+                mode = "REQUIRED"
                 typ_str = bigquery.enums.SqlTypeNames.DATETIME.value
-            schema.append(bigquery.SchemaField(name=name, field_type=typ_str, mode=mode))
+            schema.append(
+                bigquery.SchemaField(name=name, field_type=typ_str, mode=mode)
+            )
         return schema
 
     @staticmethod
-    def _common_read_csv_kwargs(file_config: DirectIngestRawFileConfig) -> Dict[str, Any]:
+    def _common_read_csv_kwargs(
+        file_config: DirectIngestRawFileConfig,
+    ) -> Dict[str, Any]:
         return {
-            'sep': file_config.separator,
-            'quoting': (csv.QUOTE_NONE if file_config.ignore_quotes else csv.QUOTE_MINIMAL),
+            "sep": file_config.separator,
+            "quoting": (
+                csv.QUOTE_NONE if file_config.ignore_quotes else csv.QUOTE_MINIMAL
+            ),
         }
 
 
-class DirectIngestRawDataSplittingGcsfsCsvReaderDelegate(SplittingGcsfsCsvReaderDelegate):
+class DirectIngestRawDataSplittingGcsfsCsvReaderDelegate(
+    SplittingGcsfsCsvReaderDelegate
+):
     """An implementation of the GcsfsCsvReaderDelegate that augments chunks of a raw data file and re-uploads each
     chunk to a temporary Google Cloud Storage path.
     """
 
-    def __init__(self,
-                 path: GcsfsFilePath,
-                 fs: DirectIngestGCSFileSystem,
-                 file_metadata: DirectIngestFileMetadata,
-                 temp_output_directory_path: GcsfsDirectoryPath):
+    def __init__(
+        self,
+        path: GcsfsFilePath,
+        fs: DirectIngestGCSFileSystem,
+        file_metadata: DirectIngestFileMetadata,
+        temp_output_directory_path: GcsfsDirectoryPath,
+    ):
 
         super().__init__(path, fs, include_header=False)
         self.file_metadata = file_metadata
@@ -546,27 +662,33 @@ class DirectIngestRawDataSplittingGcsfsCsvReaderDelegate(SplittingGcsfsCsvReader
         # Stripping white space from all fields
         df = df.applymap(lambda x: x.strip())
 
-        augmented_df = self._augment_raw_data_with_metadata_columns(path=self.path,
-                                                                    file_metadata=self.file_metadata,
-                                                                    raw_data_df=df)
+        augmented_df = self._augment_raw_data_with_metadata_columns(
+            path=self.path, file_metadata=self.file_metadata, raw_data_df=df
+        )
         return augmented_df
 
     def get_output_path(self, chunk_num: int) -> GcsfsFilePath:
         name, _extension = os.path.splitext(self.path.file_name)
 
-        return GcsfsFilePath.from_directory_and_file_name(self.temp_output_directory_path,
-                                                          f'temp_{name}_{chunk_num}.csv')
+        return GcsfsFilePath.from_directory_and_file_name(
+            self.temp_output_directory_path, f"temp_{name}_{chunk_num}.csv"
+        )
 
     @staticmethod
-    def _augment_raw_data_with_metadata_columns(path: GcsfsFilePath,
-                                                file_metadata: DirectIngestFileMetadata,
-                                                raw_data_df: pd.DataFrame) -> pd.DataFrame:
+    def _augment_raw_data_with_metadata_columns(
+        path: GcsfsFilePath,
+        file_metadata: DirectIngestFileMetadata,
+        raw_data_df: pd.DataFrame,
+    ) -> pd.DataFrame:
         """Add file_id and update_datetime columns to all rows in the dataframe."""
 
         parts = filename_parts_from_path(path)
 
-        logging.info('Adding extra columns with file_id [%s] and update_datetime [%s]',
-                     file_metadata.file_id, parts.utc_upload_datetime)
+        logging.info(
+            "Adding extra columns with file_id [%s] and update_datetime [%s]",
+            file_metadata.file_id,
+            parts.utc_upload_datetime,
+        )
         raw_data_df[_FILE_ID_COL_NAME] = file_metadata.file_id
         raw_data_df[_UPDATE_DATETIME_COL_NAME] = parts.utc_upload_datetime
 

@@ -27,9 +27,9 @@ class TestPointingAtStagingSubdirectory(unittest.TestCase):
     """Tests for string manipulation with the staging directory."""
 
     def setUp(self) -> None:
-        self.metadata_patcher = patch('recidiviz.utils.metadata.project_id')
+        self.metadata_patcher = patch("recidiviz.utils.metadata.project_id")
         self.mock_project_id_fn = self.metadata_patcher.start()
-        self.mock_project_id_fn.return_value = 'project-id'
+        self.mock_project_id_fn.return_value = "project-id"
 
     def tearDown(self) -> None:
         self.metadata_patcher.stop()
@@ -37,45 +37,75 @@ class TestPointingAtStagingSubdirectory(unittest.TestCase):
     def config_with_path(self, path: str) -> ExportBigQueryViewConfig:
         return ExportBigQueryViewConfig(
             view=SimpleBigQueryViewBuilder(
-                dataset_id='test_dataset',
-                view_id='test_view',
-                view_query_template='you know',
+                dataset_id="test_dataset",
+                view_id="test_view",
+                view_query_template="you know",
             ).build(),
-            view_filter_clause='WHERE state_code = \'US_XX\'',
-            intermediate_table_name='tubular',
-            output_directory=GcsfsDirectoryPath.from_absolute_path(f'gs://{path}'),
+            view_filter_clause="WHERE state_code = 'US_XX'",
+            intermediate_table_name="tubular",
+            output_directory=GcsfsDirectoryPath.from_absolute_path(f"gs://{path}"),
         )
 
     def test_happy_path(self) -> None:
         pointed_at_staging_file = GcsfsFilePath.from_directory_and_file_name(
-            self.config_with_path('gnarly').pointed_to_staging_subdirectory().output_directory,
-            'foo.txt')
-        self.assertEqual(pointed_at_staging_file.abs_path(), 'gnarly/staging/foo.txt')
+            self.config_with_path("gnarly")
+            .pointed_to_staging_subdirectory()
+            .output_directory,
+            "foo.txt",
+        )
+        self.assertEqual(pointed_at_staging_file.abs_path(), "gnarly/staging/foo.txt")
 
-        self.assertEqual(ExportBigQueryViewConfig.revert_staging_path_to_original(pointed_at_staging_file),
-                         GcsfsFilePath.from_absolute_path('gs://gnarly/foo.txt'))
+        self.assertEqual(
+            ExportBigQueryViewConfig.revert_staging_path_to_original(
+                pointed_at_staging_file
+            ),
+            GcsfsFilePath.from_absolute_path("gs://gnarly/foo.txt"),
+        )
 
     def test_filename_has_staging(self) -> None:
         pointed_at_staging_file = GcsfsFilePath.from_directory_and_file_name(
-            self.config_with_path('gnarly').pointed_to_staging_subdirectory().output_directory,
-            'staging_results.txt')
-        self.assertEqual(pointed_at_staging_file.abs_path(), 'gnarly/staging/staging_results.txt')
+            self.config_with_path("gnarly")
+            .pointed_to_staging_subdirectory()
+            .output_directory,
+            "staging_results.txt",
+        )
+        self.assertEqual(
+            pointed_at_staging_file.abs_path(), "gnarly/staging/staging_results.txt"
+        )
 
-        self.assertEqual(ExportBigQueryViewConfig.revert_staging_path_to_original(pointed_at_staging_file),
-                         GcsfsFilePath.from_absolute_path('gs://gnarly/staging_results.txt'))
+        self.assertEqual(
+            ExportBigQueryViewConfig.revert_staging_path_to_original(
+                pointed_at_staging_file
+            ),
+            GcsfsFilePath.from_absolute_path("gs://gnarly/staging_results.txt"),
+        )
 
     def test_noop_without_staging(self) -> None:
         not_pointed_at_staging_file = GcsfsFilePath.from_directory_and_file_name(
-            self.config_with_path('gnarly').output_directory,
-            'staging_results.txt')
-        self.assertEqual(ExportBigQueryViewConfig.revert_staging_path_to_original(not_pointed_at_staging_file),
-                         GcsfsFilePath.from_absolute_path('gs://gnarly/staging_results.txt'))
+            self.config_with_path("gnarly").output_directory, "staging_results.txt"
+        )
+        self.assertEqual(
+            ExportBigQueryViewConfig.revert_staging_path_to_original(
+                not_pointed_at_staging_file
+            ),
+            GcsfsFilePath.from_absolute_path("gs://gnarly/staging_results.txt"),
+        )
 
     def test_nested_folders(self) -> None:
         pointed_at_staging_file = GcsfsFilePath.from_directory_and_file_name(
-            self.config_with_path('gnarly/subdirectory/US_MO').pointed_to_staging_subdirectory().output_directory,
-            'foo.txt')
-        self.assertEqual(pointed_at_staging_file.abs_path(), 'gnarly/staging/subdirectory/US_MO/foo.txt')
+            self.config_with_path("gnarly/subdirectory/US_MO")
+            .pointed_to_staging_subdirectory()
+            .output_directory,
+            "foo.txt",
+        )
+        self.assertEqual(
+            pointed_at_staging_file.abs_path(),
+            "gnarly/staging/subdirectory/US_MO/foo.txt",
+        )
 
-        self.assertEqual(ExportBigQueryViewConfig.revert_staging_path_to_original(pointed_at_staging_file),
-                         GcsfsFilePath.from_absolute_path('gs://gnarly/subdirectory/US_MO/foo.txt'))
+        self.assertEqual(
+            ExportBigQueryViewConfig.revert_staging_path_to_original(
+                pointed_at_staging_file
+            ),
+            GcsfsFilePath.from_absolute_path("gs://gnarly/subdirectory/US_MO/foo.txt"),
+        )

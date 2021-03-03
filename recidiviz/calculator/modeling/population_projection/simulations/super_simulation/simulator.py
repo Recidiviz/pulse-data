@@ -18,13 +18,19 @@ from warnings import warn
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-from recidiviz.calculator.modeling.population_projection.simulations.population_simulation.population_simulation \
-    import PopulationSimulation
-from recidiviz.calculator.modeling.population_projection.simulations.population_simulation.\
-    population_simulation_factory import PopulationSimulationFactory
-from recidiviz.calculator.modeling.population_projection.simulations.predicted_admissions import ProjectionType
+from recidiviz.calculator.modeling.population_projection.simulations.population_simulation.population_simulation import (
+    PopulationSimulation,
+)
+from recidiviz.calculator.modeling.population_projection.simulations.population_simulation.population_simulation_factory import (
+    PopulationSimulationFactory,
+)
+from recidiviz.calculator.modeling.population_projection.simulations.predicted_admissions import (
+    ProjectionType,
+)
 from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
-from recidiviz.calculator.modeling.population_projection.simulations.super_simulation.initializer import Initializer
+from recidiviz.calculator.modeling.population_projection.simulations.super_simulation.initializer import (
+    Initializer,
+)
 
 
 class Simulator:
@@ -40,14 +46,14 @@ class Simulator:
         return self.pop_simulations
 
     def simulate_policy(
-            self,
-            user_inputs: Dict[str, Any],
-            data_inputs: Dict[str, Any],
-            time_step: float,
-            reference_year: float,
-            first_relevant_ts: int,
-            policy_list: List[SparkPolicy],
-            output_compartment: str,
+        self,
+        user_inputs: Dict[str, Any],
+        data_inputs: Dict[str, Any],
+        time_step: float,
+        reference_year: float,
+        first_relevant_ts: int,
+        policy_list: List[SparkPolicy],
+        output_compartment: str,
     ) -> pd.DataFrame:
         """
         Run one PopulationSimulation with policy implemented and one baseline, returns cumulative and non-cumulative
@@ -59,43 +65,41 @@ class Simulator:
         """
         self._reset_pop_simulations()
 
-        self.pop_simulations['policy'] = self._build_population_simulation(
-            user_inputs,
-            data_inputs,
-            policy_list,
-            first_relevant_ts
+        self.pop_simulations["policy"] = self._build_population_simulation(
+            user_inputs, data_inputs, policy_list, first_relevant_ts
         )
-        self.pop_simulations['control'] = self._build_population_simulation(
-            user_inputs,
-            data_inputs,
-            [],
-            first_relevant_ts
+        self.pop_simulations["control"] = self._build_population_simulation(
+            user_inputs, data_inputs, [], first_relevant_ts
         )
 
-        self.pop_simulations['policy'].simulate_policies()
-        self.pop_simulations['control'].simulate_policies()
+        self.pop_simulations["policy"].simulate_policies()
+        self.pop_simulations["control"].simulate_policies()
 
         results = {
-            scenario: self.pop_simulations[scenario].get_population_projections() for scenario in self.pop_simulations}
-        results = {i: results[i][results[i]['time_step'] >= user_inputs['start_time_step']] for i in results}
-        self._graph_results(user_inputs, time_step, reference_year, results, output_compartment)
+            scenario: self.pop_simulations[scenario].get_population_projections()
+            for scenario in self.pop_simulations
+        }
+        results = {
+            i: results[i][results[i]["time_step"] >= user_inputs["start_time_step"]]
+            for i in results
+        }
+        self._graph_results(
+            user_inputs, time_step, reference_year, results, output_compartment
+        )
         return self._format_simulation_results(
-            user_inputs,
-            time_step,
-            reference_year,
-            collapse_compartments=False
+            user_inputs, time_step, reference_year, collapse_compartments=False
         )
 
     def simulate_baseline(
-            self,
-            user_inputs: Dict[str, Any],
-            data_inputs: Dict[str, Any],
-            display_compartments: List[str],
-            first_relevant_ts: int,
-            time_step: float,
-            reference_year: float,
-            reset: bool = True
-        ) -> None:
+        self,
+        user_inputs: Dict[str, Any],
+        data_inputs: Dict[str, Any],
+        display_compartments: List[str],
+        first_relevant_ts: int,
+        time_step: float,
+        reference_year: float,
+        reset: bool = True,
+    ) -> None:
         """
         Calculates a baseline projection, returns transition error for a specific transition
         `display_compartments` are the compartment whose populations you wish to display
@@ -105,68 +109,79 @@ class Simulator:
         if reset:
             self._reset_pop_simulations()
 
-        if first_relevant_ts > user_inputs['start_time_step']:
-            raise ValueError(f"first_relevant_ts ({first_relevant_ts}) must be less than start_time_step "
-                             f"({user_inputs['start_time_step']})")
-
-        # Run one simulation for the min, max, and middle confidence intervals
-        for projection_type in [ProjectionType.LOW.value, ProjectionType.MIDDLE.value, ProjectionType.HIGH.value]:
-            user_inputs['projection_type'] = projection_type
-            self.pop_simulations[f'baseline_{projection_type}'] = self._build_population_simulation(
-                user_inputs,
-                data_inputs,
-                [],
-                first_relevant_ts
+        if first_relevant_ts > user_inputs["start_time_step"]:
+            raise ValueError(
+                f"first_relevant_ts ({first_relevant_ts}) must be less than start_time_step "
+                f"({user_inputs['start_time_step']})"
             )
 
-            self.pop_simulations[f'baseline_{projection_type}'].simulate_policies()
+        # Run one simulation for the min, max, and middle confidence intervals
+        for projection_type in [
+            ProjectionType.LOW.value,
+            ProjectionType.MIDDLE.value,
+            ProjectionType.HIGH.value,
+        ]:
+            user_inputs["projection_type"] = projection_type
+            self.pop_simulations[
+                f"baseline_{projection_type}"
+            ] = self._build_population_simulation(
+                user_inputs, data_inputs, [], first_relevant_ts
+            )
+
+            self.pop_simulations[f"baseline_{projection_type}"].simulate_policies()
 
         if display_compartments:
             simulation_results = self._format_simulation_results(
-                user_inputs,
-                time_step,
-                reference_year,
-                collapse_compartments=True
+                user_inputs, time_step, reference_year, collapse_compartments=True
             )
             display_results = pd.DataFrame(index=simulation_results.year.unique())
             for comp in display_compartments:
                 if comp not in simulation_results.compartment.unique():
-                    warn(f"Display compartment not in simulation architecture: {comp}", Warning)
+                    warn(
+                        f"Display compartment not in simulation architecture: {comp}",
+                        Warning,
+                    )
                 else:
-                    relevant_results = simulation_results[(simulation_results.compartment == comp) & (
-                            user_inputs['start_time_step'] <= simulation_results.year)]
-                    display_results[comp] = relevant_results['baseline_middle_total_population']
+                    relevant_results = simulation_results[
+                        (simulation_results.compartment == comp)
+                        & (user_inputs["start_time_step"] <= simulation_results.year)
+                    ]
+                    display_results[comp] = relevant_results[
+                        "baseline_middle_total_population"
+                    ]
 
-            display_results.plot(title="Baseline Population Projection", ylabel="Estimated Total Population")
-            plt.legend(loc='lower left')
+            display_results.plot(
+                title="Baseline Population Projection",
+                ylabel="Estimated Total Population",
+            )
+            plt.legend(loc="lower left")
             plt.ylim([0, None])
 
     def microsim_baseline_over_time(
-            self,
-            user_inputs: Dict[str, Any],
-            run_date_data_inputs: Dict[datetime, Dict[str, Any]],
-            run_date_first_relevant_ts: Dict[datetime, int],
+        self,
+        user_inputs: Dict[str, Any],
+        run_date_data_inputs: Dict[datetime, Dict[str, Any]],
+        run_date_first_relevant_ts: Dict[datetime, int],
     ) -> None:
         self._reset_pop_simulations()
 
         for start_date, data_inputs in run_date_data_inputs.items():
-            user_inputs['projection_type'] = ProjectionType.MIDDLE.value
-            self.pop_simulations[f'baseline_{start_date}'] = self._build_population_simulation(
-                user_inputs,
-                data_inputs,
-                [],
-                run_date_first_relevant_ts[start_date]
+            user_inputs["projection_type"] = ProjectionType.MIDDLE.value
+            self.pop_simulations[
+                f"baseline_{start_date}"
+            ] = self._build_population_simulation(
+                user_inputs, data_inputs, [], run_date_first_relevant_ts[start_date]
             )
 
-            self.pop_simulations[f'baseline_{start_date}'].simulate_policies()
+            self.pop_simulations[f"baseline_{start_date}"].simulate_policies()
 
     def get_cohort_hydration_simulations(
-            self,
-            user_inputs: Dict[str, Any],
-            data_inputs: Dict[str, Any],
-            range_start: int,
-            range_end: int,
-            step_size: float
+        self,
+        user_inputs: Dict[str, Any],
+        data_inputs: Dict[str, Any],
+        range_start: int,
+        range_end: int,
+        step_size: float,
     ) -> Dict[str, PopulationSimulation]:
         """
         Generates population simulations to feed to Validator.calculate_cohort_hydration_error
@@ -174,12 +189,14 @@ class Simulator:
         self._reset_pop_simulations()
 
         for ts in np.arange(range_start, range_end, step_size):
-            self.pop_simulations[f"backfill_period_{ts}_time_steps"] = self._build_population_simulation(
-                    user_inputs,
-                    data_inputs,
-                    [],
-                    first_relevant_ts=user_inputs['start_time_step'] - ts,
-                )
+            self.pop_simulations[
+                f"backfill_period_{ts}_time_steps"
+            ] = self._build_population_simulation(
+                user_inputs,
+                data_inputs,
+                [],
+                first_relevant_ts=user_inputs["start_time_step"] - ts,
+            )
             self.pop_simulations[f"backfill_period_{ts}_time_steps"].simulate_policies()
         return self.pop_simulations
 
@@ -187,50 +204,65 @@ class Simulator:
         return list(self.pop_simulations.values())[0].sub_group_ids_dict
 
     def _graph_results(
-            self,
-            user_inputs: Dict[str, Any],
-            time_step: float,
-            reference_year: float,
-            simulations: Dict[str, pd.DataFrame],
-            output_compartment: str
+        self,
+        user_inputs: Dict[str, Any],
+        time_step: float,
+        reference_year: float,
+        simulations: Dict[str, pd.DataFrame],
+        output_compartment: str,
     ) -> None:
         simulation_results = self._format_simulation_results(
-            user_inputs,
-            time_step,
-            reference_year,
-            collapse_compartments=True
+            user_inputs, time_step, reference_year, collapse_compartments=True
         )
 
-        simulation_results[simulation_results['compartment'] == output_compartment].plot(
-            x='year', y=[f'{simulation_name}_total_population' for simulation_name in simulations.keys()])
+        simulation_results[
+            simulation_results["compartment"] == output_compartment
+        ].plot(
+            x="year",
+            y=[
+                f"{simulation_name}_total_population"
+                for simulation_name in simulations.keys()
+            ],
+        )
         plt.title(f"Policy Impact on {output_compartment} Population")
         plt.ylabel(f"Estimated Year End {output_compartment} Population")
-        plt.legend(loc='lower left')
+        plt.legend(loc="lower left")
         plt.ylim([0, None])
 
     def _format_simulation_results(
-            self,
-            user_inputs: Dict[str, Any],
-            time_step: float,
-            reference_year: float,
-            collapse_compartments: bool = False
+        self,
+        user_inputs: Dict[str, Any],
+        time_step: float,
+        reference_year: float,
+        collapse_compartments: bool = False,
     ) -> pd.DataFrame:
         """Re-format PopulationSimulation results so each simulation is a column"""
         simulation_results = pd.DataFrame()
         for scenario, simulation in self.pop_simulations.items():
             results = simulation.get_population_projections()
-            results = results[results.time_step >= user_inputs['start_time_step']]
-            results = results.rename({'time_step': 'year', 'total_population': f'{scenario}_total_population'}, axis=1)
-            results.year = Initializer.convert_to_absolute_year(time_step, reference_year, results.year)
+            results = results[results.time_step >= user_inputs["start_time_step"]]
+            results = results.rename(
+                {
+                    "time_step": "year",
+                    "total_population": f"{scenario}_total_population",
+                },
+                axis=1,
+            )
+            results.year = Initializer.convert_to_absolute_year(
+                time_step, reference_year, results.year
+            )
 
             if simulation_results.empty:
                 simulation_results = results
             else:
                 simulation_results = simulation_results.merge(
-                    results, on=['compartment', 'year', 'simulation_group'])
+                    results, on=["compartment", "year", "simulation_group"]
+                )
 
         if collapse_compartments:
-            simulation_results = simulation_results.groupby(['compartment', 'year'], as_index=False).sum()
+            simulation_results = simulation_results.groupby(
+                ["compartment", "year"], as_index=False
+            ).sum()
 
         simulation_results.index = simulation_results.year
 
@@ -241,14 +273,14 @@ class Simulator:
 
     @staticmethod
     def _build_population_simulation(
-            user_inputs: Dict[str, Any],
-            data_inputs: Dict[str, Any],
-            policy_list: List[SparkPolicy],
-            first_relevant_ts: int
+        user_inputs: Dict[str, Any],
+        data_inputs: Dict[str, Any],
+        policy_list: List[SparkPolicy],
+        first_relevant_ts: int,
     ) -> PopulationSimulation:
         return PopulationSimulationFactory.build_population_simulation(
             user_inputs=user_inputs,
             policy_list=policy_list,
             first_relevant_ts=first_relevant_ts,
-            **data_inputs
+            **data_inputs,
         )

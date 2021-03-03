@@ -24,8 +24,9 @@ import pandas as pd
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
-from recidiviz.persistence.database.sqlalchemy_engine_manager import \
-    SQLAlchemyEngineManager
+from recidiviz.persistence.database.sqlalchemy_engine_manager import (
+    SQLAlchemyEngineManager,
+)
 from recidiviz.persistence.database.base_schema import JailsBase
 
 
@@ -38,26 +39,28 @@ def write_df(table: DeclarativeMeta, df: pd.DataFrame) -> None:
     |table|, then that row will be skipped.
     """
     try:
-        df.to_sql(table.__tablename__,
-                  SQLAlchemyEngineManager.get_engine_for_schema_base(JailsBase),
-                  if_exists='append',
-                  index=False)
+        df.to_sql(
+            table.__tablename__,
+            SQLAlchemyEngineManager.get_engine_for_schema_base(JailsBase),
+            if_exists="append",
+            index=False,
+        )
     except IntegrityError:
         _write_df_only_successful_rows(table, df)
 
 
-def _write_df_only_successful_rows(
-        table: DeclarativeMeta, df: pd.DataFrame) -> None:
+def _write_df_only_successful_rows(table: DeclarativeMeta, df: pd.DataFrame) -> None:
     """If the dataframe can't be written all at once (eg. some rows already
     exist in the database) then we write only the rows that we can."""
     for i in range(len(df)):
-        row = df.iloc[i:i + 1]
+        row = df.iloc[i : i + 1]
         try:
-            row.to_sql(table.__tablename__,
-                       SQLAlchemyEngineManager.get_engine_for_schema_base(
-                           JailsBase),
-                       if_exists='append',
-                       index=False)
+            row.to_sql(
+                table.__tablename__,
+                SQLAlchemyEngineManager.get_engine_for_schema_base(JailsBase),
+                if_exists="append",
+                index=False,
+            )
         except IntegrityError:
             # Skip rows that can't be written
             logging.info("Skipping write_df to %s table: %s.", table, row)

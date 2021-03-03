@@ -17,8 +17,9 @@
 """Tests for SingleThreadTaskQueue."""
 import unittest
 
-from recidiviz.tests.ingest.direct.fake_async_direct_ingest_cloud_task_manager import \
-    SingleThreadTaskQueue
+from recidiviz.tests.ingest.direct.fake_async_direct_ingest_cloud_task_manager import (
+    SingleThreadTaskQueue,
+)
 
 
 class _TestException(ValueError):
@@ -29,18 +30,18 @@ class SingleThreadTaskQueueTest(unittest.TestCase):
     """Tests for SingleThreadTaskQueue."""
 
     def test_join_terminates_and_raises_on_exception(self) -> None:
-        task_queue = SingleThreadTaskQueue(name='test_queue')
+        task_queue = SingleThreadTaskQueue(name="test_queue")
 
         def raise_value_error() -> None:
-            raise _TestException('FOO BAR')
+            raise _TestException("FOO BAR")
 
-        task_queue.add_task('my_task', raise_value_error)
+        task_queue.add_task("my_task", raise_value_error)
 
         with self.assertRaises(_TestException):
             task_queue.join()
 
     def test_run_many_tasks(self) -> None:
-        task_queue = SingleThreadTaskQueue(name='test_queue', max_tasks=1000)
+        task_queue = SingleThreadTaskQueue(name="test_queue", max_tasks=1000)
 
         self.num_tasks = 0
         expected_num_tasks = 1000
@@ -49,22 +50,22 @@ class SingleThreadTaskQueueTest(unittest.TestCase):
             self.num_tasks += 1
 
         for _ in range(expected_num_tasks):
-            task_queue.add_task('task', do_task)
+            task_queue.add_task("task", do_task)
 
         task_queue.join()
         self.assertEqual(expected_num_tasks, self.num_tasks)
 
     def test_add_tasks_during_tasks(self) -> None:
-        task_queue = SingleThreadTaskQueue(name='test_queue')
+        task_queue = SingleThreadTaskQueue(name="test_queue")
 
         self.num_tasks = 0
 
         def do_task() -> None:
             self.num_tasks += 1
             if self.num_tasks < 10:
-                task_queue.add_task('task', do_task)
+                task_queue.add_task("task", do_task)
 
-        task_queue.add_task('task', do_task)
+        task_queue.add_task("task", do_task)
 
         task_queue.join()
         self.assertEqual(10, self.num_tasks)

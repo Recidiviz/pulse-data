@@ -24,7 +24,10 @@ from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.export.big_query_view_exporter import ViewExportValidationError
-from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig, ExportOutputFormatType
+from recidiviz.big_query.export.export_query_config import (
+    ExportBigQueryViewConfig,
+    ExportOutputFormatType,
+)
 from recidiviz.big_query.view_update_manager import BigQueryViewNamespace
 from recidiviz.metrics.export.export_config import ExportViewCollectionConfig
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
@@ -37,31 +40,40 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
     """Tests for view_export_manager.py."""
 
     def setUp(self) -> None:
-        self.mock_state_code = 'US_XX'
-        self.mock_project_id = 'fake-recidiviz-project'
-        self.mock_dataset_id = 'base_dataset'
+        self.mock_state_code = "US_XX"
+        self.mock_project_id = "fake-recidiviz-project"
+        self.mock_dataset_id = "base_dataset"
         self.mock_dataset = bigquery.dataset.DatasetReference(
-            self.mock_project_id, self.mock_dataset_id)
+            self.mock_project_id, self.mock_dataset_id
+        )
 
-        self.metadata_patcher = mock.patch('recidiviz.utils.metadata.project_id')
+        self.metadata_patcher = mock.patch("recidiviz.utils.metadata.project_id")
         self.mock_project_id_fn = self.metadata_patcher.start()
         self.mock_project_id_fn.return_value = self.mock_project_id
 
         self.client_patcher = mock.patch(
-            'recidiviz.metrics.export.view_export_manager.BigQueryClientImpl')
+            "recidiviz.metrics.export.view_export_manager.BigQueryClientImpl"
+        )
         self.mock_client = self.client_patcher.start().return_value
 
         self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset
 
-        self.mock_view_builder = SimpleBigQueryViewBuilder(dataset_id=self.mock_dataset.dataset_id,
-                                                           view_id='test_view',
-                                                           view_query_template='SELECT NULL LIMIT 0')
-        self.mock_metric_view_builder = MetricBigQueryViewBuilder(dataset_id=self.mock_dataset.dataset_id,
-                                                                  view_id='test_view',
-                                                                  view_query_template='SELECT NULL LIMIT 0',
-                                                                  dimensions=[])
+        self.mock_view_builder = SimpleBigQueryViewBuilder(
+            dataset_id=self.mock_dataset.dataset_id,
+            view_id="test_view",
+            view_query_template="SELECT NULL LIMIT 0",
+        )
+        self.mock_metric_view_builder = MetricBigQueryViewBuilder(
+            dataset_id=self.mock_dataset.dataset_id,
+            view_id="test_view",
+            view_query_template="SELECT NULL LIMIT 0",
+            dimensions=[],
+        )
 
-        self.view_buidlers_for_dataset = [self.mock_view_builder, self.mock_metric_view_builder]
+        self.view_buidlers_for_dataset = [
+            self.mock_view_builder,
+            self.mock_metric_view_builder,
+        ]
 
         self.output_uri_template_for_dataset = {
             "dataset_id": "gs://{project_id}-dataset-location/subdirectory",
@@ -69,7 +81,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
 
         self.views_to_update = {self.mock_dataset_id: self.view_buidlers_for_dataset}
 
-        self.mock_export_name = 'MOCK_EXPORT_NAME'
+        self.mock_export_name = "MOCK_EXPORT_NAME"
         self.mock_big_query_view_namespace = BigQueryViewNamespace.STATE
 
         self.metric_dataset_export_configs = [
@@ -83,17 +95,19 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         ]
 
         export_config_values = {
-            'OUTPUT_DIRECTORY_URI_TEMPLATE_FOR_DATASET_EXPORT': self.output_uri_template_for_dataset,
-            'VIEW_COLLECTION_EXPORT_CONFIGS': self.metric_dataset_export_configs,
+            "OUTPUT_DIRECTORY_URI_TEMPLATE_FOR_DATASET_EXPORT": self.output_uri_template_for_dataset,
+            "VIEW_COLLECTION_EXPORT_CONFIGS": self.metric_dataset_export_configs,
         }
 
         self.export_config_patcher = mock.patch(  # type: ignore[call-overload]
-            'recidiviz.metrics.export.view_export_manager.export_config',
-            **export_config_values)
+            "recidiviz.metrics.export.view_export_manager.export_config",
+            **export_config_values,
+        )
         self.mock_export_config = self.export_config_patcher.start()
 
         self.gcs_factory_patcher = mock.patch(
-            'recidiviz.metrics.export.view_export_manager.GcsfsFactory.build')
+            "recidiviz.metrics.export.view_export_manager.GcsfsFactory.build"
+        )
         self.gcs_factory_patcher.start().return_value = FakeGCSFileSystem()
 
     def tearDown(self) -> None:
@@ -102,13 +116,19 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         self.metadata_patcher.stop()
         self.gcs_factory_patcher.stop()
 
-    @mock.patch('recidiviz.big_query.view_update_manager.rematerialize_views_for_namespace')
-    @mock.patch('recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter')
-    def test_export_dashboard_data_to_cloud_storage(self,
-                                                    mock_view_exporter,
-                                                    mock_view_update_manager_rematerialize) -> None:
+    @mock.patch(
+        "recidiviz.big_query.view_update_manager.rematerialize_views_for_namespace"
+    )
+    @mock.patch(
+        "recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter"
+    )
+    def test_export_dashboard_data_to_cloud_storage(
+        self, mock_view_exporter, mock_view_update_manager_rematerialize
+    ) -> None:
         """Tests the table is created from the view and then extracted."""
-        view_export_manager.export_view_data_to_cloud_storage(self.mock_state_code, mock_view_exporter)
+        view_export_manager.export_view_data_to_cloud_storage(
+            self.mock_state_code, mock_view_exporter
+        )
 
         view = self.mock_view_builder.build()
         metric_view = self.mock_metric_view_builder.build()
@@ -121,7 +141,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
                     "gs://{project_id}-dataset-location/subdirectory/{state_code}".format(
                         project_id=self.mock_project_id,
-                        state_code='US_XX',
+                        state_code="US_XX",
                     )
                 ),
                 export_output_formats=[ExportOutputFormatType.JSON],
@@ -133,39 +153,67 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
                     "gs://{project_id}-dataset-location/subdirectory/{state_code}".format(
                         project_id=self.mock_project_id,
-                        state_code='US_XX',
+                        state_code="US_XX",
                     )
                 ),
-                export_output_formats=[ExportOutputFormatType.JSON, ExportOutputFormatType.METRIC],
+                export_output_formats=[
+                    ExportOutputFormatType.JSON,
+                    ExportOutputFormatType.METRIC,
+                ],
             ),
         ]
 
         mock_view_update_manager_rematerialize.assert_called()
-        mock_view_exporter.export_and_validate.assert_has_calls([
-            mock.call([]),  # CSV export
-            mock.call([view_export_configs[1].pointed_to_staging_subdirectory()]),  # JSON export
-            mock.call([conf.pointed_to_staging_subdirectory() for conf in view_export_configs]),  # METRIC export
-        ], any_order=True)
+        mock_view_exporter.export_and_validate.assert_has_calls(
+            [
+                mock.call([]),  # CSV export
+                mock.call(
+                    [view_export_configs[1].pointed_to_staging_subdirectory()]
+                ),  # JSON export
+                mock.call(
+                    [
+                        conf.pointed_to_staging_subdirectory()
+                        for conf in view_export_configs
+                    ]
+                ),  # METRIC export
+            ],
+            any_order=True,
+        )
 
-    @mock.patch('recidiviz.big_query.view_update_manager.create_dataset_and_deploy_views_for_view_builders')
-    @mock.patch('recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter')
-    def test_raise_exception_no_export_matched(self, mock_view_exporter,
-                                               mock_view_update_manager_rematerialize) -> None:
+    @mock.patch(
+        "recidiviz.big_query.view_update_manager.create_dataset_and_deploy_views_for_view_builders"
+    )
+    @mock.patch(
+        "recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter"
+    )
+    def test_raise_exception_no_export_matched(
+        self, mock_view_exporter, mock_view_update_manager_rematerialize
+    ) -> None:
         # pylint: disable=unused-argument
         """Tests the table is created from the view and then extracted."""
         self.mock_export_config.NAMESPACE_TO_UPDATE_FOR_EXPORT_FILTER = {
-            'US_YY': 'NAMESPACE'
+            "US_YY": "NAMESPACE"
         }
 
         with self.assertRaises(ValueError) as e:
-            view_export_manager.export_view_data_to_cloud_storage('US_YY', mock_view_exporter)
-            self.assertEqual(str(e.exception), 'Export filter did not match any export configs:', ' US_YY')
+            view_export_manager.export_view_data_to_cloud_storage(
+                "US_YY", mock_view_exporter
+            )
+            self.assertEqual(
+                str(e.exception),
+                "Export filter did not match any export configs:",
+                " US_YY",
+            )
 
-    @mock.patch('recidiviz.big_query.view_update_manager.rematerialize_views_for_namespace')
-    @mock.patch('recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter')
-    def test_export_dashboard_data_to_cloud_storage_state_agnostic(self,
-                                                                   mock_view_exporter,
-                                                                   mock_view_update_manager_rematerialize) -> None:
+    @mock.patch(
+        "recidiviz.big_query.view_update_manager.rematerialize_views_for_namespace"
+    )
+    @mock.patch(
+        "recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter"
+    )
+    def test_export_dashboard_data_to_cloud_storage_state_agnostic(
+        self, mock_view_exporter, mock_view_update_manager_rematerialize
+    ) -> None:
         """Tests the table is created from the view and then extracted, where the export is not state-specific."""
         state_agnostic_dataset_export_configs = [
             ExportViewCollectionConfig(
@@ -177,10 +225,14 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             ),
         ]
 
-        self.mock_export_config.VIEW_COLLECTION_EXPORT_CONFIGS = state_agnostic_dataset_export_configs
+        self.mock_export_config.VIEW_COLLECTION_EXPORT_CONFIGS = (
+            state_agnostic_dataset_export_configs
+        )
 
-        view_export_manager.export_view_data_to_cloud_storage(export_job_filter=self.mock_export_name,
-                                                              override_view_exporter=mock_view_exporter)
+        view_export_manager.export_view_data_to_cloud_storage(
+            export_job_filter=self.mock_export_name,
+            override_view_exporter=mock_view_exporter,
+        )
 
         view = self.mock_view_builder.build()
         metric_view = self.mock_metric_view_builder.build()
@@ -206,88 +258,140 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                         project_id=self.mock_project_id,
                     )
                 ),
-                export_output_formats=[ExportOutputFormatType.JSON, ExportOutputFormatType.METRIC],
+                export_output_formats=[
+                    ExportOutputFormatType.JSON,
+                    ExportOutputFormatType.METRIC,
+                ],
             ),
         ]
 
         mock_view_update_manager_rematerialize.assert_called()
-        mock_view_exporter.export_and_validate.assert_has_calls([
-            mock.call([]),  # CSV export
-            mock.call([view_export_configs[1].pointed_to_staging_subdirectory()]),  # JSON export
-            mock.call([conf.pointed_to_staging_subdirectory() for conf in view_export_configs]),  # METRIC export
-        ], any_order=True)
+        mock_view_exporter.export_and_validate.assert_has_calls(
+            [
+                mock.call([]),  # CSV export
+                mock.call(
+                    [view_export_configs[1].pointed_to_staging_subdirectory()]
+                ),  # JSON export
+                mock.call(
+                    [
+                        conf.pointed_to_staging_subdirectory()
+                        for conf in view_export_configs
+                    ]
+                ),  # METRIC export
+            ],
+            any_order=True,
+        )
 
-    @mock.patch('recidiviz.big_query.view_update_manager.rematerialize_views_for_namespace')
-    @mock.patch('recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter')
-    def test_export_dashboard_data_to_cloud_storage_value_error(self,
-                                                                mock_view_exporter,
-                                                                mock_view_update_manager_rematerialize) -> None:
+    @mock.patch(
+        "recidiviz.big_query.view_update_manager.rematerialize_views_for_namespace"
+    )
+    @mock.patch(
+        "recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter"
+    )
+    def test_export_dashboard_data_to_cloud_storage_value_error(
+        self, mock_view_exporter, mock_view_update_manager_rematerialize
+    ) -> None:
         """Tests the table is created from the view and then extracted."""
 
         mock_view_exporter.export_and_validate.side_effect = ValueError
         with self.assertRaises(ValueError):
-            view_export_manager.export_view_data_to_cloud_storage(self.mock_state_code, mock_view_exporter)
+            view_export_manager.export_view_data_to_cloud_storage(
+                self.mock_state_code, mock_view_exporter
+            )
 
         # Just the metric export is attempted and then the raise stops subsequent checks from happening
         mock_view_update_manager_rematerialize.assert_called_once()
 
-    @mock.patch('recidiviz.big_query.view_update_manager.rematerialize_views_for_namespace')
-    @mock.patch('recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter')
-    def test_export_dashboard_data_to_cloud_storage_validation_error(self,
-                                                                     mock_view_exporter,
-                                                                     mock_view_update_manager_rematerialize) -> None:
+    @mock.patch(
+        "recidiviz.big_query.view_update_manager.rematerialize_views_for_namespace"
+    )
+    @mock.patch(
+        "recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter"
+    )
+    def test_export_dashboard_data_to_cloud_storage_validation_error(
+        self, mock_view_exporter, mock_view_update_manager_rematerialize
+    ) -> None:
         """Tests the table is created from the view and then extracted."""
 
         mock_view_exporter.export_and_validate.side_effect = ViewExportValidationError
 
         # Should not throw
-        view_export_manager.export_view_data_to_cloud_storage(self.mock_state_code, mock_view_exporter)
+        view_export_manager.export_view_data_to_cloud_storage(
+            self.mock_state_code, mock_view_exporter
+        )
 
         # Just the metric export is attempted and then the raise stops subsequent checks from happening
         mock_view_update_manager_rematerialize.assert_called_once()
 
-    @mock.patch('recidiviz.metrics.export.view_export_manager.view_update_manager.VIEW_BUILDERS_BY_NAMESPACE')
-    @mock.patch('recidiviz.big_query.view_update_manager.rematerialize_views_for_namespace')
-    @mock.patch('recidiviz.big_query.view_update_manager.create_dataset_and_deploy_views_for_view_builders')
-    @mock.patch('recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter')
-    def test_export_dashboard_data_to_cloud_storage_update_all_views(self,
-                                                                     mock_view_exporter,
-                                                                     mock_view_update_manager_deploy,
-                                                                     mock_view_update_manager_rematerialize,
-                                                                     mock_view_builders_by_namespace) -> None:
+    @mock.patch(
+        "recidiviz.metrics.export.view_export_manager.view_update_manager.VIEW_BUILDERS_BY_NAMESPACE"
+    )
+    @mock.patch(
+        "recidiviz.big_query.view_update_manager.rematerialize_views_for_namespace"
+    )
+    @mock.patch(
+        "recidiviz.big_query.view_update_manager.create_dataset_and_deploy_views_for_view_builders"
+    )
+    @mock.patch(
+        "recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter"
+    )
+    def test_export_dashboard_data_to_cloud_storage_update_all_views(
+        self,
+        mock_view_exporter,
+        mock_view_update_manager_deploy,
+        mock_view_update_manager_rematerialize,
+        mock_view_builders_by_namespace,
+    ) -> None:
         """Tests that all views in the namespace are updated before the export when the export name is in
         export_config.NAMESPACES_REQUIRING_FULL_UPDATE."""
-        self.mock_export_config.NAMESPACES_REQUIRING_FULL_UPDATE = [self.mock_big_query_view_namespace]
+        self.mock_export_config.NAMESPACES_REQUIRING_FULL_UPDATE = [
+            self.mock_big_query_view_namespace
+        ]
 
         mock_view_builders_by_namespace.return_value = {
             self.mock_big_query_view_namespace: self.view_buidlers_for_dataset
         }
 
-        view_export_manager.export_view_data_to_cloud_storage(self.mock_state_code, mock_view_exporter)
+        view_export_manager.export_view_data_to_cloud_storage(
+            self.mock_state_code, mock_view_exporter
+        )
 
         mock_view_update_manager_deploy.assert_called_with(
             self.mock_big_query_view_namespace,
-            mock_view_builders_by_namespace[self.mock_big_query_view_namespace])
+            mock_view_builders_by_namespace[self.mock_big_query_view_namespace],
+        )
         mock_view_update_manager_rematerialize.assert_called_once()
 
-    @mock.patch('recidiviz.metrics.export.view_export_manager.view_update_manager.VIEW_BUILDERS_BY_NAMESPACE')
-    @mock.patch('recidiviz.big_query.view_update_manager.rematerialize_views_for_namespace')
-    @mock.patch('recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter')
+    @mock.patch(
+        "recidiviz.metrics.export.view_export_manager.view_update_manager.VIEW_BUILDERS_BY_NAMESPACE"
+    )
+    @mock.patch(
+        "recidiviz.big_query.view_update_manager.rematerialize_views_for_namespace"
+    )
+    @mock.patch(
+        "recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter"
+    )
     def test_export_dashboard_data_to_cloud_storage_update_materialized_views_only(
-            self,
-            mock_view_exporter,
-            mock_view_update_manager_rematerialize,
-            mock_view_builders_by_namespace) -> None:
+        self,
+        mock_view_exporter,
+        mock_view_update_manager_rematerialize,
+        mock_view_builders_by_namespace,
+    ) -> None:
         """Tests that only materialized views in the namespace are updated before the export when the export name is not
         in export_config.NAMESPACES_REQUIRING_FULL_UPDATE."""
-        self.mock_export_config.NAMESPACES_REQUIRING_FULL_UPDATE = ['OTHER_NAMESPACE']
+        self.mock_export_config.NAMESPACES_REQUIRING_FULL_UPDATE = ["OTHER_NAMESPACE"]
 
         mock_view_builders_by_namespace.return_value = {
             self.mock_big_query_view_namespace: self.view_buidlers_for_dataset
         }
 
-        view_export_manager.export_view_data_to_cloud_storage(self.mock_state_code, mock_view_exporter)
+        view_export_manager.export_view_data_to_cloud_storage(
+            self.mock_state_code, mock_view_exporter
+        )
 
         mock_view_update_manager_rematerialize.assert_called_with(
             bq_view_namespace=self.mock_big_query_view_namespace,
-            candidate_view_builders=mock_view_builders_by_namespace[self.mock_big_query_view_namespace])
+            candidate_view_builders=mock_view_builders_by_namespace[
+                self.mock_big_query_view_namespace
+            ],
+        )

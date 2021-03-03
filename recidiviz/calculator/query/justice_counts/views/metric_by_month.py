@@ -262,6 +262,7 @@ JOIN `{project_id}.{base_dataset}.report_materialized` report
 ORDER BY {aggregated_dimension_columns}, metric, year DESC, month DESC
 """
 
+
 @attr.s(frozen=True)
 class Aggregation:
     dimension: Type[manual_upload.Dimension] = attr.ib()
@@ -282,9 +283,11 @@ class Aggregation:
     # data for non-comprehensive dimension can be assembled from multiple table instances, reports, or sources.
     comprehensive: bool = attr.ib()
 
+
 @attr.s(frozen=True)
 class CalculatedMetricByMonth:
     """Represents a metric and describes how to calculate it"""
+
     system: schema.System = attr.ib()
     metric: schema.MetricType = attr.ib()
 
@@ -302,59 +305,91 @@ class CalculatedMetricByMonth:
 
     @property
     def _comprehensive_aggregations(self) -> List[Type[manual_upload.Dimension]]:
-        return [aggregation.dimension for aggregation in self.aggregated_dimensions.values()
-                if aggregation.comprehensive]
+        return [
+            aggregation.dimension
+            for aggregation in self.aggregated_dimensions.values()
+            if aggregation.comprehensive
+        ]
 
     @property
     def _noncomprehensive_aggregations(self) -> List[Type[manual_upload.Dimension]]:
-        return [aggregation.dimension for aggregation in self.aggregated_dimensions.values()
-                if not aggregation.comprehensive]
+        return [
+            aggregation.dimension
+            for aggregation in self.aggregated_dimensions.values()
+            if not aggregation.comprehensive
+        ]
 
     @property
     def input_allowed_filters(self) -> List[Type[manual_upload.Dimension]]:
         """Filters that a table definition can have and still be used as input for this calculation."""
-        return [type(filtered_dimension) for filtered_dimension in self.filtered_dimensions] \
-            + self._noncomprehensive_aggregations
+        return [
+            type(filtered_dimension) for filtered_dimension in self.filtered_dimensions
+        ] + self._noncomprehensive_aggregations
 
     @property
     def input_required_aggregations(self) -> List[Type[manual_upload.Dimension]]:
         """Dimensions that a table definition must be aggregated by to be used as input for this calculation."""
         return self._comprehensive_aggregations
 
+
 class CalculatedMetricByMonthViewBuilder(SimpleBigQueryViewBuilder):
     """Factory class for building views that calculate metrics by month."""
-    def __init__(self, *, dataset_id: str, metric_to_calculate: CalculatedMetricByMonth):
+
+    def __init__(
+        self, *, dataset_id: str, metric_to_calculate: CalculatedMetricByMonth
+    ):
         # For determining which table definitions can be used.
-        input_allowed_filters = ', '.join([
-            f"'{dimension.dimension_identifier()}'" for dimension in metric_to_calculate.input_allowed_filters])
-        input_required_aggregations_conditions = ' '.join([
-            f"AND '{dimension.dimension_identifier()}' IN UNNEST(aggregated_dimensions)"
-            for dimension in metric_to_calculate.input_required_aggregations])
+        input_allowed_filters = ", ".join(
+            [
+                f"'{dimension.dimension_identifier()}'"
+                for dimension in metric_to_calculate.input_allowed_filters
+            ]
+        )
+        input_required_aggregations_conditions = " ".join(
+            [
+                f"AND '{dimension.dimension_identifier()}' IN UNNEST(aggregated_dimensions)"
+                for dimension in metric_to_calculate.input_required_aggregations
+            ]
+        )
 
         # For filtering data
         if metric_to_calculate.filtered_dimensions:
-            dimensions_match_filter_clause = ' OR '.join([
-                f"(dimension = '{dimension.dimension_identifier()}' "
-                f"AND dimension_value = '{dimension.dimension_value}')"
-                for dimension in metric_to_calculate.filtered_dimensions])
+            dimensions_match_filter_clause = " OR ".join(
+                [
+                    f"(dimension = '{dimension.dimension_identifier()}' "
+                    f"AND dimension_value = '{dimension.dimension_value}')"
+                    for dimension in metric_to_calculate.filtered_dimensions
+                ]
+            )
         else:
             dimensions_match_filter_clause = "FALSE"
 
         # For spatial aggregation
-        aggregated_dimension_identifiers = ', '.join([
-            f"'{aggregation.dimension.dimension_identifier()}'"
-            for aggregation in metric_to_calculate.aggregated_dimensions.values()])
+        aggregated_dimension_identifiers = ", ".join(
+            [
+                f"'{aggregation.dimension.dimension_identifier()}'"
+                for aggregation in metric_to_calculate.aggregated_dimensions.values()
+            ]
+        )
 
         # For moving aggregate dimensions to columns in output
-        aggregated_dimensions_array_columns_to_single_value_columns_clause = ', '.join([
-            f"unnested_dimensions.{column_name}_array[ORDINAL(1)] as {column_name}"
-            for column_name in metric_to_calculate.aggregated_dimensions])
-        aggregated_dimensions_array_split_to_columns_clause = ', '.join([
-            f"ARRAY(SELECT dimension_value FROM UNNEST(dimensions) "
-            f"WHERE dimension = '{aggregation.dimension.dimension_identifier()}') as {column_name}_array"
-            for column_name, aggregation in metric_to_calculate.aggregated_dimensions.items()])
+        aggregated_dimensions_array_columns_to_single_value_columns_clause = ", ".join(
+            [
+                f"unnested_dimensions.{column_name}_array[ORDINAL(1)] as {column_name}"
+                for column_name in metric_to_calculate.aggregated_dimensions
+            ]
+        )
+        aggregated_dimensions_array_split_to_columns_clause = ", ".join(
+            [
+                f"ARRAY(SELECT dimension_value FROM UNNEST(dimensions) "
+                f"WHERE dimension = '{aggregation.dimension.dimension_identifier()}') as {column_name}_array"
+                for column_name, aggregation in metric_to_calculate.aggregated_dimensions.items()
+            ]
+        )
 
-        aggregated_dimension_columns = ', '.join(metric_to_calculate.aggregated_dimensions)
+        aggregated_dimension_columns = ", ".join(
+            metric_to_calculate.aggregated_dimensions
+        )
 
         super().__init__(
             dataset_id=dataset_id,
@@ -371,8 +406,7 @@ class CalculatedMetricByMonthViewBuilder(SimpleBigQueryViewBuilder):
             dimensions_match_filter_clause=dimensions_match_filter_clause,
             num_filtered_dimensions=str(len(metric_to_calculate.filtered_dimensions)),
             aggregated_dimension_identifiers=aggregated_dimension_identifiers,
-            aggregated_dimensions_array_columns_to_single_value_columns_clause=\
-                aggregated_dimensions_array_columns_to_single_value_columns_clause,
+            aggregated_dimensions_array_columns_to_single_value_columns_clause=aggregated_dimensions_array_columns_to_single_value_columns_clause,
             aggregated_dimensions_array_split_to_columns_clause=aggregated_dimensions_array_split_to_columns_clause,
             metric_output_name=metric_to_calculate.output_name,
             aggregated_dimension_columns=aggregated_dimension_columns,

@@ -22,21 +22,25 @@ import requests
 from recidiviz.ingest.aggregate.regions.tn import tn_aggregate_site_scraper
 from recidiviz.tests.ingest import fixtures
 
-REPORTS_HTML = fixtures.as_string('aggregate/regions/tn', 'reports.html')
+REPORTS_HTML = fixtures.as_string("aggregate/regions/tn", "reports.html")
 
 
 class TestTnAggregateSiteScraper(TestCase):
     """Test that tn_aggregate_site_scraper correctly scrapes urls."""
 
-    @patch.object(requests, 'get')
+    @patch.object(requests, "get")
     def testGetAllUrls(self, mockget):
         mockresponse = Mock()
         mockget.return_value = mockresponse
         mockresponse.text = REPORTS_HTML
-        url1 = ('https://www.tn.gov/content/dam/tn/correction/documents/'
-                'JailAugust2018.pdf')
-        url2 = ('https://www.tn.gov/content/dam/tn/correction/documents/'
-                'JailFemaleOctober2017.pdf')
+        url1 = (
+            "https://www.tn.gov/content/dam/tn/correction/documents/"
+            "JailAugust2018.pdf"
+        )
+        url2 = (
+            "https://www.tn.gov/content/dam/tn/correction/documents/"
+            "JailFemaleOctober2017.pdf"
+        )
         expected_urls = {url1, url2}
 
         urls = tn_aggregate_site_scraper.get_urls_to_download()

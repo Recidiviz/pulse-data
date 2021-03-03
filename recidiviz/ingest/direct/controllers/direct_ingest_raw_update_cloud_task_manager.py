@@ -20,9 +20,13 @@
 import datetime
 import uuid
 
-from recidiviz.common.google_cloud.cloud_task_queue_manager import CloudTaskQueueManager, CloudTaskQueueInfo
-from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import \
-    BIGQUERY_QUEUE_V2
+from recidiviz.common.google_cloud.cloud_task_queue_manager import (
+    CloudTaskQueueManager,
+    CloudTaskQueueInfo,
+)
+from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
+    BIGQUERY_QUEUE_V2,
+)
 
 
 class DirectIngestRawUpdateCloudTaskManager:
@@ -31,17 +35,19 @@ class DirectIngestRawUpdateCloudTaskManager:
     """
 
     def __init__(self) -> None:
-        self.cloud_task_queue_manager = CloudTaskQueueManager(queue_info_cls=CloudTaskQueueInfo,
-                                                              queue_name=BIGQUERY_QUEUE_V2)
+        self.cloud_task_queue_manager = CloudTaskQueueManager(
+            queue_info_cls=CloudTaskQueueInfo, queue_name=BIGQUERY_QUEUE_V2
+        )
 
     def create_raw_data_latest_view_update_task(self, region_code: str) -> None:
 
-        relative_uri = f'/direct/update_raw_data_latest_views_for_state?region={region_code}'
+        relative_uri = (
+            f"/direct/update_raw_data_latest_views_for_state?region={region_code}"
+        )
 
-        task_id = '{}-update_raw_data_latest_views-{}-{}'.format(
-            region_code,
-            str(datetime.datetime.utcnow().date()),
-            uuid.uuid4())
+        task_id = "{}-update_raw_data_latest_views-{}-{}".format(
+            region_code, str(datetime.datetime.utcnow().date()), uuid.uuid4()
+        )
 
         self.cloud_task_queue_manager.create_task(
             task_id=task_id,

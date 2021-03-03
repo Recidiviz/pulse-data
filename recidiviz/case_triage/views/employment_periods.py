@@ -49,10 +49,10 @@ WHERE
 
 CURRENT_EMPLOYMENT_PERIODS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=VIEWS_DATASET,
-    view_id='employment_periods',
+    view_id="employment_periods",
     view_query_template=CURRENT_EMPLOYMENT_PERIODS_QUERY_TEMPLATE,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         CURRENT_EMPLOYMENT_PERIODS_VIEW_BUILDER.build_and_print()

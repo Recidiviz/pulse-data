@@ -20,12 +20,18 @@
 import abc
 from typing import Generic
 
-from recidiviz.validation.validation_models import DataValidationType, DataValidationJob, DataValidationJobResult
+from recidiviz.validation.validation_models import (
+    DataValidationType,
+    DataValidationJob,
+    DataValidationJobResult,
+)
 
 
 class ValidationChecker(Generic[DataValidationType]):
     """Defines the interface for performing a particular kind of check."""
 
     @abc.abstractmethod
-    def run_check(self, validation_job: DataValidationJob[DataValidationType]) -> DataValidationJobResult:
+    def run_check(
+        self, validation_job: DataValidationJob[DataValidationType]
+    ) -> DataValidationJobResult:
         pass

@@ -21,13 +21,14 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-US_ID_PAROLE_BOARD_HOLD_POPULATION_TRANSITIONS_VIEW_NAME = 'us_id_parole_board_hold_population_transitions'
+US_ID_PAROLE_BOARD_HOLD_POPULATION_TRANSITIONS_VIEW_NAME = (
+    "us_id_parole_board_hold_population_transitions"
+)
 
-US_ID_PAROLE_BOARD_HOLD_POPULATION_TRANSITIONS_VIEW_DESCRIPTION = \
-    """"Historical US_ID Board Hold total population by outflow compartment, and compartment duration (months)"""
+US_ID_PAROLE_BOARD_HOLD_POPULATION_TRANSITIONS_VIEW_DESCRIPTION = """"Historical US_ID Board Hold total population 
+by outflow compartment, and compartment duration (months)"""
 
-US_ID_PAROLE_BOARD_HOLD_POPULATION_TRANSITIONS_QUERY_TEMPLATE = \
-    """
+US_ID_PAROLE_BOARD_HOLD_POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
     /*{description}*/
     WITH cohorts_per_run_date AS (
       SELECT
@@ -105,9 +106,9 @@ US_ID_PAROLE_BOARD_HOLD_POPULATION_TRANSITIONS_VIEW_BUILDER = SimpleBigQueryView
     description=US_ID_PAROLE_BOARD_HOLD_POPULATION_TRANSITIONS_VIEW_DESCRIPTION,
     analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
     population_projection_dataset=dataset_config.POPULATION_PROJECTION_DATASET,
-    should_materialize=False
+    should_materialize=False,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         US_ID_PAROLE_BOARD_HOLD_POPULATION_TRANSITIONS_VIEW_BUILDER.build_and_print()

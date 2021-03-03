@@ -19,21 +19,18 @@
 from enum import unique
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
-import recidiviz.common.constants.state.enum_canonical_strings as \
-    state_enum_strings
+import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
 @unique
 class StateSupervisionType(EntityEnum, metaclass=EntityEnumMeta):
-    CIVIL_COMMITMENT = \
-        state_enum_strings.state_supervision_type_civil_commitment
+    CIVIL_COMMITMENT = state_enum_strings.state_supervision_type_civil_commitment
     INTERNAL_UNKNOWN = enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     HALFWAY_HOUSE = state_enum_strings.state_supervision_type_halfway_house
     PAROLE = state_enum_strings.state_supervision_type_parole
-    POST_CONFINEMENT = \
-        state_enum_strings.state_supervision_type_post_confinement
+    POST_CONFINEMENT = state_enum_strings.state_supervision_type_post_confinement
     PRE_CONFINEMENT = state_enum_strings.state_supervision_type_pre_confinement
     PROBATION = state_enum_strings.state_supervision_type_probation
 
@@ -43,22 +40,22 @@ class StateSupervisionType(EntityEnum, metaclass=EntityEnumMeta):
 
 
 _SUPERVISION_TYPE_MAP = {
-    'CIVIL COMMITMENT': StateSupervisionType.CIVIL_COMMITMENT,
-    'CC': StateSupervisionType.CIVIL_COMMITMENT,
-    'CCC': StateSupervisionType.CIVIL_COMMITMENT,
-    'EXTERNAL UNKNOWN': StateSupervisionType.EXTERNAL_UNKNOWN,
-    'INTERNAL UNKNOWN': StateSupervisionType.INTERNAL_UNKNOWN,
-    'HALFWAY HOUSE': StateSupervisionType.HALFWAY_HOUSE,
-    'HALFWAY HOME': StateSupervisionType.HALFWAY_HOUSE,
-    'HALFWAY': StateSupervisionType.HALFWAY_HOUSE,
-    'IC PAROLE': StateSupervisionType.PAROLE,
-    'PAROLE': StateSupervisionType.PAROLE,
-    'POST CONFINEMENT': StateSupervisionType.POST_CONFINEMENT,
-    'POST RELEASE': StateSupervisionType.POST_CONFINEMENT,
-    'PRE CONFINEMENT': StateSupervisionType.PRE_CONFINEMENT,
-    'PRE RELEASE': StateSupervisionType.PRE_CONFINEMENT,
-    'DEFERRED': StateSupervisionType.PROBATION,
-    'IC PROBATION': StateSupervisionType.PROBATION,
-    'PROBATION': StateSupervisionType.PROBATION,
-    'SUSPENDED': StateSupervisionType.PROBATION,
+    "CIVIL COMMITMENT": StateSupervisionType.CIVIL_COMMITMENT,
+    "CC": StateSupervisionType.CIVIL_COMMITMENT,
+    "CCC": StateSupervisionType.CIVIL_COMMITMENT,
+    "EXTERNAL UNKNOWN": StateSupervisionType.EXTERNAL_UNKNOWN,
+    "INTERNAL UNKNOWN": StateSupervisionType.INTERNAL_UNKNOWN,
+    "HALFWAY HOUSE": StateSupervisionType.HALFWAY_HOUSE,
+    "HALFWAY HOME": StateSupervisionType.HALFWAY_HOUSE,
+    "HALFWAY": StateSupervisionType.HALFWAY_HOUSE,
+    "IC PAROLE": StateSupervisionType.PAROLE,
+    "PAROLE": StateSupervisionType.PAROLE,
+    "POST CONFINEMENT": StateSupervisionType.POST_CONFINEMENT,
+    "POST RELEASE": StateSupervisionType.POST_CONFINEMENT,
+    "PRE CONFINEMENT": StateSupervisionType.PRE_CONFINEMENT,
+    "PRE RELEASE": StateSupervisionType.PRE_CONFINEMENT,
+    "DEFERRED": StateSupervisionType.PROBATION,
+    "IC PROBATION": StateSupervisionType.PROBATION,
+    "PROBATION": StateSupervisionType.PROBATION,
+    "SUSPENDED": StateSupervisionType.PROBATION,
 }

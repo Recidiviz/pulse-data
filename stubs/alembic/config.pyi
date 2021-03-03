@@ -17,9 +17,7 @@
 
 from typing import Optional
 
-
 class Config:
     attributes: dict
     config_file_name: str
-
     def __init__(self, file_: Optional[str] = None): ...

@@ -18,7 +18,10 @@
 
 from typing import Union, Type
 
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod, StateSupervisionPeriod
+from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationPeriod,
+    StateSupervisionPeriod,
+)
 
 OVERLAPPING_PERIODS_TEMPLATE = """
   SELECT 
@@ -37,21 +40,23 @@ OVERLAPPING_PERIODS_TEMPLATE = """
 """
 
 
-def overlapping_periods_query(period_type: Union[Type[StateIncarcerationPeriod], Type[StateSupervisionPeriod]]) -> str:
+def overlapping_periods_query(
+    period_type: Union[Type[StateIncarcerationPeriod], Type[StateSupervisionPeriod]]
+) -> str:
     if period_type == StateIncarcerationPeriod:
-        start_date_field = 'admission_date'
-        end_date_field = 'release_date'
-        table_name = 'state_incarceration_period'
+        start_date_field = "admission_date"
+        end_date_field = "release_date"
+        table_name = "state_incarceration_period"
     elif period_type == StateSupervisionPeriod:
-        start_date_field = 'start_date'
-        end_date_field = 'termination_date'
-        table_name = 'state_supervision_period'
+        start_date_field = "start_date"
+        end_date_field = "termination_date"
+        table_name = "state_supervision_period"
     else:
-        raise ValueError(f'Unexpected period_type [{period_type}]')
+        raise ValueError(f"Unexpected period_type [{period_type}]")
 
     return OVERLAPPING_PERIODS_TEMPLATE.format(
         primary_key_field=period_type.get_primary_key_column_name(),
         start_date_field=start_date_field,
         end_date_field=end_date_field,
-        table_name=table_name
+        table_name=table_name,
     )

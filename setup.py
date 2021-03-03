@@ -28,35 +28,35 @@ import setuptools
 # which version of each package is installed, visit
 # https://cloud.google.com/dataflow/docs/concepts/sdk-worker-dependencies
 REQUIRED_PACKAGES = [
-    'aenum',
-    'apache-beam',
-    'cattrs',
-    'dateparser',
+    "aenum",
+    "apache-beam",
+    "cattrs",
+    "dateparser",
     # Must stay up-to-date with latest dill version in the Pipfile - this library is used for template serialization and
     # it's critical that the local version used to serialize the templates and the version used to deserialize on the
     # remote workers match.
-    'dill==0.3.3',
-    'Flask',
-    'google-api-core',
-    'google-api-python-client',
+    "dill==0.3.3",
+    "Flask",
+    "google-api-core",
+    "google-api-python-client",
     # TODO(#4231): Pinned due to dependency version introduced in version 2.0.0 on 10/5/20
-    'google-cloud-monitoring==1.1.0',
-    'google-cloud-secret-manager',
-    'more-itertools',
-    'oauth2client',
-    'opencensus',
-    'opencensus-correlation',
-    'opencensus-ext-stackdriver',
+    "google-cloud-monitoring==1.1.0",
+    "google-cloud-secret-manager",
+    "more-itertools",
+    "oauth2client",
+    "opencensus",
+    "opencensus-correlation",
+    "opencensus-ext-stackdriver",
     # Must stay up-to-date with latest protobuf version in the Pipfile
-    'protobuf==3.15.3',
-    'SQLAlchemy',
-    'us',
+    "protobuf==3.15.3",
+    "SQLAlchemy",
+    "us",
 ]
 
 setuptools.setup(
-    name='recidiviz-calculation-pipelines',
+    name="recidiviz-calculation-pipelines",
     # TODO(#2031): Dynamically set the package version
-    version='1.0.76',
+    version="1.0.76",
     install_requires=REQUIRED_PACKAGES,
-    packages=setuptools.find_packages()
+    packages=setuptools.find_packages(),
 )

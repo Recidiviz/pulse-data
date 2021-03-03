@@ -24,23 +24,25 @@ import pandas as pd
 from recidiviz.common.errors import FipsMergingError
 
 
-def fuzzy_join(df1: pd.DataFrame, df2: pd.DataFrame,
-               cutoff: float) -> pd.DataFrame:
+def fuzzy_join(df1: pd.DataFrame, df2: pd.DataFrame, cutoff: float) -> pd.DataFrame:
     """Merges df1 to df2 by choosing the closest index (fuzzy) to join on."""
     df1.index = df1.index.map(lambda x: best_match(x, df2.index, cutoff))
     return df1.join(df2)
 
 
-def best_match(county_name: str, known_county_names: Iterable[str],
-               cutoff: float) -> str:
+def best_match(
+    county_name: str, known_county_names: Iterable[str], cutoff: float
+) -> str:
     """Returns the closest match of |county_name| in |known_county_names|."""
-    close_matches = difflib.get_close_matches(county_name, known_county_names,
-                                              n=1, cutoff=cutoff)
+    close_matches = difflib.get_close_matches(
+        county_name, known_county_names, n=1, cutoff=cutoff
+    )
 
     if not close_matches:
         raise FipsMergingError(
             "Failed to fuzzy match '{}' to known county_names in the state: "
-            "{}".format(county_name, known_county_names))
+            "{}".format(county_name, known_county_names)
+        )
 
     closest_match = close_matches[0]
 

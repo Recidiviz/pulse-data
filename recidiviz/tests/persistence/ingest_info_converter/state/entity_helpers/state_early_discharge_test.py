@@ -19,13 +19,17 @@
 import unittest
 from datetime import date
 
-from recidiviz.common.constants.state.state_early_discharge import StateEarlyDischargeDecision, \
-    StateEarlyDischargeDecisionStatus
+from recidiviz.common.constants.state.state_early_discharge import (
+    StateEarlyDischargeDecision,
+    StateEarlyDischargeDecisionStatus,
+)
 from recidiviz.common.constants.state.shared_enums import StateActingBodyType
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.state.entity_helpers import state_early_discharge
+from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
+    state_early_discharge,
+)
 
 _EMPTY_METADATA = IngestMetadata.new_with_defaults()
 
@@ -36,37 +40,39 @@ class StateEarlyDischargeConverterTest(unittest.TestCase):
     def testParseStateSupervisionViolationResponse(self):
         # Arrange
         ingest_response = ingest_info_pb2.StateEarlyDischarge(
-            state_early_discharge_id='id1',
-            request_date='2010/07/01',
-            decision_date='2010/08/01',
-            decision='REQUEST_DENIED',
-            decision_status='DECIDED',
-            deciding_body_type='COURT',
-            requesting_body_type='SUPERVISION_OFFICER',
-            state_code='us_nd',
-            county_code='cty',
+            state_early_discharge_id="id1",
+            request_date="2010/07/01",
+            decision_date="2010/08/01",
+            decision="REQUEST_DENIED",
+            decision_status="DECIDED",
+            deciding_body_type="COURT",
+            requesting_body_type="SUPERVISION_OFFICER",
+            state_code="us_nd",
+            county_code="cty",
         )
 
         # Act
         response_builder = entities.StateEarlyDischarge.builder()
-        state_early_discharge.copy_fields_to_builder(response_builder, ingest_response, _EMPTY_METADATA)
+        state_early_discharge.copy_fields_to_builder(
+            response_builder, ingest_response, _EMPTY_METADATA
+        )
         result = response_builder.build()
 
         # Assert
         expected_result = entities.StateEarlyDischarge.new_with_defaults(
-            external_id='ID1',
+            external_id="ID1",
             request_date=date(year=2010, month=7, day=1),
             decision_date=date(year=2010, month=8, day=1),
             decision=StateEarlyDischargeDecision.REQUEST_DENIED,
-            decision_raw_text='REQUEST_DENIED',
+            decision_raw_text="REQUEST_DENIED",
             decision_status=StateEarlyDischargeDecisionStatus.DECIDED,
-            decision_status_raw_text='DECIDED',
+            decision_status_raw_text="DECIDED",
             deciding_body_type=StateActingBodyType.COURT,
-            deciding_body_type_raw_text='COURT',
+            deciding_body_type_raw_text="COURT",
             requesting_body_type=StateActingBodyType.SUPERVISION_OFFICER,
-            requesting_body_type_raw_text='SUPERVISION_OFFICER',
-            state_code='US_ND',
-            county_code='CTY',
+            requesting_body_type_raw_text="SUPERVISION_OFFICER",
+            state_code="US_ND",
+            county_code="CTY",
         )
 
         self.assertEqual(result, expected_result)

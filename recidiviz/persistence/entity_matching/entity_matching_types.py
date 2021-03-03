@@ -21,8 +21,7 @@ import attr
 
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.persistence.database.database_entity import DatabaseEntity
-from recidiviz.persistence.database.schema.schema_person_type import \
-    SchemaPersonType
+from recidiviz.persistence.database.schema.schema_person_type import SchemaPersonType
 
 
 # TODO(#1907): Rename people -> persons
@@ -40,33 +39,33 @@ class MatchedEntities(BuildableAttr, Generic[SchemaPersonType]):
     - total root entities: The total number of root entities processed during
         matching.
     """
+
     people: List[SchemaPersonType] = attr.ib(factory=list)
     orphaned_entities: List[DatabaseEntity] = attr.ib(factory=list)
     error_count: int = attr.ib(default=0)
     database_cleanup_error_count: int = attr.ib(default=0)
     total_root_entities: int = attr.ib(default=0)
 
-    def __add__(self, other: 'MatchedEntities') -> 'MatchedEntities':
+    def __add__(self, other: "MatchedEntities") -> "MatchedEntities":
         return MatchedEntities(
             people=self.people + other.people,
             orphaned_entities=self.orphaned_entities + other.orphaned_entities,
             error_count=self.error_count + other.error_count,
-            database_cleanup_error_count=self.database_cleanup_error_count \
-                                         + other.database_cleanup_error_count,
-            total_root_entities=self.total_root_entities
-            + other.total_root_entities)
+            database_cleanup_error_count=self.database_cleanup_error_count
+            + other.database_cleanup_error_count,
+            total_root_entities=self.total_root_entities + other.total_root_entities,
+        )
 
 
 class EntityTree:
     """Object that contains an entity and the list of ancestors traversed to get
     to this entity from the root Person node."""
 
-    def __init__(self,
-                 entity: DatabaseEntity,
-                 ancestor_chain: List[DatabaseEntity]):
+    def __init__(self, entity: DatabaseEntity, ancestor_chain: List[DatabaseEntity]):
         if not entity:
             raise ValueError(
-                f"When creating EntityTree object, entity field must be set. Ancestor chain: {ancestor_chain}.")
+                f"When creating EntityTree object, entity field must be set. Ancestor chain: {ancestor_chain}."
+            )
 
         # The final child in this EntityTree.
         self.entity: DatabaseEntity = entity
@@ -75,23 +74,27 @@ class EntityTree:
         # furthest to closest ancestor.
         self.ancestor_chain: List[DatabaseEntity] = ancestor_chain[:]
 
-    def generate_parent_tree(self) -> 'EntityTree':
+    def generate_parent_tree(self) -> "EntityTree":
         """Returns an EntityTree object for the direct parent of this
         EntityTree.
         """
-        return EntityTree(entity=self.ancestor_chain[-1],
-                          ancestor_chain=self.ancestor_chain[:-1])
+        return EntityTree(
+            entity=self.ancestor_chain[-1], ancestor_chain=self.ancestor_chain[:-1]
+        )
 
-    def generate_child_trees(self, children: List[DatabaseEntity]) \
-            -> List['EntityTree']:
+    def generate_child_trees(
+        self, children: List[DatabaseEntity]
+    ) -> List["EntityTree"]:
         """For each of the provided |children| creates a new EntityTree object
         by adding the child to this EntityTree. Returns these new EntityTrees.
         """
         result = []
         for child in children:
-            result.append(EntityTree(
-                entity=child,
-                ancestor_chain=self.ancestor_chain + [self.entity]))
+            result.append(
+                EntityTree(
+                    entity=child, ancestor_chain=self.ancestor_chain + [self.entity]
+                )
+            )
         return result
 
     def get_earliest_ancestor(self) -> DatabaseEntity:
@@ -107,17 +110,16 @@ class EntityTree:
         if not isinstance(other, EntityTree):
             return False
 
-        return self.entity == other.entity \
-            and self.ancestor_chain == other.ancestor_chain
+        return (
+            self.entity == other.entity and self.ancestor_chain == other.ancestor_chain
+        )
 
 
 class IndividualMatchResult:
     """Object that represents the result of a match attempt for an
     ingested_entity_tree."""
 
-    def __init__(self,
-                 merged_entity_trees: List[EntityTree],
-                 error_count: int):
+    def __init__(self, merged_entity_trees: List[EntityTree], error_count: int):
 
         # If matching was successful, these are results of merging the
         # ingested_entity_tree with any of its DB matches.
@@ -131,19 +133,19 @@ class MatchResults:
     """Object that represents the results of a match attempt for a group of
     ingested and database EntityTree objects"""
 
-    def __init__(self,
-                 individual_match_results:
-                 List[IndividualMatchResult],
-                 unmatched_db_entities: List[DatabaseEntity],
-                 error_count: int):
+    def __init__(
+        self,
+        individual_match_results: List[IndividualMatchResult],
+        unmatched_db_entities: List[DatabaseEntity],
+        error_count: int,
+    ):
         # Results for each individual ingested EntityTree.
-        self.individual_match_results: \
-            List[IndividualMatchResult] \
-            = individual_match_results
+        self.individual_match_results: List[
+            IndividualMatchResult
+        ] = individual_match_results
 
         # List of db entities that were unmatched.
-        self.unmatched_db_entities: \
-            List[DatabaseEntity] = unmatched_db_entities
+        self.unmatched_db_entities: List[DatabaseEntity] = unmatched_db_entities
 
         # The number of errors encountered while matching these entities.
         self.error_count: int = error_count

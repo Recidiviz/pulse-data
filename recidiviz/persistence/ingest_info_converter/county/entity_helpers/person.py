@@ -26,35 +26,40 @@ from recidiviz.common.constants.person_characteristics import (
     Race,
 )
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
-    fn, parse_external_id, parse_residency_status,
-    parse_birthdate)
+    fn,
+    parse_external_id,
+    parse_residency_status,
+    parse_birthdate,
+)
 from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
-from recidiviz.persistence.ingest_info_converter.utils.zipcodes import zipcode_search_engine
+from recidiviz.persistence.ingest_info_converter.utils.zipcodes import (
+    zipcode_search_engine,
+)
 
 # Suffixes used in county names in uszipcode library
 from recidiviz.persistence.ingest_info_converter.utils.names import parse_name
 
 USZIPCODE_COUNTY_SUFFIXES = [
-    'BOROUGH',
-    'CENSUS AREA',
-    'CITY',
-    'CITY AND BOROUGH',
-    'COUNTY',
-    'MUNICIPIO',
-    'PARISH'
+    "BOROUGH",
+    "CENSUS AREA",
+    "CITY",
+    "CITY AND BOROUGH",
+    "COUNTY",
+    "MUNICIPIO",
+    "PARISH",
 ]
 
 
 def copy_fields_to_builder(person_builder, proto, metadata):
     """Mutates the provided |person_builder| by converting an ingest_info proto
-     Person.
+    Person.
 
-     Note: This will not copy children into the Builder!
-     """
+    Note: This will not copy children into the Builder!
+    """
     enum_fields = {
-        'gender': Gender,
-        'race': Race,
-        'ethnicity': Ethnicity,
+        "gender": Gender,
+        "race": Race,
+        "ethnicity": Ethnicity,
     }
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 
@@ -62,24 +67,26 @@ def copy_fields_to_builder(person_builder, proto, metadata):
 
     # Enum mappings
     new.race = enum_mappings.get(Race)
-    new.race_raw_text = fn(normalize, 'race', proto)
+    new.race_raw_text = fn(normalize, "race", proto)
     new.ethnicity = enum_mappings.get(Ethnicity)
-    new.ethnicity_raw_text = fn(normalize, 'ethnicity', proto)
+    new.ethnicity_raw_text = fn(normalize, "ethnicity", proto)
     new.gender = enum_mappings.get(Gender)
-    new.gender_raw_text = fn(normalize, 'gender', proto)
+    new.gender_raw_text = fn(normalize, "gender", proto)
 
     # 1-to-1 mappings
-    new.external_id = fn(parse_external_id, 'person_id', proto)
+    new.external_id = fn(parse_external_id, "person_id", proto)
     new.full_name = parse_name(proto)
     new.birthdate, new.birthdate_inferred_from_age = parse_birthdate(
-        proto, 'birthdate', 'age')
-    new.residency_status = fn(
-        parse_residency_status, 'place_of_residence', proto)
+        proto, "birthdate", "age"
+    )
+    new.residency_status = fn(parse_residency_status, "place_of_residence", proto)
     new.resident_of_region = fn(
-        _parse_is_resident, 'place_of_residence', proto, metadata.region)
+        _parse_is_resident, "place_of_residence", proto, metadata.region
+    )
 
-    new.jurisdiction_id = fn(normalize, 'jurisdiction_id', proto,
-                             default=metadata.jurisdiction_id)
+    new.jurisdiction_id = fn(
+        normalize, "jurisdiction_id", proto, default=metadata.jurisdiction_id
+    )
 
     new.region = metadata.region
 
@@ -90,7 +97,7 @@ def _parse_is_resident(place_of_residence: str, region: str) -> Optional[bool]:
     """
 
     zip_code = None
-    zip_code_matches = re.findall(r'\d{5}', place_of_residence)
+    zip_code_matches = re.findall(r"\d{5}", place_of_residence)
     if not zip_code_matches:
         return None
     # If more than one match is present, take the last one (to account for
@@ -103,12 +110,11 @@ def _parse_is_resident(place_of_residence: str, region: str) -> Optional[bool]:
     return _parse_is_county_resident(zip_code, region)
 
 
-def _parse_is_county_resident(
-        residence_zip_code: str, region: str) -> Optional[bool]:
+def _parse_is_county_resident(residence_zip_code: str, region: str) -> Optional[bool]:
     # Remove 'us_xx_' prefix
     region_county = region[6:]
     # Replace underscores with spaces because uszipcode uses spaces
-    normalized_region_county = region_county.upper().replace('_', ' ')
+    normalized_region_county = region_county.upper().replace("_", " ")
 
     with zipcode_search_engine() as zipcodes:
         residence_county = zipcodes.by_zipcode(residence_zip_code).county
@@ -117,8 +123,9 @@ def _parse_is_county_resident(
 
     # uszipcode county names only contain hyphens and periods as special
     # characters
-    normalized_residence_county = \
-        residence_county.upper().replace('-', ' ').replace('.', '')
+    normalized_residence_county = (
+        residence_county.upper().replace("-", " ").replace(".", "")
+    )
 
     # Compare region county to base version of residence county, as well as
     # residence county with any matching suffixes stripped
@@ -127,15 +134,15 @@ def _parse_is_county_resident(
         suffix_length = len(suffix)
         if normalized_residence_county[-(suffix_length):] == suffix:
             possible_county_names.add(
-                normalized_residence_county[:-(suffix_length + 1)])
+                normalized_residence_county[: -(suffix_length + 1)]
+            )
     for county_name in possible_county_names:
         if normalized_region_county == county_name:
             return True
     return False
 
 
-def _parse_is_state_resident(
-        residence_zip_code: str, region: str) -> Optional[bool]:
+def _parse_is_state_resident(residence_zip_code: str, region: str) -> Optional[bool]:
     region_state_code = region[-2:].upper()
     with zipcode_search_engine() as zipcodes:
         residence_state_code = zipcodes.by_zipcode(residence_zip_code).state.upper()

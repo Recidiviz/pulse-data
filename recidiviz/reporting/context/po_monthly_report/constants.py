@@ -17,5 +17,7 @@
 """Include constants for use by PO Monthly Reports."""
 
 DEFAULT_EMAIL_SUBJECT = "Your monthly Recidiviz report"
-DEFAULT_MESSAGE_BODY = "We’re here to make your life a bit easier by helping you keep track of " + \
-    "your caseload's health. You'll receive this email once a month as a customized, personal check-in just for you."
+DEFAULT_MESSAGE_BODY = (
+    "We’re here to make your life a bit easier by helping you keep track of "
+    + "your caseload's health. You'll receive this email once a month as a customized, personal check-in just for you."
+)

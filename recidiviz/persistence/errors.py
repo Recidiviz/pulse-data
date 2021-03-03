@@ -35,23 +35,33 @@ class EntityMatchingError(Exception):
 class MatchedMultipleDatabaseEntitiesError(EntityMatchingError):
     """Raised when an ingested entity is matched to multiple database entities."""
 
-    def __init__(self, ingested_entity: CoreEntity, database_entities: Sequence[CoreEntity]):
+    def __init__(
+        self, ingested_entity: CoreEntity, database_entities: Sequence[CoreEntity]
+    ):
 
         msg_template = (
             "Matched one ingested entity to multiple database entities."
             "\nIngested entity: {}"
-            "\nDatabase entity db ids: {}")
-        msg = msg_template.format(ingested_entity, '\n'.join(str(e.get_id()) for e in database_entities))
+            "\nDatabase entity db ids: {}"
+        )
+        msg = msg_template.format(
+            ingested_entity, "\n".join(str(e.get_id()) for e in database_entities)
+        )
         super().__init__(msg, ingested_entity.get_entity_name())
 
 
 class MatchedMultipleIngestedEntitiesError(EntityMatchingError):
     """Raised when a database entity is matched to multiple ingested entities."""
 
-    def __init__(self, database_entity: CoreEntity, ingested_entities: Sequence[CoreEntity]):
+    def __init__(
+        self, database_entity: CoreEntity, ingested_entities: Sequence[CoreEntity]
+    ):
         msg_template = (
             "Matched one database entity to multiple ingested entities."
             "\nDatabase entity db id: {}"
-            "\nIngested entities: {}")
-        msg = msg_template.format(database_entity.get_id(), '\n'.join(str(e) for e in ingested_entities))
+            "\nIngested entities: {}"
+        )
+        msg = msg_template.format(
+            database_entity.get_id(), "\n".join(str(e) for e in ingested_entities)
+        )
         super().__init__(msg, database_entity.get_entity_name())

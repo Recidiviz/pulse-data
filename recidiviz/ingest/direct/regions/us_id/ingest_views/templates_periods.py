@@ -38,7 +38,7 @@ def create_period_split_criteria(period_type: PeriodType) -> str:
     if period_type == PeriodType.SUPERVISION:
         criteria += "\n    OR (IFNULL(lu_cd, '') != IFNULL(previous_lu_cd, ''))"
         return criteria
-    raise ValueError(f'Unexpected PeriodType {period_type}')
+    raise ValueError(f"Unexpected PeriodType {period_type}")
 
 
 def create_important_date_union(period_type: PeriodType) -> str:
@@ -73,10 +73,10 @@ def create_important_date_union(period_type: PeriodType) -> str:
 def get_status_code(period_type: PeriodType) -> str:
     """Returns the relevant offstat stat_cd for the given |period_type|"""
     if period_type == PeriodType.INCARCERATION:
-        return 'I'
+        return "I"
     if period_type == PeriodType.SUPERVISION:
-        return 'P'
-    raise ValueError(f'Unexpected PeriodType {period_type}')
+        return "P"
+    raise ValueError(f"Unexpected PeriodType {period_type}")
 
 
 # Idaho provides us with a table 'movements', which acts as a ledger for each person's physical movements throughout
@@ -609,4 +609,5 @@ def get_all_periods_query_fragment(period_type: PeriodType) -> str:
     return ALL_PERIODS_FRAGMENT.format(
         period_split_criteria=create_period_split_criteria(period_type),
         period_status_code=get_status_code(period_type),
-        important_date_union=create_important_date_union(period_type))
+        important_date_union=create_important_date_union(period_type),
+    )

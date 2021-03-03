@@ -23,4 +23,6 @@ from typing import TypeVar
 from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.entity.state import entities as state_entities
 
-EntityPersonType = TypeVar('EntityPersonType', county_entities.Person, state_entities.StatePerson)
+EntityPersonType = TypeVar(
+    "EntityPersonType", county_entities.Person, state_entities.StatePerson
+)

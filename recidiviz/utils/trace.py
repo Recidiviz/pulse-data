@@ -23,17 +23,26 @@ from typing import Any, Callable, Dict, List
 
 from flask import request
 from opencensus.stats import measure, view, aggregation
-from opencensus.trace import execution_context, samplers, span_context as span_ctx, tracer as tracer_module
+from opencensus.trace import (
+    execution_context,
+    samplers,
+    span_context as span_ctx,
+    tracer as tracer_module,
+)
 
 from recidiviz.utils import monitoring
 
-m_duration_s = measure.MeasureFloat("function_duration", "The time it took for this function to run", "s")
+m_duration_s = measure.MeasureFloat(
+    "function_duration", "The time it took for this function to run", "s"
+)
 
-duration_distribution_view = view.View("recidiviz/function_durations",
-                                       "The distribution of the function durations",
-                                       [monitoring.TagKey.REGION, monitoring.TagKey.FUNCTION],
-                                       m_duration_s,
-                                       aggregation.DistributionAggregation(monitoring.exponential_buckets(0.1, 5, 10)))
+duration_distribution_view = view.View(
+    "recidiviz/function_durations",
+    "The distribution of the function durations",
+    [monitoring.TagKey.REGION, monitoring.TagKey.FUNCTION],
+    m_duration_s,
+    aggregation.DistributionAggregation(monitoring.exponential_buckets(0.1, 5, 10)),
+)
 monitoring.register_views([duration_distribution_view])
 
 # Contains a list of all the addresses of all of the functions in our stack that are currently being timed. Used to
@@ -52,22 +61,26 @@ def span(func: Callable) -> Callable:
     def run_inside_new_span(*args: Any, **kwargs: Any) -> None:
         tracer: tracer_module.Tracer = execution_context.get_opencensus_tracer()
         with tracer.span(name=func.__qualname__) as new_span:
-            new_span.add_attribute('recidiviz.function.module', func.__module__)
-            new_span.add_attribute('recidiviz.function.args', str(args))
-            new_span.add_attribute('recidiviz.function.kwargs', str(kwargs))
+            new_span.add_attribute("recidiviz.function.module", func.__module__)
+            new_span.add_attribute("recidiviz.function.args", str(args))
+            new_span.add_attribute("recidiviz.function.kwargs", str(kwargs))
 
-            with monitoring.measurements({
-                monitoring.TagKey.MODULE: func.__module__,
-                monitoring.TagKey.FUNCTION: func.__qualname__,
-                monitoring.TagKey.RECURSION_DEPTH: stack.get().count(id(func))
-            }) as measurements:
+            with monitoring.measurements(
+                {
+                    monitoring.TagKey.MODULE: func.__module__,
+                    monitoring.TagKey.FUNCTION: func.__qualname__,
+                    monitoring.TagKey.RECURSION_DEPTH: stack.get().count(id(func)),
+                }
+            ) as measurements:
                 stack_token = stack.set(stack.get() + [id(func)])
                 start = time.perf_counter()
 
                 try:
                     return func(*args, **kwargs)
                 finally:
-                    measurements.measure_float_put(m_duration_s, time.perf_counter() - start)
+                    measurements.measure_float_put(
+                        m_duration_s, time.perf_counter() - start
+                    )
                     stack.reset(stack_token)
 
     return run_inside_new_span
@@ -77,7 +90,9 @@ class CompositeSampler(samplers.Sampler):
     """Dispatches to a sampler based on the path of the currently active flask request, if any."""
 
     def __init__(
-        self, path_prefix_to_sampler: Dict[str, samplers.Sampler], default_sampler: samplers.Sampler
+        self,
+        path_prefix_to_sampler: Dict[str, samplers.Sampler],
+        default_sampler: samplers.Sampler,
     ) -> None:
         self.path_prefix_to_sampler = path_prefix_to_sampler
         self.default_sampler = default_sampler

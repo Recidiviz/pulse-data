@@ -22,5 +22,7 @@ from recidiviz.persistence.database.schema.county import schema
 from recidiviz.persistence.database.session import Session
 
 
-def get_county_database_invariant_validators() -> List[Callable[[Session, str, List[schema.Person]], bool]]:
+def get_county_database_invariant_validators() -> List[
+    Callable[[Session, str, List[schema.Person]], bool]
+]:
     return []

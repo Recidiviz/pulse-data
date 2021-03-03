@@ -21,12 +21,15 @@ from typing import Dict
 from recidiviz.validation.checks.existence_check import ExistenceValidationChecker
 from recidiviz.validation.checks.sameness_check import SamenessValidationChecker
 from recidiviz.validation.checks.validation_checker import ValidationChecker
-from recidiviz.validation.validation_models import ValidationCheckType, DataValidationJob
+from recidiviz.validation.validation_models import (
+    ValidationCheckType,
+    DataValidationJob,
+)
 
 
 _CHECKER_FOR_TYPE: Dict[ValidationCheckType, ValidationChecker] = {
     ValidationCheckType.EXISTENCE: ExistenceValidationChecker(),
-    ValidationCheckType.SAMENESS: SamenessValidationChecker()
+    ValidationCheckType.SAMENESS: SamenessValidationChecker(),
 }
 
 
@@ -35,7 +38,7 @@ def _checker_for_type(check_type: ValidationCheckType) -> ValidationChecker:
     if checker:
         return checker
 
-    raise ValueError(f'No checker implementation enabled for check type {check_type}')
+    raise ValueError(f"No checker implementation enabled for check type {check_type}")
 
 
 def checker_for_validation(validation_job: DataValidationJob) -> ValidationChecker:

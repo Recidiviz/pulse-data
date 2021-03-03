@@ -16,9 +16,8 @@
 # =============================================================================
 """A query template for doing person-level supervision population validation against an external dataset."""
 
-# pylint: disable=trailing-whitespace,line-too-long
-SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = \
-    """
+# pylint: disable=trailing-whitespace
+SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
 WITH 
 external_data AS (
   -- NOTE: You can replace this part of the query with your own query to test the SELECT query you will use to generate
@@ -94,7 +93,13 @@ def supervision_population_person_level_query(include_unmatched_people: bool) ->
         include_unmatched_people: (bool) Whether to include rows where the internal and external datasets disagree about
          whether this person should be on supervision at all on a given day.
     """
-    filter_clause = \
-        "" if include_unmatched_people \
+    filter_clause = (
+        ""
+        if include_unmatched_people
         else "WHERE external_data.person_external_id IS NOT NULL AND internal_data.person_external_id IS NOT NULL"
-    return SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE.format(filter_clause=filter_clause)
+    )
+    return (
+        SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE.format(
+            filter_clause=filter_clause
+        )
+    )

@@ -17,41 +17,68 @@
 """All views needed for the population projection simulation"""
 from typing import List
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.views.population_projection.microsim_projection import \
-    MICROSIM_PROJECTION_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.population_projection.population_outflows import \
-    POPULATION_OUTFLOWS_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.population_projection.population_projection_sessions import \
-    POPULATION_PROJECTION_SESSIONS_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.population_projection.population_projection_outputs import \
-    POPULATION_PROJECTION_OUTPUT_VIEW_BUILDERS
-from recidiviz.calculator.query.state.views.population_projection.population_transitions import \
-    POPULATION_TRANSITIONS_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.population_projection.incarceration_remaining_sentences import \
-    INCARCERATION_REMAINING_SENTENCES_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.population_projection.supervision_remaining_sentences import \
-    SUPERVISION_REMAINING_SENTENCES_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.population_projection.remaining_sentences import \
-    REMAINING_SENTENCES_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.population_projection.simulation_run_dates import \
-    SIMULATION_RUN_DATES_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.population_projection.total_population import TOTAL_POPULATION_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.population_projection.us_id.us_id_excluded_population import \
-    US_ID_EXCLUDED_POPULATION_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.population_projection.us_id.us_id_monthly_paid_incarceration_population \
-    import US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.population_projection.us_id.\
-    us_id_non_bias_full_population_transitions import US_ID_PAROLE_BOARD_HOLD_FULL_TRANSITIONS_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.population_projection.us_id.\
-    us_id_parole_board_hold_population_transitions import US_ID_PAROLE_BOARD_HOLD_POPULATION_TRANSITIONS_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.population_projection.us_id.\
-    us_id_rider_population_transitions import US_ID_RIDER_POPULATION_TRANSITIONS_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.population_projection.us_id.\
-    us_id_rider_pbh_remaining_sentences import US_ID_RIDER_PBH_REMAINING_SENTENCES_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.population_projection.us_id.\
-    total_jail_population import US_ID_TOTAL_JAIL_POPULATION_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.population_projection.us_id.\
-    total_out_of_state_supervised_population import TOTAL_OUT_OF_STATE_SUPERVISED_POPULATION_VIEW_BUILDER
+from recidiviz.calculator.query.state.views.population_projection.microsim_projection import (
+    MICROSIM_PROJECTION_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.population_projection.population_outflows import (
+    POPULATION_OUTFLOWS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.population_projection.population_projection_sessions import (
+    POPULATION_PROJECTION_SESSIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.population_projection.population_projection_outputs import (
+    POPULATION_PROJECTION_OUTPUT_VIEW_BUILDERS,
+)
+from recidiviz.calculator.query.state.views.population_projection.population_transitions import (
+    POPULATION_TRANSITIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.population_projection.incarceration_remaining_sentences import (
+    INCARCERATION_REMAINING_SENTENCES_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.population_projection.supervision_remaining_sentences import (
+    SUPERVISION_REMAINING_SENTENCES_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.population_projection.remaining_sentences import (
+    REMAINING_SENTENCES_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.population_projection.simulation_run_dates import (
+    SIMULATION_RUN_DATES_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.population_projection.total_population import (
+    TOTAL_POPULATION_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.population_projection.us_id.us_id_excluded_population import (
+    US_ID_EXCLUDED_POPULATION_VIEW_BUILDER,
+)
+
+
+from recidiviz.calculator.query.state.views.population_projection.us_id.us_id_monthly_paid_incarceration_population import (
+    US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_VIEW_BUILDER,
+)
+
+
+from recidiviz.calculator.query.state.views.population_projection.us_id.us_id_non_bias_full_population_transitions import (
+    US_ID_PAROLE_BOARD_HOLD_FULL_TRANSITIONS_VIEW_BUILDER,
+)
+
+
+from recidiviz.calculator.query.state.views.population_projection.us_id.us_id_parole_board_hold_population_transitions import (
+    US_ID_PAROLE_BOARD_HOLD_POPULATION_TRANSITIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.population_projection.us_id.us_id_rider_population_transitions import (
+    US_ID_RIDER_POPULATION_TRANSITIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.population_projection.us_id.us_id_rider_pbh_remaining_sentences import (
+    US_ID_RIDER_PBH_REMAINING_SENTENCES_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.population_projection.us_id.total_jail_population import (
+    US_ID_TOTAL_JAIL_POPULATION_VIEW_BUILDER,
+)
+
+
+from recidiviz.calculator.query.state.views.population_projection.us_id.total_out_of_state_supervised_population import (
+    TOTAL_OUT_OF_STATE_SUPERVISED_POPULATION_VIEW_BUILDER,
+)
 
 POPULATION_PROJECTION_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     SIMULATION_RUN_DATES_VIEW_BUILDER,  # all input views depend on this view so it must be first in the list

@@ -16,5 +16,4 @@
 # =============================================================================
 
 """us_nd specific regional functionality."""
-from recidiviz.ingest.direct.regions.us_nd import \
-    us_nd_controller
+from recidiviz.ingest.direct.regions.us_nd import us_nd_controller

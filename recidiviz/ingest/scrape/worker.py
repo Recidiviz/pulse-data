@@ -32,14 +32,19 @@ from recidiviz.ingest.scrape.task_params import QueueRequest
 from recidiviz.utils import monitoring, regions
 from recidiviz.utils.auth.gae import requires_gae_auth
 
-m_tasks = measure.MeasureInt("ingest/scrape/task_count",
-                             "The count of scrape tasks that occurred", "1")
+m_tasks = measure.MeasureInt(
+    "ingest/scrape/task_count", "The count of scrape tasks that occurred", "1"
+)
 
-task_view = view.View("recidiviz/ingest/scrape/task_count",
-                      "The sum of scrape tasks that occurred",
-                      [monitoring.TagKey.REGION, monitoring.TagKey.STATUS],
-                      m_tasks, aggregation.SumAggregation())
+task_view = view.View(
+    "recidiviz/ingest/scrape/task_count",
+    "The sum of scrape tasks that occurred",
+    [monitoring.TagKey.REGION, monitoring.TagKey.STATUS],
+    m_tasks,
+    aggregation.SumAggregation(),
+)
 monitoring.register_views([task_view])
+
 
 class RequestProcessingError(Exception):
     """Exception containing the request that failed to process"""
@@ -47,13 +52,15 @@ class RequestProcessingError(Exception):
     def __init__(self, region: str, task: str, queue_request: QueueRequest):
         request_string = pprint.pformat(queue_request.to_serializable())
         msg = "Error when running '{}' for '{}' with request:\n{}".format(
-            task, region, request_string)
+            task, region, request_string
+        )
         super().__init__(msg)
 
-worker = Blueprint('worker', __name__)
+
+worker = Blueprint("worker", __name__)
 
 # NB: Region is part of the url so that request logs can be filtered on it.
-@worker.route("/work/<region>", methods=['POST'])
+@worker.route("/work/<region>", methods=["POST"])
 @requires_gae_auth
 def work(region):
     """POST request handler to route chunk of scraper work
@@ -90,33 +97,40 @@ def work(region):
     # Verify this was actually a task queued by our app
     if "X-AppEngine-QueueName" not in request.headers:
         logging.error("Couldn't validate task was legit, exiting.")
-        return ('', HTTPStatus.INTERNAL_SERVER_ERROR)
-    queue_name = request.headers.get('X-AppEngine-QueueName')
+        return ("", HTTPStatus.INTERNAL_SERVER_ERROR)
+    queue_name = request.headers.get("X-AppEngine-QueueName")
 
     json_data = request.get_data(as_text=True)
     data = json.loads(json_data)
-    task = data['task']
-    params = QueueRequest.from_serializable(data['params'])
+    task = data["task"]
+    params = QueueRequest.from_serializable(data["params"])
 
-    if region != data['region']:
+    if region != data["region"]:
         raise ValueError(
-            "Region specified in task {} does not match region from url {}."\
-                .format(data['region'], region))
+            "Region specified in task {} does not match region from url {}.".format(
+                data["region"], region
+            )
+        )
 
-    task_tags = {monitoring.TagKey.STATUS: 'COMPLETED'}
+    task_tags = {monitoring.TagKey.STATUS: "COMPLETED"}
     # Note: measurements must be second so it receives the region tag.
-    with monitoring.push_tags({monitoring.TagKey.REGION: region}), \
-            monitoring.measurements(task_tags) as measurements:
+    with monitoring.push_tags(
+        {monitoring.TagKey.REGION: region}
+    ), monitoring.measurements(task_tags) as measurements:
         measurements.measure_int_put(m_tasks, 1)
-        if not sessions.get_current_session(
-                ScrapeKey(region, params.scrape_type)):
-            task_tags[monitoring.TagKey.STATUS] = 'SKIPPED'
-            logging.info("Queue [%s], skipping task [%s] for [%s] because it "
-                         "is not in the current session.",
-                         queue_name, task, region)
-            return ('', HTTPStatus.OK)
-        logging.info("Queue [%s], processing task [%s] for [%s].",
-                     queue_name, task, region)
+        if not sessions.get_current_session(ScrapeKey(region, params.scrape_type)):
+            task_tags[monitoring.TagKey.STATUS] = "SKIPPED"
+            logging.info(
+                "Queue [%s], skipping task [%s] for [%s] because it "
+                "is not in the current session.",
+                queue_name,
+                task,
+                region,
+            )
+            return ("", HTTPStatus.OK)
+        logging.info(
+            "Queue [%s], processing task [%s] for [%s].", queue_name, task, region
+        )
 
         scraper = regions.get_region(region).get_ingestor()
         scraper_task = getattr(scraper, task)
@@ -124,9 +138,8 @@ def work(region):
         try:
             scraper_task(params)
         except Exception as e:
-            task_tags[monitoring.TagKey.STATUS] = 'ERROR: {}' \
-                .format(type(e).__name__)
+            task_tags[monitoring.TagKey.STATUS] = "ERROR: {}".format(type(e).__name__)
             raise RequestProcessingError(region, task, params) from e
 
         # Respond to the task queue to mark this task as done
-        return ('', HTTPStatus.OK)
+        return ("", HTTPStatus.OK)

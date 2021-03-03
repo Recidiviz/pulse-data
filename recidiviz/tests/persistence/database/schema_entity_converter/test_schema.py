@@ -15,82 +15,77 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Test database schema definitions for schema defined in test_entities.py """
-from sqlalchemy import (
-    Column,
-    ForeignKey,
-    Integer,
-    String,
-    Table, Enum)
+from sqlalchemy import Column, ForeignKey, Integer, String, Table, Enum
 from sqlalchemy.orm import relationship
 
-from recidiviz.tests.persistence.database.schema_entity_converter.\
-    test_base_schema import TestBase
-from recidiviz.tests.persistence.database.schema_entity_converter.\
-    test_entities import RootType
+from recidiviz.tests.persistence.database.schema_entity_converter.test_base_schema import (
+    TestBase,
+)
+from recidiviz.tests.persistence.database.schema_entity_converter.test_entities import (
+    RootType,
+)
 
 
-root_type = Enum(RootType.SIMPSONS.value,
-                 RootType.FRIENDS.value,
-                 name='root_type')
+root_type = Enum(RootType.SIMPSONS.value, RootType.FRIENDS.value, name="root_type")
 
 
 class Root(TestBase):
     """Represents a Root object in the test schema"""
-    __tablename__ = 'root'
+
+    __tablename__ = "root"
 
     root_id = Column(Integer, primary_key=True)
 
     root_type = Column(root_type)
 
-    parents = relationship('Parent', lazy='joined')
+    parents = relationship("Parent", lazy="joined")
 
 
-association_table = Table('state_parent_child_association',
-                          TestBase.metadata,
-                          Column('parent_id',
-                                 Integer,
-                                 ForeignKey('parent.parent_id')),
-                          Column('child_id',
-                                 Integer,
-                                 ForeignKey('child.child_id')))
+association_table = Table(
+    "state_parent_child_association",
+    TestBase.metadata,
+    Column("parent_id", Integer, ForeignKey("parent.parent_id")),
+    Column("child_id", Integer, ForeignKey("child.child_id")),
+)
 
 
 class Parent(TestBase):
     """Represents a Parent object in the test schema"""
-    __tablename__ = 'parent'
+
+    __tablename__ = "parent"
 
     parent_id = Column(Integer, primary_key=True)
 
     full_name = Column(String(255))
 
-    root_id = Column(Integer, ForeignKey('root.root_id'))
+    root_id = Column(Integer, ForeignKey("root.root_id"))
 
     children = relationship(
-        'Child',
-        secondary=association_table,
-        back_populates='parents')
+        "Child", secondary=association_table, back_populates="parents"
+    )
 
 
 class Child(TestBase):
     """Represents a Child object in the test schema"""
-    __tablename__ = 'child'
+
+    __tablename__ = "child"
 
     child_id = Column(Integer, primary_key=True)
 
     full_name = Column(String(255))
 
     parents = relationship(
-        'Parent',
-        secondary=association_table,
-        back_populates='children')
+        "Parent", secondary=association_table, back_populates="children"
+    )
 
-    favorite_toy_id = Column(Integer, ForeignKey('toy.toy_id'))
-    favorite_toy = relationship('Toy', uselist=False)
+    favorite_toy_id = Column(Integer, ForeignKey("toy.toy_id"))
+    favorite_toy = relationship("Toy", uselist=False)
 
 
 class Toy(TestBase):
     """Represents a Toy object in the test schema"""
-    __tablename__ = 'toy'
+
+    __tablename__ = "toy"
 
     toy_id = Column(Integer, primary_key=True)
 

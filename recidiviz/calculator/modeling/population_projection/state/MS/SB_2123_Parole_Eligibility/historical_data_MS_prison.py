@@ -34,7 +34,10 @@ ADDITIONAL NOTES:
 
 # TODO(#99999): add whatever modules you need
 import pandas as pd
-from recidiviz.calculator.modeling.population_projection.spark_bq_utils import upload_spark_model_inputs
+from recidiviz.calculator.modeling.population_projection.spark_bq_utils import (
+    upload_spark_model_inputs,
+)
+
 # pylint: skip-file
 
 
@@ -44,9 +47,15 @@ from recidiviz.calculator.modeling.population_projection.spark_bq_utils import u
 
 # TODO(#99999): add one column to transitions_data & outflows_data per disaggregation axis.
 #  If none exist, add place-holder axis
-transitions_data = pd.read_csv('recidiviz/calculator/modeling/population_projection/state/MS/SB_2123_Parole_Eligibility/ms_transitions.csv')
-outflows_data = pd.read_csv('recidiviz/calculator/modeling/population_projection/state/MS/SB_2123_Parole_Eligibility/ms_outflows.csv')
-total_population_data = pd.read_csv('recidiviz/calculator/modeling/population_projection/state/MS/SB_2123_Parole_Eligibility/ms_population.csv')
+transitions_data = pd.read_csv(
+    "recidiviz/calculator/modeling/population_projection/state/MS/SB_2123_Parole_Eligibility/ms_transitions.csv"
+)
+outflows_data = pd.read_csv(
+    "recidiviz/calculator/modeling/population_projection/state/MS/SB_2123_Parole_Eligibility/ms_outflows.csv"
+)
+total_population_data = pd.read_csv(
+    "recidiviz/calculator/modeling/population_projection/state/MS/SB_2123_Parole_Eligibility/ms_population.csv"
+)
 
 # TRANSITIONS TABLE
 # TODO(#99999): populate transitions_data from raw data
@@ -64,7 +73,7 @@ for year in outflows_data.time_step.unique():
         final_outflows = pd.concat([final_outflows, month_outflows])
 outflows_data = final_outflows
 
-#TOTAL POPULATION TABLE
+# TOTAL POPULATION TABLE
 # TODO(#99999): populate total_population_data from raw data
 final_pops = pd.DataFrame()
 for year in total_population_data.time_step.unique():
@@ -77,4 +86,10 @@ total_population_data = final_pops
 
 # STORE DATA
 # TODO(#99999): fill in `state` and `primary_compartment`
-upload_spark_model_inputs('recidiviz-staging', 'MS_SB_2123', outflows_data, transitions_data, total_population_data)
+upload_spark_model_inputs(
+    "recidiviz-staging",
+    "MS_SB_2123",
+    outflows_data,
+    transitions_data,
+    total_population_data,
+)

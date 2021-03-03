@@ -15,19 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Facility names, IDs, and additional metadata for all facilities for which we have case data."""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-FACILITY_METADATA_VIEW_NAME = 'facility_metadata'
+FACILITY_METADATA_VIEW_NAME = "facility_metadata"
 
-FACILITY_METADATA_VIEW_DESCRIPTION = \
-    """Facility names, IDs, and additional metadata for all facilities for which we have case data."""
+FACILITY_METADATA_VIEW_DESCRIPTION = """Facility names, IDs, and additional metadata for all facilities for which we have case data."""
 
-FACILITY_METADATA_VIEW_QUERY_TEMPLATE = \
-    """
+FACILITY_METADATA_VIEW_QUERY_TEMPLATE = """
     /*{description}*/
     WITH
     -- This ensures we are using the primary name from the alias table
@@ -89,11 +87,11 @@ FACILITY_METADATA_VIEW_BUILDER = MetricBigQueryViewBuilder(
     view_id=FACILITY_METADATA_VIEW_NAME,
     view_query_template=FACILITY_METADATA_VIEW_QUERY_TEMPLATE,
     description=FACILITY_METADATA_VIEW_DESCRIPTION,
-    dimensions=['facility_id'],
+    dimensions=["facility_id"],
     covid_dashboard_dataset=dataset_config.COVID_DASHBOARD_DATASET,
-    covid_dashboard_reference_dataset=dataset_config.COVID_DASHBOARD_REFERENCE_DATASET
+    covid_dashboard_reference_dataset=dataset_config.COVID_DASHBOARD_REFERENCE_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         FACILITY_METADATA_VIEW_BUILDER.build_and_print()

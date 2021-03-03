@@ -22,8 +22,11 @@ from datetime import date
 import unittest
 import attr
 
-from recidiviz.common.attr_mixins import BuilderException, BuildableAttr, \
-    DefaultableAttr
+from recidiviz.common.attr_mixins import (
+    BuilderException,
+    BuildableAttr,
+    DefaultableAttr,
+)
 
 
 @attr.s
@@ -41,14 +44,14 @@ class FakeDefaultableAttr(DefaultableAttr):
 
 
 class FakeEnum(Enum):
-    A = 'A'
-    B = 'B'
+    A = "A"
+    B = "B"
 
 
 class InvalidFakeEnum(Enum):
-    A = 'A'
-    C = 'C'
-    D = 'D'
+    A = "A"
+    C = "C"
+    D = "D"
 
 
 @attr.s
@@ -59,7 +62,7 @@ class FakeBuildableAttrDeluxe(BuildableAttr):
     enum_field: Optional[FakeEnum] = attr.ib(default=None)
     date_field: Optional[date] = attr.ib(default=None)
     field_list: List[str] = attr.ib(factory=list)
-    field_forward_ref: Optional['FakeBuildableAttr'] = attr.ib(default=None)
+    field_forward_ref: Optional["FakeBuildableAttr"] = attr.ib(default=None)
 
 
 class BuildableAttrTests(unittest.TestCase):
@@ -75,8 +78,7 @@ class BuildableAttrTests(unittest.TestCase):
 
         # Assert
         expected_result = FakeBuildableAttr(
-            required_field="TEST",
-            field_with_default=[]
+            required_field="TEST", field_with_default=[]
         )
 
         self.assertEqual(result, expected_result)
@@ -109,8 +111,8 @@ class BuildableAttrTests(unittest.TestCase):
 
         # Assert
         expected_result = FakeDefaultableAttr(
-            field='field', field_another=None, field_with_default=1,
-            factory_field=[])
+            field="field", field_another=None, field_with_default=1, factory_field=[]
+        )
 
         self.assertEqual(subject, expected_result)
 
@@ -120,44 +122,50 @@ class BuildableAttrTests(unittest.TestCase):
 
     def testBuildFromDictionary(self):
         # Construct dictionary representation
-        subject_dict = {'required_field': 'value',
-                        'another_required_field': 'another_value',
-                        'enum_nonnull_field': FakeEnum.A.value,
-                        'enum_field': FakeEnum.B.value}
+        subject_dict = {
+            "required_field": "value",
+            "another_required_field": "another_value",
+            "enum_nonnull_field": FakeEnum.A.value,
+            "enum_field": FakeEnum.B.value,
+        }
 
         # Build from dictionary
         subject = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)
 
         # Assert
         expected_result = FakeBuildableAttrDeluxe(
-            required_field='value',
-            another_required_field='another_value',
+            required_field="value",
+            another_required_field="another_value",
             enum_nonnull_field=FakeEnum.A,
-            enum_field=FakeEnum.B)
+            enum_field=FakeEnum.B,
+        )
 
         self.assertEqual(subject, expected_result)
 
     def testBuildFromDictionary_Enum(self):
         # Construct dictionary representation
-        subject_dict = {'required_field': 'value',
-                        'another_required_field': 'another_value',
-                        'enum_nonnull_field': FakeEnum.A}
+        subject_dict = {
+            "required_field": "value",
+            "another_required_field": "another_value",
+            "enum_nonnull_field": FakeEnum.A,
+        }
 
         # Build from dictionary
         subject = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)
 
         # Assert
         expected_result = FakeBuildableAttrDeluxe(
-            required_field='value',
-            another_required_field='another_value',
-            enum_nonnull_field=FakeEnum.A)
+            required_field="value",
+            another_required_field="another_value",
+            enum_nonnull_field=FakeEnum.A,
+        )
 
         self.assertEqual(subject, expected_result)
 
     def testBuildFromDictionary_MissingRequiredArgs(self):
         with self.assertRaises(Exception):
             # Construct dictionary representation
-            subject_dict = {'required_field': 'value'}
+            subject_dict = {"required_field": "value"}
 
             # Build from dictionary
             _ = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)
@@ -165,8 +173,10 @@ class BuildableAttrTests(unittest.TestCase):
     def testBuildFromDictionary_MissingNonnullEnum(self):
         with self.assertRaises(Exception):
             # Construct dictionary representation
-            subject_dict = {'required_field': 'value',
-                            'another_required_field': 'another_value'}
+            subject_dict = {
+                "required_field": "value",
+                "another_required_field": "another_value",
+            }
 
             # Build from dictionary
             _ = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)
@@ -177,28 +187,33 @@ class BuildableAttrTests(unittest.TestCase):
 
     def testBuildFromDictionary_ExtraArguments(self):
         # Construct dictionary representation
-        subject_dict = {'required_field': 'value',
-                        'another_required_field': 'another_value',
-                        'enum_nonnull_field': FakeEnum.A.value,
-                        'extra_invalid_field': 'extra_value'}
+        subject_dict = {
+            "required_field": "value",
+            "another_required_field": "another_value",
+            "enum_nonnull_field": FakeEnum.A.value,
+            "extra_invalid_field": "extra_value",
+        }
 
         # Build from dictionary
         subject = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)
 
         # Assert
         expected_result = FakeBuildableAttrDeluxe(
-            required_field='value',
-            another_required_field='another_value',
-            enum_nonnull_field=FakeEnum.A)
+            required_field="value",
+            another_required_field="another_value",
+            enum_nonnull_field=FakeEnum.A,
+        )
 
         self.assertEqual(subject, expected_result)
 
     def testBuildFromDictionary_WrongEnum(self):
         with self.assertRaises(ValueError):
             # Construct dictionary representation
-            subject_dict = {'required_field': 'value',
-                            'another_required_field': 'another_value',
-                            'enum_field': InvalidFakeEnum.C}
+            subject_dict = {
+                "required_field": "value",
+                "another_required_field": "another_value",
+                "enum_field": InvalidFakeEnum.C,
+            }
 
             # Build from dictionary
             _ = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)
@@ -206,28 +221,33 @@ class BuildableAttrTests(unittest.TestCase):
     def testBuildFromDictionary_WrongEnumSameValue(self):
         with self.assertRaises(ValueError):
             # Construct dictionary representation
-            subject_dict = {'required_field': 'value',
-                            'another_required_field': 'another_value',
-                            'enum_field': InvalidFakeEnum.A}
+            subject_dict = {
+                "required_field": "value",
+                "another_required_field": "another_value",
+                "enum_field": InvalidFakeEnum.A,
+            }
 
             # Build from dictionary
             _ = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)
 
     def testBuildFromDictionary_ListInDict(self):
         # Construct dictionary representation
-        subject_dict = {'required_field': 'value',
-                        'another_required_field': 'another_value',
-                        'enum_nonnull_field': FakeEnum.A,
-                        'field_list': ['a', 'b', 'c']}
+        subject_dict = {
+            "required_field": "value",
+            "another_required_field": "another_value",
+            "enum_nonnull_field": FakeEnum.A,
+            "field_list": ["a", "b", "c"],
+        }
 
         subject = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)
 
         # Assert
         expected_result = FakeBuildableAttrDeluxe(
-            required_field='value',
-            another_required_field='another_value',
+            required_field="value",
+            another_required_field="another_value",
             enum_nonnull_field=FakeEnum.A,
-            field_list=['a', 'b', 'c'])
+            field_list=["a", "b", "c"],
+        )
 
         self.assertEqual(subject, expected_result)
 
@@ -235,49 +255,56 @@ class BuildableAttrTests(unittest.TestCase):
         with self.assertRaises(ValueError):
 
             # Construct dictionary representation
-            subject_dict = {'required_field': 'value',
-                            'another_required_field': 'another_value',
-                            'field_forward_ref':
-                                FakeBuildableAttr('a', ['a', 'b'])}
+            subject_dict = {
+                "required_field": "value",
+                "another_required_field": "another_value",
+                "field_forward_ref": FakeBuildableAttr("a", ["a", "b"]),
+            }
 
             # Build from dictionary
             _ = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)
 
     def testBuildFromDictionary_WithDate(self):
         # Construct dictionary representation
-        subject_dict = {'required_field': 'value',
-                        'another_required_field': 'another_value',
-                        'enum_nonnull_field': FakeEnum.A.value,
-                        'date_field': '2001-01-08'}
+        subject_dict = {
+            "required_field": "value",
+            "another_required_field": "another_value",
+            "enum_nonnull_field": FakeEnum.A.value,
+            "date_field": "2001-01-08",
+        }
 
         # Build from dictionary
         subject = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)
 
         # Assert
         expected_result = FakeBuildableAttrDeluxe(
-            required_field='value',
-            another_required_field='another_value',
+            required_field="value",
+            another_required_field="another_value",
             enum_nonnull_field=FakeEnum.A,
-            date_field=date.fromisoformat('2001-01-08'))
+            date_field=date.fromisoformat("2001-01-08"),
+        )
 
         self.assertEqual(subject, expected_result)
 
     def testBuildFromDictionary_WithEmptyDate(self):
         # Construct dictionary representation
-        subject_dict = {'required_field': 'value',
-                        'another_required_field': 'another_value',
-                        'enum_nonnull_field': FakeEnum.A.value,
-                        'date_field': None}
+        subject_dict = {
+            "required_field": "value",
+            "another_required_field": "another_value",
+            "enum_nonnull_field": FakeEnum.A.value,
+            "date_field": None,
+        }
 
         # Build from dictionary
         subject = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)
 
         # Assert
         expected_result = FakeBuildableAttrDeluxe(
-            required_field='value',
-            another_required_field='another_value',
+            required_field="value",
+            another_required_field="another_value",
             enum_nonnull_field=FakeEnum.A,
-            date_field=None)
+            date_field=None,
+        )
 
         self.assertEqual(subject, expected_result)
 
@@ -285,10 +312,12 @@ class BuildableAttrTests(unittest.TestCase):
         with self.assertRaises(ValueError):
 
             # Construct dictionary representation
-            subject_dict = {'required_field': 'value',
-                            'another_required_field': 'another_value',
-                            'enum_nonnull_field': FakeEnum.A.value,
-                            'date_field': '01-01-1999'}
+            subject_dict = {
+                "required_field": "value",
+                "another_required_field": "another_value",
+                "enum_nonnull_field": FakeEnum.A.value,
+                "date_field": "01-01-1999",
+            }
 
             # Build from dictionary
             _ = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)
@@ -297,10 +326,12 @@ class BuildableAttrTests(unittest.TestCase):
         with self.assertRaises(ValueError):
 
             # Construct dictionary representation
-            subject_dict = {'required_field': 'value',
-                            'another_required_field': 'another_value',
-                            'enum_nonnull_field': FakeEnum.A.value,
-                            'date_field': 'YYYY-MM-DD'}
+            subject_dict = {
+                "required_field": "value",
+                "another_required_field": "another_value",
+                "enum_nonnull_field": FakeEnum.A.value,
+                "date_field": "YYYY-MM-DD",
+            }
 
             # Build from dictionary
             _ = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)

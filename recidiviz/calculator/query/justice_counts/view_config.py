@@ -18,13 +18,17 @@
 from typing import Sequence
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.calculator.query.justice_counts.views.cloudsql import get_table_view_builders
-from recidiviz.calculator.query.justice_counts.views.corrections_metrics_by_month \
-    import CorrectionsMetricsByMonthBigQueryViewCollector
+from recidiviz.calculator.query.justice_counts.views.cloudsql import (
+    get_table_view_builders,
+)
+from recidiviz.calculator.query.justice_counts.views.corrections_metrics_by_month import (
+    CorrectionsMetricsByMonthBigQueryViewCollector,
+)
 
 _corrections_metrics_collector = CorrectionsMetricsByMonthBigQueryViewCollector()
 
 VIEW_BUILDERS_FOR_VIEWS_TO_EXPORT = [_corrections_metrics_collector.unified_builder]
 
 VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = (
-    get_table_view_builders() + _corrections_metrics_collector.collect_view_builders())
+    get_table_view_builders() + _corrections_metrics_collector.collect_view_builders()
+)

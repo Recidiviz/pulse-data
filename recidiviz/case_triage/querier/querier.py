@@ -22,7 +22,11 @@ import sqlalchemy.orm.exc
 from sqlalchemy.orm import Session
 
 from recidiviz.case_triage.querier.case_presenter import CasePresenter
-from recidiviz.persistence.database.schema.case_triage.schema import ETLClient, ETLOfficer, CaseUpdate
+from recidiviz.persistence.database.schema.case_triage.schema import (
+    ETLClient,
+    ETLOfficer,
+    CaseUpdate,
+)
 
 
 class PersonDoesNotExistError(ValueError):
@@ -33,30 +37,45 @@ class CaseTriageQuerier:
     """Implements Querier abstraction for Case Triage data sources."""
 
     @staticmethod
-    def clients_for_officer(session: Session, officer: ETLOfficer) -> List[CasePresenter]:
-        client_info = session.query(ETLClient, CaseUpdate).outerjoin(
-            CaseUpdate,
-            (ETLClient.person_external_id == CaseUpdate.person_external_id) &
-            (ETLClient.state_code == CaseUpdate.state_code) &
-            (ETLClient.supervising_officer_external_id ==
-             CaseUpdate.officer_external_id)
-        ).filter(
-            ETLClient.supervising_officer_external_id == officer.external_id,
-            ETLClient.state_code == officer.state_code,
-        ).all()
+    def clients_for_officer(
+        session: Session, officer: ETLOfficer
+    ) -> List[CasePresenter]:
+        client_info = (
+            session.query(ETLClient, CaseUpdate)
+            .outerjoin(
+                CaseUpdate,
+                (ETLClient.person_external_id == CaseUpdate.person_external_id)
+                & (ETLClient.state_code == CaseUpdate.state_code)
+                & (
+                    ETLClient.supervising_officer_external_id
+                    == CaseUpdate.officer_external_id
+                ),
+            )
+            .filter(
+                ETLClient.supervising_officer_external_id == officer.external_id,
+                ETLClient.state_code == officer.state_code,
+            )
+            .all()
+        )
         return [CasePresenter(info[0], info[1]) for info in client_info]
 
     @staticmethod
-    def etl_client_with_id_and_state_code(session: Session,
-                                          person_external_id: str,
-                                          state_code: str) -> ETLClient:
+    def etl_client_with_id_and_state_code(
+        session: Session, person_external_id: str, state_code: str
+    ) -> ETLClient:
         try:
-            return session.query(ETLClient).filter_by(
-                person_external_id=person_external_id,
-                state_code=state_code,
-            ).one()
+            return (
+                session.query(ETLClient)
+                .filter_by(
+                    person_external_id=person_external_id,
+                    state_code=state_code,
+                )
+                .one()
+            )
         except sqlalchemy.orm.exc.NoResultFound as e:
-            raise PersonDoesNotExistError(f'could not find id: {person_external_id}') from e
+            raise PersonDoesNotExistError(
+                f"could not find id: {person_external_id}"
+            ) from e
 
     @staticmethod
     def officer_for_email(session: Session, officer_email: str) -> ETLOfficer:

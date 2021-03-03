@@ -19,42 +19,54 @@
 from typing import Dict
 import pandas as pd
 
-from recidiviz.calculator.modeling.population_projection.shell_compartment import ShellCompartment
-from recidiviz.calculator.modeling.population_projection.full_compartment import FullCompartment
-from recidiviz.calculator.modeling.population_projection.spark_compartment import SparkCompartment
+from recidiviz.calculator.modeling.population_projection.shell_compartment import (
+    ShellCompartment,
+)
+from recidiviz.calculator.modeling.population_projection.full_compartment import (
+    FullCompartment,
+)
+from recidiviz.calculator.modeling.population_projection.spark_compartment import (
+    SparkCompartment,
+)
 
 
 class SubSimulation:
     """Run the population projection for one sub group"""
 
     def __init__(
-            self,
-            simulation_compartments: Dict[str, SparkCompartment],
-            total_population_data: pd.DataFrame,
-            should_scale_populations_after_step: bool
+        self,
+        simulation_compartments: Dict[str, SparkCompartment],
+        total_population_data: pd.DataFrame,
+        should_scale_populations_after_step: bool,
     ) -> None:
 
         self.total_population_data = total_population_data
 
         # A DataFrame with total population errors at all time steps with population data
-        self.start_ts_scale_factors = pd.DataFrame(index=total_population_data.time_step.unique())
+        self.start_ts_scale_factors = pd.DataFrame(
+            index=total_population_data.time_step.unique()
+        )
 
         # A dict of compartment tag (pre-trial, jail, prison, release...) to the corresponding SparkCompartment object
         self.simulation_compartments = simulation_compartments
 
         self.should_scale_populations_after_step = should_scale_populations_after_step
 
-    def get_error(self, compartment: str = 'prison', unit: str = 'abs') -> pd.DataFrame:
+    def get_error(self, compartment: str = "prison", unit: str = "abs") -> pd.DataFrame:
         return self.simulation_compartments[compartment].get_error(unit=unit)
 
     def get_scale_factors(self) -> pd.DataFrame:
         return self.start_ts_scale_factors
 
     def gen_arima_output_df(self) -> pd.DataFrame:
-        arima_output_df = pd.concat([compartment.gen_arima_output_df() for compartment
-                                     in self.simulation_compartments.values()
-                                     if isinstance(compartment, ShellCompartment)],
-                                    sort=True)
+        arima_output_df = pd.concat(
+            [
+                compartment.gen_arima_output_df()
+                for compartment in self.simulation_compartments.values()
+                if isinstance(compartment, ShellCompartment)
+            ],
+            sort=True,
+        )
         return arima_output_df
 
     def step_forward(self) -> None:
@@ -63,7 +75,9 @@ class SubSimulation:
             compartment.step_forward()
 
         if self.should_scale_populations_after_step:
-            for compartment_tag, populations in self.total_population_data.groupby('compartment'):
+            for compartment_tag, populations in self.total_population_data.groupby(
+                "compartment"
+            ):
                 compartment_obj = self.simulation_compartments[compartment_tag]
                 if isinstance(compartment_obj, FullCompartment):
                     ts, scale_factor = compartment_obj.scale_cohorts(populations)
@@ -73,16 +87,20 @@ class SubSimulation:
             compartment.prepare_for_next_step()
 
     def cross_flow(self) -> pd.DataFrame:
-        cohorts_table = pd.DataFrame(columns=['compartment'])
+        cohorts_table = pd.DataFrame(columns=["compartment"])
         for compartment_name, compartment_obj in self.simulation_compartments.items():
             if isinstance(compartment_obj, FullCompartment):
                 compartment_cohorts = compartment_obj.get_cohort_df()
-                compartment_cohorts['compartment'] = compartment_name
-                cohorts_table = pd.concat([cohorts_table, compartment_cohorts], sort=True)
+                compartment_cohorts["compartment"] = compartment_name
+                cohorts_table = pd.concat(
+                    [cohorts_table, compartment_cohorts], sort=True
+                )
 
         return cohorts_table
 
-    def ingest_cross_simulation_cohorts(self, cross_simulation_flows: pd.DataFrame) -> None:
+    def ingest_cross_simulation_cohorts(
+        self, cross_simulation_flows: pd.DataFrame
+    ) -> None:
         for compartment_obj in self.simulation_compartments.values():
             if isinstance(compartment_obj, FullCompartment):
                 compartment_obj.ingest_cross_simulation_cohorts(cross_simulation_flows)
@@ -93,9 +111,13 @@ class SubSimulation:
         simulation_results = pd.DataFrame()
         for compartment_name, compartment in self.simulation_compartments.items():
             if isinstance(compartment, FullCompartment):
-                compartment_results = pd.DataFrame(compartment.get_per_ts_population(), columns=['total_population'])
-                compartment_results['compartment'] = compartment_name
-                compartment_results['time_step'] = compartment_results.index
-                simulation_results = pd.concat([simulation_results, compartment_results], sort=True)
+                compartment_results = pd.DataFrame(
+                    compartment.get_per_ts_population(), columns=["total_population"]
+                )
+                compartment_results["compartment"] = compartment_name
+                compartment_results["time_step"] = compartment_results.index
+                simulation_results = pd.concat(
+                    [simulation_results, compartment_results], sort=True
+                )
 
         return simulation_results

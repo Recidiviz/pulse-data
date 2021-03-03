@@ -23,7 +23,9 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_VIEW_NAME = 'supervision_termination_by_type_by_period'
+SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_VIEW_NAME = (
+    "supervision_termination_by_type_by_period"
+)
 
 SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_DESCRIPTION = """
  Supervision termination by type and by metric period month.
@@ -32,8 +34,7 @@ SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_DESCRIPTION = """
  supervision ended because of a revocation or successful completion.
 """
 
-SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_QUERY_TEMPLATE = \
-    """
+SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT
         state_code, metric_period_months,
@@ -65,16 +66,16 @@ SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_VIEW_BUILDER = MetricBigQueryViewBuild
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_VIEW_NAME,
     view_query_template=SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_QUERY_TEMPLATE,
-    dimensions=['state_code', 'metric_period_months', 'supervision_type', 'district'],
+    dimensions=["state_code", "metric_period_months", "supervision_type", "district"],
     description=SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     district_dimension=bq_utils.unnest_district(),
     supervision_type_dimension=bq_utils.unnest_supervision_type(),
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
-    metric_period_condition=bq_utils.metric_period_condition()
+    metric_period_condition=bq_utils.metric_period_condition(),
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_VIEW_BUILDER.build_and_print()

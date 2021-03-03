@@ -34,11 +34,15 @@ class AuthorizationStore:
 
     def __init__(self) -> None:
         prefix = "" if not in_gcp() else f"{project_id()}-"
-        self.allowlist_path = GcsfsFilePath.from_absolute_path(f'{prefix}case-triage-data/allowlist_v2.json')
+        self.allowlist_path = GcsfsFilePath.from_absolute_path(
+            f"{prefix}case-triage-data/allowlist_v2.json"
+        )
         self.allowed_users: List[str] = []
         self.admin_users: List[str] = []
 
     def refresh(self) -> None:
         data = json.loads(get_local_file(self.allowlist_path))
-        self.allowed_users = [struct['email'] for struct in data]
-        self.admin_users = [struct['email'] for struct in data if struct.get('is_admin')]
+        self.allowed_users = [struct["email"] for struct in data]
+        self.admin_users = [
+            struct["email"] for struct in data if struct.get("is_admin")
+        ]

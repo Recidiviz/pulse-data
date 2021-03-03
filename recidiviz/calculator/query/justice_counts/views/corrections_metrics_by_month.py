@@ -28,7 +28,9 @@ from recidiviz.tools.justice_counts import manual_upload
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_STATE_CODE_AGGREGATION = metric_by_month.Aggregation(dimension=manual_upload.State, comprehensive=False)
+_STATE_CODE_AGGREGATION = metric_by_month.Aggregation(
+    dimension=manual_upload.State, comprehensive=False
+)
 
 METRICS = [
     # Admissions Metrics
@@ -36,131 +38,175 @@ METRICS = [
         system=schema.System.CORRECTIONS,
         metric=schema.MetricType.ADMISSIONS,
         filtered_dimensions=[],
-        aggregated_dimensions={'state_code': _STATE_CODE_AGGREGATION},
-        output_name='ADMISSIONS',
-    ), metric_by_month.CalculatedMetricByMonth(
+        aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
+        output_name="ADMISSIONS",
+    ),
+    metric_by_month.CalculatedMetricByMonth(
         system=schema.System.CORRECTIONS,
         metric=schema.MetricType.ADMISSIONS,
         filtered_dimensions=[manual_upload.AdmissionType.NEW_COMMITMENT],
-        aggregated_dimensions={'state_code': _STATE_CODE_AGGREGATION},
-        output_name='ADMISSIONS_NEW_COMMITMENTS',
-    ), metric_by_month.CalculatedMetricByMonth(
-        system=schema.System.CORRECTIONS,
-        metric=schema.MetricType.ADMISSIONS,
-        filtered_dimensions=[manual_upload.AdmissionType.FROM_SUPERVISION, manual_upload.SupervisionType.PAROLE],
-        aggregated_dimensions={'state_code': _STATE_CODE_AGGREGATION},
-        output_name='ADMISSIONS_FROM_PAROLE',
-    ), metric_by_month.CalculatedMetricByMonth(
-        system=schema.System.CORRECTIONS,
-        metric=schema.MetricType.ADMISSIONS,
-        filtered_dimensions=[manual_upload.AdmissionType.FROM_SUPERVISION, manual_upload.SupervisionType.PAROLE,
-                             manual_upload.SupervisionViolationType.NEW_CRIME],
-        aggregated_dimensions={'state_code': _STATE_CODE_AGGREGATION},
-        output_name='ADMISSIONS_FROM_PAROLE_NEW_CRIME',
-    ), metric_by_month.CalculatedMetricByMonth(
-        system=schema.System.CORRECTIONS,
-        metric=schema.MetricType.ADMISSIONS,
-        filtered_dimensions=[manual_upload.AdmissionType.FROM_SUPERVISION, manual_upload.SupervisionType.PAROLE,
-                             manual_upload.SupervisionViolationType.TECHNICAL],
-        aggregated_dimensions={'state_code': _STATE_CODE_AGGREGATION},
-        output_name='ADMISSIONS_FROM_PAROLE_TECHNICAL',
-    ), metric_by_month.CalculatedMetricByMonth(
-        system=schema.System.CORRECTIONS,
-        metric=schema.MetricType.ADMISSIONS,
-        filtered_dimensions=[manual_upload.AdmissionType.FROM_SUPERVISION, manual_upload.SupervisionType.PROBATION],
-        aggregated_dimensions={'state_code': _STATE_CODE_AGGREGATION},
-        output_name='ADMISSIONS_FROM_PROBATION',
-    ), metric_by_month.CalculatedMetricByMonth(
-        system=schema.System.CORRECTIONS,
-        metric=schema.MetricType.ADMISSIONS,
-        filtered_dimensions=[manual_upload.AdmissionType.FROM_SUPERVISION, manual_upload.SupervisionType.PROBATION,
-                             manual_upload.SupervisionViolationType.NEW_CRIME],
-        aggregated_dimensions={'state_code': _STATE_CODE_AGGREGATION},
-        output_name='ADMISSIONS_FROM_PROBATION_NEW_CRIME',
-    ), metric_by_month.CalculatedMetricByMonth(
-        system=schema.System.CORRECTIONS,
-        metric=schema.MetricType.ADMISSIONS,
-        filtered_dimensions=[manual_upload.AdmissionType.FROM_SUPERVISION, manual_upload.SupervisionType.PROBATION,
-                             manual_upload.SupervisionViolationType.TECHNICAL],
-        aggregated_dimensions={'state_code': _STATE_CODE_AGGREGATION},
-        output_name='ADMISSIONS_FROM_PROBATION_TECHNICAL',
-    ), metric_by_month.CalculatedMetricByMonth(
-        system=schema.System.CORRECTIONS,
-        metric=schema.MetricType.ADMISSIONS,
-        filtered_dimensions=[manual_upload.AdmissionType.FROM_SUPERVISION,
-                             manual_upload.SupervisionViolationType.NEW_CRIME],
-        aggregated_dimensions={'state_code': _STATE_CODE_AGGREGATION},
-        output_name='ADMISSIONS_FROM_ALL_SUPERVISION_NEW_CRIME',
-    ), metric_by_month.CalculatedMetricByMonth(
-        system=schema.System.CORRECTIONS,
-        metric=schema.MetricType.ADMISSIONS,
-        filtered_dimensions=[manual_upload.AdmissionType.FROM_SUPERVISION,
-                             manual_upload.SupervisionViolationType.TECHNICAL],
-        aggregated_dimensions={'state_code': _STATE_CODE_AGGREGATION},
-        output_name='ADMISSIONS_FROM_ALL_SUPERVISION_TECHNICAL',
+        aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
+        output_name="ADMISSIONS_NEW_COMMITMENTS",
     ),
-
+    metric_by_month.CalculatedMetricByMonth(
+        system=schema.System.CORRECTIONS,
+        metric=schema.MetricType.ADMISSIONS,
+        filtered_dimensions=[
+            manual_upload.AdmissionType.FROM_SUPERVISION,
+            manual_upload.SupervisionType.PAROLE,
+        ],
+        aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
+        output_name="ADMISSIONS_FROM_PAROLE",
+    ),
+    metric_by_month.CalculatedMetricByMonth(
+        system=schema.System.CORRECTIONS,
+        metric=schema.MetricType.ADMISSIONS,
+        filtered_dimensions=[
+            manual_upload.AdmissionType.FROM_SUPERVISION,
+            manual_upload.SupervisionType.PAROLE,
+            manual_upload.SupervisionViolationType.NEW_CRIME,
+        ],
+        aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
+        output_name="ADMISSIONS_FROM_PAROLE_NEW_CRIME",
+    ),
+    metric_by_month.CalculatedMetricByMonth(
+        system=schema.System.CORRECTIONS,
+        metric=schema.MetricType.ADMISSIONS,
+        filtered_dimensions=[
+            manual_upload.AdmissionType.FROM_SUPERVISION,
+            manual_upload.SupervisionType.PAROLE,
+            manual_upload.SupervisionViolationType.TECHNICAL,
+        ],
+        aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
+        output_name="ADMISSIONS_FROM_PAROLE_TECHNICAL",
+    ),
+    metric_by_month.CalculatedMetricByMonth(
+        system=schema.System.CORRECTIONS,
+        metric=schema.MetricType.ADMISSIONS,
+        filtered_dimensions=[
+            manual_upload.AdmissionType.FROM_SUPERVISION,
+            manual_upload.SupervisionType.PROBATION,
+        ],
+        aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
+        output_name="ADMISSIONS_FROM_PROBATION",
+    ),
+    metric_by_month.CalculatedMetricByMonth(
+        system=schema.System.CORRECTIONS,
+        metric=schema.MetricType.ADMISSIONS,
+        filtered_dimensions=[
+            manual_upload.AdmissionType.FROM_SUPERVISION,
+            manual_upload.SupervisionType.PROBATION,
+            manual_upload.SupervisionViolationType.NEW_CRIME,
+        ],
+        aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
+        output_name="ADMISSIONS_FROM_PROBATION_NEW_CRIME",
+    ),
+    metric_by_month.CalculatedMetricByMonth(
+        system=schema.System.CORRECTIONS,
+        metric=schema.MetricType.ADMISSIONS,
+        filtered_dimensions=[
+            manual_upload.AdmissionType.FROM_SUPERVISION,
+            manual_upload.SupervisionType.PROBATION,
+            manual_upload.SupervisionViolationType.TECHNICAL,
+        ],
+        aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
+        output_name="ADMISSIONS_FROM_PROBATION_TECHNICAL",
+    ),
+    metric_by_month.CalculatedMetricByMonth(
+        system=schema.System.CORRECTIONS,
+        metric=schema.MetricType.ADMISSIONS,
+        filtered_dimensions=[
+            manual_upload.AdmissionType.FROM_SUPERVISION,
+            manual_upload.SupervisionViolationType.NEW_CRIME,
+        ],
+        aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
+        output_name="ADMISSIONS_FROM_ALL_SUPERVISION_NEW_CRIME",
+    ),
+    metric_by_month.CalculatedMetricByMonth(
+        system=schema.System.CORRECTIONS,
+        metric=schema.MetricType.ADMISSIONS,
+        filtered_dimensions=[
+            manual_upload.AdmissionType.FROM_SUPERVISION,
+            manual_upload.SupervisionViolationType.TECHNICAL,
+        ],
+        aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
+        output_name="ADMISSIONS_FROM_ALL_SUPERVISION_TECHNICAL",
+    ),
     # Population Metrics
     metric_by_month.CalculatedMetricByMonth(
         system=schema.System.CORRECTIONS,
         metric=schema.MetricType.POPULATION,
-        filtered_dimensions=[manual_upload.PopulationType.SUPERVISION, manual_upload.SupervisionType.PAROLE],
-        aggregated_dimensions={'state_code': _STATE_CODE_AGGREGATION},
-        output_name='POPULATION_PAROLE',
-    ), metric_by_month.CalculatedMetricByMonth(
+        filtered_dimensions=[
+            manual_upload.PopulationType.SUPERVISION,
+            manual_upload.SupervisionType.PAROLE,
+        ],
+        aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
+        output_name="POPULATION_PAROLE",
+    ),
+    metric_by_month.CalculatedMetricByMonth(
         system=schema.System.CORRECTIONS,
         metric=schema.MetricType.POPULATION,
         filtered_dimensions=[manual_upload.PopulationType.PRISON],
-        aggregated_dimensions={'state_code': _STATE_CODE_AGGREGATION},
-        output_name='POPULATION_PRISON',
-    ), metric_by_month.CalculatedMetricByMonth(
+        aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
+        output_name="POPULATION_PRISON",
+    ),
+    metric_by_month.CalculatedMetricByMonth(
         system=schema.System.CORRECTIONS,
         metric=schema.MetricType.POPULATION,
-        filtered_dimensions=[manual_upload.PopulationType.SUPERVISION, manual_upload.SupervisionType.PROBATION],
-        aggregated_dimensions={'state_code': _STATE_CODE_AGGREGATION},
-        output_name='POPULATION_PROBATION',
+        filtered_dimensions=[
+            manual_upload.PopulationType.SUPERVISION,
+            manual_upload.SupervisionType.PROBATION,
+        ],
+        aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
+        output_name="POPULATION_PROBATION",
     ),
-
     # Release Metrics
     metric_by_month.CalculatedMetricByMonth(
         system=schema.System.CORRECTIONS,
         metric=schema.MetricType.RELEASES,
         filtered_dimensions=[manual_upload.ReleaseType.TO_SUPERVISION],
-        aggregated_dimensions={'state_code': _STATE_CODE_AGGREGATION},
-        output_name='RELEASES_SUPERVISION',
-    ), metric_by_month.CalculatedMetricByMonth(
+        aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
+        output_name="RELEASES_SUPERVISION",
+    ),
+    metric_by_month.CalculatedMetricByMonth(
         system=schema.System.CORRECTIONS,
         metric=schema.MetricType.RELEASES,
         filtered_dimensions=[manual_upload.ReleaseType.COMPLETED],
-        aggregated_dimensions={'state_code': _STATE_CODE_AGGREGATION},
-        output_name='RELEASES_COMPLETED',
+        aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
+        output_name="RELEASES_COMPLETED",
     ),
 ]
 
-class CorrectionsMetricsByMonthBigQueryViewCollector(BigQueryViewCollector[SimpleBigQueryViewBuilder]):
+
+class CorrectionsMetricsByMonthBigQueryViewCollector(
+    BigQueryViewCollector[SimpleBigQueryViewBuilder]
+):
     def __init__(self) -> None:
         self.metric_builders: List[SimpleBigQueryViewBuilder] = []
         unified_query_select_clauses = []
         for metric in METRICS:
             view_builder = metric_by_month.CalculatedMetricByMonthViewBuilder(
                 dataset_id=dataset_config.JUSTICE_COUNTS_CORRECTIONS_DATASET,
-                metric_to_calculate=metric)
+                metric_to_calculate=metric,
+            )
             unified_query_select_clauses.append(
-                f"SELECT * FROM `{{project_id}}.{{calculation_dataset}}.{view_builder.view_id}_materialized`")
+                f"SELECT * FROM `{{project_id}}.{{calculation_dataset}}.{view_builder.view_id}_materialized`"
+            )
             self.metric_builders.append(view_builder)
 
         self.unified_builder = SimpleBigQueryViewBuilder(
             dataset_id=dataset_config.JUSTICE_COUNTS_DASHBOARD_DATASET,
             view_id="unified_corrections_metrics_by_month",
-            view_query_template=' UNION ALL '.join(unified_query_select_clauses) + ';',
+            view_query_template=" UNION ALL ".join(unified_query_select_clauses) + ";",
             description="Unified view of all calculated corrections metrics by month",
-            calculation_dataset=dataset_config.JUSTICE_COUNTS_CORRECTIONS_DATASET)
+            calculation_dataset=dataset_config.JUSTICE_COUNTS_CORRECTIONS_DATASET,
+        )
 
     def collect_view_builders(self) -> List[SimpleBigQueryViewBuilder]:
         return self.metric_builders + [self.unified_builder]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         collector = CorrectionsMetricsByMonthBigQueryViewCollector()
         for builder in collector.collect_view_builders():

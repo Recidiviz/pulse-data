@@ -15,18 +15,22 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Counts of the total state population by race/ethnicity, grouped by state-specific categories."""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config, state_specific_query_strings
+from recidiviz.calculator.query.state import (
+    dataset_config,
+    state_specific_query_strings,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-STATE_RACE_ETHNICITY_POPULATION_VIEW_NAME = 'state_race_ethnicity_population'
+STATE_RACE_ETHNICITY_POPULATION_VIEW_NAME = "state_race_ethnicity_population"
 
-STATE_RACE_ETHNICITY_POPULATION_VIEW_DESCRIPTION = """Counts of the total state population by race/ethnicity."""
+STATE_RACE_ETHNICITY_POPULATION_VIEW_DESCRIPTION = (
+    """Counts of the total state population by race/ethnicity."""
+)
 
-STATE_RACE_ETHNICITY_POPULATION_VIEW_QUERY_TEMPLATE = \
-    """
+STATE_RACE_ETHNICITY_POPULATION_VIEW_QUERY_TEMPLATE = """
     /*{description}*/
     WITH total_state_population AS (
         SELECT
@@ -60,12 +64,12 @@ STATE_RACE_ETHNICITY_POPULATION_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=STATE_RACE_ETHNICITY_POPULATION_VIEW_NAME,
     view_query_template=STATE_RACE_ETHNICITY_POPULATION_VIEW_QUERY_TEMPLATE,
-    dimensions=['state_code', 'race_or_ethnicity'],
+    dimensions=["state_code", "race_or_ethnicity"],
     description=STATE_RACE_ETHNICITY_POPULATION_VIEW_DESCRIPTION,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
-    state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings()
+    state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(),
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         STATE_RACE_ETHNICITY_POPULATION_VIEW_BUILDER.build_and_print()

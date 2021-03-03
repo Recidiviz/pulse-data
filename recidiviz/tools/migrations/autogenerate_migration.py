@@ -39,28 +39,37 @@ import sys
 from alembic.command import revision, upgrade
 import alembic.config
 
-from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType, SQLAlchemyEngineManager
+from recidiviz.persistence.database.sqlalchemy_engine_manager import (
+    SchemaType,
+    SQLAlchemyEngineManager,
+)
 from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 
 def create_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description='Autogenerate local migration.')
-    parser.add_argument('--database',
-                        type=SchemaType,
-                        choices=list(SchemaType),
-                        help='Specifies which database to run against.',
-                        required=True)
-    parser.add_argument('--message',
-                        type=str,
-                        help='String message passed to alembic to apply to the revision.',
-                        required=True)
-    parser.add_argument('--project-id',
-                        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
-                        help='Used to select which GCP project in which to run this script. '
-                             'If not set, then this script runs against a locally generated '
-                             'database.')
+    parser = argparse.ArgumentParser(description="Autogenerate local migration.")
+    parser.add_argument(
+        "--database",
+        type=SchemaType,
+        choices=list(SchemaType),
+        help="Specifies which database to run against.",
+        required=True,
+    )
+    parser.add_argument(
+        "--message",
+        type=str,
+        help="String message passed to alembic to apply to the revision.",
+        required=True,
+    )
+    parser.add_argument(
+        "--project-id",
+        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
+        help="Used to select which GCP project in which to run this script. "
+        "If not set, then this script runs against a locally generated "
+        "database.",
+    )
     return parser
 
 
@@ -71,39 +80,48 @@ def main(database: SchemaType, message: str, use_local_db: bool) -> None:
         # postgres from a docker container.
         if not local_postgres_helpers.can_start_on_disk_postgresql_database():
             logging.error(
-                'pg_ctl is not installed, so the script cannot be run locally. '
-                '--project-id must be specified to run against staging or production.')
-            logging.error('Exiting...')
+                "pg_ctl is not installed, so the script cannot be run locally. "
+                "--project-id must be specified to run against staging or production."
+            )
+            logging.error("Exiting...")
             sys.exit(1)
-        logging.info('Starting local postgres database for autogeneration...')
+        logging.info("Starting local postgres database for autogeneration...")
         tmp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
-        original_env_vars = local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
+        original_env_vars = (
+            local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
+        )
     else:
         # TODO(Recidiviz/zenhub-tasks#134): This code path will throw when pointed at staging
         # because we havne't created valid read-only users there just yet.
         try:
-            original_env_vars = SQLAlchemyEngineManager.update_sqlalchemy_env_vars(database, readonly_user=True)
+            original_env_vars = SQLAlchemyEngineManager.update_sqlalchemy_env_vars(
+                database, readonly_user=True
+            )
         except ValueError as e:
-            logging.warning('Error fetching SQLAlchemy credentials: %s', e)
-            logging.warning('Until readonly users are created, we cannot autogenerate migrations against staging.')
-            logging.warning('See https://github.com/Recidiviz/zenhub-tasks/issues/134')
+            logging.warning("Error fetching SQLAlchemy credentials: %s", e)
+            logging.warning(
+                "Until readonly users are created, we cannot autogenerate migrations against staging."
+            )
+            logging.warning("See https://github.com/Recidiviz/zenhub-tasks/issues/134")
             sys.exit(1)
 
     try:
-        config = alembic.config.Config(SQLAlchemyEngineManager.get_alembic_file(database))
+        config = alembic.config.Config(
+            SQLAlchemyEngineManager.get_alembic_file(database)
+        )
         if use_local_db:
-            upgrade(config, 'head')
+            upgrade(config, "head")
         revision(config, autogenerate=True, message=message)
     except Exception as e:
-        logging.error('Automigration generation failed: %s', e)
+        logging.error("Automigration generation failed: %s", e)
 
     local_postgres_helpers.restore_local_env_vars(original_env_vars)
     if use_local_db:
-        logging.info('Stopping local postgres database...')
+        logging.info("Stopping local postgres database...")
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(tmp_db_dir)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     args = create_parser().parse_args()
     if not args.project_id:
         main(args.database, args.message, True)

@@ -31,7 +31,7 @@ class CoreEntity:
     # Consider CoreEntity abstract and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is CoreEntity:
-            raise Exception('Abstract class cannot be instantiated')
+            raise Exception("Abstract class cannot be instantiated")
         return super().__new__(cls)
 
     @classmethod
@@ -46,9 +46,9 @@ class CoreEntity:
 
     @classmethod
     def get_class_id_name(cls):
-        id_name = to_snake_case(cls.__name__) + '_id'
-        if id_name.startswith('state_'):
-            id_name = id_name.replace('state_', '')
+        id_name = to_snake_case(cls.__name__) + "_id"
+        if id_name.startswith("state_"):
+            id_name = id_name.replace("state_", "")
         return id_name
 
     def get_id(self):
@@ -65,9 +65,9 @@ class CoreEntity:
         return setattr(self, self.get_class_id_name(), entity_id)
 
     def get_external_id(self) -> Optional[str]:
-        if not hasattr(self, 'external_id'):
+        if not hasattr(self, "external_id"):
             return None
-        return self.get_field('external_id')
+        return self.get_field("external_id")
 
     # TODO(#2163): Use get/set_field_from_list when possible to clean up code.
     def get_field_as_list(self, child_field_name: str) -> List[Any]:
@@ -82,14 +82,16 @@ class CoreEntity:
         if not hasattr(self, field_name):
             raise ValueError(
                 f"Expected entity {type(self)} to have field {field_name}, "
-                f"but it did not.")
+                f"but it did not."
+            )
         return getattr(self, field_name)
 
     def set_field(self, field_name: str, value: Any):
         if not hasattr(self, field_name):
             raise ValueError(
                 f"Expected entity {type(self)} to have field {field_name}, "
-                f"but it did not.")
+                f"but it did not."
+            )
         return setattr(self, field_name, value)
 
     def clear_field(self, field_name: str):
@@ -116,11 +118,13 @@ class CoreEntity:
                 raise ValueError(
                     f"Attempting to set singular field: {field_name} on "
                     f"entity: {self.get_entity_name()}, but got multiple "
-                    f"values: {value}.", self.get_entity_name())
+                    f"values: {value}.",
+                    self.get_entity_name(),
+                )
 
     def has_default_status(self) -> bool:
-        if hasattr(self, 'status'):
-            status = self.get_field('status')
+        if hasattr(self, "status"):
+            status = self.get_field("status")
             if not status:
                 return False
 
@@ -129,17 +133,15 @@ class CoreEntity:
             elif isinstance(status, Enum):
                 status_str = status.value
             else:
-                raise ValueError(
-                    f"Unexpected type [{type(status)}] for status.")
+                raise ValueError(f"Unexpected type [{type(status)}] for status.")
 
             return status_str == enum_canonical_strings.present_without_info
         return False
 
-    def has_default_enum(self, field_name: str, field_value: Enum) \
-            -> bool:
+    def has_default_enum(self, field_name: str, field_value: Enum) -> bool:
         if hasattr(self, field_name):
             value = self.get_field(field_name)
-            raw_value = self.get_field(f'{field_name}_raw_text')
+            raw_value = self.get_field(f"{field_name}_raw_text")
 
             if not value or raw_value:
                 return False

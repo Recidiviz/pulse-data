@@ -24,14 +24,13 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
-PO_REPORT_AVGS_PER_DISTRICT_STATE_VIEW_NAME = 'po_report_avgs_per_district_state'
+PO_REPORT_AVGS_PER_DISTRICT_STATE_VIEW_NAME = "po_report_avgs_per_district_state"
 
 PO_REPORT_AVGS_PER_DISTRICT_STATE_DESCRIPTION = """
   Monthly supervision metrics averaged by district and state that do not match across the district and/or state.
 """
 
-PO_REPORT_AVGS_PER_DISTRICT_STATE_QUERY_TEMPLATE = \
-    """
+PO_REPORT_AVGS_PER_DISTRICT_STATE_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT DISTINCT
       state_code as region_code, review_month, t1.email_address, 'pos_discharges_district_average-mismatch'
@@ -148,6 +147,6 @@ PO_REPORT_AVGS_PER_DISTRICT_STATE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     po_report_dataset=state_dataset_config.PO_REPORT_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         PO_REPORT_AVGS_PER_DISTRICT_STATE_VIEW_BUILDER.build_and_print()

@@ -15,25 +15,24 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Most recent calculate job_id for the most recent metric date for daily metrics, by metric type and state code."""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-MOST_RECENT_DAILY_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_NAME = \
-    'most_recent_daily_job_id_by_metric_and_state_code'
+MOST_RECENT_DAILY_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_NAME = (
+    "most_recent_daily_job_id_by_metric_and_state_code"
+)
 
-MOST_RECENT_DAILY_JOB_ID_BY_METRIC_AND_STATE_CODE_DESCRIPTION = \
-    """ Job ID of the most recent calculate job for the most recent metric date for daily metrics, by metric and state
+MOST_RECENT_DAILY_JOB_ID_BY_METRIC_AND_STATE_CODE_DESCRIPTION = """ Job ID of the most recent calculate job for the most recent metric date for daily metrics, by metric and state
     code.
 
     All job_ids begin with the format: 'YYYY-MM-DD_HH_MM_SS', so ordering by job_id gives us the most recent job. This
     format is true of both jobs run locally and run on Dataflow.
     """
 
-MOST_RECENT_DAILY_JOB_ID_BY_METRIC_AND_STATE_CODE_QUERY_TEMPLATE = \
-    """
+MOST_RECENT_DAILY_JOB_ID_BY_METRIC_AND_STATE_CODE_QUERY_TEMPLATE = """
     /*{description}*/
     WITH all_job_ids AS (
       (SELECT DISTINCT job_id, state_code, date_of_stay as metric_date, metric_type
@@ -63,9 +62,9 @@ MOST_RECENT_DAILY_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_BUILDER = SimpleBigQueryV
     should_materialize=True,
     view_query_template=MOST_RECENT_DAILY_JOB_ID_BY_METRIC_AND_STATE_CODE_QUERY_TEMPLATE,
     description=MOST_RECENT_DAILY_JOB_ID_BY_METRIC_AND_STATE_CODE_DESCRIPTION,
-    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET
+    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         MOST_RECENT_DAILY_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_BUILDER.build_and_print()

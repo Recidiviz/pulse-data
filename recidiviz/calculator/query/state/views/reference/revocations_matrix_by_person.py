@@ -15,14 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Revocations Matrix by Person."""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
-from recidiviz.calculator.query.state import dataset_config, state_specific_query_strings
+from recidiviz.calculator.query.state import (
+    dataset_config,
+    state_specific_query_strings,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-REVOCATIONS_MATRIX_BY_PERSON_VIEW_NAME = 'revocations_matrix_by_person'
+REVOCATIONS_MATRIX_BY_PERSON_VIEW_NAME = "revocations_matrix_by_person"
 
 REVOCATIONS_MATRIX_BY_PERSON_DESCRIPTION = """
  Revocations matrix of violation response count and most severe violation per person.
@@ -31,8 +34,7 @@ REVOCATIONS_MATRIX_BY_PERSON_DESCRIPTION = """
  admissions within a metric period, the most recent revocation admission is used.
  """
 
-REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
-    """
+REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = """
     /*{description}*/
     WITH revocations AS (
         SELECT
@@ -136,28 +138,31 @@ REVOCATIONS_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE,
     description=REVOCATIONS_MATRIX_BY_PERSON_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    most_severe_violation_type_subtype_grouping=
-    state_specific_query_strings.state_specific_most_severe_violation_type_subtype_grouping(),
-    level_1_supervision_location_dimension=
-    bq_utils.unnest_column('level_1_supervision_location', 'level_1_supervision_location'),
-    level_2_supervision_location_dimension=
-    bq_utils.unnest_column('level_2_supervision_location', 'level_2_supervision_location'),
+    most_severe_violation_type_subtype_grouping=state_specific_query_strings.state_specific_most_severe_violation_type_subtype_grouping(),
+    level_1_supervision_location_dimension=bq_utils.unnest_column(
+        "level_1_supervision_location", "level_1_supervision_location"
+    ),
+    level_2_supervision_location_dimension=bq_utils.unnest_column(
+        "level_2_supervision_location", "level_2_supervision_location"
+    ),
     supervision_type_dimension=bq_utils.unnest_supervision_type(),
-    supervision_level_dimension=bq_utils.unnest_column('supervision_level', 'supervision_level'),
+    supervision_level_dimension=bq_utils.unnest_column(
+        "supervision_level", "supervision_level"
+    ),
     charge_category_dimension=bq_utils.unnest_charge_category(),
-    violation_type_dimension=bq_utils.unnest_column('violation_type', 'violation_type'),
+    violation_type_dimension=bq_utils.unnest_column("violation_type", "violation_type"),
     reported_violations_dimension=bq_utils.unnest_reported_violations(),
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
     metric_period_condition=bq_utils.metric_period_condition(),
-    state_specific_assessment_bucket=
-    state_specific_query_strings.state_specific_assessment_bucket(output_column_name='risk_level'),
+    state_specific_assessment_bucket=state_specific_query_strings.state_specific_assessment_bucket(
+        output_column_name="risk_level"
+    ),
     state_specific_supervision_level=state_specific_query_strings.state_specific_supervision_level(),
-    state_specific_supervision_location_optimization_filter=
-    state_specific_query_strings.state_specific_supervision_location_optimization_filter(),
+    state_specific_supervision_location_optimization_filter=state_specific_query_strings.state_specific_supervision_location_optimization_filter(),
     state_specific_dimension_filter=state_specific_query_strings.state_specific_dimension_filter(),
     state_specific_inclusion_filter=state_specific_query_strings.state_specific_inclusion_filter(),
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         REVOCATIONS_MATRIX_BY_PERSON_VIEW_BUILDER.build_and_print()

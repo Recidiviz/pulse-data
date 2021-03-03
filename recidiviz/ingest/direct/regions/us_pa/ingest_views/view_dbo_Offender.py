@@ -16,10 +16,12 @@
 # =============================================================================
 """Query containing person demographic and identifier information from PBPP."""
 
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import \
-    DirectIngestPreProcessedIngestViewBuilder
-from recidiviz.ingest.direct.regions.us_pa.ingest_views.templates_person_external_ids import \
-    MASTER_STATE_IDS_FRAGMENT
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    DirectIngestPreProcessedIngestViewBuilder,
+)
+from recidiviz.ingest.direct.regions.us_pa.ingest_views.templates_person_external_ids import (
+    MASTER_STATE_IDS_FRAGMENT,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -50,13 +52,13 @@ WHERE recency_rank = 1
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
-    region='us_pa',
-    ingest_view_name='dbo_Offender',
+    region="us_pa",
+    ingest_view_name="dbo_Offender",
     view_query_template=VIEW_QUERY_TEMPLATE,
     order_by_cols=None,
-    materialize_raw_data_table_views=True
+    materialize_raw_data_table_views=True,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         VIEW_BUILDER.build_and_print()

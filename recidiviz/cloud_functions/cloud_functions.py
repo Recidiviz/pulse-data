@@ -25,8 +25,9 @@ from typing import Tuple
 from flask import Blueprint, request, jsonify
 import gcsfs
 
-from recidiviz.calculator.pipeline.utils.calculate_cloud_task_manager import \
-    CalculateCloudTaskManager
+from recidiviz.calculator.pipeline.utils.calculate_cloud_task_manager import (
+    CalculateCloudTaskManager,
+)
 from recidiviz.cloud_functions.cloud_function_utils import GCSFS_NO_CACHING
 
 from recidiviz.ingest.aggregate.regions.ca import ca_aggregate_ingest
@@ -43,42 +44,41 @@ from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.params import get_str_param_value
 
-cloud_functions_blueprint = Blueprint('cloud_functions', __name__)
+cloud_functions_blueprint = Blueprint("cloud_functions", __name__)
 
 
 class StateAggregateError(Exception):
     """Errors thrown in the state aggregate endpoint"""
 
 
-HISTORICAL_BUCKET = '{}-processed-state-aggregates'
+HISTORICAL_BUCKET = "{}-processed-state-aggregates"
 
 
-@cloud_functions_blueprint.route('/state_aggregate')
+@cloud_functions_blueprint.route("/state_aggregate")
 @requires_gae_auth
 def state_aggregate() -> Tuple[str, HTTPStatus]:
     """Calls state aggregates"""
 
     # Please add new states in alphabetical order
     state_to_parser = {
-        'california': ca_aggregate_ingest.parse,
-        'florida': fl_aggregate_ingest.parse,
-        'georgia': ga_aggregate_ingest.parse,
-        'hawaii': hi_aggregate_ingest.parse,
-        'kentucky': ky_aggregate_ingest.parse,
-        'new_york': ny_aggregate_ingest.parse,
-        'pennsylvania': pa_aggregate_ingest.parse,
-        'tennessee': tn_aggregate_ingest.parse,
-        'texas': tx_aggregate_ingest.parse,
+        "california": ca_aggregate_ingest.parse,
+        "florida": fl_aggregate_ingest.parse,
+        "georgia": ga_aggregate_ingest.parse,
+        "hawaii": hi_aggregate_ingest.parse,
+        "kentucky": ky_aggregate_ingest.parse,
+        "new_york": ny_aggregate_ingest.parse,
+        "pennsylvania": pa_aggregate_ingest.parse,
+        "tennessee": tn_aggregate_ingest.parse,
+        "texas": tx_aggregate_ingest.parse,
     }
 
-    bucket = get_str_param_value('bucket', request.args)
-    state = get_str_param_value('state', request.args)
-    filename = get_str_param_value('filename', request.args)
+    bucket = get_str_param_value("bucket", request.args)
+    state = get_str_param_value("state", request.args)
+    filename = get_str_param_value("filename", request.args)
     project_id = metadata.project_id()
     logging.info("The project id is %s", project_id)
     if not bucket or not state or not filename:
-        raise StateAggregateError(
-            "All of state, bucket, and filename must be provided")
+        raise StateAggregateError("All of state, bucket, and filename must be provided")
     path = os.path.join(bucket, state, filename)
     parser = state_to_parser[state]
     # Don't use the gcsfs cache
@@ -100,23 +100,22 @@ def state_aggregate() -> Tuple[str, HTTPStatus]:
 
     try:
         result = parser(os.path.join(bucket, state), tmpdir_path)
-        logging.info('Successfully parsed the report')
+        logging.info("Successfully parsed the report")
         for table, df in result.items():
             dao.write_df(table, df)
 
         # If we are successful, we want to move the file out of the cloud
         # function triggered directory, and into the historical path.
         historical_path = os.path.join(
-            HISTORICAL_BUCKET.format(project_id),
-            state, filename
+            HISTORICAL_BUCKET.format(project_id), state, filename
         )
         fs.mv(path, historical_path)
-        return '', HTTPStatus.OK
+        return "", HTTPStatus.OK
     except Exception as e:
         return jsonify(e), HTTPStatus.INTERNAL_SERVER_ERROR
 
 
-@cloud_functions_blueprint.route('/dataflow_monitor')
+@cloud_functions_blueprint.route("/dataflow_monitor")
 @requires_gae_auth
 def dataflow_monitor() -> Tuple[str, HTTPStatus]:
     """Calls the dataflow monitor manager to begin monitoring a Dataflow job.
@@ -127,22 +126,23 @@ def dataflow_monitor() -> Tuple[str, HTTPStatus]:
         topic: The Pub/Sub topic to publish a message to if the job is
             successful
     """
-    job_id = get_str_param_value('job_id', request.args)
-    location = get_str_param_value('location', request.args)
-    topic = get_str_param_value('topic', request.args)
+    job_id = get_str_param_value("job_id", request.args)
+    location = get_str_param_value("location", request.args)
+    topic = get_str_param_value("topic", request.args)
 
     if not job_id:
-        raise ValueError('Unexpected empty job_id.')
+        raise ValueError("Unexpected empty job_id.")
     if not location:
-        raise ValueError('Unexpected empty location.')
+        raise ValueError("Unexpected empty location.")
     if not topic:
-        raise ValueError('Unexpected empty topic.')
+        raise ValueError("Unexpected empty topic.")
 
-    logging.info("Attempting to monitor the job with id: %s. Will "
-                 "publish to %s on success.", job_id, topic)
+    logging.info(
+        "Attempting to monitor the job with id: %s. Will " "publish to %s on success.",
+        job_id,
+        topic,
+    )
 
-    CalculateCloudTaskManager().create_dataflow_monitor_task(job_id,
-                                                             location,
-                                                             topic)
+    CalculateCloudTaskManager().create_dataflow_monitor_task(job_id, location, topic)
 
-    return '', HTTPStatus.OK
+    return "", HTTPStatus.OK

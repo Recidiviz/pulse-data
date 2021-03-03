@@ -22,18 +22,24 @@ from more_itertools import one
 import apache_beam as beam
 from apache_beam.typehints import with_input_types, with_output_types
 
-from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import \
-    UsMoSupervisionSentence, UsMoIncarcerationSentence
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import (
+    UsMoSupervisionSentence,
+    UsMoIncarcerationSentence,
+)
 from recidiviz.persistence.entity.entity_utils import get_ids
 from recidiviz.persistence.entity.state import entities
 
 
 @with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
-@with_output_types(beam.typehints.Tuple[int,
-                                        Union[entities.StateIncarcerationSentence, entities.StateSupervisionSentence]])
+@with_output_types(
+    beam.typehints.Tuple[
+        int,
+        Union[entities.StateIncarcerationSentence, entities.StateSupervisionSentence],
+    ]
+)
 class ConvertSentencesToStateSpecificType(beam.DoFn):
-    """Converts sentences into state-specific sublcasses of those sentences, for use in state-specific calculate flows.
-    """
+    """Converts sentences into state-specific sublcasses of those sentences,
+    for use in state-specific calculate flows."""
 
     # pylint: disable=arguments-differ
     def process(self, element, *_args, **_kwargs):
@@ -49,48 +55,72 @@ class ConvertSentencesToStateSpecificType(beam.DoFn):
         """
         person_id, sentences_and_statuses = element
 
-        incarceration_sentences = sentences_and_statuses.get('incarceration_sentences')
-        supervision_sentences = sentences_and_statuses.get('supervision_sentences')
-        all_sentence_statuses = sentences_and_statuses.get('sentence_statuses')
+        incarceration_sentences = sentences_and_statuses.get("incarceration_sentences")
+        supervision_sentences = sentences_and_statuses.get("supervision_sentences")
+        all_sentence_statuses = sentences_and_statuses.get("sentence_statuses")
 
-        us_mo_sentence_statuses_by_sentence: Dict[str, List[Dict[str, str]]] = defaultdict(list)
+        us_mo_sentence_statuses_by_sentence: Dict[
+            str, List[Dict[str, str]]
+        ] = defaultdict(list)
 
         if all_sentence_statuses:
             # Build a dictionary that maps each sentence_external_id to a list of dictionaries containing status
             # updates for this sentence
             for status_dict in all_sentence_statuses:
-                sentence_external_id = status_dict.get('sentence_external_id')
+                sentence_external_id = status_dict.get("sentence_external_id")
 
                 if sentence_external_id:
-                    us_mo_sentence_statuses_by_sentence[sentence_external_id].append(status_dict)
+                    us_mo_sentence_statuses_by_sentence[sentence_external_id].append(
+                        status_dict
+                    )
 
         for incarceration_sentence in incarceration_sentences:
             state_specific_incarceration_sentence = incarceration_sentence
-            if incarceration_sentence.state_code == 'US_MO':
+            if incarceration_sentence.state_code == "US_MO":
 
                 sentence_statuses = []
-                if incarceration_sentence.external_id in us_mo_sentence_statuses_by_sentence:
-                    sentence_statuses = us_mo_sentence_statuses_by_sentence[incarceration_sentence.external_id]
+                if (
+                    incarceration_sentence.external_id
+                    in us_mo_sentence_statuses_by_sentence
+                ):
+                    sentence_statuses = us_mo_sentence_statuses_by_sentence[
+                        incarceration_sentence.external_id
+                    ]
 
-                state_specific_incarceration_sentence = UsMoIncarcerationSentence.from_incarceration_sentence(
-                    incarceration_sentence, sentence_statuses)
+                state_specific_incarceration_sentence = (
+                    UsMoIncarcerationSentence.from_incarceration_sentence(
+                        incarceration_sentence, sentence_statuses
+                    )
+                )
 
-            yield beam.pvalue.TaggedOutput('incarceration_sentences',
-                                           (person_id, state_specific_incarceration_sentence))
+            yield beam.pvalue.TaggedOutput(
+                "incarceration_sentences",
+                (person_id, state_specific_incarceration_sentence),
+            )
 
         for supervision_sentence in supervision_sentences:
             state_specific_supervision_sentence = supervision_sentence
-            if supervision_sentence.state_code == 'US_MO':
+            if supervision_sentence.state_code == "US_MO":
 
                 sentence_statuses = []
-                if supervision_sentence.external_id in us_mo_sentence_statuses_by_sentence:
-                    sentence_statuses = us_mo_sentence_statuses_by_sentence[supervision_sentence.external_id]
+                if (
+                    supervision_sentence.external_id
+                    in us_mo_sentence_statuses_by_sentence
+                ):
+                    sentence_statuses = us_mo_sentence_statuses_by_sentence[
+                        supervision_sentence.external_id
+                    ]
 
-                state_specific_supervision_sentence = UsMoSupervisionSentence.from_supervision_sentence(
-                    supervision_sentence, sentence_statuses)
+                state_specific_supervision_sentence = (
+                    UsMoSupervisionSentence.from_supervision_sentence(
+                        supervision_sentence, sentence_statuses
+                    )
+                )
 
-            yield beam.pvalue.TaggedOutput('supervision_sentences',
-                                           (person_id, state_specific_supervision_sentence))
+            yield beam.pvalue.TaggedOutput(
+                "supervision_sentences",
+                (person_id, state_specific_supervision_sentence),
+            )
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
@@ -120,33 +150,36 @@ class SetViolationResponseOnIncarcerationPeriod(beam.DoFn):
         person_id, incarceration_periods_violation_responses = element
 
         # Get the StateIncarcerationPeriods as a list
-        incarceration_periods = \
-            list(incarceration_periods_violation_responses[
-                'incarceration_periods'])
+        incarceration_periods = list(
+            incarceration_periods_violation_responses["incarceration_periods"]
+        )
 
         # Get the StateSupervisionViolationResponses as a list
-        violation_responses = \
-            list(incarceration_periods_violation_responses[
-                'violation_responses'])
+        violation_responses = list(
+            incarceration_periods_violation_responses["violation_responses"]
+        )
 
         if incarceration_periods:
             for incarceration_period in incarceration_periods:
-                if incarceration_period.source_supervision_violation_response \
-                        and violation_responses:
+                if (
+                    incarceration_period.source_supervision_violation_response
+                    and violation_responses
+                ):
 
                     corresponding_response = [
-                        response for response in violation_responses
-                        if response.supervision_violation_response_id ==
-                        incarceration_period.
-                        source_supervision_violation_response.
-                        supervision_violation_response_id]
+                        response
+                        for response in violation_responses
+                        if response.supervision_violation_response_id
+                        == incarceration_period.source_supervision_violation_response.supervision_violation_response_id
+                    ]
 
                     # If there's a corresponding response, there should only
                     # be 1 (this is enforced at a DB level)
                     response = one(corresponding_response)
 
-                    incarceration_period. \
-                        source_supervision_violation_response = response
+                    incarceration_period.source_supervision_violation_response = (
+                        response
+                    )
 
                 yield (person_id, incarceration_period)
 
@@ -156,7 +189,8 @@ class SetViolationResponseOnIncarcerationPeriod(beam.DoFn):
 
 @with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
 @with_output_types(
-    beam.typehints.Tuple[int, entities.StateSupervisionViolationResponse])
+    beam.typehints.Tuple[int, entities.StateSupervisionViolationResponse]
+)
 class SetViolationOnViolationsResponse(beam.DoFn):
     """Sets a hydrated StateSupervisionviolation onto the corresponding
     StateSupervisionviolationResponse."""
@@ -179,28 +213,24 @@ class SetViolationOnViolationsResponse(beam.DoFn):
         person_id, violations_and_responses = element
 
         # Get the StateSupervisionViolations as a list
-        violations = \
-            list(violations_and_responses[
-                'violations'])
+        violations = list(violations_and_responses["violations"])
 
         # Get the StateSupervisionViolationResponses as a list
-        violation_responses = \
-            list(violations_and_responses[
-                'violation_responses'])
+        violation_responses = list(violations_and_responses["violation_responses"])
 
         if violation_responses:
             for violation_response in violation_responses:
                 if violations:
                     for violation in violations:
                         response_ids = [
-                            response.supervision_violation_response_id for
-                            response in
-                            violation.supervision_violation_responses
+                            response.supervision_violation_response_id
+                            for response in violation.supervision_violation_responses
                         ]
 
-                        if violation_response.\
-                                supervision_violation_response_id in \
-                                response_ids:
+                        if (
+                            violation_response.supervision_violation_response_id
+                            in response_ids
+                        ):
                             violation_response.supervision_violation = violation
 
                             # Escape the inner loop when the supervision violation has been set
@@ -232,40 +262,52 @@ class SetSentencesOnSentenceGroup(beam.DoFn):
         person_id, person_entities = element
 
         # Get the StateIncarcerationSentences in a list
-        incarceration_sentences = list(person_entities['incarceration_sentences'])
+        incarceration_sentences = list(person_entities["incarceration_sentences"])
 
         # Get the StateSupervisionSentences in a list
-        supervision_sentences = list(person_entities['supervision_sentences'])
+        supervision_sentences = list(person_entities["supervision_sentences"])
 
         # Ge the StateSentenceGroups in a list
-        sentence_groups = list(person_entities['sentence_groups'])
+        sentence_groups = list(person_entities["sentence_groups"])
 
         if sentence_groups:
             for sentence_group in sentence_groups:
                 if sentence_group.incarceration_sentences:
-                    incarceration_sentence_ids = get_ids(sentence_group.incarceration_sentences)
+                    incarceration_sentence_ids = get_ids(
+                        sentence_group.incarceration_sentences
+                    )
 
                     if incarceration_sentences:
                         sentence_group_incarceration_sentences = [
-                            inc_sent for inc_sent in incarceration_sentences
-                            if inc_sent.incarceration_sentence_id in incarceration_sentence_ids
+                            inc_sent
+                            for inc_sent in incarceration_sentences
+                            if inc_sent.incarceration_sentence_id
+                            in incarceration_sentence_ids
                         ]
 
-                        sentence_group.incarceration_sentences = sentence_group_incarceration_sentences
+                        sentence_group.incarceration_sentences = (
+                            sentence_group_incarceration_sentences
+                        )
 
                         for incarceration_sentence in incarceration_sentences:
                             incarceration_sentence.sentence_group = sentence_group
 
                 if sentence_group.supervision_sentences:
-                    supervision_sentence_ids = get_ids(sentence_group.supervision_sentences)
+                    supervision_sentence_ids = get_ids(
+                        sentence_group.supervision_sentences
+                    )
 
                     if supervision_sentences:
                         sentence_group_supervision_sentences = [
-                            sup_sent for sup_sent in supervision_sentences
-                            if sup_sent.supervision_sentence_id in supervision_sentence_ids
+                            sup_sent
+                            for sup_sent in supervision_sentences
+                            if sup_sent.supervision_sentence_id
+                            in supervision_sentence_ids
                         ]
 
-                        sentence_group.supervision_sentences = sentence_group_supervision_sentences
+                        sentence_group.supervision_sentences = (
+                            sentence_group_supervision_sentences
+                        )
 
                         for supervision_sentence in supervision_sentences:
                             supervision_sentence.sentence_group = sentence_group

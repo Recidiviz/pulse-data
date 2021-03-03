@@ -20,20 +20,21 @@ from typing import Optional
 
 from gcsfs import GCSFileSystem
 
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
-    GcsfsDirectIngestController
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import (
+    GcsfsDirectIngestController,
+)
 
 
 class DirectIngestControllerFactory:
     """Factory class for building DirectIngestControllers of various types."""
 
-    _DIRECT_INGEST_REGIONS_MODULE_NAME = 'recidiviz.ingest.direct.regions'
+    _DIRECT_INGEST_REGIONS_MODULE_NAME = "recidiviz.ingest.direct.regions"
 
     @classmethod
     def build_gcsfs_ingest_controller(
-            cls,
-            region_code: str,
-            fs: GCSFileSystem,
+        cls,
+        region_code: str,
+        fs: GCSFileSystem,
     ) -> Optional[GcsfsDirectIngestController]:
         """Retrieve a direct ingest GcsfsDirectIngestController for a particular
         region.
@@ -42,18 +43,19 @@ class DirectIngestControllerFactory:
             An instance of the region's direct ingest controller class (e.g.,
              UsNdController)
         """
-        controller_module_name = \
-            f'{cls._DIRECT_INGEST_REGIONS_MODULE_NAME}.' \
-            f'{region_code}.{region_code}_controller'
+        controller_module_name = (
+            f"{cls._DIRECT_INGEST_REGIONS_MODULE_NAME}."
+            f"{region_code}.{region_code}_controller"
+        )
 
         try:
             controller_module = importlib.import_module(controller_module_name)
         except ModuleNotFoundError:
             return None
 
-        controller_class = getattr(controller_module,
-                                   cls.gcsfs_controller_class_name(region_code),
-                                   None)
+        controller_class = getattr(
+            controller_module, cls.gcsfs_controller_class_name(region_code), None
+        )
 
         if not controller_class:
             return None
@@ -69,4 +71,4 @@ class DirectIngestControllerFactory:
         """Returns the GcsfsDirectIngestController class name for a given
         region_code.
         """
-        return ''.join(s.title() for s in region_code.split('_')) + 'Controller'
+        return "".join(s.title() for s in region_code.split("_")) + "Controller"

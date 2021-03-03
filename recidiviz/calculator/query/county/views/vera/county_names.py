@@ -25,17 +25,15 @@ from recidiviz.utils.metadata import local_project_id_override
 VERA_DATASET = vera_view_constants.VERA_DATASET
 INCARCERATION_TRENDS_TABLE = vera_view_constants.INCARCERATION_TRENDS_TABLE
 
-COUNTY_NAMES_VIEW_NAME = 'county_names'
+COUNTY_NAMES_VIEW_NAME = "county_names"
 
-COUNTY_NAMES_VIEW_DESCRIPTION = \
-"""
+COUNTY_NAMES_VIEW_DESCRIPTION = """
 A view that contains all unique combinations of
 fips, state name, and county name from
 Vera's Incarceration Trends dataset.
 """
 
-COUNTY_NAMES_VIEW_QUERY_TEMPLATE = \
-"""
+COUNTY_NAMES_VIEW_QUERY_TEMPLATE = """
 /*{description}*/
 SELECT
   SUBSTR(CAST(yfips AS STRING), 5, 5) AS fips,
@@ -52,9 +50,9 @@ COUNTY_NAMES_VIEW_BUILDER: SimpleBigQueryViewBuilder = SimpleBigQueryViewBuilder
     view_query_template=COUNTY_NAMES_VIEW_QUERY_TEMPLATE,
     description=COUNTY_NAMES_VIEW_DESCRIPTION,
     vera_dataset=VERA_DATASET,
-    incarceration_trends_table=INCARCERATION_TRENDS_TABLE
+    incarceration_trends_table=INCARCERATION_TRENDS_TABLE,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         COUNTY_NAMES_VIEW_BUILDER.build_and_print()

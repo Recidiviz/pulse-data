@@ -1,3 +1,11 @@
 #!/bin/sh
 
+GIT_DIR=$(git rev-parse --git-dir)
+REPO_GIT_DIR=${GIT_DIR%%/.git/*}
+REPO_ROOT_DIR=$(dirname "$REPO_GIT_DIR")
+source ${REPO_ROOT_DIR}/recidiviz/tools/script_base.sh
+
+echo "Formatting..."
+pipenv run black . 2>&1 | indent_output
+
 recidiviz/tools/docs/documentation_generation.sh

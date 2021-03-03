@@ -64,19 +64,25 @@ def test_repr():
 
     representation = scrape_key.__repr__()
 
-    assert representation == "<ScrapeKey region_code: us_ut, " \
-                             "scrape_type: ScrapeType.SNAPSHOT>"
+    assert (
+        representation == "<ScrapeKey region_code: us_ut, "
+        "scrape_type: ScrapeType.SNAPSHOT>"
+    )
 
 
 def test_no_region():
     with pytest.raises(ValueError) as exception:
         ScrapeKey(None, constants.ScrapeType.SNAPSHOT)
-    assert str(exception.value) == 'A scrape key must include both a region ' \
-                                   'code and a scrape type'
+    assert (
+        str(exception.value) == "A scrape key must include both a region "
+        "code and a scrape type"
+    )
 
 
 def test_no_scrape_type():
     with pytest.raises(ValueError) as exception:
         ScrapeKey("us_ut", None)
-    assert str(exception.value) == 'A scrape key must include both a region ' \
-                                   'code and a scrape type'
+    assert (
+        str(exception.value) == "A scrape key must include both a region "
+        "code and a scrape type"
+    )

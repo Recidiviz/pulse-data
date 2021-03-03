@@ -35,7 +35,18 @@ import logging
 import os
 import sys
 from collections import defaultdict, Counter
-from typing import Callable, Dict, Iterable, List, Optional, Tuple, Type, TypeVar, Union, Set
+from typing import (
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    Set,
+)
 from urllib import parse
 import webbrowser
 
@@ -50,19 +61,32 @@ from recidiviz.common import fips
 
 from recidiviz.common.constants import states
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta, EnumParsingError, EntityEnumT
-from recidiviz.common.date import first_day_of_month, last_day_of_month, DateRange, NonNegativeDateRange
+from recidiviz.common.constants.entity_enum import (
+    EntityEnum,
+    EntityEnumMeta,
+    EnumParsingError,
+    EntityEnumT,
+)
+from recidiviz.common.date import (
+    first_day_of_month,
+    last_day_of_month,
+    DateRange,
+    NonNegativeDateRange,
+)
 from recidiviz.common.str_field_utils import to_snake_case
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
-from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem, GcsfsFileContentsHandle
+from recidiviz.cloud_storage.gcs_file_system import (
+    GCSFileSystem,
+    GcsfsFileContentsHandle,
+)
 from recidiviz.persistence.database.base_schema import JusticeCountsBase
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.utils.yaml_dict import YAMLDict
 from recidiviz.utils import metadata
 
-DimensionT = TypeVar('DimensionT', bound='Dimension')
+DimensionT = TypeVar("DimensionT", bound="Dimension")
 
 # Dimensions
 
@@ -75,10 +99,14 @@ class Dimension:
     enums. Others are classes with a single text field to hold any value, and are potentially normalized to a
     pre-defined set of values as a separate dimension.
     """
+
     @classmethod
     @abstractmethod
-    def get(cls: Type[DimensionT], dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None) \
-            -> DimensionT:
+    def get(
+        cls: Type[DimensionT],
+        dimension_cell_value: str,
+        enum_overrides: Optional[EnumOverrides] = None,
+    ) -> DimensionT:
         """Create an instance of the dimension based on the given value.
 
         Raises an error if it is unable to create an instance of a dimension. Only returns None if the value is
@@ -87,7 +115,9 @@ class Dimension:
 
     @classmethod
     @abstractmethod
-    def build_overrides(cls: Type[DimensionT], mapping_overrides: Dict[str, str]) -> EnumOverrides:
+    def build_overrides(
+        cls: Type[DimensionT], mapping_overrides: Dict[str, str]
+    ) -> EnumOverrides:
         """
         Builds EnumOverrides for this Dimension, based on the provided mapping_overrides.
         Should raise an error if this Dimension is not normalized or if overrides are not supported.
@@ -110,14 +140,14 @@ class Dimension:
 
     @classmethod
     @abstractmethod
-    def get_generated_dimension_classes(cls) -> List[Type['Dimension']]:
+    def get_generated_dimension_classes(cls) -> List[Type["Dimension"]]:
         """Returns a list of Dimensions that the current dimension will generate"""
 
     @classmethod
     @abstractmethod
     def generate_dimension_classes(
         cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
-    ) -> List['Dimension']:
+    ) -> List["Dimension"]:
         """Generates Dimensions based on the dimension cell value provided"""
 
     @property
@@ -136,12 +166,17 @@ class RawDimension(Dimension, metaclass=ABCMeta):
     Child classes are typically created by passing a normalized dimension class to `raw_type_for_dimension`, which will
     create a raw, or not normalized, copy version of the dimension.
     """
+
     value: str = attr.ib()
 
     @classmethod
-    def get(cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None) -> 'RawDimension':
+    def get(
+        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
+    ) -> "RawDimension":
         if enum_overrides is not None:
-            raise ValueError(f"Unexpected enum_overrides when building raw dimension value: {enum_overrides}")
+            raise ValueError(
+                f"Unexpected enum_overrides when building raw dimension value: {enum_overrides}"
+            )
         return cls(dimension_cell_value)
 
     @classmethod
@@ -168,39 +203,68 @@ class RawDimension(Dimension, metaclass=ABCMeta):
 
 
 def raw_for_dimension_cls(dimension_cls: Type[Dimension]) -> Type[Dimension]:
-    return type(f"{dimension_cls.__name__}Raw", (RawDimension, ), {
-        'dimension_identifier': classmethod(lambda cls: '/'.join([dimension_cls.dimension_identifier(), 'raw']))
-    })
+    return type(
+        f"{dimension_cls.__name__}Raw",
+        (RawDimension,),
+        {
+            "dimension_identifier": classmethod(
+                lambda cls: "/".join([dimension_cls.dimension_identifier(), "raw"])
+            )
+        },
+    )
 
 
 def title_to_snake_case(title: str) -> str:
-    return title.replace(' ', '_').lower()
+    return title.replace(" ", "_").lower()
 
 
 def get_synthetic_dimension(column_name: str, source: str) -> Type[Dimension]:
-    column_no_space = column_name.replace(' ', '')
-    synthetic_dimension = type(f"{column_no_space}Raw", (RawDimension,), {
-        'dimension_identifier': classmethod(lambda cls: '/'.join(
-            ['source', title_to_snake_case(source), title_to_snake_case(column_name), 'raw']))
-    })
+    column_no_space = column_name.replace(" ", "")
+    synthetic_dimension = type(
+        f"{column_no_space}Raw",
+        (RawDimension,),
+        {
+            "dimension_identifier": classmethod(
+                lambda cls: "/".join(
+                    [
+                        "source",
+                        title_to_snake_case(source),
+                        title_to_snake_case(column_name),
+                        "raw",
+                    ]
+                )
+            )
+        },
+    )
     return synthetic_dimension
 
 
-def parse_entity_enum(enum_cls: Type[EntityEnumT], dimension_cell_value: str,
-                      enum_overrides: Optional[EnumOverrides]) -> EntityEnumT:
-    entity_enum = enum_cls.parse(dimension_cell_value, enum_overrides or EnumOverrides.empty())
+def parse_entity_enum(
+    enum_cls: Type[EntityEnumT],
+    dimension_cell_value: str,
+    enum_overrides: Optional[EnumOverrides],
+) -> EntityEnumT:
+    entity_enum = enum_cls.parse(
+        dimension_cell_value, enum_overrides or EnumOverrides.empty()
+    )
     if entity_enum is None or not isinstance(entity_enum, enum_cls):
-        raise ValueError(f"Attempting to parse '{dimension_cell_value}' as {enum_cls} returned unexpected "
-                         f"entity: {entity_enum}")
+        raise ValueError(
+            f"Attempting to parse '{dimension_cell_value}' as {enum_cls} returned unexpected "
+            f"entity: {entity_enum}"
+        )
     return entity_enum
 
 
-def build_entity_overrides(enum_cls: Type[EntityEnumT], mapping_overrides: Dict[str, str]) -> EnumOverrides:
+def build_entity_overrides(
+    enum_cls: Type[EntityEnumT], mapping_overrides: Dict[str, str]
+) -> EnumOverrides:
     overrides_builder = EnumOverrides.Builder()
     for value, mapping in mapping_overrides.items():
         mapped = enum_cls(mapping)
         if mapped is None:
-            raise ValueError(f"Unable to parse override value '{mapping}' as {enum_cls}")
+            raise ValueError(
+                f"Unable to parse override value '{mapping}' as {enum_cls}"
+            )
         overrides_builder.add(value, mapped)
     overrides = overrides_builder.build()
     return overrides
@@ -210,12 +274,15 @@ class PopulationType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
     """
     Dimension that represents the type of populations
     """
-    PRISON = 'PRISON'
-    SUPERVISION = 'SUPERVISION'
-    JAIL = 'JAIL'
+
+    PRISON = "PRISON"
+    SUPERVISION = "SUPERVISION"
+    JAIL = "JAIL"
 
     @classmethod
-    def get(cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None) -> 'PopulationType':
+    def get(
+        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
+    ) -> "PopulationType":
         return parse_entity_enum(cls, dimension_cell_value, enum_overrides)
 
     @classmethod
@@ -228,7 +295,7 @@ class PopulationType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
 
     @classmethod
     def dimension_identifier(cls) -> str:
-        return 'metric/population/type'
+        return "metric/population/type"
 
     @classmethod
     def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
@@ -245,29 +312,28 @@ class PopulationType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
         return self.value
 
     @classmethod
-    def _get_default_map(cls) -> Dict[str, 'PopulationType']:
-        return {
-            'PRISON': cls.PRISON,
-            'SUPERVISION': cls.SUPERVISION,
-            'JAIL': cls.JAIL
-        }
+    def _get_default_map(cls) -> Dict[str, "PopulationType"]:
+        return {"PRISON": cls.PRISON, "SUPERVISION": cls.SUPERVISION, "JAIL": cls.JAIL}
 
 
 class ReleaseType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
     """
     Dimension that represents the type of incarceration release
     """
+
     # Release from prison to supervision
-    TO_SUPERVISION = 'TO_SUPERVISION'
+    TO_SUPERVISION = "TO_SUPERVISION"
 
     # Release that has been fully served
-    COMPLETED = 'COMPLETED'
+    COMPLETED = "COMPLETED"
 
     # Releases that are not covered above
-    OTHER = 'OTHER'
+    OTHER = "OTHER"
 
     @classmethod
-    def get(cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None) -> 'ReleaseType':
+    def get(
+        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
+    ) -> "ReleaseType":
         return parse_entity_enum(cls, dimension_cell_value, enum_overrides)
 
     @classmethod
@@ -280,7 +346,7 @@ class ReleaseType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
 
     @classmethod
     def dimension_identifier(cls) -> str:
-        return 'metric/release/type'
+        return "metric/release/type"
 
     @classmethod
     def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
@@ -297,11 +363,11 @@ class ReleaseType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
         return self.value
 
     @classmethod
-    def _get_default_map(cls) -> Dict[str, 'ReleaseType']:
+    def _get_default_map(cls) -> Dict[str, "ReleaseType"]:
         return {
-            'TO SUPERVISION': cls.TO_SUPERVISION,
-            'COMPLETED': cls.COMPLETED,
-            'OTHER': cls.OTHER,
+            "TO SUPERVISION": cls.TO_SUPERVISION,
+            "COMPLETED": cls.COMPLETED,
+            "OTHER": cls.OTHER,
         }
 
 
@@ -309,16 +375,18 @@ class AdmissionType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
     """Dimension that represents the type of incarceration admission"""
 
     # Admissions due to a new sentence from the community.
-    NEW_COMMITMENT = 'NEW_COMMITMENT'
+    NEW_COMMITMENT = "NEW_COMMITMENT"
 
     # Admissions of persons from supervision (e.g. revocation, dunk, etc.)
-    FROM_SUPERVISION = 'FROM_SUPERVISION'
+    FROM_SUPERVISION = "FROM_SUPERVISION"
 
     # Any other admissions (e.g. in CT this is used for pre-trial admissions)
-    OTHER = 'OTHER'
+    OTHER = "OTHER"
 
     @classmethod
-    def get(cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None) -> 'AdmissionType':
+    def get(
+        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
+    ) -> "AdmissionType":
         return parse_entity_enum(cls, dimension_cell_value, enum_overrides)
 
     @classmethod
@@ -331,7 +399,7 @@ class AdmissionType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
 
     @classmethod
     def dimension_identifier(cls) -> str:
-        return 'metric/admission/type'
+        return "metric/admission/type"
 
     @classmethod
     def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
@@ -348,10 +416,10 @@ class AdmissionType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
         return self.value
 
     @classmethod
-    def _get_default_map(cls) -> Dict[str, 'AdmissionType']:
+    def _get_default_map(cls) -> Dict[str, "AdmissionType"]:
         return {
-            'NEW COMMITMENT': cls.NEW_COMMITMENT,
-            'FROM SUPERVISION': cls.FROM_SUPERVISION,
+            "NEW COMMITMENT": cls.NEW_COMMITMENT,
+            "FROM SUPERVISION": cls.FROM_SUPERVISION,
         }
 
 
@@ -359,13 +427,14 @@ class SupervisionViolationType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
     """
     Dimension that represents the type of supervision violation
     """
-    NEW_CRIME = 'NEW_CRIME'
-    TECHNICAL = 'TECHNICAL'
+
+    NEW_CRIME = "NEW_CRIME"
+    TECHNICAL = "TECHNICAL"
 
     @classmethod
     def get(
         cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
-    ) -> 'SupervisionViolationType':
+    ) -> "SupervisionViolationType":
         return parse_entity_enum(cls, dimension_cell_value, enum_overrides)
 
     @classmethod
@@ -378,7 +447,7 @@ class SupervisionViolationType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
 
     @classmethod
     def dimension_identifier(cls) -> str:
-        return 'metric/supervision_violation/type'
+        return "metric/supervision_violation/type"
 
     @classmethod
     def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
@@ -395,25 +464,26 @@ class SupervisionViolationType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
         return self.value
 
     @classmethod
-    def _get_default_map(cls) -> Dict[str, 'SupervisionViolationType']:
+    def _get_default_map(cls) -> Dict[str, "SupervisionViolationType"]:
         return {
-            'NEW CRIME': cls.NEW_CRIME,
-            'TECHNICAL': cls.TECHNICAL,
+            "NEW CRIME": cls.NEW_CRIME,
+            "TECHNICAL": cls.TECHNICAL,
         }
 
 
 class SupervisionType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
-    """
-    Dimension that represents the type of supervision
-    """
-    PAROLE = 'PAROLE'
-    PROBATION = 'PROBATION'
+    """Dimension that represents the type of supervision."""
+
+    PAROLE = "PAROLE"
+    PROBATION = "PROBATION"
 
     # Some jurisdictions have other types of supervision (e.g. DUI home confinement)
-    OTHER = 'OTHER'
+    OTHER = "OTHER"
 
     @classmethod
-    def get(cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None) -> 'SupervisionType':
+    def get(
+        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
+    ) -> "SupervisionType":
         return parse_entity_enum(cls, dimension_cell_value, enum_overrides)
 
     @classmethod
@@ -426,7 +496,7 @@ class SupervisionType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
 
     @classmethod
     def dimension_identifier(cls) -> str:
-        return 'metric/supervision/type'
+        return "metric/supervision/type"
 
     @classmethod
     def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
@@ -443,26 +513,33 @@ class SupervisionType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
         return self.value
 
     @classmethod
-    def _get_default_map(cls) -> Dict[str, 'SupervisionType']:
+    def _get_default_map(cls) -> Dict[str, "SupervisionType"]:
         return {
-            'PAROLE': cls.PAROLE,
-            'PROBATION': cls.PROBATION,
+            "PAROLE": cls.PAROLE,
+            "PROBATION": cls.PROBATION,
         }
 
 
-def assert_no_overrides(dimension_cls: Type[Dimension], enum_overrides: Optional[EnumOverrides]) -> None:
+def assert_no_overrides(
+    dimension_cls: Type[Dimension], enum_overrides: Optional[EnumOverrides]
+) -> None:
     if enum_overrides is not None:
-        raise ValueError(f'Overrides not supported for {dimension_cls} but received {enum_overrides}')
+        raise ValueError(
+            f"Overrides not supported for {dimension_cls} but received {enum_overrides}"
+        )
 
 
 class Country(Dimension, EntityEnum, metaclass=EntityEnumMeta):
     """
     Dimension that represents the country
     """
-    US = 'US'
+
+    US = "US"
 
     @classmethod
-    def get(cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None) -> 'Country':
+    def get(
+        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
+    ) -> "Country":
         return parse_entity_enum(cls, dimension_cell_value, enum_overrides)
 
     @classmethod
@@ -475,7 +552,7 @@ class Country(Dimension, EntityEnum, metaclass=EntityEnumMeta):
 
     @classmethod
     def dimension_identifier(cls) -> str:
-        return 'global/location/country'
+        return "global/location/country"
 
     @classmethod
     def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
@@ -492,7 +569,7 @@ class Country(Dimension, EntityEnum, metaclass=EntityEnumMeta):
         return self.value
 
     @classmethod
-    def _get_default_map(cls) -> Dict[str, 'Country']:
+    def _get_default_map(cls) -> Dict[str, "Country"]:
         return {}
 
 
@@ -501,10 +578,13 @@ class State(Dimension):
     """
     Dimension that represents the state. Takes state code as input. example: 'US_WI'
     """
+
     state_code: states.StateCode = attr.ib(converter=states.StateCode)
 
     @classmethod
-    def get(cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None) -> 'State':
+    def get(
+        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
+    ) -> "State":
         assert_no_overrides(cls, enum_overrides)
         return cls(dimension_cell_value)
 
@@ -518,7 +598,7 @@ class State(Dimension):
 
     @classmethod
     def dimension_identifier(cls) -> str:
-        return 'global/location/state'
+        return "global/location/state"
 
     @classmethod
     def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
@@ -540,10 +620,13 @@ class County(Dimension):
     """
     Dimension that represents the county. Takes county code as input. example: 'US_WI_MILWAUKEE'
     """
+
     county_code: str = attr.ib()
 
     @classmethod
-    def get(cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None) -> 'County':
+    def get(
+        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
+    ) -> "County":
         assert_no_overrides(cls, enum_overrides)
         return cls(dimension_cell_value)
 
@@ -557,7 +640,7 @@ class County(Dimension):
 
     @classmethod
     def dimension_identifier(cls) -> str:
-        return 'global/location/county'
+        return "global/location/county"
 
     @classmethod
     def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
@@ -574,14 +657,16 @@ class County(Dimension):
         return self.county_code
 
     @classmethod
-    def _get_default_map(cls) -> Dict[str, 'County']:
+    def _get_default_map(cls) -> Dict[str, "County"]:
         return {}
 
     @county_code.validator
     def _value_is_valid(self, _attribute: attr.Attribute, county_code: str) -> None:
-        if re.search('^US_[A-Z]{2}_[A-Z_]+$', county_code) is None:
-            raise ValueError(f"Invalid county code '{county_code}' does not match expected format. "
-                             f"ex: 'US_NY_NEW_YORK'")
+        if re.search("^US_[A-Z]{2}_[A-Z_]+$", county_code) is None:
+            raise ValueError(
+                f"Invalid county code '{county_code}' does not match expected format. "
+                f"ex: 'US_NY_NEW_YORK'"
+            )
         fips.validate_county_code(county_code.lower())
 
 
@@ -590,15 +675,22 @@ class CountyFIPS(Dimension):
     """
     Dimension that represents the county fips. Can also generate State and County dimensions from fips value.
     """
+
     value: str = attr.ib(converter=str)
 
     @value.validator
     def _values_are_valid(self, _attribute: attr.Attribute, value: str) -> None:
-        if len(value) != 4 and len(value) != 5:  # length can be 4 or 5, because it may not having the leading zero
-            raise ValueError(f"fips should have between 4 and 5 digits, current length: {len(value)}")
+        if (
+            len(value) != 4 and len(value) != 5
+        ):  # length can be 4 or 5, because it may not having the leading zero
+            raise ValueError(
+                f"fips should have between 4 and 5 digits, current length: {len(value)}"
+            )
 
     @classmethod
-    def get(cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None) -> 'CountyFIPS':
+    def get(
+        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
+    ) -> "CountyFIPS":
         assert_no_overrides(cls, enum_overrides)
         return cls(dimension_cell_value)
 
@@ -612,7 +704,7 @@ class CountyFIPS(Dimension):
 
     @classmethod
     def dimension_identifier(cls) -> str:
-        return 'global/location/county-fips'
+        return "global/location/county-fips"
 
     @classmethod
     def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
@@ -623,14 +715,14 @@ class CountyFIPS(Dimension):
         cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
     ) -> List[Dimension]:
         [state, county] = fips.get_state_and_county_for_fips(int(dimension_cell_value))
-        return [State.get(state), County.get(f'{state}_{county}')]
+        return [State.get(state), County.get(f"{state}_{county}")]
 
     @property
     def dimension_value(self) -> str:
         return self.value
 
     @classmethod
-    def _get_default_map(cls) -> Dict[str, 'CountyFIPS']:
+    def _get_default_map(cls) -> Dict[str, "CountyFIPS"]:
         return {}
 
 
@@ -644,10 +736,13 @@ class Facility(Dimension):
     """
     Dimension that represents the facility
     """
+
     name: str = attr.ib()
 
     @classmethod
-    def get(cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None) -> 'Facility':
+    def get(
+        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
+    ) -> "Facility":
         assert_no_overrides(cls, enum_overrides)
         return cls(dimension_cell_value)
 
@@ -661,7 +756,7 @@ class Facility(Dimension):
 
     @classmethod
     def dimension_identifier(cls) -> str:
-        return 'global/facility/raw'
+        return "global/facility/raw"
 
     @classmethod
     def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
@@ -683,11 +778,16 @@ class Race(Dimension):
     """
     Dimension that represents the type race
     """
+
     value: str = attr.ib()
 
     @classmethod
-    def get(cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None) -> 'Race':
-        parsed_enum = parse_entity_enum(person_characteristics.Race, dimension_cell_value, enum_overrides)
+    def get(
+        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
+    ) -> "Race":
+        parsed_enum = parse_entity_enum(
+            person_characteristics.Race, dimension_cell_value, enum_overrides
+        )
         return cls(parsed_enum.value)
 
     @classmethod
@@ -700,7 +800,7 @@ class Race(Dimension):
 
     @classmethod
     def dimension_identifier(cls) -> str:
-        return 'global/race'
+        return "global/race"
 
     @classmethod
     def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
@@ -722,16 +822,23 @@ class Ethnicity(Dimension):
     """
     Dimension that represents the type of ethnicity
     """
+
     value: str = attr.ib()
 
     @classmethod
-    def get(cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None) -> 'Ethnicity':
-        parsed_enum = parse_entity_enum(person_characteristics.Ethnicity, dimension_cell_value, enum_overrides)
+    def get(
+        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
+    ) -> "Ethnicity":
+        parsed_enum = parse_entity_enum(
+            person_characteristics.Ethnicity, dimension_cell_value, enum_overrides
+        )
         return cls(parsed_enum.value)
 
     @classmethod
     def build_overrides(cls, mapping_overrides: Dict[str, str]) -> EnumOverrides:
-        return build_entity_overrides(person_characteristics.Ethnicity, mapping_overrides)
+        return build_entity_overrides(
+            person_characteristics.Ethnicity, mapping_overrides
+        )
 
     @classmethod
     def is_normalized(cls) -> bool:
@@ -739,7 +846,7 @@ class Ethnicity(Dimension):
 
     @classmethod
     def dimension_identifier(cls) -> str:
-        return 'global/ethnicity'
+        return "global/ethnicity"
 
     @classmethod
     def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
@@ -761,11 +868,16 @@ class Gender(Dimension):
     """
     Dimension that represents the type of gender
     """
+
     value: str = attr.ib()
 
     @classmethod
-    def get(cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None) -> 'Gender':
-        parsed_enum = parse_entity_enum(person_characteristics.Gender, dimension_cell_value, enum_overrides)
+    def get(
+        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
+    ) -> "Gender":
+        parsed_enum = parse_entity_enum(
+            person_characteristics.Gender, dimension_cell_value, enum_overrides
+        )
         return cls(parsed_enum.value)
 
     @classmethod
@@ -778,7 +890,7 @@ class Gender(Dimension):
 
     @classmethod
     def dimension_identifier(cls) -> str:
-        return 'global/gender'
+        return "global/gender"
 
     @classmethod
     def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
@@ -800,10 +912,13 @@ class Age(Dimension):
     """
     Dimension that represents the age
     """
+
     value: str = attr.ib()
 
     @classmethod
-    def get(cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None) -> 'Age':
+    def get(
+        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
+    ) -> "Age":
         assert_no_overrides(cls, enum_overrides)
         return cls(dimension_cell_value)
 
@@ -817,7 +932,7 @@ class Age(Dimension):
 
     @classmethod
     def dimension_identifier(cls) -> str:
-        return 'global/age/raw'
+        return "global/age/raw"
 
     @classmethod
     def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
@@ -839,7 +954,7 @@ def parse_dimension_name(dimension_name: str) -> Type[Dimension]:
     """Parses a dimension name to its corresponding Dimension class."""
     for dimension in Dimension.__subclasses__():
         if not issubclass(dimension, Dimension):
-            raise ValueError(f'Non-dimension subclass returned: {dimension}')
+            raise ValueError(f"Non-dimension subclass returned: {dimension}")
         if dimension_name == to_snake_case(dimension.__name__).upper():
             return dimension
     raise KeyError(f"No dimension exists for name: {dimension_name}")
@@ -853,9 +968,9 @@ def parse_dimension_name(dimension_name: str) -> Type[Dimension]:
 # conversion that is not specific to a particular object, but instead a class of objects, e.g. all Metrics, is instead
 # implemented within the persistence code itself.
 class DateFormatType(enum.Enum):
-    DATE = 'DATE'
-    MONTH = 'MONTH'
-    YEAR = 'YEAR'
+    DATE = "DATE"
+    MONTH = "MONTH"
+    YEAR = "YEAR"
 
 
 DateFormatParserType = Callable[[str], datetime.date]
@@ -864,13 +979,13 @@ DateFormatParserType = Callable[[str], datetime.date]
 DATE_FORMAT_PARSERS: Dict[DateFormatType, DateFormatParserType] = {
     DateFormatType.DATE: datetime.date.fromisoformat,
     DateFormatType.MONTH: lambda text: datetime.datetime.strptime(text, "%Y-%m").date(),
-    DateFormatType.YEAR: lambda text: datetime.datetime.strptime(text, "%Y").date()
+    DateFormatType.YEAR: lambda text: datetime.datetime.strptime(text, "%Y").date(),
 }
 
 
 class MeasurementWindowType(enum.Enum):
-    RANGE = 'RANGE'
-    SNAPSHOT = 'SNAPSHOT'
+    RANGE = "RANGE"
+    SNAPSHOT = "SNAPSHOT"
 
 
 # Currently we only expect one or two columns to be used to construct date ranges, but this can be expanded in the
@@ -883,51 +998,55 @@ DateRangeConverterType = Union[
 
 class RangeType(enum.Enum):
     @classmethod
-    def get_or_default(cls, text: Optional[str]) -> 'RangeType':
+    def get_or_default(cls, text: Optional[str]) -> "RangeType":
         if text is None:
             return RangeType.CUSTOM
         return cls(text)
 
-    CUSTOM = 'CUSTOM'
-    MONTH = 'MONTH'
-    YEAR = 'YEAR'
+    CUSTOM = "CUSTOM"
+    MONTH = "MONTH"
+    YEAR = "YEAR"
 
 
 RANGE_CONVERTERS: Dict[RangeType, DateRangeConverterType] = {
     RangeType.CUSTOM: NonNegativeDateRange,
     RangeType.MONTH: NonNegativeDateRange.for_month_of_date,
-    RangeType.YEAR: NonNegativeDateRange.for_year_of_date
+    RangeType.YEAR: NonNegativeDateRange.for_year_of_date,
 }
 
 RANGE_CONVERTER_FORMAT_TYPES: Dict[RangeType, DateFormatType] = {
     RangeType.CUSTOM: DateFormatType.DATE,
     RangeType.MONTH: DateFormatType.MONTH,
-    RangeType.YEAR: DateFormatType.YEAR
+    RangeType.YEAR: DateFormatType.YEAR,
 }
 
 
 class SnapshotType(enum.Enum):
     @classmethod
-    def get_or_default(cls, text: Optional[str]) -> 'SnapshotType':
+    def get_or_default(cls, text: Optional[str]) -> "SnapshotType":
         if text is None:
             return SnapshotType.DAY
         return cls(text)
 
-    DAY = 'DAY'
-    FIRST_DAY_OF_MONTH = 'FIRST_DAY_OF_MONTH'
-    LAST_DAY_OF_MONTH = 'LAST_DAY_OF_MONTH'
+    DAY = "DAY"
+    FIRST_DAY_OF_MONTH = "FIRST_DAY_OF_MONTH"
+    LAST_DAY_OF_MONTH = "LAST_DAY_OF_MONTH"
 
 
 SNAPSHOT_CONVERTERS: Dict[SnapshotType, DateRangeConverterType] = {
     SnapshotType.DAY: NonNegativeDateRange.for_day,
-    SnapshotType.FIRST_DAY_OF_MONTH: lambda date: NonNegativeDateRange.for_day(first_day_of_month(date)),
-    SnapshotType.LAST_DAY_OF_MONTH: lambda date: NonNegativeDateRange.for_day(last_day_of_month(date)),
+    SnapshotType.FIRST_DAY_OF_MONTH: lambda date: NonNegativeDateRange.for_day(
+        first_day_of_month(date)
+    ),
+    SnapshotType.LAST_DAY_OF_MONTH: lambda date: NonNegativeDateRange.for_day(
+        last_day_of_month(date)
+    ),
 }
 
 SNAPSHOT_CONVERTER_FORMAT_TYPES: Dict[SnapshotType, DateFormatType] = {
     SnapshotType.DAY: DateFormatType.DATE,
     SnapshotType.FIRST_DAY_OF_MONTH: DateFormatType.MONTH,
-    SnapshotType.LAST_DAY_OF_MONTH: DateFormatType.MONTH
+    SnapshotType.LAST_DAY_OF_MONTH: DateFormatType.MONTH,
 }
 
 
@@ -958,8 +1077,11 @@ class Metric:
         """The metric type that this corresponds to in the schema."""
 
 
-def _convert_optional(dimension_type: Type[EntityEnumT], value: Optional[str]) -> Optional[EntityEnumT]:
+def _convert_optional(
+    dimension_type: Type[EntityEnumT], value: Optional[str]
+) -> Optional[EntityEnumT]:
     return None if value is None else dimension_type(value)
+
 
 # `attr` requires converters to be named functions, so we create one for each type.
 
@@ -976,11 +1098,15 @@ def _convert_optional_admission_type(value: Optional[str]) -> Optional[Admission
     return _convert_optional(AdmissionType, value)
 
 
-def _convert_optional_supervision_type(value: Optional[str]) -> Optional[SupervisionType]:
+def _convert_optional_supervision_type(
+    value: Optional[str],
+) -> Optional[SupervisionType]:
     return _convert_optional(SupervisionType, value)
 
 
-def _convert_optional_supervision_violation_type(value: Optional[str]) -> Optional[SupervisionViolationType]:
+def _convert_optional_supervision_violation_type(
+    value: Optional[str],
+) -> Optional[SupervisionViolationType]:
     return _convert_optional(SupervisionViolationType, value)
 
 
@@ -989,16 +1115,22 @@ class Population(Metric):
     """Metric for recording populations.
 
     Currently this is only used for prison and supervision populations."""
+
     measurement_type: schema.MeasurementType = attr.ib(converter=schema.MeasurementType)
 
-    population_type: Optional[PopulationType] = attr.ib(converter=_convert_optional_population_type, default=None)
-    supervision_type: Optional[SupervisionType] = attr.ib(converter=_convert_optional_supervision_type, default=None)
+    population_type: Optional[PopulationType] = attr.ib(
+        converter=_convert_optional_population_type, default=None
+    )
+    supervision_type: Optional[SupervisionType] = attr.ib(
+        converter=_convert_optional_supervision_type, default=None
+    )
 
     def __attrs_post_init__(self) -> None:
         if self.population_type != PopulationType.SUPERVISION:
             if self.supervision_type is not None:
                 raise ValueError(
-                    "'supervision_type' may only be set on population if 'population_type' is 'SUPERVISION'")
+                    "'supervision_type' may only be set on population if 'population_type' is 'SUPERVISION'"
+                )
 
     @property
     def filters(self) -> List[Dimension]:
@@ -1026,8 +1158,11 @@ class Releases(Metric):
     """
     Metric for recording releases.
     """
+
     measurement_type: schema.MeasurementType = attr.ib(converter=schema.MeasurementType)
-    release_type: Optional[ReleaseType] = attr.ib(converter=_convert_optional_release_type, default=None)
+    release_type: Optional[ReleaseType] = attr.ib(
+        converter=_convert_optional_release_type, default=None
+    )
 
     @property
     def filters(self) -> List[Dimension]:
@@ -1052,21 +1187,30 @@ class Admissions(Metric):
     Currently this is intended to only be used for *incarceration* admissions. If needed in the future, it could be
     expanded to be used for other admissions as well.
     """
+
     measurement_type: schema.MeasurementType = attr.ib(converter=schema.MeasurementType)
 
-    admission_type: Optional[AdmissionType] = attr.ib(converter=_convert_optional_admission_type, default=None)
-    supervision_type: Optional[SupervisionType] = attr.ib(converter=_convert_optional_supervision_type, default=None)
+    admission_type: Optional[AdmissionType] = attr.ib(
+        converter=_convert_optional_admission_type, default=None
+    )
+    supervision_type: Optional[SupervisionType] = attr.ib(
+        converter=_convert_optional_supervision_type, default=None
+    )
     supervision_violation_type: Optional[SupervisionViolationType] = attr.ib(
-        converter=_convert_optional_supervision_violation_type, default=None)
+        converter=_convert_optional_supervision_violation_type, default=None
+    )
 
     def __attrs_post_init__(self) -> None:
         if self.admission_type != AdmissionType.FROM_SUPERVISION:
             if self.supervision_type is not None:
                 raise ValueError(
-                    "'supervision_type' may only be set on admissions if 'admission_type' is 'FROM_SUPERVISION'")
+                    "'supervision_type' may only be set on admissions if 'admission_type' is 'FROM_SUPERVISION'"
+                )
             if self.supervision_violation_type is not None:
-                raise ValueError("'supervision_violation_type' may only be set on admissions if 'admission_type' is "
-                                 "'FROM_SUPERVISION'")
+                raise ValueError(
+                    "'supervision_violation_type' may only be set on admissions if 'admission_type' is "
+                    "'FROM_SUPERVISION'"
+                )
 
     def get_measurement_type(self) -> schema.MeasurementType:
         return self.measurement_type
@@ -1092,21 +1236,25 @@ class Admissions(Metric):
 
 
 class DateRangeProducer:
-    """Produces DateRanges for a given table, splitting the table as needed.
-    """
+    """Produces DateRanges for a given table, splitting the table as needed."""
+
     @abstractmethod
-    def split_dataframe(self, df: pandas.DataFrame) -> List[Tuple[DateRange, pandas.DataFrame]]:
+    def split_dataframe(
+        self, df: pandas.DataFrame
+    ) -> List[Tuple[DateRange, pandas.DataFrame]]:
         pass
 
 
 @attr.s(frozen=True, kw_only=True)
 class FixedDateRangeProducer(DateRangeProducer):
-    """Used when data in the table is for a single date range, configured outside of the table.
-    """
+    """Used when data in the table is for a single date range, configured outside of the table."""
+
     # The date range for the table
     fixed_range: DateRange = attr.ib()
 
-    def split_dataframe(self, df: pandas.DataFrame) -> List[Tuple[DateRange, pandas.DataFrame]]:
+    def split_dataframe(
+        self, df: pandas.DataFrame
+    ) -> List[Tuple[DateRange, pandas.DataFrame]]:
         return [(self.fixed_range, df)]
 
 
@@ -1115,6 +1263,7 @@ class DynamicDateRangeProducer(DateRangeProducer):
     """Used when data in the table is for multiple date ranges, represented by the
     values of a particular set of columns in the table.
     """
+
     # The columns that contain the date ranges and how to parse the values in that column.
     # The parsed values are passed to `converter` in the same order in which the columns are specified in the dict.
     columns: Dict[str, DateFormatParserType] = attr.ib()
@@ -1129,16 +1278,22 @@ class DynamicDateRangeProducer(DateRangeProducer):
     def column_parsers(self) -> List[DateFormatParserType]:
         return list(self.columns.values())
 
-    def split_dataframe(self, df: pandas.DataFrame) -> List[Tuple[DateRange, pandas.DataFrame]]:
+    def split_dataframe(
+        self, df: pandas.DataFrame
+    ) -> List[Tuple[DateRange, pandas.DataFrame]]:
         # - Groups the df by the specified column, getting a separate df per date range
         # - Converts the column values to a `DateRange`, using the provided converter
         # - Drops the columns from the split dfs, as they are no longer needed
-        return [(self._convert(date_args), split.drop(self.column_names, axis=1))
-                for date_args, split in df.groupby(self.column_names)]
+        return [
+            (self._convert(date_args), split.drop(self.column_names, axis=1))
+            for date_args, split in df.groupby(self.column_names)
+        ]
 
     def _convert(self, args: Union[str, List[str]]) -> DateRange:
         unified_args: List[str] = [args] if isinstance(args, str) else args
-        parsed_args: List[datetime.date] = [parser(arg) for arg, parser in zip(unified_args, self.column_parsers)]
+        parsed_args: List[datetime.date] = [
+            parser(arg) for arg, parser in zip(unified_args, self.column_parsers)
+        ]
 
         # pylint: disable=not-callable
         return self.converter(*parsed_args)
@@ -1149,6 +1304,7 @@ class ColumnDimensionMapping:
     """Denotes that a particular dimension column can generate dimensions of a given type, with information about how
     to map values in that column to dimensions of this type.
     """
+
     # The class of the Dimension this column can generate.
     dimension_cls: Type[Dimension] = attr.ib()
 
@@ -1160,20 +1316,22 @@ class ColumnDimensionMapping:
 
     @classmethod
     def from_input(
-            cls,
-            dimension_cls: Type[Dimension],
-            mapping_overrides: Optional[Dict[str, str]] = None,
-            strict: Optional[bool] = None
-    ) -> 'ColumnDimensionMapping':
+        cls,
+        dimension_cls: Type[Dimension],
+        mapping_overrides: Optional[Dict[str, str]] = None,
+        strict: Optional[bool] = None,
+    ) -> "ColumnDimensionMapping":
         overrides = None
         if mapping_overrides is not None:
             if not dimension_cls.is_normalized():
-                raise ValueError(f"Overrides can only be specified for normalized dimensions, not {dimension_cls}")
+                raise ValueError(
+                    f"Overrides can only be specified for normalized dimensions, not {dimension_cls}"
+                )
             overrides = dimension_cls.build_overrides(mapping_overrides)
         return cls(dimension_cls, overrides, strict if strict is not None else True)
 
     @classmethod
-    def for_synthetic(cls, column_name: str, source: str) -> 'ColumnDimensionMapping':
+    def for_synthetic(cls, column_name: str, source: str) -> "ColumnDimensionMapping":
         column_dimension = get_synthetic_dimension(column_name, source)
         return cls(column_dimension, overrides=None)
 
@@ -1181,19 +1339,30 @@ class ColumnDimensionMapping:
         return self.dimension_cls.get_generated_dimension_classes()
 
 
-def _validate_no_dimension_duplicates(dimensions: List['DimensionClassT']) -> None:
-    cleaned_generated_dimension = {dimension.dimension_identifier() for dimension in dimensions}
+def _validate_no_dimension_duplicates(dimensions: List["DimensionClassT"]) -> None:
+    cleaned_generated_dimension = {
+        dimension.dimension_identifier() for dimension in dimensions
+    }
     if len(cleaned_generated_dimension) != len(dimensions):
         raise ValueError(f"There may be one or more duplicate dimensions: {dimensions}")
 
 
-def _validate_generated_dimensions(dimension_cls: Type[Dimension], generated_dimensions: List[Dimension]) -> None:
+def _validate_generated_dimensions(
+    dimension_cls: Type[Dimension], generated_dimensions: List[Dimension]
+) -> None:
     _validate_no_dimension_duplicates(generated_dimensions)
-    dimension_identifiers = [dimension.dimension_identifier() for dimension in generated_dimensions]
+    dimension_identifiers = [
+        dimension.dimension_identifier() for dimension in generated_dimensions
+    ]
 
-    raw_dimension_name = '/'.join([dimension_cls.dimension_identifier(), 'raw'])
-    if dimension_cls.is_normalized() and raw_dimension_name not in dimension_identifiers:
-        raise ValueError(f"Synthetic dimension {dimension_cls} missing generated RawDimension")
+    raw_dimension_name = "/".join([dimension_cls.dimension_identifier(), "raw"])
+    if (
+        dimension_cls.is_normalized()
+        and raw_dimension_name not in dimension_identifiers
+    ):
+        raise ValueError(
+            f"Synthetic dimension {dimension_cls} missing generated RawDimension"
+        )
 
 
 @attr.s(frozen=True)
@@ -1218,8 +1387,9 @@ class DimensionGenerator:
         for mapping in self.dimension_mappings:
 
             try:
-                base_dimension_value: Optional[Dimension] = mapping.dimension_cls.get(dimension_cell_value,
-                                                                                      mapping.overrides)
+                base_dimension_value: Optional[Dimension] = mapping.dimension_cls.get(
+                    dimension_cell_value, mapping.overrides
+                )
             except EnumParsingError as e:
                 if mapping.strict:
                     raise e
@@ -1229,13 +1399,18 @@ class DimensionGenerator:
                 dimension_values.append(base_dimension_value)
 
             generated_dimension_classes = mapping.dimension_cls.generate_dimension_classes(  # type: ignore[arg-type]
-                    dimension_cell_value, mapping.overrides)
-            _validate_generated_dimensions(mapping.dimension_cls, generated_dimension_classes)
+                dimension_cell_value, mapping.overrides
+            )
+            _validate_generated_dimensions(
+                mapping.dimension_cls, generated_dimension_classes
+            )
             dimension_values.extend(generated_dimension_classes)
 
             if not dimension_values:
-                raise ValueError(f"Unable to parse '{dimension_cell_value}' as {mapping.dimension_cls}, but no raw "
-                                 f"dimension exists.'")
+                raise ValueError(
+                    f"Unable to parse '{dimension_cell_value}' as {mapping.dimension_cls}, but no raw "
+                    f"dimension exists.'"
+                )
         return dimension_values
 
 
@@ -1243,12 +1418,16 @@ class DimensionGenerator:
 DimensionalDataPoint = Tuple[Tuple[Dimension, ...], decimal.Decimal]
 
 
-def _dimension_generators_by_name(dimension_generators: List[DimensionGenerator]) \
-        -> Dict[str, DimensionGenerator]:
-    return {dimension_generator.column_name: dimension_generator for dimension_generator in dimension_generators}
+def _dimension_generators_by_name(
+    dimension_generators: List[DimensionGenerator],
+) -> Dict[str, DimensionGenerator]:
+    return {
+        dimension_generator.column_name: dimension_generator
+        for dimension_generator in dimension_generators
+    }
 
 
-DimensionClassT = TypeVar('DimensionClassT', Dimension, Type[Dimension])
+DimensionClassT = TypeVar("DimensionClassT", Dimension, Type[Dimension])
 
 
 @attr.s(frozen=True)
@@ -1257,25 +1436,41 @@ class TableConverter:
 
     # For each dimension column, an object that can produce the list of possible dimension types in that column and
     # convert dimension cell values to those types.
-    dimension_generators: Dict[str, DimensionGenerator] = attr.ib(converter=_dimension_generators_by_name)
+    dimension_generators: Dict[str, DimensionGenerator] = attr.ib(
+        converter=_dimension_generators_by_name
+    )
     value_column: str = attr.ib()
     filters: Set[Dimension] = attr.ib()
 
-    def _remove_filtered_dimensions_from_dimension_types_generated(self, generated_dimensions: List['DimensionClassT'])\
-            -> List['DimensionClassT']:
-        return [dimension for dimension in generated_dimensions
-                if dimension.dimension_identifier() not in {filtered_dimension.dimension_identifier()
-                                                            for filtered_dimension in self.filters}]
+    def _remove_filtered_dimensions_from_dimension_types_generated(
+        self, generated_dimensions: List["DimensionClassT"]
+    ) -> List["DimensionClassT"]:
+        return [
+            dimension
+            for dimension in generated_dimensions
+            if dimension.dimension_identifier()
+            not in {
+                filtered_dimension.dimension_identifier()
+                for filtered_dimension in self.filters
+            }
+        ]
 
-    def dimension_classes_for_columns(self, columns: List[str]) -> List[Type[Dimension]]:
+    def dimension_classes_for_columns(
+        self, columns: List[str]
+    ) -> List[Type[Dimension]]:
         """Returns a list of all possible dimensions that a value in a table could have (superset of possible dimensions
         from individual columns)."""
         dimensions: List[Type[Dimension]] = []
         for column in columns:
             if column in self.dimension_generators:
-                possible_dimensions = self.dimension_generators[column]\
-                    .possible_dimensions_for_column()
-                dimensions.extend(self._remove_filtered_dimensions_from_dimension_types_generated(possible_dimensions))
+                possible_dimensions = self.dimension_generators[
+                    column
+                ].possible_dimensions_for_column()
+                dimensions.extend(
+                    self._remove_filtered_dimensions_from_dimension_types_generated(
+                        possible_dimensions
+                    )
+                )
             elif column != self.value_column:
                 raise ValueError(f"Column '{column}' was not mapped.")
         return dimensions
@@ -1289,14 +1484,17 @@ class TableConverter:
             for column_name in row.index:
                 if column_name in self.dimension_generators:
                     dimension_values_list.extend(
-                        self._dimension_values_for_dimension_cell(column_name, row[column_name]))
+                        self._dimension_values_for_dimension_cell(
+                            column_name, row[column_name]
+                        )
+                    )
             dimension_values = tuple(dimension_values_list)
 
             # Pandas might've inferred our data as strings, floats, or ints. This handles converting all of them to
             # Decimal. We could instead do this up front, and tell `read_csv` which dtypes to use for each column.
             raw_value = row[self.value_column]
             if isinstance(raw_value, str):
-                raw_value = raw_value.replace(',', '')
+                raw_value = raw_value.replace(",", "")
             else:
                 raw_value = raw_value.item()
 
@@ -1305,12 +1503,16 @@ class TableConverter:
         return data_points
 
     def _dimension_values_for_dimension_cell(
-            self, dimension_column_name: str, dimension_value: str) -> Iterable[Dimension]:
+        self, dimension_column_name: str, dimension_value: str
+    ) -> Iterable[Dimension]:
         return self._remove_filtered_dimensions_from_dimension_types_generated(
-            self.dimension_generators[dimension_column_name].dimension_values_for_cell(dimension_value))
+            self.dimension_generators[dimension_column_name].dimension_values_for_cell(
+                dimension_value
+            )
+        )
 
 
-HasIdentifierT = TypeVar('HasIdentifierT', Dimension, Type[Dimension])
+HasIdentifierT = TypeVar("HasIdentifierT", Dimension, Type[Dimension])
 
 
 def _sort_dimensions(dimensions: Iterable[HasIdentifierT]) -> List[HasIdentifierT]:
@@ -1320,6 +1522,7 @@ def _sort_dimensions(dimensions: Iterable[HasIdentifierT]) -> List[HasIdentifier
 @attr.s(frozen=True)
 class Table:
     """Ingest model that represents a table in a report"""
+
     date_range: DateRange = attr.ib()
     metric: Metric = attr.ib()
     system: schema.System = attr.ib(converter=schema.System)
@@ -1336,99 +1539,156 @@ class Table:
     data_points: List[DimensionalDataPoint] = attr.ib()
 
     @data_points.validator
-    def _values_are_valid(self, _attribute: attr.Attribute, data_points: List[DimensionalDataPoint]) -> None:
+    def _values_are_valid(
+        self, _attribute: attr.Attribute, data_points: List[DimensionalDataPoint]
+    ) -> None:
         for dimension_values, value in data_points:
             if not value.is_finite():
-                raise ValueError(f"Invalid value '{value}' for row with dimensions: {dimension_values}")
+                raise ValueError(
+                    f"Invalid value '{value}' for row with dimensions: {dimension_values}"
+                )
 
     @data_points.validator
     def _rows_dimension_combinations_are_unique(
-            self, _attribute: attr.Attribute, data_points: List[DimensionalDataPoint]) -> None:
+        self, _attribute: attr.Attribute, data_points: List[DimensionalDataPoint]
+    ) -> None:
         row_dimension_values = set()
         for dimension_values, _value in data_points:
             if dimension_values in row_dimension_values:
-                raise ValueError(f"Multiple rows in table with identical dimensions: {dimension_values}")
+                raise ValueError(
+                    f"Multiple rows in table with identical dimensions: {dimension_values}"
+                )
             row_dimension_values.add(dimension_values)
 
     def _validate_metric(self) -> None:
         for dimension_metric in self.metric.required_aggregated_dimensions:
             if dimension_metric not in self.dimensions:
-                raise AttributeError(f"metric and dimension column not specified for {dimension_metric}, "
-                                     "make sure you have one or the other.")
+                raise AttributeError(
+                    f"metric and dimension column not specified for {dimension_metric}, "
+                    "make sure you have one or the other."
+                )
         for dimension in self.metric.filters:
             if type(dimension) in self.dimensions:
-                raise AttributeError(f"metric and dimension column specified for {type(dimension)},  "
-                                     "make sure you have one or the other.")
+                raise AttributeError(
+                    f"metric and dimension column specified for {type(dimension)},  "
+                    "make sure you have one or the other."
+                )
 
     def _validate_aggregate_dimensions(self) -> None:
-        unique_dimensions_by_identifiers: Dict[str, Counter] = {dimension.dimension_identifier(): Counter()
-                                                                for dimension in self.dimensions}
+        unique_dimensions_by_identifiers: Dict[str, Counter] = {
+            dimension.dimension_identifier(): Counter() for dimension in self.dimensions
+        }
 
         for dimensions, _value in self.data_points:
             for dimension in dimensions:
-                unique_dimensions_by_identifiers[dimension.dimension_identifier()][dimension] += 1
+                unique_dimensions_by_identifiers[dimension.dimension_identifier()][
+                    dimension
+                ] += 1
         for _key, unique_dimensions in unique_dimensions_by_identifiers.items():
             if len(unique_dimensions) == 1:
                 [unique_dimension, occurrences] = unique_dimensions.popitem()
                 if occurrences == len(self.data_points):
-                    raise AttributeError(f"Attribute '{unique_dimension}' only has one set value, "
-                                         f"change it to a filtered dimension.")
+                    raise AttributeError(
+                        f"Attribute '{unique_dimension}' only has one set value, "
+                        f"change it to a filtered dimension."
+                    )
 
     def _validate_dimension_either_filter_or_aggregate(self) -> None:
-        filter_identifiers = [dimension.dimension_identifier() for dimension in self.filters]
-        dimension_identifiers = [dimension.dimension_identifier() for dimension in self.dimensions]
+        filter_identifiers = [
+            dimension.dimension_identifier() for dimension in self.filters
+        ]
+        dimension_identifiers = [
+            dimension.dimension_identifier() for dimension in self.dimensions
+        ]
 
         duplicate_dimensions = set(filter_identifiers) & set(dimension_identifiers)
 
         if duplicate_dimensions:
-            raise ValueError(f"These dimensions are both in the dimension column and the filtered dimension: "
-                             f"{duplicate_dimensions}")
-        if State.dimension_identifier() not in dimension_identifiers \
-                and State.dimension_identifier() not in filter_identifiers:
-            raise ValueError("Location not specified and state dimension not in either filtered dimension or "
-                             "dimension columns")
+            raise ValueError(
+                f"These dimensions are both in the dimension column and the filtered dimension: "
+                f"{duplicate_dimensions}"
+            )
+        if (
+            State.dimension_identifier() not in dimension_identifiers
+            and State.dimension_identifier() not in filter_identifiers
+        ):
+            raise ValueError(
+                "Location not specified and state dimension not in either filtered dimension or "
+                "dimension columns"
+            )
 
     def __attrs_post_init__(self) -> None:
         # Validate consistency between `dimensions` and `data`.
         self._validate_metric()
-        dimension_identifiers = {dimension.dimension_identifier() for dimension in self.dimensions}
+        dimension_identifiers = {
+            dimension.dimension_identifier() for dimension in self.dimensions
+        }
         if len(dimension_identifiers) != len(self.dimensions):
             raise ValueError(f"Duplicate dimensions in table: {self.dimensions}")
         self._validate_aggregate_dimensions()
         _validate_no_dimension_duplicates(self.filters)
         self._validate_dimension_either_filter_or_aggregate()
         for dimensions, _value in self.data_points:
-            row_dimension_identifiers = {dimension_value.dimension_identifier() for dimension_value in dimensions}
+            row_dimension_identifiers = {
+                dimension_value.dimension_identifier() for dimension_value in dimensions
+            }
             if len(row_dimension_identifiers) != len(dimensions):
                 raise ValueError(f"Duplicate dimensions in row: {dimensions}")
             if not dimension_identifiers.issuperset(row_dimension_identifiers):
-                raise ValueError(f"Row has dimensions not defined for table. Row dimensions: "
-                                 f"'{row_dimension_identifiers}', table dimensions: '{dimension_identifiers}'")
+                raise ValueError(
+                    f"Row has dimensions not defined for table. Row dimensions: "
+                    f"'{row_dimension_identifiers}', table dimensions: '{dimension_identifiers}'"
+                )
 
     @classmethod
     def from_table(
-            cls, date_range: DateRange, table_converter: TableConverter, metric: Metric, system: str, methodology: str,
-            location: Optional[Location], additional_filters: List[Dimension], df: pandas.DataFrame) -> 'Table':
-        return cls(date_range=date_range,
-                   metric=metric,
-                   system=system,
-                   methodology=methodology,
-                   dimensions=table_converter.dimension_classes_for_columns(df.columns.values),
-                   data_points=table_converter.table_to_data_points(df),
-                   location=location,
-                   table_filters=additional_filters)
+        cls,
+        date_range: DateRange,
+        table_converter: TableConverter,
+        metric: Metric,
+        system: str,
+        methodology: str,
+        location: Optional[Location],
+        additional_filters: List[Dimension],
+        df: pandas.DataFrame,
+    ) -> "Table":
+        return cls(
+            date_range=date_range,
+            metric=metric,
+            system=system,
+            methodology=methodology,
+            dimensions=table_converter.dimension_classes_for_columns(df.columns.values),
+            data_points=table_converter.table_to_data_points(df),
+            location=location,
+            table_filters=additional_filters,
+        )
 
     @classmethod
     def list_from_dataframe(
-            cls, date_range_producer: DateRangeProducer, table_converter: TableConverter, metric: Metric, system: str,
-            methodology: str, location: Optional[Location], additional_filters: List[Dimension],
-            df: pandas.DataFrame) -> List['Table']:
+        cls,
+        date_range_producer: DateRangeProducer,
+        table_converter: TableConverter,
+        metric: Metric,
+        system: str,
+        methodology: str,
+        location: Optional[Location],
+        additional_filters: List[Dimension],
+        df: pandas.DataFrame,
+    ) -> List["Table"]:
         tables = []
         for date_range, df_date in date_range_producer.split_dataframe(df):
-            tables.append(cls.from_table(
-                date_range=date_range, table_converter=table_converter, metric=metric, system=system,
-                methodology=methodology, location=location, additional_filters=additional_filters,
-                df=df_date))
+            tables.append(
+                cls.from_table(
+                    date_range=date_range,
+                    table_converter=table_converter,
+                    metric=metric,
+                    system=system,
+                    methodology=methodology,
+                    location=location,
+                    additional_filters=additional_filters,
+                    df=df_date,
+                )
+            )
         return tables
 
     @property
@@ -1452,10 +1712,13 @@ class Table:
 
     @property
     def aggregated_dimension_names(self) -> List[str]:
-        return [dimension.dimension_identifier() for dimension in self.aggregated_dimensions]
+        return [
+            dimension.dimension_identifier() for dimension in self.aggregated_dimensions
+        ]
 
     @property
     def cells(self) -> List[Tuple[List[Optional[str]], decimal.Decimal]]:
+        """Returns all of the cells in this table."""
         table_dimensions = self.aggregated_dimensions
 
         results = []
@@ -1467,15 +1730,22 @@ class Table:
             row_dimension_values = _sort_dimensions(row[0])
             row_dimension_iter = peekable(row_dimension_values)
             for table_dimension in table_dimensions:
-                if table_dimension.dimension_identifier() == row_dimension_iter.peek().dimension_identifier():
-                    cell_dimension_values.append(next(row_dimension_iter).dimension_value)
+                if (
+                    table_dimension.dimension_identifier()
+                    == row_dimension_iter.peek().dimension_identifier()
+                ):
+                    cell_dimension_values.append(
+                        next(row_dimension_iter).dimension_value
+                    )
                 else:
                     cell_dimension_values.append(None)
 
             try:
                 next(row_dimension_iter)
-                raise ValueError(f"Dimensions for cell not aligned with table. Table dimensions: "
-                                 f"'{self.aggregated_dimensions}', row dimensions: '{row_dimension_values}'")
+                raise ValueError(
+                    f"Dimensions for cell not aligned with table. Table dimensions: "
+                    f"'{self.aggregated_dimensions}', row dimensions: '{row_dimension_values}'"
+                )
             except StopIteration:
                 pass
 
@@ -1511,6 +1781,7 @@ class Report:
 # Parsing Layer
 # TODO(#4480): Pull this out to somewhere within ingest
 
+
 def _parse_location(location_input: Optional[YAMLDict]) -> Optional[Location]:
     """Expects a dict with a single entry, e.g. `{'state': 'US_XX'}`"""
     if location_input is None:
@@ -1519,18 +1790,21 @@ def _parse_location(location_input: Optional[YAMLDict]) -> Optional[Location]:
     if len(location_input) == 1:
         [location_type] = location_input.get().keys()
         location_name = location_input.pop(location_type, str)
-        if location_type == 'country':
+        if location_type == "country":
             return Country(location_name)
-        if location_type == 'state':
+        if location_type == "state":
             return State(location_name)
-        if location_type == 'county':
+        if location_type == "county":
             return County(location_name)
-    raise ValueError(f"Invalid location, expected a dictionary with a single key that is one of ('country', 'state', "
-                     f"'county') but received: {repr(location_input)}")
+    raise ValueError(
+        f"Invalid location, expected a dictionary with a single key that is one of ('country', 'state', "
+        f"'county') but received: {repr(location_input)}"
+    )
 
 
-def _get_converter(range_type_input: str, range_converter_input: Optional[str] = None) \
-        -> DateRangeConverterType:
+def _get_converter(
+    range_type_input: str, range_converter_input: Optional[str] = None
+) -> DateRangeConverterType:
     range_type = MeasurementWindowType(range_type_input)
     if range_type is MeasurementWindowType.SNAPSHOT:
         return SNAPSHOT_CONVERTERS[SnapshotType.get_or_default(range_converter_input)]
@@ -1539,7 +1813,9 @@ def _get_converter(range_type_input: str, range_converter_input: Optional[str] =
     raise ValueError(f"Enum case not handled for {range_type} when building converter.")
 
 
-def _get_date_formatter(range_type_input: str, range_converter_input: Optional[str] = None) -> DateFormatParserType:
+def _get_date_formatter(
+    range_type_input: str, range_converter_input: Optional[str] = None
+) -> DateFormatParserType:
     measurement_window_type = MeasurementWindowType(range_type_input)
     if measurement_window_type is MeasurementWindowType.SNAPSHOT:
         snapshot_type = SnapshotType.get_or_default(range_converter_input)
@@ -1549,7 +1825,9 @@ def _get_date_formatter(range_type_input: str, range_converter_input: Optional[s
         range_type = RangeType.get_or_default(range_converter_input)
         format_type = RANGE_CONVERTER_FORMAT_TYPES[range_type]
         return DATE_FORMAT_PARSERS[format_type]
-    raise ValueError(f"Enum case not handled for {measurement_window_type} when getting date formatter.")
+    raise ValueError(
+        f"Enum case not handled for {measurement_window_type} when getting date formatter."
+    )
 
 
 # TODO(#4480): Generalize these parsing methods, instead of creating one for each class. If value is a dict, pop it,
@@ -1560,15 +1838,19 @@ def _parse_date_range(range_input: YAMLDict) -> DateRange:
     e.g. `{'type':'snapshot', 'input': ['2020-11-01'], 'range_converter': 'DATE'}`
     """
 
-    range_args = range_input.pop('input', list)
-    range_type = range_input.pop('type', str)
-    range_converter = range_input.pop_optional('converter', str)
+    range_args = range_input.pop("input", list)
+    range_type = range_input.pop("type", str)
+    range_converter = range_input.pop_optional("converter", str)
     date_formatter = _get_date_formatter(range_type.upper(), range_converter)
 
     if len(range_input) > 0:
-        raise ValueError(f"Received unexpected parameters for date_range: {range_input}")
+        raise ValueError(
+            f"Received unexpected parameters for date_range: {range_input}"
+        )
     if len(range_args) > 2:
-        raise ValueError(f"Have a maximum of 2 dates for input. Currently have: {range_args}")
+        raise ValueError(
+            f"Have a maximum of 2 dates for input. Currently have: {range_args}"
+        )
 
     converter = _get_converter(range_type.upper(), range_converter)
     parsed_args = [date_formatter(value) for value in range_args]
@@ -1576,20 +1858,29 @@ def _parse_date_range(range_input: YAMLDict) -> DateRange:
     return converter(*parsed_args)  # type: ignore[call-arg]
 
 
-def _parse_dynamic_date_range_producer(range_input: YAMLDict) -> DynamicDateRangeProducer:
+def _parse_dynamic_date_range_producer(
+    range_input: YAMLDict,
+) -> DynamicDateRangeProducer:
     """Expects a dict with type (str), columns (dict) and converter (str, optional) entries.
 
     E.g. `{'type': 'SNAPSHOT' {'columns': 'Date': 'DATE'}}`
     """
-    range_type = range_input.pop('type', str)
-    range_converter = range_input.pop_optional('converter', str)
-    column_names = range_input.pop('columns', dict)
-    columns = {key: DATE_FORMAT_PARSERS[DateFormatType(value)] for key, value in column_names.items()}
+    range_type = range_input.pop("type", str)
+    range_converter = range_input.pop_optional("converter", str)
+    column_names = range_input.pop("columns", dict)
+    columns = {
+        key: DATE_FORMAT_PARSERS[DateFormatType(value)]
+        for key, value in column_names.items()
+    }
 
     if len(range_input) > 0:
-        raise ValueError(f"Received unexpected parameters for date range: {repr(range_input)}")
+        raise ValueError(
+            f"Received unexpected parameters for date range: {repr(range_input)}"
+        )
 
-    return DynamicDateRangeProducer(converter=_get_converter(range_type, range_converter), columns=columns)
+    return DynamicDateRangeProducer(
+        converter=_get_converter(range_type, range_converter), columns=columns
+    )
 
 
 def _parse_date_range_producer(range_producer_input: YAMLDict) -> DateRangeProducer:
@@ -1597,15 +1888,21 @@ def _parse_date_range_producer(range_producer_input: YAMLDict) -> DateRangeProdu
     if len(range_producer_input) == 1:
         [range_producer_type] = range_producer_input.get().keys()
         range_producer_args = range_producer_input.pop_dict(range_producer_type)
-        if range_producer_type == 'fixed':
-            return FixedDateRangeProducer(fixed_range=_parse_date_range(range_producer_args))
-        if range_producer_type == 'dynamic':
+        if range_producer_type == "fixed":
+            return FixedDateRangeProducer(
+                fixed_range=_parse_date_range(range_producer_args)
+            )
+        if range_producer_type == "dynamic":
             return _parse_dynamic_date_range_producer(range_producer_args)
-    raise ValueError(f"Invalid date range, expected a dictionary with a single key that is one of ('fixed', 'dynamic'"
-                     f") but received: {repr(range_producer_input)}")
+    raise ValueError(
+        f"Invalid date range, expected a dictionary with a single key that is one of ('fixed', 'dynamic'"
+        f") but received: {repr(range_producer_input)}"
+    )
 
 
-def _parse_dimensions_from_additional_filters(additional_filters_input: Optional[YAMLDict]) -> List[Dimension]:
+def _parse_dimensions_from_additional_filters(
+    additional_filters_input: Optional[YAMLDict],
+) -> List[Dimension]:
     if additional_filters_input is None:
         return []
     dimensions = []
@@ -1614,59 +1911,90 @@ def _parse_dimensions_from_additional_filters(additional_filters_input: Optional
         value = additional_filters_input.pop(dimension_name, str)
         dimension_value = dimension_cls.get(value)
         if dimension_value is None:
-            raise ValueError(f"Unable to parse filter value '{value}' as {dimension_cls}")
+            raise ValueError(
+                f"Unable to parse filter value '{value}' as {dimension_cls}"
+            )
         dimensions.append(dimension_value)
     return dimensions
 
 
 def _parse_table_converter(
-        source_name: str, value_column_input: YAMLDict,
-        dimension_columns_input: Optional[List[YAMLDict]],
-        location: Optional[Location], additional_filters: List[Dimension]) -> TableConverter:
+    source_name: str,
+    value_column_input: YAMLDict,
+    dimension_columns_input: Optional[List[YAMLDict]],
+    location: Optional[Location],
+    additional_filters: List[Dimension],
+) -> TableConverter:
     """Expects a dict with the value column name and, optionally, a list of dicts describing the dimension columns.
 
     E.g. `value_column_input={'column_name': 'Population'}}
           dimension_columns_input=[{'column_name': 'Race', 'dimension_name': 'Race', 'mapping_overrides': {...}}, ...]`
     """
-    column_dimension_mappings: Dict[str, List[ColumnDimensionMapping]] = defaultdict(list)
+    column_dimension_mappings: Dict[str, List[ColumnDimensionMapping]] = defaultdict(
+        list
+    )
     if dimension_columns_input is not None:
         for dimension_column_input in dimension_columns_input:
-            column_name = dimension_column_input.pop('column_name', str)
+            column_name = dimension_column_input.pop("column_name", str)
 
-            synthetic_column = dimension_column_input.pop_optional('synthetic', bool)
+            synthetic_column = dimension_column_input.pop_optional("synthetic", bool)
             if synthetic_column is True:
-                column_dimension_mappings[column_name].append(ColumnDimensionMapping.for_synthetic(
-                    column_name=column_name, source=source_name))
+                column_dimension_mappings[column_name].append(
+                    ColumnDimensionMapping.for_synthetic(
+                        column_name=column_name, source=source_name
+                    )
+                )
                 continue
 
-            dimension_cls = parse_dimension_name(dimension_column_input.pop('dimension_name', str))
+            dimension_cls = parse_dimension_name(
+                dimension_column_input.pop("dimension_name", str)
+            )
 
-            overrides_input = dimension_column_input.pop_dict_optional('mapping_overrides')
+            overrides_input = dimension_column_input.pop_dict_optional(
+                "mapping_overrides"
+            )
             overrides = None
             if overrides_input is not None:
-                overrides = {key: overrides_input.pop(key, str)
-                             for key in list(overrides_input.get().keys())}
+                overrides = {
+                    key: overrides_input.pop(key, str)
+                    for key in list(overrides_input.get().keys())
+                }
 
-            strict = dimension_column_input.pop_optional('strict', bool)
+            strict = dimension_column_input.pop_optional("strict", bool)
 
             if len(dimension_column_input) > 0:
-                raise ValueError(f"Received unexpected input for dimension column: {repr(dimension_column_input)}")
-            column_dimension_mappings[column_name].append(ColumnDimensionMapping.from_input(
-                dimension_cls=dimension_cls, mapping_overrides=overrides, strict=strict))
+                raise ValueError(
+                    f"Received unexpected input for dimension column: {repr(dimension_column_input)}"
+                )
+            column_dimension_mappings[column_name].append(
+                ColumnDimensionMapping.from_input(
+                    dimension_cls=dimension_cls,
+                    mapping_overrides=overrides,
+                    strict=strict,
+                )
+            )
 
     dimension_generators = []
     for column_name, mappings in column_dimension_mappings.items():
-        dimension_generators.append(DimensionGenerator(column_name=column_name, dimension_mappings=mappings))
-    value_column = value_column_input.pop('column_name', str)
+        dimension_generators.append(
+            DimensionGenerator(column_name=column_name, dimension_mappings=mappings)
+        )
+    value_column = value_column_input.pop("column_name", str)
 
     filters: Set[Dimension] = set(additional_filters)
     if location is not None:
         filters.add(location)
 
     if len(value_column_input) > 0:
-        raise ValueError(f"Received unexpected parameters for value column: {repr(value_column_input)}")
+        raise ValueError(
+            f"Received unexpected parameters for value column: {repr(value_column_input)}"
+        )
 
-    return TableConverter(dimension_generators=dimension_generators, value_column=value_column, filters=filters)
+    return TableConverter(
+        dimension_generators=dimension_generators,
+        value_column=value_column,
+        filters=filters,
+    )
 
 
 def _parse_metric(metric_input: YAMLDict) -> Metric:
@@ -1674,79 +2002,109 @@ def _parse_metric(metric_input: YAMLDict) -> Metric:
     if len(metric_input) == 1:
         [metric_type] = metric_input.get().keys()
         metric_args = metric_input.pop(metric_type, dict)
-        if metric_type == 'population':
+        if metric_type == "population":
             return Population(**metric_args)
-        if metric_type == 'admissions':
+        if metric_type == "admissions":
             return Admissions(**metric_args)
-        if metric_type == 'releases':
+        if metric_type == "releases":
             return Releases(**metric_args)
-    raise ValueError(f"Invalid metric, expected a dictionary with a single key that is one of ('admissions', "
-                     f"'population') but received: {repr(metric_input)}")
+    raise ValueError(
+        f"Invalid metric, expected a dictionary with a single key that is one of ('admissions', "
+        f"'population') but received: {repr(metric_input)}"
+    )
 
 
 def _normalize(name: str) -> str:
-    return name.replace('/', '_')
+    return name.replace("/", "_")
 
 
 def csv_filename(sheet_name: str, worksheet_name: str) -> str:
     return f"{_normalize(sheet_name)} - {_normalize(worksheet_name)}.csv"
 
 
-def _get_table_filename(spreadsheet_name: str, name: Optional[str], file: Optional[str]) -> str:
+def _get_table_filename(
+    spreadsheet_name: str, name: Optional[str], file: Optional[str]
+) -> str:
     if name is not None:
         return csv_filename(spreadsheet_name, name)
     if file is not None:
         return file
     raise ValueError("Did not receive name parameter for table")
 
+
 # Only three layers of dictionary nesting is currently supported by the table parsing logic but we use the recursive
 # dictionary type for convenience.
 
 
-def _parse_tables(gcs: GCSFileSystem, manifest_path: GcsfsFilePath,
-                  source_name: str, tables_input: List[YAMLDict]) -> List[Table]:
+def _parse_tables(
+    gcs: GCSFileSystem,
+    manifest_path: GcsfsFilePath,
+    source_name: str,
+    tables_input: List[YAMLDict],
+) -> List[Table]:
     """Parses the YAML list of dictionaries describing tables into Table objects"""
     directory_path = GcsfsDirectoryPath.from_file_path(manifest_path)
 
     # We are assuming that the spreadsheet and the yaml file have the same name
-    spreadsheet_name = manifest_path.file_name.replace('.yaml', '')
+    spreadsheet_name = manifest_path.file_name.replace(".yaml", "")
     tables = []
     for table_input in tables_input:
         # Parse nested objects separately
-        date_range_producer = _parse_date_range_producer(table_input.pop_dict('date_range'))
-        location_dimension: Optional[Location] = _parse_location(table_input.pop_dict_optional('location'))
-        filter_dimensions = \
-            _parse_dimensions_from_additional_filters(table_input.pop_dict_optional('additional_filters'))
-        table_converter = _parse_table_converter(source_name,
-                                                 table_input.pop_dict('value_column'),
-                                                 table_input.pop_dicts_optional('dimension_columns'),
-                                                 location=location_dimension,
-                                                 additional_filters=filter_dimensions)
-        metric = _parse_metric(table_input.pop_dict('metric'))
+        date_range_producer = _parse_date_range_producer(
+            table_input.pop_dict("date_range")
+        )
+        location_dimension: Optional[Location] = _parse_location(
+            table_input.pop_dict_optional("location")
+        )
+        filter_dimensions = _parse_dimensions_from_additional_filters(
+            table_input.pop_dict_optional("additional_filters")
+        )
+        table_converter = _parse_table_converter(
+            source_name,
+            table_input.pop_dict("value_column"),
+            table_input.pop_dicts_optional("dimension_columns"),
+            location=location_dimension,
+            additional_filters=filter_dimensions,
+        )
+        metric = _parse_metric(table_input.pop_dict("metric"))
 
-        table_name = table_input.pop_optional('name', str)
-        table_filename = table_input.pop_optional('file', str)
+        table_name = table_input.pop_optional("name", str)
+        table_filename = table_input.pop_optional("file", str)
         try:
-            table_handle = open_table_file(gcs, directory_path, spreadsheet_name, table_name, table_filename)
+            table_handle = open_table_file(
+                gcs, directory_path, spreadsheet_name, table_name, table_filename
+            )
         except ValueError as e:
             # Much of the manually collected data uses a single spreadsheet with all of the data for a state, even if
             # it is from multiple sources. To support that we first look for a table named with the data source, e.g.
             # 'AL_A', but otherwise we fall back to the generic version, e.g. 'AL_Data'.
             try:
-                spreadsheet_prefix = spreadsheet_name.split('_')[0]
+                spreadsheet_prefix = spreadsheet_name.split("_")[0]
                 table_handle = open_table_file(
-                    gcs, directory_path, f"{spreadsheet_prefix}_Data", table_name, table_filename)
+                    gcs,
+                    directory_path,
+                    f"{spreadsheet_prefix}_Data",
+                    table_name,
+                    table_filename,
+                )
             except BaseException:
                 # Raise the original error.
                 raise e from e
         with table_handle.open() as table_file:
             df = pandas.read_csv(table_file)
 
-        tables.extend(Table.list_from_dataframe(
-            date_range_producer=date_range_producer, table_converter=table_converter, metric=metric,
-            system=table_input.pop('system', str), methodology=table_input.pop('methodology', str),
-            location=location_dimension,
-            additional_filters=filter_dimensions, df=df))
+        tables.extend(
+            Table.list_from_dataframe(
+                date_range_producer=date_range_producer,
+                table_converter=table_converter,
+                metric=metric,
+                system=table_input.pop("system", str),
+                methodology=table_input.pop("methodology", str),
+                location=location_dimension,
+                additional_filters=filter_dimensions,
+                df=df,
+            )
+        )
 
         if len(table_input) > 0:
             raise ValueError(f"Received unexpected parameters for table: {table_input}")
@@ -1755,43 +2113,54 @@ def _parse_tables(gcs: GCSFileSystem, manifest_path: GcsfsFilePath,
 
 
 def open_table_file(
-    gcs: GCSFileSystem, directory_path: GcsfsDirectoryPath, spreadsheet_name: str, table_name: Optional[str],
-    table_file: Optional[str]
+    gcs: GCSFileSystem,
+    directory_path: GcsfsDirectoryPath,
+    spreadsheet_name: str,
+    table_name: Optional[str],
+    table_file: Optional[str],
 ) -> GcsfsFileContentsHandle:
     table_path = GcsfsFilePath.from_directory_and_file_name(
-        directory_path, _get_table_filename(spreadsheet_name, name=table_name, file=table_file))
+        directory_path,
+        _get_table_filename(spreadsheet_name, name=table_name, file=table_file),
+    )
     table_handle = gcs.download_to_temp_file(table_path)
     if table_handle is None:
         raise ValueError(f"Unable to download table from path: {table_path}")
-    logging.info('Reading table: %s', table_path)
+    logging.info("Reading table: %s", table_path)
     return table_handle
 
 
-def _get_report_and_acquirer(gcs: GCSFileSystem, manifest_path: GcsfsFilePath) -> Tuple[Report, str]:
-    logging.info('Reading report manifest: %s', manifest_path)
+def _get_report_and_acquirer(
+    gcs: GCSFileSystem, manifest_path: GcsfsFilePath
+) -> Tuple[Report, str]:
+    logging.info("Reading report manifest: %s", manifest_path)
     manifest_handle = gcs.download_to_temp_file(manifest_path)
     if manifest_handle is None:
         raise ValueError(f"Unable to download manifest from path: {manifest_path}")
 
     manifest = YAMLDict.from_path(manifest_handle.local_file_path)
-    source_name = manifest.pop('source', str)
+    source_name = manifest.pop("source", str)
     # Parse tables separately
     # TODO(#4479): Also allow for location to be a column in the csv, as is done for dates.
-    tables = _parse_tables(gcs, manifest_path, source_name, manifest.pop_dicts('tables'))
+    tables = _parse_tables(
+        gcs, manifest_path, source_name, manifest.pop_dicts("tables")
+    )
 
     report = Report(
         source_name=source_name,
-        report_type=manifest.pop('report_type', str),
-        report_instance=manifest.pop('report_instance', str),
-        publish_date=manifest.pop('publish_date', str),
-        url=manifest.pop('url', str),
-        tables=tables)
-    acquirer = manifest.pop('assignee', str)
+        report_type=manifest.pop("report_type", str),
+        report_instance=manifest.pop("report_instance", str),
+        publish_date=manifest.pop("publish_date", str),
+        url=manifest.pop("url", str),
+        tables=tables,
+    )
+    acquirer = manifest.pop("assignee", str)
 
     if len(manifest) > 0:
         raise ValueError(f"Received unexpected parameters in manifest: {manifest}")
 
     return report, acquirer
+
 
 # Persistence Layer
 # TODO(#4478): Refactor this into the persistence layer (including splitting out conversion, validation)
@@ -1803,16 +2172,21 @@ class Metadata:
     acquired_by: str = attr.ib()
 
 
-def _get_existing_entity(ingested_entity: schema.JusticeCountsDatabaseEntity, session: Session) \
-        -> Optional[JusticeCountsBase]:
+def _get_existing_entity(
+    ingested_entity: schema.JusticeCountsDatabaseEntity, session: Session
+) -> Optional[JusticeCountsBase]:
     table = ingested_entity.__table__
-    [unique_constraint] = [constraint for constraint in table.constraints if isinstance(constraint, UniqueConstraint)]
+    [unique_constraint] = [
+        constraint
+        for constraint in table.constraints
+        if isinstance(constraint, UniqueConstraint)
+    ]
     query = session.query(table)
     for column in unique_constraint:
         # TODO(#4477): Instead of making an assumption about how the property name is formed from the column name, use
         # an Entity method here to follow the foreign key relationship.
-        if column.name.endswith('_id'):
-            value = getattr(ingested_entity, column.name[:-len('_id')]).id
+        if column.name.endswith("_id"):
+            value = getattr(ingested_entity, column.name[: -len("_id")]).id
         else:
             value = getattr(ingested_entity, column.name)
         # Cast to the type because array types aren't deduced properly.
@@ -1821,8 +2195,9 @@ def _get_existing_entity(ingested_entity: schema.JusticeCountsDatabaseEntity, se
     return table_entity
 
 
-def _update_existing_or_create(ingested_entity: schema.JusticeCountsDatabaseEntity, session: Session) \
-        -> schema.JusticeCountsDatabaseEntity:
+def _update_existing_or_create(
+    ingested_entity: schema.JusticeCountsDatabaseEntity, session: Session
+) -> schema.JusticeCountsDatabaseEntity:
     # Note: Using on_conflict_do_update to resolve whether there is an existing entity could be more efficient as it
     # wouldn't incur multiple roundtrips. However for some entities we need to know whether there is an existing entity
     # (e.g. table instance) so we can clear child entities, so we probably wouldn't win much if anything.
@@ -1840,9 +2215,11 @@ def _update_existing_or_create(ingested_entity: schema.JusticeCountsDatabaseEnti
     return ingested_entity
 
 
-def _delete_existing_and_create(session: Session, ingested_entity: schema.JusticeCountsDatabaseEntity,
-                                entity_cls: Type[schema.JusticeCountsDatabaseEntity]) \
-        -> schema.JusticeCountsDatabaseEntity:
+def _delete_existing_and_create(
+    session: Session,
+    ingested_entity: schema.JusticeCountsDatabaseEntity,
+    entity_cls: Type[schema.JusticeCountsDatabaseEntity],
+) -> schema.JusticeCountsDatabaseEntity:
     table_entity = _get_existing_entity(ingested_entity, session)
     if table_entity is not None:
         table = ingested_entity.__table__
@@ -1853,10 +2230,14 @@ def _delete_existing_and_create(session: Session, ingested_entity: schema.Justic
     return ingested_entity
 
 
-def _convert_entities(session: Session, ingested_report: Report, report_metadata: Metadata) -> None:
+def _convert_entities(
+    session: Session, ingested_report: Report, report_metadata: Metadata
+) -> None:
     """Convert the ingested report into SQLAlchemy models"""
     report = schema.Report(
-        source=_update_existing_or_create(schema.Source(name=ingested_report.source_name), session),
+        source=_update_existing_or_create(
+            schema.Source(name=ingested_report.source_name), session
+        ),
         type=ingested_report.report_type,
         instance=ingested_report.report_instance,
         publish_date=ingested_report.publish_date,
@@ -1869,14 +2250,17 @@ def _convert_entities(session: Session, ingested_report: Report, report_metadata
     _delete_existing_and_create(session, report, schema.Report)
 
     for table in ingested_report.tables:
-        table_definition = _update_existing_or_create(schema.ReportTableDefinition(
-            system=table.system,
-            metric_type=table.metric.get_metric_type(),
-            measurement_type=table.metric.get_measurement_type(),
-            filtered_dimensions=table.filtered_dimension_names,
-            filtered_dimension_values=table.filtered_dimension_values,
-            aggregated_dimensions=table.aggregated_dimension_names,
-        ), session)
+        table_definition = _update_existing_or_create(
+            schema.ReportTableDefinition(
+                system=table.system,
+                metric_type=table.metric.get_metric_type(),
+                measurement_type=table.metric.get_measurement_type(),
+                filtered_dimensions=table.filtered_dimension_names,
+                filtered_dimension_values=table.filtered_dimension_values,
+                aggregated_dimensions=table.aggregated_dimension_names,
+            ),
+            session,
+        )
 
         table_instance = schema.ReportTableInstance(
             report=report,
@@ -1885,10 +2269,14 @@ def _convert_entities(session: Session, ingested_report: Report, report_metadata
             time_window_end=table.date_range.upper_bound_exclusive_date,
         )
 
-        table_instance.cells = [schema.Cell(
-            report_table_instance=table_instance,
-            aggregated_dimension_values=dimensions,
-            value=value) for dimensions, value in table.cells]
+        table_instance.cells = [
+            schema.Cell(
+                report_table_instance=table_instance,
+                aggregated_dimension_values=dimensions,
+                value=value,
+            )
+            for dimensions, value in table.cells
+        ]
 
         session.add(table_instance)
 
@@ -1913,12 +2301,18 @@ def _persist_report(report: Report, report_metadata: Metadata) -> None:
 
 
 def ingest(gcs: GCSFileSystem, manifest_filepath: GcsfsFilePath) -> None:
-    logging.info('Fetching report for ingest...')
+    logging.info("Fetching report for ingest...")
     report, acquirer = _get_report_and_acquirer(gcs, manifest_filepath)
-    logging.info('Ingesting report...')
-    _persist_report(report,
-                    Metadata(acquisition_method=schema.AcquisitionMethod.MANUALLY_ENTERED, acquired_by=acquirer))
-    logging.info('Report ingested.')
+    logging.info("Ingesting report...")
+    _persist_report(
+        report,
+        Metadata(
+            acquisition_method=schema.AcquisitionMethod.MANUALLY_ENTERED,
+            acquired_by=acquirer,
+        ),
+    )
+    logging.info("Report ingested.")
+
 
 # TODO(#4127): Everything above should be refactored out of the tools directory so only the script below is left.
 
@@ -1926,22 +2320,29 @@ def ingest(gcs: GCSFileSystem, manifest_filepath: GcsfsFilePath) -> None:
 def _create_parser() -> argparse.ArgumentParser:
     """Creates the CLI argument parser."""
     parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument(
-        '--manifest-file', required=True, type=str,
-        help="The yaml describing how to ingest the data"
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument(
-        '--project-id', required=True, type=str,
-        help="The GCP project to ingest the data into"
+        "--manifest-file",
+        required=True,
+        type=str,
+        help="The yaml describing how to ingest the data",
     )
     parser.add_argument(
-        '--app-url', required=False, type=str,
-        help="Override the url of the app."
+        "--project-id",
+        required=True,
+        type=str,
+        help="The GCP project to ingest the data into",
     )
     parser.add_argument(
-        '--log', required=False, default='INFO', type=logging.getLevelName,
-        help="Set the logging level"
+        "--app-url", required=False, type=str, help="Override the url of the app."
+    )
+    parser.add_argument(
+        "--log",
+        required=False,
+        default="INFO",
+        type=logging.getLevelName,
+        help="Set the logging level",
     )
     return parser
 
@@ -1952,67 +2353,97 @@ def upload(gcs: GCSFileSystem, manifest_path: str) -> GcsfsFilePath:
     manifest = YAMLDict.from_path(manifest_path)
 
     gcs_directory = GcsfsDirectoryPath.from_absolute_path(
-        os.path.join(f'gs://{metadata.project_id()}-justice-counts-ingest', manifest.pop('source', str),
-                     manifest.pop('report_type', str), manifest.pop('report_instance', str))
+        os.path.join(
+            f"gs://{metadata.project_id()}-justice-counts-ingest",
+            manifest.pop("source", str),
+            manifest.pop("report_type", str),
+            manifest.pop("report_instance", str),
+        )
     )
 
-    for table in manifest.pop_dicts('tables'):
-        spreadsheet_name = manifest_filename[:-len('.yaml')]
-        table_name = table.pop_optional('name', str)
-        table_filename = table.pop_optional('file', str)
+    for table in manifest.pop_dicts("tables"):
+        spreadsheet_name = manifest_filename[: -len(".yaml")]
+        table_name = table.pop_optional("name", str)
+        table_filename = table.pop_optional("file", str)
         try:
-            upload_table(gcs, directory, gcs_directory, spreadsheet_name, table_name, table_filename)
+            upload_table(
+                gcs,
+                directory,
+                gcs_directory,
+                spreadsheet_name,
+                table_name,
+                table_filename,
+            )
         except FileNotFoundError as e:
             # Much of the manually collected data uses a single spreadsheet with all of the data for a state, even if
             # it is from multiple sources. To support that we first look for a table named with the data source, e.g.
             # 'AL_A', but otherwise we fall back to the generic version, e.g. 'AL_Data'.
             try:
-                spreadsheet_prefix = spreadsheet_name.split('_')[0]
-                upload_table(gcs, directory, gcs_directory, f"{spreadsheet_prefix}_Data", table_name, table_filename)
+                spreadsheet_prefix = spreadsheet_name.split("_")[0]
+                upload_table(
+                    gcs,
+                    directory,
+                    gcs_directory,
+                    f"{spreadsheet_prefix}_Data",
+                    table_name,
+                    table_filename,
+                )
             except BaseException:
                 # Raise the original error.
                 raise e from e
 
-    manifest_gcs_path = GcsfsFilePath.from_directory_and_file_name(gcs_directory, os.path.basename(manifest_path))
+    manifest_gcs_path = GcsfsFilePath.from_directory_and_file_name(
+        gcs_directory, os.path.basename(manifest_path)
+    )
     gcs.upload_from_contents_handle_stream(
         path=manifest_gcs_path,
         contents_handle=GcsfsFileContentsHandle(manifest_path, cleanup_file=False),
-        content_type='text/yaml'
+        content_type="text/yaml",
     )
     return manifest_gcs_path
 
 
 def upload_table(
-    gcs: GCSFileSystem, directory: str, gcs_directory: GcsfsDirectoryPath, spreadsheet_name: str,
-    table_name: Optional[str], table_file: Optional[str]
+    gcs: GCSFileSystem,
+    directory: str,
+    gcs_directory: GcsfsDirectoryPath,
+    spreadsheet_name: str,
+    table_name: Optional[str],
+    table_file: Optional[str],
 ) -> None:
-    table_filename = _get_table_filename(spreadsheet_name, name=table_name, file=table_file)
+    table_filename = _get_table_filename(
+        spreadsheet_name, name=table_name, file=table_file
+    )
     gcs.upload_from_contents_handle_stream(
         path=GcsfsFilePath.from_directory_and_file_name(gcs_directory, table_filename),
-        contents_handle=GcsfsFileContentsHandle(os.path.join(directory, table_filename), cleanup_file=False),
-        content_type='text/csv'
+        contents_handle=GcsfsFileContentsHandle(
+            os.path.join(directory, table_filename), cleanup_file=False
+        ),
+        content_type="text/csv",
     )
 
 
 def trigger_ingest(gcs_path: GcsfsFilePath, app_url: Optional[str]) -> None:
-    app_url = app_url or f'https://{metadata.project_id()}.appspot.com'
-    webbrowser.open(url=f"{app_url}/justice_counts/ingest?{parse.urlencode({'manifest_path': gcs_path.uri()})}")
+    app_url = app_url or f"https://{metadata.project_id()}.appspot.com"
+    webbrowser.open(
+        url=f"{app_url}/justice_counts/ingest?{parse.urlencode({'manifest_path': gcs_path.uri()})}"
+    )
 
 
 def main(manifest_path: str, app_url: Optional[str]) -> None:
-    logging.info('Uploading report for ingest...')
+    logging.info("Uploading report for ingest...")
     gcs_path = upload(GcsfsFactory.build(), manifest_path)
 
     # We can't hit the endpoint on the app directly from the python script as we don't have IAP credentials. Instead we
     # launch the browser to hit the app and allow the user to auth in browser.
-    logging.info('Opening browser to trigger ingest...')
+    logging.info("Opening browser to trigger ingest...")
     trigger_ingest(gcs_path, app_url)
     # Then we ask the user if the browser request was successful or displayed an error.
-    i = input('Was the ingest successful? [Y/n]: ')
-    if i and i.strip().lower() != 'y':
-        logging.error('Ingest failed.')
+    i = input("Was the ingest successful? [Y/n]: ")
+    if i and i.strip().lower() != "y":
+        logging.error("Ingest failed.")
         sys.exit(1)
-    logging.info('Report ingested.')
+    logging.info("Report ingested.")
 
 
 def _configure_logging(level: str) -> None:
@@ -2020,7 +2451,7 @@ def _configure_logging(level: str) -> None:
     root.setLevel(level)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     arg_parser = _create_parser()
     arguments = arg_parser.parse_args()
 

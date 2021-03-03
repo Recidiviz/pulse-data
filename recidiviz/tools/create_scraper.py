@@ -54,19 +54,20 @@ def main() -> None:
     jurisdiction_id = _get_jurisdiction_id(county_name, state)
 
     substitutions = {
-        'class_name': regions.get_ingestor_name(
-            _gen_region_name(county_name, state, delimiter='_'), 'scraper'),
-        'county': county_name,
-        'region': _gen_region_name(county_name, state, delimiter='_'),
-        'region_dashes': _gen_region_name(county_name, state, delimiter='-'),
-        'agency': args.agency,
-        'agency_type': args.agency_type,
-        'state': state.name,
-        'state_abbr': state.abbr,
-        'timezone': args.timezone or state.capital_tz,
-        'url': args.url,
-        'year': datetime.now().year,
-        'jurisdiction_id': jurisdiction_id
+        "class_name": regions.get_ingestor_name(
+            _gen_region_name(county_name, state, delimiter="_"), "scraper"
+        ),
+        "county": county_name,
+        "region": _gen_region_name(county_name, state, delimiter="_"),
+        "region_dashes": _gen_region_name(county_name, state, delimiter="-"),
+        "agency": args.agency,
+        "agency_type": args.agency_type,
+        "state": state.name,
+        "state_abbr": state.abbr,
+        "timezone": args.timezone or state.capital_tz,
+        "url": args.url,
+        "year": datetime.now().year,
+        "jurisdiction_id": jurisdiction_id,
     }
 
     if not args.tests_only:
@@ -76,24 +77,31 @@ def main() -> None:
 
 def _create_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
-    parser.add_argument('county')
-    parser.add_argument('state')
-    parser.add_argument('agency_type')
-    optional_args = [
-        'agency',
-        'timezone',
-        'url']
+    parser.add_argument("county")
+    parser.add_argument("state")
+    parser.add_argument("agency_type")
+    optional_args = ["agency", "timezone", "url"]
     for optional_arg in optional_args:
-        parser.add_argument('--' + optional_arg, nargs='?', const=1, default='')
+        parser.add_argument("--" + optional_arg, nargs="?", const=1, default="")
 
-    template_dir = os.path.join(os.path.dirname(__file__), 'scraper_template')
-    valid_vendors = sorted(vendor for vendor in os.listdir(template_dir)
-                           if os.path.isdir(os.path.join(template_dir, vendor)))
-    parser.add_argument('--vendor', required=False,
-                        help='Create a vendor scraper.',
-                        choices=valid_vendors)
-    parser.add_argument('--tests_only', required=False, action='store_true',
-                        help='If set, only create test files.')
+    template_dir = os.path.join(os.path.dirname(__file__), "scraper_template")
+    valid_vendors = sorted(
+        vendor
+        for vendor in os.listdir(template_dir)
+        if os.path.isdir(os.path.join(template_dir, vendor))
+    )
+    parser.add_argument(
+        "--vendor",
+        required=False,
+        help="Create a vendor scraper.",
+        choices=valid_vendors,
+    )
+    parser.add_argument(
+        "--tests_only",
+        required=False,
+        action="store_true",
+        help="If set, only create test files.",
+    )
     return parser
 
 
@@ -103,74 +111,76 @@ def _create_scraper_files(subs: Dict[str, str], vendor: Optional[str]) -> None:
     """
 
     def create_scraper(template: str) -> None:
-        target = os.path.join(target_dir, subs['region'] + '_scraper.py')
+        target = os.path.join(target_dir, subs["region"] + "_scraper.py")
         _populate_file(template, target, subs)
 
     def create_extractor_yaml(template: str) -> None:
-        target = os.path.join(target_dir, subs['region'] + '.yaml')
+        target = os.path.join(target_dir, subs["region"] + ".yaml")
         _populate_file(template, target, subs)
 
     def create_manifest_yaml(template: str) -> None:
-        target = os.path.join(target_dir, 'manifest.yaml')
+        target = os.path.join(target_dir, "manifest.yaml")
         _populate_file(template, target, subs)
 
     regions_dir = os.path.dirname(recidiviz.ingest.scrape.regions.__file__)
     if not os.path.exists(regions_dir):
-        raise OSError("Couldn't find directory "
-                      "recidiviz/ingest/scrape/regions.")
-    template_dir = os.path.join(os.path.dirname(__file__), 'scraper_template')
-    target_dir = os.path.join(regions_dir, subs['region'])
+        raise OSError("Couldn't find directory " "recidiviz/ingest/scrape/regions.")
+    template_dir = os.path.join(os.path.dirname(__file__), "scraper_template")
+    target_dir = os.path.join(regions_dir, subs["region"])
     if os.path.exists(target_dir):
         raise OSError("directory %s already exists" % target_dir)
     os.mkdir(target_dir)
 
-    init_template = os.path.join(template_dir, '__init__.txt')
-    init_target = os.path.join(target_dir, '__init__.py')
+    init_template = os.path.join(template_dir, "__init__.txt")
+    init_target = os.path.join(target_dir, "__init__.py")
     _populate_file(init_template, init_target, subs)
 
     if vendor:
         template_dir = os.path.join(template_dir, vendor)
-    scraper_template = os.path.join(template_dir, 'region_scraper.txt')
+    scraper_template = os.path.join(template_dir, "region_scraper.txt")
     create_scraper(scraper_template)
-    manifest_path = os.path.join(template_dir, 'manifest.txt')
+    manifest_path = os.path.join(template_dir, "manifest.txt")
     if os.path.exists(manifest_path):
         create_manifest_yaml(manifest_path)
     else:
-        create_manifest_yaml(os.path.join(template_dir, '../manifest.txt'))
+        create_manifest_yaml(os.path.join(template_dir, "../manifest.txt"))
     if not vendor:
-        yaml_template = os.path.join(template_dir, 'region.txt')
+        yaml_template = os.path.join(template_dir, "region.txt")
         create_extractor_yaml(yaml_template)
 
 
 def _create_test_files(subs: Dict[str, str], vendor: Optional[str]) -> None:
     def create_test(template: str) -> None:
-        test_target_file_name = subs['region'] + '_scraper_test.py'
+        test_target_file_name = subs["region"] + "_scraper_test.py"
         test_target = os.path.join(target_test_dir, test_target_file_name)
         _populate_file(template, test_target, subs)
 
     ingest_dir = os.path.dirname(recidiviz.ingest.scrape.regions.__file__)
     test_dir = os.path.dirname(recidiviz.tests.ingest.scrape.regions.__file__)
     if not os.path.exists(ingest_dir):
-        raise OSError("Couldn\'t find directory "
-                      "recidiviz/tests/ingest/scrape/regions.")
-    target_test_dir = os.path.join(test_dir, subs['region'])
+        raise OSError(
+            "Couldn't find directory " "recidiviz/tests/ingest/scrape/regions."
+        )
+    target_test_dir = os.path.join(test_dir, subs["region"])
     if os.path.exists(target_test_dir):
         raise OSError("directory %s already exists" % target_test_dir)
     os.mkdir(target_test_dir)
 
-    template_dir = os.path.join(os.path.dirname(__file__), 'scraper_template')
+    template_dir = os.path.join(os.path.dirname(__file__), "scraper_template")
     if vendor:
         template_dir = os.path.join(template_dir, vendor)
-    test_template = os.path.join(template_dir, 'region_scraper_test.txt')
+    test_template = os.path.join(template_dir, "region_scraper_test.txt")
     create_test(test_template)
 
 
-def _populate_file(template_path: str, target_path: str, substitutions: Dict[str, str]) -> None:
+def _populate_file(
+    template_path: str, target_path: str, substitutions: Dict[str, str]
+) -> None:
     with open(template_path) as template_file:
         template = Template(template_file.read())
         contents = template.substitute(substitutions)
 
-    with open(target_path, 'w') as target:
+    with open(target_path, "w") as target:
         target.write(contents)
 
 
@@ -182,9 +192,8 @@ def _get_state(state_arg: str) -> us.states:
     return state
 
 
-def _gen_region_name(county_name: str, state: us.states, *,
-                     delimiter: str) -> str:
-    parts = ('us', state.abbr.lower()) + tuple(county_name.lower().split())
+def _gen_region_name(county_name: str, state: us.states, *, delimiter: str) -> str:
+    parts = ("us", state.abbr.lower()) + tuple(county_name.lower().split())
     return delimiter.join(parts)
 
 
@@ -193,8 +202,8 @@ def _get_jurisdiction_id(county_name: str, state: us.states) -> str:
         return "'{}'".format(jid.get(county_name, state))
     except FipsMergingError:
         # If no 1:1 mapping, leave jurisdiction_id blank to be caught by tests
-        return ''
+        return ""
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

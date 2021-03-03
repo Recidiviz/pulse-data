@@ -32,15 +32,15 @@ class TestScrapedData(TestCase):
 
     def testIngestInfo(self) -> None:
         ScrapedData(
-            ingest_info=IngestInfo(people=[Person(race=Race("ASIAN"))]),
-            persist=True)
+            ingest_info=IngestInfo(people=[Person(race=Race("ASIAN"))]), persist=True
+        )
 
     def testSingleCount(self) -> None:
-        ScrapedData(single_counts=[SingleCount(count=123)],
-                    persist=True)
+        ScrapedData(single_counts=[SingleCount(count=123)], persist=True)
 
     def testBoth(self) -> None:
         ScrapedData(
             ingest_info=IngestInfo(people=[Person(race=Race("ASIAN"))]),
             single_counts=[SingleCount(count=123)],
-            persist=True)
+            persist=True,
+        )

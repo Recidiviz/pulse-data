@@ -29,10 +29,15 @@ from recidiviz.calculator.pipeline.utils.beam_utils import AverageFnResult
 
 class TestBeamUtils(unittest.TestCase):
     """Tests for the beam_utils functions."""
+
     def testAverageFn(self):
-        test_values_dicts = [({'field': 'a'}, 0), ({'field': 'a'}, 0),
-                             ({'field': 'a'}, 1),
-                             ({'field': 'b'}, 0), ({'field': 'b'}, 1)]
+        test_values_dicts = [
+            ({"field": "a"}, 0),
+            ({"field": "a"}, 0),
+            ({"field": "a"}, 1),
+            ({"field": "b"}, 0),
+            ({"field": "b"}, 1),
+        ]
 
         test_input = []
 
@@ -41,26 +46,25 @@ class TestBeamUtils(unittest.TestCase):
             test_input.append((test_set, value))
 
         correct_output = [
-            (frozenset({('field', 'a')}),
-             AverageFnResult(
-                 input_count=3,
-                 sum_of_inputs=1,
-                 average_of_inputs=(1.0 / 3)
-             )),
-            (frozenset({('field', 'b')}),
-             AverageFnResult(
-                 input_count=2,
-                 sum_of_inputs=1,
-                 average_of_inputs=0.5
-             ))
+            (
+                frozenset({("field", "a")}),
+                AverageFnResult(
+                    input_count=3, sum_of_inputs=1, average_of_inputs=(1.0 / 3)
+                ),
+            ),
+            (
+                frozenset({("field", "b")}),
+                AverageFnResult(input_count=2, sum_of_inputs=1, average_of_inputs=0.5),
+            ),
         ]
 
         test_pipeline = TestPipeline()
 
-        output = (test_pipeline
-                  | beam.Create(test_input)
-                  | 'Test AverageFn' >>
-                  beam.CombinePerKey(beam_utils.AverageFn()))
+        output = (
+            test_pipeline
+            | beam.Create(test_input)
+            | "Test AverageFn" >> beam.CombinePerKey(beam_utils.AverageFn())
+        )
 
         assert_that(output, equal_to(correct_output))
 
@@ -69,19 +73,24 @@ class TestBeamUtils(unittest.TestCase):
     def testAverageFn_EmptyInput(self):
         test_pipeline = TestPipeline()
 
-        output = (test_pipeline
-                  | beam.Create([])
-                  | 'Test AverageFn' >>
-                  beam.CombinePerKey(beam_utils.AverageFn()))
+        output = (
+            test_pipeline
+            | beam.Create([])
+            | "Test AverageFn" >> beam.CombinePerKey(beam_utils.AverageFn())
+        )
 
         assert_that(output, equal_to([]))
 
         test_pipeline.run()
 
     def testSumFn(self):
-        test_values_dicts = [({'field': 'a'}, 1), ({'field': 'a'}, 1),
-                             ({'field': 'a'}, 1),
-                             ({'field': 'b'}, 1), ({'field': 'b'}, 1)]
+        test_values_dicts = [
+            ({"field": "a"}, 1),
+            ({"field": "a"}, 1),
+            ({"field": "a"}, 1),
+            ({"field": "b"}, 1),
+            ({"field": "b"}, 1),
+        ]
 
         test_input = []
 
@@ -90,16 +99,17 @@ class TestBeamUtils(unittest.TestCase):
             test_input.append((test_set, value))
 
         correct_output = [
-            (frozenset({('field', 'a')}), 3),
-            (frozenset({('field', 'b')}), 2)
+            (frozenset({("field", "a")}), 3),
+            (frozenset({("field", "b")}), 2),
         ]
 
         test_pipeline = TestPipeline()
 
-        output = (test_pipeline
-                  | beam.Create(test_input)
-                  | 'Test SumFn' >>
-                  beam.CombinePerKey(beam_utils.SumFn()))
+        output = (
+            test_pipeline
+            | beam.Create(test_input)
+            | "Test SumFn" >> beam.CombinePerKey(beam_utils.SumFn())
+        )
 
         assert_that(output, equal_to(correct_output))
 
@@ -108,30 +118,34 @@ class TestBeamUtils(unittest.TestCase):
     def testSumFn_NoInput(self):
         test_pipeline = TestPipeline()
 
-        output = (test_pipeline
-                  | beam.Create([])
-                  | 'Test SumFn' >>
-                  beam.CombinePerKey(beam_utils.SumFn()))
+        output = (
+            test_pipeline
+            | beam.Create([])
+            | "Test SumFn" >> beam.CombinePerKey(beam_utils.SumFn())
+        )
 
         assert_that(output, equal_to([]))
 
         test_pipeline.run()
 
     def testConvertDictToKVTuple(self):
-        test_input = [{'key_field': 'a', 'other_field': 'x'},
-                      {'key_field': 'b', 'other_field': 'y'}]
+        test_input = [
+            {"key_field": "a", "other_field": "x"},
+            {"key_field": "b", "other_field": "y"},
+        ]
 
         test_pipeline = TestPipeline()
 
-        output = (test_pipeline
-                  | beam.Create(test_input)
-                  | 'Test ConvertDictToKVTuple' >>
-                  beam.ParDo(beam_utils.ConvertDictToKVTuple(),
-                             'key_field'))
+        output = (
+            test_pipeline
+            | beam.Create(test_input)
+            | "Test ConvertDictToKVTuple"
+            >> beam.ParDo(beam_utils.ConvertDictToKVTuple(), "key_field")
+        )
 
         correct_output = [
-            ('a', {'key_field': 'a', 'other_field': 'x'}),
-            ('b', {'key_field': 'b', 'other_field': 'y'})
+            ("a", {"key_field": "a", "other_field": "x"}),
+            ("b", {"key_field": "b", "other_field": "y"}),
         ]
 
         assert_that(output, equal_to(correct_output))
@@ -139,16 +153,19 @@ class TestBeamUtils(unittest.TestCase):
         test_pipeline.run()
 
     def testConvertDictToKVTuple_InvalidKey(self):
-        test_input = [{'key_field': 'a', 'other_field': 'x'},
-                      {'key_field': 'b', 'other_field': 'y'}]
+        test_input = [
+            {"key_field": "a", "other_field": "x"},
+            {"key_field": "b", "other_field": "y"},
+        ]
 
         test_pipeline = TestPipeline()
 
         with pytest.raises(ValueError):
-            _ = (test_pipeline
-                 | beam.Create(test_input)
-                 | 'Test ConvertDictToKVTuple' >>
-                 beam.ParDo(beam_utils.ConvertDictToKVTuple(),
-                            'not_the_key_field'))
+            _ = (
+                test_pipeline
+                | beam.Create(test_input)
+                | "Test ConvertDictToKVTuple"
+                >> beam.ParDo(beam_utils.ConvertDictToKVTuple(), "not_the_key_field")
+            )
 
             test_pipeline.run()

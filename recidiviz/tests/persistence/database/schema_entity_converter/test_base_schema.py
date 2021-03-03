@@ -22,4 +22,4 @@ from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 
 # Base class for all table classes
-TestBase: DeclarativeMeta = declarative_base(cls=DatabaseEntity, name='TestBase')
+TestBase: DeclarativeMeta = declarative_base(cls=DatabaseEntity, name="TestBase")

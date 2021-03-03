@@ -20,21 +20,28 @@ synchronously, when prompted."""
 from typing import List, Tuple, Union
 
 from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgs
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
-    GcsfsDirectIngestController
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsIngestViewExportArgs, \
-    GcsfsRawDataBQImportArgs
-from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
-    _build_task_id, ProcessIngestJobCloudTaskQueueInfo, BQImportExportCloudTaskQueueInfo, \
-    SchedulerCloudTaskQueueInfo, SftpCloudTaskQueueInfo
-from recidiviz.tests.ingest.direct.fake_direct_ingest_cloud_task_manager \
-    import FakeDirectIngestCloudTaskManager
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import (
+    GcsfsDirectIngestController,
+)
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
+    GcsfsIngestViewExportArgs,
+    GcsfsRawDataBQImportArgs,
+)
+from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
+    _build_task_id,
+    ProcessIngestJobCloudTaskQueueInfo,
+    BQImportExportCloudTaskQueueInfo,
+    SchedulerCloudTaskQueueInfo,
+    SftpCloudTaskQueueInfo,
+)
+from recidiviz.tests.ingest.direct.fake_direct_ingest_cloud_task_manager import (
+    FakeDirectIngestCloudTaskManager,
+)
 from recidiviz.utils import monitoring
 from recidiviz.utils.regions import Region
 
 
-class FakeSynchronousDirectIngestCloudTaskManager(
-        FakeDirectIngestCloudTaskManager):
+class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
     """Test implementation of the DirectIngestCloudTaskManager that runs tasks
     synchronously, when prompted."""
 
@@ -44,93 +51,97 @@ class FakeSynchronousDirectIngestCloudTaskManager(
         self.num_finished_process_job_tasks = 0
         self.scheduler_tasks: List[Tuple[str, bool]] = []
         self.num_finished_scheduler_tasks = 0
-        self.bq_import_export_tasks: List[Tuple[str, Union[GcsfsRawDataBQImportArgs, GcsfsIngestViewExportArgs]]] = []
+        self.bq_import_export_tasks: List[
+            Tuple[str, Union[GcsfsRawDataBQImportArgs, GcsfsIngestViewExportArgs]]
+        ] = []
         self.num_finished_bq_import_export_tasks = 0
         self.sftp_tasks: List[str] = []
 
-    def get_process_job_queue_info(self,
-                                   region: Region) -> ProcessIngestJobCloudTaskQueueInfo:
+    def get_process_job_queue_info(
+        self, region: Region
+    ) -> ProcessIngestJobCloudTaskQueueInfo:
 
         return ProcessIngestJobCloudTaskQueueInfo(
-            queue_name='process',
-            task_names=[t[0] for t in self.process_job_tasks])
+            queue_name="process", task_names=[t[0] for t in self.process_job_tasks]
+        )
 
-    def get_scheduler_queue_info(self,
-                                 region: Region) -> SchedulerCloudTaskQueueInfo:
+    def get_scheduler_queue_info(self, region: Region) -> SchedulerCloudTaskQueueInfo:
         return SchedulerCloudTaskQueueInfo(
-            queue_name='schedule',
-            task_names=[t[0] for t in self.scheduler_tasks])
+            queue_name="schedule", task_names=[t[0] for t in self.scheduler_tasks]
+        )
 
-    def get_bq_import_export_queue_info(self, region: Region) -> BQImportExportCloudTaskQueueInfo:
+    def get_bq_import_export_queue_info(
+        self, region: Region
+    ) -> BQImportExportCloudTaskQueueInfo:
         return BQImportExportCloudTaskQueueInfo(
-            queue_name='bq_import_export',
-            task_names=[t[0] for t in self.bq_import_export_tasks])
+            queue_name="bq_import_export",
+            task_names=[t[0] for t in self.bq_import_export_tasks],
+        )
 
     def get_sftp_download_queue_info(self, region: Region) -> SftpCloudTaskQueueInfo:
         return SftpCloudTaskQueueInfo(
-            queue_name='sftp_download',
-            task_names=[t[0] for t in self.sftp_tasks])
+            queue_name="sftp_download", task_names=[t[0] for t in self.sftp_tasks]
+        )
 
     def create_direct_ingest_process_job_task(
-            self,
-            region: Region,
-            ingest_args: IngestArgs) -> None:
+        self, region: Region, ingest_args: IngestArgs
+    ) -> None:
         """Queues *but does not run* a process job task."""
         if not self.controller:
-            raise ValueError(
-                "Controller is null - did you call set_controller()?")
+            raise ValueError("Controller is null - did you call set_controller()?")
 
-        task_id = _build_task_id(self.controller.region.region_code,
-                                 ingest_args.task_id_tag())
-        self.process_job_tasks.append(
-            (f'projects/path/to/{task_id}', ingest_args))
+        task_id = _build_task_id(
+            self.controller.region.region_code, ingest_args.task_id_tag()
+        )
+        self.process_job_tasks.append((f"projects/path/to/{task_id}", ingest_args))
 
-    def create_direct_ingest_scheduler_queue_task(self, region: Region,
-                                                  just_finished_job: bool,
-                                                  delay_sec: int) -> None:
+    def create_direct_ingest_scheduler_queue_task(
+        self, region: Region, just_finished_job: bool, delay_sec: int
+    ) -> None:
         """Queues *but does not run* a scheduler task."""
         if not self.controller:
-            raise ValueError(
-                "Controller is null - did you call set_controller()?")
+            raise ValueError("Controller is null - did you call set_controller()?")
 
         task_id = _build_task_id(self.controller.region.region_code, None)
         self.scheduler_tasks.append(
-            (f'projects/path/to/{task_id}-schedule', just_finished_job))
+            (f"projects/path/to/{task_id}-schedule", just_finished_job)
+        )
 
-    def create_direct_ingest_handle_new_files_task(self,
-                                                   region: Region,
-                                                   can_start_ingest: bool) -> None:
+    def create_direct_ingest_handle_new_files_task(
+        self, region: Region, can_start_ingest: bool
+    ) -> None:
         if not self.controller:
-            raise ValueError(
-                "Controller is null - did you call set_controller()?")
+            raise ValueError("Controller is null - did you call set_controller()?")
         task_id = _build_task_id(self.controller.region.region_code, None)
         self.scheduler_tasks.append(
-            (f'projects/path/to/{task_id}-handle_new_files', can_start_ingest))
+            (f"projects/path/to/{task_id}-handle_new_files", can_start_ingest)
+        )
 
-    def create_direct_ingest_raw_data_import_task(self,
-                                                  region: Region, data_import_args: GcsfsRawDataBQImportArgs) -> None:
+    def create_direct_ingest_raw_data_import_task(
+        self, region: Region, data_import_args: GcsfsRawDataBQImportArgs
+    ) -> None:
         if not self.controller:
-            raise ValueError(
-                "Controller is null - did you call set_controller()?")
+            raise ValueError("Controller is null - did you call set_controller()?")
         task_id = _build_task_id(self.controller.region.region_code, None)
         self.bq_import_export_tasks.append(
-            (f'projects/path/to/{task_id}-raw_data_import', data_import_args))
+            (f"projects/path/to/{task_id}-raw_data_import", data_import_args)
+        )
 
-    def create_direct_ingest_ingest_view_export_task(self, region: Region,
-                                                     ingest_view_export_args: GcsfsIngestViewExportArgs) -> None:
+    def create_direct_ingest_ingest_view_export_task(
+        self, region: Region, ingest_view_export_args: GcsfsIngestViewExportArgs
+    ) -> None:
         if not self.controller:
-            raise ValueError(
-                "Controller is null - did you call set_controller()?")
+            raise ValueError("Controller is null - did you call set_controller()?")
         task_id = _build_task_id(self.controller.region.region_code, None)
         self.bq_import_export_tasks.append(
-            (f'projects/path/to/{task_id}-ingest_view_export', ingest_view_export_args))
+            (f"projects/path/to/{task_id}-ingest_view_export", ingest_view_export_args)
+        )
 
     def create_direct_ingest_sftp_download_task(self, region: Region) -> None:
         if not self.controller:
-            raise ValueError(
-                "Controller is null - did you call set_controller()?")
+            raise ValueError("Controller is null - did you call set_controller()?")
         task_id = _build_task_id(self.controller.region.region_code, None)
-        self.sftp_tasks.append(f'projects/path/to/{task_id}-handle_sftp_download')
+        self.sftp_tasks.append(f"projects/path/to/{task_id}-handle_sftp_download")
 
     def test_run_next_process_job_task(self) -> None:
         """Synchronously executes the next queued process job task, but *does
@@ -142,14 +153,12 @@ class FakeSynchronousDirectIngestCloudTaskManager(
             raise ValueError("Must first pop last finished task.")
 
         if not self.controller:
-            raise ValueError(
-                "Controller is null - did you call set_controller()?")
+            raise ValueError("Controller is null - did you call set_controller()?")
 
         task = self.process_job_tasks[0]
 
         with monitoring.push_region_tag(self.controller.region.region_code):
-            self.controller.run_ingest_job_and_kick_scheduler_on_completion(
-                task[1])
+            self.controller.run_ingest_job_and_kick_scheduler_on_completion(task[1])
         self.num_finished_process_job_tasks += 1
 
     def test_run_next_scheduler_task(self) -> None:
@@ -163,23 +172,24 @@ class FakeSynchronousDirectIngestCloudTaskManager(
             raise ValueError("Must first pop last finished task.")
 
         if not self.controller:
-            raise ValueError(
-                "Controller is null - did you call set_controller()?")
+            raise ValueError("Controller is null - did you call set_controller()?")
 
         task = self.scheduler_tasks[0]
         task_id = task[0]
 
         with monitoring.push_region_tag(self.controller.region.region_code):
-            if task_id.endswith('schedule'):
+            if task_id.endswith("schedule"):
                 self.controller.schedule_next_ingest_job_or_wait_if_necessary(
-                    just_finished_job=task[1])
-            elif task_id.endswith('handle_new_files'):
+                    just_finished_job=task[1]
+                )
+            elif task_id.endswith("handle_new_files"):
                 if not isinstance(self.controller, GcsfsDirectIngestController):
                     raise ValueError(
-                        f'Unexpected controller type {type(self.controller)}')
+                        f"Unexpected controller type {type(self.controller)}"
+                    )
                 self.controller.handle_new_files(can_start_ingest=task[1])
             else:
-                raise ValueError(f'Unexpected task id [{task_id}]')
+                raise ValueError(f"Unexpected task id [{task_id}]")
         self.num_finished_scheduler_tasks += 1
 
     def test_run_next_bq_import_export_task(self) -> None:
@@ -192,30 +202,33 @@ class FakeSynchronousDirectIngestCloudTaskManager(
             raise ValueError("Must first pop last finished task.")
 
         if not self.controller:
-            raise ValueError(
-                "Controller is null - did you call set_controller()?")
+            raise ValueError("Controller is null - did you call set_controller()?")
 
         task = self.bq_import_export_tasks[0]
         task_id = task[0]
         args = task[1]
 
         with monitoring.push_region_tag(self.controller.region.region_code):
-            if task_id.endswith('raw_data_import'):
+            if task_id.endswith("raw_data_import"):
                 if not isinstance(self.controller, GcsfsDirectIngestController):
-                    raise ValueError(f'Unexpected controller type {type(self.controller)}')
+                    raise ValueError(
+                        f"Unexpected controller type {type(self.controller)}"
+                    )
                 if not isinstance(args, GcsfsRawDataBQImportArgs):
-                    raise ValueError(f'Unexpected args type {type(args)}')
+                    raise ValueError(f"Unexpected args type {type(args)}")
 
                 self.controller.do_raw_data_import(data_import_args=args)
-            elif task_id.endswith('ingest_view_export'):
+            elif task_id.endswith("ingest_view_export"):
                 if not isinstance(self.controller, GcsfsDirectIngestController):
-                    raise ValueError(f'Unexpected controller type {type(self.controller)}')
+                    raise ValueError(
+                        f"Unexpected controller type {type(self.controller)}"
+                    )
                 if not isinstance(args, GcsfsIngestViewExportArgs):
-                    raise ValueError(f'Unexpected args type {type(args)}')
+                    raise ValueError(f"Unexpected args type {type(args)}")
 
                 self.controller.do_ingest_view_export(ingest_view_export_args=args)
             else:
-                raise ValueError(f'Unexpected task id [{task_id}]')
+                raise ValueError(f"Unexpected task id [{task_id}]")
         self.num_finished_bq_import_export_tasks += 1
 
     def test_pop_finished_process_job_task(self) -> Tuple[str, IngestArgs]:

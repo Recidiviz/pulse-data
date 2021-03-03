@@ -15,9 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Query for person date of birth info."""
-from recidiviz.calculator.query.state.dataset_config import STATIC_REFERENCE_TABLES_DATASET
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import \
-    DirectIngestPreProcessedIngestViewBuilder
+from recidiviz.calculator.query.state.dataset_config import (
+    STATIC_REFERENCE_TABLES_DATASET,
+)
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    DirectIngestPreProcessedIngestViewBuilder,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -65,12 +68,12 @@ ON
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
-    region='us_id',
-    ingest_view_name='offender_ofndr_dob_address',
+    region="us_id",
+    ingest_view_name="offender_ofndr_dob_address",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols='docno'
+    order_by_cols="docno",
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         VIEW_BUILDER.build_and_print()

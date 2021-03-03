@@ -20,14 +20,19 @@ sums for the revocations_matrix_distribution_by_race view in the Revocation Anal
 # pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
-from recidiviz.calculator.query.state.views.dashboard.revocation_analysis.\
-    revocations_matrix_distribution_by_race import REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_VIEW_BUILDER
+from recidiviz.calculator.query.state.views.dashboard.revocation_analysis.revocations_matrix_distribution_by_race import (
+    REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_VIEW_BUILDER,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
-from recidiviz.validation.views.utils.internal_consistency_templates import sums_and_totals_consistency_query
+from recidiviz.validation.views.utils.internal_consistency_templates import (
+    sums_and_totals_consistency_query,
+)
 
-REVOCATION_MATRIX_DISTRIBUTION_BY_RACE_COMPARISON_VIEW_NAME = 'revocation_matrix_distribution_by_race_comparison'
+REVOCATION_MATRIX_DISTRIBUTION_BY_RACE_COMPARISON_VIEW_NAME = (
+    "revocation_matrix_distribution_by_race_comparison"
+)
 
 REVOCATION_MATRIX_DISTRIBUTION_BY_RACE_COMPARISON_DESCRIPTION = """ 
 Revocation matrix comparison of summed counts across race """
@@ -50,9 +55,9 @@ REVOCATION_MATRIX_DISTRIBUTION_BY_RACE_COMPARISON_VIEW_BUILDER = SimpleBigQueryV
     view_query_template=REVOCATION_MATRIX_DISTRIBUTION_BY_RACE_COMPARISON_QUERY_TEMPLATE,
     description=REVOCATION_MATRIX_DISTRIBUTION_BY_RACE_COMPARISON_DESCRIPTION,
     view_dataset=state_dataset_config.DASHBOARD_VIEWS_DATASET,
-    view=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_VIEW_BUILDER.view_id
+    view=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_VIEW_BUILDER.view_id,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         REVOCATION_MATRIX_DISTRIBUTION_BY_RACE_COMPARISON_VIEW_BUILDER.build_and_print()

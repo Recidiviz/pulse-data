@@ -17,41 +17,44 @@
 
 """Converts an ingest_info proto StateSupervisionViolation to a
 persistence entity."""
-from recidiviz.common.constants.state.state_supervision_violation import \
-    StateSupervisionViolationType
+from recidiviz.common.constants.state.state_supervision_violation import (
+    StateSupervisionViolationType,
+)
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.common.str_field_utils import parse_bool, parse_date, normalize
 
 from recidiviz.ingest.models.ingest_info_pb2 import StateSupervisionViolation
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.utils.converter_utils import \
-    parse_region_code_with_override, parse_external_id, fn
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import \
-    EnumMappings
+from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
+    parse_region_code_with_override,
+    parse_external_id,
+    fn,
+)
+from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
 
 
 def copy_fields_to_builder(
-        supervision_violation_builder:
-        entities.StateSupervisionViolation.Builder,
-        proto: StateSupervisionViolation,
-        metadata: IngestMetadata) -> None:
+    supervision_violation_builder: entities.StateSupervisionViolation.Builder,
+    proto: StateSupervisionViolation,
+    metadata: IngestMetadata,
+) -> None:
     """Converts an ingest_info proto StateSupervisionViolation to a
     persistence entity."""
     new = supervision_violation_builder
 
     enum_fields = {
-        'violation_type': StateSupervisionViolationType,
+        "violation_type": StateSupervisionViolationType,
     }
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 
     # enum values
     new.violation_type = enum_mappings.get(StateSupervisionViolationType)
-    new.violation_type_raw_text = fn(normalize, 'violation_type', proto)
+    new.violation_type_raw_text = fn(normalize, "violation_type", proto)
 
     # 1-to-1 mappings
-    new.external_id = fn(parse_external_id, 'state_supervision_violation_id', proto)
-    new.violation_date = fn(parse_date, 'violation_date', proto)
-    new.state_code = parse_region_code_with_override(proto, 'state_code', metadata)
-    new.is_violent = fn(parse_bool, 'is_violent', proto)
-    new.is_sex_offense = fn(parse_bool, 'is_sex_offense', proto)
-    new.violated_conditions = fn(normalize, 'violated_conditions', proto)
+    new.external_id = fn(parse_external_id, "state_supervision_violation_id", proto)
+    new.violation_date = fn(parse_date, "violation_date", proto)
+    new.state_code = parse_region_code_with_override(proto, "state_code", metadata)
+    new.is_violent = fn(parse_bool, "is_violent", proto)
+    new.is_sex_offense = fn(parse_bool, "is_sex_offense", proto)
+    new.violated_conditions = fn(normalize, "violated_conditions", proto)

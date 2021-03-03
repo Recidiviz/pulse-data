@@ -19,34 +19,43 @@ import os
 import unittest
 from unittest.mock import patch
 
-from recidiviz.calculator.modeling.population_projection.simulations.super_simulation.super_simulation_factory import \
-    SuperSimulationFactory
-from recidiviz.tests.calculator.modeling.population_projection.simulation_objects.super_simulation_test \
-    import mock_load_table_from_big_query_macro, mock_load_table_from_big_query_micro
+from recidiviz.calculator.modeling.population_projection.simulations.super_simulation.super_simulation_factory import (
+    SuperSimulationFactory,
+)
+from recidiviz.tests.calculator.modeling.population_projection.simulation_objects.super_simulation_test import (
+    mock_load_table_from_big_query_macro,
+    mock_load_table_from_big_query_micro,
+)
 
 
 def get_inputs_path(file_name: str) -> str:
-    return os.path.join(os.path.dirname(__file__), '../test_configurations', file_name)
+    return os.path.join(os.path.dirname(__file__), "../test_configurations", file_name)
 
 
 class TestSuperSimulationFactory(unittest.TestCase):
     """Tests the SuperSimulationFactory works correctly."""
 
-    @patch('recidiviz.calculator.modeling.population_projection.spark_bq_utils.load_spark_table_from_big_query',
-           mock_load_table_from_big_query_macro)
+    @patch(
+        "recidiviz.calculator.modeling.population_projection.spark_bq_utils.load_spark_table_from_big_query",
+        mock_load_table_from_big_query_macro,
+    )
     def test_build_super_simulation_macrosim(self) -> None:
-        macrosim = SuperSimulationFactory.build_super_simulation(get_inputs_path(
-            'super_simulation_data_ingest.yaml'))
+        macrosim = SuperSimulationFactory.build_super_simulation(
+            get_inputs_path("super_simulation_data_ingest.yaml")
+        )
         self.assertFalse(macrosim.initializer.microsim)
         self.assertFalse(macrosim.simulator.microsim)
         self.assertFalse(macrosim.validator.microsim)
         self.assertFalse(macrosim.exporter.microsim)
 
-    @patch('recidiviz.calculator.modeling.population_projection.ignite_bq_utils.load_ignite_table_from_big_query',
-           mock_load_table_from_big_query_micro)
+    @patch(
+        "recidiviz.calculator.modeling.population_projection.ignite_bq_utils.load_ignite_table_from_big_query",
+        mock_load_table_from_big_query_micro,
+    )
     def test_build_super_simulation_microsim(self) -> None:
-        microsim = SuperSimulationFactory.build_super_simulation(get_inputs_path(
-            'super_simulation_microsim_model_inputs.yaml'))
+        microsim = SuperSimulationFactory.build_super_simulation(
+            get_inputs_path("super_simulation_microsim_model_inputs.yaml")
+        )
         self.assertTrue(microsim.initializer.microsim)
         self.assertTrue(microsim.simulator.microsim)
         self.assertTrue(microsim.validator.microsim)
@@ -54,21 +63,26 @@ class TestSuperSimulationFactory(unittest.TestCase):
 
     def test_invalid_yaml_configs(self) -> None:
         with self.assertRaises(ValueError):
-            SuperSimulationFactory.build_super_simulation(get_inputs_path(
-                'super_simulation_invalid_reference_date.yaml'))
+            SuperSimulationFactory.build_super_simulation(
+                get_inputs_path("super_simulation_invalid_reference_date.yaml")
+            )
 
         with self.assertRaises(ValueError):
-            SuperSimulationFactory.build_super_simulation(get_inputs_path(
-                'super_simulation_missing_inputs.yaml'))
+            SuperSimulationFactory.build_super_simulation(
+                get_inputs_path("super_simulation_missing_inputs.yaml")
+            )
 
         with self.assertRaises(ValueError):
-            SuperSimulationFactory.build_super_simulation(get_inputs_path(
-                'super_simulation_unexpected_inputs.yaml'))
+            SuperSimulationFactory.build_super_simulation(
+                get_inputs_path("super_simulation_unexpected_inputs.yaml")
+            )
 
         with self.assertRaises(ValueError):
-            SuperSimulationFactory.build_super_simulation(get_inputs_path(
-                'super_simulation_extra_data_inputs.yaml'))
+            SuperSimulationFactory.build_super_simulation(
+                get_inputs_path("super_simulation_extra_data_inputs.yaml")
+            )
 
         with self.assertRaises(ValueError):
-            SuperSimulationFactory.build_super_simulation(get_inputs_path(
-                'super_simulation_extra_user_inputs.yaml'))
+            SuperSimulationFactory.build_super_simulation(
+                get_inputs_path("super_simulation_extra_user_inputs.yaml")
+            )

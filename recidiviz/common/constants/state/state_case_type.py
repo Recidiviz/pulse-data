@@ -18,8 +18,7 @@
 """Constants related to a StateSupervisionCaseTypeEntry entity."""
 from enum import unique
 
-import recidiviz.common.constants.state.enum_canonical_strings as \
-    state_enum_strings
+import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
@@ -31,8 +30,12 @@ class StateSupervisionCaseType(EntityEnum, metaclass=EntityEnumMeta):
     DRUG_COURT = state_enum_strings.state_supervision_case_type_drug_court
     FAMILY_COURT = state_enum_strings.state_supervision_case_type_family_court
     GENERAL = state_enum_strings.state_supervision_case_type_general
-    MENTAL_HEALTH_COURT = state_enum_strings.state_supervision_case_type_mental_health_court
-    SERIOUS_MENTAL_ILLNESS = state_enum_strings.state_supervision_case_type_serious_mental_illness
+    MENTAL_HEALTH_COURT = (
+        state_enum_strings.state_supervision_case_type_mental_health_court
+    )
+    SERIOUS_MENTAL_ILLNESS = (
+        state_enum_strings.state_supervision_case_type_serious_mental_illness
+    )
     SEX_OFFENSE = state_enum_strings.state_supervision_case_type_sex_offense
     VETERANS_COURT = state_enum_strings.state_supervision_case_type_veterans_court
 
@@ -42,13 +45,13 @@ class StateSupervisionCaseType(EntityEnum, metaclass=EntityEnumMeta):
 
 
 _STATE_CASE_TYPE_MAP = {
-    'ALCOHOL DRUG': StateSupervisionCaseType.ALCOHOL_DRUG,
-    'DOMESTIC VIOLENCE': StateSupervisionCaseType.DOMESTIC_VIOLENCE,
-    'DRUG COURT': StateSupervisionCaseType.DRUG_COURT,
-    'FAMILY COURT': StateSupervisionCaseType.FAMILY_COURT,
-    'GENERAL': StateSupervisionCaseType.GENERAL,
-    'MENTAL HEALTH COURT': StateSupervisionCaseType.MENTAL_HEALTH_COURT,
-    'SERIOUS MENTAL ILLNESS': StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS,
-    'SEX OFFENSE': StateSupervisionCaseType.SEX_OFFENSE,
-    'VETERANS COURT': StateSupervisionCaseType.VETERANS_COURT,
+    "ALCOHOL DRUG": StateSupervisionCaseType.ALCOHOL_DRUG,
+    "DOMESTIC VIOLENCE": StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+    "DRUG COURT": StateSupervisionCaseType.DRUG_COURT,
+    "FAMILY COURT": StateSupervisionCaseType.FAMILY_COURT,
+    "GENERAL": StateSupervisionCaseType.GENERAL,
+    "MENTAL HEALTH COURT": StateSupervisionCaseType.MENTAL_HEALTH_COURT,
+    "SERIOUS MENTAL ILLNESS": StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS,
+    "SEX OFFENSE": StateSupervisionCaseType.SEX_OFFENSE,
+    "VETERANS COURT": StateSupervisionCaseType.VETERANS_COURT,
 }

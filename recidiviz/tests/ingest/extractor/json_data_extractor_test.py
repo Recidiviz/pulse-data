@@ -22,119 +22,125 @@ from recidiviz.ingest.extractor.json_data_extractor import JsonDataExtractor
 from recidiviz.ingest.models.ingest_info import Booking, Charge, IngestInfo
 from recidiviz.tests.ingest import fixtures
 
-_JT_PERSON = fixtures.as_dict('extractor', 'jailtracker_person.json')
-_JT_BOOKING = fixtures.as_dict('extractor', 'jailtracker_booking.json')
-_PERSON_WITH_CHARGES = fixtures.as_dict('extractor', 'person_with_charges.json')
-_PERSON_WITH_HOLDS = fixtures.as_dict('extractor', 'person_with_holds.json')
-_SKIP_EMPTY = fixtures.as_dict('extractor', 'skip_empty.json')
+_JT_PERSON = fixtures.as_dict("extractor", "jailtracker_person.json")
+_JT_BOOKING = fixtures.as_dict("extractor", "jailtracker_booking.json")
+_PERSON_WITH_CHARGES = fixtures.as_dict("extractor", "person_with_charges.json")
+_PERSON_WITH_HOLDS = fixtures.as_dict("extractor", "person_with_holds.json")
+_SKIP_EMPTY = fixtures.as_dict("extractor", "skip_empty.json")
 
 
 class DataExtractorJsonTest(unittest.TestCase):
     """Tests for extracting data from JSON."""
 
     def test_jailtracker_person(self):
-        key_mapping_file = 'fixtures/jailtracker_person.yaml'
-        key_mapping_file = os.path.join(os.path.dirname(__file__),
-                                        key_mapping_file)
+        key_mapping_file = "fixtures/jailtracker_person.yaml"
+        key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
         extractor = JsonDataExtractor(key_mapping_file)
 
         expected_result = IngestInfo()
-        expected_result.create_person(person_id='012345',
-                                      birthdate='12/12/0001', age='2018',
-                                      race='WHITE')
+        expected_result.create_person(
+            person_id="012345", birthdate="12/12/0001", age="2018", race="WHITE"
+        )
         result = extractor.extract_and_populate_data(_JT_PERSON)
 
         self.assertEqual(result, expected_result)
 
     def test_jailtracker_booking(self):
-        key_mapping_file = 'fixtures/jailtracker_booking.yaml'
-        key_mapping_file = os.path.join(os.path.dirname(__file__),
-                                        key_mapping_file)
+        key_mapping_file = "fixtures/jailtracker_booking.yaml"
+        key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
 
         extractor = JsonDataExtractor(key_mapping_file)
 
         expected_result = IngestInfo()
         expected_person = expected_result.create_person()
-        expected_person.create_booking(booking_id='123098',
-                                       admission_date='1/1/2001',
-                                       release_date='1/1/2001')
-        expected_person.create_booking(booking_id='123099',
-                                       admission_date='1/1/2002',
-                                       release_date='1/1/2002')
+        expected_person.create_booking(
+            booking_id="123098", admission_date="1/1/2001", release_date="1/1/2001"
+        )
+        expected_person.create_booking(
+            booking_id="123099", admission_date="1/1/2002", release_date="1/1/2002"
+        )
 
         result = extractor.extract_and_populate_data(_JT_BOOKING)
 
         self.assertEqual(result, expected_result)
 
     def test_person_with_charges(self):
-        key_mapping_file = 'fixtures/person_with_charges.yaml'
-        key_mapping_file = os.path.join(os.path.dirname(__file__),
-                                        key_mapping_file)
+        key_mapping_file = "fixtures/person_with_charges.yaml"
+        key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
         extractor = JsonDataExtractor(key_mapping_file)
 
         expected_result = IngestInfo()
-        expected_person = expected_result.create_person(person_id='3245',
-                                                        full_name='AAA AAAB',
-                                                        race='BLACK')
-        booking_1 = expected_person.create_booking(booking_id='324567',
-                                                   admission_date='1/1/1111')
-        booking_1.create_charge(charge_id='345309', name='charge name 1')
-        booking_1.create_charge(charge_id='894303', name='charge name 2')
-        booking_2 = expected_person.create_booking(booking_id='3245',
-                                                   admission_date='2/2/2222')
-        booking_2.create_charge(charge_id='42309', name='charge name 3')
+        expected_person = expected_result.create_person(
+            person_id="3245", full_name="AAA AAAB", race="BLACK"
+        )
+        booking_1 = expected_person.create_booking(
+            booking_id="324567", admission_date="1/1/1111"
+        )
+        booking_1.create_charge(charge_id="345309", name="charge name 1")
+        booking_1.create_charge(charge_id="894303", name="charge name 2")
+        booking_2 = expected_person.create_booking(
+            booking_id="3245", admission_date="2/2/2222"
+        )
+        booking_2.create_charge(charge_id="42309", name="charge name 3")
 
         result = extractor.extract_and_populate_data(_PERSON_WITH_CHARGES)
         self.assertEqual(result, expected_result)
 
     def test_person_with_holds(self):
-        key_mapping_file = 'fixtures/person_with_holds.yaml'
-        key_mapping_file = os.path.join(os.path.dirname(__file__),
-                                        key_mapping_file)
+        key_mapping_file = "fixtures/person_with_holds.yaml"
+        key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
         extractor = JsonDataExtractor(key_mapping_file)
 
         expected_result = IngestInfo()
-        expected_person = expected_result.create_person(person_id='3245',
-                                                        full_name='AAA AAAB',
-                                                        race='BLACK')
-        booking_1 = expected_person.create_booking(booking_id='324567',
-                                                   admission_date='1/1/1111')
-        booking_1.create_hold(hold_id='345309',
-                              jurisdiction_name='jurisdiction name 1')
-        booking_1.create_hold(hold_id='894303',
-                              jurisdiction_name='jurisdiction name 2')
-        booking_2 = expected_person.create_booking(booking_id='3245',
-                                                   admission_date='2/2/2222')
-        booking_2.create_hold(hold_id='42309',
-                              jurisdiction_name='jurisdiction name 3')
+        expected_person = expected_result.create_person(
+            person_id="3245", full_name="AAA AAAB", race="BLACK"
+        )
+        booking_1 = expected_person.create_booking(
+            booking_id="324567", admission_date="1/1/1111"
+        )
+        booking_1.create_hold(hold_id="345309", jurisdiction_name="jurisdiction name 1")
+        booking_1.create_hold(hold_id="894303", jurisdiction_name="jurisdiction name 2")
+        booking_2 = expected_person.create_booking(
+            booking_id="3245", admission_date="2/2/2222"
+        )
+        booking_2.create_hold(hold_id="42309", jurisdiction_name="jurisdiction name 3")
 
         result = extractor.extract_and_populate_data(_PERSON_WITH_HOLDS)
         self.assertEqual(result, expected_result)
 
     def test_skip_empty(self):
-        key_mapping_file = os.path.join(os.path.dirname(__file__),
-                                        'fixtures/skip_empty.yaml')
+        key_mapping_file = os.path.join(
+            os.path.dirname(__file__), "fixtures/skip_empty.yaml"
+        )
         extractor = JsonDataExtractor(key_mapping_file)
 
         expected = IngestInfo()
         expected.create_person(
-            full_name='skip empty',
-            bookings=[Booking(
-                custody_status='in custody',
-                booking_id='1',
-                charges=[Charge(
-                    name="battery",
-                ), Charge(
-                    name="assault",
-                    charge_class='misdemeanor',
-                ), ],
-            ), Booking(
-                booking_id='2',
-                charges=[Charge(
-                    name='robbery',
-                    charge_class='felony',
-                ), ],
-            ), ],
+            full_name="skip empty",
+            bookings=[
+                Booking(
+                    custody_status="in custody",
+                    booking_id="1",
+                    charges=[
+                        Charge(
+                            name="battery",
+                        ),
+                        Charge(
+                            name="assault",
+                            charge_class="misdemeanor",
+                        ),
+                    ],
+                ),
+                Booking(
+                    booking_id="2",
+                    charges=[
+                        Charge(
+                            name="robbery",
+                            charge_class="felony",
+                        ),
+                    ],
+                ),
+            ],
         )
 
         result = extractor.extract_and_populate_data(_SKIP_EMPTY)

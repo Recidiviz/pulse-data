@@ -39,9 +39,10 @@ class CaseTriageInvalidStateException(FlaskException):
 
     def __init__(self, state: str) -> None:
         super().__init__(
-            'invalid_state',
-            f'Attempted to perform action on behalf of state: {state}',
-            HTTPStatus.BAD_REQUEST)
+            "invalid_state",
+            f"Attempted to perform action on behalf of state: {state}",
+            HTTPStatus.BAD_REQUEST,
+        )
 
 
 class CaseTriageSecretForbiddenException(FlaskException):
@@ -50,6 +51,7 @@ class CaseTriageSecretForbiddenException(FlaskException):
 
     def __init__(self) -> None:
         super().__init__(
-            'not_found',
-            'The attempted request failed because the resource was not found.',
-            HTTPStatus.NOT_FOUND)
+            "not_found",
+            "The attempted request failed because the resource was not found.",
+            HTTPStatus.NOT_FOUND,
+        )

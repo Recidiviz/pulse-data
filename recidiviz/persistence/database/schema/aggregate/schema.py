@@ -22,13 +22,18 @@ The below schema uses only generic SQLAlchemy types, and therefore should be
 portable between database implementations.
 """
 
-from sqlalchemy import CheckConstraint, Column, Date, Enum, Integer, String, \
-    UniqueConstraint
+from sqlalchemy import (
+    CheckConstraint,
+    Column,
+    Date,
+    Enum,
+    Integer,
+    String,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import validates
 
-from recidiviz.common.constants.aggregate import (
-    enum_canonical_strings as enum_strings
-)
+from recidiviz.common.constants.aggregate import enum_canonical_strings as enum_strings
 from recidiviz.persistence.database.base_schema import JailsBase
 
 from recidiviz.persistence.database.schema.shared_enums import (
@@ -40,12 +45,14 @@ from recidiviz.persistence.database.schema.shared_enums import (
 # SQLAlchemy enums. Created separately from the tables so they can be shared
 # between the master and historical tables for each entity.
 
-time_granularity = Enum(enum_strings.daily_granularity,
-                        enum_strings.weekly_granularity,
-                        enum_strings.monthly_granularity,
-                        enum_strings.quarterly_granularity,
-                        enum_strings.yearly_granularity,
-                        name='time_granularity')
+time_granularity = Enum(
+    enum_strings.daily_granularity,
+    enum_strings.weekly_granularity,
+    enum_strings.monthly_granularity,
+    enum_strings.quarterly_granularity,
+    enum_strings.yearly_granularity,
+    name="time_granularity",
+)
 
 # Note that we generally don't aggregate any fields in the schemas below.  The
 # fields are a one to one mapping from the column names in the PDF tables from
@@ -61,7 +68,7 @@ class _AggregateTableMixin:
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _AggregateTableMixin:
-            raise Exception('_AggregateTableMixin cannot be instantiated')
+            raise Exception("_AggregateTableMixin cannot be instantiated")
         return super().__new__(cls)
 
     # Use a synthetic primary key and enforce uniqueness over a set of columns
@@ -80,25 +87,24 @@ class _AggregateTableMixin:
     # The expected time between snapshots of data
     report_frequency = Column(time_granularity, nullable=False)
 
-    @validates('fips')
+    @validates("fips")
     def validate_fips(self, _, fips: str) -> str:
         if len(fips) != 5:
             raise ValueError(
-                'FIPS code invalid length: {} characters, should be 5'.format(
-                    len(fips)))
+                "FIPS code invalid length: {} characters, should be 5".format(len(fips))
+            )
         return fips
 
 
 class CaFacilityAggregate(JailsBase, _AggregateTableMixin):
     """CA state-provided aggregate statistics."""
-    __tablename__ = 'ca_facility_aggregate'
+
+    __tablename__ = "ca_facility_aggregate"
     __table_args__ = (
-        UniqueConstraint(
-            'fips', 'facility_name', 'report_date', 'aggregation_window'
-        ),
+        UniqueConstraint("fips", "facility_name", "report_date", "aggregation_window"),
         CheckConstraint(
-            'LENGTH(fips) = 5',
-            name='ca_facility_aggregate_fips_length_check'),
+            "LENGTH(fips) = 5", name="ca_facility_aggregate_fips_length_check"
+        ),
     )
 
     jurisdiction_name = Column(String(255))
@@ -112,12 +118,13 @@ class CaFacilityAggregate(JailsBase, _AggregateTableMixin):
 
 class FlCountyAggregate(JailsBase, _AggregateTableMixin):
     """FL state-provided aggregate statistics."""
-    __tablename__ = 'fl_county_aggregate'
+
+    __tablename__ = "fl_county_aggregate"
     __table_args__ = (
-        UniqueConstraint('fips', 'report_date', 'aggregation_window'),
+        UniqueConstraint("fips", "report_date", "aggregation_window"),
         CheckConstraint(
-            'LENGTH(fips) = 5',
-            name='fl_county_aggregate_fips_length_check'),
+            "LENGTH(fips) = 5", name="fl_county_aggregate_fips_length_check"
+        ),
     )
 
     county_name = Column(String(255), nullable=False)
@@ -135,14 +142,13 @@ class FlFacilityAggregate(JailsBase, _AggregateTableMixin):
     Note: This 2nd FL database table is special because FL reports contain a 2nd
     table for Pretrial information by Facility.
     """
-    __tablename__ = 'fl_facility_aggregate'
+
+    __tablename__ = "fl_facility_aggregate"
     __table_args__ = (
-        UniqueConstraint(
-            'fips', 'facility_name', 'report_date', 'aggregation_window'
-        ),
+        UniqueConstraint("fips", "facility_name", "report_date", "aggregation_window"),
         CheckConstraint(
-            'LENGTH(fips) = 5',
-            name='fl_facility_aggregate_fips_length_check'),
+            "LENGTH(fips) = 5", name="fl_facility_aggregate_fips_length_check"
+        ),
     )
 
     facility_name = Column(String(255), nullable=False)
@@ -153,12 +159,13 @@ class FlFacilityAggregate(JailsBase, _AggregateTableMixin):
 
 class GaCountyAggregate(JailsBase, _AggregateTableMixin):
     """GA state-provided aggregate statistics."""
-    __tablename__ = 'ga_county_aggregate'
+
+    __tablename__ = "ga_county_aggregate"
     __table_args__ = (
-        UniqueConstraint('fips', 'report_date', 'aggregation_window'),
+        UniqueConstraint("fips", "report_date", "aggregation_window"),
         CheckConstraint(
-            'LENGTH(fips) = 5',
-            name='ga_county_aggregate_fips_length_check'),
+            "LENGTH(fips) = 5", name="ga_county_aggregate_fips_length_check"
+        ),
     )
 
     county_name = Column(String(255), nullable=False)
@@ -173,14 +180,13 @@ class GaCountyAggregate(JailsBase, _AggregateTableMixin):
 
 class HiFacilityAggregate(JailsBase, _AggregateTableMixin):
     """HI state-provided aggregate statistics."""
-    __tablename__ = 'hi_facility_aggregate'
+
+    __tablename__ = "hi_facility_aggregate"
     __table_args__ = (
-        UniqueConstraint(
-            'fips', 'facility_name', 'report_date', 'aggregation_window'
-        ),
+        UniqueConstraint("fips", "facility_name", "report_date", "aggregation_window"),
         CheckConstraint(
-            'LENGTH(fips) = 5',
-            name='hi_facility_aggregate_fips_length_check'),
+            "LENGTH(fips) = 5", name="hi_facility_aggregate_fips_length_check"
+        ),
     )
 
     facility_name = Column(String(255), nullable=False)
@@ -219,14 +225,13 @@ class HiFacilityAggregate(JailsBase, _AggregateTableMixin):
 
 class KyFacilityAggregate(JailsBase, _AggregateTableMixin):
     """KY state-provided aggregate statistics."""
-    __tablename__ = 'ky_facility_aggregate'
+
+    __tablename__ = "ky_facility_aggregate"
     __table_args__ = (
-        UniqueConstraint(
-            'fips', 'facility_name', 'report_date', 'aggregation_window'
-        ),
+        UniqueConstraint("fips", "facility_name", "report_date", "aggregation_window"),
         CheckConstraint(
-            'LENGTH(fips) = 5',
-            name='ky_facility_aggregate_fips_length_check'),
+            "LENGTH(fips) = 5", name="ky_facility_aggregate_fips_length_check"
+        ),
     )
 
     facility_name = Column(String(255), nullable=False)
@@ -258,14 +263,13 @@ class KyFacilityAggregate(JailsBase, _AggregateTableMixin):
 
 class NyFacilityAggregate(JailsBase, _AggregateTableMixin):
     """NY state-provided aggregate statistics."""
-    __tablename__ = 'ny_facility_aggregate'
+
+    __tablename__ = "ny_facility_aggregate"
     __table_args__ = (
-        UniqueConstraint(
-            'fips', 'facility_name', 'report_date', 'aggregation_window'
-        ),
+        UniqueConstraint("fips", "facility_name", "report_date", "aggregation_window"),
         CheckConstraint(
-            'LENGTH(fips) = 5',
-            name='ny_facility_aggregate_fips_length_check'),
+            "LENGTH(fips) = 5", name="ny_facility_aggregate_fips_length_check"
+        ),
     )
 
     facility_name = Column(String(255), nullable=False)
@@ -285,14 +289,13 @@ class NyFacilityAggregate(JailsBase, _AggregateTableMixin):
 
 class TxCountyAggregate(JailsBase, _AggregateTableMixin):
     """TX state-provided aggregate statistics."""
-    __tablename__ = 'tx_county_aggregate'
+
+    __tablename__ = "tx_county_aggregate"
     __table_args__ = (
-        UniqueConstraint(
-            'fips', 'facility_name', 'report_date', 'aggregation_window'
-        ),
+        UniqueConstraint("fips", "facility_name", "report_date", "aggregation_window"),
         CheckConstraint(
-            'LENGTH(fips) = 5',
-            name='tx_county_aggregate_fips_length_check'),
+            "LENGTH(fips) = 5", name="tx_county_aggregate_fips_length_check"
+        ),
     )
 
     facility_name = Column(String(255), nullable=False)
@@ -328,12 +331,13 @@ class TxCountyAggregate(JailsBase, _AggregateTableMixin):
 
 class DcFacilityAggregate(JailsBase, _AggregateTableMixin):
     """DC state-provided aggregate statistics."""
-    __tablename__ = 'dc_facility_aggregate'
+
+    __tablename__ = "dc_facility_aggregate"
     __table_args__ = (
-        UniqueConstraint('fips', 'report_date', 'aggregation_window'),
+        UniqueConstraint("fips", "report_date", "aggregation_window"),
         CheckConstraint(
-            'LENGTH(fips) = 5',
-            name='dc_facility_aggregate_fips_length_check'),
+            "LENGTH(fips) = 5", name="dc_facility_aggregate_fips_length_check"
+        ),
     )
 
     facility_name = Column(String(255), nullable=False)
@@ -354,14 +358,13 @@ class DcFacilityAggregate(JailsBase, _AggregateTableMixin):
 
 class PaFacilityPopAggregate(JailsBase, _AggregateTableMixin):
     """PA state-provided aggregate population statistics."""
-    __tablename__ = 'pa_facility_pop_aggregate'
+
+    __tablename__ = "pa_facility_pop_aggregate"
     __table_args__ = (
-        UniqueConstraint(
-            'fips', 'facility_name', 'report_date', 'aggregation_window'
-        ),
+        UniqueConstraint("fips", "facility_name", "report_date", "aggregation_window"),
         CheckConstraint(
-            'LENGTH(fips) = 5',
-            name='pa_facility_pop_aggregate_fips_length_check'),
+            "LENGTH(fips) = 5", name="pa_facility_pop_aggregate_fips_length_check"
+        ),
     )
 
     facility_name = Column(String(255), nullable=False)
@@ -376,14 +379,14 @@ class PaFacilityPopAggregate(JailsBase, _AggregateTableMixin):
 
 class PaCountyPreSentencedAggregate(JailsBase, _AggregateTableMixin):
     """PA state-provided pre-sentenced statistics."""
-    __tablename__ = 'pa_county_pre_sentenced_aggregate'
+
+    __tablename__ = "pa_county_pre_sentenced_aggregate"
     __table_args__ = (
-        UniqueConstraint(
-            'fips', 'report_date', 'aggregation_window'
-        ),
+        UniqueConstraint("fips", "report_date", "aggregation_window"),
         CheckConstraint(
-            'LENGTH(fips) = 5',
-            name='pa_county_pre_sentenced_aggregate_fips_length_check'),
+            "LENGTH(fips) = 5",
+            name="pa_county_pre_sentenced_aggregate_fips_length_check",
+        ),
     )
 
     county_name = Column(String(255), nullable=False)
@@ -392,14 +395,13 @@ class PaCountyPreSentencedAggregate(JailsBase, _AggregateTableMixin):
 
 class TnFacilityAggregate(JailsBase, _AggregateTableMixin):
     """TN state-provided aggregate population statistics."""
-    __tablename__ = 'tn_facility_aggregate'
+
+    __tablename__ = "tn_facility_aggregate"
     __table_args__ = (
-        UniqueConstraint(
-            'fips', 'facility_name', 'report_date', 'aggregation_window'
-        ),
+        UniqueConstraint("fips", "facility_name", "report_date", "aggregation_window"),
         CheckConstraint(
-            'LENGTH(fips) = 5',
-            name='tn_facility_aggregate_fips_length_check'),
+            "LENGTH(fips) = 5", name="tn_facility_aggregate_fips_length_check"
+        ),
     )
 
     facility_name = Column(String(255), nullable=False)
@@ -416,14 +418,13 @@ class TnFacilityAggregate(JailsBase, _AggregateTableMixin):
 
 class TnFacilityFemaleAggregate(JailsBase, _AggregateTableMixin):
     """TN state-provided aggregate population statistics."""
-    __tablename__ = 'tn_facility_female_aggregate'
+
+    __tablename__ = "tn_facility_female_aggregate"
     __table_args__ = (
-        UniqueConstraint(
-            'fips', 'facility_name', 'report_date', 'aggregation_window'
-        ),
+        UniqueConstraint("fips", "facility_name", "report_date", "aggregation_window"),
         CheckConstraint(
-            'LENGTH(fips) = 5',
-            name='tn_facility_aggregate_fips_length_check'),
+            "LENGTH(fips) = 5", name="tn_facility_aggregate_fips_length_check"
+        ),
     )
 
     facility_name = Column(String(255), nullable=False)
@@ -439,15 +440,11 @@ class TnFacilityFemaleAggregate(JailsBase, _AggregateTableMixin):
 
 
 class SingleCountAggregate(JailsBase):
-    __tablename__ = 'single_count_aggregate'
+    __tablename__ = "single_count_aggregate"
 
     __table_args__ = (
-        UniqueConstraint(
-            'jid', 'date', 'ethnicity', 'gender', 'race'
-        ),
-        CheckConstraint(
-            'LENGTH(jid) = 8',
-            name='single_count_jid_length_check'),
+        UniqueConstraint("jid", "date", "ethnicity", "gender", "race"),
+        CheckConstraint("LENGTH(jid) = 8", name="single_count_jid_length_check"),
     )
 
     record_id = Column(Integer, primary_key=True)

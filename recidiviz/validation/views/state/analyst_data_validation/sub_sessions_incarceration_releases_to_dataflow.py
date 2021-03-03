@@ -17,17 +17,17 @@
 
 """A view which provides an annual comparison between incarceration session ends and dataflow releases."""
 
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
-SUB_SESSIONS_INCARCERATION_RELEASES_TO_DATAFLOW_VIEW_NAME = \
-    'sub_sessions_incarceration_releases_to_dataflow'
+SUB_SESSIONS_INCARCERATION_RELEASES_TO_DATAFLOW_VIEW_NAME = (
+    "sub_sessions_incarceration_releases_to_dataflow"
+)
 
-SUB_SESSIONS_INCARCERATION_RELEASES_TO_DATAFLOW_DESCRIPTION = \
-    """
+SUB_SESSIONS_INCARCERATION_RELEASES_TO_DATAFLOW_DESCRIPTION = """
     A view which provides an annual comparison between incarceration session ends and dataflow releases. One
     comparison is session ends vs sessions_with_end_reason (the latter being a subset of the former), which can be used 
     to identify the % of sessions with end reasons. Another comparison is dataflow_releases vs session_releases (the 
@@ -35,8 +35,7 @@ SUB_SESSIONS_INCARCERATION_RELEASES_TO_DATAFLOW_DESCRIPTION = \
     sessions
     """
 
-SUB_SESSIONS_INCARCERATION_RELEASES_TO_DATAFLOW_QUERY_TEMPLATE = \
-    """
+SUB_SESSIONS_INCARCERATION_RELEASES_TO_DATAFLOW_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT 
         state_code AS region_code,
@@ -61,6 +60,6 @@ SUB_SESSIONS_INCARCERATION_RELEASES_TO_DATAFLOW_VIEW_BUILDER = SimpleBigQueryVie
     validation_views_dataset=dataset_config.VIEWS_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         SUB_SESSIONS_INCARCERATION_RELEASES_TO_DATAFLOW_VIEW_BUILDER.build_and_print()

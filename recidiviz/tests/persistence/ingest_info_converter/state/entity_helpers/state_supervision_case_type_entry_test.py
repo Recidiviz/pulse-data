@@ -18,13 +18,13 @@
 
 import unittest
 
-from recidiviz.common.constants.state.state_case_type import \
-    StateSupervisionCaseType
+from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.state.entity_helpers import \
-     state_supervision_case_type_entry
+from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
+    state_supervision_case_type_entry,
+)
 
 _EMPTY_METADATA = IngestMetadata.new_with_defaults()
 
@@ -35,20 +35,22 @@ class StateSupervisionCaseTypeEntryTest(unittest.TestCase):
     def testParseStateSupervisionViolation(self):
         # Arrange
         ingest_case_type_entry = ingest_info_pb2.StateSupervisionCaseTypeEntry(
-            state_supervision_case_type_entry_id='entry_id',
-            state_code='state',
-            case_type='DOMESTIC_VIOLENCE',
+            state_supervision_case_type_entry_id="entry_id",
+            state_code="state",
+            case_type="DOMESTIC_VIOLENCE",
         )
 
         # Act
         result = state_supervision_case_type_entry.convert(
-            ingest_case_type_entry, _EMPTY_METADATA)
+            ingest_case_type_entry, _EMPTY_METADATA
+        )
 
         # Assert
         expected_result = entities.StateSupervisionCaseTypeEntry(
-            state_code='STATE',
+            state_code="STATE",
             case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
-            case_type_raw_text='DOMESTIC_VIOLENCE',
-            external_id='ENTRY_ID')
+            case_type_raw_text="DOMESTIC_VIOLENCE",
+            external_id="ENTRY_ID",
+        )
 
         self.assertEqual(result, expected_result)

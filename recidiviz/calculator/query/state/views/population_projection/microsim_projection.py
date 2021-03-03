@@ -15,19 +15,19 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Microsimulation projection output"""
-# pylint: disable=line-too-long
+
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-MICROSIM_PROJECTION_VIEW_NAME = 'microsim_projection'
+MICROSIM_PROJECTION_VIEW_NAME = "microsim_projection"
 
-MICROSIM_PROJECTION_VIEW_DESCRIPTION = \
+MICROSIM_PROJECTION_VIEW_DESCRIPTION = (
     """"The projected population for the simulated policy and the baseline"""
+)
 
-MICROSIM_PROJECTION_QUERY_TEMPLATE = \
-    """
+MICROSIM_PROJECTION_QUERY_TEMPLATE = """
     /* {description} */
     WITH historical_dates AS (
       SELECT *
@@ -136,9 +136,9 @@ MICROSIM_PROJECTION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
     population_projection_dataset=dataset_config.POPULATION_PROJECTION_DATASET,
     population_projection_output_dataset=dataset_config.POPULATION_PROJECTION_OUTPUT_DATASET,
-    should_materialize=False
+    should_materialize=False,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         MICROSIM_PROJECTION_VIEW_BUILDER.build_and_print()

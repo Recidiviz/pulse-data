@@ -32,10 +32,13 @@ from recidiviz.utils import structured_logging
 DAG_WALKER_MAX_WORKERS = 10
 
 DagKey = Tuple[str, str]
-ViewResultT = TypeVar('ViewResultT')
+ViewResultT = TypeVar("ViewResultT")
 ParentResultsT = Dict[BigQueryView, ViewResultT]
 
+
 class BigQueryViewDagNode:
+    """A single node in a BigQuery view DAG, i.e. a single view with relationships to other views."""
+
     def __init__(self, view: BigQueryView, is_root: bool = False):
         self.view = view
         self.child_node_keys: Set[DagKey] = set()
@@ -50,10 +53,12 @@ class BigQueryViewDagNode:
     def parent_keys(self) -> Set[DagKey]:
         parent_keys: Set[DagKey] = set()
 
-        candidates = re.findall(r'`[\w-]*\.([\w-]*)\.([\w-]*)`', self.view.view_query)
+        candidates = re.findall(r"`[\w-]*\.([\w-]*)\.([\w-]*)`", self.view.view_query)
         for candidate in candidates:
             if candidate[1].endswith(MATERIALIZED_SUFFIX):
-                parent_keys.add((candidate[0], candidate[1][:-len(MATERIALIZED_SUFFIX)]))
+                parent_keys.add(
+                    (candidate[0], candidate[1][: -len(MATERIALIZED_SUFFIX)])
+                )
             else:
                 parent_keys.add(candidate)
 
@@ -106,13 +111,14 @@ class BigQueryViewDagWalker:
 
             for child_key in self.nodes_by_key[key].child_node_keys:
                 if child_key in path:
-                    raise ValueError(f'Detected cycle in graph reachable from {start_key}: {path}')
+                    raise ValueError(
+                        f"Detected cycle in graph reachable from {start_key}: {path}"
+                    )
 
-                paths_to_explore.append((child_key, path+[child_key]))
+                paths_to_explore.append((child_key, path + [child_key]))
 
     def process_dag(
-            self,
-            view_process_fn: Callable[[BigQueryView, ParentResultsT], ViewResultT]
+        self, view_process_fn: Callable[[BigQueryView, ParentResultsT], ViewResultT]
     ) -> Dict[BigQueryView, ViewResultT]:
         """This method provides a level-by-level "breadth-first" traversal of a DAG and executes
         view_process_fn on every node in level order."""
@@ -121,18 +127,25 @@ class BigQueryViewDagWalker:
         result: Dict[BigQueryView, ViewResultT] = {}
         with futures.ThreadPoolExecutor(max_workers=DAG_WALKER_MAX_WORKERS) as executor:
             future_to_view = {
-                executor.submit(structured_logging.with_context(view_process_fn), node.view, {}): node
+                executor.submit(
+                    structured_logging.with_context(view_process_fn), node.view, {}
+                ): node
                 for node in self.roots
             }
             processing = {node.dag_key for node in future_to_view.values()}
             while processing:
-                completed, _not_completed = futures.wait(future_to_view.keys(), return_when='FIRST_COMPLETED')
+                completed, _not_completed = futures.wait(
+                    future_to_view.keys(), return_when="FIRST_COMPLETED"
+                )
                 for future in completed:
                     node = future_to_view.pop(future)
                     try:
                         view_result: ViewResultT = future.result()
                     except Exception as e:
-                        logging.error('Exception found fetching result for view_key: %s', node.dag_key)
+                        logging.error(
+                            "Exception found fetching result for view_key: %s",
+                            node.dag_key,
+                        )
                         raise e
                     result[node.view] = view_result
                     processing.remove(node.dag_key)
@@ -142,23 +155,29 @@ class BigQueryViewDagWalker:
                         child_node = self.nodes_by_key[child_key]
                         if child_node in processed or child_node in queue:
                             raise ValueError(
-                                f'Unexpected situation where child node has already been processed: {child_key}')
+                                f"Unexpected situation where child node has already been processed: {child_key}"
+                            )
                         if child_node in processing:
                             continue
 
                         parents_all_processed = True
                         parent_results = {}
                         for parent_key in child_node.parent_keys:
-                            if parent_key in self.nodes_by_key and parent_key not in processed:
+                            if (
+                                parent_key in self.nodes_by_key
+                                and parent_key not in processed
+                            ):
                                 parents_all_processed = False
                                 break
                             if parent_key in self.nodes_by_key:
                                 parent_view = self.nodes_by_key[parent_key].view
                                 parent_results[parent_view] = result[parent_view]
                         if parents_all_processed:
-                            future = executor.submit(structured_logging.with_context(view_process_fn),
-                                                     child_node.view,
-                                                     parent_results)
+                            future = executor.submit(
+                                structured_logging.with_context(view_process_fn),
+                                child_node.view,
+                                parent_results,
+                            )
                             future_to_view[future] = child_node
                             processing.add(child_node.dag_key)
         return result

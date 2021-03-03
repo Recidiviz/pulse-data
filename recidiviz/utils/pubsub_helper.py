@@ -68,25 +68,25 @@ def get_topic_path(scrape_key, pubsub_type):
     return get_publisher().topic_path(
         metadata.project_id(),
         "v1.{}.{}-{}".format(
-            pubsub_type, scrape_key.region_code, scrape_key.scrape_type))
+            pubsub_type, scrape_key.region_code, scrape_key.scrape_type
+        ),
+    )
 
 
 def get_subscription_path(scrape_key, pubsub_type):
     return get_subscriber().subscription_path(
         metadata.project_id(),
         "v1.{}.{}-{}".format(
-            pubsub_type, scrape_key.region_code, scrape_key.scrape_type))
+            pubsub_type, scrape_key.region_code, scrape_key.scrape_type
+        ),
+    )
 
 
 def create_topic_and_subscription(scrape_key, pubsub_type):
     topic_path = get_topic_path(scrape_key, pubsub_type)
     try:
         logging.info("Creating pubsub topic: '%s'", topic_path)
-        retry_grpc(
-            NUM_GRPC_RETRIES,
-            get_publisher().create_topic,
-            name=topic_path
-        )
+        retry_grpc(NUM_GRPC_RETRIES, get_publisher().create_topic, name=topic_path)
     except exceptions.AlreadyExists:
         logging.info("Topic already exists")
 
@@ -99,8 +99,9 @@ def create_topic_and_subscription(scrape_key, pubsub_type):
         retry_grpc(
             NUM_GRPC_RETRIES,
             get_subscriber().create_subscription,
-            name=subscription_path, topic=topic_path,
-            ack_deadline_seconds=ACK_DEADLINE_SECONDS
+            name=subscription_path,
+            topic=topic_path,
+            ack_deadline_seconds=ACK_DEADLINE_SECONDS,
         )
     except exceptions.AlreadyExists:
         logging.info("Subscription already exists")
@@ -110,8 +111,7 @@ def retry_with_create(scrape_key, fn, pubsub_type):
     try:
         result = retry_grpc(NUM_GRPC_RETRIES, fn)
     except exceptions.NotFound:
-        create_topic_and_subscription(
-            scrape_key, pubsub_type=pubsub_type)
+        create_topic_and_subscription(scrape_key, pubsub_type=pubsub_type)
         result = retry_grpc(NUM_GRPC_RETRIES, fn)
     return result
 
@@ -121,7 +121,8 @@ def purge(scrape_key: ScrapeKey, pubsub_type: str):
     # once available on the emulator.
     try:
         get_subscriber().delete_subscription(
-            subscription=get_subscription_path(scrape_key, pubsub_type=pubsub_type))
+            subscription=get_subscription_path(scrape_key, pubsub_type=pubsub_type)
+        )
     except exceptions.NotFound:
         pass
 
@@ -132,4 +133,4 @@ def publish_message_to_topic(message: str, topic: str):
     logging.info("Publishing message: '%s' to topic: %s", message, topic)
     publisher = get_publisher()
     topic_path = publisher.topic_path(metadata.project_id(), topic)
-    publisher.publish(topic_path, data=message.encode('utf-8'))
+    publisher.publish(topic_path, data=message.encode("utf-8"))

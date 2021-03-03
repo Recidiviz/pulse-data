@@ -18,24 +18,22 @@
 """Constants related to a StateProgramAssignment."""
 from enum import unique
 
-import recidiviz.common.constants.state.enum_canonical_strings as \
-    state_enum_strings
+import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
 from recidiviz.common.constants import enum_canonical_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
 @unique
-class StateProgramAssignmentParticipationStatus(
-        EntityEnum, metaclass=EntityEnumMeta):
-    DENIED = state_enum_strings.\
-        state_program_assignment_participation_status_denied
-    DISCHARGED = state_enum_strings.\
-        state_program_assignment_participation_status_discharged
+class StateProgramAssignmentParticipationStatus(EntityEnum, metaclass=EntityEnumMeta):
+    DENIED = state_enum_strings.state_program_assignment_participation_status_denied
+    DISCHARGED = (
+        state_enum_strings.state_program_assignment_participation_status_discharged
+    )
     EXTERNAL_UNKNOWN = enum_canonical_strings.external_unknown
-    IN_PROGRESS = state_enum_strings.\
-        state_program_assignment_participation_status_in_progress
-    PENDING = state_enum_strings.\
-        state_program_assignment_participation_status_pending
+    IN_PROGRESS = (
+        state_enum_strings.state_program_assignment_participation_status_in_progress
+    )
+    PENDING = state_enum_strings.state_program_assignment_participation_status_pending
     PRESENT_WITHOUT_INFO = enum_canonical_strings.present_without_info
 
     @staticmethod
@@ -44,34 +42,31 @@ class StateProgramAssignmentParticipationStatus(
 
 
 _STATE_PROGRAM_ASSIGNMENT_PARTICIPATION_STATUS_MAP = {
-    'DENIED': StateProgramAssignmentParticipationStatus.DENIED,
-    'DISCHARGED': StateProgramAssignmentParticipationStatus.DISCHARGED,
-    'EXTERNAL UNKNOWN':
-        StateProgramAssignmentParticipationStatus.EXTERNAL_UNKNOWN,
-    'IN PROGRESS': StateProgramAssignmentParticipationStatus.IN_PROGRESS,
-    'PENDING': StateProgramAssignmentParticipationStatus.PENDING,
-    'PRESENT WITHOUT INFO':
-        StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO,
+    "DENIED": StateProgramAssignmentParticipationStatus.DENIED,
+    "DISCHARGED": StateProgramAssignmentParticipationStatus.DISCHARGED,
+    "EXTERNAL UNKNOWN": StateProgramAssignmentParticipationStatus.EXTERNAL_UNKNOWN,
+    "IN PROGRESS": StateProgramAssignmentParticipationStatus.IN_PROGRESS,
+    "PENDING": StateProgramAssignmentParticipationStatus.PENDING,
+    "PRESENT WITHOUT INFO": StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO,
 }
 
 
 @unique
-class StateProgramAssignmentDischargeReason(
-        EntityEnum, metaclass=EntityEnumMeta):
-    ABSCONDED = state_enum_strings.\
-        state_program_assignment_discharge_reason_absconded
-    ADVERSE_TERMINATION = state_enum_strings.\
-        state_program_assignment_discharge_reason_adverse_termination
-    COMPLETED = state_enum_strings.\
-        state_program_assignment_discharge_reason_completed
+class StateProgramAssignmentDischargeReason(EntityEnum, metaclass=EntityEnumMeta):
+    ABSCONDED = state_enum_strings.state_program_assignment_discharge_reason_absconded
+    ADVERSE_TERMINATION = (
+        state_enum_strings.state_program_assignment_discharge_reason_adverse_termination
+    )
+    COMPLETED = state_enum_strings.state_program_assignment_discharge_reason_completed
     EXTERNAL_UNKNOWN = enum_canonical_strings.external_unknown
     MOVED = state_enum_strings.state_program_assignment_discharge_reason_moved
-    OPTED_OUT = state_enum_strings.\
-        state_program_assignment_discharge_reason_opted_out
-    PROGRAM_TRANSFER = state_enum_strings. \
-        state_program_assignment_discharge_reason_program_transfer
-    REINCARCERATED = state_enum_strings. \
-        state_program_assignment_discharge_reason_reincarcerated
+    OPTED_OUT = state_enum_strings.state_program_assignment_discharge_reason_opted_out
+    PROGRAM_TRANSFER = (
+        state_enum_strings.state_program_assignment_discharge_reason_program_transfer
+    )
+    REINCARCERATED = (
+        state_enum_strings.state_program_assignment_discharge_reason_reincarcerated
+    )
 
     @staticmethod
     def _get_default_map():
@@ -79,14 +74,12 @@ class StateProgramAssignmentDischargeReason(
 
 
 _STATE_PROGRAM_ASSIGNMENT_DISCHARGE_REASON_MAP = {
-    'ABSCONDED': StateProgramAssignmentDischargeReason.ABSCONDED,
-    'ADVERSE TERMINATION':
-        StateProgramAssignmentDischargeReason.ADVERSE_TERMINATION,
-    'COMPLETED': StateProgramAssignmentDischargeReason.COMPLETED,
-    'EXTERNAL UNKNOWN':
-        StateProgramAssignmentDischargeReason.EXTERNAL_UNKNOWN,
-    'MOVED': StateProgramAssignmentDischargeReason.MOVED,
-    'OPTED OUT': StateProgramAssignmentDischargeReason.OPTED_OUT,
-    'PROGRAM TRANSFER': StateProgramAssignmentDischargeReason.PROGRAM_TRANSFER,
-    'REINCARCERATED': StateProgramAssignmentDischargeReason.REINCARCERATED,
+    "ABSCONDED": StateProgramAssignmentDischargeReason.ABSCONDED,
+    "ADVERSE TERMINATION": StateProgramAssignmentDischargeReason.ADVERSE_TERMINATION,
+    "COMPLETED": StateProgramAssignmentDischargeReason.COMPLETED,
+    "EXTERNAL UNKNOWN": StateProgramAssignmentDischargeReason.EXTERNAL_UNKNOWN,
+    "MOVED": StateProgramAssignmentDischargeReason.MOVED,
+    "OPTED OUT": StateProgramAssignmentDischargeReason.OPTED_OUT,
+    "PROGRAM TRANSFER": StateProgramAssignmentDischargeReason.PROGRAM_TRANSFER,
+    "REINCARCERATED": StateProgramAssignmentDischargeReason.REINCARCERATED,
 }

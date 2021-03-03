@@ -15,20 +15,22 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Event based revocations to support various revocation matrix views."""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config, state_specific_query_strings
+from recidiviz.calculator.query.state import (
+    dataset_config,
+    state_specific_query_strings,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-EVENT_BASED_REVOCATIONS_FOR_MATRIX_VIEW_NAME = 'event_based_revocations_for_matrix'
+EVENT_BASED_REVOCATIONS_FOR_MATRIX_VIEW_NAME = "event_based_revocations_for_matrix"
 
 EVENT_BASED_REVOCATIONS_FOR_MATRIX_DESCRIPTION = """
     Event based revocations to support various revocation matrix views
  """
 
-EVENT_BASED_REVOCATIONS_FOR_MATRIX_QUERY_TEMPLATE = \
-    """
+EVENT_BASED_REVOCATIONS_FOR_MATRIX_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT
         state_code,
@@ -66,12 +68,12 @@ EVENT_BASED_REVOCATIONS_FOR_MATRIX_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=EVENT_BASED_REVOCATIONS_FOR_MATRIX_QUERY_TEMPLATE,
     description=EVENT_BASED_REVOCATIONS_FOR_MATRIX_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    state_specific_most_recent_officer_recommendation=
-    state_specific_query_strings.state_specific_officer_recommendation(input_col='most_recent_response_decision'),
-    state_specific_recommended_for_revocation=
-    state_specific_query_strings.state_specific_recommended_for_revocation(),
+    state_specific_most_recent_officer_recommendation=state_specific_query_strings.state_specific_officer_recommendation(
+        input_col="most_recent_response_decision"
+    ),
+    state_specific_recommended_for_revocation=state_specific_query_strings.state_specific_recommended_for_revocation(),
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         EVENT_BASED_REVOCATIONS_FOR_MATRIX_VIEW_BUILDER.build_and_print()

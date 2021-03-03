@@ -65,15 +65,18 @@ def get_secret(secret_id: str) -> Optional[str]:
         logging.warning("Couldn't locate secret: [%s].", secret_id)
         return None
     except Exception:
-        logging.error("Couldn't successfully connect to secret manager to retrieve secret: [%s].",
-                      secret_id, exc_info=True)
+        logging.error(
+            "Couldn't successfully connect to secret manager to retrieve secret: [%s].",
+            secret_id,
+            exc_info=True,
+        )
         return None
 
     if not response or not response.payload or not response.payload.data:
         logging.error("Couldn't retrieve secret: [%s].", secret_id)
         return None
 
-    secret_value = response.payload.data.decode('UTF-8')
+    secret_value = response.payload.data.decode("UTF-8")
     if secret_value is None:
         logging.error("Couldn't decode secret: [%s].", secret_id)
         return None

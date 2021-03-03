@@ -30,7 +30,9 @@ class EnumMappings:
     and the overrides map. Call enum_mappings.get to retrieve the value from
     an enum type."""
 
-    def __init__(self, proto, enum_fields: Mapping[str, EntityEnumMeta], overrides: EnumOverrides):
+    def __init__(
+        self, proto, enum_fields: Mapping[str, EntityEnumMeta], overrides: EnumOverrides
+    ):
         """
         Initializes a mapping from enum fields within a single Entity to enum
         values. If enum fields map to enum values in a different entity, those
@@ -49,7 +51,9 @@ class EnumMappings:
                          parsing functions (e.g. CustodyStatus.parse).
             overrides: the enum overrides mapping.
         """
-        self.parsed_enums_from_original_field: Dict[EntityEnumMeta, Dict[str, EntityEnum]] = dict()
+        self.parsed_enums_from_original_field: Dict[
+            EntityEnumMeta, Dict[str, EntityEnum]
+        ] = dict()
         self.all_parsed_enums: Set[EntityEnum] = set()
 
         for field_name, from_enum in enum_fields.items():
@@ -58,16 +62,20 @@ class EnumMappings:
                 continue
             if isinstance(value, from_enum):
                 default_mapping: Dict[str, EntityEnum] = {}
-                mappings_by_field = self.parsed_enums_from_original_field.get(from_enum, default_mapping)
+                mappings_by_field = self.parsed_enums_from_original_field.get(
+                    from_enum, default_mapping
+                )
                 mappings_by_field[field_name] = value
                 self.parsed_enums_from_original_field[from_enum] = mappings_by_field
             else:
                 self.all_parsed_enums.add(value)
 
-    def get(self,
-            enum_type: EntityEnumMeta,
-            field_name: str = None,
-            default: EntityEnum = None) -> Optional[EntityEnum]:
+    def get(
+        self,
+        enum_type: EntityEnumMeta,
+        field_name: str = None,
+        default: EntityEnum = None,
+    ) -> Optional[EntityEnum]:
         """Returns the exact enum value mapped to the given |enum_type|.
 
         If this instance was instantiated with a map that contains multiple
@@ -85,12 +93,15 @@ class EnumMappings:
                 return field_mappings.get(field_name, None)
             return next(iter(field_mappings.values()), None)
 
-        matching_values = {enum for enum in self.all_parsed_enums if isinstance(enum, enum_type)}
+        matching_values = {
+            enum for enum in self.all_parsed_enums if isinstance(enum, enum_type)
+        }
 
         if not matching_values:
             return default
 
-        multiple_matches_error = ValueError("Found multiple values for enum field %s: %s" %
-                                            (enum_type, matching_values))
+        multiple_matches_error = ValueError(
+            "Found multiple values for enum field %s: %s" % (enum_type, matching_values)
+        )
 
         return one(matching_values, too_long=multiple_matches_error)

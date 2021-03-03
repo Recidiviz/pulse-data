@@ -24,12 +24,13 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
-INCARCERATION_ADMISSION_NULLS_VIEW_NAME = 'incarceration_admission_nulls'
+INCARCERATION_ADMISSION_NULLS_VIEW_NAME = "incarceration_admission_nulls"
 
-INCARCERATION_ADMISSION_NULLS_DESCRIPTION = """ Incarceration admissions with null admission dates """
+INCARCERATION_ADMISSION_NULLS_DESCRIPTION = (
+    """ Incarceration admissions with null admission dates """
+)
 
-INCARCERATION_ADMISSION_NULLS_QUERY_TEMPLATE = \
-    """
+INCARCERATION_ADMISSION_NULLS_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT *, state_code as region_code
     FROM `{project_id}.{state_dataset}.state_incarceration_period`
@@ -46,6 +47,6 @@ INCARCERATION_ADMISSION_NULLS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     state_dataset=state_dataset_config.STATE_BASE_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         INCARCERATION_ADMISSION_NULLS_VIEW_BUILDER.build_and_print()

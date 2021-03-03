@@ -15,10 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Query that generates incarceration periods."""
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import \
-    DirectIngestPreProcessedIngestViewBuilder
-from recidiviz.ingest.direct.regions.us_id.ingest_views.templates_periods import get_all_periods_query_fragment, \
-    PeriodType
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    DirectIngestPreProcessedIngestViewBuilder,
+)
+from recidiviz.ingest.direct.regions.us_id.ingest_views.templates_periods import (
+    get_all_periods_query_fragment,
+    PeriodType,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -41,12 +44,12 @@ WHERE
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
-    region='us_id',
-    ingest_view_name='movement_facility_location_offstat_incarceration_periods',
+    region="us_id",
+    ingest_view_name="movement_facility_location_offstat_incarceration_periods",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols='docno, incrno, start_date, end_date',
+    order_by_cols="docno, incrno, start_date, end_date",
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         VIEW_BUILDER.build_and_print()

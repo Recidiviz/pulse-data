@@ -45,51 +45,64 @@ def get_job_id(pipeline_options: Dict[str, str]) -> str:
         The job_id string of the current pipeline job.
 
     """
-    runner = pipeline_options.get('runner')
+    runner = pipeline_options.get("runner")
 
-    if runner == 'DataflowRunner':
+    if runner == "DataflowRunner":
         # Job is running on Dataflow. Get job_id.
-        project = pipeline_options.get('project')
-        region = pipeline_options.get('region')
-        job_name = pipeline_options.get('job_name')
+        project = pipeline_options.get("project")
+        region = pipeline_options.get("region")
+        job_name = pipeline_options.get("job_name")
 
         if not project:
-            raise ValueError("No project provided in pipeline options: "
-                             f"{pipeline_options}")
+            raise ValueError(
+                "No project provided in pipeline options: " f"{pipeline_options}"
+            )
         if not region:
-            raise ValueError("No region provided in pipeline options: "
-                             f"{pipeline_options}")
+            raise ValueError(
+                "No region provided in pipeline options: " f"{pipeline_options}"
+            )
         if not job_name:
-            raise ValueError("No job_name provided in pipeline options: "
-                             f"{pipeline_options}")
+            raise ValueError(
+                "No job_name provided in pipeline options: " f"{pipeline_options}"
+            )
 
         try:
             logging.info("Looking for job_id on Dataflow.")
 
-            service_name = 'dataflow'
-            dataflow_api_version = 'v1b3'
+            service_name = "dataflow"
+            dataflow_api_version = "v1b3"
             credentials = GoogleCredentials.get_application_default()
 
-            dataflow = build(serviceName=service_name,
-                             version=dataflow_api_version,
-                             credentials=credentials)
+            dataflow = build(
+                serviceName=service_name,
+                version=dataflow_api_version,
+                credentials=credentials,
+            )
 
-            result = dataflow.projects().locations().jobs().list(
-                projectId=project,
-                location=region,
-            ).execute()
+            result = (
+                dataflow.projects()
+                .locations()
+                .jobs()
+                .list(
+                    projectId=project,
+                    location=region,
+                )
+                .execute()
+            )
 
-            pipeline_job_id = 'none'
+            pipeline_job_id = "none"
 
-            for job in result['jobs']:
-                if job['name'] == job_name:
-                    if job['currentState'] == 'JOB_STATE_RUNNING':
-                        pipeline_job_id = job['id']
+            for job in result["jobs"]:
+                if job["name"] == job_name:
+                    if job["currentState"] == "JOB_STATE_RUNNING":
+                        pipeline_job_id = job["id"]
                     break
 
-            if pipeline_job_id == 'none':
-                msg = "Could not find currently running job with the " \
+            if pipeline_job_id == "none":
+                msg = (
+                    "Could not find currently running job with the "
                     f"name: {job_name}."
+                )
                 logging.error(msg)
                 raise LookupError(msg)
 
@@ -99,8 +112,8 @@ def get_job_id(pipeline_options: Dict[str, str]) -> str:
 
     else:
         # Job is running locally. Generate id from the timestamp.
-        pipeline_job_id = '_local_job'
-        job_timestamp = pipeline_options.get('job_timestamp')
+        pipeline_job_id = "_local_job"
+        job_timestamp = pipeline_options.get("job_timestamp")
 
         if not job_timestamp:
             raise ValueError("Must provide a job_timestamp for local jobs.")
@@ -110,20 +123,25 @@ def get_job_id(pipeline_options: Dict[str, str]) -> str:
     return pipeline_job_id
 
 
-def get_dataflow_job_with_id(project: str, job_id: str, location: str) -> Dict[str, str]:
+def get_dataflow_job_with_id(
+    project: str, job_id: str, location: str
+) -> Dict[str, str]:
     """Returns information about the Dataflow job with the given `job_id`."""
-    service_name = 'dataflow'
-    dataflow_api_version = 'v1b3'
+    service_name = "dataflow"
+    dataflow_api_version = "v1b3"
     credentials = GoogleCredentials.get_application_default()
 
-    dataflow = build(serviceName=service_name,
-                     version=dataflow_api_version,
-                     credentials=credentials)
+    dataflow = build(
+        serviceName=service_name, version=dataflow_api_version, credentials=credentials
+    )
 
-    return dataflow.projects().locations().jobs().get(
-        projectId=project,
-        jobId=job_id,
-        location=location).execute()
+    return (
+        dataflow.projects()
+        .locations()
+        .jobs()
+        .get(projectId=project, jobId=job_id, location=location)
+        .execute()
+    )
 
 
 def calculation_month_count_arg(value: str) -> int:
@@ -140,21 +158,27 @@ def calculation_month_count_arg(value: str) -> int:
 def calculation_end_month_arg(value: str) -> str:
     """Enforces the acceptable values for the calculation_end_month parameter in the pipelines."""
     try:
-        end_month_date = datetime.datetime.strptime(value, '%Y-%m').date()
+        end_month_date = datetime.datetime.strptime(value, "%Y-%m").date()
 
         today_year, today_month = year_and_month_for_today()
 
-        if end_month_date.year > today_year or \
-                (end_month_date.year == today_year and end_month_date.month > today_month):
-            raise argparse.ArgumentTypeError("calculation_end_month parameter cannot be a month in the future.")
+        if end_month_date.year > today_year or (
+            end_month_date.year == today_year and end_month_date.month > today_month
+        ):
+            raise argparse.ArgumentTypeError(
+                "calculation_end_month parameter cannot be a month in the future."
+            )
 
         return value
     except ValueError as e:
-        raise argparse.ArgumentTypeError("calculation_end_month parameter must be in the format YYYY-MM.") from e
+        raise argparse.ArgumentTypeError(
+            "calculation_end_month parameter must be in the format YYYY-MM."
+        ) from e
 
 
 def person_and_kwargs_for_identifier(
-        arg_to_entities_map: Dict[str, Iterable[Any]]) -> Tuple[StatePerson, Dict[str, List]]:
+    arg_to_entities_map: Dict[str, Iterable[Any]]
+) -> Tuple[StatePerson, Dict[str, List]]:
     """In the calculation pipelines we use the CoGroupByKey function to group StatePerson entities with their associated
     entities. The output of CoGroupByKey is a dictionary where the keys are the variable names expected in the
     identifier step of the pipeline, and the values are iterables of the associated entities.
@@ -169,55 +193,76 @@ def person_and_kwargs_for_identifier(
     person = None
 
     for key, values in arg_to_entities_map.items():
-        if key == 'person':
+        if key == "person":
             if not values:
-                raise ValueError(f'Found no person values in arg_to_entities_map: {arg_to_entities_map}')
+                raise ValueError(
+                    f"Found no person values in arg_to_entities_map: {arg_to_entities_map}"
+                )
 
             person = one(values)
         else:
             kwargs[key] = list(values)
 
     if not person:
-        raise ValueError(f"No StatePerson associated with these entities: {arg_to_entities_map}")
+        raise ValueError(
+            f"No StatePerson associated with these entities: {arg_to_entities_map}"
+        )
 
     return person, kwargs
 
 
 def select_all_by_person_query(
-        dataset: str,
-        table: str,
-        state_code_filter: str,
-        person_id_filter_set: Optional[Set[int]]) -> str:
-    return select_all_query(dataset, table, state_code_filter, 'person_id', person_id_filter_set)
+    dataset: str,
+    table: str,
+    state_code_filter: str,
+    person_id_filter_set: Optional[Set[int]],
+) -> str:
+    return select_all_query(
+        dataset, table, state_code_filter, "person_id", person_id_filter_set
+    )
 
 
-def select_all_query(dataset: str,
-                     table: str,
-                     state_code_filter: str,
-                     unifying_id_field: Optional[str],
-                     unifying_id_field_filter_set: Optional[Set[int]]) -> str:
+def select_all_query(
+    dataset: str,
+    table: str,
+    state_code_filter: str,
+    unifying_id_field: Optional[str],
+    unifying_id_field_filter_set: Optional[Set[int]],
+) -> str:
     """Returns a query string formatted to select all contents of the table in the given dataset, filtering by the
     provided state code and unifying id filter sets, if necessary."""
 
     if not state_code_filter:
-        raise ValueError(f'State code filter unexpectedly empty for table [{table}]')
+        raise ValueError(f"State code filter unexpectedly empty for table [{table}]")
 
-    entity_query = f"SELECT * FROM `{dataset}.{table}` WHERE state_code IN ('{state_code_filter}')"
+    entity_query = (
+        f"SELECT * FROM `{dataset}.{table}` WHERE state_code IN ('{state_code_filter}')"
+    )
 
     if unifying_id_field_filter_set:
         if not unifying_id_field:
             raise ValueError(
-                f'Expected non-null unifying_id_field for nonnull unifying_id_field_filter_set when querying'
-                f'dataset [{dataset}] and table [{table}].')
+                f"Expected non-null unifying_id_field for nonnull unifying_id_field_filter_set when querying"
+                f"dataset [{dataset}] and table [{table}]."
+            )
 
-        id_str_set = {str(unifying_id) for unifying_id in unifying_id_field_filter_set if str(unifying_id)}
+        id_str_set = {
+            str(unifying_id)
+            for unifying_id in unifying_id_field_filter_set
+            if str(unifying_id)
+        }
 
-        entity_query = entity_query + f" AND {unifying_id_field} IN ({', '.join(sorted(id_str_set))})"
+        entity_query = (
+            entity_query
+            + f" AND {unifying_id_field} IN ({', '.join(sorted(id_str_set))})"
+        )
 
     return entity_query
 
 
-def list_of_dicts_to_dict_with_keys(list_of_dicts: List[Dict[str, Any]], key: str) -> Dict[Any, Dict[str, Any]]:
+def list_of_dicts_to_dict_with_keys(
+    list_of_dicts: List[Dict[str, Any]], key: str
+) -> Dict[Any, Dict[str, Any]]:
     """Converts a list of dictionaries to a dictionary, where they keys are the values in each dictionary corresponding
     to the |key| argument. Each dictionary must contain the |key| key."""
     result_dict: Dict[str, Dict[str, Any]] = defaultdict()
@@ -226,14 +271,18 @@ def list_of_dicts_to_dict_with_keys(list_of_dicts: List[Dict[str, Any]], key: st
         key_value = dict_entry.get(key)
 
         if not key_value:
-            raise ValueError(f"Key {key} must be present in all dictionaries: {dict_entry}.")
+            raise ValueError(
+                f"Key {key} must be present in all dictionaries: {dict_entry}."
+            )
 
         result_dict[key_value] = dict_entry
 
     return result_dict
 
 
-def extract_county_of_residence_from_rows(persons_to_recent_county_of_residence: List[Dict[str, Any]]) -> Optional[str]:
+def extract_county_of_residence_from_rows(
+    persons_to_recent_county_of_residence: List[Dict[str, Any]]
+) -> Optional[str]:
     """Extracts the single county of residence from a list of dictionaries representing rows in the
     persons_to_recent_county_of_residence table. Throws if there is more than one row (there should never be for a given
     person).
@@ -241,10 +290,14 @@ def extract_county_of_residence_from_rows(persons_to_recent_county_of_residence:
     county_of_residence = None
     if persons_to_recent_county_of_residence:
         if len(persons_to_recent_county_of_residence) > 1:
-            person_id = persons_to_recent_county_of_residence[0]['person_id']
-            raise ValueError(f'Found more than one county of residence for person with id [{person_id}]: '
-                             f'{persons_to_recent_county_of_residence}')
+            person_id = persons_to_recent_county_of_residence[0]["person_id"]
+            raise ValueError(
+                f"Found more than one county of residence for person with id [{person_id}]: "
+                f"{persons_to_recent_county_of_residence}"
+            )
 
-        county_of_residence = persons_to_recent_county_of_residence[0]['county_of_residence']
+        county_of_residence = persons_to_recent_county_of_residence[0][
+            "county_of_residence"
+        ]
 
     return county_of_residence

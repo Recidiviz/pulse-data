@@ -21,9 +21,9 @@ from typing import Optional
 
 import attr
 
-from recidiviz.common.constants.person_characteristics import Ethnicity, \
-    Gender, Race
+from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
 from recidiviz.ingest.models.model_utils import date_converter_or_today
+
 
 @attr.s(frozen=True)
 class SingleCount:
@@ -33,11 +33,13 @@ class SingleCount:
     count: int = attr.ib(converter=int)
     # Optionally, this count can be ethnicity, race, or gender specific.
     ethnicity: Optional[Ethnicity] = attr.ib(
-        default=None, converter=attr.converters.optional(Ethnicity))
+        default=None, converter=attr.converters.optional(Ethnicity)
+    )
     gender: Optional[Gender] = attr.ib(
-        default=None, converter=attr.converters.optional(Gender))
+        default=None, converter=attr.converters.optional(Gender)
+    )
     race: Optional[Race] = attr.ib(
-        default=None, converter=attr.converters.optional(Race))
+        default=None, converter=attr.converters.optional(Race)
+    )
     # Date, or today
-    date: datetime.date = attr.ib(default=None,
-                                  converter=date_converter_or_today)
+    date: datetime.date = attr.ib(default=None, converter=date_converter_or_today)

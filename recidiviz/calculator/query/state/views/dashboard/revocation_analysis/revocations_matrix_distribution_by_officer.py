@@ -15,14 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Revocations Matrix Distribution by Officer."""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_VIEW_NAME = 'revocations_matrix_distribution_by_officer'
+REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_VIEW_NAME = (
+    "revocations_matrix_distribution_by_officer"
+)
 
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_DESCRIPTION = """
  Revocations matrix of violation response count and by officer and metric period month.
@@ -30,8 +32,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_DESCRIPTION = """
  and the metric period months.
  """
 
-REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_QUERY_TEMPLATE = \
-    """
+REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_QUERY_TEMPLATE = """
     /*{description}*/
     WITH supervision_counts AS (
     SELECT
@@ -145,13 +146,22 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_VIEW_BUILDER = MetricBigQueryViewBuil
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_VIEW_NAME,
     view_query_template=REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_QUERY_TEMPLATE,
-    dimensions=['state_code', 'metric_period_months', 'level_1_supervision_location',
-                'level_2_supervision_location', 'supervision_type', 'supervision_level',
-                'violation_type', 'reported_violations', 'charge_category', 'officer'],
+    dimensions=[
+        "state_code",
+        "metric_period_months",
+        "level_1_supervision_location",
+        "level_2_supervision_location",
+        "supervision_type",
+        "supervision_level",
+        "violation_type",
+        "reported_violations",
+        "charge_category",
+        "officer",
+    ],
     description=REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_VIEW_BUILDER.build_and_print()

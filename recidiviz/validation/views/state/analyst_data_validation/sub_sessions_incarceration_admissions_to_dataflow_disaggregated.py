@@ -17,18 +17,18 @@
 
 """A view which provides a person / day level comparison between incarceration session starts and dataflow admissions"""
 
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
-SUB_SESSIONS_INCARCERATION_ADMISSIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_NAME = \
-    'sub_sessions_incarceration_admissions_to_dataflow_disaggregated'
+SUB_SESSIONS_INCARCERATION_ADMISSIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_NAME = (
+    "sub_sessions_incarceration_admissions_to_dataflow_disaggregated"
+)
 
-SUB_SESSIONS_INCARCERATION_ADMISSIONS_TO_DATAFLOW_DISAGGREGATED_DESCRIPTION = \
-    """
+SUB_SESSIONS_INCARCERATION_ADMISSIONS_TO_DATAFLOW_DISAGGREGATED_DESCRIPTION = """
     A view which provides a person / day level comparison between incarceration session starts and dataflow admissions. 
     For each person / day there are a set of binary variables that indicate whether that record meets a criteria. The 
     first four (sub_session_start, session_start, sub_session_with_start_reason, session_with_start_reason) are used to 
@@ -39,8 +39,7 @@ SUB_SESSIONS_INCARCERATION_ADMISSIONS_TO_DATAFLOW_DISAGGREGATED_DESCRIPTION = \
     compartment transition
     """
 
-SUB_SESSIONS_INCARCERATION_ADMISSIONS_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = \
-    """
+SUB_SESSIONS_INCARCERATION_ADMISSIONS_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT
         person_id,
@@ -65,14 +64,14 @@ SUB_SESSIONS_INCARCERATION_ADMISSIONS_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE =
     ORDER BY state_code, start_date
     """
 
-SUB_SESSIONS_INCARCERATION_ADMISSIONS_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED= SimpleBigQueryViewBuilder(
+SUB_SESSIONS_INCARCERATION_ADMISSIONS_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
     view_id=SUB_SESSIONS_INCARCERATION_ADMISSIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_NAME,
     view_query_template=SUB_SESSIONS_INCARCERATION_ADMISSIONS_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE,
     description=SUB_SESSIONS_INCARCERATION_ADMISSIONS_TO_DATAFLOW_DISAGGREGATED_DESCRIPTION,
-    analyst_dataset=ANALYST_VIEWS_DATASET
+    analyst_dataset=ANALYST_VIEWS_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         SUB_SESSIONS_INCARCERATION_ADMISSIONS_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED.build_and_print()

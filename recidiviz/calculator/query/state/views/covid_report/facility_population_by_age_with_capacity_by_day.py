@@ -16,21 +16,31 @@
 # =============================================================================
 """Incarceration facility population by age by day compared to the facility's goal capacity"""
 # pylint: disable=trailing-whitespace
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder, SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view import (
+    SimpleBigQueryViewBuilder,
+    SimpleBigQueryViewBuilder,
+)
 from recidiviz.calculator.query import bq_utils
-from recidiviz.calculator.query.state import dataset_config, state_specific_query_strings
-from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET, DATAFLOW_METRICS_MATERIALIZED_DATASET, \
-    STATIC_REFERENCE_TABLES_DATASET
+from recidiviz.calculator.query.state import (
+    dataset_config,
+    state_specific_query_strings,
+)
+from recidiviz.calculator.query.state.dataset_config import (
+    STATE_BASE_DATASET,
+    DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    STATIC_REFERENCE_TABLES_DATASET,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_VIEW_NAME = 'facility_population_by_age_with_capacity_by_day'
+FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_VIEW_NAME = (
+    "facility_population_by_age_with_capacity_by_day"
+)
 
-FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_DESCRIPTION = \
-    """ Incarceration facility population by age by day compared to the facility's goal capacity"""
+FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_DESCRIPTION = """ Incarceration facility population 
+by age by day compared to the facility's goal capacity"""
 
-FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_QUERY_TEMPLATE = \
-    """
+FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT
       state_code,
@@ -102,10 +112,10 @@ FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_VIEW_BUILDER = SimpleBigQueryVie
     materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    facility_dimension=bq_utils.unnest_column('facility', 'facility'),
+    facility_dimension=bq_utils.unnest_column("facility", "facility"),
     state_specific_facility_exclusion=state_specific_query_strings.state_specific_facility_exclusion(),
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_VIEW_BUILDER.build_and_print()

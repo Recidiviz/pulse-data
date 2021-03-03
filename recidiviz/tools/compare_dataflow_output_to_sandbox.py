@@ -94,9 +94,13 @@ from google.cloud.bigquery import QueryJob
 from more_itertools import peekable
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.big_query.view_update_manager import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
+from recidiviz.big_query.view_update_manager import (
+    TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
+)
 from recidiviz.calculator import pipeline as pipeline_module
-from recidiviz.calculator.dataflow_output_storage_config import DATAFLOW_METRICS_TO_TABLES
+from recidiviz.calculator.dataflow_output_storage_config import (
+    DATAFLOW_METRICS_TO_TABLES,
+)
 from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
@@ -104,8 +108,10 @@ from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.yaml_dict import YAMLDict
 
 
-PRODUCTION_TEMPLATES_PATH = os.path.join(os.path.dirname(pipeline_module.__file__),
-                                         'production_calculation_pipeline_templates.yaml')
+PRODUCTION_TEMPLATES_PATH = os.path.join(
+    os.path.dirname(pipeline_module.__file__),
+    "production_calculation_pipeline_templates.yaml",
+)
 
 OUTPUT_COMPARISON_TEMPLATE = """
     WITH base_output AS (
@@ -145,63 +151,84 @@ OUTPUT_COMPARISON_TEMPLATE = """
 
 # Date columns in the metric tables that should not be included in the dimensions
 DATE_COLUMNS_TO_EXCLUDE = [
-    'created_on',
-    'updated_on',
+    "created_on",
+    "updated_on",
     # This date is often null, and null values don't join on each other in BigQuery
-    'projected_end_date'
+    "projected_end_date",
 ]
 
 
 # TODO(#5814): Update this to look for the last completed job that ran with the parameters defined for the job_name
 def compare_dataflow_output_to_sandbox(
-        sandbox_dataset_prefix: str,
-        job_name_to_compare: str,
-        base_output_job_id: str,
-        sandbox_output_job_id: str,
-        additional_columns_to_compare: List[str],
-        allow_overwrite: bool = False
+    sandbox_dataset_prefix: str,
+    job_name_to_compare: str,
+    base_output_job_id: str,
+    sandbox_output_job_id: str,
+    additional_columns_to_compare: List[str],
+    allow_overwrite: bool = False,
 ) -> None:
     """Compares the output for all metrics produced by the daily pipeline job with the given |job_name_to_compare|
     between the output from the |base_output_job_id| job in the dataflow_metrics dataset and the output from the
     |sandbox_output_job_id| job in the sandbox dataflow dataset."""
     bq_client = BigQueryClientImpl()
-    sandbox_dataflow_dataset_id = sandbox_dataset_prefix + '_' + DATAFLOW_METRICS_DATASET
+    sandbox_dataflow_dataset_id = (
+        sandbox_dataset_prefix + "_" + DATAFLOW_METRICS_DATASET
+    )
 
-    sandbox_comparison_output_dataset_id = sandbox_dataset_prefix + '_dataflow_comparison_output'
-    sandbox_comparison_output_dataset_ref = bq_client.dataset_ref_for_id(sandbox_comparison_output_dataset_id)
+    sandbox_comparison_output_dataset_id = (
+        sandbox_dataset_prefix + "_dataflow_comparison_output"
+    )
+    sandbox_comparison_output_dataset_ref = bq_client.dataset_ref_for_id(
+        sandbox_comparison_output_dataset_id
+    )
 
-    if bq_client.dataset_exists(sandbox_comparison_output_dataset_ref) and \
-            any(bq_client.list_tables(sandbox_comparison_output_dataset_id)) and not allow_overwrite:
-        if __name__ == '__main__':
-            logging.error("Dataset %s already exists in project %s. To overwrite, set --allow_overwrite.",
-                          sandbox_comparison_output_dataset_id, bq_client.project_id)
+    if (
+        bq_client.dataset_exists(sandbox_comparison_output_dataset_ref)
+        and any(bq_client.list_tables(sandbox_comparison_output_dataset_id))
+        and not allow_overwrite
+    ):
+        if __name__ == "__main__":
+            logging.error(
+                "Dataset %s already exists in project %s. To overwrite, set --allow_overwrite.",
+                sandbox_comparison_output_dataset_id,
+                bq_client.project_id,
+            )
             sys.exit(1)
         else:
-            raise ValueError(f"Cannot write comparison output to a non-empty dataset. Please delete tables in dataset: "
-                             f"{bq_client.project_id}.{sandbox_comparison_output_dataset_id}.")
+            raise ValueError(
+                f"Cannot write comparison output to a non-empty dataset. Please delete tables in dataset: "
+                f"{bq_client.project_id}.{sandbox_comparison_output_dataset_id}."
+            )
 
-    bq_client.create_dataset_if_necessary(sandbox_comparison_output_dataset_ref,
-                                          TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS)
+    bq_client.create_dataset_if_necessary(
+        sandbox_comparison_output_dataset_ref, TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
+    )
 
     query_jobs: List[Tuple[QueryJob, str]] = []
 
-    pipelines = YAMLDict.from_path(PRODUCTION_TEMPLATES_PATH).pop_dicts('daily_pipelines')
+    pipelines = YAMLDict.from_path(PRODUCTION_TEMPLATES_PATH).pop_dicts(
+        "daily_pipelines"
+    )
 
     for pipeline in pipelines:
-        if pipeline.pop('job_name', str) == job_name_to_compare:
-            pipeline_metric_types = pipeline.peek_optional('metric_types', str)
+        if pipeline.pop("job_name", str) == job_name_to_compare:
+            pipeline_metric_types = pipeline.peek_optional("metric_types", str)
 
             if not pipeline_metric_types:
-                raise ValueError(f"Pipeline job {job_name_to_compare} missing required metric_types attribute.")
+                raise ValueError(
+                    f"Pipeline job {job_name_to_compare} missing required metric_types attribute."
+                )
 
             metric_types_for_comparison = pipeline_metric_types.split()
 
             for metric_class, metric_table in DATAFLOW_METRICS_TO_TABLES.items():
                 # Hack to get the value of the metric_type on this RecidivizMetric class
-                metric_instance = cast(RecidivizMetric, metric_class.build_from_dictionary({
-                    'job_id': 'xxx',
-                    'state_code': 'US_XX'
-                }))
+                metric_instance = cast(
+                    RecidivizMetric,
+                    metric_class.build_from_dictionary(
+                        {"job_id": "xxx", "state_code": "US_XX"}
+                    ),
+                )
 
                 metric_type_value = metric_instance.metric_type.value
 
@@ -220,18 +247,18 @@ def compare_dataflow_output_to_sandbox(
                         base_dataset_id=DATAFLOW_METRICS_DATASET,
                         sandbox_dataset_id=sandbox_dataflow_dataset_id,
                         table_id=metric_table,
-                        columns_to_compare=', '.join(columns_to_compare),
-                        dimensions=', '.join(dimensions),
+                        columns_to_compare=", ".join(columns_to_compare),
+                        dimensions=", ".join(dimensions),
                         base_output_job_id=base_output_job_id,
                         sandbox_output_job_id=sandbox_output_job_id,
-                        output_col_exclusion=output_col_exclusion
+                        output_col_exclusion=output_col_exclusion,
                     )
 
                     query_job = bq_client.create_table_from_query_async(
                         dataset_id=sandbox_comparison_output_dataset_id,
                         table_id=metric_table,
                         query=comparison_query,
-                        overwrite=True
+                        overwrite=True,
                     )
 
                     # Add query job to the list of running jobs
@@ -241,37 +268,55 @@ def compare_dataflow_output_to_sandbox(
         # Wait for the insert job to complete before looking for the table
         query_job.result()
 
-        output_table = bq_client.get_table(sandbox_comparison_output_dataset_ref, output_table_id)
+        output_table = bq_client.get_table(
+            sandbox_comparison_output_dataset_ref, output_table_id
+        )
 
         if output_table.num_rows == 0:
             # If there are no rows in the output table, then the output was identical
-            bq_client.delete_table(sandbox_comparison_output_dataset_id, output_table_id)
+            bq_client.delete_table(
+                sandbox_comparison_output_dataset_id, output_table_id
+            )
 
-    metrics_with_different_output = peekable(bq_client.list_tables(sandbox_comparison_output_dataset_id))
+    metrics_with_different_output = peekable(
+        bq_client.list_tables(sandbox_comparison_output_dataset_id)
+    )
 
-    logging.info("\n*************** DATAFLOW OUTPUT COMPARISON RESULTS ***************\n")
+    logging.info(
+        "\n*************** DATAFLOW OUTPUT COMPARISON RESULTS ***************\n"
+    )
 
     if metrics_with_different_output:
         for metric_table in metrics_with_different_output:
             # This will always be true, and is here to silence mypy warnings
             assert isinstance(metric_table, bigquery.table.TableListItem)
 
-            logging.warning("Dataflow output differs for metric %s. See %s.%s for diverging rows.",
-                            metric_table.table_id, sandbox_comparison_output_dataset_id, metric_table.table_id)
+            logging.warning(
+                "Dataflow output differs for metric %s. See %s.%s for diverging rows.",
+                metric_table.table_id,
+                sandbox_comparison_output_dataset_id,
+                metric_table.table_id,
+            )
     else:
-        logging.info("Dataflow output identical. Deleting dataset %s.",
-                     sandbox_comparison_output_dataset_ref.dataset_id)
-        bq_client.delete_dataset(sandbox_comparison_output_dataset_ref, delete_contents=True)
+        logging.info(
+            "Dataflow output identical. Deleting dataset %s.",
+            sandbox_comparison_output_dataset_ref.dataset_id,
+        )
+        bq_client.delete_dataset(
+            sandbox_comparison_output_dataset_ref, delete_contents=True
+        )
 
 
-def _get_dimension_columns_for_metric_class(metric_class: Type[RecidivizMetric]) -> List[str]:
+def _get_dimension_columns_for_metric_class(
+    metric_class: Type[RecidivizMetric],
+) -> List[str]:
     """Returns the dimension columns that should be used to compare output between pipeline runs. Includes the
     state_code, the person_id, and any date fields specific to the metric (e.g. date_of_supervision)."""
-    dimension_columns: List[str] = ['state_code', 'person_id']
+    dimension_columns: List[str] = ["state_code", "person_id"]
 
     schema_fields = metric_class.bq_schema_for_metric_table()
     for field in schema_fields:
-        if field.field_type == 'DATE' and field.name not in DATE_COLUMNS_TO_EXCLUDE:
+        if field.field_type == "DATE" and field.name not in DATE_COLUMNS_TO_EXCLUDE:
             dimension_columns.append(field.name)
 
     return dimension_columns
@@ -281,61 +326,77 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     """Parses the arguments needed to call the compare_metric_view_output_to_sandbox function."""
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--project_id',
-                        dest='project_id',
-                        type=str,
-                        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
-                        required=True)
+    parser.add_argument(
+        "--project_id",
+        dest="project_id",
+        type=str,
+        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
+        required=True,
+    )
 
-    parser.add_argument('--sandbox_dataset_prefix',
-                        dest='sandbox_dataset_prefix',
-                        help='The prefix of the sandbox dataflow_metrics dataset.',
-                        type=str,
-                        required=True)
+    parser.add_argument(
+        "--sandbox_dataset_prefix",
+        dest="sandbox_dataset_prefix",
+        help="The prefix of the sandbox dataflow_metrics dataset.",
+        type=str,
+        required=True,
+    )
 
-    parser.add_argument('--job_name_to_compare',
-                        dest='job_name_to_compare',
-                        help='The name of the regularly-running calculation job for which you are comparing output.',
-                        type=str,
-                        required=True)
+    parser.add_argument(
+        "--job_name_to_compare",
+        dest="job_name_to_compare",
+        help="The name of the regularly-running calculation job for which you are comparing output.",
+        type=str,
+        required=True,
+    )
 
-    parser.add_argument('--base_output_job_id',
-                        dest='base_output_job_id',
-                        help='The job_id that ran against which you are comparing output.',
-                        type=str,
-                        required=True)
+    parser.add_argument(
+        "--base_output_job_id",
+        dest="base_output_job_id",
+        help="The job_id that ran against which you are comparing output.",
+        type=str,
+        required=True,
+    )
 
-    parser.add_argument('--sandbox_output_job_id',
-                        dest='sandbox_output_job_id',
-                        help='The job_id that ran for which you are comparing output.',
-                        type=str,
-                        required=True)
+    parser.add_argument(
+        "--sandbox_output_job_id",
+        dest="sandbox_output_job_id",
+        help="The job_id that ran for which you are comparing output.",
+        type=str,
+        required=True,
+    )
 
-    parser.add_argument('--additional_columns_to_compare',
-                        dest='additional_columns_to_compare',
-                        type=str,
-                        nargs='+',
-                        help='An optional list of columns to compare between the two outputs, besides state_code,'
-                             'person_id, and the date fields of the metric.',
-                        required=False)
+    parser.add_argument(
+        "--additional_columns_to_compare",
+        dest="additional_columns_to_compare",
+        type=str,
+        nargs="+",
+        help="An optional list of columns to compare between the two outputs, besides state_code,"
+        "person_id, and the date fields of the metric.",
+        required=False,
+    )
 
-    parser.add_argument('--allow_overwrite',
-                        dest='allow_overwrite',
-                        action='store_true',
-                        default=False,
-                        help="Allow tables in existing dataset to be overwritten.")
+    parser.add_argument(
+        "--allow_overwrite",
+        dest="allow_overwrite",
+        action="store_true",
+        default=False,
+        help="Allow tables in existing dataset to be overwritten.",
+    )
 
     return parser.parse_known_args(argv)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
     known_args, _ = parse_arguments(sys.argv)
 
     with local_project_id_override(known_args.project_id):
-        compare_dataflow_output_to_sandbox(known_args.sandbox_dataset_prefix,
-                                           known_args.job_name_to_compare,
-                                           known_args.base_output_job_id,
-                                           known_args.sandbox_output_job_id,
-                                           known_args.additional_columns_to_compare,
-                                           known_args.allow_overwrite)
+        compare_dataflow_output_to_sandbox(
+            known_args.sandbox_dataset_prefix,
+            known_args.job_name_to_compare,
+            known_args.base_output_job_id,
+            known_args.sandbox_output_job_id,
+            known_args.additional_columns_to_compare,
+            known_args.allow_overwrite,
+        )

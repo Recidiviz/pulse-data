@@ -19,13 +19,11 @@ import unittest
 
 import pytest
 
-from recidiviz.common.constants.state.state_person_alias import \
-    StatePersonAliasType
+from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.state.entity_helpers import \
-    state_alias
+from recidiviz.persistence.ingest_info_converter.state.entity_helpers import state_alias
 
 
 _EMPTY_METADATA = IngestMetadata.new_with_defaults()
@@ -37,13 +35,13 @@ class StateAliasConverterTest(unittest.TestCase):
     def testParseStateAliasNameParts(self):
         # Arrange
         ingest_alias = ingest_info_pb2.StateAlias(
-            state_alias_id='ALIAS_ID',
-            state_code='US_ND',
-            given_names='FRANK',
-            middle_names='LONNY',
-            surname='OCEAN',
-            name_suffix='BREAUX',
-            alias_type='GIVEN',
+            state_alias_id="ALIAS_ID",
+            state_code="US_ND",
+            given_names="FRANK",
+            middle_names="LONNY",
+            surname="OCEAN",
+            name_suffix="BREAUX",
+            alias_type="GIVEN",
         )
 
         # Act
@@ -51,13 +49,13 @@ class StateAliasConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.StatePersonAlias(
-            state_code='US_ND',
+            state_code="US_ND",
             full_name='{"given_names": "FRANK", '
-                      '"middle_names": "LONNY", '
-                      '"name_suffix": "BREAUX", '
-                      '"surname": "OCEAN"}',
+            '"middle_names": "LONNY", '
+            '"name_suffix": "BREAUX", '
+            '"surname": "OCEAN"}',
             alias_type=StatePersonAliasType.GIVEN_NAME,
-            alias_type_raw_text='GIVEN',
+            alias_type_raw_text="GIVEN",
         )
 
         self.assertEqual(result, expected_result)
@@ -65,10 +63,10 @@ class StateAliasConverterTest(unittest.TestCase):
     def testParseStateAliasFullName(self):
         # Arrange
         ingest_alias = ingest_info_pb2.StateAlias(
-            state_code='US_ND',
-            state_alias_id='ALIAS_ID',
-            full_name='FRANK OCEAN',
-            alias_type='NICKNAME',
+            state_code="US_ND",
+            state_alias_id="ALIAS_ID",
+            full_name="FRANK OCEAN",
+            alias_type="NICKNAME",
         )
 
         # Act
@@ -76,10 +74,10 @@ class StateAliasConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.StatePersonAlias(
-            state_code='US_ND',
+            state_code="US_ND",
             full_name='{"full_name": "FRANK OCEAN"}',
             alias_type=StatePersonAliasType.NICKNAME,
-            alias_type_raw_text='NICKNAME',
+            alias_type_raw_text="NICKNAME",
         )
 
         self.assertEqual(result, expected_result)
@@ -88,13 +86,13 @@ class StateAliasConverterTest(unittest.TestCase):
     def testParseStateAliasTooManyNames():
         # Arrange
         ingest_alias = ingest_info_pb2.StateAlias(
-            state_alias_id='ALIAS_ID',
-            full_name='FRANK OCEAN',
-            given_names='FRANK',
-            middle_names='LONNY',
-            surname='OCEAN',
-            name_suffix='BREAUX',
-            alias_type='NICKNAME',
+            state_alias_id="ALIAS_ID",
+            full_name="FRANK OCEAN",
+            given_names="FRANK",
+            middle_names="LONNY",
+            surname="OCEAN",
+            name_suffix="BREAUX",
+            alias_type="NICKNAME",
         )
 
         # Act

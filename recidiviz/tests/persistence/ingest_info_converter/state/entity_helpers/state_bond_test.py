@@ -25,8 +25,7 @@ from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.state.entity_helpers import \
-    state_bond
+from recidiviz.persistence.ingest_info_converter.state.entity_helpers import state_bond
 
 _EMPTY_METADATA = IngestMetadata.new_with_defaults()
 
@@ -37,14 +36,14 @@ class StateBondConverterTest(unittest.TestCase):
     def testParseStateBond(self) -> None:
         # Arrange
         ingest_bond = ingest_info_pb2.StateBond(
-            status='ACTIVE',
-            bond_type='CASH',
-            state_bond_id='BOND_ID',
-            date_paid='1/2/2111',
-            state_code='us_nd',
-            county_code='BISMARCK',
-            bond_agent='AGENT',
-            amount='$125.00',
+            status="ACTIVE",
+            bond_type="CASH",
+            state_bond_id="BOND_ID",
+            date_paid="1/2/2111",
+            state_code="us_nd",
+            county_code="BISMARCK",
+            bond_agent="AGENT",
+            amount="$125.00",
         )
 
         # Act
@@ -53,14 +52,14 @@ class StateBondConverterTest(unittest.TestCase):
         # Assert
         expected_result = entities.StateBond(
             status=BondStatus.SET,
-            status_raw_text='ACTIVE',
+            status_raw_text="ACTIVE",
             bond_type=BondType.CASH,
-            bond_type_raw_text='CASH',
-            external_id='BOND_ID',
+            bond_type_raw_text="CASH",
+            external_id="BOND_ID",
             date_paid=date(year=2111, month=1, day=2),
-            state_code='US_ND',
-            county_code='BISMARCK',
-            bond_agent='AGENT',
+            state_code="US_ND",
+            county_code="BISMARCK",
+            bond_agent="AGENT",
             amount_dollars=125,
         )
 
@@ -68,61 +67,66 @@ class StateBondConverterTest(unittest.TestCase):
 
     def testParseBond_AmountIsNoBond_UsesAmountAsType(self) -> None:
         # Arrange
-        ingest_bond = ingest_info_pb2.StateBond(state_code='us_xx', amount='No Bond')
+        ingest_bond = ingest_info_pb2.StateBond(state_code="us_xx", amount="No Bond")
 
         # Act
         result = state_bond.convert(ingest_bond, _EMPTY_METADATA)
 
         # Assert
         expected_result = entities.StateBond.new_with_defaults(
-            state_code='US_XX',
-            bond_type=BondType.DENIED,
-            status=BondStatus.SET
+            state_code="US_XX", bond_type=BondType.DENIED, status=BondStatus.SET
         )
         self.assertEqual(result, expected_result)
 
     def testParseBond_AmountIsBondDenied_UsesAmountAsType(self) -> None:
         # Arrange
-        ingest_bond = ingest_info_pb2.StateBond(state_code='us_xx', amount='Bond Denied')
+        ingest_bond = ingest_info_pb2.StateBond(
+            state_code="us_xx", amount="Bond Denied"
+        )
 
         # Act
         result = state_bond.convert(ingest_bond, _EMPTY_METADATA)
 
         # Assert
         expected_result = entities.StateBond.new_with_defaults(
-            state_code='US_XX',
-            bond_type=BondType.DENIED,
-            status=BondStatus.SET
+            state_code="US_XX", bond_type=BondType.DENIED, status=BondStatus.SET
         )
         self.assertEqual(result, expected_result)
 
     def testParseBond_MapStatusToType(self) -> None:
         # Arrange
-        ingest_bond = ingest_info_pb2.StateBond(state_code='us_xx', bond_type='bond revoked')
+        ingest_bond = ingest_info_pb2.StateBond(
+            state_code="us_xx", bond_type="bond revoked"
+        )
         overrides_builder = EnumOverrides.Builder()
-        overrides_builder.add('BOND REVOKED', BondStatus.REVOKED, BondType)
+        overrides_builder.add("BOND REVOKED", BondStatus.REVOKED, BondType)
         overrides = overrides_builder.build()
 
         # Act
         result = state_bond.convert(
-            ingest_bond, attr.evolve(_EMPTY_METADATA, enum_overrides=overrides))
+            ingest_bond, attr.evolve(_EMPTY_METADATA, enum_overrides=overrides)
+        )
 
         # Assert
         expected_result = entities.StateBond.new_with_defaults(
-            state_code='US_XX', bond_type_raw_text='BOND REVOKED', status=BondStatus.REVOKED)
+            state_code="US_XX",
+            bond_type_raw_text="BOND REVOKED",
+            status=BondStatus.REVOKED,
+        )
         self.assertEqual(result, expected_result)
 
     def testParseBond_OnlyAmount_InfersCash(self) -> None:
         # Arrange
-        ingest_bond = ingest_info_pb2.StateBond(state_code='us_xx', amount='1,500')
+        ingest_bond = ingest_info_pb2.StateBond(state_code="us_xx", amount="1,500")
 
         # Act
         result = state_bond.convert(ingest_bond, _EMPTY_METADATA)
 
         # Assert
         expected_result = entities.StateBond.new_with_defaults(
-            state_code='US_XX',
+            state_code="US_XX",
             bond_type=BondType.CASH,
             status=BondStatus.PRESENT_WITHOUT_INFO,
-            amount_dollars=1500)
+            amount_dollars=1500,
+        )
         self.assertEqual(result, expected_result)

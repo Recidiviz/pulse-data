@@ -22,6 +22,7 @@ import recidiviz.common.constants.state.enum_canonical_strings as state_enum_str
 from recidiviz.common.constants import enum_canonical_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
+
 @unique
 class StateAgentType(EntityEnum, metaclass=EntityEnumMeta):
     PRESENT_WITHOUT_INFO = enum_canonical_strings.present_without_info
@@ -39,11 +40,11 @@ class StateAgentType(EntityEnum, metaclass=EntityEnumMeta):
 
 
 _STATE_AGENT_TYPE_MAP = {
-    'PRESENT WITHOUT INFO': StateAgentType.PRESENT_WITHOUT_INFO,
-    'CORRECTIONAL OFFICER': StateAgentType.CORRECTIONAL_OFFICER,
-    'JUDGE': StateAgentType.JUDGE,
-    'PAROLE BOARD MEMBER': StateAgentType.PAROLE_BOARD_MEMBER,
-    'SUPERVISION OFFICER': StateAgentType.SUPERVISION_OFFICER,
-    'UNIT SUPERVISOR': StateAgentType.UNIT_SUPERVISOR,
-    'INTERNAL UNKNOWN': StateAgentType.INTERNAL_UNKNOWN,
+    "PRESENT WITHOUT INFO": StateAgentType.PRESENT_WITHOUT_INFO,
+    "CORRECTIONAL OFFICER": StateAgentType.CORRECTIONAL_OFFICER,
+    "JUDGE": StateAgentType.JUDGE,
+    "PAROLE BOARD MEMBER": StateAgentType.PAROLE_BOARD_MEMBER,
+    "SUPERVISION OFFICER": StateAgentType.SUPERVISION_OFFICER,
+    "UNIT SUPERVISOR": StateAgentType.UNIT_SUPERVISOR,
+    "INTERNAL UNKNOWN": StateAgentType.INTERNAL_UNKNOWN,
 }

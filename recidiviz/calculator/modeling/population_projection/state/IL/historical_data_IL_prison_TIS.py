@@ -40,7 +40,10 @@ future programs they participate in, but not for programs completed prior to the
 
 """
 import pandas as pd
-from recidiviz.calculator.modeling.population_projection.spark_bq_utils import upload_spark_model_inputs
+from recidiviz.calculator.modeling.population_projection.spark_bq_utils import (
+    upload_spark_model_inputs,
+)
+
 pd.set_option("display.max_rows", None, "display.max_columns", None)
 # pylint: skip-file
 
@@ -48,67 +51,159 @@ pd.set_option("display.max_rows", None, "display.max_columns", None)
 reference_year = 2011
 
 # DISAGGREGATION AXES
-race = ['white', 'non-white']
-tis_percentage = ['100%', '85%', '75%']
+race = ["white", "non-white"]
+tis_percentage = ["100%", "85%", "75%"]
 
 # TRANSITIONS DATA
 transitions_data = pd.DataFrame()
 
-prison_transitions_data = pd.read_csv('recidiviz/calculator/modeling/population_projection/state/IL/IL_data/TIS Prison Transitions Data-Table 1.csv')
+prison_transitions_data = pd.read_csv(
+    "recidiviz/calculator/modeling/population_projection/state/IL/IL_data/TIS Prison Transitions Data-Table 1.csv"
+)
 
-probation_transitions_data = pd.read_csv('recidiviz/calculator/modeling/population_projection/state/IL/IL_data/TIS Probation Transitions Data-Table 1.csv')
+probation_transitions_data = pd.read_csv(
+    "recidiviz/calculator/modeling/population_projection/state/IL/IL_data/TIS Probation Transitions Data-Table 1.csv"
+)
 
-release_transitions_data = pd.read_csv('recidiviz/calculator/modeling/population_projection/state/IL/IL_data/TIS Release Transitions Data-Table 1.csv')
+release_transitions_data = pd.read_csv(
+    "recidiviz/calculator/modeling/population_projection/state/IL/IL_data/TIS Release Transitions Data-Table 1.csv"
+)
 
-transitions_data = pd.concat([transitions_data, prison_transitions_data, probation_transitions_data, release_transitions_data])
+transitions_data = pd.concat(
+    [
+        transitions_data,
+        prison_transitions_data,
+        probation_transitions_data,
+        release_transitions_data,
+    ]
+)
 
 # OUTFLOWS DATA
 
-outflows_data = pd.read_csv('recidiviz/calculator/modeling/population_projection/state/IL/IL_data/TIS Prison Admissions Data-Table 1.csv')
+outflows_data = pd.read_csv(
+    "recidiviz/calculator/modeling/population_projection/state/IL/IL_data/TIS Prison Admissions Data-Table 1.csv"
+)
 
 monthly_outflows_data = pd.DataFrame()
 
 for year in range(2011, 2020):
-    temp_monthly_outflows_data = pd.DataFrame({
-        'time_step': [i for i in range((year - reference_year) * 12, (year - reference_year + 1) * 12)] * 6,
-        'compartment': ['pretrial'] * 72,
-        'outflow_to': ['prison'] * 72,
-        'tis_percentage': ['100%'] * 24 + ['85%'] * 24 + ['75%'] * 24,
-        'race': ['white'] * 12 + ['non-white'] * 12 + ['white'] * 12 + ['non-white'] * 12 + ['white'] * 12 + ['non-white'] * 12,
-        'total_population': [outflows_data.iloc[(year - reference_year) * 6, 5] / 12 for month in range(12)] +
-                            [outflows_data.iloc[(year - reference_year) * 6 + 1, 5] / 12 for month in range(12)] +
-                            [outflows_data.iloc[(year - reference_year) * 6 + 2, 5] / 12 for month in range(12)] +
-                            [outflows_data.iloc[(year - reference_year) * 6 + 3, 5] / 12 for month in range(12)] +
-                            [outflows_data.iloc[(year - reference_year) * 6 + 4, 5] / 12 for month in range(12)] +
-                            [outflows_data.iloc[(year - reference_year) * 6 + 5, 5] / 12 for month in range(12)]
-    })
-    monthly_outflows_data = pd.concat([monthly_outflows_data, temp_monthly_outflows_data])
+    temp_monthly_outflows_data = pd.DataFrame(
+        {
+            "time_step": [
+                i
+                for i in range(
+                    (year - reference_year) * 12, (year - reference_year + 1) * 12
+                )
+            ]
+            * 6,
+            "compartment": ["pretrial"] * 72,
+            "outflow_to": ["prison"] * 72,
+            "tis_percentage": ["100%"] * 24 + ["85%"] * 24 + ["75%"] * 24,
+            "race": ["white"] * 12
+            + ["non-white"] * 12
+            + ["white"] * 12
+            + ["non-white"] * 12
+            + ["white"] * 12
+            + ["non-white"] * 12,
+            "total_population": [
+                outflows_data.iloc[(year - reference_year) * 6, 5] / 12
+                for month in range(12)
+            ]
+            + [
+                outflows_data.iloc[(year - reference_year) * 6 + 1, 5] / 12
+                for month in range(12)
+            ]
+            + [
+                outflows_data.iloc[(year - reference_year) * 6 + 2, 5] / 12
+                for month in range(12)
+            ]
+            + [
+                outflows_data.iloc[(year - reference_year) * 6 + 3, 5] / 12
+                for month in range(12)
+            ]
+            + [
+                outflows_data.iloc[(year - reference_year) * 6 + 4, 5] / 12
+                for month in range(12)
+            ]
+            + [
+                outflows_data.iloc[(year - reference_year) * 6 + 5, 5] / 12
+                for month in range(12)
+            ],
+        }
+    )
+    monthly_outflows_data = pd.concat(
+        [monthly_outflows_data, temp_monthly_outflows_data]
+    )
 
 # TOTAL POPULATION DATA
 
-total_population_data = pd.read_csv('recidiviz/calculator/modeling/population_projection/state/IL/IL_data/TIS Total Prison Population Data-Table 1.csv')
+total_population_data = pd.read_csv(
+    "recidiviz/calculator/modeling/population_projection/state/IL/IL_data/TIS Total Prison Population Data-Table 1.csv"
+)
 
 monthly_total_population_data = pd.DataFrame()
 
 for year in range(2011, 2020):
-    temp_monthly_total_population_data = pd.DataFrame({
-        'time_step': [i for i in range((year - reference_year) * 12, (year - reference_year + 1) * 12)] * 6,
-        'compartment': ['prison'] * 72,
-        'tis_percentage': ['100%'] * 24 + ['85%'] * 24 + ['75%'] * 24,
-        'race': ['white'] * 12 + ['non-white'] * 12 + ['white'] * 12 + ['non-white'] * 12 + ['white'] * 12 + ['non-white'] * 12,
-        'total_population': [total_population_data.iloc[(year - reference_year) * 6, 4] for month in range(12)] +
-                            [total_population_data.iloc[(year - reference_year) * 6 + 1, 4] for month in range(12)] +
-                            [total_population_data.iloc[(year - reference_year) * 6 + 2, 4] for month in range(12)] +
-                            [total_population_data.iloc[(year - reference_year) * 6 + 3, 4] for month in range(12)] +
-                            [total_population_data.iloc[(year - reference_year) * 6 + 4, 4] for month in range(12)] +
-                            [total_population_data.iloc[(year - reference_year) * 6 + 5, 4] for month in range(12)]
-    })
-    monthly_total_population_data = pd.concat([monthly_total_population_data, temp_monthly_total_population_data])
+    temp_monthly_total_population_data = pd.DataFrame(
+        {
+            "time_step": [
+                i
+                for i in range(
+                    (year - reference_year) * 12, (year - reference_year + 1) * 12
+                )
+            ]
+            * 6,
+            "compartment": ["prison"] * 72,
+            "tis_percentage": ["100%"] * 24 + ["85%"] * 24 + ["75%"] * 24,
+            "race": ["white"] * 12
+            + ["non-white"] * 12
+            + ["white"] * 12
+            + ["non-white"] * 12
+            + ["white"] * 12
+            + ["non-white"] * 12,
+            "total_population": [
+                total_population_data.iloc[(year - reference_year) * 6, 4]
+                for month in range(12)
+            ]
+            + [
+                total_population_data.iloc[(year - reference_year) * 6 + 1, 4]
+                for month in range(12)
+            ]
+            + [
+                total_population_data.iloc[(year - reference_year) * 6 + 2, 4]
+                for month in range(12)
+            ]
+            + [
+                total_population_data.iloc[(year - reference_year) * 6 + 3, 4]
+                for month in range(12)
+            ]
+            + [
+                total_population_data.iloc[(year - reference_year) * 6 + 4, 4]
+                for month in range(12)
+            ]
+            + [
+                total_population_data.iloc[(year - reference_year) * 6 + 5, 4]
+                for month in range(12)
+            ],
+        }
+    )
+    monthly_total_population_data = pd.concat(
+        [monthly_total_population_data, temp_monthly_total_population_data]
+    )
 
-#STORE DATA
-monthly_outflows_data = monthly_outflows_data.rename({'tis_percentage': 'crime_type'}, axis=1)
-transitions_data = transitions_data.rename({'tis_percentage': 'crime_type'}, axis=1)
-monthly_total_population_data = monthly_total_population_data.rename({'tis_percentage': 'crime_type'}, axis=1)
+# STORE DATA
+monthly_outflows_data = monthly_outflows_data.rename(
+    {"tis_percentage": "crime_type"}, axis=1
+)
+transitions_data = transitions_data.rename({"tis_percentage": "crime_type"}, axis=1)
+monthly_total_population_data = monthly_total_population_data.rename(
+    {"tis_percentage": "crime_type"}, axis=1
+)
 
-upload_spark_model_inputs('recidiviz-staging', 'IL_prison_TIS', monthly_outflows_data, transitions_data,
-                          monthly_total_population_data)
+upload_spark_model_inputs(
+    "recidiviz-staging",
+    "IL_prison_TIS",
+    monthly_outflows_data,
+    transitions_data,
+    monthly_total_population_data,
+)

@@ -20,30 +20,39 @@ import os
 import shutil
 import unittest
 
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import DirectIngestRegionRawFileConfig
-from recidiviz.tools.create_ingest_config_skeleton import create_ingest_config_skeleton, make_config_directory
+from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
+    DirectIngestRegionRawFileConfig,
+)
+from recidiviz.tools.create_ingest_config_skeleton import (
+    create_ingest_config_skeleton,
+    make_config_directory,
+)
 
-INPUT_TABLE = 'raw_table_1'
+INPUT_TABLE = "raw_table_1"
 
-FAKE_STATE = 'us_xx'
+FAKE_STATE = "us_xx"
+
 
 class CreateIngestConfigSkeletonTest(unittest.TestCase):
-
     def tearDown(self) -> None:
         shutil.rmtree(os.path.split(make_config_directory(FAKE_STATE))[0])
 
     def test_create_structure_and_check(self) -> None:
         """Create a raw file config from a test input, try to ingest it, and check the results."""
         state_code = FAKE_STATE
-        delimiter = '|'
+        delimiter = "|"
         allow_overwrite = False
         initialize_state = True
 
-        input_path = os.path.join(os.path.dirname(__file__),
-                                  'create_ingest_config_skeleton_test_fixtures',
-                                  INPUT_TABLE + '.txt')
+        input_path = os.path.join(
+            os.path.dirname(__file__),
+            "create_ingest_config_skeleton_test_fixtures",
+            INPUT_TABLE + ".txt",
+        )
 
-        create_ingest_config_skeleton([input_path], state_code, delimiter, allow_overwrite, initialize_state)
+        create_ingest_config_skeleton(
+            [input_path], state_code, delimiter, allow_overwrite, initialize_state
+        )
 
         config = DirectIngestRegionRawFileConfig(region_code=state_code)
 
@@ -51,4 +60,7 @@ class CreateIngestConfigSkeletonTest(unittest.TestCase):
 
         table_config = config.raw_file_configs[INPUT_TABLE]
         self.assertEqual(table_config.file_tag, INPUT_TABLE)
-        self.assertEqual([field.name for field in table_config.columns], ['field1', 'field2', 'field3'])
+        self.assertEqual(
+            [field.name for field in table_config.columns],
+            ["field1", "field2", "field3"],
+        )

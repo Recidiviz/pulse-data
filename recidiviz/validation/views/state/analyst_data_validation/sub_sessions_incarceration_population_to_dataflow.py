@@ -17,22 +17,21 @@
 
 """A view which provides a comparison of annual sessions incarceration population to dataflow."""
 
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
-SUB_SESSIONS_INCARCERATION_POPULATION_TO_DATAFLOW_VIEW_NAME = \
-    'sub_sessions_incarceration_population_to_dataflow'
+SUB_SESSIONS_INCARCERATION_POPULATION_TO_DATAFLOW_VIEW_NAME = (
+    "sub_sessions_incarceration_population_to_dataflow"
+)
 
-SUB_SESSIONS_INCARCERATION_POPULATION_TO_DATAFLOW_DESCRIPTION = \
-    """
+SUB_SESSIONS_INCARCERATION_POPULATION_TO_DATAFLOW_DESCRIPTION = """
     A view which provides a comparison of annual incarceration population counts in sub-sessions vs dataflow
     """
 
-SUB_SESSIONS_INCARCERATION_POPULATION_TO_DATAFLOW_QUERY_TEMPLATE = \
-    """
+SUB_SESSIONS_INCARCERATION_POPULATION_TO_DATAFLOW_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT
         state_code AS region_code,
@@ -52,6 +51,6 @@ SUB_SESSIONS_INCARCERATION_POPULATION_TO_DATAFLOW_VIEW_BUILDER = SimpleBigQueryV
     validation_views_dataset=dataset_config.VIEWS_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         SUB_SESSIONS_INCARCERATION_POPULATION_TO_DATAFLOW_VIEW_BUILDER.build_and_print()

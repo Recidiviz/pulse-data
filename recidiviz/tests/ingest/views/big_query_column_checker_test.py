@@ -28,19 +28,23 @@ class TestBigQueryColumnChecker(TestCase):
     """Tests for BigQueryColumnChecker."""
 
     def setUp(self) -> None:
-        self.client_patcher = mock.patch('recidiviz.ingest.views.metadata_helpers.BigQueryClientImpl')
+        self.client_patcher = mock.patch(
+            "recidiviz.ingest.views.metadata_helpers.BigQueryClientImpl"
+        )
         self.client_fn = self.client_patcher.start()
 
-        self.metadata_patcher = mock.patch('recidiviz.utils.metadata.project_id')
+        self.metadata_patcher = mock.patch("recidiviz.utils.metadata.project_id")
         self.mock_project_id_fn = self.metadata_patcher.start()
-        self.mock_project_id_fn.return_value = 'test-project'
+        self.mock_project_id_fn.return_value = "test-project"
 
-        self.checker = BigQueryTableChecker('fake-dataset', 'fake-table')
+        self.checker = BigQueryTableChecker("fake-dataset", "fake-table")
 
         self.mock_table = mock.MagicMock()
         self.mock_table.schema = [
-            bigquery.SchemaField('fake-col', bigquery.enums.SqlTypeNames.STRING.value),
-            bigquery.SchemaField('fake-col-2', bigquery.enums.SqlTypeNames.STRING.value),
+            bigquery.SchemaField("fake-col", bigquery.enums.SqlTypeNames.STRING.value),
+            bigquery.SchemaField(
+                "fake-col-2", bigquery.enums.SqlTypeNames.STRING.value
+            ),
         ]
 
     def tearDown(self) -> None:
@@ -49,10 +53,10 @@ class TestBigQueryColumnChecker(TestCase):
 
     def test_column_in_table(self) -> None:
         self.client_fn().get_table.return_value = self.mock_table
-        self.assertTrue(self.checker.get_has_column_predicate('fake-col')())
-        self.assertTrue(self.checker.get_has_column_predicate('fake-col-2')())
+        self.assertTrue(self.checker.get_has_column_predicate("fake-col")())
+        self.assertTrue(self.checker.get_has_column_predicate("fake-col-2")())
         self.client_fn().get_table.assert_called_once()
 
     def test_column_not_in_table(self) -> None:
         self.client_fn().get_table.return_value = self.mock_table
-        self.assertFalse(self.checker.get_has_column_predicate('fake-column')())
+        self.assertFalse(self.checker.get_has_column_predicate("fake-column")())

@@ -24,18 +24,21 @@ from typing import Type
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.operations import schema
-from recidiviz.persistence.database.schema_entity_converter. \
-    base_schema_entity_converter import (BaseSchemaEntityConverter,
-                                         FieldNameType, DstBaseType,
-                                         SrcBaseType)
+from recidiviz.persistence.database.schema_entity_converter.base_schema_entity_converter import (
+    BaseSchemaEntityConverter,
+    FieldNameType,
+    DstBaseType,
+    SrcBaseType,
+)
 from recidiviz.persistence.entity.base_entity import Entity
 
 from recidiviz.persistence.entity.entity_utils import SchemaEdgeDirectionChecker
 from recidiviz.persistence.entity.operations import entities
 
 
-class _OperationsSchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType,
-                                                                 DstBaseType]):
+class _OperationsSchemaEntityConverter(
+    BaseSchemaEntityConverter[SrcBaseType, DstBaseType]
+):
     """County-specific implementation of BaseSchemaEntityConverter"""
 
     def __init__(self):
@@ -47,8 +50,7 @@ class _OperationsSchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType,
     def _get_entities_module(self) -> ModuleType:
         return entities
 
-    def _should_skip_field(
-            self, entity_cls: Type, field: FieldNameType) -> bool:
+    def _should_skip_field(self, entity_cls: Type, field: FieldNameType) -> bool:
         return False
 
     def _populate_indirect_back_edges(self, _):
@@ -56,10 +58,12 @@ class _OperationsSchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType,
 
 
 class OperationsSchemaToEntityConverter(
-        _OperationsSchemaEntityConverter[DatabaseEntity, Entity]):
+    _OperationsSchemaEntityConverter[DatabaseEntity, Entity]
+):
     pass
 
 
 class OperationsEntityToSchemaConverter(
-        _OperationsSchemaEntityConverter[Entity, DatabaseEntity]):
+    _OperationsSchemaEntityConverter[Entity, DatabaseEntity]
+):
     pass

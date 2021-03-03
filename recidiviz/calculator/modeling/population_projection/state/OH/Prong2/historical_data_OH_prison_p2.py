@@ -34,7 +34,10 @@ ADDITIONAL NOTES:
 
 # TODO(#99999): add whatever modules you need
 import pandas as pd
-from recidiviz.calculator.modeling.population_projection.spark_bq_utils import upload_spark_model_inputs
+from recidiviz.calculator.modeling.population_projection.spark_bq_utils import (
+    upload_spark_model_inputs,
+)
+
 # pylint: skip-file
 
 
@@ -44,14 +47,20 @@ from recidiviz.calculator.modeling.population_projection.spark_bq_utils import u
 
 # TODO(#99999): add one column to transitions_data & outflows_data per disaggregation axis.
 #  If none exist, add place-holder axis
-transitions_data = pd.read_csv('oh_p2_transitions.csv')
-outflows_data = pd.read_csv('oh_p2_outflows.csv')
-total_population_data = pd.read_csv('oh_p2_population.csv')
+transitions_data = pd.read_csv("oh_p2_transitions.csv")
+outflows_data = pd.read_csv("oh_p2_outflows.csv")
+total_population_data = pd.read_csv("oh_p2_population.csv")
 
 
-transitions_data = transitions_data.rename({'charge': 'crime_type', 'felony_level': 'crime'}, axis=1)
-outflows_data = outflows_data.rename({'charge': 'crime_type', 'felony_level': 'crime'}, axis=1)
-total_population_data = total_population_data.rename({'charge': 'crime_type', 'felony_level': 'crime'}, axis=1)
+transitions_data = transitions_data.rename(
+    {"charge": "crime_type", "felony_level": "crime"}, axis=1
+)
+outflows_data = outflows_data.rename(
+    {"charge": "crime_type", "felony_level": "crime"}, axis=1
+)
+total_population_data = total_population_data.rename(
+    {"charge": "crime_type", "felony_level": "crime"}, axis=1
+)
 
 # TRANSITIONS TABLE
 
@@ -83,5 +92,10 @@ total_population_data = final_pops
 # STORE DATA
 # TODO(#99999): fill in `state` and `primary_compartment`
 simulation_tag = "OH_SB3_prong2"
-upload_spark_model_inputs('recidiviz-staging', simulation_tag, outflows_data, transitions_data,
-                          total_population_data)
+upload_spark_model_inputs(
+    "recidiviz-staging",
+    simulation_tag,
+    outflows_data,
+    transitions_data,
+    total_population_data,
+)

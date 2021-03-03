@@ -33,46 +33,52 @@ import yaml
 from recidiviz.calculator import pipeline
 from recidiviz.tools.run_calculation_pipelines import run_pipeline, get_pipeline_module
 
-STAGING_ONLY_TEMPLATES_PATH = os.path.join(os.path.dirname(pipeline.__file__),
-                                           'staging_only_calculation_pipeline_templates.yaml')
+STAGING_ONLY_TEMPLATES_PATH = os.path.join(
+    os.path.dirname(pipeline.__file__),
+    "staging_only_calculation_pipeline_templates.yaml",
+)
 
 
-PRODUCTION_TEMPLATES_PATH = os.path.join(os.path.dirname(pipeline.__file__),
-                                         'production_calculation_pipeline_templates.yaml')
+PRODUCTION_TEMPLATES_PATH = os.path.join(
+    os.path.dirname(pipeline.__file__), "production_calculation_pipeline_templates.yaml"
+)
 
 TEMPLATE_PATHS = {
-    'production': PRODUCTION_TEMPLATES_PATH,
-    'staging': STAGING_ONLY_TEMPLATES_PATH
+    "production": PRODUCTION_TEMPLATES_PATH,
+    "staging": STAGING_ONLY_TEMPLATES_PATH,
 }
 
 
 def deploy_pipeline_templates(template_yaml_path: str, project_id: str) -> None:
     """Deploys all pipelines listed in the file at the template_yaml_path to templates in the given project."""
-    logging.info("Deploying pipeline templates at %s to %s", template_yaml_path, project_id)
+    logging.info(
+        "Deploying pipeline templates at %s to %s", template_yaml_path, project_id
+    )
 
-    with open(template_yaml_path, 'r') as yaml_file:
+    with open(template_yaml_path, "r") as yaml_file:
         pipeline_config_yaml = yaml.full_load(yaml_file)
 
         if pipeline_config_yaml:
-            pipeline_config_yaml_all_pipelines = pipeline_config_yaml['daily_pipelines'] + \
-                pipeline_config_yaml['historical_pipelines']
+            pipeline_config_yaml_all_pipelines = (
+                pipeline_config_yaml["daily_pipelines"]
+                + pipeline_config_yaml["historical_pipelines"]
+            )
             for pipeline_yaml_dict in pipeline_config_yaml_all_pipelines:
-                argv = ['--project', project_id,
-                        '--save_as_template']
+                argv = ["--project", project_id, "--save_as_template"]
 
-                pipeline_type = ''
+                pipeline_type = ""
 
                 for key, value in pipeline_yaml_dict.items():
-                    if key == 'pipeline':
+                    if key == "pipeline":
                         pipeline_type = value
-                    elif key == 'metric_types':  # The only arg that allows a list
-                        argv.extend([f'--{key}'])
-                        metric_type_values = value.split(' ')
+                    elif key == "metric_types":  # The only arg that allows a list
+                        argv.extend([f"--{key}"])
+                        metric_type_values = value.split(" ")
 
                         for metric_type_value in metric_type_values:
                             argv.extend([metric_type_value])
                     else:
-                        argv.extend([f'--{key}', f'{value}'])
+                        argv.extend([f"--{key}", f"{value}"])
 
                 pipeline_module = get_pipeline_module(pipeline_type)
                 run_pipeline(pipeline_module, argv)
@@ -84,17 +90,21 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     """Parses the arguments needed to deploy the pipeline templates."""
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--templates_to_deploy',
-                        dest='templates_to_deploy',
-                        type=str,
-                        choices=TEMPLATE_PATHS.keys(),
-                        required=True)
+    parser.add_argument(
+        "--templates_to_deploy",
+        dest="templates_to_deploy",
+        type=str,
+        choices=TEMPLATE_PATHS.keys(),
+        required=True,
+    )
 
-    parser.add_argument('--project_id',
-                        dest='project_id',
-                        type=str,
-                        choices=['recidiviz-123', 'recidiviz-staging'],
-                        required=True)
+    parser.add_argument(
+        "--project_id",
+        dest="project_id",
+        type=str,
+        choices=["recidiviz-123", "recidiviz-staging"],
+        required=True,
+    )
 
     return parser.parse_known_args(argv)
 
@@ -106,13 +116,17 @@ def deploy_pipeline_templates_to_project() -> None:
     template_yaml_path = TEMPLATE_PATHS.get(known_args.templates_to_deploy)
 
     if template_yaml_path:
-        deploy_pipeline_templates(template_yaml_path=template_yaml_path, project_id=known_args.project_id)
+        deploy_pipeline_templates(
+            template_yaml_path=template_yaml_path, project_id=known_args.project_id
+        )
     else:
         # Bad arg should be caught by the arg parser before we get here
-        raise ValueError(f"No template yaml file corresponding to --templates_to_deploy="
-                         f"{known_args.templates_to_deploy}")
+        raise ValueError(
+            f"No template yaml file corresponding to --templates_to_deploy="
+            f"{known_args.templates_to_deploy}"
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
     deploy_pipeline_templates_to_project()

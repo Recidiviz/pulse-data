@@ -30,11 +30,11 @@ import attr
 
 from recidiviz.persistence.entity.core_entity import primary_key_name_from_cls
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import \
-    get_all_entity_classes_in_module
+from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
 from recidiviz.persistence.entity.state import entities
-from recidiviz.tests.persistence.entity.state.entities_test_utils import \
-    generate_full_graph_state_person
+from recidiviz.tests.persistence.entity.state.entities_test_utils import (
+    generate_full_graph_state_person,
+)
 
 
 class TestStateEntities(TestCase):
@@ -42,37 +42,48 @@ class TestStateEntities(TestCase):
 
     def test_classes_have_eq_equal_false(self):
         for entity_class in get_all_entity_classes_in_module(entities):
-            self.assertEqual(entity_class.__eq__, Entity.__eq__,
-                             f"Class [{entity_class}] has an __eq__ function "
-                             f"unequal to the base Entity class - did you "
-                             f"remember to set eq=False in the @attr.s "
-                             f"declaration?")
+            self.assertEqual(
+                entity_class.__eq__,
+                Entity.__eq__,
+                f"Class [{entity_class}] has an __eq__ function "
+                f"unequal to the base Entity class - did you "
+                f"remember to set eq=False in the @attr.s "
+                f"declaration?",
+            )
 
     def test_all_entity_class_names_prefixed_with_state(self):
         for cls in get_all_entity_classes_in_module(entities):
-            self.assertTrue(cls.__name__.startswith('State'))
+            self.assertTrue(cls.__name__.startswith("State"))
 
     def test_all_entity_classes_have_expected_primary_id(self):
         for cls in get_all_entity_classes_in_module(entities):
             key_name = primary_key_name_from_cls(cls)
-            self.assertTrue(key_name in attr.fields_dict(cls),
-                            f"Expected primary key field [{key_name}] not "
-                            f"defined for class [{cls}].")
+            self.assertTrue(
+                key_name in attr.fields_dict(cls),
+                f"Expected primary key field [{key_name}] not "
+                f"defined for class [{cls}].",
+            )
             attribute = attr.fields_dict(cls)[key_name]
-            self.assertEqual(attribute.type, Optional[int],
-                             f"Unexpected type [{attribute.type}] for primary "
-                             f"key [{key_name}] of class [{cls}].")
+            self.assertEqual(
+                attribute.type,
+                Optional[int],
+                f"Unexpected type [{attribute.type}] for primary "
+                f"key [{key_name}] of class [{cls}].",
+            )
 
     def test_all_classes_have_a_non_optional_state_code(self):
         for cls in get_all_entity_classes_in_module(entities):
             self.assertTrue(
-                'state_code' in attr.fields_dict(cls),
-                f"Expected field |state_code| not defined for class [{cls}].")
-            attribute = attr.fields_dict(cls)['state_code']
-            self.assertEqual(attribute.type,
-                             str,
-                             f"Unexpected type [{attribute.type}] for "
-                             f"|state_code| field of class [{cls}].")
+                "state_code" in attr.fields_dict(cls),
+                f"Expected field |state_code| not defined for class [{cls}].",
+            )
+            attribute = attr.fields_dict(cls)["state_code"]
+            self.assertEqual(
+                attribute.type,
+                str,
+                f"Unexpected type [{attribute.type}] for "
+                f"|state_code| field of class [{cls}].",
+            )
 
     def test_all_classes_have_person_reference(self):
         classes_without_a_person_ref = [
@@ -84,13 +95,16 @@ class TestStateEntities(TestCase):
             if cls in classes_without_a_person_ref:
                 continue
             self.assertTrue(
-                'person' in attr.fields_dict(cls),
-                f"Expected field |person| not defined for class [{cls}].")
-            attribute = attr.fields_dict(cls)['person']
-            self.assertEqual(attribute.type,
-                             Optional[ForwardRef('StatePerson')],
-                             f"Unexpected type [{attribute.type}] for |person| "
-                             f"field of class [{cls}].")
+                "person" in attr.fields_dict(cls),
+                f"Expected field |person| not defined for class [{cls}].",
+            )
+            attribute = attr.fields_dict(cls)["person"]
+            self.assertEqual(
+                attribute.type,
+                Optional[ForwardRef("StatePerson")],
+                f"Unexpected type [{attribute.type}] for |person| "
+                f"field of class [{cls}].",
+            )
 
     def test_person_equality_no_backedges(self):
         person1 = generate_full_graph_state_person(set_back_edges=False)
@@ -117,7 +131,7 @@ class TestStateEntities(TestCase):
         person1 = generate_full_graph_state_person(set_back_edges=True)
         person2 = generate_full_graph_state_person(set_back_edges=True)
 
-        next(iter(person1.assessments)).state_code = 'us_ny'
+        next(iter(person1.assessments)).state_code = "us_ny"
 
         self.assertNotEqual(person1, person2)
 
@@ -129,8 +143,7 @@ class TestStateEntities(TestCase):
         person2a = generate_full_graph_state_person(set_back_edges=False)
         person2b = generate_full_graph_state_person(set_back_edges=False)
 
-        self.assertEqual([person1a, person2a],
-                         [person1b, person2b])
+        self.assertEqual([person1a, person2a], [person1b, person2b])
 
     # TODO(#1894): Add more detailed unit tests for entity_graph_eq (first
     #  defined in #1812)

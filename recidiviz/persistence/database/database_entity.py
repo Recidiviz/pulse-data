@@ -25,12 +25,13 @@ from sqlalchemy.sql.sqltypes import Boolean
 
 from recidiviz.persistence.entity.core_entity import CoreEntity
 
+
 class DatabaseEntity(CoreEntity):
     """Mixin class to provide helper methods to expose database entity
     properties
     """
 
-    Property = TypeVar('Property', RelationshipProperty, ColumnProperty)
+    Property = TypeVar("Property", RelationshipProperty, ColumnProperty)
 
     @classmethod
     def get_primary_key_column_name(cls) -> str:
@@ -73,8 +74,7 @@ class DatabaseEntity(CoreEntity):
         return property_name in cls.get_relationship_property_names()
 
     @classmethod
-    def get_relationship_property_class_name(
-            cls, property_name: str) -> Optional[str]:
+    def get_relationship_property_class_name(cls, property_name: str) -> Optional[str]:
         if not cls.is_relationship_property(property_name):
             return None
         prop = inspect(cls).relationships[property_name]
@@ -93,9 +93,9 @@ class DatabaseEntity(CoreEntity):
         """Returns string name of ORM object attribute corresponding to
         |column_name| on table
         """
-        return next(name
-                    for name in cls.get_column_property_names()
-                    if column_name == name)
+        return next(
+            name for name in cls.get_column_property_names() if column_name == name
+        )
 
     def get_primary_key(self) -> Optional[int]:
         """Returns primary key value for entity"""
@@ -108,18 +108,21 @@ class DatabaseEntity(CoreEntity):
         NOTE: This name is the *attribute* name on the ORM object, which is not
         guaranteed to be the same as the *column* name in the table.
         """
-        return cls.get_property_name_by_column_name(
-            cls.get_primary_key_column_name())
+        return cls.get_property_name_by_column_name(cls.get_primary_key_column_name())
 
     @classmethod
-    def _get_entity_property_names_by_type(cls, property_type: Type[Property]) -> Set[str]:
+    def _get_entity_property_names_by_type(
+        cls, property_type: Type[Property]
+    ) -> Set[str]:
         """Returns set of string names of all properties of |cls| that match the
         type of |property_type|.
         """
         return set(cls._get_entity_names_and_properties_by_type(property_type).keys())
 
     @classmethod
-    def _get_entity_names_and_properties_by_type(cls, property_type: Type[Property]) -> Dict[str, Property]:
+    def _get_entity_names_and_properties_by_type(
+        cls, property_type: Type[Property]
+    ) -> Dict[str, Property]:
         """Returns a dictionary where the keys are the string names of all
         properties of |cls| that are of type |property_type|, and the
         values are the corresponding properties.
@@ -136,8 +139,12 @@ class DatabaseEntity(CoreEntity):
 
     def __repr__(self) -> str:
         """String representation of a DatabaseEntity object that prints DB IDs and external ids for better debugging."""
-        property_strs = sorted([f'{key}={value}'
-                                for key, value in self.__dict__.items()
-                                if key in {self.get_primary_key_column_name(), 'external_id'}])
-        properties_str = ', '.join(property_strs)
-        return f'{self.__class__.__name__}({properties_str})'
+        property_strs = sorted(
+            [
+                f"{key}={value}"
+                for key, value in self.__dict__.items()
+                if key in {self.get_primary_key_column_name(), "external_id"}
+            ]
+        )
+        properties_str = ", ".join(property_strs)
+        return f"{self.__class__.__name__}({properties_str})"

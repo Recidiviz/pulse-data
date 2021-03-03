@@ -22,15 +22,18 @@ from recidiviz.ingest.models.ingest_info_diff import diff_ingest_infos
 from recidiviz.ingest.scrape import ingest_utils
 from recidiviz.persistence.entity_validator import entity_validator
 from recidiviz.persistence.ingest_info_converter import ingest_info_converter
-from recidiviz.persistence.ingest_info_validator.ingest_info_validator import \
-    validate
+from recidiviz.persistence.ingest_info_validator.ingest_info_validator import validate
 
 
 class IndividualIngestTest:
     """A base class for tests which ingest individuals."""
-    def validate_ingest(self, ingest_info: IngestInfo,
-                        expected_ingest_info: IngestInfo,
-                        metadata: IngestMetadata) -> IngestInfo:
+
+    def validate_ingest(
+        self,
+        ingest_info: IngestInfo,
+        expected_ingest_info: IngestInfo,
+        metadata: IngestMetadata,
+    ) -> IngestInfo:
         """This function runs validation on a computed and expected ingest_info.
 
         Args:
@@ -54,12 +57,10 @@ class IndividualIngestTest:
         # Attempt to convert the ingest_info to the ingest info proto,
         # validate the proto, and finally attempt to convert the proto into
         # our entitiy/ objects (which includes parsing strings into types)
-        ingest_info_proto = ingest_utils.convert_ingest_info_to_proto(
-            ingest_info)
+        ingest_info_proto = ingest_utils.convert_ingest_info_to_proto(ingest_info)
         validate(ingest_info_proto)
         res = ingest_info_converter.convert_to_persistence_entities(
-            ingest_info_proto,
-            metadata
+            ingest_info_proto, metadata
         )
 
         assert res.enum_parsing_errors == 0
@@ -71,14 +72,18 @@ class IndividualIngestTest:
         differences = diff_ingest_infos(expected_ingest_info, ingest_info)
 
         if differences:
-            self.fail('IngestInfo objects do not match.\n'  # type: ignore
-                      'Expected:\n{}\n'
-                      'Actual:\n{}\n'
-                      'Differences:\n{}\n\n'
-                      '(paste the following) scraped object:'
-                      '\n{}'.format(expected_ingest_info,
-                                    ingest_info,
-                                    '\n'.join(differences),
-                                    repr(ingest_info)))
+            self.fail(  # type: ignore[attr-defined]
+                "IngestInfo objects do not match.\n"
+                "Expected:\n{}\n"
+                "Actual:\n{}\n"
+                "Differences:\n{}\n\n"
+                "(paste the following) scraped object:"
+                "\n{}".format(
+                    expected_ingest_info,
+                    ingest_info,
+                    "\n".join(differences),
+                    repr(ingest_info),
+                )
+            )
 
         return ingest_info

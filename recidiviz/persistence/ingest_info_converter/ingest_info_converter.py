@@ -18,25 +18,28 @@
 
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
-from recidiviz.persistence.ingest_info_converter.base_converter import \
-    BaseConverter, IngestInfoConversionResult
-from recidiviz.persistence.ingest_info_converter.county.county_converter \
-    import CountyConverter
-from recidiviz.persistence.ingest_info_converter.state.state_converter import \
-    StateConverter
+from recidiviz.persistence.ingest_info_converter.base_converter import (
+    BaseConverter,
+    IngestInfoConversionResult,
+)
+from recidiviz.persistence.ingest_info_converter.county.county_converter import (
+    CountyConverter,
+)
+from recidiviz.persistence.ingest_info_converter.state.state_converter import (
+    StateConverter,
+)
 from recidiviz.utils import trace
 
 
 @trace.span
 def convert_to_persistence_entities(
-        ingest_info: IngestInfo, metadata: IngestMetadata
+    ingest_info: IngestInfo, metadata: IngestMetadata
 ) -> IngestInfoConversionResult:
     converter = _get_converter(ingest_info, metadata)
     return converter.run_convert()
 
 
-def _get_converter(ingest_info: IngestInfo, metadata: IngestMetadata) \
-        -> BaseConverter:
+def _get_converter(ingest_info: IngestInfo, metadata: IngestMetadata) -> BaseConverter:
     system_level = metadata.system_level
 
     if system_level == SystemLevel.COUNTY:
@@ -45,5 +48,6 @@ def _get_converter(ingest_info: IngestInfo, metadata: IngestMetadata) \
     if system_level == SystemLevel.STATE:
         return StateConverter(ingest_info, metadata)
 
-    raise ValueError("Ingest metadata includes invalid system level of [{}]"
-                     .format(system_level))
+    raise ValueError(
+        "Ingest metadata includes invalid system level of [{}]".format(system_level)
+    )

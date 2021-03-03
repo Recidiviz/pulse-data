@@ -17,6 +17,6 @@
 
 """County-level dataset configuration."""
 
-VIEWS_DATASET: str = 'census_views'
+VIEWS_DATASET: str = "census_views"
 
-COUNTY_BASE_DATASET: str = 'census'
+COUNTY_BASE_DATASET: str = "census"

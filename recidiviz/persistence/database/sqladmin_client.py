@@ -26,6 +26,5 @@ def sqladmin_client() -> discovery.Resource:
     global _client
     if not _client:
         credentials, _ = google.auth.default()
-        _client = discovery.build(
-            'sqladmin', 'v1beta4', credentials=credentials)
+        _client = discovery.build("sqladmin", "v1beta4", credentials=credentials)
     return _client

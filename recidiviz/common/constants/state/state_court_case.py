@@ -48,11 +48,11 @@ class StateCourtCaseStatus(EntityEnum, metaclass=EntityEnumMeta):
 
 _STATE_COURT_TYPE_MAP: Dict[str, StateCourtType] = {
     # TODO(#1697): Add values here
-    'PRESENT WITHOUT INFO': StateCourtType.PRESENT_WITHOUT_INFO,
+    "PRESENT WITHOUT INFO": StateCourtType.PRESENT_WITHOUT_INFO,
 }
 
 _STATE_COURT_CASE_STATUS_MAP: Dict[str, StateCourtCaseStatus] = {
     # TODO(#1697): Add values here
-    'EXTERNAL UNKNOWN': StateCourtCaseStatus.EXTERNAL_UNKNOWN,
-    'PRESENT WITHOUT INFO': StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
+    "EXTERNAL UNKNOWN": StateCourtCaseStatus.EXTERNAL_UNKNOWN,
+    "PRESENT WITHOUT INFO": StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
 }

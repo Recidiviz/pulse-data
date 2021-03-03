@@ -22,13 +22,9 @@ import os
 
 import pandas as pd
 
-FIPS_URL = (
-    'https://www2.census.gov/geo/docs/reference/codes/files/national_county.txt'
-)
+FIPS_URL = "https://www2.census.gov/geo/docs/reference/codes/files/national_county.txt"
 
-FIPS_FIELDS = [
-    'state_abbrev', 'state_code', 'county_code', 'county_name', 'class_code'
-]
+FIPS_FIELDS = ["state_abbrev", "state_code", "county_code", "county_name", "class_code"]
 
 FIPS_DTYPES = {field: str for field in FIPS_FIELDS}
 
@@ -41,22 +37,22 @@ def generate_fips_df() -> pd.DataFrame:
     """
     fips_df = pd.read_csv(FIPS_URL, names=FIPS_FIELDS, dtype=FIPS_DTYPES)
 
-    fips_df = fips_df.drop('class_code', axis='columns')
+    fips_df = fips_df.drop("class_code", axis="columns")
 
-    fips_df['fips'] = fips_df['state_code'] + fips_df['county_code']
+    fips_df["fips"] = fips_df["state_code"] + fips_df["county_code"]
 
-    unique_states = fips_df.drop_duplicates('state_code')
+    unique_states = fips_df.drop_duplicates("state_code")
 
-    unknown_county_code = '999'
+    unknown_county_code = "999"
     unknown_codes = unique_states.apply(
         lambda row: {
-            'state_abbrev': row['state_abbrev'],
-            'state_code': row['state_code'],
-            'county_code': unknown_county_code,
-            'county_name': '{} Unknown'.format(row['state_abbrev']),
-            'fips': '{}{}'.format(row['state_code'], unknown_county_code)
+            "state_abbrev": row["state_abbrev"],
+            "state_code": row["state_code"],
+            "county_code": unknown_county_code,
+            "county_name": "{} Unknown".format(row["state_abbrev"]),
+            "fips": "{}{}".format(row["state_code"], unknown_county_code),
         },
-        axis='columns'
+        axis="columns",
     )
     unknown_codes = pd.DataFrame(list(unknown_codes))
 
@@ -65,8 +61,8 @@ def generate_fips_df() -> pd.DataFrame:
     return fips_df_with_unknowns
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     FIPS = generate_fips_df()
 
-    OUTPUT_PATH = os.path.join(os.path.dirname(__file__), 'fips.csv')
+    OUTPUT_PATH = os.path.join(os.path.dirname(__file__), "fips.csv")
     FIPS.to_csv(OUTPUT_PATH, index=False)

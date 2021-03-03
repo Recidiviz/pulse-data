@@ -26,7 +26,9 @@ import attr
 from recidiviz.cloud_storage.gcs_file_system import GCSBlobDoesNotExistError
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import CloudSqlToBQConfig
+from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
+    CloudSqlToBQConfig,
+)
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
 from recidiviz.utils import metadata
 
@@ -38,15 +40,15 @@ class IngestMetadataCounts:
 
     def to_json(self) -> Dict[str, int]:
         return {
-            'totalCount': self.total_count,
-            'placeholderCount': self.placeholder_count,
+            "totalCount": self.total_count,
+            "placeholderCount": self.placeholder_count,
         }
 
     @staticmethod
-    def from_json(json_dict: Dict[str, str]) -> 'IngestMetadataCounts':
+    def from_json(json_dict: Dict[str, str]) -> "IngestMetadataCounts":
         return IngestMetadataCounts(
-            total_count=int(json_dict['total_count']),
-            placeholder_count=int(json_dict['placeholder_count']),
+            total_count=int(json_dict["total_count"]),
+            placeholder_count=int(json_dict["placeholder_count"]),
         )
 
 
@@ -55,7 +57,9 @@ class IngestMetadataCounts:
 IngestMetadataResult = Dict[str, Dict[str, IngestMetadataCounts]]
 
 # An InternalMetadataCountsStore maps from table -> column name -> column value -> state_code -> counts
-InternalMetadataBackingStore = Dict[str, Dict[str, Dict[str, Dict[str, IngestMetadataCounts]]]]
+InternalMetadataBackingStore = Dict[
+    str, Dict[str, Dict[str, Dict[str, IngestMetadataCounts]]]
+]
 
 
 class IngestMetadataCountsStore:
@@ -68,11 +72,17 @@ class IngestMetadataCountsStore:
         self.data_freshness_results: List[Dict[str, Union[str, bool]]] = []
 
         # This class takes heavy advantage of the fact that python dicts are thread-safe.
-        self.store: InternalMetadataBackingStore = defaultdict(lambda: defaultdict(dict))
+        self.store: InternalMetadataBackingStore = defaultdict(
+            lambda: defaultdict(dict)
+        )
 
     @property
     def project_id(self) -> str:
-        return metadata.project_id() if self.override_project_id is None else self.override_project_id
+        return (
+            metadata.project_id()
+            if self.override_project_id is None
+            else self.override_project_id
+        )
 
     def recalculate_store(self) -> None:
         """
@@ -80,23 +90,34 @@ class IngestMetadataCountsStore:
         """
         self.update_data_freshness_results()
 
-        file_paths = [f for f in self.gcs_fs.ls_with_blob_prefix(
-            f'{self.project_id}-ingest-metadata', '') if isinstance(f, GcsfsFilePath)]
+        file_paths = [
+            f
+            for f in self.gcs_fs.ls_with_blob_prefix(
+                f"{self.project_id}-ingest-metadata", ""
+            )
+            if isinstance(f, GcsfsFilePath)
+        ]
         for path in file_paths:
             name, extension = os.path.splitext(path.file_name)
-            if extension != '.json':
-                logging.warning('Found unexpected file in ingest metadata folder: %s', path.file_name)
+            if extension != ".json":
+                logging.warning(
+                    "Found unexpected file in ingest metadata folder: %s",
+                    path.file_name,
+                )
                 continue
             try:
-                file_prefix, table_name, col_name = name.split('__')
+                file_prefix, table_name, col_name = name.split("__")
             except ValueError:
                 # There will be files in this directory that don't follow this structure, so it's safe
                 # to skip them without alarm.
                 continue
-            if file_prefix != 'ingest_state_metadata':
-                logging.warning('Found unexpected file in ingest metadata folder: %s', path.file_name)
+            if file_prefix != "ingest_state_metadata":
+                logging.warning(
+                    "Found unexpected file in ingest metadata folder: %s",
+                    path.file_name,
+                )
                 continue
-            logging.info('Processing %s', path.file_name)
+            logging.info("Processing %s", path.file_name)
 
             col_store: Dict[str, Dict[str, IngestMetadataCounts]] = defaultdict(dict)
 
@@ -104,26 +125,36 @@ class IngestMetadataCountsStore:
                 result = self.gcs_fs.download_as_string(path)
             except GCSBlobDoesNotExistError:
                 continue
-            lines = result.split('\n')
+            lines = result.split("\n")
             for l in lines:
                 l = l.strip()
                 if not l:
                     continue
                 struct = json.loads(l)
-                col_store[struct[col_name]][struct['state_code'].upper()] = IngestMetadataCounts.from_json(struct)
+                col_store[struct[col_name]][
+                    struct["state_code"].upper()
+                ] = IngestMetadataCounts.from_json(struct)
             self.store[table_name][col_name] = col_store
-        logging.info('DONE PROCESSING')
+        logging.info("DONE PROCESSING")
 
     def update_data_freshness_results(self) -> None:
+        """Refreshes information in the metadata store about freshness of ingested data for all states."""
         bq_export_config = CloudSqlToBQConfig.for_schema_type(
             SchemaType.STATE,
-            yaml_path=GcsfsFilePath.from_absolute_path(f'gs://{self.project_id}-configs/cloud_sql_to_bq_config.yaml')
+            yaml_path=GcsfsFilePath.from_absolute_path(
+                f"gs://{self.project_id}-configs/cloud_sql_to_bq_config.yaml"
+            ),
         )
-        regions_paused = [] if bq_export_config is None else bq_export_config.region_codes_to_exclude
+        regions_paused = (
+            [] if bq_export_config is None else bq_export_config.region_codes_to_exclude
+        )
 
         latest_upper_bounds_path = GcsfsFilePath.from_absolute_path(
-            f'gs://{self.project_id}-ingest-metadata/ingest_metadata_latest_ingested_upper_bounds.json')
-        latest_upper_bounds_json = self.gcs_fs.download_as_string(latest_upper_bounds_path)
+            f"gs://{self.project_id}-ingest-metadata/ingest_metadata_latest_ingested_upper_bounds.json"
+        )
+        latest_upper_bounds_json = self.gcs_fs.download_as_string(
+            latest_upper_bounds_path
+        )
         latest_upper_bounds = []
 
         for line in latest_upper_bounds_json.splitlines():
@@ -131,11 +162,13 @@ class IngestMetadataCountsStore:
             if not line:
                 continue
             struct = json.loads(line)
-            latest_upper_bounds.append({
-                'state': struct['state_code'],
-                'date': struct['processed_date'],
-                'ingestPaused': struct['state_code'] in regions_paused,
-            })
+            latest_upper_bounds.append(
+                {
+                    "state": struct["state_code"],
+                    "date": struct["processed_date"],
+                    "ingestPaused": struct["state_code"] in regions_paused,
+                }
+            )
         self.data_freshness_results = latest_upper_bounds
 
     def fetch_object_counts_by_table(self) -> IngestMetadataResult:
@@ -179,7 +212,7 @@ class IngestMetadataCountsStore:
             placeholder_count: Dict[str, int] = defaultdict(int)
             total_count: Dict[str, int] = defaultdict(int)
             for val, state_map in val_map.items():
-                if val == 'NULL':
+                if val == "NULL":
                     continue
                 for state_code, result in state_map.items():
                     total_count[state_code] += result.total_count
@@ -192,7 +225,9 @@ class IngestMetadataCountsStore:
 
         return results
 
-    def fetch_column_object_counts_by_value(self, table: str, column: str) -> IngestMetadataResult:
+    def fetch_column_object_counts_by_value(
+        self, table: str, column: str
+    ) -> IngestMetadataResult:
         """
         This code does the equivalent of:
         SELECT state_code, val, total_count, placeholder_count FROM column_metadata WHERE table_name=$1 AND col=$2

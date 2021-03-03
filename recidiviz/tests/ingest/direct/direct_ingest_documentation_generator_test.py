@@ -22,11 +22,17 @@ import pytest
 from mock import patch, MagicMock
 
 from recidiviz.common.constants import states
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import DirectIngestRegionRawFileConfig
-from recidiviz.ingest.direct.direct_ingest_documentation_generator import DirectIngestDocumentationGenerator
+from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
+    DirectIngestRegionRawFileConfig,
+)
+from recidiviz.ingest.direct.direct_ingest_documentation_generator import (
+    DirectIngestDocumentationGenerator,
+)
 from recidiviz.tests.ingest import fixtures
-from recidiviz.tests.ingest.direct.direct_ingest_util import FakeDirectIngestPreProcessedIngestViewCollector, \
-    FakeDirectIngestRegionRawFileConfig
+from recidiviz.tests.ingest.direct.direct_ingest_util import (
+    FakeDirectIngestPreProcessedIngestViewCollector,
+    FakeDirectIngestRegionRawFileConfig,
+)
 from recidiviz.tests.utils.fake_region import fake_region
 
 
@@ -34,27 +40,37 @@ class DirectIngestDocumentationGeneratorTest(unittest.TestCase):
     """Tests for DirectIngestDocumentationGenerator."""
 
     def setUp(self) -> None:
-        self.metadata_patcher = patch('recidiviz.utils.metadata.project_id')
+        self.metadata_patcher = patch("recidiviz.utils.metadata.project_id")
         self.mock_project_id_fn = self.metadata_patcher.start()
-        self.mock_project_id_fn.return_value = 'project-id'
+        self.mock_project_id_fn.return_value = "project-id"
 
     def tearDown(self) -> None:
         self.metadata_patcher.stop()
 
-    @patch('recidiviz.ingest.direct.direct_ingest_documentation_generator.DirectIngestRegionRawFileConfig')
-    @patch('recidiviz.ingest.direct.direct_ingest_documentation_generator.DirectIngestDocumentationGenerator'
-           '._get_updated_by')
-    @patch('recidiviz.ingest.direct.direct_ingest_documentation_generator.DirectIngestDocumentationGenerator'
-           '._get_last_updated')
-    @patch('recidiviz.utils.regions.get_region', return_value=fake_region())
-    @patch('recidiviz.ingest.direct.direct_ingest_documentation_generator.DirectIngestDocumentationGenerator'
-           '._get_referencing_views')
-    def test_generate_raw_file_docs_for_region(self,
-                                               mock_referencing_views: MagicMock,
-                                               _mock_region: MagicMock,
-                                               mock_last_updated: MagicMock,
-                                               mock_updated_by: MagicMock,
-                                               mock_raw_config: MagicMock) -> None:
+    @patch(
+        "recidiviz.ingest.direct.direct_ingest_documentation_generator.DirectIngestRegionRawFileConfig"
+    )
+    @patch(
+        "recidiviz.ingest.direct.direct_ingest_documentation_generator.DirectIngestDocumentationGenerator"
+        "._get_updated_by"
+    )
+    @patch(
+        "recidiviz.ingest.direct.direct_ingest_documentation_generator.DirectIngestDocumentationGenerator"
+        "._get_last_updated"
+    )
+    @patch("recidiviz.utils.regions.get_region", return_value=fake_region())
+    @patch(
+        "recidiviz.ingest.direct.direct_ingest_documentation_generator.DirectIngestDocumentationGenerator"
+        ".get_referencing_views"
+    )
+    def test_generate_raw_file_docs_for_region(
+        self,
+        mock_referencing_views: MagicMock,
+        _mock_region: MagicMock,
+        mock_last_updated: MagicMock,
+        mock_updated_by: MagicMock,
+        mock_raw_config: MagicMock,
+    ) -> None:
         importlib.reload(states)
         region_code = states.StateCode.US_XX.value.lower()
         region_config = DirectIngestRegionRawFileConfig(
@@ -62,14 +78,18 @@ class DirectIngestDocumentationGeneratorTest(unittest.TestCase):
             yaml_config_file_dir=fixtures.as_filepath(region_code),
         )
         mock_raw_config.return_value = region_config
-        mock_updated_by.return_value = 'Julia Dressel'
-        mock_last_updated.return_value = '2021-02-10'
-        mock_referencing_views.return_value = {'multiLineDescription': ['view_one', 'view_two'],
-                                               'tagColumnsMissing': ['view_one'],
-                                               'tagPrimaryKeyColsMissing': []}
+        mock_updated_by.return_value = "Julia Dressel"
+        mock_last_updated.return_value = "2021-02-10"
+        mock_referencing_views.return_value = {
+            "multiLineDescription": ["view_one", "view_two"],
+            "tagColumnsMissing": ["view_one"],
+            "tagPrimaryKeyColsMissing": [],
+        }
 
         documentation_generator = DirectIngestDocumentationGenerator()
-        documentation = documentation_generator.generate_raw_file_docs_for_region(region_code)
+        documentation = documentation_generator.generate_raw_file_docs_for_region(
+            region_code
+        )
 
         expected_documentation = """# Test State Raw Data Description
 
@@ -120,19 +140,30 @@ tagPrimaryKeyColsMissing file description
         documentation_generator = DirectIngestDocumentationGenerator()
 
         with pytest.raises(ValueError) as error:
-            documentation_generator.generate_raw_file_docs_for_region('US_NOT_REAL')
-            self.assertEqual(error.value, "Missing raw data configs for region: US_NOT_REAL")
+            documentation_generator.generate_raw_file_docs_for_region("US_NOT_REAL")
+            self.assertEqual(
+                error.value, "Missing raw data configs for region: US_NOT_REAL"
+            )
 
-    @patch("recidiviz.ingest.direct.views.direct_ingest_big_query_view_types"
-           ".get_region_raw_file_config")
+    @patch(
+        "recidiviz.ingest.direct.views.direct_ingest_big_query_view_types"
+        ".get_region_raw_file_config"
+    )
     def test_get_referencing_views(self, mock_config_fn: MagicMock) -> None:
-        mock_config_fn.return_value = FakeDirectIngestRegionRawFileConfig('US_XX')
+        mock_config_fn.return_value = FakeDirectIngestRegionRawFileConfig("US_XX")
         documentation_generator = DirectIngestDocumentationGenerator()
-        tags = ['tagA', 'tagB', 'tagC']
-        my_collector = FakeDirectIngestPreProcessedIngestViewCollector(region=fake_region(),
-                                                                       controller_tag_rank_list=tags)
-        expected_referencing_views = {'tagA': ['tagA', 'gatedTagNotInTagsList'],
-                                      'tagB': ['tagB', 'gatedTagNotInTagsList'],
-                                      'tagC': ['tagC']}
-        self.assertEqual(documentation_generator._get_referencing_views(my_collector),  # pylint: disable=W0212
-                         expected_referencing_views)
+        tags = ["tagA", "tagB", "tagC"]
+        my_collector = FakeDirectIngestPreProcessedIngestViewCollector(
+            region=fake_region(), controller_tag_rank_list=tags
+        )
+        expected_referencing_views = {
+            "tagA": ["tagA", "gatedTagNotInTagsList"],
+            "tagB": ["tagB", "gatedTagNotInTagsList"],
+            "tagC": ["tagC"],
+        }
+        self.assertEqual(
+            documentation_generator.get_referencing_views(
+                my_collector
+            ),  # pylint: disable=W0212
+            expected_referencing_views,
+        )

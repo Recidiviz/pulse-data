@@ -32,57 +32,71 @@ class TestProtobufBuilder(unittest.TestCase):
     def test_compose_simple(self):
         duration1 = duration_pb2.Duration(seconds=1, nanos=2)
         duration2 = duration_pb2.Duration(nanos=3)
-        duration = ProtobufBuilder(duration_pb2.Duration).compose(
-            duration1
-        ).compose(
-            duration2
-        ).build()
+        duration = (
+            ProtobufBuilder(duration_pb2.Duration)
+            .compose(duration1)
+            .compose(duration2)
+            .build()
+        )
 
         self.assertEqual(duration, duration_pb2.Duration(seconds=1, nanos=3))
 
-        duration = ProtobufBuilder(duration_pb2.Duration).compose(
-            duration2
-        ).compose(
-            duration1
-        ).build()
+        duration = (
+            ProtobufBuilder(duration_pb2.Duration)
+            .compose(duration2)
+            .compose(duration1)
+            .build()
+        )
 
         self.assertEqual(duration, duration_pb2.Duration(seconds=1, nanos=2))
 
     def test_update_args(self):
-        duration = ProtobufBuilder(duration_pb2.Duration).update_args(
-            seconds=1,
-            nanos=2,
-        ).update_args(
-            nanos=3
-        ).build()
+        duration = (
+            ProtobufBuilder(duration_pb2.Duration)
+            .update_args(
+                seconds=1,
+                nanos=2,
+            )
+            .update_args(nanos=3)
+            .build()
+        )
 
         self.assertEqual(duration, duration_pb2.Duration(seconds=1, nanos=3))
 
-        duration = ProtobufBuilder(duration_pb2.Duration).update_args(
-            nanos=3
-        ).update_args(
-            seconds=1,
-            nanos=2,
-        ).build()
+        duration = (
+            ProtobufBuilder(duration_pb2.Duration)
+            .update_args(nanos=3)
+            .update_args(
+                seconds=1,
+                nanos=2,
+            )
+            .build()
+        )
 
         self.assertEqual(duration, duration_pb2.Duration(seconds=1, nanos=2))
 
     def test_build_multiple_ways(self):
         duration1 = duration_pb2.Duration(seconds=1, nanos=2)
-        duration = ProtobufBuilder(duration_pb2.Duration).compose(
-            duration1
-        ).update_args(
-            nanos=3,
-        ).build()
+        duration = (
+            ProtobufBuilder(duration_pb2.Duration)
+            .compose(duration1)
+            .update_args(
+                nanos=3,
+            )
+            .build()
+        )
 
         self.assertEqual(duration, duration_pb2.Duration(seconds=1, nanos=3))
 
         duration2 = duration_pb2.Duration(nanos=2)
-        duration = ProtobufBuilder(duration_pb2.Duration).update_args(
-            seconds=1,
-        ).compose(
-            duration2
-        ).build()
+        duration = (
+            ProtobufBuilder(duration_pb2.Duration)
+            .update_args(
+                seconds=1,
+            )
+            .compose(duration2)
+            .build()
+        )
 
         self.assertEqual(duration, duration_pb2.Duration(seconds=1, nanos=2))
 
@@ -94,22 +108,26 @@ class TestProtobufBuilder(unittest.TestCase):
             ),
             retry_config=queue_pb2.RetryConfig(
                 max_attempts=5,
-            )
+            ),
         )
 
-        queue = ProtobufBuilder(queue_pb2.Queue).compose(
-            base_queue
-        ).compose(
-            queue_pb2.Queue(
-                rate_limits=queue_pb2.RateLimits(
-                    max_dispatches_per_second=50,
-                ),
+        queue = (
+            ProtobufBuilder(queue_pb2.Queue)
+            .compose(base_queue)
+            .compose(
+                queue_pb2.Queue(
+                    rate_limits=queue_pb2.RateLimits(
+                        max_dispatches_per_second=50,
+                    ),
+                )
             )
-        ).update_args(
-            retry_config=queue_pb2.RetryConfig(
-                max_doublings=4,
+            .update_args(
+                retry_config=queue_pb2.RetryConfig(
+                    max_doublings=4,
+                )
             )
-        ).build()
+            .build()
+        )
 
         expected_queue = queue_pb2.Queue(
             rate_limits=queue_pb2.RateLimits(
@@ -119,7 +137,7 @@ class TestProtobufBuilder(unittest.TestCase):
             retry_config=queue_pb2.RetryConfig(
                 max_attempts=5,
                 max_doublings=4,
-            )
+            ),
         )
 
         self.assertEqual(queue, expected_queue)
@@ -132,4 +150,4 @@ class TestProtobufBuilder(unittest.TestCase):
     def test_bad_arg_raises_error(self):
         duration_builder = ProtobufBuilder(duration_pb2.Duration)
         with self.assertRaises(ValueError):
-            duration_builder.update_args(name='this-field-does-not-exist')
+            duration_builder.update_args(name="this-field-does-not-exist")

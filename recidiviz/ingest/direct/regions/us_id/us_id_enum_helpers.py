@@ -18,43 +18,77 @@
 from typing import Optional
 
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
-from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodAdmissionReason, \
-    StateIncarcerationPeriodReleaseReason, StateSpecializedPurposeForIncarceration
-from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodAdmissionReason, \
-    StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodAdmissionReason,
+    StateIncarcerationPeriodReleaseReason,
+    StateSpecializedPurposeForIncarceration,
+)
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodTerminationReason,
+    StateSupervisionPeriodSupervisionType,
+)
 from recidiviz.common.str_field_utils import sorted_list_from_str
-from recidiviz.ingest.direct.regions.us_id.us_id_constants import JAIL_FACILITY_CODES, DEPORTED_LOCATION_NAME, \
-    INTERSTATE_FACILITY_CODE, COMMUTED_LOCATION_NAMES, EARLY_DISCHARGE_LOCATION_NAME, DECEASED_LOCATION_NAMES, \
-    DISMISSED_LOCATION_NAME, PARDONED_LOCATION_NAMES, HISTORY_FACILITY_TYPE, SUPERVISION_FACILITY_TYPE, \
-    INCARCERATION_FACILITY_TYPE, OTHER_FACILITY_TYPE, FUGITIVE_FACILITY_TYPE, PAROLE_COMMISSION_CODE, \
-    FEDERAL_CUSTODY_LOCATION_CODE
+from recidiviz.ingest.direct.regions.us_id.us_id_constants import (
+    JAIL_FACILITY_CODES,
+    DEPORTED_LOCATION_NAME,
+    INTERSTATE_FACILITY_CODE,
+    COMMUTED_LOCATION_NAMES,
+    EARLY_DISCHARGE_LOCATION_NAME,
+    DECEASED_LOCATION_NAMES,
+    DISMISSED_LOCATION_NAME,
+    PARDONED_LOCATION_NAMES,
+    HISTORY_FACILITY_TYPE,
+    SUPERVISION_FACILITY_TYPE,
+    INCARCERATION_FACILITY_TYPE,
+    OTHER_FACILITY_TYPE,
+    FUGITIVE_FACILITY_TYPE,
+    PAROLE_COMMISSION_CODE,
+    FEDERAL_CUSTODY_LOCATION_CODE,
+)
 
 
-def supervision_admission_reason_mapper(label: str) -> Optional[StateSupervisionPeriodAdmissionReason]:
-    if label == HISTORY_FACILITY_TYPE:    # Coming from history (person had completed sentences in past)
+def supervision_admission_reason_mapper(
+    label: str,
+) -> Optional[StateSupervisionPeriodAdmissionReason]:
+    if (
+        label == HISTORY_FACILITY_TYPE
+    ):  # Coming from history (person had completed sentences in past)
         return StateSupervisionPeriodAdmissionReason.COURT_SENTENCE
-    if label == SUPERVISION_FACILITY_TYPE:    # Coming from probation/parole within the state
+    if (
+        label == SUPERVISION_FACILITY_TYPE
+    ):  # Coming from probation/parole within the state
         return StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE
     # TODO(#3506): Clarify when OTHER_FACILITY_TYPE is used.
-    if label in (INCARCERATION_FACILITY_TYPE, OTHER_FACILITY_TYPE):  # Coming from incarceration.
+    if label in (
+        INCARCERATION_FACILITY_TYPE,
+        OTHER_FACILITY_TYPE,
+    ):  # Coming from incarceration.
         return StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE
-    if label == FUGITIVE_FACILITY_TYPE:    # Coming from absconsion.
+    if label == FUGITIVE_FACILITY_TYPE:  # Coming from absconsion.
         return StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION
     if label in (DEPORTED_LOCATION_NAME, INTERSTATE_FACILITY_CODE):
         return StateSupervisionPeriodAdmissionReason.TRANSFER_OUT_OF_STATE
     return None
 
 
-def supervision_termination_reason_mapper(label: str) -> Optional[StateSupervisionPeriodTerminationReason]:
+def supervision_termination_reason_mapper(
+    label: str,
+) -> Optional[StateSupervisionPeriodTerminationReason]:
     # TODO(#2865): Update enum normalization so that we separate by -s instead of spaces
-    if label.startswith(f'{HISTORY_FACILITY_TYPE} '):    # Going to history (completed all sentences)
+    if label.startswith(
+        f"{HISTORY_FACILITY_TYPE} "
+    ):  # Going to history (completed all sentences)
         return _supervision_history_termination_reason_mapper(label)
-    if label == SUPERVISION_FACILITY_TYPE:    # Going to probation/parole within the state
+    if label == SUPERVISION_FACILITY_TYPE:  # Going to probation/parole within the state
         return StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE
     # TODO(#3506): Clarify when OTHER_FACILITY_TYPE is used.
-    if label in (INCARCERATION_FACILITY_TYPE, OTHER_FACILITY_TYPE):     # Going to incarceration.
+    if label in (
+        INCARCERATION_FACILITY_TYPE,
+        OTHER_FACILITY_TYPE,
+    ):  # Going to incarceration.
         return StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION
-    if label == FUGITIVE_FACILITY_TYPE:    # End of absconsion period
+    if label == FUGITIVE_FACILITY_TYPE:  # End of absconsion period
         return StateSupervisionPeriodTerminationReason.ABSCONSION
     if label in (DEPORTED_LOCATION_NAME, INTERSTATE_FACILITY_CODE):
         return StateSupervisionPeriodTerminationReason.TRANSFER_OUT_OF_STATE
@@ -62,9 +96,11 @@ def supervision_termination_reason_mapper(label: str) -> Optional[StateSupervisi
     return None
 
 
-def _supervision_history_termination_reason_mapper(label: str) -> Optional[StateSupervisionPeriodTerminationReason]:
+def _supervision_history_termination_reason_mapper(
+    label: str,
+) -> Optional[StateSupervisionPeriodTerminationReason]:
     # TODO(#2865): Update enum normalization so that we separate by -s instead of spaces
-    _history_facility_typ, location_name = label.split(' ', 1)
+    _history_facility_typ, location_name = label.split(" ", 1)
     if location_name in COMMUTED_LOCATION_NAMES:
         return StateSupervisionPeriodTerminationReason.COMMUTED
     if location_name == EARLY_DISCHARGE_LOCATION_NAME:
@@ -81,36 +117,54 @@ def _supervision_history_termination_reason_mapper(label: str) -> Optional[State
     return StateSupervisionPeriodTerminationReason.EXPIRATION
 
 
-def incarceration_admission_reason_mapper(label: str) -> Optional[StateIncarcerationPeriodAdmissionReason]:
-    if label == HISTORY_FACILITY_TYPE:    # Coming from history (person had completed sentences in past)
+def incarceration_admission_reason_mapper(
+    label: str,
+) -> Optional[StateIncarcerationPeriodAdmissionReason]:
+    if (
+        label == HISTORY_FACILITY_TYPE
+    ):  # Coming from history (person had completed sentences in past)
         return StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION
-    if label == SUPERVISION_FACILITY_TYPE:    # Coming from probation/parole within the state
+    if (
+        label == SUPERVISION_FACILITY_TYPE
+    ):  # Coming from probation/parole within the state
         return StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION
     # TODO(#3506): Clarify when OTHER_FACILITY_TYPE is used.
-    if label in (INCARCERATION_FACILITY_TYPE, OTHER_FACILITY_TYPE):     # Coming from incarceration.
+    if label in (
+        INCARCERATION_FACILITY_TYPE,
+        OTHER_FACILITY_TYPE,
+    ):  # Coming from incarceration.
         return StateIncarcerationPeriodAdmissionReason.TRANSFER
-    if label == FUGITIVE_FACILITY_TYPE:    # Coming from absconsion.
+    if label == FUGITIVE_FACILITY_TYPE:  # Coming from absconsion.
         return StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE
     return None
 
 
-def incarceration_release_reason_mapper(label: str) -> Optional[StateIncarcerationPeriodReleaseReason]:
+def incarceration_release_reason_mapper(
+    label: str,
+) -> Optional[StateIncarcerationPeriodReleaseReason]:
     # TODO(#2865): Update enum normalization so that we separate by -s instead of spaces
-    if label.startswith(f'{HISTORY_FACILITY_TYPE} '):    # Going to history (completed all sentences)
+    if label.startswith(
+        f"{HISTORY_FACILITY_TYPE} "
+    ):  # Going to history (completed all sentences)
         return _incarceration_history_release_reason_mapper(label)
-    if label == SUPERVISION_FACILITY_TYPE:    # Going to probation/parole within the state
+    if label == SUPERVISION_FACILITY_TYPE:  # Going to probation/parole within the state
         return StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE
     # TODO(#3506): Clarify when OTHER_FACILITY_TYPE is used.
-    if label in (INCARCERATION_FACILITY_TYPE, OTHER_FACILITY_TYPE):     # Going to incarceration.
+    if label in (
+        INCARCERATION_FACILITY_TYPE,
+        OTHER_FACILITY_TYPE,
+    ):  # Going to incarceration.
         return StateIncarcerationPeriodReleaseReason.TRANSFER
-    if label == FUGITIVE_FACILITY_TYPE:    # Going to absconsion.
+    if label == FUGITIVE_FACILITY_TYPE:  # Going to absconsion.
         return StateIncarcerationPeriodReleaseReason.ESCAPE
     return None
 
 
-def _incarceration_history_release_reason_mapper(label: str) -> Optional[StateIncarcerationPeriodReleaseReason]:
+def _incarceration_history_release_reason_mapper(
+    label: str,
+) -> Optional[StateIncarcerationPeriodReleaseReason]:
     # TODO(#2865): Update enum normalization so that we separate by -s instead of spaces
-    _history_facility_typ, location_name = label.split(' ', 1)
+    _history_facility_typ, location_name = label.split(" ", 1)
     if location_name in COMMUTED_LOCATION_NAMES:
         return StateIncarcerationPeriodReleaseReason.COMMUTED
     if location_name in DECEASED_LOCATION_NAMES:
@@ -120,61 +174,79 @@ def _incarceration_history_release_reason_mapper(label: str) -> Optional[StateIn
     return StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED
 
 
-def purpose_for_incarceration_mapper(label: str) -> Optional[StateSpecializedPurposeForIncarceration]:
+def purpose_for_incarceration_mapper(
+    label: str,
+) -> Optional[StateSpecializedPurposeForIncarceration]:
     """Parses status information from the 'offstat' table into potential purposes for incarceration. Ranking of priority
     is taken from Idaho itself (the 'statstrt' table in the us_id_raw_data dataset).
     """
-    statuses = sorted_list_from_str(label, delimiter=' ')
-    if 'TM' in statuses:    # Termer
+    statuses = sorted_list_from_str(label, delimiter=" ")
+    if "TM" in statuses:  # Termer
         return StateSpecializedPurposeForIncarceration.GENERAL
-    if 'RJ' in statuses:    # Rider
+    if "RJ" in statuses:  # Rider
         return StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
-    if 'NO' in statuses:    # Non Idaho commitment TODO(#3518): Consider adding as specialized purpose.
+    if (
+        "NO" in statuses
+    ):  # Non Idaho commitment TODO(#3518): Consider adding as specialized purpose.
         return StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN
-    if 'PV' in statuses:    # Parole board hold
+    if "PV" in statuses:  # Parole board hold
         return StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
-    if 'IP' in statuses:    # Institutional Probation   TODO(#3518): Understand what this is.
+    if (
+        "IP" in statuses
+    ):  # Institutional Probation   TODO(#3518): Understand what this is.
         return StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN
-    if 'CV' in statuses:    # Civil commitment      TODO(#3518): Consider adding a specialized purpose for this
+    if (
+        "CV" in statuses
+    ):  # Civil commitment      TODO(#3518): Consider adding a specialized purpose for this
         return StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN
-    if 'CH' in statuses:    # Courtesy Hold         TODO(#3518): Understand what this is
+    if "CH" in statuses:  # Courtesy Hold         TODO(#3518): Understand what this is
         return StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN
-    if 'PB' in statuses:    # Probation -- happens VERY infrequently (occurs as a data error from ID)
+    if (
+        "PB" in statuses
+    ):  # Probation -- happens VERY infrequently (occurs as a data error from ID)
         return StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN
     return None
 
 
-def supervision_period_supervision_type_mapper(label: str) -> Optional[StateSupervisionPeriodSupervisionType]:
+def supervision_period_supervision_type_mapper(
+    label: str,
+) -> Optional[StateSupervisionPeriodSupervisionType]:
     """Parses status information from the 'offstat' table into potential supervision types. Ranking of priority
     is taken from Idaho itself (the 'statstrt' table in the us_id_raw_data dataset).
     """
-    statuses = sorted_list_from_str(label, delimiter=' ')
-    if 'PR' in statuses and 'PB' in statuses:   # Parole and Probation
+    statuses = sorted_list_from_str(label, delimiter=" ")
+    if "PR" in statuses and "PB" in statuses:  # Parole and Probation
         return StateSupervisionPeriodSupervisionType.DUAL
-    if 'PR' in statuses:    # Parole
+    if "PR" in statuses:  # Parole
         return StateSupervisionPeriodSupervisionType.PAROLE
-    if 'PB' in statuses:    # Probation
+    if "PB" in statuses:  # Probation
         return StateSupervisionPeriodSupervisionType.PROBATION
-    if 'PS' in statuses:    # Pre sentence investigation
+    if "PS" in statuses:  # Pre sentence investigation
         return StateSupervisionPeriodSupervisionType.INVESTIGATION
-    if 'PA' in statuses:    # Pardon applicant     TODO(#3506): Get more info from ID. Filter these people out entirely?
+    if (
+        "PA" in statuses
+    ):  # Pardon applicant     TODO(#3506): Get more info from ID. Filter these people out entirely?
         return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
-    if 'PF' in statuses:    # Firearm applicant    TODO(#3506): Get more info from ID. Filter these people out entirely?
+    if (
+        "PF" in statuses
+    ):  # Firearm applicant    TODO(#3506): Get more info from ID. Filter these people out entirely?
         return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
-    if 'CR' in statuses:    # Rider (no longer used).
+    if "CR" in statuses:  # Rider (no longer used).
         return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
-    if 'BW' in statuses:    # Bench Warrant
+    if "BW" in statuses:  # Bench Warrant
         return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
-    if 'CP' in statuses:    # Court Probation
+    if "CP" in statuses:  # Court Probation
         return StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION
     return None
 
 
 def is_jail_facility(facility: str) -> bool:
-    return facility in JAIL_FACILITY_CODES or 'SHERIFF' in facility
+    return facility in JAIL_FACILITY_CODES or "SHERIFF" in facility
 
 
-def custodial_authority_mapper(custodial_authority_code: str) -> StateCustodialAuthority:
+def custodial_authority_mapper(
+    custodial_authority_code: str,
+) -> StateCustodialAuthority:
     """Parses supervision facility and location information to determine the custodial authority on the supervision
     period."""
     # Interstate and parole commission facilities mean some non-ID entity is supervising the person.

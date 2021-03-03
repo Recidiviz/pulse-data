@@ -35,9 +35,9 @@ class ViewExportConfigTest(unittest.TestCase):
     """Tests for the export variables in view_config.py."""
 
     def setUp(self) -> None:
-        self.metadata_patcher = mock.patch('recidiviz.utils.metadata.project_id')
+        self.metadata_patcher = mock.patch("recidiviz.utils.metadata.project_id")
         self.mock_project_id_fn = self.metadata_patcher.start()
-        self.mock_project_id_fn.return_value = 'recidiviz-456'
+        self.mock_project_id_fn.return_value = "recidiviz-456"
 
         fakes.use_in_memory_sqlite_database(JailsBase)
 
@@ -45,8 +45,10 @@ class ViewExportConfigTest(unittest.TestCase):
         self.metadata_patcher.stop()
         fakes.teardown_in_memory_sqlite_databases()
 
-    @mock.patch('google.cloud.bigquery.Client')
-    def test_VIEW_COLLECTION_EXPORT_CONFIGS_types(self, _mock_client: mock.MagicMock) -> None:
+    @mock.patch("google.cloud.bigquery.Client")
+    def test_VIEW_COLLECTION_EXPORT_CONFIGS_types(
+        self, _mock_client: mock.MagicMock
+    ) -> None:
         """Make sure that all view_builders in the view_builders_to_export attribute of
         VIEW_COLLECTION_EXPORT_CONFIGS are of type BigQueryViewBuilder, and that running view_builder.build()
         produces a BigQueryView."""

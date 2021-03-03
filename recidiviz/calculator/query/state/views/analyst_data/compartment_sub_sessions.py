@@ -16,21 +16,22 @@
 # =============================================================================
 """Sub-sessionized view of each individual. Session defined as continuous stay within a compartment and location"""
 # pylint: disable=trailing-whitespace
-# pylint: disable=line-too-long
+
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET, DATAFLOW_METRICS_MATERIALIZED_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    ANALYST_VIEWS_DATASET,
+    DATAFLOW_METRICS_MATERIALIZED_DATASET,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-COMPARTMENT_SUB_SESSIONS_VIEW_NAME = 'compartment_sub_sessions'
+COMPARTMENT_SUB_SESSIONS_VIEW_NAME = "compartment_sub_sessions"
 
-COMPARTMENT_SUB_SESSIONS_SUPPORTED_STATES = ('US_ND', 'US_ID', 'US_MO', 'US_PA')
+COMPARTMENT_SUB_SESSIONS_SUPPORTED_STATES = ("US_ND", "US_ID", "US_MO", "US_PA")
 
-COMPARTMENT_SUB_SESSIONS_VIEW_DESCRIPTION = \
-    """Sub-sessionized view of each individual. Session defined as continuous stay within a compartment and location"""
+COMPARTMENT_SUB_SESSIONS_VIEW_DESCRIPTION = """Sub-sessionized view of each individual. Session defined as continuous stay within a compartment and location"""
 
-COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
-    """
+COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = """
     /*{description}*/
     WITH population_cte AS
     /*
@@ -547,9 +548,9 @@ COMPARTMENT_SUB_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     analyst_dataset=ANALYST_VIEWS_DATASET,
     should_materialize=True,
-    supported_states = "', '".join(COMPARTMENT_SUB_SESSIONS_SUPPORTED_STATES)
+    supported_states="', '".join(COMPARTMENT_SUB_SESSIONS_SUPPORTED_STATES),
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         COMPARTMENT_SUB_SESSIONS_VIEW_BUILDER.build_and_print()

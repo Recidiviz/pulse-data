@@ -19,12 +19,18 @@
 import unittest
 from datetime import date
 
-from recidiviz.common.constants.state.state_supervision_contact import StateSupervisionContactType, \
-    StateSupervisionContactReason, StateSupervisionContactLocation, StateSupervisionContactStatus
+from recidiviz.common.constants.state.state_supervision_contact import (
+    StateSupervisionContactType,
+    StateSupervisionContactReason,
+    StateSupervisionContactLocation,
+    StateSupervisionContactStatus,
+)
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.state.entity_helpers import state_supervision_contact
+from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
+    state_supervision_contact,
+)
 
 _EMPTY_METADATA = IngestMetadata.new_with_defaults()
 
@@ -35,35 +41,37 @@ class StateSupervisionContactConverterTest(unittest.TestCase):
     def testParseStateSupervisionContacts(self):
         # Arrange
         ingest_contact = ingest_info_pb2.StateSupervisionContact(
-            state_supervision_contact_id='CONTACT_ID',
-            contact_type='FACE_TO_FACE',
-            status='COMPLETED',
-            contact_reason='GENERAL_CONTACT',
-            location='RESIDENCE',
-            contact_date='1/2/1111',
-            state_code='us_ca',
-            verified_employment='True',
-            resulted_in_arrest='False',
+            state_supervision_contact_id="CONTACT_ID",
+            contact_type="FACE_TO_FACE",
+            status="COMPLETED",
+            contact_reason="GENERAL_CONTACT",
+            location="RESIDENCE",
+            contact_date="1/2/1111",
+            state_code="us_ca",
+            verified_employment="True",
+            resulted_in_arrest="False",
         )
 
         # Act
         contact_builder = entities.StateSupervisionContact.builder()
-        state_supervision_contact.copy_fields_to_builder(contact_builder, ingest_contact, _EMPTY_METADATA)
+        state_supervision_contact.copy_fields_to_builder(
+            contact_builder, ingest_contact, _EMPTY_METADATA
+        )
         result = contact_builder.build()
 
         # Assert
         expected_result = entities.StateSupervisionContact(
-            external_id='CONTACT_ID',
+            external_id="CONTACT_ID",
             status=StateSupervisionContactStatus.COMPLETED,
-            status_raw_text='COMPLETED',
+            status_raw_text="COMPLETED",
             contact_type=StateSupervisionContactType.FACE_TO_FACE,
-            contact_type_raw_text='FACE_TO_FACE',
+            contact_type_raw_text="FACE_TO_FACE",
             contact_date=date(year=1111, month=1, day=2),
-            state_code='US_CA',
+            state_code="US_CA",
             contact_reason=StateSupervisionContactReason.GENERAL_CONTACT,
-            contact_reason_raw_text='GENERAL_CONTACT',
+            contact_reason_raw_text="GENERAL_CONTACT",
             location=StateSupervisionContactLocation.RESIDENCE,
-            location_raw_text='RESIDENCE',
+            location_raw_text="RESIDENCE",
             verified_employment=True,
             resulted_in_arrest=False,
         )

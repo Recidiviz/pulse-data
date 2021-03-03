@@ -29,9 +29,17 @@ from google.api_core import retry, exceptions
 from google.cloud import storage
 from google.cloud.exceptions import NotFound
 
-from recidiviz.cloud_storage.content_types import FileContentsHandle, FileContentsRowType, IoType
-from recidiviz.cloud_storage.gcsfs_path import GcsfsPath, \
-    GcsfsFilePath, GcsfsDirectoryPath, GcsfsBucketPath
+from recidiviz.cloud_storage.content_types import (
+    FileContentsHandle,
+    FileContentsRowType,
+    IoType,
+)
+from recidiviz.cloud_storage.gcsfs_path import (
+    GcsfsPath,
+    GcsfsFilePath,
+    GcsfsDirectoryPath,
+    GcsfsBucketPath,
+)
 
 
 class GCSBlobDoesNotExistError(ValueError):
@@ -53,7 +61,7 @@ class GcsfsFileContentsHandle(FileContentsHandle[str, TextIO]):
                 yield line
 
     def open(self) -> TextIO:
-        return open(self.local_file_path, mode='r', encoding='utf-8')
+        return open(self.local_file_path, mode="r", encoding="utf-8")
 
     def __del__(self) -> None:
         """This ensures that the file contents on local disk are deleted when
@@ -64,9 +72,7 @@ class GcsfsFileContentsHandle(FileContentsHandle[str, TextIO]):
 
 
 class GcsfsSftpFileContentsHandle(FileContentsHandle[bytes, SFTPFile]):
-    def __init__(self,
-                 local_file_path: str,
-                 sftp_connection: pysftp.Connection):
+    def __init__(self, local_file_path: str, sftp_connection: pysftp.Connection):
         super().__init__(local_file_path=local_file_path)
         self.sftp_connection = sftp_connection
 
@@ -79,16 +85,15 @@ class GcsfsSftpFileContentsHandle(FileContentsHandle[bytes, SFTPFile]):
                 yield line
 
     def open(self) -> SFTPFile:
-        return self.sftp_connection.open(remote_file=self.local_file_path, mode='r')
+        return self.sftp_connection.open(remote_file=self.local_file_path, mode="r")
 
 
 class GCSFileSystem:
     """An abstraction for manipulating files on the Google Cloud Storage File System"""
+
     _RENAME_RETRIES = 5
 
-    def mv(self,
-           src_path: GcsfsFilePath,
-           dst_path: GcsfsPath) -> None:
+    def mv(self, src_path: GcsfsFilePath, dst_path: GcsfsPath) -> None:
         """Moves object from bucket 1 to bucket 2 with optional rename. Note:
         this is *not* an atomic move - there is a failure case where you'd end
         up with a copied version of the file at |dst_path| but it has not been
@@ -98,9 +103,7 @@ class GCSFileSystem:
         self.delete(src_path)
 
     @abc.abstractmethod
-    def copy(self,
-             src_path: GcsfsFilePath,
-             dst_path: GcsfsPath) -> None:
+    def copy(self, src_path: GcsfsFilePath, dst_path: GcsfsPath) -> None:
         """Copies object at |src_path| to |dst_path|."""
 
     @abc.abstractmethod
@@ -127,7 +130,9 @@ class GCSFileSystem:
         """
 
     @abc.abstractmethod
-    def download_to_temp_file(self, path: GcsfsFilePath) -> Optional[GcsfsFileContentsHandle]:
+    def download_to_temp_file(
+        self, path: GcsfsFilePath
+    ) -> Optional[GcsfsFileContentsHandle]:
         """Generates a new file in a temporary directory on the local file
         system (App Engine VM when in prod/staging), and downloads file contents
         from the provided GCS path into that file, returning a handle to temp
@@ -136,29 +141,28 @@ class GCSFileSystem:
         """
 
     @abc.abstractmethod
-    def upload_from_string(self,
-                           path: GcsfsFilePath,
-                           contents: str,
-                           content_type: str) -> None:
+    def upload_from_string(
+        self, path: GcsfsFilePath, contents: str, content_type: str
+    ) -> None:
         """Uploads string contents to a file path."""
 
     @abc.abstractmethod
-    def upload_from_contents_handle_stream(self,
-                                           path: GcsfsFilePath,
-                                           contents_handle: FileContentsHandle[FileContentsRowType, IoType],
-                                           content_type: str) -> None:
+    def upload_from_contents_handle_stream(
+        self,
+        path: GcsfsFilePath,
+        contents_handle: FileContentsHandle[FileContentsRowType, IoType],
+        content_type: str,
+    ) -> None:
         """Uploads contents in handle via a file stream to a file path."""
 
     @abc.abstractmethod
-    def ls_with_blob_prefix(self,
-                            bucket_name: str,
-                            blob_prefix: str) -> List[Union[GcsfsDirectoryPath, GcsfsFilePath]]:
+    def ls_with_blob_prefix(
+        self, bucket_name: str, blob_prefix: str
+    ) -> List[Union[GcsfsDirectoryPath, GcsfsFilePath]]:
         """Returns absolute paths of objects in the bucket with the given |relative_path|. """
 
     @abc.abstractmethod
-    def set_content_type(self,
-                         path: GcsfsFilePath,
-                         content_type: str) -> None:
+    def set_content_type(self, path: GcsfsFilePath, content_type: str) -> None:
         """Allows for the content type of a certain file path to be reset."""
 
     @abc.abstractmethod
@@ -172,11 +176,13 @@ class GCSFileSystem:
 
 def retry_predicate(exception: Exception) -> Callable[[Exception], bool]:
     """"A function that will determine whether we should retry a given Google exception."""
-    return retry.if_transient_error(exception) or retry.if_exception_type(exceptions.GatewayTimeout)(exception)
+    return retry.if_transient_error(exception) or retry.if_exception_type(
+        exceptions.GatewayTimeout
+    )(exception)
 
 
 def generate_random_temp_path() -> str:
-    temp_dir = os.path.join(tempfile.gettempdir(), 'gcs_temp_files')
+    temp_dir = os.path.join(tempfile.gettempdir(), "gcs_temp_files")
     os.makedirs(temp_dir, exist_ok=True)
 
     return os.path.join(temp_dir, str(uuid.uuid4()))
@@ -200,21 +206,29 @@ class GCSFileSystemImpl(GCSFileSystem):
                 return False
             return blob.exists(self.storage_client)
 
-        raise ValueError(f'Unexpected path type [{type(path)}]')
+        raise ValueError(f"Unexpected path type [{type(path)}]")
 
     def _get_blob(self, path: GcsfsFilePath) -> storage.Blob:
         try:
             bucket = self.storage_client.get_bucket(path.bucket_name)
             blob = bucket.get_blob(path.blob_name)
         except NotFound as error:
-            logging.warning("Blob at [%s] does not exist - might have already been deleted", path.uri())
+            logging.warning(
+                "Blob at [%s] does not exist - might have already been deleted",
+                path.uri(),
+            )
 
-            raise GCSBlobDoesNotExistError(f'Blob at [{path.uri()}] does not exist') from error
+            raise GCSBlobDoesNotExistError(
+                f"Blob at [{path.uri()}] does not exist"
+            ) from error
         else:
             if not blob:
-                logging.warning("Blob at [%s] does not exist - might have already been deleted", path.uri())
+                logging.warning(
+                    "Blob at [%s] does not exist - might have already been deleted",
+                    path.uri(),
+                )
 
-                raise GCSBlobDoesNotExistError(f'Blob at [{path.uri()}] does not exist')
+                raise GCSBlobDoesNotExistError(f"Blob at [{path.uri()}] does not exist")
 
             return blob
 
@@ -235,9 +249,7 @@ class GCSFileSystemImpl(GCSFileSystem):
             return None
 
     @retry.Retry(predicate=retry_predicate)
-    def copy(self,
-             src_path: GcsfsFilePath,
-             dst_path: GcsfsPath) -> None:
+    def copy(self, src_path: GcsfsFilePath, dst_path: GcsfsPath) -> None:
         src_bucket = self.storage_client.get_bucket(src_path.bucket_name)
         src_blob = self._get_blob(src_path)
 
@@ -246,18 +258,18 @@ class GCSFileSystemImpl(GCSFileSystem):
         if isinstance(dst_path, GcsfsFilePath):
             dst_blob_name = dst_path.blob_name
         elif isinstance(dst_path, GcsfsDirectoryPath):
-            dst_blob_name = \
-                GcsfsFilePath.from_directory_and_file_name(
-                    dst_path, src_path.file_name).blob_name
+            dst_blob_name = GcsfsFilePath.from_directory_and_file_name(
+                dst_path, src_path.file_name
+            ).blob_name
         else:
-            raise ValueError(f'Unexpected path type [{type(dst_path)}]')
+            raise ValueError(f"Unexpected path type [{type(dst_path)}]")
 
         src_bucket.copy_blob(src_blob, dst_bucket, dst_blob_name)
 
     @retry.Retry(predicate=retry_predicate)
     def delete(self, path: GcsfsFilePath) -> None:
         if not isinstance(path, GcsfsFilePath):
-            raise ValueError(f'Unexpected path type [{type(path)}]')
+            raise ValueError(f"Unexpected path type [{type(path)}]")
 
         try:
             blob = self._get_blob(path)
@@ -267,7 +279,9 @@ class GCSFileSystemImpl(GCSFileSystem):
             return
 
     @retry.Retry(predicate=retry_predicate)
-    def download_to_temp_file(self, path: GcsfsFilePath) -> Optional[GcsfsFileContentsHandle]:
+    def download_to_temp_file(
+        self, path: GcsfsFilePath
+    ) -> Optional[GcsfsFileContentsHandle]:
         temp_file_path = generate_random_temp_path()
 
         try:
@@ -275,11 +289,15 @@ class GCSFileSystemImpl(GCSFileSystem):
 
             logging.info(
                 "Started download of file [{%s}] to local file [%s].",
-                path.abs_path(), temp_file_path)
+                path.abs_path(),
+                temp_file_path,
+            )
             blob.download_to_filename(temp_file_path)
             logging.info(
                 "Completed download of file [{%s}] to local file [%s].",
-                path.abs_path(), temp_file_path)
+                path.abs_path(),
+                temp_file_path,
+            )
             return GcsfsFileContentsHandle(temp_file_path)
         except GCSBlobDoesNotExistError:
             return None
@@ -291,18 +309,21 @@ class GCSFileSystemImpl(GCSFileSystem):
         return blob.download_as_bytes().decode(encoding)
 
     @retry.Retry(predicate=retry_predicate)
-    def upload_from_string(self, path: GcsfsFilePath,
-                           contents: str,
-                           content_type: str) -> None:
+    def upload_from_string(
+        self, path: GcsfsFilePath, contents: str, content_type: str
+    ) -> None:
         bucket = self.storage_client.get_bucket(path.bucket_name)
         bucket.blob(path.blob_name).upload_from_string(
-            contents, content_type=content_type)
+            contents, content_type=content_type
+        )
 
     @retry.Retry(predicate=retry_predicate)
-    def upload_from_contents_handle_stream(self,
-                                           path: GcsfsFilePath,
-                                           contents_handle: FileContentsHandle[FileContentsRowType, IoType],
-                                           content_type: str) -> None:
+    def upload_from_contents_handle_stream(
+        self,
+        path: GcsfsFilePath,
+        contents_handle: FileContentsHandle[FileContentsRowType, IoType],
+        content_type: str,
+    ) -> None:
         bucket = self.storage_client.get_bucket(path.bucket_name)
         bucket.blob(path.blob_name).upload_from_file(
             contents_handle.open(), content_type=content_type
@@ -310,9 +331,8 @@ class GCSFileSystemImpl(GCSFileSystem):
 
     @retry.Retry(predicate=retry_predicate)
     def ls_with_blob_prefix(
-            self,
-            bucket_name: str,
-            blob_prefix: str) -> List[Union[GcsfsDirectoryPath, GcsfsFilePath]]:
+        self, bucket_name: str, blob_prefix: str
+    ) -> List[Union[GcsfsDirectoryPath, GcsfsFilePath]]:
         blobs = self.storage_client.list_blobs(bucket_name, prefix=blob_prefix)
         return [GcsfsPath.from_blob(blob) for blob in blobs]
 
@@ -328,7 +348,9 @@ class GCSFileSystemImpl(GCSFileSystem):
             directory = GcsfsDirectoryPath.from_absolute_path(path)
             # If the directory is empty, has_dir will have 1 entry, which is the Blob representing the directory
             # Otherwise, if the directory doesn't exist on GCS, has_dir will return an empty list
-            has_dir = self.ls_with_blob_prefix(bucket_name=directory.bucket_name, blob_prefix=directory.relative_path)
+            has_dir = self.ls_with_blob_prefix(
+                bucket_name=directory.bucket_name, blob_prefix=directory.relative_path
+            )
             return len(has_dir) > 0
         except ValueError:
             return False

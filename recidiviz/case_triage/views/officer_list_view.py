@@ -16,8 +16,13 @@
 # =============================================================================
 """Creates the view builder and view for listing all known officers."""
 
-from recidiviz.big_query.selected_columns_big_query_view import SelectedColumnsBigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import REFERENCE_VIEWS_DATASET, STATIC_REFERENCE_TABLES_DATASET
+from recidiviz.big_query.selected_columns_big_query_view import (
+    SelectedColumnsBigQueryViewBuilder,
+)
+from recidiviz.calculator.query.state.dataset_config import (
+    REFERENCE_VIEWS_DATASET,
+    STATIC_REFERENCE_TABLES_DATASET,
+)
 from recidiviz.case_triage.views.dataset_config import VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -57,19 +62,19 @@ USING (state_code, external_id)
 
 OFFICER_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     dataset_id=VIEWS_DATASET,
-    view_id='etl_officers',
+    view_id="etl_officers",
     view_query_template=OFFICER_LIST_QUERY_TEMPLATE,
     columns=[
-        'state_code',
-        'external_id',
-        'email_address',
-        'given_names',
-        'surname',
+        "state_code",
+        "external_id",
+        "email_address",
+        "given_names",
+        "surname",
     ],
     reference_views_dataset=REFERENCE_VIEWS_DATASET,
     static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         OFFICER_LIST_VIEW_BUILDER.build_and_print()

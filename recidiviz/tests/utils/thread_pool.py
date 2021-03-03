@@ -27,7 +27,7 @@ class SerialExecutor(Executor):
 
     # disable pylint since we don't need to mock the keyword version
     # of the call for our purposes, just the positional one
-    def submit(self, fn, *args, **kwargs): # pylint: disable=W0221
+    def submit(self, fn, *args, **kwargs):  # pylint: disable=W0221
         f = Future()
         try:
             f.set_result(fn(*args, **kwargs))

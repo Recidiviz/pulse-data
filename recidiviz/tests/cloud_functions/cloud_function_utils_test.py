@@ -17,8 +17,10 @@
 """Tests for cloud_function_utils.py."""
 from unittest import TestCase
 
-from recidiviz.cloud_functions.cloud_function_utils import \
-    get_state_region_code_from_direct_ingest_bucket, build_query_param_string
+from recidiviz.cloud_functions.cloud_function_utils import (
+    get_state_region_code_from_direct_ingest_bucket,
+    build_query_param_string,
+)
 
 
 class CloudFunctionUtilsTest(TestCase):
@@ -27,45 +29,63 @@ class CloudFunctionUtilsTest(TestCase):
     def test_get_state_region_code_from_bucket(self) -> None:
         self.assertEqual(
             get_state_region_code_from_direct_ingest_bucket(
-                'recidiviz-123-direct-ingest-state-us-nd'),
-            'us_nd')
+                "recidiviz-123-direct-ingest-state-us-nd"
+            ),
+            "us_nd",
+        )
         self.assertEqual(
             get_state_region_code_from_direct_ingest_bucket(
-                'recidiviz-staging-direct-ingest-state-us-pa'),
-            'us_pa')
+                "recidiviz-staging-direct-ingest-state-us-pa"
+            ),
+            "us_pa",
+        )
 
         # Not a state!
         self.assertEqual(
             get_state_region_code_from_direct_ingest_bucket(
-                'recidiviz-staging-direct-ingest-county-us-ma-middlesex'),
-            None)
+                "recidiviz-staging-direct-ingest-county-us-ma-middlesex"
+            ),
+            None,
+        )
         self.assertEqual(
             get_state_region_code_from_direct_ingest_bucket(
-                'recidiviz-staging-direct-ingest-state-us-ma-middlesex'),
-            None)
+                "recidiviz-staging-direct-ingest-state-us-ma-middlesex"
+            ),
+            None,
+        )
 
         # Unknown project!
         self.assertEqual(
             get_state_region_code_from_direct_ingest_bucket(
-                'recidiviz-newproject-direct-ingest-state-us-ca'),
-            None)
+                "recidiviz-newproject-direct-ingest-state-us-ca"
+            ),
+            None,
+        )
 
         # Missing region type!
         self.assertEqual(
             get_state_region_code_from_direct_ingest_bucket(
-                'recidiviz-staging-direct-ingest-us-nd'),
-            None)
+                "recidiviz-staging-direct-ingest-us-nd"
+            ),
+            None,
+        )
 
     def test_build_query_param_string(self) -> None:
         """Given valid request params, it returns a query param string."""
-        request_params = {"batch_id": "20201120051030",
-                          "redirect_address": "dev@recidiviz.org",
-                          "cc_address": ["cc1@domain.org", "cc2@domain.org"]}
+        request_params = {
+            "batch_id": "20201120051030",
+            "redirect_address": "dev@recidiviz.org",
+            "cc_address": ["cc1@domain.org", "cc2@domain.org"],
+        }
 
         accepted_query_params = ["batch_id", "redirect_address", "cc_address"]
-        expected = "?batch_id=20201120051030&redirect_address=dev%40recidiviz.org&cc_address=cc1%40domain.org&" \
-                   "cc_address=cc2%40domain.org"
-        self.assertEqual(expected, build_query_param_string(request_params, accepted_query_params))
+        expected = (
+            "?batch_id=20201120051030&redirect_address=dev%40recidiviz.org&cc_address=cc1%40domain.org&"
+            "cc_address=cc2%40domain.org"
+        )
+        self.assertEqual(
+            expected, build_query_param_string(request_params, accepted_query_params)
+        )
 
     def test_build_query_param_string_invalid_request_params(self) -> None:
         """Given invalid request params, it raises a KeyError"""
@@ -76,9 +96,13 @@ class CloudFunctionUtilsTest(TestCase):
 
     def test_build_query_param_string_empty_value(self) -> None:
         """Given valid request params with empty values, it does not include it in the query param string"""
-        request_params = {"batch_id": "20201120051030",
-                          "redirect_address": None,
-                          "cc_address": ["cc1@domain.org", "cc2@domain.org"]}
+        request_params = {
+            "batch_id": "20201120051030",
+            "redirect_address": None,
+            "cc_address": ["cc1@domain.org", "cc2@domain.org"],
+        }
         accepted_query_params = ["batch_id", "redirect_address", "cc_address"]
         expected = "?batch_id=20201120051030&cc_address=cc1%40domain.org&cc_address=cc2%40domain.org"
-        self.assertEqual(expected, build_query_param_string(request_params, accepted_query_params))
+        self.assertEqual(
+            expected, build_query_param_string(request_params, accepted_query_params)
+        )

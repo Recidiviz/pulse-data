@@ -28,43 +28,53 @@ class SelectedColumnsBigQueryView(BigQueryView):
     that our views and the Postgres schema may be slightly out of sync.
     """
 
-    def __init__(self,
-                 *,
-                 dataset_id: str,
-                 view_id: str,
-                 view_query_template: str,
-                 columns: List[str],
-                 should_materialize: bool,
-                 dataset_overrides: Optional[Dict[str, str]],
-                 **query_format_kwargs: str):
-        query_format_kwargs['columns'] = ',\n    '.join(columns)
-        super().__init__(dataset_id=dataset_id,
-                         view_id=view_id,
-                         view_query_template=view_query_template,
-                         should_materialize=should_materialize,
-                         dataset_overrides=dataset_overrides,
-                         **query_format_kwargs)
+    def __init__(
+        self,
+        *,
+        dataset_id: str,
+        view_id: str,
+        view_query_template: str,
+        columns: List[str],
+        should_materialize: bool,
+        dataset_overrides: Optional[Dict[str, str]],
+        **query_format_kwargs: str,
+    ):
+        query_format_kwargs["columns"] = ",\n    ".join(columns)
+        super().__init__(
+            dataset_id=dataset_id,
+            view_id=view_id,
+            view_query_template=view_query_template,
+            should_materialize=should_materialize,
+            dataset_overrides=dataset_overrides,
+            **query_format_kwargs,
+        )
         self.columns = columns
 
     def __repr__(self) -> str:
-        return f'{self.__class__.__name__}(' \
-            f'view={self.project}.{self.dataset_id}.{self.view_id}, ' \
-            f'view_query=\'{self.view_query}\', ' \
-            f'columns={self.columns})'
+        return (
+            f"{self.__class__.__name__}("
+            f"view={self.project}.{self.dataset_id}.{self.view_id}, "
+            f"view_query='{self.view_query}', "
+            f"columns={self.columns})"
+        )
 
 
-class SelectedColumnsBigQueryViewBuilder(BigQueryViewBuilder[SelectedColumnsBigQueryView]):
+class SelectedColumnsBigQueryViewBuilder(
+    BigQueryViewBuilder[SelectedColumnsBigQueryView]
+):
     """Class that builds a SelectedColumnsBigQueryView. Can be instantiated as a top-level variable."""
 
-    def __init__(self,
-                 *,
-                 dataset_id: str,
-                 view_id: str,
-                 view_query_template: str,
-                 columns: List[str],
-                 should_materialize: bool = False,
-                 # All keyword args must have string values
-                 **query_format_kwargs: str):
+    def __init__(
+        self,
+        *,
+        dataset_id: str,
+        view_id: str,
+        view_query_template: str,
+        columns: List[str],
+        should_materialize: bool = False,
+        # All keyword args must have string values
+        **query_format_kwargs: str,
+    ):
         self.dataset_id = dataset_id
         self.view_id = view_id
         self.view_query_template = view_query_template
@@ -72,7 +82,9 @@ class SelectedColumnsBigQueryViewBuilder(BigQueryViewBuilder[SelectedColumnsBigQ
         self.should_materialize = should_materialize
         self.query_format_kwargs = query_format_kwargs
 
-    def _build(self, *, dataset_overrides: Optional[Dict[str, str]] = None) -> SelectedColumnsBigQueryView:
+    def _build(
+        self, *, dataset_overrides: Optional[Dict[str, str]] = None
+    ) -> SelectedColumnsBigQueryView:
         return SelectedColumnsBigQueryView(
             dataset_id=self.dataset_id,
             view_id=self.view_id,
@@ -80,7 +92,8 @@ class SelectedColumnsBigQueryViewBuilder(BigQueryViewBuilder[SelectedColumnsBigQ
             columns=self.columns,
             should_materialize=self.should_materialize,
             dataset_overrides=dataset_overrides,
-            **self.query_format_kwargs)
+            **self.query_format_kwargs,
+        )
 
     def should_build(self) -> bool:
         return True

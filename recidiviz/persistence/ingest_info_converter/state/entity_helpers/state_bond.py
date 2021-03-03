@@ -28,9 +28,9 @@ from recidiviz.persistence.ingest_info_converter.utils import converter_utils
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     fn,
     parse_external_id,
-    parse_region_code_with_override)
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings \
-    import EnumMappings
+    parse_region_code_with_override,
+)
+from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
 
 
 def convert(proto: StateBond, metadata: IngestMetadata) -> entities.StateBond:
@@ -38,29 +38,32 @@ def convert(proto: StateBond, metadata: IngestMetadata) -> entities.StateBond:
     new = entities.StateBond.builder()
 
     enum_fields = {
-        'status': BondStatus,
-        'bond_type': BondType,
+        "status": BondStatus,
+        "bond_type": BondType,
     }
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 
     # enum values
     new.status = enum_mappings.get(BondStatus)
-    new.status_raw_text = fn(normalize, 'status', proto)
+    new.status_raw_text = fn(normalize, "status", proto)
     new.bond_type = enum_mappings.get(BondType)
-    new.bond_type_raw_text = fn(normalize, 'bond_type', proto)
+    new.bond_type_raw_text = fn(normalize, "bond_type", proto)
 
     # 1-to-1 mappings
-    new.external_id = fn(parse_external_id, 'state_bond_id', proto)
-    new.date_paid = fn(parse_date, 'date_paid', proto)
-    new.state_code = parse_region_code_with_override(
-        proto, 'state_code', metadata)
-    new.county_code = fn(normalize, 'county_code', proto)
-    new.bond_agent = fn(normalize, 'bond_agent', proto)
+    new.external_id = fn(parse_external_id, "state_bond_id", proto)
+    new.date_paid = fn(parse_date, "date_paid", proto)
+    new.state_code = parse_region_code_with_override(proto, "state_code", metadata)
+    new.county_code = fn(normalize, "county_code", proto)
+    new.bond_agent = fn(normalize, "bond_agent", proto)
 
-    new.amount_dollars, new.bond_type, new.status = \
-        converter_utils.parse_bond_amount_type_and_status(
-            fn(normalize, 'amount', proto),
-            provided_bond_type=cast(Optional[BondType], new.bond_type),
-            provided_status=cast(Optional[BondStatus], new.status))
+    (
+        new.amount_dollars,
+        new.bond_type,
+        new.status,
+    ) = converter_utils.parse_bond_amount_type_and_status(
+        fn(normalize, "amount", proto),
+        provided_bond_type=cast(Optional[BondType], new.bond_type),
+        provided_status=cast(Optional[BondStatus], new.status),
+    )
 
     return new.build()

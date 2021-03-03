@@ -20,12 +20,15 @@ from typing import List
 
 from recidiviz.cloud_sql.cloud_sql_client import CloudSQLClientImpl
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.persistence.database.sqlalchemy_engine_manager import SQLAlchemyEngineManager, SchemaType
+from recidiviz.persistence.database.sqlalchemy_engine_manager import (
+    SQLAlchemyEngineManager,
+    SchemaType,
+)
 
 
-def import_gcs_csv_to_cloud_sql(destination_table: str,
-                                gcs_uri: GcsfsFilePath,
-                                columns: List[str]) -> None:
+def import_gcs_csv_to_cloud_sql(
+    destination_table: str, gcs_uri: GcsfsFilePath, columns: List[str]
+) -> None:
     """Implements the import of GCS CSV to Cloud SQL by creating a temporary table, uploading the
     results to the temporary table, and then swapping the contents of the table."""
     # Create temporary table
@@ -33,40 +36,52 @@ def import_gcs_csv_to_cloud_sql(destination_table: str,
         SQLAlchemyEngineManager.declarative_method_for_schema(SchemaType.CASE_TRIAGE)
     )
     if engine is None:
-        raise RuntimeError('Could not create postgres sqlalchemy engine')
+        raise RuntimeError("Could not create postgres sqlalchemy engine")
 
     with engine.connect() as conn:
-        conn.execute(f'CREATE TABLE tmp__{destination_table} AS TABLE {destination_table} WITH NO DATA')
+        conn.execute(
+            f"CREATE TABLE tmp__{destination_table} AS TABLE {destination_table} WITH NO DATA"
+        )
 
     try:
         # Start actual Cloud SQL import
-        logging.info('Starting import from GCS URI: %s', gcs_uri)
-        logging.info('Starting import to destination table: %s', destination_table)
-        logging.info('Starting import using columns: %s', columns)
+        logging.info("Starting import from GCS URI: %s", gcs_uri)
+        logging.info("Starting import to destination table: %s", destination_table)
+        logging.info("Starting import using columns: %s", columns)
         cloud_sql_client = CloudSQLClientImpl()
-        instance_name = SQLAlchemyEngineManager.get_stripped_cloudsql_instance_id(SchemaType.CASE_TRIAGE)
+        instance_name = SQLAlchemyEngineManager.get_stripped_cloudsql_instance_id(
+            SchemaType.CASE_TRIAGE
+        )
         if instance_name is None:
-            raise ValueError('Could not find instance name.')
+            raise ValueError("Could not find instance name.")
         operation_id = cloud_sql_client.import_gcs_csv(
             instance_name=instance_name,
-            table_name=f'tmp__{destination_table}',
+            table_name=f"tmp__{destination_table}",
             gcs_uri=gcs_uri,
             columns=columns,
         )
         if operation_id is None:
-            raise RuntimeError('Cloud SQL import operation was not started successfully.')
+            raise RuntimeError(
+                "Cloud SQL import operation was not started successfully."
+            )
 
-        operation_succeeded = cloud_sql_client.wait_until_operation_completed(operation_id)
+        operation_succeeded = cloud_sql_client.wait_until_operation_completed(
+            operation_id
+        )
 
         if not operation_succeeded:
-            raise RuntimeError('Cloud SQL import failed.')
+            raise RuntimeError("Cloud SQL import failed.")
     except Exception as e:
-        logging.warning('Dropping newly created table due to raised exception.')
-        conn.execute(f'DROP TABLE tmp__{destination_table}')
+        logging.warning("Dropping newly created table due to raised exception.")
+        conn.execute(f"DROP TABLE tmp__{destination_table}")
         raise e
 
     # Swap in new table
     with engine.begin() as conn:
-        conn.execute(f'ALTER TABLE {destination_table} RENAME TO old__{destination_table}')
-        conn.execute(f'ALTER TABLE tmp__{destination_table} RENAME TO {destination_table}')
-        conn.execute(f'DROP TABLE old__{destination_table}')
+        conn.execute(
+            f"ALTER TABLE {destination_table} RENAME TO old__{destination_table}"
+        )
+        conn.execute(
+            f"ALTER TABLE tmp__{destination_table} RENAME TO {destination_table}"
+        )
+        conn.execute(f"DROP TABLE old__{destination_table}")

@@ -29,30 +29,32 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
 
     def setUp(self) -> None:
 
-        self.project_id = 'fake-recidiviz-project'
-        self.mock_view_dataset_name = 'my_views_dataset'
+        self.project_id = "fake-recidiviz-project"
+        self.mock_view_dataset_name = "my_views_dataset"
         self.mock_dataset = bigquery.dataset.DatasetReference(
-            self.project_id, self.mock_view_dataset_name)
+            self.project_id, self.mock_view_dataset_name
+        )
 
-        self.project_id_patcher = patch('recidiviz.utils.metadata.project_id')
+        self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
         self.project_id_patcher.start().return_value = self.project_id
-        self.project_number_patcher = patch('recidiviz.utils.metadata.project_number')
-        self.project_number_patcher.start().return_value = '123456789'
+        self.project_number_patcher = patch("recidiviz.utils.metadata.project_number")
+        self.project_number_patcher.start().return_value = "123456789"
 
         self.bq_client_patcher = mock.patch(
-            'recidiviz.calculator.dataflow_metric_table_manager.BigQueryClientImpl')
+            "recidiviz.calculator.dataflow_metric_table_manager.BigQueryClientImpl"
+        )
         self.mock_client = self.bq_client_patcher.start().return_value
 
         self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset
         self.mock_dataflow_tables = [
-            bigquery.TableReference(self.mock_dataset, 'fake_table_1'),
-            bigquery.TableReference(self.mock_dataset, 'fake_table_2')
+            bigquery.TableReference(self.mock_dataset, "fake_table_1"),
+            bigquery.TableReference(self.mock_dataset, "fake_table_2"),
         ]
         self.mock_client.list_tables.return_value = self.mock_dataflow_tables
         self.mock_client.project_id.return_value = self.project_id
 
-        self.fake_dataflow_metrics_dataset = 'fake_dataflow_metrics_dataset'
-        self.fake_cold_storage_dataset = 'fake_cold_storage_dataset'
+        self.fake_dataflow_metrics_dataset = "fake_dataflow_metrics_dataset"
+        self.fake_cold_storage_dataset = "fake_cold_storage_dataset"
         self.fake_max_jobs = 10
 
     def tearDown(self) -> None:

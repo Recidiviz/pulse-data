@@ -42,12 +42,18 @@ class UsIdSftpDownloadDelegate(BaseSftpDownloadDelegate):
 
     def filter_paths(self, candidate_paths: List[str]) -> List[str]:
         """For US_ID, find all file uploads that match RecidivizYYYYMMDD format."""
-        return [candidate_path for candidate_path in candidate_paths if self._matches(candidate_path)]
+        return [
+            candidate_path
+            for candidate_path in candidate_paths
+            if self._matches(candidate_path)
+        ]
 
     def root_directory(self, _: List[str]) -> str:
         """The US_ID server is set to use the root directory, so candidate_paths is effectively ignored."""
         return self.CURRENT_ROOT
 
-    def post_process_downloads(self, downloaded_path: GcsfsFilePath, _: GCSFileSystem) -> str:
+    def post_process_downloads(
+        self, downloaded_path: GcsfsFilePath, _: GCSFileSystem
+    ) -> str:
         """The US_ID server doesn't require any post-processing."""
         return downloaded_path.abs_path()
