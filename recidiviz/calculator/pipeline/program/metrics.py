@@ -21,17 +21,24 @@ from typing import Optional, Dict, Any, cast
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric, PersonLevelMetric, RecidivizMetricType, \
-    AssessmentMetric, SupervisionLocationMetric
-from recidiviz.common.constants.state.state_program_assignment import StateProgramAssignmentParticipationStatus
+from recidiviz.calculator.pipeline.utils.metric_utils import (
+    RecidivizMetric,
+    PersonLevelMetric,
+    RecidivizMetricType,
+    AssessmentMetric,
+    SupervisionLocationMetric,
+)
+from recidiviz.common.constants.state.state_program_assignment import (
+    StateProgramAssignmentParticipationStatus,
+)
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 
 
 class ProgramMetricType(RecidivizMetricType):
     """The type of program metrics."""
 
-    PROGRAM_PARTICIPATION = 'PROGRAM_PARTICIPATION'
-    PROGRAM_REFERRAL = 'PROGRAM_REFERRAL'
+    PROGRAM_PARTICIPATION = "PROGRAM_PARTICIPATION"
+    PROGRAM_REFERRAL = "PROGRAM_REFERRAL"
 
 
 @attr.s
@@ -42,6 +49,7 @@ class ProgramMetric(RecidivizMetric, PersonLevelMetric):
     required characteristics for normalization as well as optional
     characteristics for slicing the data.
     """
+
     # Required characteristics
 
     # The type of ProgramMetric
@@ -59,22 +67,22 @@ class ProgramMetric(RecidivizMetric, PersonLevelMetric):
     program_id: str = attr.ib(default=None)
 
     @staticmethod
-    def build_from_metric_key_group(metric_key: Dict[str, Any],
-                                    job_id: str) -> \
-            Optional['ProgramMetric']:
+    def build_from_metric_key_group(
+        metric_key: Dict[str, Any], job_id: str
+    ) -> Optional["ProgramMetric"]:
         """Builds a ProgramMetric object from the given
-         arguments.
+        arguments.
         """
 
         if not metric_key:
             raise ValueError("The metric_key is empty.")
 
-        metric_key['job_id'] = job_id
-        metric_key['created_on'] = date.today()
+        metric_key["job_id"] = job_id
+        metric_key["created_on"] = date.today()
 
-        program_metric = cast(ProgramMetric,
-                              ProgramMetric.
-                              build_from_dictionary(metric_key))
+        program_metric = cast(
+            ProgramMetric, ProgramMetric.build_from_dictionary(metric_key)
+        )
 
         return program_metric
 
@@ -82,10 +90,13 @@ class ProgramMetric(RecidivizMetric, PersonLevelMetric):
 @attr.s
 class ProgramReferralMetric(ProgramMetric, AssessmentMetric, SupervisionLocationMetric):
     """Subclass of ProgramMetric that contains program referral information."""
+
     # Required characteristics
 
     # The type of ProgramMetric
-    metric_type: ProgramMetricType = attr.ib(init=False, default=ProgramMetricType.PROGRAM_REFERRAL)
+    metric_type: ProgramMetricType = attr.ib(
+        init=False, default=ProgramMetricType.PROGRAM_REFERRAL
+    )
 
     # The date on which the referral took place
     date_of_referral: date = attr.ib(default=None)
@@ -97,28 +108,31 @@ class ProgramReferralMetric(ProgramMetric, AssessmentMetric, SupervisionLocation
     supervision_type: Optional[StateSupervisionType] = attr.ib(default=None)
 
     # Program participation status
-    participation_status: Optional[StateProgramAssignmentParticipationStatus] = attr.ib(default=None)
+    participation_status: Optional[StateProgramAssignmentParticipationStatus] = attr.ib(
+        default=None
+    )
 
     # External ID of the officer who was supervising the person described by this metric
     supervising_officer_external_id: Optional[str] = attr.ib(default=None)
 
     @staticmethod
-    def build_from_metric_key_group(metric_key: Dict[str, Any],
-                                    job_id: str) -> \
-            Optional['ProgramReferralMetric']:
+    def build_from_metric_key_group(
+        metric_key: Dict[str, Any], job_id: str
+    ) -> Optional["ProgramReferralMetric"]:
         """Builds a ProgramReferralMetric object from the given
-         arguments.
+        arguments.
         """
 
         if not metric_key:
             raise ValueError("The metric_key is empty.")
 
-        metric_key['job_id'] = job_id
-        metric_key['created_on'] = date.today()
+        metric_key["job_id"] = job_id
+        metric_key["created_on"] = date.today()
 
-        program_metric = cast(ProgramReferralMetric,
-                              ProgramReferralMetric.
-                              build_from_dictionary(metric_key))
+        program_metric = cast(
+            ProgramReferralMetric,
+            ProgramReferralMetric.build_from_dictionary(metric_key),
+        )
 
         return program_metric
 
@@ -126,10 +140,13 @@ class ProgramReferralMetric(ProgramMetric, AssessmentMetric, SupervisionLocation
 @attr.s
 class ProgramParticipationMetric(ProgramMetric):
     """Subclass of ProgramMetric that contains program participation information."""
+
     # Required characteristics
 
     # The type of ProgramMetric
-    metric_type: ProgramMetricType = attr.ib(init=False, default=ProgramMetricType.PROGRAM_PARTICIPATION)
+    metric_type: ProgramMetricType = attr.ib(
+        init=False, default=ProgramMetricType.PROGRAM_PARTICIPATION
+    )
 
     # Date of active participation
     date_of_participation: date = attr.ib(default=None)
@@ -147,16 +164,20 @@ class ProgramParticipationMetric(ProgramMetric):
     supervision_type: Optional[StateSupervisionType] = attr.ib(default=None)
 
     @staticmethod
-    def build_from_metric_key_group(metric_key: Dict[str, Any],
-                                    job_id: str) -> Optional['ProgramParticipationMetric']:
+    def build_from_metric_key_group(
+        metric_key: Dict[str, Any], job_id: str
+    ) -> Optional["ProgramParticipationMetric"]:
         """Builds a ProgramParticipationMetric object from the given arguments."""
 
         if not metric_key:
             raise ValueError("The metric_key is empty.")
 
-        metric_key['job_id'] = job_id
-        metric_key['created_on'] = date.today()
+        metric_key["job_id"] = job_id
+        metric_key["created_on"] = date.today()
 
-        program_metric = cast(ProgramParticipationMetric, ProgramParticipationMetric.build_from_dictionary(metric_key))
+        program_metric = cast(
+            ProgramParticipationMetric,
+            ProgramParticipationMetric.build_from_dictionary(metric_key),
+        )
 
         return program_metric

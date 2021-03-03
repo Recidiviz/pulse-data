@@ -51,7 +51,9 @@ class ReportContext(ABC):
         ]
 
         if missing_keys:
-            raise KeyError(f"Missing key(s) [{missing_keys}] not found in recipient.", recipient)
+            raise KeyError(
+                f"Missing key(s) [{missing_keys}] not found in recipient.", recipient
+            )
 
     @abstractmethod
     def get_report_type(self) -> str:
@@ -87,13 +89,12 @@ class ReportContext(ABC):
 
     def render_html(self) -> str:
         """Interpolates the report's prepared data into the template
-         Returns: Interpolated template """
+        Returns: Interpolated template"""
         prepared_data = self.get_prepared_data()
 
         with open(self.get_html_template_filepath()) as html_template:
             template = Template(html_template.read())
             return template.substitute(prepared_data)
-
 
     @abstractmethod
     def prepare_for_generation(self) -> dict:

@@ -19,22 +19,25 @@ most_recent_job_id_by_metric_and_state_code_materialized"""
 from typing import List, Dict
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.dataflow_output_storage_config import DATAFLOW_METRICS_TO_TABLES
-from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_MATERIALIZED_DATASET, \
-    DATAFLOW_METRICS_DATASET
+from recidiviz.calculator.dataflow_output_storage_config import (
+    DATAFLOW_METRICS_TO_TABLES,
+)
+from recidiviz.calculator.query.state.dataset_config import (
+    DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    DATAFLOW_METRICS_DATASET,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-DEFAULT_JOIN_INDICES: str = 'job_id, state_code, year, month, metric_type'
+DEFAULT_JOIN_INDICES: str = "job_id, state_code, year, month, metric_type"
 
 METRIC_TABLES_JOIN_OVERRIDES: Dict[str, str] = {
-    'recidivism_rate_metrics': 'job_id, state_code, metric_type',
+    "recidivism_rate_metrics": "job_id, state_code, metric_type",
 }
 
 METRICS_VIEWS_TO_MATERIALIZE: List[str] = list(DATAFLOW_METRICS_TO_TABLES.values())
 
-MOST_RECENT_JOBS_TEMPLATE: str = \
-    """
+MOST_RECENT_JOBS_TEMPLATE: str = """
     /*{description}*/
     SELECT *
     FROM `{project_id}.{metrics_dataset}.{metric_view}`
@@ -44,7 +47,9 @@ MOST_RECENT_JOBS_TEMPLATE: str = \
     """
 
 
-def _make_most_recent_metric_view_builder(metric_name: str) -> SimpleBigQueryViewBuilder:
+def _make_most_recent_metric_view_builder(
+    metric_name: str,
+) -> SimpleBigQueryViewBuilder:
     description = f"{metric_name} for the most recent job run"
     view_id = f"most_recent_{metric_name}"
     join_indices = METRIC_TABLES_JOIN_OVERRIDES.get(metric_name, DEFAULT_JOIN_INDICES)
@@ -61,14 +66,20 @@ def _make_most_recent_metric_view_builder(metric_name: str) -> SimpleBigQueryVie
     )
 
 
-def generate_most_recent_metrics_view_builders(metric_views: List[str]) -> List[SimpleBigQueryViewBuilder]:
-    return [_make_most_recent_metric_view_builder(metric_view) for metric_view in metric_views]
+def generate_most_recent_metrics_view_builders(
+    metric_views: List[str],
+) -> List[SimpleBigQueryViewBuilder]:
+    return [
+        _make_most_recent_metric_view_builder(metric_view)
+        for metric_view in metric_views
+    ]
 
 
-MOST_RECENT_METRICS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = \
-    generate_most_recent_metrics_view_builders(METRICS_VIEWS_TO_MATERIALIZE)
+MOST_RECENT_METRICS_VIEW_BUILDERS: List[
+    SimpleBigQueryViewBuilder
+] = generate_most_recent_metrics_view_builders(METRICS_VIEWS_TO_MATERIALIZE)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         for builder in MOST_RECENT_METRICS_VIEW_BUILDERS:
             builder.build_and_print()

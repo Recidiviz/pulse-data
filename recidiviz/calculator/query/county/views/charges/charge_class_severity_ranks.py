@@ -43,20 +43,18 @@ CHARGE_CLASSES_BY_SEVERITY = [
     charge_class_infraction,
     charge_class_other,
     charge_class_civil,
-    external_unknown
+    external_unknown,
 ]
 
-CHARGE_CLASS_SEVERITY_RANKS_VIEW_NAME = 'charge_class_severity_ranks'
+CHARGE_CLASS_SEVERITY_RANKS_VIEW_NAME = "charge_class_severity_ranks"
 
-CHARGE_CLASS_SEVERITY_RANKS_DESCRIPTION = \
-"""
+CHARGE_CLASS_SEVERITY_RANKS_DESCRIPTION = """
 A View of all charge classes and their severity ranks.
 
 Severity is ranked where 0 is most severe, and 7 is least severe.
 """
 
-CHARGE_CLASS_SEVERITY_RANKS_QUERY_TEMPLATE = \
-"""
+CHARGE_CLASS_SEVERITY_RANKS_QUERY_TEMPLATE = """
 /*{description}*/
 SELECT severity, charge_class
 FROM
@@ -72,9 +70,9 @@ CHARGE_CLASS_SEVERITY_RANKS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=CHARGE_CLASS_SEVERITY_RANKS_VIEW_NAME,
     view_query_template=CHARGE_CLASS_SEVERITY_RANKS_QUERY_TEMPLATE,
     description=CHARGE_CLASS_SEVERITY_RANKS_DESCRIPTION,
-    charge_classes_by_severity_list=str(CHARGE_CLASSES_BY_SEVERITY)
+    charge_classes_by_severity_list=str(CHARGE_CLASSES_BY_SEVERITY),
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         CHARGE_CLASS_SEVERITY_RANKS_VIEW_BUILDER.build_and_print()

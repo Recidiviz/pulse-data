@@ -18,8 +18,10 @@
 
 import unittest
 
-from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType, \
-    get_most_relevant_supervision_type
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodSupervisionType,
+    get_most_relevant_supervision_type,
+)
 
 
 class StateSupervisionPeriodTest(unittest.TestCase):
@@ -28,13 +30,24 @@ class StateSupervisionPeriodTest(unittest.TestCase):
     def test_getMostRelevantSupervisionType_allEnums(self) -> None:
         for supervision_type in StateSupervisionPeriodSupervisionType:
             types = {supervision_type}
-            self.assertEqual(supervision_type, get_most_relevant_supervision_type(types))
+            self.assertEqual(
+                supervision_type, get_most_relevant_supervision_type(types)
+            )
 
     def test_getMostRelevantSupervisionType_chooseDualIfExists(self) -> None:
         for supervision_type in StateSupervisionPeriodSupervisionType:
             types = {StateSupervisionPeriodSupervisionType.DUAL, supervision_type}
-            self.assertEqual(StateSupervisionPeriodSupervisionType.DUAL, get_most_relevant_supervision_type(types))
+            self.assertEqual(
+                StateSupervisionPeriodSupervisionType.DUAL,
+                get_most_relevant_supervision_type(types),
+            )
 
     def test_getMostRelevantSupervisionType_dualIfProbationAndParole(self) -> None:
-        types = {StateSupervisionPeriodSupervisionType.PROBATION, StateSupervisionPeriodSupervisionType.PAROLE}
-        self.assertEqual(StateSupervisionPeriodSupervisionType.DUAL, get_most_relevant_supervision_type(types))
+        types = {
+            StateSupervisionPeriodSupervisionType.PROBATION,
+            StateSupervisionPeriodSupervisionType.PAROLE,
+        }
+        self.assertEqual(
+            StateSupervisionPeriodSupervisionType.DUAL,
+            get_most_relevant_supervision_type(types),
+        )

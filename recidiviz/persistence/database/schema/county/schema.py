@@ -31,19 +31,30 @@ the historical table (which does not). Because the key is shared between the
 master and historical tables, this allows an indirect guarantee of referential
 integrity to the historical tables as well.
 """
-from sqlalchemy import Boolean, CheckConstraint, Column, Date, DateTime, Enum, \
-    ForeignKey, Integer, String, Text
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    Column,
+    Date,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import relationship, validates
 
 from recidiviz.common.constants.county import (
-    enum_canonical_strings as county_enum_strings
+    enum_canonical_strings as county_enum_strings,
 )
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.persistence.database.base_schema import JailsBase
-from recidiviz.persistence.database.schema.history_table_shared_columns_mixin \
-    import HistoryTableSharedColumns
+from recidiviz.persistence.database.schema.history_table_shared_columns_mixin import (
+    HistoryTableSharedColumns,
+)
 from recidiviz.persistence.database.schema.shared_enums import (
     gender,
     race,
@@ -59,87 +70,104 @@ from recidiviz.persistence.database.schema.shared_enums import (
 
 # Booking
 
-admission_reason = Enum(county_enum_strings.admission_reason_escape,
-                        county_enum_strings.admission_reason_new_commitment,
-                        county_enum_strings.admission_reason_parole_violation,
-                        county_enum_strings.admission_reason_probation_violation,
-                        county_enum_strings.admission_reason_supervision_violation_for_sex_offense,
-                        county_enum_strings.admission_reason_transfer,
-                        name='admission_reason')
+admission_reason = Enum(
+    county_enum_strings.admission_reason_escape,
+    county_enum_strings.admission_reason_new_commitment,
+    county_enum_strings.admission_reason_parole_violation,
+    county_enum_strings.admission_reason_probation_violation,
+    county_enum_strings.admission_reason_supervision_violation_for_sex_offense,
+    county_enum_strings.admission_reason_transfer,
+    name="admission_reason",
+)
 
-release_reason = Enum(county_enum_strings.release_reason_acquittal,
-                      county_enum_strings.release_reason_bond,
-                      county_enum_strings.release_reason_case_dismissed,
-                      county_enum_strings.release_reason_death,
-                      county_enum_strings.release_reason_escape,
-                      county_enum_strings.release_reason_expiration,
-                      enum_strings.external_unknown,
-                      county_enum_strings.release_reason_recognizance,
-                      county_enum_strings.release_reason_parole,
-                      county_enum_strings.release_reason_probation,
-                      county_enum_strings.release_reason_transfer,
-                      name='release_reason')
+release_reason = Enum(
+    county_enum_strings.release_reason_acquittal,
+    county_enum_strings.release_reason_bond,
+    county_enum_strings.release_reason_case_dismissed,
+    county_enum_strings.release_reason_death,
+    county_enum_strings.release_reason_escape,
+    county_enum_strings.release_reason_expiration,
+    enum_strings.external_unknown,
+    county_enum_strings.release_reason_recognizance,
+    county_enum_strings.release_reason_parole,
+    county_enum_strings.release_reason_probation,
+    county_enum_strings.release_reason_transfer,
+    name="release_reason",
+)
 
-custody_status = Enum(county_enum_strings.custody_status_escaped,
-                      county_enum_strings.custody_status_elsewhere,
-                      county_enum_strings.custody_status_in_custody,
-                      county_enum_strings.custody_status_inferred_release,
-                      county_enum_strings.custody_status_released,
-                      enum_strings.present_without_info,
-                      enum_strings.removed_without_info,
-                      name='custody_status')
+custody_status = Enum(
+    county_enum_strings.custody_status_escaped,
+    county_enum_strings.custody_status_elsewhere,
+    county_enum_strings.custody_status_in_custody,
+    county_enum_strings.custody_status_inferred_release,
+    county_enum_strings.custody_status_released,
+    enum_strings.present_without_info,
+    enum_strings.removed_without_info,
+    name="custody_status",
+)
 
-classification = Enum(enum_strings.external_unknown,
-                      county_enum_strings.classification_high,
-                      county_enum_strings.classification_low,
-                      county_enum_strings.classification_maximum,
-                      county_enum_strings.classification_medium,
-                      county_enum_strings.classification_minimum,
-                      county_enum_strings.classification_work_release,
-                      name='classification')
+classification = Enum(
+    enum_strings.external_unknown,
+    county_enum_strings.classification_high,
+    county_enum_strings.classification_low,
+    county_enum_strings.classification_maximum,
+    county_enum_strings.classification_medium,
+    county_enum_strings.classification_minimum,
+    county_enum_strings.classification_work_release,
+    name="classification",
+)
 
 # Hold
 
-hold_status = Enum(county_enum_strings.hold_status_active,
-                   county_enum_strings.hold_status_inactive,
-                   county_enum_strings.hold_status_inferred_dropped,
-                   enum_strings.present_without_info,
-                   enum_strings.removed_without_info,
-                   name='hold_status')
+hold_status = Enum(
+    county_enum_strings.hold_status_active,
+    county_enum_strings.hold_status_inactive,
+    county_enum_strings.hold_status_inferred_dropped,
+    enum_strings.present_without_info,
+    enum_strings.removed_without_info,
+    name="hold_status",
+)
 
 # Sentence
 
-sentence_status = Enum(county_enum_strings.sentence_status_commuted,
-                       county_enum_strings.sentence_status_completed,
-                       county_enum_strings.sentence_status_serving,
-                       enum_strings.present_without_info,
-                       enum_strings.removed_without_info,
-                       name='sentence_status')
+sentence_status = Enum(
+    county_enum_strings.sentence_status_commuted,
+    county_enum_strings.sentence_status_completed,
+    county_enum_strings.sentence_status_serving,
+    enum_strings.present_without_info,
+    enum_strings.removed_without_info,
+    name="sentence_status",
+)
 
 # SentenceRelationship
 
 sentence_relationship_type = Enum(
     county_enum_strings.sentence_relationship_type_concurrent,
     county_enum_strings.sentence_relationship_type_consecutive,
-    name='sentence_relationship_type')
+    name="sentence_relationship_type",
+)
 
-charge_class = Enum(county_enum_strings.charge_class_civil,
-                    enum_strings.external_unknown,
-                    county_enum_strings.charge_class_felony,
-                    county_enum_strings.charge_class_infraction,
-                    county_enum_strings.charge_class_misdemeanor,
-                    county_enum_strings.charge_class_other,
-                    county_enum_strings.charge_class_parole_violation,
-                    county_enum_strings.charge_class_probation_violation,
-                    county_enum_strings.charge_class_supervision_violation_for_sex_offense,
-                    name='charge_class')
+charge_class = Enum(
+    county_enum_strings.charge_class_civil,
+    enum_strings.external_unknown,
+    county_enum_strings.charge_class_felony,
+    county_enum_strings.charge_class_infraction,
+    county_enum_strings.charge_class_misdemeanor,
+    county_enum_strings.charge_class_other,
+    county_enum_strings.charge_class_parole_violation,
+    county_enum_strings.charge_class_probation_violation,
+    county_enum_strings.charge_class_supervision_violation_for_sex_offense,
+    name="charge_class",
+)
 
-degree = Enum(enum_strings.external_unknown,
-              county_enum_strings.degree_first,
-              county_enum_strings.degree_fourth,
-              county_enum_strings.degree_second,
-              county_enum_strings.degree_third,
-              name='degree')
+degree = Enum(
+    enum_strings.external_unknown,
+    county_enum_strings.degree_first,
+    county_enum_strings.degree_fourth,
+    county_enum_strings.degree_second,
+    county_enum_strings.degree_third,
+    name="degree",
+)
 
 
 class _PersonSharedColumns:
@@ -148,7 +176,7 @@ class _PersonSharedColumns:
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _PersonSharedColumns:
-            raise Exception('_PersonSharedColumns cannot be instantiated')
+            raise Exception("_PersonSharedColumns cannot be instantiated")
         return super().__new__(cls)
 
     # NOTE: PersonHistory does not contain full_name or birthdate columns. This
@@ -168,22 +196,24 @@ class _PersonSharedColumns:
     region = Column(String(255), nullable=False, index=True)
     jurisdiction_id = Column(String(8), nullable=False)
 
-    @validates('jurisdiction_id')
+    @validates("jurisdiction_id")
     def validate_jurisdiction_id(self, _, jurisdiction_id: str) -> str:
         if len(jurisdiction_id) != 8:
             raise ValueError(
-                'Jurisdiction ID invalid length: {} characters, should be '
-                '8'.format(len(jurisdiction_id)))
+                "Jurisdiction ID invalid length: {} characters, should be "
+                "8".format(len(jurisdiction_id))
+            )
         return jurisdiction_id
 
 
 class Person(JailsBase, _PersonSharedColumns):
     """Represents a person in the SQL schema"""
-    __tablename__ = 'person'
+
+    __tablename__ = "person"
     __table_args__ = (
         CheckConstraint(
-            'LENGTH(jurisdiction_id) = 8',
-            name='person_jurisdiction_id_length_check'),
+            "LENGTH(jurisdiction_id) = 8", name="person_jurisdiction_id_length_check"
+        ),
     )
 
     person_id = Column(Integer, primary_key=True)
@@ -191,18 +221,18 @@ class Person(JailsBase, _PersonSharedColumns):
     birthdate = Column(Date, index=True)
     birthdate_inferred_from_age = Column(Boolean)
 
-    bookings = relationship('Booking', lazy='joined')
+    bookings = relationship("Booking", lazy="joined")
 
 
-class PersonHistory(JailsBase,
-                    _PersonSharedColumns,
-                    HistoryTableSharedColumns):
+class PersonHistory(JailsBase, _PersonSharedColumns, HistoryTableSharedColumns):
     """Represents the historical state of a person"""
-    __tablename__ = 'person_history'
+
+    __tablename__ = "person_history"
     __table_args__ = (
         CheckConstraint(
-            'LENGTH(jurisdiction_id) = 8',
-            name='person_history_jurisdiction_id_length_check'),
+            "LENGTH(jurisdiction_id) = 8",
+            name="person_history_jurisdiction_id_length_check",
+        ),
     )
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
@@ -210,7 +240,8 @@ class PersonHistory(JailsBase,
     person_history_id = Column(Integer, primary_key=True)
 
     person_id = Column(
-        Integer, ForeignKey('person.person_id'), nullable=False, index=True)
+        Integer, ForeignKey("person.person_id"), nullable=False, index=True
+    )
 
 
 class _BookingSharedColumns:
@@ -219,7 +250,7 @@ class _BookingSharedColumns:
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _BookingSharedColumns:
-            raise Exception('_BookingSharedColumns cannot be instantiated')
+            raise Exception("_BookingSharedColumns cannot be instantiated")
         return super().__new__(cls)
 
     # NOTE: BookingHistory does not contain last_seen_time column. This is to
@@ -249,43 +280,45 @@ class _BookingSharedColumns:
 
     @declared_attr
     def person_id(self):
-        return Column(Integer, ForeignKey('person.person_id'), nullable=False)
+        return Column(Integer, ForeignKey("person.person_id"), nullable=False)
 
-    @validates('facility_id')
+    @validates("facility_id")
     def validate_facility_id(self, _, facility_id: str) -> str:
         if facility_id and len(facility_id) != 16:
             raise ValueError(
-                'Facility ID invalid length: {} characters, should be '
-                '16'.format(len(facility_id)))
+                "Facility ID invalid length: {} characters, should be "
+                "16".format(len(facility_id))
+            )
         return facility_id
+
 
 class Booking(JailsBase, _BookingSharedColumns):
     """Represents a booking in the SQL schema"""
-    __tablename__ = 'booking'
+
+    __tablename__ = "booking"
     __table_args__ = (
         CheckConstraint(
-            'LENGTH(facility_id) = 16',
-            name='booking_facility_id_length_check'),
+            "LENGTH(facility_id) = 16", name="booking_facility_id_length_check"
+        ),
     )
 
     booking_id = Column(Integer, primary_key=True)
     last_seen_time = Column(DateTime, nullable=False)
     first_seen_time = Column(DateTime, nullable=False)
 
-    holds = relationship('Hold', lazy='joined')
-    arrest = relationship('Arrest', uselist=False, lazy='joined')
-    charges = relationship('Charge', lazy='joined')
+    holds = relationship("Hold", lazy="joined")
+    arrest = relationship("Arrest", uselist=False, lazy="joined")
+    charges = relationship("Charge", lazy="joined")
 
 
-class BookingHistory(JailsBase,
-                     _BookingSharedColumns,
-                     HistoryTableSharedColumns):
+class BookingHistory(JailsBase, _BookingSharedColumns, HistoryTableSharedColumns):
     """Represents the historical state of a booking"""
-    __tablename__ = 'booking_history'
+
+    __tablename__ = "booking_history"
     __table_args__ = (
         CheckConstraint(
-            'LENGTH(facility_id) = 16',
-            name='booking_history_facility_id_length_check'),
+            "LENGTH(facility_id) = 16", name="booking_history_facility_id_length_check"
+        ),
     )
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
@@ -293,7 +326,8 @@ class BookingHistory(JailsBase,
     booking_history_id = Column(Integer, primary_key=True)
 
     booking_id = Column(
-        Integer, ForeignKey('booking.booking_id'), nullable=False, index=True)
+        Integer, ForeignKey("booking.booking_id"), nullable=False, index=True
+    )
 
 
 class _HoldSharedColumns:
@@ -302,7 +336,7 @@ class _HoldSharedColumns:
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _HoldSharedColumns:
-            raise Exception('_HoldSharedColumns cannot be instantiated')
+            raise Exception("_HoldSharedColumns cannot be instantiated")
         return super().__new__(cls)
 
     external_id = Column(String(255), index=True)
@@ -312,29 +346,27 @@ class _HoldSharedColumns:
 
     @declared_attr
     def booking_id(self):
-        return Column(
-            Integer, ForeignKey('booking.booking_id'), nullable=False)
+        return Column(Integer, ForeignKey("booking.booking_id"), nullable=False)
 
 
 class Hold(JailsBase, _HoldSharedColumns):
     """Represents a hold from another jurisdiction against a booking"""
-    __tablename__ = 'hold'
+
+    __tablename__ = "hold"
 
     hold_id = Column(Integer, primary_key=True)
 
 
-class HoldHistory(JailsBase,
-                  _HoldSharedColumns,
-                  HistoryTableSharedColumns):
+class HoldHistory(JailsBase, _HoldSharedColumns, HistoryTableSharedColumns):
     """Represents the historical state of a hold"""
-    __tablename__ = 'hold_history'
+
+    __tablename__ = "hold_history"
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
     hold_history_id = Column(Integer, primary_key=True)
 
-    hold_id = Column(
-        Integer, ForeignKey('hold.hold_id'), nullable=False, index=True)
+    hold_id = Column(Integer, ForeignKey("hold.hold_id"), nullable=False, index=True)
 
 
 class _ArrestSharedColumns:
@@ -343,7 +375,7 @@ class _ArrestSharedColumns:
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _ArrestSharedColumns:
-            raise Exception('_ArrestSharedColumns cannot be instantiated')
+            raise Exception("_ArrestSharedColumns cannot be instantiated")
         return super().__new__(cls)
 
     external_id = Column(String(255), index=True)
@@ -355,29 +387,29 @@ class _ArrestSharedColumns:
 
     @declared_attr
     def booking_id(self):
-        return Column(
-            Integer, ForeignKey('booking.booking_id'), nullable=False)
+        return Column(Integer, ForeignKey("booking.booking_id"), nullable=False)
 
 
 class Arrest(JailsBase, _ArrestSharedColumns):
     """Represents an arrest in the SQL schema"""
-    __tablename__ = 'arrest'
+
+    __tablename__ = "arrest"
 
     arrest_id = Column(Integer, primary_key=True)
 
 
-class ArrestHistory(JailsBase,
-                    _ArrestSharedColumns,
-                    HistoryTableSharedColumns):
+class ArrestHistory(JailsBase, _ArrestSharedColumns, HistoryTableSharedColumns):
     """Represents the historical state of an arrest"""
-    __tablename__ = 'arrest_history'
+
+    __tablename__ = "arrest_history"
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
     arrest_history_id = Column(Integer, primary_key=True)
 
     arrest_id = Column(
-        Integer, ForeignKey('arrest.arrest_id'), nullable=False, index=True)
+        Integer, ForeignKey("arrest.arrest_id"), nullable=False, index=True
+    )
 
 
 class _BondSharedColumns:
@@ -386,7 +418,7 @@ class _BondSharedColumns:
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _BondSharedColumns:
-            raise Exception('_BondSharedColumns cannot be instantiated')
+            raise Exception("_BondSharedColumns cannot be instantiated")
         return super().__new__(cls)
 
     external_id = Column(String(255), index=True)
@@ -410,30 +442,29 @@ class _BondSharedColumns:
             # relationship, it needs to be manually set. To avoid raising an
             # error during any transient invalid states during processing, the
             # constraint must be deferred to only be checked at commit time.
-            ForeignKey(
-                'booking.booking_id', deferrable=True, initially='DEFERRED'),
-            nullable=False)
+            ForeignKey("booking.booking_id", deferrable=True, initially="DEFERRED"),
+            nullable=False,
+        )
 
 
 class Bond(JailsBase, _BondSharedColumns):
     """Represents a bond in the SQL schema"""
-    __tablename__ = 'bond'
+
+    __tablename__ = "bond"
 
     bond_id = Column(Integer, primary_key=True)
 
 
-class BondHistory(JailsBase,
-                  _BondSharedColumns,
-                  HistoryTableSharedColumns):
+class BondHistory(JailsBase, _BondSharedColumns, HistoryTableSharedColumns):
     """Represents the historical state of a bond"""
-    __tablename__ = 'bond_history'
+
+    __tablename__ = "bond_history"
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
     bond_history_id = Column(Integer, primary_key=True)
 
-    bond_id = Column(
-        Integer, ForeignKey('bond.bond_id'), nullable=False, index=True)
+    bond_id = Column(Integer, ForeignKey("bond.bond_id"), nullable=False, index=True)
 
 
 class _SentenceSharedColumns:
@@ -444,7 +475,7 @@ class _SentenceSharedColumns:
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _SentenceSharedColumns:
-            raise Exception('_SentenceSharedColumns cannot be instantiated')
+            raise Exception("_SentenceSharedColumns cannot be instantiated")
         return super().__new__(cls)
 
     external_id = Column(String(255), index=True)
@@ -476,14 +507,15 @@ class _SentenceSharedColumns:
             # relationship, it needs to be manually set. To avoid raising an
             # error during any transient invalid states during processing, the
             # constraint must be deferred to only be checked at commit time.
-            ForeignKey(
-                'booking.booking_id', deferrable=True, initially='DEFERRED'),
-            nullable=False)
+            ForeignKey("booking.booking_id", deferrable=True, initially="DEFERRED"),
+            nullable=False,
+        )
 
 
 class Sentence(JailsBase, _SentenceSharedColumns):
     """Represents a sentence in the SQL schema"""
-    __tablename__ = 'sentence'
+
+    __tablename__ = "sentence"
 
     sentence_id = Column(Integer, primary_key=True)
 
@@ -491,27 +523,22 @@ class Sentence(JailsBase, _SentenceSharedColumns):
     # be represented by different relationships, a sentence must have two sets
     # of relationships with other sentences, depending on which side of the pair
     # it's on.
-    related_sentences_a = association_proxy(
-        'a_sentence_relations', 'sentence_a')
-    related_sentences_b = association_proxy(
-        'b_sentence_relations', 'sentence_b')
+    related_sentences_a = association_proxy("a_sentence_relations", "sentence_a")
+    related_sentences_b = association_proxy("b_sentence_relations", "sentence_b")
 
 
-class SentenceHistory(JailsBase,
-                      _SentenceSharedColumns,
-                      HistoryTableSharedColumns):
+class SentenceHistory(JailsBase, _SentenceSharedColumns, HistoryTableSharedColumns):
     """Represents the historical state of a sentence"""
-    __tablename__ = 'sentence_history'
+
+    __tablename__ = "sentence_history"
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
     sentence_history_id = Column(Integer, primary_key=True)
 
     sentence_id = Column(
-        Integer,
-        ForeignKey('sentence.sentence_id'),
-        nullable=False,
-        index=True)
+        Integer, ForeignKey("sentence.sentence_id"), nullable=False, index=True
+    )
 
 
 class _SentenceRelationshipSharedColumns:
@@ -522,13 +549,13 @@ class _SentenceRelationshipSharedColumns:
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _SentenceRelationshipSharedColumns:
-            raise Exception(
-                '_SentenceRelationshipSharedColumns cannot be instantiated')
+            raise Exception("_SentenceRelationshipSharedColumns cannot be instantiated")
         return super().__new__(cls)
 
     # Manually set name to avoid conflict with Python reserved keyword
     sentence_relationship_type = Column(
-        'type', sentence_relationship_type, nullable=False)
+        "type", sentence_relationship_type, nullable=False
+    )
     sentence_relation_type_raw_text = Column(String(255))
 
     # NOTE: A sentence relationship is undirected: if sentence A is served
@@ -543,38 +570,38 @@ class _SentenceRelationshipSharedColumns:
 
     @declared_attr
     def sentence_a_id(self):
-        return Column(
-            Integer, ForeignKey('sentence.sentence_id'), nullable=False)
+        return Column(Integer, ForeignKey("sentence.sentence_id"), nullable=False)
 
     @declared_attr
     def sentence_b_id(self):
-        return Column(
-            Integer, ForeignKey('sentence.sentence_id'), nullable=False)
+        return Column(Integer, ForeignKey("sentence.sentence_id"), nullable=False)
 
 
-class SentenceRelationship(JailsBase,
-                           _SentenceRelationshipSharedColumns):
+class SentenceRelationship(JailsBase, _SentenceRelationshipSharedColumns):
     """Represents the relationship between two sentences"""
-    __tablename__ = 'sentence_relationship'
+
+    __tablename__ = "sentence_relationship"
 
     sentence_relationship_id = Column(Integer, primary_key=True)
 
     sentence_a = relationship(
-        'Sentence',
-        backref='b_sentence_relations',
-        primaryjoin='Sentence.sentence_id==SentenceRelationship.sentence_b_id')
+        "Sentence",
+        backref="b_sentence_relations",
+        primaryjoin="Sentence.sentence_id==SentenceRelationship.sentence_b_id",
+    )
     sentence_b = relationship(
-        'Sentence',
-        backref='a_sentence_relations',
-        primaryjoin='Sentence.sentence_id==SentenceRelationship.sentence_a_id')
+        "Sentence",
+        backref="a_sentence_relations",
+        primaryjoin="Sentence.sentence_id==SentenceRelationship.sentence_a_id",
+    )
 
 
-class SentenceRelationshipHistory(JailsBase,
-                                  _SentenceRelationshipSharedColumns,
-                                  HistoryTableSharedColumns):
-    """Represents the historical state of the relationship between two sentences
-    """
-    __tablename__ = 'sentence_relationship_history'
+class SentenceRelationshipHistory(
+    JailsBase, _SentenceRelationshipSharedColumns, HistoryTableSharedColumns
+):
+    """Represents the historical state of the relationship between two sentences"""
+
+    __tablename__ = "sentence_relationship_history"
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
@@ -582,9 +609,10 @@ class SentenceRelationshipHistory(JailsBase,
 
     sentence_relationship_id = Column(
         Integer,
-        ForeignKey('sentence_relationship.sentence_relationship_id'),
+        ForeignKey("sentence_relationship.sentence_relationship_id"),
         nullable=False,
-        index=True)
+        index=True,
+    )
 
 
 class _ChargeSharedColumns:
@@ -593,7 +621,7 @@ class _ChargeSharedColumns:
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _ChargeSharedColumns:
-            raise Exception('_ChargeSharedColumns cannot be instantiated')
+            raise Exception("_ChargeSharedColumns cannot be instantiated")
         return super().__new__(cls)
 
     external_id = Column(String(255), index=True)
@@ -604,7 +632,7 @@ class _ChargeSharedColumns:
     degree = Column(degree)
     degree_raw_text = Column(String(255))
     # Manually set name to avoid conflict with Python reserved keyword
-    charge_class = Column('class', charge_class)
+    charge_class = Column("class", charge_class)
     class_raw_text = Column(String(255))
     level = Column(String(255))
     fee_dollars = Column(Integer)
@@ -619,50 +647,49 @@ class _ChargeSharedColumns:
 
     @declared_attr
     def booking_id(self):
-        return Column(
-            Integer, ForeignKey('booking.booking_id'), nullable=False)
+        return Column(Integer, ForeignKey("booking.booking_id"), nullable=False)
 
     @declared_attr
     def bond_id(self):
-        return Column(Integer, ForeignKey('bond.bond_id'))
+        return Column(Integer, ForeignKey("bond.bond_id"))
 
     @declared_attr
     def sentence_id(self):
-        return Column(Integer, ForeignKey('sentence.sentence_id'))
+        return Column(Integer, ForeignKey("sentence.sentence_id"))
 
 
 class Charge(JailsBase, _ChargeSharedColumns):
     """Represents a charge in the SQL schema"""
-    __tablename__ = 'charge'
+
+    __tablename__ = "charge"
 
     charge_id = Column(Integer, primary_key=True)
 
-    bond = relationship('Bond', lazy='joined')
-    sentence = relationship('Sentence', lazy='joined')
+    bond = relationship("Bond", lazy="joined")
+    sentence = relationship("Sentence", lazy="joined")
 
 
-class ChargeHistory(JailsBase,
-                    _ChargeSharedColumns,
-                    HistoryTableSharedColumns):
+class ChargeHistory(JailsBase, _ChargeSharedColumns, HistoryTableSharedColumns):
     """Represents the historical state of a charge"""
-    __tablename__ = 'charge_history'
+
+    __tablename__ = "charge_history"
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
     charge_history_id = Column(Integer, primary_key=True)
 
     charge_id = Column(
-        Integer, ForeignKey('charge.charge_id'), nullable=False, index=True)
+        Integer, ForeignKey("charge.charge_id"), nullable=False, index=True
+    )
 
 
 class ScraperSuccess(JailsBase):
     """Represents the successful completion of a scrape session."""
-    __tablename__ = 'scraper_success'
+
+    __tablename__ = "scraper_success"
 
     __table_args__ = (
-        CheckConstraint(
-            'LENGTH(jid) = 8',
-            name='single_count_jid_length_check'),
+        CheckConstraint("LENGTH(jid) = 8", name="single_count_jid_length_check"),
     )
 
     scraper_success_id = Column(Integer, primary_key=True)

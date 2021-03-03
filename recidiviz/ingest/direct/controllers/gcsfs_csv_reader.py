@@ -25,8 +25,8 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.utils import environment
 
 COMMON_RAW_FILE_ENCODINGS = [
-    'UTF-8',
-    'ISO-8859-1'  # Also known as 'latin-1', used in the census and lots of other government data
+    "UTF-8",
+    "ISO-8859-1",  # Also known as 'latin-1', used in the census and lots of other government data
 ]
 
 
@@ -86,15 +86,17 @@ class GcsfsCsvReader:
         # reading from may have to match the project default you have set locally (check via `gcloud info` and set via
         # `gcloud config set project [PROJECT_ID]`. If we are running in the GCP environment, we should be able to query
         # the internal metadata for credentials.
-        token = 'google_default' if not environment.in_gcp() else 'cloud'
+        token = "google_default" if not environment.in_gcp() else "cloud"
         return self.gcs_file_system.open(path.uri(), encoding=encoding, token=token)
 
-    def streaming_read(self,
-                       path: GcsfsFilePath,
-                       delegate: GcsfsCsvReaderDelegate,
-                       chunk_size: int,
-                       encodings_to_try: Optional[List[str]] = None,
-                       **kwargs: Any) -> None:
+    def streaming_read(
+        self,
+        path: GcsfsFilePath,
+        delegate: GcsfsCsvReaderDelegate,
+        chunk_size: int,
+        encodings_to_try: Optional[List[str]] = None,
+        **kwargs: Any,
+    ) -> None:
         """
         Performs a streaming read of the CSV at the provided path. Will attempt to decode file with multiple encoding
         types. For large files, this allows us to read and process the whole file without ever storing the whole file in
@@ -125,13 +127,15 @@ class GcsfsCsvReader:
                             encoding=encoding,
                             dtype=str,
                             chunksize=chunk_size,
-                            **kwargs
+                            **kwargs,
                         )
                     except pd.errors.EmptyDataError:
                         reader = iter([])
 
                     for i, df in enumerate(reader):
-                        continue_iteration = delegate.on_dataframe(encoding=encoding, chunk_num=i, df=df)
+                        continue_iteration = delegate.on_dataframe(
+                            encoding=encoding, chunk_num=i, df=df
+                        )
                         if not continue_iteration:
                             break
 
@@ -147,4 +151,6 @@ class GcsfsCsvReader:
                 if should_throw:
                     raise e
 
-        raise ValueError(f'Unable to read path [{path.abs_path()}] for any of these encodings: {encodings_to_try}')
+        raise ValueError(
+            f"Unable to read path [{path.abs_path()}] for any of these encodings: {encodings_to_try}"
+        )

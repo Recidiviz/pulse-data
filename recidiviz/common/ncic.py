@@ -50,18 +50,20 @@ class NcicCode(DefaultableAttr):
 
 def _initialize_codes() -> Dict[str, NcicCode]:
     ncic_codes = {}
-    with open(_NCIC_FILEPATH, 'r') as file:
+    with open(_NCIC_FILEPATH, "r") as file:
         reader = csv.DictReader(file)
         for row in reader:
-            code = row['ncic_code']
-            ncic_codes[code] = NcicCode(ncic_code=code,
-                                        description=row['description'].upper(),
-                                        is_violent=row['is_violent'] == 'Y')
+            code = row["ncic_code"]
+            ncic_codes[code] = NcicCode(
+                ncic_code=code,
+                description=row["description"].upper(),
+                is_violent=row["is_violent"] == "Y",
+            )
 
     return ncic_codes
 
 
-_NCIC_FILEPATH: str = as_filepath('ncic.csv', subdir='data_sets')
+_NCIC_FILEPATH: str = as_filepath("ncic.csv", subdir="data_sets")
 _NCIC: Dict[str, NcicCode] = _initialize_codes()
 
 

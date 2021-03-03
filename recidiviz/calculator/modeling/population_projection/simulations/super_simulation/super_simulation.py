@@ -21,10 +21,18 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from recidiviz.calculator.modeling.population_projection.simulations.super_simulation.initializer import Initializer
-from recidiviz.calculator.modeling.population_projection.simulations.super_simulation.simulator import Simulator
-from recidiviz.calculator.modeling.population_projection.simulations.super_simulation.validator import Validator
-from recidiviz.calculator.modeling.population_projection.simulations.super_simulation.exporter import Exporter
+from recidiviz.calculator.modeling.population_projection.simulations.super_simulation.initializer import (
+    Initializer,
+)
+from recidiviz.calculator.modeling.population_projection.simulations.super_simulation.simulator import (
+    Simulator,
+)
+from recidiviz.calculator.modeling.population_projection.simulations.super_simulation.validator import (
+    Validator,
+)
+from recidiviz.calculator.modeling.population_projection.simulations.super_simulation.exporter import (
+    Exporter,
+)
 from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
 
 
@@ -32,11 +40,11 @@ class SuperSimulation:
     """Manage the PopulationSimulations and output data needed to run tests, baselines, and policy scenarios"""
 
     def __init__(
-            self,
-            initializer: Initializer,
-            simulator: Simulator,
-            validator: Validator,
-            exporter: Exporter
+        self,
+        initializer: Initializer,
+        simulator: Simulator,
+        validator: Validator,
+        exporter: Exporter,
     ) -> None:
 
         self.initializer = initializer
@@ -45,17 +53,20 @@ class SuperSimulation:
         self.exporter = exporter
 
     def simulate_baseline(
-            self,
-            display_compartments: List[str],
-            first_relevant_ts: Optional[int] = None
+        self, display_compartments: List[str], first_relevant_ts: Optional[int] = None
     ) -> None:
         """
         Calculates a baseline projection.
         `simulation_title` is the desired simulation tag for this baseline
         `first_relevant_ts` is the ts at which to start initialization
         """
-        first_relevant_ts, data_inputs, user_inputs, time_step, reference_year = \
-            self._get_simulation_inputs(first_relevant_ts)
+        (
+            first_relevant_ts,
+            data_inputs,
+            user_inputs,
+            time_step,
+            reference_year,
+        ) = self._get_simulation_inputs(first_relevant_ts)
 
         self.simulator.simulate_baseline(
             user_inputs,
@@ -63,12 +74,20 @@ class SuperSimulation:
             display_compartments,
             first_relevant_ts,
             time_step,
-            reference_year
+            reference_year,
         )
         self.validator.reset(self.simulator.get_population_simulations())
 
-    def simulate_policy(self, policy_list: List[SparkPolicy], output_compartment: str) -> pd.DataFrame:
-        first_relevant_ts, data_inputs, user_inputs, time_step, reference_year = self._get_simulation_inputs()
+    def simulate_policy(
+        self, policy_list: List[SparkPolicy], output_compartment: str
+    ) -> pd.DataFrame:
+        (
+            first_relevant_ts,
+            data_inputs,
+            user_inputs,
+            time_step,
+            reference_year,
+        ) = self._get_simulation_inputs()
 
         simulation_output = self.simulator.simulate_policy(
             user_inputs,
@@ -77,9 +96,12 @@ class SuperSimulation:
             reference_year,
             first_relevant_ts,
             policy_list,
-            output_compartment
+            output_compartment,
         )
-        self.validator.reset(self.simulator.get_population_simulations(), {'policy_simulation': simulation_output})
+        self.validator.reset(
+            self.simulator.get_population_simulations(),
+            {"policy_simulation": simulation_output},
+        )
         return simulation_output
 
     def microsim_baseline_over_time(self, start_run_dates: List[datetime]) -> None:
@@ -88,34 +110,38 @@ class SuperSimulation:
         `start_run_dates` should be a list of datetime at which to run the simulation
         """
         user_inputs = self.initializer.get_user_inputs()
-        data_inputs_dict, first_relevant_ts_dict = \
-            self.initializer.get_inputs_for_microsim_baseline_over_time(start_run_dates)
+        (
+            data_inputs_dict,
+            first_relevant_ts_dict,
+        ) = self.initializer.get_inputs_for_microsim_baseline_over_time(start_run_dates)
 
-        self.simulator.microsim_baseline_over_time(user_inputs, data_inputs_dict, first_relevant_ts_dict)
+        self.simulator.microsim_baseline_over_time(
+            user_inputs, data_inputs_dict, first_relevant_ts_dict
+        )
         self.validator.reset(self.simulator.get_population_simulations())
 
     def upload_simulation_results_to_bq(
-            self,
-            simulation_tag: str,
-            cost_multipliers: pd.DataFrame = pd.DataFrame(),
+        self,
+        simulation_tag: str,
+        cost_multipliers: pd.DataFrame = pd.DataFrame(),
     ) -> Optional[Dict[str, pd.DataFrame]]:
         output_data = self.validator.get_output_data_for_upload()
         sub_group_ids_dict = self.simulator.get_sub_group_ids_dict()
         _, data_inputs, _, time_step, reference_year = self._get_simulation_inputs()
         excluded_pop_data = self.initializer.get_excluded_pop_data()
-        disaggregation_axes = data_inputs['disaggregation_axes']
+        disaggregation_axes = data_inputs["disaggregation_axes"]
 
         testing_data = self.exporter.upload_simulation_results_to_bq(
-            'recidiviz-staging',
+            "recidiviz-staging",
             simulation_tag,
             output_data,
             excluded_pop_data,
-            data_inputs['total_population_data'],
+            data_inputs["total_population_data"],
             cost_multipliers,
             sub_group_ids_dict,
             time_step,
             reference_year,
-            disaggregation_axes
+            disaggregation_axes,
         )
         return testing_data
 
@@ -123,19 +149,15 @@ class SuperSimulation:
         return self.validator.gen_arima_output_df(simulation_title)
 
     def get_arima_output_plots(
-            self,
-            simulation_title: str,
-            fig_size: Tuple[int, int] = (8, 6),
-            by_simulation_group: bool = False
+        self,
+        simulation_title: str,
+        fig_size: Tuple[int, int] = (8, 6),
+        by_simulation_group: bool = False,
     ) -> List[plt.subplot]:
         time_step = self.initializer.get_time_step()
         reference_year = self.initializer.get_reference_year()
         return self.validator.gen_arima_output_plots(
-            simulation_title,
-            fig_size,
-            by_simulation_group,
-            time_step,
-            reference_year
+            simulation_title, fig_size, by_simulation_group, time_step, reference_year
         )
 
     def get_outflows_error(self, simulation_title: str) -> pd.DataFrame:
@@ -145,26 +167,34 @@ class SuperSimulation:
     def get_total_population_error(self, simulation_tag: str) -> pd.DataFrame:
         time_step = self.initializer.get_time_step()
         reference_year = self.initializer.get_reference_year()
-        return self.validator.gen_total_population_error(simulation_tag, time_step, reference_year)
+        return self.validator.gen_total_population_error(
+            simulation_tag, time_step, reference_year
+        )
 
     def get_full_error_output(self, simulation_tag: str) -> pd.DataFrame:
         time_step = self.initializer.get_time_step()
         reference_year = self.initializer.get_reference_year()
-        return self.validator.gen_full_error_output(simulation_tag, time_step, reference_year)
+        return self.validator.gen_full_error_output(
+            simulation_tag, time_step, reference_year
+        )
 
-    def calculate_baseline_transition_error(self, validation_pairs: Dict[str, str]) -> pd.DataFrame:
+    def calculate_baseline_transition_error(
+        self, validation_pairs: Dict[str, str]
+    ) -> pd.DataFrame:
         time_step = self.initializer.get_time_step()
         reference_year = self.initializer.get_reference_year()
-        return self.validator.calculate_baseline_transition_error(validation_pairs, time_step, reference_year)
+        return self.validator.calculate_baseline_transition_error(
+            validation_pairs, time_step, reference_year
+        )
 
     def calculate_cohort_hydration_error(
-            self,
-            output_compartment: str,
-            outflow_to: str,
-            lower_bound: float = 0,
-            upper_bound: float = 2,
-            step_size: float = 0.1,
-            unit: str = 'abs'
+        self,
+        output_compartment: str,
+        outflow_to: str,
+        lower_bound: float = 0,
+        upper_bound: float = 2,
+        step_size: float = 0.1,
+        unit: str = "abs",
     ) -> pd.DataFrame:
         """
         `back_fill_range` is a three item tuple giving the lower and upper bounds to test in units of
@@ -179,7 +209,7 @@ class SuperSimulation:
             data_inputs,
             int(lower_bound * max_sentence),
             int(upper_bound * max_sentence),
-            step_size * max_sentence
+            step_size * max_sentence,
         )
 
         self.validator.reset(self.simulator.get_population_simulations())
@@ -189,12 +219,11 @@ class SuperSimulation:
             int(lower_bound * max_sentence),
             int(upper_bound * max_sentence),
             step_size * max_sentence,
-            unit
+            unit,
         )
 
     def _get_simulation_inputs(
-            self,
-            first_relevant_ts: Optional[int] = None
+        self, first_relevant_ts: Optional[int] = None
     ) -> Tuple[int, Dict[str, Any], Dict[str, Any], float, float]:
         first_relevant_ts = self.initializer.get_first_relevant_ts(first_relevant_ts)
         data_inputs = self.initializer.get_data_inputs()

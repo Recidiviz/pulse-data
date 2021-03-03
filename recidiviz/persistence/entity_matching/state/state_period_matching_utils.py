@@ -19,10 +19,14 @@ from typing import List
 
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.entity_utils import is_placeholder
-from recidiviz.persistence.entity_matching.state.state_matching_utils import get_all_entities_of_cls
+from recidiviz.persistence.entity_matching.state.state_matching_utils import (
+    get_all_entities_of_cls,
+)
 
 
-def add_supervising_officer_to_open_supervision_periods(persons: List[schema.StatePerson]):
+def add_supervising_officer_to_open_supervision_periods(
+    persons: List[schema.StatePerson],
+):
     """For each person in the provided |persons|, adds the supervising_officer from the person entity onto all open
     StateSupervisionPeriods.
     """
@@ -30,7 +34,9 @@ def add_supervising_officer_to_open_supervision_periods(persons: List[schema.Sta
         if not person.supervising_officer:
             continue
 
-        supervision_periods = get_all_entities_of_cls([person], schema.StateSupervisionPeriod)
+        supervision_periods = get_all_entities_of_cls(
+            [person], schema.StateSupervisionPeriod
+        )
         for supervision_period in supervision_periods:
             # Skip placeholders
             if is_placeholder(supervision_period):

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Admissions minus releases (net change in incarcerated population)"""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
@@ -23,14 +23,13 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-ADMISSIONS_VERSUS_RELEASES_BY_MONTH_VIEW_NAME = \
-    'admissions_versus_releases_by_month'
+ADMISSIONS_VERSUS_RELEASES_BY_MONTH_VIEW_NAME = "admissions_versus_releases_by_month"
 
-ADMISSIONS_VERSUS_RELEASES_BY_MONTH_DESCRIPTION = \
+ADMISSIONS_VERSUS_RELEASES_BY_MONTH_DESCRIPTION = (
     """ Monthly admissions versus releases """
+)
 
-ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY_TEMPLATE = \
-    """
+ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT
       state_code, year, month, district, 
@@ -83,15 +82,14 @@ ADMISSIONS_VERSUS_RELEASES_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=ADMISSIONS_VERSUS_RELEASES_BY_MONTH_VIEW_NAME,
     view_query_template=ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY_TEMPLATE,
-    dimensions=['state_code', 'year', 'month', 'district'],
+    dimensions=["state_code", "year", "month", "district"],
     description=ADMISSIONS_VERSUS_RELEASES_BY_MONTH_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    district_dimension=bq_utils.unnest_district(
-        district_column='county_of_residence'),
-    thirty_six_month_filter=bq_utils.thirty_six_month_filter()
+    district_dimension=bq_utils.unnest_district(district_column="county_of_residence"),
+    thirty_six_month_filter=bq_utils.thirty_six_month_filter(),
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         ADMISSIONS_VERSUS_RELEASES_BY_MONTH_VIEW_BUILDER.build_and_print()

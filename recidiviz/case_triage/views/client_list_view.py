@@ -16,8 +16,13 @@
 # =============================================================================
 """Creates the view builder and view for listing all clients."""
 
-from recidiviz.big_query.selected_columns_big_query_view import SelectedColumnsBigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import CASE_TRIAGE_DATASET, DATAFLOW_METRICS_MATERIALIZED_DATASET
+from recidiviz.big_query.selected_columns_big_query_view import (
+    SelectedColumnsBigQueryViewBuilder,
+)
+from recidiviz.calculator.query.state.dataset_config import (
+    CASE_TRIAGE_DATASET,
+    DATAFLOW_METRICS_MATERIALIZED_DATASET,
+)
 from recidiviz.case_triage.views.dataset_config import VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -138,34 +143,34 @@ WHERE with_derived_supervising_officer.supervising_officer_external_id IS NOT NU
 
 CLIENT_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     dataset_id=VIEWS_DATASET,
-    view_id='etl_clients',
+    view_id="etl_clients",
     view_query_template=CLIENT_LIST_QUERY_TEMPLATE,
     case_triage_dataset=CASE_TRIAGE_DATASET,
     dataflow_metrics_materialized_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     columns=[
-        'state_code',
-        'person_external_id',
-        'full_name',
-        'gender',
-        'current_address',
-        'birthdate',
-        'birthdate_inferred_from_age',
-        'supervision_start_date',
-        'projected_end_date',
-        'supervision_type',
-        'case_type',
-        'supervision_level',
-        'employer',
-        'most_recent_assessment_date',
-        'assessment_score',
-        'most_recent_face_to_face_date',
+        "state_code",
+        "person_external_id",
+        "full_name",
+        "gender",
+        "current_address",
+        "birthdate",
+        "birthdate_inferred_from_age",
+        "supervision_start_date",
+        "projected_end_date",
+        "supervision_type",
+        "case_type",
+        "supervision_level",
+        "employer",
+        "most_recent_assessment_date",
+        "assessment_score",
+        "most_recent_face_to_face_date",
         # TODO(#5943): supervising_officer_external_id must be at the end of
         # this list because of the way that we have to derive this result from
         # the ofndr_agnt table for Idaho.
-        'supervising_officer_external_id',
+        "supervising_officer_external_id",
     ],
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         CLIENT_LIST_VIEW_BUILDER.build_and_print()

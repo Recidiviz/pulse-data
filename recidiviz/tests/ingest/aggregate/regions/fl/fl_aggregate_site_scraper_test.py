@@ -22,19 +22,19 @@ import requests
 from recidiviz.ingest.aggregate.regions.fl import fl_aggregate_site_scraper
 from recidiviz.tests.ingest import fixtures
 
-REPORTS_HTML = fixtures.as_string('aggregate/regions/fl', 'reports.html')
+REPORTS_HTML = fixtures.as_string("aggregate/regions/fl", "reports.html")
 
 
 class TestFlAggregateSiteScraper(TestCase):
     """Test that fl_aggregate_site_scraper correctly scrapes urls."""
 
-    @patch.object(requests, 'get')
+    @patch.object(requests, "get")
     def testGetAllUrls(self, mockget):
         mockresponse = Mock()
         mockget.return_value = mockresponse
         mockresponse.text = REPORTS_HTML
-        url1 = 'http://www.dc.state.fl.us/pub/jails/2019/2019_06 June FCDF.pdf'
-        url2 = 'http://www.dc.state.fl.us/pub/jails/2016/jails-2016-03.pdf'
+        url1 = "http://www.dc.state.fl.us/pub/jails/2019/2019_06 June FCDF.pdf"
+        url2 = "http://www.dc.state.fl.us/pub/jails/2016/jails-2016-03.pdf"
         expected_urls = {url1, url2}
 
         urls = fl_aggregate_site_scraper.get_urls_to_download()

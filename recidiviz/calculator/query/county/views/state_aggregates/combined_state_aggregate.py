@@ -20,8 +20,9 @@ import sqlalchemy
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
-from recidiviz.calculator.query.county.views.state_aggregates import \
-    state_aggregate_mappings
+from recidiviz.calculator.query.county.views.state_aggregates import (
+    state_aggregate_mappings,
+)
 from recidiviz.persistence.database import schema_utils
 
 
@@ -30,9 +31,8 @@ def _to_bq_table(query_str: str) -> str:
     base_dataset = dataset_config.COUNTY_BASE_DATASET
 
     for table in schema_utils.get_aggregate_table_classes():
-        bq_table_name = '`{{project_id}}.{base_dataset}.{table_name}`'.format(
-            base_dataset=base_dataset,
-            table_name=table.name
+        bq_table_name = "`{{project_id}}.{base_dataset}.{table_name}`".format(
+            base_dataset=base_dataset, table_name=table.name
         )
         query_str = query_str.replace(table.name, bq_table_name)
 
@@ -48,8 +48,10 @@ _BQ_UNIONED_STATEMENT_QUERY_TEMPLATE = _to_bq_table(str(_UNIONED_STATEMENT.compi
 # this view is to combine it with a view of our "scraped website data" that maps
 # to the same shared column_names. Both of these views should be aggregated to
 # the same level (eg. jurisdiction level via jurisdiction_id).
-COMBINED_STATE_AGGREGATE_VIEW_BUILDER: SimpleBigQueryViewBuilder = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.VIEWS_DATASET,
-    view_id='combined_state_aggregates',
-    view_query_template=_BQ_UNIONED_STATEMENT_QUERY_TEMPLATE
+COMBINED_STATE_AGGREGATE_VIEW_BUILDER: SimpleBigQueryViewBuilder = (
+    SimpleBigQueryViewBuilder(
+        dataset_id=dataset_config.VIEWS_DATASET,
+        view_id="combined_state_aggregates",
+        view_query_template=_BQ_UNIONED_STATEMENT_QUERY_TEMPLATE,
+    )
 )

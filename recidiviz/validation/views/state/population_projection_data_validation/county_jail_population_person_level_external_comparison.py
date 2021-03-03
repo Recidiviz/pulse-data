@@ -25,21 +25,22 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
-COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_NAME = \
-    'county_jail_population_person_level_external_comparison_matching_people'
+COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_NAME = (
+    "county_jail_population_person_level_external_comparison_matching_people"
+)
 
-COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_NAME = \
-    'county_jail_population_person_level_external_comparison'
+COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_NAME = (
+    "county_jail_population_person_level_external_comparison"
+)
 
 COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_DESCRIPTION = """
 Comparison of values between internal and external lists of start of month person-level county jail incarceration
 populations.
 """
 
-COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_DATE = '2020-09-01'
+COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_DATE = "2020-09-01"
 
-COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = \
-    """
+COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
 /*{description}*/
 WITH external_data AS (
   SELECT
@@ -93,8 +94,7 @@ USING(region_code, date_of_stay, person_external_id, facility, legal_status)
 ORDER BY region_code, date_of_stay, person_external_id
 """
 
-COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_FILTER = \
-    "WHERE external_data.person_external_id IS NOT NULL AND internal_data.person_external_id IS NOT NULL"
+COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_FILTER = "WHERE external_data.person_external_id IS NOT NULL AND internal_data.person_external_id IS NOT NULL"
 
 COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
@@ -106,7 +106,7 @@ COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUI
     materialized_metrics_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     population_projection_dataset=state_dataset_config.POPULATION_PROJECTION_DATASET,
     comparison_date=COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_DATE,
-    filter_clause=COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_FILTER
+    filter_clause=COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_FILTER,
 )
 
 COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -119,10 +119,10 @@ COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER = SimpleBig
     materialized_metrics_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     population_projection_dataset=state_dataset_config.POPULATION_PROJECTION_DATASET,
     comparison_date=COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_DATE,
-    filter_clause=''
+    filter_clause="",
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER.build_and_print()
         COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER.build_and_print()

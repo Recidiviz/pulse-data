@@ -16,19 +16,22 @@
 # =============================================================================
 """Assessment scores with range of dates for each score"""
 # pylint: disable=trailing-whitespace
-# pylint: disable=line-too-long
+
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET, ANALYST_VIEWS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    STATE_BASE_DATASET,
+    ANALYST_VIEWS_DATASET,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-ASSESSMENT_SCORE_SESSIONS_VIEW_NAME = 'assessment_score_sessions'
+ASSESSMENT_SCORE_SESSIONS_VIEW_NAME = "assessment_score_sessions"
 
-ASSESSMENT_SCORE_SESSIONS_VIEW_DESCRIPTION = \
+ASSESSMENT_SCORE_SESSIONS_VIEW_DESCRIPTION = (
     """Assessment scores with range of dates for each score"""
+)
 
-ASSESSMENT_SCORE_SESSIONS_QUERY_TEMPLATE = \
-    """
+ASSESSMENT_SCORE_SESSIONS_QUERY_TEMPLATE = """
     /*{description}*/   
     SELECT 
         person_id,
@@ -58,9 +61,9 @@ ASSESSMENT_SCORE_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=ASSESSMENT_SCORE_SESSIONS_QUERY_TEMPLATE,
     description=ASSESSMENT_SCORE_SESSIONS_VIEW_DESCRIPTION,
     base_dataset=STATE_BASE_DATASET,
-    should_materialize=True
+    should_materialize=True,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         ASSESSMENT_SCORE_SESSIONS_VIEW_BUILDER.build_and_print()

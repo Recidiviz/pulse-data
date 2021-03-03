@@ -24,14 +24,13 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
-PO_REPORT_DISTINCT_BY_OFFICER_MONTH_VIEW_NAME = 'po_report_distinct_by_officer_month'
+PO_REPORT_DISTINCT_BY_OFFICER_MONTH_VIEW_NAME = "po_report_distinct_by_officer_month"
 
 PO_REPORT_DISTINCT_BY_OFFICER_MONTH_DESCRIPTION = """
   A list of officers that have more than one PO report row per recipient and review_month.
 """
 
-PO_REPORT_DISTINCT_BY_OFFICER_MONTH_QUERY_TEMPLATE = \
-    """
+PO_REPORT_DISTINCT_BY_OFFICER_MONTH_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT
       state_code as region_code, review_month, email_address, count(*) AS total_rows
@@ -48,6 +47,6 @@ PO_REPORT_DISTINCT_BY_OFFICER_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     po_report_dataset=state_dataset_config.PO_REPORT_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         PO_REPORT_DISTINCT_BY_OFFICER_MONTH_VIEW_BUILDER.build_and_print()

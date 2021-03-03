@@ -24,19 +24,20 @@ from recidiviz.calculator.query.state import dataset_config as state_dataset_con
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
-from recidiviz.validation.views.state.incarceration_population_person_level_template import \
-    incarceration_population_person_level_query
+from recidiviz.validation.views.state.incarceration_population_person_level_template import (
+    incarceration_population_person_level_query,
+)
 
-INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_NAME = \
-    'incarceration_population_person_level_external_comparison_matching_people'
+INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_NAME = (
+    "incarceration_population_person_level_external_comparison_matching_people"
+)
 
 INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_DESCRIPTION = """
 Comparison of values between internal and external lists of end of month person-level incarceration
 populations among rows where we both agree the person was incarcerated on that day.
 """
 
-INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_QUERY_TEMPLATE = \
-    f"""
+INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_QUERY_TEMPLATE = f"""
 /*{{description}}*/
 {incarceration_population_person_level_query(include_unmatched_people=False)}
 """
@@ -50,6 +51,6 @@ INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_B
     materialized_metrics_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER.build_and_print()

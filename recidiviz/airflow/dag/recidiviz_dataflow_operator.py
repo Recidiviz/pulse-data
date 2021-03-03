@@ -26,15 +26,22 @@ from airflow.contrib.operators.dataflow_operator import DataflowTemplateOperator
 
 class RecidivizDataflowTemplateOperator(DataflowTemplateOperator):
     def execute(
-            self,
-            # Some context about the context: https://bcb.github.io/airflow/execute-context
-            context: Dict[str, Any]  # pylint: disable=unused-argument
+        self,
+        # Some context about the context: https://bcb.github.io/airflow/execute-context
+        context: Dict[str, Any],  # pylint: disable=unused-argument
     ) -> None:
-        hook = DataFlowHook(gcp_conn_id=self.gcp_conn_id,
-                            delegate_to=self.delegate_to,
-                            poll_sleep=self.poll_sleep)
+        hook = DataFlowHook(
+            gcp_conn_id=self.gcp_conn_id,
+            delegate_to=self.delegate_to,
+            poll_sleep=self.poll_sleep,
+        )
 
         # In DataflowTemplateOperator,  start_template_dataflow has the default append_job_name set to True
         # so it adds a unique-id to the end of the job name. This overwrites that default argument.
-        hook.start_template_dataflow(self.task_id, self.dataflow_default_options,
-                                     self.parameters, self.template, append_job_name=False)
+        hook.start_template_dataflow(
+            self.task_id,
+            self.dataflow_default_options,
+            self.parameters,
+            self.template,
+            append_job_name=False,
+        )

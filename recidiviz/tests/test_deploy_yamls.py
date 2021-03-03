@@ -30,52 +30,56 @@ class TestDeployYamls(unittest.TestCase):
     """
 
     def path_for_build_file(self, file_name: str) -> str:
-        return os.path.join(os.path.dirname(__file__),
-                            '..', '..', file_name)
+        return os.path.join(os.path.dirname(__file__), "..", "..", file_name)
 
     def test_cron_yaml_parses(self) -> None:
-        yaml_dict = YAMLDict.from_path(self.path_for_build_file('cron.yaml'))
+        yaml_dict = YAMLDict.from_path(self.path_for_build_file("cron.yaml"))
         self.assertTrue(yaml_dict.get())
 
     def test_prod_yaml_parses(self) -> None:
-        yaml_dict = YAMLDict.from_path(self.path_for_build_file('prod.yaml'))
+        yaml_dict = YAMLDict.from_path(self.path_for_build_file("prod.yaml"))
         self.assertTrue(yaml_dict.get())
 
     def test_staging_yaml_parses(self) -> None:
-        yaml_dict = YAMLDict.from_path(self.path_for_build_file('staging.yaml'))
+        yaml_dict = YAMLDict.from_path(self.path_for_build_file("staging.yaml"))
         self.assertTrue(yaml_dict.get())
 
     def test_travis_yaml_parses(self) -> None:
-        yaml_dict = YAMLDict.from_path(self.path_for_build_file('.travis.yml'))
+        yaml_dict = YAMLDict.from_path(self.path_for_build_file(".travis.yml"))
         self.assertTrue(yaml_dict.get())
 
     def test_circleci_yaml_parses(self) -> None:
-        yaml_dict = YAMLDict.from_path(self.path_for_build_file('.circleci/config.yml'))
+        yaml_dict = YAMLDict.from_path(self.path_for_build_file(".circleci/config.yml"))
         self.assertTrue(yaml_dict.get())
 
     def test_prod_staging_same(self) -> None:
-        staging_yaml = YAMLDict.from_path(self.path_for_build_file('staging.yaml'))
-        prod_yaml = YAMLDict.from_path(self.path_for_build_file('prod.yaml'))
+        staging_yaml = YAMLDict.from_path(self.path_for_build_file("staging.yaml"))
+        prod_yaml = YAMLDict.from_path(self.path_for_build_file("prod.yaml"))
 
         diff = deepdiff.DeepDiff(staging_yaml.get(), prod_yaml.get())
 
         # We expect the RECIDIVIZ_ENV values to be different
-        env_diff = diff['values_changed'].pop("root['env_variables']['RECIDIVIZ_ENV']")
-        self.assertEqual({'new_value': 'production', 'old_value': 'staging'}, env_diff)
+        env_diff = diff["values_changed"].pop("root['env_variables']['RECIDIVIZ_ENV']")
+        self.assertEqual({"new_value": "production", "old_value": "staging"}, env_diff)
 
         # We expect the cloud sql instance names to be different, but names should match same pattern
-        cloud_sql_instance_diff = diff['values_changed'].pop("root['beta_settings']['cloud_sql_instances']")
-        staging_cloud_sql_instances: str = cloud_sql_instance_diff['old_value']
-        prod_cloud_sql_instances = cloud_sql_instance_diff['new_value']
+        cloud_sql_instance_diff = diff["values_changed"].pop(
+            "root['beta_settings']['cloud_sql_instances']"
+        )
+        staging_cloud_sql_instances: str = cloud_sql_instance_diff["old_value"]
+        prod_cloud_sql_instances = cloud_sql_instance_diff["new_value"]
         self.assertEqual(
-            (staging_cloud_sql_instances
-             .replace('recidiviz-staging', 'recidiviz-123')  # Staging project becomes production
-             .replace('dev-', 'prod-')  # Dev prefix becomes prod
-             .replace('-0af0a', '')  # Development case triage suffix is dropped
-             ),
-            prod_cloud_sql_instances)
+            (
+                staging_cloud_sql_instances.replace(
+                    "recidiviz-staging", "recidiviz-123"
+                )  # Staging project becomes production
+                .replace("dev-", "prod-")  # Dev prefix becomes prod
+                .replace("-0af0a", "")  # Development case triage suffix is dropped
+            ),
+            prod_cloud_sql_instances,
+        )
 
         # There should be no other values changed between the two
-        self.assertFalse(diff.pop('values_changed'))
+        self.assertFalse(diff.pop("values_changed"))
         # Aside from the few values changed, there should be no other changes
         self.assertFalse(diff)

@@ -25,9 +25,12 @@ from recidiviz.ingest.scrape import vendors
 
 BASE_VENDOR_PATH = os.path.dirname(vendors.__file__)
 
+
 def get_vendors() -> Set[str]:
-    return {vendor_module.name for vendor_module
-            in pkgutil.iter_modules([BASE_VENDOR_PATH])}
+    return {
+        vendor_module.name for vendor_module in pkgutil.iter_modules([BASE_VENDOR_PATH])
+    }
+
 
 def get_vendor_queue_params(vendor: str) -> Optional[Dict[str, Any]]:
     """Gets the queue params for the given region.
@@ -36,7 +39,7 @@ def get_vendor_queue_params(vendor: str) -> Optional[Dict[str, Any]]:
         - None, if queue.yaml does not exist (and a queue should not be created)
         - dict, if queue.yaml does exist (and a queue should be created)
     """
-    queue_param_path = os.path.join(BASE_VENDOR_PATH, vendor, 'queue.yaml')
+    queue_param_path = os.path.join(BASE_VENDOR_PATH, vendor, "queue.yaml")
     if not os.path.exists(queue_param_path):
         return None
     with open(queue_param_path) as queue_params:

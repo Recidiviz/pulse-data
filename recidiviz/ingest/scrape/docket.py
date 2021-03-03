@@ -76,8 +76,8 @@ from recidiviz.utils import environment, pubsub_helper, regions
 
 SNAPSHOT_BATCH_SIZE = 100
 SNAPSHOT_DISTANCE_YEARS = 10
-FILENAME_PREFIX = './name_lists/'
-PUBSUB_TYPE = 'docket'
+FILENAME_PREFIX = "./name_lists/"
+PUBSUB_TYPE = "docket"
 
 
 # ##################### #
@@ -85,8 +85,7 @@ PUBSUB_TYPE = 'docket'
 # ##################### #
 
 
-def load_target_list(
-        scrape_key: ScrapeKey, given_names: str = "", surname: str = ""):
+def load_target_list(scrape_key: ScrapeKey, given_names: str = "", surname: str = ""):
     """Starts docket loading based on scrape type and region.
 
     Determines correct scrape type and kicks off target list generation,
@@ -108,16 +107,16 @@ def load_target_list(
             name_list_file = region.names_file
             filename = FILENAME_PREFIX + name_list_file
 
-            query_name = \
-                (surname, given_names) if surname or given_names else None
+            query_name = (surname, given_names) if surname or given_names else None
 
             load_background_target_list(scrape_key, filename, query_name)
         else:
             load_empty_message(scrape_key)
 
 
-def load_background_target_list(scrape_key: ScrapeKey, name_file: str,
-                                query_name: Optional[Tuple[str, str]]):
+def load_background_target_list(
+    scrape_key: ScrapeKey, name_file: str, query_name: Optional[Tuple[str, str]]
+):
     """Load background scrape docket items, from name file.
 
     Iterates over a CSV of common names, loading a docket item for the scraper
@@ -145,10 +144,9 @@ def load_background_target_list(scrape_key: ScrapeKey, name_file: str,
     # provided then all names should be written.
     should_write_names = not bool(query_name)
 
-    pubsub_helper.create_topic_and_subscription(
-        scrape_key, pubsub_type=PUBSUB_TYPE)
+    pubsub_helper.create_topic_and_subscription(scrape_key, pubsub_type=PUBSUB_TYPE)
 
-    with open(name_file, 'r') as csvfile:
+    with open(name_file, "r") as csvfile:
         names_reader = csv.reader(csvfile)
 
         for row in names_reader:
@@ -166,9 +164,11 @@ def load_background_target_list(scrape_key: ScrapeKey, name_file: str,
 
     # The query string was not found, add it as a separate docket item.
     if not should_write_names:
-        logging.info("Couldn't find user-provided name [%s] in name list, "
-                     "adding one-off docket item for the name instead.",
-                     str(query_name))
+        logging.info(
+            "Couldn't find user-provided name [%s] in name list, "
+            "adding one-off docket item for the name instead.",
+            str(query_name),
+        )
         futures.append(_add_to_query_docket(scrape_key, query_name))
 
     for future in futures:
@@ -216,11 +216,11 @@ def _add_to_query_docket(scrape_key: ScrapeKey, item):
     Returns:
         Future for the added message
     """
-    logging.debug("Attempting to add item to [%s] docket: [%s]",
-                  scrape_key, item)
+    logging.debug("Attempting to add item to [%s] docket: [%s]", scrape_key, item)
     return pubsub_helper.get_publisher().publish(
         pubsub_helper.get_topic_path(scrape_key, pubsub_type=PUBSUB_TYPE),
-        data=json.dumps(item).encode())
+        data=json.dumps(item).encode(),
+    )
 
 
 # ########################## #
@@ -229,8 +229,8 @@ def _add_to_query_docket(scrape_key: ScrapeKey, item):
 
 
 def get_new_docket_item(
-        scrape_key: ScrapeKey,
-        return_immediately=False) -> Optional[pubsub.types.ReceivedMessage]:
+    scrape_key: ScrapeKey, return_immediately=False
+) -> Optional[pubsub.types.ReceivedMessage]:
     """Retrieves an item from the docket for the specified region / scrape type
 
     Retrieves an arbitrary item still in the docket (whichever docket
@@ -251,23 +251,28 @@ def get_new_docket_item(
     docket_message = None
 
     subscription_path = pubsub_helper.get_subscription_path(
-        scrape_key, pubsub_type=PUBSUB_TYPE)
+        scrape_key, pubsub_type=PUBSUB_TYPE
+    )
 
     def inner() -> pubsub.types.PullResponse:
         return pubsub_helper.get_subscriber().pull(
-            subscription=subscription_path, max_messages=1,
-            return_immediately=return_immediately)
+            subscription=subscription_path,
+            max_messages=1,
+            return_immediately=return_immediately,
+        )
 
     response = pubsub_helper.retry_with_create(
-        scrape_key, inner, pubsub_type=PUBSUB_TYPE)
+        scrape_key, inner, pubsub_type=PUBSUB_TYPE
+    )
 
     if response.received_messages:
         docket_message = response.received_messages[0]
-        logging.info("Leased docket item from subscription: [%s]",
-                     subscription_path)
+        logging.info("Leased docket item from subscription: [%s]", subscription_path)
     else:
-        logging.info("No matching docket item found in the docket queue for "
-                     "scraper: %s", scrape_key)
+        logging.info(
+            "No matching docket item found in the docket queue for " "scraper: %s",
+            scrape_key,
+        )
 
     return docket_message
 
@@ -311,6 +316,9 @@ def ack_docket_item(scrape_key: ScrapeKey, ack_id: str):
     def inner():
         pubsub_helper.get_subscriber().acknowledge(
             subscription=pubsub_helper.get_subscription_path(
-                scrape_key, pubsub_type=PUBSUB_TYPE), ack_ids=[ack_id])
+                scrape_key, pubsub_type=PUBSUB_TYPE
+            ),
+            ack_ids=[ack_id],
+        )
 
     pubsub_helper.retry_with_create(scrape_key, inner, pubsub_type=PUBSUB_TYPE)

@@ -22,13 +22,22 @@ represented in the data point, and the value represents the value the person sho
 """
 from typing import List, Dict, Tuple, Any, Type, Optional
 
-from recidiviz.calculator.pipeline.incarceration.incarceration_event import \
-    IncarcerationEvent, IncarcerationAdmissionEvent,\
-    IncarcerationReleaseEvent, IncarcerationStayEvent
-from recidiviz.calculator.pipeline.incarceration.metrics import \
-    IncarcerationMetricType, IncarcerationMetric, IncarcerationAdmissionMetric, IncarcerationPopulationMetric, \
-    IncarcerationReleaseMetric
-from recidiviz.calculator.pipeline.utils.calculator_utils import produce_standard_metric_combinations
+from recidiviz.calculator.pipeline.incarceration.incarceration_event import (
+    IncarcerationEvent,
+    IncarcerationAdmissionEvent,
+    IncarcerationReleaseEvent,
+    IncarcerationStayEvent,
+)
+from recidiviz.calculator.pipeline.incarceration.metrics import (
+    IncarcerationMetricType,
+    IncarcerationMetric,
+    IncarcerationAdmissionMetric,
+    IncarcerationPopulationMetric,
+    IncarcerationReleaseMetric,
+)
+from recidiviz.calculator.pipeline.utils.calculator_utils import (
+    produce_standard_metric_combinations,
+)
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.persistence.entity.state.entities import StatePerson
 
@@ -36,23 +45,24 @@ from recidiviz.persistence.entity.state.entities import StatePerson
 EVENT_TO_METRIC_TYPES: Dict[Type[IncarcerationEvent], IncarcerationMetricType] = {
     IncarcerationAdmissionEvent: IncarcerationMetricType.INCARCERATION_ADMISSION,
     IncarcerationStayEvent: IncarcerationMetricType.INCARCERATION_POPULATION,
-    IncarcerationReleaseEvent: IncarcerationMetricType.INCARCERATION_RELEASE
+    IncarcerationReleaseEvent: IncarcerationMetricType.INCARCERATION_RELEASE,
 }
 
 EVENT_TO_METRIC_CLASSES: Dict[Type[IncarcerationEvent], Type[IncarcerationMetric]] = {
     IncarcerationAdmissionEvent: IncarcerationAdmissionMetric,
     IncarcerationStayEvent: IncarcerationPopulationMetric,
-    IncarcerationReleaseEvent: IncarcerationReleaseMetric
+    IncarcerationReleaseEvent: IncarcerationReleaseMetric,
 }
 
 
-def map_incarceration_combinations(person: StatePerson,
-                                   incarceration_events:
-                                   List[IncarcerationEvent],
-                                   metric_inclusions: Dict[IncarcerationMetricType, bool],
-                                   calculation_end_month: Optional[str],
-                                   calculation_month_count: int,
-                                   person_metadata: PersonMetadata) -> List[Tuple[Dict[str, Any], Any]]:
+def map_incarceration_combinations(
+    person: StatePerson,
+    incarceration_events: List[IncarcerationEvent],
+    metric_inclusions: Dict[IncarcerationMetricType, bool],
+    calculation_end_month: Optional[str],
+    calculation_month_count: int,
+    person_metadata: PersonMetadata,
+) -> List[Tuple[Dict[str, Any], Any]]:
     """Transforms IncarcerationEvents and a StatePerson into combinations representing IncarcerationMetrics.
 
     Takes in a StatePerson and all of their IncarcerationEvent and returns an array of "incarceration combinations".
@@ -73,12 +83,14 @@ def map_incarceration_combinations(person: StatePerson,
     Returns:
         A list of key-value tuples representing specific metric combinations and the value corresponding to that metric.
     """
-    return produce_standard_metric_combinations(pipeline='incarceration',
-                                                person=person,
-                                                identifier_events=incarceration_events,
-                                                metric_inclusions=metric_inclusions,
-                                                calculation_end_month=calculation_end_month,
-                                                calculation_month_count=calculation_month_count,
-                                                person_metadata=person_metadata,
-                                                event_to_metric_types=EVENT_TO_METRIC_TYPES,
-                                                event_to_metric_classes=EVENT_TO_METRIC_CLASSES)
+    return produce_standard_metric_combinations(
+        pipeline="incarceration",
+        person=person,
+        identifier_events=incarceration_events,
+        metric_inclusions=metric_inclusions,
+        calculation_end_month=calculation_end_month,
+        calculation_month_count=calculation_month_count,
+        person_metadata=person_metadata,
+        event_to_metric_types=EVENT_TO_METRIC_TYPES,
+        event_to_metric_classes=EVENT_TO_METRIC_CLASSES,
+    )

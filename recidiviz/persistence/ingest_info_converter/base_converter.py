@@ -72,7 +72,8 @@ class BaseConverter(Generic[EntityPersonType]):
             people=people,
             enum_parsing_errors=enum_parsing_errors,
             general_parsing_errors=general_parsing_errors,
-            protected_class_errors=protected_class_errors)
+            protected_class_errors=protected_class_errors,
+        )
 
     @abstractmethod
     def _pop_person(self):

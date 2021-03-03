@@ -24,14 +24,10 @@ from mock import Mock, patch
 from more_itertools import one
 
 from recidiviz.common import str_field_utils
-from recidiviz.common.constants.person_characteristics import Ethnicity, \
-    Gender, Race
-from recidiviz.ingest.aggregate.single_count import \
-    store_single_count_blueprint
-from recidiviz.persistence.database.base_schema import \
-    JailsBase
-from recidiviz.persistence.database.schema.aggregate.schema import \
-    SingleCountAggregate
+from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
+from recidiviz.ingest.aggregate.single_count import store_single_count_blueprint
+from recidiviz.persistence.database.base_schema import JailsBase
+from recidiviz.persistence.database.schema.aggregate.schema import SingleCountAggregate
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.utils import fakes
 
@@ -39,13 +35,13 @@ APP_ID = "recidiviz-scraper-aggregate-report-test"
 
 app = Flask(__name__)
 app.register_blueprint(store_single_count_blueprint)
-app.config['TESTING'] = True
-TEST_ENV = 'recidiviz-test'
+app.config["TESTING"] = True
+TEST_ENV = "recidiviz-test"
 
 
-@patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
-@patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
-@patch.dict('os.environ', {'PERSIST_LOCALLY': 'true'})
+@patch("recidiviz.utils.metadata.project_id", Mock(return_value="test-project"))
+@patch("recidiviz.utils.metadata.project_number", Mock(return_value="123456789"))
+@patch.dict("os.environ", {"PERSIST_LOCALLY": "true"})
 class TestSingleCountIngest(TestCase):
     """Test that store_single_count correctly stores a count."""
 
@@ -58,130 +54,128 @@ class TestSingleCountIngest(TestCase):
 
     def testWrite_SingleCountToday(self):
         params = {
-            'jid': '01001001',
-            'count': 311,
+            "jid": "01001001",
+            "count": 311,
         }
 
-        headers = {'X-Appengine-Cron': 'test-cron'}
-        response = self.client.get(f'/single_count?{urlencode(params)}',
-                                   headers=headers)
+        headers = {"X-Appengine-Cron": "test-cron"}
+        response = self.client.get(
+            f"/single_count?{urlencode(params)}", headers=headers
+        )
         self.assertEqual(response.status_code, 200)
 
         # Assert
-        query = SessionFactory.for_schema_base(JailsBase).query(
-            SingleCountAggregate)
+        query = SessionFactory.for_schema_base(JailsBase).query(SingleCountAggregate)
         result = one(query.all())
 
-        self.assertEqual(result.count, params['count'])
+        self.assertEqual(result.count, params["count"])
         self.assertEqual(result.date, datetime.date.today())
 
     def testWrite_SingleCountGenderToday(self):
         params = {
-            'jid': '01001001',
-            'count': 311,
-            'gender': Gender.MALE.value,
+            "jid": "01001001",
+            "count": 311,
+            "gender": Gender.MALE.value,
         }
 
-        headers = {'X-Appengine-Cron': 'test-cron'}
-        response = self.client.get(f'/single_count?{urlencode(params)}',
-                                   headers=headers)
+        headers = {"X-Appengine-Cron": "test-cron"}
+        response = self.client.get(
+            f"/single_count?{urlencode(params)}", headers=headers
+        )
         self.assertEqual(response.status_code, 200)
 
         # Assert
-        query = SessionFactory.for_schema_base(JailsBase).query(
-            SingleCountAggregate)
+        query = SessionFactory.for_schema_base(JailsBase).query(SingleCountAggregate)
         result = one(query.all())
 
-        self.assertEqual(result.count, params['count'])
+        self.assertEqual(result.count, params["count"])
         self.assertEqual(result.date, datetime.date.today())
-        self.assertEqual(result.gender, params['gender'])
+        self.assertEqual(result.gender, params["gender"])
 
     def testWrite_SingleCountEthnicityToday(self):
         params = {
-            'jid': '01001001',
-            'count': 311,
-            'ethnicity': Ethnicity.HISPANIC.value,
+            "jid": "01001001",
+            "count": 311,
+            "ethnicity": Ethnicity.HISPANIC.value,
         }
 
-        headers = {'X-Appengine-Cron': 'test-cron'}
-        response = self.client.get(f'/single_count?{urlencode(params)}',
-                                   headers=headers)
+        headers = {"X-Appengine-Cron": "test-cron"}
+        response = self.client.get(
+            f"/single_count?{urlencode(params)}", headers=headers
+        )
         self.assertEqual(response.status_code, 200)
 
         # Assert
-        query = SessionFactory.for_schema_base(JailsBase).query(
-            SingleCountAggregate)
+        query = SessionFactory.for_schema_base(JailsBase).query(SingleCountAggregate)
         result = one(query.all())
 
-        self.assertEqual(result.count, params['count'])
+        self.assertEqual(result.count, params["count"])
         self.assertEqual(result.date, datetime.date.today())
-        self.assertEqual(result.ethnicity, params['ethnicity'])
+        self.assertEqual(result.ethnicity, params["ethnicity"])
 
     def testWrite_SingleCountRaceToday(self):
         params = {
-            'jid': '01001001',
-            'count': 311,
-            'race': Race.ASIAN.value,
+            "jid": "01001001",
+            "count": 311,
+            "race": Race.ASIAN.value,
         }
 
-        headers = {'X-Appengine-Cron': 'test-cron'}
-        response = self.client.get(f'/single_count?{urlencode(params)}',
-                                   headers=headers)
+        headers = {"X-Appengine-Cron": "test-cron"}
+        response = self.client.get(
+            f"/single_count?{urlencode(params)}", headers=headers
+        )
         self.assertEqual(response.status_code, 200)
 
         # Assert
-        query = SessionFactory.for_schema_base(JailsBase).query(
-            SingleCountAggregate)
+        query = SessionFactory.for_schema_base(JailsBase).query(SingleCountAggregate)
         result = one(query.all())
 
-        self.assertEqual(result.count, params['count'])
+        self.assertEqual(result.count, params["count"])
         self.assertEqual(result.date, datetime.date.today())
-        self.assertEqual(result.race, params['race'])
+        self.assertEqual(result.race, params["race"])
 
     def testWrite_SingleCountWithDate(self):
         params = {
-            'jid': '01001001',
-            'count': 311,
-            'date': '2019-01-01',
+            "jid": "01001001",
+            "count": 311,
+            "date": "2019-01-01",
         }
 
-        headers = {'X-Appengine-Cron': 'test-cron'}
-        response = self.client.get(f'/single_count?{urlencode(params)}',
-                                   headers=headers)
+        headers = {"X-Appengine-Cron": "test-cron"}
+        response = self.client.get(
+            f"/single_count?{urlencode(params)}", headers=headers
+        )
         self.assertEqual(response.status_code, 200)
 
         # Assert
-        query = SessionFactory.for_schema_base(JailsBase).query(
-            SingleCountAggregate)
+        query = SessionFactory.for_schema_base(JailsBase).query(SingleCountAggregate)
         result = one(query.all())
 
-        self.assertEqual(result.count, params['count'])
-        self.assertEqual(result.date,
-                         str_field_utils.parse_date(params['date']))
+        self.assertEqual(result.count, params["count"])
+        self.assertEqual(result.date, str_field_utils.parse_date(params["date"]))
 
     def testWrite_SingleCountWithDateAndAllDemographics(self):
         params = {
-            'jid': '01001001',
-            'ethnicity': Ethnicity.HISPANIC.value,
-            'gender': Gender.FEMALE.value,
-            'race': Race.BLACK.value,
-            'count': 311,
-            'date': '2019-01-01',
+            "jid": "01001001",
+            "ethnicity": Ethnicity.HISPANIC.value,
+            "gender": Gender.FEMALE.value,
+            "race": Race.BLACK.value,
+            "count": 311,
+            "date": "2019-01-01",
         }
 
-        headers = {'X-Appengine-Cron': 'test-cron'}
-        response = self.client.get(f'/single_count?{urlencode(params)}',
-                                   headers=headers)
+        headers = {"X-Appengine-Cron": "test-cron"}
+        response = self.client.get(
+            f"/single_count?{urlencode(params)}", headers=headers
+        )
         self.assertEqual(response.status_code, 200)
 
         # Assert
-        query = SessionFactory.for_schema_base(JailsBase).query(
-            SingleCountAggregate)
+        query = SessionFactory.for_schema_base(JailsBase).query(SingleCountAggregate)
         result = one(query.all())
 
-        self.assertEqual(result.count, params['count'])
-        self.assertEqual(result.date,
-                         str_field_utils.parse_date(params['date']))
-        self.assertEqual(result.ethnicity, params['ethnicity'])
-        self.assertEqual(result.gender, params['gender'])
-        self.assertEqual(result.race, params['race'])
+        self.assertEqual(result.count, params["count"])
+        self.assertEqual(result.date, str_field_utils.parse_date(params["date"]))
+        self.assertEqual(result.ethnicity, params["ethnicity"])
+        self.assertEqual(result.gender, params["gender"])
+        self.assertEqual(result.race, params["race"])

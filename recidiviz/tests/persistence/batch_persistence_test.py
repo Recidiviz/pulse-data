@@ -26,21 +26,20 @@ from mock import Mock, patch
 
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.ingest.models.scrape_key import ScrapeKey
-from recidiviz.ingest.scrape import (constants, infer_release, ingest_utils,
-                                     scrape_phase)
+from recidiviz.ingest.scrape import constants, infer_release, ingest_utils, scrape_phase
 from recidiviz.ingest.scrape.task_params import Task
 from recidiviz.persistence import batch_persistence, datastore_ingest_info
 from recidiviz.persistence.datastore_ingest_info import BatchIngestInfoData
 
-REGIONS = ['us_x', 'us_y']
-TEST_NAME = 'test'
-TEST_NAME2 = 'test2'
-TEST_ID = '1'
-TEST_ID2 = '2'
-TEST_ENDPOINT = 'www.test.com'
-TEST_ERROR = 'TestError'
-TEST_PARAMS = {'test': 'value'}
-TEST_TRACE = 'TEST TRACE'
+REGIONS = ["us_x", "us_y"]
+TEST_NAME = "test"
+TEST_NAME2 = "test2"
+TEST_ID = "1"
+TEST_ID2 = "2"
+TEST_ENDPOINT = "www.test.com"
+TEST_ERROR = "TestError"
+TEST_PARAMS = {"test": "value"}
+TEST_TRACE = "TEST TRACE"
 
 
 @pytest.fixture(scope="class")
@@ -49,21 +48,21 @@ def client(request):
     app.register_blueprint(infer_release.infer_release_blueprint)
     # Include so that flask can get the url of `infer_release`.
     app.register_blueprint(batch_persistence.batch_blueprint)
-    app.config['TESTING'] = True
+    app.config["TESTING"] = True
 
     request.cls.client = app.test_client()
 
 
 @pytest.fixture(autouse=True)
 def project_id():
-    with patch('recidiviz.utils.metadata.project_id') as mock_project:
-        mock_project.return_value = 'fake-project'
+    with patch("recidiviz.utils.metadata.project_id") as mock_project:
+        mock_project.return_value = "fake-project"
         yield mock_project
 
 
 def create_mock_session():
     mock_session = Mock()
-    mock_session.region = 'test'
+    mock_session.region = "test"
     mock_session.scrape_type = constants.ScrapeType.BACKGROUND
     session_start = datetime.datetime.now()
     mock_session.start = session_start
@@ -73,50 +72,48 @@ def create_mock_session():
 
 # pylint: disable=protected-access
 
+
 @pytest.mark.usefixtures("emulator")
 class TestBatchPersistence(TestCase):
     """Tests for batch persistence logic"""
 
-    @patch(
-        "recidiviz.ingest.scrape.sessions.get_current_session")
+    @patch("recidiviz.ingest.scrape.sessions.get_current_session")
     def test_write_to_datastore(self, mock_session_return):
         mock_session = mock_session_return.return_value = create_mock_session()
 
         scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
 
         ii = IngestInfo()
-        ii.create_person(full_name=TEST_NAME).create_booking(
-            booking_id=TEST_ID)
+        ii.create_person(full_name=TEST_NAME).create_booking(booking_id=TEST_ID)
 
-        t = Task(task_type=constants.TaskType.SCRAPE_DATA,
-                 endpoint=TEST_ENDPOINT,
-                 response_type=constants.ResponseType.TEXT)
+        t = Task(
+            task_type=constants.TaskType.SCRAPE_DATA,
+            endpoint=TEST_ENDPOINT,
+            response_type=constants.ResponseType.TEXT,
+        )
         task_hash = hash(json.dumps(t.to_serializable(), sort_keys=True))
 
-        expected_batch = BatchIngestInfoData(ingest_info=ii,
-                                             task_hash=task_hash)
+        expected_batch = BatchIngestInfoData(ingest_info=ii, task_hash=task_hash)
 
         batch_persistence.write(ii, scrape_key, t)
 
         batch_ingest_info_list = batch_persistence._get_batch_ingest_info_list(
-            scrape_key.region_code, mock_session.start)
+            scrape_key.region_code, mock_session.start
+        )
 
         self.assertEqual(len(batch_ingest_info_list), 1)
         self.assertEqual(expected_batch, batch_ingest_info_list[0])
 
-    @patch(
-        "recidiviz.ingest.scrape.sessions.get_current_session")
+    @patch("recidiviz.ingest.scrape.sessions.get_current_session")
     def test_write_to_multiple_datastore(self, mock_session_return):
         mock_session = mock_session_return.return_value = create_mock_session()
         scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
 
         ii = IngestInfo()
-        ii.create_person(full_name=TEST_NAME).create_booking(
-            booking_id=TEST_ID)
+        ii.create_person(full_name=TEST_NAME).create_booking(booking_id=TEST_ID)
 
         ii2 = IngestInfo()
-        ii2.create_person(full_name=TEST_NAME2).create_booking(
-            booking_id=TEST_ID)
+        ii2.create_person(full_name=TEST_NAME2).create_booking(booking_id=TEST_ID)
 
         t = Task(
             task_type=constants.TaskType.SCRAPE_DATA,
@@ -134,20 +131,19 @@ class TestBatchPersistence(TestCase):
 
         expected_batches = [
             BatchIngestInfoData(ingest_info=ii, task_hash=task_hash),
-            BatchIngestInfoData(ingest_info=ii2, task_hash=task_hash2)
+            BatchIngestInfoData(ingest_info=ii2, task_hash=task_hash2),
         ]
 
         batch_persistence.write(ii, scrape_key, t)
         batch_persistence.write(ii2, scrape_key, t)
 
-        batch_ingest_info_data_list = batch_persistence \
-            ._get_batch_ingest_info_list(scrape_key.region_code,
-                                         mock_session.start)
+        batch_ingest_info_data_list = batch_persistence._get_batch_ingest_info_list(
+            scrape_key.region_code, mock_session.start
+        )
         self.assertEqual(len(batch_ingest_info_data_list), 2)
         self.assertCountEqual(expected_batches, batch_ingest_info_data_list)
 
-    @patch(
-        "recidiviz.ingest.scrape.sessions.get_current_session")
+    @patch("recidiviz.ingest.scrape.sessions.get_current_session")
     def test_write_error_to_datastore(self, mock_session_return):
         mock_session = mock_session_return.return_value = create_mock_session()
         scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
@@ -161,30 +157,30 @@ class TestBatchPersistence(TestCase):
         )
         task_hash = hash(json.dumps(t.to_serializable(), sort_keys=True))
 
-        expected_batch = BatchIngestInfoData(error=error, trace_id=TEST_TRACE,
-                                             task_hash=task_hash)
+        expected_batch = BatchIngestInfoData(
+            error=error, trace_id=TEST_TRACE, task_hash=task_hash
+        )
 
         batch_persistence.write_error(error, TEST_TRACE, t, scrape_key)
 
         batch_ingest_info_list = batch_persistence._get_batch_ingest_info_list(
-            scrape_key.region_code, mock_session.start)
+            scrape_key.region_code, mock_session.start
+        )
 
         self.assertEqual(len(batch_ingest_info_list), 1)
         self.assertEqual(expected_batch, batch_ingest_info_list[0])
 
-    @patch(
-        "recidiviz.ingest.scrape.sessions.get_current_session")
-    @patch('recidiviz.utils.regions.get_region')
-    @patch('recidiviz.persistence.persistence.write')
-    def test_persist_to_db(self, mock_write, _mock_region,
-                           mock_session_return):
+    @patch("recidiviz.ingest.scrape.sessions.get_current_session")
+    @patch("recidiviz.utils.regions.get_region")
+    @patch("recidiviz.persistence.persistence.write")
+    def test_persist_to_db(self, mock_write, _mock_region, mock_session_return):
         mock_session = mock_session_return.return_value = create_mock_session()
         scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
 
         ii = IngestInfo()
-        ii.create_person(person_id=TEST_ID,
-                         full_name=TEST_NAME) \
-            .create_booking(booking_id=TEST_ID)
+        ii.create_person(person_id=TEST_ID, full_name=TEST_NAME).create_booking(
+            booking_id=TEST_ID
+        )
 
         t = Task(
             task_type=constants.TaskType.SCRAPE_DATA,
@@ -196,33 +192,36 @@ class TestBatchPersistence(TestCase):
 
         expected_proto = ingest_utils.convert_ingest_info_to_proto(ii)
 
-        batch_persistence.persist_to_database(scrape_key.region_code,
-                                              mock_session.start)
+        batch_persistence.persist_to_database(
+            scrape_key.region_code, mock_session.start
+        )
 
         result_proto = mock_write.call_args[0][0]
         self.assertEqual(result_proto, expected_proto)
 
         # After we persist, there should no longer be ingest infos on Datastore
         ingest_infos = datastore_ingest_info.batch_get_ingest_infos_for_region(
-            REGIONS[0], mock_session.start)
+            REGIONS[0], mock_session.start
+        )
         self.assertEqual(len(ingest_infos), 0)
 
-    @patch(
-        "recidiviz.ingest.scrape.sessions.get_current_session")
-    @patch('recidiviz.utils.regions.get_region')
-    @patch('recidiviz.persistence.persistence.write')
+    @patch("recidiviz.ingest.scrape.sessions.get_current_session")
+    @patch("recidiviz.utils.regions.get_region")
+    @patch("recidiviz.persistence.persistence.write")
     def test_persist_to_db_multiple_tasks_one_write(
-            self, mock_write, _mock_region, mock_session_return):
+        self, mock_write, _mock_region, mock_session_return
+    ):
         mock_session = mock_session_return.return_value = create_mock_session()
         scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
 
         ii = IngestInfo()
-        ii.create_person(person_id=TEST_ID,
-                         full_name=TEST_NAME) \
-            .create_booking(booking_id=TEST_ID)
+        ii.create_person(person_id=TEST_ID, full_name=TEST_NAME).create_booking(
+            booking_id=TEST_ID
+        )
         ii2 = IngestInfo()
-        ii2.create_person(person_id=TEST_ID, full_name=TEST_NAME) \
-            .create_booking(booking_id=TEST_ID)
+        ii2.create_person(person_id=TEST_ID, full_name=TEST_NAME).create_booking(
+            booking_id=TEST_ID
+        )
 
         t = Task(
             task_type=constants.TaskType.SCRAPE_DATA,
@@ -239,30 +238,32 @@ class TestBatchPersistence(TestCase):
         batch_persistence.write(ii2, scrape_key, t2)
 
         expected_proto = ingest_utils.convert_ingest_info_to_proto(ii)
-        batch_persistence.persist_to_database(scrape_key.region_code,
-                                              mock_session.start)
+        batch_persistence.persist_to_database(
+            scrape_key.region_code, mock_session.start
+        )
 
         result_proto = mock_write.call_args[0][0]
         self.assertEqual(result_proto, expected_proto)
 
         # After we persist, there should no longer be ingest infos on Datastore
         ingest_infos = datastore_ingest_info.batch_get_ingest_infos_for_region(
-            REGIONS[0], mock_session.start)
+            REGIONS[0], mock_session.start
+        )
         self.assertEqual(len(ingest_infos), 0)
 
-    @patch(
-        "recidiviz.ingest.scrape.sessions.get_current_session")
-    @patch('recidiviz.utils.regions.get_region')
-    @patch('recidiviz.persistence.persistence.write')
-    def test_persist_to_db_failed_no_write(self, mock_write, _mock_region,
-                                           mock_session_return):
+    @patch("recidiviz.ingest.scrape.sessions.get_current_session")
+    @patch("recidiviz.utils.regions.get_region")
+    @patch("recidiviz.persistence.persistence.write")
+    def test_persist_to_db_failed_no_write(
+        self, mock_write, _mock_region, mock_session_return
+    ):
         mock_session = mock_session_return.return_value = create_mock_session()
         scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
 
         ii = IngestInfo()
-        ii.create_person(person_id=TEST_ID,
-                         full_name=TEST_NAME) \
-            .create_booking(booking_id=TEST_ID)
+        ii.create_person(person_id=TEST_ID, full_name=TEST_NAME).create_booking(
+            booking_id=TEST_ID
+        )
 
         t = Task(
             task_type=constants.TaskType.SCRAPE_DATA,
@@ -281,32 +282,35 @@ class TestBatchPersistence(TestCase):
         batch_persistence.write(ii, scrape_key, t)
         batch_persistence.write_error(TEST_ERROR, TEST_TRACE, t2, scrape_key)
 
-        self.assertFalse(batch_persistence.persist_to_database(
-            scrape_key.region_code, mock_session.start))
+        self.assertFalse(
+            batch_persistence.persist_to_database(
+                scrape_key.region_code, mock_session.start
+            )
+        )
 
         self.assertEqual(mock_write.call_count, 0)
 
         # We should still have both items still on Datastore because they
         # weren't persisted.
-        batch_ingest_info_data_list = batch_persistence \
-            ._get_batch_ingest_info_list(scrape_key.region_code,
-                                         mock_session.start)
+        batch_ingest_info_data_list = batch_persistence._get_batch_ingest_info_list(
+            scrape_key.region_code, mock_session.start
+        )
         self.assertEqual(len(batch_ingest_info_data_list), 2)
 
-    @patch(
-        "recidiviz.ingest.scrape.sessions.get_current_session")
-    @patch('recidiviz.utils.regions.get_region')
-    @patch('recidiviz.persistence.persistence.write')
+    @patch("recidiviz.ingest.scrape.sessions.get_current_session")
+    @patch("recidiviz.utils.regions.get_region")
+    @patch("recidiviz.persistence.persistence.write")
     def test_persist_to_db_same_task_one_fail_one_pass(
-            self, mock_write, _mock_region, mock_session_return):
+        self, mock_write, _mock_region, mock_session_return
+    ):
         mock_session = mock_session_return.return_value = create_mock_session()
         scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
         mock_write.return_value = True
 
         ii = IngestInfo()
-        ii.create_person(person_id=TEST_ID,
-                         full_name=TEST_NAME) \
-            .create_booking(booking_id=TEST_ID)
+        ii.create_person(person_id=TEST_ID, full_name=TEST_NAME).create_booking(
+            booking_id=TEST_ID
+        )
 
         t = Task(
             task_type=constants.TaskType.SCRAPE_DATA,
@@ -327,36 +331,38 @@ class TestBatchPersistence(TestCase):
 
         expected_proto = ingest_utils.convert_ingest_info_to_proto(ii)
 
-        self.assertTrue(batch_persistence.persist_to_database(
-            scrape_key.region_code, mock_session.start))
+        self.assertTrue(
+            batch_persistence.persist_to_database(
+                scrape_key.region_code, mock_session.start
+            )
+        )
 
         result_proto = mock_write.call_args[0][0]
         self.assertEqual(result_proto, expected_proto)
 
         ingest_infos = datastore_ingest_info.batch_get_ingest_infos_for_region(
-            REGIONS[0], mock_session.start)
+            REGIONS[0], mock_session.start
+        )
         self.assertEqual(len(ingest_infos), 0)
 
-    @patch(
-        "recidiviz.ingest.scrape.sessions.get_current_session")
-    @patch('recidiviz.utils.regions.get_region')
-    @patch('recidiviz.persistence.persistence.write')
-    def test_persist_to_db_different_regions(self, mock_write, _mock_region,
-                                             mock_session_return):
-        scrape_key1 = ScrapeKey(REGIONS[0],
-                                constants.ScrapeType.BACKGROUND)
-        scrape_key2 = ScrapeKey(REGIONS[1],
-                                constants.ScrapeType.BACKGROUND)
+    @patch("recidiviz.ingest.scrape.sessions.get_current_session")
+    @patch("recidiviz.utils.regions.get_region")
+    @patch("recidiviz.persistence.persistence.write")
+    def test_persist_to_db_different_regions(
+        self, mock_write, _mock_region, mock_session_return
+    ):
+        scrape_key1 = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
+        scrape_key2 = ScrapeKey(REGIONS[1], constants.ScrapeType.BACKGROUND)
 
         ii = IngestInfo()
-        ii.create_person(person_id=TEST_ID,
-                         full_name=TEST_NAME) \
-            .create_booking(booking_id=TEST_ID)
+        ii.create_person(person_id=TEST_ID, full_name=TEST_NAME).create_booking(
+            booking_id=TEST_ID
+        )
 
         ii2 = IngestInfo()
-        ii2.create_person(
-            person_id=TEST_ID, full_name=TEST_NAME2) \
-            .create_booking(booking_id=TEST_ID)
+        ii2.create_person(person_id=TEST_ID, full_name=TEST_NAME2).create_booking(
+            booking_id=TEST_ID
+        )
 
         t = Task(
             task_type=constants.TaskType.SCRAPE_DATA,
@@ -370,47 +376,47 @@ class TestBatchPersistence(TestCase):
             response_type=constants.ResponseType.TEXT,
         )
 
-        mock_session_1 = mock_session_return.return_value = \
-            create_mock_session()
+        mock_session_1 = mock_session_return.return_value = create_mock_session()
 
         batch_persistence.write(ii, scrape_key1, t)
         expected_proto = ingest_utils.convert_ingest_info_to_proto(ii)
-        batch_persistence.persist_to_database(scrape_key1.region_code,
-                                              mock_session_1.start)
+        batch_persistence.persist_to_database(
+            scrape_key1.region_code, mock_session_1.start
+        )
 
         result_proto = mock_write.call_args[0][0]
         self.assertEqual(result_proto, expected_proto)
 
         # We expect the region that we persisted to have no more ingest infos.
-        ingest_infos_1 = datastore_ingest_info \
-            .batch_get_ingest_infos_for_region(REGIONS[0],
-                                               mock_session_1.start)
+        ingest_infos_1 = datastore_ingest_info.batch_get_ingest_infos_for_region(
+            REGIONS[0], mock_session_1.start
+        )
         self.assertEqual(len(ingest_infos_1), 0)
 
-        mock_session_2 = mock_session_return.return_value = \
-            create_mock_session()
+        mock_session_2 = mock_session_return.return_value = create_mock_session()
 
         batch_persistence.write(ii2, scrape_key2, t2)
-        ingest_infos_2 = datastore_ingest_info \
-            .batch_get_ingest_infos_for_region(REGIONS[1],
-                                               mock_session_2.start)
+        ingest_infos_2 = datastore_ingest_info.batch_get_ingest_infos_for_region(
+            REGIONS[1], mock_session_2.start
+        )
         self.assertEqual(len(ingest_infos_2), 1)
 
         expected_proto = ingest_utils.convert_ingest_info_to_proto(ii2)
-        batch_persistence.persist_to_database(scrape_key2.region_code,
-                                              mock_session_2.start)
+        batch_persistence.persist_to_database(
+            scrape_key2.region_code, mock_session_2.start
+        )
 
         result_proto = mock_write.call_args[0][0]
         self.assertEqual(result_proto, expected_proto)
 
         self.assertEqual(mock_write.call_count, 2)
 
-    @patch(
-        "recidiviz.ingest.scrape.sessions.get_current_session")
-    @patch('recidiviz.utils.regions.get_region')
-    @patch('recidiviz.persistence.persistence.write')
-    def test_persist_duplicates_to_db(self, mock_write, _mock_region,
-                                      mock_session_return):
+    @patch("recidiviz.ingest.scrape.sessions.get_current_session")
+    @patch("recidiviz.utils.regions.get_region")
+    @patch("recidiviz.persistence.persistence.write")
+    def test_persist_duplicates_to_db(
+        self, mock_write, _mock_region, mock_session_return
+    ):
         """Tests that duplicate ingest_info.Person objects are merged before
         write."""
         mock_session = mock_session_return.return_value = create_mock_session()
@@ -418,26 +424,31 @@ class TestBatchPersistence(TestCase):
 
         # Arrange
         ii = IngestInfo()
-        ii.create_person(person_id=TEST_ID,
-                         full_name=TEST_NAME) \
-            .create_booking(booking_id=TEST_ID)
+        ii.create_person(person_id=TEST_ID, full_name=TEST_NAME).create_booking(
+            booking_id=TEST_ID
+        )
 
         ii_2 = IngestInfo()
         ii.create_person(person_id=TEST_ID2, full_name=TEST_NAME2)
 
         ii_1_dup = copy.deepcopy(ii)
 
-        t1, t2, t3 = (Task(task_type=constants.TaskType.SCRAPE_DATA,
-                           endpoint=TEST_ENDPOINT + str(i),
-                           response_type=constants.ResponseType.TEXT)
-                      for i in range(3))
+        t1, t2, t3 = (
+            Task(
+                task_type=constants.TaskType.SCRAPE_DATA,
+                endpoint=TEST_ENDPOINT + str(i),
+                response_type=constants.ResponseType.TEXT,
+            )
+            for i in range(3)
+        )
 
         batch_persistence.write(ii, scrape_key, t1)
         batch_persistence.write(ii_2, scrape_key, t2)
         batch_persistence.write(ii_1_dup, scrape_key, t3)
 
-        batch_persistence.persist_to_database(scrape_key.region_code,
-                                              mock_session.start)
+        batch_persistence.persist_to_database(
+            scrape_key.region_code, mock_session.start
+        )
 
         expected_ii = IngestInfo(people=ii.people + ii_2.people)
         expected_proto = ingest_utils.convert_ingest_info_to_proto(expected_ii)
@@ -449,32 +460,32 @@ class TestBatchPersistence(TestCase):
 class TestReadAndPersist(TestCase):
     """Tests read and persist"""
 
-    @patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
+    @patch("recidiviz.utils.metadata.project_number", Mock(return_value="123456789"))
     @patch("recidiviz.persistence.batch_persistence.ScraperCloudTaskManager")
-    @patch(
-        "recidiviz.ingest.scrape.sessions.get_most_recent_completed_session")
+    @patch("recidiviz.ingest.scrape.sessions.get_most_recent_completed_session")
     @patch("recidiviz.ingest.scrape.sessions.update_phase")
     @patch("recidiviz.persistence.batch_persistence.persist_to_database")
     def test_read_and_persist(
-            self, mock_persist, mock_session_update, mock_session_return,
-            mock_task_manager):
+        self, mock_persist, mock_session_update, mock_session_return, mock_task_manager
+    ):
         mock_session = Mock()
-        mock_session.region = 'test'
+        mock_session.region = "test"
         mock_session.scrape_type = constants.ScrapeType.BACKGROUND
         session_start = datetime.datetime.now()
         mock_session.start = session_start
         mock_session_return.return_value = mock_session
 
-        request_args = {'region': 'test'}
-        headers = {'X-Appengine-Cron': 'test-cron'}
-        response = self.client.get('/read_and_persist',
-                                   query_string=request_args,
-                                   headers=headers)
+        request_args = {"region": "test"}
+        headers = {"X-Appengine-Cron": "test-cron"}
+        response = self.client.get(
+            "/read_and_persist", query_string=request_args, headers=headers
+        )
         self.assertEqual(response.status_code, 200)
 
-        mock_persist.assert_called_once_with('test', session_start)
-        mock_task_manager.return_value.create_scraper_phase_task.\
-            assert_called_once_with(region_code='test',
-                                    url='/release')
+        mock_persist.assert_called_once_with("test", session_start)
+        mock_task_manager.return_value.create_scraper_phase_task.assert_called_once_with(
+            region_code="test", url="/release"
+        )
         mock_session_update.assert_called_once_with(
-            mock_session, scrape_phase.ScrapePhase.RELEASE)
+            mock_session, scrape_phase.ScrapePhase.RELEASE
+        )

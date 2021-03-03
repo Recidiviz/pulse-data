@@ -22,14 +22,15 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME = \
-    'persons_to_recent_county_of_residence'
+PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME = (
+    "persons_to_recent_county_of_residence"
+)
 
-PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_DESCRIPTION = \
+PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_DESCRIPTION = (
     """Persons to their most recent county of residence."""
+)
 
-PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_QUERY_TEMPLATE = \
-    """
+PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_QUERY_TEMPLATE = """
 /*{description}*/
     WITH zip_code_county_map AS (
       SELECT
@@ -63,9 +64,9 @@ PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_QUERY_TEMPLATE,
     description=PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_DESCRIPTION,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER.build_and_print()

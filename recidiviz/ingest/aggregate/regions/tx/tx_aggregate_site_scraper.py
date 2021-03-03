@@ -22,23 +22,23 @@ import re
 import requests
 from lxml import html
 
-STATE_AGGREGATE_URL = 'https://www.tcjs.state.tx.us/historical-population-reports/'
+STATE_AGGREGATE_URL = "https://www.tcjs.state.tx.us/historical-population-reports/"
 
 
 def get_urls_to_download() -> Set[str]:
     """Scrapes the aggregate report pdfs from the state website"""
     page = requests.get(STATE_AGGREGATE_URL).text
     html_tree = html.fromstring(page)
-    links = html_tree.xpath('//a/@href')
-    pattern = re.compile(r'(\d{4}).pdf')
+    links = html_tree.xpath("//a/@href")
+    pattern = re.compile(r"(\d{4}).pdf")
     result = {*()}
 
     for link in links:
-        if 'Abbre' in link and '.pdf' in link:
+        if "Abbre" in link and ".pdf" in link:
             search = pattern.search(link)
             # The scraper currently fails on many old reports.
             # This should be removed once it is extended to support them.
-            if search and search.group(1) < '2020':
+            if search and search.group(1) < "2020":
                 continue
             result.add(link)
 

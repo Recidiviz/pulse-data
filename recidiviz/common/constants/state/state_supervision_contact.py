@@ -43,9 +43,15 @@ class StateSupervisionContactReason(EntityEnum, metaclass=EntityEnumMeta):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     INTERNAL_UNKNOWN = enum_strings.internal_unknown
 
-    EMERGENCY_CONTACT = state_enum_strings.state_supervision_contact_reason_emergency_contact
-    GENERAL_CONTACT = state_enum_strings.state_supervision_contact_reason_general_contact
-    INITIAL_CONTACT = state_enum_strings.state_supervision_contact_reason_initial_contact
+    EMERGENCY_CONTACT = (
+        state_enum_strings.state_supervision_contact_reason_emergency_contact
+    )
+    GENERAL_CONTACT = (
+        state_enum_strings.state_supervision_contact_reason_general_contact
+    )
+    INITIAL_CONTACT = (
+        state_enum_strings.state_supervision_contact_reason_initial_contact
+    )
 
     @staticmethod
     def _get_default_map():
@@ -73,10 +79,16 @@ class StateSupervisionContactLocation(EntityEnum, metaclass=EntityEnumMeta):
     COURT = state_enum_strings.state_supervision_contact_location_court
     FIELD = state_enum_strings.state_supervision_contact_location_field
     JAIL = state_enum_strings.state_supervision_contact_location_jail
-    PLACE_OF_EMPLOYMENT = state_enum_strings.state_supervision_contact_location_place_of_employment
+    PLACE_OF_EMPLOYMENT = (
+        state_enum_strings.state_supervision_contact_location_place_of_employment
+    )
     RESIDENCE = state_enum_strings.state_supervision_contact_location_residence
-    SUPERVISION_OFFICE = state_enum_strings.state_supervision_contact_location_supervision_office
-    TREATMENT_PROVIDER = state_enum_strings.state_supervision_contact_location_treatment_provider
+    SUPERVISION_OFFICE = (
+        state_enum_strings.state_supervision_contact_location_supervision_office
+    )
+    TREATMENT_PROVIDER = (
+        state_enum_strings.state_supervision_contact_location_treatment_provider
+    )
 
     @staticmethod
     def _get_default_map():
@@ -84,37 +96,37 @@ class StateSupervisionContactLocation(EntityEnum, metaclass=EntityEnumMeta):
 
 
 _STATE_SUPERVISION_CONTACT_LOCATION_MAP = {
-    'EXTERNAL UNKNOWN': StateSupervisionContactLocation.EXTERNAL_UNKNOWN,
-    'INTERNAL UNKNOWN': StateSupervisionContactLocation.INTERNAL_UNKNOWN,
-    'COURT': StateSupervisionContactLocation.COURT,
-    'FIELD': StateSupervisionContactLocation.FIELD,
-    'JAIL': StateSupervisionContactLocation.JAIL,
-    'PLACE OF EMPLOYMENT': StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT,
-    'RESIDENCE': StateSupervisionContactLocation.RESIDENCE,
-    'SUPERVISION OFFICE': StateSupervisionContactLocation.SUPERVISION_OFFICE,
-    'TREATMENT PROVIDER': StateSupervisionContactLocation.TREATMENT_PROVIDER,
+    "EXTERNAL UNKNOWN": StateSupervisionContactLocation.EXTERNAL_UNKNOWN,
+    "INTERNAL UNKNOWN": StateSupervisionContactLocation.INTERNAL_UNKNOWN,
+    "COURT": StateSupervisionContactLocation.COURT,
+    "FIELD": StateSupervisionContactLocation.FIELD,
+    "JAIL": StateSupervisionContactLocation.JAIL,
+    "PLACE OF EMPLOYMENT": StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT,
+    "RESIDENCE": StateSupervisionContactLocation.RESIDENCE,
+    "SUPERVISION OFFICE": StateSupervisionContactLocation.SUPERVISION_OFFICE,
+    "TREATMENT PROVIDER": StateSupervisionContactLocation.TREATMENT_PROVIDER,
 }
 
 _STATE_SUPERVISION_CONTACT_STATUS_MAP = {
-    'EXTERNAL UNKNOWN': StateSupervisionContactStatus.EXTERNAL_UNKNOWN,
-    'INTERNAL UNKNOWN': StateSupervisionContactStatus.INTERNAL_UNKNOWN,
-    'ATTEMPTED': StateSupervisionContactStatus.ATTEMPTED,
-    'COMPLETED': StateSupervisionContactStatus.COMPLETED,
+    "EXTERNAL UNKNOWN": StateSupervisionContactStatus.EXTERNAL_UNKNOWN,
+    "INTERNAL UNKNOWN": StateSupervisionContactStatus.INTERNAL_UNKNOWN,
+    "ATTEMPTED": StateSupervisionContactStatus.ATTEMPTED,
+    "COMPLETED": StateSupervisionContactStatus.COMPLETED,
 }
 
 _STATE_SUPERVISION_CONTACT_REASON_MAP = {
-    'EXTERNAL UNKNOWN': StateSupervisionContactReason.EXTERNAL_UNKNOWN,
-    'INTERNAL UNKNOWN': StateSupervisionContactReason.INTERNAL_UNKNOWN,
-    'EMERGENCY CONTACT': StateSupervisionContactReason.EMERGENCY_CONTACT,
-    'GENERAL CONTACT': StateSupervisionContactReason.GENERAL_CONTACT,
-    'INITIAL CONTACT': StateSupervisionContactReason.INITIAL_CONTACT,
+    "EXTERNAL UNKNOWN": StateSupervisionContactReason.EXTERNAL_UNKNOWN,
+    "INTERNAL UNKNOWN": StateSupervisionContactReason.INTERNAL_UNKNOWN,
+    "EMERGENCY CONTACT": StateSupervisionContactReason.EMERGENCY_CONTACT,
+    "GENERAL CONTACT": StateSupervisionContactReason.GENERAL_CONTACT,
+    "INITIAL CONTACT": StateSupervisionContactReason.INITIAL_CONTACT,
 }
 
 _STATE_SUPERVISION_CONTACT_TYPE_MAP = {
-    'EXTERNAL UNKNOWN': StateSupervisionContactType.EXTERNAL_UNKNOWN,
-    'INTERNAL UNKNOWN': StateSupervisionContactType.INTERNAL_UNKNOWN,
-    'FACE TO FACE': StateSupervisionContactType.FACE_TO_FACE,
-    'TELEPHONE': StateSupervisionContactType.TELEPHONE,
-    'WRITTEN MESSAGE': StateSupervisionContactType.WRITTEN_MESSAGE,
-    'VIRTUAL': StateSupervisionContactType.VIRTUAL,
+    "EXTERNAL UNKNOWN": StateSupervisionContactType.EXTERNAL_UNKNOWN,
+    "INTERNAL UNKNOWN": StateSupervisionContactType.INTERNAL_UNKNOWN,
+    "FACE TO FACE": StateSupervisionContactType.FACE_TO_FACE,
+    "TELEPHONE": StateSupervisionContactType.TELEPHONE,
+    "WRITTEN MESSAGE": StateSupervisionContactType.WRITTEN_MESSAGE,
+    "VIRTUAL": StateSupervisionContactType.VIRTUAL,
 }

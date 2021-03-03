@@ -15,20 +15,25 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Active FTR participation counts by the region of the program location."""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
-from recidiviz.calculator.query.state import dataset_config, state_specific_query_strings
+from recidiviz.calculator.query.state import (
+    dataset_config,
+    state_specific_query_strings,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_NAME = 'active_program_participation_by_region'
+ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_NAME = (
+    "active_program_participation_by_region"
+)
 
-ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_DESCRIPTION = \
+ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_DESCRIPTION = (
     """Active program participation counts by the region of the program location."""
+)
 
-ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_QUERY_TEMPLATE = \
-    """
+ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_QUERY_TEMPLATE = """
     /*{description}*/
      WITH most_recent_job_id AS (
       SELECT
@@ -76,17 +81,20 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
     view_id=ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_NAME,
     view_query_template=ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_QUERY_TEMPLATE,
-    dimensions=['state_code', 'supervision_type', 'race_or_ethnicity', 'region_id'],
+    dimensions=["state_code", "supervision_type", "race_or_ethnicity", "region_id"],
     description=ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_DESCRIPTION,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    state_specific_race_or_ethnicity_groupings=
-    state_specific_query_strings.state_specific_race_or_ethnicity_groupings('prioritized_race_or_ethnicity'),
-    unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
-    region_dimension=bq_utils.unnest_column('region_id', 'region_id'),
+    state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(
+        "prioritized_race_or_ethnicity"
+    ),
+    unnested_race_or_ethnicity_dimension=bq_utils.unnest_column(
+        "race_or_ethnicity", "race_or_ethnicity"
+    ),
+    region_dimension=bq_utils.unnest_column("region_id", "region_id"),
     supervision_type_dimension=bq_utils.unnest_supervision_type(),
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_BUILDER.build_and_print()

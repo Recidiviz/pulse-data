@@ -21,19 +21,21 @@ from lxml import html
 import requests
 
 
-STATE_AGGREGATE_URL = 'https://www.tn.gov/correction/' \
-    'statistics-and-information/jail-summary-reports.html'
-STATE_BASE_URL = 'https://www.tn.gov'
+STATE_AGGREGATE_URL = (
+    "https://www.tn.gov/correction/"
+    "statistics-and-information/jail-summary-reports.html"
+)
+STATE_BASE_URL = "https://www.tn.gov"
 
 
 def get_urls_to_download() -> Set[str]:
     """Scrapes the aggregate report pdfs from the state website"""
     page = requests.get(STATE_AGGREGATE_URL).text
     html_tree = html.fromstring(page)
-    links = html_tree.xpath('//a/@href')
+    links = html_tree.xpath("//a/@href")
 
     aggregate_report_urls = set()
     for link in links:
-        if link.endswith('.pdf'):
+        if link.endswith(".pdf"):
             aggregate_report_urls.add(STATE_BASE_URL + link)
     return aggregate_report_urls

@@ -20,8 +20,7 @@ from datetime import date
 
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.county import entities
-from recidiviz.persistence.ingest_info_converter.county.entity_helpers import \
-    arrest
+from recidiviz.persistence.ingest_info_converter.county.entity_helpers import arrest
 
 
 class ArrestConverterTest(unittest.TestCase):
@@ -30,12 +29,12 @@ class ArrestConverterTest(unittest.TestCase):
     def testParseArrest(self):
         # Arrange
         ingest_arrest = ingest_info_pb2.Arrest(
-            arrest_id='ARREST_ID',
-            arrest_date='1/2/1111',
-            location='FAKE_LOCATION',
-            officer_name='FAKE_NAME',
-            officer_id='FAKE_ID',
-            agency='FAKE_AGENCY'
+            arrest_id="ARREST_ID",
+            arrest_date="1/2/1111",
+            location="FAKE_LOCATION",
+            officer_name="FAKE_NAME",
+            officer_id="FAKE_ID",
+            agency="FAKE_AGENCY",
         )
 
         # Act
@@ -43,12 +42,12 @@ class ArrestConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.Arrest(
-            external_id='ARREST_ID',
+            external_id="ARREST_ID",
             arrest_date=date(year=1111, month=1, day=2),
-            location='FAKE_LOCATION',
-            officer_name='FAKE_NAME',
-            officer_id='FAKE_ID',
-            agency='FAKE_AGENCY'
+            location="FAKE_LOCATION",
+            officer_name="FAKE_NAME",
+            officer_id="FAKE_ID",
+            agency="FAKE_AGENCY",
         )
 
         self.assertEqual(result, expected_result)
@@ -56,30 +55,32 @@ class ArrestConverterTest(unittest.TestCase):
     def testParseArrest_LongAgencyName_TruncatesName(self):
         # Arrange
         ingest_arrest = ingest_info_pb2.Arrest(
-            agency='Loooooooooooooooooooooooooooooooooooooooooooooooooo'
-                   'ooooooooooooooooooooooooooooooooooooooooooooooooooo'
-                   'ooooooooooooooooooooooooooooooooooooooooooooooooooo'
-                   'ooooooooooooooooooooooooooooooooooooooooooooooooooo'
-                   'ooooooooooooooooooooooooooooooooooooooooooooooooooo'
-                   'ooooooooooooooooooooooooooooooooooooooooooooooooooo'
-                   'ooooooooooooooooooooooooooooooooooooooooooooooooooo'
-                   'ooooooooooooooooooooooooooooooooooooooooooooooooooo'
-                   'ooooooooooooooooooooooooooooooooooooooooooooooooooo'
-                   'ooooooong Agency Name')
+            agency="Loooooooooooooooooooooooooooooooooooooooooooooooooo"
+            "ooooooooooooooooooooooooooooooooooooooooooooooooooo"
+            "ooooooooooooooooooooooooooooooooooooooooooooooooooo"
+            "ooooooooooooooooooooooooooooooooooooooooooooooooooo"
+            "ooooooooooooooooooooooooooooooooooooooooooooooooooo"
+            "ooooooooooooooooooooooooooooooooooooooooooooooooooo"
+            "ooooooooooooooooooooooooooooooooooooooooooooooooooo"
+            "ooooooooooooooooooooooooooooooooooooooooooooooooooo"
+            "ooooooooooooooooooooooooooooooooooooooooooooooooooo"
+            "ooooooong Agency Name"
+        )
 
         # Act
         result = arrest.convert(ingest_arrest)
 
         # Assert
         expected_result = entities.Arrest(
-            agency='LOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO'
-                   'OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO'
-                   'OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO'
-                   'OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO'
-                   'OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO',
+            agency="LOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO"
+            "OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO"
+            "OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO"
+            "OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO"
+            "OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO",
             external_id=None,
             arrest_date=None,
             location=None,
             officer_name=None,
-            officer_id=None)
+            officer_id=None,
+        )
         self.assertEqual(result, expected_result)

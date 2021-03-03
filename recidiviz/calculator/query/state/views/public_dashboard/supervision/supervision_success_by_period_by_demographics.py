@@ -15,21 +15,24 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Rates of successful completion of supervision by period, grouped by demographic dimensions."""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
-from recidiviz.calculator.query.state import dataset_config, state_specific_query_strings
+from recidiviz.calculator.query.state import (
+    dataset_config,
+    state_specific_query_strings,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_NAME = 'supervision_success_by_period_by_demographics'
+SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_NAME = (
+    "supervision_success_by_period_by_demographics"
+)
 
-SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_DESCRIPTION = \
-    """Rates of successful completion of supervision by period, grouped by demographic dimensions."""
+SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_DESCRIPTION = """Rates of successful completion of supervision by period, grouped by demographic dimensions."""
 
 
-SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
-    """
+SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
     /*{description}*/
     WITH supervision_completions AS (
       SELECT 
@@ -85,21 +88,32 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQueryViewB
     dataset_id=dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
     view_id=SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_NAME,
     view_query_template=SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE,
-    dimensions=['state_code', 'supervision_type', 'metric_period_months', 'district',
-                'race_or_ethnicity', 'gender', 'age_bucket'],
+    dimensions=[
+        "state_code",
+        "supervision_type",
+        "metric_period_months",
+        "district",
+        "race_or_ethnicity",
+        "gender",
+        "age_bucket",
+    ],
     description=SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    grouped_districts=
-    state_specific_query_strings.state_supervision_specific_district_groupings('supervising_district_external_id', 'judicial_district_code'),
+    grouped_districts=state_specific_query_strings.state_supervision_specific_district_groupings(
+        "supervising_district_external_id", "judicial_district_code"
+    ),
     metric_period_condition=bq_utils.metric_period_condition(month_offset=1),
-    unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
-    gender_dimension=bq_utils.unnest_column('gender', 'gender'),
-    age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),
-    state_specific_race_or_ethnicity_groupings=
-    state_specific_query_strings.state_specific_race_or_ethnicity_groupings('prioritized_race_or_ethnicity'),
+    unnested_race_or_ethnicity_dimension=bq_utils.unnest_column(
+        "race_or_ethnicity", "race_or_ethnicity"
+    ),
+    gender_dimension=bq_utils.unnest_column("gender", "gender"),
+    age_dimension=bq_utils.unnest_column("age_bucket", "age_bucket"),
+    state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(
+        "prioritized_race_or_ethnicity"
+    ),
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_BUILDER.build_and_print()

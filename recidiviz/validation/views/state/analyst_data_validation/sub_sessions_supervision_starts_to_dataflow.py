@@ -17,17 +17,17 @@
 
 """A view which provides an annual comparison between supervision session starts and dataflow starts."""
 
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
-SUB_SESSIONS_SUPERVISION_STARTS_TO_DATAFLOW_VIEW_NAME = \
-    'sub_sessions_supervision_starts_to_dataflow'
+SUB_SESSIONS_SUPERVISION_STARTS_TO_DATAFLOW_VIEW_NAME = (
+    "sub_sessions_supervision_starts_to_dataflow"
+)
 
-SUB_SESSIONS_SUPERVISION_STARTS_TO_DATAFLOW_DESCRIPTION = \
-    """
+SUB_SESSIONS_SUPERVISION_STARTS_TO_DATAFLOW_DESCRIPTION = """
     A view which provides an annual comparison between supervision session starts and dataflow supervision starts. One
     comparison is session starts vs sessions_with_start_reason (the latter being a subset of the former), which can be 
     used to identify the % of sessions with start reasons. Another comparison is dataflow_supervision_starts vs 
@@ -35,8 +35,7 @@ SUB_SESSIONS_SUPERVISION_STARTS_TO_DATAFLOW_DESCRIPTION = \
     dataflow supervision start events represented in sessions.
     """
 
-SUB_SESSIONS_SUPERVISION_STARTS_TO_DATAFLOW_QUERY_TEMPLATE = \
-    """
+SUB_SESSIONS_SUPERVISION_STARTS_TO_DATAFLOW_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT 
         state_code AS region_code,
@@ -61,6 +60,6 @@ SUB_SESSIONS_SUPERVISION_STARTS_TO_DATAFLOW_VIEW_BUILDER = SimpleBigQueryViewBui
     validation_views_dataset=dataset_config.VIEWS_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         SUB_SESSIONS_SUPERVISION_STARTS_TO_DATAFLOW_VIEW_BUILDER.build_and_print()

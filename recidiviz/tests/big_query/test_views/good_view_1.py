@@ -17,14 +17,16 @@
 """A test view builder file for big_query_view_collector_test.py"""
 
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.tests.big_query.fake_big_query_view_builder import FakeBigQueryViewBuilder
+from recidiviz.tests.big_query.fake_big_query_view_builder import (
+    FakeBigQueryViewBuilder,
+)
 from recidiviz.utils.metadata import local_project_id_override
 
-with local_project_id_override('my-project-id'):
+with local_project_id_override("my-project-id"):
     GOOD_VIEW_1 = BigQueryView(
-        dataset_id='my_dataset',
-        view_id='early_discharge_incarceration_sentence',
-        view_query_template='SELECT * FROM table1'
+        dataset_id="my_dataset",
+        view_id="early_discharge_incarceration_sentence",
+        view_query_template="SELECT * FROM table1",
     )
 
 VIEW_BUILDER = FakeBigQueryViewBuilder(GOOD_VIEW_1)

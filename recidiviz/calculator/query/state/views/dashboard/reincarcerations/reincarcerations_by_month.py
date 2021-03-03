@@ -23,12 +23,11 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-REINCARCERATIONS_BY_MONTH_VIEW_NAME = 'reincarcerations_by_month'
+REINCARCERATIONS_BY_MONTH_VIEW_NAME = "reincarcerations_by_month"
 
 REINCARCERATIONS_BY_MONTH_DESCRIPTION = """ Reincarcerations by month """
 
-REINCARCERATIONS_BY_MONTH_QUERY_TEMPLATE = \
-    """
+REINCARCERATIONS_BY_MONTH_QUERY_TEMPLATE = """
     /*{description}*/
     WITH admissions AS (
       SELECT
@@ -72,13 +71,13 @@ REINCARCERATIONS_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=REINCARCERATIONS_BY_MONTH_VIEW_NAME,
     view_query_template=REINCARCERATIONS_BY_MONTH_QUERY_TEMPLATE,
-    dimensions=['state_code', 'year', 'month', 'district'],
+    dimensions=["state_code", "year", "month", "district"],
     description=REINCARCERATIONS_BY_MONTH_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    district_dimension=bq_utils.unnest_district(district_column='county_of_residence'),
+    district_dimension=bq_utils.unnest_district(district_column="county_of_residence"),
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         REINCARCERATIONS_BY_MONTH_VIEW_BUILDER.build_and_print()

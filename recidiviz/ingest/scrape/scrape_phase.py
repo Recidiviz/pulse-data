@@ -19,13 +19,14 @@
 import enum
 from typing import Optional
 
+
 @enum.unique
 class ScrapePhase(enum.Enum):
-    START = 'start'
-    SCRAPE = 'scrape'
-    PERSIST = 'persist'
-    RELEASE = 'release'
-    DONE = 'done'
+    START = "start"
+    SCRAPE = "scrape"
+    PERSIST = "persist"
+    RELEASE = "release"
+    DONE = "done"
 
     def is_actively_scraping(self):
         return self is ScrapePhase.SCRAPE
@@ -35,11 +36,10 @@ class ScrapePhase(enum.Enum):
 
 
 _next_phase = {
-    'scraper_status.check_for_finished_scrapers':
-        'scraper_control.scraper_stop',
-    'scraper_control.scraper_stop': 'batch.read_and_persist',
-    'batch.read_and_persist': 'infer_release.infer_release',
-    'infer_release.infer_release': None,
+    "scraper_status.check_for_finished_scrapers": "scraper_control.scraper_stop",
+    "scraper_control.scraper_stop": "batch.read_and_persist",
+    "batch.read_and_persist": "infer_release.infer_release",
+    "infer_release.infer_release": None,
 }
 
 

@@ -29,14 +29,13 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-REINCARCERATION_RATE_BY_STAY_LENGTH_VIEW_NAME = \
-    'reincarceration_rate_by_stay_length'
+REINCARCERATION_RATE_BY_STAY_LENGTH_VIEW_NAME = "reincarceration_rate_by_stay_length"
 
-REINCARCERATION_RATE_BY_STAY_LENGTH_DESCRIPTION = \
+REINCARCERATION_RATE_BY_STAY_LENGTH_DESCRIPTION = (
     """Reincarceration rate by stay length."""
+)
 
-REINCARCERATION_RATE_BY_STAY_LENGTH_QUERY_TEMPLATE = \
-    """
+REINCARCERATION_RATE_BY_STAY_LENGTH_QUERY_TEMPLATE = """
     /*{description}*/
     WITH releases AS (
         SELECT
@@ -74,13 +73,18 @@ REINCARCERATION_RATE_BY_STAY_LENGTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=REINCARCERATION_RATE_BY_STAY_LENGTH_VIEW_NAME,
     view_query_template=REINCARCERATION_RATE_BY_STAY_LENGTH_QUERY_TEMPLATE,
-    dimensions=['state_code', 'release_cohort', 'follow_up_period', 'stay_length_bucket', 'district'],
+    dimensions=[
+        "state_code",
+        "release_cohort",
+        "follow_up_period",
+        "stay_length_bucket",
+        "district",
+    ],
     description=REINCARCERATION_RATE_BY_STAY_LENGTH_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    district_dimension=bq_utils.unnest_district(
-        district_column='county_of_residence'),
+    district_dimension=bq_utils.unnest_district(district_column="county_of_residence"),
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         REINCARCERATION_RATE_BY_STAY_LENGTH_VIEW_BUILDER.build_and_print()

@@ -25,16 +25,14 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-FTR_REFERRALS_BY_PERIOD_VIEW_NAME = 'ftr_referrals_by_period'
+FTR_REFERRALS_BY_PERIOD_VIEW_NAME = "ftr_referrals_by_period"
 
-FTR_REFERRAL_DESCRIPTION = \
-    """All individuals who have been referred to Free Through Recovery by
+FTR_REFERRAL_DESCRIPTION = """All individuals who have been referred to Free Through Recovery by
     metric period months.
     """
 
 # TODO(#2549): Filter by FTR specifically once the metadata exists.
-FTR_REFERRAL_QUERY_TEMPLATE = \
-    """
+FTR_REFERRAL_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT
       pop.state_code,
@@ -76,13 +74,13 @@ FTR_REFERRALS_BY_PERIOD_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=FTR_REFERRALS_BY_PERIOD_VIEW_NAME,
     view_query_template=FTR_REFERRAL_QUERY_TEMPLATE,
-    dimensions=['state_code', 'metric_period_months', 'district', 'supervision_type'],
+    dimensions=["state_code", "metric_period_months", "district", "supervision_type"],
     description=FTR_REFERRAL_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
     metric_period_condition=bq_utils.metric_period_condition(),
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         FTR_REFERRALS_BY_PERIOD_VIEW_BUILDER.build_and_print()

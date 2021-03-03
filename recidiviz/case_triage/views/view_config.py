@@ -18,10 +18,16 @@
 from typing import Sequence
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.big_query.selected_columns_big_query_view import SelectedColumnsBigQueryViewBuilder
+from recidiviz.big_query.selected_columns_big_query_view import (
+    SelectedColumnsBigQueryViewBuilder,
+)
 from recidiviz.case_triage.views.client_list_view import CLIENT_LIST_VIEW_BUILDER
-from recidiviz.case_triage.views.employment_periods import CURRENT_EMPLOYMENT_PERIODS_VIEW_BUILDER
-from recidiviz.case_triage.views.latest_assessments import LATEST_ASSESSMENTS_VIEW_BUILDER
+from recidiviz.case_triage.views.employment_periods import (
+    CURRENT_EMPLOYMENT_PERIODS_VIEW_BUILDER,
+)
+from recidiviz.case_triage.views.latest_assessments import (
+    LATEST_ASSESSMENTS_VIEW_BUILDER,
+)
 from recidiviz.case_triage.views.officer_list_view import OFFICER_LIST_VIEW_BUILDER
 
 CASE_TRIAGE_EXPORTED_VIEW_BUILDERS: Sequence[SelectedColumnsBigQueryViewBuilder] = [

@@ -16,8 +16,9 @@
 # =============================================================================
 """Query containing institutional (i.e. prison) sentence information."""
 
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import \
-    DirectIngestPreProcessedIngestViewBuilder
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    DirectIngestPreProcessedIngestViewBuilder,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -89,12 +90,12 @@ VIEW_QUERY_TEMPLATE = """
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
-    region='us_mo',
-    ingest_view_name='tak022_tak023_tak025_tak026_offender_sentence_institution',
+    region="us_mo",
+    ingest_view_name="tak022_tak023_tak025_tak026_offender_sentence_institution",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols='BS_DOC, BS_CYC, BS_SEO',
+    order_by_cols="BS_DOC, BS_CYC, BS_SEO",
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         VIEW_BUILDER.build_and_print()

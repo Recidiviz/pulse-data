@@ -33,68 +33,70 @@ requiring the database to be updated when an enum value is created or removed.
 
 # booking.py
 
-admission_reason_escape = 'ESCAPE'
-admission_reason_new_commitment = 'NEW_COMMITMENT'
-admission_reason_parole_violation = 'PAROLE_VIOLATION'
-admission_reason_probation_violation = 'PROBATION_VIOLATION'
-admission_reason_supervision_violation_for_sex_offense = \
-    'SUPERVISION_VIOLATION_FOR_SEX_OFFENSE'
-admission_reason_transfer = 'TRANSFER'
+admission_reason_escape = "ESCAPE"
+admission_reason_new_commitment = "NEW_COMMITMENT"
+admission_reason_parole_violation = "PAROLE_VIOLATION"
+admission_reason_probation_violation = "PROBATION_VIOLATION"
+admission_reason_supervision_violation_for_sex_offense = (
+    "SUPERVISION_VIOLATION_FOR_SEX_OFFENSE"
+)
+admission_reason_transfer = "TRANSFER"
 
-release_reason_acquittal = 'ACQUITTAL'
-release_reason_bond = 'BOND'
-release_reason_case_dismissed = 'CASE_DISMISSED'
-release_reason_death = 'DEATH'
-release_reason_escape = 'ESCAPE'
-release_reason_expiration = 'EXPIRATION_OF_SENTENCE'
-release_reason_recognizance = 'OWN_RECOGNIZANCE'
-release_reason_parole = 'PAROLE'
-release_reason_probation = 'PROBATION'
-release_reason_transfer = 'TRANSFER'
+release_reason_acquittal = "ACQUITTAL"
+release_reason_bond = "BOND"
+release_reason_case_dismissed = "CASE_DISMISSED"
+release_reason_death = "DEATH"
+release_reason_escape = "ESCAPE"
+release_reason_expiration = "EXPIRATION_OF_SENTENCE"
+release_reason_recognizance = "OWN_RECOGNIZANCE"
+release_reason_parole = "PAROLE"
+release_reason_probation = "PROBATION"
+release_reason_transfer = "TRANSFER"
 
-custody_status_escaped = 'ESCAPED'
-custody_status_elsewhere = 'HELD_ELSEWHERE'
-custody_status_in_custody = 'IN_CUSTODY'
-custody_status_inferred_release = 'INFERRED_RELEASE'
-custody_status_released = 'RELEASED'
+custody_status_escaped = "ESCAPED"
+custody_status_elsewhere = "HELD_ELSEWHERE"
+custody_status_in_custody = "IN_CUSTODY"
+custody_status_inferred_release = "INFERRED_RELEASE"
+custody_status_released = "RELEASED"
 
-classification_high = 'HIGH'
-classification_low = 'LOW'
-classification_maximum = 'MAXIMUM'
-classification_medium = 'MEDIUM'
-classification_minimum = 'MINIMUM'
-classification_work_release = 'WORK_RELEASE'
+classification_high = "HIGH"
+classification_low = "LOW"
+classification_maximum = "MAXIMUM"
+classification_medium = "MEDIUM"
+classification_minimum = "MINIMUM"
+classification_work_release = "WORK_RELEASE"
 
 # charge.py
 
-charge_class_civil = 'CIVIL'
-charge_class_felony = 'FELONY'
-charge_class_infraction = 'INFRACTION'
-charge_class_misdemeanor = 'MISDEMEANOR'
-charge_class_other = 'OTHER'
-charge_class_parole_violation = 'PAROLE_VIOLATION'
-charge_class_probation_violation = 'PROBATION_VIOLATION'
-charge_class_supervision_violation_for_sex_offense = \
-    'SUPERVISION_VIOLATION_FOR_SEX_OFFENSE'
+charge_class_civil = "CIVIL"
+charge_class_felony = "FELONY"
+charge_class_infraction = "INFRACTION"
+charge_class_misdemeanor = "MISDEMEANOR"
+charge_class_other = "OTHER"
+charge_class_parole_violation = "PAROLE_VIOLATION"
+charge_class_probation_violation = "PROBATION_VIOLATION"
+charge_class_supervision_violation_for_sex_offense = (
+    "SUPERVISION_VIOLATION_FOR_SEX_OFFENSE"
+)
 
-degree_first = 'FIRST'
-degree_second = 'SECOND'
-degree_third = 'THIRD'
-degree_fourth = 'FOURTH'
+degree_first = "FIRST"
+degree_second = "SECOND"
+degree_third = "THIRD"
+degree_fourth = "FOURTH"
 
 # hold.py
 
-hold_status_active = 'ACTIVE'
-hold_status_inactive = 'INACTIVE'
-hold_status_inferred_dropped = 'INFERRED_DROPPED'
+hold_status_active = "ACTIVE"
+hold_status_inactive = "INACTIVE"
+hold_status_inferred_dropped = "INFERRED_DROPPED"
 
 # sentence.py
 
-sentence_status_commuted = 'COMMUTED'
-sentence_status_completed = 'COMPLETED'
-sentence_status_serving = 'SERVING'
+sentence_status_commuted = "COMMUTED"
+sentence_status_completed = "COMPLETED"
+sentence_status_serving = "SERVING"
 
 # SentenceRelationship
 
-sentence_relationship_type_concurrent = 'CONCURRENT'
-sentence_relationship_type_consecutive = 'CONSECUTIVE'
+sentence_relationship_type_concurrent = "CONCURRENT"
+sentence_relationship_type_consecutive = "CONSECUTIVE"

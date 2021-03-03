@@ -23,15 +23,15 @@ import subprocess
 from typing import List, Tuple, Optional
 
 
-def enum_errors_from_logs(log_output: bytes, region: Optional[str]
-                          ) -> List[Tuple[str, str, str]]:
+def enum_errors_from_logs(
+    log_output: bytes, region: Optional[str]
+) -> List[Tuple[str, str, str]]:
     """Extract unique enum errors from the log file"""
-    regions = region.split(',') if region else []
+    regions = region.split(",") if region else []
     errors: List[Tuple[str, str, str]] = []
     for log in json.loads(log_output):
-        enum_type, enum_string = extract_enum_string_type(
-            log['jsonPayload']['message'])
-        region = log['labels']['region']
+        enum_type, enum_string = extract_enum_string_type(log["jsonPayload"]["message"])
+        region = log["labels"]["region"]
 
         assert region and enum_type and enum_string
         error = (region, enum_type, enum_string)
@@ -42,9 +42,9 @@ def enum_errors_from_logs(log_output: bytes, region: Optional[str]
 
 def extract_enum_string_type(text: str) -> Tuple[str, str]:
     try:
-        assert text.startswith('Could not parse')
-        text = text[len('Could not parse'):].strip()
-        enum_string = text[:text.find(' when building ')].strip()
+        assert text.startswith("Could not parse")
+        text = text[len("Could not parse") :].strip()
+        enum_string = text[: text.find(" when building ")].strip()
         enum_type = text.split("'")[-2].strip()
         return enum_type, enum_string
     except ValueError:
@@ -52,24 +52,37 @@ def extract_enum_string_type(text: str) -> Tuple[str, str]:
         return "", ""
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--project', required=False, default='recidiviz-123',
-                        help="The gcloud project to search logs. "
-                             "Defaults to recidiviz-123.")
-    parser.add_argument('--region', required=False,
-                        help="The region or comma-separated list of regions "
-                             "to read errors for. Leave empty to read all "
-                             "regions.")
+    parser.add_argument(
+        "--project",
+        required=False,
+        default="recidiviz-123",
+        help="The gcloud project to search logs. " "Defaults to recidiviz-123.",
+    )
+    parser.add_argument(
+        "--region",
+        required=False,
+        help="The region or comma-separated list of regions "
+        "to read errors for. Leave empty to read all "
+        "regions.",
+    )
     args = parser.parse_args()
 
-    logs = subprocess.check_output([
-        'gcloud', 'logging', 'read',
-        'resource.type="gae_app" '
-        f'logName="projects/{args.project}/logs/app" "could not parse"',
-        '--freshness=7d',
-        '--project', args.project, '--format', 'json'])
+    logs = subprocess.check_output(
+        [
+            "gcloud",
+            "logging",
+            "read",
+            'resource.type="gae_app" '
+            f'logName="projects/{args.project}/logs/app" "could not parse"',
+            "--freshness=7d",
+            "--project",
+            args.project,
+            "--format",
+            "json",
+        ]
+    )
 
     enum_errors = enum_errors_from_logs(logs, args.region)
     pprint.pprint(enum_errors)

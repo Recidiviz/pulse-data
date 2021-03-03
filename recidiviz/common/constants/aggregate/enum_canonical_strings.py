@@ -32,8 +32,8 @@ requiring the database to be updated when an enum value is created or removed.
 
 # Aggregates
 
-daily_granularity = 'DAILY'
-weekly_granularity = 'WEEKLY'
-monthly_granularity = 'MONTHLY'
-quarterly_granularity = 'QUARTERLY'
-yearly_granularity = 'YEARLY'
+daily_granularity = "DAILY"
+weekly_granularity = "WEEKLY"
+monthly_granularity = "MONTHLY"
+quarterly_granularity = "QUARTERLY"
+yearly_granularity = "YEARLY"

@@ -18,19 +18,26 @@
 from typing import List
 
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
-from recidiviz.calculator.query.state.views.dashboard.supervision.us_nd.average_change_lsir_score_by_period import \
-    AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.dashboard.supervision.us_nd.average_change_lsir_score_by_month import \
-    AVERAGE_CHANGE_LSIR_SCORE_MONTH_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.dashboard.supervision.us_nd.case_terminations_by_type_by_month import \
-    CASE_TERMINATIONS_BY_TYPE_BY_MONTH_VIEW_BUILDER
-# pylint:disable=line-too-long
-from recidiviz.calculator.query.state.views.dashboard.supervision.us_nd.case_terminations_by_type_by_officer_by_period import \
-    CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.dashboard.supervision.supervision_termination_by_type_by_period import \
-    SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.dashboard.supervision.supervision_termination_by_type_by_month import \
-    SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_VIEW_BUILDER
+from recidiviz.calculator.query.state.views.dashboard.supervision.us_nd.average_change_lsir_score_by_period import (
+    AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.dashboard.supervision.us_nd.average_change_lsir_score_by_month import (
+    AVERAGE_CHANGE_LSIR_SCORE_MONTH_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.dashboard.supervision.us_nd.case_terminations_by_type_by_month import (
+    CASE_TERMINATIONS_BY_TYPE_BY_MONTH_VIEW_BUILDER,
+)
+
+
+from recidiviz.calculator.query.state.views.dashboard.supervision.us_nd.case_terminations_by_type_by_officer_by_period import (
+    CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.dashboard.supervision.supervision_termination_by_type_by_period import (
+    SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.dashboard.supervision.supervision_termination_by_type_by_month import (
+    SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_VIEW_BUILDER,
+)
 
 SUPERVISION_VIEW_BUILDERS: List[MetricBigQueryViewBuilder] = [
     AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW_BUILDER,

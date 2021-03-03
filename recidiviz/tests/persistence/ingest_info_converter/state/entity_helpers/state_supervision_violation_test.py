@@ -19,13 +19,15 @@
 import unittest
 from datetime import date
 
-from recidiviz.common.constants.state.state_supervision_violation import \
-    StateSupervisionViolationType
+from recidiviz.common.constants.state.state_supervision_violation import (
+    StateSupervisionViolationType,
+)
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.state.entity_helpers import \
-    state_supervision_violation
+from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
+    state_supervision_violation,
+)
 
 _EMPTY_METADATA = IngestMetadata.new_with_defaults()
 
@@ -36,29 +38,30 @@ class StateSupervisionViolationConverterTest(unittest.TestCase):
     def testParseStateSupervisionViolation(self):
         # Arrange
         ingest_violation = ingest_info_pb2.StateSupervisionViolation(
-            violation_type='TECHNICAL',
-            state_supervision_violation_id='VIOLATION_ID',
-            violation_date='1/2/2111',
-            state_code='us_nd',
-            is_violent='false',
-            violated_conditions='CURFEW, TOX-SCREEN',
+            violation_type="TECHNICAL",
+            state_supervision_violation_id="VIOLATION_ID",
+            violation_date="1/2/2111",
+            state_code="us_nd",
+            is_violent="false",
+            violated_conditions="CURFEW, TOX-SCREEN",
         )
 
         # Act
         violation_builder = entities.StateSupervisionViolation.builder()
         state_supervision_violation.copy_fields_to_builder(
-            violation_builder, ingest_violation, _EMPTY_METADATA)
+            violation_builder, ingest_violation, _EMPTY_METADATA
+        )
         result = violation_builder.build()
 
         # Assert
         expected_result = entities.StateSupervisionViolation.new_with_defaults(
             violation_type=StateSupervisionViolationType.TECHNICAL,
-            violation_type_raw_text='TECHNICAL',
-            external_id='VIOLATION_ID',
+            violation_type_raw_text="TECHNICAL",
+            external_id="VIOLATION_ID",
             violation_date=date(year=2111, month=1, day=2),
-            state_code='US_ND',
+            state_code="US_ND",
             is_violent=False,
-            violated_conditions='CURFEW, TOX-SCREEN'
+            violated_conditions="CURFEW, TOX-SCREEN",
         )
 
         self.assertEqual(result, expected_result)

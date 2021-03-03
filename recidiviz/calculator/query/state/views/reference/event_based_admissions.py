@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Event Based Admissions."""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
@@ -23,7 +23,7 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-EVENT_BASED_ADMISSIONS_VIEW_NAME = 'event_based_admissions'
+EVENT_BASED_ADMISSIONS_VIEW_NAME = "event_based_admissions"
 
 EVENT_BASED_ADMISSIONS_DESCRIPTION = """
  Admission data on the person level with admission district (county of residence), admission date, and admission reason.
@@ -31,8 +31,7 @@ EVENT_BASED_ADMISSIONS_DESCRIPTION = """
  Expanded Dimensions: district
  """
 
-EVENT_BASED_ADMISSIONS_QUERY_TEMPLATE = \
-    """
+EVENT_BASED_ADMISSIONS_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT
       person_id, state_code, year, month,
@@ -51,10 +50,10 @@ EVENT_BASED_ADMISSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=EVENT_BASED_ADMISSIONS_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    district_dimension=bq_utils.unnest_district(district_column='county_of_residence'),
-    thirty_six_month_filter=bq_utils.thirty_six_month_filter()
+    district_dimension=bq_utils.unnest_district(district_column="county_of_residence"),
+    thirty_six_month_filter=bq_utils.thirty_six_month_filter(),
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         EVENT_BASED_ADMISSIONS_VIEW_BUILDER.build_and_print()

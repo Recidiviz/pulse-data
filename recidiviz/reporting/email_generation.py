@@ -45,13 +45,15 @@ def generate(report_context: ReportContext) -> None:
     prepared_data = report_context.get_prepared_data()
 
     html_content = generate_html_content(report_context)
-    attachment_content = prepared_data['attachment_content']
+    attachment_content = prepared_data["attachment_content"]
 
     html_path = utils.get_html_filepath(
-            prepared_data[utils.KEY_BATCH_ID],
-            prepared_data[utils.KEY_EMAIL_ADDRESS],
+        prepared_data[utils.KEY_BATCH_ID],
+        prepared_data[utils.KEY_EMAIL_ADDRESS],
     )
-    upload_file_contents_to_gcs(file_path=html_path, file_contents=html_content, content_type='text/html')
+    upload_file_contents_to_gcs(
+        file_path=html_path, file_contents=html_content, content_type="text/html"
+    )
 
     if attachment_content:
         attachment_path = utils.get_attachment_filepath(
@@ -59,9 +61,11 @@ def generate(report_context: ReportContext) -> None:
             prepared_data[utils.KEY_EMAIL_ADDRESS],
         )
 
-        upload_file_contents_to_gcs(file_path=attachment_path,
-                                    file_contents=attachment_content,
-                                    content_type='text/plain')
+        upload_file_contents_to_gcs(
+            file_path=attachment_path,
+            file_contents=attachment_content,
+            content_type="text/plain",
+        )
 
 
 def generate_html_content(report_context: ReportContext) -> str:
@@ -69,18 +73,25 @@ def generate_html_content(report_context: ReportContext) -> str:
     try:
         return report_context.render_html()
     except KeyError as err:
-        logging.error("Attribute required for HTML template missing from recipient data: "
-                      "batch id = %s, email address = %s, attribute = %s",
-                      report_context.get_batch_id(), report_context.get_email_address(), err)
+        logging.error(
+            "Attribute required for HTML template missing from recipient data: "
+            "batch id = %s, email address = %s, attribute = %s",
+            report_context.get_batch_id(),
+            report_context.get_email_address(),
+            err,
+        )
         raise
     except Exception:
-        logging.error("Unexpected error during templating. Recipient = %s", report_context.get_email_address())
+        logging.error(
+            "Unexpected error during templating. Recipient = %s",
+            report_context.get_email_address(),
+        )
         raise
 
 
-def upload_file_contents_to_gcs(file_path: GcsfsFilePath,
-                                file_contents: str,
-                                content_type: str) -> None:
+def upload_file_contents_to_gcs(
+    file_path: GcsfsFilePath, file_contents: str, content_type: str
+) -> None:
     """Uploads a file's content to Cloud Storage.
 
     Args:
@@ -90,7 +101,9 @@ def upload_file_contents_to_gcs(file_path: GcsfsFilePath,
     """
     try:
         gcs_file_system = GcsfsFactory.build()
-        gcs_file_system.upload_from_string(path=file_path, contents=file_contents, content_type=content_type)
+        gcs_file_system.upload_from_string(
+            path=file_path, contents=file_contents, content_type=content_type
+        )
     except Exception:
         logging.error("Error while attempting upload of %s", file_path)
         raise
@@ -108,7 +121,9 @@ def start_chart_generation(report_context: ReportContext) -> None:
     publisher = pubsub_v1.PublisherClient()
 
     prepared_data = report_context.get_prepared_data()
-    payload = json.dumps(prepared_data)  # no error checking here since we already validated the JSON previously
+    payload = json.dumps(
+        prepared_data
+    )  # no error checking here since we already validated the JSON previously
     # TODO(#3260): Generalize this with report context
     topic = utils.get_chart_topic()
     publisher.publish(topic, payload.encode("utf-8"))

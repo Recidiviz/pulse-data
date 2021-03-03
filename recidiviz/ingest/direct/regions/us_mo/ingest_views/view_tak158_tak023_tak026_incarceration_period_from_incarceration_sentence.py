@@ -16,12 +16,16 @@
 # =============================================================================
 """Query containing incarceration period from sentence information."""
 
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import \
-    DirectIngestPreProcessedIngestViewBuilder
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    DirectIngestPreProcessedIngestViewBuilder,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.ingest.direct.regions.us_mo.ingest_views.us_mo_view_query_fragments import \
-    INCARCERATION_SUB_SUBCYCLE_SPANS_FRAGMENT, STATUSES_BY_DATE_FRAGMENT, MOST_RECENT_STATUS_UPDATES_FRAGMENT
+from recidiviz.ingest.direct.regions.us_mo.ingest_views.us_mo_view_query_fragments import (
+    INCARCERATION_SUB_SUBCYCLE_SPANS_FRAGMENT,
+    STATUSES_BY_DATE_FRAGMENT,
+    MOST_RECENT_STATUS_UPDATES_FRAGMENT,
+)
 
 VIEW_QUERY_TEMPLATE = f"""
     WITH {INCARCERATION_SUB_SUBCYCLE_SPANS_FRAGMENT},
@@ -89,12 +93,12 @@ VIEW_QUERY_TEMPLATE = f"""
     """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
-    region='us_mo',
-    ingest_view_name='tak158_tak023_tak026_incarceration_period_from_incarceration_sentence',
+    region="us_mo",
+    ingest_view_name="tak158_tak023_tak026_incarceration_period_from_incarceration_sentence",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols='BT_DOC, BT_CYC, BT_SEO, F1_SQN',
+    order_by_cols="BT_DOC, BT_CYC, BT_SEO, F1_SQN",
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         VIEW_BUILDER.build_and_print()

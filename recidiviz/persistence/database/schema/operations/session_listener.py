@@ -21,7 +21,9 @@ from sqlite3 import IntegrityError
 
 from sqlalchemy import event
 
-from recidiviz.persistence.database.schema.operations.schema import DirectIngestIngestFileMetadata
+from recidiviz.persistence.database.schema.operations.schema import (
+    DirectIngestIngestFileMetadata,
+)
 
 
 def session_listener(session):
@@ -32,18 +34,23 @@ def session_listener(session):
         if not isinstance(instance, DirectIngestIngestFileMetadata):
             return
 
-        results = session.query(DirectIngestIngestFileMetadata).filter_by(
-            is_invalidated=False,
-            is_file_split=False,
-            region_code=instance.region_code,
-            file_tag=instance.file_tag,
-            datetimes_contained_lower_bound_exclusive=instance.datetimes_contained_lower_bound_exclusive,
-            datetimes_contained_upper_bound_inclusive=instance.datetimes_contained_upper_bound_inclusive
-        ).all()
+        results = (
+            session.query(DirectIngestIngestFileMetadata)
+            .filter_by(
+                is_invalidated=False,
+                is_file_split=False,
+                region_code=instance.region_code,
+                file_tag=instance.file_tag,
+                datetimes_contained_lower_bound_exclusive=instance.datetimes_contained_lower_bound_exclusive,
+                datetimes_contained_upper_bound_inclusive=instance.datetimes_contained_upper_bound_inclusive,
+            )
+            .all()
+        )
 
         if len(results) > 1:
             raise IntegrityError(
-                f'Attempting to commit repeated non-file split DirectIngestIngestFileMetadata row for '
-                f'region_code={instance.region_code}, file_tag={instance.file_tag}, '
-                f'datetimes_contained_lower_bound_exclusive={instance.datetimes_contained_lower_bound_exclusive}, '
-                f'datetimes_contained_upper_bound_inclusive={instance.datetimes_contained_upper_bound_inclusive}')
+                f"Attempting to commit repeated non-file split DirectIngestIngestFileMetadata row for "
+                f"region_code={instance.region_code}, file_tag={instance.file_tag}, "
+                f"datetimes_contained_lower_bound_exclusive={instance.datetimes_contained_lower_bound_exclusive}, "
+                f"datetimes_contained_upper_bound_inclusive={instance.datetimes_contained_upper_bound_inclusive}"
+            )

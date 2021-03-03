@@ -19,10 +19,14 @@ from typing import Type
 
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import GcsfsDirectIngestController
-from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests import BaseDirectIngestControllerTests
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import (
+    GcsfsDirectIngestController,
+)
+from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests import (
+    BaseDirectIngestControllerTests,
+)
 
-_REGION_CODE_UPPER = 'US_XX'
+_REGION_CODE_UPPER = "US_XX"
 
 
 class TestUsXxController(BaseDirectIngestControllerTests):
@@ -38,4 +42,4 @@ class TestUsXxController(BaseDirectIngestControllerTests):
 
     @classmethod
     def schema_base(cls) -> DeclarativeMeta:
-        raise NotImplementedError('Choose one of StateBase or JailsBase')
+        raise NotImplementedError("Choose one of StateBase or JailsBase")

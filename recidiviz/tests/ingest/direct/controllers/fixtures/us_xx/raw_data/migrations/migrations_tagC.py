@@ -19,12 +19,15 @@
 import datetime
 from typing import List
 
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration import RawTableMigration, \
-    UpdateRawTableMigration, DeleteFromRawTableMigration
+from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration import (
+    RawTableMigration,
+    UpdateRawTableMigration,
+    DeleteFromRawTableMigration,
+)
 
-COL1 = 'COL1'
-DATE_1 = datetime.datetime.fromisoformat('2020-06-10T00:00:00')
-DATE_2 = datetime.datetime.fromisoformat('2020-09-21T00:00:00')
+COL1 = "COL1"
+DATE_1 = datetime.datetime.fromisoformat("2020-06-10T00:00:00")
+DATE_2 = datetime.datetime.fromisoformat("2020-09-21T00:00:00")
 
 MIGRATIONS: List[RawTableMigration] = [
     UpdateRawTableMigration(
@@ -33,12 +36,12 @@ MIGRATIONS: List[RawTableMigration] = [
             DATE_1,
             DATE_2,
         ],
-        filters=[(COL1, '123')],
-        updates=[(COL1, '456')],
+        filters=[(COL1, "123")],
+        updates=[(COL1, "456")],
     ),
     DeleteFromRawTableMigration(
         migrations_file=__file__,
         update_datetime_filters=None,
-        filters=[(COL1, '789')],
-    )
+        filters=[(COL1, "789")],
+    ),
 ]

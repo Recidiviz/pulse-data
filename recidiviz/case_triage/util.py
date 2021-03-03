@@ -26,12 +26,11 @@ from recidiviz.utils.environment import in_development
 from recidiviz.utils.secrets import get_secret
 
 
-SESSION_ADMIN_KEY = 'is_admin'
+SESSION_ADMIN_KEY = "is_admin"
 
 
 local_path = os.path.join(
-    os.path.realpath(os.path.dirname(os.path.realpath(__file__))),
-    "local"
+    os.path.realpath(os.path.dirname(os.path.realpath(__file__))), "local"
 )
 
 
@@ -59,7 +58,7 @@ def get_local_file(file_path: GcsfsFilePath) -> str:
     """
 
     if in_development():
-        return Path(os.path.join(local_path, "gcs",  file_path.abs_path())).read_text()
+        return Path(os.path.join(local_path, "gcs", file_path.abs_path())).read_text()
 
     gcs_fs = GcsfsFactory.build()
     return gcs_fs.download_as_string(file_path)

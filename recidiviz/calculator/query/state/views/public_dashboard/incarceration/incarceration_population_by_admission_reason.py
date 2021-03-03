@@ -15,20 +15,23 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Most recent daily incarceration population count broken down by reason for admission and demographics."""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
-from recidiviz.calculator.query.state import dataset_config, state_specific_query_strings
+from recidiviz.calculator.query.state import (
+    dataset_config,
+    state_specific_query_strings,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_NAME = 'incarceration_population_by_admission_reason'
+INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_NAME = (
+    "incarceration_population_by_admission_reason"
+)
 
-INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_DESCRIPTION = \
-        """Most recent daily incarceration population count broken down by reason for admission and demographics."""
+INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_DESCRIPTION = """Most recent daily incarceration population count broken down by reason for admission and demographics."""
 
-INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_QUERY_TEMPLATE = \
-    """
+INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_QUERY_TEMPLATE = """
     /*{description}*/
     WITH state_specific_groupings AS (
       SELECT 
@@ -71,16 +74,25 @@ INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_BUILDER = MetricBigQueryViewBu
     dataset_id=dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
     view_id=INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_NAME,
     view_query_template=INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_QUERY_TEMPLATE,
-    dimensions=['state_code', 'date_of_stay', 'race_or_ethnicity', 'gender', 'age_bucket'],
+    dimensions=[
+        "state_code",
+        "date_of_stay",
+        "race_or_ethnicity",
+        "gender",
+        "age_bucket",
+    ],
     description=INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
-    gender_dimension=bq_utils.unnest_column('gender', 'gender'),
-    age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),
-    state_specific_race_or_ethnicity_groupings=
-    state_specific_query_strings.state_specific_race_or_ethnicity_groupings('prioritized_race_or_ethnicity')
+    unnested_race_or_ethnicity_dimension=bq_utils.unnest_column(
+        "race_or_ethnicity", "race_or_ethnicity"
+    ),
+    gender_dimension=bq_utils.unnest_column("gender", "gender"),
+    age_dimension=bq_utils.unnest_column("age_bucket", "age_bucket"),
+    state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(
+        "prioritized_race_or_ethnicity"
+    ),
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_BUILDER.build_and_print()

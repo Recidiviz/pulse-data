@@ -15,22 +15,25 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """For every Booking, total bond amounts and UNKNOWN or DENIED."""
-# pylint: disable=line-too-long
+
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
-from recidiviz.calculator.query.county.views.bonds.bond_amounts_by_booking import BOND_AMOUNTS_BY_BOOKING_VIEW_BUILDER
-from recidiviz.calculator.query.county.views.vera.county_names import COUNTY_NAMES_VIEW_BUILDER
+from recidiviz.calculator.query.county.views.bonds.bond_amounts_by_booking import (
+    BOND_AMOUNTS_BY_BOOKING_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.county.views.vera.county_names import (
+    COUNTY_NAMES_VIEW_BUILDER,
+)
 from recidiviz.common.constants.enum_canonical_strings import bond_type_denied
 
 from recidiviz.persistence.database.schema.county.schema import Booking, Person
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-BOND_AMOUNTS_ALL_BOOKINGS_VIEW_NAME = 'bond_amounts_all_bookings'
+BOND_AMOUNTS_ALL_BOOKINGS_VIEW_NAME = "bond_amounts_all_bookings"
 
-BOND_AMOUNTS_ALL_BOOKINGS_DESCRIPTION = \
-"""
+BOND_AMOUNTS_ALL_BOOKINGS_DESCRIPTION = """
 A complete table of total bond amounts,
 and whether the bonds are UNKNOWN or {bond_type_denied}, for every Booking.
 
@@ -54,11 +57,10 @@ UNKNOWN Bookings in `{bond_amounts_by_booking_view}`,
 plus all the Bookings whose booking_id is not in Bonds.
 """.format(
     bond_type_denied=bond_type_denied,
-    bond_amounts_by_booking_view=BOND_AMOUNTS_BY_BOOKING_VIEW_BUILDER.view_id
+    bond_amounts_by_booking_view=BOND_AMOUNTS_BY_BOOKING_VIEW_BUILDER.view_id,
 )
 
-BOND_AMOUNTS_ALL_BOOKINGS_QUERY_TEMPLATE = \
-"""
+BOND_AMOUNTS_ALL_BOOKINGS_QUERY_TEMPLATE = """
 /*{description}*/
 SELECT
   CountyNames.fips,
@@ -105,9 +107,9 @@ BOND_AMOUNTS_ALL_BOOKINGS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     base_dataset=dataset_config.COUNTY_BASE_DATASET,
     booking_table=Booking.__tablename__,
     person_table=Person.__tablename__,
-    county_names_view=COUNTY_NAMES_VIEW_BUILDER.view_id
+    county_names_view=COUNTY_NAMES_VIEW_BUILDER.view_id,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         BOND_AMOUNTS_ALL_BOOKINGS_VIEW_BUILDER.build_and_print()

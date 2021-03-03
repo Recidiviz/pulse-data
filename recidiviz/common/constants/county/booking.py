@@ -18,7 +18,7 @@
 """Constants related to a booking entity."""
 
 from recidiviz.common.constants.county import (
-    enum_canonical_strings as county_enum_strings
+    enum_canonical_strings as county_enum_strings,
 )
 from recidiviz.common.constants import enum_canonical_strings as enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
@@ -28,11 +28,10 @@ class AdmissionReason(EntityEnum, metaclass=EntityEnumMeta):
     ESCAPE = county_enum_strings.admission_reason_escape
     NEW_COMMITMENT = county_enum_strings.admission_reason_new_commitment
     PAROLE_VIOLATION = county_enum_strings.admission_reason_parole_violation
-    PROBATION_VIOLATION = county_enum_strings.\
-        admission_reason_probation_violation
-    SUPERVISION_VIOLATION_FOR_SEX_OFFENSE = \
-        county_enum_strings.\
-        admission_reason_supervision_violation_for_sex_offense
+    PROBATION_VIOLATION = county_enum_strings.admission_reason_probation_violation
+    SUPERVISION_VIOLATION_FOR_SEX_OFFENSE = (
+        county_enum_strings.admission_reason_supervision_violation_for_sex_offense
+    )
     TRANSFER = county_enum_strings.admission_reason_transfer
 
     @staticmethod
@@ -72,7 +71,7 @@ class CustodyStatus(EntityEnum, metaclass=EntityEnumMeta):
         return [
             CustodyStatus.RELEASED,
             CustodyStatus.INFERRED_RELEASE,
-            CustodyStatus.REMOVED_WITHOUT_INFO
+            CustodyStatus.REMOVED_WITHOUT_INFO,
         ]
 
     @staticmethod
@@ -102,69 +101,69 @@ class ReleaseReason(EntityEnum, metaclass=EntityEnumMeta):
 # space. Add mappings here using a single space between words and numbers.
 # For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
 _ADMISSION_REASON_MAP = {
-    'BAIL MITTIMUS': AdmissionReason.NEW_COMMITMENT,
-    'BOND SURRENDER': AdmissionReason.NEW_COMMITMENT,
-    'COURT ORDER': AdmissionReason.NEW_COMMITMENT,
-    'ESCAPE': AdmissionReason.ESCAPE,
-    'GOVERNORS WARRANT': AdmissionReason.NEW_COMMITMENT,
-    'NEW COMMITMENT': AdmissionReason.NEW_COMMITMENT,
-    'PAROLE VIOLATION': AdmissionReason.PAROLE_VIOLATION,
-    'PENDING SENTENCE': AdmissionReason.NEW_COMMITMENT,
-    'PROBATION VIOLATION': AdmissionReason.PROBATION_VIOLATION,
-    'SENTENCE MITTIMUS': AdmissionReason.NEW_COMMITMENT,
-    'TRANSFER': AdmissionReason.TRANSFER,
+    "BAIL MITTIMUS": AdmissionReason.NEW_COMMITMENT,
+    "BOND SURRENDER": AdmissionReason.NEW_COMMITMENT,
+    "COURT ORDER": AdmissionReason.NEW_COMMITMENT,
+    "ESCAPE": AdmissionReason.ESCAPE,
+    "GOVERNORS WARRANT": AdmissionReason.NEW_COMMITMENT,
+    "NEW COMMITMENT": AdmissionReason.NEW_COMMITMENT,
+    "PAROLE VIOLATION": AdmissionReason.PAROLE_VIOLATION,
+    "PENDING SENTENCE": AdmissionReason.NEW_COMMITMENT,
+    "PROBATION VIOLATION": AdmissionReason.PROBATION_VIOLATION,
+    "SENTENCE MITTIMUS": AdmissionReason.NEW_COMMITMENT,
+    "TRANSFER": AdmissionReason.TRANSFER,
 }
 
 # MappableEnum.parse will strip punctuation and separate tokens with a single
 # space. Add mappings here using a single space between words and numbers.
 # For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
 _CLASSIFICATION_MAP = {
-    'HIGH': Classification.HIGH,
-    'LOW': Classification.LOW,
-    'MAXIMUM': Classification.MAXIMUM,
-    'MEDIUM': Classification.MEDIUM,
-    'MINIMUM': Classification.MINIMUM,
-    'UNKNOWN': Classification.EXTERNAL_UNKNOWN,
-    'WORK RELEASE': Classification.WORK_RELEASE,
+    "HIGH": Classification.HIGH,
+    "LOW": Classification.LOW,
+    "MAXIMUM": Classification.MAXIMUM,
+    "MEDIUM": Classification.MEDIUM,
+    "MINIMUM": Classification.MINIMUM,
+    "UNKNOWN": Classification.EXTERNAL_UNKNOWN,
+    "WORK RELEASE": Classification.WORK_RELEASE,
 }
 
 # MappableEnum.parse will strip punctuation and separate tokens with a single
 # space. Add mappings here using a single space between words and numbers.
 # For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
 _CUSTODY_STATUS_MAP = {
-    'CURRENTLY BOOKED': CustodyStatus.IN_CUSTODY,
-    'DISCHARGED': CustodyStatus.RELEASED,
-    'ESCAPED': CustodyStatus.ESCAPED,
-    'HELD ELSEWHERE': CustodyStatus.HELD_ELSEWHERE,
-    'IN CUSTODY': CustodyStatus.IN_CUSTODY,
-    'IN JAIL': CustodyStatus.IN_CUSTODY,
-    'OUT TO COURT': CustodyStatus.HELD_ELSEWHERE,
-    'RELEASED': CustodyStatus.RELEASED,
-    'TEMP RELEASE': CustodyStatus.RELEASED,
+    "CURRENTLY BOOKED": CustodyStatus.IN_CUSTODY,
+    "DISCHARGED": CustodyStatus.RELEASED,
+    "ESCAPED": CustodyStatus.ESCAPED,
+    "HELD ELSEWHERE": CustodyStatus.HELD_ELSEWHERE,
+    "IN CUSTODY": CustodyStatus.IN_CUSTODY,
+    "IN JAIL": CustodyStatus.IN_CUSTODY,
+    "OUT TO COURT": CustodyStatus.HELD_ELSEWHERE,
+    "RELEASED": CustodyStatus.RELEASED,
+    "TEMP RELEASE": CustodyStatus.RELEASED,
 }
 
 # MappableEnum.parse will strip punctuation and separate tokens with a single
 # space. Add mappings here using a single space between words and numbers.
 # For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
 _RELEASE_REASON_MAP = {
-    'ACQUITTAL': ReleaseReason.ACQUITTAL,
-    'BALANCE OF SENTENCE SUSPENDED': ReleaseReason.EXPIRATION_OF_SENTENCE,
-    'BOND': ReleaseReason.BOND,
-    'CASE DISMISSED': ReleaseReason.CASE_DISMISSED,
-    'DEATH': ReleaseReason.DEATH,
-    'ESCAPE': ReleaseReason.ESCAPE,
-    'ERROR': None,
-    'EXPIRATION OF SENTENCE': ReleaseReason.EXPIRATION_OF_SENTENCE,
-    'MID HUDSON PSYCH HOSPITAL': ReleaseReason.TRANSFER,
-    'NEVER RETURNED FROM COURT': ReleaseReason.ESCAPE,
-    'NG NOT GUILTY': ReleaseReason.ACQUITTAL,
-    'OTHER': None,
-    'OWN RECOGNIZANCE': ReleaseReason.OWN_RECOGNIZANCE,
-    'PAROLE': ReleaseReason.PAROLE,
-    'PROBATION': ReleaseReason.PROBATION,
-    'SENTENCE EXPIRATION': ReleaseReason.EXPIRATION_OF_SENTENCE,
-    'TRANSFER': ReleaseReason.TRANSFER,
-    'UNKNOWN': ReleaseReason.EXTERNAL_UNKNOWN,
-    'WARRANT': ReleaseReason.TRANSFER,
-    'WRONG PERSON': ReleaseReason.CASE_DISMISSED,
+    "ACQUITTAL": ReleaseReason.ACQUITTAL,
+    "BALANCE OF SENTENCE SUSPENDED": ReleaseReason.EXPIRATION_OF_SENTENCE,
+    "BOND": ReleaseReason.BOND,
+    "CASE DISMISSED": ReleaseReason.CASE_DISMISSED,
+    "DEATH": ReleaseReason.DEATH,
+    "ESCAPE": ReleaseReason.ESCAPE,
+    "ERROR": None,
+    "EXPIRATION OF SENTENCE": ReleaseReason.EXPIRATION_OF_SENTENCE,
+    "MID HUDSON PSYCH HOSPITAL": ReleaseReason.TRANSFER,
+    "NEVER RETURNED FROM COURT": ReleaseReason.ESCAPE,
+    "NG NOT GUILTY": ReleaseReason.ACQUITTAL,
+    "OTHER": None,
+    "OWN RECOGNIZANCE": ReleaseReason.OWN_RECOGNIZANCE,
+    "PAROLE": ReleaseReason.PAROLE,
+    "PROBATION": ReleaseReason.PROBATION,
+    "SENTENCE EXPIRATION": ReleaseReason.EXPIRATION_OF_SENTENCE,
+    "TRANSFER": ReleaseReason.TRANSFER,
+    "UNKNOWN": ReleaseReason.EXTERNAL_UNKNOWN,
+    "WARRANT": ReleaseReason.TRANSFER,
+    "WRONG PERSON": ReleaseReason.CASE_DISMISSED,
 }

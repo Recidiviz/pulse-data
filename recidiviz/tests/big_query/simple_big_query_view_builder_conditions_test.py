@@ -17,36 +17,39 @@
 """Implements tests for conditions on SimpleBigQueryViewBuilder."""
 from unittest import TestCase, mock
 
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder, BigQueryViewBuilderShouldNotBuildError
+from recidiviz.big_query.big_query_view import (
+    SimpleBigQueryViewBuilder,
+    BigQueryViewBuilderShouldNotBuildError,
+)
 
 
 class TestSimpleBigQueryViewBuilderConditions(TestCase):
     """Tests for conditions on SimpleBigQueryViewBuilder."""
 
     def setUp(self) -> None:
-        self.metadata_patcher = mock.patch('recidiviz.utils.metadata.project_id')
+        self.metadata_patcher = mock.patch("recidiviz.utils.metadata.project_id")
         self.mock_project_id_fn = self.metadata_patcher.start()
-        self.mock_project_id_fn.return_value = 'test-project'
+        self.mock_project_id_fn.return_value = "test-project"
 
     def tearDown(self) -> None:
         self.metadata_patcher.stop()
 
     def test_raise_when_condition_fails(self) -> None:
         builder = SimpleBigQueryViewBuilder(
-            dataset_id='fake_dataset',
-            view_id='my_fake_view',
-            view_query_template='SELECT NULL LIMIT 0',
-            should_build_predicate=(lambda: False)
+            dataset_id="fake_dataset",
+            view_id="my_fake_view",
+            view_query_template="SELECT NULL LIMIT 0",
+            should_build_predicate=(lambda: False),
         )
         with self.assertRaises(BigQueryViewBuilderShouldNotBuildError):
             builder.build()
 
     def test_no_raise_when_condition_succeeds(self) -> None:
         builder = SimpleBigQueryViewBuilder(
-            dataset_id='fake_dataset',
-            view_id='my_fake_view',
-            view_query_template='SELECT NULL LIMIT 0',
-            should_build_predicate=(lambda: True)
+            dataset_id="fake_dataset",
+            view_id="my_fake_view",
+            view_query_template="SELECT NULL LIMIT 0",
+            should_build_predicate=(lambda: True),
         )
 
         # Should be no raise

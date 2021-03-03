@@ -24,15 +24,14 @@ from more_itertools import one
 import pandas as pd
 from sqlalchemy import func
 
-from recidiviz.common.constants.aggregate import (
-    enum_canonical_strings as enum_strings
-)
+from recidiviz.common.constants.aggregate import enum_canonical_strings as enum_strings
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.base_schema import \
-    JailsBase
+from recidiviz.persistence.database.base_schema import JailsBase
 from recidiviz.persistence.database.schema.aggregate import dao
-from recidiviz.persistence.database.schema.aggregate.schema import \
-    FlCountyAggregate, FlFacilityAggregate
+from recidiviz.persistence.database.schema.aggregate.schema import (
+    FlCountyAggregate,
+    FlFacilityAggregate,
+)
 from recidiviz.tests.utils import fakes
 
 DATE_SCRAPED = datetime.date(year=2019, month=1, day=1)
@@ -49,133 +48,159 @@ class TestDao(TestCase):
 
     def testWriteDf(self):
         # Arrange
-        subject = pd.DataFrame({
-            'county_name': ['Alachua', 'Baker', 'Bay', 'Bradford', 'Brevard'],
-            'county_population': [257062, 26965, 176016, 27440, 568919],
-            'average_daily_population': [799, 478, 1015, 141, 1547],
-            'date_reported': [pd.NaT, pd.NaT,
-                              datetime.datetime(year=2017, month=9, day=1),
-                              pd.NaT, pd.NaT],
-            'fips': ['00000', '00001', '00002', '00003', '00004'],
-            'report_date': 5 * [DATE_SCRAPED],
-            'aggregation_window': 5 * [enum_strings.monthly_granularity],
-            'report_frequency': 5 * [enum_strings.monthly_granularity]
-        })
+        subject = pd.DataFrame(
+            {
+                "county_name": ["Alachua", "Baker", "Bay", "Bradford", "Brevard"],
+                "county_population": [257062, 26965, 176016, 27440, 568919],
+                "average_daily_population": [799, 478, 1015, 141, 1547],
+                "date_reported": [
+                    pd.NaT,
+                    pd.NaT,
+                    datetime.datetime(year=2017, month=9, day=1),
+                    pd.NaT,
+                    pd.NaT,
+                ],
+                "fips": ["00000", "00001", "00002", "00003", "00004"],
+                "report_date": 5 * [DATE_SCRAPED],
+                "aggregation_window": 5 * [enum_strings.monthly_granularity],
+                "report_frequency": 5 * [enum_strings.monthly_granularity],
+            }
+        )
 
         # Act
         dao.write_df(FlCountyAggregate, subject)
 
         # Assert
-        query = SessionFactory.for_schema_base(JailsBase) \
-            .query(FlCountyAggregate) \
-            .filter(FlCountyAggregate.county_name == 'Bay')
+        query = (
+            SessionFactory.for_schema_base(JailsBase)
+            .query(FlCountyAggregate)
+            .filter(FlCountyAggregate.county_name == "Bay")
+        )
         result = one(query.all())
 
-        self.assertEqual(result.county_name, 'Bay')
+        self.assertEqual(result.county_name, "Bay")
         self.assertEqual(result.county_population, 176016)
         self.assertEqual(result.average_daily_population, 1015)
-        self.assertEqual(result.date_reported,
-                         datetime.date(year=2017, month=9, day=1))
-        self.assertEqual(result.fips, '00002')
+        self.assertEqual(result.date_reported, datetime.date(year=2017, month=9, day=1))
+        self.assertEqual(result.fips, "00002")
         self.assertEqual(result.report_date, DATE_SCRAPED)
-        self.assertEqual(result.aggregation_window,
-                         enum_strings.monthly_granularity)
+        self.assertEqual(result.aggregation_window, enum_strings.monthly_granularity)
 
     def testWriteDf_doesNotOverrideMatchingColumnNames(self):
         # Arrange
-        subject = pd.DataFrame({
-            'county_name': ['Alachua', 'Baker', 'Bay', 'Bradford', 'Brevard'],
-            'county_population': [257062, 26965, 176016, 27440, 568919],
-            'average_daily_population': [799, 478, 1015, 141, 1547],
-            'date_reported': [pd.NaT, pd.NaT,
-                              datetime.datetime(year=2017, month=9, day=1),
-                              pd.NaT, pd.NaT],
-            'fips': ['00000', '00001', '00002', '00003', '00004'],
-            'report_date': 5 * [DATE_SCRAPED],
-            'aggregation_window': 5 * [enum_strings.monthly_granularity],
-            'report_frequency': 5 * [enum_strings.monthly_granularity]
-        })
+        subject = pd.DataFrame(
+            {
+                "county_name": ["Alachua", "Baker", "Bay", "Bradford", "Brevard"],
+                "county_population": [257062, 26965, 176016, 27440, 568919],
+                "average_daily_population": [799, 478, 1015, 141, 1547],
+                "date_reported": [
+                    pd.NaT,
+                    pd.NaT,
+                    datetime.datetime(year=2017, month=9, day=1),
+                    pd.NaT,
+                    pd.NaT,
+                ],
+                "fips": ["00000", "00001", "00002", "00003", "00004"],
+                "report_date": 5 * [DATE_SCRAPED],
+                "aggregation_window": 5 * [enum_strings.monthly_granularity],
+                "report_frequency": 5 * [enum_strings.monthly_granularity],
+            }
+        )
         dao.write_df(FlCountyAggregate, subject)
 
-        subject = pd.DataFrame({
-            'facility_name': ['One', 'Two', 'Three', 'Four', 'Five'],
-            'average_daily_population': [13, 14, 15, 16, 17],
-            'number_felony_pretrial': [23, 24, 25, 26, 27],
-            'number_misdemeanor_pretrial': 5 * [pd.NaT],
-            'fips': ['10000', '10111', '10222', '10333', '10444'],
-            'report_date': 5 * [DATE_SCRAPED],
-            'aggregation_window': 5 * [enum_strings.monthly_granularity],
-            'report_frequency': 5 * [enum_strings.monthly_granularity]
-        })
+        subject = pd.DataFrame(
+            {
+                "facility_name": ["One", "Two", "Three", "Four", "Five"],
+                "average_daily_population": [13, 14, 15, 16, 17],
+                "number_felony_pretrial": [23, 24, 25, 26, 27],
+                "number_misdemeanor_pretrial": 5 * [pd.NaT],
+                "fips": ["10000", "10111", "10222", "10333", "10444"],
+                "report_date": 5 * [DATE_SCRAPED],
+                "aggregation_window": 5 * [enum_strings.monthly_granularity],
+                "report_frequency": 5 * [enum_strings.monthly_granularity],
+            }
+        )
 
         # Act
         dao.write_df(FlFacilityAggregate, subject)
 
         # Assert
-        query = SessionFactory.for_schema_base(JailsBase) \
-            .query(FlCountyAggregate) \
-            .filter(FlCountyAggregate.county_name == 'Bay')
+        query = (
+            SessionFactory.for_schema_base(JailsBase)
+            .query(FlCountyAggregate)
+            .filter(FlCountyAggregate.county_name == "Bay")
+        )
         result = one(query.all())
 
-        fips_not_overridden_by_facility_table = '00002'
-        self.assertEqual(result.county_name, 'Bay')
+        fips_not_overridden_by_facility_table = "00002"
+        self.assertEqual(result.county_name, "Bay")
         self.assertEqual(result.fips, fips_not_overridden_by_facility_table)
 
     def testWriteDf_rowsWithSameColumnsThatMustBeUnique_onlyWritesOnce(self):
         # Arrange
-        shared_fips = '12345'
-        subject = pd.DataFrame({
-            'county_name': ['Alachua', 'Baker'],
-            'county_population': [257062, 26965],
-            'average_daily_population': [799, 478],
-            'date_reported': [pd.NaT, pd.NaT],
-            'fips': 2 * [shared_fips],
-            'report_date': 2 * [DATE_SCRAPED],
-            'aggregation_window': 2 * [enum_strings.monthly_granularity],
-            'report_frequency': 2 * [enum_strings.monthly_granularity]
-        })
+        shared_fips = "12345"
+        subject = pd.DataFrame(
+            {
+                "county_name": ["Alachua", "Baker"],
+                "county_population": [257062, 26965],
+                "average_daily_population": [799, 478],
+                "date_reported": [pd.NaT, pd.NaT],
+                "fips": 2 * [shared_fips],
+                "report_date": 2 * [DATE_SCRAPED],
+                "aggregation_window": 2 * [enum_strings.monthly_granularity],
+                "report_frequency": 2 * [enum_strings.monthly_granularity],
+            }
+        )
 
         # Act
         dao.write_df(FlCountyAggregate, subject)
 
         # Assert
-        query = \
-            SessionFactory.for_schema_base(JailsBase).query(FlCountyAggregate)
+        query = SessionFactory.for_schema_base(JailsBase).query(FlCountyAggregate)
         self.assertEqual(len(query.all()), 1)
 
     def testWriteDf_OverlappingData_WritesNewAndIgnoresDuplicateRows(self):
         # Arrange
-        initial_df = pd.DataFrame({
-            'county_name': ['Alachua', 'Baker', 'Bay', 'Bradford', 'Brevard'],
-            'county_population': [257062, 26965, 176016, 27440, 568919],
-            'average_daily_population': [799, 478, 1015, 141, 1547],
-            'date_reported': [pd.NaT, pd.NaT,
-                              datetime.datetime(year=2017, month=9, day=1),
-                              pd.NaT, pd.NaT],
-            'fips': ['00000', '00001', '00002', '00003', '00004'],
-            'report_date': 5 * [DATE_SCRAPED],
-            'aggregation_window': 5 * [enum_strings.monthly_granularity],
-            'report_frequency': 5 * [enum_strings.monthly_granularity]
-        })
+        initial_df = pd.DataFrame(
+            {
+                "county_name": ["Alachua", "Baker", "Bay", "Bradford", "Brevard"],
+                "county_population": [257062, 26965, 176016, 27440, 568919],
+                "average_daily_population": [799, 478, 1015, 141, 1547],
+                "date_reported": [
+                    pd.NaT,
+                    pd.NaT,
+                    datetime.datetime(year=2017, month=9, day=1),
+                    pd.NaT,
+                    pd.NaT,
+                ],
+                "fips": ["00000", "00001", "00002", "00003", "00004"],
+                "report_date": 5 * [DATE_SCRAPED],
+                "aggregation_window": 5 * [enum_strings.monthly_granularity],
+                "report_frequency": 5 * [enum_strings.monthly_granularity],
+            }
+        )
         dao.write_df(FlCountyAggregate, initial_df)
 
-        subject = pd.DataFrame({
-            'county_name': ['Alachua', 'NewCounty', 'Baker'],
-            'county_population': [0, 1000000000, 0],
-            'average_daily_population': [0, 50, 0],
-            'date_reported': [pd.NaT, pd.NaT, pd.NaT],
-            'fips': ['00000', '01000', '00002'],
-            'report_date': 3 * [DATE_SCRAPED],
-            'aggregation_window': 3 * [enum_strings.monthly_granularity],
-            'report_frequency': 3 * [enum_strings.monthly_granularity]
-        })
+        subject = pd.DataFrame(
+            {
+                "county_name": ["Alachua", "NewCounty", "Baker"],
+                "county_population": [0, 1000000000, 0],
+                "average_daily_population": [0, 50, 0],
+                "date_reported": [pd.NaT, pd.NaT, pd.NaT],
+                "fips": ["00000", "01000", "00002"],
+                "report_date": 3 * [DATE_SCRAPED],
+                "aggregation_window": 3 * [enum_strings.monthly_granularity],
+                "report_frequency": 3 * [enum_strings.monthly_granularity],
+            }
+        )
 
         # Act
         dao.write_df(FlCountyAggregate, subject)
 
         # Assert
         query = SessionFactory.for_schema_base(JailsBase).query(
-            func.sum(FlCountyAggregate.county_population))
+            func.sum(FlCountyAggregate.county_population)
+        )
         result = one(one(query.all()))
 
         # This sum includes intial_df + NewCounty and ignores other changes in

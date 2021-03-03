@@ -27,11 +27,12 @@ from recidiviz.persistence.database.base_schema import CaseTriageBase
 
 class ETLClient(CaseTriageBase):
     """Represents a person derived from our ETL pipeline."""
-    __tablename__ = 'etl_clients'
-    __table_args__ = (
-        UniqueConstraint('state_code', 'person_external_id'),
+
+    __tablename__ = "etl_clients"
+    __table_args__ = (UniqueConstraint("state_code", "person_external_id"),)
+    person_external_id = Column(
+        String(255), nullable=False, index=True, primary_key=True
     )
-    person_external_id = Column(String(255), nullable=False, index=True, primary_key=True)
     state_code = Column(String(255), nullable=False, index=True, primary_key=True)
     supervising_officer_external_id = Column(String(255), nullable=False, index=True)
 
@@ -53,7 +54,8 @@ class ETLClient(CaseTriageBase):
 
 class ETLOfficer(CaseTriageBase):
     """Represents an officer derived from our ETL pipeline."""
-    __tablename__ = 'etl_officers'
+
+    __tablename__ = "etl_officers"
     external_id = Column(String(255), nullable=False, index=True, primary_key=True)
     state_code = Column(String(255), nullable=False, index=True, primary_key=True)
     email_address = Column(String(255), nullable=False)
@@ -75,10 +77,15 @@ class CaseUpdate(CaseTriageBase):
     The ETL-derived data should always be eventually accurate and this is meant to help
     correct that information when our pipeline is behind reality.
     """
-    __tablename__ = 'case_updates'
 
-    person_external_id = Column(String(255), nullable=False, index=True, primary_key=True)
-    officer_external_id = Column(String(255), nullable=False, index=True, primary_key=True)
+    __tablename__ = "case_updates"
+
+    person_external_id = Column(
+        String(255), nullable=False, index=True, primary_key=True
+    )
+    officer_external_id = Column(
+        String(255), nullable=False, index=True, primary_key=True
+    )
     state_code = Column(String(255), nullable=False, index=True, primary_key=True)
 
     # To start, we're just keeping things in json. We will eventually migrate this to

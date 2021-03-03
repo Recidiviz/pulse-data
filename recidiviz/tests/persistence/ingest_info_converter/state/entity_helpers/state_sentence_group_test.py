@@ -24,12 +24,16 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.entity.state.deserialize_entity_factories import StateSentenceGroupFactory
-from recidiviz.persistence.ingest_info_converter.state.entity_helpers import \
-    state_sentence_group
+from recidiviz.persistence.entity.state.deserialize_entity_factories import (
+    StateSentenceGroupFactory,
+)
+from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
+    state_sentence_group,
+)
 
-METADATA = IngestMetadata.new_with_defaults(region='us_nd',
-                                            system_level=SystemLevel.STATE)
+METADATA = IngestMetadata.new_with_defaults(
+    region="us_nd", system_level=SystemLevel.STATE
+)
 
 
 class StateSentenceGroupConverterTest(unittest.TestCase):
@@ -38,29 +42,30 @@ class StateSentenceGroupConverterTest(unittest.TestCase):
     def testParseStateSentenceGroup(self):
         # Arrange
         ingest_group = ingest_info_pb2.StateSentenceGroup(
-            status='SUSPENDED',
-            state_sentence_group_id='GROUP_ID',
-            date_imposed='1/2/2111',
-            county_code='CO',
-            min_length='200',
-            max_length='600',
-            is_life='false',
+            status="SUSPENDED",
+            state_sentence_group_id="GROUP_ID",
+            date_imposed="1/2/2111",
+            county_code="CO",
+            min_length="200",
+            max_length="600",
+            is_life="false",
         )
 
         # Act
         group_builder = entities.StateSentenceGroup.builder()
         state_sentence_group.copy_fields_to_builder(
-            group_builder, ingest_group, METADATA)
+            group_builder, ingest_group, METADATA
+        )
         result = group_builder.build(StateSentenceGroupFactory.deserialize)
 
         # Assert
         expected_result = entities.StateSentenceGroup(
             status=StateSentenceStatus.SUSPENDED,
-            status_raw_text='SUSPENDED',
-            external_id='GROUP_ID',
+            status_raw_text="SUSPENDED",
+            external_id="GROUP_ID",
             date_imposed=date(year=2111, month=1, day=2),
-            state_code='US_ND',
-            county_code='CO',
+            state_code="US_ND",
+            county_code="CO",
             min_length_days=200,
             max_length_days=600,
             is_life=False,

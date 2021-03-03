@@ -22,17 +22,22 @@ from recidiviz.common.constants.person_characteristics import Ethnicity
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StatePersonEthnicity
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.entity.state.deserialize_entity_factories import StatePersonEthnicityFactory
+from recidiviz.persistence.entity.state.deserialize_entity_factories import (
+    StatePersonEthnicityFactory,
+)
 
 
-def convert(proto: StatePersonEthnicity,
-            metadata: IngestMetadata) -> entities.StatePersonEthnicity:
+def convert(
+    proto: StatePersonEthnicity, metadata: IngestMetadata
+) -> entities.StatePersonEthnicity:
     """Converts an ingest_info proto Hold to a persistence entity."""
     new = entities.StatePersonEthnicity.builder()
 
     # Enum mappings
-    new.ethnicity = EnumParser(getattr(proto, 'ethnicity'), Ethnicity, metadata.enum_overrides)
-    new.ethnicity_raw_text = getattr(proto, 'ethnicity')
+    new.ethnicity = EnumParser(
+        getattr(proto, "ethnicity"), Ethnicity, metadata.enum_overrides
+    )
+    new.ethnicity_raw_text = getattr(proto, "ethnicity")
 
     # 1-to-1 mappings
     new.state_code = metadata.region

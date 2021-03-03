@@ -17,26 +17,32 @@
 
 """Converts an ingest_info proto StateSupervisionPeriod to a persistence entity."""
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
-from recidiviz.common.constants.state.state_supervision import \
-    StateSupervisionType
-from recidiviz.common.constants.state.state_supervision_period import \
-    StateSupervisionPeriodStatus, StateSupervisionPeriodAdmissionReason, \
-    StateSupervisionPeriodTerminationReason, StateSupervisionLevel, StateSupervisionPeriodSupervisionType
+from recidiviz.common.constants.state.state_supervision import StateSupervisionType
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodStatus,
+    StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodTerminationReason,
+    StateSupervisionLevel,
+    StateSupervisionPeriodSupervisionType,
+)
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.common.str_field_utils import parse_date, normalize
 from recidiviz.ingest.models.ingest_info_pb2 import StateSupervisionPeriod
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.utils.converter_utils import \
-    fn, parse_external_id, parse_region_code_with_override, \
-    create_comma_separated_list
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import \
-    EnumMappings
+from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
+    fn,
+    parse_external_id,
+    parse_region_code_with_override,
+    create_comma_separated_list,
+)
+from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
 
 
 def copy_fields_to_builder(
-        supervision_period_builder: entities.StateSupervisionPeriod.Builder,
-        proto: StateSupervisionPeriod,
-        metadata: IngestMetadata) -> None:
+    supervision_period_builder: entities.StateSupervisionPeriod.Builder,
+    proto: StateSupervisionPeriod,
+    metadata: IngestMetadata,
+) -> None:
     """Mutates the provided |supervision_period_builder| by converting an ingest_info proto StateSupervisionPeriod.
 
     Note: This will not copy children into the Builder!
@@ -44,24 +50,24 @@ def copy_fields_to_builder(
     new = supervision_period_builder
 
     # 1-to-1 mappings
-    new.external_id = fn(parse_external_id, 'state_supervision_period_id', proto)
+    new.external_id = fn(parse_external_id, "state_supervision_period_id", proto)
 
-    new.start_date = fn(parse_date, 'start_date', proto)
-    new.termination_date = fn(parse_date, 'termination_date', proto)
-    new.state_code = parse_region_code_with_override(proto, 'state_code', metadata)
-    new.county_code = fn(normalize, 'county_code', proto)
-    new.supervision_site = fn(normalize, 'supervision_site', proto)
+    new.start_date = fn(parse_date, "start_date", proto)
+    new.termination_date = fn(parse_date, "termination_date", proto)
+    new.state_code = parse_region_code_with_override(proto, "state_code", metadata)
+    new.county_code = fn(normalize, "county_code", proto)
+    new.supervision_site = fn(normalize, "supervision_site", proto)
     if proto.conditions:
-        new.conditions = create_comma_separated_list(proto, 'conditions')
+        new.conditions = create_comma_separated_list(proto, "conditions")
 
     enum_fields = {
-        'status': StateSupervisionPeriodStatus,
-        'supervision_type': StateSupervisionType,
-        'supervision_period_supervision_type': StateSupervisionPeriodSupervisionType,
-        'admission_reason': StateSupervisionPeriodAdmissionReason,
-        'termination_reason': StateSupervisionPeriodTerminationReason,
-        'supervision_level': StateSupervisionLevel,
-        'custodial_authority': StateCustodialAuthority
+        "status": StateSupervisionPeriodStatus,
+        "supervision_type": StateSupervisionType,
+        "supervision_period_supervision_type": StateSupervisionPeriodSupervisionType,
+        "admission_reason": StateSupervisionPeriodAdmissionReason,
+        "termination_reason": StateSupervisionPeriodTerminationReason,
+        "supervision_level": StateSupervisionLevel,
+        "custodial_authority": StateCustodialAuthority,
     }
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 
@@ -75,16 +81,20 @@ def copy_fields_to_builder(
         status_default = StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
     new.status = enum_mappings.get(StateSupervisionPeriodStatus, default=status_default)
 
-    new.status_raw_text = fn(normalize, 'status', proto)
+    new.status_raw_text = fn(normalize, "status", proto)
     new.supervision_type = enum_mappings.get(StateSupervisionType)
-    new.supervision_type_raw_text = fn(normalize, 'supervision_type', proto)
-    new.supervision_period_supervision_type = enum_mappings.get(StateSupervisionPeriodSupervisionType)
-    new.supervision_period_supervision_type_raw_text = fn(normalize, 'supervision_period_supervision_type', proto)
+    new.supervision_type_raw_text = fn(normalize, "supervision_type", proto)
+    new.supervision_period_supervision_type = enum_mappings.get(
+        StateSupervisionPeriodSupervisionType
+    )
+    new.supervision_period_supervision_type_raw_text = fn(
+        normalize, "supervision_period_supervision_type", proto
+    )
     new.admission_reason = enum_mappings.get(StateSupervisionPeriodAdmissionReason)
-    new.admission_reason_raw_text = fn(normalize, 'admission_reason', proto)
+    new.admission_reason_raw_text = fn(normalize, "admission_reason", proto)
     new.termination_reason = enum_mappings.get(StateSupervisionPeriodTerminationReason)
-    new.termination_reason_raw_text = fn(normalize, 'termination_reason', proto)
+    new.termination_reason_raw_text = fn(normalize, "termination_reason", proto)
     new.supervision_level = enum_mappings.get(StateSupervisionLevel)
-    new.supervision_level_raw_text = fn(normalize, 'supervision_level', proto)
+    new.supervision_level_raw_text = fn(normalize, "supervision_level", proto)
     new.custodial_authority = enum_mappings.get(StateCustodialAuthority)
-    new.custodial_authority_raw_text = fn(normalize, 'custodial_authority', proto)
+    new.custodial_authority_raw_text = fn(normalize, "custodial_authority", proto)

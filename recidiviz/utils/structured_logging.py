@@ -50,29 +50,26 @@ class StructuredLogFormatter(logging.Formatter):
     # that in a single entry it will be dropped, so we use 80 KiB to be
     # conservative.
     _MAX_BYTES = 80 * 1024  # 80 KiB
-    _SUFFIX = '...truncated'
+    _SUFFIX = "...truncated"
 
     def format(self, record):
         text = super().format(record)
         if len(text) > self._MAX_BYTES:
-            logging.warning('Truncated log message')
-            text = text[:self._MAX_BYTES - len(self._SUFFIX)] + self._SUFFIX
+            logging.warning("Truncated log message")
+            text = text[: self._MAX_BYTES - len(self._SUFFIX)] + self._SUFFIX
         labels = {
-            'region': record.region,
-            'funcName': record.funcName,
-            'module': record.module,
-            'thread': record.thread,
-            'threadName': record.threadName,
+            "region": record.region,
+            "funcName": record.funcName,
+            "module": record.module,
+            "thread": record.thread,
+            "threadName": record.threadName,
         }
 
         if record.traceId is not None:
             # pylint: disable=protected-access
             labels[handlers.app_engine._TRACE_ID_LABEL] = record.traceId
 
-        return {
-            'text': text,
-            'labels': {k: str(v) for k, v in labels.items()}
-        }
+        return {"text": text, "labels": {k: str(v) for k, v in labels.items()}}
 
 
 class StructuredAppEngineHandler(handlers.AppEngineHandler):
@@ -83,16 +80,20 @@ class StructuredAppEngineHandler(handlers.AppEngineHandler):
         jsonPayload.message
         """
         message = super().format(record)
-        labels = {**message.get('labels', {}), **self.get_gae_labels()}
+        labels = {**message.get("labels", {}), **self.get_gae_labels()}
         # pylint: disable=protected-access
         trace_id = (
-            "projects/%s/traces/%s" % (
-                self.project_id, labels[handlers.app_engine._TRACE_ID_LABEL])
-            if handlers.app_engine._TRACE_ID_LABEL in labels else None
+            "projects/%s/traces/%s"
+            % (self.project_id, labels[handlers.app_engine._TRACE_ID_LABEL])
+            if handlers.app_engine._TRACE_ID_LABEL in labels
+            else None
         )
         self.transport.send(
-            record, message['text'],
-            resource=self.resource, labels=labels, trace=trace_id
+            record,
+            message["text"],
+            resource=self.resource,
+            labels=labels,
+            trace=trace_id,
         )
 
 
@@ -118,8 +119,9 @@ def setup():
         stdout_handler = logging.StreamHandler(sys.stdout)
         handlers.setup_logging(stdout_handler, log_level=logging.INFO)
         for handler in logger.handlers:
-            if not isinstance(handler, (StructuredAppEngineHandler,
-                                        logging.StreamHandler)):
+            if not isinstance(
+                handler, (StructuredAppEngineHandler, logging.StreamHandler)
+            ):
                 logger.removeHandler(handler)
     else:
         logging.basicConfig()
@@ -130,11 +132,11 @@ def setup():
             handler.setFormatter(StructuredLogFormatter())
         # Otherwise, the default stream handler requires a string.
         else:
-            handler.setFormatter(logging.Formatter(
-                "(%(region)s) %(module)s/%(funcName)s : %(message)s"
-            ))
+            handler.setFormatter(
+                logging.Formatter("(%(region)s) %(module)s/%(funcName)s : %(message)s")
+            )
 
     # Export gunicorn errors using the same handlers as other logs, so that they
     # go to Stackdriver in production.
-    gunicorn_logger = logging.getLogger('gunicorn.error')
+    gunicorn_logger = logging.getLogger("gunicorn.error")
     gunicorn_logger.handlers = logger.handlers

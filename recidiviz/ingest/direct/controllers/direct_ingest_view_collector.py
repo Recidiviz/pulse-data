@@ -23,48 +23,63 @@ from typing import List
 
 import recidiviz
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import \
-    DirectIngestPreProcessedIngestViewBuilder
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    DirectIngestPreProcessedIngestViewBuilder,
+)
 from recidiviz.utils.regions import Region
 
-_INGEST_VIEWS_SUBDIR_NAME = 'ingest_views'
-_INGEST_VIEW_FILE_PREFIX = 'view_'
+_INGEST_VIEWS_SUBDIR_NAME = "ingest_views"
+_INGEST_VIEW_FILE_PREFIX = "view_"
 
 
-class DirectIngestPreProcessedIngestViewCollector(BigQueryViewCollector[DirectIngestPreProcessedIngestViewBuilder]):
+class DirectIngestPreProcessedIngestViewCollector(
+    BigQueryViewCollector[DirectIngestPreProcessedIngestViewBuilder]
+):
     """An implementation of the BigQueryViewCollector for collecting direct ingest SQL preprocessing views for a given
     region.
     """
 
-    def __init__(self,
-                 region: Region,
-                 controller_tag_rank_list: List[str]):
+    def __init__(self, region: Region, controller_tag_rank_list: List[str]):
         self.region = region
         self.controller_tag_rank_list = controller_tag_rank_list
 
     def collect_view_builders(self) -> List[DirectIngestPreProcessedIngestViewBuilder]:
-        relative_dir = os.path.relpath(os.path.dirname(self.region.region_module.__file__),
-                                       os.path.dirname(recidiviz.__file__))
-        relative_dir_path = os.path.join(relative_dir, self.region.region_code, _INGEST_VIEWS_SUBDIR_NAME)
+        relative_dir = os.path.relpath(
+            os.path.dirname(self.region.region_module.__file__),
+            os.path.dirname(recidiviz.__file__),
+        )
+        relative_dir_path = os.path.join(
+            relative_dir, self.region.region_code, _INGEST_VIEWS_SUBDIR_NAME
+        )
 
         ingest_view_builders = self.collect_view_builders_in_dir(
             DirectIngestPreProcessedIngestViewBuilder,
             relative_dir_path,
-            _INGEST_VIEW_FILE_PREFIX
+            _INGEST_VIEW_FILE_PREFIX,
         )
 
         self._validate_ingest_views(ingest_view_builders)
 
         return ingest_view_builders
 
-    def _validate_ingest_views(self, ingest_view_builders: List[DirectIngestPreProcessedIngestViewBuilder]) -> None:
+    def _validate_ingest_views(
+        self, ingest_view_builders: List[DirectIngestPreProcessedIngestViewBuilder]
+    ) -> None:
         found_ingest_view_tags = [builder.file_tag for builder in ingest_view_builders]
         found_ingest_view_tags_set = set(found_ingest_view_tags)
         if len(found_ingest_view_tags) > len(found_ingest_view_tags_set):
-            raise ValueError(f'Found duplicate tags in the view directory. Found: [{found_ingest_view_tags}].')
+            raise ValueError(
+                f"Found duplicate tags in the view directory. Found: [{found_ingest_view_tags}]."
+            )
 
         controller_view_tags_set = set(self.controller_tag_rank_list)
-        controller_tags_no_view_defined = controller_view_tags_set.difference(found_ingest_view_tags_set)
-        if self.region.are_ingest_view_exports_enabled_in_env() and controller_tags_no_view_defined:
+        controller_tags_no_view_defined = controller_view_tags_set.difference(
+            found_ingest_view_tags_set
+        )
+        if (
+            self.region.are_ingest_view_exports_enabled_in_env()
+            and controller_tags_no_view_defined
+        ):
             raise ValueError(
-                f'Found controller file tags with no corresponding view defined: {controller_tags_no_view_defined}')
+                f"Found controller file tags with no corresponding view defined: {controller_tags_no_view_defined}"
+            )

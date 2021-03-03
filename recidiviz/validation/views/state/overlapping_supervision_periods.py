@@ -28,12 +28,15 @@ from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
-from recidiviz.validation.views.state.overlapping_periods_template import overlapping_periods_query
+from recidiviz.validation.views.state.overlapping_periods_template import (
+    overlapping_periods_query,
+)
 
-OVERLAPPING_SUPERVISION_PERIODS_VIEW_NAME = 'overlapping_supervision_periods'
+OVERLAPPING_SUPERVISION_PERIODS_VIEW_NAME = "overlapping_supervision_periods"
 
-OVERLAPPING_SUPERVISION_PERIODS_DESCRIPTION = \
+OVERLAPPING_SUPERVISION_PERIODS_DESCRIPTION = (
     """ Supervision periods with another supervision period with overlapping dates """
+)
 
 OVERLAPPING_SUPERVISION_PERIODS_QUERY_TEMPLATE = f"""
   /*{{description}}*/
@@ -48,6 +51,6 @@ OVERLAPPING_SUPERVISION_PERIODS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     state_dataset=state_dataset_config.STATE_BASE_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         OVERLAPPING_SUPERVISION_PERIODS_VIEW_BUILDER.build_and_print()

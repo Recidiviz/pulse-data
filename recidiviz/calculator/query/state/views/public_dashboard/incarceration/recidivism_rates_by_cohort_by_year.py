@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Reincarceration recidivism rates by release cohort and follow-up period years, with demographic breakdowns."""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import state_specific_query_strings
@@ -23,13 +23,11 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_NAME = 'recidivism_rates_by_cohort_by_year'
+RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_NAME = "recidivism_rates_by_cohort_by_year"
 
-RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_DESCRIPTION = \
-    """Reincarceration recidivism rates by release cohort and follow-up period years, with demographic breakdowns."""
+RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_DESCRIPTION = """Reincarceration recidivism rates by release cohort and follow-up period years, with demographic breakdowns."""
 
-RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_QUERY_TEMPLATE = \
-    """
+RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_QUERY_TEMPLATE = """
     /*{description}*/
     WITH releases AS (
       SELECT
@@ -79,16 +77,24 @@ RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
     view_id=RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_NAME,
     view_query_template=RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_QUERY_TEMPLATE,
-    dimensions=['state_code', 'release_cohort', 'followup_years', 'gender', 'age_bucket', 'race_or_ethnicity'],
+    dimensions=[
+        "state_code",
+        "release_cohort",
+        "followup_years",
+        "gender",
+        "age_bucket",
+        "race_or_ethnicity",
+    ],
     description=RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    state_specific_race_or_ethnicity_groupings=
-    state_specific_query_strings.state_specific_race_or_ethnicity_groupings(),
-    race_or_ethnicity_dimension=bq_utils.unnest_column('prioritized_race_or_ethnicity', 'race_or_ethnicity'),
-    gender_dimension=bq_utils.unnest_column('gender', 'gender'),
-    age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),
+    state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(),
+    race_or_ethnicity_dimension=bq_utils.unnest_column(
+        "prioritized_race_or_ethnicity", "race_or_ethnicity"
+    ),
+    gender_dimension=bq_utils.unnest_column("gender", "gender"),
+    age_dimension=bq_utils.unnest_column("age_bucket", "age_bucket"),
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_BUILDER.build_and_print()

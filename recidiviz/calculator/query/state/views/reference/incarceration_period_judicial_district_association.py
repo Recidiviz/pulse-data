@@ -16,22 +16,22 @@
 # =============================================================================
 """Maps incarceration_period_ids to the area of jurisdictional coverage of the court that sentenced the person to
      the incarceration."""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME = 'incarceration_period_judicial_district_association'
+INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME = (
+    "incarceration_period_judicial_district_association"
+)
 
-INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_DESCRIPTION = \
-    """Maps incarceration_period_ids to the area of jurisdictional coverage of the court that sentenced the person to
+INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_DESCRIPTION = """Maps incarceration_period_ids to the area of jurisdictional coverage of the court that sentenced the person to
      the incarceration. If there are multiple non-null judicial districts associated with a supervision period,
     prioritizes ones associated with controlling charges on the sentence."""
 
-INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = \
-    """
+INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = """
     /*{{description}}*/
     WITH ips_to_sentence_groups AS (
       -- Sentence groups from incarceration sentences --
@@ -75,12 +75,15 @@ INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = \
     -- This will limit the size of the output, improving Dataflow job speeds
     AND judicial_district_code IS NOT NULL
     """.format(
-        # This is formatted first so that the joins can contain arguments that will be formatted later during
-        # the creation of the view
-        period_to_sentence_group_incarceration_join=
-        bq_utils.period_to_sentence_group_joins('incarceration', 'incarceration'),
-        period_to_sentence_group_supervision_join=
-        bq_utils.period_to_sentence_group_joins('incarceration', 'supervision'))
+    # This is formatted first so that the joins can contain arguments that will be formatted later during
+    # the creation of the view
+    period_to_sentence_group_incarceration_join=bq_utils.period_to_sentence_group_joins(
+        "incarceration", "incarceration"
+    ),
+    period_to_sentence_group_supervision_join=bq_utils.period_to_sentence_group_joins(
+        "incarceration", "supervision"
+    ),
+)
 
 INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.REFERENCE_VIEWS_DATASET,
@@ -88,9 +91,9 @@ INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER = SimpleBigQuery
     view_query_template=INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE,
     description=INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_DESCRIPTION,
     base_dataset=dataset_config.STATE_BASE_DATASET,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER.build_and_print()

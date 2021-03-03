@@ -23,18 +23,16 @@ from http import HTTPStatus
 from flask import Blueprint, request, url_for
 
 from recidiviz.ingest.models.scrape_key import ScrapeKey
-from recidiviz.ingest.scrape import (constants, ingest_utils,
-                                     scrape_phase, sessions)
-from recidiviz.ingest.scrape.scraper_cloud_task_manager import \
-    ScraperCloudTaskManager
+from recidiviz.ingest.scrape import constants, ingest_utils, scrape_phase, sessions
+from recidiviz.ingest.scrape.scraper_cloud_task_manager import ScraperCloudTaskManager
 from recidiviz.utils import monitoring, regions, structured_logging
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.params import get_str_param_values
 
-scraper_status = Blueprint('scraper_status', __name__)
+scraper_status = Blueprint("scraper_status", __name__)
 
 
-@scraper_status.route('/check_finished')
+@scraper_status.route("/check_finished")
 @requires_gae_auth
 def check_for_finished_scrapers():
     """Checks for any finished scrapers and kicks off next processes."""
@@ -47,7 +45,8 @@ def check_for_finished_scrapers():
     def _check_finished(region_code: str):
         # If there are no sessions currently scraping, nothing to check.
         session = sessions.get_current_session(
-            ScrapeKey(region_code, constants.ScrapeType.BACKGROUND))
+            ScrapeKey(region_code, constants.ScrapeType.BACKGROUND)
+        )
         if not session or not session.phase.is_actively_scraping():
             return
 
@@ -55,19 +54,23 @@ def check_for_finished_scrapers():
             logging.info("Region [%s] has finished scraping.", region_code)
 
             if next_phase:
-                logging.info("Enqueueing [%s] for region [%s].",
-                             next_phase, region_code)
+                logging.info(
+                    "Enqueueing [%s] for region [%s].", next_phase, region_code
+                )
                 ScraperCloudTaskManager().create_scraper_phase_task(
-                    region_code=region_code, url=next_phase_url)
+                    region_code=region_code, url=next_phase_url
+                )
 
     region_codes = ingest_utils.validate_regions(
-        get_str_param_values('region', request.args))
+        get_str_param_values("region", request.args)
+    )
 
     failed_regions = []
     with futures.ThreadPoolExecutor() as executor:
         future_to_region = {
-            executor.submit(structured_logging.with_context(_check_finished),
-                            region_code): region_code
+            executor.submit(
+                structured_logging.with_context(_check_finished), region_code
+            ): region_code
             for region_code in region_codes
         }
         for future in futures.as_completed(future_to_region):
@@ -77,19 +80,20 @@ def check_for_finished_scrapers():
                     future.result()
                 except Exception:
                     logging.exception(
-                        'An exception occured when checking region [%s]',
-                        region_code)
+                        "An exception occured when checking region [%s]", region_code
+                    )
                     failed_regions.append(region_code)
 
     if failed_regions:
-        return ('Failed to check regions: {}'.format(failed_regions),
-                HTTPStatus.INTERNAL_SERVER_ERROR)
-    return ('', HTTPStatus.OK)
+        return (
+            "Failed to check regions: {}".format(failed_regions),
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+    return ("", HTTPStatus.OK)
 
 
-def is_scraper_finished(region_code: str,
-                        cloud_task_manager: ScraperCloudTaskManager):
+def is_scraper_finished(region_code: str, cloud_task_manager: ScraperCloudTaskManager):
     region = regions.get_region(region_code)
     return not cloud_task_manager.list_scrape_tasks(
-        region_code=region_code,
-        queue_name=region.get_queue_name())
+        region_code=region_code, queue_name=region.get_queue_name()
+    )

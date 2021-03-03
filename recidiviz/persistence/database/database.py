@@ -21,12 +21,10 @@ from more_itertools import one
 
 from sqlalchemy.orm import Session
 
-import recidiviz.persistence.database.history.historical_snapshot_update as \
-    update_snapshots
+import recidiviz.persistence.database.history.historical_snapshot_update as update_snapshots
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.persistence.database.database_entity import DatabaseEntity
-from recidiviz.persistence.database.schema.schema_person_type import \
-    SchemaPersonType
+from recidiviz.persistence.database.schema.schema_person_type import SchemaPersonType
 from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.common.common_utils import check_all_objs_have_type
 from recidiviz.persistence.errors import PersistenceError
@@ -36,10 +34,12 @@ _DUMMY_BOOKING_ID = -1
 
 
 @trace.span
-def write_people(session: Session,
-                 people: List[SchemaPersonType],
-                 metadata: IngestMetadata,
-                 orphaned_entities: List[DatabaseEntity] = None) -> List[SchemaPersonType]:
+def write_people(
+    session: Session,
+    people: List[SchemaPersonType],
+    metadata: IngestMetadata,
+    orphaned_entities: List[DatabaseEntity] = None,
+) -> List[SchemaPersonType]:
     """
     Converts the given |people| into (SchemaPersonType) objects and persists
     their corresponding record trees. Returns the list of persisted
@@ -51,10 +51,12 @@ def write_people(session: Session,
     return _save_record_trees(session, people, orphaned_entities, metadata)
 
 
-def write_person(session: Session,
-                 person: SchemaPersonType,
-                 metadata: IngestMetadata,
-                 orphaned_entities: List[DatabaseEntity] = None) -> SchemaPersonType:
+def write_person(
+    session: Session,
+    person: SchemaPersonType,
+    metadata: IngestMetadata,
+    orphaned_entities: List[DatabaseEntity] = None,
+) -> SchemaPersonType:
     """
     Converts the given |person| into a (SchemaPersonType) object and persists
     the record tree rooted at that |person|. Returns the persisted
@@ -62,18 +64,19 @@ def write_person(session: Session,
     """
     if not orphaned_entities:
         orphaned_entities = []
-    persisted_people = _save_record_trees(session,
-                                          [person],
-                                          orphaned_entities,
-                                          metadata)
+    persisted_people = _save_record_trees(
+        session, [person], orphaned_entities, metadata
+    )
     # persisted_people will only contain the single person passed in
     return one(persisted_people)
 
 
-def _save_record_trees(session: Session,
-                       root_people: List[SchemaPersonType],
-                       orphaned_entities: List[DatabaseEntity],
-                       metadata: IngestMetadata) -> List[SchemaPersonType]:
+def _save_record_trees(
+    session: Session,
+    root_people: List[SchemaPersonType],
+    orphaned_entities: List[DatabaseEntity],
+    metadata: IngestMetadata,
+) -> List[SchemaPersonType]:
     """Persists all record trees rooted at |root_people|. Also performs any
     historical snapshot updates required for any entities in any of these
     record trees. Returns the list of persisted (SchemaPersonType) objects.
@@ -93,26 +96,31 @@ def _save_record_trees(session: Session,
         # newly created ones, have primary keys set before performing historical
         # snapshot operations
 
-        logging.info("Starting Session merge of [%s] persons.",
-                     str(len(root_people)))
+        logging.info("Starting Session merge of [%s] persons.", str(len(root_people)))
 
         merged_root_people = []
         for root_person in root_people:
             merged_root_people.append(session.merge(root_person))
             if len(merged_root_people) % 200 == 0:
-                logging.info("Merged [%s] of [%s] people.",
-                             str(len(merged_root_people)),
-                             str(len(root_people)))
+                logging.info(
+                    "Merged [%s] of [%s] people.",
+                    str(len(merged_root_people)),
+                    str(len(root_people)),
+                )
 
-        logging.info("Starting Session merge of [%s] orphaned entities.",
-                     str(len(orphaned_entities)))
+        logging.info(
+            "Starting Session merge of [%s] orphaned entities.",
+            str(len(orphaned_entities)),
+        )
         merged_orphaned_entities = []
         for entity in orphaned_entities:
             merged_orphaned_entities.append(session.merge(entity))
             if len(merged_orphaned_entities) % 200 == 0:
-                logging.info("Merged [%s] of [%s] entities.",
-                             str(len(merged_orphaned_entities)),
-                             str(len(orphaned_entities)))
+                logging.info(
+                    "Merged [%s] of [%s] entities.",
+                    str(len(merged_orphaned_entities)),
+                    str(len(orphaned_entities)),
+                )
 
         logging.info("Session flush start.")
         session.flush()
@@ -127,11 +135,11 @@ def _save_record_trees(session: Session,
             raise PersistenceError("State doesn't use orphaned entities")
         merged_orphaned_entities = []
     else:
-        raise PersistenceError(
-            f"Unexpected system level [{metadata.system_level}]")
+        raise PersistenceError(f"Unexpected system level [{metadata.system_level}]")
 
     update_snapshots.update_historical_snapshots(
-        session, merged_root_people, merged_orphaned_entities, metadata)
+        session, merged_root_people, merged_orphaned_entities, metadata
+    )
 
     return merged_root_people
 
@@ -149,23 +157,24 @@ def _set_dummy_booking_ids(root_people: List[county_schema.Person]) -> None:
             for charge in booking.charges:
                 if charge.bond is not None and charge.bond.booking_id is None:
                     charge.bond.booking_id = _DUMMY_BOOKING_ID
-                if charge.sentence is not None and \
-                        charge.sentence.booking_id is None:
+                if charge.sentence is not None and charge.sentence.booking_id is None:
                     charge.sentence.booking_id = _DUMMY_BOOKING_ID
 
 
-def _overwrite_dummy_booking_ids(
-        root_people: List[county_schema.Person]
-) -> None:
+def _overwrite_dummy_booking_ids(root_people: List[county_schema.Person]) -> None:
     """Overwrites the dummy booking ID for any bonds and sentences that have
     it set with the real ID of their parent booking
     """
     for person in root_people:
         for booking in person.bookings:
             for charge in booking.charges:
-                if charge.bond is not None \
-                        and charge.bond.booking_id == _DUMMY_BOOKING_ID:
+                if (
+                    charge.bond is not None
+                    and charge.bond.booking_id == _DUMMY_BOOKING_ID
+                ):
                     charge.bond.booking_id = booking.booking_id
-                if charge.sentence is not None \
-                        and charge.sentence.booking_id == _DUMMY_BOOKING_ID:
+                if (
+                    charge.sentence is not None
+                    and charge.sentence.booking_id == _DUMMY_BOOKING_ID
+                ):
                     charge.sentence.booking_id = booking.booking_id

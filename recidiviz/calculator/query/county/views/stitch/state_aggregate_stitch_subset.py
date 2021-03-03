@@ -15,12 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """State Aggregate data used for stitch"""
-# pylint:disable=line-too-long
+
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
-from recidiviz.calculator.query.county.views.state_aggregates import \
-    state_aggregate_collapsed_to_fips
+from recidiviz.calculator.query.county.views.state_aggregates import (
+    state_aggregate_collapsed_to_fips,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -82,13 +83,13 @@ FROM
 
 STATE_AGGREGATE_STITCH_SUBSET_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
-    view_id='state_aggregate_stitch_subset',
+    view_id="state_aggregate_stitch_subset",
     view_query_template=_QUERY_TEMPLATE,
     views_dataset=dataset_config.VIEWS_DATASET,
     combined_state_aggregates=state_aggregate_collapsed_to_fips.STATE_AGGREGATES_COLLAPSED_TO_FIPS_BUILDER.view_id,
-    description=_DESCRIPTION
+    description=_DESCRIPTION,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         STATE_AGGREGATE_STITCH_SUBSET_VIEW_BUILDER.build_and_print()

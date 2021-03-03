@@ -17,7 +17,9 @@
 """Functions that return state-specific logic used in BigQuery queries."""
 
 
-def state_supervision_specific_district_groupings(district_column: str, judicial_district_column: str) -> str:
+def state_supervision_specific_district_groupings(
+    district_column: str, judicial_district_column: str
+) -> str:
     return f"""IFNULL(CASE WHEN supervision_type = 'PROBATION' THEN
         {state_specific_judicial_district_groupings(judicial_district_column)}
         ELSE {district_column} END, 'EXTERNAL_UNKNOWN')"""
@@ -32,14 +34,18 @@ def state_specific_judicial_district_groupings(judicial_district_column: str) ->
                ELSE {judicial_district_column} END)"""
 
 
-def state_specific_race_or_ethnicity_groupings(race_or_ethnicity_column: str = 'race_or_ethnicity') -> str:
+def state_specific_race_or_ethnicity_groupings(
+    race_or_ethnicity_column: str = "race_or_ethnicity",
+) -> str:
     return f"""CASE WHEN state_code = 'US_ND' AND ({race_or_ethnicity_column} IS NULL OR {race_or_ethnicity_column} IN
               ('EXTERNAL_UNKNOWN', 'ASIAN', 'NATIVE_HAWAIIAN_PACIFIC_ISLANDER')) THEN 'OTHER'
               WHEN {race_or_ethnicity_column} IS NULL THEN 'EXTERNAL_UNKNOWN'
               ELSE {race_or_ethnicity_column} END AS race_or_ethnicity"""
 
 
-def state_specific_assessment_bucket(output_column_name: str = 'assessment_score_bucket') -> str:
+def state_specific_assessment_bucket(
+    output_column_name: str = "assessment_score_bucket",
+) -> str:
     return f"""-- TODO(#3135): remove this aggregation once the dashboard supports LOW_MEDIUM
         CASE WHEN state_code = 'US_MO' AND assessment_score_bucket = 'LOW_MEDIUM' THEN 'MEDIUM'
         ELSE assessment_score_bucket END AS {output_column_name}"""
@@ -64,7 +70,9 @@ def state_specific_recommended_for_revocation() -> str:
             AS recommended_for_revocation"""
 
 
-def state_specific_officer_recommendation(input_col: str, include_col_declaration: bool = True) -> str:
+def state_specific_officer_recommendation(
+    input_col: str, include_col_declaration: bool = True
+) -> str:
     return f"""CASE WHEN state_code = 'US_MO' THEN
                 CASE WHEN {input_col} = 'SHOCK_INCARCERATION' THEN 'CODS'
                 WHEN {input_col} = 'WARRANT_ISSUED' THEN 'CAPIAS'
@@ -127,8 +135,7 @@ def state_specific_external_id_type(state_code_table_prefix: str) -> str:
 
 
 def state_specific_supervision_location_optimization_filter() -> str:
-    """ State-specific logic for filtering rows based on supervision location values that are unused by the front end.
-    """
+    """State-specific logic for filtering rows based on supervision location values that are unused by the front end."""
     return """level_1_supervision_location != 'EXTERNAL_UNKNOWN'
       AND level_2_supervision_location != 'EXTERNAL_UNKNOWN'
       AND CASE

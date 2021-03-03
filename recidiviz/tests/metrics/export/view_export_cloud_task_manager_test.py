@@ -25,10 +25,16 @@ from mock import patch
 from freezegun import freeze_time
 from parameterized import parameterized
 
-from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import QUEUES_REGION
-from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import BIGQUERY_QUEUE_V2
+from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import (
+    QUEUES_REGION,
+)
+from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
+    BIGQUERY_QUEUE_V2,
+)
 from recidiviz.metrics.export import view_export_cloud_task_manager
-from recidiviz.metrics.export.view_export_cloud_task_manager import ViewExportCloudTaskManager
+from recidiviz.metrics.export.view_export_cloud_task_manager import (
+    ViewExportCloudTaskManager,
+)
 
 CLOUD_TASK_MANAGER_PACKAGE_NAME = view_export_cloud_task_manager.__name__
 
@@ -37,15 +43,15 @@ class ViewExportCloudTaskManagerTest(unittest.TestCase):
     """Tests for ViewExportCloudTaskManager."""
 
     def setUp(self) -> None:
-        self.metadata_patcher = patch('recidiviz.utils.metadata.project_id')
+        self.metadata_patcher = patch("recidiviz.utils.metadata.project_id")
         self.mock_project_id_fn = self.metadata_patcher.start()
-        self.mock_project_id = 'recidiviz-456'
+        self.mock_project_id = "recidiviz-456"
         self.mock_project_id_fn.return_value = self.mock_project_id
 
-        self.mock_client_patcher = patch('google.cloud.tasks_v2.CloudTasksClient')
+        self.mock_client_patcher = patch("google.cloud.tasks_v2.CloudTasksClient")
         self.mock_client = self.mock_client_patcher.start()
 
-        self.mock_uuid_patcher = patch(f'{CLOUD_TASK_MANAGER_PACKAGE_NAME}.uuid')
+        self.mock_uuid_patcher = patch(f"{CLOUD_TASK_MANAGER_PACKAGE_NAME}.uuid")
         self.mock_uuid = self.mock_uuid_patcher.start()
 
     def tearDown(self) -> None:
@@ -53,48 +59,56 @@ class ViewExportCloudTaskManagerTest(unittest.TestCase):
         self.mock_client_patcher.stop()
         self.metadata_patcher.stop()
 
-    @parameterized.expand([
-        ('with_export_name_filter', 'CORE', '/export/metric_view_data?export_job_filter=CORE'),
-        ('with_state_filter', 'US_MO', '/export/metric_view_data?export_job_filter=US_MO'),
-    ])
-    @freeze_time('2019-04-12')
+    @parameterized.expand(
+        [
+            (
+                "with_export_name_filter",
+                "CORE",
+                "/export/metric_view_data?export_job_filter=CORE",
+            ),
+            (
+                "with_state_filter",
+                "US_MO",
+                "/export/metric_view_data?export_job_filter=US_MO",
+            ),
+        ]
+    )
+    @freeze_time("2019-04-12")
     def test_create_metric_view_data_export_task(
-            self,
-            _name: str,
-            export_job_filter: str,
-            expected_url: str) -> None:
+        self, _name: str, export_job_filter: str, expected_url: str
+    ) -> None:
         # Arrange
-        uuid = 'random-uuid'
+        uuid = "random-uuid"
         self.mock_uuid.uuid4.return_value = uuid
 
-        queue_path = f'queue_path/{self.mock_project_id}/{QUEUES_REGION}'
-        task_id = f'view_export-{export_job_filter}-2019-04-12-random-uuid'
-        task_path = f'{queue_path}/{task_id}'
+        queue_path = f"queue_path/{self.mock_project_id}/{QUEUES_REGION}"
+        task_id = f"view_export-{export_job_filter}-2019-04-12-random-uuid"
+        task_path = f"{queue_path}/{task_id}"
 
         task = tasks_v2.types.task_pb2.Task(
             name=task_path,
             app_engine_http_request={
-                'http_method': 'POST',
-                'relative_uri': expected_url,
-                'body': json.dumps({}).encode()
-            }
+                "http_method": "POST",
+                "relative_uri": expected_url,
+                "body": json.dumps({}).encode(),
+            },
         )
 
         self.mock_client.return_value.task_path.return_value = task_path
         self.mock_client.return_value.queue_path.return_value = queue_path
 
         # Act
-        ViewExportCloudTaskManager().create_metric_view_data_export_task(export_job_filter=export_job_filter)
+        ViewExportCloudTaskManager().create_metric_view_data_export_task(
+            export_job_filter=export_job_filter
+        )
 
         # Assert
         self.mock_client.return_value.queue_path.assert_called_with(
-            self.mock_project_id,
-            QUEUES_REGION,
-            BIGQUERY_QUEUE_V2)
+            self.mock_project_id, QUEUES_REGION, BIGQUERY_QUEUE_V2
+        )
         self.mock_client.return_value.task_path.assert_called_with(
-            self.mock_project_id,
-            QUEUES_REGION,
-            BIGQUERY_QUEUE_V2,
-            task_id)
+            self.mock_project_id, QUEUES_REGION, BIGQUERY_QUEUE_V2, task_id
+        )
         self.mock_client.return_value.create_task.assert_called_with(
-            parent=queue_path, task=task)
+            parent=queue_path, task=task
+        )

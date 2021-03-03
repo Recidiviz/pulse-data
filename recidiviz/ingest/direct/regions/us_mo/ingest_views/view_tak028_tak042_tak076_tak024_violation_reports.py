@@ -16,19 +16,23 @@
 # =============================================================================
 """Query containing violation reports information."""
 
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import \
-    DirectIngestPreProcessedIngestViewBuilder
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    DirectIngestPreProcessedIngestViewBuilder,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.ingest.direct.regions.us_mo.ingest_views.us_mo_view_query_fragments import \
-    NON_INVESTIGATION_SUPERVISION_SENTENCES_FRAGMENT, ALL_OFFICERS_FRAGMENT, TAK142_FINALLY_FORMED_DOCUMENT_FRAGMENT
+from recidiviz.ingest.direct.regions.us_mo.ingest_views.us_mo_view_query_fragments import (
+    NON_INVESTIGATION_SUPERVISION_SENTENCES_FRAGMENT,
+    ALL_OFFICERS_FRAGMENT,
+    TAK142_FINALLY_FORMED_DOCUMENT_FRAGMENT,
+)
 
 
-FINALLY_FORMED_VIOLATIONS_E6 = \
-    TAK142_FINALLY_FORMED_DOCUMENT_FRAGMENT.format(document_type_code='XIF')
+FINALLY_FORMED_VIOLATIONS_E6 = TAK142_FINALLY_FORMED_DOCUMENT_FRAGMENT.format(
+    document_type_code="XIF"
+)
 
-OFFICERS_WITH_MOST_RECENT_ROLE_FRAGMENT = \
-    f"""
+OFFICERS_WITH_MOST_RECENT_ROLE_FRAGMENT = f"""
     {ALL_OFFICERS_FRAGMENT},
     officers_with_role_recency_ranks AS(
         -- Officers with their roles ranked from most recent to least recent.
@@ -142,12 +146,12 @@ VIEW_QUERY_TEMPLATE = f"""
     """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
-    region='us_mo',
-    ingest_view_name='tak028_tak042_tak076_tak024_violation_reports',
+    region="us_mo",
+    ingest_view_name="tak028_tak042_tak076_tak024_violation_reports",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols='BY_DOC, BY_CYC, BY_VSN',
+    order_by_cols="BY_DOC, BY_CYC, BY_VSN",
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         VIEW_BUILDER.build_and_print()

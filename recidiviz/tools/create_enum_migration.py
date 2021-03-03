@@ -17,22 +17,24 @@ import os
 from typing import Set
 
 
-_ALEMBIC_REVISION_COMMAND_TEMPLATE = \
-    'alembic -c {config_path} revision -m {migration_name}'
+_ALEMBIC_REVISION_COMMAND_TEMPLATE = (
+    "alembic -c {config_path} revision -m {migration_name}"
+)
 
-_PATH_TO_MIGRATIONS_DIRECTORY = 'recidiviz/persistence/database/migrations'
-_PATH_TO_BODY_SECTION_TEMPLATE = _PATH_TO_MIGRATIONS_DIRECTORY + \
-    '/enum_migration_template.txt'
+_PATH_TO_MIGRATIONS_DIRECTORY = "recidiviz/persistence/database/migrations"
+_PATH_TO_BODY_SECTION_TEMPLATE = (
+    _PATH_TO_MIGRATIONS_DIRECTORY + "/enum_migration_template.txt"
+)
 
-_HEADER_SECTION_FINAL_LINE_START = 'depends_on'
+_HEADER_SECTION_FINAL_LINE_START = "depends_on"
 
 
 def _path_to_versions_directory(schema: str) -> str:
-    return os.path.join(_PATH_TO_MIGRATIONS_DIRECTORY, schema, 'versions')
+    return os.path.join(_PATH_TO_MIGRATIONS_DIRECTORY, schema, "versions")
 
 
 def _path_to_config_file(schema: str) -> str:
-    return os.path.join(_PATH_TO_MIGRATIONS_DIRECTORY, f'{schema}_alembic.ini')
+    return os.path.join(_PATH_TO_MIGRATIONS_DIRECTORY, f"{schema}_alembic.ini")
 
 
 def _create_new_migration_and_return_filename(schema: str, migration_name: str) -> str:
@@ -41,11 +43,14 @@ def _create_new_migration_and_return_filename(schema: str, migration_name: str) 
     initial_filenames = _get_all_filenames_in_versions_directory(schema)
 
     command = _ALEMBIC_REVISION_COMMAND_TEMPLATE.format(
-        config_path=_path_to_config_file(schema), migration_name=migration_name)
+        config_path=_path_to_config_file(schema), migration_name=migration_name
+    )
     exit_code = os.system(command)
     if exit_code != 0:
-        raise RuntimeError("Call to generate alembic revision failed, any "
-                           "error messages printed in preceding output")
+        raise RuntimeError(
+            "Call to generate alembic revision failed, any "
+            "error messages printed in preceding output"
+        )
 
     new_filenames = _get_all_filenames_in_versions_directory(schema)
 
@@ -57,8 +62,11 @@ def _get_all_filenames_in_versions_directory(schema: str) -> Set[str]:
     """Returns set of all filenames currently in versions directory"""
     versions_directory = _path_to_versions_directory(schema)
 
-    return {item for item in os.listdir(versions_directory)
-            if os.path.isfile(os.path.join(versions_directory, item))}
+    return {
+        item
+        for item in os.listdir(versions_directory)
+        if os.path.isfile(os.path.join(versions_directory, item))
+    }
 
 
 def _get_migration_header_section(migration_filepath: str) -> str:
@@ -67,56 +75,59 @@ def _get_migration_header_section(migration_filepath: str) -> str:
     """
     header_section_lines = []
 
-    with open(migration_filepath, 'r') as migration_file:
+    with open(migration_filepath, "r") as migration_file:
         for line in migration_file.readlines():
             header_section_lines.append(line)
             if line.startswith(_HEADER_SECTION_FINAL_LINE_START):
                 break
 
-    return ''.join(header_section_lines)
+    return "".join(header_section_lines)
 
 
-def _get_migration_body_section(master_table_name: str,
-                                historical_table_name: str,
-                                type_name: str,
-                                column_name: str) -> str:
+def _get_migration_body_section(
+    master_table_name: str, historical_table_name: str, type_name: str, column_name: str
+) -> str:
     """Returns string of body section of enum migration by interpolating
     provided values into enum migration template
     """
-    with open(_PATH_TO_BODY_SECTION_TEMPLATE, 'r') as template_file:
+    with open(_PATH_TO_BODY_SECTION_TEMPLATE, "r") as template_file:
         template = template_file.read()
     return template.format(
         master_table=master_table_name,
         historical_table=historical_table_name,
         type=type_name,
-        column=column_name)
+        column=column_name,
+    )
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument('--schema')
-    parser.add_argument('--master_table')
-    parser.add_argument('--historical_table')
-    parser.add_argument('--type')
-    parser.add_argument('--column')
-    parser.add_argument('--migration_name')
+    parser.add_argument("--schema")
+    parser.add_argument("--master_table")
+    parser.add_argument("--historical_table")
+    parser.add_argument("--type")
+    parser.add_argument("--column")
+    parser.add_argument("--migration_name")
 
     args = parser.parse_args()
 
     migration_filename = _create_new_migration_and_return_filename(
-        args.schema, args.migration_name)
+        args.schema, args.migration_name
+    )
     migration_filepath = os.path.join(
-        _path_to_versions_directory(args.schema), migration_filename)
+        _path_to_versions_directory(args.schema), migration_filename
+    )
     header_section = _get_migration_header_section(migration_filepath)
     body_section = _get_migration_body_section(
-        args.master_table, args.historical_table, args.type, args.column)
-    file_content = '{}\n{}'.format(header_section, body_section)
+        args.master_table, args.historical_table, args.type, args.column
+    )
+    file_content = "{}\n{}".format(header_section, body_section)
 
-    with open(migration_filepath, 'w') as migration_file:
+    with open(migration_filepath, "w") as migration_file:
         migration_file.write(file_content)
 
     print("Successfully generated migration {}".format(migration_filename))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

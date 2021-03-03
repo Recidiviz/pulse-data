@@ -35,17 +35,17 @@ FAKE_QUEUE_PARAMS = QueueRequest(
     scraper_start_time=datetime.datetime.utcnow(),
     next_task=Task(
         task_type=constants.TaskType.INITIAL,
-        endpoint='some.endpoint',
+        endpoint="some.endpoint",
     ),
 )
 
 app = Flask(__name__)
 app.register_blueprint(worker.worker)
-app.config['TESTING'] = True
+app.config["TESTING"] = True
 
 
-@patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
-@patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
+@patch("recidiviz.utils.metadata.project_id", Mock(return_value="test-project"))
+@patch("recidiviz.utils.metadata.project_number", Mock(return_value="123456789"))
 class TestWorker:
     """Tests for requests to the Worker API."""
 
@@ -57,17 +57,21 @@ class TestWorker:
     @patch("recidiviz.ingest.scrape.sessions.get_current_session")
     def test_post_work(self, mock_session, mock_region):
         mock_session.return_value = sessions.ScrapeSession.new(
-            key=None, region='us_ca',
+            key=None,
+            region="us_ca",
             scrape_type=constants.ScrapeType.BACKGROUND,
             phase=scrape_phase.ScrapePhase.SCRAPE,
         )
         region = create_autospec(Region)
         mock_region.return_value = region
 
-        form = {'region': 'us_ca', 'task': 'fake_task',
-                'params': FAKE_QUEUE_PARAMS.to_serializable()}
+        form = {
+            "region": "us_ca",
+            "task": "fake_task",
+            "params": FAKE_QUEUE_PARAMS.to_serializable(),
+        }
         form_encoded = json.dumps(form).encode()
-        headers = {'X-Appengine-QueueName': "test-queue"}
+        headers = {"X-Appengine-QueueName": "test-queue"}
         response = self.client.post(PATH, data=form_encoded, headers=headers)
         assert response.status_code == 200
 
@@ -78,10 +82,13 @@ class TestWorker:
     def test_post_work_no_session(self, mock_session, mock_region):
         mock_session.return_value = None
 
-        form = {'region': 'us_ca', 'task': 'fake_task',
-                'params': FAKE_QUEUE_PARAMS.to_serializable()}
+        form = {
+            "region": "us_ca",
+            "task": "fake_task",
+            "params": FAKE_QUEUE_PARAMS.to_serializable(),
+        }
         form_encoded = json.dumps(form).encode()
-        headers = {'X-Appengine-QueueName': "test-queue"}
+        headers = {"X-Appengine-QueueName": "test-queue"}
         response = self.client.post(PATH, data=form_encoded, headers=headers)
         assert response.status_code == 200
 
@@ -91,7 +98,8 @@ class TestWorker:
     @patch("recidiviz.ingest.scrape.sessions.get_current_session")
     def test_post_work_error(self, mock_session, mock_region):
         mock_session.return_value = sessions.ScrapeSession.new(
-            key=None, region='us_ca',
+            key=None,
+            region="us_ca",
             scrape_type=constants.ScrapeType.BACKGROUND,
             phase=scrape_phase.ScrapePhase.SCRAPE,
         )
@@ -100,12 +108,12 @@ class TestWorker:
         mock_region.return_value = region
 
         form = {
-            'region': 'us_ca',
-            'task': 'fake_task',
-            'params': FAKE_QUEUE_PARAMS.to_serializable(),
+            "region": "us_ca",
+            "task": "fake_task",
+            "params": FAKE_QUEUE_PARAMS.to_serializable(),
         }
         form_encoded = json.dumps(form).encode()
-        headers = {'X-Appengine-QueueName': "test-queue"}
+        headers = {"X-Appengine-QueueName": "test-queue"}
         with pytest.raises(worker.RequestProcessingError):
             self.client.post(PATH, data=form_encoded, headers=headers)
 
@@ -115,7 +123,8 @@ class TestWorker:
     @patch("recidiviz.ingest.scrape.sessions.get_current_session")
     def test_post_work_timeout(self, mock_session, mock_region):
         mock_session.return_value = sessions.ScrapeSession.new(
-            key=None, region='us_ca',
+            key=None,
+            region="us_ca",
             scrape_type=constants.ScrapeType.BACKGROUND,
             phase=scrape_phase.ScrapePhase.SCRAPE,
         )
@@ -124,12 +133,12 @@ class TestWorker:
         mock_region.return_value = region
 
         form = {
-            'region': 'us_ca',
-            'task': 'fake_task',
-            'params': FAKE_QUEUE_PARAMS.to_serializable(),
+            "region": "us_ca",
+            "task": "fake_task",
+            "params": FAKE_QUEUE_PARAMS.to_serializable(),
         }
         form_encoded = json.dumps(form).encode()
-        headers = {'X-Appengine-QueueName': "test-queue"}
+        headers = {"X-Appengine-QueueName": "test-queue"}
         with pytest.raises(worker.RequestProcessingError):
             self.client.post(PATH, data=form_encoded, headers=headers)
 
@@ -137,21 +146,21 @@ class TestWorker:
 
     @patch("recidiviz.utils.validate_jwt.validate_iap_jwt_from_app_engine")
     def test_post_work_not_from_task(self, mock_jwt):
-        mock_jwt.return_value = ('user', 'email', None)
+        mock_jwt.return_value = ("user", "email", None)
 
-        headers = {'x-goog-iap-jwt-assertion': '1234'}
+        headers = {"x-goog-iap-jwt-assertion": "1234"}
         response = self.client.post(PATH, headers=headers)
         assert response.status_code == 500
 
     def test_post_work_region_mismatch(self):
         form = {
             # different region
-            'region': 'us_nd',
-            'task': 'fake_task',
-            'params': FAKE_QUEUE_PARAMS.to_serializable(),
+            "region": "us_nd",
+            "task": "fake_task",
+            "params": FAKE_QUEUE_PARAMS.to_serializable(),
         }
         form_encoded = json.dumps(form).encode()
-        headers = {'X-Appengine-QueueName': "test-queue"}
+        headers = {"X-Appengine-QueueName": "test-queue"}
         with pytest.raises(ValueError) as exception:
             self.client.post(PATH, data=form_encoded, headers=headers)
-            assert exception.message.startswith('Region specified')
+            assert exception.message.startswith("Region specified")

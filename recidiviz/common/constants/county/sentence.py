@@ -18,7 +18,7 @@
 """Constants related to a sentence entity."""
 
 from recidiviz.common.constants.county import (
-    enum_canonical_strings as county_enum_strings
+    enum_canonical_strings as county_enum_strings,
 )
 from recidiviz.common.constants import enum_canonical_strings as enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
@@ -40,7 +40,7 @@ class SentenceStatus(EntityEnum, metaclass=EntityEnumMeta):
 # space. Add mappings here using a single space between words and numbers.
 # For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
 _SENTENCE_STATUS_MAP = {
-    'COMMUTED': SentenceStatus.COMMUTED,
-    'COMPLETED': SentenceStatus.COMPLETED,
-    'SERVING': SentenceStatus.SERVING,
+    "COMMUTED": SentenceStatus.COMMUTED,
+    "COMPLETED": SentenceStatus.COMPLETED,
+    "SERVING": SentenceStatus.SERVING,
 }

@@ -38,14 +38,21 @@ from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 
 
-def delete_from_table(dry_run: bool, bq_client: BigQueryClient, table_id: str, filter_clause: str) -> None:
+def delete_from_table(
+    dry_run: bool, bq_client: BigQueryClient, table_id: str, filter_clause: str
+) -> None:
     if dry_run:
-        logging.info("[DRY RUN] Would delete rows from [%s].[%s] %s",
-                     DATAFLOW_METRICS_DATASET, table_id, filter_clause)
+        logging.info(
+            "[DRY RUN] Would delete rows from [%s].[%s] %s",
+            DATAFLOW_METRICS_DATASET,
+            table_id,
+            filter_clause,
+        )
     else:
         # Delete these rows from the Dataflow metrics table
         delete_job = bq_client.delete_from_table_async(
-            DATAFLOW_METRICS_DATASET, table_id, filter_clause=filter_clause)
+            DATAFLOW_METRICS_DATASET, table_id, filter_clause=filter_clause
+        )
 
         # Wait for the delete job to complete before moving on
         delete_job.result()
@@ -56,12 +63,12 @@ def main(dry_run: bool) -> None:
     for after today."""
     bq_client = BigQueryClientImpl()
 
-    incarceration_table = 'incarceration_population_metrics'
-    incarceration_filter = 'WHERE date_of_stay > CURRENT_DATE()'
+    incarceration_table = "incarceration_population_metrics"
+    incarceration_filter = "WHERE date_of_stay > CURRENT_DATE()"
     delete_from_table(dry_run, bq_client, incarceration_table, incarceration_filter)
 
-    supervision_table = 'supervision_population_metrics'
-    supervision_filter = 'WHERE date_of_supervision > CURRENT_DATE()'
+    supervision_table = "supervision_population_metrics"
+    supervision_filter = "WHERE date_of_supervision > CURRENT_DATE()"
     delete_from_table(dry_run, bq_client, supervision_table, supervision_filter)
 
 
@@ -69,28 +76,30 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     """Parses the required arguments."""
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--project_id',
-                        dest='project_id',
-                        type=str,
-                        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
-                        required=True)
+    parser.add_argument(
+        "--project_id",
+        dest="project_id",
+        type=str,
+        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
+        required=True,
+    )
 
-    parser.add_argument('--dry_run',
-                        dest='dry_run',
-                        type=str_to_bool,
-                        required=True)
+    parser.add_argument("--dry_run", dest="dry_run", type=str_to_bool, required=True)
 
     return parser.parse_known_args(argv)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
     known_args, _ = parse_arguments(sys.argv)
 
-    logging.warning("This script should only be run by the on-call engineer doing a deploy."
-                    " Are you the on-call engineer running a deploy for the %s project? (Y/n)", known_args.project_id)
+    logging.warning(
+        "This script should only be run by the on-call engineer doing a deploy."
+        " Are you the on-call engineer running a deploy for the %s project? (Y/n)",
+        known_args.project_id,
+    )
     continue_running = input()
-    if continue_running != 'Y':
+    if continue_running != "Y":
         sys.exit()
 
     with local_project_id_override(known_args.project_id):

@@ -20,20 +20,22 @@
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.views.dashboard.supervision.us_nd.case_terminations_by_type_by_month import \
-    _get_query_prep_statement
+from recidiviz.calculator.query.state.views.dashboard.supervision.us_nd.case_terminations_by_type_by_month import (
+    _get_query_prep_statement,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_VIEW_NAME = 'case_terminations_by_type_by_officer_by_period'
+CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_VIEW_NAME = (
+    "case_terminations_by_type_by_officer_by_period"
+)
 
 CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_DESCRIPTION = """
     Supervision period termination count split by termination reason, terminating officer, district, supervision type,
     and metric period months (1, 3, 6, 12, 36).
 """
 
-CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_QUERY_TEMPLATE = \
-    f"""
+CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_QUERY_TEMPLATE = f"""
     /*{{description}}*/
     {_get_query_prep_statement(reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET)}
     SELECT
@@ -77,12 +79,18 @@ CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_VIEW_BUILDER = MetricBigQueryView
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_VIEW_NAME,
     view_query_template=CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_QUERY_TEMPLATE,
-    dimensions=['state_code', 'metric_period_months', 'supervision_type', 'district', 'officer_external_id'],
+    dimensions=[
+        "state_code",
+        "metric_period_months",
+        "supervision_type",
+        "district",
+        "officer_external_id",
+    ],
     description=CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_DESCRIPTION,
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
     metric_period_condition=bq_utils.metric_period_condition(),
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_VIEW_BUILDER.build_and_print()

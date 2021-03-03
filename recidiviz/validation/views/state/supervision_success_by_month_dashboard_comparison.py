@@ -17,21 +17,21 @@
 """A view which provides a comparison of supervision success counts by month between views for the dashboard
 and views for the public dashboard."""
 
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
-SUPERVISION_SUCCESS_BY_MONTH_DASHBOARD_COMPARISON_VIEW_NAME = \
-    'supervision_success_by_month_dashboard_comparison'
+SUPERVISION_SUCCESS_BY_MONTH_DASHBOARD_COMPARISON_VIEW_NAME = (
+    "supervision_success_by_month_dashboard_comparison"
+)
 
 SUPERVISION_SUCCESS_BY_MONTH_DASHBOARD_COMPARISON_DESCRIPTION = """ 
 Compares counts of supervision success by month between the dashboard and the public dashboard. """
 
-SUPERVISION_SUCCESS_BY_MONTH_DASHBOARD_COMPARISON_QUERY_TEMPLATE = \
-    """
+SUPERVISION_SUCCESS_BY_MONTH_DASHBOARD_COMPARISON_QUERY_TEMPLATE = """
     /*{description}*/
     WITH dashboard_success AS (
       SELECT * EXCEPT (district),
@@ -66,9 +66,9 @@ SUPERVISION_SUCCESS_BY_MONTH_DASHBOARD_COMPARISON_VIEW_BUILDER = SimpleBigQueryV
     view_query_template=SUPERVISION_SUCCESS_BY_MONTH_DASHBOARD_COMPARISON_QUERY_TEMPLATE,
     description=SUPERVISION_SUCCESS_BY_MONTH_DASHBOARD_COMPARISON_DESCRIPTION,
     dashboard_dataset=state_dataset_config.DASHBOARD_VIEWS_DATASET,
-    public_dashboard_dataset=state_dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET
+    public_dashboard_dataset=state_dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         SUPERVISION_SUCCESS_BY_MONTH_DASHBOARD_COMPARISON_VIEW_BUILDER.build_and_print()

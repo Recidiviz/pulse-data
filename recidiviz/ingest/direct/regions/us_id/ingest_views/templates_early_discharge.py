@@ -127,8 +127,8 @@ FROM
 
 def _get_relevant_select_args(ids_only: bool) -> str:
     if ids_only:
-        return 'ofndr_num, incrno, sent_no, early_discharge_id, early_discharge_sent_id'
-    return '*'
+        return "ofndr_num, incrno, sent_no, early_discharge_id, early_discharge_sent_id"
+    return "*"
 
 
 def _get_relevant_sentence_query_for_type(discharge_type: EarlyDischargeType) -> str:
@@ -137,11 +137,13 @@ def _get_relevant_sentence_query_for_type(discharge_type: EarlyDischargeType) ->
     if discharge_type == EarlyDischargeType.SUPERVISION:
         return PROBATION_SENTENCE_IDS_QUERY
 
-    raise ValueError(f'Unexpected discharge type {discharge_type}')
+    raise ValueError(f"Unexpected discharge type {discharge_type}")
 
 
-def early_discharge_view_template(discharge_type: EarlyDischargeType, ids_only: bool = False) -> str:
+def early_discharge_view_template(
+    discharge_type: EarlyDischargeType, ids_only: bool = False
+) -> str:
     return EARLY_DISCHARGE_QUERY_TEMPLATE.format(
         relevant_sentence_query=_get_relevant_sentence_query_for_type(discharge_type),
-        relevant_select_args=_get_relevant_select_args(ids_only)
+        relevant_select_args=_get_relevant_select_args(ids_only),
     )

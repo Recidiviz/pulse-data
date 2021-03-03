@@ -25,28 +25,23 @@ from typing import Type, TypeVar
 import attr
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
-from recidiviz.persistence.database.schema_entity_converter. \
-    base_schema_entity_converter import (
-        BaseSchemaEntityConverter,
-        FieldNameType,
-        SrcBaseType,
-        DstBaseType
-    )
+from recidiviz.persistence.database.schema_entity_converter.base_schema_entity_converter import (
+    BaseSchemaEntityConverter,
+    FieldNameType,
+    SrcBaseType,
+    DstBaseType,
+)
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import \
-    SchemaEdgeDirectionChecker
+from recidiviz.persistence.entity.entity_utils import SchemaEdgeDirectionChecker
 
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state.entities import StatePerson
 
-StatePersonType = TypeVar('StatePersonType',
-                          entities.StatePerson,
-                          schema.StatePerson)
+StatePersonType = TypeVar("StatePersonType", entities.StatePerson, schema.StatePerson)
 
 
-class _StateSchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType,
-                                                            DstBaseType]):
+class _StateSchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType, DstBaseType]):
     """State-specific implementation of BaseSchemaEntityConverter"""
 
     def __init__(self):
@@ -62,13 +57,16 @@ class _StateSchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType,
     # our schema.
     # TODO(#2668): Remove these checks once these columns are removed from
     # our schema.
-    def _should_skip_field(
-            self, entity_cls: Type, field: FieldNameType) -> bool:
-        if entity_cls == entities.StateSupervisionPeriod \
-                and field == 'supervision_violations':
+    def _should_skip_field(self, entity_cls: Type, field: FieldNameType) -> bool:
+        if (
+            entity_cls == entities.StateSupervisionPeriod
+            and field == "supervision_violations"
+        ):
             return True
-        if entity_cls == entities.StateSupervisionViolation \
-                and field == 'supervision_period':
+        if (
+            entity_cls == entities.StateSupervisionViolation
+            and field == "supervision_period"
+        ):
             return True
         return False
 
@@ -76,8 +74,7 @@ class _StateSchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType,
         if isinstance(dst, (StatePerson, schema.StatePerson)):
             self._add_person_to_dst(dst, dst)
 
-    def _add_person_to_dst(
-            self, person: StatePersonType, dst: DstBaseType):
+    def _add_person_to_dst(self, person: StatePersonType, dst: DstBaseType):
         self._set_person_on_dst(person, dst)
         entity_cls: Type[Entity] = self._get_entity_class(dst)
 
@@ -92,26 +89,20 @@ class _StateSchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType,
             if isinstance(v, list):
                 for next_dst in v:
                     self._set_person_on_child(person, next_dst)
-            if issubclass(type(v), Entity) \
-                    or issubclass(type(v), DatabaseEntity):
+            if issubclass(type(v), Entity) or issubclass(type(v), DatabaseEntity):
                 self._set_person_on_child(person, v)
 
-    def _set_person_on_child(
-            self,
-            person: StatePersonType,
-            next_dst: DstBaseType):
+    def _set_person_on_child(self, person: StatePersonType, next_dst: DstBaseType):
         self._add_person_to_dst(person, next_dst)
 
     def _set_person_on_dst(self, person: StatePersonType, dst: DstBaseType):
-        if hasattr(dst, 'person'):
-            setattr(dst, 'person', person)
+        if hasattr(dst, "person"):
+            setattr(dst, "person", person)
 
 
-class StateEntityToSchemaConverter(_StateSchemaEntityConverter[Entity,
-                                                               DatabaseEntity]):
+class StateEntityToSchemaConverter(_StateSchemaEntityConverter[Entity, DatabaseEntity]):
     pass
 
 
-class StateSchemaToEntityConverter(_StateSchemaEntityConverter[DatabaseEntity,
-                                                               Entity]):
+class StateSchemaToEntityConverter(_StateSchemaEntityConverter[DatabaseEntity, Entity]):
     pass

@@ -16,6 +16,6 @@
 # =============================================================================
 """Constants related to Vera views that we rely on."""
 
-VERA_DATASET: str = 'vera_data'
-INCARCERATION_TRENDS_TABLE: str = 'incarceration_trends'
-IOB_RACE_GENDER_POP_TABLE: str = 'iob_race_gender_pop'
+VERA_DATASET: str = "vera_data"
+INCARCERATION_TRENDS_TABLE: str = "incarceration_trends"
+IOB_RACE_GENDER_POP_TABLE: str = "iob_race_gender_pop"

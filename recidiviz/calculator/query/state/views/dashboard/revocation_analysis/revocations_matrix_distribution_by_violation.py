@@ -15,13 +15,18 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Revocations Matrix Distribution by Violation."""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config, state_specific_query_strings
+from recidiviz.calculator.query.state import (
+    dataset_config,
+    state_specific_query_strings,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_VIEW_NAME = 'revocations_matrix_distribution_by_violation'
+REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_VIEW_NAME = (
+    "revocations_matrix_distribution_by_violation"
+)
 
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_DESCRIPTION = """
  Relative frequency of each type of violation and condition violated for people who were revoked to prison. This is
@@ -30,8 +35,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_DESCRIPTION = """
  violation reports filed during that period. 
  """
 
-REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY_TEMPLATE = \
-    """
+REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY_TEMPLATE = """
     /*{description}*/
 
     /*
@@ -123,18 +127,24 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_VIEW_BUILDER = MetricBigQueryViewBu
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_VIEW_NAME,
     view_query_template=REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY_TEMPLATE,
-    dimensions=['state_code', 'metric_period_months', 'level_1_supervision_location',
-                'level_2_supervision_location', 'supervision_type',
-                'supervision_level', 'violation_type', 'reported_violations', 'charge_category'],
+    dimensions=[
+        "state_code",
+        "metric_period_months",
+        "level_1_supervision_location",
+        "level_2_supervision_location",
+        "supervision_type",
+        "supervision_level",
+        "violation_type",
+        "reported_violations",
+        "charge_category",
+    ],
     description=REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     state_specific_violation_type_entry=state_specific_query_strings.state_specific_violation_type_entry(),
-    state_specific_supervision_location_optimization_filter=
-    state_specific_query_strings.state_specific_supervision_location_optimization_filter(),
-    state_specific_violation_type_entry_categories=state_specific_query_strings.
-    state_specific_violation_type_entry_categories()
+    state_specific_supervision_location_optimization_filter=state_specific_query_strings.state_specific_supervision_location_optimization_filter(),
+    state_specific_violation_type_entry_categories=state_specific_query_strings.state_specific_violation_type_entry_categories(),
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_VIEW_BUILDER.build_and_print()

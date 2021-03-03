@@ -27,36 +27,105 @@ from mock import call, create_autospec, patch
 
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig
-from recidiviz.metrics.export.optimized_metric_big_query_view_export_validator import \
-    OptimizedMetricBigQueryViewExportValidator
+from recidiviz.metrics.export.optimized_metric_big_query_view_export_validator import (
+    OptimizedMetricBigQueryViewExportValidator,
+)
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.metrics.export import optimized_metric_big_query_view_exporter
-from recidiviz.metrics.export.optimized_metric_big_query_view_exporter import OptimizedMetricRepresentation, \
-    OptimizedMetricBigQueryViewExporter
+from recidiviz.metrics.export.optimized_metric_big_query_view_exporter import (
+    OptimizedMetricRepresentation,
+    OptimizedMetricBigQueryViewExporter,
+)
 
 _DATA_POINTS = [
-    {'district': '4', 'year': 2020, 'month': 11, 'supervision_type': 'PAROLE', 'total_revocations': 100},
-    {'district': '4', 'year': 2020, 'month': 11, 'supervision_type': 'PROBATION', 'total_revocations': 68},
-    {'district': '5', 'year': 2020, 'month': 11, 'supervision_type': 'PAROLE', 'total_revocations': 73},
-    {'district': '5', 'year': 2020, 'month': 11, 'supervision_type': 'PROBATION', 'total_revocations': 41},
-    {'district': '6', 'year': 2020, 'month': 11, 'supervision_type': 'PAROLE', 'total_revocations': 10},
-    {'district': '4', 'year': 2020, 'month': 12, 'supervision_type': 'PAROLE', 'total_revocations': 30},
-    {'district': '4', 'year': 2020, 'month': 12, 'supervision_type': 'PROBATION', 'total_revocations': 36},
-    {'district': '5', 'year': 2020, 'month': 12, 'supervision_type': 'PAROLE', 'total_revocations': 51},
-    {'district': '5', 'year': 2020, 'month': 12, 'supervision_type': 'PROBATION', 'total_revocations': 38},
-    {'district': '6', 'year': 2020, 'month': 12, 'supervision_type': 'PAROLE', 'total_revocations': 15},
-    {'district': '6', 'year': 2020, 'month': 12, 'supervision_type': 'PROBATION', 'total_revocations': 4},
+    {
+        "district": "4",
+        "year": 2020,
+        "month": 11,
+        "supervision_type": "PAROLE",
+        "total_revocations": 100,
+    },
+    {
+        "district": "4",
+        "year": 2020,
+        "month": 11,
+        "supervision_type": "PROBATION",
+        "total_revocations": 68,
+    },
+    {
+        "district": "5",
+        "year": 2020,
+        "month": 11,
+        "supervision_type": "PAROLE",
+        "total_revocations": 73,
+    },
+    {
+        "district": "5",
+        "year": 2020,
+        "month": 11,
+        "supervision_type": "PROBATION",
+        "total_revocations": 41,
+    },
+    {
+        "district": "6",
+        "year": 2020,
+        "month": 11,
+        "supervision_type": "PAROLE",
+        "total_revocations": 10,
+    },
+    {
+        "district": "4",
+        "year": 2020,
+        "month": 12,
+        "supervision_type": "PAROLE",
+        "total_revocations": 30,
+    },
+    {
+        "district": "4",
+        "year": 2020,
+        "month": 12,
+        "supervision_type": "PROBATION",
+        "total_revocations": 36,
+    },
+    {
+        "district": "5",
+        "year": 2020,
+        "month": 12,
+        "supervision_type": "PAROLE",
+        "total_revocations": 51,
+    },
+    {
+        "district": "5",
+        "year": 2020,
+        "month": 12,
+        "supervision_type": "PROBATION",
+        "total_revocations": 38,
+    },
+    {
+        "district": "6",
+        "year": 2020,
+        "month": 12,
+        "supervision_type": "PAROLE",
+        "total_revocations": 15,
+    },
+    {
+        "district": "6",
+        "year": 2020,
+        "month": 12,
+        "supervision_type": "PROBATION",
+        "total_revocations": 4,
+    },
 ]
 
 _DIMENSION_MANIFEST = [
-    ('district', ['4', '5', '6']),
-    ('month', ['11', '12']),
-    ('supervision_type', ['parole', 'probation']),
-    ('year', ['2020']),
+    ("district", ["4", "5", "6"]),
+    ("month", ["11", "12"]),
+    ("supervision_type", ["parole", "probation"]),
+    ("year", ["2020"]),
 ]
 
-_VALUE_KEYS = ['total_revocations']
+_VALUE_KEYS = ["total_revocations"]
 
 _DATA_VALUES = [
     [0, 0, 1, 1, 2, 0, 0, 1, 1, 2, 2],
@@ -77,12 +146,18 @@ class PlaceInCompactMatrixTest(unittest.TestCase):
     def test_place_happy_path_single_value(self):
         fresh_data_values = self._create_new_data_values()
         optimized_metric_big_query_view_exporter.place_in_compact_matrix(
-            _DATA_POINTS[3], fresh_data_values, _VALUE_KEYS, _DIMENSION_MANIFEST,
+            _DATA_POINTS[3],
+            fresh_data_values,
+            _VALUE_KEYS,
+            _DIMENSION_MANIFEST,
         )
         self.assertEqual([[1], [0], [1], [0], [41]], fresh_data_values)
 
         optimized_metric_big_query_view_exporter.place_in_compact_matrix(
-            _DATA_POINTS[8], fresh_data_values, _VALUE_KEYS, _DIMENSION_MANIFEST,
+            _DATA_POINTS[8],
+            fresh_data_values,
+            _VALUE_KEYS,
+            _DIMENSION_MANIFEST,
         )
         self.assertEqual([[1, 1], [0, 1], [1, 1], [0, 0], [41, 38]], fresh_data_values)
 
@@ -90,14 +165,17 @@ class PlaceInCompactMatrixTest(unittest.TestCase):
         fresh_data_values = self._create_new_data_values()
         for data_point in _DATA_POINTS:
             optimized_metric_big_query_view_exporter.place_in_compact_matrix(
-                data_point, fresh_data_values, _VALUE_KEYS, _DIMENSION_MANIFEST,
+                data_point,
+                fresh_data_values,
+                _VALUE_KEYS,
+                _DIMENSION_MANIFEST,
             )
 
         self.assertEqual(_DATA_VALUES, fresh_data_values)
 
     def test_place_each_data_point_multi_value(self):
-        multi_data_points = [{**dp, 'total_population': 100} for dp in _DATA_POINTS]
-        multi_value_keys = ['total_population', 'total_revocations']
+        multi_data_points = [{**dp, "total_population": 100} for dp in _DATA_POINTS]
+        multi_value_keys = ["total_population", "total_revocations"]
 
         expected = [
             [0, 0, 1, 1, 2, 0, 0, 1, 1, 2, 2],
@@ -112,16 +190,28 @@ class PlaceInCompactMatrixTest(unittest.TestCase):
         fresh_data_values.append([])  # Add one more for this test case
         for data_point in multi_data_points:
             optimized_metric_big_query_view_exporter.place_in_compact_matrix(
-                data_point, fresh_data_values, multi_value_keys, _DIMENSION_MANIFEST,
+                data_point,
+                fresh_data_values,
+                multi_value_keys,
+                _DIMENSION_MANIFEST,
             )
 
         self.assertEqual(expected, fresh_data_values)
 
     def test_place_value_not_in_dataset(self):
         fresh_data_values = self._create_new_data_values()
-        new_data_point = {'district': '6', 'year': 2020, 'month': 11, 'supervision_type': 'PROBATION', 'other_value': 5}
+        new_data_point = {
+            "district": "6",
+            "year": 2020,
+            "month": 11,
+            "supervision_type": "PROBATION",
+            "other_value": 5,
+        }
         optimized_metric_big_query_view_exporter.place_in_compact_matrix(
-            new_data_point, fresh_data_values, _VALUE_KEYS, _DIMENSION_MANIFEST,
+            new_data_point,
+            fresh_data_values,
+            _VALUE_KEYS,
+            _DIMENSION_MANIFEST,
         )
         self.assertEqual([[2], [0], [1], [0], [0]], fresh_data_values)
 
@@ -129,13 +219,20 @@ class PlaceInCompactMatrixTest(unittest.TestCase):
         fresh_data_values = self._create_new_data_values()
         with pytest.raises(KeyError) as e:
             new_data_point = {
-                'district': '4', 'year': 2020, 'month': 5, 'supervision_type': 'PAROLE', 'total_revocations': 10,
+                "district": "4",
+                "year": 2020,
+                "month": 5,
+                "supervision_type": "PAROLE",
+                "total_revocations": 10,
             }
             optimized_metric_big_query_view_exporter.place_in_compact_matrix(
-                new_data_point, fresh_data_values, _VALUE_KEYS, _DIMENSION_MANIFEST,
+                new_data_point,
+                fresh_data_values,
+                _VALUE_KEYS,
+                _DIMENSION_MANIFEST,
             )
 
-            self.assertIn('month: 5', e.message)
+            self.assertIn("month: 5", e.message)
 
 
 class AddToManifestTest(unittest.TestCase):
@@ -144,81 +241,92 @@ class AddToManifestTest(unittest.TestCase):
     def test_add_all_new_dimensions(self):
         data_point = _DATA_POINTS[2]
         fresh_manifest: Dict[str, Set[str]] = {
-            'district': set(),
-            'month': set(),
-            'supervision_type': set(),
-            'year': set(),
+            "district": set(),
+            "month": set(),
+            "supervision_type": set(),
+            "year": set(),
         }
 
         expected = {
-            'district': {'5'},
-            'month': {'11'},
-            'supervision_type': {'parole'},
-            'year': {'2020'},
+            "district": {"5"},
+            "month": {"11"},
+            "supervision_type": {"parole"},
+            "year": {"2020"},
         }
 
-        updated_manifest = optimized_metric_big_query_view_exporter.add_to_dimension_manifest(data_point,
-                                                                                              fresh_manifest)
+        updated_manifest = (
+            optimized_metric_big_query_view_exporter.add_to_dimension_manifest(
+                data_point, fresh_manifest
+            )
+        )
         self.assertEqual(expected, updated_manifest)
 
     def test_add_to_existing_dimensions(self):
         data_point = _DATA_POINTS[2]
         existing_manifest: Dict[str, Set[str]] = {
-            'district': {'4'},
-            'month': {'11'},
-            'supervision_type': {'parole', 'probation'},
-            'year': {'2020'},
+            "district": {"4"},
+            "month": {"11"},
+            "supervision_type": {"parole", "probation"},
+            "year": {"2020"},
         }
 
         expected = {
-            'district': {'4', '5'},
-            'month': {'11'},
-            'supervision_type': {'parole', 'probation'},
-            'year': {'2020'},
+            "district": {"4", "5"},
+            "month": {"11"},
+            "supervision_type": {"parole", "probation"},
+            "year": {"2020"},
         }
 
-        updated_manifest = optimized_metric_big_query_view_exporter.add_to_dimension_manifest(data_point,
-                                                                                              existing_manifest)
+        updated_manifest = (
+            optimized_metric_big_query_view_exporter.add_to_dimension_manifest(
+                data_point, existing_manifest
+            )
+        )
         self.assertEqual(expected, updated_manifest)
 
     def test_add_data_point_with_empty_values(self):
         data_point = {
-            'district': None,
-            'month': None,
-            'supervision_type': None,
-            'year': None,
+            "district": None,
+            "month": None,
+            "supervision_type": None,
+            "year": None,
         }
 
         existing_manifest: Dict[str, Set[str]] = {
-            'district': {'4'},
-            'month': {'11'},
-            'supervision_type': {'parole', 'probation'},
-            'year': {'2020'},
+            "district": {"4"},
+            "month": {"11"},
+            "supervision_type": {"parole", "probation"},
+            "year": {"2020"},
         }
 
         expected: Dict[str, Set[str]] = {
-            'district': {'4', 'none'},
-            'month': {'11', 'none'},
-            'supervision_type': {'parole', 'probation', 'none'},
-            'year': {'2020', 'none'},
+            "district": {"4", "none"},
+            "month": {"11", "none"},
+            "supervision_type": {"parole", "probation", "none"},
+            "year": {"2020", "none"},
         }
 
-        updated_manifest = optimized_metric_big_query_view_exporter.add_to_dimension_manifest(data_point,
-                                                                                              existing_manifest)
+        updated_manifest = (
+            optimized_metric_big_query_view_exporter.add_to_dimension_manifest(
+                data_point, existing_manifest
+            )
+        )
         self.assertEqual(expected, updated_manifest)
 
     @staticmethod
     def test_add_empty_data_point():
         data_point = {}
         existing_manifest: Dict[str, Set[str]] = {
-            'district': {'4'},
-            'month': {'11'},
-            'supervision_type': {'parole', 'probation'},
-            'year': {'2020'},
+            "district": {"4"},
+            "month": {"11"},
+            "supervision_type": {"parole", "probation"},
+            "year": {"2020"},
         }
 
         with pytest.raises(KeyError):
-            optimized_metric_big_query_view_exporter.add_to_dimension_manifest(data_point, existing_manifest)
+            optimized_metric_big_query_view_exporter.add_to_dimension_manifest(
+                data_point, existing_manifest
+            )
 
 
 class TransformManifestTest(unittest.TestCase):
@@ -226,49 +334,54 @@ class TransformManifestTest(unittest.TestCase):
 
     def test_transform_happy_path(self):
         dimensions_as_dictionary = {
-            'district': {'6', '5', '4'},
-            'year': {'2020'},
-            'supervision_type': {'probation', 'parole'},
-            'month': {'11', '12'},
+            "district": {"6", "5", "4"},
+            "year": {"2020"},
+            "supervision_type": {"probation", "parole"},
+            "month": {"11", "12"},
         }
 
         dimension_manifest = optimized_metric_big_query_view_exporter.transform_manifest_to_order_enforced_form(
-            dimensions_as_dictionary)
+            dimensions_as_dictionary
+        )
         self.assertEqual(_DIMENSION_MANIFEST, dimension_manifest)
 
     def test_transform_with_other_types(self):
         dimensions_as_dictionary = {
-            'district': {'6', '5', '4'},
-            'year': {'2020'},
-            'supervision_type': {'probation', 'parole'},
-            'month': {'11', '12'},
+            "district": {"6", "5", "4"},
+            "year": {"2020"},
+            "supervision_type": {"probation", "parole"},
+            "month": {"11", "12"},
         }
 
         dimension_manifest = optimized_metric_big_query_view_exporter.transform_manifest_to_order_enforced_form(
-            dimensions_as_dictionary)
+            dimensions_as_dictionary
+        )
         self.assertEqual(_DIMENSION_MANIFEST, dimension_manifest)
 
     def test_transform_with_nones(self):
         dimensions_as_dictionary = {
-            'district': {'all', '6', '5', '4'},
-            'year': {'2020'},
-            'supervision_type': {'probation', 'parole', 'none'},
-            'month': {'11', '12'},
+            "district": {"all", "6", "5", "4"},
+            "year": {"2020"},
+            "supervision_type": {"probation", "parole", "none"},
+            "month": {"11", "12"},
         }
 
         expected = [
-            ('district', ['4', '5', '6', 'all']),
-            ('month', ['11', '12']),
-            ('supervision_type', ['none', 'parole', 'probation']),
-            ('year', ['2020']),
+            ("district", ["4", "5", "6", "all"]),
+            ("month", ["11", "12"]),
+            ("supervision_type", ["none", "parole", "probation"]),
+            ("year", ["2020"]),
         ]
 
         dimension_manifest = optimized_metric_big_query_view_exporter.transform_manifest_to_order_enforced_form(
-            dimensions_as_dictionary)
+            dimensions_as_dictionary
+        )
         self.assertEqual(expected, dimension_manifest)
 
     def test_transform_empty(self):
-        dimension_manifest = optimized_metric_big_query_view_exporter.transform_manifest_to_order_enforced_form({})
+        dimension_manifest = optimized_metric_big_query_view_exporter.transform_manifest_to_order_enforced_form(
+            {}
+        )
         self.assertEqual([], dimension_manifest)
 
 
@@ -277,32 +390,47 @@ class GetRowValuesTest(unittest.TestCase):
 
     def test_transform_happy_path_single_value(self):
         data_point = _DATA_POINTS[1]
-        value_keys = ['total_revocations']
+        value_keys = ["total_revocations"]
 
-        expected = [data_point['total_revocations']]
-        self.assertEqual(expected, optimized_metric_big_query_view_exporter.get_row_values(data_point, value_keys))
+        expected = [data_point["total_revocations"]]
+        self.assertEqual(
+            expected,
+            optimized_metric_big_query_view_exporter.get_row_values(
+                data_point, value_keys
+            ),
+        )
 
     def test_transform_happy_path_multi_value(self):
-        data_point = {**_DATA_POINTS[1], 'total_population': 752}
-        value_keys = ['total_population', 'total_revocations']
+        data_point = {**_DATA_POINTS[1], "total_population": 752}
+        value_keys = ["total_population", "total_revocations"]
 
         expected = [752, 68]
-        self.assertEqual(expected, optimized_metric_big_query_view_exporter.get_row_values(data_point, value_keys))
+        self.assertEqual(
+            expected,
+            optimized_metric_big_query_view_exporter.get_row_values(
+                data_point, value_keys
+            ),
+        )
 
     def test_transform_no_value_keys(self):
         data_point = _DATA_POINTS[1]
         value_keys = []
 
-        self.assertEqual([], optimized_metric_big_query_view_exporter.get_row_values(data_point, value_keys))
+        self.assertEqual(
+            [],
+            optimized_metric_big_query_view_exporter.get_row_values(
+                data_point, value_keys
+            ),
+        )
 
 
 class ConvertQueryResultsTest(unittest.TestCase):
     """Tests for convert_query_results_to_optimized_value_matrix"""
 
     def setUp(self) -> None:
-        self.metadata_patcher = patch('recidiviz.utils.metadata.project_id')
+        self.metadata_patcher = patch("recidiviz.utils.metadata.project_id")
         self.mock_project_id_fn = self.metadata_patcher.start()
-        self.mock_project_id_fn.return_value = 'project-id'
+        self.mock_project_id_fn.return_value = "project-id"
 
     def tearDown(self):
         self.metadata_patcher.stop()
@@ -312,13 +440,13 @@ class ConvertQueryResultsTest(unittest.TestCase):
 
         mock_dataset_ref = create_autospec(bigquery.DatasetReference)
 
-        table_ref = bigquery.TableReference(mock_dataset_ref, 'test_view')
+        table_ref = bigquery.TableReference(mock_dataset_ref, "test_view")
         schema_fields = [
-            bigquery.SchemaField('district', 'STRING'),
-            bigquery.SchemaField('year', 'STRING'),
-            bigquery.SchemaField('month', 'STRING'),
-            bigquery.SchemaField('supervision_type', 'STRING'),
-            bigquery.SchemaField('total_revocations', 'STRING'),
+            bigquery.SchemaField("district", "STRING"),
+            bigquery.SchemaField("year", "STRING"),
+            bigquery.SchemaField("month", "STRING"),
+            bigquery.SchemaField("supervision_type", "STRING"),
+            bigquery.SchemaField("total_revocations", "STRING"),
         ]
         table = bigquery.Table(table_ref, schema_fields)
 
@@ -333,42 +461,61 @@ class ConvertQueryResultsTest(unittest.TestCase):
             all_rows,
         ]
 
-        def fake_paged_process_fn(query_job: bigquery.QueryJob,
-                                  _page_size: int,
-                                  process_fn: Callable[[bigquery.table.Row], None]) -> None:
-            for row in query_job.result(max_results=optimized_metric_big_query_view_exporter.QUERY_PAGE_SIZE,
-                                        start_index=0):
+        def fake_paged_process_fn(
+            query_job: bigquery.QueryJob,
+            _page_size: int,
+            process_fn: Callable[[bigquery.table.Row], None],
+        ) -> None:
+            for row in query_job.result(
+                max_results=optimized_metric_big_query_view_exporter.QUERY_PAGE_SIZE,
+                start_index=0,
+            ):
                 process_fn(row)
 
         mock_bq_client.paged_read_and_process.side_effect = fake_paged_process_fn
         mock_validator = create_autospec(OptimizedMetricBigQueryViewExportValidator)
 
-        view_exporter = OptimizedMetricBigQueryViewExporter(mock_bq_client, mock_validator)
+        view_exporter = OptimizedMetricBigQueryViewExporter(
+            mock_bq_client, mock_validator
+        )
 
         export_config = ExportBigQueryViewConfig(
             view=MetricBigQueryViewBuilder(
-                dataset_id='test_dataset',
-                view_id='test_view',
-                view_query_template='you know',
-                dimensions=['district', 'year', 'month', 'supervision_type'],
+                dataset_id="test_dataset",
+                view_id="test_view",
+                view_query_template="you know",
+                dimensions=["district", "year", "month", "supervision_type"],
             ).build(),
-            view_filter_clause='WHERE state_code = \'US_XX\'',
-            intermediate_table_name='tubular',
-            output_directory=GcsfsDirectoryPath.from_absolute_path('gs://gnarly/blob'),
+            view_filter_clause="WHERE state_code = 'US_XX'",
+            intermediate_table_name="tubular",
+            output_directory=GcsfsDirectoryPath.from_absolute_path("gs://gnarly/blob"),
         )
 
-        optimized_representation = view_exporter.convert_query_results_to_optimized_value_matrix(mock_query_job,
-                                                                                                 export_config)
-        expected = OptimizedMetricRepresentation(value_matrix=_DATA_VALUES,
-                                                 dimension_manifest=_DIMENSION_MANIFEST,
-                                                 value_keys=_VALUE_KEYS)
+        optimized_representation = (
+            view_exporter.convert_query_results_to_optimized_value_matrix(
+                mock_query_job, export_config
+            )
+        )
+        expected = OptimizedMetricRepresentation(
+            value_matrix=_DATA_VALUES,
+            dimension_manifest=_DIMENSION_MANIFEST,
+            value_keys=_VALUE_KEYS,
+        )
 
         self.assertEqual(expected, optimized_representation)
 
-        mock_query_job.result.assert_has_calls([
-            call(max_results=optimized_metric_big_query_view_exporter.QUERY_PAGE_SIZE, start_index=0),
-            call(max_results=optimized_metric_big_query_view_exporter.QUERY_PAGE_SIZE, start_index=0),
-        ])
+        mock_query_job.result.assert_has_calls(
+            [
+                call(
+                    max_results=optimized_metric_big_query_view_exporter.QUERY_PAGE_SIZE,
+                    start_index=0,
+                ),
+                call(
+                    max_results=optimized_metric_big_query_view_exporter.QUERY_PAGE_SIZE,
+                    start_index=0,
+                ),
+            ]
+        )
 
         mock_bq_client.paged_read_and_process.assert_called()
         mock_bq_client.dataset_ref_for_id.assert_called()

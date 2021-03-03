@@ -22,22 +22,27 @@ from typing import List
 import pytest
 
 from recidiviz.calculator.pipeline.utils import violation_response_utils
-from recidiviz.persistence.entity.state.entities import StateSupervisionViolationResponse
+from recidiviz.persistence.entity.state.entities import (
+    StateSupervisionViolationResponse,
+)
 
 
 class TestResponsesOnMostRecentResponseDate(unittest.TestCase):
     """Tests the responses_on_most_recent_response_date function."""
+
     @staticmethod
-    def _test_responses_on_most_recent_response_date(response_dates: List[datetime.date]) -> \
-        List[StateSupervisionViolationResponse]:
+    def _test_responses_on_most_recent_response_date(
+        response_dates: List[datetime.date],
+    ) -> List[StateSupervisionViolationResponse]:
         """Helper function for testing the responses_on_most_recent_response_date function."""
         violation_responses: List[StateSupervisionViolationResponse] = []
 
         for response_date in response_dates:
-            violation_responses.append(StateSupervisionViolationResponse.new_with_defaults(
-                state_code='US_XX',
-                response_date=response_date
-            ))
+            violation_responses.append(
+                StateSupervisionViolationResponse.new_with_defaults(
+                    state_code="US_XX", response_date=response_date
+                )
+            )
 
         return violation_response_utils.responses_on_most_recent_response_date(
             violation_responses
@@ -47,20 +52,24 @@ class TestResponsesOnMostRecentResponseDate(unittest.TestCase):
         response_dates = [
             datetime.date(2020, 1, 1),
             datetime.date(2019, 3, 1),
-            datetime.date(2029, 10, 1)
+            datetime.date(2029, 10, 1),
         ]
 
-        most_recent_responses = self._test_responses_on_most_recent_response_date(response_dates)
+        most_recent_responses = self._test_responses_on_most_recent_response_date(
+            response_dates
+        )
 
         self.assertEqual(1, len(most_recent_responses))
-        self.assertEqual(datetime.date(2029, 10, 1), most_recent_responses[0].response_date)
+        self.assertEqual(
+            datetime.date(2029, 10, 1), most_recent_responses[0].response_date
+        )
 
     def test_responses_on_most_recent_response_date_empty_dates(self):
         response_dates = [
             datetime.date(2020, 1, 1),
             datetime.date(2019, 3, 1),
             datetime.date(2029, 10, 1),
-            None
+            None,
         ]
 
         # No responses without dates should be sent to this function
@@ -71,10 +80,12 @@ class TestResponsesOnMostRecentResponseDate(unittest.TestCase):
         response_dates = [
             datetime.date(2020, 1, 1),
             datetime.date(2029, 10, 1),
-            datetime.date(2029, 10, 1)
+            datetime.date(2029, 10, 1),
         ]
 
-        most_recent_responses = self._test_responses_on_most_recent_response_date(response_dates)
+        most_recent_responses = self._test_responses_on_most_recent_response_date(
+            response_dates
+        )
 
         self.assertEqual(2, len(most_recent_responses))
 

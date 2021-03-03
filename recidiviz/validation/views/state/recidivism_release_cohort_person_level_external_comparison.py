@@ -24,17 +24,19 @@ from recidiviz.calculator.query.state import dataset_config as state_dataset_con
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
-from recidiviz.validation.views.state.recidivism_person_level_template import recidivism_person_level_query
+from recidiviz.validation.views.state.recidivism_person_level_template import (
+    recidivism_person_level_query,
+)
 
-RECIDIVISM_RELEASE_COHORT_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_NAME = \
-    'recidivism_release_cohort_person_level_external_comparison'
+RECIDIVISM_RELEASE_COHORT_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_NAME = (
+    "recidivism_release_cohort_person_level_external_comparison"
+)
 
 RECIDIVISM_RELEASE_COHORT_PERSON_LEVEL_EXTERNAL_COMPARISON_DESCRIPTION = """
 Comparison of values between internal and external lists of person-level release cohorts and follow-up periods.
 """
 
-RECIDIVISM_RELEASE_COHORT_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = \
-    f"""
+RECIDIVISM_RELEASE_COHORT_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = f"""
 /*{{description}}*/
 {recidivism_person_level_query(include_unmatched_people=True)}
 """
@@ -48,6 +50,6 @@ RECIDIVISM_RELEASE_COHORT_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER = Simple
     materialized_metrics_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         RECIDIVISM_RELEASE_COHORT_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER.build_and_print()

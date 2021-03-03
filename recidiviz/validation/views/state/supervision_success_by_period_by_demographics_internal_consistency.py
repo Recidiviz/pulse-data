@@ -22,28 +22,40 @@ supervision_success_by_period_by_demographics view.
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
-from recidiviz.calculator.query.state.views.public_dashboard.supervision.\
-    supervision_success_by_period_by_demographics import \
-    SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_NAME
+
+
+from recidiviz.calculator.query.state.views.public_dashboard.supervision.supervision_success_by_period_by_demographics import (
+    SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_NAME,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
-from recidiviz.validation.views.utils.internal_consistency_templates import internal_consistency_query
+from recidiviz.validation.views.utils.internal_consistency_templates import (
+    internal_consistency_query,
+)
 
-SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_NAME = \
-    'supervision_success_by_period_by_demographics_internal_consistency'
+SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_NAME = (
+    "supervision_success_by_period_by_demographics_internal_consistency"
+)
 
-SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_DESCRIPTION = \
-    """ Builds validation table to ensure internal consistency across breakdowns in the 
- supervision_success_by_period_by_demographics view."""
+SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_DESCRIPTION = """ Builds validation table to ensure
+internal consistency across breakdowns in the supervision_success_by_period_by_demographics view."""
 
 
-PARTITION_COLUMNS = ['state_code', 'metric_period_months', 'supervision_type', 'district']
-CALCULATED_COLUMNS_TO_VALIDATE = ['successful_termination_count', 'projected_completion_count']
-MUTUALLY_EXCLUSIVE_BREAKDOWN_COLUMNS = ['race_or_ethnicity', 'gender']
+PARTITION_COLUMNS = [
+    "state_code",
+    "metric_period_months",
+    "supervision_type",
+    "district",
+]
+CALCULATED_COLUMNS_TO_VALIDATE = [
+    "successful_termination_count",
+    "projected_completion_count",
+]
+MUTUALLY_EXCLUSIVE_BREAKDOWN_COLUMNS = ["race_or_ethnicity", "gender"]
 # NOTE: age_bucket is a non-mutually exclusive breakdown column, because people can fall into multiple age_buckets over
 # time
-NON_MUTUALLY_EXCLUSIVE_BREAKDOWN_COLUMNS = ['age_bucket']
+NON_MUTUALLY_EXCLUSIVE_BREAKDOWN_COLUMNS = ["age_bucket"]
 
 SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_QUERY_TEMPLATE = f"""
 /*{{description}}*/
@@ -59,9 +71,9 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER 
     view_query_template=SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_QUERY_TEMPLATE,
     description=SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_DESCRIPTION,
     validated_table_dataset_id=state_dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
-    validated_table_id=SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_NAME
+    validated_table_id=SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_NAME,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER.build_and_print()

@@ -22,28 +22,28 @@ from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.entity.entities import EntityPersonType
 from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity_matching.base_entity_matcher import \
-    BaseEntityMatcher
-from recidiviz.persistence.entity_matching.entity_matching_types import \
-    MatchedEntities
-from recidiviz.persistence.entity_matching.county.county_entity_matcher import \
-    CountyEntityMatcher
-from recidiviz.persistence.entity_matching.state.state_entity_matcher import \
-    StateEntityMatcher
-from recidiviz.persistence.entity_matching.state.\
-    state_matching_delegate_factory import StateMatchingDelegateFactory
+from recidiviz.persistence.entity_matching.base_entity_matcher import BaseEntityMatcher
+from recidiviz.persistence.entity_matching.entity_matching_types import MatchedEntities
+from recidiviz.persistence.entity_matching.county.county_entity_matcher import (
+    CountyEntityMatcher,
+)
+from recidiviz.persistence.entity_matching.state.state_entity_matcher import (
+    StateEntityMatcher,
+)
+from recidiviz.persistence.entity_matching.state.state_matching_delegate_factory import (
+    StateMatchingDelegateFactory,
+)
 from recidiviz.utils import trace
 
-_EMPTY_MATCH_OUTPUT = MatchedEntities(people=[],
-                                      orphaned_entities=[],
-                                      error_count=0,
-                                      total_root_entities=0)
+_EMPTY_MATCH_OUTPUT = MatchedEntities(
+    people=[], orphaned_entities=[], error_count=0, total_root_entities=0
+)
 
 
 @trace.span
-def match(session: Session,
-          region: str,
-          ingested_people: List[EntityPersonType]) -> MatchedEntities:
+def match(
+    session: Session, region: str, ingested_people: List[EntityPersonType]
+) -> MatchedEntities:
     matcher = _get_matcher(ingested_people, region)
     if not matcher:
         return _EMPTY_MATCH_OUTPUT
@@ -51,9 +51,9 @@ def match(session: Session,
     return matcher.run_match(session, region, ingested_people)
 
 
-def _get_matcher(ingested_people: List[EntityPersonType],
-                 region_code: str) \
-        -> Optional[BaseEntityMatcher]:
+def _get_matcher(
+    ingested_people: List[EntityPersonType], region_code: str
+) -> Optional[BaseEntityMatcher]:
     sample = next(iter(ingested_people), None)
     if not sample:
         return None
@@ -62,9 +62,9 @@ def _get_matcher(ingested_people: List[EntityPersonType],
         return CountyEntityMatcher()
 
     if isinstance(sample, state_entities.StatePerson):
-        state_matching_delegate = \
-            StateMatchingDelegateFactory.build(region_code=region_code)
+        state_matching_delegate = StateMatchingDelegateFactory.build(
+            region_code=region_code
+        )
         return StateEntityMatcher(state_matching_delegate)
 
-    raise ValueError('Invalid person type of [{}]'
-                     .format(sample.__class__.__name__))
+    raise ValueError("Invalid person type of [{}]".format(sample.__class__.__name__))

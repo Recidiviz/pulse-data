@@ -18,17 +18,28 @@
 from typing import List
 
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
-from recidiviz.calculator.query.state.views.public_dashboard.incarceration import incarceration_views
-from recidiviz.calculator.query.state.views.public_dashboard.program_evaluation import program_evaluation_views
-from recidiviz.calculator.query.state.views.public_dashboard.racial_disparity import racial_disparity_views
-from recidiviz.calculator.query.state.views.public_dashboard.sentencing import sentencing_views
-from recidiviz.calculator.query.state.views.public_dashboard.supervision import supervision_views
+from recidiviz.calculator.query.state.views.public_dashboard.incarceration import (
+    incarceration_views,
+)
+from recidiviz.calculator.query.state.views.public_dashboard.program_evaluation import (
+    program_evaluation_views,
+)
+from recidiviz.calculator.query.state.views.public_dashboard.racial_disparity import (
+    racial_disparity_views,
+)
+from recidiviz.calculator.query.state.views.public_dashboard.sentencing import (
+    sentencing_views,
+)
+from recidiviz.calculator.query.state.views.public_dashboard.supervision import (
+    supervision_views,
+)
 
 PUBLIC_DASHBOARD_VIEW_BUILDERS: List[MetricBigQueryViewBuilder] = (
-    incarceration_views.INCARCERATION_VIEW_BUILDERS +
-    program_evaluation_views.PROGRAM_EVALUATION_VIEW_BUILDERS +
-    sentencing_views.SENTENCING_VIEW_BUILDERS +
-    supervision_views.SUPERVISION_VIEW_BUILDERS +
+    incarceration_views.INCARCERATION_VIEW_BUILDERS
+    + program_evaluation_views.PROGRAM_EVALUATION_VIEW_BUILDERS
+    + sentencing_views.SENTENCING_VIEW_BUILDERS
+    + supervision_views.SUPERVISION_VIEW_BUILDERS
+    +
     # These views rely on the other public dashboard views and must be updated last
     racial_disparity_views.RACIAL_DISPARITY_VIEW_BUILDERS
 )

@@ -19,10 +19,10 @@ import unittest
 
 from mock import Mock, patch, create_autospec
 
-from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory \
-    import DirectIngestControllerFactory
-from recidiviz.ingest.direct.regions.us_nd.us_nd_controller import \
-    UsNdController
+from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import (
+    DirectIngestControllerFactory,
+)
+from recidiviz.ingest.direct.regions.us_nd.us_nd_controller import UsNdController
 
 
 class TestDirectIngestControllerFactory(unittest.TestCase):
@@ -31,13 +31,13 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
     def test_build_gcsfs_ingest_controller(self) -> None:
         mock_package = Mock()
         mock_controller = create_autospec(spec=UsNdController)
-        mock_package.UsNdController.return_value = \
-            mock_controller
+        mock_package.UsNdController.return_value = mock_controller
 
-        with patch.dict('sys.modules', {
-                'recidiviz.ingest.direct.regions.us_nd.us_nd_controller':
-                mock_package
-        }):
-            controller = DirectIngestControllerFactory.\
-                build_gcsfs_ingest_controller(region_code='us_nd', fs=Mock())
+        with patch.dict(
+            "sys.modules",
+            {"recidiviz.ingest.direct.regions.us_nd.us_nd_controller": mock_package},
+        ):
+            controller = DirectIngestControllerFactory.build_gcsfs_ingest_controller(
+                region_code="us_nd", fs=Mock()
+            )
             assert controller is mock_controller

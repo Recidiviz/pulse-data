@@ -17,20 +17,28 @@
 """Utils for state-specific logic related to identifying revocations in US_ID."""
 from typing import List, Tuple, Optional
 
-from recidiviz.calculator.pipeline.utils.supervision_period_utils import \
-    find_last_supervision_period_terminated_before_date
-from recidiviz.common.constants.state.state_incarceration_period import \
-    StateSpecializedPurposeForIncarceration as PurposeForIncarceration, \
-    StateIncarcerationPeriodAdmissionReason, StateIncarcerationPeriodReleaseReason
-from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod, StateSupervisionPeriod
+from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
+    find_last_supervision_period_terminated_before_date,
+)
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateSpecializedPurposeForIncarceration as PurposeForIncarceration,
+    StateIncarcerationPeriodAdmissionReason,
+    StateIncarcerationPeriodReleaseReason,
+)
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodSupervisionType,
+)
+from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationPeriod,
+    StateSupervisionPeriod,
+)
 
 
 def us_id_revoked_supervision_period_if_revocation_occurred(
-        incarceration_period: StateIncarcerationPeriod,
-        filtered_supervision_periods: List[StateSupervisionPeriod],
-        preceding_incarceration_period: Optional[StateIncarcerationPeriod]) -> \
-        Tuple[bool, Optional[StateSupervisionPeriod]]:
+    incarceration_period: StateIncarcerationPeriod,
+    filtered_supervision_periods: List[StateSupervisionPeriod],
+    preceding_incarceration_period: Optional[StateIncarcerationPeriod],
+) -> Tuple[bool, Optional[StateSupervisionPeriod]]:
     """Determines whether the incarceration_period started because of a revocation of supervision. If a revocation did
     occur, finds the supervision period that was revoked.
     For US_ID, revocations occur in the following circumstances:
@@ -54,71 +62,100 @@ def us_id_revoked_supervision_period_if_revocation_occurred(
     admission_date = incarceration_period.admission_date
 
     if not admission_date:
-        raise ValueError(f"Admission date null for {incarceration_period}. Should be set in "
-                         f"the prepare_incarceration_periods_for_calculations process.")
+        raise ValueError(
+            f"Admission date null for {incarceration_period}. Should be set in "
+            f"the prepare_incarceration_periods_for_calculations process."
+        )
 
-    if not us_id_is_revocation_admission(incarceration_period, preceding_incarceration_period):
+    if not us_id_is_revocation_admission(
+        incarceration_period, preceding_incarceration_period
+    ):
         return False, None
 
     incarceration_admission_date = None
 
-    if incarceration_period.admission_reason == StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION:
-        if incarceration_period.specialized_purpose_for_incarceration in (PurposeForIncarceration.TREATMENT_IN_PRISON,
-                                                                          PurposeForIncarceration.GENERAL):
+    if (
+        incarceration_period.admission_reason
+        == StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION
+    ):
+        if incarceration_period.specialized_purpose_for_incarceration in (
+            PurposeForIncarceration.TREATMENT_IN_PRISON,
+            PurposeForIncarceration.GENERAL,
+        ):
             # If returning from supervision to prison for general incarceration or treatment, it is a revocation.
             incarceration_admission_date = incarceration_period.admission_date
 
-    elif incarceration_period.admission_reason == StateIncarcerationPeriodAdmissionReason.TRANSFER:
-        if incarceration_period.specialized_purpose_for_incarceration in (PurposeForIncarceration.TREATMENT_IN_PRISON,
-                                                                          PurposeForIncarceration.GENERAL):
+    elif (
+        incarceration_period.admission_reason
+        == StateIncarcerationPeriodAdmissionReason.TRANSFER
+    ):
+        if incarceration_period.specialized_purpose_for_incarceration in (
+            PurposeForIncarceration.TREATMENT_IN_PRISON,
+            PurposeForIncarceration.GENERAL,
+        ):
             if not preceding_incarceration_period:
-                raise ValueError("Preceding incarceration period must exist for a transfer admission to be counted as "
-                                 "a revocation. Revocation admission identification not working.")
+                raise ValueError(
+                    "Preceding incarceration period must exist for a transfer admission to be counted as "
+                    "a revocation. Revocation admission identification not working."
+                )
 
             if not preceding_incarceration_period.admission_date:
-                raise ValueError(f"Admission date null for {incarceration_period}. Should be set in "
-                                 f"the prepare_incarceration_periods_for_calculations process.")
+                raise ValueError(
+                    f"Admission date null for {incarceration_period}. Should be set in "
+                    f"the prepare_incarceration_periods_for_calculations process."
+                )
 
-            if preceding_incarceration_period.specialized_purpose_for_incarceration == \
-                    PurposeForIncarceration.PAROLE_BOARD_HOLD:
+            if (
+                preceding_incarceration_period.specialized_purpose_for_incarceration
+                == PurposeForIncarceration.PAROLE_BOARD_HOLD
+            ):
                 # This person was transferred from a parole board hold to incarceration. The date that they
                 # entered prison was the date of the preceding incarceration period.
-                incarceration_admission_date = preceding_incarceration_period.admission_date
+                incarceration_admission_date = (
+                    preceding_incarceration_period.admission_date
+                )
 
     if incarceration_admission_date:
         # US_ID does not have overlapping supervision periods, so there there is a maximum of one revoked period.
         revoked_period = find_last_supervision_period_terminated_before_date(
             upper_bound_date=incarceration_admission_date,
-            supervision_periods=filtered_supervision_periods
+            supervision_periods=filtered_supervision_periods,
         )
 
         if revoked_period:
-            if (revoked_period.supervision_period_supervision_type ==
-                    StateSupervisionPeriodSupervisionType.INVESTIGATION):
+            if (
+                revoked_period.supervision_period_supervision_type
+                == StateSupervisionPeriodSupervisionType.INVESTIGATION
+            ):
                 # If the most recent supervision period was of type INVESTIGATION, this is not actually a revocation
                 return False, None
 
         return True, revoked_period
 
-    raise ValueError("Should not reach this point. us_id_is_revocation_admission is not properly classifying "
-                     "revocations.")
+    raise ValueError(
+        "Should not reach this point. us_id_is_revocation_admission is not properly classifying "
+        "revocations."
+    )
 
 
 def us_id_filter_supervision_periods_for_revocation_identification(
-        supervision_periods: List[StateSupervisionPeriod]) -> List[StateSupervisionPeriod]:
+    supervision_periods: List[StateSupervisionPeriod],
+) -> List[StateSupervisionPeriod]:
     """Filters the list of supervision periods to only include ones with a set supervision_period_supervision_type."""
     # Drop any supervision periods that don't have a set supervision_period_supervision_type (this could signify a
     # bench warrant, for example).
     return [
-        period for period in supervision_periods
+        period
+        for period in supervision_periods
         if period.supervision_period_supervision_type is not None
-        and period.supervision_period_supervision_type != StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
+        and period.supervision_period_supervision_type
+        != StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
     ]
 
 
 def us_id_get_pre_revocation_supervision_type(
-        revoked_supervision_period: Optional[StateSupervisionPeriod]) -> \
-        Optional[StateSupervisionPeriodSupervisionType]:
+    revoked_supervision_period: Optional[StateSupervisionPeriod],
+) -> Optional[StateSupervisionPeriodSupervisionType]:
     """Returns the supervision_period_supervision_type associated with the given revoked_supervision_period,
     if present. If not, returns None."""
     if revoked_supervision_period:
@@ -127,40 +164,63 @@ def us_id_get_pre_revocation_supervision_type(
 
 
 def us_id_is_revocation_admission(
-        incarceration_period: StateIncarcerationPeriod,
-        preceding_incarceration_period: Optional[StateIncarcerationPeriod]) -> bool:
+    incarceration_period: StateIncarcerationPeriod,
+    preceding_incarceration_period: Optional[StateIncarcerationPeriod],
+) -> bool:
     """Determines whether the admission to incarceration for the given purpose indicates this person was revoked."""
 
-    purpose_for_incarceration = incarceration_period.specialized_purpose_for_incarceration
+    purpose_for_incarceration = (
+        incarceration_period.specialized_purpose_for_incarceration
+    )
 
-    if incarceration_period.admission_reason == StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION:
+    if (
+        incarceration_period.admission_reason
+        == StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION
+    ):
         return purpose_for_incarceration in (
-            PurposeForIncarceration.TREATMENT_IN_PRISON, PurposeForIncarceration.GENERAL)
+            PurposeForIncarceration.TREATMENT_IN_PRISON,
+            PurposeForIncarceration.GENERAL,
+        )
 
-    if incarceration_period.admission_reason == StateIncarcerationPeriodAdmissionReason.TRANSFER \
-            and purpose_for_incarceration in (
-            PurposeForIncarceration.TREATMENT_IN_PRISON, PurposeForIncarceration.GENERAL):
+    if (
+        incarceration_period.admission_reason
+        == StateIncarcerationPeriodAdmissionReason.TRANSFER
+        and purpose_for_incarceration
+        in (
+            PurposeForIncarceration.TREATMENT_IN_PRISON,
+            PurposeForIncarceration.GENERAL,
+        )
+    ):
         # Transfers from parole board holds to general incarceration or treatment in prison are revocation admissions
         if not preceding_incarceration_period:
             return False
 
         if not incarceration_period.admission_date:
-            raise ValueError(f"Admission date null for {incarceration_period}. Should be set in "
-                             f"the prepare_incarceration_periods_for_calculations process.")
+            raise ValueError(
+                f"Admission date null for {incarceration_period}. Should be set in "
+                f"the prepare_incarceration_periods_for_calculations process."
+            )
 
         if not preceding_incarceration_period.release_date:
             raise ValueError(
                 f"Open incarceration period preceding another period. Incarceration period pre-processing "
                 f"is not effectively setting missing dates. "
                 f"Open incarceration_period_id = {preceding_incarceration_period.incarceration_period_id}"
-                f"Next incarceration_period_id = {incarceration_period.incarceration_period_id}")
+                f"Next incarceration_period_id = {incarceration_period.incarceration_period_id}"
+            )
 
-        if preceding_incarceration_period.release_date == incarceration_period.admission_date:
+        if (
+            preceding_incarceration_period.release_date
+            == incarceration_period.admission_date
+        ):
             # Transfers from parole board holds to general incarceration or
             # treatment in prison are revocation admissions
-            if preceding_incarceration_period.release_reason == StateIncarcerationPeriodReleaseReason.TRANSFER \
-                    and preceding_incarceration_period.specialized_purpose_for_incarceration \
-                    == PurposeForIncarceration.PAROLE_BOARD_HOLD:
+            if (
+                preceding_incarceration_period.release_reason
+                == StateIncarcerationPeriodReleaseReason.TRANSFER
+                and preceding_incarceration_period.specialized_purpose_for_incarceration
+                == PurposeForIncarceration.PAROLE_BOARD_HOLD
+            ):
                 return True
 
     return False

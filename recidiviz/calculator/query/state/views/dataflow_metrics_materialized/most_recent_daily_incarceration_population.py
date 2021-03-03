@@ -15,22 +15,24 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Event based incarceration population for the most recent date of incarceration."""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config, state_specific_query_strings
+from recidiviz.calculator.query.state import (
+    dataset_config,
+    state_specific_query_strings,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-MOST_RECENT_DAILY_INCARCERATION_POPULATION_VIEW_NAME = \
-    'most_recent_daily_incarceration_population'
+MOST_RECENT_DAILY_INCARCERATION_POPULATION_VIEW_NAME = (
+    "most_recent_daily_incarceration_population"
+)
 
-MOST_RECENT_DAILY_INCARCERATION_POPULATION_DESCRIPTION = \
-    """Event based incarceration population for the most recent date of incarceration."""
+MOST_RECENT_DAILY_INCARCERATION_POPULATION_DESCRIPTION = """Event based incarceration population for the most recent date of incarceration."""
 
 
 # TODO(#5461): Move most_recent_daily joins to dataflow_metrics_materialized
-MOST_RECENT_DAILY_INCARCERATION_POPULATION_QUERY_TEMPLATE = \
-    """
+MOST_RECENT_DAILY_INCARCERATION_POPULATION_QUERY_TEMPLATE = """
     /*{description}*/
     WITH most_recent_job_id AS (
       SELECT
@@ -70,6 +72,6 @@ MOST_RECENT_DAILY_INCARCERATION_POPULATION_VIEW_BUILDER = SimpleBigQueryViewBuil
     state_specific_facility_exclusion=state_specific_query_strings.state_specific_facility_exclusion(),
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         MOST_RECENT_DAILY_INCARCERATION_POPULATION_VIEW_BUILDER.build_and_print()

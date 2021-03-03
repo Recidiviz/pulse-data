@@ -32,7 +32,7 @@ from typing import TypeVar
 #
 # obj = MySubClass.make_object()
 # obj.print_foo()  <- mypy understand the type of obj is MySubClass and doesn't complain here
-ClsT = TypeVar('ClsT', bound=object)
+ClsT = TypeVar("ClsT", bound=object)
 
 # A Generic type where the generic can be any object
-T = TypeVar('T')
+T = TypeVar("T")

@@ -26,8 +26,8 @@ from recidiviz.persistence.entity.base_entity import Entity
 
 
 class RootType(EntityEnum, metaclass=EntityEnumMeta):
-    SIMPSONS = 'SIMPSONS'
-    FRIENDS = 'FRIENDS'
+    SIMPSONS = "SIMPSONS"
+    FRIENDS = "FRIENDS"
 
     @staticmethod
     def _get_default_map():
@@ -40,7 +40,7 @@ class Root(Entity, BuildableAttr, DefaultableAttr):
 
     type: Optional[RootType] = attr.ib()
 
-    parents: List['Parent'] = attr.ib(factory=list)
+    parents: List["Parent"] = attr.ib(factory=list)
 
 
 @attr.s
@@ -49,7 +49,7 @@ class Parent(Entity, BuildableAttr, DefaultableAttr):
 
     full_name: str = attr.ib()
 
-    children: List['Child'] = attr.ib(factory=list)
+    children: List["Child"] = attr.ib(factory=list)
 
 
 @attr.s
@@ -58,9 +58,9 @@ class Child(Entity, BuildableAttr, DefaultableAttr):
 
     full_name: str = attr.ib()
 
-    parents: List['Parent'] = attr.ib(factory=list)
+    parents: List["Parent"] = attr.ib(factory=list)
 
-    favorite_toy: Optional['Toy'] = attr.ib(default=None)
+    favorite_toy: Optional["Toy"] = attr.ib(default=None)
 
 
 @attr.s

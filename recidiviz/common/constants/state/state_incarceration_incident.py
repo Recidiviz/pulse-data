@@ -19,26 +19,24 @@
 from enum import unique
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
-import recidiviz.common.constants.state.enum_canonical_strings as \
-    state_enum_strings
+import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
 @unique
 class StateIncarcerationIncidentType(EntityEnum, metaclass=EntityEnumMeta):
     """Possible State Incarceration Incident types."""
+
     PRESENT_WITHOUT_INFO = enum_strings.present_without_info
-    CONTRABAND = \
-        state_enum_strings.state_incarceration_incident_type_contraband
-    DISORDERLY_CONDUCT = \
+    CONTRABAND = state_enum_strings.state_incarceration_incident_type_contraband
+    DISORDERLY_CONDUCT = (
         state_enum_strings.state_incarceration_incident_type_disorderly_conduct
+    )
     ESCAPE = state_enum_strings.state_incarceration_incident_type_escape
-    MINOR_OFFENSE = \
-        state_enum_strings.state_incarceration_incident_type_minor_offense
+    MINOR_OFFENSE = state_enum_strings.state_incarceration_incident_type_minor_offense
     POSITIVE = state_enum_strings.state_incarceration_incident_type_positive
     REPORT = state_enum_strings.state_incarceration_incident_type_report
-    VIOLENCE = \
-        state_enum_strings.state_incarceration_incident_type_violence
+    VIOLENCE = state_enum_strings.state_incarceration_incident_type_violence
 
     @staticmethod
     def _get_default_map():
@@ -46,39 +44,40 @@ class StateIncarcerationIncidentType(EntityEnum, metaclass=EntityEnumMeta):
 
 
 @unique
-class StateIncarcerationIncidentOutcomeType(EntityEnum,
-                                            metaclass=EntityEnumMeta):
+class StateIncarcerationIncidentOutcomeType(EntityEnum, metaclass=EntityEnumMeta):
     """Possible State Incarceration Incident outcome types."""
+
     # A form of confinement when a person cannot generally leave their own cell, regardless of who else occupies it
-    CELL_CONFINEMENT = state_enum_strings.state_incarceration_incident_outcome_cell_confinement
-    DISCIPLINARY_LABOR = \
-        state_enum_strings.\
-        state_incarceration_incident_outcome_disciplinary_labor
-    DISMISSED = \
-        state_enum_strings.state_incarceration_incident_outcome_dismissed
-    EXTERNAL_PROSECUTION = \
-        state_enum_strings.\
-        state_incarceration_incident_outcome_external_prosecution
-    FINANCIAL_PENALTY = \
-        state_enum_strings.\
-        state_incarceration_incident_outcome_financial_penalty
-    GOOD_TIME_LOSS = \
-        state_enum_strings.\
-        state_incarceration_incident_outcome_good_time_loss
-    MISCELLANEOUS = \
+    CELL_CONFINEMENT = (
+        state_enum_strings.state_incarceration_incident_outcome_cell_confinement
+    )
+    DISCIPLINARY_LABOR = (
+        state_enum_strings.state_incarceration_incident_outcome_disciplinary_labor
+    )
+    DISMISSED = state_enum_strings.state_incarceration_incident_outcome_dismissed
+    EXTERNAL_PROSECUTION = (
+        state_enum_strings.state_incarceration_incident_outcome_external_prosecution
+    )
+    FINANCIAL_PENALTY = (
+        state_enum_strings.state_incarceration_incident_outcome_financial_penalty
+    )
+    GOOD_TIME_LOSS = (
+        state_enum_strings.state_incarceration_incident_outcome_good_time_loss
+    )
+    MISCELLANEOUS = (
         state_enum_strings.state_incarceration_incident_outcome_miscellaneous
-    NOT_GUILTY = \
-        state_enum_strings.state_incarceration_incident_outcome_not_guilty
-    PRIVILEGE_LOSS = \
+    )
+    NOT_GUILTY = state_enum_strings.state_incarceration_incident_outcome_not_guilty
+    PRIVILEGE_LOSS = (
         state_enum_strings.state_incarceration_incident_outcome_privilege_loss
+    )
     # A form of confinement when a person is limited to certain areas of the facility, including their own cell/bunk
-    RESTRICTED_CONFINEMENT = \
+    RESTRICTED_CONFINEMENT = (
         state_enum_strings.state_incarceration_incident_outcome_restricted_confinement
+    )
     # A form of confinement when a person cannot leave a separate solitary cell, generally at all
-    SOLITARY = \
-        state_enum_strings.state_incarceration_incident_outcome_solitary
-    TREATMENT = \
-        state_enum_strings.state_incarceration_incident_outcome_treatment
+    SOLITARY = state_enum_strings.state_incarceration_incident_outcome_solitary
+    TREATMENT = state_enum_strings.state_incarceration_incident_outcome_treatment
     WARNING = state_enum_strings.state_incarceration_incident_outcome_warning
 
     @staticmethod
@@ -87,36 +86,36 @@ class StateIncarcerationIncidentOutcomeType(EntityEnum,
 
 
 _STATE_INCARCERATION_INCIDENT_OFFENSE_MAP = {
-    'CONTRABAND': StateIncarcerationIncidentType.CONTRABAND,
-    'DRUGS': StateIncarcerationIncidentType.CONTRABAND,
-    'ALCOHOL': StateIncarcerationIncidentType.CONTRABAND,
-    'TATTOO': StateIncarcerationIncidentType.CONTRABAND,
-    'DISORDERLY CONDUCT': StateIncarcerationIncidentType.DISORDERLY_CONDUCT,
-    'ESCAPE': StateIncarcerationIncidentType.ESCAPE,
-    'MINOR': StateIncarcerationIncidentType.MINOR_OFFENSE,
-    'MINOR OFFENSE': StateIncarcerationIncidentType.MINOR_OFFENSE,
-    'PRESENT WITHOUT INFO': StateIncarcerationIncidentType.PRESENT_WITHOUT_INFO,
-    'POSITIVE': StateIncarcerationIncidentType.POSITIVE,
-    'REPORT': StateIncarcerationIncidentType.REPORT,
-    'VIOLENT': StateIncarcerationIncidentType.VIOLENCE,
-    'VIOLENCE': StateIncarcerationIncidentType.VIOLENCE,
+    "CONTRABAND": StateIncarcerationIncidentType.CONTRABAND,
+    "DRUGS": StateIncarcerationIncidentType.CONTRABAND,
+    "ALCOHOL": StateIncarcerationIncidentType.CONTRABAND,
+    "TATTOO": StateIncarcerationIncidentType.CONTRABAND,
+    "DISORDERLY CONDUCT": StateIncarcerationIncidentType.DISORDERLY_CONDUCT,
+    "ESCAPE": StateIncarcerationIncidentType.ESCAPE,
+    "MINOR": StateIncarcerationIncidentType.MINOR_OFFENSE,
+    "MINOR OFFENSE": StateIncarcerationIncidentType.MINOR_OFFENSE,
+    "PRESENT WITHOUT INFO": StateIncarcerationIncidentType.PRESENT_WITHOUT_INFO,
+    "POSITIVE": StateIncarcerationIncidentType.POSITIVE,
+    "REPORT": StateIncarcerationIncidentType.REPORT,
+    "VIOLENT": StateIncarcerationIncidentType.VIOLENCE,
+    "VIOLENCE": StateIncarcerationIncidentType.VIOLENCE,
 }
 
 
 _STATE_INCARCERATION_INCIDENT_OUTCOME_MAP = {
-    'CELL CONFINEMENT': StateIncarcerationIncidentOutcomeType.CELL_CONFINEMENT,
-    'DISCIPLINARY LABOR': StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR,
-    'DISMISSED': StateIncarcerationIncidentOutcomeType.DISMISSED,
-    'EXTERNAL PROSECUTION': StateIncarcerationIncidentOutcomeType.EXTERNAL_PROSECUTION,
-    'FINANCIAL PENALTY': StateIncarcerationIncidentOutcomeType.FINANCIAL_PENALTY,
-    'GOOD TIME LOSS': StateIncarcerationIncidentOutcomeType.GOOD_TIME_LOSS,
-    'MISCELLANEOUS': StateIncarcerationIncidentOutcomeType.MISCELLANEOUS,
-    'PRIVILEGE LOSS': StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS,
-    'LOSS OF PRIVILEGE': StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS,
-    'NOT GUILTY': StateIncarcerationIncidentOutcomeType.NOT_GUILTY,
-    'RESTRICTED CONFINEMENT': StateIncarcerationIncidentOutcomeType.RESTRICTED_CONFINEMENT,
-    'SOLITARY': StateIncarcerationIncidentOutcomeType.SOLITARY,
-    'SOLITARY CONFINEMENT': StateIncarcerationIncidentOutcomeType.SOLITARY,
-    'TREATMENT': StateIncarcerationIncidentOutcomeType.TREATMENT,
-    'WARNING': StateIncarcerationIncidentOutcomeType.WARNING,
+    "CELL CONFINEMENT": StateIncarcerationIncidentOutcomeType.CELL_CONFINEMENT,
+    "DISCIPLINARY LABOR": StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR,
+    "DISMISSED": StateIncarcerationIncidentOutcomeType.DISMISSED,
+    "EXTERNAL PROSECUTION": StateIncarcerationIncidentOutcomeType.EXTERNAL_PROSECUTION,
+    "FINANCIAL PENALTY": StateIncarcerationIncidentOutcomeType.FINANCIAL_PENALTY,
+    "GOOD TIME LOSS": StateIncarcerationIncidentOutcomeType.GOOD_TIME_LOSS,
+    "MISCELLANEOUS": StateIncarcerationIncidentOutcomeType.MISCELLANEOUS,
+    "PRIVILEGE LOSS": StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS,
+    "LOSS OF PRIVILEGE": StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS,
+    "NOT GUILTY": StateIncarcerationIncidentOutcomeType.NOT_GUILTY,
+    "RESTRICTED CONFINEMENT": StateIncarcerationIncidentOutcomeType.RESTRICTED_CONFINEMENT,
+    "SOLITARY": StateIncarcerationIncidentOutcomeType.SOLITARY,
+    "SOLITARY CONFINEMENT": StateIncarcerationIncidentOutcomeType.SOLITARY,
+    "TREATMENT": StateIncarcerationIncidentOutcomeType.TREATMENT,
+    "WARNING": StateIncarcerationIncidentOutcomeType.WARNING,
 }

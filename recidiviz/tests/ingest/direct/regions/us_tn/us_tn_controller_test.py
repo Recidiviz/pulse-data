@@ -19,12 +19,16 @@ from typing import Type
 
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import GcsfsDirectIngestController
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import (
+    GcsfsDirectIngestController,
+)
 from recidiviz.ingest.direct.regions.us_tn.us_tn_controller import UsTnController
 from recidiviz.persistence.database.base_schema import StateBase
-from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests import BaseDirectIngestControllerTests
+from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests import (
+    BaseDirectIngestControllerTests,
+)
 
-_STATE_CODE_UPPER = 'US_TN'
+_STATE_CODE_UPPER = "US_TN"
 
 
 class TestUsTnController(BaseDirectIngestControllerTests):

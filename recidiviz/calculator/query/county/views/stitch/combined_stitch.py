@@ -18,28 +18,30 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
-from recidiviz.calculator.query.county.views.stitch.incarceration_trends_stitch_subset \
-    import INCARCERATION_TRENDS_STITCH_SUBSET_VIEW_BUILDER
-from recidiviz.calculator.query.county.views.stitch.scraper_aggregated_stitch_subset \
-    import SCRAPER_AGGREGATED_STITCH_SUBSET_VIEW_BUILDER
-from recidiviz.calculator.query.county.views.stitch.single_count_stitch_subset \
-    import SINGLE_COUNT_STITCH_SUBSET_VIEW_BUILDER
-from recidiviz.calculator.query.county.views.stitch.state_aggregate_stitch_subset \
-    import STATE_AGGREGATE_STITCH_SUBSET_VIEW_BUILDER
+from recidiviz.calculator.query.county.views.stitch.incarceration_trends_stitch_subset import (
+    INCARCERATION_TRENDS_STITCH_SUBSET_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.county.views.stitch.scraper_aggregated_stitch_subset import (
+    SCRAPER_AGGREGATED_STITCH_SUBSET_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.county.views.stitch.single_count_stitch_subset import (
+    SINGLE_COUNT_STITCH_SUBSET_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.county.views.stitch.state_aggregate_stitch_subset import (
+    STATE_AGGREGATE_STITCH_SUBSET_VIEW_BUILDER,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _DESCRIPTION = """
 Combine {interpolated_state_aggregate}, {scraper_data_aggregated},
 {incarceration_trends_aggregate}, and {single_count} into one unified view
-""".format(interpolated_state_aggregate=
-           STATE_AGGREGATE_STITCH_SUBSET_VIEW_BUILDER.view_id,
-           scraper_data_aggregated=
-           SCRAPER_AGGREGATED_STITCH_SUBSET_VIEW_BUILDER.view_id,
-           single_count=
-           SINGLE_COUNT_STITCH_SUBSET_VIEW_BUILDER.view_id,
-           incarceration_trends_aggregate=
-           INCARCERATION_TRENDS_STITCH_SUBSET_VIEW_BUILDER.view_id)
+""".format(
+    interpolated_state_aggregate=STATE_AGGREGATE_STITCH_SUBSET_VIEW_BUILDER.view_id,
+    scraper_data_aggregated=SCRAPER_AGGREGATED_STITCH_SUBSET_VIEW_BUILDER.view_id,
+    single_count=SINGLE_COUNT_STITCH_SUBSET_VIEW_BUILDER.view_id,
+    incarceration_trends_aggregate=INCARCERATION_TRENDS_STITCH_SUBSET_VIEW_BUILDER.view_id,
+)
 
 _QUERY_TEMPLATE = """
 /*{description}*/
@@ -55,19 +57,16 @@ SELECT * FROM `{project_id}.{views_dataset}.{incarceration_trends_aggregate}`
 
 COMBINED_STITCH_VIEW_BUILDER: SimpleBigQueryViewBuilder = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
-    view_id='combined_stitch',
+    view_id="combined_stitch",
     view_query_template=_QUERY_TEMPLATE,
     views_dataset=dataset_config.VIEWS_DATASET,
-    interpolated_state_aggregate=
-    STATE_AGGREGATE_STITCH_SUBSET_VIEW_BUILDER.view_id,
+    interpolated_state_aggregate=STATE_AGGREGATE_STITCH_SUBSET_VIEW_BUILDER.view_id,
     single_count_aggregate=SINGLE_COUNT_STITCH_SUBSET_VIEW_BUILDER.view_id,
-    scraper_data_aggregated=
-    SCRAPER_AGGREGATED_STITCH_SUBSET_VIEW_BUILDER.view_id,
-    incarceration_trends_aggregate=
-    INCARCERATION_TRENDS_STITCH_SUBSET_VIEW_BUILDER.view_id,
-    description=_DESCRIPTION
+    scraper_data_aggregated=SCRAPER_AGGREGATED_STITCH_SUBSET_VIEW_BUILDER.view_id,
+    incarceration_trends_aggregate=INCARCERATION_TRENDS_STITCH_SUBSET_VIEW_BUILDER.view_id,
+    description=_DESCRIPTION,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         COMBINED_STITCH_VIEW_BUILDER.build_and_print()

@@ -26,15 +26,12 @@ from more_itertools.more import one
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.common import fips, str_field_utils
-from recidiviz.common.constants.aggregate import (
-    enum_canonical_strings as enum_strings
-)
+from recidiviz.common.constants.aggregate import enum_canonical_strings as enum_strings
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
 from recidiviz.ingest.aggregate.errors import AggregateDateParsingError
-from recidiviz.persistence.database.schema.aggregate.schema import \
-    GaCountyAggregate
+from recidiviz.persistence.database.schema.aggregate.schema import GaCountyAggregate
 
-DATE_PARSE_ANCHOR = 'DATA SUMMARY'
+DATE_PARSE_ANCHOR = "DATA SUMMARY"
 
 
 def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
@@ -45,22 +42,20 @@ def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     county_names = table.county_name.map(_sanitize_county_name)
     table = fips.add_column_to_df(table, county_names, us.states.GA)
 
-    table['report_date'] = report_date
-    table['aggregation_window'] = enum_strings.daily_granularity
-    table['report_frequency'] = enum_strings.monthly_granularity
+    table["report_date"] = report_date
+    table["aggregation_window"] = enum_strings.daily_granularity
+    table["report_frequency"] = enum_strings.monthly_granularity
 
-    return {
-        GaCountyAggregate: table
-    }
+    return {GaCountyAggregate: table}
 
 
 def _parse_date(filename: str) -> datetime.date:
-    with open(filename, 'rb') as f:
+    with open(filename, "rb") as f:
         try:
             pdf = PdfFileReader(f)
             page = pdf.getPage(0)
             text = page.extractText()
-            lines = text.split('\n')
+            lines = text.split("\n")
         except Exception as e:
             raise AggregateDateParsingError(str(e)) from e
         for index, line in enumerate(lines):
@@ -77,19 +72,19 @@ def _parse_table(_: str, filename: str, report_date: datetime.date) -> pd.DataFr
 
     # Set column names since the pdf makes them hard to parse directly
     column_names = [
-        'Index',
-        'Jurisdiction',
-        'Total Number of Inmates In Jail',
-        'Jail Capacity',
-        'Inmates as % of Capacity',
-        'Number of Inmates Sentenced to State [Number]',
-        'Number of Inmates Sentenced to State [% of Total]',
-        'Number of Inmates Awaiting Trial in Jail [Number]',
-        'Number of Inmates Awaiting Trial in Jail [% of Total]',
-        'Number of Inmates Serving County Sentence [Number]',
-        'Number of Inmates Serving County Sentence [% of Total]',
-        'Number of Other Inmates [Number]',
-        'Number of Other Inmates [% of Total]'
+        "Index",
+        "Jurisdiction",
+        "Total Number of Inmates In Jail",
+        "Jail Capacity",
+        "Inmates as % of Capacity",
+        "Number of Inmates Sentenced to State [Number]",
+        "Number of Inmates Sentenced to State [% of Total]",
+        "Number of Inmates Awaiting Trial in Jail [Number]",
+        "Number of Inmates Awaiting Trial in Jail [% of Total]",
+        "Number of Inmates Serving County Sentence [Number]",
+        "Number of Inmates Serving County Sentence [% of Total]",
+        "Number of Other Inmates [Number]",
+        "Number of Other Inmates [% of Total]",
     ]
 
     # Tables at the end of the doc contain all data we want to parse
@@ -99,14 +94,12 @@ def _parse_table(_: str, filename: str, report_date: datetime.date) -> pd.DataFr
     # the right half of the page
     use_lattice = True
 
-    if filename.endswith('jun_19.pdf'):
+    if filename.endswith("jun_19.pdf"):
         # Tabula can't handle the multiple tables because it thinks the one on
         # the last page has extra columns. This concats them manually.
         *dfs, df4 = tabula.read_pdf(
-            filename,
-            pages=pages,
-            lattice=use_lattice,
-            multiple_tables=True)
+            filename, pages=pages, lattice=use_lattice, multiple_tables=True
+        )
         df4 = df4.iloc[:-1, 1:14]
         df4.columns = range(13)
         df4.iloc[33, 1] = df4.iloc[33, 1].strip(" '")
@@ -115,55 +108,59 @@ def _parse_table(_: str, filename: str, report_date: datetime.date) -> pd.DataFr
         result.columns = column_names
     elif report_date >= datetime.date(2020, 11, 5):
         # Skip every 48th row for new-style reports
-        result = one(tabula.read_pdf(
-            filename,
-            pages=pages,
-            lattice=use_lattice,
-            multiple_tables=False,
-            pandas_options={
-                'names': column_names,
-                'skiprows': [x * 48 for x in range(4)],
-                'skipfooter': 1,  # The last row is the grand totals
-                'engine': 'python'  # Only python engine supports 'skipfooter'
-            }))
+        result = one(
+            tabula.read_pdf(
+                filename,
+                pages=pages,
+                lattice=use_lattice,
+                multiple_tables=False,
+                pandas_options={
+                    "names": column_names,
+                    "skiprows": [x * 48 for x in range(4)],
+                    "skipfooter": 1,  # The last row is the grand totals
+                    "engine": "python",  # Only python engine supports 'skipfooter'
+                },
+            )
+        )
     else:
-        result = one(tabula.read_pdf(
-            filename,
-            pages=pages,
-            lattice=use_lattice,
-            multiple_tables=False,
-            pandas_options={
-                'names': column_names,
-                'skiprows': _header_on_each_page(),
-                'skipfooter': 1,  # The last row is the grand totals
-                'engine': 'python'  # Only python engine supports 'skipfooter'
-            }))
+        result = one(
+            tabula.read_pdf(
+                filename,
+                pages=pages,
+                lattice=use_lattice,
+                multiple_tables=False,
+                pandas_options={
+                    "names": column_names,
+                    "skiprows": _header_on_each_page(),
+                    "skipfooter": 1,  # The last row is the grand totals
+                    "engine": "python",  # Only python engine supports 'skipfooter'
+                },
+            )
+        )
 
-    result = aggregate_ingest_utils.rename_columns_and_select(result, {
-        'Jurisdiction': 'county_name',
-        'Total Number of Inmates In Jail': 'total_number_of_inmates_in_jail',
-        'Jail Capacity': 'jail_capacity',
-        'Number of Inmates Sentenced to State [Number]':
-            'number_of_inmates_sentenced_to_state',
-        'Number of Inmates Awaiting Trial in Jail [Number]':
-            'number_of_inmates_awaiting_trial',
-        'Number of Inmates Serving County Sentence [Number]':
-            'number_of_inmates_serving_county_sentence',
-        'Number of Other Inmates [Number]':
-            'number_of_other_inmates'
-    })
+    result = aggregate_ingest_utils.rename_columns_and_select(
+        result,
+        {
+            "Jurisdiction": "county_name",
+            "Total Number of Inmates In Jail": "total_number_of_inmates_in_jail",
+            "Jail Capacity": "jail_capacity",
+            "Number of Inmates Sentenced to State [Number]": "number_of_inmates_sentenced_to_state",
+            "Number of Inmates Awaiting Trial in Jail [Number]": "number_of_inmates_awaiting_trial",
+            "Number of Inmates Serving County Sentence [Number]": "number_of_inmates_serving_county_sentence",
+            "Number of Other Inmates [Number]": "number_of_other_inmates",
+        },
+    )
 
     # Tabula may parse extra empty rows
     result = result.dropna()
 
-    aggregate_ingest_utils.cast_columns_to_int(
-        result, ignore_columns={'county_name'})
+    aggregate_ingest_utils.cast_columns_to_int(result, ignore_columns={"county_name"})
 
     return result
 
 
 def _sanitize_county_name(county_name: str) -> str:
-    return county_name.replace('NO JAIL', '').rstrip(' ')
+    return county_name.replace("NO JAIL", "").rstrip(" ")
 
 
 def _header_on_each_page() -> List[int]:

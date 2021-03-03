@@ -23,16 +23,13 @@ from sqlalchemy.schema import MetaData
 
 config: Config
 
-
-def configure(connection: Optional[Connection] = None,
-              url: Optional[str] = None,
-              target_metadata: Optional[MetaData] = None,
-              transaction_per_migration: bool = False,
-              literal_binds: bool = False,
-              compare_type: bool = False) -> None: ...
-
-
+def configure(
+    connection: Optional[Connection] = None,
+    url: Optional[str] = None,
+    target_metadata: Optional[MetaData] = None,
+    transaction_per_migration: bool = False,
+    literal_binds: bool = False,
+    compare_type: bool = False,
+) -> None: ...
 def is_offline_mode() -> bool: ...
-
-
 def run_migrations() -> None: ...

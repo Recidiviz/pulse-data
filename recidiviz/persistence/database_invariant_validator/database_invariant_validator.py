@@ -23,19 +23,21 @@ from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.persistence.database.schema.schema_person_type import SchemaPersonType
 from recidiviz.persistence.database.schema.state.dao import SessionIsDirtyError
 from recidiviz.persistence.database.session import Session
-from recidiviz.persistence.database_invariant_validator.county.county_invariant_validators import \
-    get_county_database_invariant_validators
-from recidiviz.persistence.database_invariant_validator.state.state_invariant_validators import \
-    get_state_database_invariant_validators
+from recidiviz.persistence.database_invariant_validator.county.county_invariant_validators import (
+    get_county_database_invariant_validators,
+)
+from recidiviz.persistence.database_invariant_validator.state.state_invariant_validators import (
+    get_state_database_invariant_validators,
+)
 
 ValidatorType = Callable[[Session, str, List[SchemaPersonType]], bool]
 
 
 def validate_invariants(
-        session: Session,
-        system_level: SystemLevel,
-        region_code: str,
-        output_people: List[SchemaPersonType]
+    session: Session,
+    system_level: SystemLevel,
+    region_code: str,
+    output_people: List[SchemaPersonType],
 ) -> int:
     """Validates that certain database invariants are true for the given region.
 
@@ -62,7 +64,11 @@ def validate_invariants(
         except SessionIsDirtyError as e:
             raise e
         except Exception as e:
-            logging.error('Exception checking database invariant [%s]: %s', validator_fn.__name__, e)
+            logging.error(
+                "Exception checking database invariant [%s]: %s",
+                validator_fn.__name__,
+                e,
+            )
             errors += 1
 
     return errors

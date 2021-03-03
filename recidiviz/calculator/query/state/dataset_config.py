@@ -17,49 +17,49 @@
 """Various BigQuery datasets."""
 
 # Where the actual, final dashboard views live
-DASHBOARD_VIEWS_DATASET: str = 'dashboard_views'
+DASHBOARD_VIEWS_DATASET: str = "dashboard_views"
 
 # Where the metrics that Dataflow jobs produce live
-DATAFLOW_METRICS_DATASET: str = 'dataflow_metrics'
+DATAFLOW_METRICS_DATASET: str = "dataflow_metrics"
 
 # Where the most recent metrics that Dataflow jobs produce live
-DATAFLOW_METRICS_MATERIALIZED_DATASET: str = 'dataflow_metrics_materialized'
+DATAFLOW_METRICS_MATERIALIZED_DATASET: str = "dataflow_metrics_materialized"
 
 # Where static reference tables live
-STATIC_REFERENCE_TABLES_DATASET: str = 'static_reference_tables'
+STATIC_REFERENCE_TABLES_DATASET: str = "static_reference_tables"
 
 # Where reference views (views used by other views) live
-REFERENCE_VIEWS_DATASET: str = 'reference_views'
+REFERENCE_VIEWS_DATASET: str = "reference_views"
 
 # Where the base tables for the state schema live
-STATE_BASE_DATASET: str = 'state'
+STATE_BASE_DATASET: str = "state"
 
 # Where case triage views live
-CASE_TRIAGE_DATASET: str = 'case_triage'
+CASE_TRIAGE_DATASET: str = "case_triage"
 
 # Where the views for the COVID dashboard live
-COVID_DASHBOARD_DATASET: str = 'covid_public_data'
+COVID_DASHBOARD_DATASET: str = "covid_public_data"
 
 # Where the tables used to populate the COVID dashboard views live
-COVID_DASHBOARD_REFERENCE_DATASET: str = 'covid_public_data_reference_tables'
+COVID_DASHBOARD_REFERENCE_DATASET: str = "covid_public_data_reference_tables"
 
 # Where the views for the COVID report live
-COVID_REPORT_DATASET: str = 'covid_report_views'
+COVID_REPORT_DATASET: str = "covid_report_views"
 
 # Where the views for the PO Monthly report live
-PO_REPORT_DATASET: str = 'po_report_views'
+PO_REPORT_DATASET: str = "po_report_views"
 
 # Where the views for the public dashboard live
-PUBLIC_DASHBOARD_VIEWS_DATASET: str = 'public_dashboard_views'
+PUBLIC_DASHBOARD_VIEWS_DATASET: str = "public_dashboard_views"
 
 # Where analyst datasets live
-ANALYST_VIEWS_DATASET: str = 'analyst_data'
+ANALYST_VIEWS_DATASET: str = "analyst_data"
 
 # Where the population projection simulation views live
-POPULATION_PROJECTION_DATASET: str = 'population_projection_data'
+POPULATION_PROJECTION_DATASET: str = "population_projection_data"
 
 # Where the population projection simulation output tables live
-POPULATION_PROJECTION_OUTPUT_DATASET: str = 'population_projection_output_data'
+POPULATION_PROJECTION_OUTPUT_DATASET: str = "population_projection_output_data"
 
 # Where the views for the vitals report live
-VITALS_REPORT_DATASET: str = 'vitals_report_views'
+VITALS_REPORT_DATASET: str = "vitals_report_views"

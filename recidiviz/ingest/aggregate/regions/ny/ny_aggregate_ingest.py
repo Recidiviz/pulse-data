@@ -28,13 +28,10 @@ import tabula
 import us
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
-from recidiviz.common.constants.aggregate import (
-    enum_canonical_strings as enum_strings
-)
+from recidiviz.common.constants.aggregate import enum_canonical_strings as enum_strings
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
 from recidiviz.common import fips
-from recidiviz.persistence.database.schema.aggregate.schema import \
-    NyFacilityAggregate
+from recidiviz.persistence.database.schema.aggregate.schema import NyFacilityAggregate
 
 
 def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
@@ -46,24 +43,21 @@ def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     county_names = table.facility_name.map(_pretend_facility_is_county)
     table = fips.add_column_to_df(table, county_names, us.states.NY)
 
-    table['aggregation_window'] = enum_strings.monthly_granularity
-    table['report_frequency'] = enum_strings.monthly_granularity
+    table["aggregation_window"] = enum_strings.monthly_granularity
+    table["report_frequency"] = enum_strings.monthly_granularity
 
-    return {
-        NyFacilityAggregate: table
-    }
+    return {NyFacilityAggregate: table}
 
 
 def _parse_table(_: str, filename: str) -> pd.DataFrame:
     """Parses all tables in the GA PDF."""
     all_dfs = tabula.read_pdf(
         filename,
-        pages='all',
+        pages="all",
         multiple_tables=True,
         lattice=True,
-        pandas_options={
-            'header': 0
-        })
+        pandas_options={"header": 0},
+    )
 
     # Trim unnecessary tables
     all_dfs = all_dfs[3:-1]
@@ -77,18 +71,18 @@ def _parse_table(_: str, filename: str) -> pd.DataFrame:
 
 def _split_page(df: pd.DataFrame) -> Generator[pd.DataFrame, None, None]:
     """Create a new DataFrame for each facility listed on a page."""
-    df = df.dropna(how='all')
+    df = df.dropna(how="all")
 
     # bottom_df is parsed offset by one column and needs to be shifted
     last_column = df[df.columns[-1]]
     top_df = df[last_column.notnull()]
-    bottom_df = df[last_column.isnull()].shift(1, axis='columns')
+    bottom_df = df[last_column.isnull()].shift(1, axis="columns")
 
     # Recombine top_df and bottom_df since it's not the correct table division
     aligned_df = pd.concat([top_df, bottom_df], ignore_index=True)
 
     # New table starts when a new facility is listed
-    table_starts = np.where(aligned_df['FACILITY'].notnull())[0]
+    table_starts = np.where(aligned_df["FACILITY"].notnull())[0]
     table_starts_and_end = numpy.append(table_starts, len(aligned_df))
 
     for start, end in aggregate_ingest_utils.pairwise(table_starts_and_end):
@@ -99,27 +93,35 @@ def _format_df(df: pd.DataFrame) -> pd.DataFrame:
     """Format the DataFrame to match the schema."""
     result = _transpose_df(df)
 
-    result = aggregate_ingest_utils.rename_columns_and_select(result, {
-        'report_date': 'report_date',
-        'Census': 'census',
-        'In House': 'in_house',
-        'Boarded In': 'boarded_in',
-        'Boarded Out': 'boarded_out',
-        '- Sentenced': 'sentenced',
-        '- Civil': 'civil',
-        '- Federal': 'federal',
-        '- Technical Parole Violators': 'technical_parole_violators',
-        '- State Readies': 'state_readies',
-        '- Other Unsentenced **': 'other_unsentenced'
-    })
+    result = aggregate_ingest_utils.rename_columns_and_select(
+        result,
+        {
+            "report_date": "report_date",
+            "Census": "census",
+            "In House": "in_house",
+            "Boarded In": "boarded_in",
+            "Boarded Out": "boarded_out",
+            "- Sentenced": "sentenced",
+            "- Civil": "civil",
+            "- Federal": "federal",
+            "- Technical Parole Violators": "technical_parole_violators",
+            "- State Readies": "state_readies",
+            "- Other Unsentenced **": "other_unsentenced",
+        },
+    )
 
-    result['report_date'] = result['report_date'].apply(_parse_report_date)
+    result["report_date"] = result["report_date"].apply(_parse_report_date)
 
-    for column_name in set(result.columns) - {'report_date'}:
+    for column_name in set(result.columns) - {"report_date"}:
         result[column_name] = result[column_name].apply(
-            lambda d: int(d) if isinstance(d, (int, float)) else 0 if '(' in d else locale.atoi(d))
+            lambda d: int(d)
+            if isinstance(d, (int, float))
+            else 0
+            if "(" in d
+            else locale.atoi(d)
+        )
 
-    result['facility_name'] = df['FACILITY'].iloc[0]
+    result["facility_name"] = df["FACILITY"].iloc[0]
 
     return result
 
@@ -140,7 +142,7 @@ def _transpose_df(df: pd.DataFrame) -> pd.DataFrame:
     df = df.transpose()
 
     # Since report_date was the old column header, instead make it a new column
-    df = df.rename_axis('report_date').reset_index()
+    df = df.rename_axis("report_date").reset_index()
 
     return df
 
@@ -156,9 +158,9 @@ def _parse_report_date(report_date: str) -> datetime.date:
 
 def _pretend_facility_is_county(facility_name: str):
     """Format facility_name like a county_name to match each to a fips."""
-    return facility_name.split(' ')[0] + ' ' + facility_name.split(' ')[1]
+    return facility_name.split(" ")[0] + " " + facility_name.split(" ")[1]
 
 
 def _setup() -> None:
     # This allows us to call `locale.atoi` when converting str -> int
-    locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
+    locale.setlocale(locale.LC_ALL, "en_US.UTF-8")

@@ -71,12 +71,15 @@ from typing import Dict, Optional, Tuple
 import numpy
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager import \
-    StateSupervisionCaseComplianceManager
+from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager import (
+    StateSupervisionCaseComplianceManager,
+)
 from recidiviz.common.constants.person_characteristics import Gender
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
-from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType, \
-    StateSupervisionLevel
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodSupervisionType,
+    StateSupervisionLevel,
+)
 
 SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PROBATION = 45
 SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PAROLE = 90
@@ -100,19 +103,20 @@ DEPRECATED_MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE = 180
 DEPRECATED_MINIMUM_SUPERVISION_CONTACT_FREQUENCY_GENERAL_CASE = sys.maxsize
 
 # Dictionary from case type -> supervision level -> tuple of number of times they must be contacted per time period
-SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS: \
-    Dict[StateSupervisionCaseType, Dict[StateSupervisionLevel, Tuple[int, int]]] = {
-        StateSupervisionCaseType.GENERAL: {
-            StateSupervisionLevel.MINIMUM: (1, 180),
-            StateSupervisionLevel.MEDIUM: (2, 90),
-            StateSupervisionLevel.HIGH: (2, 30),
-        },
-        StateSupervisionCaseType.SEX_OFFENSE: {
-            StateSupervisionLevel.MINIMUM: (1, 90),
-            StateSupervisionLevel.MEDIUM: (1, 30),
-            StateSupervisionLevel.HIGH: (2, 30),
-        },
-    }
+SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS: Dict[
+    StateSupervisionCaseType, Dict[StateSupervisionLevel, Tuple[int, int]]
+] = {
+    StateSupervisionCaseType.GENERAL: {
+        StateSupervisionLevel.MINIMUM: (1, 180),
+        StateSupervisionLevel.MEDIUM: (2, 90),
+        StateSupervisionLevel.HIGH: (2, 30),
+    },
+    StateSupervisionCaseType.SEX_OFFENSE: {
+        StateSupervisionLevel.MINIMUM: (1, 90),
+        StateSupervisionLevel.MEDIUM: (1, 30),
+        StateSupervisionLevel.HIGH: (2, 30),
+    },
+}
 
 NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS = 3
 
@@ -127,23 +131,33 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         supervision_type = self.supervision_period.supervision_period_supervision_type
 
         # Check case type
-        if self.case_type not in (StateSupervisionCaseType.GENERAL, StateSupervisionCaseType.SEX_OFFENSE):
+        if self.case_type not in (
+            StateSupervisionCaseType.GENERAL,
+            StateSupervisionCaseType.SEX_OFFENSE,
+        ):
             return False
 
         # Check supervision level
-        allowed_supervision_levels = [StateSupervisionLevel.MINIMUM, StateSupervisionLevel.MEDIUM,
-                                      StateSupervisionLevel.HIGH]
+        allowed_supervision_levels = [
+            StateSupervisionLevel.MINIMUM,
+            StateSupervisionLevel.MEDIUM,
+            StateSupervisionLevel.HIGH,
+        ]
         if self.case_type is StateSupervisionCaseType.GENERAL:
             allowed_supervision_levels.append(StateSupervisionLevel.MAXIMUM)
         if self.supervision_period.supervision_level not in allowed_supervision_levels:
             return False
 
         # Check supervision type
-        allowed_supervision_types = [StateSupervisionPeriodSupervisionType.DUAL,
-                                     StateSupervisionPeriodSupervisionType.PROBATION,
-                                     StateSupervisionPeriodSupervisionType.PAROLE]
-        is_bench_warrant = supervision_type == StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN and \
-            self.supervision_period.supervision_type_raw_text == 'BW'
+        allowed_supervision_types = [
+            StateSupervisionPeriodSupervisionType.DUAL,
+            StateSupervisionPeriodSupervisionType.PROBATION,
+            StateSupervisionPeriodSupervisionType.PAROLE,
+        ]
+        is_bench_warrant = (
+            supervision_type == StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
+            and self.supervision_period.supervision_type_raw_text == "BW"
+        )
         if supervision_type not in allowed_supervision_types and not is_bench_warrant:
             return False
 
@@ -152,31 +166,40 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
     def _get_initial_assessment_number_of_days(self) -> int:
         """Returns the number of days that an initial assessment should take place, given a `case_type` and
         `supervision_type`."""
-        supervision_type: Optional[StateSupervisionPeriodSupervisionType] = self.supervision_period.\
-            supervision_period_supervision_type
+        supervision_type: Optional[
+            StateSupervisionPeriodSupervisionType
+        ] = self.supervision_period.supervision_period_supervision_type
         if self.case_type == StateSupervisionCaseType.GENERAL:
             return NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS
         if self.case_type == StateSupervisionCaseType.SEX_OFFENSE:
             if supervision_type == StateSupervisionPeriodSupervisionType.PROBATION:
                 return SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PROBATION
-            if supervision_type in (StateSupervisionPeriodSupervisionType.PAROLE,
-                                    StateSupervisionPeriodSupervisionType.DUAL):
+            if supervision_type in (
+                StateSupervisionPeriodSupervisionType.PAROLE,
+                StateSupervisionPeriodSupervisionType.DUAL,
+            ):
                 return SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PAROLE
             raise ValueError(f"Found unexpected supervision_type: [{supervision_type}]")
 
         raise ValueError(f"Found unexpected case_type: [{self.case_type}]")
 
-    def _num_days_past_required_reassessment(self,
-                                             compliance_evaluation_date: date,
-                                             most_recent_assessment_date: date,
-                                             most_recent_assessment_score: int) -> int:
+    def _num_days_past_required_reassessment(
+        self,
+        compliance_evaluation_date: date,
+        most_recent_assessment_date: date,
+        most_recent_assessment_score: int,
+    ) -> int:
         """Returns the number of days it has been since the required reassessment deadline. Returns 0
         if the reassessment is not overdue."""
         if self.case_type == StateSupervisionCaseType.GENERAL:
-            if self.supervision_period.supervision_level == StateSupervisionLevel.MINIMUM:
+            if (
+                self.supervision_period.supervision_level
+                == StateSupervisionLevel.MINIMUM
+            ):
                 return 0
             return self._num_days_compliance_evaluation_date_past_reassessment_deadline(
-                compliance_evaluation_date, most_recent_assessment_date)
+                compliance_evaluation_date, most_recent_assessment_date
+            )
         if self.case_type == StateSupervisionCaseType.SEX_OFFENSE:
             # TODO(#5769): Related to #5809, an extension of the work to bring assessment scores into
             # the calc pipeline is to bring gender information here as well because many cutoff decisions
@@ -184,17 +207,24 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
             # gender FEMALE, we're going to check the cutoff against that gender type.
             #
             # Better to err on the side of less assessments encouraged than more.
-            if most_recent_assessment_score >= SEX_OFFENSE_LSIR_MINIMUM_SCORE[Gender.FEMALE]:
+            if (
+                most_recent_assessment_score
+                >= SEX_OFFENSE_LSIR_MINIMUM_SCORE[Gender.FEMALE]
+            ):
                 return self._num_days_compliance_evaluation_date_past_reassessment_deadline(
-                    compliance_evaluation_date,
-                    most_recent_assessment_date)
+                    compliance_evaluation_date, most_recent_assessment_date
+                )
         return 0
 
-    def _face_to_face_contact_frequency_is_sufficient(self, compliance_evaluation_date: date) -> Optional[bool]:
+    def _face_to_face_contact_frequency_is_sufficient(
+        self, compliance_evaluation_date: date
+    ) -> Optional[bool]:
         """Calculates whether the frequency of face-to-face contacts between the officer and the person on supervision
         is sufficient with respect to the state standards for the level of supervision of the case.
         """
-        business_days_since_start = numpy.busday_count(self.start_of_supervision, compliance_evaluation_date)
+        business_days_since_start = numpy.busday_count(
+            self.start_of_supervision, compliance_evaluation_date
+        )
 
         if business_days_since_start <= NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS:
             # This is a recently started supervision period, and the person has not yet hit the number of business days
@@ -203,20 +233,27 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
             logging.debug(
                 "Supervision period %d started %d business days before the compliance date %s. Contact is not "
                 "overdue.",
-                self.supervision_period.supervision_period_id, business_days_since_start, compliance_evaluation_date)
+                self.supervision_period.supervision_period_id,
+                business_days_since_start,
+                compliance_evaluation_date,
+            )
             return True
 
         # Get applicable contacts that occurred between the start of supervision and the
         # compliance_evaluation_date (inclusive)
-        applicable_contacts = self._get_applicable_face_to_face_contacts_between_dates(self.start_of_supervision,
-                                                                                       compliance_evaluation_date)
+        applicable_contacts = self._get_applicable_face_to_face_contacts_between_dates(
+            self.start_of_supervision, compliance_evaluation_date
+        )
 
         if not applicable_contacts:
             # This person has been on supervision for longer than the allowed number of days without an initial contact.
             # The face-to-face contact standard is not in compliance.
             return False
 
-        required_contacts, period_days = self._get_required_face_to_face_contacts_and_period_days_for_level()
+        (
+            required_contacts,
+            period_days,
+        ) = self._get_required_face_to_face_contacts_and_period_days_for_level()
 
         days_since_start = (compliance_evaluation_date - self.start_of_supervision).days
 
@@ -226,55 +263,87 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
             return True
 
         contacts_within_period = [
-            contact for contact in applicable_contacts
-            if
-            contact.contact_date is not None and (compliance_evaluation_date - contact.contact_date).days <
-            period_days
+            contact
+            for contact in applicable_contacts
+            if contact.contact_date is not None
+            and (compliance_evaluation_date - contact.contact_date).days < period_days
         ]
 
         return len(contacts_within_period) >= required_contacts
 
-    def _num_days_compliance_evaluation_date_past_reassessment_deadline(self,
-                                                                        compliance_evaluation_date: date,
-                                                                        most_recent_assessment_date: date) -> int:
+    def _num_days_compliance_evaluation_date_past_reassessment_deadline(
+        self, compliance_evaluation_date: date, most_recent_assessment_date: date
+    ) -> int:
         """Computes the number of days the compliance is overdue for a reassessment. Returns 0 if it is
         not overdue."""
-        reassessment_deadline = most_recent_assessment_date + relativedelta(days=REASSESSMENT_DEADLINE_DAYS)
+        reassessment_deadline = most_recent_assessment_date + relativedelta(
+            days=REASSESSMENT_DEADLINE_DAYS
+        )
         logging.debug(
             "Last assessment was taken on %s. Re-assessment due by %s, and the compliance evaluation date is %s",
-            most_recent_assessment_date, reassessment_deadline, compliance_evaluation_date)
+            most_recent_assessment_date,
+            reassessment_deadline,
+            compliance_evaluation_date,
+        )
         return max(0, (compliance_evaluation_date - reassessment_deadline).days)
 
-    def _get_required_face_to_face_contacts_and_period_days_for_level(self) -> \
-            Tuple[int, int]:
+    def _get_required_face_to_face_contacts_and_period_days_for_level(
+        self,
+    ) -> Tuple[int, int]:
         """Returns the number of face-to-face contacts that are required within time period (in days) for a supervision
          case with the given supervision level.
         There are two supervision level systems, each with different face to face contact frequency expectations. The
         deprecated level system has four levels (which are associated with four numeric levels), and the new system has
         three levels.
         """
-        supervision_level_raw_text: Optional[str] = self.supervision_period.supervision_level_raw_text
-        supervision_level: Optional[StateSupervisionLevel] = self.supervision_period.supervision_level
-        is_new_level_system = UsIdSupervisionCaseCompliance._is_new_level_system(supervision_level_raw_text)
+        supervision_level_raw_text: Optional[
+            str
+        ] = self.supervision_period.supervision_level_raw_text
+        supervision_level: Optional[
+            StateSupervisionLevel
+        ] = self.supervision_period.supervision_level
+        is_new_level_system = UsIdSupervisionCaseCompliance._is_new_level_system(
+            supervision_level_raw_text
+        )
 
-        if self.case_type not in (StateSupervisionCaseType.GENERAL, StateSupervisionCaseType.SEX_OFFENSE):
-            raise ValueError("Standard supervision compliance guidelines not applicable for cases with a supervision"
-                             f" level of {supervision_level}. Should not be calculating compliance for this"
-                             f" supervision case.")
+        if self.case_type not in (
+            StateSupervisionCaseType.GENERAL,
+            StateSupervisionCaseType.SEX_OFFENSE,
+        ):
+            raise ValueError(
+                "Standard supervision compliance guidelines not applicable for cases with a supervision"
+                f" level of {supervision_level}. Should not be calculating compliance for this"
+                f" supervision case."
+            )
         if supervision_level is None:
             raise ValueError(
-                'Supervision level not provided and so cannot calculate required face to face contact frequency.')
-        if self.case_type == StateSupervisionCaseType.GENERAL and not is_new_level_system:
+                "Supervision level not provided and so cannot calculate required face to face contact frequency."
+            )
+        if (
+            self.case_type == StateSupervisionCaseType.GENERAL
+            and not is_new_level_system
+        ):
             if supervision_level == StateSupervisionLevel.MINIMUM:
                 return 0, DEPRECATED_MINIMUM_SUPERVISION_CONTACT_FREQUENCY_GENERAL_CASE
             if supervision_level == StateSupervisionLevel.MEDIUM:
-                return 1, DEPRECATED_MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE
+                return (
+                    1,
+                    DEPRECATED_MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE,
+                )
             if supervision_level == StateSupervisionLevel.HIGH:
-                return 1, DEPRECATED_HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE
+                return (
+                    1,
+                    DEPRECATED_HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE,
+                )
             if supervision_level == StateSupervisionLevel.MAXIMUM:
-                return 2, DEPRECATED_MAXIMUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE
+                return (
+                    2,
+                    DEPRECATED_MAXIMUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE,
+                )
 
-        return SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS[self.case_type][supervision_level]
+        return SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS[self.case_type][
+            supervision_level
+        ]
 
     @staticmethod
     def _is_new_level_system(supervision_level_raw_text: Optional[str]) -> bool:
@@ -282,6 +351,8 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         and `HIGH`. Returns whether the level system used is one of new values."""
 
         if not supervision_level_raw_text:
-            raise ValueError("a StateSupervisionPeriod should always have a value for supervision_level_raw_text.")
+            raise ValueError(
+                "a StateSupervisionPeriod should always have a value for supervision_level_raw_text."
+            )
 
         return supervision_level_raw_text in ("LOW", "MODERATE", "HIGH")

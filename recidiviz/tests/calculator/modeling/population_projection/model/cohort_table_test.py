@@ -29,14 +29,23 @@ class TestCohortTable(unittest.TestCase):
         """Tests that cohort size can only decrease over time"""
         cohort = CohortTable(starting_ts=2000, transition_table_max_length=100)
         with self.assertRaises(ValueError):
-            cohort.append_ts_end_count(cohort_sizes=pd.Series({i: 1 for i in range(1900, 2000)}), projection_ts=2001)
+            cohort.append_ts_end_count(
+                cohort_sizes=pd.Series({i: 1 for i in range(1900, 2000)}),
+                projection_ts=2001,
+            )
 
     def test_duplicate_year_data_rejected(self):
         """Tests that yearly data added to cohort must be in a new year"""
         cohort = CohortTable(starting_ts=2000, transition_table_max_length=100)
-        cohort.append_ts_end_count(cohort_sizes=pd.Series({i: 0 for i in range(1900, 2000)}), projection_ts=2000)
+        cohort.append_ts_end_count(
+            cohort_sizes=pd.Series({i: 0 for i in range(1900, 2000)}),
+            projection_ts=2000,
+        )
         with self.assertRaises(ValueError):
-            cohort.append_ts_end_count(cohort_sizes=pd.Series({i: 0 for i in range(1900, 2000)}), projection_ts=2000)
+            cohort.append_ts_end_count(
+                cohort_sizes=pd.Series({i: 0 for i in range(1900, 2000)}),
+                projection_ts=2000,
+            )
 
     def test_cohort_happy_path(self):
         """Tests the Cohort can maintain the timeline data"""
@@ -45,7 +54,10 @@ class TestCohortTable(unittest.TestCase):
         cohort_size_list = [-10, -20, -30, -40, -50]
         cohort = CohortTable(starting_ts=2000, transition_table_max_length=1)
         for time_index, cohort_size in enumerate(cohort_size_list):
-            cohort.append_ts_end_count(cohort_sizes=pd.Series({1999: cohort_size}), projection_ts=start_time+time_index)
+            cohort.append_ts_end_count(
+                cohort_sizes=pd.Series({1999: cohort_size}),
+                projection_ts=start_time + time_index,
+            )
 
         for index, cohort_size in enumerate(cohort_size_list):
             self.assertEqual(cohort_size, cohort.get_cohort_timeline(1999).iloc[index])

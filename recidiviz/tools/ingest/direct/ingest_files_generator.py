@@ -24,7 +24,9 @@ import argparse
 import logging
 
 from recidiviz.common.constants import states
-from recidiviz.ingest.direct.direct_ingest_files_generator import DirectIngestFilesGenerator
+from recidiviz.ingest.direct.direct_ingest_files_generator import (
+    DirectIngestFilesGenerator,
+)
 
 
 def main(region_code: str) -> None:
@@ -32,14 +34,18 @@ def main(region_code: str) -> None:
     generator.generate_all_new_dirs_and_files()
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
 
-    parser.add_argument('--region-code',
-                        required=True,
-                        help='The state to generate ingest files for.',
-                        choices=[state.value for state in states.StateCode])
+    parser.add_argument(
+        "--region-code",
+        required=True,
+        help="The state to generate ingest files for.",
+        choices=[state.value for state in states.StateCode],
+    )
 
     args = parser.parse_args()
-    logging.basicConfig(level=logging.INFO, format='%(message)s')
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
     main(region_code=args.region_code.lower())

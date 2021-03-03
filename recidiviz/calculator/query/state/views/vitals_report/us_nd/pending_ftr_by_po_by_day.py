@@ -15,21 +15,20 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Supervisees with pending FTR by PO by day."""
-# pylint: disable=line-too-long
+
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-PENDING_FTR_BY_PO_BY_DAY_VIEW_NAME = 'pending_ftr_by_po_by_day'
+PENDING_FTR_BY_PO_BY_DAY_VIEW_NAME = "pending_ftr_by_po_by_day"
 
 PENDING_FTR_BY_PO_BY_DAY_DESCRIPTION = """
     Supervisees with pending FTR by PO by day
  """
 
-PENDING_FTR_BY_PO_BY_DAY_QUERY_TEMPLATE = \
-    """
+PENDING_FTR_BY_PO_BY_DAY_QUERY_TEMPLATE = """
     /*{description}*/
     # Get all of the job ids in program referral metrics.
     WITH all_job_ids AS (
@@ -91,6 +90,6 @@ PENDING_FTR_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         PENDING_FTR_BY_PO_BY_DAY_VIEW_BUILDER.build_and_print()

@@ -16,4 +16,4 @@
 # =============================================================================
 """Dataset configuration for case triage."""
 
-VIEWS_DATASET: str = 'case_triage'
+VIEWS_DATASET: str = "case_triage"

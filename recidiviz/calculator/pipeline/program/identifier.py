@@ -21,29 +21,47 @@ from typing import List, Optional, Dict, Any
 
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.calculator.pipeline.program.program_event import \
-    ProgramReferralEvent, ProgramEvent, ProgramParticipationEvent
+from recidiviz.calculator.pipeline.program.program_event import (
+    ProgramReferralEvent,
+    ProgramEvent,
+    ProgramParticipationEvent,
+)
 from recidiviz.calculator.pipeline.utils import assessment_utils
-from recidiviz.calculator.pipeline.utils.execution_utils import list_of_dicts_to_dict_with_keys
-from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
-    filter_out_federal_and_other_country_supervision_periods, \
-    get_supervising_officer_and_location_info_from_supervision_period
-from recidiviz.calculator.pipeline.utils.supervision_period_utils import prepare_supervision_periods_for_calculations
-from recidiviz.common.constants.state.state_assessment import \
-    StateAssessmentType, StateAssessmentClass
-from recidiviz.common.constants.state.state_program_assignment import StateProgramAssignmentParticipationStatus
-from recidiviz.persistence.entity.entity_utils import is_placeholder, get_single_state_code
-from recidiviz.persistence.entity.state.entities import \
-    StateProgramAssignment, StateAssessment, StateSupervisionPeriod
+from recidiviz.calculator.pipeline.utils.execution_utils import (
+    list_of_dicts_to_dict_with_keys,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
+    filter_out_federal_and_other_country_supervision_periods,
+    get_supervising_officer_and_location_info_from_supervision_period,
+)
+from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
+    prepare_supervision_periods_for_calculations,
+)
+from recidiviz.common.constants.state.state_assessment import (
+    StateAssessmentType,
+    StateAssessmentClass,
+)
+from recidiviz.common.constants.state.state_program_assignment import (
+    StateProgramAssignmentParticipationStatus,
+)
+from recidiviz.persistence.entity.entity_utils import (
+    is_placeholder,
+    get_single_state_code,
+)
+from recidiviz.persistence.entity.state.entities import (
+    StateProgramAssignment,
+    StateAssessment,
+    StateSupervisionPeriod,
+)
 
-EXTERNAL_UNKNOWN_VALUE = 'EXTERNAL_UNKNOWN'
+EXTERNAL_UNKNOWN_VALUE = "EXTERNAL_UNKNOWN"
 
 
 def find_program_events(
-        program_assignments: List[StateProgramAssignment],
-        assessments: List[StateAssessment],
-        supervision_periods: List[StateSupervisionPeriod],
-        supervision_period_to_agent_association: List[Dict[str, Any]],
+    program_assignments: List[StateProgramAssignment],
+    assessments: List[StateAssessment],
+    supervision_periods: List[StateSupervisionPeriod],
+    supervision_period_to_agent_association: List[Dict[str, Any]],
 ) -> List[ProgramEvent]:
     """Finds instances of interaction with a program.
 
@@ -67,29 +85,33 @@ def find_program_events(
         return program_events
 
     supervision_period_to_agent_associations = list_of_dicts_to_dict_with_keys(
-        supervision_period_to_agent_association, StateSupervisionPeriod.get_class_id_name())
+        supervision_period_to_agent_association,
+        StateSupervisionPeriod.get_class_id_name(),
+    )
 
     state_code = get_single_state_code(program_assignments)
 
-    should_drop_federal_and_other_country = \
+    should_drop_federal_and_other_country = (
         filter_out_federal_and_other_country_supervision_periods(state_code)
+    )
 
     supervision_periods = prepare_supervision_periods_for_calculations(
         supervision_periods,
-        drop_federal_and_other_country_supervision_periods=should_drop_federal_and_other_country)
+        drop_federal_and_other_country_supervision_periods=should_drop_federal_and_other_country,
+    )
 
     for program_assignment in program_assignments:
         program_referrals = find_program_referrals(
             program_assignment,
             assessments,
             supervision_periods,
-            supervision_period_to_agent_associations)
+            supervision_period_to_agent_associations,
+        )
 
         program_events.extend(program_referrals)
 
         program_participation_events = find_program_participation_events(
-            program_assignment,
-            supervision_periods
+            program_assignment, supervision_periods
         )
 
         program_events.extend(program_participation_events)
@@ -98,10 +120,11 @@ def find_program_events(
 
 
 def find_program_referrals(
-        program_assignment: StateProgramAssignment,
-        assessments: List[StateAssessment],
-        supervision_periods: List[StateSupervisionPeriod],
-        supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]]) -> List[ProgramReferralEvent]:
+    program_assignment: StateProgramAssignment,
+    assessments: List[StateAssessment],
+    supervision_periods: List[StateSupervisionPeriod],
+    supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
+) -> List[ProgramReferralEvent]:
     """Finds instances of being referred to a program.
 
     If the program assignment has a referral date, then using date-based logic, connects that referral to assessment
@@ -121,32 +144,41 @@ def find_program_referrals(
         program_id = EXTERNAL_UNKNOWN_VALUE
 
     if referral_date and program_id:
-        assessment_score, _, assessment_type = assessment_utils.most_recent_applicable_assessment_attributes_for_class(
+        (
+            assessment_score,
+            _,
+            assessment_type,
+        ) = assessment_utils.most_recent_applicable_assessment_attributes_for_class(
             referral_date,
             assessments,
             assessment_class=StateAssessmentClass.RISK,
-            state_code=program_assignment.state_code)
+            state_code=program_assignment.state_code,
+        )
 
         relevant_supervision_periods = find_supervision_periods_overlapping_with_date(
-            referral_date, supervision_periods)
+            referral_date, supervision_periods
+        )
 
-        program_referrals.extend(referrals_for_supervision_periods(
-            program_assignment.state_code,
-            program_id,
-            referral_date,
-            program_assignment.participation_status,
-            assessment_score,
-            assessment_type,
-            relevant_supervision_periods,
-            supervision_period_to_agent_associations
-        ))
+        program_referrals.extend(
+            referrals_for_supervision_periods(
+                program_assignment.state_code,
+                program_id,
+                referral_date,
+                program_assignment.participation_status,
+                assessment_score,
+                assessment_type,
+                relevant_supervision_periods,
+                supervision_period_to_agent_associations,
+            )
+        )
 
     return program_referrals
 
 
-def find_program_participation_events(program_assignment: StateProgramAssignment,
-                                      supervision_periods: List[StateSupervisionPeriod]) -> \
-        List[ProgramParticipationEvent]:
+def find_program_participation_events(
+    program_assignment: StateProgramAssignment,
+    supervision_periods: List[StateSupervisionPeriod],
+) -> List[ProgramParticipationEvent]:
     """Finds instances of actively participating in a program. Produces a ProgramParticipationEvent for each day that
     the person was actively participating in the program. If the program_assignment has a participation_status of
     IN_PROGRESS and has a set start_date, produces a ProgramParticipationEvent for every day between the start_date and
@@ -165,8 +197,10 @@ def find_program_participation_events(program_assignment: StateProgramAssignment
     state_code = program_assignment.state_code
     participation_status = program_assignment.participation_status
 
-    if (participation_status not in (StateProgramAssignmentParticipationStatus.IN_PROGRESS,
-                                     StateProgramAssignmentParticipationStatus.DISCHARGED)):
+    if participation_status not in (
+        StateProgramAssignmentParticipationStatus.IN_PROGRESS,
+        StateProgramAssignmentParticipationStatus.DISCHARGED,
+    ):
         return program_participation_events
 
     start_date = program_assignment.start_date
@@ -177,23 +211,38 @@ def find_program_participation_events(program_assignment: StateProgramAssignment
     discharge_date = program_assignment.discharge_date
 
     if discharge_date is None:
-        if participation_status != StateProgramAssignmentParticipationStatus.IN_PROGRESS:
-            logging.warning("StateProgramAssignment with a DISCHARGED status but no discharge_date: %s",
-                            program_assignment)
+        if (
+            participation_status
+            != StateProgramAssignmentParticipationStatus.IN_PROGRESS
+        ):
+            logging.warning(
+                "StateProgramAssignment with a DISCHARGED status but no discharge_date: %s",
+                program_assignment,
+            )
             return program_participation_events
 
         # This person is actively participating in this program. Set the discharge_date for tomorrow.
         discharge_date = date.today() + relativedelta(days=1)
 
-    program_id = program_assignment.program_id if program_assignment.program_id else EXTERNAL_UNKNOWN_VALUE
-    program_location_id = (program_assignment.program_location_id
-                           if program_assignment.program_location_id else EXTERNAL_UNKNOWN_VALUE)
+    program_id = (
+        program_assignment.program_id
+        if program_assignment.program_id
+        else EXTERNAL_UNKNOWN_VALUE
+    )
+    program_location_id = (
+        program_assignment.program_location_id
+        if program_assignment.program_location_id
+        else EXTERNAL_UNKNOWN_VALUE
+    )
 
     participation_date = start_date
 
     while participation_date < discharge_date:
-        overlapping_supervision_periods = find_supervision_periods_overlapping_with_date(participation_date,
-                                                                                         supervision_periods)
+        overlapping_supervision_periods = (
+            find_supervision_periods_overlapping_with_date(
+                participation_date, supervision_periods
+            )
+        )
         is_first_day_in_program = participation_date == start_date
 
         if overlapping_supervision_periods:
@@ -206,16 +255,19 @@ def find_program_participation_events(program_assignment: StateProgramAssignment
                         program_id=program_id,
                         program_location_id=program_location_id,
                         # TODO(#2891): Use supervision_period_supervision_type
-                        supervision_type=supervision_period.supervision_type
-                    ))
+                        supervision_type=supervision_period.supervision_type,
+                    )
+                )
         else:
-            program_participation_events.append(ProgramParticipationEvent(
-                state_code=state_code,
-                event_date=participation_date,
-                is_first_day_in_program=is_first_day_in_program,
-                program_id=program_id,
-                program_location_id=program_location_id
-            ))
+            program_participation_events.append(
+                ProgramParticipationEvent(
+                    state_code=state_code,
+                    event_date=participation_date,
+                    is_first_day_in_program=is_first_day_in_program,
+                    program_id=program_id,
+                    program_location_id=program_location_id,
+                )
+            )
 
         participation_date = participation_date + relativedelta(days=1)
 
@@ -223,12 +275,14 @@ def find_program_participation_events(program_assignment: StateProgramAssignment
 
 
 def referrals_for_supervision_periods(
-        state_code: str, program_id: str, referral_date: date,
-        participation_status: Optional[StateProgramAssignmentParticipationStatus],
-        assessment_score: Optional[int],
-        assessment_type: Optional[StateAssessmentType],
-        supervision_periods: Optional[List[StateSupervisionPeriod]],
-        supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]]
+    state_code: str,
+    program_id: str,
+    referral_date: date,
+    participation_status: Optional[StateProgramAssignmentParticipationStatus],
+    assessment_score: Optional[int],
+    assessment_type: Optional[StateAssessmentType],
+    supervision_periods: Optional[List[StateSupervisionPeriod]],
+    supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
 ) -> List[ProgramReferralEvent]:
     """Builds ProgramReferralEvents with data from the relevant supervision periods at the time of the referral.
     Returns one ProgramReferralEvent for each of the supervision periods that overlap with the referral."""
@@ -237,14 +291,18 @@ def referrals_for_supervision_periods(
     if supervision_periods:
         for supervision_period in supervision_periods:
             # Return one ProgramReferralEvent per supervision period
-            (supervising_officer_external_id,
-             level_1_supervision_location_external_id,
-             level_2_supervision_location_external_id) = \
-                get_supervising_officer_and_location_info_from_supervision_period(
-                    supervision_period, supervision_period_to_agent_associations)
+            (
+                supervising_officer_external_id,
+                level_1_supervision_location_external_id,
+                level_2_supervision_location_external_id,
+            ) = get_supervising_officer_and_location_info_from_supervision_period(
+                supervision_period, supervision_period_to_agent_associations
+            )
 
-            deprecated_supervising_district_external_id = \
-                level_2_supervision_location_external_id or level_1_supervision_location_external_id
+            deprecated_supervising_district_external_id = (
+                level_2_supervision_location_external_id
+                or level_1_supervision_location_external_id
+            )
             program_referrals.append(
                 ProgramReferralEvent(
                     state_code=state_code,
@@ -258,7 +316,7 @@ def referrals_for_supervision_periods(
                     supervising_officer_external_id=supervising_officer_external_id,
                     supervising_district_external_id=deprecated_supervising_district_external_id,
                     level_1_supervision_location_external_id=level_1_supervision_location_external_id,
-                    level_2_supervision_location_external_id=level_2_supervision_location_external_id
+                    level_2_supervision_location_external_id=level_2_supervision_location_external_id,
                 )
             )
     else:
@@ -270,7 +328,7 @@ def referrals_for_supervision_periods(
                 event_date=referral_date,
                 participation_status=participation_status,
                 assessment_score=assessment_score,
-                assessment_type=assessment_type
+                assessment_type=assessment_type,
             )
         ]
 
@@ -278,14 +336,15 @@ def referrals_for_supervision_periods(
 
 
 def find_supervision_periods_overlapping_with_date(
-        event_date: date,
-        supervision_periods: List[StateSupervisionPeriod],
+    event_date: date,
+    supervision_periods: List[StateSupervisionPeriod],
 ) -> List[StateSupervisionPeriod]:
     """Identifies supervision_periods where the event_date falls between the start and end of the supervision period,
     inclusive of the start date and exclusive of the end date."""
     return [
-        sp for sp in supervision_periods if
-        not is_placeholder(sp)
+        sp
+        for sp in supervision_periods
+        if not is_placeholder(sp)
         and sp.start_date is not None
         and sp.start_date <= event_date
         and (sp.termination_date is None or event_date < sp.termination_date)

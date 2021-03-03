@@ -21,13 +21,13 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-POPULATION_PROJECTION_SESSIONS_VIEW_NAME = 'population_projection_sessions'
+POPULATION_PROJECTION_SESSIONS_VIEW_NAME = "population_projection_sessions"
 
-POPULATION_PROJECTION_SESSIONS_VIEW_DESCRIPTION = \
+POPULATION_PROJECTION_SESSIONS_VIEW_DESCRIPTION = (
     """"Compartment sessions view altered for the population projection simulation"""
+)
 
-POPULATION_PROJECTION_SESSIONS_QUERY_TEMPLATE = \
-    """
+POPULATION_PROJECTION_SESSIONS_QUERY_TEMPLATE = """
     WITH previously_incarcerated_cte AS (
       -- Create a flag to indicate if the person was incarcerated prior to this session
       -- Only count a session as "previously incarcerated" if there was a release/supervision session post-incarceration
@@ -88,9 +88,9 @@ POPULATION_PROJECTION_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=POPULATION_PROJECTION_SESSIONS_QUERY_TEMPLATE,
     description=POPULATION_PROJECTION_SESSIONS_VIEW_DESCRIPTION,
     analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
-    should_materialize=True
+    should_materialize=True,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         POPULATION_PROJECTION_SESSIONS_VIEW_BUILDER.build_and_print()

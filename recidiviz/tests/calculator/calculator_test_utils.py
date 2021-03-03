@@ -44,7 +44,9 @@ def normalized_database_base_dict(database_base: StateBase) -> NormalizedDatabas
     return new_object_dict
 
 
-def normalized_database_base_dict_list(database_bases: List[StateBase]) -> List[NormalizedDatabaseDict]:
+def normalized_database_base_dict_list(
+    database_bases: List[StateBase],
+) -> List[NormalizedDatabaseDict]:
     """Returns a list of normalized database base dictionaries."""
     dict_list = []
 
@@ -54,23 +56,22 @@ def normalized_database_base_dict_list(database_bases: List[StateBase]) -> List[
     return dict_list
 
 
-def remove_relationship_properties(
-        database_base: StateBase) -> StateBase:
+def remove_relationship_properties(database_base: StateBase) -> StateBase:
     """Removes the attributes corresponding to relationship properties
     on the Base. Used for tests to remove unwanted forward and back edges
     that mess with equality when hydrating only one degree away from a
     root entity."""
-    for relationship_property in \
-            database_base.get_relationship_property_names():
-        if hasattr(database_base, relationship_property) and \
-                getattr(database_base, relationship_property) is not None:
+    for relationship_property in database_base.get_relationship_property_names():
+        if (
+            hasattr(database_base, relationship_property)
+            and getattr(database_base, relationship_property) is not None
+        ):
             database_base.__delattr__(relationship_property)
 
     return database_base
 
 
-def combo_has_enum_value_for_key(combo: Dict[str, Any], key: str,
-                                 enum: Enum) -> bool:
+def combo_has_enum_value_for_key(combo: Dict[str, Any], key: str, enum: Enum) -> bool:
     """Checks whether the combo dict has the enum value for a given key.
     Person-based metrics are currently sent through a JSON conversion step,
     which removes the Enum values and leaves just the raw values. Therefore,

@@ -22,19 +22,21 @@ import requests
 from recidiviz.ingest.aggregate.regions.hi import hi_aggregate_site_scraper
 from recidiviz.tests.ingest import fixtures
 
-REPORTS_HTML = fixtures.as_string('aggregate/regions/hi', 'report.html')
+REPORTS_HTML = fixtures.as_string("aggregate/regions/hi", "report.html")
 
 
 class TestHiAggregateSiteScraper(TestCase):
     """Test that fl_aggregate_site_scraper correctly scrapes urls."""
 
-    @patch.object(requests, 'get')
+    @patch.object(requests, "get")
     def testGetAllUrls(self, mockget):
         mockresponse = Mock()
         mockget.return_value = mockresponse
         mockresponse.text = REPORTS_HTML
-        url1 = ('https://dps.hawaii.gov/wp-content/uploads/2019/01/'
-                'Pop-Reports-EOM-2018-12-31.pdf')
+        url1 = (
+            "https://dps.hawaii.gov/wp-content/uploads/2019/01/"
+            "Pop-Reports-EOM-2018-12-31.pdf"
+        )
         expected_urls = {url1}
 
         urls = hi_aggregate_site_scraper.get_urls_to_download()

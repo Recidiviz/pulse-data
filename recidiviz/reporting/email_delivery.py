@@ -32,14 +32,18 @@ from typing import Dict, Tuple, Optional, List
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.reporting.context.po_monthly_report.constants import DEFAULT_EMAIL_SUBJECT
+from recidiviz.reporting.context.po_monthly_report.constants import (
+    DEFAULT_EMAIL_SUBJECT,
+)
 from recidiviz.reporting.sendgrid_client_wrapper import SendGridClientWrapper
 
 
-def deliver(batch_id: str,
-            redirect_address: Optional[str] = None,
-            cc_addresses: Optional[List[str]] = None,
-            subject_override: Optional[str] = None) -> Tuple[int, int]:
+def deliver(
+    batch_id: str,
+    redirect_address: Optional[str] = None,
+    cc_addresses: Optional[List[str]] = None,
+    subject_override: Optional[str] = None,
+) -> Tuple[int, int]:
     """Delivers emails for the given batch.
 
     Delivers emails to the email address specified in the generated email filename.
@@ -63,22 +67,35 @@ def deliver(batch_id: str,
     logging.info("Delivering emails for batch %s", batch_id)
 
     if redirect_address:
-        logging.info("Redirecting all emails for batch %s to be sent to %s", batch_id, redirect_address)
+        logging.info(
+            "Redirecting all emails for batch %s to be sent to %s",
+            batch_id,
+            redirect_address,
+        )
 
     if cc_addresses:
-        logging.info("CCing the following addresses: [%s]", ','.join(address for address in cc_addresses))
+        logging.info(
+            "CCing the following addresses: [%s]",
+            ",".join(address for address in cc_addresses),
+        )
 
     try:
-        from_email_address = utils.get_env_var('FROM_EMAIL_ADDRESS')
-        from_email_name = utils.get_env_var('FROM_EMAIL_NAME')
+        from_email_address = utils.get_env_var("FROM_EMAIL_ADDRESS")
+        from_email_name = utils.get_env_var("FROM_EMAIL_NAME")
     except KeyError:
-        logging.error("Unable to get a required environment variables `FROM_EMAIL_ADDRESS` or `FROM_EMAIL_NAME`. "
-                      "Exiting.")
+        logging.error(
+            "Unable to get a required environment variables `FROM_EMAIL_ADDRESS` or `FROM_EMAIL_NAME`. "
+            "Exiting."
+        )
         raise
 
     content_bucket = utils.get_email_content_bucket_name()
-    html_files = load_files_from_storage(content_bucket, utils.get_html_folder(batch_id))
-    attachment_files = load_files_from_storage(content_bucket, utils.get_attachments_folder(batch_id))
+    html_files = load_files_from_storage(
+        content_bucket, utils.get_html_folder(batch_id)
+    )
+    attachment_files = load_files_from_storage(
+        content_bucket, utils.get_attachments_folder(batch_id)
+    )
 
     if len(html_files.items()) == 0:
         msg = f"No files found for batch {batch_id} in the bucket {content_bucket}"
@@ -91,14 +108,16 @@ def deliver(batch_id: str,
     subject = DEFAULT_EMAIL_SUBJECT if subject_override is None else subject_override
 
     for recipient_email_address in html_files:
-        sent_successfully = sendgrid.send_message(to_email=recipient_email_address,
-                                                  from_email=from_email_address,
-                                                  from_email_name=from_email_name,
-                                                  subject=subject,
-                                                  html_content=html_files[recipient_email_address],
-                                                  redirect_address=redirect_address,
-                                                  cc_addresses=cc_addresses,
-                                                  text_attachment_content=attachment_files.get(recipient_email_address))
+        sent_successfully = sendgrid.send_message(
+            to_email=recipient_email_address,
+            from_email=from_email_address,
+            from_email_name=from_email_name,
+            subject=subject,
+            html_content=html_files[recipient_email_address],
+            redirect_address=redirect_address,
+            cc_addresses=cc_addresses,
+            text_attachment_content=attachment_files.get(recipient_email_address),
+        )
 
         if sent_successfully:
             success_count = success_count + 1
@@ -115,7 +134,7 @@ def email_from_file_name(file_name: str) -> str:
     Args:
         file_name: Assumes that the file name is of the form of [email address].html
     """
-    return re.sub(r'(.html|.txt)$', '', file_name)
+    return re.sub(r"(.html|.txt)$", "", file_name)
 
 
 def load_files_from_storage(bucket_name: str, batch_id: str) -> Dict[str, str]:
@@ -139,11 +158,17 @@ def load_files_from_storage(bucket_name: str, batch_id: str) -> Dict[str, str]:
         gcs_file_system = GcsfsFactory.build()
         paths = [
             path
-            for path in gcs_file_system.ls_with_blob_prefix(bucket_name, blob_prefix=batch_id)
+            for path in gcs_file_system.ls_with_blob_prefix(
+                bucket_name, blob_prefix=batch_id
+            )
             if isinstance(path, GcsfsFilePath)
         ]
     except Exception:
-        logging.error("Unable to list files in folder. Bucket = %s, batch_id = %s", bucket_name, batch_id)
+        logging.error(
+            "Unable to list files in folder. Bucket = %s, batch_id = %s",
+            bucket_name,
+            batch_id,
+        )
         raise
 
     files = {}
@@ -151,7 +176,9 @@ def load_files_from_storage(bucket_name: str, batch_id: str) -> Dict[str, str]:
         try:
             body = gcs_file_system.download_as_string(path)
         except Exception:
-            logging.error("Unable to load file %s from bucket %s", path.blob_name, bucket_name)
+            logging.error(
+                "Unable to load file %s from bucket %s", path.blob_name, bucket_name
+            )
             raise
         else:
             email_address = email_from_file_name(path.file_name)

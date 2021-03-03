@@ -17,13 +17,10 @@
 from flask import Flask
 from typing import Union
 
-
-class CSRFProtect():
+class CSRFProtect:
     def __init__(self, app: Flask): ...
-
 
 class CSRFError(Exception):
     pass
-
 
 def generate_csrf(secret_key: Union[bytes, str, None]) -> str: ...

@@ -33,24 +33,24 @@ class MetadataTest(unittest.TestCase):
     def test_local_project_id_override(self):
         original_project = metadata.project_id()
 
-        with local_project_id_override('recidiviz-456'):
-            self.assertEqual('recidiviz-456', metadata.project_id())
+        with local_project_id_override("recidiviz-456"):
+            self.assertEqual("recidiviz-456", metadata.project_id())
 
         self.assertEqual(original_project, metadata.project_id())
 
-        with local_project_id_override('recidiviz-678'):
-            self.assertEqual('recidiviz-678', metadata.project_id())
+        with local_project_id_override("recidiviz-678"):
+            self.assertEqual("recidiviz-678", metadata.project_id())
 
         self.assertEqual(original_project, metadata.project_id())
 
     def test_local_project_id_override_throws_if_called_nested(self):
         original_project = metadata.project_id()
 
-        with local_project_id_override('recidiviz-456'):
-            self.assertEqual('recidiviz-456', metadata.project_id())
+        with local_project_id_override("recidiviz-456"):
+            self.assertEqual("recidiviz-456", metadata.project_id())
             with self.assertRaises(ValueError):
-                with local_project_id_override('recidiviz-678'):
+                with local_project_id_override("recidiviz-678"):
                     pass
-            self.assertEqual('recidiviz-456', metadata.project_id())
+            self.assertEqual("recidiviz-456", metadata.project_id())
 
         self.assertEqual(original_project, metadata.project_id())

@@ -23,7 +23,7 @@ import recidiviz
 from recidiviz.big_query.big_query_view import BigQueryViewBuilderType
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 
-VIEW_BUILDER_EXPECTED_NAME = 'VIEW_BUILDER'
+VIEW_BUILDER_EXPECTED_NAME = "VIEW_BUILDER"
 
 
 class BigQueryViewCollector(Generic[BigQueryViewBuilderType], ModuleCollectorMixin):
@@ -37,10 +37,12 @@ class BigQueryViewCollector(Generic[BigQueryViewBuilderType], ModuleCollectorMix
         """Returns a list of view builders of the appropriate type. Should be implemented by subclasses."""
 
     @classmethod
-    def collect_view_builders_in_dir(cls,
-                                     builder_type: Type[BigQueryViewBuilderType],
-                                     relative_dir_path: str,
-                                     view_file_prefix_filter: Optional[str] = None) -> List[BigQueryViewBuilderType]:
+    def collect_view_builders_in_dir(
+        cls,
+        builder_type: Type[BigQueryViewBuilderType],
+        relative_dir_path: str,
+        view_file_prefix_filter: Optional[str] = None,
+    ) -> List[BigQueryViewBuilderType]:
         """Collects all view builders in a directory relative to the recidiviz base directory and returns a list of all
         views that can be built from builders defined in files in that directory.
 
@@ -49,20 +51,22 @@ class BigQueryViewCollector(Generic[BigQueryViewBuilderType], ModuleCollectorMix
             relative_dir_path: The relative path to search in (e.g. 'calculator/query/state/views/admissions').
             view_file_prefix_filter: When set, collection filters out any files whose name does not have this prefix.
         """
-        sub_module_parts = os.path.normpath(relative_dir_path).split('/')
+        sub_module_parts = os.path.normpath(relative_dir_path).split("/")
         view_dir_module = cls.get_relative_module(recidiviz, sub_module_parts)
         view_modules = cls.get_submodules(view_dir_module, view_file_prefix_filter)
 
         builders = []
         for view_module in view_modules:
             if not hasattr(view_module, VIEW_BUILDER_EXPECTED_NAME):
-                raise ValueError(f'File [{view_module.__file__}] has no top-level attribute called '
-                                 f'[{VIEW_BUILDER_EXPECTED_NAME}]')
+                raise ValueError(
+                    f"File [{view_module.__file__}] has no top-level attribute called "
+                    f"[{VIEW_BUILDER_EXPECTED_NAME}]"
+                )
 
             builder = getattr(view_module, VIEW_BUILDER_EXPECTED_NAME)
 
             if not isinstance(builder, builder_type):
-                raise ValueError(f'Unexpected type for builder [{type(builder)}]')
+                raise ValueError(f"Unexpected type for builder [{type(builder)}]")
 
             builders.append(builder)
 

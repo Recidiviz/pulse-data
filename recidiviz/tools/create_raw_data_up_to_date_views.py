@@ -30,26 +30,43 @@ import argparse
 import logging
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_data_table_latest_view_updater import \
-    DirectIngestRawDataTableLatestViewUpdater
+from recidiviz.ingest.direct.controllers.direct_ingest_raw_data_table_latest_view_updater import (
+    DirectIngestRawDataTableLatestViewUpdater,
+)
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 
 
 def main(state_code: str, project_id: str, dry_run: bool) -> None:
     bq_client = BigQueryClientImpl(project_id=project_id)
-    updater = DirectIngestRawDataTableLatestViewUpdater(state_code, project_id, bq_client, dry_run)
+    updater = DirectIngestRawDataTableLatestViewUpdater(
+        state_code, project_id, bq_client, dry_run
+    )
     updater.update_views_for_state()
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
 
-    parser.add_argument('--dry-run', default=True, type=str_to_bool,
-                        help='Runs copy in dry-run mode, only prints the file copies it would do.')
-    parser.add_argument('--project-id', required=True, help='The project_id to upload views to')
-    parser.add_argument('--state-code', required=True, help='The state to upload views for.')
+    parser.add_argument(
+        "--dry-run",
+        default=True,
+        type=str_to_bool,
+        help="Runs copy in dry-run mode, only prints the file copies it would do.",
+    )
+    parser.add_argument(
+        "--project-id", required=True, help="The project_id to upload views to"
+    )
+    parser.add_argument(
+        "--state-code", required=True, help="The state to upload views for."
+    )
     args = parser.parse_args()
-    logging.basicConfig(level=logging.INFO, format='%(message)s')
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
     with local_project_id_override(args.project_id):
-        main(project_id=args.project_id, state_code=args.state_code.lower(), dry_run=args.dry_run)
+        main(
+            project_id=args.project_id,
+            state_code=args.state_code.lower(),
+            dry_run=args.dry_run,
+        )

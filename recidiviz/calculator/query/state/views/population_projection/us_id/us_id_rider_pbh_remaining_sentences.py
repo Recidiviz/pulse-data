@@ -15,21 +15,19 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """US_ID Rider remaining sentences by outflow compartment, and projected compartment duration (months)"""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-US_ID_RIDER_PBH_REMAINING_SENTENCES_VIEW_NAME = 'us_id_rider_pbh_remaining_sentences'
+US_ID_RIDER_PBH_REMAINING_SENTENCES_VIEW_NAME = "us_id_rider_pbh_remaining_sentences"
 
-US_ID_RIDER_PBH_REMAINING_SENTENCES_VIEW_DESCRIPTION = \
-    """"US_ID Rider & Parole Board Hold remaining sentences by outflow compartment, and compartment duration (months)
+US_ID_RIDER_PBH_REMAINING_SENTENCES_VIEW_DESCRIPTION = """"US_ID Rider & Parole Board Hold remaining sentences by outflow compartment, and compartment duration (months)
     projected using the historical transition probabilities and the time served so far to make up the remaining
     compartment duration."""
 
-US_ID_RIDER_PBH_REMAINING_SENTENCES_QUERY_TEMPLATE = \
-    """
+US_ID_RIDER_PBH_REMAINING_SENTENCES_QUERY_TEMPLATE = """
     /*{description}*/
 
     /*
@@ -106,9 +104,9 @@ US_ID_RIDER_PBH_REMAINING_SENTENCES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=US_ID_RIDER_PBH_REMAINING_SENTENCES_VIEW_DESCRIPTION,
     analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
     population_projection_dataset=dataset_config.POPULATION_PROJECTION_DATASET,
-    should_materialize=False
+    should_materialize=False,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         US_ID_RIDER_PBH_REMAINING_SENTENCES_VIEW_BUILDER.build_and_print()

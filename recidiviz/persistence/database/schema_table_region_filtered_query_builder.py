@@ -25,8 +25,13 @@ from typing import List, Optional
 from sqlalchemy import Table, ForeignKeyConstraint
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
-from recidiviz.persistence.database.schema_utils import get_foreign_key_constraints, get_region_code_col, \
-    get_table_class_by_name, schema_has_region_code_query_support, is_association_table
+from recidiviz.persistence.database.schema_utils import (
+    get_foreign_key_constraints,
+    get_region_code_col,
+    get_table_class_by_name,
+    schema_has_region_code_query_support,
+    is_association_table,
+)
 
 
 class SchemaTableRegionFilteredQueryBuilder:
@@ -48,15 +53,20 @@ class SchemaTableRegionFilteredQueryBuilder:
             # Returns a query that will return rows that do NOT match the provided region codes
             QueryBuilder(metadata_base, table, columns_to_include, region_codes_to_exclude=['US_ID']).full_query()
     """
-    def __init__(self,
-                 metadata_base: DeclarativeMeta,
-                 table: Table,
-                 columns_to_include: List[str],
-                 region_codes_to_include: Optional[List[str]] = None,
-                 region_codes_to_exclude: Optional[List[str]] = None):
+
+    def __init__(
+        self,
+        metadata_base: DeclarativeMeta,
+        table: Table,
+        columns_to_include: List[str],
+        region_codes_to_include: Optional[List[str]] = None,
+        region_codes_to_exclude: Optional[List[str]] = None,
+    ):
         if region_codes_to_include is not None and region_codes_to_exclude is not None:
-            raise ValueError(f'Expected only one of region_codes_to_include ([{region_codes_to_include}])'
-                             f'and region_codes_to_exclude ([{region_codes_to_exclude}]) to be not None')
+            raise ValueError(
+                f"Expected only one of region_codes_to_include ([{region_codes_to_include}])"
+                f"and region_codes_to_exclude ([{region_codes_to_exclude}]) to be not None"
+            )
         self.metadata_base = metadata_base
         self.sorted_tables: List[Table] = metadata_base.metadata.sorted_tables
         self.table = table
@@ -70,7 +80,10 @@ class SchemaTableRegionFilteredQueryBuilder:
 
     @property
     def excludes_all_rows(self) -> bool:
-        if self.region_codes_to_include is not None and len(self.region_codes_to_include) == 0:
+        if (
+            self.region_codes_to_include is not None
+            and len(self.region_codes_to_include) == 0
+        ):
             return True
         return False
 
@@ -96,7 +109,9 @@ class SchemaTableRegionFilteredQueryBuilder:
 
     def _get_association_join_table(self) -> Table:
         constraint = self._get_association_foreign_key_constraint()
-        join_table = get_table_class_by_name(constraint.referred_table.name, self.sorted_tables)
+        join_table = get_table_class_by_name(
+            constraint.referred_table.name, self.sorted_tables
+        )
         return join_table
 
     def _get_association_foreign_key_col(self) -> str:
@@ -104,16 +119,20 @@ class SchemaTableRegionFilteredQueryBuilder:
         return constraint.column_keys[0]
 
     def select_clause(self) -> str:
-        formatted_columns = self.format_columns_for_sql(self.columns_to_include, table_prefix=self.table_name)
+        formatted_columns = self.format_columns_for_sql(
+            self.columns_to_include, table_prefix=self.table_name
+        )
 
         if schema_has_region_code_query_support(self.metadata_base):
             region_code_col = self._get_region_code_col()
             if region_code_col not in self.columns_to_include:
                 region_code_table = self._get_region_code_table()
-                formatted_columns = \
-                    formatted_columns + f',{region_code_table.name}.{region_code_col} AS {region_code_col}'
+                formatted_columns = (
+                    formatted_columns
+                    + f",{region_code_table.name}.{region_code_col} AS {region_code_col}"
+                )
 
-        return 'SELECT {columns}'.format(columns=formatted_columns)
+        return "SELECT {columns}".format(columns=formatted_columns)
 
     @abstractmethod
     def from_clause(self) -> str:
@@ -124,7 +143,7 @@ class SchemaTableRegionFilteredQueryBuilder:
             return None
         join_table = self._get_association_join_table()
         foreign_key_col = self._get_association_foreign_key_col()
-        return f'JOIN {join_table.name} ON {join_table.name}.{foreign_key_col} = {self.table_name}.{foreign_key_col}'
+        return f"JOIN {join_table.name} ON {join_table.name}.{foreign_key_col} = {self.table_name}.{foreign_key_col}"
 
     @abstractmethod
     def _join_to_get_region_code(self) -> bool:
@@ -137,60 +156,89 @@ class SchemaTableRegionFilteredQueryBuilder:
             return None
 
         region_code_col = self._get_region_code_col()
-        operator = 'NOT IN' if self.region_codes_to_exclude else 'IN'
-        region_codes = self.region_codes_to_exclude if self.region_codes_to_exclude else self.region_codes_to_include
+        operator = "NOT IN" if self.region_codes_to_exclude else "IN"
+        region_codes = (
+            self.region_codes_to_exclude
+            if self.region_codes_to_exclude
+            else self.region_codes_to_include
+        )
         if not region_codes:
             return None
-        return f'WHERE {region_code_col} {operator} ({self.format_region_codes_for_sql(region_codes)})'
+        return f"WHERE {region_code_col} {operator} ({self.format_region_codes_for_sql(region_codes)})"
 
     def full_query(self) -> str:
-        return ' '.join(filter(None,
-                               [self.select_clause(), self.from_clause(), self.join_clause(), self.filter_clause()]))
+        return " ".join(
+            filter(
+                None,
+                [
+                    self.select_clause(),
+                    self.from_clause(),
+                    self.join_clause(),
+                    self.filter_clause(),
+                ],
+            )
+        )
 
     @staticmethod
     def format_region_codes_for_sql(region_codes: List[str]) -> str:
         """Format a list of region codes to use in a SQL string
-            format_region_codes_for_sql(['US_ND']) --> "'US_ND'"
-            format_region_codes_for_sql(['US_ND', 'US_PA']) --> "'US_ND', 'US_PA'"
+        format_region_codes_for_sql(['US_ND']) --> "'US_ND'"
+        format_region_codes_for_sql(['US_ND', 'US_PA']) --> "'US_ND', 'US_PA'"
         """
-        return ','.join([f"\'{region_code.upper()}\'" for region_code in region_codes])
+        return ",".join([f"'{region_code.upper()}'" for region_code in region_codes])
 
     @staticmethod
-    def format_columns_for_sql(columns: List[str], table_prefix: Optional[str] = None) -> str:
+    def format_columns_for_sql(
+        columns: List[str], table_prefix: Optional[str] = None
+    ) -> str:
         if table_prefix:
-            return ','.join(map(lambda col: f'{table_prefix}.{col}', columns))
-        return ','.join(columns)
+            return ",".join(map(lambda col: f"{table_prefix}.{col}", columns))
+        return ",".join(columns)
 
 
-class CloudSqlSchemaTableRegionFilteredQueryBuilder(SchemaTableRegionFilteredQueryBuilder):
+class CloudSqlSchemaTableRegionFilteredQueryBuilder(
+    SchemaTableRegionFilteredQueryBuilder
+):
     """Implementation of the SchemaTableRegionFilteredQueryBuilder for querying tables in CloudSQL (i.e. Postgres)."""
 
     def from_clause(self) -> str:
-        return f'FROM {self.table_name}'
+        return f"FROM {self.table_name}"
 
     def _join_to_get_region_code(self) -> bool:
-        return schema_has_region_code_query_support(self.metadata_base) and is_association_table(self.table_name)
+        return schema_has_region_code_query_support(
+            self.metadata_base
+        ) and is_association_table(self.table_name)
 
 
-class BigQuerySchemaTableRegionFilteredQueryBuilder(SchemaTableRegionFilteredQueryBuilder):
+class BigQuerySchemaTableRegionFilteredQueryBuilder(
+    SchemaTableRegionFilteredQueryBuilder
+):
     """Implementation of the SchemaTableRegionFilteredQueryBuilder for querying schema tables in BigQuery that have been
     exported from CloudSQL.
     """
 
-    def __init__(self,
-                 project_id: str,
-                 dataset_id: str,
-                 metadata_base: DeclarativeMeta,
-                 table: Table,
-                 columns_to_include: List[str],
-                 region_codes_to_include: Optional[List[str]] = None,
-                 region_codes_to_exclude: Optional[List[str]] = None):
-        super().__init__(metadata_base, table, columns_to_include, region_codes_to_include, region_codes_to_exclude)
+    def __init__(
+        self,
+        project_id: str,
+        dataset_id: str,
+        metadata_base: DeclarativeMeta,
+        table: Table,
+        columns_to_include: List[str],
+        region_codes_to_include: Optional[List[str]] = None,
+        region_codes_to_exclude: Optional[List[str]] = None,
+    ):
+        super().__init__(
+            metadata_base,
+            table,
+            columns_to_include,
+            region_codes_to_include,
+            region_codes_to_exclude,
+        )
         self.project_id = project_id
         self.dataset_id = dataset_id
 
     def from_clause(self) -> str:
-        return f'FROM `{self.project_id}.{self.dataset_id}.{self.table_name}` {self.table_name}'
+        return f"FROM `{self.project_id}.{self.dataset_id}.{self.table_name}` {self.table_name}"
 
     def _join_to_get_region_code(self) -> bool:
         # All schema tables the in schemas that support region code fields should already have that column in the BQ

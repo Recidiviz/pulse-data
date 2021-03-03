@@ -20,13 +20,13 @@ import unittest
 from datetime import date
 
 from recidiviz.common.constants.charge import ChargeStatus
-from recidiviz.common.constants.state.state_charge import \
-    StateChargeClassificationType
+from recidiviz.common.constants.state.state_charge import StateChargeClassificationType
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.state.entity_helpers import \
-    state_charge
+from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
+    state_charge,
+)
 
 _EMPTY_METADATA = IngestMetadata.new_with_defaults()
 
@@ -37,54 +37,55 @@ class StateChargeConverterTest(unittest.TestCase):
     def testParseStateCharge(self):
         # Arrange
         ingest_charge = ingest_info_pb2.StateCharge(
-            status='ACQUITTED',
-            classification_type='FELONY',
-            classification_subtype='AA',
-            offense_type='OTHER',
-            is_violent='False',
-            state_charge_id='CHARGE_ID',
-            offense_date='1/2/2111',
-            date_charged='1/10/2111',
-            state_code='us_nd',
-            ncic_code='4801',
-            statute='ab54.21c',
-            description='CONSPIRACY',
-            attempted='False',
-            counts='4',
+            status="ACQUITTED",
+            classification_type="FELONY",
+            classification_subtype="AA",
+            offense_type="OTHER",
+            is_violent="False",
+            state_charge_id="CHARGE_ID",
+            offense_date="1/2/2111",
+            date_charged="1/10/2111",
+            state_code="us_nd",
+            ncic_code="4801",
+            statute="ab54.21c",
+            description="CONSPIRACY",
+            attempted="False",
+            counts="4",
             charge_notes="Have I told you about that time I saw Janelle Monae "
-                         "open for of Montreal at the 9:30 Club?",
-            is_controlling='True',
-            charging_entity='SCOTUS'
+            "open for of Montreal at the 9:30 Club?",
+            is_controlling="True",
+            charging_entity="SCOTUS",
         )
 
         # Act
         charge_builder = entities.StateCharge.builder()
         state_charge.copy_fields_to_builder(
-            charge_builder, ingest_charge, _EMPTY_METADATA)
+            charge_builder, ingest_charge, _EMPTY_METADATA
+        )
         result = charge_builder.build()
 
         # Assert
         expected_result = entities.StateCharge.new_with_defaults(
             status=ChargeStatus.ACQUITTED,
-            status_raw_text='ACQUITTED',
+            status_raw_text="ACQUITTED",
             classification_type=StateChargeClassificationType.FELONY,
-            classification_type_raw_text='FELONY',
-            classification_subtype='AA',
-            offense_type='OTHER',
+            classification_type_raw_text="FELONY",
+            classification_subtype="AA",
+            offense_type="OTHER",
             is_violent=False,
-            external_id='CHARGE_ID',
+            external_id="CHARGE_ID",
             offense_date=date(year=2111, month=1, day=2),
             date_charged=date(year=2111, month=1, day=10),
-            state_code='US_ND',
-            ncic_code='4801',
-            statute='AB54.21C',
-            description='CONSPIRACY',
+            state_code="US_ND",
+            ncic_code="4801",
+            statute="AB54.21C",
+            description="CONSPIRACY",
             attempted=False,
             counts=4,
             charge_notes="HAVE I TOLD YOU ABOUT THAT TIME I SAW JANELLE MONAE "
-                         "OPEN FOR OF MONTREAL AT THE 9:30 CLUB?",
+            "OPEN FOR OF MONTREAL AT THE 9:30 CLUB?",
             is_controlling=True,
-            charging_entity='SCOTUS'
+            charging_entity="SCOTUS",
         )
 
         self.assertEqual(result, expected_result)
@@ -92,40 +93,41 @@ class StateChargeConverterTest(unittest.TestCase):
     def testParseStateCharge_ncicCodeButNoDescription(self):
         # Arrange
         ingest_charge = ingest_info_pb2.StateCharge(
-            status='ACQUITTED',
-            classification_type='FELONY',
-            classification_subtype='AA',
-            offense_type='VIOLENT',
-            is_violent='True',
-            state_charge_id='CHARGE_ID',
-            offense_date='1/2/2111',
-            date_charged='1/10/2111',
-            state_code='us_nd',
-            ncic_code='4801',
-            attempted='False',
+            status="ACQUITTED",
+            classification_type="FELONY",
+            classification_subtype="AA",
+            offense_type="VIOLENT",
+            is_violent="True",
+            state_charge_id="CHARGE_ID",
+            offense_date="1/2/2111",
+            date_charged="1/10/2111",
+            state_code="us_nd",
+            ncic_code="4801",
+            attempted="False",
         )
 
         # Act
         charge_builder = entities.StateCharge.builder()
         state_charge.copy_fields_to_builder(
-            charge_builder, ingest_charge, _EMPTY_METADATA)
+            charge_builder, ingest_charge, _EMPTY_METADATA
+        )
         result = charge_builder.build()
 
         # Assert
         expected_result = entities.StateCharge.new_with_defaults(
             status=ChargeStatus.ACQUITTED,
-            status_raw_text='ACQUITTED',
+            status_raw_text="ACQUITTED",
             classification_type=StateChargeClassificationType.FELONY,
-            classification_type_raw_text='FELONY',
-            classification_subtype='AA',
-            offense_type='VIOLENT',
+            classification_type_raw_text="FELONY",
+            classification_subtype="AA",
+            offense_type="VIOLENT",
             is_violent=True,
-            external_id='CHARGE_ID',
+            external_id="CHARGE_ID",
             offense_date=date(year=2111, month=1, day=2),
             date_charged=date(year=2111, month=1, day=10),
-            state_code='US_ND',
-            ncic_code='4801',
-            description='RESISTING ARREST',
+            state_code="US_ND",
+            ncic_code="4801",
+            description="RESISTING ARREST",
             attempted=False,
         )
 
@@ -134,35 +136,36 @@ class StateChargeConverterTest(unittest.TestCase):
     def testParseStateCharge_ncicCodeButNoDescription_codeNotFound(self):
         # Arrange
         ingest_charge = ingest_info_pb2.StateCharge(
-            status='ACQUITTED',
-            classification_type='FELONY',
-            classification_subtype='AA',
-            state_charge_id='CHARGE_ID',
-            offense_date='1/2/2111',
-            date_charged='1/10/2111',
-            state_code='us_nd',
-            ncic_code='9999',
-            attempted='False',
+            status="ACQUITTED",
+            classification_type="FELONY",
+            classification_subtype="AA",
+            state_charge_id="CHARGE_ID",
+            offense_date="1/2/2111",
+            date_charged="1/10/2111",
+            state_code="us_nd",
+            ncic_code="9999",
+            attempted="False",
         )
 
         # Act
         charge_builder = entities.StateCharge.builder()
         state_charge.copy_fields_to_builder(
-            charge_builder, ingest_charge, _EMPTY_METADATA)
+            charge_builder, ingest_charge, _EMPTY_METADATA
+        )
         result = charge_builder.build()
 
         # Assert
         expected_result = entities.StateCharge.new_with_defaults(
             status=ChargeStatus.ACQUITTED,
-            status_raw_text='ACQUITTED',
+            status_raw_text="ACQUITTED",
             classification_type=StateChargeClassificationType.FELONY,
-            classification_type_raw_text='FELONY',
-            classification_subtype='AA',
-            external_id='CHARGE_ID',
+            classification_type_raw_text="FELONY",
+            classification_subtype="AA",
+            external_id="CHARGE_ID",
             offense_date=date(year=2111, month=1, day=2),
             date_charged=date(year=2111, month=1, day=10),
-            state_code='US_ND',
-            ncic_code='9999',
+            state_code="US_ND",
+            ncic_code="9999",
             attempted=False,
         )
 

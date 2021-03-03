@@ -20,14 +20,16 @@
 import unittest
 from datetime import date, datetime
 
-from recidiviz.common.constants.person_characteristics import Gender, \
-    ResidencyStatus
+from recidiviz.common.constants.person_characteristics import Gender, ResidencyStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.entity.state.deserialize_entity_factories import StatePersonFactory
-from recidiviz.persistence.ingest_info_converter.state.entity_helpers import \
-    state_person
+from recidiviz.persistence.entity.state.deserialize_entity_factories import (
+    StatePersonFactory,
+)
+from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
+    state_person,
+)
 
 _NOW = datetime(2000, 5, 15)
 
@@ -41,29 +43,29 @@ class StatePersonConverterTest(unittest.TestCase):
     def testParsesStatePerson(self):
         # Arrange
         metadata = IngestMetadata.new_with_defaults(
-            region='us_nd', jurisdiction_id='JURISDICTION_ID')
+            region="us_nd", jurisdiction_id="JURISDICTION_ID"
+        )
         ingest_person = ingest_info_pb2.StatePerson(
-            gender='MALE',
-            full_name='FULL_NAME',
-            birthdate='12-31-1999',
-            current_address='NNN\n  STREET \t ZIP'
+            gender="MALE",
+            full_name="FULL_NAME",
+            birthdate="12-31-1999",
+            current_address="NNN\n  STREET \t ZIP",
         )
 
         # Act
-        state_person.copy_fields_to_builder(
-            self.subject, ingest_person, metadata)
+        state_person.copy_fields_to_builder(self.subject, ingest_person, metadata)
         result = self.subject.build(StatePersonFactory.deserialize)
 
         # Assert
         expected_result = entities.StatePerson.new_with_defaults(
             gender=Gender.MALE,
-            gender_raw_text='MALE',
+            gender_raw_text="MALE",
             full_name='{"full_name": "FULL_NAME"}',
             birthdate=date(year=1999, month=12, day=31),
             birthdate_inferred_from_age=False,
-            current_address='NNN STREET ZIP',
+            current_address="NNN STREET ZIP",
             residency_status=ResidencyStatus.PERMANENT,
-            state_code='US_ND'
+            state_code="US_ND",
         )
 
         self.assertEqual(result, expected_result)
@@ -72,77 +74,74 @@ class StatePersonConverterTest(unittest.TestCase):
         # Arrange
         metadata = IngestMetadata.new_with_defaults()
         ingest_person = ingest_info_pb2.StatePerson(
-            full_name='LAST,FIRST',
-            surname='LAST'
+            full_name="LAST,FIRST", surname="LAST"
         )
 
         # Arrange + Act
         with self.assertRaises(ValueError):
-            state_person.copy_fields_to_builder(
-                self.subject, ingest_person, metadata)
+            state_person.copy_fields_to_builder(self.subject, ingest_person, metadata)
 
     def testParseStatePerson_WithSurnameAndGivenNames_UsesFullNameAsJson(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults(region='us_xx')
+        metadata = IngestMetadata.new_with_defaults(region="us_xx")
         ingest_person = ingest_info_pb2.StatePerson(
-            state_code='us_xx',
+            state_code="us_xx",
             surname='UNESCAPED,SURNAME"WITH-CHARS"',
-            given_names='GIVEN_NAMES',
-            middle_names='MIDDLE_NAMES'
+            given_names="GIVEN_NAMES",
+            middle_names="MIDDLE_NAMES",
         )
 
         # Act
-        state_person.copy_fields_to_builder(
-            self.subject, ingest_person, metadata)
+        state_person.copy_fields_to_builder(self.subject, ingest_person, metadata)
         result = self.subject.build(StatePersonFactory.deserialize)
 
         # Assert
-        expected_full_name = \
-            '{{"given_names": "{}", "middle_names": "{}", "surname": "{}"}}'\
-            .format('GIVEN_NAMES', 'MIDDLE_NAMES',
-                    'UNESCAPED,SURNAME\\"WITH-CHARS\\"')
+        expected_full_name = (
+            '{{"given_names": "{}", "middle_names": "{}", "surname": "{}"}}'.format(
+                "GIVEN_NAMES", "MIDDLE_NAMES", 'UNESCAPED,SURNAME\\"WITH-CHARS\\"'
+            )
+        )
         expected_result = entities.StatePerson.new_with_defaults(
-            state_code='US_XX', full_name=expected_full_name)
+            state_code="US_XX", full_name=expected_full_name
+        )
 
         self.assertEqual(result, expected_result)
 
     def testParseStatePerson_TakesLastZipCodeMatch(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults(region='us_nd')
+        metadata = IngestMetadata.new_with_defaults(region="us_nd")
         # 5-digit address could be mistaken for a zip code
-        ingest_person = ingest_info_pb2.StatePerson(
-            current_address='12345 Main 58503')
+        ingest_person = ingest_info_pb2.StatePerson(current_address="12345 Main 58503")
 
         # Act
-        state_person.copy_fields_to_builder(
-            self.subject, ingest_person, metadata)
+        state_person.copy_fields_to_builder(self.subject, ingest_person, metadata)
         result = self.subject.build(StatePersonFactory.deserialize)
 
         # Assert
         expected_result = entities.StatePerson.new_with_defaults(
-            current_address='12345 MAIN 58503',
+            current_address="12345 MAIN 58503",
             residency_status=ResidencyStatus.PERMANENT,
-            state_code='US_ND'
+            state_code="US_ND",
         )
 
         self.assertEqual(result, expected_result)
 
     def testParseStatePerson_NoiseInPlaceOfResidence_ParsesResidency(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults(region='us_xx')
+        metadata = IngestMetadata.new_with_defaults(region="us_xx")
         ingest_person = ingest_info_pb2.StatePerson(
-            current_address='transient moves around')
+            current_address="transient moves around"
+        )
 
         # Act
-        state_person.copy_fields_to_builder(
-            self.subject, ingest_person, metadata)
+        state_person.copy_fields_to_builder(self.subject, ingest_person, metadata)
         result = self.subject.build(StatePersonFactory.deserialize)
 
         # Assert
         expected_result = entities.StatePerson.new_with_defaults(
-            current_address='TRANSIENT MOVES AROUND',
+            current_address="TRANSIENT MOVES AROUND",
             residency_status=ResidencyStatus.TRANSIENT,
-            state_code='US_XX'
+            state_code="US_XX",
         )
 
         self.assertEqual(result, expected_result)

@@ -15,14 +15,19 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Matrix of supervision terminations with violation response count and most severe violation per person."""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
-from recidiviz.calculator.query.state import dataset_config, state_specific_query_strings
+from recidiviz.calculator.query.state import (
+    dataset_config,
+    state_specific_query_strings,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_NAME = 'supervision_termination_matrix_by_person'
+SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_NAME = (
+    "supervision_termination_matrix_by_person"
+)
 
 SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_DESCRIPTION = """
  Matrix of supervision terminations with violation response count and most severe violation per person.
@@ -32,8 +37,7 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_DESCRIPTION = """
  termination. These terminations are broken down by number of violations and the most severe violation in a 12 month
  window leading up to the termination."""
 
-SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE = \
-    """
+SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE = """
     /*{description}*/
     
     /* Supervision case terminations. */
@@ -178,29 +182,32 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilde
     description=SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    most_severe_violation_type_subtype_grouping=
-    state_specific_query_strings.state_specific_most_severe_violation_type_subtype_grouping(),
-    state_specific_assessment_bucket=
-    state_specific_query_strings.state_specific_assessment_bucket(output_column_name='risk_level'),
+    most_severe_violation_type_subtype_grouping=state_specific_query_strings.state_specific_most_severe_violation_type_subtype_grouping(),
+    state_specific_assessment_bucket=state_specific_query_strings.state_specific_assessment_bucket(
+        output_column_name="risk_level"
+    ),
     state_specific_supervision_level=state_specific_query_strings.state_specific_supervision_level(),
-    level_1_supervision_location_dimension=
-    bq_utils.unnest_column('level_1_supervision_location', 'level_1_supervision_location'),
-    level_2_supervision_location_dimension=
-    bq_utils.unnest_column('level_2_supervision_location', 'level_2_supervision_location'),
+    level_1_supervision_location_dimension=bq_utils.unnest_column(
+        "level_1_supervision_location", "level_1_supervision_location"
+    ),
+    level_2_supervision_location_dimension=bq_utils.unnest_column(
+        "level_2_supervision_location", "level_2_supervision_location"
+    ),
     supervision_type_dimension=bq_utils.unnest_supervision_type(),
-    supervision_level_dimension=bq_utils.unnest_column('supervision_level', 'supervision_level'),
+    supervision_level_dimension=bq_utils.unnest_column(
+        "supervision_level", "supervision_level"
+    ),
     charge_category_dimension=bq_utils.unnest_charge_category(),
-    violation_type_dimension=bq_utils.unnest_column('violation_type', 'violation_type'),
+    violation_type_dimension=bq_utils.unnest_column("violation_type", "violation_type"),
     reported_violations_dimension=bq_utils.unnest_reported_violations(),
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
     metric_period_condition=bq_utils.metric_period_condition(),
-    state_specific_supervision_location_optimization_filter=
-    state_specific_query_strings.state_specific_supervision_location_optimization_filter(),
+    state_specific_supervision_location_optimization_filter=state_specific_query_strings.state_specific_supervision_location_optimization_filter(),
     thirty_six_month_filter=bq_utils.thirty_six_month_filter(),
     state_specific_dimension_filter=state_specific_query_strings.state_specific_dimension_filter(),
     state_specific_inclusion_filter=state_specific_query_strings.state_specific_inclusion_filter(),
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_BUILDER.build_and_print()

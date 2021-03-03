@@ -17,12 +17,12 @@
 
 """Tests for email_reporting_utils.py."""
 
-#pylint: disable=import-outside-toplevel
+# pylint: disable=import-outside-toplevel
 from unittest import TestCase
 from unittest.mock import patch, Mock, MagicMock
 import recidiviz.reporting.email_reporting_utils as utils
 
-_MOCK_PROJECT_ID = 'RECIDIVIZ_TEST'
+_MOCK_PROJECT_ID = "RECIDIVIZ_TEST"
 
 
 class EmailReportingUtilsTests(TestCase):
@@ -30,99 +30,95 @@ class EmailReportingUtilsTests(TestCase):
 
     def setUp(self) -> None:
         self.eru = utils
-        self.project_id_patcher = patch('recidiviz.utils.metadata.project_id')
-        self.project_id_patcher.start().return_value = 'fake-project'
+        self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
+        self.project_id_patcher.start().return_value = "fake-project"
 
     def tearDown(self) -> None:
         self.project_id_patcher.stop()
 
-    @patch('os.environ.get')
+    @patch("os.environ.get")
     def test_get_env_var_happy_path(self, mock_environ_get: MagicMock) -> None:
-        expected = 'ANALYSIS'
+        expected = "ANALYSIS"
         mock_environ_get.return_value = expected
 
-        actual = self.eru.get_env_var('WILDLIFE')
+        actual = self.eru.get_env_var("WILDLIFE")
         self.assertEqual(expected, actual)
 
-    @patch('os.environ.get')
+    @patch("os.environ.get")
     def test_get_env_var_not_found(self, mock_environ_get: MagicMock) -> None:
         mock_environ_get.return_value = None
 
         with self.assertRaises(KeyError):
-            self.eru.get_env_var('SIXTYTEN')
+            self.eru.get_env_var("SIXTYTEN")
 
-    @patch('recidiviz.utils.metadata.project_id', Mock(return_value=_MOCK_PROJECT_ID))
+    @patch("recidiviz.utils.metadata.project_id", Mock(return_value=_MOCK_PROJECT_ID))
     def test_get_project_id(self) -> None:
         actual = self.eru.get_project_id()
         self.assertEqual(_MOCK_PROJECT_ID, actual)
 
-    @patch('recidiviz.utils.secrets.get_secret')
+    @patch("recidiviz.utils.secrets.get_secret")
     def test_get_cdn_static_ip(self, mock_secret: MagicMock) -> None:
-        expected = '123.456.7.8'
-        test_secrets = {
-            'po_report_cdn_static_IP': expected
-        }
+        expected = "123.456.7.8"
+        test_secrets = {"po_report_cdn_static_IP": expected}
         mock_secret.side_effect = test_secrets.get
 
         actual = self.eru.get_cdn_static_ip()
         self.assertEqual(expected, actual)
 
-    @patch('recidiviz.utils.metadata.project_id', Mock(return_value=_MOCK_PROJECT_ID))
+    @patch("recidiviz.utils.metadata.project_id", Mock(return_value=_MOCK_PROJECT_ID))
     def test_get_data_storage_bucket_name(self) -> None:
-        expected = f'{_MOCK_PROJECT_ID}-report-data'
+        expected = f"{_MOCK_PROJECT_ID}-report-data"
         actual = self.eru.get_data_storage_bucket_name()
         self.assertEqual(expected, actual)
 
-    @patch('recidiviz.utils.metadata.project_id', Mock(return_value=_MOCK_PROJECT_ID))
+    @patch("recidiviz.utils.metadata.project_id", Mock(return_value=_MOCK_PROJECT_ID))
     def test_get_data_archive_bucket_name(self) -> None:
-        expected = f'{_MOCK_PROJECT_ID}-report-data-archive'
+        expected = f"{_MOCK_PROJECT_ID}-report-data-archive"
         actual = self.eru.get_data_archive_bucket_name()
         self.assertEqual(expected, actual)
 
-    @patch('recidiviz.utils.metadata.project_id', Mock(return_value=_MOCK_PROJECT_ID))
+    @patch("recidiviz.utils.metadata.project_id", Mock(return_value=_MOCK_PROJECT_ID))
     def test_get_email_content_bucket_name_html(self) -> None:
-        expected = f'{_MOCK_PROJECT_ID}-report-html'
+        expected = f"{_MOCK_PROJECT_ID}-report-html"
         actual = self.eru.get_email_content_bucket_name()
         self.assertEqual(expected, actual)
 
-    @patch('recidiviz.utils.secrets.get_secret')
+    @patch("recidiviz.utils.secrets.get_secret")
     def test_get_static_image_path(self, mock_secret: MagicMock) -> None:
-        expected = '123.456.7.8'
-        test_secrets = {
-            'po_report_cdn_static_IP': expected
-        }
+        expected = "123.456.7.8"
+        test_secrets = {"po_report_cdn_static_IP": expected}
         mock_secret.side_effect = test_secrets.get
 
-        expected = 'http://123.456.7.8/us_va/anything/static'
-        actual = self.eru.get_static_image_path('us_va', 'anything')
+        expected = "http://123.456.7.8/us_va/anything/static"
+        actual = self.eru.get_static_image_path("us_va", "anything")
         self.assertEqual(expected, actual)
 
     def test_get_data_filename(self) -> None:
-        expected = 'anything/us_va/anything_data.json'
-        actual = self.eru.get_data_filename('us_va', 'anything')
+        expected = "anything/us_va/anything_data.json"
+        actual = self.eru.get_data_filename("us_va", "anything")
         self.assertEqual(expected, actual)
 
     def test_get_data_archive_filename(self) -> None:
-        expected = 'batch-1.json'
-        actual = self.eru.get_data_archive_filename('batch-1')
+        expected = "batch-1.json"
+        actual = self.eru.get_data_archive_filename("batch-1")
         self.assertEqual(expected, actual)
 
     def test_get_email_html_filename(self) -> None:
-        expected = 'batch-1/html/boards@canada.ca.html'
+        expected = "batch-1/html/boards@canada.ca.html"
 
-        actual = self.eru.get_html_filename('batch-1', 'boards@canada.ca')
+        actual = self.eru.get_html_filename("batch-1", "boards@canada.ca")
         self.assertEqual(expected, actual)
 
     def test_get_email_attachment_filename(self) -> None:
-        expected = 'batch-1/attachments/boards@canada.ca.txt'
-        actual = self.eru.get_attachment_filename('batch-1', 'boards@canada.ca')
+        expected = "batch-1/attachments/boards@canada.ca.txt"
+        actual = self.eru.get_attachment_filename("batch-1", "boards@canada.ca")
         self.assertEqual(expected, actual)
 
     def test_format_test_address_valid(self) -> None:
         """Given a valid test_address and recipient_address, it returns the test address with the recipient
         email address name appended."""
         expected = "test+recipient@domain.com"
-        actual = utils.format_test_address("test@domain.com","recipient@id.us.gov")
+        actual = utils.format_test_address("test@domain.com", "recipient@id.us.gov")
         self.assertEqual(expected, actual)
 
     def test_format_test_address_invalid(self) -> None:

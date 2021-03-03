@@ -31,7 +31,9 @@ ADDITIONAL NOTES: [fill long form as necessary]
 
 # TODO(#99999): add whatever modules you need
 import pandas as pd
-from recidiviz.calculator.modeling.population_projection.spark_bq_utils import upload_spark_model_inputs
+from recidiviz.calculator.modeling.population_projection.spark_bq_utils import (
+    upload_spark_model_inputs,
+)
 
 
 # RAW DATA
@@ -40,9 +42,15 @@ from recidiviz.calculator.modeling.population_projection.spark_bq_utils import u
 
 # TODO(#99999): add one column to transitions_data & outflows_data per disaggregation axis.
 #  If none exist, add place-holder axis
-transitions_data = pd.DataFrame(columns=['compartment', 'outflow_to', 'total_population', 'compartment_duration'])
-outflows_data = pd.DataFrame(columns=['compartment', 'outflow_to', 'total_population', 'time_step'])
-total_population_data = pd.DataFrame(columns=['compartment', 'total_population', 'time_step'])
+transitions_data = pd.DataFrame(
+    columns=["compartment", "outflow_to", "total_population", "compartment_duration"]
+)
+outflows_data = pd.DataFrame(
+    columns=["compartment", "outflow_to", "total_population", "time_step"]
+)
+total_population_data = pd.DataFrame(
+    columns=["compartment", "total_population", "time_step"]
+)
 
 # TRANSITIONS TABLE
 # TODO(#99999): populate transitions_data from raw data
@@ -56,5 +64,10 @@ total_population_data = pd.DataFrame(columns=['compartment', 'total_population',
 # STORE DATA
 # TODO(#99999): fill in `simulation_tag'
 simulation_tag = "TKTK"
-upload_spark_model_inputs('recidiviz-staging', simulation_tag, outflows_data, transitions_data,
-                          total_population_data)
+upload_spark_model_inputs(
+    "recidiviz-staging",
+    simulation_tag,
+    outflows_data,
+    transitions_data,
+    total_population_data,
+)

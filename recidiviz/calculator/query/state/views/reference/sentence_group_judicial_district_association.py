@@ -16,20 +16,20 @@
 # =============================================================================
 """Connects sentence_group_ids to judicial districts corresponding to the charges and court cases on the sentence
 group's sentences."""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-SENTENCE_GROUP_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME = 'sentence_group_judicial_district_association'
+SENTENCE_GROUP_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME = (
+    "sentence_group_judicial_district_association"
+)
 
-SENTENCE_GROUP_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_DESCRIPTION = \
-    """Connects sentence_group_ids to judicial districts corresponding to the charges and court cases on the sentence
+SENTENCE_GROUP_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_DESCRIPTION = """Connects sentence_group_ids to judicial districts corresponding to the charges and court cases on the sentence
      group's sentences."""
 
-SENTENCE_GROUP_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = \
-    """
+SENTENCE_GROUP_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = """
     /*{description}*/
     WITH supervision AS (
       SELECT
@@ -111,9 +111,9 @@ SENTENCE_GROUP_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER = SimpleBigQueryViewBu
     view_query_template=SENTENCE_GROUP_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE,
     description=SENTENCE_GROUP_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_DESCRIPTION,
     base_dataset=dataset_config.STATE_BASE_DATASET,
-    static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET
+    static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         SENTENCE_GROUP_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER.build_and_print()

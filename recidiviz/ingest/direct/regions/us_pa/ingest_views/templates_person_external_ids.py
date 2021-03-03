@@ -64,9 +64,7 @@ EXPLORE_GRAPH_BY_COLUMN_TEMPLATE = """SELECT
       )"""
 
 
-def explore_graph_by_column_query(
-        base_table_name: str,
-        join_col_name: str) -> str:
+def explore_graph_by_column_query(base_table_name: str, join_col_name: str) -> str:
     """Generates a query that explores one level of graph edges along the provided |join_col_name| column, merging
     clusters of master_state_id that are linked by that edge.
     """

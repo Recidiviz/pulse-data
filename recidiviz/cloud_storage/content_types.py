@@ -19,12 +19,11 @@ import abc
 from typing import TypeVar, Generic, Iterator
 
 # Type for a single row/chunk returned by the ingest contents iterator.
-FileContentsRowType = TypeVar('FileContentsRowType')
-IoType = TypeVar('IoType')
+FileContentsRowType = TypeVar("FileContentsRowType")
+IoType = TypeVar("IoType")
 
 
 class FileContentsHandle(Generic[FileContentsRowType, IoType]):
-
     def __init__(self, local_file_path: str):
         self.local_file_path = local_file_path
 

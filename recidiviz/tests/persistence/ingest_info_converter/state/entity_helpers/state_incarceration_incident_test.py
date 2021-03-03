@@ -19,13 +19,15 @@
 import unittest
 from datetime import date
 
-from recidiviz.common.constants.state.state_incarceration_incident import \
-    StateIncarcerationIncidentType
+from recidiviz.common.constants.state.state_incarceration_incident import (
+    StateIncarcerationIncidentType,
+)
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.state.entity_helpers import \
-    state_incarceration_incident
+from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
+    state_incarceration_incident,
+)
 
 _EMPTY_METADATA = IngestMetadata.new_with_defaults()
 
@@ -36,31 +38,32 @@ class StateIncarcerationIncidentConverterTest(unittest.TestCase):
     def testParseStateIncarcerationIncident(self):
         # Arrange
         ingest_incident = ingest_info_pb2.StateIncarcerationIncident(
-            state_incarceration_incident_id='INCIDENT_ID',
-            incident_type='CONTRABAND',
-            incident_date='1/2/1111',
-            state_code='us_ca',
-            facility='Alcatraz',
-            location_within_facility='13B',
-            incident_details='Inmate was told to be quiet and would not comply',
+            state_incarceration_incident_id="INCIDENT_ID",
+            incident_type="CONTRABAND",
+            incident_date="1/2/1111",
+            state_code="us_ca",
+            facility="Alcatraz",
+            location_within_facility="13B",
+            incident_details="Inmate was told to be quiet and would not comply",
         )
 
         # Act
         incident_builder = entities.StateIncarcerationIncident.builder()
         state_incarceration_incident.copy_fields_to_builder(
-            incident_builder, ingest_incident, _EMPTY_METADATA)
+            incident_builder, ingest_incident, _EMPTY_METADATA
+        )
         result = incident_builder.build()
 
         # Assert
         expected_result = entities.StateIncarcerationIncident(
-            external_id='INCIDENT_ID',
+            external_id="INCIDENT_ID",
             incident_type=StateIncarcerationIncidentType.CONTRABAND,
-            incident_type_raw_text='CONTRABAND',
+            incident_type_raw_text="CONTRABAND",
             incident_date=date(year=1111, month=1, day=2),
-            state_code='US_CA',
-            facility='ALCATRAZ',
-            location_within_facility='13B',
-            incident_details='INMATE WAS TOLD TO BE QUIET AND WOULD NOT COMPLY',
+            state_code="US_CA",
+            facility="ALCATRAZ",
+            location_within_facility="13B",
+            incident_details="INMATE WAS TOLD TO BE QUIET AND WOULD NOT COMPLY",
         )
 
         self.assertEqual(result, expected_result)

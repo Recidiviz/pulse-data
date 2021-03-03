@@ -22,10 +22,9 @@ from recidiviz.calculator.query.county.views.vera import vera_view_constants
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-RESIDENT_POPULATION_COUNTS_VIEW_NAME = 'resident_population_counts'
+RESIDENT_POPULATION_COUNTS_VIEW_NAME = "resident_population_counts"
 
-RESIDENT_POPULATION_COUNTS_DESCRIPTION = \
-"""
+RESIDENT_POPULATION_COUNTS_DESCRIPTION = """
 Creates a resident population count table from
 Vera's Incarceration Trends dataset. For every
 year-fips-race-gender combination, there will be a `resident_pop` column.
@@ -43,8 +42,7 @@ Similarly, Race: 'ALL' sums every race for each gender.
 DO NOT sum along race or gender, or you will double-count by including 'ALL'.
 """
 
-RESIDENT_POPULATION_COUNTS_QUERY_TEMPLATE = \
-"""
+RESIDENT_POPULATION_COUNTS_QUERY_TEMPLATE = """
 /*{description}*/
 
 WITH
@@ -111,9 +109,9 @@ RESIDENT_POPULATION_COUNTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=RESIDENT_POPULATION_COUNTS_QUERY_TEMPLATE,
     description=RESIDENT_POPULATION_COUNTS_DESCRIPTION,
     vera_dataset=vera_view_constants.VERA_DATASET,
-    iob_race_gender_pop_table=vera_view_constants.IOB_RACE_GENDER_POP_TABLE
+    iob_race_gender_pop_table=vera_view_constants.IOB_RACE_GENDER_POP_TABLE,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         RESIDENT_POPULATION_COUNTS_VIEW_BUILDER.build_and_print()

@@ -42,12 +42,21 @@ from mock import patch
 dag_folder = "recidiviz/airflow/dag"
 
 
-@patch('os.environ', {'GCP_PROJECT_ID': 'recidiviz-testing',
-                      'CONFIG_FILE': 'recidiviz/calculator/pipeline/production_calculation_pipeline_templates.yaml'})
-@patch('recidiviz.cloud_functions.cloud_function_utils.IAP_CLIENT_ID', {'recidiviz-testing':
-                                                                        'xx.apps.googleusercontent.com'})
+@patch(
+    "os.environ",
+    {
+        "GCP_PROJECT_ID": "recidiviz-testing",
+        "CONFIG_FILE": "recidiviz/calculator/pipeline/production_calculation_pipeline_templates.yaml",
+    },
+)
+@patch(
+    "recidiviz.cloud_functions.cloud_function_utils.IAP_CLIENT_ID",
+    {"recidiviz-testing": "xx.apps.googleusercontent.com"},
+)
 class TestDagIntegrity(unittest.TestCase):
-    @unittest.skip("TODO(#5101): Re-enable once we can include apache-airflow in our Pipfile dependencies")
+    @unittest.skip(
+        "TODO(#5101): Re-enable once we can include apache-airflow in our Pipfile dependencies"
+    )
     def test_dagbag_import(self) -> None:
         """
         Verify that Airflow will be able to import all DAGs in the repository without errors
@@ -61,7 +70,9 @@ class TestDagIntegrity(unittest.TestCase):
         #     )
         # )
 
-    @unittest.skip("TODO(#5101): Re-enable once we can include apache-airflow in our Pipfile dependencies")
+    @unittest.skip(
+        "TODO(#5101): Re-enable once we can include apache-airflow in our Pipfile dependencies"
+    )
     def test_correct_dag(self) -> None:
         """
         Verify that there is one DAG with the correct name

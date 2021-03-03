@@ -23,24 +23,20 @@ from pandas.testing import assert_frame_equal
 from more_itertools import one
 from sqlalchemy import func
 
-from recidiviz.common.constants.aggregate import (
-    enum_canonical_strings as enum_strings
-)
+from recidiviz.common.constants.aggregate import enum_canonical_strings as enum_strings
 from recidiviz.ingest.aggregate.regions.ca import ca_aggregate_ingest
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.base_schema import \
-    JailsBase
+from recidiviz.persistence.database.base_schema import JailsBase
 from recidiviz.persistence.database.schema.aggregate import dao
-from recidiviz.persistence.database.schema.aggregate.schema import \
-    CaFacilityAggregate
+from recidiviz.persistence.database.schema.aggregate.schema import CaFacilityAggregate
 from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.utils import fakes
 
 # Cache the parsed result between tests since it's expensive to compute
-PARSED_RESULT = ca_aggregate_ingest.parse(
-    '', fixtures.as_filepath('QueryResult.xls'))
+PARSED_RESULT = ca_aggregate_ingest.parse("", fixtures.as_filepath("QueryResult.xls"))
 PARSED_RESULT_2 = ca_aggregate_ingest.parse(
-    '', fixtures.as_filepath('california_california2018'))
+    "", fixtures.as_filepath("california_california2018")
+)
 
 
 class TestCaAggregateIngest(TestCase):
@@ -56,76 +52,92 @@ class TestCaAggregateIngest(TestCase):
         result = PARSED_RESULT[CaFacilityAggregate]
 
         # Assert Head
-        expected_head = pd.DataFrame({
-            'jurisdiction_name': ['Alameda Sheriff\'s Dept.',
-                                  'Alameda Sheriff\'s Dept.'],
-            'facility_name': ['Glen Dyer Jail', 'Santa Rita Jail'],
-            'average_daily_population': [379, 2043],
-            'unsentenced_male_adp': [356, 1513],
-            'unsentenced_female_adp': [0, 192],
-            'sentenced_male_adp': [23, 301],
-            'sentenced_female_adp': [0, 37],
-            'report_date': 2 * [datetime.date(2017, 1, 31)],
-            'fips': ['06001', '06001'],
-            'aggregation_window': 2 * [enum_strings.monthly_granularity],
-            'report_frequency': 2 * [enum_strings.monthly_granularity]
-        })
+        expected_head = pd.DataFrame(
+            {
+                "jurisdiction_name": [
+                    "Alameda Sheriff's Dept.",
+                    "Alameda Sheriff's Dept.",
+                ],
+                "facility_name": ["Glen Dyer Jail", "Santa Rita Jail"],
+                "average_daily_population": [379, 2043],
+                "unsentenced_male_adp": [356, 1513],
+                "unsentenced_female_adp": [0, 192],
+                "sentenced_male_adp": [23, 301],
+                "sentenced_female_adp": [0, 37],
+                "report_date": 2 * [datetime.date(2017, 1, 31)],
+                "fips": ["06001", "06001"],
+                "aggregation_window": 2 * [enum_strings.monthly_granularity],
+                "report_frequency": 2 * [enum_strings.monthly_granularity],
+            }
+        )
         assert_frame_equal(result.head(n=2), expected_head)
 
         # Assert Tail
-        expected_tail = pd.DataFrame({
-            'jurisdiction_name': ['Yuba Sheriff\'s Dept.',
-                                  'Yuba Sheriff\'s Dept.'],
-            'facility_name': ['Yuba County Jail', 'Yuba County Jail'],
-            'average_daily_population': [373, 366],
-            'unsentenced_male_adp': [307, 292],
-            'unsentenced_female_adp': [26, 30],
-            'sentenced_male_adp': [29, 34],
-            'sentenced_female_adp': [11, 10],
-            'report_date': [datetime.date(2017, 11, 30),
-                            datetime.date(2017, 12, 31)],
-            'fips': ['06115', '06115'],
-            'aggregation_window': 2 * [enum_strings.monthly_granularity],
-            'report_frequency': 2 * [enum_strings.monthly_granularity]
-        }, index=range(1435, 1437))
+        expected_tail = pd.DataFrame(
+            {
+                "jurisdiction_name": ["Yuba Sheriff's Dept.", "Yuba Sheriff's Dept."],
+                "facility_name": ["Yuba County Jail", "Yuba County Jail"],
+                "average_daily_population": [373, 366],
+                "unsentenced_male_adp": [307, 292],
+                "unsentenced_female_adp": [26, 30],
+                "sentenced_male_adp": [29, 34],
+                "sentenced_female_adp": [11, 10],
+                "report_date": [
+                    datetime.date(2017, 11, 30),
+                    datetime.date(2017, 12, 31),
+                ],
+                "fips": ["06115", "06115"],
+                "aggregation_window": 2 * [enum_strings.monthly_granularity],
+                "report_frequency": 2 * [enum_strings.monthly_granularity],
+            },
+            index=range(1435, 1437),
+        )
         assert_frame_equal(result.tail(n=2), expected_tail)
 
     def testParse_ParsesHeadAndTail2(self):
         result = PARSED_RESULT_2[CaFacilityAggregate]
 
         # Assert Head
-        expected_head = pd.DataFrame({
-            'jurisdiction_name': ['Alameda Sheriff\'s Dept.',
-                                  'Alameda Sheriff\'s Dept.'],
-            'facility_name': ['Glen Dyer Jail', 'Santa Rita Jail'],
-            'average_daily_population': [396, 2185],
-            'unsentenced_male_adp': [370, 1589],
-            'unsentenced_female_adp': [0, 177],
-            'sentenced_male_adp': [26, 370],
-            'sentenced_female_adp': [0, 49],
-            'report_date': 2 * [datetime.date(2018, 1, 31)],
-            'fips': ['06001', '06001'],
-            'aggregation_window': 2 * [enum_strings.monthly_granularity],
-            'report_frequency': 2 * [enum_strings.monthly_granularity]
-        })
+        expected_head = pd.DataFrame(
+            {
+                "jurisdiction_name": [
+                    "Alameda Sheriff's Dept.",
+                    "Alameda Sheriff's Dept.",
+                ],
+                "facility_name": ["Glen Dyer Jail", "Santa Rita Jail"],
+                "average_daily_population": [396, 2185],
+                "unsentenced_male_adp": [370, 1589],
+                "unsentenced_female_adp": [0, 177],
+                "sentenced_male_adp": [26, 370],
+                "sentenced_female_adp": [0, 49],
+                "report_date": 2 * [datetime.date(2018, 1, 31)],
+                "fips": ["06001", "06001"],
+                "aggregation_window": 2 * [enum_strings.monthly_granularity],
+                "report_frequency": 2 * [enum_strings.monthly_granularity],
+            }
+        )
         assert_frame_equal(result.head(n=2), expected_head)
 
         # Assert Tail
-        expected_tail = pd.DataFrame({
-            'jurisdiction_name': ['Yuba Sheriff\'s Dept.',
-                                  'Yuba Sheriff\'s Dept.'],
-            'facility_name': ['Yuba County Jail', 'Yuba County Jail'],
-            'average_daily_population': [342, 339],
-            'unsentenced_male_adp': [246, 261],
-            'unsentenced_female_adp': [32, 28],
-            'sentenced_male_adp': [59, 44],
-            'sentenced_female_adp': [5, 6],
-            'report_date': [datetime.date(2018, 9, 30),
-                            datetime.date(2018, 12, 31)],
-            'fips': ['06115', '06115'],
-            'aggregation_window': 2 * [enum_strings.monthly_granularity],
-            'report_frequency': 2 * [enum_strings.monthly_granularity]
-        }, index=range(1404, 1406))
+        expected_tail = pd.DataFrame(
+            {
+                "jurisdiction_name": ["Yuba Sheriff's Dept.", "Yuba Sheriff's Dept."],
+                "facility_name": ["Yuba County Jail", "Yuba County Jail"],
+                "average_daily_population": [342, 339],
+                "unsentenced_male_adp": [246, 261],
+                "unsentenced_female_adp": [32, 28],
+                "sentenced_male_adp": [59, 44],
+                "sentenced_female_adp": [5, 6],
+                "report_date": [
+                    datetime.date(2018, 9, 30),
+                    datetime.date(2018, 12, 31),
+                ],
+                "fips": ["06115", "06115"],
+                "aggregation_window": 2 * [enum_strings.monthly_granularity],
+                "report_frequency": 2 * [enum_strings.monthly_granularity],
+            },
+            index=range(1404, 1406),
+        )
         assert_frame_equal(result.tail(n=2), expected_tail)
 
     def testWrite_CalculatesSum(self):
@@ -135,7 +147,8 @@ class TestCaAggregateIngest(TestCase):
 
         # Assert
         query = SessionFactory.for_schema_base(JailsBase).query(
-            func.sum(CaFacilityAggregate.average_daily_population))
+            func.sum(CaFacilityAggregate.average_daily_population)
+        )
         result = one(one(query.all()))
 
         expected_sum_adp = 900124

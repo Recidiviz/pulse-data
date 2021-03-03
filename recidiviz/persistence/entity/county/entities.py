@@ -31,7 +31,7 @@ from recidiviz.common.constants.county.booking import (
     ReleaseReason,
     CustodyStatus,
     Classification,
-    AdmissionReason
+    AdmissionReason,
 )
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.county.charge import ChargeClass, ChargeDegree
@@ -50,6 +50,7 @@ from recidiviz.persistence.entity.base_entity import ExternalIdEntity
 @attr.s
 class Person(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models a Person moving through the criminal justice system."""
+
     full_name: Optional[str] = attr.ib()
     birthdate: Optional[datetime.date] = attr.ib()
     birthdate_inferred_from_age: Optional[bool] = attr.ib()
@@ -65,12 +66,13 @@ class Person(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     resident_of_region: Optional[bool] = attr.ib()
 
     person_id: Optional[int] = attr.ib(default=None)
-    bookings: List['Booking'] = attr.ib(factory=list)
+    bookings: List["Booking"] = attr.ib(factory=list)
 
 
 @attr.s
 class Booking(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models a particular Booking into jail for a Person."""
+
     admission_date: Optional[datetime.date] = attr.ib()
     admission_reason: Optional[AdmissionReason] = attr.ib()
     admission_reason_raw_text: Optional[str] = attr.ib()
@@ -90,14 +92,15 @@ class Booking(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     first_seen_time: datetime.datetime = attr.ib()  # non-nullable
 
     booking_id: Optional[int] = attr.ib(default=None)
-    holds: List['Hold'] = attr.ib(factory=list)
-    arrest: Optional['Arrest'] = attr.ib(default=None)
-    charges: List['Charge'] = attr.ib(factory=list)
+    holds: List["Hold"] = attr.ib(factory=list)
+    arrest: Optional["Arrest"] = attr.ib(default=None)
+    charges: List["Charge"] = attr.ib(factory=list)
 
 
 @attr.s
 class Arrest(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models the Arrest for a particular Booking."""
+
     arrest_date: Optional[datetime.date] = attr.ib()
     location: Optional[str] = attr.ib()
     agency: Optional[str] = attr.ib()
@@ -131,8 +134,8 @@ class Charge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     charge_notes: Optional[str] = attr.ib()
 
     charge_id: Optional[int] = attr.ib(default=None)
-    bond: Optional['Bond'] = attr.ib(default=None)
-    sentence: Optional['Sentence'] = attr.ib(default=None)
+    bond: Optional["Bond"] = attr.ib(default=None)
+    sentence: Optional["Sentence"] = attr.ib(default=None)
 
 
 @attr.s
@@ -185,4 +188,4 @@ class Sentence(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
     # To avoid recursive references, store only 1 level of related_sentences
     # (ie. don't store related_sentences of these related_sentences).
-    related_sentences: List['Sentence'] = attr.ib(factory=list)
+    related_sentences: List["Sentence"] = attr.ib(factory=list)

@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-#pylint: disable=protected-access
+# pylint: disable=protected-access
 """
 Tests for SQLAlchemy enums defined in recidiviz.persistence.database.schema
 """
@@ -31,13 +31,13 @@ import recidiviz.persistence.database.schema.shared_enums as shared_enums
 
 
 from recidiviz.common.constants import person_characteristics
-from recidiviz.persistence.database.schema.aggregate import (
-    schema as aggregate_schema
-)
+from recidiviz.persistence.database.schema.aggregate import schema as aggregate_schema
 from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.database.schema.state import schema as state_schema
-from recidiviz.persistence.database.schema_utils import \
-    _get_all_database_entities_in_module, get_all_table_classes_in_module
+from recidiviz.persistence.database.schema_utils import (
+    _get_all_database_entities_in_module,
+    get_all_table_classes_in_module,
+)
 
 ALL_SCHEMA_MODULES = [county_schema, state_schema, aggregate_schema]
 
@@ -51,14 +51,14 @@ class TestSchemaEnums(TestCase):
     # If a schema enum does not correspond to a persistence layer enum,
     # it should be mapped to None.
     SHARED_ENUMS_TEST_MAPPING = {
-        'gender': person_characteristics.Gender,
-        'race': person_characteristics.Race,
-        'ethnicity': person_characteristics.Ethnicity,
-        'residency_status': person_characteristics.ResidencyStatus,
-        'bond_type': bond.BondType,
-        'bond_status': bond.BondStatus,
-        'degree': recidiviz.common.constants.county.charge.ChargeDegree,
-        'charge_status': charge.ChargeStatus,
+        "gender": person_characteristics.Gender,
+        "race": person_characteristics.Race,
+        "ethnicity": person_characteristics.Ethnicity,
+        "residency_status": person_characteristics.ResidencyStatus,
+        "bond_type": bond.BondType,
+        "bond_status": bond.BondStatus,
+        "degree": recidiviz.common.constants.county.charge.ChargeDegree,
+        "charge_status": charge.ChargeStatus,
     }
 
     # Test case ensuring enum values match between persistence layer enums and
@@ -67,15 +67,14 @@ class TestSchemaEnums(TestCase):
         """Test case ensuring enum values match between persistence layer enums
         and schema enums."""
         self.check_persistence_and_schema_enums_match(
-            self.SHARED_ENUMS_TEST_MAPPING,
-            shared_enums)
+            self.SHARED_ENUMS_TEST_MAPPING, shared_enums
+        )
 
     def testNoOverlappingEnumPostgresNames(self):
         postgres_names_set = set()
         enum_id_set = set()
         for schema_module in ALL_SCHEMA_MODULES:
-            enums = \
-                self._get_all_sqlalchemy_enums_in_module(schema_module)
+            enums = self._get_all_sqlalchemy_enums_in_module(schema_module)
             for enum in enums:
                 if id(enum) in enum_id_set:
                     continue
@@ -83,15 +82,13 @@ class TestSchemaEnums(TestCase):
                 self.assertNotIn(
                     postgres_name,
                     postgres_names_set,
-                    f'SQLAlchemy enum with Postgres name [{postgres_name}]'
-                    f' (defined in [{schema_module}]) already exists'
+                    f"SQLAlchemy enum with Postgres name [{postgres_name}]"
+                    f" (defined in [{schema_module}]) already exists",
                 )
                 postgres_names_set.add(postgres_name)
                 enum_id_set.add(id(enum))
 
-    def check_persistence_and_schema_enums_match(self,
-                                                 test_mapping,
-                                                 enums_package):
+    def check_persistence_and_schema_enums_match(self, test_mapping, enums_package):
         schema_enums_by_name = {}
         num_enums = 0
         for attribute_name in dir(enums_package):
@@ -99,10 +96,13 @@ class TestSchemaEnums(TestCase):
             if isinstance(attribute, sqlalchemy.Enum):
                 num_enums += 1
                 schema_enums_by_name[attribute_name] = attribute
-        self.assertNotEqual(0, num_enums,
-                            f'No enums found in package [{enums_package}] - is'
-                            f' this the correct package to search for schema'
-                            f' enums?')
+        self.assertNotEqual(
+            0,
+            num_enums,
+            f"No enums found in package [{enums_package}] - is"
+            f" this the correct package to search for schema"
+            f" enums?",
+        )
 
         for schema_enum_name, schema_enum in schema_enums_by_name.items():
             # This will throw a KeyError if a schema enum is not mapped to
@@ -123,13 +123,14 @@ class TestSchemaEnums(TestCase):
             schema_enum_values,
             persistence_enum_values,
             msg='Values of schema enum "{schema_enum}" did not match values of '
-                'persistence enum "{persistence_enum}"'.format(
-                    schema_enum=schema_enum.name,
-                    persistence_enum=persistence_enum.__name__))
+            'persistence enum "{persistence_enum}"'.format(
+                schema_enum=schema_enum.name, persistence_enum=persistence_enum.__name__
+            ),
+        )
 
     @staticmethod
     def _get_all_sqlalchemy_enums_in_module(
-            schema_module: ModuleType,
+        schema_module: ModuleType,
     ) -> List[sqlalchemy.Enum]:
         enums = []
         for attribute_name in dir(schema_module):
@@ -151,8 +152,8 @@ class TestSchemaTableConsistency(TestCase):
                 self.assertNotIn(
                     table_name,
                     table_names_set,
-                    f'Table name [{table_name}] defined in [{schema_module}]) '
-                    f'already exists.'
+                    f"Table name [{table_name}] defined in [{schema_module}]) "
+                    f"already exists.",
                 )
                 table_names_set.add(table_name)
 
@@ -165,8 +166,8 @@ class TestSchemaTableConsistency(TestCase):
                 self.assertNotIn(
                     class_name,
                     table_class_names_set,
-                    f'Table name [{class_name}] defined in '
-                    f'[{schema_module}]) already exists.'
+                    f"Table name [{class_name}] defined in "
+                    f"[{schema_module}]) already exists.",
                 )
 
     def testAllTableNamesMatchClassNames(self):
@@ -177,8 +178,9 @@ class TestSchemaTableConsistency(TestCase):
                 self.assertEqual(
                     table_name_to_capital_case,
                     cls.__name__,
-                    f'Table class {cls.__name__} does not have matching table '
-                    f'name: {table_name}')
+                    f"Table class {cls.__name__} does not have matching table "
+                    f"name: {table_name}",
+                )
 
     def testDatabaseEntityFunctionality(self):
         for schema_module in ALL_SCHEMA_MODULES:

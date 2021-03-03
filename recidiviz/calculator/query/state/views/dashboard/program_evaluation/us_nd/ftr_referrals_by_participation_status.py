@@ -22,14 +22,15 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-FTR_REFERRALS_BY_PARTICIPATION_STATUS_VIEW_NAME = 'ftr_referrals_by_participation_status'
+FTR_REFERRALS_BY_PARTICIPATION_STATUS_VIEW_NAME = (
+    "ftr_referrals_by_participation_status"
+)
 
 FTR_REFERRALS_BY_PARTICIPATION_STATUS_DESCRIPTION = """
  Month over month count for the participation status of each Free Through Recovery program referral.
 """
 
-FTR_REFERRALS_BY_PARTICIPATION_STATUS_QUERY_TEMPLATE = \
-    """
+FTR_REFERRALS_BY_PARTICIPATION_STATUS_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT
       state_code, year, month,
@@ -49,11 +50,11 @@ FTR_REFERRALS_BY_PARTICIPATION_STATUS_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=FTR_REFERRALS_BY_PARTICIPATION_STATUS_VIEW_NAME,
     view_query_template=FTR_REFERRALS_BY_PARTICIPATION_STATUS_QUERY_TEMPLATE,
-    dimensions=['state_code', 'year', 'month', 'district', 'supervision_type'],
+    dimensions=["state_code", "year", "month", "district", "supervision_type"],
     description=FTR_REFERRALS_BY_PARTICIPATION_STATUS_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         FTR_REFERRALS_BY_PARTICIPATION_STATUS_VIEW_BUILDER.build_and_print()

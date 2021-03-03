@@ -24,20 +24,22 @@ from opencensus.stats import measure, view, aggregation
 
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.entities import EntityPersonType
-from recidiviz.persistence.entity_matching.entity_matching_types import \
-    MatchedEntities
+from recidiviz.persistence.entity_matching.entity_matching_types import MatchedEntities
 from recidiviz.utils import monitoring
 
 m_matching_errors = measure.MeasureInt(
-    'persistence/entity_matching/error_count',
-    'Number of EntityMatchingErrors thrown for a specific entity type', '1')
+    "persistence/entity_matching/error_count",
+    "Number of EntityMatchingErrors thrown for a specific entity type",
+    "1",
+)
 
 matching_errors_by_entity_view = view.View(
-    'recidiviz/persistence/entity_matching/error_count',
-    'Sum of the errors in the entity matching layer, by entity',
+    "recidiviz/persistence/entity_matching/error_count",
+    "Sum of the errors in the entity matching layer, by entity",
     [monitoring.TagKey.REGION, monitoring.TagKey.ENTITY_TYPE],
     m_matching_errors,
-    aggregation.SumAggregation())
+    aggregation.SumAggregation(),
+)
 
 monitoring.register_views([matching_errors_by_entity_view])
 
@@ -46,9 +48,12 @@ class BaseEntityMatcher(Generic[EntityPersonType]):
     """Base class for all entity matchers."""
 
     @abstractmethod
-    def run_match(self, session: Session, region_code: str,
-                  ingested_people: List[EntityPersonType]) \
-            -> MatchedEntities:
+    def run_match(
+        self,
+        session: Session,
+        region_code: str,
+        ingested_people: List[EntityPersonType],
+    ) -> MatchedEntities:
         """
         Attempts to match all people from |ingested_people| with corresponding
         people in our database for the given |region|. Returns an

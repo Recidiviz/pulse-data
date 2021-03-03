@@ -16,12 +16,14 @@
 # =============================================================================
 """Query that generates information for all violation reports from the up-to-date US_ID report form (test_id = 210)."""
 
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import \
-    DirectIngestPreProcessedIngestViewBuilder
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    DirectIngestPreProcessedIngestViewBuilder,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.ingest.direct.regions.us_id.ingest_views.templates_test_questions import \
-    question_numbers_with_descriptive_answers_view_fragment
+from recidiviz.ingest.direct.regions.us_id.ingest_views.templates_test_questions import (
+    question_numbers_with_descriptive_answers_view_fragment,
+)
 
 VIEW_QUERY_TEMPLATE = f"""WITH
     {question_numbers_with_descriptive_answers_view_fragment(test_id='210')}
@@ -50,12 +52,12 @@ VIEW_QUERY_TEMPLATE = f"""WITH
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
-    region='us_id',
-    ingest_view_name='ofndr_tst_tst_qstn_rspns_violation_reports',
+    region="us_id",
+    ingest_view_name="ofndr_tst_tst_qstn_rspns_violation_reports",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols='ofndr_num, ofndr_tst_id',
+    order_by_cols="ofndr_num, ofndr_tst_id",
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         VIEW_BUILDER.build_and_print()

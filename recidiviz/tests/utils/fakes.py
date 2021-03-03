@@ -21,7 +21,9 @@ from typing import Set
 
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
-from recidiviz.persistence.database.sqlalchemy_engine_manager import SQLAlchemyEngineManager
+from recidiviz.persistence.database.sqlalchemy_engine_manager import (
+    SQLAlchemyEngineManager,
+)
 from recidiviz.utils import environment
 
 _in_memory_sqlite_connection_thread_ids: Set[int] = set()
@@ -42,26 +44,29 @@ def use_in_memory_sqlite_database(declarative_base: DeclarativeMeta) -> None:
     assert if you attempt to create connections from multiple threads within the context of a single test - SQLite does
     not handle multi-threading well and will often lock or crash when used in a multi-threading scenario.
     """
+
     def connection_creator() -> sqlite3.Connection:
         global _in_memory_sqlite_connection_thread_ids
 
         thread_id = threading.get_ident()
         if thread_id in _in_memory_sqlite_connection_thread_ids:
-            raise ValueError('Accessing SQLite in-memory database on multiple threads. Either you forgot to call '
-                             'teardown_in_memory_sqlite_databases() or you should be using a persistent postgres DB.')
+            raise ValueError(
+                "Accessing SQLite in-memory database on multiple threads. Either you forgot to call "
+                "teardown_in_memory_sqlite_databases() or you should be using a persistent postgres DB."
+            )
 
         _in_memory_sqlite_connection_thread_ids.add(thread_id)
-        connection = sqlite3.connect('file::memory:', uri=True)
+        connection = sqlite3.connect("file::memory:", uri=True)
 
         # Configures SQLite to enforce foreign key constraints
-        connection.execute('PRAGMA foreign_keys = ON;')
+        connection.execute("PRAGMA foreign_keys = ON;")
 
         return connection
 
     SQLAlchemyEngineManager.init_engine_for_db_instance(
-        db_url='sqlite:///:memory:',
+        db_url="sqlite:///:memory:",
         schema_base=declarative_base,
-        creator=connection_creator
+        creator=connection_creator,
     )
 
 
@@ -84,5 +89,5 @@ def use_on_disk_sqlite_database(declarative_base: DeclarativeMeta) -> None:
     3. Bind the global SessionMaker to the new database engine
     """
     SQLAlchemyEngineManager.init_engine_for_db_instance(
-        db_url='sqlite:///recidiviz.db',
-        schema_base=declarative_base)
+        db_url="sqlite:///recidiviz.db", schema_base=declarative_base
+    )

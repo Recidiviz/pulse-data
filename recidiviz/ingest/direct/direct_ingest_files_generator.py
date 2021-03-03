@@ -23,12 +23,14 @@ from typing import Dict
 
 from recidiviz.ingest.direct import regions as regions_module
 from recidiviz.ingest.direct import templates as ingest_templates_module
-from recidiviz.persistence.entity_matching import templates as persistence_templates_module
+from recidiviz.persistence.entity_matching import (
+    templates as persistence_templates_module,
+)
 from recidiviz.persistence.entity_matching import state as state_module
 from recidiviz.tests.ingest.direct import regions as regions_tests_module
 from recidiviz.tests.ingest.direct import templates as test_templates_module
 
-_PLACEHOLDER = 'TO' + 'DO'
+_PLACEHOLDER = "TO" + "DO"
 
 
 class DirectIngestFilesGenerator:
@@ -48,25 +50,43 @@ class DirectIngestFilesGenerator:
               fit the new requirements.
         """
 
-        new_region_dir_path = os.path.join(os.path.dirname(regions_module.__file__), self.region_code)
-        new_region_persistence_dir_path = os.path.join(os.path.dirname(state_module.__file__), self.region_code)
-        new_region_tests_dir_path = os.path.join(os.path.dirname(regions_tests_module.__file__), self.region_code)
+        new_region_dir_path = os.path.join(
+            os.path.dirname(regions_module.__file__), self.region_code
+        )
+        new_region_persistence_dir_path = os.path.join(
+            os.path.dirname(state_module.__file__), self.region_code
+        )
+        new_region_tests_dir_path = os.path.join(
+            os.path.dirname(regions_tests_module.__file__), self.region_code
+        )
 
-        dirs_to_create = [new_region_dir_path, new_region_persistence_dir_path, new_region_tests_dir_path]
+        dirs_to_create = [
+            new_region_dir_path,
+            new_region_persistence_dir_path,
+            new_region_tests_dir_path,
+        ]
         existing_dirs = [d for d in dirs_to_create if os.path.exists(d)]
         if existing_dirs:
-            raise FileExistsError("The following already exists:\n{}".format('\n'.join(existing_dirs)))
+            raise FileExistsError(
+                "The following already exists:\n{}".format("\n".join(existing_dirs))
+            )
 
         template_to_dest: Dict[str, str] = {
             os.path.dirname(ingest_templates_module.__file__): new_region_dir_path,
-            os.path.dirname(persistence_templates_module.__file__): new_region_persistence_dir_path,
-            os.path.dirname(test_templates_module.__file__): new_region_tests_dir_path
+            os.path.dirname(
+                persistence_templates_module.__file__
+            ): new_region_persistence_dir_path,
+            os.path.dirname(test_templates_module.__file__): new_region_tests_dir_path,
         }
 
         try:
             # Copy the template directory into the new region's directory
             for template_dir, dest_dir in template_to_dest.items():
-                copytree(os.path.join(template_dir, 'us_xx'), dest_dir, ignore=ignore_patterns("__pycache__"))
+                copytree(
+                    os.path.join(template_dir, "us_xx"),
+                    dest_dir,
+                    ignore=ignore_patterns("__pycache__"),
+                )
 
             for d in dirs_to_create:
                 for dir_path, _, files in os.walk(d):
@@ -82,9 +102,11 @@ class DirectIngestFilesGenerator:
 
     def _update_file_name(self, dir_path: str, file_name: str) -> None:
         """Update file names that use generic codes from templates to use the specified region code."""
-        if re.search('us_xx', file_name):
-            new_file_name = re.sub('us_xx', self.region_code, file_name)
-            os.rename(os.path.join(dir_path, file_name), os.path.join(dir_path, new_file_name))
+        if re.search("us_xx", file_name):
+            new_file_name = re.sub("us_xx", self.region_code, file_name)
+            os.rename(
+                os.path.join(dir_path, file_name), os.path.join(dir_path, new_file_name)
+            )
 
     def _update_file_contents(self, file_path: str) -> None:
         """
@@ -97,19 +119,25 @@ class DirectIngestFilesGenerator:
         with open(file_path) as f:
             file_contents = f.readlines()
 
-        with open(file_path, 'w') as updated_f:
+        with open(file_path, "w") as updated_f:
             for line in file_contents:
-                if re.search('US_XX', line):
-                    line = re.sub('US_XX', self.region_code.upper(), line)
-                if re.search('us_xx', line):
-                    line = re.sub('us_xx', self.region_code, line)
-                if re.search('UsXx', line):
-                    line = re.sub('UsXx',
-                                  # Capitalize the first letter of the region and any clause following an underscore
-                                  re.sub(r'^[a-z]|[_][a-z]', lambda m: m.group().upper(), self.region_code.lower()),
-                                  line).replace('_', '')
-                if re.search('unknown', line):
+                if re.search("US_XX", line):
+                    line = re.sub("US_XX", self.region_code.upper(), line)
+                if re.search("us_xx", line):
+                    line = re.sub("us_xx", self.region_code, line)
+                if re.search("UsXx", line):
+                    line = re.sub(
+                        "UsXx",
+                        # Capitalize the first letter of the region and any clause following an underscore
+                        re.sub(
+                            r"^[a-z]|[_][a-z]",
+                            lambda m: m.group().upper(),
+                            self.region_code.lower(),
+                        ),
+                        line,
+                    ).replace("_", "")
+                if re.search("unknown", line):
                     line = line.rstrip() + f"  # {_PLACEHOLDER}\n"
-                if re.search(r'Copyright \(C\) 2021 Recidiviz', line):
-                    line = re.sub('2021', f"{self.current_year}", line)
+                if re.search(r"Copyright \(C\) 2021 Recidiviz", line):
+                    line = re.sub("2021", f"{self.current_year}", line)
                 updated_f.write(line)

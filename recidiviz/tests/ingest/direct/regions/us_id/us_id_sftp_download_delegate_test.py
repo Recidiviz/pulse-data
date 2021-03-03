@@ -18,7 +18,9 @@
 import unittest
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.ingest.direct.regions.us_id.us_id_sftp_download_delegate import UsIdSftpDownloadDelegate
+from recidiviz.ingest.direct.regions.us_id.us_id_sftp_download_delegate import (
+    UsIdSftpDownloadDelegate,
+)
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 
@@ -39,18 +41,15 @@ class UsIdSftpDownloadDelegateTest(unittest.TestCase):
             "Recdvz2020",
             "Recidiviz2020-01-01",
             "Recidiviz202002",
-            "some_other_file.txt"
+            "some_other_file.txt",
         ]
-        expected_results = [
-            "Recidiviz20200101",
-            "Recidiviz20210304"
-        ]
+        expected_results = ["Recidiviz20200101", "Recidiviz20210304"]
         results = self.delegate.filter_paths(test_directories)
         self.assertEqual(results, expected_results)
 
     def test_post_process_downloads(self) -> None:
         result = self.delegate.post_process_downloads(
             GcsfsFilePath.from_absolute_path("test_bucket/test.txt"),
-            FakeGCSFileSystem()
+            FakeGCSFileSystem(),
         )
         self.assertEqual(result, "test_bucket/test.txt")

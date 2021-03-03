@@ -19,8 +19,7 @@
 from enum import unique
 from typing import Dict
 
-import recidiviz.common.constants.state.enum_canonical_strings as \
-    state_enum_strings
+import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
@@ -52,18 +51,18 @@ class StateSupervisionViolationType(EntityEnum, metaclass=EntityEnumMeta):
     TECHNICAL = state_enum_strings.state_supervision_violation_type_technical
 
     @staticmethod
-    def _get_default_map() -> Dict[str, 'StateSupervisionViolationType']:
+    def _get_default_map() -> Dict[str, "StateSupervisionViolationType"]:
         return _STATE_SUPERVISION_VIOLATION_TYPE_MAP
 
 
 _STATE_SUPERVISION_VIOLATION_TYPE_MAP = {
-    'ABSCOND': StateSupervisionViolationType.ABSCONDED,
-    'ABSCONDED': StateSupervisionViolationType.ABSCONDED,
-    'ABSCONDER': StateSupervisionViolationType.ABSCONDED,
-    'ESCAPED': StateSupervisionViolationType.ESCAPED,
-    'FELONY': StateSupervisionViolationType.FELONY,
-    'LAW': StateSupervisionViolationType.LAW,
-    'MISDEMEANOR': StateSupervisionViolationType.MISDEMEANOR,
-    'MUNICIPAL': StateSupervisionViolationType.MUNICIPAL,
-    'TECHNICAL': StateSupervisionViolationType.TECHNICAL,
+    "ABSCOND": StateSupervisionViolationType.ABSCONDED,
+    "ABSCONDED": StateSupervisionViolationType.ABSCONDED,
+    "ABSCONDER": StateSupervisionViolationType.ABSCONDED,
+    "ESCAPED": StateSupervisionViolationType.ESCAPED,
+    "FELONY": StateSupervisionViolationType.FELONY,
+    "LAW": StateSupervisionViolationType.LAW,
+    "MISDEMEANOR": StateSupervisionViolationType.MISDEMEANOR,
+    "MUNICIPAL": StateSupervisionViolationType.MUNICIPAL,
+    "TECHNICAL": StateSupervisionViolationType.TECHNICAL,
 }

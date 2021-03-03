@@ -27,22 +27,62 @@ REFERENCE_DATE: January 2016
 TIME_STEP: 1 month
 """
 import pandas as pd
-from recidiviz.calculator.modeling.population_projection.spark_bq_utils import upload_spark_model_inputs
+from recidiviz.calculator.modeling.population_projection.spark_bq_utils import (
+    upload_spark_model_inputs,
+)
 
-transitions_data = pd.DataFrame(columns=['compartment', 'outflow_to', 'compartment_duration', 'total_population','crime'])
-outflows_data = pd.DataFrame(columns=['compartment', 'outflow_to','time_step', 'total_population','crime'])
-total_population_data = pd.DataFrame(columns=['compartment','time_step', 'total_population','crime'])
+transitions_data = pd.DataFrame(
+    columns=[
+        "compartment",
+        "outflow_to",
+        "compartment_duration",
+        "total_population",
+        "crime",
+    ]
+)
+outflows_data = pd.DataFrame(
+    columns=["compartment", "outflow_to", "time_step", "total_population", "crime"]
+)
+total_population_data = pd.DataFrame(
+    columns=["compartment", "time_step", "total_population", "crime"]
+)
 
 # TRANSITIONS TABLE
-transitions_data = pd.concat([transitions_data, pd.read_csv('recidiviz/calculator/modeling/population_projection/state/AZ/financial_incentives/transitions_AZ_data.csv')])
+transitions_data = pd.concat(
+    [
+        transitions_data,
+        pd.read_csv(
+            "recidiviz/calculator/modeling/population_projection/state/AZ/financial_incentives/transitions_AZ_data.csv"
+        ),
+    ]
+)
 
 # OUTFLOWS TABLE
-outflows_data = pd.concat([outflows_data, pd.read_csv('recidiviz/calculator/modeling/population_projection/state/AZ/financial_incentives/outflows_data AZ.csv')])
+outflows_data = pd.concat(
+    [
+        outflows_data,
+        pd.read_csv(
+            "recidiviz/calculator/modeling/population_projection/state/AZ/financial_incentives/outflows_data AZ.csv"
+        ),
+    ]
+)
 
-#TOTAL POPULATION TABLE
-total_population_data = pd.concat([total_population_data, pd.read_csv('recidiviz/calculator/modeling/population_projection/state/AZ/financial_incentives/total_population_data AZ.csv')])
+# TOTAL POPULATION TABLE
+total_population_data = pd.concat(
+    [
+        total_population_data,
+        pd.read_csv(
+            "recidiviz/calculator/modeling/population_projection/state/AZ/financial_incentives/total_population_data AZ.csv"
+        ),
+    ]
+)
 
 # STORE DATA
 simulation_tag = "AZ_financialincentives"
-upload_spark_model_inputs('recidiviz-staging', simulation_tag, outflows_data, transitions_data,
-                          total_population_data)
+upload_spark_model_inputs(
+    "recidiviz-staging",
+    simulation_tag,
+    outflows_data,
+    transitions_data,
+    total_population_data,
+)

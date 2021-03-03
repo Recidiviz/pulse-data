@@ -24,16 +24,16 @@ def print_visible_header_label(label_text: str) -> None:
     printouts.
     """
     for _ in range(0, 3):
-        print('*' * 200)
+        print("*" * 200)
     print(f"\n{label_text}")
 
 
 def in_docker():
     """ Returns: True if running in a Docker container, else False """
-    if not os.path.exists('/proc/1/cgroup'):
+    if not os.path.exists("/proc/1/cgroup"):
         return False
-    with open('/proc/1/cgroup', 'rt') as ifh:
-        return 'docker' in ifh.read()
+    with open("/proc/1/cgroup", "rt") as ifh:
+        return "docker" in ifh.read()
 
 
 def is_running_in_ci() -> bool:

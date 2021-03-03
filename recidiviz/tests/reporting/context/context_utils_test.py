@@ -21,16 +21,16 @@ from copy import copy
 from datetime import datetime
 from unittest import TestCase
 
-from recidiviz.reporting.context.context_utils import singular_or_plural, format_date, align_columns
+from recidiviz.reporting.context.context_utils import (
+    singular_or_plural,
+    format_date,
+    align_columns,
+)
 
-_PREPARED_DATA: dict = {
-    'singular_value': '1',
-    'plural_value': '2',
-    'zero_value': '0'
-}
+_PREPARED_DATA: dict = {"singular_value": "1", "plural_value": "2", "zero_value": "0"}
 
-SINGULAR_TEXT = 'Monstera Deliciosa'
-PLURAL_TEXT = 'Monsteras Deliciosa'
+SINGULAR_TEXT = "Monstera Deliciosa"
+PLURAL_TEXT = "Monsteras Deliciosa"
 
 
 class ContextUtilsTest(TestCase):
@@ -40,41 +40,50 @@ class ContextUtilsTest(TestCase):
         expected = SINGULAR_TEXT
         prepared_data = copy(_PREPARED_DATA)
 
-        singular_or_plural(prepared_data, 'singular_value', 'final_text', SINGULAR_TEXT, PLURAL_TEXT)
-        actual = prepared_data['final_text']
+        singular_or_plural(
+            prepared_data, "singular_value", "final_text", SINGULAR_TEXT, PLURAL_TEXT
+        )
+        actual = prepared_data["final_text"]
         self.assertEqual(expected, actual)
 
     def test_singular_or_plural_plural(self) -> None:
         expected = PLURAL_TEXT
         prepared_data = copy(_PREPARED_DATA)
 
-        singular_or_plural(prepared_data, 'plural_value', 'final_text', SINGULAR_TEXT, PLURAL_TEXT)
-        actual = prepared_data['final_text']
+        singular_or_plural(
+            prepared_data, "plural_value", "final_text", SINGULAR_TEXT, PLURAL_TEXT
+        )
+        actual = prepared_data["final_text"]
         self.assertEqual(expected, actual)
 
     def test_singular_or_plural_zero(self) -> None:
         expected = PLURAL_TEXT
         prepared_data = copy(_PREPARED_DATA)
 
-        singular_or_plural(prepared_data, 'zero_value', 'final_text', SINGULAR_TEXT, PLURAL_TEXT)
-        actual = prepared_data['final_text']
+        singular_or_plural(
+            prepared_data, "zero_value", "final_text", SINGULAR_TEXT, PLURAL_TEXT
+        )
+        actual = prepared_data["final_text"]
         self.assertEqual(expected, actual)
 
     def test_format_date(self) -> None:
-        date = datetime.strptime('20201205112344', '%Y%m%d%H%M%S')
-        actual = format_date('20201205112344', current_format='%Y%m%d%H%M%S')
-        self.assertEqual(datetime.strftime(date, '%m/%d/%Y'), actual)
+        date = datetime.strptime("20201205112344", "%Y%m%d%H%M%S")
+        actual = format_date("20201205112344", current_format="%Y%m%d%H%M%S")
+        self.assertEqual(datetime.strftime(date, "%m/%d/%Y"), actual)
 
+    # pylint:disable=trailing-whitespace
     def test_align_columns(self) -> None:
         columns = [
             ["few char", "many characters", "a little"],
             ["1", "2", "3"],
-            ["a longer one", "few char", "many"]
+            ["a longer one", "few char", "many"],
         ]
 
-        expected = textwrap.dedent("""\
+        expected = textwrap.dedent(
+            """\
             few char         many characters     a little    
             1                2                   3           
-            a longer one     few char            many        """)
+            a longer one     few char            many        """
+        )
 
         self.assertEqual(expected, align_columns(columns))

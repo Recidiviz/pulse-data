@@ -36,10 +36,14 @@ EMULATOR_STARTUP_TIMEOUT = 30
 
 def pytest_configure(config) -> None:
     recidiviz.called_from_test = True
-    config.addinivalue_line("markers", "uses_db: for tests that spin up a new database.")
-    config.addinivalue_line("markers",
-                            "no_parallel: for tests that should not be run in parallel (e.g. they write to shared "
-                            "filesystem space).")
+    config.addinivalue_line(
+        "markers", "uses_db: for tests that spin up a new database."
+    )
+    config.addinivalue_line(
+        "markers",
+        "no_parallel: for tests that should not be run in parallel (e.g. they write to shared "
+        "filesystem space).",
+    )
 
 
 def pytest_unconfigure() -> None:
@@ -47,15 +51,21 @@ def pytest_unconfigure() -> None:
 
 
 def pytest_addoption(parser) -> None:
-    parser.addoption("-E", "--with-emulator", action="store_true",
-                     help="run tests that require the datastore emulator.")
-    parser.addoption("--test-set", type=str, choices=['parallel', 'not-parallel'])
+    parser.addoption(
+        "-E",
+        "--with-emulator",
+        action="store_true",
+        help="run tests that require the datastore emulator.",
+    )
+    parser.addoption("--test-set", type=str, choices=["parallel", "not-parallel"])
 
 
 def pytest_runtest_setup(item: pytest.Item) -> None:
-    test_set = item.config.getoption('test_set', default=None)
-    if 'emulator' in item.fixturenames:
-        if test_set == 'parallel' or not item.config.getoption('with_emulator', default=None):
+    test_set = item.config.getoption("test_set", default=None)
+    if "emulator" in item.fixturenames:
+        if test_set == "parallel" or not item.config.getoption(
+            "with_emulator", default=None
+        ):
             pytest.skip("requires datastore emulator")
     else:
         # For tests without the emulator, prevent them from trying to create google cloud clients.
@@ -63,26 +73,31 @@ def pytest_runtest_setup(item: pytest.Item) -> None:
         mock_google_auth = item.google_auth_patcher.start()
         mock_google_auth.side_effect = AssertionError(
             "Unit test may not instantiate a Google client. Please mock the appropriate client class inside this test "
-            " (e.g. `patch('google.cloud.bigquery.Client')`).")
+            " (e.g. `patch('google.cloud.bigquery.Client')`)."
+        )
 
-        if item.get_closest_marker('uses_db') is not None:
-            if test_set == 'parallel':
-                pytest.skip('[parallel tests] skipping because test requires database')
-        elif item.get_closest_marker('no_parallel') is not None:
-            if test_set == 'parallel':
-                pytest.skip('[parallel tests] skipping because test requires parallel execution')
+        if item.get_closest_marker("uses_db") is not None:
+            if test_set == "parallel":
+                pytest.skip("[parallel tests] skipping because test requires database")
+        elif item.get_closest_marker("no_parallel") is not None:
+            if test_set == "parallel":
+                pytest.skip(
+                    "[parallel tests] skipping because test requires parallel execution"
+                )
         else:
-            if test_set == 'not-parallel':
-                pytest.skip('[not-parallel tests] skipping because test does not require parallel execution')
+            if test_set == "not-parallel":
+                pytest.skip(
+                    "[not-parallel tests] skipping because test does not require parallel execution"
+                )
 
 
 def pytest_runtest_teardown(item: pytest.Item) -> None:
-    if hasattr(item, 'google_auth_patcher') and item.google_auth_patcher is not None:
+    if hasattr(item, "google_auth_patcher") and item.google_auth_patcher is not None:
         item.google_auth_patcher.stop()
 
 
 # TODO(#263): return the datastore client from this fixture
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def emulator(request) -> None:
     datastore_emulator, pubsub_emulator = _start_emulators()
 
@@ -108,33 +123,39 @@ def emulator(request) -> None:
 def _start_emulators() -> Tuple[subprocess.Popen, subprocess.Popen]:
     """Start gcloud datastore and pubsub emulators."""
     datastore_emulator = subprocess.Popen(
-        shlex.split('gcloud beta emulators datastore start --no-store-on-disk '
-                    '--consistency=1.0 --project=test-project'))
+        shlex.split(
+            "gcloud beta emulators datastore start --no-store-on-disk "
+            "--consistency=1.0 --project=test-project"
+        )
+    )
     pubsub_emulator = subprocess.Popen(
-        shlex.split('gcloud beta emulators pubsub start '
-                    '--project=test-project'))
+        shlex.split("gcloud beta emulators pubsub start " "--project=test-project")
+    )
 
     # Sleep to ensure emulators successfully start
     emulator_start_time = time()
     sleep(5)
     while not _emulators_started():
         if time() - emulator_start_time > EMULATOR_STARTUP_TIMEOUT:
-            raise Exception('Emulators did not start up before timeout.')
+            raise Exception("Emulators did not start up before timeout.")
         sleep(1)
 
     if datastore_emulator.poll() or pubsub_emulator.poll():
         datastore_emulator.terminate()
         pubsub_emulator.terminate()
-        raise Exception('Failed to start gcloud emulators!')
+        raise Exception("Failed to start gcloud emulators!")
 
     return datastore_emulator, pubsub_emulator
 
 
 def _get_emulator_env_paths() -> List[str]:
-    return [os.path.join(
-            os.environ.get('HOME', ''),
-            '.config/gcloud/emulators/{}/env.yaml'.format(emulator_name))
-            for emulator_name in ['datastore', 'pubsub']]
+    return [
+        os.path.join(
+            os.environ.get("HOME", ""),
+            ".config/gcloud/emulators/{}/env.yaml".format(emulator_name),
+        )
+        for emulator_name in ["datastore", "pubsub"]
+    ]
 
 
 def _emulators_started() -> bool:
@@ -149,16 +170,16 @@ def _write_emulator_environs() -> Dict[str, Optional[str]]:
     # wins
     env_dict = {}
     for emulator_env_path in _get_emulator_env_paths():
-        env_file = open(emulator_env_path, 'r')
+        env_file = open(emulator_env_path, "r")
         env_dict.update(yaml.full_load(env_file))
         env_file.close()
 
     old_environs = {key: os.environ.get(key) for key in env_dict}
     os.environ.update(env_dict)
     # https://github.com/GoogleCloudPlatform/google-cloud-datastore/issues/168#issuecomment-294418422
-    if 'DATASTORE_PROJECT_ID' in env_dict:
-        old_environs['APPLICATION_ID'] = os.environ.get('APPLICATION_ID')
-        os.environ['APPLICATION_ID'] = env_dict['DATASTORE_PROJECT_ID']
+    if "DATASTORE_PROJECT_ID" in env_dict:
+        old_environs["APPLICATION_ID"] = os.environ.get("APPLICATION_ID")
+        os.environ["APPLICATION_ID"] = env_dict["DATASTORE_PROJECT_ID"]
 
     return old_environs
 

@@ -24,10 +24,9 @@ from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.ingest_info_converter.utils import converter_utils
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     fn,
-    parse_external_id
+    parse_external_id,
 )
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings \
-    import EnumMappings
+from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
 
 
 def convert(proto, metadata: IngestMetadata) -> entities.Bond:
@@ -35,24 +34,28 @@ def convert(proto, metadata: IngestMetadata) -> entities.Bond:
     new = entities.Bond.builder()
 
     enum_fields = {
-        'status': BondStatus,
-        'bond_type': BondType,
+        "status": BondStatus,
+        "bond_type": BondType,
     }
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 
     # enum values
     new.bond_type = enum_mappings.get(BondType)
-    new.bond_type_raw_text = fn(normalize, 'bond_type', proto)
+    new.bond_type_raw_text = fn(normalize, "bond_type", proto)
     new.status = enum_mappings.get(BondStatus)
-    new.status_raw_text = fn(normalize, 'status', proto)
+    new.status_raw_text = fn(normalize, "status", proto)
 
     # parsed values
-    new.external_id = fn(parse_external_id, 'bond_id', proto)
-    new.bond_agent = fn(normalize, 'bond_agent', proto)
-    new.amount_dollars, new.bond_type, new.status = \
-        converter_utils.parse_bond_amount_type_and_status(
-            fn(normalize, 'amount', proto),
-            provided_bond_type=cast(Optional[BondType], new.bond_type),
-            provided_status=cast(Optional[BondStatus], new.status))
+    new.external_id = fn(parse_external_id, "bond_id", proto)
+    new.bond_agent = fn(normalize, "bond_agent", proto)
+    (
+        new.amount_dollars,
+        new.bond_type,
+        new.status,
+    ) = converter_utils.parse_bond_amount_type_and_status(
+        fn(normalize, "amount", proto),
+        provided_bond_type=cast(Optional[BondType], new.bond_type),
+        provided_status=cast(Optional[BondStatus], new.status),
+    )
 
     return new.build()

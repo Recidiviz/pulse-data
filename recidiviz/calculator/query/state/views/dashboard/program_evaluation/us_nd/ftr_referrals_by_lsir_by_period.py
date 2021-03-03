@@ -18,7 +18,7 @@
 All individuals who have been referred to Free Through Recovery by metric period
 months, broken down by LSIR score.
 """
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
@@ -26,8 +26,7 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-FTR_REFERRALS_BY_LSIR_BY_PERIOD_VIEW_NAME = \
-    'ftr_referrals_by_lsir_by_period'
+FTR_REFERRALS_BY_LSIR_BY_PERIOD_VIEW_NAME = "ftr_referrals_by_lsir_by_period"
 
 FTR_REFERRALS_BY_LSIR_BY_PERIOD_DESCRIPTION = """
  All individuals who have been referred to Free Through Recovery by metric
@@ -35,8 +34,7 @@ FTR_REFERRALS_BY_LSIR_BY_PERIOD_DESCRIPTION = """
 """
 
 # TODO(#5334): Make this view deterministic by sorting by date_of_supervision and date_of_referral
-FTR_REFERRALS_BY_LSIR_BY_PERIOD_QUERY_TEMPLATE = \
-    """
+FTR_REFERRALS_BY_LSIR_BY_PERIOD_QUERY_TEMPLATE = """
     /*{description}*/
     WITH supervision AS (
       SELECT
@@ -111,13 +109,19 @@ FTR_REFERRALS_BY_LSIR_BY_PERIOD_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=FTR_REFERRALS_BY_LSIR_BY_PERIOD_VIEW_NAME,
     view_query_template=FTR_REFERRALS_BY_LSIR_BY_PERIOD_QUERY_TEMPLATE,
-    dimensions=['state_code', 'metric_period_months', 'district', 'supervision_type', 'assessment_score_bucket'],
+    dimensions=[
+        "state_code",
+        "metric_period_months",
+        "district",
+        "supervision_type",
+        "assessment_score_bucket",
+    ],
     description=FTR_REFERRALS_BY_LSIR_BY_PERIOD_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
     metric_period_condition=bq_utils.metric_period_condition(),
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         FTR_REFERRALS_BY_LSIR_BY_PERIOD_VIEW_BUILDER.build_and_print()

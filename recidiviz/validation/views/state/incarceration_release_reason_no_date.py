@@ -23,12 +23,13 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
-INCARCERATION_RELEASE_REASON_NO_DATE_VIEW_NAME = 'incarceration_release_reason_no_date'
+INCARCERATION_RELEASE_REASON_NO_DATE_VIEW_NAME = "incarceration_release_reason_no_date"
 
-INCARCERATION_RELEASE_REASON_NO_DATE_DESCRIPTION = """Incarceration periods with release reasons but no release date."""
+INCARCERATION_RELEASE_REASON_NO_DATE_DESCRIPTION = (
+    """Incarceration periods with release reasons but no release date."""
+)
 
-INCARCERATION_RELEASE_REASON_NO_DATE_QUERY_TEMPLATE = \
-    """
+INCARCERATION_RELEASE_REASON_NO_DATE_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT *, state_code as region_code
     FROM `{project_id}.{state_dataset}.state_incarceration_period`
@@ -45,6 +46,6 @@ INCARCERATION_RELEASE_REASON_NO_DATE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     state_dataset=state_dataset_config.STATE_BASE_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         INCARCERATION_RELEASE_REASON_NO_DATE_VIEW_BUILDER.build_and_print()

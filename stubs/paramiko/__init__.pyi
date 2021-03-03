@@ -16,49 +16,36 @@
 # =============================================================================
 from typing import Optional, MutableMapping, List, Any, Iterator, Union
 
-
 class SFTPAttributes(object):
     st_mtime: float
     filename: str
     st_mode: int
-
     def __init__(self) -> None: ...
 
-
 class RSAKey:
-
     def __init__(self, data: bytes) -> None: ...
-
 
 class SSHException(Exception):
     pass
 
-
 class PKey:
     pass
 
-
 class HostKeys:
-
     class SubDict(MutableMapping):
         def __delitem__(self, key: Any) -> None: ...
         def __getitem__(self, key: Any) -> Any: ...
         def __iter__(self) -> Iterator[Any]: ...
         def __len__(self) -> int: ...
         def __setitem__(self, key: Any, val: Any) -> None: ...
-
     def add(self, name: str, keytype: str, key: Union[PKey, Any]) -> None: ...
     def lookup(self, host: str) -> SubDict: ...
 
-
 class HostKeyEntry:
-
     @classmethod
-    def from_line(cls, line: str, lineno: Optional[int] = None) -> 'HostKeyEntry': ...
-
+    def from_line(cls, line: str, lineno: Optional[int] = None) -> "HostKeyEntry": ...
 
 class SFTPFile:
-
-    def __enter__(self) -> 'SFTPFile': ...
+    def __enter__(self) -> "SFTPFile": ...
     def __exit__(self, type: Any, value: Any, traceback: Any) -> None: ...
     def readline(self, size: Optional[int] = None) -> bytes: ...

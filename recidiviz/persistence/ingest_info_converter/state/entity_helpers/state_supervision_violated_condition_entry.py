@@ -19,24 +19,25 @@ persistence entity."""
 
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.common.str_field_utils import normalize
-from recidiviz.ingest.models.ingest_info_pb2 import \
-    StateSupervisionViolatedConditionEntry
+from recidiviz.ingest.models.ingest_info_pb2 import (
+    StateSupervisionViolatedConditionEntry,
+)
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.utils.converter_utils import \
-    fn, parse_region_code_with_override
+from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
+    fn,
+    parse_region_code_with_override,
+)
 
 
 def convert(
-        proto: StateSupervisionViolatedConditionEntry,
-        metadata: IngestMetadata
+    proto: StateSupervisionViolatedConditionEntry, metadata: IngestMetadata
 ) -> entities.StateSupervisionViolatedConditionEntry:
     """Converts an ingest_info proto StateSupervisionViolatedConditionEntry to a
     persistence entity."""
     new = entities.StateSupervisionViolatedConditionEntry.builder()
 
     # 1-to-1 mappings
-    new.condition = fn(normalize, 'condition', proto)
-    new.state_code = parse_region_code_with_override(
-        proto, 'state_code', metadata)
+    new.condition = fn(normalize, "condition", proto)
+    new.state_code = parse_region_code_with_override(proto, "state_code", metadata)
 
     return new.build()

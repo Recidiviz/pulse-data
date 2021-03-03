@@ -14,13 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-# pylint: disable=line-too-long
+
 """Unpivot stitch data"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
-from recidiviz.calculator.query.county.views.stitch.combined_stitch_drop_overlapping \
-    import COMBINED_STITCH_DROP_OVERLAPPING_VIEW_BUILDER
+from recidiviz.calculator.query.county.views.stitch.combined_stitch_drop_overlapping import (
+    COMBINED_STITCH_DROP_OVERLAPPING_VIEW_BUILDER,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -351,14 +352,13 @@ SELECT * FROM unknown_gender_unknown_race
 #  is materialized
 COMBINED_STITCH_DROP_OVERLAPPING_UNPIVOT_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
-    view_id='combined_stitch_drop_overlapping_unpivot',
+    view_id="combined_stitch_drop_overlapping_unpivot",
     view_query_template=_QUERY_TEMPLATE,
     views_dataset=dataset_config.VIEWS_DATASET,
-    combined_stitch_drop_overlapping=
-    COMBINED_STITCH_DROP_OVERLAPPING_VIEW_BUILDER.view_id,
-    description=_DESCRIPTION
+    combined_stitch_drop_overlapping=COMBINED_STITCH_DROP_OVERLAPPING_VIEW_BUILDER.view_id,
+    description=_DESCRIPTION,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         COMBINED_STITCH_DROP_OVERLAPPING_UNPIVOT_VIEW_BUILDER.build_and_print()

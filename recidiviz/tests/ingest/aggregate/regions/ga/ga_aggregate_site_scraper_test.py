@@ -23,33 +23,30 @@ from recidiviz.ingest.aggregate.regions.ga import ga_aggregate_site_scraper
 from recidiviz.tests.ingest import fixtures
 
 REPORTS_LANDING_HTML = fixtures.as_string(
-    'aggregate/regions/ga', 'reports_landing.html')
-REPORTS_YEAR_2015 = fixtures.as_string(
-    'aggregate/regions/ga', 'reports_year_2015.html')
-REPORTS_YEAR_2019 = fixtures.as_string(
-    'aggregate/regions/ga', 'reports_year_2019.html')
+    "aggregate/regions/ga", "reports_landing.html"
+)
+REPORTS_YEAR_2015 = fixtures.as_string("aggregate/regions/ga", "reports_year_2015.html")
+REPORTS_YEAR_2019 = fixtures.as_string("aggregate/regions/ga", "reports_year_2019.html")
 
 
 class TestGaAggregateSiteScraper(TestCase):
     """Test that ga_aggregate_site_scraper correctly scrapes urls."""
 
-    @patch.object(requests, 'get')
+    @patch.object(requests, "get")
     def testGetAllUrls(self, mockget):
         def _MockGet(url):
             response = Mock()
-            if 'node/5617' in url:
+            if "node/5617" in url:
                 response.text = REPORTS_YEAR_2019
-            elif 'node/4036' in url:
+            elif "node/4036" in url:
                 response.text = REPORTS_YEAR_2015
             else:
                 response.text = REPORTS_LANDING_HTML
             return response
 
         mockget.side_effect = _MockGet
-        url1 = ('https://www.dca.ga.gov/sites/default/files/'
-                'jail_report_jan19.pdf')
-        url2 = ('https://www.dca.ga.gov/sites/default/files/'
-                'mar15_jail_report.pdf')
+        url1 = "https://www.dca.ga.gov/sites/default/files/jail_report_jan19.pdf"
+        url2 = "https://www.dca.ga.gov/sites/default/files/mar15_jail_report.pdf"
         expected_urls = {url1, url2}
 
         urls = ga_aggregate_site_scraper.get_urls_to_download()

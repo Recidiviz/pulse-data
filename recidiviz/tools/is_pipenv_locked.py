@@ -20,16 +20,23 @@ import sys
 
 from pipenv.core import project
 
+
 def is_locked() -> bool:
     lock_hash = project.get_lockfile_hash()
     pipfile_hash = project.calculate_pipfile_hash()
     if lock_hash == pipfile_hash:
         return True
-    logging.error("Pipfile.lock (%s) is out of date (expected %s).", lock_hash[-6:], pipfile_hash[-6:])
+    logging.error(
+        "Pipfile.lock (%s) is out of date (expected %s).",
+        lock_hash[-6:],
+        pipfile_hash[-6:],
+    )
     return False
+
 
 def main() -> None:
     sys.exit(not is_locked())
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

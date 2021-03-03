@@ -21,26 +21,35 @@ import uuid
 from datetime import datetime
 from unittest import mock
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockManager, GCSPseudoLockAlreadyExists, \
-    GCSPseudoLockDoesNotExist, GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME
+from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
+    GCSPseudoLockManager,
+    GCSPseudoLockAlreadyExists,
+    GCSPseudoLockDoesNotExist,
+    GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME,
+)
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 
 class GCSPseudoLockManagerTest(unittest.TestCase):
     """Class to test GCS Pseudo Lock Manager"""
-    LOCK_NAME = 'LOCK_NAME'
-    LOCK_NAME2 = 'LOCK_NAME2'
-    PROJECT_ID = 'recidiviz-staging'
+
+    LOCK_NAME = "LOCK_NAME"
+    LOCK_NAME2 = "LOCK_NAME2"
+    PROJECT_ID = "recidiviz-staging"
     TIME_FORMAT = "%m/%d/%Y, %H:%M:%S"
     CONTENTS = '{"CONTENTS" : "contents"}'
     CONTENTS2 = '{"CONTENTS2" : "contents2"}'
-    REGION = 'region'
-    PREFIX = 'prefix'
+    REGION = "region"
+    PREFIX = "prefix"
 
     def setUp(self) -> None:
-        self.project_id_patcher = mock.patch('recidiviz.cloud_storage.gcs_pseudo_lock_manager.metadata')
-        self.project_id_patcher.start().return_value = 'recidiviz-123'
-        self.gcs_factory_patcher = mock.patch('recidiviz.cloud_storage.gcs_pseudo_lock_manager.GcsfsFactory.build')
+        self.project_id_patcher = mock.patch(
+            "recidiviz.cloud_storage.gcs_pseudo_lock_manager.metadata"
+        )
+        self.project_id_patcher.start().return_value = "recidiviz-123"
+        self.gcs_factory_patcher = mock.patch(
+            "recidiviz.cloud_storage.gcs_pseudo_lock_manager.GcsfsFactory.build"
+        )
         fake_gcs = FakeGCSFileSystem()
         self.gcs_factory_patcher.start().return_value = fake_gcs
         self.fs = fake_gcs
@@ -141,7 +150,9 @@ class GCSPseudoLockManagerTest(unittest.TestCase):
         lock_manager = GCSPseudoLockManager(self.PROJECT_ID)
         lock_manager.lock(self.LOCK_NAME)
         correct_contents = datetime.now().strftime(self.TIME_FORMAT)
-        path = GcsfsFilePath(bucket_name=lock_manager.bucket_name, blob_name=self.LOCK_NAME)
+        path = GcsfsFilePath(
+            bucket_name=lock_manager.bucket_name, blob_name=self.LOCK_NAME
+        )
         actual_contents = self.fs.download_as_string(path)
         self.assertEqual(correct_contents, actual_contents)
 
@@ -149,7 +160,9 @@ class GCSPseudoLockManagerTest(unittest.TestCase):
         """Locks with pre-specified contents and asserts the lockfile contains those contents"""
         lock_manager = GCSPseudoLockManager(self.PROJECT_ID)
         lock_manager.lock(self.LOCK_NAME, self.CONTENTS)
-        path = GcsfsFilePath(bucket_name=lock_manager.bucket_name, blob_name=self.LOCK_NAME)
+        path = GcsfsFilePath(
+            bucket_name=lock_manager.bucket_name, blob_name=self.LOCK_NAME
+        )
         actual_contents = self.fs.download_as_string(path)
         self.assertEqual(self.CONTENTS, actual_contents)
 
@@ -159,22 +172,38 @@ class GCSPseudoLockManagerTest(unittest.TestCase):
         lock_manager.lock(self.LOCK_NAME, self.CONTENTS)
         lock_manager.unlock(self.LOCK_NAME)
         lock_manager.lock(self.LOCK_NAME, self.CONTENTS2)
-        path = GcsfsFilePath(bucket_name=lock_manager.bucket_name, blob_name=self.LOCK_NAME)
+        path = GcsfsFilePath(
+            bucket_name=lock_manager.bucket_name, blob_name=self.LOCK_NAME
+        )
         actual_contents = self.fs.download_as_string(path)
         self.assertEqual(self.CONTENTS2, actual_contents)
 
     def test_region_are_running(self) -> None:
         """Ensures lock manager can see regions are running"""
         lock_manager = GCSPseudoLockManager(self.PROJECT_ID)
-        lock_manager.lock(GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME + self.REGION.upper())
-        self.assertFalse(lock_manager.no_active_locks_with_prefix(GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME))
+        lock_manager.lock(
+            GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME + self.REGION.upper()
+        )
+        self.assertFalse(
+            lock_manager.no_active_locks_with_prefix(
+                GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME
+            )
+        )
 
     def test_region_are_not_running(self) -> None:
         """Ensures lock manager can see regions are not running"""
         lock_manager = GCSPseudoLockManager(self.PROJECT_ID)
-        lock_manager.lock(GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME + self.REGION.upper())
-        lock_manager.unlock(GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME + self.REGION.upper())
-        self.assertTrue(lock_manager.no_active_locks_with_prefix(GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME))
+        lock_manager.lock(
+            GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME + self.REGION.upper()
+        )
+        lock_manager.unlock(
+            GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME + self.REGION.upper()
+        )
+        self.assertTrue(
+            lock_manager.no_active_locks_with_prefix(
+                GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME
+            )
+        )
 
     def test_get_lock_contents(self) -> None:
         """Tests that the get_lock_contents gets the correct contents from the lock"""

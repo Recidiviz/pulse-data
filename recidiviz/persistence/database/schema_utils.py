@@ -28,32 +28,44 @@ from sqlalchemy import Table, ForeignKeyConstraint
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.common.ingest_metadata import SystemLevel
-from recidiviz.persistence.database.base_schema import JailsBase, JusticeCountsBase, \
-    StateBase, OperationsBase
+from recidiviz.persistence.database.base_schema import (
+    JailsBase,
+    JusticeCountsBase,
+    StateBase,
+    OperationsBase,
+)
 from recidiviz.persistence.database.database_entity import DatabaseEntity
-from recidiviz.persistence.database.schema.aggregate import \
-    schema as aggregate_schema
+from recidiviz.persistence.database.schema.aggregate import schema as aggregate_schema
 from recidiviz.persistence.database.schema.county import schema as county_schema
-from recidiviz.persistence.database.schema.history_table_shared_columns_mixin \
-    import HistoryTableSharedColumns
-from recidiviz.persistence.database.schema.justice_counts import schema as justice_counts_schema
+from recidiviz.persistence.database.schema.history_table_shared_columns_mixin import (
+    HistoryTableSharedColumns,
+)
+from recidiviz.persistence.database.schema.justice_counts import (
+    schema as justice_counts_schema,
+)
 from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema.operations import schema as operations_schema
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
 
-_SCHEMA_MODULES: List[ModuleType] = \
-    [aggregate_schema, county_schema, justice_counts_schema, state_schema, operations_schema]
+_SCHEMA_MODULES: List[ModuleType] = [
+    aggregate_schema,
+    county_schema,
+    justice_counts_schema,
+    state_schema,
+    operations_schema,
+]
 
 BQ_TYPES = {
-    sqlalchemy.Boolean: 'BOOL',
-    sqlalchemy.Date: 'DATE',
-    sqlalchemy.DateTime: 'DATETIME',
-    sqlalchemy.Enum: 'STRING',
-    sqlalchemy.Integer: 'INT64',
-    sqlalchemy.String: 'STRING',
-    sqlalchemy.Text: 'STRING',
-    sqlalchemy.ARRAY: 'ARRAY',
+    sqlalchemy.Boolean: "BOOL",
+    sqlalchemy.Date: "DATE",
+    sqlalchemy.DateTime: "DATETIME",
+    sqlalchemy.Enum: "STRING",
+    sqlalchemy.Integer: "INT64",
+    sqlalchemy.String: "STRING",
+    sqlalchemy.Text: "STRING",
+    sqlalchemy.ARRAY: "ARRAY",
 }
+
 
 def get_all_table_classes() -> Iterator[Table]:
     for module in _SCHEMA_MODULES:
@@ -61,8 +73,11 @@ def get_all_table_classes() -> Iterator[Table]:
 
 
 def get_foreign_key_constraints(table: Table) -> List[ForeignKeyConstraint]:
-    return [constraint for constraint in table.constraints
-            if isinstance(constraint, ForeignKeyConstraint)]
+    return [
+        constraint
+        for constraint in table.constraints
+        if isinstance(constraint, ForeignKeyConstraint)
+    ]
 
 
 def get_table_class_by_name(table_name: str, tables: List[Table]) -> Table:
@@ -70,35 +85,33 @@ def get_table_class_by_name(table_name: str, tables: List[Table]) -> Table:
     for table in tables:
         if table.name == table_name:
             return table
-    raise ValueError(f'{table_name}: Table name not found in list of tables.')
+    raise ValueError(f"{table_name}: Table name not found in list of tables.")
 
 
 def get_region_code_col(metadata_base: DeclarativeMeta, table: Table) -> str:
     if metadata_base == StateBase:
-        if hasattr(table.c, 'state_code') or is_association_table(table.name):
-            return 'state_code'
+        if hasattr(table.c, "state_code") or is_association_table(table.name):
+            return "state_code"
     if metadata_base == OperationsBase:
-        if hasattr(table.c, 'region_code'):
-            return 'region_code'
-    raise ValueError(f'Unexpected table is missing a region code field: [{table.name}]')
+        if hasattr(table.c, "region_code"):
+            return "region_code"
+    raise ValueError(f"Unexpected table is missing a region code field: [{table.name}]")
 
 
 def schema_has_region_code_query_support(metadata_base: DeclarativeMeta) -> bool:
     """NOTE: The CloudSQL -> BQ export must run once without any filtered region codes for each newly added SchemaType.
-        This ensures the region_code column is added to tables that are missing it before a query tries to
-        filter for that column.
+    This ensures the region_code column is added to tables that are missing it before a query tries to
+    filter for that column.
     """
     return metadata_base in (StateBase, OperationsBase)
 
 
 def is_association_table(table_name: str) -> bool:
-    return table_name.endswith('_association')
+    return table_name.endswith("_association")
 
 
-def get_all_table_classes_in_module(
-        module: ModuleType) -> Iterator[Type[Table]]:
-    all_members_in_current_module = \
-        inspect.getmembers(sys.modules[module.__name__])
+def get_all_table_classes_in_module(module: ModuleType) -> Iterator[Type[Table]]:
+    all_members_in_current_module = inspect.getmembers(sys.modules[module.__name__])
     for _, member in all_members_in_current_module:
         if isinstance(member, Table):
             yield member
@@ -125,6 +138,7 @@ def get_state_table_classes() -> Iterator[Table]:
 def get_operations_table_classes() -> Iterator[Table]:
     yield from get_all_table_classes_in_module(operations_schema)
 
+
 def get_non_history_state_database_entities() -> List[Type[DatabaseEntity]]:
     to_return = []
     for cls in _get_all_database_entities_in_module(state_schema):
@@ -134,25 +148,26 @@ def get_non_history_state_database_entities() -> List[Type[DatabaseEntity]]:
 
 
 def _get_all_database_entities_in_module(
-        module: ModuleType) -> Iterator[Type[DatabaseEntity]]:
+    module: ModuleType,
+) -> Iterator[Type[DatabaseEntity]]:
     """This should only be called in tests and by the
     `get_state_database_entity_with_name` function."""
-    all_members_in_current_module = \
-        inspect.getmembers(sys.modules[module.__name__])
+    all_members_in_current_module = inspect.getmembers(sys.modules[module.__name__])
     for _, member in all_members_in_current_module:
         if _is_database_entity_subclass(member):
             yield member
 
 
 def _is_database_entity_subclass(member: Any) -> bool:
-    return (inspect.isclass(member)
-            and issubclass(member, DatabaseEntity)
-            and member is not DatabaseEntity
-            and member is not JailsBase
-            and member is not JusticeCountsBase
-            and member is not StateBase
-            and member is not OperationsBase)
-
+    return (
+        inspect.isclass(member)
+        and issubclass(member, DatabaseEntity)
+        and member is not DatabaseEntity
+        and member is not JailsBase
+        and member is not JusticeCountsBase
+        and member is not StateBase
+        and member is not OperationsBase
+    )
 
 
 @lru_cache(maxsize=None)
@@ -163,11 +178,12 @@ def get_state_database_entity_with_name(class_name: str) -> Type[StateBase]:
         if member.__name__ == class_name:
             return member
 
-    raise LookupError(f"Entity class {class_name} does not exist in "
-                      f"{state_schema.__name__}.")
+    raise LookupError(
+        f"Entity class {class_name} does not exist in " f"{state_schema.__name__}."
+    )
 
 
-HISTORICAL_TABLE_CLASS_SUFFIX = 'History'
+HISTORICAL_TABLE_CLASS_SUFFIX = "History"
 
 
 def historical_table_class_name_from_obj(schema_object: DatabaseEntity) -> str:
@@ -175,14 +191,14 @@ def historical_table_class_name_from_obj(schema_object: DatabaseEntity) -> str:
     if obj_class_name.endswith(HISTORICAL_TABLE_CLASS_SUFFIX):
         return obj_class_name
 
-    return f'{obj_class_name}{HISTORICAL_TABLE_CLASS_SUFFIX}'
+    return f"{obj_class_name}{HISTORICAL_TABLE_CLASS_SUFFIX}"
 
 
 def historical_table_class_from_obj(
-        schema_object: DatabaseEntity) -> Optional[Type[DatabaseEntity]]:
+    schema_object: DatabaseEntity,
+) -> Optional[Type[DatabaseEntity]]:
     schema_module = inspect.getmodule(schema_object)
-    history_table_class_name = \
-        historical_table_class_name_from_obj(schema_object)
+    history_table_class_name = historical_table_class_name_from_obj(schema_object)
     return getattr(schema_module, history_table_class_name, None)
 
 
@@ -225,5 +241,4 @@ def schema_base_for_object(schema_object: DatabaseEntity) -> DeclarativeMeta:
     if isinstance(schema_object, OperationsBase):
         return OperationsBase
 
-    raise ValueError(
-        f"Object of type [{type(schema_object)}] has unknown schema base.")
+    raise ValueError(f"Object of type [{type(schema_object)}] has unknown schema base.")

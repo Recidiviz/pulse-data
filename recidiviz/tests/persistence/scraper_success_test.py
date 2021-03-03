@@ -21,17 +21,18 @@ from unittest import TestCase
 from mock import patch
 from more_itertools import one
 
-from recidiviz.ingest.models.scraper_success import ScraperSuccess as \
-    ScraperSuccessModel
-from recidiviz.persistence.database.base_schema import \
-    JailsBase
-from recidiviz.persistence.database.schema.county.schema import \
-    ScraperSuccess as ScraperSuccessTable
+from recidiviz.ingest.models.scraper_success import (
+    ScraperSuccess as ScraperSuccessModel,
+)
+from recidiviz.persistence.database.base_schema import JailsBase
+from recidiviz.persistence.database.schema.county.schema import (
+    ScraperSuccess as ScraperSuccessTable,
+)
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.scraper_success import store_scraper_success
 from recidiviz.tests.utils import fakes
 
-_JID = '01001001'
+_JID = "01001001"
 _TODAY = datetime.date(2000, 1, 1)
 
 
@@ -50,22 +51,20 @@ class TestScraperSuccessPersist(TestCase):
     def tearDown(self) -> None:
         fakes.teardown_in_memory_sqlite_databases()
 
-    @patch('recidiviz.ingest.models.single_count.datetime.date', MockDate)
+    @patch("recidiviz.ingest.models.single_count.datetime.date", MockDate)
     def testWrite_SingleCount(self):
-        store_scraper_success(ScraperSuccessModel(), '01001001')
+        store_scraper_success(ScraperSuccessModel(), "01001001")
 
-        query = SessionFactory.for_schema_base(JailsBase).query(
-            ScraperSuccessTable)
+        query = SessionFactory.for_schema_base(JailsBase).query(ScraperSuccessTable)
         result = one(query.all())
 
         self.assertEqual(result.jid, _JID)
         self.assertEqual(result.date, _TODAY)
 
     def testWrite_ScraperSuccessWithDate(self):
-        store_scraper_success(ScraperSuccessModel(date=_TODAY), '01001001')
+        store_scraper_success(ScraperSuccessModel(date=_TODAY), "01001001")
 
-        query = SessionFactory.for_schema_base(JailsBase).query(
-            ScraperSuccessTable)
+        query = SessionFactory.for_schema_base(JailsBase).query(ScraperSuccessTable)
         result = one(query.all())
 
         self.assertEqual(result.jid, _JID)

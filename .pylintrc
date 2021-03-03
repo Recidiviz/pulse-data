@@ -46,7 +46,10 @@ extension-pkg-whitelist=lxml,numpy
 # CHANGED:
 # C0103: Invalid name ""
 # C0111: Missing docstring
+# C0301: Line too long
 # C0302: Too many lines in module (N)
+# C0326: Bad whitespace (required for Black)
+# C0330: Wrong hanging indentation (required for Black)
 #
 # F0401: Unable to import 'module'
 # pylint acting strangely: plaso/lib/event.py: F0401: 26,0: Unable to import 'google.protobuf'
@@ -78,8 +81,8 @@ extension-pkg-whitelist=lxml,numpy
 # W0703: Catch "Exception"
 # W1201: Specify string format arguments as logging function parameters
 # W0201: Variables defined initially outside the scope of __init__ (reconsider this, added by Kristinn).
-#disable=C0103,C0111,C0302,F0401,I0010,I0011,R0201,R0801,R0901,R0902,R0903,R0904,R0911,R0912,R0913,R0914,R0915,R0921,R0922,R0924,W0122,W0141,W0142,W0402,W0404,W0511,W0603,W0703,W1201,W0201
-disable=C0103,C0302,F0401,I0010,I0011,R0201,R0801,R0901,R0902,R0903,R0904,R0911,R0912,R0913,R0914,R0915,R0921,R0922,R0924,RP0401,W0122,W0141,W0142,W0402,W0404,W0511,W0603,W0703,W0201,R0401,no-member,useless-super-delegation
+#disable=C0103,C0111,C0301,C0302,F0401,I0010,I0011,R0201,R0801,R0901,R0902,R0903,R0904,R0911,R0912,R0913,R0914,R0915,R0921,R0922,R0924,W0122,W0141,W0142,W0402,W0404,W0511,W0603,W0703,W1201,W0201
+disable=C0103,C0301,C0302,C0326,C0330,F0401,I0010,I0011,R0201,R0801,R0901,R0902,R0903,R0904,R0911,R0912,R0913,R0914,R0915,R0921,R0922,R0924,RP0401,W0122,W0141,W0142,W0402,W0404,W0511,W0603,W0703,W0201,R0401,no-member,useless-super-delegation
 
 
 [REPORTS]
@@ -162,9 +165,6 @@ ignore-docstrings=yes
 
 
 [FORMAT]
-
-# Maximum number of characters allowed on a single line.
-max-line-length=120
 
 # Maximum number of lines in a module
 max-module-lines=1000

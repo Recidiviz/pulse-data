@@ -29,12 +29,20 @@ from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo, Person
 from recidiviz.persistence import persistence_utils
 from recidiviz.persistence.entity.county import entities
-from recidiviz.persistence.ingest_info_converter.base_converter import \
-    BaseConverter
-from recidiviz.persistence.ingest_info_converter.county.entity_helpers import \
-    booking, charge, hold, person, sentence, arrest, bond
-from recidiviz.persistence.ingest_info_converter.utils.converter_utils import \
-    fn, parse_bond_amount_type_and_status
+from recidiviz.persistence.ingest_info_converter.base_converter import BaseConverter
+from recidiviz.persistence.ingest_info_converter.county.entity_helpers import (
+    booking,
+    charge,
+    hold,
+    person,
+    sentence,
+    arrest,
+    bond,
+)
+from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
+    fn,
+    parse_bond_amount_type_and_status,
+)
 
 
 class CountyConverter(BaseConverter[entities.Person]):
@@ -65,15 +73,18 @@ class CountyConverter(BaseConverter[entities.Person]):
         """Converts an ingest_info proto Person to a persistence entity."""
         person_builder = entities.Person.builder()
 
-        person.copy_fields_to_builder(
-            person_builder, ingest_person, self.metadata)
+        person.copy_fields_to_builder(person_builder, ingest_person, self.metadata)
 
-        converted_bookings = [self._convert_booking(self.bookings[booking_id])
-                              for booking_id in ingest_person.booking_ids]
+        converted_bookings = [
+            self._convert_booking(self.bookings[booking_id])
+            for booking_id in ingest_person.booking_ids
+        ]
 
         if len([b for b in converted_bookings if not b.release_date]) > 1:
-            raise ValueError(f"Multiple open bookings for person with person_id"
-                             f" [{ingest_person}]")
+            raise ValueError(
+                f"Multiple open bookings for person with person_id"
+                f" [{ingest_person}]"
+            )
 
         # If no bookings were ingested, create booking to house inferred data.
         if not converted_bookings:
@@ -86,8 +97,9 @@ class CountyConverter(BaseConverter[entities.Person]):
 
         # Scrub PII if the person either has an external id or has no open
         # bookings.
-        if converted_person.external_id \
-                or not persistence_utils.has_active_booking(converted_person):
+        if converted_person.external_id or not persistence_utils.has_active_booking(
+            converted_person
+        ):
             persistence_utils.remove_pii_for_person(converted_person)
 
         return converted_person
@@ -96,32 +108,30 @@ class CountyConverter(BaseConverter[entities.Person]):
         """Converts an ingest_info proto Booking to a persistence entity."""
         booking_builder = entities.Booking.builder()
 
-        booking.copy_fields_to_builder(booking_builder, ingest_booking,
-                                       self.metadata)
+        booking.copy_fields_to_builder(booking_builder, ingest_booking, self.metadata)
 
-        booking_builder.arrest = \
-            fn(lambda i: arrest.convert(self.arrests[i]),
-               'arrest_id', ingest_booking)
+        booking_builder.arrest = fn(
+            lambda i: arrest.convert(self.arrests[i]), "arrest_id", ingest_booking
+        )
 
         converted_holds = [
-            hold.convert(self.holds[hold_id], self.metadata) for hold_id in
-            ingest_booking.hold_ids]
-        booking_builder.holds = list(
-            more_itertools.unique_everseen(converted_holds))
+            hold.convert(self.holds[hold_id], self.metadata)
+            for hold_id in ingest_booking.hold_ids
+        ]
+        booking_builder.holds = list(more_itertools.unique_everseen(converted_holds))
 
         ingest_charges = [self.charges[c] for c in ingest_booking.charge_ids]
         charges = self._convert_charges(ingest_charges)
         booking_builder.charges = charges
 
         bond_info_tuple = fn(
-            parse_bond_amount_type_and_status,
-            'total_bond_amount',
-            ingest_booking)
+            parse_bond_amount_type_and_status, "total_bond_amount", ingest_booking
+        )
         if bond_info_tuple is not None:
             bond_amount, bond_type, bond_status = bond_info_tuple
-            booking_builder.charges = \
-                _charges_pointing_to_total_bond(
-                    bond_amount, bond_type, bond_status, charges)
+            booking_builder.charges = _charges_pointing_to_total_bond(
+                bond_amount, bond_type, bond_status, charges
+            )
 
         return booking_builder.build()
 
@@ -134,10 +144,12 @@ class CountyConverter(BaseConverter[entities.Person]):
         charges: List[entities.Charge] = []
         for ingest_charge in ingest_charges:
             new_charge = self._convert_charge(ingest_charge)
-            number_of_counts = parse_int(ingest_charge.number_of_counts) if \
-                ingest_charge.HasField('number_of_counts') else 1
-            charges.extend(
-                _duplicate_charge_with_counts(new_charge, number_of_counts))
+            number_of_counts = (
+                parse_int(ingest_charge.number_of_counts)
+                if ingest_charge.HasField("number_of_counts")
+                else 1
+            )
+            charges.extend(_duplicate_charge_with_counts(new_charge, number_of_counts))
 
         return charges
 
@@ -145,16 +157,18 @@ class CountyConverter(BaseConverter[entities.Person]):
         """Converts an ingest_info proto Charge to a persistence entity."""
         charge_builder = entities.Charge.builder()
 
-        charge.copy_fields_to_builder(charge_builder, ingest_charge,
-                                      self.metadata)
+        charge.copy_fields_to_builder(charge_builder, ingest_charge, self.metadata)
 
-        charge_builder.bond = \
-            fn(lambda i: bond.convert(self.bonds[i], self.metadata),
-               'bond_id',
-               ingest_charge)
-        charge_builder.sentence = \
-            fn(lambda i: self._convert_sentence(self.sentences[i]),
-               'sentence_id', ingest_charge)
+        charge_builder.bond = fn(
+            lambda i: bond.convert(self.bonds[i], self.metadata),
+            "bond_id",
+            ingest_charge,
+        )
+        charge_builder.sentence = fn(
+            lambda i: self._convert_sentence(self.sentences[i]),
+            "sentence_id",
+            ingest_charge,
+        )
 
         return charge_builder.build()
 
@@ -162,36 +176,41 @@ class CountyConverter(BaseConverter[entities.Person]):
         """Converts an ingest_info proto Sentence to a persistence entity."""
         sentence_builder = entities.Sentence.builder()
 
-        sentence.copy_fields_to_builder(sentence_builder, ingest_sentence,
-                                        self.metadata)
+        sentence.copy_fields_to_builder(
+            sentence_builder, ingest_sentence, self.metadata
+        )
 
         return sentence_builder.build()
 
 
-def _duplicate_charge_with_counts(converted_charge: entities.Charge,
-                                  counts: int) -> List[entities.Charge]:
+def _duplicate_charge_with_counts(
+    converted_charge: entities.Charge, counts: int
+) -> List[entities.Charge]:
     if counts == 0:
-        logging.info("Charge with [%d] counts cannot be converted; changing to"
-                     "1 count for charge %s", counts, converted_charge)
+        logging.info(
+            "Charge with [%d] counts cannot be converted; changing to"
+            "1 count for charge %s",
+            counts,
+            converted_charge,
+        )
         counts = 1
     elif counts < 0:
-        raise ValueError(f"Charge with [{counts}] counts cannot be converted: "
-                         f"{converted_charge}")
+        raise ValueError(
+            f"Charge with [{counts}] counts cannot be converted: " f"{converted_charge}"
+        )
     duplicated_charges = []
     for i in range(1, counts + 1):
         # Perform a shallow copy so that bonds and sentences are shared rather
         # than duplicated.
         duplicated_charge = copy.copy(converted_charge)
         if duplicated_charge.external_id:
-            new_external_id = '{}_COUNT_{}'.format(
-                converted_charge.external_id, i)
+            new_external_id = "{}_COUNT_{}".format(converted_charge.external_id, i)
             duplicated_charge.external_id = new_external_id
         duplicated_charges.append(duplicated_charge)
     return duplicated_charges
 
 
-def _charges_pointing_to_total_bond(
-        bond_amount, bond_type, bond_status, charges):
+def _charges_pointing_to_total_bond(bond_amount, bond_type, bond_status, charges):
     """Infers a bond from the total_bond field and creates a copy of all charges
     updated to point to the inferred bond. If no charges exist, then also infer
     a charge."""
@@ -207,8 +226,7 @@ def _charges_pointing_to_total_bond(
 
     if not charges:
         inferred_charge = entities.Charge.new_with_defaults(
-            bond=inferred_bond,
-            status=ChargeStatus.PRESENT_WITHOUT_INFO
+            bond=inferred_bond, status=ChargeStatus.PRESENT_WITHOUT_INFO
         )
         return [inferred_charge]
 

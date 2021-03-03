@@ -21,25 +21,25 @@ from typing import Set
 from lxml import html
 import requests
 
-STATE_AGGREGATE_URL = 'https://www.dca.ga.gov/node/3811/documents/2086'
-BASE_URL = 'https://www.dca.ga.gov{}'
-YEAR_PATTERN = re.compile(r'[0-9]{4} Jail Reports')
+STATE_AGGREGATE_URL = "https://www.dca.ga.gov/node/3811/documents/2086"
+BASE_URL = "https://www.dca.ga.gov{}"
+YEAR_PATTERN = re.compile(r"[0-9]{4} Jail Reports")
 
 
 def get_urls_to_download() -> Set[str]:
     page = requests.get(STATE_AGGREGATE_URL).text
     html_tree = html.fromstring(page)
-    links = html_tree.xpath('//a')
+    links = html_tree.xpath("//a")
 
     aggregate_report_urls = set()
     for link in links:
         if YEAR_PATTERN.match(link.text_content()):
-            url = BASE_URL.format(link.attrib['href'])
+            url = BASE_URL.format(link.attrib["href"])
             # We need to do a separate get request on the actual report page
             page = requests.get(url).text
             html_tree = html.fromstring(page)
-            links_year = html_tree.xpath('//a/@href')
+            links_year = html_tree.xpath("//a/@href")
             for link_year in links_year:
-                if 'jail_report' in link_year and '.pdf' in link_year:
+                if "jail_report" in link_year and ".pdf" in link_year:
                     aggregate_report_urls.add(link_year)
     return aggregate_report_urls

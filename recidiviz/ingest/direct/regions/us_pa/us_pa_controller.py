@@ -22,69 +22,130 @@ import re
 from typing import List, Dict, Optional, Callable
 
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
-from recidiviz.common.constants.enum_overrides import EnumOverrides, EnumMapper, EnumIgnorePredicate
+from recidiviz.common.constants.enum_overrides import (
+    EnumOverrides,
+    EnumMapper,
+    EnumIgnorePredicate,
+)
 from recidiviz.common.constants.person_characteristics import Race, Gender, Ethnicity
-from recidiviz.common.constants.standard_enum_overrides import get_standard_enum_overrides
-from recidiviz.common.constants.state.external_id_types import US_PA_SID, US_PA_CONTROL, US_PA_PBPP
+from recidiviz.common.constants.standard_enum_overrides import (
+    get_standard_enum_overrides,
+)
+from recidiviz.common.constants.state.external_id_types import (
+    US_PA_SID,
+    US_PA_CONTROL,
+    US_PA_PBPP,
+)
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_agent import StateAgentType
-from recidiviz.common.constants.state.state_assessment import StateAssessmentType, StateAssessmentClass, \
-    StateAssessmentLevel
+from recidiviz.common.constants.state.state_assessment import (
+    StateAssessmentType,
+    StateAssessmentClass,
+    StateAssessmentLevel,
+)
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
-from recidiviz.common.constants.state.state_incarceration_incident import StateIncarcerationIncidentOutcomeType, \
-    StateIncarcerationIncidentType
-from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodAdmissionReason, \
-    StateIncarcerationPeriodReleaseReason, StateSpecializedPurposeForIncarceration
+from recidiviz.common.constants.state.state_incarceration_incident import (
+    StateIncarcerationIncidentOutcomeType,
+    StateIncarcerationIncidentType,
+)
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodAdmissionReason,
+    StateIncarcerationPeriodReleaseReason,
+    StateSpecializedPurposeForIncarceration,
+)
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
-from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodTerminationReason, \
-    StateSupervisionPeriodAdmissionReason, StateSupervisionPeriodSupervisionType, StateSupervisionLevel
-from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
-from recidiviz.common.constants.state.state_supervision_violation_response import \
-    StateSupervisionViolationResponseDecision, StateSupervisionViolationResponseRevocationType, \
-    StateSupervisionViolationResponseType, StateSupervisionViolationResponseDecidingBodyType
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodTerminationReason,
+    StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodSupervisionType,
+    StateSupervisionLevel,
+)
+from recidiviz.common.constants.state.state_supervision_violation import (
+    StateSupervisionViolationType,
+)
+from recidiviz.common.constants.state.state_supervision_violation_response import (
+    StateSupervisionViolationResponseDecision,
+    StateSupervisionViolationResponseRevocationType,
+    StateSupervisionViolationResponseType,
+    StateSupervisionViolationResponseDecidingBodyType,
+)
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.common.str_field_utils import parse_days_from_duration_pieces
-from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import CsvGcsfsDirectIngestController
-from recidiviz.ingest.direct.direct_ingest_controller_utils import update_overrides_from_maps, create_if_not_exists
-from recidiviz.ingest.direct.regions.us_pa.us_pa_assessment_level_reference import set_date_specific_lsir_fields
-from recidiviz.ingest.direct.regions.us_pa.us_pa_enum_helpers import incarceration_period_release_reason_mapper, \
-    concatenate_sci_incarceration_period_end_codes, incarceration_period_purpose_mapper, \
-    concatenate_sci_incarceration_period_purpose_codes, incarceration_period_admission_reason_mapper, \
-    concatenate_sci_incarceration_period_start_codes, revocation_type_mapper, assessment_level_mapper, \
-    concatenate_ccis_incarceration_period_start_codes, concatenate_ccis_incarceration_period_purpose_codes, \
-    concatenate_ccis_incarceration_period_end_codes, supervision_period_supervision_type_mapper
-from recidiviz.ingest.direct.regions.us_pa.us_pa_violation_type_reference import violated_condition
-from recidiviz.ingest.direct.state_shared_row_posthooks import copy_name_to_alias, gen_label_single_external_id_hook, \
-    gen_rationalize_race_and_ethnicity, gen_convert_person_ids_to_external_id_objects
+from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import (
+    CsvGcsfsDirectIngestController,
+)
+from recidiviz.ingest.direct.direct_ingest_controller_utils import (
+    update_overrides_from_maps,
+    create_if_not_exists,
+)
+from recidiviz.ingest.direct.regions.us_pa.us_pa_assessment_level_reference import (
+    set_date_specific_lsir_fields,
+)
+from recidiviz.ingest.direct.regions.us_pa.us_pa_enum_helpers import (
+    incarceration_period_release_reason_mapper,
+    concatenate_sci_incarceration_period_end_codes,
+    incarceration_period_purpose_mapper,
+    concatenate_sci_incarceration_period_purpose_codes,
+    incarceration_period_admission_reason_mapper,
+    concatenate_sci_incarceration_period_start_codes,
+    revocation_type_mapper,
+    assessment_level_mapper,
+    concatenate_ccis_incarceration_period_start_codes,
+    concatenate_ccis_incarceration_period_purpose_codes,
+    concatenate_ccis_incarceration_period_end_codes,
+    supervision_period_supervision_type_mapper,
+)
+from recidiviz.ingest.direct.regions.us_pa.us_pa_violation_type_reference import (
+    violated_condition,
+)
+from recidiviz.ingest.direct.state_shared_row_posthooks import (
+    copy_name_to_alias,
+    gen_label_single_external_id_hook,
+    gen_rationalize_race_and_ethnicity,
+    gen_convert_person_ids_to_external_id_objects,
+)
 from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
-from recidiviz.ingest.models.ingest_info import IngestObject, StatePerson, StatePersonExternalId, StateAssessment, \
-    StateIncarcerationSentence, StateCharge, StateSentenceGroup, StateIncarcerationPeriod, StateIncarcerationIncident, \
-    StateIncarcerationIncidentOutcome, StateSupervisionPeriod, StatePersonRace, \
-    StateSupervisionViolation, StateSupervisionViolationResponse
+from recidiviz.ingest.models.ingest_info import (
+    IngestObject,
+    StatePerson,
+    StatePersonExternalId,
+    StateAssessment,
+    StateIncarcerationSentence,
+    StateCharge,
+    StateSentenceGroup,
+    StateIncarcerationPeriod,
+    StateIncarcerationIncident,
+    StateIncarcerationIncidentOutcome,
+    StateSupervisionPeriod,
+    StatePersonRace,
+    StateSupervisionViolation,
+    StateSupervisionViolationResponse,
+)
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 from recidiviz.utils import environment
 
-MAGICAL_DATES = [
-    '20000000'
-]
+MAGICAL_DATES = ["20000000"]
 
-AGENT_NAME_AND_ID_REGEX = re.compile(r'(.*?)( (\d+))$')
+AGENT_NAME_AND_ID_REGEX = re.compile(r"(.*?)( (\d+))$")
 
 
 class UsPaController(CsvGcsfsDirectIngestController):
     """Direct ingest controller implementation for US_PA."""
 
-    def __init__(self,
-                 ingest_directory_path: Optional[str] = None,
-                 storage_directory_path: Optional[str] = None,
-                 max_delay_sec_between_files: Optional[int] = None):
+    def __init__(
+        self,
+        ingest_directory_path: Optional[str] = None,
+        storage_directory_path: Optional[str] = None,
+        max_delay_sec_between_files: Optional[int] = None,
+    ):
         super().__init__(
-            'us_pa',
+            "us_pa",
             SystemLevel.STATE,
             ingest_directory_path,
             storage_directory_path,
-            max_delay_sec_between_files=max_delay_sec_between_files)
+            max_delay_sec_between_files=max_delay_sec_between_files,
+        )
         self.enum_overrides = self.generate_enum_overrides()
 
         sci_incarceration_period_row_postprocessors = [
@@ -98,14 +159,16 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
         doc_person_info_postprocessors: List[Callable] = [
             gen_label_single_external_id_hook(US_PA_CONTROL),
-            self.gen_hydrate_alternate_external_ids({
-                'SID_Num': US_PA_SID,
-                'PBPP_Num': US_PA_PBPP,
-            }),
+            self.gen_hydrate_alternate_external_ids(
+                {
+                    "SID_Num": US_PA_SID,
+                    "PBPP_Num": US_PA_PBPP,
+                }
+            ),
             copy_name_to_alias,
             gen_rationalize_race_and_ethnicity(self.ENUM_OVERRIDES),
             self._compose_current_address,
-            self._hydrate_sentence_group_ids
+            self._hydrate_sentence_group_ids,
         ]
         dbo_Miscon_postprocessors: List[Callable] = [
             gen_label_single_external_id_hook(US_PA_CONTROL),
@@ -122,457 +185,449 @@ class UsPaController(CsvGcsfsDirectIngestController):
         ]
 
         self.row_post_processors_by_file: Dict[str, List[Callable]] = {
-            'person_external_ids': [
-                self._hydrate_person_external_ids
-            ],
-            'doc_person_info_v2': doc_person_info_postprocessors,
-            'dbo_tblInmTestScore': [
+            "person_external_ids": [self._hydrate_person_external_ids],
+            "doc_person_info_v2": doc_person_info_postprocessors,
+            "dbo_tblInmTestScore": [
                 gen_label_single_external_id_hook(US_PA_CONTROL),
                 self._generate_doc_assessment_external_id,
                 self._enrich_doc_assessments,
             ],
-            'dbo_Senrec': [
+            "dbo_Senrec": [
                 self._set_incarceration_sentence_id,
                 self._enrich_incarceration_sentence,
                 self._strip_id_whitespace,
             ],
-            'sci_incarceration_period': sci_incarceration_period_row_postprocessors,
-            'ccis_incarceration_period': [
+            "sci_incarceration_period": sci_incarceration_period_row_postprocessors,
+            "ccis_incarceration_period": [
                 self._concatenate_admission_reason_codes,
                 self._concatenate_release_reason_codes,
                 self._add_incarceration_type,
                 self._concatenate_incarceration_purpose_codes,
             ],
-            'dbo_Miscon_v2': dbo_Miscon_postprocessors,
-            'dbo_Offender': [
+            "dbo_Miscon_v2": dbo_Miscon_postprocessors,
+            "dbo_Offender": [
                 gen_label_single_external_id_hook(US_PA_PBPP),
                 self._hydrate_races,
                 gen_rationalize_race_and_ethnicity(self.ENUM_OVERRIDES),
             ],
-            'dbo_LSIR': [
+            "dbo_LSIR": [
                 gen_label_single_external_id_hook(US_PA_PBPP),
                 self._generate_pbpp_assessment_external_id,
                 self._enrich_pbpp_assessments,
             ],
-            'supervision_period_v2': supervision_period_postprocessors,
-            'supervision_violation': [
+            "supervision_period_v2": supervision_period_postprocessors,
+            "supervision_violation": [
                 self._append_supervision_violation_entries,
             ],
-            'supervision_violation_response': [
+            "supervision_violation_response": [
                 self._append_supervision_violation_response_entries,
                 self._set_violation_response_type,
             ],
-            'board_action': [
+            "board_action": [
                 self._set_board_action_violation_response_fields,
                 self._append_board_action_supervision_violation_response_entries,
-            ]
+            ],
         }
 
         self.file_post_processors_by_file: Dict[str, List[Callable]] = {
-            'person_external_ids': [],
-            'doc_person_info_v2': [],
-            'dbo_tblInmTestScore': [],
-            'dbo_Senrec': [
+            "person_external_ids": [],
+            "doc_person_info_v2": [],
+            "dbo_tblInmTestScore": [],
+            "dbo_Senrec": [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
-            'sci_incarceration_period': [
+            "sci_incarceration_period": [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
-            'ccis_incarceration_period': [
+            "ccis_incarceration_period": [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type)
             ],
-            'dbo_Miscon_v2': [
+            "dbo_Miscon_v2": [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
-            'dbo_Offender': [],
-            'dbo_LSIR': [],
-            'supervision_period_v2': [
+            "dbo_Offender": [],
+            "dbo_LSIR": [],
+            "supervision_period_v2": [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
-            'supervision_violation': [
+            "supervision_violation": [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
-            'supervision_violation_response': [
+            "supervision_violation_response": [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
-            'board_action': [
+            "board_action": [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type)
-            ]
+            ],
         }
 
         self.primary_key_override_hook_by_file: Dict[str, Callable] = {
-            'sci_incarceration_period': _generate_sci_incarceration_period_primary_key,
-            'supervision_period_v2': _generate_supervision_period_primary_key,
-            'supervision_violation': _generate_supervision_violation_primary_key,
-            'supervision_violation_response': _generate_supervision_violation_response_primary_key,
-            'board_action': _generate_board_action_supervision_violation_response_primary_key,
+            "sci_incarceration_period": _generate_sci_incarceration_period_primary_key,
+            "supervision_period_v2": _generate_supervision_period_primary_key,
+            "supervision_violation": _generate_supervision_violation_primary_key,
+            "supervision_violation_response": _generate_supervision_violation_response_primary_key,
+            "board_action": _generate_board_action_supervision_violation_response_primary_key,
         }
 
         self.ancestor_chain_overrides_callback_by_file: Dict[str, Callable] = {
-            'sci_incarceration_period': _state_incarceration_period_ancestor_chain_overrides,
-            'ccis_incarceration_period': _state_incarceration_period_ancestor_chain_overrides,
-            'supervision_violation_response': _state_supervision_violation_response_ancestor_chain_overrides,
+            "sci_incarceration_period": _state_incarceration_period_ancestor_chain_overrides,
+            "ccis_incarceration_period": _state_incarceration_period_ancestor_chain_overrides,
+            "supervision_violation_response": _state_supervision_violation_response_ancestor_chain_overrides,
         }
 
     ENUM_OVERRIDES: Dict[EntityEnum, List[str]] = {
-        Race.ASIAN: ['ASIAN', 'A'],
-        Race.BLACK: ['BLACK', 'B'],
-        Race.AMERICAN_INDIAN_ALASKAN_NATIVE: ['AMERICAN INDIAN', 'I'],
-        Race.OTHER: ['OTHER', 'N'],
-        Race.WHITE: ['WHITE', 'W', 'WW'],
-
-        Ethnicity.HISPANIC: ['HISPANIC', 'H'],
-
-        Gender.FEMALE: ['FEMALE', 'F'],
-        Gender.MALE: ['MALE', 'M', 'MM'],
-
+        Race.ASIAN: ["ASIAN", "A"],
+        Race.BLACK: ["BLACK", "B"],
+        Race.AMERICAN_INDIAN_ALASKAN_NATIVE: ["AMERICAN INDIAN", "I"],
+        Race.OTHER: ["OTHER", "N"],
+        Race.WHITE: ["WHITE", "W", "WW"],
+        Ethnicity.HISPANIC: ["HISPANIC", "H"],
+        Gender.FEMALE: ["FEMALE", "F"],
+        Gender.MALE: ["MALE", "M", "MM"],
         # NOTE: We've only seen one instance of this as of 10/12/2020 - it could just be a typo.
-        Gender.OTHER: ['OTHER', 'N'],
-
-        StateAssessmentType.CSSM: ['CSS-M'],
-        StateAssessmentType.LSIR: ['LSI-R'],
-        StateAssessmentType.PA_RST: ['RST'],
-        StateAssessmentType.STATIC_99: ['ST99'],
-
+        Gender.OTHER: ["OTHER", "N"],
+        StateAssessmentType.CSSM: ["CSS-M"],
+        StateAssessmentType.LSIR: ["LSI-R"],
+        StateAssessmentType.PA_RST: ["RST"],
+        StateAssessmentType.STATIC_99: ["ST99"],
         # TODO(#3020): Confirm the COMPLETED codes below. Some may be intermediate and not appropriately mapped as
         # final.
         StateSentenceStatus.COMPLETED: [
-            'B',   # Bailed
-            'CS',  # Change other Sentence
-            'DA',  # Deceased - Assault
-            'DN',  # Deceased - Natural
-            'DS',  # Deceased - Suicide
-            'DX',  # Deceased - Accident
-            'DZ',  # Deceased - Non DOC Location
-            'EX',  # Executed
-            'FR',  # Federal Release
-            'NC',  # Non-Return CSC
-            'NF',  # Non-Return Furlough
-            'NR',  # [Unlisted]
-            'NW',  # Non-Return Work Release
-            'P',   # Paroled
-            'RP',  # Re-paroled (extremely rare)
-            'SC',  # Sentence Complete
-            'SP',  # Serve Previous
-            'TC',  # Transfer to County
-            'TS',  # Transfer to Other State
+            "B",  # Bailed
+            "CS",  # Change other Sentence
+            "DA",  # Deceased - Assault
+            "DN",  # Deceased - Natural
+            "DS",  # Deceased - Suicide
+            "DX",  # Deceased - Accident
+            "DZ",  # Deceased - Non DOC Location
+            "EX",  # Executed
+            "FR",  # Federal Release
+            "NC",  # Non-Return CSC
+            "NF",  # Non-Return Furlough
+            "NR",  # [Unlisted]
+            "NW",  # Non-Return Work Release
+            "P",  # Paroled
+            "RP",  # Re-paroled (extremely rare)
+            "SC",  # Sentence Complete
+            "SP",  # Serve Previous
+            "TC",  # Transfer to County
+            "TS",  # Transfer to Other State
         ],
         StateSentenceStatus.COMMUTED: [
-            'RD',  # Release Detentioner
-            'RE',  # Received in Error
+            "RD",  # Release Detentioner
+            "RE",  # Received in Error
         ],
         StateSentenceStatus.PARDONED: [
-            'PD',  # Pardoned
+            "PD",  # Pardoned
         ],
         StateSentenceStatus.SERVING: [
-            'AS',  # Actively Serving
-            'CT',  # In Court
-            'DC',  # Diag/Class (Diagnostics / Classification)
-            'EC',  # Escape CSC
-            'EI',  # Escape Institution
-            'F',   # Furloughed
-
+            "AS",  # Actively Serving
+            "CT",  # In Court
+            "DC",  # Diag/Class (Diagnostics / Classification)
+            "EC",  # Escape CSC
+            "EI",  # Escape Institution
+            "F",  # Furloughed
             # TODO(#3312): What does it mean when someone else is in custody elsewhere? Does this mean they are no
             # longer the responsibility of the PA DOC? Should they also stop being counted towards population counts?
             # What does it mean when this code is used with a county code?
-            'IC',  # In Custody Elsewhere
-            'MH',  # Mental Health
-            'SH',  # State Hospital
-            'W',   # Waiting
-            'WT',  # WRIT/ATA
+            "IC",  # In Custody Elsewhere
+            "MH",  # Mental Health
+            "SH",  # State Hospital
+            "W",  # Waiting
+            "WT",  # WRIT/ATA
         ],
         StateSentenceStatus.VACATED: [
-            'VC',  # Vacated Conviction
-            'VS',  # Vacated Sentence
+            "VC",  # Vacated Conviction
+            "VS",  # Vacated Sentence
         ],
         StateSentenceStatus.EXTERNAL_UNKNOWN: [
-            'O',   # ??? (this is PA's own label; it means unknown within their own system)
+            "O",  # ??? (this is PA's own label; it means unknown within their own system)
         ],
-
         StateIncarcerationType.COUNTY_JAIL: [
-            'C',     # County
-            'CCIS',  # All CCIS periods are in contracted county facilities
+            "C",  # County
+            "CCIS",  # All CCIS periods are in contracted county facilities
         ],
         StateIncarcerationType.FEDERAL_PRISON: [
-            'F',  # Federal
+            "F",  # Federal
         ],
         StateIncarcerationType.OUT_OF_STATE: [
-            'O',  # Transfer out of Pennsylvania
+            "O",  # Transfer out of Pennsylvania
         ],
         StateIncarcerationType.STATE_PRISON: [
-            'S',    # State
-            'I',    # Transfer into Pennsylvania
-            'T',    # County Transfer, i.e. transfer from county to state, usually for mental health services
-                    # ("5B Case")
-            'P',    # SIP Program
-            'E',    # SIP Evaluation
-            'SCI',  # State Correctional Institution
+            "S",  # State
+            "I",  # Transfer into Pennsylvania
+            "T",  # County Transfer, i.e. transfer from county to state, usually for mental health services
+            # ("5B Case")
+            "P",  # SIP Program
+            "E",  # SIP Evaluation
+            "SCI",  # State Correctional Institution
         ],
         StateIncarcerationIncidentOutcomeType.CELL_CONFINEMENT: [
-            'C',  # Cell Confinement
+            "C",  # Cell Confinement
         ],
         StateIncarcerationIncidentOutcomeType.RESTRICTED_CONFINEMENT: [
-            'Y',  # Restricted Confinement
+            "Y",  # Restricted Confinement
         ],
-
         StateSupervisionType.PROBATION: [
-            'Y',  # Yes means Probation; anything else means Parole
+            "Y",  # Yes means Probation; anything else means Parole
         ],
-
         StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE: [
-            '02',  # Paroled from SCI to PBPP Supervision
-            'B2',  # Released according to Boot Camp Law
-            'R2',  # RSAT Parole
-            'C2',  # CCC Parole
-            '03',  # Reparoled from SCI to PBPP Supervision
-            'R3',  # RSAT Reparole
-            'C3',  # CCC Reparole
+            "02",  # Paroled from SCI to PBPP Supervision
+            "B2",  # Released according to Boot Camp Law
+            "R2",  # RSAT Parole
+            "C2",  # CCC Parole
+            "03",  # Reparoled from SCI to PBPP Supervision
+            "R3",  # RSAT Reparole
+            "C3",  # CCC Reparole
         ],
         StateSupervisionPeriodAdmissionReason.COURT_SENTENCE: [
-            '04',  # Sentenced to Probation by County Judge and Supervised by PBPP
-            '4A',  # ARD case - Sentenced by County Judge and Supervised by PBPP
-            '4B',  # PWV case - Sentenced by County Judge and Supervised by PBPP
-            '4C',  # COOP case - Offender on both PBPP and County Supervision
-            '05',  # Special Parole sentenced by County and Supervised by PBPP
+            "04",  # Sentenced to Probation by County Judge and Supervised by PBPP
+            "4A",  # ARD case - Sentenced by County Judge and Supervised by PBPP
+            "4B",  # PWV case - Sentenced by County Judge and Supervised by PBPP
+            "4C",  # COOP case - Offender on both PBPP and County Supervision
+            "05",  # Special Parole sentenced by County and Supervised by PBPP
         ],
         StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN: [
-            '08',  # Other States' Deferred Sentence
-            '09',  # Emergency Release - used for COVID releases
+            "08",  # Other States' Deferred Sentence
+            "09",  # Emergency Release - used for COVID releases
         ],
         StateSupervisionPeriodAdmissionReason.TRANSFER_OUT_OF_STATE: [
-            '06',  # Paroled/Reparoled by other state and transferred to PA
-            '07',  # Sentenced to Probation by other state and transferred to PA
+            "06",  # Paroled/Reparoled by other state and transferred to PA
+            "07",  # Sentenced to Probation by other state and transferred to PA
         ],
-
         StateSupervisionPeriodTerminationReason.ABSCONSION: [
-            '45',  # Case closed for client with criminal charges pending that has reached maximum expiration
-                   # of sentence on paroled offense - usually applies to absconders or unconvicted violators
+            "45",  # Case closed for client with criminal charges pending that has reached maximum expiration
+            # of sentence on paroled offense - usually applies to absconders or unconvicted violators
         ],
         StateSupervisionPeriodTerminationReason.DEATH: [
-            '47',  # Death while under supervision of causes unrelated to crime
-            '48',  # Death while under supervision caused by criminal activity
+            "47",  # Death while under supervision of causes unrelated to crime
+            "48",  # Death while under supervision caused by criminal activity
         ],
         StateSupervisionPeriodTerminationReason.DISCHARGE: [
-            '46',  # The Board of Pardons grants a pardon or commutation which terminates supervision,
-                   # or early discharge is granted by a judge.
+            "46",  # The Board of Pardons grants a pardon or commutation which terminates supervision,
+            # or early discharge is granted by a judge.
         ],
         StateSupervisionPeriodTerminationReason.EXPIRATION: [
-            '43',  # Successful completion of sentence at maximum expiration date
-            '49',  # Not an actually closed case - Case reached the Maximum Expiration Date for a State Sentence but
-                   # has a county sentence of probation to finish. Closes the case and reopens it as a county
-                   # probation case,
+            "43",  # Successful completion of sentence at maximum expiration date
+            "49",  # Not an actually closed case - Case reached the Maximum Expiration Date for a State Sentence but
+            # has a county sentence of probation to finish. Closes the case and reopens it as a county
+            # probation case,
         ],
         StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN: [
-            '50',  # Case Opened in Error
-            '51',  # ?? Not in data dictionary
+            "50",  # Case Opened in Error
+            "51",  # ?? Not in data dictionary
         ],
         StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION: [
-            '44',  # Conviction and return to prison to serve detainer sentence
+            "44",  # Conviction and return to prison to serve detainer sentence
         ],
         StateSupervisionPeriodTerminationReason.REVOCATION: [
-            '40',  # Recommitment to prison for new criminal convictions while under supervision
-            '41',  # Recommitment to prison for adjudication of technical parole violations while under supervision
-            '42',  # Recommitment to prison for convictions of new crimes and technical parole
-                   # violations while under supervision
+            "40",  # Recommitment to prison for new criminal convictions while under supervision
+            "41",  # Recommitment to prison for adjudication of technical parole violations while under supervision
+            "42",  # Recommitment to prison for convictions of new crimes and technical parole
+            # violations while under supervision
         ],
         StateSupervisionLevel.MAXIMUM: [
-            'MA',  # Maximum (shorter)
-            'MAX',  # Maximum
+            "MA",  # Maximum (shorter)
+            "MAX",  # Maximum
         ],
         StateSupervisionLevel.MEDIUM: [
-            'ME',  # Medium (shorter)
-            'MED',  # Medium
+            "ME",  # Medium (shorter)
+            "MED",  # Medium
         ],
         StateSupervisionLevel.MINIMUM: [
-            'MI',  # Minimum (shorter)
-            'MIN',  # Minimum
+            "MI",  # Minimum (shorter)
+            "MIN",  # Minimum
         ],
         StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY: [
-            'MON',  # Monitoring
+            "MON",  # Monitoring
         ],
         StateSupervisionLevel.LIMITED: [
-            'ADM',  # Administrative Parole
-            'SPC',  # Special Circumstance
+            "ADM",  # Administrative Parole
+            "SPC",  # Special Circumstance
         ],
         StateSupervisionLevel.HIGH: [
-            'ENH',  # Enhanced
+            "ENH",  # Enhanced
         ],
         StateSupervisionLevel.INTERNAL_UNKNOWN: [
-            'SPC',  # Special Circumstance
-            'NOT',  # <Unclear what this is>
-
+            "SPC",  # Special Circumstance
+            "NOT",  # <Unclear what this is>
             # These are very old status codes that only show up in history table (dbo_Hist_Release), largely in records
             # from the 80s.
-            '00',
-            '50',
-            '51',
-            '52',
-            '53',
-            '54',
-            '55',
-            '56',
-            '57',
-            '58',
-            '59',
-            '5A',
-            '5B',
-            '5C',
-            '5D',
-            '5E',
-            '5F',
-            '5G',
-            '5H',
-            '5J',
-            '5K',
+            "00",
+            "50",
+            "51",
+            "52",
+            "53",
+            "54",
+            "55",
+            "56",
+            "57",
+            "58",
+            "59",
+            "5A",
+            "5B",
+            "5C",
+            "5D",
+            "5E",
+            "5F",
+            "5G",
+            "5H",
+            "5J",
+            "5K",
         ],
         StateSupervisionViolationType.ABSCONDED: [
-            'H06',  # Failure to report upon release
-            'H09',  # Absconding
+            "H06",  # Failure to report upon release
+            "H09",  # Absconding
         ],
         StateSupervisionViolationType.LAW: [
-            'H04',  # Pending criminal charges (UCV) Detained/Not detained
-            'M20',  # Conviction of Misdemeanor Offense
-            'M13',  # Conviction of a summary offense (a minor criminal, not civil offense)
+            "H04",  # Pending criminal charges (UCV) Detained/Not detained
+            "M20",  # Conviction of Misdemeanor Offense
+            "M13",  # Conviction of a summary offense (a minor criminal, not civil offense)
         ],
         StateSupervisionViolationType.TECHNICAL: [
-            'M04',  # Travel violations
-            'H01',  # Changing residence without permission
-            'M02',  # A - Failure to report as instructed
-            'M19',  # B - Failure to notify agent of arrest or citation within 72 hrs
-            'L07',  # C - Failure to notify agent of change in status/employment
-            'M01',  # C - Failure to notify agent of change in status/employment
-            'L08',  # A - Positive urine, drugs
-            'M03',  # A - Positive urine, drugs
-            'H12',  # A - Positive urine, drugs
-            'H10',  # B - Possession of offense weapon
-            'H11',  # B - Possession of firearm
-            'H08',  # C - Assaultive behavior
-            'L06',  # Failure to pay court ordered fees, restitution
-            'L01',  # Failure to participate in community service
-            'L03',  # Failure to pay supervision fees
-            'L04',  # Failure to pay urinalysis fees
-            'L05',  # Failure to support dependents
-            'M05',  # Possession of contraband, cell phones, etc.
-            'M06',  # Failure to take medications as prescribed
-            'M07',  # Failure to maintain employment
-            'M08',  # Failure to participate or maintain treatment
-            'M09',  # Entering prohibited establishments
-            'M10',  # Associating with gang members, co-defendants, etc
-            'M11',  # Failure to abide by written instructions
-            'M12',  # Failure to abide by field imposed special conditions
-            'L02',  # Positive urine, alcohol (Previous History)
-            'M14',  # Positive urine, alcohol (Previous History)
-            'H03',  # Positive urine, alcohol (Previous History)
-            'M15',  # Violating curfew
-            'M16',  # Violating electronic monitoring
-            'M17',  # Failure to provide urine
-            'M18',  # Failure to complete treatment
-            'H02',  # Associating with crime victims
-            'H05',  # Failure to abide by Board Imposed Special Conditions
-            'H07',  # Removal from Treatment/CCC Failure
+            "M04",  # Travel violations
+            "H01",  # Changing residence without permission
+            "M02",  # A - Failure to report as instructed
+            "M19",  # B - Failure to notify agent of arrest or citation within 72 hrs
+            "L07",  # C - Failure to notify agent of change in status/employment
+            "M01",  # C - Failure to notify agent of change in status/employment
+            "L08",  # A - Positive urine, drugs
+            "M03",  # A - Positive urine, drugs
+            "H12",  # A - Positive urine, drugs
+            "H10",  # B - Possession of offense weapon
+            "H11",  # B - Possession of firearm
+            "H08",  # C - Assaultive behavior
+            "L06",  # Failure to pay court ordered fees, restitution
+            "L01",  # Failure to participate in community service
+            "L03",  # Failure to pay supervision fees
+            "L04",  # Failure to pay urinalysis fees
+            "L05",  # Failure to support dependents
+            "M05",  # Possession of contraband, cell phones, etc.
+            "M06",  # Failure to take medications as prescribed
+            "M07",  # Failure to maintain employment
+            "M08",  # Failure to participate or maintain treatment
+            "M09",  # Entering prohibited establishments
+            "M10",  # Associating with gang members, co-defendants, etc
+            "M11",  # Failure to abide by written instructions
+            "M12",  # Failure to abide by field imposed special conditions
+            "L02",  # Positive urine, alcohol (Previous History)
+            "M14",  # Positive urine, alcohol (Previous History)
+            "H03",  # Positive urine, alcohol (Previous History)
+            "M15",  # Violating curfew
+            "M16",  # Violating electronic monitoring
+            "M17",  # Failure to provide urine
+            "M18",  # Failure to complete treatment
+            "H02",  # Associating with crime victims
+            "H05",  # Failure to abide by Board Imposed Special Conditions
+            "H07",  # Removal from Treatment/CCC Failure
         ],
         StateSupervisionViolationResponseDecision.COMMUNITY_SERVICE: [
-            'COMS',  # Imposition of Community Service
+            "COMS",  # Imposition of Community Service
         ],
         StateSupervisionViolationResponseDecision.DELAYED_ACTION: [
-            'ACCG',  # Refer to ASCRA groups
+            "ACCG",  # Refer to ASCRA groups
         ],
         StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN: [
-            'IAOD',
-            'GCON',
-            'GARR',
-            'SAVE',  # Placement in SAVE
-            'ARRT',  # Arrest
-            'H03',
-            'CON1',  # Administrative Conference 1
-            'PV01', 'PV02', 'PV03', 'PV04', 'PV05', 'PV06',
+            "IAOD",
+            "GCON",
+            "GARR",
+            "SAVE",  # Placement in SAVE
+            "ARRT",  # Arrest
+            "H03",
+            "CON1",  # Administrative Conference 1
+            "PV01",
+            "PV02",
+            "PV03",
+            "PV04",
+            "PV05",
+            "PV06",
         ],
         StateSupervisionViolationResponseDecision.NEW_CONDITIONS: [
-            'IRPT',  # Increased Reporting Requirements
-            'CURF',  # Imposition of Curfew
-            'ICRF',  # Imposition of Increased Curfew
-            'URIN',  # Imposition of Increased Urinalysis Testing
-            'EMOS',  # Imposition of Electronic Monitoring
-            'AGPS',  # Imposition of Global Positioning
-            'WTVR',  # Written Travel Restriction
-            'DJBS',  # Documented Job Search
-            'DRPT',  # Day Reporting Center
-            'DFSE',  # Deadline for Securing Employment
-            'RECT',  # Refer to Re-Entry Program
-            'SCCC',  # Secure CCC
-            'IMAT',  # Imposition of Mandatory Antabuse Use
-            'PGPS',  # Imposition of Passive Global Positioning
+            "IRPT",  # Increased Reporting Requirements
+            "CURF",  # Imposition of Curfew
+            "ICRF",  # Imposition of Increased Curfew
+            "URIN",  # Imposition of Increased Urinalysis Testing
+            "EMOS",  # Imposition of Electronic Monitoring
+            "AGPS",  # Imposition of Global Positioning
+            "WTVR",  # Written Travel Restriction
+            "DJBS",  # Documented Job Search
+            "DRPT",  # Day Reporting Center
+            "DFSE",  # Deadline for Securing Employment
+            "RECT",  # Refer to Re-Entry Program
+            "SCCC",  # Secure CCC
+            "IMAT",  # Imposition of Mandatory Antabuse Use
+            "PGPS",  # Imposition of Passive Global Positioning
         ],
         StateSupervisionViolationResponseDecision.OTHER: [
-            'LOTR',  # Low Sanction Range - Other
-            'MOTR',  # Medium Sanction Range - Other
-            'HOTR',  # High Sanction Range - Other
+            "LOTR",  # Low Sanction Range - Other
+            "MOTR",  # Medium Sanction Range - Other
+            "HOTR",  # High Sanction Range - Other
         ],
         StateSupervisionViolationResponseDecision.REVOCATION: [
-            'ARR2',  # Incarceration
-            'CPCB',  # Placement in CCC Half Way Back
-            'VCCF',  # Placement in PV Center
-            'IDOX',  # Placement in D&A Detox Facility
-            'IPMH',  # Placement in Mental Health Facility
-            'VCCP',  # Placement in Violation Center County Prison
-            'CPCO',  # Community Parole Corrections Half Way Out
+            "ARR2",  # Incarceration
+            "CPCB",  # Placement in CCC Half Way Back
+            "VCCF",  # Placement in PV Center
+            "IDOX",  # Placement in D&A Detox Facility
+            "IPMH",  # Placement in Mental Health Facility
+            "VCCP",  # Placement in Violation Center County Prison
+            "CPCO",  # Community Parole Corrections Half Way Out
         ],
         StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION: [
-            'RESCR',
-            'RESCR6',
-            'RESCR9',
-            'RESCR12'
+            "RESCR",
+            "RESCR6",
+            "RESCR9",
+            "RESCR12",
         ],
         StateSupervisionViolationResponseDecision.TREATMENT_IN_FIELD: [
-            'OPAT',  # Placement in Out-Patient D&A Treatment
-            'TXEV',  # Obtain treatment evaluation
-            'GVPB',  # Refer to Violence Prevention Booster
+            "OPAT",  # Placement in Out-Patient D&A Treatment
+            "TXEV",  # Obtain treatment evaluation
+            "GVPB",  # Refer to Violence Prevention Booster
         ],
         StateSupervisionViolationResponseDecision.TREATMENT_IN_PRISON: [
-            'IPAT',  # Placement in In-Patient D&A Treatment
+            "IPAT",  # Placement in In-Patient D&A Treatment
         ],
         StateSupervisionViolationResponseDecision.WARNING: [
-            'WTWR',  # Written Warning
+            "WTWR",  # Written Warning
         ],
         StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION: [
-            'RESCR',
-            'RESCR6',
-            'RESCR9',
-            'RESCR12'
+            "RESCR",
+            "RESCR6",
+            "RESCR9",
+            "RESCR12",
         ],
         StateCustodialAuthority.STATE_PRISON: [
             # SUPERVISION CUSTODIAL AUTHORITY CODES
-            '09',  # Emergency Release - used for COVID releases
+            "09",  # Emergency Release - used for COVID releases
             # INCARCERATION CUSTODIAL AUTHORITY CODES
-            '46',  # Technical parole violator being held in a contracted county facility
-            '51',  # Receiving treatment in a contracted county facility
+            "46",  # Technical parole violator being held in a contracted county facility
+            "51",  # Receiving treatment in a contracted county facility
         ],
         StateCustodialAuthority.SUPERVISION_AUTHORITY: [
             # SUPERVISION CUSTODIAL AUTHORITY CODES
             # These periods are in-state probation cases supervised by PBPP. If we implement decision_making_authority,
             # these would have a type of COURT
-            '4A',  # ARD case - Sentenced by County Judge and Supervised by PBPP
-            '4B',  # PWV case - Sentenced by County Judge and Supervised by PBPP
-            '4C',  # COOP case - Offender on both PBPP and County Supervision (deprecated)
-            '04',  # Special Probation - Sentenced to Probation by County Judge and Supervised by PBPP
-            '05',  # Special Parole - Sentenced by County and Supervised by PBPP
+            "4A",  # ARD case - Sentenced by County Judge and Supervised by PBPP
+            "4B",  # PWV case - Sentenced by County Judge and Supervised by PBPP
+            "4C",  # COOP case - Offender on both PBPP and County Supervision (deprecated)
+            "04",  # Special Probation - Sentenced to Probation by County Judge and Supervised by PBPP
+            "05",  # Special Parole - Sentenced by County and Supervised by PBPP
             # These periods are in-state parole cases supervised by PBPP. If we implement decision_making_authority,
             # these would have a type of PAROLE_BOARD
-            'R2',  # RSAT Parole (deprecated)
-            'C2',  # CCC Parole
-            'C3',  # CCC Reparole
-            '02',  # State Parole - Paroled from SCI to PBPP Supervision
-            '03',  # State Rearole - Reparoled from SCI to PBPP Supervision
-            'B2',  # Boot Camp - Released according to Boot Camp Law
-            'R3',  # RSAT Reparole (deprecated)
+            "R2",  # RSAT Parole (deprecated)
+            "C2",  # CCC Parole
+            "C3",  # CCC Reparole
+            "02",  # State Parole - Paroled from SCI to PBPP Supervision
+            "03",  # State Rearole - Reparoled from SCI to PBPP Supervision
+            "B2",  # Boot Camp - Released according to Boot Camp Law
+            "R3",  # RSAT Reparole (deprecated)
             # These periods are supervised in-state for sentences from out-of-state. If we implement
             # decision_making_authority, these would have a type of OTHER_STATE
-            '06',  # Other States' Parole/Reparole - Paroled/Reparoled by other state and transferred to PA
-            '07',  # Other States' Probation - Sentenced to Probation by other state and transferred to PA
-            '08',  # Other States' Deferred Sentence (deprecated)
+            "06",  # Other States' Parole/Reparole - Paroled/Reparoled by other state and transferred to PA
+            "07",  # Other States' Probation - Sentenced to Probation by other state and transferred to PA
+            "08",  # Other States' Deferred Sentence (deprecated)
             # INCARCERATION CUSTODIAL AUTHORITY CODES
-            '26',  # Parolee in a Parole Violator Center
-        ]
+            "26",  # Parolee in a Parole Violator Center
+        ],
     }
 
     ENUM_MAPPERS: Dict[EntityEnumMeta, EnumMapper] = {
@@ -585,11 +640,21 @@ class UsPaController(CsvGcsfsDirectIngestController):
     }
 
     ENUM_IGNORES: Dict[EntityEnumMeta, List[str]] = {
-        Gender: ['W', 'B', 'U', 'A', '1'],  # Unexplained rare values
-        Race: ['M', 'U', 'F', 'QW', 'WSW', 'QB', 'EW', 'Q', 'S'],  # Unexplained rare values
+        Gender: ["W", "B", "U", "A", "1"],  # Unexplained rare values
+        Race: [
+            "M",
+            "U",
+            "F",
+            "QW",
+            "WSW",
+            "QB",
+            "EW",
+            "Q",
+            "S",
+        ],  # Unexplained rare values
         StateIncarcerationType: [
-            '\''  # The dbo_Senrec table has several rows where the value type_of_sent is a single quotation mark
-        ]
+            "'"  # The dbo_Senrec table has several rows where the value type_of_sent is a single quotation mark
+        ],
     }
     ENUM_IGNORE_PREDICATES: Dict[EntityEnumMeta, EnumIgnorePredicate] = {}
 
@@ -597,25 +662,22 @@ class UsPaController(CsvGcsfsDirectIngestController):
     def get_file_tag_rank_list(cls) -> List[str]:
         launched_file_tags = [
             # Data source: Mixed
-            'person_external_ids',
-
+            "person_external_ids",
             # Data source: DOC
-            'doc_person_info_v2',
-            'dbo_tblInmTestScore',
-            'dbo_Senrec',
-            'sci_incarceration_period',
-            'dbo_Miscon_v2',
-
+            "doc_person_info_v2",
+            "dbo_tblInmTestScore",
+            "dbo_Senrec",
+            "sci_incarceration_period",
+            "dbo_Miscon_v2",
             # Data source: CCIS
-            'ccis_incarceration_period',
-
+            "ccis_incarceration_period",
             # Data source: PBPP
-            'dbo_Offender',
-            'dbo_LSIR',
-            'supervision_period_v2',
-            'supervision_violation',
-            'supervision_violation_response',
-            'board_action',
+            "dbo_Offender",
+            "dbo_LSIR",
+            "supervision_period_v2",
+            "supervision_violation",
+            "supervision_violation_response",
+            "board_action",
         ]
 
         unlaunched_file_tags: List[str] = [
@@ -633,7 +695,12 @@ class UsPaController(CsvGcsfsDirectIngestController):
         """Provides Pennsylvania-specific overrides for enum mappings."""
         base_overrides = get_standard_enum_overrides()
         return update_overrides_from_maps(
-            base_overrides, cls.ENUM_OVERRIDES, cls.ENUM_IGNORES, cls.ENUM_MAPPERS, cls.ENUM_IGNORE_PREDICATES)
+            base_overrides,
+            cls.ENUM_OVERRIDES,
+            cls.ENUM_IGNORES,
+            cls.ENUM_MAPPERS,
+            cls.ENUM_IGNORE_PREDICATES,
+        )
 
     def get_enum_overrides(self) -> EnumOverrides:
         return self.enum_overrides
@@ -647,11 +714,15 @@ class UsPaController(CsvGcsfsDirectIngestController):
     def _get_primary_key_override_for_file(self, file: str) -> Optional[Callable]:
         return self.primary_key_override_hook_by_file.get(file, None)
 
-    def _get_ancestor_chain_overrides_callback_for_file(self, file: str) -> Optional[Callable]:
+    def _get_ancestor_chain_overrides_callback_for_file(
+        self, file: str
+    ) -> Optional[Callable]:
         return self.ancestor_chain_overrides_callback_by_file.get(file, None)
 
     @staticmethod
-    def gen_hydrate_alternate_external_ids(columns_to_id_types: Dict[str, str]) -> Callable:
+    def gen_hydrate_alternate_external_ids(
+        columns_to_id_types: Dict[str, str]
+    ) -> Callable:
         """Generates a row post-hook that will hydrate alternate external ids than the "main" external id in a row, for
         rows which have multiple external ids to be hydrated.
 
@@ -659,187 +730,237 @@ class UsPaController(CsvGcsfsDirectIngestController):
         then this would be no-longer necessary.
         """
 
-        def _hydrate_external_id(_file_tag: str,
-                                 row: Dict[str, str],
-                                 extracted_objects: List[IngestObject],
-                                 _cache: IngestObjectCache) -> None:
+        def _hydrate_external_id(
+            _file_tag: str,
+            row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache,
+        ) -> None:
             for obj in extracted_objects:
                 if isinstance(obj, StatePerson):
                     external_ids_to_create = []
                     for column, id_type in columns_to_id_types.items():
-                        value = row.get(column, '').strip()
+                        value = row.get(column, "").strip()
 
                         if value:
                             external_ids_to_create.append(
-                                StatePersonExternalId(state_person_external_id_id=value, id_type=id_type))
+                                StatePersonExternalId(
+                                    state_person_external_id_id=value, id_type=id_type
+                                )
+                            )
 
                     for id_to_create in external_ids_to_create:
-                        create_if_not_exists(id_to_create, obj, 'state_person_external_ids')
+                        create_if_not_exists(
+                            id_to_create, obj, "state_person_external_ids"
+                        )
 
         return _hydrate_external_id
 
     @staticmethod
     def _get_id_type(file_tag: str) -> Optional[str]:
         if file_tag in [
-            'dbo_Senrec',
-            'sci_incarceration_period',
-            'ccis_incarceration_period',
-            'dbo_Miscon_v2',
+            "dbo_Senrec",
+            "sci_incarceration_period",
+            "ccis_incarceration_period",
+            "dbo_Miscon_v2",
         ]:
             return US_PA_CONTROL
 
-        if file_tag in ['supervision_period_v2',
-                        'supervision_violation',
-                        'supervision_violation_response',
-                        'board_action',
-                        ]:
+        if file_tag in [
+            "supervision_period_v2",
+            "supervision_violation",
+            "supervision_violation_response",
+            "board_action",
+        ]:
             return US_PA_PBPP
         return None
 
     @staticmethod
     def _hydrate_person_external_ids(
-            _file_tag: str, row: Dict[str, str],
-            extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache) -> None:
+        _file_tag: str,
+        row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
+        """Creates StatePersonExternalId entities from all of the identifiers in the given row."""
         for obj in extracted_objects:
             if isinstance(obj, StatePerson):
-                control_numbers = row['control_numbers'].split(',') if row['control_numbers'] else []
-                state_ids = row['state_ids'].split(',') if row['state_ids'] else []
-                parole_numbers = row['parole_numbers'].split(',') if row['parole_numbers'] else []
+                control_numbers = (
+                    row["control_numbers"].split(",") if row["control_numbers"] else []
+                )
+                state_ids = row["state_ids"].split(",") if row["state_ids"] else []
+                parole_numbers = (
+                    row["parole_numbers"].split(",") if row["parole_numbers"] else []
+                )
 
                 external_ids_to_create = []
                 for state_id in state_ids:
-                    external_ids_to_create.append(StatePersonExternalId(state_person_external_id_id=state_id,
-                                                                        id_type=US_PA_SID))
+                    external_ids_to_create.append(
+                        StatePersonExternalId(
+                            state_person_external_id_id=state_id, id_type=US_PA_SID
+                        )
+                    )
                 for control_number in control_numbers:
-                    external_ids_to_create.append(StatePersonExternalId(state_person_external_id_id=control_number,
-                                                                        id_type=US_PA_CONTROL))
+                    external_ids_to_create.append(
+                        StatePersonExternalId(
+                            state_person_external_id_id=control_number,
+                            id_type=US_PA_CONTROL,
+                        )
+                    )
                 for parole_number in parole_numbers:
-                    external_ids_to_create.append(StatePersonExternalId(state_person_external_id_id=parole_number,
-                                                                        id_type=US_PA_PBPP))
+                    external_ids_to_create.append(
+                        StatePersonExternalId(
+                            state_person_external_id_id=parole_number,
+                            id_type=US_PA_PBPP,
+                        )
+                    )
                 for id_to_create in external_ids_to_create:
-                    create_if_not_exists(id_to_create, obj, 'state_person_external_ids')
+                    create_if_not_exists(id_to_create, obj, "state_person_external_ids")
 
     @staticmethod
     def _hydrate_sentence_group_ids(
-            _file_tag: str, row: Dict[str, str],
-            extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache) -> None:
+        _file_tag: str,
+        row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
         for obj in extracted_objects:
             if isinstance(obj, StatePerson):
-                inmate_numbers = row['inmate_numbers'].split(',') if row['inmate_numbers'] else []
+                inmate_numbers = (
+                    row["inmate_numbers"].split(",") if row["inmate_numbers"] else []
+                )
 
                 sentence_groups_to_create = []
                 for inmate_number in inmate_numbers:
-                    sentence_groups_to_create.append(StateSentenceGroup(state_sentence_group_id=inmate_number))
+                    sentence_groups_to_create.append(
+                        StateSentenceGroup(state_sentence_group_id=inmate_number)
+                    )
 
                 for sg_to_create in sentence_groups_to_create:
-                    create_if_not_exists(sg_to_create, obj, 'state_sentence_groups')
+                    create_if_not_exists(sg_to_create, obj, "state_sentence_groups")
 
     @staticmethod
     def _hydrate_races(
-            _file_tag: str, row: Dict[str, str],
-            extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache) -> None:
+        _file_tag: str,
+        row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
         for obj in extracted_objects:
             if isinstance(obj, StatePerson):
-                races = row['races_ethnicities_list'].split(',') if row['races_ethnicities_list'] else []
+                races = (
+                    row["races_ethnicities_list"].split(",")
+                    if row["races_ethnicities_list"]
+                    else []
+                )
                 for race in races:
                     race_obj = StatePersonRace(race=race)
-                    create_if_not_exists(race_obj, obj, 'state_person_external_ids')
+                    create_if_not_exists(race_obj, obj, "state_person_external_ids")
 
     @staticmethod
     def _compose_current_address(
-            _file_tag: str, row: Dict[str, str],
-            extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache) -> None:
+        _file_tag: str,
+        row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
         """Composes all of the address-related fields into a single address."""
-        line_1 = row['legal_address_1']
-        line_2 = row['legal_address_2']
-        city = row['legal_city']
-        state = row['legal_state']
-        zip_code = row['legal_zip_code']
+        line_1 = row["legal_address_1"]
+        line_2 = row["legal_address_2"]
+        city = row["legal_city"]
+        state = row["legal_state"]
+        zip_code = row["legal_zip_code"]
         state_and_zip = f"{state} {zip_code}" if zip_code else state
 
-        address = ', '.join(filter(None, (line_1, line_2, city, state_and_zip)))
+        address = ", ".join(filter(None, (line_1, line_2, city, state_and_zip)))
 
         for obj in extracted_objects:
             if isinstance(obj, StatePerson):
                 obj.current_address = address
 
     ASSESSMENT_CLASSES: Dict[str, StateAssessmentClass] = {
-        'CSS-M': StateAssessmentClass.SOCIAL,
-        'HIQ': StateAssessmentClass.SOCIAL,
-        'LSI-R': StateAssessmentClass.RISK,
-        'RST': StateAssessmentClass.RISK,
-        'ST99': StateAssessmentClass.SEX_OFFENSE,
-        'TCU': StateAssessmentClass.SUBSTANCE_ABUSE,
+        "CSS-M": StateAssessmentClass.SOCIAL,
+        "HIQ": StateAssessmentClass.SOCIAL,
+        "LSI-R": StateAssessmentClass.RISK,
+        "RST": StateAssessmentClass.RISK,
+        "ST99": StateAssessmentClass.SEX_OFFENSE,
+        "TCU": StateAssessmentClass.SUBSTANCE_ABUSE,
     }
 
     @staticmethod
-    def _generate_doc_assessment_external_id(_file_tag: str,
-                                             row: Dict[str, str],
-                                             extracted_objects: List[IngestObject],
-                                             _cache: IngestObjectCache) -> None:
+    def _generate_doc_assessment_external_id(
+        _file_tag: str,
+        row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
         """Adds the assessment external_id to the extracted state assessment."""
-        control_number = row['Control_Number']
-        inmate_number = row['Inmate_number']
-        test_id = row['Test_Id']
-        version_number = row['AsmtVer_Num']
-        external_id = '-'.join([control_number, inmate_number, test_id, version_number])
+        control_number = row["Control_Number"]
+        inmate_number = row["Inmate_number"]
+        test_id = row["Test_Id"]
+        version_number = row["AsmtVer_Num"]
+        external_id = "-".join([control_number, inmate_number, test_id, version_number])
 
         for extracted_object in extracted_objects:
             if isinstance(extracted_object, StateAssessment):
                 extracted_object.state_assessment_id = external_id
 
-    def _enrich_doc_assessments(self,
-                                _file_tag: str,
-                                row: Dict[str, str],
-                                extracted_objects: List[IngestObject],
-                                _cache: IngestObjectCache) -> None:
+    def _enrich_doc_assessments(
+        self,
+        _file_tag: str,
+        row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
         """Enriches the assessment object with additional metadata."""
 
         def _rst_metadata() -> Optional[Dict]:
-            version_flag = row.get('RSTRvsd_Flg', None)
+            version_flag = row.get("RSTRvsd_Flg", None)
             if version_flag:
-                return {'latest_version': version_flag in ['1', '-1']}
+                return {"latest_version": version_flag in ["1", "-1"]}
             return None
 
         for obj in extracted_objects:
             if isinstance(obj, StateAssessment):
-                assessment_type = obj.assessment_type.strip() if obj.assessment_type else ''
+                assessment_type = (
+                    obj.assessment_type.strip() if obj.assessment_type else ""
+                )
                 assessment_class = self.ASSESSMENT_CLASSES.get(assessment_type, None)
                 if assessment_class:
                     obj.assessment_class = assessment_class.value
 
-                if assessment_type == 'RST':
+                if assessment_type == "RST":
                     rst_metadata = _rst_metadata()
                     if rst_metadata:
                         obj.assessment_metadata = json.dumps(rst_metadata)
 
-                if assessment_type == 'LSI-R':
+                if assessment_type == "LSI-R":
                     set_date_specific_lsir_fields(obj)
 
     @staticmethod
-    def _generate_pbpp_assessment_external_id(_file_tag: str,
-                                              row: Dict[str, str],
-                                              extracted_objects: List[IngestObject],
-                                              _cache: IngestObjectCache) -> None:
+    def _generate_pbpp_assessment_external_id(
+        _file_tag: str,
+        row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
         """Adds the assessment external_id to the extracted state assessment."""
-        parole_number = row['ParoleNumber']
-        parole_count_id = row['ParoleCountID']
-        lsir_instance = row['LsirID']
-        external_id = '-'.join([parole_number, parole_count_id, lsir_instance])
+        parole_number = row["ParoleNumber"]
+        parole_count_id = row["ParoleCountID"]
+        lsir_instance = row["LsirID"]
+        external_id = "-".join([parole_number, parole_count_id, lsir_instance])
 
         for extracted_object in extracted_objects:
             if isinstance(extracted_object, StateAssessment):
                 extracted_object.state_assessment_id = external_id
 
     @staticmethod
-    def _enrich_pbpp_assessments(_file_tag: str,
-                                 _row: Dict[str, str],
-                                 extracted_objects: List[IngestObject],
-                                 _cache: IngestObjectCache) -> None:
+    def _enrich_pbpp_assessments(
+        _file_tag: str,
+        _row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
         """Enriches the assessment object with additional metadata."""
         for obj in extracted_objects:
             if isinstance(obj, StateAssessment):
@@ -848,12 +969,14 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 set_date_specific_lsir_fields(obj)
 
     @staticmethod
-    def _set_incarceration_sentence_id(_file_tag: str,
-                                       row: Dict[str, str],
-                                       extracted_objects: List[IngestObject],
-                                       _cache: IngestObjectCache) -> None:
-        sentence_group_id = row['curr_inmate_num']
-        sentence_number = row['type_number']
+    def _set_incarceration_sentence_id(
+        _file_tag: str,
+        row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
+        sentence_group_id = row["curr_inmate_num"]
+        sentence_number = row["type_number"]
         sentence_id = f"{sentence_group_id}-{sentence_number}"
 
         for obj in extracted_objects:
@@ -861,29 +984,39 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 obj.state_incarceration_sentence_id = sentence_id
 
     @staticmethod
-    def _enrich_incarceration_sentence(_file_tag: str,
-                                       row: Dict[str, str],
-                                       extracted_objects: List[IngestObject],
-                                       _cache: IngestObjectCache) -> None:
+    def _enrich_incarceration_sentence(
+        _file_tag: str,
+        row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
         """Enriches incarceration sentences by setting sentence length and boolean fields."""
-        max_years = row.get('max_cort_sent_yrs', '0')
-        max_months = row.get('max_cort_sent_mths', '0')
-        max_days = row.get('max_cort_sent_days', '0')
-        min_years = row.get('min_cort_sent_yrs', '0')
-        min_months = row.get('min_cort_sent_mths', '0')
-        min_days = row.get('min_cort_sent_days', '0')
+        max_years = row.get("max_cort_sent_yrs", "0")
+        max_months = row.get("max_cort_sent_mths", "0")
+        max_days = row.get("max_cort_sent_days", "0")
+        min_years = row.get("min_cort_sent_yrs", "0")
+        min_months = row.get("min_cort_sent_mths", "0")
+        min_days = row.get("min_cort_sent_days", "0")
 
-        sentence_class = row.get('class_of_sent', '')
-        is_life = sentence_class in ('CL', 'LF')
-        is_capital_punishment = sentence_class in ('EX', 'EP')
+        sentence_class = row.get("class_of_sent", "")
+        is_life = sentence_class in ("CL", "LF")
+        is_capital_punishment = sentence_class in ("EX", "EP")
 
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationSentence):
                 start_date = obj.start_date
                 max_time = parse_days_from_duration_pieces(
-                    years_str=max_years, months_str=max_months, days_str=max_days, start_dt_str=start_date)
+                    years_str=max_years,
+                    months_str=max_months,
+                    days_str=max_days,
+                    start_dt_str=start_date,
+                )
                 min_time = parse_days_from_duration_pieces(
-                    years_str=min_years, months_str=min_months, days_str=min_days, start_dt_str=start_date)
+                    years_str=min_years,
+                    months_str=min_months,
+                    days_str=min_days,
+                    start_dt_str=start_date,
+                )
 
                 if max_time:
                     obj.max_length = str(max_time)
@@ -895,10 +1028,12 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     # TODO(#3020): When PA is switched to use SQL pre-processing, this will no longer be necessary.
     @staticmethod
-    def _strip_id_whitespace(_file_tag: str,
-                             _row: Dict[str, str],
-                             extracted_objects: List[IngestObject],
-                             _cache: IngestObjectCache) -> None:
+    def _strip_id_whitespace(
+        _file_tag: str,
+        _row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
         """Strips id fields provided as strings with inconsistent whitespace padding to avoid id matching issues."""
         for obj in extracted_objects:
             if isinstance(obj, StateCharge):
@@ -906,70 +1041,91 @@ class UsPaController(CsvGcsfsDirectIngestController):
                     obj.state_charge_id = obj.state_charge_id.strip()
 
     @staticmethod
-    def _concatenate_admission_reason_codes(file_tag: str,
-                                            row: Dict[str, str],
-                                            extracted_objects: List[IngestObject],
-                                            _cache: IngestObjectCache) -> None:
+    def _concatenate_admission_reason_codes(
+        file_tag: str,
+        row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
         """Concatenates the incarceration period admission reason-related codes to be parsed in the enum mapper."""
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
-                if file_tag  == 'sci_incarceration_period':
-                    obj.admission_reason = concatenate_sci_incarceration_period_start_codes(row)
-                elif file_tag == 'ccis_incarceration_period':
-                    obj.admission_reason = concatenate_ccis_incarceration_period_start_codes(row)
+                if file_tag == "sci_incarceration_period":
+                    obj.admission_reason = (
+                        concatenate_sci_incarceration_period_start_codes(row)
+                    )
+                elif file_tag == "ccis_incarceration_period":
+                    obj.admission_reason = (
+                        concatenate_ccis_incarceration_period_start_codes(row)
+                    )
 
     @staticmethod
-    def _concatenate_release_reason_codes(file_tag: str,
-                                          row: Dict[str, str],
-                                          extracted_objects: List[IngestObject],
-                                          _cache: IngestObjectCache) -> None:
+    def _concatenate_release_reason_codes(
+        file_tag: str,
+        row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
         """Concatenates the incarceration period release reason-related codes to be parsed in the enum mapper."""
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
                 if obj.release_date:
-                    if file_tag  == 'sci_incarceration_period':
-                        obj.release_reason = concatenate_sci_incarceration_period_end_codes(row)
-                    elif file_tag == 'ccis_incarceration_period':
-                        obj.release_reason = concatenate_ccis_incarceration_period_end_codes(row)
+                    if file_tag == "sci_incarceration_period":
+                        obj.release_reason = (
+                            concatenate_sci_incarceration_period_end_codes(row)
+                        )
+                    elif file_tag == "ccis_incarceration_period":
+                        obj.release_reason = (
+                            concatenate_ccis_incarceration_period_end_codes(row)
+                        )
 
     @staticmethod
-    def _concatenate_incarceration_purpose_codes(file_tag: str,
-                                                 row: Dict[str, str],
-                                                 extracted_objects: List[IngestObject],
-                                                 _cache: IngestObjectCache) -> None:
+    def _concatenate_incarceration_purpose_codes(
+        file_tag: str,
+        row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
         """Concatenates the incarceration period specialized purpose-related codes to be parsed in the enum mapper."""
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
-                if file_tag  == 'sci_incarceration_period':
-                    obj.specialized_purpose_for_incarceration = concatenate_sci_incarceration_period_purpose_codes(row)
-                elif file_tag == 'ccis_incarceration_period':
-                    obj.specialized_purpose_for_incarceration = concatenate_ccis_incarceration_period_purpose_codes(row)
+                if file_tag == "sci_incarceration_period":
+                    obj.specialized_purpose_for_incarceration = (
+                        concatenate_sci_incarceration_period_purpose_codes(row)
+                    )
+                elif file_tag == "ccis_incarceration_period":
+                    obj.specialized_purpose_for_incarceration = (
+                        concatenate_ccis_incarceration_period_purpose_codes(row)
+                    )
 
     @staticmethod
     def _add_incarceration_type(
-            file_tag: str,
-            _row: Dict[str, str],
-            extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache) -> None:
+        file_tag: str,
+        _row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
         """Sets incarceration type on incarceration periods based on facility."""
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
-                if file_tag  == 'sci_incarceration_period':
+                if file_tag == "sci_incarceration_period":
                     # TODO(#3312): Figure out how to fill out the incarceration_type COUNTY_JAIL/STATE/FEDERAL based on
                     #  IC sentence status + location codes? Ask PA about this!
-                    obj.incarceration_type = 'SCI'
-                elif file_tag == 'ccis_incarceration_period':
-                    obj.incarceration_type = 'CCIS'
+                    obj.incarceration_type = "SCI"
+                elif file_tag == "ccis_incarceration_period":
+                    obj.incarceration_type = "CCIS"
 
     @staticmethod
-    def _specify_incident_location(_file_tag: str,
-                                   row: Dict[str, str],
-                                   extracted_objects: List[IngestObject],
-                                   _cache: IngestObjectCache) -> None:
+    def _specify_incident_location(
+        _file_tag: str,
+        row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
         """Specifies the exact location where the incarceration incident took place."""
-        place_code = row.get('place_hvl_code', None)
-        place_extended = row.get('place_extended', None)
-        location = '-'.join(filter(None, [place_code, place_extended]))
+        place_code = row.get("place_hvl_code", None)
+        place_extended = row.get("place_extended", None)
+        location = "-".join(filter(None, [place_code, place_extended]))
 
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationIncident):
@@ -977,13 +1133,15 @@ class UsPaController(CsvGcsfsDirectIngestController):
                     obj.location_within_facility = location
 
     @staticmethod
-    def _specify_incident_type(_file_tag: str,
-                               row: Dict[str, str],
-                               extracted_objects: List[IngestObject],
-                               _cache: IngestObjectCache) -> None:
+    def _specify_incident_type(
+        _file_tag: str,
+        row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
         """Specifies the type of incarceration incident."""
-        drug_related = row.get('drug_related', None)
-        is_contraband = drug_related == 'Y'
+        drug_related = row.get("drug_related", None)
+        is_contraband = drug_related == "Y"
 
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationIncident):
@@ -993,24 +1151,26 @@ class UsPaController(CsvGcsfsDirectIngestController):
                     obj.incident_type = StateIncarcerationIncidentType.REPORT.value
 
     @staticmethod
-    def _specify_incident_details(_file_tag: str,
-                                  row: Dict[str, str],
-                                  extracted_objects: List[IngestObject],
-                                  _cache: IngestObjectCache) -> None:
+    def _specify_incident_details(
+        _file_tag: str,
+        row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
         """Specifies the incarceration incident details. This is a grouping of flags indicating whether certain
         "classes" of charges are involved in the incident."""
-        category_1 = row.get('ctgory_of_chrgs_1', None)
-        category_2 = row.get('ctgory_of_chrgs_2', None)
-        category_3 = row.get('ctgory_of_chrgs_3', None)
-        category_4 = row.get('ctgory_of_chrgs_4', None)
-        category_5 = row.get('ctgory_of_chrgs_5', None)
+        category_1 = row.get("ctgory_of_chrgs_1", None)
+        category_2 = row.get("ctgory_of_chrgs_2", None)
+        category_3 = row.get("ctgory_of_chrgs_3", None)
+        category_4 = row.get("ctgory_of_chrgs_4", None)
+        category_5 = row.get("ctgory_of_chrgs_5", None)
 
         details_mapping = {
-            'category_1': category_1,
-            'category_2': category_2,
-            'category_3': category_3,
-            'category_4': category_4,
-            'category_5': category_5,
+            "category_1": category_1,
+            "category_2": category_2,
+            "category_3": category_3,
+            "category_4": category_4,
+            "category_5": category_5,
         }
 
         for obj in extracted_objects:
@@ -1018,16 +1178,18 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 obj.incident_details = json.dumps(details_mapping)
 
     @staticmethod
-    def _specify_incident_outcome(_file_tag: str,
-                                  row: Dict[str, str],
-                                  extracted_objects: List[IngestObject],
-                                  _cache: IngestObjectCache) -> None:
+    def _specify_incident_outcome(
+        _file_tag: str,
+        row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
         """Specifies the type of outcome of the incarceration incident."""
-        misconduct_number = row.get('misconduct_number', None)
-        confinement_code = row.get('confinement', None)
-        confinement_date = row.get('confinement_date', None)
-        is_restricted = confinement_code == 'Y'
-        is_cell = confinement_code == 'C'
+        misconduct_number = row.get("misconduct_number", None)
+        confinement_code = row.get("confinement", None)
+        confinement_date = row.get("confinement_date", None)
+        is_restricted = confinement_code == "Y"
+        is_cell = confinement_code == "C"
 
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationIncidentOutcome):
@@ -1039,27 +1201,35 @@ class UsPaController(CsvGcsfsDirectIngestController):
                     obj.date_effective = confinement_date
 
     @staticmethod
-    def _unpack_supervision_period_conditions(_file_tag: str,
-                                              row: Dict[str, str],
-                                              extracted_objects: List[IngestObject],
-                                              _cache: IngestObjectCache) -> None:
+    def _unpack_supervision_period_conditions(
+        _file_tag: str,
+        row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
         """Unpacks the comma-separated string of condition codes into an array of strings."""
         for obj in extracted_objects:
             if isinstance(obj, StateSupervisionPeriod):
-                conditions = row['condition_codes'].split(',') if row['condition_codes'] else []
+                conditions = (
+                    row["condition_codes"].split(",") if row["condition_codes"] else []
+                )
                 if conditions:
                     obj.conditions = conditions
 
     @staticmethod
-    def _set_supervising_officer(_file_tag: str,
-                                 row: Dict[str, str],
-                                 extracted_objects: List[IngestObject],
-                                 _cache: IngestObjectCache) -> None:
+    def _set_supervising_officer(
+        _file_tag: str,
+        row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
         """Sets the supervision officer (as an Agent entity) on the supervision period."""
-        officer_full_name_and_id = row.get('supervising_officer_name', None)
+        officer_full_name_and_id = row.get("supervising_officer_name", None)
 
-        if officer_full_name_and_id and \
-                ('Vacant, Position' in officer_full_name_and_id or 'Position, Vacant' in officer_full_name_and_id):
+        if officer_full_name_and_id and (
+            "Vacant, Position" in officer_full_name_and_id
+            or "Position, Vacant" in officer_full_name_and_id
+        ):
             # This is a placeholder name for when a person does not actually have a PO
             return
 
@@ -1074,74 +1244,92 @@ class UsPaController(CsvGcsfsDirectIngestController):
                     else:
                         full_name = officer_full_name_and_id
                         external_id = None
-                    obj.create_state_agent(state_agent_id=external_id,
-                                           full_name=full_name,
-                                           agent_type=StateAgentType.SUPERVISION_OFFICER.value)
+                    obj.create_state_agent(
+                        state_agent_id=external_id,
+                        full_name=full_name,
+                        agent_type=StateAgentType.SUPERVISION_OFFICER.value,
+                    )
 
     @staticmethod
-    def _set_supervision_site(_file_tag: str,
-                              row: Dict[str, str],
-                              extracted_objects: List[IngestObject],
-                              _cache: IngestObjectCache) -> None:
+    def _set_supervision_site(
+        _file_tag: str,
+        row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
         """Sets the supervision_site on the supervision period."""
-        district_office = row['district_office']
-        district_sub_office_id = row['district_sub_office_id']
-        supervision_location_org_code = row['supervision_location_org_code']
+        district_office = row["district_office"]
+        district_sub_office_id = row["district_sub_office_id"]
+        supervision_location_org_code = row["supervision_location_org_code"]
         for obj in extracted_objects:
             if isinstance(obj, StateSupervisionPeriod):
-                if district_office and district_sub_office_id and supervision_location_org_code:
-                    obj.supervision_site = f'{district_office}|{district_sub_office_id}|{supervision_location_org_code}'
+                if (
+                    district_office
+                    and district_sub_office_id
+                    and supervision_location_org_code
+                ):
+                    obj.supervision_site = f"{district_office}|{district_sub_office_id}|{supervision_location_org_code}"
 
     @staticmethod
-    def _set_supervision_period_custodial_authority(_file_tag: str,
-                                                    row: Dict[str, str],
-                                                    extracted_objects: List[IngestObject],
-                                                    _cache: IngestObjectCache) -> None:
+    def _set_supervision_period_custodial_authority(
+        _file_tag: str,
+        row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
         """Sets the custodial_authority on the supervision period."""
         # TODO(#1882): This row post hook should not be necessary once you can map a column value to multiple fields on
         #  the ingested object.
-        supervision_types = row['supervision_types']
+        supervision_types = row["supervision_types"]
 
         # For dual supervision types, the custodial authority will always be the supervision authority, so we
         # just arbitrarily pick raw text to map to an enum.
-        custodial_authority = supervision_types.split(',')[0] if supervision_types else supervision_types
+        custodial_authority = (
+            supervision_types.split(",")[0] if supervision_types else supervision_types
+        )
 
         for obj in extracted_objects:
             if isinstance(obj, StateSupervisionPeriod):
                 obj.custodial_authority = custodial_authority
 
     @staticmethod
-    def _set_sci_incarceration_period_custodial_authority(_file_tag: str,
-                                                          _row: Dict[str, str],
-                                                          extracted_objects: List[IngestObject],
-                                                          _cache: IngestObjectCache) -> None:
+    def _set_sci_incarceration_period_custodial_authority(
+        _file_tag: str,
+        _row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
         """Sets the custodial_authority on the incarceration period."""
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
                 obj.custodial_authority = StateCustodialAuthority.STATE_PRISON.value
 
     @staticmethod
-    def _append_supervision_violation_entries(_file_tag: str,
-                                              row: Dict[str, str],
-                                              extracted_objects: List[IngestObject],
-                                              _cache: IngestObjectCache) -> None:
+    def _append_supervision_violation_entries(
+        _file_tag: str,
+        row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
         """Appends violation type and violated condition entries to the parent supervision violation."""
-        parole_number = row['parole_number']
-        parole_count_id = row['parole_count_id']
-        set_id = row['set_id']
+        parole_number = row["parole_number"]
+        parole_count_id = row["parole_count_id"]
+        set_id = row["set_id"]
 
-        raw_violation_types = row.get('violation_types', '[]')
+        raw_violation_types = row.get("violation_types", "[]")
         violation_types = json.loads(raw_violation_types)
 
         conditions_violated = []
         for violation_type in violation_types:
-            sequence_id = violation_type['sequence_id']
-            violation_code = violation_type['violation_code']
+            sequence_id = violation_type["sequence_id"]
+            violation_code = violation_type["violation_code"]
             condition_violated = violated_condition(violation_code)
             if condition_violated not in conditions_violated:
                 conditions_violated.append(condition_violated)
 
-            violation_type_entry_id = f"{parole_number}-{parole_count_id}-{set_id}-{sequence_id}"
+            violation_type_entry_id = (
+                f"{parole_number}-{parole_count_id}-{set_id}-{sequence_id}"
+            )
 
             for obj in extracted_objects:
                 if isinstance(obj, StateSupervisionViolation):
@@ -1158,21 +1346,23 @@ class UsPaController(CsvGcsfsDirectIngestController):
                     )
 
     @staticmethod
-    def _append_supervision_violation_response_entries(_file_tag: str,
-                                                       row: Dict[str, str],
-                                                       extracted_objects: List[IngestObject],
-                                                       _cache: IngestObjectCache) -> None:
+    def _append_supervision_violation_response_entries(
+        _file_tag: str,
+        row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
         """Appends violation response decision entries to the parent supervision violation response."""
-        parole_number = row['parole_number']
-        parole_count_id = row['parole_count_id']
-        set_id = row['set_id']
+        parole_number = row["parole_number"]
+        parole_count_id = row["parole_count_id"]
+        set_id = row["set_id"]
 
-        raw_sanction_types = row.get('sanction_types', '[]')
+        raw_sanction_types = row.get("sanction_types", "[]")
         sanction_types = json.loads(raw_sanction_types)
 
         for sanction_type in sanction_types:
-            sequence_id = sanction_type['sequence_id']
-            sanction_code = sanction_type['sanction_code']
+            sequence_id = sanction_type["sequence_id"]
+            sanction_code = sanction_type["sanction_code"]
 
             entry_id = f"{parole_number}-{parole_count_id}-{set_id}-{sequence_id}"
 
@@ -1180,14 +1370,17 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 if isinstance(obj, StateSupervisionViolationResponse):
                     obj.create_state_supervision_violation_response_decision_entry(
                         state_supervision_violation_response_decision_entry_id=entry_id,
-                        decision=sanction_code, revocation_type=sanction_code,
+                        decision=sanction_code,
+                        revocation_type=sanction_code,
                     )
 
     @staticmethod
-    def _set_violation_response_type(_file_tag: str,
-                                     _row: Dict[str, str],
-                                     extracted_objects: List[IngestObject],
-                                     _cache: IngestObjectCache) -> None:
+    def _set_violation_response_type(
+        _file_tag: str,
+        _row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
         """Sets relevant fields on the parent supervision violation response.
 
         We set all violation response types as VIOLATION REPORT because we have no additional metadata to make
@@ -1195,31 +1388,40 @@ class UsPaController(CsvGcsfsDirectIngestController):
         """
         for obj in extracted_objects:
             if isinstance(obj, StateSupervisionViolationResponse):
-                obj.response_type = StateSupervisionViolationResponseType.VIOLATION_REPORT.value
+                obj.response_type = (
+                    StateSupervisionViolationResponseType.VIOLATION_REPORT.value
+                )
 
     @staticmethod
-    def _set_board_action_violation_response_fields(_file_tag: str,
-                                                    _row: Dict[str, str],
-                                                    extracted_objects: List[IngestObject],
-                                                    _cache: IngestObjectCache) -> None:
-        """Sets relevant fields specific to a board action supervision violation response.
-        """
+    def _set_board_action_violation_response_fields(
+        _file_tag: str,
+        _row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
+        """Sets relevant fields specific to a board action supervision violation response."""
         for obj in extracted_objects:
             if isinstance(obj, StateSupervisionViolationResponse):
-                obj.response_type = StateSupervisionViolationResponseType.PERMANENT_DECISION.value
-                obj.deciding_body_type = StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD.value
+                obj.response_type = (
+                    StateSupervisionViolationResponseType.PERMANENT_DECISION.value
+                )
+                obj.deciding_body_type = (
+                    StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD.value
+                )
 
     @staticmethod
-    def _append_board_action_supervision_violation_response_entries(_file_tag: str,
-                                                                    row: Dict[str, str],
-                                                                    extracted_objects: List[IngestObject],
-                                                                    _cache: IngestObjectCache) -> None:
+    def _append_board_action_supervision_violation_response_entries(
+        _file_tag: str,
+        row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
         """Appends board action violation response decision entries to the parent supervision violation response."""
-        parole_number = row['ParoleNumber']
-        parole_count_id = row['ParoleCountID']
-        board_action_id = row['BdActionID']
+        parole_number = row["ParoleNumber"]
+        parole_count_id = row["ParoleCountID"]
+        board_action_id = row["BdActionID"]
         entry_id = f"{parole_number}-{parole_count_id}-{board_action_id}"
-        condition_code = row['CndConditionCode']
+        condition_code = row["CndConditionCode"]
         for obj in extracted_objects:
             if isinstance(obj, StateSupervisionViolationResponse):
                 obj.create_state_supervision_violation_response_decision_entry(
@@ -1229,17 +1431,23 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 )
 
 
-def _generate_sci_incarceration_period_primary_key(_file_tag: str, row: Dict[str, str]) -> IngestFieldCoordinates:
-    sentence_group_id = row['inmate_number']
-    sequence_number = row['sequence_number']
+def _generate_sci_incarceration_period_primary_key(
+    _file_tag: str, row: Dict[str, str]
+) -> IngestFieldCoordinates:
+    sentence_group_id = row["inmate_number"]
+    sequence_number = row["sequence_number"]
     incarceration_period_id = f"{sentence_group_id}-{sequence_number}"
 
-    return IngestFieldCoordinates('state_incarceration_period',
-                                  'state_incarceration_period_id',
-                                  incarceration_period_id)
+    return IngestFieldCoordinates(
+        "state_incarceration_period",
+        "state_incarceration_period_id",
+        incarceration_period_id,
+    )
 
 
-def _state_incarceration_period_ancestor_chain_overrides(_file_tag: str, row: Dict[str, str]) -> Dict[str, str]:
+def _state_incarceration_period_ancestor_chain_overrides(
+    _file_tag: str, row: Dict[str, str]
+) -> Dict[str, str]:
     """This creates an incarceration sentence id for specifying the ancestor of an incarceration period.
 
     Incarceration periods only have explicit links to sentence groups. However, we know that the vast majority of
@@ -1248,70 +1456,85 @@ def _state_incarceration_period_ancestor_chain_overrides(_file_tag: str, row: Di
     relates to charge information. Thus, tying each incarceration period to sentence 01 in a given group appears
     to be safe.
     """
-    sentence_group_id = row['inmate_number']
-    assumed_type_number = '01'
+    sentence_group_id = row["inmate_number"]
+    assumed_type_number = "01"
     incarceration_sentence_id = f"{sentence_group_id}-{assumed_type_number}"
 
-    return {'state_incarceration_sentence': incarceration_sentence_id}
+    return {"state_incarceration_sentence": incarceration_sentence_id}
 
 
-def _generate_supervision_period_primary_key(_file_tag: str, row: Dict[str, str]) -> IngestFieldCoordinates:
-    person_id = row['parole_number']
-    period_sequence_number = row['period_sequence_number']
+def _generate_supervision_period_primary_key(
+    _file_tag: str, row: Dict[str, str]
+) -> IngestFieldCoordinates:
+    person_id = row["parole_number"]
+    period_sequence_number = row["period_sequence_number"]
     supervision_period_id = f"{person_id}-{period_sequence_number}"
 
-    return IngestFieldCoordinates('state_supervision_period',
-                                  'state_supervision_period_id',
-                                  supervision_period_id)
+    return IngestFieldCoordinates(
+        "state_supervision_period", "state_supervision_period_id", supervision_period_id
+    )
 
 
-def _generate_supervision_violation_primary_key(_file_tag: str, row: Dict[str, str]) -> IngestFieldCoordinates:
-    person_id = row['parole_number']
-    parole_count = row['parole_count_id']
-    set_id = row['set_id']
+def _generate_supervision_violation_primary_key(
+    _file_tag: str, row: Dict[str, str]
+) -> IngestFieldCoordinates:
+    person_id = row["parole_number"]
+    parole_count = row["parole_count_id"]
+    set_id = row["set_id"]
     violation_id = f"{person_id}-{parole_count}-{set_id}"
 
-    return IngestFieldCoordinates('state_supervision_violation', 'state_supervision_violation_id', violation_id)
+    return IngestFieldCoordinates(
+        "state_supervision_violation", "state_supervision_violation_id", violation_id
+    )
 
 
-def _state_supervision_violation_ancestor_chain_overrides(_file_tag: str,
-                                                          row: Dict[str, str]) -> Dict[str, str]:
-    person_id = row['parole_number']
-    parole_count = row['parole_count_id']
+def _state_supervision_violation_ancestor_chain_overrides(
+    _file_tag: str, row: Dict[str, str]
+) -> Dict[str, str]:
+    person_id = row["parole_number"]
+    parole_count = row["parole_count_id"]
     period_id = f"{person_id}-{parole_count}"
 
-    return {'state_supervision_period': period_id}
+    return {"state_supervision_period": period_id}
 
 
-def _generate_supervision_violation_response_primary_key(_file_tag: str, row: Dict[str, str]) -> IngestFieldCoordinates:
-    person_id = row['parole_number']
-    parole_count = row['parole_count_id']
-    set_id = row['set_id']
+def _generate_supervision_violation_response_primary_key(
+    _file_tag: str, row: Dict[str, str]
+) -> IngestFieldCoordinates:
+    person_id = row["parole_number"]
+    parole_count = row["parole_count_id"]
+    set_id = row["set_id"]
     response_id = f"{person_id}-{parole_count}-{set_id}"
 
-    return IngestFieldCoordinates('state_supervision_violation_response',
-                                  'state_supervision_violation_response_id',
-                                  response_id)
+    return IngestFieldCoordinates(
+        "state_supervision_violation_response",
+        "state_supervision_violation_response_id",
+        response_id,
+    )
 
 
-def _generate_board_action_supervision_violation_response_primary_key(_file_tag: str, row: Dict[str, str])\
-        -> IngestFieldCoordinates:
-    parole_id = row['ParoleNumber']
-    parole_count_id = row['ParoleCountID']
-    board_action_id = row['BdActionID']
+def _generate_board_action_supervision_violation_response_primary_key(
+    _file_tag: str, row: Dict[str, str]
+) -> IngestFieldCoordinates:
+    parole_id = row["ParoleNumber"]
+    parole_count_id = row["ParoleCountID"]
+    board_action_id = row["BdActionID"]
     response_id = f"{parole_id}-{parole_count_id}-{board_action_id}"
 
-    return IngestFieldCoordinates('state_supervision_violation_response',
-                                  'state_supervision_violation_response_id',
-                                  response_id)
+    return IngestFieldCoordinates(
+        "state_supervision_violation_response",
+        "state_supervision_violation_response_id",
+        response_id,
+    )
 
 
 def _state_supervision_violation_response_ancestor_chain_overrides(
-        _file_tag: str, row: Dict[str, str]) -> Dict[str, str]:
-    person_id = row['parole_number']
-    parole_count = row['parole_count_id']
-    set_id = row['set_id']
+    _file_tag: str, row: Dict[str, str]
+) -> Dict[str, str]:
+    person_id = row["parole_number"]
+    parole_count = row["parole_count_id"]
+    set_id = row["set_id"]
 
     violation_id = f"{person_id}-{parole_count}-{set_id}"
 
-    return {'state_supervision_violation': violation_id}
+    return {"state_supervision_violation": violation_id}

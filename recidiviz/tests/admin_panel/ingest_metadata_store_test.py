@@ -35,11 +35,15 @@ class TestIngestMetadataStore(TestCase):
     """TestCase for IngestMetadataCountsStore."""
 
     def setUp(self) -> None:
-        self.gcs_factory_patcher = mock.patch('recidiviz.admin_panel.ingest_metadata_store.GcsfsFactory.build')
+        self.gcs_factory_patcher = mock.patch(
+            "recidiviz.admin_panel.ingest_metadata_store.GcsfsFactory.build"
+        )
 
         fake_gcs = FakeGCSFileSystem()
         fake_gcs.upload_from_string(
-            path=GcsfsFilePath.from_absolute_path('gs://recidiviz-456-configs/cloud_sql_to_bq_config.yaml'),
+            path=GcsfsFilePath.from_absolute_path(
+                "gs://recidiviz-456-configs/cloud_sql_to_bq_config.yaml"
+            ),
             contents="""
 region_codes_to_exclude:
   - US_ND
@@ -50,31 +54,36 @@ county_columns_to_exclude:
     - full_name
     - birthdate_inferred_from_age
 """,
-            content_type="text/yaml")
+            content_type="text/yaml",
+        )
         fake_gcs.upload_from_string(
             path=GcsfsFilePath.from_absolute_path(
-                'gs://recidiviz-456-ingest-metadata/ingest_metadata_latest_ingested_upper_bounds.json'),
+                "gs://recidiviz-456-ingest-metadata/ingest_metadata_latest_ingested_upper_bounds.json"
+            ),
             contents="""
 {"state_code":"US_PA","processed_date":"2020-11-25"}
 {"state_code":"US_ID","processed_date":"2021-01-04"}
 {"state_code":"US_MO","processed_date":"2020-12-21"}
 {"state_code":"US_ND","processed_date":"2020-12-16"}
 """,
-            content_type="text/text")
+            content_type="text/text",
+        )
 
         fixture_folder = os.path.join(
             os.path.dirname(os.path.realpath(__file__)),
-            'fixtures',
+            "fixtures",
         )
         self.table_column_map: Dict[str, List[str]] = defaultdict(list)
         for f in os.listdir(fixture_folder):
-            _, table, col = f.split('__')
-            self.table_column_map[table].append(col[:-len('.json')])
-            path = GcsfsFilePath.from_absolute_path(f'gs://recidiviz-456-ingest-metadata/{f}')
+            _, table, col = f.split("__")
+            self.table_column_map[table].append(col[: -len(".json")])
+            path = GcsfsFilePath.from_absolute_path(
+                f"gs://recidiviz-456-ingest-metadata/{f}"
+            )
             fake_gcs.test_add_path(path, local_path=os.path.join(fixture_folder, f))
 
         self.gcs_factory_patcher.start().return_value = fake_gcs
-        self.store = IngestMetadataCountsStore(override_project_id='recidiviz-456')
+        self.store = IngestMetadataCountsStore(override_project_id="recidiviz-456")
         self.store.recalculate_store()
 
     def tearDown(self) -> None:
@@ -84,75 +93,101 @@ county_columns_to_exclude:
         self.assertIngestMetadataResultsEqual(
             self.store.fetch_object_counts_by_table(),
             {
-                'state_agent': {
-                    'US_WW': IngestMetadataCounts.from_json({
-                        "total_count": "687179",
-                        "placeholder_count": "50180",
-                    }),
-                    'US_XX': IngestMetadataCounts.from_json({
-                        "total_count": "7175527",
-                        "placeholder_count": "0",
-                    }),
-                    'US_YY': IngestMetadataCounts.from_json({
-                        "total_count": "274616",
-                        "placeholder_count": "179028",
-                    }),
-                    'US_ZZ': IngestMetadataCounts.from_json({
-                        "total_count": "888765",
-                        "placeholder_count": "359273",
-                    }),
+                "state_agent": {
+                    "US_WW": IngestMetadataCounts.from_json(
+                        {
+                            "total_count": "687179",
+                            "placeholder_count": "50180",
+                        }
+                    ),
+                    "US_XX": IngestMetadataCounts.from_json(
+                        {
+                            "total_count": "7175527",
+                            "placeholder_count": "0",
+                        }
+                    ),
+                    "US_YY": IngestMetadataCounts.from_json(
+                        {
+                            "total_count": "274616",
+                            "placeholder_count": "179028",
+                        }
+                    ),
+                    "US_ZZ": IngestMetadataCounts.from_json(
+                        {
+                            "total_count": "888765",
+                            "placeholder_count": "359273",
+                        }
+                    ),
                 },
-                'state_bond': {},
-                'state_charge': {
-                    'US_XX': IngestMetadataCounts.from_json({
-                        "total_count": "1656434",
-                        "placeholder_count": "0",
-                    }),
-                    'US_YY': IngestMetadataCounts.from_json({
-                        "total_count": "386469",
-                        "placeholder_count": "123811",
-                    }),
+                "state_bond": {},
+                "state_charge": {
+                    "US_XX": IngestMetadataCounts.from_json(
+                        {
+                            "total_count": "1656434",
+                            "placeholder_count": "0",
+                        }
+                    ),
+                    "US_YY": IngestMetadataCounts.from_json(
+                        {
+                            "total_count": "386469",
+                            "placeholder_count": "123811",
+                        }
+                    ),
                 },
-            }
+            },
         )
 
     def test_empty_table(self) -> None:
         """Tests that empty tables report empty values but still show up in the main set of results."""
-        empty_table = 'state_bond'
+        empty_table = "state_bond"
 
         # check that dataset-wide aggregation finds no results for table
         self.assertEqual(0, len(self.store.fetch_object_counts_by_table()[empty_table]))
 
         # check that table-specific lookup returns no values
-        self.assertEqual(0, len(self.store.fetch_table_nonnull_counts_by_column(empty_table)))
+        self.assertEqual(
+            0, len(self.store.fetch_table_nonnull_counts_by_column(empty_table))
+        )
 
         # check that each column reports no values
         for col in self.table_column_map[empty_table]:
-            self.assertEqual(0, len(self.store.fetch_column_object_counts_by_value(empty_table, col)),
-                             msg=f'Unexpectedly found non-empty results for table {empty_table}, col {col}')
+            self.assertEqual(
+                0,
+                len(self.store.fetch_column_object_counts_by_value(empty_table, col)),
+                msg=f"Unexpectedly found non-empty results for table {empty_table}, col {col}",
+            )
 
     def test_nonexistent_table(self) -> None:
         """Tests that counts continue to work with a nonexistent table."""
-        nonexistent_table = 'nonexistent'
+        nonexistent_table = "nonexistent"
 
         # check that dataset-wide aggregation finds no results for table
-        self.assertTrue(nonexistent_table not in self.store.fetch_object_counts_by_table())
+        self.assertTrue(
+            nonexistent_table not in self.store.fetch_object_counts_by_table()
+        )
 
         # check that table-specific lookup returns no values
-        self.assertEqual(0, len(self.store.fetch_table_nonnull_counts_by_column(nonexistent_table)))
+        self.assertEqual(
+            0, len(self.store.fetch_table_nonnull_counts_by_column(nonexistent_table))
+        )
 
     def test_count_primary_keys(self) -> None:
         """Tests that primary key values should only report a single type, non-null."""
-        results = self.store.fetch_column_object_counts_by_value('state_agent', 'agent_id')
+        results = self.store.fetch_column_object_counts_by_value(
+            "state_agent", "agent_id"
+        )
         self.assertEqual(
             1,
             len(results),
-            msg='Primary key field should not report more than one observed type (NOT_NULL only).')
+            msg="Primary key field should not report more than one observed type (NOT_NULL only).",
+        )
 
-    @parameterized.expand([
-        ('state_agent', ['US_WW', 'US_XX', 'US_YY', 'US_ZZ']),
-        ('state_charge', ['US_XX', 'US_YY']),
-    ])
+    @parameterized.expand(
+        [
+            ("state_agent", ["US_WW", "US_XX", "US_YY", "US_ZZ"]),
+            ("state_charge", ["US_XX", "US_YY"]),
+        ]
+    )
     def test_state_consistency(self, table: str, states: List[str]) -> None:
         """Tests that the same states should be present across all results for the table."""
 
@@ -160,11 +195,14 @@ county_columns_to_exclude:
         self.assertEqual(
             len(states),
             len(object_counts),
-            msg='Not all states present in call to `fetch_object_counts_by_table`.')
+            msg="Not all states present in call to `fetch_object_counts_by_table`.",
+        )
 
         for state in states:
-            self.assertTrue(state in object_counts,
-                            msg=f'State {state} not found in `fetch_object_counts_by_table` results.')
+            self.assertTrue(
+                state in object_counts,
+                msg=f"State {state} not found in `fetch_object_counts_by_table` results.",
+            )
 
         nonnull_counts = self.store.fetch_table_nonnull_counts_by_column(table)
         for col, results in nonnull_counts.items():
@@ -172,21 +210,30 @@ county_columns_to_exclude:
             self.assertGreaterEqual(
                 len(states),
                 len(results),
-                msg=f'More states than expected in call to `fetch_table_nonnull_counts_by_column` for column {col}.')
+                msg=f"More states than expected in call to `fetch_table_nonnull_counts_by_column` for column {col}.",
+            )
 
             value_found_for_state = {state: False for state in states}
 
-            obj_counts_by_values = self.store.fetch_column_object_counts_by_value(table, col)
+            obj_counts_by_values = self.store.fetch_column_object_counts_by_value(
+                table, col
+            )
             for value_counts in obj_counts_by_values.values():
                 for state in value_found_for_state:
                     if state in value_counts:
                         value_found_for_state[state] = True
 
             for state, found in value_found_for_state.items():
-                self.assertTrue(found, msg=f'Did not find value for state {state} in column {col}')
+                self.assertTrue(
+                    found, msg=f"Did not find value for state {state} in column {col}"
+                )
 
-    def assertIngestMetadataResultsEqual(self, r1: IngestMetadataResult, r2: IngestMetadataResult) -> None:
-        self.assertEqual(len(r1), len(r2), msg='The two results have differing numbers of values.')
+    def assertIngestMetadataResultsEqual(
+        self, r1: IngestMetadataResult, r2: IngestMetadataResult
+    ) -> None:
+        self.assertEqual(
+            len(r1), len(r2), msg="The two results have differing numbers of values."
+        )
 
         for key, state_map1 in r1.items():
             state_map2 = r2[key]
@@ -194,7 +241,8 @@ county_columns_to_exclude:
             self.assertEqual(
                 len(state_map1),
                 len(state_map2),
-                msg=f'The two results have differing numbers of states for value {key}')
+                msg=f"The two results have differing numbers of states for value {key}",
+            )
 
             for state, count1 in state_map1.items():
                 count2 = state_map2[state]
@@ -202,9 +250,11 @@ county_columns_to_exclude:
                 self.assertEqual(
                     count1.total_count,
                     count2.total_count,
-                    msg=f"Total counts for state {state} and value {key} do not match.")
+                    msg=f"Total counts for state {state} and value {key} do not match.",
+                )
 
                 self.assertEqual(
                     count1.placeholder_count,
                     count2.placeholder_count,
-                    msg=f"Placeholder counts for state {state} and value {key} do not match.")
+                    msg=f"Placeholder counts for state {state} and value {key} do not match.",
+                )

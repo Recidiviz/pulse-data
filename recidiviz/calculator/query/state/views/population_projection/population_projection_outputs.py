@@ -32,25 +32,32 @@ class PopulationProjectionOutputView:
 
 
 POPULATION_PROJECTION_OUTPUT_VIEWS = [
-    PopulationProjectionOutputView(output_name='cost_avoidance_estimate',
-                                   output_description='The projected cumulative cost saved by the simulated policy',
-                                   output_columns=['total_cost']),
-    PopulationProjectionOutputView(output_name='cost_avoidance_non_cumulative_estimate',
-                                   output_description='The projected cost saved by the simulated policy per '
-                                                      'year/month (non-cumulative',
-                                   output_columns=['total_cost']),
-    PopulationProjectionOutputView(output_name='life_years_estimate',
-                                   output_description='The projected cumulative life years saved by the simulated '
-                                                      'policy',
-                                   output_columns=['life_years']),
-    PopulationProjectionOutputView(output_name='population_estimate',
-                                   output_description='The projected population for the simulated policy and the '
-                                                      'baseline',
-                                   output_columns=['scenario', 'population']),
+    PopulationProjectionOutputView(
+        output_name="cost_avoidance_estimate",
+        output_description="The projected cumulative cost saved by the simulated policy",
+        output_columns=["total_cost"],
+    ),
+    PopulationProjectionOutputView(
+        output_name="cost_avoidance_non_cumulative_estimate",
+        output_description="The projected cost saved by the simulated policy per "
+        "year/month (non-cumulative",
+        output_columns=["total_cost"],
+    ),
+    PopulationProjectionOutputView(
+        output_name="life_years_estimate",
+        output_description="The projected cumulative life years saved by the simulated "
+        "policy",
+        output_columns=["life_years"],
+    ),
+    PopulationProjectionOutputView(
+        output_name="population_estimate",
+        output_description="The projected population for the simulated policy and the "
+        "baseline",
+        output_columns=["scenario", "population"],
+    ),
 ]
 
-POPULATION_PROJECTION_OUTPUT_QUERY_TEMPLATE = \
-    """
+POPULATION_PROJECTION_OUTPUT_QUERY_TEMPLATE = """
     /*{description}*/
     WITH most_recent_results AS (
       SELECT
@@ -71,19 +78,22 @@ POPULATION_PROJECTION_OUTPUT_QUERY_TEMPLATE = \
     """
 
 POPULATION_PROJECTION_OUTPUT_VIEW_BUILDERS = [
-    SimpleBigQueryViewBuilder(dataset_id=dataset_config.POPULATION_PROJECTION_DATASET,
-                              view_id=output.output_name,
-                              view_query_template=POPULATION_PROJECTION_OUTPUT_QUERY_TEMPLATE,
-                              description=output.output_description,
-                              population_projection_output_dataset=dataset_config.POPULATION_PROJECTION_OUTPUT_DATASET,
-                              output_name=output.output_name,
-                              output_columns=', '.join(output.output_columns),
-                              should_materialize=False
-                              )
+    SimpleBigQueryViewBuilder(
+        dataset_id=dataset_config.POPULATION_PROJECTION_DATASET,
+        view_id=output.output_name,
+        view_query_template=POPULATION_PROJECTION_OUTPUT_QUERY_TEMPLATE,
+        description=output.output_description,
+        population_projection_output_dataset=dataset_config.POPULATION_PROJECTION_OUTPUT_DATASET,
+        output_name=output.output_name,
+        output_columns=", ".join(output.output_columns),
+        should_materialize=False,
+    )
     for output in POPULATION_PROJECTION_OUTPUT_VIEWS
 ]
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        for pop_projection_output_view_builder in POPULATION_PROJECTION_OUTPUT_VIEW_BUILDERS:
+        for (
+            pop_projection_output_view_builder
+        ) in POPULATION_PROJECTION_OUTPUT_VIEW_BUILDERS:
             pop_projection_output_view_builder.build_and_print()

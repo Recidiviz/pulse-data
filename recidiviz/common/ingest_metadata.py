@@ -27,8 +27,8 @@ from recidiviz.common.constants.enum_overrides import EnumOverrides
 
 @enum.unique
 class SystemLevel(enum.Enum):
-    COUNTY = 'COUNTY'
-    STATE = 'STATE'
+    COUNTY = "COUNTY"
+    STATE = "STATE"
 
 
 @attr.s(frozen=True)

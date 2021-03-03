@@ -48,16 +48,18 @@ class HtmlDataExtractor(DataExtractor):
     def __init__(self, key_mapping_file):
         super().__init__(key_mapping_file)
 
-        self.css_keys = self.manifest.get('css_key_mappings', {})
-        self.keys_to_ignore = self.manifest.get('keys_to_ignore', [])
+        self.css_keys = self.manifest.get("css_key_mappings", {})
+        self.keys_to_ignore = self.manifest.get("keys_to_ignore", [])
 
         self.keys.update(self.css_keys)
 
-        self.all_keys = set(self.keys.keys()) | \
-                        set(self.multi_keys.keys()) | set(self.keys_to_ignore)
+        self.all_keys = (
+            set(self.keys.keys())
+            | set(self.multi_keys.keys())
+            | set(self.keys_to_ignore)
+        )
 
-    def _set_all_cells(
-            self, content: HtmlElement, search_for_keys: bool) -> None:
+    def _set_all_cells(self, content: HtmlElement, search_for_keys: bool) -> None:
         """Finds all leaf cells on a page and sets them.
 
         Args:
@@ -69,7 +71,7 @@ class HtmlDataExtractor(DataExtractor):
             elif search_for_keys:
                 self._convert_key_to_cells(content, key)
 
-        all_cells = content.xpath('//*[self::th or self::td]')
+        all_cells = content.xpath("//*[self::th or self::td]")
         self.cells = [cell for cell in all_cells if self._is_leaf_cell(cell)]
 
     def _is_leaf_cell(self, e: HtmlElement) -> bool:
@@ -80,13 +82,15 @@ class HtmlDataExtractor(DataExtractor):
             True if the Element does not contain any children with tag
             'th' or 'td'
         """
-        return not e.findall('.//th') and not e.findall('.//td')
+        return not e.findall(".//th") and not e.findall(".//td")
 
     # pylint: disable=arguments-differ
     def extract_and_populate_data(
-            self, content: HtmlElement,
-            ingest_info: IngestInfo = None,
-            search_for_keys: bool = True) -> IngestInfo:
+        self,
+        content: HtmlElement,
+        ingest_info: IngestInfo = None,
+        search_for_keys: bool = True,
+    ) -> IngestInfo:
         """This function does all the work of taking the users yaml file
         and content and returning a populated data class.  This function
         iterates through every cell on the page and builds a model based on
@@ -123,8 +127,7 @@ class HtmlDataExtractor(DataExtractor):
             # keys that map to the same value ('hi' and 'hi:' both map to the
             # same thing) but that is a more expensive preprocessing calculation
             cell_val = self._normalize_cell(cell)
-            lookup_keys = (self.keys.get(cell_val) or
-                           self.multi_keys.get(cell_val))
+            lookup_keys = self.keys.get(cell_val) or self.multi_keys.get(cell_val)
             if not lookup_keys:
                 # Users can specify a key with no value associated and then use
                 # |get_value()| later. We shouldn't warn, even though we
@@ -138,19 +141,18 @@ class HtmlDataExtractor(DataExtractor):
             elif cell_val in self.multi_keys:
                 values = self._get_values_below_cell(cell)
             if values:
-                self._set_or_create_object(ingest_info, lookup_keys, values,
-                                           seen_map)
+                self._set_or_create_object(ingest_info, lookup_keys, values, seen_map)
                 if cell_val in needed_keys:
                     needed_keys.remove(cell_val)
         # If at the end of everything there are some keys we haven't found on
         # page we should complain.
         if needed_keys:
-            logging.debug("The following keys could not be found: %s",
-                          needed_keys)
+            logging.debug("The following keys could not be found: %s", needed_keys)
         return ingest_info.prune()
 
-    def get_value(self, key: str, multiple: bool = False
-                  ) -> Union[List[Optional[str]], Optional[str]]:
+    def get_value(
+        self, key: str, multiple: bool = False
+    ) -> Union[List[Optional[str]], Optional[str]]:
         """
         This function iterates through every cell on the page, searching for a
         value that matches the provided |key|. Returns the string value if
@@ -174,12 +176,12 @@ class HtmlDataExtractor(DataExtractor):
     @staticmethod
     def _process_html(content: HtmlElement) -> None:
         """Cleans up the provided content."""
-        _remove_from_content(content, '//script')
-        _remove_from_content(content, '//comment()')
+        _remove_from_content(content, "//script")
+        _remove_from_content(content, "//comment()")
 
         # Format line breaks as newlines
-        for br in content.xpath('//br'):
-            br.tail = '\n' + br.tail if br.tail else '\n'
+        for br in content.xpath("//br"):
+            br.tail = "\n" + br.tail if br.tail else "\n"
 
     def _convert_key_to_cells(self, content: HtmlElement, key: str) -> None:
         """Searches for elements in |content| that match a |key| and converts
@@ -190,8 +192,9 @@ class HtmlDataExtractor(DataExtractor):
             key: (string) to search for
         """
         matches = content.xpath(
-            './/*[starts-with('
-            'normalize-space(translate(text(),"\xA0"," ")),"%s")]' % key)
+            ".//*[starts-with("
+            'normalize-space(translate(text(),"\xA0"," ")),"%s")]' % key
+        )
         # results from the xpath call are references, so modifying them changes
         # |content|.
         for match in matches:
@@ -203,25 +206,29 @@ class HtmlDataExtractor(DataExtractor):
                 continue
 
             # Only convert elements that are not already table cells.
-            if match.tag == 'td' or match.tag == 'th':
+            if match.tag == "td" or match.tag == "th":
                 continue
             # Ensure no individual words in |content| was split when matching.
             if text:
-                remaining = ' '.join(text.split()).replace(key, '')
+                remaining = " ".join(text.split()).replace(key, "")
                 if not remaining or not remaining[0].isalpha():
                     if self._key_element_to_cell(key, match):
-                        logging.debug("Converting element matching key %s: %s",
-                                      key, tostring(match))
+                        logging.debug(
+                            "Converting element matching key %s: %s",
+                            key,
+                            tostring(match),
+                        )
 
     def _css_key_to_cell(self, content: HtmlElement, css_key: str) -> None:
         matches = content.cssselect(css_key)
 
         for match in matches:
-            logging.debug("Adding cell [%s] which matches css key [%s]",
-                          tostring(match), css_key)
+            logging.debug(
+                "Adding cell [%s] which matches css key [%s]", tostring(match), css_key
+            )
             key_cell = HtmlElement(css_key)
-            key_cell.tag = 'td'
-            match.tag = 'td'
+            key_cell.tag = "td"
+            match.tag = "td"
             match.addprevious(key_cell)
 
     def _get_text_from_element(self, element: HtmlElement) -> Optional[str]:
@@ -245,21 +252,21 @@ class HtmlDataExtractor(DataExtractor):
         # <foo><bar>key</bar>value</foo>
         # Create a new td element containing the following-sibling's text and
         # add it after the key cell.
-        following_siblings = key_element.xpath('following-sibling::text()')
+        following_siblings = key_element.xpath("following-sibling::text()")
         if following_siblings:
             following_text = following_siblings[0].strip()
             if following_text:
-                key_element.tag = 'td'
+                key_element.tag = "td"
                 following_cell = HtmlElement(following_text)
-                following_cell.tag = 'td'
+                following_cell.tag = "td"
                 key_element.addnext(following_cell)
                 return True
 
         # <foo>key</foo><bar>value</bar>
         # The key and value are already adjacent, so just make them both cells.
         if key_element.getnext() is not None:
-            key_element.tag = 'td'
-            key_element.getnext().tag = 'td'
+            key_element.tag = "td"
+            key_element.getnext().tag = "td"
             return True
 
         # <foo><bar/><baz></baz>key: value</foo>
@@ -274,9 +281,9 @@ class HtmlDataExtractor(DataExtractor):
         # value cell.
         if len(key_element) == 1:
             key_cell = HtmlElement(key)
-            key_cell.tag = 'td'
+            key_cell.tag = "td"
             value_cell = key_element[0]
-            value_cell.tag = 'td'
+            value_cell.tag = "td"
             value_cell.addprevious(key_cell)
             return True
 
@@ -293,12 +300,12 @@ class HtmlDataExtractor(DataExtractor):
         """Given a |text| string in the format '<key>: <value>', inserts
         corresponding key/value td cells into |container|. Returns True if
         insertion is performed, False otherwise."""
-        remaining = text[len(key):].strip().strip(':').strip()
+        remaining = text[len(key) :].strip().strip(":").strip()
         if remaining:
             key_cell = HtmlElement(key)
-            key_cell.tag = 'td'
+            key_cell.tag = "td"
             value_cell = HtmlElement(remaining)
-            value_cell.tag = 'td'
+            value_cell.tag = "td"
             container.insert(0, key_cell)
             container.insert(1, value_cell)
             return True
@@ -320,13 +327,13 @@ class HtmlDataExtractor(DataExtractor):
 
         grand_parent = parent.getparent()
         # If |cell| is inside a <thead>, the |next_row| is inside a <tbody>.
-        if grand_parent is not None and grand_parent.tag == 'thead':
+        if grand_parent is not None and grand_parent.tag == "thead":
             tbody = grand_parent.getnext()
             if tbody is not None:
                 next_row = next(tbody.iterchildren(), None)
 
         while next_row is not None:
-            if next_row.tag == 'tr' and index < len(next_row):
+            if next_row.tag == "tr" and index < len(next_row):
                 if self._element_contains_key_descendant(next_row[index]):
                     break
                 yield next_row[index]
@@ -395,7 +402,7 @@ class HtmlDataExtractor(DataExtractor):
         """
         if cell is None:
             return None
-        if cell.tag == 'th':
+        if cell.tag == "th":
             below_cell = self._get_below(cell)
             if below_cell is not None:
                 below_text = below_cell.text_content().strip()
@@ -413,12 +420,12 @@ class HtmlDataExtractor(DataExtractor):
         return None
 
     def _normalize_cell(self, cell: HtmlElement) -> str:
-        """ Given a cell, normalize the text content to compare to key mappings.
+        """Given a cell, normalize the text content to compare to key mappings.
 
         Args:
             cell: the html element for a table cell.
         """
-        return cell.text_content().strip().strip(':').strip()
+        return cell.text_content().strip().strip(":").strip()
 
     def _element_contains_key_descendant(self, e: HtmlElement) -> bool:
         """Returns True if Element |e| or a descendant has a key as its text

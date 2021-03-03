@@ -41,8 +41,9 @@ from recidiviz.big_query.export.big_query_view_exporter import BigQueryViewExpor
 from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.metrics.export.optimized_metric_big_query_view_export_validator import \
-    OptimizedMetricBigQueryViewExportValidator
+from recidiviz.metrics.export.optimized_metric_big_query_view_export_validator import (
+    OptimizedMetricBigQueryViewExportValidator,
+)
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryView
 from recidiviz.utils import structured_logging
 
@@ -76,19 +77,29 @@ class OptimizedMetricBigQueryViewExporter(BigQueryViewExporter):
     matrix and then flattened into a single array, which is written to text files and exported to
     Google Cloud Storage."""
 
-    def __init__(self,
-                 bq_client: BigQueryClient,
-                 validator: OptimizedMetricBigQueryViewExportValidator,
-                 should_compress: bool = False):
+    def __init__(
+        self,
+        bq_client: BigQueryClient,
+        validator: OptimizedMetricBigQueryViewExportValidator,
+        should_compress: bool = False,
+    ):
         super().__init__(bq_client, validator)
         self.should_compress = should_compress
 
-    def export(self, export_configs: Sequence[ExportBigQueryViewConfig[MetricBigQueryView]]) -> List[GcsfsFilePath]:
+    def export(
+        self, export_configs: Sequence[ExportBigQueryViewConfig[MetricBigQueryView]]
+    ) -> List[GcsfsFilePath]:
         storage_client = storage.Client()
         output_paths = []
-        with futures.ThreadPoolExecutor(max_workers=OPTIMIZED_VIEW_EXPORTER_MAX_WORKERS) as executor:
+        with futures.ThreadPoolExecutor(
+            max_workers=OPTIMIZED_VIEW_EXPORTER_MAX_WORKERS
+        ) as executor:
             future_to_view = {
-                executor.submit(structured_logging.with_context(self._export_view), storage_client, config): config
+                executor.submit(
+                    structured_logging.with_context(self._export_view),
+                    storage_client,
+                    config,
+                ): config
                 for config in export_configs
             }
             for future in futures.as_completed(future_to_view):
@@ -96,95 +107,155 @@ class OptimizedMetricBigQueryViewExporter(BigQueryViewExporter):
                 try:
                     output_path: GcsfsFilePath = future.result()
                 except Exception as e:
-                    logging.error('Exception found exporting view: %s.%s', config.view.dataset_id, config.view.view_id)
+                    logging.error(
+                        "Exception found exporting view: %s.%s",
+                        config.view.dataset_id,
+                        config.view.view_id,
+                    )
                     raise e
                 output_paths.append(output_path)
 
         return output_paths
 
-    def _export_view(self,
-                     storage_client: storage.Client,
-                     config: ExportBigQueryViewConfig[MetricBigQueryView]) -> GcsfsFilePath:
+    def _export_view(
+        self,
+        storage_client: storage.Client,
+        config: ExportBigQueryViewConfig[MetricBigQueryView],
+    ) -> GcsfsFilePath:
         query_job = self.bq_client.run_query_async(config.query, [])
-        optimized_format = self.convert_query_results_to_optimized_value_matrix(query_job, config)
-        output_path = self._export_optimized_format(config, optimized_format, storage_client)
+        optimized_format = self.convert_query_results_to_optimized_value_matrix(
+            query_job, config
+        )
+        output_path = self._export_optimized_format(
+            config, optimized_format, storage_client
+        )
         return output_path
 
-    def convert_query_results_to_optimized_value_matrix(self,
-                                                        query_job: bigquery.QueryJob,
-                                                        export_config: ExportBigQueryViewConfig[MetricBigQueryView]) \
-            -> OptimizedMetricRepresentation:
+    def convert_query_results_to_optimized_value_matrix(
+        self,
+        query_job: bigquery.QueryJob,
+        export_config: ExportBigQueryViewConfig[MetricBigQueryView],
+    ) -> OptimizedMetricRepresentation:
         """Prepares an optimized metric file format for the results of the given query job and export configuration."""
 
         # Identifies the full set of keys for the given view, as well as those for for dimensions and values
         export_view = export_config.view
 
-        logging.info("Converting query results to the optimized metric file format for view: %s", export_view.view_id)
+        logging.info(
+            "Converting query results to the optimized metric file format for view: %s",
+            export_view.view_id,
+        )
 
-        table = self.bq_client.get_table(self.bq_client.dataset_ref_for_id(export_view.dataset_id), export_view.view_id)
+        table = self.bq_client.get_table(
+            self.bq_client.dataset_ref_for_id(export_view.dataset_id),
+            export_view.view_id,
+        )
         all_keys = [field.name for field in table.schema]
 
         logging.debug("Determined full set of keys for the view: %s", all_keys)
 
         if len(all_keys) == 0:
-            logging.warning("No columns for this view query, returning an empty representation ")
-            return OptimizedMetricRepresentation(value_matrix=[], dimension_manifest=[], value_keys=[])
+            logging.warning(
+                "No columns for this view query, returning an empty representation "
+            )
+            return OptimizedMetricRepresentation(
+                value_matrix=[], dimension_manifest=[], value_keys=[]
+            )
 
         dimension_keys = export_view.dimensions
         value_keys = sorted(list(set(all_keys) - set(dimension_keys)))
 
         # Look at all records to identify full range of values for each dimension
-        dimension_values_by_key: Dict[str, Set[str]] = _initialize_dimension_manifest(dimension_keys)
+        dimension_values_by_key: Dict[str, Set[str]] = _initialize_dimension_manifest(
+            dimension_keys
+        )
         assemble_manifest_fn = _gen_assemble_manifest(dimension_values_by_key)
-        self.bq_client.paged_read_and_process(query_job, QUERY_PAGE_SIZE, assemble_manifest_fn)
-        logging.info("Produced dictionary-based manifest for view: %s", export_view.view_id)
-        logging.debug("Dictionary-based manifest for view %s: %s", export_view.view_id, dimension_values_by_key)
+        self.bq_client.paged_read_and_process(
+            query_job, QUERY_PAGE_SIZE, assemble_manifest_fn
+        )
+        logging.info(
+            "Produced dictionary-based manifest for view: %s", export_view.view_id
+        )
+        logging.debug(
+            "Dictionary-based manifest for view %s: %s",
+            export_view.view_id,
+            dimension_values_by_key,
+        )
 
         # Transform dimension ranges into list of tuples first ordered by dimension key and internally by values
-        dimension_manifest: List[Tuple[str, List[str]]] = transform_manifest_to_order_enforced_form(
-            dimension_values_by_key)
-        logging.info("Produced ordered dimension manifest for view: %s", export_view.view_id)
-        logging.debug("Ordered dimension manifest for view %s: %s", export_view.view_id, dimension_manifest)
+        dimension_manifest: List[
+            Tuple[str, List[str]]
+        ] = transform_manifest_to_order_enforced_form(dimension_values_by_key)
+        logging.info(
+            "Produced ordered dimension manifest for view: %s", export_view.view_id
+        )
+        logging.debug(
+            "Ordered dimension manifest for view %s: %s",
+            export_view.view_id,
+            dimension_manifest,
+        )
 
         # Allocate an array with nested arrays for each dimension and value key
-        data_values: List[List[Any]] = [[] for _ in range(len(dimension_keys) + len(value_keys))]
+        data_values: List[List[Any]] = [
+            [] for _ in range(len(dimension_keys) + len(value_keys))
+        ]
 
         # For each data point, set its numeric values in the spot determined by its dimensional combination
-        place_value_in_matrix_fn = _gen_place_in_compact_matrix(data_values, value_keys, dimension_manifest)
-        self.bq_client.paged_read_and_process(query_job, QUERY_PAGE_SIZE, place_value_in_matrix_fn)
-        logging.info("Finished paged read and process for view: %s", export_view.view_id)
+        place_value_in_matrix_fn = _gen_place_in_compact_matrix(
+            data_values, value_keys, dimension_manifest
+        )
+        self.bq_client.paged_read_and_process(
+            query_job, QUERY_PAGE_SIZE, place_value_in_matrix_fn
+        )
+        logging.info(
+            "Finished paged read and process for view: %s", export_view.view_id
+        )
 
         # Return the array and the dimensional manifest
-        return OptimizedMetricRepresentation(value_matrix=data_values,
-                                             dimension_manifest=dimension_manifest,
-                                             value_keys=value_keys)
+        return OptimizedMetricRepresentation(
+            value_matrix=data_values,
+            dimension_manifest=dimension_manifest,
+            value_keys=value_keys,
+        )
 
-    def _export_optimized_format(self,
-                                 export_config: ExportBigQueryViewConfig,
-                                 formatted: OptimizedMetricRepresentation,
-                                 storage_client: storage.Client) -> GcsfsFilePath:
+    def _export_optimized_format(
+        self,
+        export_config: ExportBigQueryViewConfig,
+        formatted: OptimizedMetricRepresentation,
+        storage_client: storage.Client,
+    ) -> GcsfsFilePath:
         """Writes the optimized metric representation to Cloud Storage, based on the export configuration. Returns the
         output path the file was written to.
         """
-        output_path = export_config.output_path(extension='txt')
+        output_path = export_config.output_path(extension="txt")
 
-        logging.info("Writing optimized metric file %s to GCS bucket %s...",
-                     output_path.blob_name, output_path.bucket_name)
+        logging.info(
+            "Writing optimized metric file %s to GCS bucket %s...",
+            output_path.blob_name,
+            output_path.bucket_name,
+        )
 
         blob = storage.Blob.from_string(output_path.uri(), client=storage_client)
         self._set_format_metadata(formatted, blob, should_compress=True)
-        blob.upload_from_string(self._produce_transmission_format(formatted, should_compress=True),
-                                content_type='text/plain')
+        blob.upload_from_string(
+            self._produce_transmission_format(formatted, should_compress=True),
+            content_type="text/plain",
+        )
 
-        logging.info("Optimized metric file %s written to GCS bucket %s.",
-                     output_path.blob_name, output_path.bucket_name)
+        logging.info(
+            "Optimized metric file %s written to GCS bucket %s.",
+            output_path.blob_name,
+            output_path.bucket_name,
+        )
 
         return output_path
 
     @staticmethod
-    def _set_format_metadata(formatted: OptimizedMetricRepresentation,
-                             blob: storage.Blob,
-                             should_compress: bool = False) -> None:
+    def _set_format_metadata(
+        formatted: OptimizedMetricRepresentation,
+        blob: storage.Blob,
+        should_compress: bool = False,
+    ) -> None:
         """Sets metadata on the Cloud Storage blob that can be used to retrieve data points from the optimized
         representation.
 
@@ -192,27 +263,31 @@ class OptimizedMetricBigQueryViewExporter(BigQueryViewExporter):
         number of data points to effectively "unflatten" the flattened matrix. Also sets the 'Content-Encoding: gzip'
         header if the content is going to be compressed.
         """
-        total_data_points = len(formatted.value_matrix[0]) if formatted.value_matrix else 0
+        total_data_points = (
+            len(formatted.value_matrix[0]) if formatted.value_matrix else 0
+        )
         metadata = {
-            'dimension_manifest': json.dumps(formatted.dimension_manifest),
-            'value_keys': json.dumps(formatted.value_keys),
-            'total_data_points': total_data_points,
+            "dimension_manifest": json.dumps(formatted.dimension_manifest),
+            "value_keys": json.dumps(formatted.value_keys),
+            "total_data_points": total_data_points,
         }
         blob.metadata = metadata
 
         if should_compress:
-            blob.content_encoding = 'gzip'
+            blob.content_encoding = "gzip"
 
-    def _produce_transmission_format(self,
-                                     formatted: OptimizedMetricRepresentation,
-                                     should_compress: bool = False) -> Union[str, bytes]:
+    def _produce_transmission_format(
+        self, formatted: OptimizedMetricRepresentation, should_compress: bool = False
+    ) -> Union[str, bytes]:
         """Converts the value matrix into a flattened comma-separated string of values.
 
         Returns the output as a string if should_compress is false. If should_compress is true, returns the output
         as a gzip-compressed array of bytes.
         """
-        flattened = [value for dimension in formatted.value_matrix for value in dimension]
-        as_string = ','.join([str(value) for value in flattened])
+        flattened = [
+            value for dimension in formatted.value_matrix for value in dimension
+        ]
+        as_string = ",".join([str(value) for value in flattened])
 
         if should_compress:
             return self._gzip_str(as_string)
@@ -224,7 +299,7 @@ class OptimizedMetricBigQueryViewExporter(BigQueryViewExporter):
         """Gzip-compresses the given uncompressed string."""
         out = io.BytesIO()
 
-        with gzip.GzipFile(fileobj=out, mode='w') as fo:
+        with gzip.GzipFile(fileobj=out, mode="w") as fo:
             fo.write(uncompressed.encode())
 
         return out.getvalue()
@@ -243,17 +318,21 @@ def _initialize_dimension_manifest(dimension_keys: List[str]) -> Dict[str, Set[s
     return dimension_values_by_key
 
 
-def _gen_assemble_manifest(dimension_values_by_key: Dict[str, Set[str]]) -> Callable[[bigquery.table.Row], None]:
+def _gen_assemble_manifest(
+    dimension_values_by_key: Dict[str, Set[str]]
+) -> Callable[[bigquery.table.Row], None]:
     """Generates and returns a function which will take a given result set row from BigQuery and update the given
     mapping of dimension keys to sets of possible values."""
+
     def _assemble_by_row(row: bigquery.table.Row) -> None:
         add_to_dimension_manifest(dict(row), dimension_values_by_key)
 
     return _assemble_by_row
 
 
-def add_to_dimension_manifest(data_point: Dict[str, Any],
-                              dimension_values_by_key: Dict[str, Set[str]]) -> Dict[str, Set[str]]:
+def add_to_dimension_manifest(
+    data_point: Dict[str, Any], dimension_values_by_key: Dict[str, Set[str]]
+) -> Dict[str, Set[str]]:
     """Updates the given dictionary-based dimension manifest with the dimensional contents of the given data point,
     i.e. ensures that any new values for any dimensions in the data point are included in the manifest."""
     for key in dimension_values_by_key.keys():
@@ -264,8 +343,9 @@ def add_to_dimension_manifest(data_point: Dict[str, Any],
     return dimension_values_by_key
 
 
-def transform_manifest_to_order_enforced_form(dimension_values_by_key: Dict[str, Set[str]]) \
-        -> List[Tuple[str, List[str]]]:
+def transform_manifest_to_order_enforced_form(
+    dimension_values_by_key: Dict[str, Set[str]]
+) -> List[Tuple[str, List[str]]]:
     """Transforms the dictionary version of the dimension manifest into list-based one which enforces ordering for
     both dimension keys and dimension values per key."""
     dimension_manifest: List[Tuple[str, List[str]]] = []
@@ -281,10 +361,11 @@ def get_row_values(data_point: Dict[str, Any], value_keys: List[str]) -> List[An
     return [data_point.get(vk, DEFAULT_DATA_VALUE) for vk in value_keys]
 
 
-def _gen_place_in_compact_matrix(data_values: List[List[Any]],
-                                 value_keys: List[str],
-                                 dimension_manifest: List[Tuple[str, List[str]]]) \
-        -> Callable[[bigquery.table.Row], None]:
+def _gen_place_in_compact_matrix(
+    data_values: List[List[Any]],
+    value_keys: List[str],
+    dimension_manifest: List[Tuple[str, List[str]]],
+) -> Callable[[bigquery.table.Row], None]:
     def _place_by_row(row: bigquery.table.Row) -> None:
         data_point = dict(row)
         place_in_compact_matrix(data_point, data_values, value_keys, dimension_manifest)
@@ -292,10 +373,12 @@ def _gen_place_in_compact_matrix(data_values: List[List[Any]],
     return _place_by_row
 
 
-def place_in_compact_matrix(data_point: Dict[str, Any],
-                            data_values: List[List[Any]],
-                            value_keys: List[str],
-                            dimension_manifest: List[Tuple[str, List[str]]]) -> None:
+def place_in_compact_matrix(
+    data_point: Dict[str, Any],
+    data_values: List[List[Any]],
+    value_keys: List[str],
+    dimension_manifest: List[Tuple[str, List[str]]],
+) -> None:
     """Places the given data point within the compact matrix representation of the dataset.
 
     The compact matrix is composed of an array of arrays: one for each dimension key and for each value key. They are
@@ -315,10 +398,12 @@ def place_in_compact_matrix(data_point: Dict[str, Any],
         try:
             value_index = dimension_values.index(normalized_value)
         except ValueError as e:
-            raise KeyError(f'Dimension of [{dimension_key}: {dimension_value}] not found in dimension manifest: '
-                           f'[{dimension_manifest}]. This indicates that either the manifest was not constructed from '
-                           'a dataset containing the given data point or a bug in the optimized view exporter. '
-                           f'Data point: {data_point}') from e
+            raise KeyError(
+                f"Dimension of [{dimension_key}: {dimension_value}] not found in dimension manifest: "
+                f"[{dimension_manifest}]. This indicates that either the manifest was not constructed from "
+                "a dataset containing the given data point or a bug in the optimized view exporter. "
+                f"Data point: {data_point}"
+            ) from e
 
         data_values[i].append(value_index)
 

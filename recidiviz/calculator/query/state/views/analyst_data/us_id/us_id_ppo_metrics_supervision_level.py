@@ -16,20 +16,21 @@
 # =============================================================================
 """Metric capturing number of people on limited or low supervision on the last day of each month"""
 # pylint: disable=trailing-whitespace
-# pylint: disable=line-too-long
+
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET, ANALYST_VIEWS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    STATE_BASE_DATASET,
+    ANALYST_VIEWS_DATASET,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-US_ID_PPO_METRICS_SUPERVISION_LEVEL_VIEW_NAME = 'us_id_ppo_metrics_supervision_level'
+US_ID_PPO_METRICS_SUPERVISION_LEVEL_VIEW_NAME = "us_id_ppo_metrics_supervision_level"
 
-US_ID_PPO_METRICS_SUPERVISION_LEVEL_VIEW_DESCRIPTION = \
-    """Metric capturing number of people on limited or low supervision on the last day of each month for the last 2 years"""
+US_ID_PPO_METRICS_SUPERVISION_LEVEL_VIEW_DESCRIPTION = """Metric capturing number of people on limited or low supervision on the last day of each month for the last 2 years"""
 
-US_ID_PPO_METRICS_SUPERVISION_LEVEL_QUERY_TEMPLATE = \
-    """
+US_ID_PPO_METRICS_SUPERVISION_LEVEL_QUERY_TEMPLATE = """
     /*{description}*/
 
     SELECT 
@@ -60,9 +61,9 @@ US_ID_PPO_METRICS_SUPERVISION_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     base_dataset=STATE_BASE_DATASET,
     analyst_dataset=ANALYST_VIEWS_DATASET,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    should_materialize=True
+    should_materialize=True,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         US_ID_PPO_METRICS_SUPERVISION_LEVEL_VIEW_BUILDER.build_and_print()

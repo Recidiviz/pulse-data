@@ -25,6 +25,6 @@ from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.database.schema.state import schema as state_schema
 
 
-SchemaPersonType = TypeVar('SchemaPersonType',
-                           county_schema.Person,
-                           state_schema.StatePerson)
+SchemaPersonType = TypeVar(
+    "SchemaPersonType", county_schema.Person, state_schema.StatePerson
+)

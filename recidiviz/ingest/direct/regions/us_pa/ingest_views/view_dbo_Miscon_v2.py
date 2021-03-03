@@ -17,8 +17,9 @@
 
 """Query containing incarceration incident information."""
 
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import \
-    DirectIngestPreProcessedIngestViewBuilder
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    DirectIngestPreProcessedIngestViewBuilder,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -34,12 +35,12 @@ USING (control_number)
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
-    region='us_pa',
-    ingest_view_name='dbo_Miscon_v2',
+    region="us_pa",
+    ingest_view_name="dbo_Miscon_v2",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols='control_number ASC, misconduct_number ASC'
+    order_by_cols="control_number ASC, misconduct_number ASC",
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         VIEW_BUILDER.build_and_print()

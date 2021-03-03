@@ -21,10 +21,16 @@ from unittest.case import TestCase
 import pytest
 import sqlalchemy.orm.exc
 
-from recidiviz.case_triage.querier.querier import CaseTriageQuerier, PersonDoesNotExistError
+from recidiviz.case_triage.querier.querier import (
+    CaseTriageQuerier,
+    PersonDoesNotExistError,
+)
 from recidiviz.persistence.database.base_schema import CaseTriageBase
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.tests.case_triage.case_triage_helpers import generate_fake_client, generate_fake_officer
+from recidiviz.tests.case_triage.case_triage_helpers import (
+    generate_fake_client,
+    generate_fake_officer,
+)
 from recidiviz.tools.postgres import local_postgres_helpers
 
 
@@ -47,35 +53,41 @@ class TestCaseTriageQuerier(TestCase):
 
     @classmethod
     def tearDownClass(cls) -> None:
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(cls.temp_db_dir)
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.temp_db_dir
+        )
 
     def test_fetch_officer_id_happy_path(self) -> None:
-        officer_1 = generate_fake_officer('id_1', 'officer1@recidiviz.org')
-        officer_2 = generate_fake_officer('id_2', 'officer2@recidiviz.org')
+        officer_1 = generate_fake_officer("id_1", "officer1@recidiviz.org")
+        officer_2 = generate_fake_officer("id_2", "officer2@recidiviz.org")
         session = SessionFactory.for_schema_base(CaseTriageBase)
         session.add(officer_1)
         session.add(officer_2)
         session.commit()
 
         read_session = SessionFactory.for_schema_base(CaseTriageBase)
-        first_fetch = CaseTriageQuerier.officer_for_email(read_session, 'officer1@recidiviz.org')
-        self.assertEqual(first_fetch.external_id, 'id_1')
-        second_fetch = CaseTriageQuerier.officer_for_email(read_session, 'OFFICER2@RECIDIVIZ.ORG')
-        self.assertEqual(second_fetch.external_id, 'id_2')
+        first_fetch = CaseTriageQuerier.officer_for_email(
+            read_session, "officer1@recidiviz.org"
+        )
+        self.assertEqual(first_fetch.external_id, "id_1")
+        second_fetch = CaseTriageQuerier.officer_for_email(
+            read_session, "OFFICER2@RECIDIVIZ.ORG"
+        )
+        self.assertEqual(second_fetch.external_id, "id_2")
 
     def test_nonexistent_officer(self) -> None:
         session = SessionFactory.for_schema_base(CaseTriageBase)
 
         with self.assertRaises(sqlalchemy.orm.exc.NoResultFound):
-            CaseTriageQuerier.officer_for_email(session, 'nonexistent@email.com')
+            CaseTriageQuerier.officer_for_email(session, "nonexistent@email.com")
 
     def test_clients_for_officer(self) -> None:
-        officer_1 = generate_fake_officer('id_1')
-        officer_2 = generate_fake_officer('id_2')
-        officer_3 = generate_fake_officer('id_3')
-        client_1 = generate_fake_client('client_1', 'id_1')
-        client_2 = generate_fake_client('client_2', 'id_1')
-        client_3 = generate_fake_client('client_3', 'id_2')
+        officer_1 = generate_fake_officer("id_1")
+        officer_2 = generate_fake_officer("id_2")
+        officer_3 = generate_fake_officer("id_3")
+        client_1 = generate_fake_client("client_1", "id_1")
+        client_2 = generate_fake_client("client_2", "id_1")
+        client_3 = generate_fake_client("client_3", "id_2")
         session = SessionFactory.for_schema_base(CaseTriageBase)
         session.add(officer_1)
         session.add(officer_2)
@@ -100,14 +112,18 @@ class TestCaseTriageQuerier(TestCase):
         )
 
     def test_etl_client_with_id_and_state_code(self) -> None:
-        client_1 = generate_fake_client('client_1')
+        client_1 = generate_fake_client("client_1")
         session = SessionFactory.for_schema_base(CaseTriageBase)
         session.add(client_1)
         session.commit()
 
         read_session = SessionFactory.for_schema_base(CaseTriageBase)
         with self.assertRaises(PersonDoesNotExistError):
-            CaseTriageQuerier.etl_client_with_id_and_state_code(read_session, 'nonexistent', 'US_XX')
+            CaseTriageQuerier.etl_client_with_id_and_state_code(
+                read_session, "nonexistent", "US_XX"
+            )
 
         # Should not raise an error
-        CaseTriageQuerier.etl_client_with_id_and_state_code(read_session, 'client_1', 'US_XX')
+        CaseTriageQuerier.etl_client_with_id_and_state_code(
+            read_session, "client_1", "US_XX"
+        )

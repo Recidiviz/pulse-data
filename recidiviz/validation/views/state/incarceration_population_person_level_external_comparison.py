@@ -24,19 +24,20 @@ from recidiviz.calculator.query.state import dataset_config as state_dataset_con
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
-from recidiviz.validation.views.state.incarceration_population_person_level_template import \
-    incarceration_population_person_level_query
+from recidiviz.validation.views.state.incarceration_population_person_level_template import (
+    incarceration_population_person_level_query,
+)
 
-INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_NAME = \
-    'incarceration_population_person_level_external_comparison'
+INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_NAME = (
+    "incarceration_population_person_level_external_comparison"
+)
 
 INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_DESCRIPTION = """
 Comparison of values between internal and external lists of end of month person-level incarceration
 populations.
 """
 
-INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = \
-    f"""
+INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = f"""
 /*{{description}}*/
 {incarceration_population_person_level_query(include_unmatched_people=True)}
 """
@@ -47,9 +48,9 @@ INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER = SimpleB
     view_query_template=INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE,
     description=INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_DESCRIPTION,
     external_accuracy_dataset=dataset_config.EXTERNAL_ACCURACY_DATASET,
-    materialized_metrics_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET
+    materialized_metrics_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER.build_and_print()

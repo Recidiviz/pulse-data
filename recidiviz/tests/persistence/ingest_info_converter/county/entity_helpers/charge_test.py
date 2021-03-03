@@ -24,8 +24,7 @@ from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.county import entities
-from recidiviz.persistence.ingest_info_converter.county.entity_helpers import \
-    charge
+from recidiviz.persistence.ingest_info_converter.county.entity_helpers import charge
 
 _EMPTY_METADATA = IngestMetadata.new_with_defaults()
 
@@ -39,48 +38,44 @@ class ChargeConverterTest(unittest.TestCase):
     def testParseCharge(self):
         # Arrange
         ingest_charge = ingest_info_pb2.Charge(
-            charge_id='CHARGE_ID',
-            attempted='True',
-            degree='FIRST',
-            charge_class='FELONY',
-            status='DROPPED',
-            court_type='DISTRICT',
+            charge_id="CHARGE_ID",
+            attempted="True",
+            degree="FIRST",
+            charge_class="FELONY",
+            status="DROPPED",
+            court_type="DISTRICT",
         )
 
         # Act
-        charge.copy_fields_to_builder(self.subject, ingest_charge,
-                                      _EMPTY_METADATA)
+        charge.copy_fields_to_builder(self.subject, ingest_charge, _EMPTY_METADATA)
         result = self.subject.build()
 
         # Assert
         expected_result = entities.Charge.new_with_defaults(
-            external_id='CHARGE_ID',
+            external_id="CHARGE_ID",
             attempted=True,
             degree=ChargeDegree.FIRST,
-            degree_raw_text='FIRST',
+            degree_raw_text="FIRST",
             charge_class=ChargeClass.FELONY,
-            class_raw_text='FELONY',
+            class_raw_text="FELONY",
             status=ChargeStatus.DROPPED,
-            status_raw_text='DROPPED',
-            court_type='DISTRICT',
+            status_raw_text="DROPPED",
+            court_type="DISTRICT",
         )
 
         self.assertEqual(result, expected_result)
 
     def testParseCharge_classInName(self):
         # Arrange
-        ingest_charge = ingest_info_pb2.Charge(
-            name='Felony Murder'
-        )
+        ingest_charge = ingest_info_pb2.Charge(name="Felony Murder")
 
         # Act
-        charge.copy_fields_to_builder(self.subject, ingest_charge,
-                                      _EMPTY_METADATA)
+        charge.copy_fields_to_builder(self.subject, ingest_charge, _EMPTY_METADATA)
         result = self.subject.build()
 
         # Assert
         expected_result = entities.Charge.new_with_defaults(
-            name='FELONY MURDER',
+            name="FELONY MURDER",
             charge_class=ChargeClass.FELONY,
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
         )
@@ -90,17 +85,16 @@ class ChargeConverterTest(unittest.TestCase):
     def testParseCharge_classWithSpaceInName(self):
         # Arrange
         ingest_charge = ingest_info_pb2.Charge(
-            name='Failed Drug Test - Probation Violation'
+            name="Failed Drug Test - Probation Violation"
         )
 
         # Act
-        charge.copy_fields_to_builder(self.subject, ingest_charge,
-                                      _EMPTY_METADATA)
+        charge.copy_fields_to_builder(self.subject, ingest_charge, _EMPTY_METADATA)
         result = self.subject.build()
 
         # Assert
         expected_result = entities.Charge.new_with_defaults(
-            name='FAILED DRUG TEST - PROBATION VIOLATION',
+            name="FAILED DRUG TEST - PROBATION VIOLATION",
             charge_class=ChargeClass.PROBATION_VIOLATION,
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
         )
@@ -111,8 +105,7 @@ class ChargeConverterTest(unittest.TestCase):
         ingest_charge = ingest_info_pb2.Charge()
 
         # Act
-        charge.copy_fields_to_builder(self.subject, ingest_charge,
-                                      _EMPTY_METADATA)
+        charge.copy_fields_to_builder(self.subject, ingest_charge, _EMPTY_METADATA)
         result = self.subject.build()
 
         # Assert
@@ -124,22 +117,25 @@ class ChargeConverterTest(unittest.TestCase):
     def testParseCharge_MapAcrossFields(self):
         # Arrange
         overrides_builder = EnumOverrides.Builder()
-        overrides_builder.add('FELONY', ChargeClass.FELONY, ChargeDegree)
-        overrides_builder.add('FIRST DEGREE', ChargeDegree.FIRST, ChargeClass)
+        overrides_builder.add("FELONY", ChargeClass.FELONY, ChargeDegree)
+        overrides_builder.add("FIRST DEGREE", ChargeDegree.FIRST, ChargeClass)
         metadata = IngestMetadata.new_with_defaults(
             enum_overrides=overrides_builder.build()
         )
-        ingest_charge = ingest_info_pb2.Charge(charge_class='first degree',
-                                               degree='felony')
+        ingest_charge = ingest_info_pb2.Charge(
+            charge_class="first degree", degree="felony"
+        )
 
         # Act
-        charge.copy_fields_to_builder(self.subject, ingest_charge,
-                                      metadata)
+        charge.copy_fields_to_builder(self.subject, ingest_charge, metadata)
         result = self.subject.build()
 
         # Assert
         expected_result = entities.Charge.new_with_defaults(
-            degree=ChargeDegree.FIRST, degree_raw_text='FELONY',
-            charge_class=ChargeClass.FELONY, class_raw_text='FIRST DEGREE',
-            status=ChargeStatus.PRESENT_WITHOUT_INFO)
+            degree=ChargeDegree.FIRST,
+            degree_raw_text="FELONY",
+            charge_class=ChargeClass.FELONY,
+            class_raw_text="FIRST DEGREE",
+            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+        )
         self.assertEqual(result, expected_result)

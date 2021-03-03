@@ -22,14 +22,18 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_com
 )
 from recidiviz.case_triage.state_utils.types import PolicyRequirements
 from recidiviz.common.constants.person_characteristics import Gender
-from recidiviz.common.constants.state.state_supervision_period import StateSupervisionLevel
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
+)
 
 
 # Note: This mapping doesn't contain details for EXTERNAL_UNKNOWN or NULL. All other types
 # that we know about (as of Feb. 9, 2021) are reflected in this mapping.
 # See
 # http://forms.idoc.idaho.gov/WebLink/0/edoc/281944/Interim%20Standards%20to%20Probation%20and%20Parole%20Supervision%20Strategies.pdf
-US_ID_ASSESSMENT_SCORE_RANGE: Dict[Gender, Dict[StateSupervisionLevel, Tuple[int, Optional[int]]]] = {
+US_ID_ASSESSMENT_SCORE_RANGE: Dict[
+    Gender, Dict[StateSupervisionLevel, Tuple[int, Optional[int]]]
+] = {
     Gender.FEMALE: {
         StateSupervisionLevel.MINIMUM: (0, 22),
         StateSupervisionLevel.MEDIUM: (23, 30),
@@ -53,9 +57,9 @@ US_ID_ASSESSMENT_SCORE_RANGE: Dict[Gender, Dict[StateSupervisionLevel, Tuple[int
 }
 
 US_ID_SUPERVISION_LEVEL_NAMES = {
-    StateSupervisionLevel.MINIMUM: 'Low',
-    StateSupervisionLevel.MEDIUM: 'Moderate',
-    StateSupervisionLevel.HIGH: 'High',
+    StateSupervisionLevel.MINIMUM: "Low",
+    StateSupervisionLevel.MEDIUM: "Moderate",
+    StateSupervisionLevel.HIGH: "High",
 }
 
 

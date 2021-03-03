@@ -22,11 +22,12 @@ from recidiviz.common.constants.person_characteristics import Race
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.state.entity_helpers import \
-    state_person_race
+from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
+    state_person_race,
+)
 
 _EMPTY_METADATA = IngestMetadata.new_with_defaults(
-    region='us_nd',
+    region="us_nd",
 )
 
 
@@ -36,9 +37,9 @@ class StatePersonRaceConverterTest(unittest.TestCase):
     def testParseStatePersonRace(self):
         # Arrange
         ingest_person_race = ingest_info_pb2.StatePersonRace(
-            race='SAMOAN',
-            state_code='US_ND',
-            state_person_race_id='123',
+            race="SAMOAN",
+            state_code="US_ND",
+            state_person_race_id="123",
         )
 
         # Act
@@ -47,8 +48,8 @@ class StatePersonRaceConverterTest(unittest.TestCase):
         # Assert
         expected_result = entities.StatePersonRace(
             race=Race.NATIVE_HAWAIIAN_PACIFIC_ISLANDER,
-            race_raw_text='SAMOAN',
-            state_code='US_ND',
+            race_raw_text="SAMOAN",
+            state_code="US_ND",
         )
 
         self.assertEqual(result, expected_result)

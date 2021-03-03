@@ -30,29 +30,46 @@ UNPIVOT_TEMPLATE = """
 ),
 """
 
-PIVOT_TEMPLATE = "SUM(IF(gender = '{gender}' AND race = '{race}', person_count, null)) AS {column_name},"  # pylint:disable=line-too-long
-PIVOT_TEMPLATE_JUST_GENDER = "SUM(IF(gender = '{gender}', person_count, null)) AS {column_name},"  # pylint:disable=line-too-long
-PIVOT_TEMPLATE_JUST_RACE = "SUM(IF(race = '{race}', person_count, null)) AS {column_name},"  # pylint:disable=line-too-long
+PIVOT_TEMPLATE = "SUM(IF(gender = '{gender}' AND race = '{race}', person_count, null)) AS {column_name},"
+PIVOT_TEMPLATE_JUST_GENDER = (
+    "SUM(IF(gender = '{gender}', person_count, null)) AS {column_name},"
+)
+PIVOT_TEMPLATE_JUST_RACE = (
+    "SUM(IF(race = '{race}', person_count, null)) AS {column_name},"
+)
 
-GENDERS = ['MALE', 'FEMALE', 'UNKNOWN_GENDER']
-RACES = ['ASIAN', 'BLACK', 'NATIVE_AMERICAN', 'LATINO', 'WHITE', 'OTHER',
-         'UNKNOWN_RACE']
+GENDERS = ["MALE", "FEMALE", "UNKNOWN_GENDER"]
+RACES = [
+    "ASIAN",
+    "BLACK",
+    "NATIVE_AMERICAN",
+    "LATINO",
+    "WHITE",
+    "OTHER",
+    "UNKNOWN_RACE",
+]
 
 
 def main() -> None:
     """Script to create query logic for pivoting tables"""
     for gender in GENDERS:
-        print(PIVOT_TEMPLATE_JUST_GENDER.format(gender=_to_db_gender(gender),
-                                                column_name=gender.lower()))
+        print(
+            PIVOT_TEMPLATE_JUST_GENDER.format(
+                gender=_to_db_gender(gender), column_name=gender.lower()
+            )
+        )
     for race in RACES:
-        print(PIVOT_TEMPLATE_JUST_RACE.format(race=_to_db_race(race),
-                                              column_name=race.lower()))
+        print(
+            PIVOT_TEMPLATE_JUST_RACE.format(
+                race=_to_db_race(race), column_name=race.lower()
+            )
+        )
 
     for gender in GENDERS:
         for race in RACES:
             print_pivot_query(gender, race)
 
-    print('\n---------------\n')
+    print("\n---------------\n")
 
     for gender in GENDERS:
         for race in RACES:
@@ -60,8 +77,8 @@ def main() -> None:
 
     for gender in GENDERS:
         for race in RACES:
-            print('SELECT * FROM ' + _to_column_name(gender, race))
-            print('UNION ALL')
+            print("SELECT * FROM " + _to_column_name(gender, race))
+            print("UNION ALL")
 
 
 def print_pivot_query(gender: str, race: str) -> None:
@@ -69,35 +86,34 @@ def print_pivot_query(gender: str, race: str) -> None:
         PIVOT_TEMPLATE.format(
             gender=_to_db_gender(gender),
             race=_to_db_race(race),
-            column_name=_to_column_name(gender, race)
+            column_name=_to_column_name(gender, race),
         )
     )
 
 
 def print_unpivot_query(gender: str, race: str) -> None:
-    column_name = gender.lower() + '_' + race.lower()
-    print(UNPIVOT_TEMPLATE.format(
-        column_name=column_name, gender=gender, race=race))
+    column_name = gender.lower() + "_" + race.lower()
+    print(UNPIVOT_TEMPLATE.format(column_name=column_name, gender=gender, race=race))
 
 
 def _to_db_race(race: str) -> str:
-    if race == 'NATIVE_AMERICAN':
-        return 'AMERICAN_INDIAN_ALASKAN_NATIVE'
-    if race == 'LATINO':
-        return 'HISPANIC'
-    if race == 'UNKNOWN_RACE':
-        return 'EXTERNAL_UNKNOWN'
+    if race == "NATIVE_AMERICAN":
+        return "AMERICAN_INDIAN_ALASKAN_NATIVE"
+    if race == "LATINO":
+        return "HISPANIC"
+    if race == "UNKNOWN_RACE":
+        return "EXTERNAL_UNKNOWN"
     return race
 
 
 def _to_db_gender(gender: str) -> str:
-    if gender == 'UNKNOWN_GENDER':
-        return 'EXTERNAL_UNKNOWN'
+    if gender == "UNKNOWN_GENDER":
+        return "EXTERNAL_UNKNOWN"
     return gender
 
 
 def _to_column_name(gender: str, race: str) -> str:
-    return gender.lower() + '_' + race.lower()
+    return gender.lower() + "_" + race.lower()
 
 
 if __name__ == "__main__":

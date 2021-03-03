@@ -21,8 +21,12 @@ from typing import List, Tuple, Callable
 from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.entity.entities import EntityPersonType
 from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity_validator.county.county_validator import validate_county_person
-from recidiviz.persistence.entity_validator.state.state_validator import validate_state_person
+from recidiviz.persistence.entity_validator.county.county_validator import (
+    validate_county_person,
+)
+from recidiviz.persistence.entity_validator.state.state_validator import (
+    validate_state_person,
+)
 
 
 def validate(people: List[EntityPersonType]) -> Tuple[List[EntityPersonType], int]:
@@ -47,6 +51,8 @@ def _get_validator(person: EntityPersonType) -> Callable[..., bool]:
     if isinstance(person, state_entities.StatePerson):
         return validate_state_person
 
-    raise ValueError(f"StatePerson entity to validate was not of expected type "
-                     f"county_entities.Person or state_entities.StatePerson "
-                     f"but [{person.__class__.__name__}]")
+    raise ValueError(
+        f"StatePerson entity to validate was not of expected type "
+        f"county_entities.Person or state_entities.StatePerson "
+        f"but [{person.__class__.__name__}]"
+    )

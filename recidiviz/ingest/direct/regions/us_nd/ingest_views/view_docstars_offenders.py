@@ -16,8 +16,9 @@
 # =============================================================================
 """Query containing offender information."""
 
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import \
-    DirectIngestPreProcessedIngestViewBuilder
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    DirectIngestPreProcessedIngestViewBuilder,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -27,12 +28,12 @@ FROM {docstars_offenders}
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
-    region='us_nd',
-    ingest_view_name='docstars_offenders',
+    region="us_nd",
+    ingest_view_name="docstars_offenders",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols='SID',
+    order_by_cols="SID",
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         VIEW_BUILDER.build_and_print()

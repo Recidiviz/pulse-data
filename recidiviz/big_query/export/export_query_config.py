@@ -28,14 +28,14 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryView
 
 
-STAGING_DIRECTORY = 'staging/'
+STAGING_DIRECTORY = "staging/"
 
 
 class ExportOutputFormatType(Enum):
-    METRIC = 'metric'
-    HEADERLESS_CSV = 'headerless_csv'
-    CSV = 'csv'
-    JSON = 'json'
+    METRIC = "metric"
+    HEADERLESS_CSV = "headerless_csv"
+    CSV = "csv"
+    JSON = "json"
 
 
 @attr.s(frozen=True)
@@ -61,14 +61,17 @@ class ExportQueryConfig:
     output_format: bigquery.DestinationFormat = attr.ib()
 
     @classmethod
-    def from_view_query(cls,
-                        view: BigQueryView,
-                        view_filter_clause: str,
-                        intermediate_table_name: str,
-                        output_uri: str,
-                        output_format: bigquery.DestinationFormat) -> 'ExportQueryConfig':
-        query = "{select_query} {filter_clause}".format(select_query=view.select_query,
-                                                        filter_clause=view_filter_clause)
+    def from_view_query(
+        cls,
+        view: BigQueryView,
+        view_filter_clause: str,
+        intermediate_table_name: str,
+        output_uri: str,
+        output_format: bigquery.DestinationFormat,
+    ) -> "ExportQueryConfig":
+        query = "{select_query} {filter_clause}".format(
+            select_query=view.select_query, filter_clause=view_filter_clause
+        )
         return ExportQueryConfig(
             query=query,
             query_parameters=[],
@@ -79,7 +82,7 @@ class ExportQueryConfig:
         )
 
 
-BigQueryViewType = TypeVar('BigQueryViewType', bound=BigQueryView)
+BigQueryViewType = TypeVar("BigQueryViewType", bound=BigQueryView)
 
 
 @attr.s(frozen=True)
@@ -108,23 +111,28 @@ class ExportBigQueryViewConfig(Generic[BigQueryViewType]):
         return [ExportOutputFormatType.JSON]
 
     def output_path(self, extension: str) -> GcsfsFilePath:
-        file_name = f'{self.view.view_id}.{extension}'
-        return GcsfsFilePath.from_directory_and_file_name(self.output_directory, file_name)
+        file_name = f"{self.view.view_id}.{extension}"
+        return GcsfsFilePath.from_directory_and_file_name(
+            self.output_directory, file_name
+        )
 
     @property
     def query(self) -> str:
-        return "{select_query} {filter_clause}".format(select_query=self.view.select_query,
-                                                       filter_clause=self.view_filter_clause)
+        return "{select_query} {filter_clause}".format(
+            select_query=self.view.select_query, filter_clause=self.view_filter_clause
+        )
 
-    def as_export_query_config(self, output_format: bigquery.DestinationFormat) -> ExportQueryConfig:
+    def as_export_query_config(
+        self, output_format: bigquery.DestinationFormat
+    ) -> ExportQueryConfig:
         if output_format == bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON:
-            extension = 'json'
+            extension = "json"
         elif output_format == bigquery.DestinationFormat.CSV:
-            extension = 'csv'
+            extension = "csv"
         elif output_format == bigquery.DestinationFormat.AVRO:
-            extension = 'avro'
+            extension = "avro"
         else:
-            raise ValueError(f'Unexpected destination format: [{output_format}].')
+            raise ValueError(f"Unexpected destination format: [{output_format}].")
 
         return ExportQueryConfig(
             query=self.query,
@@ -139,10 +147,14 @@ class ExportBigQueryViewConfig(Generic[BigQueryViewType]):
     def revert_staging_path_to_original(staging_path: GcsfsFilePath) -> GcsfsFilePath:
         non_staging_relative_path = staging_path.blob_name
         if non_staging_relative_path.startswith(STAGING_DIRECTORY):
-            non_staging_relative_path = non_staging_relative_path[len(STAGING_DIRECTORY):]
-        return GcsfsFilePath.from_absolute_path(f'{staging_path.bucket_name}/{non_staging_relative_path}')
+            non_staging_relative_path = non_staging_relative_path[
+                len(STAGING_DIRECTORY) :
+            ]
+        return GcsfsFilePath.from_absolute_path(
+            f"{staging_path.bucket_name}/{non_staging_relative_path}"
+        )
 
-    def pointed_to_staging_subdirectory(self) -> 'ExportBigQueryViewConfig':
+    def pointed_to_staging_subdirectory(self) -> "ExportBigQueryViewConfig":
         """Returns an updated version of this configuration that points to a 'staging' upload location instead of
         the given location.
 
@@ -159,6 +171,7 @@ class ExportBigQueryViewConfig(Generic[BigQueryViewType]):
             view_filter_clause=self.view_filter_clause,
             intermediate_table_name=self.intermediate_table_name,
             output_directory=GcsfsDirectoryPath.from_absolute_path(
-                os.path.join(bucket_name, STAGING_DIRECTORY, relative_path)),
+                os.path.join(bucket_name, STAGING_DIRECTORY, relative_path)
+            ),
             export_output_formats=self.export_output_formats,
         )

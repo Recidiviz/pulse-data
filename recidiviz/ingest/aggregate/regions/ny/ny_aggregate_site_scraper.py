@@ -18,8 +18,9 @@
 """Scrapes the new york aggregate site and finds pdfs to download."""
 from typing import Set
 
-STATE_AGGREGATE_URL = ('https://www.criminaljustice.ny.gov/crimnet/ojsa/'
-                       'jail_population.pdf')
+STATE_AGGREGATE_URL = (
+    "https://www.criminaljustice.ny.gov/crimnet/ojsa/jail_population.pdf"
+)
 
 
 def get_urls_to_download() -> Set[str]:

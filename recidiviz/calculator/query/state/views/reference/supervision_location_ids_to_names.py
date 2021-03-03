@@ -16,18 +16,19 @@
 # =============================================================================
 """Reference table for supervision location names."""
 
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME = 'supervision_location_ids_to_names'
+SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME = "supervision_location_ids_to_names"
 
-SUPERVISION_LOCATION_IDS_TO_NAMES_DESCRIPTION = """Reference table for supervision location names"""
+SUPERVISION_LOCATION_IDS_TO_NAMES_DESCRIPTION = (
+    """Reference table for supervision location names"""
+)
 
-SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = \
-    """
+SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
     /*{description}*/
     WITH
     mo_location_names AS (        
@@ -89,6 +90,6 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=SUPERVISION_LOCATION_IDS_TO_NAMES_DESCRIPTION,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER.build_and_print()

@@ -34,24 +34,47 @@ from apache_beam.options.pipeline_options import SetupOptions, PipelineOptions
 from apache_beam.typehints import with_input_types, with_output_types
 from more_itertools import one
 
-from recidiviz.calculator.dataflow_output_storage_config import DATAFLOW_METRICS_TO_TABLES
+from recidiviz.calculator.dataflow_output_storage_config import (
+    DATAFLOW_METRICS_TO_TABLES,
+)
 from recidiviz.calculator.pipeline.recidivism import identifier
 from recidiviz.calculator.pipeline.recidivism import calculator
 from recidiviz.calculator.pipeline.recidivism.release_event import ReleaseEvent
-from recidiviz.calculator.pipeline.recidivism.metrics import \
-    ReincarcerationRecidivismRateMetric, ReincarcerationRecidivismCountMetric, \
-    ReincarcerationRecidivismMetric
-from recidiviz.calculator.pipeline.recidivism.metrics import ReincarcerationRecidivismMetricType
-from recidiviz.calculator.pipeline.utils.beam_utils import RecidivizMetricWritableDict, \
-    ImportTableAsKVTuples, ImportTable
-from recidiviz.calculator.pipeline.utils.entity_hydration_utils import \
-    SetViolationResponseOnIncarcerationPeriod, SetViolationOnViolationsResponse
-from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, person_and_kwargs_for_identifier
-from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity, WriteAppendToBigQuery
-from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata, BuildPersonMetadata
-from recidiviz.calculator.pipeline.utils.pipeline_args_utils import add_shared_pipeline_arguments
-from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import \
-    PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME
+from recidiviz.calculator.pipeline.recidivism.metrics import (
+    ReincarcerationRecidivismRateMetric,
+    ReincarcerationRecidivismCountMetric,
+    ReincarcerationRecidivismMetric,
+)
+from recidiviz.calculator.pipeline.recidivism.metrics import (
+    ReincarcerationRecidivismMetricType,
+)
+from recidiviz.calculator.pipeline.utils.beam_utils import (
+    RecidivizMetricWritableDict,
+    ImportTableAsKVTuples,
+    ImportTable,
+)
+from recidiviz.calculator.pipeline.utils.entity_hydration_utils import (
+    SetViolationResponseOnIncarcerationPeriod,
+    SetViolationOnViolationsResponse,
+)
+from recidiviz.calculator.pipeline.utils.execution_utils import (
+    get_job_id,
+    person_and_kwargs_for_identifier,
+)
+from recidiviz.calculator.pipeline.utils.extractor_utils import (
+    BuildRootEntity,
+    WriteAppendToBigQuery,
+)
+from recidiviz.calculator.pipeline.utils.person_utils import (
+    PersonMetadata,
+    BuildPersonMetadata,
+)
+from recidiviz.calculator.pipeline.utils.pipeline_args_utils import (
+    add_shared_pipeline_arguments,
+)
+from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import (
+    PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
+)
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.utils import environment
@@ -74,12 +97,14 @@ def clear_job_id():
 
 
 @with_input_types(beam.typehints.Tuple[int, Dict[str, Iterable[Any]]])
-@with_output_types(beam.typehints.Tuple[entities.StatePerson, Dict[int, ReleaseEvent], PersonMetadata])
+@with_output_types(
+    beam.typehints.Tuple[entities.StatePerson, Dict[int, ReleaseEvent], PersonMetadata]
+)
 class ExtractPersonReleaseEventsMetadata(beam.DoFn):
     # pylint: disable=arguments-differ
-    def process(self,
-                element: Tuple[int, Dict[str, Iterable[Any]]]) -> \
-            Iterable[Tuple[entities.StatePerson, Dict[int, ReleaseEvent], PersonMetadata]]:
+    def process(
+        self, element: Tuple[int, Dict[str, Iterable[Any]]]
+    ) -> Iterable[Tuple[entities.StatePerson, Dict[int, ReleaseEvent], PersonMetadata]]:
         """Extracts the StatePerson, dict of release years and ReleaseEvents, and PersonMetadata for use in the
         calculator step of the pipeline.
 
@@ -87,8 +112,8 @@ class ExtractPersonReleaseEventsMetadata(beam.DoFn):
         """
         _, element_data = element
 
-        person_events = element_data.get('person_events')
-        person_metadata_group = element_data.get('person_metadata')
+        person_events = element_data.get("person_events")
+        person_metadata_group = element_data.get("person_metadata")
 
         # If there isn't a person associated with this person_id_person, continue
         if person_events and person_metadata_group:
@@ -101,20 +126,21 @@ class ExtractPersonReleaseEventsMetadata(beam.DoFn):
         pass  # Passing unused abstract method.
 
 
-@with_input_types(beam.typehints.Tuple[entities.StatePerson, Dict[int, ReleaseEvent], PersonMetadata])
+@with_input_types(
+    beam.typehints.Tuple[entities.StatePerson, Dict[int, ReleaseEvent], PersonMetadata]
+)
 @with_output_types(ReincarcerationRecidivismMetric)
 class GetRecidivismMetrics(beam.PTransform):
     """Transforms a StatePerson and ReleaseEvents into RecidivismMetrics."""
 
-    def __init__(self, pipeline_options: Dict[str, str],
-                 metric_types: Set[str]):
+    def __init__(self, pipeline_options: Dict[str, str], metric_types: Set[str]):
         super().__init__()
         self._pipeline_options = pipeline_options
 
         self.metric_inclusions: Dict[ReincarcerationRecidivismMetricType, bool] = {}
 
         for metric_option in ReincarcerationRecidivismMetricType:
-            if metric_option.value in metric_types or 'ALL' in metric_types:
+            if metric_option.value in metric_types or "ALL" in metric_types:
                 self.metric_inclusions[metric_option] = True
                 logging.info("Producing %s metrics", metric_option.value)
             else:
@@ -125,21 +151,29 @@ class GetRecidivismMetrics(beam.PTransform):
         # ReleaseEvents
         recidivism_metric_combinations = (
             input_or_inputs
-            | 'Map to metric combinations' >>
-            beam.ParDo(CalculateRecidivismMetricCombinations(), self.metric_inclusions))
+            | "Map to metric combinations"
+            >> beam.ParDo(
+                CalculateRecidivismMetricCombinations(), self.metric_inclusions
+            )
+        )
 
         # Produce ReincarcerationRecidivismMetrics for all metrics
-        metrics = (recidivism_metric_combinations |
-                   'Produce person-level ReincarcerationRecidivismMetrics' >>
-                   beam.ParDo(ProduceReincarcerationRecidivismMetric(), **self._pipeline_options))
+        metrics = (
+            recidivism_metric_combinations
+            | "Produce person-level ReincarcerationRecidivismMetrics"
+            >> beam.ParDo(
+                ProduceReincarcerationRecidivismMetric(), **self._pipeline_options
+            )
+        )
 
         # Return ReincarcerationRecidivismMetric objects
         return metrics
 
 
 @with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
-@with_output_types(beam.typehints.Tuple[entities.StatePerson,
-                                        Dict[int, List[ReleaseEvent]]])
+@with_output_types(
+    beam.typehints.Tuple[entities.StatePerson, Dict[int, List[ReleaseEvent]]]
+)
 class ClassifyReleaseEvents(beam.DoFn):
     """Classifies releases as either recidivism or non-recidivism events."""
 
@@ -163,13 +197,17 @@ class ClassifyReleaseEvents(beam.DoFn):
 
         person, kwargs = person_and_kwargs_for_identifier(person_entities)
 
-        release_events_by_cohort_year = \
-            identifier.find_release_events_by_cohort_year(**kwargs)
+        release_events_by_cohort_year = identifier.find_release_events_by_cohort_year(
+            **kwargs
+        )
 
         if not release_events_by_cohort_year:
-            logging.info("No valid release events identified for person with"
-                         "id: %d. Excluding them from the "
-                         "calculations.", person.person_id)
+            logging.info(
+                "No valid release events identified for person with"
+                "id: %d. Excluding them from the "
+                "calculations.",
+                person.person_id,
+            )
         else:
             yield person.person_id, (person, release_events_by_cohort_year)
 
@@ -177,13 +215,15 @@ class ClassifyReleaseEvents(beam.DoFn):
         pass  # Passing unused abstract method.
 
 
-@with_input_types(beam.typehints.Tuple[entities.StatePerson, Dict[int, ReleaseEvent], PersonMetadata],
-                  beam.typehints.Dict[ReincarcerationRecidivismMetricType, bool])
+@with_input_types(
+    beam.typehints.Tuple[entities.StatePerson, Dict[int, ReleaseEvent], PersonMetadata],
+    beam.typehints.Dict[ReincarcerationRecidivismMetricType, bool],
+)
 @with_output_types(beam.typehints.Tuple[Dict[str, Any], Any])
 class CalculateRecidivismMetricCombinations(beam.DoFn):
     """Calculates recidivism metric combinations."""
 
-    #pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ
     def process(self, element, metric_inclusions):
         """Produces various recidivism metric combinations.
 
@@ -201,7 +241,8 @@ class CalculateRecidivismMetricCombinations(beam.DoFn):
 
         # Calculate recidivism metric combinations for this person and events
         metric_combinations = calculator.map_recidivism_combinations(
-            person, release_events, metric_inclusions, person_metadata)
+            person, release_events, metric_inclusions, person_metadata
+        )
 
         # Return each of the recidivism metric combinations
         for metric_combination in metric_combinations:
@@ -251,16 +292,22 @@ class ProduceReincarcerationRecidivismMetric(beam.DoFn):
             # Due to how the pipeline arrives at this function, this should be impossible.
             raise ValueError("Empty dict_metric_key.")
 
-        metric_type = dict_metric_key.pop('metric_type')
+        metric_type = dict_metric_key.pop("metric_type")
 
         if metric_type == ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT:
-            recidivism_metric = ReincarcerationRecidivismCountMetric.build_from_metric_key_group(
-                dict_metric_key, pipeline_job_id)
+            recidivism_metric = (
+                ReincarcerationRecidivismCountMetric.build_from_metric_key_group(
+                    dict_metric_key, pipeline_job_id
+                )
+            )
         elif metric_type == ReincarcerationRecidivismMetricType.REINCARCERATION_RATE:
-            dict_metric_key['did_recidivate'] = bool(value)
+            dict_metric_key["did_recidivate"] = bool(value)
 
-            recidivism_metric = ReincarcerationRecidivismRateMetric.build_from_metric_key_group(
-                dict_metric_key, pipeline_job_id)
+            recidivism_metric = (
+                ReincarcerationRecidivismRateMetric.build_from_metric_key_group(
+                    dict_metric_key, pipeline_job_id
+                )
+            )
         else:
             logging.error("Unexpected metric of type: %s", metric_type)
             return
@@ -279,28 +326,32 @@ def get_arg_parser() -> argparse.ArgumentParser:
     # Parse arguments
     add_shared_pipeline_arguments(parser)
 
-    parser.add_argument('--metric_types',
-                        dest='metric_types',
-                        type=str,
-                        nargs='+',
-                        choices=[
-                            'ALL',
-                            ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT.value,
-                            ReincarcerationRecidivismMetricType.REINCARCERATION_RATE.value
-                        ],
-                        help='A list of the types of metric to calculate.',
-                        default={'ALL'})
+    parser.add_argument(
+        "--metric_types",
+        dest="metric_types",
+        type=str,
+        nargs="+",
+        choices=[
+            "ALL",
+            ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT.value,
+            ReincarcerationRecidivismMetricType.REINCARCERATION_RATE.value,
+        ],
+        help="A list of the types of metric to calculate.",
+        default={"ALL"},
+    )
     return parser
 
 
-def run(apache_beam_pipeline_options: PipelineOptions,
-        data_input: str,
-        reference_view_input: str,
-        static_reference_input: str,
-        output: str,
-        metric_types: List[str],
-        state_code: str,
-        person_filter_ids: Optional[List[int]]):
+def run(
+    apache_beam_pipeline_options: PipelineOptions,
+    data_input: str,
+    reference_view_input: str,
+    static_reference_input: str,
+    output: str,
+    metric_types: List[str],
+    state_code: str,
+    person_filter_ids: Optional[List[int]],
+):
     """Runs the recidivism calculation pipeline."""
 
     # Workaround to load SQLAlchemy objects at start of pipeline. This is
@@ -315,191 +366,212 @@ def run(apache_beam_pipeline_options: PipelineOptions,
 
     # Get pipeline job details
     all_pipeline_options = apache_beam_pipeline_options.get_all_options()
-    project_id = all_pipeline_options['project']
+    project_id = all_pipeline_options["project"]
 
     if project_id is None:
-        raise ValueError(f'No project set in pipeline options: {all_pipeline_options}')
+        raise ValueError(f"No project set in pipeline options: {all_pipeline_options}")
 
     if state_code is None:
-        raise ValueError('No state_code set for pipeline')
+        raise ValueError("No state_code set for pipeline")
 
-    input_dataset = project_id + '.' + data_input
-    reference_dataset = project_id + '.' + reference_view_input
-    static_reference_dataset = project_id + '.' + static_reference_input
+    input_dataset = project_id + "." + data_input
+    reference_dataset = project_id + "." + reference_view_input
+    static_reference_dataset = project_id + "." + static_reference_input
 
     person_id_filter_set = set(person_filter_ids) if person_filter_ids else None
 
     with beam.Pipeline(options=apache_beam_pipeline_options) as p:
         # Get StatePersons
-        persons = (p
-                   | 'Load Persons' >>
-                   BuildRootEntity(dataset=input_dataset, root_entity_class=entities.StatePerson,
-                                   unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                   build_related_entities=True, unifying_id_field_filter_set=person_id_filter_set,
-                                   state_code=state_code))
+        persons = p | "Load Persons" >> BuildRootEntity(
+            dataset=input_dataset,
+            root_entity_class=entities.StatePerson,
+            unifying_id_field=entities.StatePerson.get_class_id_name(),
+            build_related_entities=True,
+            unifying_id_field_filter_set=person_id_filter_set,
+            state_code=state_code,
+        )
 
         # Get StateIncarcerationPeriods
-        incarceration_periods = (p
-                                 | 'Load IncarcerationPeriods' >>
-                                 BuildRootEntity(dataset=input_dataset,
-                                                 root_entity_class=entities.StateIncarcerationPeriod,
-                                                 unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                                 build_related_entities=True,
-                                                 unifying_id_field_filter_set=person_id_filter_set,
-                                                 state_code=state_code
-                                                 ))
+        incarceration_periods = p | "Load IncarcerationPeriods" >> BuildRootEntity(
+            dataset=input_dataset,
+            root_entity_class=entities.StateIncarcerationPeriod,
+            unifying_id_field=entities.StatePerson.get_class_id_name(),
+            build_related_entities=True,
+            unifying_id_field_filter_set=person_id_filter_set,
+            state_code=state_code,
+        )
 
         # Get StateSupervisionViolations
-        supervision_violations = \
-            (p
-             | 'Load SupervisionViolations' >>
-             BuildRootEntity(dataset=input_dataset, root_entity_class=entities.StateSupervisionViolation,
-                             unifying_id_field=entities.StatePerson.get_class_id_name(), build_related_entities=True,
-                             unifying_id_field_filter_set=person_id_filter_set,
-                             state_code=state_code
-                             ))
+        supervision_violations = p | "Load SupervisionViolations" >> BuildRootEntity(
+            dataset=input_dataset,
+            root_entity_class=entities.StateSupervisionViolation,
+            unifying_id_field=entities.StatePerson.get_class_id_name(),
+            build_related_entities=True,
+            unifying_id_field_filter_set=person_id_filter_set,
+            state_code=state_code,
+        )
 
         # TODO(#2769): Don't bring this in as a root entity
         # Get StateSupervisionViolationResponses
-        supervision_violation_responses = \
-            (p
-             | 'Load SupervisionViolationResponses' >>
-             BuildRootEntity(dataset=input_dataset, root_entity_class=entities.StateSupervisionViolationResponse,
-                             unifying_id_field=entities.StatePerson.get_class_id_name(), build_related_entities=True,
-                             unifying_id_field_filter_set=person_id_filter_set,
-                             state_code=state_code
-                             ))
+        supervision_violation_responses = (
+            p
+            | "Load SupervisionViolationResponses"
+            >> BuildRootEntity(
+                dataset=input_dataset,
+                root_entity_class=entities.StateSupervisionViolationResponse,
+                unifying_id_field=entities.StatePerson.get_class_id_name(),
+                build_related_entities=True,
+                unifying_id_field_filter_set=person_id_filter_set,
+                state_code=state_code,
+            )
+        )
 
         # Group StateSupervisionViolationResponses and
         # StateSupervisionViolations by person_id
         supervision_violations_and_responses = (
-            {'violations': supervision_violations,
-             'violation_responses': supervision_violation_responses
-             } | 'Group StateSupervisionViolationResponses to '
-                 'StateSupervisionViolations' >>
-            beam.CoGroupByKey()
+            {
+                "violations": supervision_violations,
+                "violation_responses": supervision_violation_responses,
+            }
+            | "Group StateSupervisionViolationResponses to "
+            "StateSupervisionViolations" >> beam.CoGroupByKey()
         )
 
         # Set the fully hydrated StateSupervisionViolation entities on
         # the corresponding StateSupervisionViolationResponses
         violation_responses_with_hydrated_violations = (
             supervision_violations_and_responses
-            | 'Set hydrated StateSupervisionViolations on '
-              'the StateSupervisionViolationResponses' >>
-            beam.ParDo(SetViolationOnViolationsResponse()))
+            | "Set hydrated StateSupervisionViolations on "
+            "the StateSupervisionViolationResponses"
+            >> beam.ParDo(SetViolationOnViolationsResponse())
+        )
 
         # Group StateIncarcerationPeriods and StateSupervisionViolationResponses
         # by person_id
         incarceration_periods_and_violation_responses = (
-            {'incarceration_periods': incarceration_periods,
-             'violation_responses':
-                 violation_responses_with_hydrated_violations}
-            | 'Group StateIncarcerationPeriods to '
-              'StateSupervisionViolationResponses' >>
-            beam.CoGroupByKey()
+            {
+                "incarceration_periods": incarceration_periods,
+                "violation_responses": violation_responses_with_hydrated_violations,
+            }
+            | "Group StateIncarcerationPeriods to "
+            "StateSupervisionViolationResponses" >> beam.CoGroupByKey()
         )
 
         # Set the fully hydrated StateSupervisionViolationResponse entities on
         # the corresponding StateIncarcerationPeriods
         incarceration_periods_with_source_violations = (
             incarceration_periods_and_violation_responses
-            | 'Set hydrated StateSupervisionViolationResponses on '
-            'the StateIncarcerationPeriods' >>
-            beam.ParDo(SetViolationResponseOnIncarcerationPeriod()))
+            | "Set hydrated StateSupervisionViolationResponses on "
+            "the StateIncarcerationPeriods"
+            >> beam.ParDo(SetViolationResponseOnIncarcerationPeriod())
+        )
 
         # Bring in the table that associates people and their county of residence
-        person_id_to_county_kv = (p | 'Load person_id_to_county_kv' >> ImportTableAsKVTuples(
-            dataset_id=reference_dataset,
-            table_id=PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
-            table_key='person_id',
-            state_code_filter=state_code,
-            person_id_filter_set=person_id_filter_set
-        ))
+        person_id_to_county_kv = (
+            p
+            | "Load person_id_to_county_kv"
+            >> ImportTableAsKVTuples(
+                dataset_id=reference_dataset,
+                table_id=PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
+                table_key="person_id",
+                state_code_filter=state_code,
+                person_id_filter_set=person_id_filter_set,
+            )
+        )
 
         # Group each StatePerson with their StateIncarcerationPeriods
-        person_entities = (
-            {'person': persons,
-             'incarceration_periods': incarceration_periods_with_source_violations,
-             'persons_to_recent_county_of_residence': person_id_to_county_kv
-             }
-            | 'Group StatePerson to StateIncarcerationPeriods' >>
-            beam.CoGroupByKey()
-        )
+        person_entities = {
+            "person": persons,
+            "incarceration_periods": incarceration_periods_with_source_violations,
+            "persons_to_recent_county_of_residence": person_id_to_county_kv,
+        } | "Group StatePerson to StateIncarcerationPeriods" >> beam.CoGroupByKey()
 
         state_race_ethnicity_population_counts = (
-                p | 'Load state_race_ethnicity_population_counts' >>
-                ImportTable(
-                    dataset_id=static_reference_dataset,
-                    table_id='state_race_ethnicity_population_counts',
-                    state_code_filter=state_code,
-                    person_id_filter_set=None
-                ))
-
-        # Identify ReleaseEvents events from the StatePerson's StateIncarcerationPeriods
-        person_release_events = (
-            person_entities
-            | "ClassifyReleaseEvents" >>
-            beam.ParDo(ClassifyReleaseEvents())
+            p
+            | "Load state_race_ethnicity_population_counts"
+            >> ImportTable(
+                dataset_id=static_reference_dataset,
+                table_id="state_race_ethnicity_population_counts",
+                state_code_filter=state_code,
+                person_id_filter_set=None,
+            )
         )
 
-        person_metadata = (persons
-                           | "Build the person_metadata dictionary" >>
-                           beam.ParDo(BuildPersonMetadata(),
-                                      AsList(state_race_ethnicity_population_counts)))
+        # Identify ReleaseEvents events from the StatePerson's StateIncarcerationPeriods
+        person_release_events = person_entities | "ClassifyReleaseEvents" >> beam.ParDo(
+            ClassifyReleaseEvents()
+        )
+
+        person_metadata = (
+            persons
+            | "Build the person_metadata dictionary"
+            >> beam.ParDo(
+                BuildPersonMetadata(), AsList(state_race_ethnicity_population_counts)
+            )
+        )
 
         person_release_events_with_metadata = (
-            {
-                'person_events': person_release_events,
-                'person_metadata': person_metadata
-            }
-            | 'Group ReleaseEvents with person-level metadata' >> beam.CoGroupByKey()
-            | 'Organize StatePerson, PersonMetadata and ReleaseEvents for calculations' >>
-            beam.ParDo(ExtractPersonReleaseEventsMetadata())
+            {"person_events": person_release_events, "person_metadata": person_metadata}
+            | "Group ReleaseEvents with person-level metadata" >> beam.CoGroupByKey()
+            | "Organize StatePerson, PersonMetadata and ReleaseEvents for calculations"
+            >> beam.ParDo(ExtractPersonReleaseEventsMetadata())
         )
 
         # Get pipeline job details for accessing job_id
         all_pipeline_options = apache_beam_pipeline_options.get_all_options()
 
         # Add timestamp for local jobs
-        job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
-        all_pipeline_options['job_timestamp'] = job_timestamp
+        job_timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H_%M_%S.%f")
+        all_pipeline_options["job_timestamp"] = job_timestamp
 
         # Get the type of metric to calculate
         metric_types_set = set(metric_types)
 
         # Get recidivism metrics
-        recidivism_metrics = (person_release_events_with_metadata
-                              | 'Get Recidivism Metrics' >>
-                              GetRecidivismMetrics(
-                                  pipeline_options=all_pipeline_options,
-                                  metric_types=metric_types_set))
+        recidivism_metrics = (
+            person_release_events_with_metadata
+            | "Get Recidivism Metrics"
+            >> GetRecidivismMetrics(
+                pipeline_options=all_pipeline_options, metric_types=metric_types_set
+            )
+        )
 
         if person_id_filter_set:
-            logging.warning("Non-empty person filter set - returning before writing metrics.")
+            logging.warning(
+                "Non-empty person filter set - returning before writing metrics."
+            )
             return
 
         # Convert the metrics into a format that's writable to BQ
-        writable_metrics = (recidivism_metrics
-                            | 'Convert to dict to be written to BQ' >>
-                            beam.ParDo(RecidivizMetricWritableDict()).with_outputs(
-                                ReincarcerationRecidivismMetricType.REINCARCERATION_RATE.value,
-                                ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT.value
-                            ))
+        writable_metrics = (
+            recidivism_metrics
+            | "Convert to dict to be written to BQ"
+            >> beam.ParDo(RecidivizMetricWritableDict()).with_outputs(
+                ReincarcerationRecidivismMetricType.REINCARCERATION_RATE.value,
+                ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT.value,
+            )
+        )
 
         # Write the recidivism metrics to the output tables in BigQuery
         rates_table_id = DATAFLOW_METRICS_TO_TABLES[ReincarcerationRecidivismRateMetric]
-        counts_table_id = DATAFLOW_METRICS_TO_TABLES[ReincarcerationRecidivismCountMetric]
+        counts_table_id = DATAFLOW_METRICS_TO_TABLES[
+            ReincarcerationRecidivismCountMetric
+        ]
 
-        _ = (writable_metrics.REINCARCERATION_RATE
-             | f"Write rate metrics to BQ table: {rates_table_id}" >>
-             WriteAppendToBigQuery(
-                 output_table=rates_table_id,
-                 output_dataset=output,
-             ))
+        _ = (
+            writable_metrics.REINCARCERATION_RATE
+            | f"Write rate metrics to BQ table: {rates_table_id}"
+            >> WriteAppendToBigQuery(
+                output_table=rates_table_id,
+                output_dataset=output,
+            )
+        )
 
-        _ = (writable_metrics.REINCARCERATION_COUNT
-             | f"Write count metrics to BQ table: {counts_table_id}" >>
-             WriteAppendToBigQuery(
-                 output_table=counts_table_id,
-                 output_dataset=output,
-             ))
+        _ = (
+            writable_metrics.REINCARCERATION_COUNT
+            | f"Write count metrics to BQ table: {counts_table_id}"
+            >> WriteAppendToBigQuery(
+                output_table=counts_table_id,
+                output_dataset=output,
+            )
+        )

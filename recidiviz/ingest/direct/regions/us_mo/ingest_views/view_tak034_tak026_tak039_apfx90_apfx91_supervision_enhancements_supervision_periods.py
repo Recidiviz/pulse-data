@@ -16,15 +16,16 @@
 # =============================================================================
 """Query containing incarceration period from supervision information."""
 
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import \
-    DirectIngestPreProcessedIngestViewBuilder
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    DirectIngestPreProcessedIngestViewBuilder,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.ingest.direct.regions.us_mo.ingest_views.us_mo_view_query_fragments import \
-    ALL_OFFICERS_FRAGMENT
+from recidiviz.ingest.direct.regions.us_mo.ingest_views.us_mo_view_query_fragments import (
+    ALL_OFFICERS_FRAGMENT,
+)
 
-OFFICER_ROLE_SPANS_FRAGMENT = \
-    f"""
+OFFICER_ROLE_SPANS_FRAGMENT = f"""
     {ALL_OFFICERS_FRAGMENT},
     officers_with_role_time_ranks AS(
         -- Officers with their roles ranked from least recent to most recent,
@@ -560,12 +561,12 @@ WITH field_assignments_ce AS (
     """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
-    region='us_mo',
-    ingest_view_name='tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods',
+    region="us_mo",
+    ingest_view_name="tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols='DOC, CYC',
+    order_by_cols="DOC, CYC",
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         VIEW_BUILDER.build_and_print()

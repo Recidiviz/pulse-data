@@ -24,8 +24,7 @@ from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.county import entities
-from recidiviz.persistence.ingest_info_converter.county.entity_helpers import \
-    bond
+from recidiviz.persistence.ingest_info_converter.county.entity_helpers import bond
 
 _EMPTY_METADATA = IngestMetadata.new_with_defaults()
 
@@ -36,11 +35,11 @@ class BondConverterTest(unittest.TestCase):
     def testParseBond(self):
         # Arrange
         ingest_bond = ingest_info_pb2.Bond(
-            bond_id='BOND_ID',
-            bond_type='CASH',
-            amount='$125.00',
-            status='ACTIVE',
-            bond_agent='AGENT',
+            bond_id="BOND_ID",
+            bond_type="CASH",
+            amount="$125.00",
+            status="ACTIVE",
+            bond_agent="AGENT",
         )
 
         # Act
@@ -48,64 +47,64 @@ class BondConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.Bond(
-            external_id='BOND_ID',
+            external_id="BOND_ID",
             bond_type=BondType.CASH,
-            bond_type_raw_text='CASH',
+            bond_type_raw_text="CASH",
             amount_dollars=125,
             status=BondStatus.SET,
-            status_raw_text='ACTIVE',
-            bond_agent='AGENT',
+            status_raw_text="ACTIVE",
+            bond_agent="AGENT",
         )
 
         self.assertEqual(result, expected_result)
 
     def testParseBond_AmountIsNoBond_UsesAmountAsType(self):
         # Arrange
-        ingest_bond = ingest_info_pb2.Bond(amount='No Bond')
+        ingest_bond = ingest_info_pb2.Bond(amount="No Bond")
 
         # Act
         result = bond.convert(ingest_bond, _EMPTY_METADATA)
 
         # Assert
         expected_result = entities.Bond.new_with_defaults(
-            bond_type=BondType.DENIED,
-            status=BondStatus.SET
+            bond_type=BondType.DENIED, status=BondStatus.SET
         )
         self.assertEqual(result, expected_result)
 
     def testParseBond_AmountIsBondDenied_UsesAmountAsType(self):
         # Arrange
-        ingest_bond = ingest_info_pb2.Bond(amount='Bond Denied')
+        ingest_bond = ingest_info_pb2.Bond(amount="Bond Denied")
 
         # Act
         result = bond.convert(ingest_bond, _EMPTY_METADATA)
 
         # Assert
         expected_result = entities.Bond.new_with_defaults(
-            bond_type=BondType.DENIED,
-            status=BondStatus.SET
+            bond_type=BondType.DENIED, status=BondStatus.SET
         )
         self.assertEqual(result, expected_result)
 
     def testParseBond_MapStatusToType(self):
         # Arrange
-        ingest_bond = ingest_info_pb2.Bond(bond_type='bond revoked')
+        ingest_bond = ingest_info_pb2.Bond(bond_type="bond revoked")
         overrides_builder = EnumOverrides.Builder()
-        overrides_builder.add('BOND REVOKED', BondStatus.REVOKED, BondType)
+        overrides_builder.add("BOND REVOKED", BondStatus.REVOKED, BondType)
         overrides = overrides_builder.build()
 
         # Act
         result = bond.convert(
-            ingest_bond, attr.evolve(_EMPTY_METADATA, enum_overrides=overrides))
+            ingest_bond, attr.evolve(_EMPTY_METADATA, enum_overrides=overrides)
+        )
 
         # Assert
         expected_result = entities.Bond.new_with_defaults(
-            bond_type_raw_text='BOND REVOKED', status=BondStatus.REVOKED)
+            bond_type_raw_text="BOND REVOKED", status=BondStatus.REVOKED
+        )
         self.assertEqual(result, expected_result)
 
     def testParseBond_OnlyAmount_InfersCash(self):
         # Arrange
-        ingest_bond = ingest_info_pb2.Bond(amount='1,500')
+        ingest_bond = ingest_info_pb2.Bond(amount="1,500")
 
         # Act
         result = bond.convert(ingest_bond, _EMPTY_METADATA)
@@ -114,5 +113,6 @@ class BondConverterTest(unittest.TestCase):
         expected_result = entities.Bond.new_with_defaults(
             bond_type=BondType.CASH,
             status=BondStatus.PRESENT_WITHOUT_INFO,
-            amount_dollars=1500)
+            amount_dollars=1500,
+        )
         self.assertEqual(result, expected_result)

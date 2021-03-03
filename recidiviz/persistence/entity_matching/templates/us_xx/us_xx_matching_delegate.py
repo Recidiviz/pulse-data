@@ -16,10 +16,13 @@
 # =============================================================================
 """Contains logic for US_XX specific entity matching overrides."""
 
-from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import BaseStateMatchingDelegate
+from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import (
+    BaseStateMatchingDelegate,
+)
 
 
 class UsXxMatchingDelegate(BaseStateMatchingDelegate):
     """Class that contains matching logic specific to US_XX."""
+
     def __init__(self) -> None:
-        super().__init__('us_xx')
+        super().__init__("us_xx")

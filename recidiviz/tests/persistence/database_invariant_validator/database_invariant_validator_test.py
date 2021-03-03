@@ -25,26 +25,35 @@ from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.persistence.database.schema.schema_person_type import SchemaPersonType
 from recidiviz.persistence.database.schema.state.dao import SessionIsDirtyError
 from recidiviz.persistence.database.session import Session
-from recidiviz.persistence.database_invariant_validator import database_invariant_validator
+from recidiviz.persistence.database_invariant_validator import (
+    database_invariant_validator,
+)
 
 DATABASE_INVARIANT_VALIDATOR_MODULE = database_invariant_validator.__name__
 
 
-def validator_that_succeeds(_session: Session, _region_code: str, _output_people: List[SchemaPersonType]) -> bool:
+def validator_that_succeeds(
+    _session: Session, _region_code: str, _output_people: List[SchemaPersonType]
+) -> bool:
     return True
 
 
-def validator_that_fails(_session: Session, _region_code: str, _output_people: List[SchemaPersonType]) -> bool:
+def validator_that_fails(
+    _session: Session, _region_code: str, _output_people: List[SchemaPersonType]
+) -> bool:
     return False
 
 
-def validator_that_throws(_session: Session, _region_code: str, _output_people: List[SchemaPersonType]) -> bool:
-    raise ValueError('Validation error')
+def validator_that_throws(
+    _session: Session, _region_code: str, _output_people: List[SchemaPersonType]
+) -> bool:
+    raise ValueError("Validation error")
 
 
 def validator_that_throws_session_is_dirty(
-        _session: Session, _region_code: str, _output_people: List[SchemaPersonType]) -> bool:
-    raise SessionIsDirtyError('Dirty session error')
+    _session: Session, _region_code: str, _output_people: List[SchemaPersonType]
+) -> bool:
+    raise SessionIsDirtyError("Dirty session error")
 
 
 class TestDatabaseInvariantValidator(unittest.TestCase):
@@ -53,62 +62,80 @@ class TestDatabaseInvariantValidator(unittest.TestCase):
     def setUp(self) -> None:
         self.mock_session = create_autospec(Session)
 
-    @patch(f'{DATABASE_INVARIANT_VALIDATOR_MODULE}.get_state_database_invariant_validators')
-    def test_invariant_validator_no_validations(self, mock_get_validators: MagicMock) -> None:
+    @patch(
+        f"{DATABASE_INVARIANT_VALIDATOR_MODULE}.get_state_database_invariant_validators"
+    )
+    def test_invariant_validator_no_validations(
+        self, mock_get_validators: MagicMock
+    ) -> None:
         # Arrange
         mock_get_validators.return_value = []
 
         # Act
-        errors = database_invariant_validator.validate_invariants(self.mock_session, SystemLevel.STATE, 'US_XX', [])
+        errors = database_invariant_validator.validate_invariants(
+            self.mock_session, SystemLevel.STATE, "US_XX", []
+        )
 
         # Assert
         self.assertEqual(0, errors)
         mock_get_validators.assert_called_once()
 
-    @patch(f'{DATABASE_INVARIANT_VALIDATOR_MODULE}.get_state_database_invariant_validators')
+    @patch(
+        f"{DATABASE_INVARIANT_VALIDATOR_MODULE}.get_state_database_invariant_validators"
+    )
     def test_invariant_validator_success(self, mock_get_validators: MagicMock) -> None:
         # Arrange
-        mock_get_validators.return_value = [
-            validator_that_succeeds
-        ]
+        mock_get_validators.return_value = [validator_that_succeeds]
 
         # Act
-        errors = database_invariant_validator.validate_invariants(self.mock_session, SystemLevel.STATE, 'US_XX', [])
+        errors = database_invariant_validator.validate_invariants(
+            self.mock_session, SystemLevel.STATE, "US_XX", []
+        )
 
         # Assert
         self.assertEqual(0, errors)
         mock_get_validators.assert_called_once()
 
-    @patch(f'{DATABASE_INVARIANT_VALIDATOR_MODULE}.get_county_database_invariant_validators')
-    def test_invariant_validator_success_county(self, mock_get_validators: MagicMock) -> None:
+    @patch(
+        f"{DATABASE_INVARIANT_VALIDATOR_MODULE}.get_county_database_invariant_validators"
+    )
+    def test_invariant_validator_success_county(
+        self, mock_get_validators: MagicMock
+    ) -> None:
         # Arrange
-        mock_get_validators.return_value = [
-            validator_that_succeeds
-        ]
+        mock_get_validators.return_value = [validator_that_succeeds]
 
         # Act
-        errors = database_invariant_validator.validate_invariants(self.mock_session, SystemLevel.COUNTY, 'US_XX_YY', [])
+        errors = database_invariant_validator.validate_invariants(
+            self.mock_session, SystemLevel.COUNTY, "US_XX_YY", []
+        )
 
         # Assert
         self.assertEqual(0, errors)
         mock_get_validators.assert_called_once()
 
-    @patch(f'{DATABASE_INVARIANT_VALIDATOR_MODULE}.get_state_database_invariant_validators')
+    @patch(
+        f"{DATABASE_INVARIANT_VALIDATOR_MODULE}.get_state_database_invariant_validators"
+    )
     def test_invariant_validator_error(self, mock_get_validators: MagicMock) -> None:
         # Arrange
-        mock_get_validators.return_value = [
-            validator_that_fails
-        ]
+        mock_get_validators.return_value = [validator_that_fails]
 
         # Act
-        errors = database_invariant_validator.validate_invariants(self.mock_session, SystemLevel.STATE, 'US_XX', [])
+        errors = database_invariant_validator.validate_invariants(
+            self.mock_session, SystemLevel.STATE, "US_XX", []
+        )
 
         # Assert
         self.assertEqual(1, errors)
         mock_get_validators.assert_called_once()
 
-    @patch(f'{DATABASE_INVARIANT_VALIDATOR_MODULE}.get_state_database_invariant_validators')
-    def test_invariant_validator_mixed_errors_and_success(self, mock_get_validators: MagicMock) -> None:
+    @patch(
+        f"{DATABASE_INVARIANT_VALIDATOR_MODULE}.get_state_database_invariant_validators"
+    )
+    def test_invariant_validator_mixed_errors_and_success(
+        self, mock_get_validators: MagicMock
+    ) -> None:
         # Arrange
         mock_get_validators.return_value = [
             validator_that_succeeds,
@@ -118,50 +145,61 @@ class TestDatabaseInvariantValidator(unittest.TestCase):
         ]
 
         # Act
-        errors = database_invariant_validator.validate_invariants(self.mock_session, SystemLevel.STATE, 'US_XX', [])
+        errors = database_invariant_validator.validate_invariants(
+            self.mock_session, SystemLevel.STATE, "US_XX", []
+        )
 
         # Assert
         self.assertEqual(2, errors)
         mock_get_validators.assert_called_once()
 
-    @patch(f'{DATABASE_INVARIANT_VALIDATOR_MODULE}.get_state_database_invariant_validators')
+    @patch(
+        f"{DATABASE_INVARIANT_VALIDATOR_MODULE}.get_state_database_invariant_validators"
+    )
     def test_invariant_validator_throws(self, mock_get_validators: MagicMock) -> None:
         # Arrange
-        mock_get_validators.return_value = [
-            validator_that_throws
-        ]
+        mock_get_validators.return_value = [validator_that_throws]
 
         # Act
-        errors = database_invariant_validator.validate_invariants(self.mock_session, SystemLevel.STATE, 'US_XX', [])
+        errors = database_invariant_validator.validate_invariants(
+            self.mock_session, SystemLevel.STATE, "US_XX", []
+        )
 
         # Assert
         self.assertEqual(1, errors)
         mock_get_validators.assert_called_once()
 
-    @patch(f'{DATABASE_INVARIANT_VALIDATOR_MODULE}.get_state_database_invariant_validators')
-    def test_invariant_validator_throws_session_is_dirty(self, mock_get_validators: MagicMock) -> None:
+    @patch(
+        f"{DATABASE_INVARIANT_VALIDATOR_MODULE}.get_state_database_invariant_validators"
+    )
+    def test_invariant_validator_throws_session_is_dirty(
+        self, mock_get_validators: MagicMock
+    ) -> None:
         # Arrange
-        mock_get_validators.return_value = [
-            validator_that_throws_session_is_dirty
-        ]
+        mock_get_validators.return_value = [validator_that_throws_session_is_dirty]
 
         # Act
         with self.assertRaises(SessionIsDirtyError):
-            _ = database_invariant_validator.validate_invariants(self.mock_session, SystemLevel.STATE, 'US_XX', [])
+            _ = database_invariant_validator.validate_invariants(
+                self.mock_session, SystemLevel.STATE, "US_XX", []
+            )
 
         # Assert
         mock_get_validators.assert_called_once()
 
-    @patch(f'{DATABASE_INVARIANT_VALIDATOR_MODULE}.get_state_database_invariant_validators')
-    def test_invariant_validator_throws_and_failure(self, mock_get_validators: MagicMock) -> None:
+    @patch(
+        f"{DATABASE_INVARIANT_VALIDATOR_MODULE}.get_state_database_invariant_validators"
+    )
+    def test_invariant_validator_throws_and_failure(
+        self, mock_get_validators: MagicMock
+    ) -> None:
         # Arrange
-        mock_get_validators.return_value = [
-            validator_that_throws,
-            validator_that_fails
-        ]
+        mock_get_validators.return_value = [validator_that_throws, validator_that_fails]
 
         # Act
-        errors = database_invariant_validator.validate_invariants(self.mock_session, SystemLevel.STATE, 'US_XX', [])
+        errors = database_invariant_validator.validate_invariants(
+            self.mock_session, SystemLevel.STATE, "US_XX", []
+        )
 
         # Assert
         self.assertEqual(2, errors)

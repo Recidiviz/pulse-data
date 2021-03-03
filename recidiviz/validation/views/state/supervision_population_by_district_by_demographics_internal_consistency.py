@@ -22,25 +22,29 @@ supervision_population_by_district_by_demographics view.
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
-from recidiviz.calculator.query.state.views.public_dashboard.supervision.\
-    supervision_population_by_district_by_demographics import \
-    SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_NAME
+
+
+from recidiviz.calculator.query.state.views.public_dashboard.supervision.supervision_population_by_district_by_demographics import (
+    SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_NAME,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
-from recidiviz.validation.views.utils.internal_consistency_templates import internal_consistency_query
+from recidiviz.validation.views.utils.internal_consistency_templates import (
+    internal_consistency_query,
+)
 
-SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_NAME = \
-    'supervision_population_by_district_by_demographics_internal_consistency'
+SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_NAME = (
+    "supervision_population_by_district_by_demographics_internal_consistency"
+)
 
-SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_DESCRIPTION = \
-    """ Builds validation table to ensure internal consistency across breakdowns in the 
- supervision_population_by_district_by_demographics view."""
+SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_DESCRIPTION = """ Builds validation table
+to ensure internal consistency across breakdowns in the supervision_population_by_district_by_demographics view."""
 
 
-PARTITION_COLUMNS = ['state_code', 'supervision_type', 'district']
-CALCULATED_COLUMNS_TO_VALIDATE = ['total_supervision_count']
-MUTUALLY_EXCLUSIVE_BREAKDOWN_COLUMNS = ['age_bucket', 'race_or_ethnicity', 'gender']
+PARTITION_COLUMNS = ["state_code", "supervision_type", "district"]
+CALCULATED_COLUMNS_TO_VALIDATE = ["total_supervision_count"]
+MUTUALLY_EXCLUSIVE_BREAKDOWN_COLUMNS = ["age_bucket", "race_or_ethnicity", "gender"]
 
 SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_QUERY_TEMPLATE = f"""
 /*{{description}}*/
@@ -55,9 +59,9 @@ SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUI
     view_query_template=SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_QUERY_TEMPLATE,
     description=SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_DESCRIPTION,
     validated_table_dataset_id=state_dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
-    validated_table_id=SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_NAME
+    validated_table_id=SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_NAME,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER.build_and_print()

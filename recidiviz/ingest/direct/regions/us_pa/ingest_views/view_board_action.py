@@ -17,8 +17,9 @@
 """Query containing board action information extracted from multiple PADOC files, corresponding to condition codes
 'RESCR', 'RESCR6', 'RESCR9', 'RESCR12'."""
 
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import \
-    DirectIngestPreProcessedIngestViewBuilder
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    DirectIngestPreProcessedIngestViewBuilder,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -59,12 +60,12 @@ FROM sci_actions
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
-    region='us_pa',
-    ingest_view_name='board_action',
+    region="us_pa",
+    ingest_view_name="board_action",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols='ParoleNumber, ActionDate',
+    order_by_cols="ParoleNumber, ActionDate",
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         VIEW_BUILDER.build_and_print()

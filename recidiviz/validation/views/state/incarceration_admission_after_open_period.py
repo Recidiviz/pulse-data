@@ -26,12 +26,15 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
-INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW_NAME = 'incarceration_admission_after_open_period'
+INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW_NAME = (
+    "incarceration_admission_after_open_period"
+)
 
-INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_DESCRIPTION = """ Incarceration admissions after open periods """
+INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_DESCRIPTION = (
+    """ Incarceration admissions after open periods """
+)
 
-INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_QUERY_TEMPLATE = \
-    """
+INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_QUERY_TEMPLATE = """
     /*{description}*/
     WITH periods_with_next_admission AS (
       SELECT external_id, person_id, state_code as region_code, admission_date, release_date,
@@ -53,6 +56,6 @@ INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW_BUILDER = SimpleBigQueryViewBuild
     state_dataset=state_dataset_config.STATE_BASE_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW_BUILDER.build_and_print()

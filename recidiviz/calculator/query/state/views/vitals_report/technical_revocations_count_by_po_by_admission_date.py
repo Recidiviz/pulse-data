@@ -15,21 +15,22 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Technical revocations count by PO by admission date."""
-# pylint: disable=line-too-long
+
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-TECHNICAL_REVOCATIONS_COUNT_BY_PO_BY_DAY_VIEW_NAME = 'technical_revocations_count_by_po_by_admission_date'
+TECHNICAL_REVOCATIONS_COUNT_BY_PO_BY_DAY_VIEW_NAME = (
+    "technical_revocations_count_by_po_by_admission_date"
+)
 
 TECHNICAL_REVOCATIONS_COUNT_BY_PO_BY_DAY_DESCRIPTION = """
     Technical revocations count by PO by admission date
  """
 
-TECHNICAL_REVOCATIONS_COUNT_BY_PO_BY_DAY_QUERY_TEMPLATE = \
-    """
+TECHNICAL_REVOCATIONS_COUNT_BY_PO_BY_DAY_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT
         revocations.state_code,
@@ -68,6 +69,6 @@ TECHNICAL_REVOCATIONS_COUNT_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuilde
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         TECHNICAL_REVOCATIONS_COUNT_BY_PO_BY_DAY_VIEW_BUILDER.build_and_print()

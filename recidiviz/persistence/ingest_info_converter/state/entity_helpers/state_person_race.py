@@ -21,17 +21,20 @@ from recidiviz.common.constants.person_characteristics import Race
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StatePersonRace
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.entity.state.deserialize_entity_factories import StatePersonRaceFactory
+from recidiviz.persistence.entity.state.deserialize_entity_factories import (
+    StatePersonRaceFactory,
+)
 
 
-def convert(proto: StatePersonRace,
-            metadata: IngestMetadata) -> entities.StatePersonRace:
+def convert(
+    proto: StatePersonRace, metadata: IngestMetadata
+) -> entities.StatePersonRace:
     """Converts an ingest_info proto Hold to a persistence entity."""
     new = entities.StatePersonRace.builder()
 
     # Enum mappings
-    new.race = EnumParser(getattr(proto, 'race'), Race, metadata.enum_overrides)
-    new.race_raw_text = getattr(proto, 'race')
+    new.race = EnumParser(getattr(proto, "race"), Race, metadata.enum_overrides)
+    new.race_raw_text = getattr(proto, "race")
 
     # 1-to-1 mappings
     new.state_code = metadata.region

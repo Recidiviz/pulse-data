@@ -17,18 +17,20 @@
 
 """A view which provides a comparison of various internal incarceration population counts by demographic."""
 
-# pylint: disable=trailing-whitespace,line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
-INCARCERATION_POPULATION_BY_DEMOGRAPHIC_INTERNAL_COMPARISON_VIEW_NAME = \
-    'incarceration_population_by_demographic_internal_comparison'
+INCARCERATION_POPULATION_BY_DEMOGRAPHIC_INTERNAL_COMPARISON_VIEW_NAME = (
+    "incarceration_population_by_demographic_internal_comparison"
+)
 
-INCARCERATION_POPULATION_BY_DEMOGRAPHIC_INTERNAL_COMPARISON_DESCRIPTION = \
+INCARCERATION_POPULATION_BY_DEMOGRAPHIC_INTERNAL_COMPARISON_DESCRIPTION = (
     """ Comparison of various internal incarceration population counts by facility """
+)
 
 INCARCERATION_POPULATION_BY_DEMOGRAPHIC_INTERNAL_COMPARISON_QUERY_TEMPLATE = """WITH
 incarceration_population_by_admission_reason AS (
@@ -63,9 +65,9 @@ INCARCERATION_POPULATION_BY_DEMOGRAPHIC_INTERNAL_COMPARISON_VIEW_BUILDER = Simpl
     view_query_template=INCARCERATION_POPULATION_BY_DEMOGRAPHIC_INTERNAL_COMPARISON_QUERY_TEMPLATE,
     description=INCARCERATION_POPULATION_BY_DEMOGRAPHIC_INTERNAL_COMPARISON_DESCRIPTION,
     covid_report_dataset=state_dataset_config.COVID_REPORT_DATASET,
-    public_dashboard_dataset=state_dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET
+    public_dashboard_dataset=state_dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         INCARCERATION_POPULATION_BY_DEMOGRAPHIC_INTERNAL_COMPARISON_VIEW_BUILDER.build_and_print()

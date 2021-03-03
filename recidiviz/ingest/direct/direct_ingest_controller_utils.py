@@ -20,24 +20,32 @@ import logging
 from typing import Dict, List, TypeVar
 
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
-from recidiviz.common.constants.enum_overrides import EnumOverrides, EnumMapper, EnumIgnorePredicate
+from recidiviz.common.constants.enum_overrides import (
+    EnumOverrides,
+    EnumMapper,
+    EnumIgnorePredicate,
+)
 from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
 from recidiviz.ingest.models.ingest_info import IngestObject
 from recidiviz.utils import environment
 from recidiviz.utils.regions import Region
 
-EnumType = TypeVar('EnumType', bound=EntityEnum)
+EnumType = TypeVar("EnumType", bound=EntityEnum)
 
 
-def invert_enum_to_str_mappings(overrides: Dict[EnumType, List[str]]) -> Dict[str, EnumType]:
+def invert_enum_to_str_mappings(
+    overrides: Dict[EnumType, List[str]]
+) -> Dict[str, EnumType]:
     """Inverts a given dictionary, that maps a target enum from a list of parseable strings, into another dictionary,
     that maps each parseable string to its target enum."""
     inverted_overrides: Dict[str, EnumType] = {}
     for mapped_enum, text_tokens in overrides.items():
         for text_token in text_tokens:
             if text_token in inverted_overrides:
-                raise ValueError(f'Unexpected, text_token [{text_token}] is used for both '
-                                 f'[{mapped_enum}] and [{inverted_overrides[text_token]}]')
+                raise ValueError(
+                    f"Unexpected, text_token [{text_token}] is used for both "
+                    f"[{mapped_enum}] and [{inverted_overrides[text_token]}]"
+                )
             inverted_overrides[text_token] = mapped_enum
 
     return inverted_overrides
@@ -49,19 +57,22 @@ def invert_str_to_str_mappings(overrides: Dict[str, List[str]]) -> Dict[str, str
     for mapped_str, text_tokens in overrides.items():
         for text_token in text_tokens:
             if text_token in inverted_overrides:
-                raise ValueError(f'Unexpected, text_token [{text_token}] is used for both '
-                                 f'[{mapped_str}] and [{inverted_overrides[text_token]}]')
+                raise ValueError(
+                    f"Unexpected, text_token [{text_token}] is used for both "
+                    f"[{mapped_str}] and [{inverted_overrides[text_token]}]"
+                )
             inverted_overrides[text_token] = mapped_str
 
     return inverted_overrides
 
 
 def update_overrides_from_maps(
-        base_enum_overrides: EnumOverrides,
-        overrides: Dict[EntityEnum, List[str]],
-        ignores: Dict[EntityEnumMeta, List[str]],
-        override_mappers: Dict[EntityEnumMeta, EnumMapper],
-        ignore_predicates: Dict[EntityEnumMeta, EnumIgnorePredicate]) -> EnumOverrides:
+    base_enum_overrides: EnumOverrides,
+    overrides: Dict[EntityEnum, List[str]],
+    ignores: Dict[EntityEnumMeta, List[str]],
+    override_mappers: Dict[EntityEnumMeta, EnumMapper],
+    ignore_predicates: Dict[EntityEnumMeta, EnumIgnorePredicate],
+) -> EnumOverrides:
     overrides_builder = base_enum_overrides.to_builder()
 
     for mapped_enum, text_tokens in overrides.items():
@@ -81,9 +92,9 @@ def update_overrides_from_maps(
     return overrides_builder.build()
 
 
-def create_if_not_exists(obj: IngestObject,
-                         parent_obj: IngestObject,
-                         objs_field_name: str) -> None:
+def create_if_not_exists(
+    obj: IngestObject, parent_obj: IngestObject, objs_field_name: str
+) -> None:
     """Create an object on |parent_obj| if an identical object does not
     already exist.
     """
@@ -95,7 +106,7 @@ def create_if_not_exists(obj: IngestObject,
     for existing_obj in existing_objects:
         if obj == existing_obj:
             return
-    create_func = getattr(parent_obj, f'create_{obj.class_name()}')
+    create_func = getattr(parent_obj, f"create_{obj.class_name()}")
     create_func(**obj.__dict__)
 
 
@@ -104,6 +115,8 @@ def check_is_region_launched_in_env(region: Region) -> None:
     not."""
     if not region.is_ingest_launched_in_env():
         gcp_env = environment.get_gcp_environment()
-        error_msg = f'Bad environment [{gcp_env}] for region [{region.region_code}].'
+        error_msg = f"Bad environment [{gcp_env}] for region [{region.region_code}]."
         logging.error(error_msg)
-        raise DirectIngestError(msg=error_msg, error_type=DirectIngestErrorType.ENVIRONMENT_ERROR)
+        raise DirectIngestError(
+            msg=error_msg, error_type=DirectIngestErrorType.ENVIRONMENT_ERROR
+        )

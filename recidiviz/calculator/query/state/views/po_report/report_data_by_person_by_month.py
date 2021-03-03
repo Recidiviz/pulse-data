@@ -15,23 +15,25 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Person-level data to populate the monthly PO report email."""
-# pylint: disable=trailing-whitespace,line-too-long
+# pylint: disable=trailing-whitespace
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config, state_specific_query_strings
+from recidiviz.calculator.query.state import (
+    dataset_config,
+    state_specific_query_strings,
+)
 from recidiviz.calculator.query.state.dataset_config import PO_REPORT_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-REPORT_DATA_BY_PERSON_BY_MONTH_VIEW_NAME = 'report_data_by_person_by_month'
+REPORT_DATA_BY_PERSON_BY_MONTH_VIEW_NAME = "report_data_by_person_by_month"
 
 REPORT_DATA_BY_PERSON_BY_MONTH_DESCRIPTION = """
  Person-level data regarding early discharges, successful supervision completions, reported recommendations for
  absconsions and revocations, and case compliance statuses.
  """
 
-REPORT_DATA_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = \
-    """
+REPORT_DATA_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT
       person.state_code, year, month, person.person_id,
@@ -89,9 +91,10 @@ REPORT_DATA_BY_PERSON_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     po_report_dataset=PO_REPORT_DATASET,
     state_dataset=dataset_config.STATE_BASE_DATASET,
     state_specific_external_id_type=state_specific_query_strings.state_specific_external_id_type(
-        state_code_table_prefix='person')
+        state_code_table_prefix="person"
+    ),
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         REPORT_DATA_BY_PERSON_BY_MONTH_VIEW_BUILDER.build_and_print()

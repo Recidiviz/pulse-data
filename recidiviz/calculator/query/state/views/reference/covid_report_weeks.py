@@ -16,19 +16,18 @@
 # =============================================================================
 """Week dates by state for COVID-19 Report"""
 
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-COVID_REPORT_WEEKS_VIEW_NAME = 'covid_report_weeks'
+COVID_REPORT_WEEKS_VIEW_NAME = "covid_report_weeks"
 
 COVID_REPORT_WEEKS_DESCRIPTION = """Week dates by state for COVID-19 Report"""
 
-COVID_REPORT_WEEKS_QUERY_TEMPLATE = \
-    """
+COVID_REPORT_WEEKS_QUERY_TEMPLATE = """
     /*{description}*/
     -- US_ID report starting 2020-05-02 --
     SELECT
@@ -55,9 +54,9 @@ COVID_REPORT_WEEKS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.REFERENCE_VIEWS_DATASET,
     view_id=COVID_REPORT_WEEKS_VIEW_NAME,
     view_query_template=COVID_REPORT_WEEKS_QUERY_TEMPLATE,
-    description=COVID_REPORT_WEEKS_DESCRIPTION
+    description=COVID_REPORT_WEEKS_DESCRIPTION,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         COVID_REPORT_WEEKS_VIEW_BUILDER.build_and_print()

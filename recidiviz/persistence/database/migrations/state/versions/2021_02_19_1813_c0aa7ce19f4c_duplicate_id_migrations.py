@@ -11,8 +11,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'c0aa7ce19f4c'
-down_revision = '1889d05fda36'
+revision = "c0aa7ce19f4c"
+down_revision = "1889d05fda36"
 branch_labels = None
 depends_on = None
 
@@ -49,19 +49,27 @@ WHERE t.{primary_key_col} = new_ids.{primary_key_col};
 
 def upgrade():
     table_to_primary_key = {
-        'state_sentence_group': 'sentence_group_id',
-        'state_incarceration_incident': 'incarceration_incident_id',
-        'state_incarceration_incident_outcome': 'incarceration_incident_outcome_id',
+        "state_sentence_group": "sentence_group_id",
+        "state_incarceration_incident": "incarceration_incident_id",
+        "state_incarceration_incident_outcome": "incarceration_incident_outcome_id",
     }
 
     with op.get_context().autocommit_block():
         for base_table, base_table_primary_key in table_to_primary_key.items():
-            op.execute(DEDUP_UPGRADE_QUERY.format(base_table_name=base_table,
-                                                  table_name=base_table,
-                                                  primary_key_col=base_table_primary_key))
-            op.execute(DEDUP_UPGRADE_QUERY.format(base_table_name=base_table,
-                                                  table_name=f'{base_table}_history',
-                                                  primary_key_col=base_table_primary_key))
+            op.execute(
+                DEDUP_UPGRADE_QUERY.format(
+                    base_table_name=base_table,
+                    table_name=base_table,
+                    primary_key_col=base_table_primary_key,
+                )
+            )
+            op.execute(
+                DEDUP_UPGRADE_QUERY.format(
+                    base_table_name=base_table,
+                    table_name=f"{base_table}_history",
+                    primary_key_col=base_table_primary_key,
+                )
+            )
 
 
 def downgrade():

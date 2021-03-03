@@ -20,15 +20,12 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-US_MO_SENTENCE_STATUSES_VIEW_NAME = \
-    'us_mo_sentence_statuses'
+US_MO_SENTENCE_STATUSES_VIEW_NAME = "us_mo_sentence_statuses"
 
-US_MO_SENTENCE_STATUSES_DESCRIPTION = \
-    """Provides time-based sentence status information for US_MO.
+US_MO_SENTENCE_STATUSES_DESCRIPTION = """Provides time-based sentence status information for US_MO.
     """
 
-US_MO_SENTENCE_STATUSES_QUERY_TEMPLATE = \
-    """
+US_MO_SENTENCE_STATUSES_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT
         COALESCE(incarceration_sentences.person_id, supervision_sentences.person_id) AS person_id,
@@ -79,6 +76,6 @@ US_MO_SENTENCE_STATUSES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         US_MO_SENTENCE_STATUSES_VIEW_BUILDER.build_and_print()

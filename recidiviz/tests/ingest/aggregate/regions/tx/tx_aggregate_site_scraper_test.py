@@ -22,21 +22,25 @@ import requests
 from recidiviz.ingest.aggregate.regions.tx import tx_aggregate_site_scraper
 from recidiviz.tests.ingest import fixtures
 
-REPORTS_HTML = fixtures.as_string('aggregate/regions/tx', 'reports.html')
+REPORTS_HTML = fixtures.as_string("aggregate/regions/tx", "reports.html")
 
 
 class TestTxAggregateSiteScraper(TestCase):
     """Test that tx_aggregate_site_scraper correctly scrapes urls."""
 
-    @patch.object(requests, 'get')
+    @patch.object(requests, "get")
     def testGetAllUrls(self, mockget):
         mockresponse = Mock()
         mockget.return_value = mockresponse
         mockresponse.text = REPORTS_HTML
-        url1 = ('https://www.tcjs.state.tx.us/docs/AbbreviatedPopReports/'
-                'Abbreviated Pop Rpt June 2020.pdf')
-        url2 = ('https://www.tcjs.state.tx.us/docs/AbbreviatedPopReports/'
-                'Abbreviated Pop Rpt Jan 2021.pdf')
+        url1 = (
+            "https://www.tcjs.state.tx.us/docs/AbbreviatedPopReports/"
+            "Abbreviated Pop Rpt June 2020.pdf"
+        )
+        url2 = (
+            "https://www.tcjs.state.tx.us/docs/AbbreviatedPopReports/"
+            "Abbreviated Pop Rpt Jan 2021.pdf"
+        )
         expected_urls = {url1, url2}
 
         urls = tx_aggregate_site_scraper.get_urls_to_download()

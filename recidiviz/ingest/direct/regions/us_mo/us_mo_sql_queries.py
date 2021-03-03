@@ -28,7 +28,9 @@ offline.
 
 from typing import List, Tuple, Optional
 
-from recidiviz.calculator.query.state.dataset_config import STATIC_REFERENCE_TABLES_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    STATIC_REFERENCE_TABLES_DATASET,
+)
 from recidiviz.ingest.direct.query_utils import output_sql_queries
 
 
@@ -109,8 +111,7 @@ ORDER BY FH$SCD;
 
 lower_bound_update_date = 0
 
-NON_INVESTIGATION_SUPERVISION_SENTENCES_FRAGMENT = \
-    """
+NON_INVESTIGATION_SUPERVISION_SENTENCES_FRAGMENT = """
     non_investigation_supervision_sentences_bu AS (
         -- Chooses only probation sentences that are non-investigation (not INV)
         SELECT *
@@ -118,15 +119,13 @@ NON_INVESTIGATION_SUPERVISION_SENTENCES_FRAGMENT = \
         WHERE BU$PBT != 'INV'
     )"""
 
-DISTINCT_SUPERVISION_SENTENCE_IDS_FRAGMENT = \
-    """
+DISTINCT_SUPERVISION_SENTENCE_IDS_FRAGMENT = """
     distinct_supervision_sentence_ids AS (
         SELECT DISTINCT BU$DOC, BU$CYC, BU$SEO, BU$FSO
         FROM non_investigation_supervision_sentences_bu
     )"""
 
-TAK001_OFFENDER_IDENTIFICATION_QUERY = \
-    f"""
+TAK001_OFFENDER_IDENTIFICATION_QUERY = f"""
     -- tak001_offender_identification
 
     SELECT *
@@ -143,8 +142,7 @@ TAK001_OFFENDER_IDENTIFICATION_QUERY = \
     ORDER BY EK$DOC DESC;
     """
 
-TAK040_OFFENDER_CYCLES = \
-    f"""
+TAK040_OFFENDER_CYCLES = f"""
     -- tak040_offender_cycles
 
     SELECT *
@@ -155,8 +153,7 @@ TAK040_OFFENDER_CYCLES = \
     ORDER BY DQ$DOC;
     """
 
-TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_INSTITUTION = \
-    f"""
+TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_INSTITUTION = f"""
     -- tak022_tak023_tak025_tak026_offender_sentence_institution
 
     WITH sentence_status_xref AS (
@@ -265,8 +262,7 @@ TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_INSTITUTION = \
     ORDER BY BS$DOC, BS$CYC, BS$SEO;
     """
 
-SUPERVISION_SENTENCE_STATUS_XREF_FRAGMENT = \
-    """
+SUPERVISION_SENTENCE_STATUS_XREF_FRAGMENT = """
     classified_status_bw AS (
         /* Helper to classify statuses in ways that will help us figure out the types of their associated supervision
         sentences */
@@ -387,8 +383,7 @@ SUPERVISION_SENTENCE_STATUS_XREF_FRAGMENT = \
 
 # Required that you also use DISTINCT_SUPERVISION_SENTENCE_IDS_FRAGMENT and SUPERVISION_SENTENCE_STATUS_XREF_FRAGMENT
 # in your query
-SUPERVISION_SENTENCE_TYPE_CLASSIFIER_FRAGMENT = \
-    """
+SUPERVISION_SENTENCE_TYPE_CLASSIFIER_FRAGMENT = """
     collapsed_sentence_status_type_classification AS (
        SELECT
           BV$DOC, BV$CYC, BV$SEO,
@@ -436,8 +431,7 @@ SUPERVISION_SENTENCE_TYPE_CLASSIFIER_FRAGMENT = \
             distinct_supervision_sentence_ids.BU$SEO = collapsed_sentence_status_type_classification.BV$SEO
     )"""
 
-SUPERVISION_SENTENCE_STATUS_MAX_UPDATE_DATES_FRAGMENT = \
-    """
+SUPERVISION_SENTENCE_STATUS_MAX_UPDATE_DATES_FRAGMENT = """
     sentence_max_status_update_dates AS (
         /* Get the max create/update dates for all the status info for a given
           sentence. If any status changes for a given sentence, we want to
@@ -453,8 +447,7 @@ SUPERVISION_SENTENCE_STATUS_MAX_UPDATE_DATES_FRAGMENT = \
         GROUP BY BV$DOC, BV$CYC, BV$SEO
     )"""
 
-FULL_SUPERVISION_SENTENCE_INFO_FRAGMENT = \
-    """
+FULL_SUPERVISION_SENTENCE_INFO_FRAGMENT = """
     full_supervision_sentence_info AS (
         SELECT sentence_bs.*, non_investigation_supervision_sentences_bu.*
         FROM
@@ -468,8 +461,7 @@ FULL_SUPERVISION_SENTENCE_INFO_FRAGMENT = \
     )"""
 
 
-TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_SUPERVISION = \
-    f"""
+TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_SUPERVISION = f"""
     -- tak022_tak024_tak025_tak026_offender_sentence_supervision
 
     WITH
@@ -604,8 +596,7 @@ TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_SUPERVISION = \
            full_supervision_sentence_info.BS$CYC,
            full_supervision_sentence_info.BS$SEO;"""
 
-INCARCERATION_SUB_SUBCYCLE_SPANS_FRAGMENT = \
-    """
+INCARCERATION_SUB_SUBCYCLE_SPANS_FRAGMENT = """
     status_bw AS (
         SELECT
             *
@@ -763,8 +754,7 @@ INCARCERATION_SUB_SUBCYCLE_SPANS_FRAGMENT = \
     )
     """
 
-STATUSES_BY_DATE_FRAGMENT = \
-    """
+STATUSES_BY_DATE_FRAGMENT = """
     all_scd_codes_by_date AS (
         -- All SCD status codes grouped by DOC, CYC, and SY (Date).
         SELECT
@@ -781,8 +771,7 @@ STATUSES_BY_DATE_FRAGMENT = \
 # TODO(#2798): Update this query/mappings to remove explicit linking to
 #  sentences - entity matching should handle date-based matching just like it
 #  does for supervision periods.
-TAK158_TAK023_TAK026_INCARCERATION_PERIOD_FROM_INCARCERATION_SENTENCE = \
-    f"""
+TAK158_TAK023_TAK026_INCARCERATION_PERIOD_FROM_INCARCERATION_SENTENCE = f"""
     -- tak158_tak023_tak026_incarceration_period_from_incarceration_sentence
     WITH {INCARCERATION_SUB_SUBCYCLE_SPANS_FRAGMENT},
     {STATUSES_BY_DATE_FRAGMENT},
@@ -838,8 +827,7 @@ TAK158_TAK023_TAK026_INCARCERATION_PERIOD_FROM_INCARCERATION_SENTENCE = \
     ORDER BY BT$DOC, BT$CYC, BT$SEO, F1$SQN;
     """
 
-TAK158_TAK024_TAK026_TAK039_INCARCERATION_PERIOD_FROM_SUPERVISION_SENTENCE = \
-    f"""
+TAK158_TAK024_TAK026_TAK039_INCARCERATION_PERIOD_FROM_SUPERVISION_SENTENCE = f"""
     -- tak158_tak024_tak026_incarceration_period_from_supervision_sentence
 
     WITH {INCARCERATION_SUB_SUBCYCLE_SPANS_FRAGMENT},
@@ -897,8 +885,7 @@ TAK158_TAK024_TAK026_TAK039_INCARCERATION_PERIOD_FROM_SUPERVISION_SENTENCE = \
     ORDER BY BU$DOC, BU$CYC, BU$SEO, F1$SQN;
     """
 
-ALL_OFFICERS_FRAGMENT = \
-    """all_officers AS (
+ALL_OFFICERS_FRAGMENT = """all_officers AS (
         -- Combination of 2 officer tables into one source of truth. Both tables
         -- contain information about different groups of officers. From
         -- conversations with MO contacts, we should use a combination of both
@@ -949,8 +936,7 @@ ALL_OFFICERS_FRAGMENT = \
     )
     """
 
-OFFICERS_WITH_MOST_RECENT_ROLE_FRAGMENT = \
-    f"""
+OFFICERS_WITH_MOST_RECENT_ROLE_FRAGMENT = f"""
     {ALL_OFFICERS_FRAGMENT},
     officers_with_role_recency_ranks AS(
         -- Officers with their roles ranked from most recent to least recent.
@@ -979,8 +965,7 @@ OFFICERS_WITH_MOST_RECENT_ROLE_FRAGMENT = \
             AND officers_with_role_recency_ranks.CLSTTL IS NOT NULL)
     """
 
-OFFICER_ROLE_SPANS_FRAGMENT = \
-    f"""
+OFFICER_ROLE_SPANS_FRAGMENT = f"""
     {ALL_OFFICERS_FRAGMENT},
     officers_with_role_time_ranks AS(
         -- Officers with their roles ranked from least recent to most recent,
@@ -1029,8 +1014,7 @@ OFFICER_ROLE_SPANS_FRAGMENT = \
 
 # TODO(#3736): Incremental updates from this query will be supported automatically when we transition MO to SQL
 #  pre-processing.
-TAK034_TAK026_TAK039_APFX90_APFX91_SUPERVISION_ENHANCEMENTS_SUPERVISION_PERIODS = \
-    f"""
+TAK034_TAK026_TAK039_APFX90_APFX91_SUPERVISION_ENHANCEMENTS_SUPERVISION_PERIODS = f"""
     -- tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods
 
     WITH field_assignments_ce AS (
@@ -1491,8 +1475,7 @@ TAK034_TAK026_TAK039_APFX90_APFX91_SUPERVISION_ENHANCEMENTS_SUPERVISION_PERIODS 
     ORDER BY DOC, CYC;
     """
 
-TAK142_FINALLY_FORMED_DOCUMENT_FRAGMENT = \
-    """
+TAK142_FINALLY_FORMED_DOCUMENT_FRAGMENT = """
         -- Finally formed documents are ones which are no longer in a draft
         -- state.
         SELECT
@@ -1510,14 +1493,15 @@ TAK142_FINALLY_FORMED_DOCUMENT_FRAGMENT = \
             finally_formed_documents_e6.E6$CYC,
             finally_formed_documents_e6.E6$DOS"""
 
-FINALLY_FORMED_CITATIONS_E6 = \
-    TAK142_FINALLY_FORMED_DOCUMENT_FRAGMENT.format(document_type_code='XIT')
-FINALLY_FORMED_VIOLATIONS_E6 = \
-    TAK142_FINALLY_FORMED_DOCUMENT_FRAGMENT.format(document_type_code='XIF')
+FINALLY_FORMED_CITATIONS_E6 = TAK142_FINALLY_FORMED_DOCUMENT_FRAGMENT.format(
+    document_type_code="XIT"
+)
+FINALLY_FORMED_VIOLATIONS_E6 = TAK142_FINALLY_FORMED_DOCUMENT_FRAGMENT.format(
+    document_type_code="XIF"
+)
 
 # TODO(#2805): Update to do a date-based join on OFFICER_ROLE_SPANS_FRAGMENT
-TAK028_TAK042_TAK076_TAK024_VIOLATION_REPORTS = \
-    f"""
+TAK028_TAK042_TAK076_TAK024_VIOLATION_REPORTS = f"""
     -- tak028_tak042_tak076_tak024_violation_reports
 
     WITH
@@ -1613,8 +1597,7 @@ TAK028_TAK042_TAK076_TAK024_VIOLATION_REPORTS = \
     ORDER BY BY$DOC, BY$CYC, BY$VSN;
     """
 
-TAK291_TAK292_TAK024_CITATIONS = \
-    f"""
+TAK291_TAK292_TAK024_CITATIONS = f"""
     -- tak291_tak292_tak024_citations
 
     WITH
@@ -1697,8 +1680,7 @@ TAK291_TAK292_TAK024_CITATIONS = \
     ORDER BY JT$DOC, JT$CYC, JT$CSQ;
     """
 
-ORAS_ASSESSMENTS_WEEKLY = \
-    """
+ORAS_ASSESSMENTS_WEEKLY = """
     -- oras_assessments_weekly
     SELECT
         *
@@ -1718,30 +1700,45 @@ def get_query_name_to_query_list() -> List[Tuple[str, str]]:
         # TODO(#3736): When we transition MO to SQL pre-processing, these tables should be imported as normal raw data
         #  imports and the calculation pipelines should pull the necessary data from
         #  `us_mo_raw_data_up_to_date_views.<table_name>_latest`.
-        ('us_mo_tak025_sentence_status_xref', US_MO_TAK025_SENTENCE_STATUS_XREF_QUERY),
-        ('us_mo_tak026_sentence_status', US_MO_TAK026_SENTENCE_STATUS_QUERY),
-        ('us_mo_tak146_status_code_descriptions', US_MO_TAK146_STATUS_CODE_DESCRIPTIONS_QUERY),
+        ("us_mo_tak025_sentence_status_xref", US_MO_TAK025_SENTENCE_STATUS_XREF_QUERY),
+        ("us_mo_tak026_sentence_status", US_MO_TAK026_SENTENCE_STATUS_QUERY),
+        (
+            "us_mo_tak146_status_code_descriptions",
+            US_MO_TAK146_STATUS_CODE_DESCRIPTIONS_QUERY,
+        ),
         # ~~~ END REFERENCE TABLE QUERIES ~~~ #
-
-        ('tak001_offender_identification', TAK001_OFFENDER_IDENTIFICATION_QUERY),
-        ('oras_assessments_weekly', ORAS_ASSESSMENTS_WEEKLY),
-        ('tak040_offender_cycles', TAK040_OFFENDER_CYCLES),
-        ('tak022_tak023_tak025_tak026_offender_sentence_institution',
-         TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_INSTITUTION),
-        ('tak022_tak024_tak025_tak026_offender_sentence_supervision',
-         TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_SUPERVISION),
-        ('tak158_tak023_tak026_incarceration_period_from_incarceration_sentence',
-         TAK158_TAK023_TAK026_INCARCERATION_PERIOD_FROM_INCARCERATION_SENTENCE),
-        ('tak158_tak024_tak026_incarceration_period_from_supervision_sentence',
-         TAK158_TAK024_TAK026_TAK039_INCARCERATION_PERIOD_FROM_SUPERVISION_SENTENCE),
-        ('tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods',
-         TAK034_TAK026_TAK039_APFX90_APFX91_SUPERVISION_ENHANCEMENTS_SUPERVISION_PERIODS),
-        ('tak028_tak042_tak076_tak024_violation_reports', TAK028_TAK042_TAK076_TAK024_VIOLATION_REPORTS),
-        ('tak291_tak292_tak024_citations', TAK291_TAK292_TAK024_CITATIONS)
+        ("tak001_offender_identification", TAK001_OFFENDER_IDENTIFICATION_QUERY),
+        ("oras_assessments_weekly", ORAS_ASSESSMENTS_WEEKLY),
+        ("tak040_offender_cycles", TAK040_OFFENDER_CYCLES),
+        (
+            "tak022_tak023_tak025_tak026_offender_sentence_institution",
+            TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_INSTITUTION,
+        ),
+        (
+            "tak022_tak024_tak025_tak026_offender_sentence_supervision",
+            TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_SUPERVISION,
+        ),
+        (
+            "tak158_tak023_tak026_incarceration_period_from_incarceration_sentence",
+            TAK158_TAK023_TAK026_INCARCERATION_PERIOD_FROM_INCARCERATION_SENTENCE,
+        ),
+        (
+            "tak158_tak024_tak026_incarceration_period_from_supervision_sentence",
+            TAK158_TAK024_TAK026_TAK039_INCARCERATION_PERIOD_FROM_SUPERVISION_SENTENCE,
+        ),
+        (
+            "tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods",
+            TAK034_TAK026_TAK039_APFX90_APFX91_SUPERVISION_ENHANCEMENTS_SUPERVISION_PERIODS,
+        ),
+        (
+            "tak028_tak042_tak076_tak024_violation_reports",
+            TAK028_TAK042_TAK076_TAK024_VIOLATION_REPORTS,
+        ),
+        ("tak291_tak292_tak024_citations", TAK291_TAK292_TAK024_CITATIONS),
     ]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Uncomment the os.path clause below (change the directory as desired) if you want the queries to write out to
     # separate files instead of to the console.
     output_dir: Optional[str] = None  # os.path.expanduser('~/Downloads/mo_queries')

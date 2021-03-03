@@ -35,11 +35,15 @@ from typing import List, Dict
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.common.constants import states
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import RawTableColumnInfo
+from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
+    RawTableColumnInfo,
+)
 from recidiviz.utils import metadata
 
 
-def _get_columns_by_file(state_code: str, project_id: str) -> Dict[str, List[RawTableColumnInfo]]:
+def _get_columns_by_file(
+    state_code: str, project_id: str
+) -> Dict[str, List[RawTableColumnInfo]]:
     """Creates a list of RawTableColumnInfo for each raw file in a given state"""
     columns_by_file: Dict[str, List[RawTableColumnInfo]] = {}
 
@@ -57,23 +61,27 @@ ORDER BY
     bq_client = BigQueryClientImpl()
     query_job = bq_client.run_query_async(query_string)
     for row in query_job:
-        column_name = row['column_name']
-        if column_name in {'file_id', 'update_datetime'}:
+        column_name = row["column_name"]
+        if column_name in {"file_id", "update_datetime"}:
             continue
 
-        file_name = row['table_name']
-        is_datetime = row['data_type'].upper() == 'DATETIME'
+        file_name = row["table_name"]
+        is_datetime = row["data_type"].upper() == "DATETIME"
 
         if file_name not in columns_by_file:
             columns_by_file[file_name] = []
 
-        column_info = RawTableColumnInfo(name=column_name, is_datetime=is_datetime, description='TKTK')
+        column_info = RawTableColumnInfo(
+            name=column_name, is_datetime=is_datetime, description="TKTK"
+        )
         columns_by_file[file_name].append(column_info)
 
     return columns_by_file
 
 
-def _generate_skeleton_config_for_file(file_name: str, columns: List[RawTableColumnInfo]) -> str:
+def _generate_skeleton_config_for_file(
+    file_name: str, columns: List[RawTableColumnInfo]
+) -> str:
     config = f"# {file_name}\n\ncolumns:\n"
 
     def _generate_column_config_string(column: RawTableColumnInfo) -> str:
@@ -93,7 +101,9 @@ def _generate_skeleton_config(state_code: str, project_id: str) -> str:
 
     config_strings_by_file = []
     for file_name, columns in columns_by_file.items():
-        config_strings_by_file.append(_generate_skeleton_config_for_file(file_name, columns))
+        config_strings_by_file.append(
+            _generate_skeleton_config_for_file(file_name, columns)
+        )
 
     return "\n\n".join(config_strings_by_file)
 
@@ -107,26 +117,30 @@ def parse_arguments(argv: List[str]) -> argparse.Namespace:
     """Parses the named arguments."""
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--state-code',
-                        dest='state_code',
-                        help='State to which this config belongs in the form US_XX.',
-                        type=str,
-                        choices=[state.value for state in states.StateCode],
-                        required=True)
+    parser.add_argument(
+        "--state-code",
+        dest="state_code",
+        help="State to which this config belongs in the form US_XX.",
+        type=str,
+        choices=[state.value for state in states.StateCode],
+        required=True,
+    )
 
-    parser.add_argument('--project-id',
-                        dest='project_id',
-                        help='Which project to read raw data from.',
-                        type=str,
-                        choices=['recidiviz-staging', 'recidiviz-123'],
-                        required=True)
+    parser.add_argument(
+        "--project-id",
+        dest="project_id",
+        help="Which project to read raw data from.",
+        type=str,
+        choices=["recidiviz-staging", "recidiviz-123"],
+        required=True,
+    )
 
     known_args, _ = parser.parse_known_args(argv)
 
     return known_args
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
     args = parse_arguments(sys.argv)
 

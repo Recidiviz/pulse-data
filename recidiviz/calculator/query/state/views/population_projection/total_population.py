@@ -21,13 +21,13 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-TOTAL_POPULATION_VIEW_NAME = 'total_population'
+TOTAL_POPULATION_VIEW_NAME = "total_population"
 
-TOTAL_POPULATION_VIEW_DESCRIPTION = \
+TOTAL_POPULATION_VIEW_DESCRIPTION = (
     """"Historical population by compartment and month"""
+)
 
-TOTAL_POPULATION_QUERY_TEMPLATE = \
-    """
+TOTAL_POPULATION_QUERY_TEMPLATE = """
     WITH cte AS
     (
         SELECT
@@ -75,9 +75,9 @@ TOTAL_POPULATION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=TOTAL_POPULATION_VIEW_DESCRIPTION,
     analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
     population_projection_dataset=dataset_config.POPULATION_PROJECTION_DATASET,
-    should_materialize=False
+    should_materialize=False,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         TOTAL_POPULATION_VIEW_BUILDER.build_and_print()

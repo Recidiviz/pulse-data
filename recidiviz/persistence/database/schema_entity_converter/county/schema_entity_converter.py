@@ -23,10 +23,12 @@ from types import ModuleType
 from typing import Type
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
-from recidiviz.persistence.database.schema_entity_converter. \
-    base_schema_entity_converter import (BaseSchemaEntityConverter,
-                                         FieldNameType, DstBaseType,
-                                         SrcBaseType)
+from recidiviz.persistence.database.schema_entity_converter.base_schema_entity_converter import (
+    BaseSchemaEntityConverter,
+    FieldNameType,
+    DstBaseType,
+    SrcBaseType,
+)
 from recidiviz.persistence.entity.base_entity import Entity
 
 from recidiviz.persistence.entity.county import entities
@@ -34,8 +36,7 @@ from recidiviz.persistence.database.schema.county import schema
 from recidiviz.persistence.entity.entity_utils import SchemaEdgeDirectionChecker
 
 
-class _CountySchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType,
-                                                             DstBaseType]):
+class _CountySchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType, DstBaseType]):
     """County-specific implementation of BaseSchemaEntityConverter"""
 
     def __init__(self):
@@ -47,21 +48,22 @@ class _CountySchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType,
     def _get_entities_module(self) -> ModuleType:
         return entities
 
-    def _should_skip_field(
-            self, entity_cls: Type, field: FieldNameType) -> bool:
+    def _should_skip_field(self, entity_cls: Type, field: FieldNameType) -> bool:
         # TODO(#1145): Correctly convert related_sentences once schema
         # for this field is finalized.
-        return entity_cls == entities.Sentence and field == 'related_sentences'
+        return entity_cls == entities.Sentence and field == "related_sentences"
 
     def _populate_indirect_back_edges(self, _):
         return
 
 
 class CountyEntityToSchemaConverter(
-        _CountySchemaEntityConverter[Entity, DatabaseEntity]):
+    _CountySchemaEntityConverter[Entity, DatabaseEntity]
+):
     pass
 
 
 class CountySchemaToEntityConverter(
-        _CountySchemaEntityConverter[DatabaseEntity, Entity]):
+    _CountySchemaEntityConverter[DatabaseEntity, Entity]
+):
     pass

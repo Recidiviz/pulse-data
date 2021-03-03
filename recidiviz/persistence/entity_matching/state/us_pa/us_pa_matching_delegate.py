@@ -22,28 +22,36 @@ from typing import List, Optional
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity_matching import entity_matching_utils
 from recidiviz.persistence.entity_matching.entity_matching_types import EntityTree
-from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import BaseStateMatchingDelegate
-from recidiviz.persistence.entity_matching.state.state_date_based_matching_utils import \
-    move_violations_onto_supervision_periods_for_person
-from recidiviz.persistence.entity_matching.state.state_matching_utils import nonnull_fields_entity_match
+from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import (
+    BaseStateMatchingDelegate,
+)
+from recidiviz.persistence.entity_matching.state.state_date_based_matching_utils import (
+    move_violations_onto_supervision_periods_for_person,
+)
+from recidiviz.persistence.entity_matching.state.state_matching_utils import (
+    nonnull_fields_entity_match,
+)
 
 
 class UsPaMatchingDelegate(BaseStateMatchingDelegate):
     """Class that contains matching logic specific to US_PA."""
+
     def __init__(self):
-        super().__init__('us_pa', [schema.StatePerson, schema.StateSentenceGroup])
+        super().__init__("us_pa", [schema.StatePerson, schema.StateSentenceGroup])
 
     def get_non_external_id_match(
-            self, ingested_entity_tree: EntityTree,
-            db_entity_trees: List[EntityTree]) -> Optional[EntityTree]:
+        self, ingested_entity_tree: EntityTree, db_entity_trees: List[EntityTree]
+    ) -> Optional[EntityTree]:
         """PA specific logic to match the |ingested_entity_tree| to one of the
         |db_entity_trees| that does not rely solely on matching by external_id.
         If such a match is found, it is returned.
         """
-        if isinstance(ingested_entity_tree.entity, (schema.StateAssessment, schema.StateCharge)):
-            return entity_matching_utils.get_only_match(ingested_entity_tree,
-                                                        db_entity_trees,
-                                                        nonnull_fields_entity_match)
+        if isinstance(
+            ingested_entity_tree.entity, (schema.StateAssessment, schema.StateCharge)
+        ):
+            return entity_matching_utils.get_only_match(
+                ingested_entity_tree, db_entity_trees, nonnull_fields_entity_match
+            )
         return None
 
     def perform_match_postprocessing(self, matched_persons: List[schema.StatePerson]):
@@ -52,5 +60,9 @@ class UsPaMatchingDelegate(BaseStateMatchingDelegate):
             - Move IncarcerationIncidents onto IncarcerationPeriods based on
               date.
         """
-        logging.info('[Entity matching] Move supervision violations onto supervision periods by date.')
-        move_violations_onto_supervision_periods_for_person(matched_persons, self.get_region_code())
+        logging.info(
+            "[Entity matching] Move supervision violations onto supervision periods by date."
+        )
+        move_violations_onto_supervision_periods_for_person(
+            matched_persons, self.get_region_code()
+        )
