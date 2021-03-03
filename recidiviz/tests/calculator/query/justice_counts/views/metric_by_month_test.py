@@ -654,7 +654,8 @@ class PrisonPopulationViewTest(BaseViewTest):
             table_id="source_materialized",
             mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
             mock_data=pd.DataFrame(
-                [[1, "XX"], [2, "YY"], [3, "ZZ"], [4, "XA"]], columns=["id", "name"]
+                [[1, "XX"], [2, "YY"], [3, "ZZ"], [4, "XA"], [5, "BJS"], [6, "FED"]],
+                columns=["id", "name"],
             ),
         )
         self.create_mock_bq_table(
@@ -703,6 +704,26 @@ class PrisonPopulationViewTest(BaseViewTest):
                         "MANUALLY_ENTERED",
                         "Jude",
                     ],
+                    [
+                        5,
+                        5,
+                        "_",
+                        "All",
+                        "2021-01-02",
+                        "bjs.gov",
+                        "MANUALLY_ENTERED",
+                        "Jude",
+                    ],
+                    [
+                        6,
+                        6,
+                        "_",
+                        "All",
+                        "2021-01-02",
+                        "fed.gov",
+                        "MANUALLY_ENTERED",
+                        "Jude",
+                    ],
                 ],
                 columns=[
                     "id",
@@ -734,7 +755,7 @@ class PrisonPopulationViewTest(BaseViewTest):
                         ["US_XX", "PRISON"],
                         ["global/gender", "global/gender/raw"],
                     ],
-                    # Not aggregated
+                    # Not aggregated by gender
                     [
                         2,
                         "CORRECTIONS",
@@ -744,7 +765,7 @@ class PrisonPopulationViewTest(BaseViewTest):
                         ["US_YY", "PRISON"],
                         [],
                     ],
-                    # Filtered instead, not comprehensive
+                    # Filtered by gender instead, not comprehensive
                     [
                         3,
                         "CORRECTIONS",
@@ -771,6 +792,26 @@ class PrisonPopulationViewTest(BaseViewTest):
                             "global/gender/raw",
                             "source/XA/facility/raw",
                         ],
+                    ],
+                    # Matches - aggregated by state
+                    [
+                        5,
+                        "CORRECTIONS",
+                        "POPULATION",
+                        "INSTANT",
+                        ["metric/population/type"],
+                        ["PRISON"],
+                        ["global/location/state", "global/gender", "global/gender/raw"],
+                    ],
+                    # No state dimension
+                    [
+                        6,
+                        "CORRECTIONS",
+                        "POPULATION",
+                        "INSTANT",
+                        ["metric/population/type"],
+                        ["PRISON"],
+                        ["global/gender", "global/gender/raw"],
                     ],
                 ],
                 columns=[
@@ -800,6 +841,10 @@ class PrisonPopulationViewTest(BaseViewTest):
                     [6, 3, 3, "2020-12-31", "2021-01-01", None],
                     [7, 4, 4, "2020-11-30", "2020-12-01", None],
                     [8, 4, 4, "2020-12-31", "2021-01-01", None],
+                    [9, 5, 5, "2020-11-30", "2020-12-01", None],
+                    [10, 5, 5, "2020-12-31", "2021-01-01", None],
+                    [11, 6, 6, "2020-11-30", "2020-12-01", None],
+                    [12, 6, 6, "2020-12-31", "2021-01-01", None],
                 ],
                 columns=[
                     "id",
@@ -833,6 +878,18 @@ class PrisonPopulationViewTest(BaseViewTest):
                     [14, 8, ["MALE", "Male", "Offsite"], 30],
                     [15, 8, ["FEMALE", "Female", "Onsite"], 200],
                     [16, 8, ["FEMALE", "Female", "Offsite"], 20],
+                    [17, 9, ["US_XB", "MALE", "Male"], 1],
+                    [18, 9, ["US_XB", "FEMALE", "Female"], 2],
+                    [19, 9, ["US_XC", "MALE", "Male"], 3],
+                    [20, 9, ["US_XC", "FEMALE", "Female"], 4],
+                    [21, 10, ["US_XB", "MALE", "Male"], 5],
+                    [22, 10, ["US_XB", "FEMALE", "Female"], 6],
+                    [23, 10, ["US_XC", "MALE", "Male"], 7],
+                    [24, 10, ["US_XC", "FEMALE", "Female"], 8],
+                    [25, 11, ["MALE", "Male"], 2_000_000],
+                    [26, 11, ["FEMALE", "Female"], 200_000],
+                    [27, 12, ["MALE", "Male"], 3_000_000],
+                    [28, 12, ["FEMALE", "Female"], 300_000],
                 ],
                 columns=[
                     "id",
@@ -924,6 +981,118 @@ class PrisonPopulationViewTest(BaseViewTest):
                     "_",
                     ["Male", "Offsite", "Onsite"],
                     330,
+                ]
+                + [None] * 4,
+                [
+                    "US_XB",
+                    "FEMALE",
+                    "POP",
+                    2020,
+                    11,
+                    _npd("2020-11-30"),
+                    "BJS",
+                    "bjs.gov",
+                    "_",
+                    ["Female"],
+                    2,
+                ]
+                + [None] * 4,
+                [
+                    "US_XB",
+                    "FEMALE",
+                    "POP",
+                    2020,
+                    12,
+                    _npd("2020-12-31"),
+                    "BJS",
+                    "bjs.gov",
+                    "_",
+                    ["Female"],
+                    6,
+                ]
+                + [None] * 4,
+                [
+                    "US_XB",
+                    "MALE",
+                    "POP",
+                    2020,
+                    11,
+                    _npd("2020-11-30"),
+                    "BJS",
+                    "bjs.gov",
+                    "_",
+                    ["Male"],
+                    1,
+                ]
+                + [None] * 4,
+                [
+                    "US_XB",
+                    "MALE",
+                    "POP",
+                    2020,
+                    12,
+                    _npd("2020-12-31"),
+                    "BJS",
+                    "bjs.gov",
+                    "_",
+                    ["Male"],
+                    5,
+                ]
+                + [None] * 4,
+                [
+                    "US_XC",
+                    "FEMALE",
+                    "POP",
+                    2020,
+                    11,
+                    _npd("2020-11-30"),
+                    "BJS",
+                    "bjs.gov",
+                    "_",
+                    ["Female"],
+                    4,
+                ]
+                + [None] * 4,
+                [
+                    "US_XC",
+                    "FEMALE",
+                    "POP",
+                    2020,
+                    12,
+                    _npd("2020-12-31"),
+                    "BJS",
+                    "bjs.gov",
+                    "_",
+                    ["Female"],
+                    8,
+                ]
+                + [None] * 4,
+                [
+                    "US_XC",
+                    "MALE",
+                    "POP",
+                    2020,
+                    11,
+                    _npd("2020-11-30"),
+                    "BJS",
+                    "bjs.gov",
+                    "_",
+                    ["Male"],
+                    3,
+                ]
+                + [None] * 4,
+                [
+                    "US_XC",
+                    "MALE",
+                    "POP",
+                    2020,
+                    12,
+                    _npd("2020-12-31"),
+                    "BJS",
+                    "bjs.gov",
+                    "_",
+                    ["Male"],
+                    7,
                 ]
                 + [None] * 4,
                 [

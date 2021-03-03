@@ -24,11 +24,20 @@ from recidiviz.calculator.query.justice_counts.views.cloudsql import (
 from recidiviz.calculator.query.justice_counts.views.corrections_metrics_by_month import (
     CorrectionsMetricsByMonthBigQueryViewCollector,
 )
+from recidiviz.calculator.query.justice_counts.views.jails_metrics_by_month import (
+    JailsMetricsByMonthBigQueryViewCollector,
+)
 
 _corrections_metrics_collector = CorrectionsMetricsByMonthBigQueryViewCollector()
+_jails_metrics_collector = JailsMetricsByMonthBigQueryViewCollector()
 
-VIEW_BUILDERS_FOR_VIEWS_TO_EXPORT = [_corrections_metrics_collector.unified_builder]
+VIEW_BUILDERS_FOR_VIEWS_TO_EXPORT = [
+    _corrections_metrics_collector.unified_builder,
+    _jails_metrics_collector.unified_builder,
+]
 
 VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = (
-    get_table_view_builders() + _corrections_metrics_collector.collect_view_builders()
+    get_table_view_builders()
+    + _corrections_metrics_collector.collect_view_builders()
+    + _jails_metrics_collector.collect_view_builders()
 )
