@@ -157,6 +157,11 @@ class CasePresenter:
                 Gender(self.etl_client.gender), 0
             ):
                 return None
+        if (
+            StateSupervisionLevel(self.etl_client.supervision_level)
+            == StateSupervisionLevel.MINIMUM
+        ):
+            return None
         return self.etl_client.most_recent_assessment_date + timedelta(
             days=REASSESSMENT_DEADLINE_DAYS
         )
