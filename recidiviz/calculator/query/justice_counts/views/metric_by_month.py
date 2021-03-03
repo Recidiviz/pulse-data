@@ -16,7 +16,7 @@
 # =============================================================================
 """Provides a template for calculating a Justice Counts metric by month."""
 
-from typing import Dict, List, Type
+from typing import Dict, Iterable, List, Type
 
 import attr
 
@@ -43,8 +43,8 @@ WITH sufficient_table_defs as (
       SELECT filtered_dimensions FROM UNNEST(filtered_dimensions) AS filtered_dimension
       WHERE filtered_dimension NOT IN ({input_allowed_filters})
     )
-    -- Exclude table definitions that don't have all the necessary aggregated dimensions.
-    {input_required_aggregations_conditions}
+    -- Exclude table definitions that don't have all the necessary dimensions.
+    {input_required_dimensions_clause}
 ),
 
 -- Gets the cells for these table definitions and flattens the filtered and aggregated dimensions into a single set of
@@ -327,9 +327,9 @@ class CalculatedMetricByMonth:
         ] + self._noncomprehensive_aggregations
 
     @property
-    def input_required_aggregations(self) -> List[Type[manual_upload.Dimension]]:
-        """Dimensions that a table definition must be aggregated by to be used as input for this calculation."""
-        return self._comprehensive_aggregations
+    def input_required_aggregations(self) -> Iterable[Aggregation]:
+        """Dimensions that a table definition must include to be used as input for this calculation."""
+        return self.aggregated_dimensions.values()
 
 
 class CalculatedMetricByMonthViewBuilder(SimpleBigQueryViewBuilder):
@@ -345,12 +345,17 @@ class CalculatedMetricByMonthViewBuilder(SimpleBigQueryViewBuilder):
                 for dimension in metric_to_calculate.input_allowed_filters
             ]
         )
-        input_required_aggregations_conditions = " ".join(
-            [
-                f"AND '{dimension.dimension_identifier()}' IN UNNEST(aggregated_dimensions)"
-                for dimension in metric_to_calculate.input_required_aggregations
-            ]
-        )
+
+        input_required_dimension_conditions: List[str] = []
+        for aggregation in metric_to_calculate.input_required_aggregations:
+            columns = ["aggregated_dimensions"]
+            if not aggregation.comprehensive:
+                columns.append("filtered_dimensions")
+            input_required_dimension_conditions.append(
+                f"AND '{aggregation.dimension.dimension_identifier()}' "
+                f"IN UNNEST(ARRAY_CONCAT({', '.join(columns)}))"
+            )
+        input_required_dimensions_clause = " ".join(input_required_dimension_conditions)
 
         # For filtering data
         if metric_to_calculate.filtered_dimensions:
@@ -402,7 +407,7 @@ class CalculatedMetricByMonthViewBuilder(SimpleBigQueryViewBuilder):
             system=metric_to_calculate.system.value,
             metric_type=metric_to_calculate.metric.value,
             input_allowed_filters=input_allowed_filters,
-            input_required_aggregations_conditions=input_required_aggregations_conditions,
+            input_required_dimensions_clause=input_required_dimensions_clause,
             dimensions_match_filter_clause=dimensions_match_filter_clause,
             num_filtered_dimensions=str(len(metric_to_calculate.filtered_dimensions)),
             aggregated_dimension_identifiers=aggregated_dimension_identifiers,

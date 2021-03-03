@@ -116,7 +116,7 @@ CREATE AGGREGATE array_concat_agg (anyarray)
 """
 
 _DROP_ARRAY_CONCAT_AGG_FUNC = """
-DROP AGGREGATE array_concat_agg
+DROP AGGREGATE array_concat_agg (anyarray)
 """
 
 
@@ -240,9 +240,10 @@ class BaseViewTest(unittest.TestCase):
         query = _replace_iter(query, r"\[ORDINAL\((?P<ordinal>.+?)\)\]", "[{ordinal}]")
 
         # Array concatenation is performed with the || operator
+        query = _replace_iter(query, r"ARRAY_CONCAT\((?P<first>[^,]+?)\)", "({first})")
         query = _replace_iter(
             query,
-            r"ARRAY_CONCAT\((?P<first>.+?), (?P<second>.+?)\)",
+            r"ARRAY_CONCAT\((?P<first>[^,]+?), (?P<second>[^,]+?)\)",
             "({first} || {second})",
         )
 
