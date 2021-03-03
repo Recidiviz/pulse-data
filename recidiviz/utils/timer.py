@@ -26,10 +26,12 @@ class RepeatedTimer(threading.Thread):
     """Starts a background thread that repeatedly calls the passed in callback with
     the specified delay time in between."""
 
-    def __init__(self,
-                 seconds_to_wait: float,
-                 callback: Callable[[], None],
-                 run_immediately: bool = False):
+    def __init__(
+        self,
+        seconds_to_wait: float,
+        callback: Callable[[], None],
+        run_immediately: bool = False,
+    ):
         threading.Thread.__init__(self)
         self.seconds_to_wait = seconds_to_wait
         self.callback = callback

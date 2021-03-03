@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-# pylint: disable=line-too-long
+
 """Define views for combining scraper & state-reports & ITP."""
 
 import os
@@ -22,14 +22,18 @@ import os
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
 from recidiviz.calculator.query.county.views.stitch import combined_stitch
-from recidiviz.calculator.query.county.views.stitch.incarceration_trends_stitch_subset \
-    import INCARCERATION_TRENDS_STITCH_SUBSET_VIEW_BUILDER
-from recidiviz.calculator.query.county.views.stitch.scraper_aggregated_stitch_subset \
-    import SCRAPER_AGGREGATED_STITCH_SUBSET_VIEW_BUILDER
-from recidiviz.calculator.query.county.views.stitch.single_count_stitch_subset \
-    import SINGLE_COUNT_STITCH_SUBSET_VIEW_BUILDER
-from recidiviz.calculator.query.county.views.stitch.state_aggregate_stitch_subset \
-    import STATE_AGGREGATE_STITCH_SUBSET_VIEW_BUILDER
+from recidiviz.calculator.query.county.views.stitch.incarceration_trends_stitch_subset import (
+    INCARCERATION_TRENDS_STITCH_SUBSET_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.county.views.stitch.scraper_aggregated_stitch_subset import (
+    SCRAPER_AGGREGATED_STITCH_SUBSET_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.county.views.stitch.single_count_stitch_subset import (
+    SINGLE_COUNT_STITCH_SUBSET_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.county.views.stitch.state_aggregate_stitch_subset import (
+    STATE_AGGREGATE_STITCH_SUBSET_VIEW_BUILDER,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -46,20 +50,23 @@ This is because all data points are plotted using valid_from.  """.format(
     state=INCARCERATION_TRENDS_STITCH_SUBSET_VIEW_BUILDER.view_id,
     scraper=SCRAPER_AGGREGATED_STITCH_SUBSET_VIEW_BUILDER.view_id,
     single_count=SINGLE_COUNT_STITCH_SUBSET_VIEW_BUILDER.view_id,
-    itp=STATE_AGGREGATE_STITCH_SUBSET_VIEW_BUILDER.view_id)
-
-with open(os.path.splitext(__file__)[0] + '.sql') as fp:
-    _QUERY_TEMPLATE = fp.read()
-
-COMBINED_STITCH_DROP_OVERLAPPING_TOTAL_JAIL_POP_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.VIEWS_DATASET,
-    view_id='combined_stitch_drop_overlapping_total_jail_pop',
-    view_query_template=_QUERY_TEMPLATE,
-    views_dataset=dataset_config.VIEWS_DATASET,
-    combined_stitch=combined_stitch.COMBINED_STITCH_VIEW_BUILDER.view_id,
-    description=_DESCRIPTION
+    itp=STATE_AGGREGATE_STITCH_SUBSET_VIEW_BUILDER.view_id,
 )
 
-if __name__ == '__main__':
+with open(os.path.splitext(__file__)[0] + ".sql") as fp:
+    _QUERY_TEMPLATE = fp.read()
+
+COMBINED_STITCH_DROP_OVERLAPPING_TOTAL_JAIL_POP_VIEW_BUILDER = (
+    SimpleBigQueryViewBuilder(
+        dataset_id=dataset_config.VIEWS_DATASET,
+        view_id="combined_stitch_drop_overlapping_total_jail_pop",
+        view_query_template=_QUERY_TEMPLATE,
+        views_dataset=dataset_config.VIEWS_DATASET,
+        combined_stitch=combined_stitch.COMBINED_STITCH_VIEW_BUILDER.view_id,
+        description=_DESCRIPTION,
+    )
+)
+
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         COMBINED_STITCH_DROP_OVERLAPPING_TOTAL_JAIL_POP_VIEW_BUILDER.build_and_print()

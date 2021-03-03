@@ -19,8 +19,7 @@
 
 import unittest
 
-from recidiviz.ingest.models.ingest_object_hierarchy import \
-    get_ancestor_class_sequence
+from recidiviz.ingest.models.ingest_object_hierarchy import get_ancestor_class_sequence
 
 
 class FieldsDontMatchError(Exception):
@@ -31,73 +30,93 @@ class TestIngestObjectHierarchy(unittest.TestCase):
     """Tests for ingest_object_hierarchy."""
 
     def test_get_sequence_for_class_persons(self):
-        actual = get_ancestor_class_sequence('person')
+        actual = get_ancestor_class_sequence("person")
         expected = ()
         self.assertEqual(expected, actual)
 
-        actual = get_ancestor_class_sequence('state_person')
+        actual = get_ancestor_class_sequence("state_person")
         expected = ()
         self.assertEqual(expected, actual)
 
     def test_get_sequence_for_class_single_parent(self):
-        actual = get_ancestor_class_sequence('bond')
-        expected = ('person', 'booking', 'charge')
+        actual = get_ancestor_class_sequence("bond")
+        expected = ("person", "booking", "charge")
         self.assertEqual(expected, actual)
 
-        actual = get_ancestor_class_sequence('state_supervision_sentence')
-        expected = ('state_person', 'state_sentence_group')
+        actual = get_ancestor_class_sequence("state_supervision_sentence")
+        expected = ("state_person", "state_sentence_group")
         self.assertEqual(expected, actual)
 
     def test_get_sequence_for_class_multiple_parents_enforced(self):
         actual = get_ancestor_class_sequence(
-            'state_supervision_period',
-            enforced_ancestor_choices=
-            {'state_sentence': 'state_incarceration_sentence'})
+            "state_supervision_period",
+            enforced_ancestor_choices={
+                "state_sentence": "state_incarceration_sentence"
+            },
+        )
 
-        expected = ('state_person', 'state_sentence_group',
-                    'state_incarceration_sentence')
+        expected = (
+            "state_person",
+            "state_sentence_group",
+            "state_incarceration_sentence",
+        )
         self.assertEqual(expected, actual)
 
     def test_get_sequence_for_class_multiple_parents_enforced_bad_key(self):
         with self.assertRaises(ValueError):
             get_ancestor_class_sequence(
-                'state_supervision_period',
-                enforced_ancestor_choices={'nonsense': 'whatever'})
+                "state_supervision_period",
+                enforced_ancestor_choices={"nonsense": "whatever"},
+            )
 
     def test_get_sequence_for_class_multiple_parents_enforced_bad_choice(self):
         with self.assertRaises(ValueError):
             get_ancestor_class_sequence(
-                'state_supervision_period',
-                enforced_ancestor_choices={'state_sentence': 'bogus'})
+                "state_supervision_period",
+                enforced_ancestor_choices={"state_sentence": "bogus"},
+            )
 
     def test_get_sequence_for_class_multiple_parents_enforced_over_chain(self):
         actual = get_ancestor_class_sequence(
-            'state_supervision_period',
-            ancestor_chain={'state_person': '12345'},
-            enforced_ancestor_choices=
-            {'state_sentence': 'state_supervision_sentence'})
+            "state_supervision_period",
+            ancestor_chain={"state_person": "12345"},
+            enforced_ancestor_choices={"state_sentence": "state_supervision_sentence"},
+        )
 
-        expected = ('state_person', 'state_sentence_group',
-                    'state_supervision_sentence')
+        expected = (
+            "state_person",
+            "state_sentence_group",
+            "state_supervision_sentence",
+        )
         self.assertEqual(expected, actual)
 
     def test_get_sequence_for_class_multiple_parents_chain(self):
         actual = get_ancestor_class_sequence(
-            'state_incarceration_period',
-            ancestor_chain={'state_person': '12345',
-                            'state_incarceration_sentence': '45678'})
+            "state_incarceration_period",
+            ancestor_chain={
+                "state_person": "12345",
+                "state_incarceration_sentence": "45678",
+            },
+        )
 
-        expected = ('state_person', 'state_sentence_group',
-                    'state_incarceration_sentence')
+        expected = (
+            "state_person",
+            "state_sentence_group",
+            "state_incarceration_sentence",
+        )
         self.assertEqual(expected, actual)
 
     def test_get_sequence_for_class_multiple_parents_further_downstream(self):
         actual = get_ancestor_class_sequence(
-            'state_supervision_violation_response',
-            enforced_ancestor_choices=
-            {'state_sentence': 'state_supervision_sentence'})
+            "state_supervision_violation_response",
+            enforced_ancestor_choices={"state_sentence": "state_supervision_sentence"},
+        )
 
-        expected = ('state_person', 'state_sentence_group',
-                    'state_supervision_sentence', 'state_supervision_period',
-                    'state_supervision_violation')
+        expected = (
+            "state_person",
+            "state_sentence_group",
+            "state_supervision_sentence",
+            "state_supervision_period",
+            "state_supervision_violation",
+        )
         self.assertEqual(expected, actual)

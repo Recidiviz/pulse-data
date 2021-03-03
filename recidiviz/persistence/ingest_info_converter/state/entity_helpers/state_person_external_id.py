@@ -21,17 +21,22 @@ from recidiviz.common.common_utils import get_external_id
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StatePersonExternalId
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.entity.state.deserialize_entity_factories import StatePersonExternalIdFactory
+from recidiviz.persistence.entity.state.deserialize_entity_factories import (
+    StatePersonExternalIdFactory,
+)
 
 
-def convert(proto: StatePersonExternalId,
-            metadata: IngestMetadata) -> entities.StatePersonExternalId:
+def convert(
+    proto: StatePersonExternalId, metadata: IngestMetadata
+) -> entities.StatePersonExternalId:
     """Converts an ingest_info proto Hold to a persistence entity."""
     new = entities.StatePersonExternalId.builder()
 
     # The ingest info -> proto converter appends the id_type to the external id to keep external ids globally unique.
-    new.external_id = get_external_id(synthetic_id=getattr(proto, 'state_person_external_id_id'))
-    new.id_type = getattr(proto, 'id_type')
+    new.external_id = get_external_id(
+        synthetic_id=getattr(proto, "state_person_external_id_id")
+    )
+    new.id_type = getattr(proto, "id_type")
     new.state_code = metadata.region
 
     return new.build(StatePersonExternalIdFactory.deserialize)

@@ -43,8 +43,8 @@ from recidiviz.utils.environment import GCPEnvironment
 
 
 class RemovedFromWebsite(Enum):
-    RELEASED = 'RELEASED'
-    UNKNOWN_SIGNIFICANCE = 'UNKNOWN_SIGNIFICANCE'
+    RELEASED = "RELEASED"
+    UNKNOWN_SIGNIFICANCE = "UNKNOWN_SIGNIFICANCE"
 
 
 class IngestType(Enum):
@@ -53,7 +53,7 @@ class IngestType(Enum):
 
 
 # Cache of the `Region` objects.
-REGIONS: Dict[IngestType, Dict[str, 'Region']] = {}
+REGIONS: Dict[IngestType, Dict[str, "Region"]] = {}
 
 
 def _to_lower(s: str) -> str:
@@ -102,9 +102,9 @@ class Region:
     base_url: Optional[str] = attr.ib(default=None)
     shared_queue: Optional[str] = attr.ib(default=None)
     queue: Optional[Dict[str, Any]] = attr.ib(default=None)
-    removed_from_website: RemovedFromWebsite = \
-        attr.ib(default=RemovedFromWebsite.RELEASED,
-                converter=RemovedFromWebsite)
+    removed_from_website: RemovedFromWebsite = attr.ib(
+        default=RemovedFromWebsite.RELEASED, converter=RemovedFromWebsite
+    )
     names_file: Optional[str] = attr.ib(default=None)
     should_proxy: Optional[bool] = attr.ib(default=False)
     is_stoppable: Optional[bool] = attr.ib(default=False)
@@ -123,12 +123,13 @@ class Region:
 
     def __attrs_post_init__(self):
         if self.queue and self.shared_queue:
-            raise ValueError(
-                'Only one of `queue` and `shared_queue` can be set.')
+            raise ValueError("Only one of `queue` and `shared_queue` can be set.")
         if self.environment not in {*environment.GCP_ENVIRONMENTS, None}:
-            raise ValueError('Invalid environment: {}'.format(self.environment))
+            raise ValueError("Invalid environment: {}".format(self.environment))
         if self.facility_id and len(self.facility_id) != 16:
-            raise ValueError(f'Improperly formatted FID [{self.facility_id}], should be length 16')
+            raise ValueError(
+                f"Improperly formatted FID [{self.facility_id}], should be length 16"
+            )
 
     def get_ingestor_class(self):
         """Retrieve the class for the ingest object for a particular region
@@ -136,15 +137,17 @@ class Region:
         Returns:
             An instance of the region's ingest class (e.g., UsNyScraper)
         """
-        ingest_type_name = 'Controller' if self.is_direct_ingest else 'Scraper'
+        ingest_type_name = "Controller" if self.is_direct_ingest else "Scraper"
 
-        module_name = \
-            f'{self.region_module.__name__}.{self.region_code}' \
-            f'.{self.region_code}_{ingest_type_name.lower()}'
+        module_name = (
+            f"{self.region_module.__name__}.{self.region_code}"
+            f".{self.region_code}_{ingest_type_name.lower()}"
+        )
 
         module = importlib.import_module(module_name)
         ingest_class = getattr(
-            module, get_ingestor_name(self.region_code, ingest_type_name))
+            module, get_ingestor_name(self.region_code, ingest_type_name)
+        )
 
         return ingest_class
 
@@ -167,8 +170,11 @@ class Region:
 
     def get_queue_name(self) -> str:
         """Returns the name of the queue to be used for the region"""
-        return self.shared_queue if self.shared_queue \
-            else '{}-scraper-v2'.format(self.region_code.replace('_', '-'))
+        return (
+            self.shared_queue
+            if self.shared_queue
+            else "{}-scraper-v2".format(self.region_code.replace("_", "-"))
+        )
 
     def is_ingest_launched_in_env(self) -> bool:
         """Returns true if ingest can be launched for this region in the current
@@ -178,12 +184,17 @@ class Region:
         this region can be run in prod. All regions can be triggered to run in
         staging.
         """
-        return not environment.in_gcp_production() \
+        return (
+            not environment.in_gcp_production()
             or self.environment == environment.get_gcp_environment()
+        )
 
     def is_ingest_launched_in_production(self) -> bool:
         """Returns true if ingest can be launched for this region in production. """
-        return self.environment is not None and self.environment.lower() == GCPEnvironment.PRODUCTION.value.lower()
+        return (
+            self.environment is not None
+            and self.environment.lower() == GCPEnvironment.PRODUCTION.value.lower()
+        )
 
     def is_raw_vs_ingest_file_name_detection_enabled(self) -> bool:
         """Returns True if this is ready for ingest to differentiate between files with the 'raw' and 'ingest_view'
@@ -212,9 +223,14 @@ class Region:
         If the |raw_vs_ingest_file_name_differentiation_enabled_env| config is unset, returns False. If it is set to
         'prod', this will also be enabled in staging.
         """
-        return self.raw_vs_ingest_file_name_differentiation_enabled_env is not None and \
-            (not environment.in_gcp_production() or
-             self.raw_vs_ingest_file_name_differentiation_enabled_env == environment.get_gcp_environment())
+        return (
+            self.raw_vs_ingest_file_name_differentiation_enabled_env is not None
+            and (
+                not environment.in_gcp_production()
+                or self.raw_vs_ingest_file_name_differentiation_enabled_env
+                == environment.get_gcp_environment()
+            )
+        )
 
     def are_raw_data_bq_imports_enabled_in_env(self) -> bool:
         """Returns true if this regions supports raw data import to BQ.
@@ -244,10 +260,15 @@ class Region:
         If the |raw_data_bq_imports_enabled_env| config is unset, returns False. If it is set to 'prod',
         BQ import will also be enabled in staging.
         """
-        return self.is_raw_vs_ingest_file_name_detection_enabled() and \
-            self.raw_data_bq_imports_enabled_env is not None and \
-            (not environment.in_gcp_production() or
-             self.raw_data_bq_imports_enabled_env == environment.get_gcp_environment())
+        return (
+            self.is_raw_vs_ingest_file_name_detection_enabled()
+            and self.raw_data_bq_imports_enabled_env is not None
+            and (
+                not environment.in_gcp_production()
+                or self.raw_data_bq_imports_enabled_env
+                == environment.get_gcp_environment()
+            )
+        )
 
     def are_ingest_view_exports_enabled_in_env(self) -> bool:
         """Returns true if this regions supports export of ingest views to the ingest bucket.
@@ -267,15 +288,23 @@ class Region:
         If the |ingest_view_exports_enabled_env| config is unset, returns False. If it is set to 'prod',
         ingest view export will also be enabled in staging.
         """
-        return self.is_raw_vs_ingest_file_name_detection_enabled() and \
-            self.are_raw_data_bq_imports_enabled_in_env() and \
-            self.ingest_view_exports_enabled_env is not None and \
-            (not environment.in_gcp_production() or
-             self.ingest_view_exports_enabled_env == environment.get_gcp_environment())
+        return (
+            self.is_raw_vs_ingest_file_name_detection_enabled()
+            and self.are_raw_data_bq_imports_enabled_in_env()
+            and self.ingest_view_exports_enabled_env is not None
+            and (
+                not environment.in_gcp_production()
+                or self.ingest_view_exports_enabled_env
+                == environment.get_gcp_environment()
+            )
+        )
 
 
-def get_region(region_code: str, is_direct_ingest: bool = False,
-               region_module_override: Optional[ModuleType] = None) -> Region:
+def get_region(
+    region_code: str,
+    is_direct_ingest: bool = False,
+    region_module_override: Optional[ModuleType] = None,
+) -> Region:
     global REGIONS
 
     if region_module_override:
@@ -290,18 +319,19 @@ def get_region(region_code: str, is_direct_ingest: bool = False,
         REGIONS[ingest_type] = {}
 
     if region_code not in REGIONS[ingest_type]:
-        REGIONS[ingest_type][region_code] = Region(region_code=region_code.lower(),
-                                                   is_direct_ingest=is_direct_ingest,
-                                                   region_module=region_module,
-                                                   **get_region_manifest(region_code.lower(), region_module))
+        REGIONS[ingest_type][region_code] = Region(
+            region_code=region_code.lower(),
+            is_direct_ingest=is_direct_ingest,
+            region_module=region_module,
+            **get_region_manifest(region_code.lower(), region_module),
+        )
     return REGIONS[ingest_type][region_code]
 
 
-MANIFEST_NAME = 'manifest.yaml'
+MANIFEST_NAME = "manifest.yaml"
 
 
-def get_region_manifest(region_code: str,
-                        region_module: ModuleType) -> Dict[str, Any]:
+def get_region_manifest(region_code: str, region_module: ModuleType) -> Dict[str, Any]:
     """Gets manifest for a specific region
 
     Args:
@@ -310,14 +340,17 @@ def get_region_manifest(region_code: str,
     Returns:
         Region manifest as dictionary
     """
-    with open(os.path.join(os.path.dirname(region_module.__file__),
-                           region_code,
-                           MANIFEST_NAME)) as region_manifest:
+    with open(
+        os.path.join(
+            os.path.dirname(region_module.__file__), region_code, MANIFEST_NAME
+        )
+    ) as region_manifest:
         return yaml.full_load(region_manifest)
 
 
-def get_supported_scrape_region_codes(timezone: tzinfo = None,
-                                      stripes: List[str] = None) -> Set[str]:
+def get_supported_scrape_region_codes(
+    timezone: tzinfo = None, stripes: List[str] = None
+) -> Set[str]:
     """Retrieve a list of known scraper regions / region codes
 
     Args:
@@ -331,58 +364,69 @@ def get_supported_scrape_region_codes(timezone: tzinfo = None,
         scraper_regions_module,
         is_direct_ingest=False,
         timezone=timezone,
-        stripes=stripes)
+        stripes=stripes,
+    )
 
 
 def get_supported_direct_ingest_region_codes() -> Set[str]:
     return _get_supported_region_codes_for_base_region_module(
-        direct_ingest_regions_module,
-        is_direct_ingest=True)
+        direct_ingest_regions_module, is_direct_ingest=True
+    )
 
 
 def _get_supported_region_codes_for_base_region_module(
-        base_region_module: ModuleType,
-        is_direct_ingest: bool,
-        timezone: tzinfo = None,
-        stripes: List[str] = None):
+    base_region_module: ModuleType,
+    is_direct_ingest: bool,
+    timezone: tzinfo = None,
+    stripes: List[str] = None,
+):
+    """Returns all regions that support the given module type, e.g. direct ingest versus scraper. Will optionally
+    filter on the additional arguments."""
 
     base_region_path = os.path.dirname(base_region_module.__file__)
-    all_region_codes = {region_module.name for region_module
-                        in pkgutil.iter_modules([base_region_path])}
+    all_region_codes = {
+        region_module.name for region_module in pkgutil.iter_modules([base_region_path])
+    }
     if timezone:
         dt = datetime.now()
-        filtered_regions = {region_code for region_code in all_region_codes
-                            if timezone.utcoffset(dt) ==
-                            get_region(
-                                region_code,
-                                is_direct_ingest=is_direct_ingest
-                            ).timezone.utcoffset(dt)}
+        filtered_regions = {
+            region_code
+            for region_code in all_region_codes
+            if timezone.utcoffset(dt)
+            == get_region(
+                region_code, is_direct_ingest=is_direct_ingest
+            ).timezone.utcoffset(dt)
+        }
     else:
         filtered_regions = all_region_codes
 
     if stripes and len(stripes) > 0:
-        return {region_code for region_code in filtered_regions
-                if get_region(
-                    region_code,
-                    is_direct_ingest=is_direct_ingest
-                ).stripe in stripes}
+        return {
+            region_code
+            for region_code in filtered_regions
+            if get_region(region_code, is_direct_ingest=is_direct_ingest).stripe
+            in stripes
+        }
 
     return filtered_regions
 
 
-def get_supported_regions() -> List['Region']:
-    return get_supported_scrape_regions() + \
-        get_supported_direct_ingest_regions()
+def get_supported_regions() -> List["Region"]:
+    return get_supported_scrape_regions() + get_supported_direct_ingest_regions()
 
 
-def get_supported_scrape_regions() -> List['Region']:
-    return [get_region(region_code, is_direct_ingest=False)
-            for region_code in get_supported_scrape_region_codes()]
+def get_supported_scrape_regions() -> List["Region"]:
+    return [
+        get_region(region_code, is_direct_ingest=False)
+        for region_code in get_supported_scrape_region_codes()
+    ]
 
 
-def get_supported_direct_ingest_regions() -> List['Region']:
-    return [get_region(region_code, is_direct_ingest=True)
-            for region_code in get_supported_direct_ingest_region_codes()]
+def get_supported_direct_ingest_regions() -> List["Region"]:
+    return [
+        get_region(region_code, is_direct_ingest=True)
+        for region_code in get_supported_direct_ingest_region_codes()
+    ]
 
 
 def validate_region_code(region_code):
@@ -400,5 +444,4 @@ def validate_region_code(region_code):
 
 def get_ingestor_name(region_code: str, ingest_type_name: str) -> str:
     """Returns the class name for a given region_code and ingest_module"""
-    return ''.join(s.title() for s in
-                   chain(region_code.split('_'), [ingest_type_name]))
+    return "".join(s.title() for s in chain(region_code.split("_"), [ingest_type_name]))

@@ -29,9 +29,17 @@ from typing import List, Dict
 
 from jinja2 import Template
 
-from recidiviz.reporting.context.context_utils import singular_or_plural, month_number_to_name, \
-    round_float_value_to_int, round_float_value_to_number_of_digits, format_greeting, format_name, format_date, \
-    format_violation_type, align_columns
+from recidiviz.reporting.context.context_utils import (
+    singular_or_plural,
+    month_number_to_name,
+    round_float_value_to_int,
+    round_float_value_to_number_of_digits,
+    format_greeting,
+    format_name,
+    format_date,
+    format_violation_type,
+    align_columns,
+)
 import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.reporting.context.po_monthly_report.constants import DEFAULT_MESSAGE_BODY
 from recidiviz.reporting.context.report_context import ReportContext
@@ -61,8 +69,13 @@ _AVERAGE_METRICS_FOR_DISPLAY = [
     "absconsions_state_average",
 ]
 
-_BASE_METRICS_FOR_DISPLAY = ["pos_discharges", "earned_discharges", "technical_revocations", "crime_revocations",
-                             "absconsions"]
+_BASE_METRICS_FOR_DISPLAY = [
+    "pos_discharges",
+    "earned_discharges",
+    "technical_revocations",
+    "crime_revocations",
+    "absconsions",
+]
 
 _ALL_METRICS_FOR_DISPLAY = _BASE_METRICS_FOR_DISPLAY + _AVERAGE_METRICS_FOR_DISPLAY
 
@@ -83,18 +96,23 @@ _ALL_CLIENT_FIELDS = [
     "facetoface_out_of_date_clients",
 ]
 
-_ALL_REQUIRED_RECIPIENT_DATA_FIELDS = _ALL_METRICS_FOR_DISPLAY + _ALL_LAST_MONTH_METRICS + _ALL_CLIENT_FIELDS + [
-    "officer_external_id",
-    "state_code",
-    "district",
-    "email_address",
-    "officer_given_name",
-    "review_month",
-    "assessments",
-    "assessment_percent",
-    "facetoface",
-    "facetoface_percent"
-]
+_ALL_REQUIRED_RECIPIENT_DATA_FIELDS = (
+    _ALL_METRICS_FOR_DISPLAY
+    + _ALL_LAST_MONTH_METRICS
+    + _ALL_CLIENT_FIELDS
+    + [
+        "officer_external_id",
+        "state_code",
+        "district",
+        "email_address",
+        "officer_given_name",
+        "review_month",
+        "assessments",
+        "assessment_percent",
+        "facetoface",
+        "facetoface_percent",
+    ]
+)
 
 
 class PoMonthlyReportContext(ReportContext):
@@ -110,7 +128,7 @@ class PoMonthlyReportContext(ReportContext):
             self.attachment_template = Template(attachment_file.read())
 
     def get_attachment_filepath(self) -> str:
-        return os.path.join(os.path.dirname(__file__), 'attachment.txt.jinja2')
+        return os.path.join(os.path.dirname(__file__), "attachment.txt.jinja2")
 
     def get_required_recipient_data_fields(self) -> List[str]:
         return _ALL_REQUIRED_RECIPIENT_DATA_FIELDS
@@ -120,18 +138,22 @@ class PoMonthlyReportContext(ReportContext):
 
     def get_properties_filepath(self) -> str:
         """Returns path to the properties.json, assumes it is in the same directory as the context."""
-        return os.path.join(os.path.dirname(__file__), 'properties.json')
+        return os.path.join(os.path.dirname(__file__), "properties.json")
 
     def get_html_template_filepath(self) -> str:
         """Returns path to the template.html file, assumes it is in the same directory as the context."""
-        return os.path.join(os.path.dirname(__file__), 'template.html')
+        return os.path.join(os.path.dirname(__file__), "template.html")
 
     def prepare_for_generation(self) -> dict:
         """Executes PO Monthly Report data preparation."""
         self.prepared_data = copy.deepcopy(self.recipient_data)
 
-        self.prepared_data["static_image_path"] = utils.get_static_image_path(self.state_code, self.get_report_type())
-        self.prepared_data["greeting"] = format_greeting(self.recipient_data["officer_given_name"])
+        self.prepared_data["static_image_path"] = utils.get_static_image_path(
+            self.state_code, self.get_report_type()
+        )
+        self.prepared_data["greeting"] = format_greeting(
+            self.recipient_data["officer_given_name"]
+        )
 
         if "message_body" not in self.prepared_data:
             self.prepared_data["message_body"] = DEFAULT_MESSAGE_BODY
@@ -146,22 +168,28 @@ class PoMonthlyReportContext(ReportContext):
         self._set_congratulations_section()
         self._set_total_revocations()
         self._singular_or_plural_section_headers()
-        self._round_float_values_to_ints(['assessment_percent', 'facetoface_percent'])
-        self._round_float_values_to_number_of_digits(_AVERAGE_METRICS_FOR_DISPLAY,
-                                                     number_of_digits=_AVERAGE_VALUES_SIGNIFICANT_DIGITS)
+        self._round_float_values_to_ints(["assessment_percent", "facetoface_percent"])
+        self._round_float_values_to_number_of_digits(
+            _AVERAGE_METRICS_FOR_DISPLAY,
+            number_of_digits=_AVERAGE_VALUES_SIGNIFICANT_DIGITS,
+        )
         self._prepare_attachment_content()
 
         return self.prepared_data
 
     def _prepare_attachment_content(self) -> None:
         if not self._should_generate_attachment():
-            self.prepared_data['attachment_content'] = None
+            self.prepared_data["attachment_content"] = None
             return
 
-        self.prepared_data['attachment_content'] = self.attachment_template.render(self._prepare_attachment_data())
+        self.prepared_data["attachment_content"] = self.attachment_template.render(
+            self._prepare_attachment_data()
+        )
 
     @staticmethod
-    def _metric_improved(metric_key: str, metric_value: float, comparison_value: float) -> bool:
+    def _metric_improved(
+        metric_key: str, metric_value: float, comparison_value: float
+    ) -> bool:
         """Returns True if the value improved when compared to the comparison_value"""
         change_value = float(metric_value - comparison_value)
         if metric_key in _METRICS_IMPROVE_ON_INCREASE:
@@ -193,37 +221,55 @@ class PoMonthlyReportContext(ReportContext):
         """Returns the number of metrics that performed better than the either district or state averages"""
         num_metrics_outperformed_region_averages = 0
         for metric_key in _BASE_METRICS_FOR_DISPLAY:
-            if self._improved_over_district_average(metric_key) or self._improved_over_state_average(metric_key):
+            if self._improved_over_district_average(
+                metric_key
+            ) or self._improved_over_state_average(metric_key):
                 num_metrics_outperformed_region_averages += 1
 
         return num_metrics_outperformed_region_averages
 
     def _set_total_revocations(self) -> None:
-        self.prepared_data['total_revocations'] = str(int(self.recipient_data['technical_revocations']) +
-                                                      int(self.recipient_data['crime_revocations']))
+        self.prepared_data["total_revocations"] = str(
+            int(self.recipient_data["technical_revocations"])
+            + int(self.recipient_data["crime_revocations"])
+        )
 
     def _get_metric_text_singular_or_plural(self, metric_value: int) -> str:
-        metric_text = 'metric_text_singular' if metric_value == 1 else 'metric_text_plural'
+        metric_text = (
+            "metric_text_singular" if metric_value == 1 else "metric_text_plural"
+        )
         return self.properties[metric_text].format(metric=metric_value)
 
     def _set_congratulations_section(self) -> None:
         """Set the text and the display property for the Congratulations section. Sets the display property to
-            'inherit' if the metrics met goals, or 'none' if no goals were met and it should be hidden."""
+        'inherit' if the metrics met goals, or 'none' if no goals were met and it should be hidden."""
         num_metrics_met_goal = self._get_num_metrics_improved_from_last_month()
-        num_metrics_outperformed_region_averages = self._get_num_metrics_outperformed_region_averages()
-        is_meeting_goals = num_metrics_met_goal > 0 or num_metrics_outperformed_region_averages > 0
+        num_metrics_outperformed_region_averages = (
+            self._get_num_metrics_outperformed_region_averages()
+        )
+        is_meeting_goals = (
+            num_metrics_met_goal > 0 or num_metrics_outperformed_region_averages > 0
+        )
 
-        self.prepared_data['display_congratulations'] = 'inherit' if is_meeting_goals else 'none'
+        self.prepared_data["display_congratulations"] = (
+            "inherit" if is_meeting_goals else "none"
+        )
 
-        met_goal_text = self.properties['met_goal_text'].format(
+        met_goal_text = self.properties["met_goal_text"].format(
             metric_text=self._get_metric_text_singular_or_plural(num_metrics_met_goal)
         )
-        outperformed_region_averages_text = self.properties['outperformed_region_averages_text'].format(
-            metric_text=self._get_metric_text_singular_or_plural(num_metrics_outperformed_region_averages)
+        outperformed_region_averages_text = self.properties[
+            "outperformed_region_averages_text"
+        ].format(
+            metric_text=self._get_metric_text_singular_or_plural(
+                num_metrics_outperformed_region_averages
+            )
         )
 
         if num_metrics_met_goal > 0 and num_metrics_outperformed_region_averages > 0:
-            congratulations_text = f"You {met_goal_text} and {outperformed_region_averages_text}."
+            congratulations_text = (
+                f"You {met_goal_text} and {outperformed_region_averages_text}."
+            )
 
         elif num_metrics_met_goal > 0:
             congratulations_text = f"You {met_goal_text}."
@@ -234,74 +280,112 @@ class PoMonthlyReportContext(ReportContext):
         else:
             congratulations_text = ""
 
-        self.prepared_data['congratulations_text'] = congratulations_text
+        self.prepared_data["congratulations_text"] = congratulations_text
 
     def _set_averages_metric_color(self, metrics: List[str]) -> None:
         """Sets the color for the district averages displayed in each section. Color will be the red if it didn't
-            improve compared to the state average, otherwise it will be the default color.
+        improve compared to the state average, otherwise it will be the default color.
         """
         for metric_key in metrics:
             if metric_key.endswith("state_average"):
                 # Only set the color for district averages
                 continue
 
-            color_key = f'{metric_key}_color'
+            color_key = f"{metric_key}_color"
             metric_value = float(self.recipient_data[metric_key])
-            state_average = float(self.recipient_data[metric_key.replace("district_average", "state_average")])
-            metric_improved = self._metric_improved(metric_key, metric_value, state_average)
+            state_average = float(
+                self.recipient_data[
+                    metric_key.replace("district_average", "state_average")
+                ]
+            )
+            metric_improved = self._metric_improved(
+                metric_key, metric_value, state_average
+            )
 
             if metric_improved:
-                self.prepared_data[color_key] = self.properties['default_color']
+                self.prepared_data[color_key] = self.properties["default_color"]
             else:
-                self.prepared_data[color_key] = self.properties['red']
+                self.prepared_data[color_key] = self.properties["red"]
 
     def _set_base_metric_color(self, metrics: List[str]) -> None:
         """Sets the color for the base metrics displayed in each section. Color will be the red if it didn't
-            improve compared to either the district or state averages, otherwise it will be the default color.
+        improve compared to either the district or state averages, otherwise it will be the default color.
         """
         for metric_key in metrics:
-            color_key = f'{metric_key}_color'
+            color_key = f"{metric_key}_color"
 
-            if self._improved_over_district_average(metric_key) and self._improved_over_state_average(metric_key):
-                self.prepared_data[color_key] = self.properties['default_color']
+            if self._improved_over_district_average(
+                metric_key
+            ) and self._improved_over_state_average(metric_key):
+                self.prepared_data[color_key] = self.properties["default_color"]
             else:
-                self.prepared_data[color_key] = self.properties['red']
+                self.prepared_data[color_key] = self.properties["red"]
 
     def _set_month_to_month_change_metrics(self, metrics: List[str]) -> None:
         """Sets the value and color for metrics that display the month-to-month change value. If the metric improved
-            from last month's value, the color will be gray, otherwise it will be red.
+        from last month's value, the color will be gray, otherwise it will be red.
         """
         for metric_key in metrics:
             metric_improves_on_increase = metric_key in _METRICS_IMPROVE_ON_INCREASE
-            base_key = f'{metric_key}_change'
-            color_key = f'{metric_key}_change_color'
+            base_key = f"{metric_key}_change"
+            color_key = f"{metric_key}_change_color"
             metric_value = float(self.recipient_data[metric_key])
             last_month_value = float(self.recipient_data[f"{metric_key}_last_month"])
             change_value = float(metric_value - last_month_value)
 
-            self._set_color_and_text_for_change_metrics(change_value,
-                                                        base_key,
-                                                        color_key,
-                                                        metric_improves_on_increase)
+            self._set_color_and_text_for_change_metrics(
+                change_value, base_key, color_key, metric_improves_on_increase
+            )
 
     def _singular_or_plural_section_headers(self) -> None:
         """Ensures that each of the given labels will be made singular or plural, based on the value it is labelling."""
-        singular_or_plural(self.prepared_data, "pos_discharges", "pos_discharges_label",
-                           "Successful&nbsp;Case Completion", "Successful&nbsp;Case Completions")
+        singular_or_plural(
+            self.prepared_data,
+            "pos_discharges",
+            "pos_discharges_label",
+            "Successful&nbsp;Case Completion",
+            "Successful&nbsp;Case Completions",
+        )
 
-        singular_or_plural(self.prepared_data, "earned_discharges", "earned_discharges_label", "Early Discharge",
-                           "Early Discharges")
+        singular_or_plural(
+            self.prepared_data,
+            "earned_discharges",
+            "earned_discharges_label",
+            "Early Discharge",
+            "Early Discharges",
+        )
 
-        singular_or_plural(self.prepared_data, "total_revocations", "total_revocations_label", "Revocation",
-                           "Revocations")
+        singular_or_plural(
+            self.prepared_data,
+            "total_revocations",
+            "total_revocations_label",
+            "Revocation",
+            "Revocations",
+        )
 
-        singular_or_plural(self.prepared_data, "absconsions", "absconsions_label", "Absconsion", "Absconsions")
+        singular_or_plural(
+            self.prepared_data,
+            "absconsions",
+            "absconsions_label",
+            "Absconsion",
+            "Absconsions",
+        )
 
-        singular_or_plural(self.prepared_data, "assessments", "assessments_label", "Risk Assessment",
-                           "Risk Assessments")
+        singular_or_plural(
+            self.prepared_data,
+            "assessments",
+            "assessments_label",
+            "Risk Assessment",
+            "Risk Assessments",
+        )
 
-        singular_or_plural(self.prepared_data, "facetoface", "facetoface_label", "Face-to-Face Contact",
-                           "Face-to-Face Contacts")
+        singular_or_plural(
+            self.prepared_data,
+            "facetoface",
+            "facetoface_label",
+            "Face-to-Face Contact",
+            "Face-to-Face Contacts",
+        )
 
     def _convert_month_to_name(self, month_key: str) -> None:
         """Converts the number at the given key, representing a calendar month, into the name of that month."""
@@ -312,19 +396,26 @@ class PoMonthlyReportContext(ReportContext):
     def _round_float_values_to_ints(self, float_keys: List[str]) -> None:
         """Rounds all of the values with the given keys to their nearest integer values for display."""
         for float_key in float_keys:
-            self.prepared_data[float_key] = round_float_value_to_int(self.recipient_data[float_key])
+            self.prepared_data[float_key] = round_float_value_to_int(
+                self.recipient_data[float_key]
+            )
 
-    def _round_float_values_to_number_of_digits(self, float_keys: List[str], number_of_digits: int) -> None:
+    def _round_float_values_to_number_of_digits(
+        self, float_keys: List[str], number_of_digits: int
+    ) -> None:
         """Rounds all of the values with the given keys to the given number of digits."""
         for float_key in float_keys:
             self.prepared_data[float_key] = round_float_value_to_number_of_digits(
-                self.recipient_data[float_key], number_of_digits)
+                self.recipient_data[float_key], number_of_digits
+            )
 
-    def _set_color_and_text_for_change_metrics(self,
-                                               change_value: float,
-                                               base_key: str,
-                                               color_key: str,
-                                               metric_improves_on_increase: bool) -> None:
+    def _set_color_and_text_for_change_metrics(
+        self,
+        change_value: float,
+        base_key: str,
+        color_key: str,
+        metric_improves_on_increase: bool,
+    ) -> None:
         """Sets text and color properties for the given value and key based on the value and whether we want
         the coloring to apply on increase or on decrease. Also ensures that all displayed values are rounded to the
         nearest integer."""
@@ -339,14 +430,18 @@ class PoMonthlyReportContext(ReportContext):
         if metric_improves_on_increase:
             if change_value >= 0:
                 self.prepared_data[color_key] = gray
-                self.prepared_data[base_key] = f"{str(int_value)} {increase_text} {encouragement_text}"
+                self.prepared_data[
+                    base_key
+                ] = f"{str(int_value)} {increase_text} {encouragement_text}"
             else:
                 self.prepared_data[color_key] = red
                 self.prepared_data[base_key] = f"{str(abs(int_value))} {decrease_text}"
         else:
             if change_value <= 0:
                 self.prepared_data[color_key] = gray
-                self.prepared_data[base_key] = f"{str(abs(int_value))} {decrease_text} {encouragement_text}"
+                self.prepared_data[
+                    base_key
+                ] = f"{str(abs(int_value))} {decrease_text} {encouragement_text}"
             else:
                 self.prepared_data[color_key] = red
                 self.prepared_data[base_key] = f"{str(int_value)} {increase_text}"
@@ -368,8 +463,8 @@ class PoMonthlyReportContext(ReportContext):
 
     def _prepare_attachment_clients_tables(self) -> Dict[str, List[List[str]]]:
         """
-            Prepares "tables" (2 dimensional arrays) of client details to inline into the email
-            Returns: a dictionary, keyed by client "type", and its corresponding table
+        Prepares "tables" (2 dimensional arrays) of client details to inline into the email
+        Returns: a dictionary, keyed by client "type", and its corresponding table
         """
         clients_by_type: Dict[str, List[List[str]]] = {}
 
@@ -380,7 +475,10 @@ class PoMonthlyReportContext(ReportContext):
                 continue
 
             for client in self.recipient_data[clients_key]:
-                base_columns = [f"[{client['person_external_id']}]", format_name(client['full_name'])]
+                base_columns = [
+                    f"[{client['person_external_id']}]",
+                    format_name(client["full_name"]),
+                ]
                 additional_columns = []
 
                 if clients_key == "pos_discharges_clients":
@@ -398,7 +496,7 @@ class PoMonthlyReportContext(ReportContext):
                 elif clients_key == "revocations_clients":
                     additional_columns = [
                         f'{format_violation_type(client["revocation_violation_type"])}',
-                        f'Revocation recommendation staffed on {format_date(client["revocation_report_date"])}'
+                        f'Revocation recommendation staffed on {format_date(client["revocation_report_date"])}',
                     ]
 
                 clients_by_type[clients_key].append(base_columns + additional_columns)
@@ -406,11 +504,15 @@ class PoMonthlyReportContext(ReportContext):
         return clients_by_type
 
     def _prepare_attachment_data(self) -> Dict:
-        prepared_on_date = format_date(self.get_batch_id(), current_format='%Y%m%d%H%M%S')
+        prepared_on_date = format_date(
+            self.get_batch_id(), current_format="%Y%m%d%H%M%S"
+        )
 
         return {
             "prepared_on_date": prepared_on_date,
-            "officer_given_name": format_name(self.recipient_data['officer_given_name']),
+            "officer_given_name": format_name(
+                self.recipient_data["officer_given_name"]
+            ),
             "clients": {
                 clients_key: align_columns(clients)
                 for clients_key, clients in self._prepare_attachment_clients_tables().items()

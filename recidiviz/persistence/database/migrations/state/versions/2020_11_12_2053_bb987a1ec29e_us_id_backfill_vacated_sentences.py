@@ -11,24 +11,29 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'bb987a1ec29e'
-down_revision = '08bfc99a8d94'
+revision = "bb987a1ec29e"
+down_revision = "08bfc99a8d94"
 branch_labels = None
 depends_on = None
 
-UPDATE_QUERY = "UPDATE {table_name} " \
-               "SET status = 'VACATED' " \
-               "WHERE state_code = 'US_ID' AND status_raw_text IN ('V', 'Q');"
+UPDATE_QUERY = (
+    "UPDATE {table_name} "
+    "SET status = 'VACATED' "
+    "WHERE state_code = 'US_ID' AND status_raw_text IN ('V', 'Q');"
+)
 
-DOWNGRADE_QUERY = "UPDATE {table_name} " \
-                  "SET status = 'COMPLETED' " \
-                  "WHERE state_code = 'US_ID' AND status_raw_text IN ('V', 'Q');"
+DOWNGRADE_QUERY = (
+    "UPDATE {table_name} "
+    "SET status = 'COMPLETED' "
+    "WHERE state_code = 'US_ID' AND status_raw_text IN ('V', 'Q');"
+)
 
 TABLES_TO_UPDATE = [
-    'state_supervision_sentence',
-    'state_supervision_sentence_history',
-    'state_incarceration_sentence',
-    'state_incarceration_sentence_history']
+    "state_supervision_sentence",
+    "state_supervision_sentence_history",
+    "state_incarceration_sentence",
+    "state_incarceration_sentence_history",
+]
 
 
 def upgrade():

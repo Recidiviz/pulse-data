@@ -15,19 +15,19 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """US_ND Admissions to CPP (Community Placement Program) by week"""
-# pylint: disable=trailing-whitespace,line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-ADMISSIONS_TO_CPP_BY_WEEK_VIEW_NAME = 'admissions_to_cpp_by_week'
+ADMISSIONS_TO_CPP_BY_WEEK_VIEW_NAME = "admissions_to_cpp_by_week"
 
-ADMISSIONS_TO_CPP_BY_WEEK_DESCRIPTION = \
+ADMISSIONS_TO_CPP_BY_WEEK_DESCRIPTION = (
     """US_ND Admissions to CPP (Community Placement Program) by week"""
+)
 
-ADMISSIONS_TO_CPP_BY_WEEK_QUERY_TEMPLATE = \
-    """
+ADMISSIONS_TO_CPP_BY_WEEK_QUERY_TEMPLATE = """
     /*{description}*/
       -- Incarceration in US_ND state prison to be used for COVID analysis --
       WITH us_nd_state_incarceration_period AS
@@ -99,9 +99,9 @@ ADMISSIONS_TO_CPP_BY_WEEK_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=ADMISSIONS_TO_CPP_BY_WEEK_DESCRIPTION,
     base_dataset=dataset_config.STATE_BASE_DATASET,
     covid_report_dataset=dataset_config.COVID_REPORT_DATASET,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         ADMISSIONS_TO_CPP_BY_WEEK_VIEW_BUILDER.build_and_print()

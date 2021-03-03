@@ -22,15 +22,17 @@ from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.persistence.database.base_schema import OperationsBase
 from recidiviz.persistence.database.schema.operations.session_listener import (
-    session_listener as operations_session_listener
+    session_listener as operations_session_listener,
 )
-from recidiviz.persistence.database.sqlalchemy_engine_manager import \
-    SQLAlchemyEngineManager
+from recidiviz.persistence.database.sqlalchemy_engine_manager import (
+    SQLAlchemyEngineManager,
+)
 from recidiviz.persistence.database.session import Session
 
 
 class SessionFactory:
     """Creates SQLAlchemy sessions for the given database schema"""
+
     @classmethod
     def for_schema_base(cls, schema_base: DeclarativeMeta) -> Session:
         engine = SQLAlchemyEngineManager.get_engine_for_schema_base(schema_base)
@@ -43,7 +45,9 @@ class SessionFactory:
         return session
 
     @classmethod
-    def _apply_session_listener_for_schema_base(cls, schema_base: DeclarativeMeta, session: Session) -> None:
+    def _apply_session_listener_for_schema_base(
+        cls, schema_base: DeclarativeMeta, session: Session
+    ) -> None:
         if schema_base == OperationsBase:
             operations_session_listener(session)
 
@@ -61,5 +65,5 @@ class SessionFactory:
         # https://stackoverflow.com/questions/42288808/why-does-postgresql-serializable-transaction-think-this-as-conflict.
         #
         # TODO(#3928): Once defined in code, set this on the SQL instance itself instead of per session.
-        if session.bind.dialect.name == 'postgresql':
-            session.execute('SET random_page_cost=1;')
+        if session.bind.dialect.name == "postgresql":
+            session.execute("SET random_page_cost=1;")

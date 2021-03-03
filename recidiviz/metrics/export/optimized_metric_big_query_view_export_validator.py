@@ -18,7 +18,9 @@
 """View Validator implementation for the optimized metric file representation, checking that the metric file's
 total number of data points is greater than 0."""
 
-from recidiviz.big_query.export.big_query_view_export_validator import BigQueryViewExportValidator
+from recidiviz.big_query.export.big_query_view_export_validator import (
+    BigQueryViewExportValidator,
+)
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 
 
@@ -31,7 +33,7 @@ class OptimizedMetricBigQueryViewExportValidator(BigQueryViewExportValidator):
         if not metadata:
             return False
 
-        data_points = metadata.get('total_data_points')
+        data_points = metadata.get("total_data_points")
 
         if not data_points:
             return False

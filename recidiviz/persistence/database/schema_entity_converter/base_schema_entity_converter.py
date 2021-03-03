@@ -23,8 +23,18 @@ import abc
 from collections import defaultdict
 from enum import Enum
 from types import ModuleType
-from typing import Generic, Dict, List, Type, Optional, Any, Tuple, Sequence, \
-    TypeVar, Union
+from typing import (
+    Generic,
+    Dict,
+    List,
+    Type,
+    Optional,
+    Any,
+    Tuple,
+    Sequence,
+    TypeVar,
+    Union,
+)
 
 import attr
 
@@ -37,8 +47,8 @@ from recidiviz.persistence.entity.entity_utils import SchemaEdgeDirectionChecker
 SrcIdType = int
 FieldNameType = str
 
-SrcBaseType = TypeVar('SrcBaseType', DatabaseEntity, Entity)
-DstBaseType = TypeVar('DstBaseType', DatabaseEntity, Entity)
+SrcBaseType = TypeVar("SrcBaseType", DatabaseEntity, Entity)
+DstBaseType = TypeVar("DstBaseType", DatabaseEntity, Entity)
 
 
 class DatabaseConversionError(Exception):
@@ -59,8 +69,7 @@ class _Direction(Enum):
         if issubclass(src_cls, DatabaseEntity):
             return _Direction.SCHEMA_TO_ENTITY
 
-        raise DatabaseConversionError(
-            "Unable to convert class [{0}]".format(src_cls))
+        raise DatabaseConversionError("Unable to convert class [{0}]".format(src_cls))
 
 
 class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
@@ -86,9 +95,9 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
         # lists of src type object ids that correspond to edges that traverse
         # backwards along the object graph ordering, and need to be filled in
         # once all the forward edges have been traversed.
-        self._back_edges: Dict[SrcIdType,
-                               Dict[FieldNameType, List[SrcIdType]]] = \
-            defaultdict(lambda: defaultdict(list))
+        self._back_edges: Dict[
+            SrcIdType, Dict[FieldNameType, List[SrcIdType]]
+        ] = defaultdict(lambda: defaultdict(list))
 
     @abc.abstractmethod
     def _get_entities_module(self) -> ModuleType:
@@ -99,8 +108,7 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
         pass
 
     @abc.abstractmethod
-    def _should_skip_field(
-            self, entity_cls: Type, field: FieldNameType) -> bool:
+    def _should_skip_field(self, entity_cls: Type, field: FieldNameType) -> bool:
         pass
 
     @abc.abstractmethod
@@ -113,10 +121,9 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
     def _id_from_src_object(src: SrcBaseType) -> SrcIdType:
         return id(src)
 
-    def _register_back_edge(self,
-                            from_src_obj: SrcBaseType,
-                            to_src_obj: SrcBaseType,
-                            field: FieldNameType) -> None:
+    def _register_back_edge(
+        self, from_src_obj: SrcBaseType, to_src_obj: SrcBaseType, field: FieldNameType
+    ) -> None:
         """
         Records an edge on the source object graph that is a back edge, i.e. it
         travels in a direction opposite to the class ranking. This edge will be
@@ -141,10 +148,12 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
             raise DatabaseConversionError(
                 f"Found back edges that have yet to be filled in for "
                 f"[{len(self._back_edges.keys())}] items. Should have been 0."
-                f"First unfilled edge: {key}: {self._back_edges[key]}")
+                f"First unfilled edge: {key}: {self._back_edges[key]}"
+            )
 
-    def convert_all(self, src: Sequence[SrcBaseType],
-                    populate_back_edges: bool = True) -> List[DstBaseType]:
+    def convert_all(
+        self, src: Sequence[SrcBaseType], populate_back_edges: bool = True
+    ) -> List[DstBaseType]:
         """Converts the given list of objects into their entity/schema
         counterparts.
 
@@ -160,8 +169,9 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
             self._check_back_edges_empty()
         return result
 
-    def convert(self, src: SrcBaseType,
-                populate_back_edges: bool = True) -> DstBaseType:
+    def convert(
+        self, src: SrcBaseType, populate_back_edges: bool = True
+    ) -> DstBaseType:
         """Converts the given object into its entity/schema counterpart.
 
         Args:
@@ -176,8 +186,7 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
             self._check_back_edges_empty()
         return result
 
-    def _convert(
-            self, src: SrcBaseType, populate_back_edges: bool) -> DstBaseType:
+    def _convert(self, src: SrcBaseType, populate_back_edges: bool) -> DstBaseType:
         dst = self._convert_forward(src, populate_back_edges)
         if populate_back_edges:
             self._populate_direct_back_edges()
@@ -185,7 +194,8 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
         return dst
 
     def _convert_forward(
-            self, src: SrcBaseType, populate_back_edges: bool) -> DstBaseType:
+        self, src: SrcBaseType, populate_back_edges: bool
+    ) -> DstBaseType:
         """Converts the given src object to its entity/schema counterpart."""
 
         src_id = self._id_from_src_object(src)
@@ -196,29 +206,33 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
         entity_cls: Type[Entity] = self._get_entity_class(src)
 
         if entity_cls is None or schema_cls is None:
-            raise DatabaseConversionError("Both |entity_cls| and |schema_cls| "
-                                          "should be not None")
+            raise DatabaseConversionError(
+                "Both |entity_cls| and |schema_cls| " "should be not None"
+            )
 
         if isinstance(src, Entity):
-            dst_builder: \
-                Union[BuildableAttr.Builder, DatabaseEntity] = schema_cls()
+            dst_builder: Union[BuildableAttr.Builder, DatabaseEntity] = schema_cls()
         elif isinstance(src, DatabaseEntity):
             if not issubclass(entity_cls, BuildableAttr):
                 raise DatabaseConversionError(
                     f"Expected [{entity_cls}] to be a subclass of "
-                    f"BuildableAttr, but it is not")
+                    f"BuildableAttr, but it is not"
+                )
 
             dst_builder = entity_cls.builder()
         else:
             raise DatabaseConversionError(
-                "Unable to convert class [{0}]".format(src.__class__))
+                "Unable to convert class [{0}]".format(src.__class__)
+            )
 
         for field, attribute in attr.fields_dict(entity_cls).items():
             if self._should_skip_field(entity_cls, field):
                 continue
 
-            if self._direction_checker.is_back_edge(src, field) and \
-                    not populate_back_edges:
+            if (
+                self._direction_checker.is_back_edge(src, field)
+                and not populate_back_edges
+            ):
                 continue
 
             v = getattr(src, field)
@@ -226,7 +240,8 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
             if not isinstance(attribute, attr.Attribute):
                 raise DatabaseConversionError(
                     f"Expected attribute with class [{attribute.__class__}] to "
-                    f"be an instance of Attribute, but it is not")
+                    f"be an instance of Attribute, but it is not"
+                )
 
             if isinstance(v, list):
                 values = []
@@ -249,9 +264,7 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
             elif v is None:
                 value = None
             elif is_enum(attribute):
-                value = self._convert_enum(src,
-                                           field,
-                                           attribute)
+                value = self._convert_enum(src, field, attribute)
             else:
                 value = v
 
@@ -263,15 +276,15 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
             dst = dst_builder
         else:
             raise DatabaseConversionError(
-                f"Unexpected type [{type(dst_builder)}] for dst_builder")
+                f"Unexpected type [{type(dst_builder)}] for dst_builder"
+            )
 
         self._converted_map[src_id] = dst
 
         return dst
 
     def _lookup_edges(
-            self,
-            next_src_ids: List[SrcIdType]
+        self, next_src_ids: List[SrcIdType]
     ) -> Tuple[List[DstBaseType], List[SrcIdType]]:
         """Look up objects in the destination object graph corresponding to the
         provided list of object ids from the source object graph.
@@ -303,36 +316,41 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
         distant ancestor) are not included here.
         """
 
-        not_found_back_edges: \
-            Dict[SrcIdType, Dict[FieldNameType, List[SrcIdType]]] = \
-            defaultdict(lambda: defaultdict(list))
+        not_found_back_edges: Dict[
+            SrcIdType, Dict[FieldNameType, List[SrcIdType]]
+        ] = defaultdict(lambda: defaultdict(list))
 
         for src_id, back_edges_map in self._back_edges.items():
             dst_object = self._converted_map[src_id]
             for field, next_src_ids in back_edges_map.items():
-                next_dst_objects, not_found_next_src_ids = \
-                    self._lookup_edges(next_src_ids)
+                next_dst_objects, not_found_next_src_ids = self._lookup_edges(
+                    next_src_ids
+                )
 
-                if len(next_dst_objects) + len(not_found_next_src_ids) != \
-                        len(next_src_ids):
+                if len(next_dst_objects) + len(not_found_next_src_ids) != len(
+                    next_src_ids
+                ):
                     raise DatabaseConversionError(
-                        f'Expected to find {len(next_src_ids)} '
-                        f'next_dst_objects or not_found_next_src_ids, instead '
-                        f'found {len(next_dst_objects)} objects and '
-                        f'{len(not_found_next_src_ids)} not found ids.')
+                        f"Expected to find {len(next_src_ids)} "
+                        f"next_dst_objects or not_found_next_src_ids, instead "
+                        f"found {len(next_dst_objects)} objects and "
+                        f"{len(not_found_next_src_ids)} not found ids."
+                    )
 
                 v = getattr(dst_object, field)
                 if isinstance(v, list):
                     existing = {id(obj) for obj in v}
 
-                    v.extend([obj for obj in next_dst_objects
-                              if id(obj) not in existing])
+                    v.extend(
+                        [obj for obj in next_dst_objects if id(obj) not in existing]
+                    )
                 else:
                     if len(next_src_ids) > 1:
                         raise DatabaseConversionError(
                             f"Found [{len(next_src_ids)}] edges for non-list "
                             f"field [{field}] on object with class name "
-                            f"{dst_object.__class__.__name__}")
+                            f"{dst_object.__class__.__name__}"
+                        )
 
                     if len(next_dst_objects) == 1:
                         next_dst_object = next_dst_objects[0]
@@ -344,14 +362,16 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
         self._back_edges = not_found_back_edges
 
     def _check_is_valid_module(self, obj: Union[SrcBaseType, DstBaseType]):
-        if obj.__module__ not in [self._get_schema_module().__name__,
-                                  self._get_entities_module().__name__]:
+        if obj.__module__ not in [
+            self._get_schema_module().__name__,
+            self._get_entities_module().__name__,
+        ]:
             raise DatabaseConversionError(
                 f"Attempting to convert class with unexpected"
-                f" module: [{obj.__module__}]")
+                f" module: [{obj.__module__}]"
+            )
 
-    def _get_entity_class(
-            self, obj: Union[SrcBaseType, DstBaseType]) -> Type[Entity]:
+    def _get_entity_class(self, obj: Union[SrcBaseType, DstBaseType]) -> Type[Entity]:
         self._check_is_valid_module(obj)
         return getattr(self._get_entities_module(), obj.__class__.__name__)
 

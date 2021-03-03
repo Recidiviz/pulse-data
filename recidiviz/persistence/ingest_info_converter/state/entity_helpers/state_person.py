@@ -24,9 +24,11 @@ from recidiviz.common.constants.enum_parser import EnumParser
 from recidiviz.persistence.ingest_info_converter.utils.names import parse_name
 
 
-def copy_fields_to_builder(state_person_builder: entities.StatePerson.Builder,
-                           proto: StatePerson,
-                           metadata: IngestMetadata) -> None:
+def copy_fields_to_builder(
+    state_person_builder: entities.StatePerson.Builder,
+    proto: StatePerson,
+    metadata: IngestMetadata,
+) -> None:
     """Mutates the provided |state_person_builder| by converting an
     ingest_info proto StatePerson.
 
@@ -35,13 +37,13 @@ def copy_fields_to_builder(state_person_builder: entities.StatePerson.Builder,
     new = state_person_builder
 
     # Enum mappings
-    new.gender = EnumParser(getattr(proto, 'gender'), Gender, metadata.enum_overrides)
-    new.gender_raw_text = getattr(proto, 'gender')
+    new.gender = EnumParser(getattr(proto, "gender"), Gender, metadata.enum_overrides)
+    new.gender_raw_text = getattr(proto, "gender")
 
     # 1-to-1 mappings
     new.full_name = parse_name(proto)
-    new.birthdate = getattr(proto, 'birthdate')
-    new.birthdate_inferred_from_age = 'False' if new.birthdate else None
-    new.current_address = getattr(proto, 'current_address')
-    new.residency_status = getattr(proto, 'current_address')
+    new.birthdate = getattr(proto, "birthdate")
+    new.birthdate_inferred_from_age = "False" if new.birthdate else None
+    new.current_address = getattr(proto, "current_address")
+    new.residency_status = getattr(proto, "current_address")
     new.state_code = metadata.region

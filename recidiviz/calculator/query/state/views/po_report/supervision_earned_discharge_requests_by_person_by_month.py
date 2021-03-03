@@ -22,16 +22,16 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-SUPERVISION_EARNED_DISCHARGE_REQUESTS_BY_PERSON_BY_MONTH_VIEW_NAME = \
-    'supervision_earned_discharge_requests_by_person_by_month'
+SUPERVISION_EARNED_DISCHARGE_REQUESTS_BY_PERSON_BY_MONTH_VIEW_NAME = (
+    "supervision_earned_discharge_requests_by_person_by_month"
+)
 
 SUPERVISION_EARNED_DISCHARGE_REQUESTS_BY_PERSON_BY_MONTH_DESCRIPTION = """
  Earned discharge requests per person per month.
  """
 
 # TODO(#4491): Consider using `external_id` instead of `agent_external_id`
-SUPERVISION_EARNED_DISCHARGE_REQUESTS_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = \
-    """
+SUPERVISION_EARNED_DISCHARGE_REQUESTS_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT DISTINCT
       state_code, 
@@ -62,9 +62,9 @@ SUPERVISION_EARNED_DISCHARGE_REQUESTS_BY_PERSON_BY_MONTH_VIEW_BUILDER = SimpleBi
     view_query_template=SUPERVISION_EARNED_DISCHARGE_REQUESTS_BY_PERSON_BY_MONTH_QUERY_TEMPLATE,
     description=SUPERVISION_EARNED_DISCHARGE_REQUESTS_BY_PERSON_BY_MONTH_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    state_dataset=dataset_config.STATE_BASE_DATASET
+    state_dataset=dataset_config.STATE_BASE_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         SUPERVISION_EARNED_DISCHARGE_REQUESTS_BY_PERSON_BY_MONTH_VIEW_BUILDER.build_and_print()

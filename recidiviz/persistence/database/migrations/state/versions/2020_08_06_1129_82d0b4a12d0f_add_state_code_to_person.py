@@ -10,72 +10,93 @@ from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = '82d0b4a12d0f'
-down_revision = '57f876b6962d'
+revision = "82d0b4a12d0f"
+down_revision = "57f876b6962d"
 branch_labels = None
 depends_on = None
 
-UPDATE_QUERY = \
-    "WITH state_person_state_code_table AS ( " \
-    "   SELECT a.person_id, COALESCE(b.state_code, c.state_code, d.state_code, e.state_code, f.state_code, " \
-    "   g.state_code, h.state_code, i.state_code, j.state_code, k.state_code, l.state_code, " \
-    "m.state_code, n.state_code, o.state_code, p.state_code, q.state_code) AS state_code " \
-    "FROM {table_name} as a " \
-    "LEFT JOIN (SELECT DISTINCT person_id, state_code FROM state_sentence_group) as b ON a.person_id = b.person_id " \
-    "LEFT JOIN (SELECT DISTINCT person_id, state_code FROM state_assessment) as c ON a.person_id = c.person_id " \
-    "LEFT JOIN (SELECT DISTINCT person_id, state_code FROM state_person_external_id) as d ON a.person_id = " \
-    "d.person_id " \
-    "   LEFT JOIN (SELECT DISTINCT person_id, state_code FROM state_person_alias) as e ON a.person_id = e.person_id " \
-    "   LEFT JOIN (SELECT DISTINCT person_id, state_code FROM state_person_race) as f ON a.person_id = f.person_id " \
-    "LEFT JOIN (SELECT DISTINCT person_id, state_code FROM state_person_ethnicity) as g ON a.person_id = g.person_id " \
-    "" \
-    "LEFT JOIN (SELECT DISTINCT person_id, state_code FROM state_program_assignment) as h ON a.person_id = " \
-    "h.person_id " \
-    "LEFT JOIN (SELECT DISTINCT agent_id, state_code FROM state_agent) as i ON a.supervising_officer_id = i.agent_id " \
-    "" \
-    "LEFT JOIN (SELECT DISTINCT person_id, state_code FROM state_sentence_group_history) as j ON a.person_id = " \
-    "j.person_id " \
-    "LEFT JOIN (SELECT DISTINCT person_id, state_code FROM state_assessment_history) as k ON a.person_id = " \
-    "k.person_id " \
-    "LEFT JOIN (SELECT DISTINCT person_id, state_code FROM state_person_external_id_history) as l ON a.person_id = " \
-    "l.person_id " \
-    "LEFT JOIN (SELECT DISTINCT person_id, state_code FROM state_person_alias_history) as m ON a.person_id = " \
-    "m.person_id " \
-    "LEFT JOIN (SELECT DISTINCT person_id, state_code FROM state_person_race_history) as n ON a.person_id = " \
-    "n.person_id " \
-    "LEFT JOIN (SELECT DISTINCT person_id, state_code FROM state_person_ethnicity_history) as o ON a.person_id = " \
-    "o.person_id " \
-    "LEFT JOIN (SELECT DISTINCT person_id, state_code FROM state_program_assignment_history) as p ON a.person_id = " \
-    "p.person_id " \
-    "LEFT JOIN (SELECT DISTINCT agent_id, state_code FROM state_agent_history) as q ON a.supervising_officer_id = " \
-    "q.agent_id " \
-    "GROUP BY a.person_id, 2) " \
-    "UPDATE {table_name} p " \
-    "SET state_code = s.state_code " \
-    "FROM state_person_state_code_table s " \
+UPDATE_QUERY = (
+    "WITH state_person_state_code_table AS ( "
+    "   SELECT a.person_id, COALESCE(b.state_code, c.state_code, d.state_code, e.state_code, f.state_code, "
+    "   g.state_code, h.state_code, i.state_code, j.state_code, k.state_code, l.state_code, "
+    "m.state_code, n.state_code, o.state_code, p.state_code, q.state_code) AS state_code "
+    "FROM {table_name} as a "
+    "LEFT JOIN (SELECT DISTINCT person_id, state_code FROM state_sentence_group) as b ON a.person_id = b.person_id "
+    "LEFT JOIN (SELECT DISTINCT person_id, state_code FROM state_assessment) as c ON a.person_id = c.person_id "
+    "LEFT JOIN (SELECT DISTINCT person_id, state_code FROM state_person_external_id) as d ON a.person_id = "
+    "d.person_id "
+    "   LEFT JOIN (SELECT DISTINCT person_id, state_code FROM state_person_alias) as e ON a.person_id = e.person_id "
+    "   LEFT JOIN (SELECT DISTINCT person_id, state_code FROM state_person_race) as f ON a.person_id = f.person_id "
+    "LEFT JOIN (SELECT DISTINCT person_id, state_code FROM state_person_ethnicity) as g ON a.person_id = g.person_id "
+    ""
+    "LEFT JOIN (SELECT DISTINCT person_id, state_code FROM state_program_assignment) as h ON a.person_id = "
+    "h.person_id "
+    "LEFT JOIN (SELECT DISTINCT agent_id, state_code FROM state_agent) as i ON a.supervising_officer_id = i.agent_id "
+    ""
+    "LEFT JOIN (SELECT DISTINCT person_id, state_code FROM state_sentence_group_history) as j ON a.person_id = "
+    "j.person_id "
+    "LEFT JOIN (SELECT DISTINCT person_id, state_code FROM state_assessment_history) as k ON a.person_id = "
+    "k.person_id "
+    "LEFT JOIN (SELECT DISTINCT person_id, state_code FROM state_person_external_id_history) as l ON a.person_id = "
+    "l.person_id "
+    "LEFT JOIN (SELECT DISTINCT person_id, state_code FROM state_person_alias_history) as m ON a.person_id = "
+    "m.person_id "
+    "LEFT JOIN (SELECT DISTINCT person_id, state_code FROM state_person_race_history) as n ON a.person_id = "
+    "n.person_id "
+    "LEFT JOIN (SELECT DISTINCT person_id, state_code FROM state_person_ethnicity_history) as o ON a.person_id = "
+    "o.person_id "
+    "LEFT JOIN (SELECT DISTINCT person_id, state_code FROM state_program_assignment_history) as p ON a.person_id = "
+    "p.person_id "
+    "LEFT JOIN (SELECT DISTINCT agent_id, state_code FROM state_agent_history) as q ON a.supervising_officer_id = "
+    "q.agent_id "
+    "GROUP BY a.person_id, 2) "
+    "UPDATE {table_name} p "
+    "SET state_code = s.state_code "
+    "FROM state_person_state_code_table s "
     "WHERE p.person_id = s.person_id; "
+)
 
 
 def upgrade():
     connection = op.get_bind()
 
-    op.add_column('state_person', sa.Column('state_code', sa.String(length=255), nullable=True))
-    state_person_update_query = UPDATE_QUERY.format(table_name='state_person')
+    op.add_column(
+        "state_person", sa.Column("state_code", sa.String(length=255), nullable=True)
+    )
+    state_person_update_query = UPDATE_QUERY.format(table_name="state_person")
     connection.execute(state_person_update_query)
-    op.alter_column('state_person', 'state_code', existing_type=sa.String(), nullable=False)
-    op.create_index(op.f('ix_state_person_state_code'), 'state_person', ['state_code'], unique=False)
+    op.alter_column(
+        "state_person", "state_code", existing_type=sa.String(), nullable=False
+    )
+    op.create_index(
+        op.f("ix_state_person_state_code"), "state_person", ["state_code"], unique=False
+    )
 
-    op.add_column('state_person_history', sa.Column('state_code', sa.String(length=255), nullable=True))
-    state_person_history_update_query = UPDATE_QUERY.format(table_name='state_person_history')
+    op.add_column(
+        "state_person_history",
+        sa.Column("state_code", sa.String(length=255), nullable=True),
+    )
+    state_person_history_update_query = UPDATE_QUERY.format(
+        table_name="state_person_history"
+    )
     connection.execute(state_person_history_update_query)
-    op.alter_column('state_person_history', 'state_code', existing_type=sa.String(), nullable=False)
-    op.create_index(op.f('ix_state_person_history_state_code'), 'state_person_history', ['state_code'], unique=False)
+    op.alter_column(
+        "state_person_history", "state_code", existing_type=sa.String(), nullable=False
+    )
+    op.create_index(
+        op.f("ix_state_person_history_state_code"),
+        "state_person_history",
+        ["state_code"],
+        unique=False,
+    )
 
 
 def downgrade():
     # ### commands auto generated by Alembic - please adjust! ###
-    op.drop_index(op.f('ix_state_person_history_state_code'), table_name='state_person_history')
-    op.drop_column('state_person_history', 'state_code')
-    op.drop_index(op.f('ix_state_person_state_code'), table_name='state_person')
-    op.drop_column('state_person', 'state_code')
+    op.drop_index(
+        op.f("ix_state_person_history_state_code"), table_name="state_person_history"
+    )
+    op.drop_column("state_person_history", "state_code")
+    op.drop_index(op.f("ix_state_person_state_code"), table_name="state_person")
+    op.drop_column("state_person", "state_code")
     # ### end Alembic commands ###

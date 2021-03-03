@@ -21,17 +21,24 @@ from typing import Union
 
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import filename_parts_from_path
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
+    filename_parts_from_path,
+)
 from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest import fixtures
 
 
 def add_direct_ingest_path(
-        fs: GCSFileSystem, path: Union[GcsfsFilePath, GcsfsDirectoryPath], has_fixture: bool = True,
-        fail_handle_file_call: bool = False) -> None:
+    fs: GCSFileSystem,
+    path: Union[GcsfsFilePath, GcsfsDirectoryPath],
+    has_fixture: bool = True,
+    fail_handle_file_call: bool = False,
+) -> None:
     if not isinstance(fs, FakeGCSFileSystem):
-        raise ValueError('add_direct_ingest_path can only be called on FakeGCSFileSystems')
+        raise ValueError(
+            "add_direct_ingest_path can only be called on FakeGCSFileSystems"
+        )
     local_path = None
     if has_fixture and isinstance(path, GcsfsFilePath):
         local_path = _get_fixture_for_direct_ingest_path(path)
@@ -49,8 +56,10 @@ def _get_fixture_for_direct_ingest_path(path: GcsfsFilePath) -> str:
     try:
         directory_path, _ = os.path.split(path.abs_path())
         parts = filename_parts_from_path(path)
-        suffix = f'_{parts.filename_suffix}' if parts.filename_suffix else ''
-        relative_path = os.path.join(directory_path, f'{parts.file_tag}{suffix}.{parts.extension}')
+        suffix = f"_{parts.filename_suffix}" if parts.filename_suffix else ""
+        relative_path = os.path.join(
+            directory_path, f"{parts.file_tag}{suffix}.{parts.extension}"
+        )
     except DirectIngestError as e:
         if e.error_type != DirectIngestErrorType.INPUT_ERROR:
             raise

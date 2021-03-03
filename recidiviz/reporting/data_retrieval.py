@@ -34,29 +34,39 @@ from recidiviz.reporting.recipient import Recipient
 from recidiviz.reporting.region_codes import InvalidRegionCodeException, REGION_CODES
 
 
-def filter_recipients(recipients: List[Recipient],
-                      region_code: Optional[str] = None,
-                      email_allowlist: Optional[List[str]] = None) -> List[Recipient]:
+def filter_recipients(
+    recipients: List[Recipient],
+    region_code: Optional[str] = None,
+    email_allowlist: Optional[List[str]] = None,
+) -> List[Recipient]:
     if region_code is not None and region_code not in REGION_CODES:
         raise InvalidRegionCodeException()
 
     return [
         recipient
         for recipient in recipients
-        if all([
-            recipient.district == REGION_CODES[region_code] if region_code is not None else True,
-            recipient.email_address in email_allowlist if email_allowlist is not None else True,
-        ])
+        if all(
+            [
+                recipient.district == REGION_CODES[region_code]
+                if region_code is not None
+                else True,
+                recipient.email_address in email_allowlist
+                if email_allowlist is not None
+                else True,
+            ]
+        )
     ]
 
 
-def start(state_code: str,
-          report_type: str,
-          batch_id: Optional[str] = None,
-          test_address: Optional[str] = None,
-          region_code: Optional[str] = None,
-          email_allowlist: Optional[List[str]] = None,
-          message_body: Optional[str] = None) -> Tuple[int, int]:
+def start(
+    state_code: str,
+    report_type: str,
+    batch_id: Optional[str] = None,
+    test_address: Optional[str] = None,
+    region_code: Optional[str] = None,
+    email_allowlist: Optional[List[str]] = None,
+    message_body: Optional[str] = None,
+) -> Tuple[int, int]:
     """Begins data retrieval for a new batch of email reports.
 
     Start with collection of data from the calculation pipelines.
@@ -82,8 +92,13 @@ def start(state_code: str,
     if batch_id is None:
         batch_id = utils.generate_batch_id()
 
-    logging.info("New batch started for %s (region: %s) and %s. Batch id = %s",
-                 state_code, region_code, report_type, batch_id)
+    logging.info(
+        "New batch started for %s (region: %s) and %s. Batch id = %s",
+        state_code,
+        region_code,
+        report_type,
+        batch_id,
+    )
 
     recipients: List[Recipient] = retrieve_data(state_code, report_type, batch_id)
     recipients = filter_recipients(recipients, region_code, email_allowlist)
@@ -91,14 +106,20 @@ def start(state_code: str,
     if test_address:
         logging.info("Overriding batch emails with test address: %s", test_address)
         recipients = [
-            recipient.create_derived_recipient({
-                "email_address": utils.format_test_address(test_address, recipient.email_address),
-            })
+            recipient.create_derived_recipient(
+                {
+                    "email_address": utils.format_test_address(
+                        test_address, recipient.email_address
+                    ),
+                }
+            )
             for recipient in recipients
         ]
 
     if message_body is not None:
-        logging.info("Overriding default message body in batch emails (batch id = %s)", batch_id)
+        logging.info(
+            "Overriding default message body in batch emails (batch id = %s)", batch_id
+        )
         recipients = [
             recipient.create_derived_recipient({"message_body": message_body})
             for recipient in recipients
@@ -113,7 +134,7 @@ def start(state_code: str,
             email_generation.generate(report_context)
         except Exception as e:
             failure_count += 1
-            logging.error('Failed to generate report email for %s %s', recipient, e)
+            logging.error("Failed to generate report email for %s %s", recipient, e)
         else:
             success_count += 1
 
@@ -140,24 +161,30 @@ def retrieve_data(state_code: str, report_type: str, batch_id: str) -> List[Reci
         Provides logging for debug purposes whenever possible.
     """
     data_bucket = utils.get_data_storage_bucket_name()
-    data_filename = ''
+    data_filename = ""
     gcs_file_system = GcsfsFactory.build()
     try:
         data_filename = utils.get_data_filename(state_code, report_type)
-        path = GcsfsFilePath.from_absolute_path(f'gs://{data_bucket}/{data_filename}')
+        path = GcsfsFilePath.from_absolute_path(f"gs://{data_bucket}/{data_filename}")
         file_contents = gcs_file_system.download_as_string(path)
     except BaseException:
         logging.info("Unable to load data file %s/%s", data_bucket, data_filename)
         raise
 
     archive_bucket = utils.get_data_archive_bucket_name()
-    archive_filename = ''
+    archive_filename = ""
     try:
         archive_filename = utils.get_data_archive_filename(batch_id)
-        archive_path = GcsfsFilePath.from_absolute_path(f'gs://{archive_bucket}/{archive_filename}')
-        gcs_file_system.upload_from_string(path=archive_path, contents=file_contents, content_type="text/json")
+        archive_path = GcsfsFilePath.from_absolute_path(
+            f"gs://{archive_bucket}/{archive_filename}"
+        )
+        gcs_file_system.upload_from_string(
+            path=archive_path, contents=file_contents, content_type="text/json"
+        )
     except Exception:
-        logging.error("Unable to archive the data file to %s/%s", archive_bucket, archive_filename)
+        logging.error(
+            "Unable to archive the data file to %s/%s", archive_bucket, archive_filename
+        )
         raise
 
     json_list = file_contents.splitlines()
@@ -167,16 +194,25 @@ def retrieve_data(state_code: str, report_type: str, batch_id: str) -> List[Reci
         try:
             item = json.loads(json_str)
         except Exception as err:
-            logging.error("Unable to parse JSON found in the file %s. Offending json string is: '%s'. <%s> %s",
-                          data_filename, json_str, type(err).__name__, err)
+            logging.error(
+                "Unable to parse JSON found in the file %s. Offending json string is: '%s'. <%s> %s",
+                data_filename,
+                json_str,
+                type(err).__name__,
+                err,
+            )
         else:
             recipient_data.append(item)
 
-    logging.info("Retrieved %s recipients from data file %s", len(recipient_data), data_filename)
+    logging.info(
+        "Retrieved %s recipients from data file %s", len(recipient_data), data_filename
+    )
     return [
-        Recipient.from_report_json({
-            **recipient,
-            utils.KEY_BATCH_ID: batch_id,
-        })
+        Recipient.from_report_json(
+            {
+                **recipient,
+                utils.KEY_BATCH_ID: batch_id,
+            }
+        )
         for recipient in recipient_data
     ]

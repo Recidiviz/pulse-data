@@ -20,26 +20,28 @@ prepopulated.
 from recidiviz.common.constants.bond import BondStatus, BondType
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.state.state_agent import StateAgentType
-from recidiviz.common.constants.state.state_court_case import \
-    StateCourtCaseStatus
+from recidiviz.common.constants.state.state_court_case import StateCourtCaseStatus
 from recidiviz.common.constants.state.state_fine import StateFineStatus
-from recidiviz.common.constants.state.state_incarceration import \
-    StateIncarcerationType
-from recidiviz.common.constants.state.state_incarceration_period import \
-    StateIncarcerationPeriodStatus
-from recidiviz.common.constants.state.state_program_assignment import StateProgramAssignmentParticipationStatus
+from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodStatus,
+)
+from recidiviz.common.constants.state.state_program_assignment import (
+    StateProgramAssignmentParticipationStatus,
+)
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.constants.state.state_supervision_period import \
-    StateSupervisionPeriodStatus
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodStatus,
+)
 from recidiviz.persistence.database.schema.state import schema
 
-_ID_TYPE = 'ID_TYPE'
-_STATE_CODE = 'US_XX'
+_ID_TYPE = "ID_TYPE"
+_STATE_CODE = "US_XX"
 
 
 def generate_person(**kwargs) -> schema.StatePerson:
     args = {
-        'state_code': _STATE_CODE,
+        "state_code": _STATE_CODE,
     }
     args.update(kwargs)
     return schema.StatePerson(**args)
@@ -47,8 +49,8 @@ def generate_person(**kwargs) -> schema.StatePerson:
 
 def generate_external_id(**kwargs) -> schema.StatePersonExternalId:
     args = {
-        'state_code': _STATE_CODE,
-        'id_type': _ID_TYPE,
+        "state_code": _STATE_CODE,
+        "id_type": _ID_TYPE,
     }
     args.update(kwargs)
     return schema.StatePersonExternalId(**args)
@@ -56,8 +58,8 @@ def generate_external_id(**kwargs) -> schema.StatePersonExternalId:
 
 def generate_sentence_group(**kwargs) -> schema.StateSentenceGroup:
     args = {
-        'status': StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
-        'state_code': _STATE_CODE,
+        "status": StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+        "state_code": _STATE_CODE,
     }
     args.update(kwargs)
     return schema.StateSentenceGroup(**args)
@@ -65,7 +67,7 @@ def generate_sentence_group(**kwargs) -> schema.StateSentenceGroup:
 
 def generate_race(**kwargs) -> schema.StatePersonRace:
     args = {
-        'state_code': _STATE_CODE,
+        "state_code": _STATE_CODE,
     }
     args.update(kwargs)
     return schema.StatePersonRace(**args)
@@ -73,7 +75,7 @@ def generate_race(**kwargs) -> schema.StatePersonRace:
 
 def generate_ethnicity(**kwargs) -> schema.StatePersonEthnicity:
     args = {
-        'state_code': _STATE_CODE,
+        "state_code": _STATE_CODE,
     }
     args.update(kwargs)
     return schema.StatePersonEthnicity(**args)
@@ -81,115 +83,117 @@ def generate_ethnicity(**kwargs) -> schema.StatePersonEthnicity:
 
 def generate_alias(**kwargs) -> schema.StatePersonAlias:
     args = {
-        'state_code': _STATE_CODE,
+        "state_code": _STATE_CODE,
     }
     args.update(kwargs)
     return schema.StatePersonAlias(**args)
 
 
-def generate_incarceration_sentence(person, **kwargs) \
-        -> schema.StateIncarcerationSentence:
+def generate_incarceration_sentence(
+    person, **kwargs
+) -> schema.StateIncarcerationSentence:
     args = {
-        'status': StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
-        'state_code': _STATE_CODE,
+        "status": StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+        "state_code": _STATE_CODE,
     }
     args.update(kwargs)
-    return schema.StateIncarcerationSentence(
-        person=person, **args)
+    return schema.StateIncarcerationSentence(person=person, **args)
 
 
-def generate_incarceration_period(person, **kwargs) \
-        -> schema.StateIncarcerationPeriod:
+def generate_incarceration_period(person, **kwargs) -> schema.StateIncarcerationPeriod:
     args = {
-        'status': StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO.value,
-        'state_code': _STATE_CODE,
-        'incarceration_type': StateIncarcerationType.STATE_PRISON.value,
+        "status": StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO.value,
+        "state_code": _STATE_CODE,
+        "incarceration_type": StateIncarcerationType.STATE_PRISON.value,
     }
     args.update(kwargs)
     return schema.StateIncarcerationPeriod(person=person, **args)
 
 
-def generate_incarceration_incident(person, **kwargs) \
-        -> schema.StateIncarcerationIncident:
+def generate_incarceration_incident(
+    person, **kwargs
+) -> schema.StateIncarcerationIncident:
     args = {
-        'state_code': _STATE_CODE,
+        "state_code": _STATE_CODE,
     }
     args.update(kwargs)
     return schema.StateIncarcerationIncident(person=person, **args)
 
 
-def generate_supervision_violation_response(person, **kwargs) \
-        -> schema.StateSupervisionViolationResponse:
+def generate_supervision_violation_response(
+    person, **kwargs
+) -> schema.StateSupervisionViolationResponse:
 
     args = {
-        'state_code': _STATE_CODE,
+        "state_code": _STATE_CODE,
     }
     args.update(kwargs)
     return schema.StateSupervisionViolationResponse(person=person, **args)
 
 
 def generate_supervision_violation_response_decision_entry(
-        person, **kwargs) \
-        -> schema.StateSupervisionViolationResponseDecisionEntry:
+    person, **kwargs
+) -> schema.StateSupervisionViolationResponseDecisionEntry:
     args = {
-        'state_code': _STATE_CODE,
+        "state_code": _STATE_CODE,
     }
     args.update(kwargs)
-    return schema.StateSupervisionViolationResponseDecisionEntry(
-        person=person, **args)
+    return schema.StateSupervisionViolationResponseDecisionEntry(person=person, **args)
 
 
-def generate_supervision_violation(person, **kwargs) \
-        -> schema.StateSupervisionViolation:
+def generate_supervision_violation(
+    person, **kwargs
+) -> schema.StateSupervisionViolation:
     args = {
-        'state_code': _STATE_CODE,
+        "state_code": _STATE_CODE,
     }
     args.update(kwargs)
     return schema.StateSupervisionViolation(person=person, **args)
 
 
-def generate_supervision_violation_type_entry(person, **kwargs) \
-        -> schema.StateSupervisionViolationTypeEntry:
+def generate_supervision_violation_type_entry(
+    person, **kwargs
+) -> schema.StateSupervisionViolationTypeEntry:
     args = {
-        'state_code': _STATE_CODE,
+        "state_code": _STATE_CODE,
     }
     args.update(kwargs)
     return schema.StateSupervisionViolationTypeEntry(person=person, **args)
 
 
-def generate_supervision_violated_condition_entry(person, **kwargs) \
-        -> schema.StateSupervisionViolatedConditionEntry:
+def generate_supervision_violated_condition_entry(
+    person, **kwargs
+) -> schema.StateSupervisionViolatedConditionEntry:
     args = {
-        'state_code': _STATE_CODE,
+        "state_code": _STATE_CODE,
     }
     args.update(kwargs)
     return schema.StateSupervisionViolatedConditionEntry(person=person, **args)
 
 
-def generate_supervision_case_type_entry(person, **kwargs) \
-        -> schema.StateSupervisionCaseTypeEntry:
+def generate_supervision_case_type_entry(
+    person, **kwargs
+) -> schema.StateSupervisionCaseTypeEntry:
     args = {
-        'state_code': _STATE_CODE,
+        "state_code": _STATE_CODE,
     }
     args.update(kwargs)
     return schema.StateSupervisionCaseTypeEntry(person=person, **args)
 
 
-def generate_supervision_period(person, **kwargs) \
-        -> schema.StateSupervisionPeriod:
+def generate_supervision_period(person, **kwargs) -> schema.StateSupervisionPeriod:
     args = {
-        'state_code': _STATE_CODE,
-        'status': StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
+        "state_code": _STATE_CODE,
+        "status": StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
     }
     args.update(kwargs)
     return schema.StateSupervisionPeriod(person=person, **args)
 
 
-def generate_supervision_sentence(person, **kwargs) \
-        -> schema.StateSupervisionSentence:
+def generate_supervision_sentence(person, **kwargs) -> schema.StateSupervisionSentence:
     args = {
-        'state_code': _STATE_CODE,
-        'status': StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+        "state_code": _STATE_CODE,
+        "status": StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
     }
     args.update(kwargs)
     return schema.StateSupervisionSentence(person=person, **args)
@@ -197,8 +201,8 @@ def generate_supervision_sentence(person, **kwargs) \
 
 def generate_fine(person, **kwargs) -> schema.StateFine:
     args = {
-        'status': StateFineStatus.PRESENT_WITHOUT_INFO.value,
-        'state_code': _STATE_CODE,
+        "status": StateFineStatus.PRESENT_WITHOUT_INFO.value,
+        "state_code": _STATE_CODE,
     }
     args.update(kwargs)
     return schema.StateFine(person=person, **args)
@@ -206,8 +210,8 @@ def generate_fine(person, **kwargs) -> schema.StateFine:
 
 def generate_charge(person, **kwargs) -> schema.StateCharge:
     args = {
-        'status': ChargeStatus.PRESENT_WITHOUT_INFO.value,
-        'state_code': _STATE_CODE,
+        "status": ChargeStatus.PRESENT_WITHOUT_INFO.value,
+        "state_code": _STATE_CODE,
     }
     args.update(kwargs)
     return schema.StateCharge(person=person, **args)
@@ -215,8 +219,8 @@ def generate_charge(person, **kwargs) -> schema.StateCharge:
 
 def generate_court_case(person, **kwargs) -> schema.StateCourtCase:
     args = {
-        'status': StateCourtCaseStatus.PRESENT_WITHOUT_INFO.value,
-        'state_code': _STATE_CODE,
+        "status": StateCourtCaseStatus.PRESENT_WITHOUT_INFO.value,
+        "state_code": _STATE_CODE,
     }
     args.update(kwargs)
     return schema.StateCourtCase(person=person, **args)
@@ -224,9 +228,9 @@ def generate_court_case(person, **kwargs) -> schema.StateCourtCase:
 
 def generate_bond(person, **kwargs) -> schema.StateBond:
     args = {
-        'status': BondStatus.PRESENT_WITHOUT_INFO.value,
-        'state_code': _STATE_CODE,
-        'bond_type': BondType.CASH.value,
+        "status": BondStatus.PRESENT_WITHOUT_INFO.value,
+        "state_code": _STATE_CODE,
+        "bond_type": BondType.CASH.value,
     }
     args.update(kwargs)
     return schema.StateBond(person=person, **args)
@@ -234,7 +238,7 @@ def generate_bond(person, **kwargs) -> schema.StateBond:
 
 def generate_assessment(person, **kwargs) -> schema.StateAssessment:
     args = {
-        'state_code': _STATE_CODE,
+        "state_code": _STATE_CODE,
     }
     args.update(kwargs)
     return schema.StateAssessment(person=person, **args)
@@ -242,8 +246,8 @@ def generate_assessment(person, **kwargs) -> schema.StateAssessment:
 
 def generate_agent(**kwargs) -> schema.StateAgent:
     args = {
-        'state_code': _STATE_CODE,
-        'agent_type': StateAgentType.JUDGE.value,
+        "state_code": _STATE_CODE,
+        "agent_type": StateAgentType.JUDGE.value,
     }
     args.update(kwargs)
     return schema.StateAgent(**args)
@@ -251,29 +255,32 @@ def generate_agent(**kwargs) -> schema.StateAgent:
 
 def generate_parole_decision(person, **kwargs) -> schema.StateParoleDecision:
     args = {
-        'state_code': _STATE_CODE,
+        "state_code": _STATE_CODE,
     }
     args.update(kwargs)
     return schema.StateParoleDecision(person=person, **args)
 
+
 def generate_early_discharge(person, **kwargs) -> schema.StateEarlyDischarge:
     args = {
-        'state_code': _STATE_CODE,
+        "state_code": _STATE_CODE,
     }
     args.update(kwargs)
     return schema.StateEarlyDischarge(person=person, **args)
 
+
 def generate_program_assignment(person, **kwargs) -> schema.StateProgramAssignment:
     args = {
-        'state_code': _STATE_CODE,
-        'participation_status': StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO.value,
+        "state_code": _STATE_CODE,
+        "participation_status": StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO.value,
     }
     args.update(kwargs)
     return schema.StateProgramAssignment(person=person, **args)
 
+
 def generate_supervision_contact(person, **kwargs) -> schema.StateSupervisionContact:
     args = {
-        'state_code': _STATE_CODE,
+        "state_code": _STATE_CODE,
     }
     args.update(kwargs)
     return schema.StateSupervisionContact(person=person, **args)

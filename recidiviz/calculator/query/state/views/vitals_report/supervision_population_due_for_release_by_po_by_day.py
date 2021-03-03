@@ -15,21 +15,22 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Supervisees due for release by PO by day."""
-# pylint: disable=line-too-long
+
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-SUPERVISION_POPULATION_DUE_FOR_RELEASE_BY_PO_BY_DAY_VIEW_NAME = 'supervision_population_due_for_release_by_po_by_day'
+SUPERVISION_POPULATION_DUE_FOR_RELEASE_BY_PO_BY_DAY_VIEW_NAME = (
+    "supervision_population_due_for_release_by_po_by_day"
+)
 
 SUPERVISION_POPULATION_DUE_FOR_RELEASE_BY_PO_BY_DAY_DESCRIPTION = """
     Supervision population due for release by PO by day
  """
 
-SUPERVISION_POPULATION_DUE_FOR_RELEASE_BY_PO_BY_DAY_QUERY_TEMPLATE = \
-    """
+SUPERVISION_POPULATION_DUE_FOR_RELEASE_BY_PO_BY_DAY_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT
         population.state_code,
@@ -57,6 +58,6 @@ SUPERVISION_POPULATION_DUE_FOR_RELEASE_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQuer
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         SUPERVISION_POPULATION_DUE_FOR_RELEASE_BY_PO_BY_DAY_VIEW_BUILDER.build_and_print()

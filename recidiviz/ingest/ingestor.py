@@ -18,8 +18,9 @@
 """
 
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.constants.standard_enum_overrides import \
-    get_standard_enum_overrides
+from recidiviz.common.constants.standard_enum_overrides import (
+    get_standard_enum_overrides,
+)
 
 
 class Ingestor:

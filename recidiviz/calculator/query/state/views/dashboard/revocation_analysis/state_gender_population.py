@@ -15,18 +15,19 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Counts of the total state population by gender, grouped by state-specific categories."""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-STATE_GENDER_POPULATION_VIEW_NAME = 'state_gender_population'
+STATE_GENDER_POPULATION_VIEW_NAME = "state_gender_population"
 
-STATE_GENDER_POPULATION_VIEW_DESCRIPTION = """Counts of the total state population by gender."""
+STATE_GENDER_POPULATION_VIEW_DESCRIPTION = (
+    """Counts of the total state population by gender."""
+)
 
-STATE_GENDER_POPULATION_VIEW_QUERY_TEMPLATE = \
-    """
+STATE_GENDER_POPULATION_VIEW_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT
       state_code,
@@ -40,11 +41,11 @@ STATE_GENDER_POPULATION_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=STATE_GENDER_POPULATION_VIEW_NAME,
     view_query_template=STATE_GENDER_POPULATION_VIEW_QUERY_TEMPLATE,
-    dimensions=['state_code', 'gender'],
+    dimensions=["state_code", "gender"],
     description=STATE_GENDER_POPULATION_VIEW_DESCRIPTION,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         STATE_GENDER_POPULATION_VIEW_BUILDER.build_and_print()

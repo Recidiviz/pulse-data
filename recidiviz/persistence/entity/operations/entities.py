@@ -32,10 +32,11 @@ from recidiviz.persistence.entity.base_entity import entity_graph_eq
 @attr.s(eq=False)
 class OperationsEntity:
     """Base class for all entity types."""
+
     # Consider Entity abstract and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is OperationsEntity:
-            raise Exception('Abstract class cannot be instantiated')
+            raise Exception("Abstract class cannot be instantiated")
         return super().__new__(cls)
 
     def __eq__(self, other):
@@ -45,6 +46,7 @@ class OperationsEntity:
 @attr.s(eq=False)
 class DirectIngestFileMetadata(OperationsEntity, BuildableAttr, DefaultableAttr):
     """A Base class which defines all fields common each of the direct ingest file metadata tables."""
+
     file_id: int = attr.ib()
 
     region_code: str = attr.ib()
@@ -60,12 +62,13 @@ class DirectIngestFileMetadata(OperationsEntity, BuildableAttr, DefaultableAttr)
         provides region-specific mappings (e.g. facility names, offense categorizations).
         """
         # TODO(#5935): Fuller support that isn't just based on table prefix.
-        return self.file_tag.startswith('RECIDIVIZ_REFERENCE')
+        return self.file_tag.startswith("RECIDIVIZ_REFERENCE")
 
 
 @attr.s(eq=False)
 class DirectIngestRawFileMetadata(DirectIngestFileMetadata):
     """Metadata about a raw file imported directly from a particular region."""
+
     discovery_time: datetime.datetime = attr.ib()
     normalized_file_name: str = attr.ib()
     datetimes_contained_upper_bound_inclusive: datetime.datetime = attr.ib()
@@ -74,6 +77,7 @@ class DirectIngestRawFileMetadata(DirectIngestFileMetadata):
 @attr.s(eq=False)
 class DirectIngestIngestFileMetadata(DirectIngestFileMetadata):
     """Metadata about a SQL-preprocessed, persistence-ready direct ingest files."""
+
     is_invalidated: bool = attr.ib()
     is_file_split: bool = attr.ib()
     job_creation_time: datetime.datetime = attr.ib()

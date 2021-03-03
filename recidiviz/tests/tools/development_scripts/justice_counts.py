@@ -35,18 +35,27 @@ from recidiviz.tools.postgres import local_postgres_helpers
 def _create_parser() -> argparse.ArgumentParser:
     """Creates the CLI argument parser."""
     parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument(
-        '--manifest-file', required=True, type=str,
-        help="The yaml describing how to ingest the data"
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument(
-        '--log', required=False, default='INFO', type=logging.getLevelName,
-        help="Set the logging level"
+        "--manifest-file",
+        required=True,
+        type=str,
+        help="The yaml describing how to ingest the data",
     )
     parser.add_argument(
-        '--clean-up-db', required=False, default=False, type=bool,
-        help="Automatically cleans up tmp-pgsql-db at end of run"
+        "--log",
+        required=False,
+        default="INFO",
+        type=logging.getLevelName,
+        help="Set the logging level",
+    )
+    parser.add_argument(
+        "--clean-up-db",
+        required=False,
+        default=False,
+        type=bool,
+        help="Automatically cleans up tmp-pgsql-db at end of run",
     )
     return parser
 
@@ -58,16 +67,23 @@ def _configure_logging(level: int) -> None:
 
 def _cleanup_run(tmp_postgres_db_dir: str, clean_up_db: bool) -> None:
     if clean_up_db:
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(tmp_postgres_db_dir)
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            tmp_postgres_db_dir
+        )
         logging.info("Db automatically cleaned up")
     else:
         # Don't cleanup the database so that user can query the data afterward.
-        logging.info("For future cleanup, the postgres data directory is at %s.", tmp_postgres_db_dir)
-        logging.info("To query the data, connect to the local database with "
-                     "`psql --dbname=recidiviz_test_db`")
+        logging.info(
+            "For future cleanup, the postgres data directory is at %s.",
+            tmp_postgres_db_dir,
+        )
+        logging.info(
+            "To query the data, connect to the local database with "
+            "`psql --dbname=recidiviz_test_db`"
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     arg_parser = _create_parser()
     arguments = arg_parser.parse_args()
 

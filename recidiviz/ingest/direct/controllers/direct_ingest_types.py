@@ -49,10 +49,10 @@ class IngestArgs(CloudTaskArgs):
         return None
 
 
-IngestArgsType = TypeVar('IngestArgsType', bound=IngestArgs)
+IngestArgsType = TypeVar("IngestArgsType", bound=IngestArgs)
 
 
-ContentsHandleType = TypeVar('ContentsHandleType', bound=FileContentsHandle)
+ContentsHandleType = TypeVar("ContentsHandleType", bound=FileContentsHandle)
 
 
 class ArgsPriorityQueue(Generic[IngestArgsType]):

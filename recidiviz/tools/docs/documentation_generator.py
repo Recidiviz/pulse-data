@@ -25,7 +25,9 @@ from typing import Set
 
 import recidiviz
 from recidiviz.ingest.direct import regions as regions_module
-from recidiviz.ingest.direct.direct_ingest_documentation_generator import DirectIngestDocumentationGenerator
+from recidiviz.ingest.direct.direct_ingest_documentation_generator import (
+    DirectIngestDocumentationGenerator,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -37,25 +39,33 @@ def generate_raw_data_documentation_for_region(region_code: str) -> None:
     for a given region.
     """
     documentation_generator = DirectIngestDocumentationGenerator()
-    documentation = documentation_generator.generate_raw_file_docs_for_region(region_code.lower())
-    ingest_docs_path = 'docs/ingest'
-    markdown_file_path = os.path.join(ingest_docs_path, f'{region_code.lower()}/raw_data.md')
-    with open(markdown_file_path, 'w') as raw_data_md_file:
+    documentation = documentation_generator.generate_raw_file_docs_for_region(
+        region_code.lower()
+    )
+    ingest_docs_path = "docs/ingest"
+    markdown_file_path = os.path.join(
+        ingest_docs_path, f"{region_code.lower()}/raw_data.md"
+    )
+    with open(markdown_file_path, "w") as raw_data_md_file:
         raw_data_md_file.write(documentation)
-    res = subprocess.Popen(f'git add {markdown_file_path}',
-                           shell=True,
-                           stdout=subprocess.PIPE)
+    res = subprocess.Popen(
+        f"git add {markdown_file_path}", shell=True, stdout=subprocess.PIPE
+    )
     _stdout, _stderr = res.communicate()
 
 
 def get_touched_raw_data_regions() -> Set[str]:
     """Greps for touched files in the direct ingest regions directories and returns the touched regions' codes"""
 
-    regions_dir_path = os.path.relpath(os.path.dirname(regions_module.__file__),
-                                       os.path.dirname(os.path.dirname(recidiviz.__file__)))
-    res = subprocess.Popen(f'git diff --cached --name-only | grep "{regions_dir_path}" | cut -d / -f 5',
-                           shell=True,
-                           stdout=subprocess.PIPE)
+    regions_dir_path = os.path.relpath(
+        os.path.dirname(regions_module.__file__),
+        os.path.dirname(os.path.dirname(recidiviz.__file__)),
+    )
+    res = subprocess.Popen(
+        f'git diff --cached --name-only | grep "{regions_dir_path}" | cut -d / -f 5',
+        shell=True,
+        stdout=subprocess.PIPE,
+    )
     stdout, _stderr = res.communicate()
     return set(stdout.decode().upper().splitlines())
 
@@ -65,10 +75,12 @@ def main() -> None:
     with local_project_id_override(GCP_PROJECT_STAGING):
         touched_raw_data_regions = get_touched_raw_data_regions()
         for region_code in touched_raw_data_regions:
-            logging.info('Generating raw data documentation for region [%s]', region_code)
+            logging.info(
+                "Generating raw data documentation for region [%s]", region_code
+            )
             generate_raw_data_documentation_for_region(region_code)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
     main()

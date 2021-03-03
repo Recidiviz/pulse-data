@@ -20,18 +20,18 @@ from typing import Set
 from lxml import html
 import requests
 
-STATE_AGGREGATE_URL = 'http://www.dc.state.fl.us/pub/jails/'
+STATE_AGGREGATE_URL = "http://www.dc.state.fl.us/pub/jails/"
 
 
 def get_urls_to_download() -> Set[str]:
     page = requests.get(STATE_AGGREGATE_URL).text
     html_tree = html.fromstring(page)
-    links = html_tree.xpath('//a/@href')
+    links = html_tree.xpath("//a/@href")
 
     aggregate_report_urls = set()
     for link in links:
         low_link = link.lower()
-        if ('jails' in low_link or 'fcdf' in low_link) and 'pdf' in low_link:
+        if ("jails" in low_link or "fcdf" in low_link) and "pdf" in low_link:
             url = STATE_AGGREGATE_URL + link
             aggregate_report_urls.add(url)
     return aggregate_report_urls

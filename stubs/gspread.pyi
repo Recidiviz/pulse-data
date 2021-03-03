@@ -20,24 +20,25 @@ from typing import Dict, List, Optional, Type, TypeVar
 from google.auth.credentials import Credentials
 
 class Worksheet:
-
     @property
     def title(self) -> str: ...
-
-    def get_all_records(self, empty2zero: bool = False, head: int = 1, default_blank: str = "",
-                        allow_underscores_in_numeric_literals: bool = False,
-                        numericise_ignore: Optional[List[int]]=None,) -> List[Dict[str, str]]: ...
+    def get_all_records(
+        self,
+        empty2zero: bool = False,
+        head: int = 1,
+        default_blank: str = "",
+        allow_underscores_in_numeric_literals: bool = False,
+        numericise_ignore: Optional[List[int]] = None,
+    ) -> List[Dict[str, str]]: ...
 
 class Spreadsheet:
-
     @property
     def title(self) -> str: ...
-
     def worksheets(self) -> List[Worksheet]: ...
 
 class Client:
-   def open_by_key(self, key: str) -> Spreadsheet: ...
+    def open_by_key(self, key: str) -> Spreadsheet: ...
 
-ClientT = TypeVar('ClientT')
+ClientT = TypeVar("ClientT")
 # For some reason mypy doesn't like the default assignment here.
-def authorize(credentials: Credentials, client_class: Type[ClientT] = Client) -> ClientT: ... # type: ignore[assignment]
+def authorize(credentials: Credentials, client_class: Type[ClientT] = Client) -> ClientT: ...  # type: ignore[assignment]

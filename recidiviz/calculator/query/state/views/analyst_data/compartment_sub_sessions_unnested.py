@@ -17,19 +17,17 @@
 """Sessionized view of each individual merged onto an array of dates at daily intervals,
  used to calculate person-based metrics such as population"""
 # pylint: disable=trailing-whitespace
-# pylint: disable=line-too-long
+
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-COMPARTMENT_SUB_SESSIONS_UNNESTED_VIEW_NAME = 'compartment_sub_sessions_unnested'
+COMPARTMENT_SUB_SESSIONS_UNNESTED_VIEW_NAME = "compartment_sub_sessions_unnested"
 
-COMPARTMENT_SUB_SESSIONS_UNNESTED_VIEW_DESCRIPTION = \
-    """Sessionized view of each individual merged onto an array of dates at daily intervals, used to calculate person-based metrics such as population"""
+COMPARTMENT_SUB_SESSIONS_UNNESTED_VIEW_DESCRIPTION = """Sessionized view of each individual merged onto an array of dates at daily intervals, used to calculate person-based metrics such as population"""
 
-COMPARTMENT_SUB_SESSIONS_UNNESTED_QUERY_TEMPLATE = \
-    """
+COMPARTMENT_SUB_SESSIONS_UNNESTED_QUERY_TEMPLATE = """
     /*{description}*/
 
     /* Joins sub_sessions onto sessions view to get start and end dates associated with a given session, in order
@@ -80,9 +78,9 @@ COMPARTMENT_SUB_SESSIONS_UNNESTED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=COMPARTMENT_SUB_SESSIONS_UNNESTED_QUERY_TEMPLATE,
     description=COMPARTMENT_SUB_SESSIONS_UNNESTED_VIEW_DESCRIPTION,
     analyst_dataset=ANALYST_VIEWS_DATASET,
-    should_materialize=True
+    should_materialize=True,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         COMPARTMENT_SUB_SESSIONS_UNNESTED_VIEW_BUILDER.build_and_print()

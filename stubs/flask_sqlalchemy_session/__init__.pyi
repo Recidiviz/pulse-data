@@ -19,9 +19,9 @@ from typing import Callable, Optional
 from flask import Flask
 from sqlalchemy.orm import Session
 
-
 current_session: Session
 
-
 class flask_scoped_session:
-    def __init__(self, session_factory: Callable[..., Session], app: Optional[Flask] = None): ...
+    def __init__(
+        self, session_factory: Callable[..., Session], app: Optional[Flask] = None
+    ): ...

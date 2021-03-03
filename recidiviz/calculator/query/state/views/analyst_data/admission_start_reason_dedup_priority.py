@@ -16,19 +16,21 @@
 # =============================================================================
 """Dedup priority for session start reasons"""
 # pylint: disable=trailing-whitespace
-# pylint: disable=line-too-long
+
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-ADMISSION_START_REASON_DEDUP_PRIORITY_VIEW_NAME = 'admission_start_reason_dedup_priority'
+ADMISSION_START_REASON_DEDUP_PRIORITY_VIEW_NAME = (
+    "admission_start_reason_dedup_priority"
+)
 
-ADMISSION_START_REASON_DEDUP_PRIORITY_VIEW_DESCRIPTION = \
+ADMISSION_START_REASON_DEDUP_PRIORITY_VIEW_DESCRIPTION = (
     """Dedup priority for session start reasons"""
+)
 
-ADMISSION_START_REASON_DEDUP_PRIORITY_QUERY_TEMPLATE = \
-    """
+ADMISSION_START_REASON_DEDUP_PRIORITY_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT 
         'SUPERVISION_START' AS metric_source,
@@ -67,9 +69,9 @@ ADMISSION_START_REASON_DEDUP_PRIORITY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=ADMISSION_START_REASON_DEDUP_PRIORITY_VIEW_NAME,
     view_query_template=ADMISSION_START_REASON_DEDUP_PRIORITY_QUERY_TEMPLATE,
     description=ADMISSION_START_REASON_DEDUP_PRIORITY_VIEW_DESCRIPTION,
-    should_materialize=False
+    should_materialize=False,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         ADMISSION_START_REASON_DEDUP_PRIORITY_VIEW_BUILDER.build_and_print()

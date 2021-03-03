@@ -19,24 +19,21 @@
 in static tables.
 """
 
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-AUGMENTED_AGENT_INFO_VIEW_NAME = \
-    'augmented_agent_info'
+AUGMENTED_AGENT_INFO_VIEW_NAME = "augmented_agent_info"
 
-AUGMENTED_AGENT_INFO_DESCRIPTION = \
-    """Agent information table that adds agent info from one-off reference tables to info from the state_agent table
+AUGMENTED_AGENT_INFO_DESCRIPTION = """Agent information table that adds agent info from one-off reference tables to info from the state_agent table
     for use in the pipelines.
     """
 
 # TODO(#4159) Remove the US_PA state-specific logic once we have given and surnames set in ingest
-AUGMENTED_AGENT_INFO_QUERY_TEMPLATE = \
-    """
+AUGMENTED_AGENT_INFO_QUERY_TEMPLATE = """
     /*{description}*/
     WITH
     agents_base AS (
@@ -94,6 +91,6 @@ AUGMENTED_AGENT_INFO_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         AUGMENTED_AGENT_INFO_VIEW_BUILDER.build_and_print()

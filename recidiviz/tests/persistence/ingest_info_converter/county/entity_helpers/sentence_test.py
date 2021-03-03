@@ -22,8 +22,7 @@ from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.county import entities
-from recidiviz.persistence.ingest_info_converter.county.entity_helpers import \
-    sentence
+from recidiviz.persistence.ingest_info_converter.county.entity_helpers import sentence
 
 
 class SentenceConverterTest(unittest.TestCase):
@@ -32,27 +31,30 @@ class SentenceConverterTest(unittest.TestCase):
     def testParseSentence(self):
         # Arrange
         ingest_sentence = ingest_info_pb2.Sentence(
-            sentence_id='SENTENCE_ID',
-            min_length='1',
-            date_imposed='2000-1-1',
-            post_release_supervision_length=''
+            sentence_id="SENTENCE_ID",
+            min_length="1",
+            date_imposed="2000-1-1",
+            post_release_supervision_length="",
         )
 
         # Act
         sentence_builder = entities.Sentence.builder()
-        sentence.copy_fields_to_builder(sentence_builder, ingest_sentence,
-                                        IngestMetadata.new_with_defaults(
-                                            ingest_time=datetime.datetime(
-                                                year=2018, month=6, day=8)))
+        sentence.copy_fields_to_builder(
+            sentence_builder,
+            ingest_sentence,
+            IngestMetadata.new_with_defaults(
+                ingest_time=datetime.datetime(year=2018, month=6, day=8)
+            ),
+        )
         result = sentence_builder.build()
 
         # Assert
         expected_result = entities.Sentence.new_with_defaults(
-            external_id='SENTENCE_ID',
+            external_id="SENTENCE_ID",
             min_length_days=1,
             post_release_supervision_length_days=0,
             date_imposed=datetime.date(year=2000, month=1, day=1),
-            status=SentenceStatus.PRESENT_WITHOUT_INFO
+            status=SentenceStatus.PRESENT_WITHOUT_INFO,
         )
 
         self.assertEqual(result, expected_result)
@@ -60,24 +62,27 @@ class SentenceConverterTest(unittest.TestCase):
     def testCompletionDateInFuture(self):
         # Arrange
         ingest_sentence = ingest_info_pb2.Sentence(
-            sentence_id='SENTENCE_ID',
-            completion_date='2020-1-1',
+            sentence_id="SENTENCE_ID",
+            completion_date="2020-1-1",
         )
 
         # Act
         sentence_builder = entities.Sentence.builder()
-        sentence.copy_fields_to_builder(sentence_builder, ingest_sentence,
-                                        IngestMetadata.new_with_defaults(
-                                            ingest_time=datetime.datetime(
-                                                year=2018, month=6, day=8)))
+        sentence.copy_fields_to_builder(
+            sentence_builder,
+            ingest_sentence,
+            IngestMetadata.new_with_defaults(
+                ingest_time=datetime.datetime(year=2018, month=6, day=8)
+            ),
+        )
         result = sentence_builder.build()
 
         # Assert
         expected_result = entities.Sentence.new_with_defaults(
-            external_id='SENTENCE_ID',
+            external_id="SENTENCE_ID",
             completion_date=None,
             projected_completion_date=datetime.date(year=2020, month=1, day=1),
-            status=SentenceStatus.PRESENT_WITHOUT_INFO
+            status=SentenceStatus.PRESENT_WITHOUT_INFO,
         )
 
         self.assertEqual(result, expected_result)
@@ -85,23 +90,26 @@ class SentenceConverterTest(unittest.TestCase):
     def testParseSentence_completionDateWithoutStatus_marksAsCompleted(self):
         # Arrange
         ingest_sentence = ingest_info_pb2.Sentence(
-            sentence_id='SENTENCE_ID',
-            completion_date='2018-1-1',
+            sentence_id="SENTENCE_ID",
+            completion_date="2018-1-1",
         )
 
         # Act
         sentence_builder = entities.Sentence.builder()
-        sentence.copy_fields_to_builder(sentence_builder, ingest_sentence,
-                                        IngestMetadata.new_with_defaults(
-                                            ingest_time=datetime.datetime(
-                                                year=2018, month=6, day=8)))
+        sentence.copy_fields_to_builder(
+            sentence_builder,
+            ingest_sentence,
+            IngestMetadata.new_with_defaults(
+                ingest_time=datetime.datetime(year=2018, month=6, day=8)
+            ),
+        )
         result = sentence_builder.build()
 
         # Assert
         expected_result = entities.Sentence.new_with_defaults(
-            external_id='SENTENCE_ID',
+            external_id="SENTENCE_ID",
             completion_date=datetime.date(year=2018, month=1, day=1),
-            status=SentenceStatus.COMPLETED
+            status=SentenceStatus.COMPLETED,
         )
 
         self.assertEqual(result, expected_result)

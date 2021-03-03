@@ -24,33 +24,49 @@ from typing import List
 import pytest
 
 from recidiviz.ingest.direct import regions as regions_module
-from recidiviz.ingest.direct.direct_ingest_files_generator import DirectIngestFilesGenerator
-from recidiviz.ingest.direct.direct_ingest_region_utils import get_existing_region_dir_names, \
-    get_existing_region_dir_paths
+from recidiviz.ingest.direct.direct_ingest_files_generator import (
+    DirectIngestFilesGenerator,
+)
+from recidiviz.ingest.direct.direct_ingest_region_utils import (
+    get_existing_region_dir_names,
+    get_existing_region_dir_paths,
+)
 from recidiviz.persistence.entity_matching import state as state_module
 from recidiviz.tests.ingest.direct import regions as regions_tests_module
-from recidiviz.tests.ingest.direct.regions.direct_ingest_region_structure_test import DirectIngestRegionDirStructureBase
+from recidiviz.tests.ingest.direct.regions.direct_ingest_region_structure_test import (
+    DirectIngestRegionDirStructureBase,
+)
 
 
 # TODO(#6105): Use a fake FS for these tests so they can be run in parallel without clobbering each other.
 @pytest.mark.no_parallel
-class DirectIngestFilesGeneratorTest(DirectIngestRegionDirStructureBase, unittest.TestCase):
+class DirectIngestFilesGeneratorTest(
+    DirectIngestRegionDirStructureBase, unittest.TestCase
+):
     """Tests for DirectIngestFilesGenerator."""
 
     def setUp(self) -> None:
         super().setUp()
-        test_region_code = 'us_aa'
+        test_region_code = "us_aa"
         self.files_generator = DirectIngestFilesGenerator(test_region_code)
         self.files_generator.generate_all_new_dirs_and_files()
 
     def tearDown(self) -> None:
-        new_region_dir_path = os.path.join(os.path.dirname(regions_module.__file__),
-                                           self.files_generator.region_code)
-        new_region_persistence_dir_path = os.path.join(os.path.dirname(state_module.__file__),
-                                                       self.files_generator.region_code)
-        new_region_tests_dir_path = os.path.join(os.path.dirname(regions_tests_module.__file__),
-                                                 self.files_generator.region_code)
-        dirs_created = [new_region_dir_path, new_region_persistence_dir_path, new_region_tests_dir_path]
+        new_region_dir_path = os.path.join(
+            os.path.dirname(regions_module.__file__), self.files_generator.region_code
+        )
+        new_region_persistence_dir_path = os.path.join(
+            os.path.dirname(state_module.__file__), self.files_generator.region_code
+        )
+        new_region_tests_dir_path = os.path.join(
+            os.path.dirname(regions_tests_module.__file__),
+            self.files_generator.region_code,
+        )
+        dirs_created = [
+            new_region_dir_path,
+            new_region_persistence_dir_path,
+            new_region_tests_dir_path,
+        ]
         for d in dirs_created:
             if os.path.isdir(d):
                 rmtree(d)
@@ -73,5 +89,5 @@ class DirectIngestFilesGeneratorTest(DirectIngestRegionDirStructureBase, unittes
 
     def test_generate_all_new_files_for_existing_state(self) -> None:
         with self.assertRaises(FileExistsError):
-            files_generator = DirectIngestFilesGenerator('us_nd')
+            files_generator = DirectIngestFilesGenerator("us_nd")
             files_generator.generate_all_new_dirs_and_files()

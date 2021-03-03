@@ -20,16 +20,19 @@ import unittest
 from datetime import date
 
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
-from recidiviz.common.constants.state.state_supervision import \
-    StateSupervisionType
-from recidiviz.common.constants.state.state_supervision_period import \
-    StateSupervisionPeriodStatus, StateSupervisionPeriodAdmissionReason, \
-    StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType
+from recidiviz.common.constants.state.state_supervision import StateSupervisionType
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodStatus,
+    StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodTerminationReason,
+    StateSupervisionPeriodSupervisionType,
+)
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.state.entity_helpers import \
-    state_supervision_period
+from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
+    state_supervision_period,
+)
 
 _EMPTY_METADATA = IngestMetadata.new_with_defaults()
 
@@ -40,84 +43,87 @@ class StateSupervisionPeriodConverterTest(unittest.TestCase):
     def testParseStateSupervisionPeriod(self):
         # Arrange
         ingest_supervision = ingest_info_pb2.StateSupervisionPeriod(
-            status='TERMINATED',
-            supervision_type='PAROLE',
-            supervision_period_supervision_type='PAROLE',
-            admission_reason='CONDITIONAL_RELEASE',
-            termination_reason='DISCHARGE',
+            status="TERMINATED",
+            supervision_type="PAROLE",
+            supervision_period_supervision_type="PAROLE",
+            admission_reason="CONDITIONAL_RELEASE",
+            termination_reason="DISCHARGE",
             supervision_level=None,
-            state_supervision_period_id='SUPERVISION_ID',
-            start_date='1/2/2111',
-            termination_date='2/2/2112',
-            state_code='us_nd',
-            county_code='bis',
-            custodial_authority='SUPERVISION AUTHORITY',
-            supervision_site='07-CENTRAL',
-            conditions=['CURFEW', 'DRINKING']
+            state_supervision_period_id="SUPERVISION_ID",
+            start_date="1/2/2111",
+            termination_date="2/2/2112",
+            state_code="us_nd",
+            county_code="bis",
+            custodial_authority="SUPERVISION AUTHORITY",
+            supervision_site="07-CENTRAL",
+            conditions=["CURFEW", "DRINKING"],
         )
 
         # Act
         supervision_builder = entities.StateSupervisionPeriod.builder()
         state_supervision_period.copy_fields_to_builder(
-            supervision_builder, ingest_supervision, _EMPTY_METADATA)
+            supervision_builder, ingest_supervision, _EMPTY_METADATA
+        )
         result = supervision_builder.build()
 
         # Assert
         expected_result = entities.StateSupervisionPeriod(
             status=StateSupervisionPeriodStatus.TERMINATED,
-            status_raw_text='TERMINATED',
+            status_raw_text="TERMINATED",
             supervision_type=StateSupervisionType.PAROLE,
-            supervision_type_raw_text='PAROLE',
+            supervision_type_raw_text="PAROLE",
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            supervision_period_supervision_type_raw_text='PAROLE',
-            admission_reason=
-            StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
-            admission_reason_raw_text='CONDITIONAL_RELEASE',
-            termination_reason=
-            StateSupervisionPeriodTerminationReason.DISCHARGE,
-            termination_reason_raw_text='DISCHARGE',
+            supervision_period_supervision_type_raw_text="PAROLE",
+            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            admission_reason_raw_text="CONDITIONAL_RELEASE",
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            termination_reason_raw_text="DISCHARGE",
             supervision_level=None,
             supervision_level_raw_text=None,
-            external_id='SUPERVISION_ID',
+            external_id="SUPERVISION_ID",
             start_date=date(year=2111, month=1, day=2),
             termination_date=date(year=2112, month=2, day=2),
-            state_code='US_ND',
-            county_code='BIS',
-            supervision_site='07-CENTRAL',
-            conditions='CURFEW, DRINKING',
+            state_code="US_ND",
+            county_code="BIS",
+            supervision_site="07-CENTRAL",
+            conditions="CURFEW, DRINKING",
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
-            custodial_authority_raw_text='SUPERVISION AUTHORITY'
+            custodial_authority_raw_text="SUPERVISION AUTHORITY",
         )
 
         self.assertEqual(result, expected_result)
 
     def testParseStateSupervisionPeriod_inferStatus_noDates(self):
         # Arrange
-        ingest_supervision = ingest_info_pb2.StateSupervisionPeriod(state_code='us_nd')
+        ingest_supervision = ingest_info_pb2.StateSupervisionPeriod(state_code="us_nd")
 
         # Act
         supervision_builder = entities.StateSupervisionPeriod.builder()
-        state_supervision_period.copy_fields_to_builder(supervision_builder, ingest_supervision, _EMPTY_METADATA)
+        state_supervision_period.copy_fields_to_builder(
+            supervision_builder, ingest_supervision, _EMPTY_METADATA
+        )
         result = supervision_builder.build()
 
         # Assert
         expected_result = entities.StateSupervisionPeriod.new_with_defaults(
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
-            state_code='US_ND')
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO, state_code="US_ND"
+        )
 
         self.assertEqual(expected_result, result)
 
     def testParseStateSupervisionPeriod_inferStatus_terminationDate(self):
         # Arrange
         ingest_supervision = ingest_info_pb2.StateSupervisionPeriod(
-            state_code='us_nd',
-            start_date='1/2/2111',
-            termination_date='1/2/2112',
+            state_code="us_nd",
+            start_date="1/2/2111",
+            termination_date="1/2/2112",
         )
 
         # Act
         supervision_builder = entities.StateSupervisionPeriod.builder()
-        state_supervision_period.copy_fields_to_builder(supervision_builder, ingest_supervision, _EMPTY_METADATA)
+        state_supervision_period.copy_fields_to_builder(
+            supervision_builder, ingest_supervision, _EMPTY_METADATA
+        )
         result = supervision_builder.build()
 
         # Assert
@@ -125,26 +131,30 @@ class StateSupervisionPeriodConverterTest(unittest.TestCase):
             status=StateSupervisionPeriodStatus.TERMINATED,
             start_date=date(year=2111, month=1, day=2),
             termination_date=date(year=2112, month=1, day=2),
-            state_code='US_ND')
+            state_code="US_ND",
+        )
 
         self.assertEqual(expected_result, result)
 
     def testParseStateSupervisionPeriod_inferStatus_startNoTermination(self):
         # Arrange
         ingest_supervision = ingest_info_pb2.StateSupervisionPeriod(
-            state_code='us_nd',
-            start_date='1/2/2111',
+            state_code="us_nd",
+            start_date="1/2/2111",
         )
 
         # Act
         supervision_builder = entities.StateSupervisionPeriod.builder()
-        state_supervision_period.copy_fields_to_builder(supervision_builder, ingest_supervision, _EMPTY_METADATA)
+        state_supervision_period.copy_fields_to_builder(
+            supervision_builder, ingest_supervision, _EMPTY_METADATA
+        )
         result = supervision_builder.build()
 
         # Assert
         expected_result = entities.StateSupervisionPeriod.new_with_defaults(
             status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
             start_date=date(year=2111, month=1, day=2),
-            state_code='US_ND')
+            state_code="US_ND",
+        )
 
         self.assertEqual(expected_result, result)

@@ -32,50 +32,59 @@ import enum
 from typing import TypeVar
 
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql.schema import Column, ForeignKeyConstraint, PrimaryKeyConstraint, UniqueConstraint
+from sqlalchemy.sql.schema import (
+    Column,
+    ForeignKeyConstraint,
+    PrimaryKeyConstraint,
+    UniqueConstraint,
+)
 from sqlalchemy.sql.sqltypes import ARRAY, Date, Enum, Integer, Numeric, String
 
 from recidiviz.persistence.database.base_schema import JusticeCountsBase
 
 
 class AcquisitionMethod(enum.Enum):
-    SCRAPED = 'SCRAPED'
-    UPLOADED = 'UPLOADED'
-    MANUALLY_ENTERED = 'MANUALLY_ENTERED'
+    SCRAPED = "SCRAPED"
+    UPLOADED = "UPLOADED"
+    MANUALLY_ENTERED = "MANUALLY_ENTERED"
 
 
 class MetricType(enum.Enum):
     """Various aspects of the criminal justice system that are measured, as defined by the Justice Counts Framework."""
-    ADMISSIONS = 'ADMISSIONS'
-    ARRESTS = 'ARRESTS'
-    POPULATION = 'POPULATION'
-    REVOCATIONS = 'REVOCATIONS'
-    RELEASES = 'RELEASES'
+
+    ADMISSIONS = "ADMISSIONS"
+    ARRESTS = "ARRESTS"
+    POPULATION = "POPULATION"
+    REVOCATIONS = "REVOCATIONS"
+    RELEASES = "RELEASES"
 
 
 class MeasurementType(enum.Enum):
     """How the metric over a given time window was reduced to a single point.
 
     This is not comprehensive and can grow as needed."""
+
     # Measurement at a single point in time.
-    INSTANT = 'INSTANT'
+    INSTANT = "INSTANT"
 
     # Measurement averaged over the window.
-    AVERAGE = 'AVERAGE'
+    AVERAGE = "AVERAGE"
 
     # Count of events that occurred over the window.
-    DELTA = 'DELTA'
+    DELTA = "DELTA"
 
     # Count of events that occurred over the window, deduplicated based on the person associated with the event such
     # that only a single event for each person is counted. In the future if other deduplication-based counting
     # methodologies are discovered this can be expanded or new fields can be added to cover those.
-    PERSON_BASED_DELTA = 'PERSON_BASED_DELTA'
+    PERSON_BASED_DELTA = "PERSON_BASED_DELTA"
+
 
 class System(enum.Enum):
     """Part of the overall criminal justice system that this pertains to, as defined by the Justice Counts Framework."""
-    LAW_ENFORCEMENT = 'LAW_ENFORCEMENT'
-    COURT_PROCESSES = 'COURT_PROCESSES'
-    CORRECTIONS = 'CORRECTIONS'
+
+    LAW_ENFORCEMENT = "LAW_ENFORCEMENT"
+    COURT_PROCESSES = "COURT_PROCESSES"
+    CORRECTIONS = "CORRECTIONS"
 
 
 class Source(JusticeCountsBase):
@@ -83,20 +92,20 @@ class Source(JusticeCountsBase):
 
     It is not necessarily specific to a state or jurisdiction, but frequently is.
     """
-    __tablename__ = 'source'
+
+    __tablename__ = "source"
 
     id = Column(Integer, autoincrement=True)
 
     name = Column(String(255), nullable=False)
 
-    __table_args__ = tuple([
-        PrimaryKeyConstraint(id),
-        UniqueConstraint(name)])
+    __table_args__ = tuple([PrimaryKeyConstraint(id), UniqueConstraint(name)])
+
 
 class Report(JusticeCountsBase):
-    """A document that is published by a source that contains data pertaining to the Justice Counts Framework.
-    """
-    __tablename__ = 'report'
+    """A document that is published by a source that contains data pertaining to the Justice Counts Framework."""
+
+    __tablename__ = "report"
 
     id = Column(Integer, autoincrement=True)
 
@@ -123,21 +132,29 @@ class Report(JusticeCountsBase):
     acquired_by = Column(String(255))
     # TODO(#4485): Add a list of projects (e.g. Justice Counts, Spark) for which this data was ingested.
 
-    __table_args__ = tuple([
-        PrimaryKeyConstraint(id),
-        UniqueConstraint(source_id, type, instance),
-        ForeignKeyConstraint([source_id], [Source.id])])
+    __table_args__ = tuple(
+        [
+            PrimaryKeyConstraint(id),
+            UniqueConstraint(source_id, type, instance),
+            ForeignKeyConstraint([source_id], [Source.id]),
+        ]
+    )
 
     source = relationship(Source)
 
-    report_table_instances = relationship('ReportTableInstance', back_populates='report', cascade='all, delete',
-                                          lazy='selectin', passive_deletes=True)
+    report_table_instances = relationship(
+        "ReportTableInstance",
+        back_populates="report",
+        cascade="all, delete",
+        lazy="selectin",
+        passive_deletes=True,
+    )
 
 
 class ReportTableDefinition(JusticeCountsBase):
-    """The definition for what a table within a report describes.
-    """
-    __tablename__ = 'report_table_definition'
+    """The definition for what a table within a report describes."""
+
+    __tablename__ = "report_table_definition"
 
     id = Column(Integer, autoincrement=True)
 
@@ -155,10 +172,18 @@ class ReportTableDefinition(JusticeCountsBase):
     # combination of values for the aggregated dimensions. Dimensions are sorted deterministically within the array.
     aggregated_dimensions = Column(ARRAY(String(255)))
 
-    __table_args__ = tuple([
-        PrimaryKeyConstraint(id),
-        UniqueConstraint(metric_type, measurement_type, filtered_dimensions,
-                         filtered_dimension_values, aggregated_dimensions)])
+    __table_args__ = tuple(
+        [
+            PrimaryKeyConstraint(id),
+            UniqueConstraint(
+                metric_type,
+                measurement_type,
+                filtered_dimensions,
+                filtered_dimension_values,
+                aggregated_dimensions,
+            ),
+        ]
+    )
 
 
 class ReportTableInstance(JusticeCountsBase):
@@ -167,7 +192,8 @@ class ReportTableInstance(JusticeCountsBase):
     It typically maps to a literal table with columns and rows in a report, but in some cases a literal table in the
     report may map to multiple tables as defined here.
     """
-    __tablename__ = 'report_table_instance'
+
+    __tablename__ = "report_table_instance"
 
     id = Column(Integer, autoincrement=True)
 
@@ -185,26 +211,42 @@ class ReportTableInstance(JusticeCountsBase):
     # for prior instances.
     methodology = Column(String(255))
 
-    __table_args__ = tuple([
-        PrimaryKeyConstraint(id),
-        # TODO(#4476): We need to include time window as part of the unique constraint in case there is data for the
-        # same table definition that represents multiple time windows within a single report. To make this work with
-        # updates, I think we will re-ingest all table instances for a particular report table definition in an updated
-        # report.
-        UniqueConstraint(report_id, report_table_definition_id, time_window_start, time_window_end),
-        ForeignKeyConstraint([report_id], [Report.id], ondelete='CASCADE'),
-        ForeignKeyConstraint([report_table_definition_id], [ReportTableDefinition.id])])
+    __table_args__ = tuple(
+        [
+            PrimaryKeyConstraint(id),
+            # TODO(#4476): We need to include time window as part of the unique
+            # constraint in case there is data for the same table definition that
+            # represents multiple time windows within a single report. To make this
+            # work with updates, I think we will re-ingest all table instances for
+            # a particular report table definition in an updated report.
+            UniqueConstraint(
+                report_id,
+                report_table_definition_id,
+                time_window_start,
+                time_window_end,
+            ),
+            ForeignKeyConstraint([report_id], [Report.id], ondelete="CASCADE"),
+            ForeignKeyConstraint(
+                [report_table_definition_id], [ReportTableDefinition.id]
+            ),
+        ]
+    )
 
-    report = relationship(Report, back_populates='report_table_instances')
+    report = relationship(Report, back_populates="report_table_instances")
     report_table_definition = relationship(ReportTableDefinition)
-    cells = relationship('Cell', back_populates='report_table_instance', lazy='selectin',
-                         cascade='all, delete', passive_deletes=True)
+    cells = relationship(
+        "Cell",
+        back_populates="report_table_instance",
+        lazy="selectin",
+        cascade="all, delete",
+        passive_deletes=True,
+    )
 
 
 class Cell(JusticeCountsBase):
-    """A single data point within a table.
-    """
-    __tablename__ = 'cell'
+    """A single data point within a table."""
+
+    __tablename__ = "cell"
 
     id = Column(Integer, autoincrement=True)
 
@@ -213,13 +255,21 @@ class Cell(JusticeCountsBase):
 
     value = Column(Numeric, nullable=False)
 
-    __table_args__ = tuple([
-        PrimaryKeyConstraint(id),
-        UniqueConstraint(report_table_instance_id, aggregated_dimension_values),
-        ForeignKeyConstraint([report_table_instance_id], [ReportTableInstance.id], ondelete='CASCADE')])
+    __table_args__ = tuple(
+        [
+            PrimaryKeyConstraint(id),
+            UniqueConstraint(report_table_instance_id, aggregated_dimension_values),
+            ForeignKeyConstraint(
+                [report_table_instance_id], [ReportTableInstance.id], ondelete="CASCADE"
+            ),
+        ]
+    )
 
-    report_table_instance = relationship(ReportTableInstance, back_populates='cells')
+    report_table_instance = relationship(ReportTableInstance, back_populates="cells")
+
 
 # As this is a TypeVar, it should be used when all variables within the scope of this type should have the same
 # concrete class.
-JusticeCountsDatabaseEntity = TypeVar('JusticeCountsDatabaseEntity', bound=JusticeCountsBase)
+JusticeCountsDatabaseEntity = TypeVar(
+    "JusticeCountsDatabaseEntity", bound=JusticeCountsBase
+)

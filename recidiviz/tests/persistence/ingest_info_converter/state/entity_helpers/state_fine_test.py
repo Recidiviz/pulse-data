@@ -23,8 +23,7 @@ from recidiviz.common.constants.state.state_fine import StateFineStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.state.entity_helpers import \
-    state_fine
+from recidiviz.persistence.ingest_info_converter.state.entity_helpers import state_fine
 
 _EMPTY_METADATA = IngestMetadata.new_with_defaults()
 
@@ -35,29 +34,28 @@ class StateFineConverterTest(unittest.TestCase):
     def testParseStateFine(self):
         # Arrange
         ingest_fine = ingest_info_pb2.StateFine(
-            status='PAID',
-            state_fine_id='FINE_ID',
-            date_paid='1/10/2111',
-            state_code='us_nd',
-            county_code='CO',
-            fine_dollars='3.50',
+            status="PAID",
+            state_fine_id="FINE_ID",
+            date_paid="1/10/2111",
+            state_code="us_nd",
+            county_code="CO",
+            fine_dollars="3.50",
         )
 
         # Act
         fine_builder = entities.StateFine.builder()
-        state_fine.copy_fields_to_builder(
-            fine_builder, ingest_fine, _EMPTY_METADATA)
+        state_fine.copy_fields_to_builder(fine_builder, ingest_fine, _EMPTY_METADATA)
         result = fine_builder.build()
 
         # Assert
         expected_result = entities.StateFine.new_with_defaults(
             status=StateFineStatus.PAID,
-            status_raw_text='PAID',
-            external_id='FINE_ID',
+            status_raw_text="PAID",
+            external_id="FINE_ID",
             date_paid=date(year=2111, month=1, day=10),
-            state_code='US_ND',
-            county_code='CO',
-            fine_dollars=3
+            state_code="US_ND",
+            county_code="CO",
+            fine_dollars=3,
         )
 
         self.assertEqual(result, expected_result)

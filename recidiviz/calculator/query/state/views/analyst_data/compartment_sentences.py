@@ -15,20 +15,21 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Sentences associated with each compartment session"""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET, ANALYST_VIEWS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    STATE_BASE_DATASET,
+    ANALYST_VIEWS_DATASET,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-COMPARTMENT_SENTENCES_VIEW_NAME = 'compartment_sentences'
+COMPARTMENT_SENTENCES_VIEW_NAME = "compartment_sentences"
 
-COMPARTMENT_SENTENCES_VIEW_DESCRIPTION = \
-    """Sentences associated with each compartment session. Joined based on sentence start date proximity to session start date"""
+COMPARTMENT_SENTENCES_VIEW_DESCRIPTION = """Sentences associated with each compartment session. Joined based on sentence start date proximity to session start date"""
 
-COMPARTMENT_SENTENCES_QUERY_TEMPLATE = \
-    """
+COMPARTMENT_SENTENCES_QUERY_TEMPLATE = """
     /*{description}*/
     /*
     Union together supervision and incarceration sentence data. Join to state charge datasets to get the description and
@@ -238,9 +239,9 @@ COMPARTMENT_SENTENCES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=COMPARTMENT_SENTENCES_VIEW_DESCRIPTION,
     base_dataset=STATE_BASE_DATASET,
     analyst_dataset=ANALYST_VIEWS_DATASET,
-    should_materialize=True
+    should_materialize=True,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         COMPARTMENT_SENTENCES_VIEW_BUILDER.build_and_print()

@@ -21,14 +21,20 @@ from mock import MagicMock, call
 
 from google.api_core import exceptions  # pylint: disable=no-name-in-module
 
-from recidiviz.common.common_utils import create_generated_id, \
-    is_generated_id, retry_grpc, create_synthetic_id, get_external_id, date_intersects_with_span, \
-    date_spans_overlap_exclusive, date_spans_overlap_inclusive
+from recidiviz.common.common_utils import (
+    create_generated_id,
+    is_generated_id,
+    retry_grpc,
+    create_synthetic_id,
+    get_external_id,
+    date_intersects_with_span,
+    date_spans_overlap_exclusive,
+    date_spans_overlap_inclusive,
+)
 
-GO_AWAY_ERROR = exceptions.InternalServerError('500 GOAWAY received')
-DEADLINE_EXCEEDED_ERROR = exceptions.InternalServerError('504 Deadline '
-                                                         'Exceeded')
-OTHER_ERROR = exceptions.InternalServerError('500 received')
+GO_AWAY_ERROR = exceptions.InternalServerError("500 GOAWAY received")
+DEADLINE_EXCEEDED_ERROR = exceptions.InternalServerError("504 Deadline " "Exceeded")
+OTHER_ERROR = exceptions.InternalServerError("500 received")
 _DATE_1 = datetime.date(year=2019, month=1, day=1)
 _DATE_2 = datetime.date(year=2019, month=2, day=1)
 _DATE_3 = datetime.date(year=2019, month=3, day=1)
@@ -36,6 +42,7 @@ _DATE_4 = datetime.date(year=2019, month=4, day=1)
 _DATE_5 = datetime.date(year=2019, month=5, day=1)
 _DATE_6 = datetime.date(year=2019, month=6, day=1)
 _DATE_7 = datetime.date(year=2019, month=7, day=1)
+
 
 class CommonUtilsTest(unittest.TestCase):
     """Tests for common_utils.py."""
@@ -55,8 +62,9 @@ class CommonUtilsTest(unittest.TestCase):
     def test_create_synthetic_id(self):
         id_str = "id_str"
         id_type = "id_type"
-        self.assertEqual("id_type:id_str", create_synthetic_id(
-            external_id=id_str, id_type=id_type))
+        self.assertEqual(
+            "id_type:id_str", create_synthetic_id(external_id=id_str, id_type=id_type)
+        )
 
     def test_get_external_id(self):
         synthetic_id = "id_type:11:111"
@@ -103,42 +111,118 @@ class CommonUtilsTest(unittest.TestCase):
         fn.assert_has_calls([call(1, b=2)] * 4)
 
     def test_dateIntersectsWithSpan(self):
-        self.assertFalse(date_intersects_with_span(point_in_time=_DATE_1, start_date=_DATE_2, end_date=_DATE_4))
-        self.assertTrue(date_intersects_with_span(point_in_time=_DATE_2, start_date=_DATE_2, end_date=_DATE_4))
-        self.assertTrue(date_intersects_with_span(point_in_time=_DATE_3, start_date=_DATE_2, end_date=_DATE_4))
-        self.assertFalse(date_intersects_with_span(point_in_time=_DATE_4, start_date=_DATE_2, end_date=_DATE_4))
-        self.assertFalse(date_intersects_with_span(point_in_time=_DATE_5, start_date=_DATE_2, end_date=_DATE_4))
+        self.assertFalse(
+            date_intersects_with_span(
+                point_in_time=_DATE_1, start_date=_DATE_2, end_date=_DATE_4
+            )
+        )
+        self.assertTrue(
+            date_intersects_with_span(
+                point_in_time=_DATE_2, start_date=_DATE_2, end_date=_DATE_4
+            )
+        )
+        self.assertTrue(
+            date_intersects_with_span(
+                point_in_time=_DATE_3, start_date=_DATE_2, end_date=_DATE_4
+            )
+        )
+        self.assertFalse(
+            date_intersects_with_span(
+                point_in_time=_DATE_4, start_date=_DATE_2, end_date=_DATE_4
+            )
+        )
+        self.assertFalse(
+            date_intersects_with_span(
+                point_in_time=_DATE_5, start_date=_DATE_2, end_date=_DATE_4
+            )
+        )
 
     def test_dateSpansOverlapExclusive(self):
         # Spans intersect partially
-        self.assertTrue(date_spans_overlap_exclusive(start_1=_DATE_1, end_1=_DATE_3, start_2=_DATE_2, end_2=_DATE_4))
+        self.assertTrue(
+            date_spans_overlap_exclusive(
+                start_1=_DATE_1, end_1=_DATE_3, start_2=_DATE_2, end_2=_DATE_4
+            )
+        )
         # One span completely overshadows the other
-        self.assertTrue(date_spans_overlap_exclusive(start_1=_DATE_1, end_1=_DATE_5, start_2=_DATE_2, end_2=_DATE_4))
+        self.assertTrue(
+            date_spans_overlap_exclusive(
+                start_1=_DATE_1, end_1=_DATE_5, start_2=_DATE_2, end_2=_DATE_4
+            )
+        )
         # Single day span start date
-        self.assertTrue(date_spans_overlap_exclusive(start_1=_DATE_2, end_1=_DATE_2, start_2=_DATE_2, end_2=_DATE_4))
+        self.assertTrue(
+            date_spans_overlap_exclusive(
+                start_1=_DATE_2, end_1=_DATE_2, start_2=_DATE_2, end_2=_DATE_4
+            )
+        )
         # Single day span middle
-        self.assertTrue(date_spans_overlap_exclusive(start_1=_DATE_3, end_1=_DATE_3, start_2=_DATE_2, end_2=_DATE_4))
+        self.assertTrue(
+            date_spans_overlap_exclusive(
+                start_1=_DATE_3, end_1=_DATE_3, start_2=_DATE_2, end_2=_DATE_4
+            )
+        )
 
         # Spans are distinct
-        self.assertFalse(date_spans_overlap_exclusive(start_1=_DATE_5, end_1=_DATE_6, start_2=_DATE_2, end_2=_DATE_4))
+        self.assertFalse(
+            date_spans_overlap_exclusive(
+                start_1=_DATE_5, end_1=_DATE_6, start_2=_DATE_2, end_2=_DATE_4
+            )
+        )
         # Span end span start
-        self.assertFalse(date_spans_overlap_exclusive(start_1=_DATE_1, end_1=_DATE_2, start_2=_DATE_2, end_2=_DATE_4))
+        self.assertFalse(
+            date_spans_overlap_exclusive(
+                start_1=_DATE_1, end_1=_DATE_2, start_2=_DATE_2, end_2=_DATE_4
+            )
+        )
         # Single day span end date
-        self.assertFalse(date_spans_overlap_exclusive(start_1=_DATE_4, end_1=_DATE_4, start_2=_DATE_2, end_2=_DATE_4))
+        self.assertFalse(
+            date_spans_overlap_exclusive(
+                start_1=_DATE_4, end_1=_DATE_4, start_2=_DATE_2, end_2=_DATE_4
+            )
+        )
 
     def test_dateSpansOverlapInclusive(self):
         # Spans intersect partially
-        self.assertTrue(date_spans_overlap_inclusive(start_1=_DATE_1, end_1=_DATE_3, start_2=_DATE_2, end_2=_DATE_4))
+        self.assertTrue(
+            date_spans_overlap_inclusive(
+                start_1=_DATE_1, end_1=_DATE_3, start_2=_DATE_2, end_2=_DATE_4
+            )
+        )
         # One span completely overshadows the other
-        self.assertTrue(date_spans_overlap_inclusive(start_1=_DATE_1, end_1=_DATE_5, start_2=_DATE_2, end_2=_DATE_4))
+        self.assertTrue(
+            date_spans_overlap_inclusive(
+                start_1=_DATE_1, end_1=_DATE_5, start_2=_DATE_2, end_2=_DATE_4
+            )
+        )
         # Span end span start
-        self.assertTrue(date_spans_overlap_inclusive(start_1=_DATE_1, end_1=_DATE_2, start_2=_DATE_2, end_2=_DATE_4))
+        self.assertTrue(
+            date_spans_overlap_inclusive(
+                start_1=_DATE_1, end_1=_DATE_2, start_2=_DATE_2, end_2=_DATE_4
+            )
+        )
         # Single day span start date
-        self.assertTrue(date_spans_overlap_inclusive(start_1=_DATE_2, end_1=_DATE_2, start_2=_DATE_2, end_2=_DATE_4))
+        self.assertTrue(
+            date_spans_overlap_inclusive(
+                start_1=_DATE_2, end_1=_DATE_2, start_2=_DATE_2, end_2=_DATE_4
+            )
+        )
         # Single day span end date
-        self.assertTrue(date_spans_overlap_inclusive(start_1=_DATE_4, end_1=_DATE_4, start_2=_DATE_2, end_2=_DATE_4))
+        self.assertTrue(
+            date_spans_overlap_inclusive(
+                start_1=_DATE_4, end_1=_DATE_4, start_2=_DATE_2, end_2=_DATE_4
+            )
+        )
         # Single day span middle
-        self.assertTrue(date_spans_overlap_inclusive(start_1=_DATE_3, end_1=_DATE_3, start_2=_DATE_2, end_2=_DATE_4))
+        self.assertTrue(
+            date_spans_overlap_inclusive(
+                start_1=_DATE_3, end_1=_DATE_3, start_2=_DATE_2, end_2=_DATE_4
+            )
+        )
 
         # Spans are distinct
-        self.assertFalse(date_spans_overlap_inclusive(start_1=_DATE_5, end_1=_DATE_6, start_2=_DATE_2, end_2=_DATE_4))
+        self.assertFalse(
+            date_spans_overlap_inclusive(
+                start_1=_DATE_5, end_1=_DATE_6, start_2=_DATE_2, end_2=_DATE_4
+            )
+        )

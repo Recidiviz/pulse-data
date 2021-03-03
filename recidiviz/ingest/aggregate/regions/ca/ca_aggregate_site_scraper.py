@@ -26,18 +26,14 @@ from recidiviz.common import str_field_utils
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
 
 # Human landing page: https://app.bscc.ca.gov/joq//jps/QuerySelection.asp
-LANDING_PAGE = 'https://app.bscc.ca.gov/joq//jps/query.asp?action=v'
-DATE_RANGE_RE = r'(.*) through (.*)'
-PDF_URL = 'https://app.bscc.ca.gov/joq//jps/query.asp?action=q'
-DATE_RANGE_ANCHOR = 'Data is available from'
+LANDING_PAGE = "https://app.bscc.ca.gov/joq//jps/query.asp?action=v"
+DATE_RANGE_RE = r"(.*) through (.*)"
+PDF_URL = "https://app.bscc.ca.gov/joq//jps/query.asp?action=q"
+DATE_RANGE_ANCHOR = "Data is available from"
 
 
 def _get_landing_data():
-    return {
-        'DataType': 'Facility',
-        'ReportingRange': '2002',
-        'Continue': 'Continue'
-    }
+    return {"DataType": "Facility", "ReportingRange": "2002", "Continue": "Continue"}
 
 
 def _get_pdf_data(year, month_from, month_to, reporting_range):
@@ -46,24 +42,84 @@ def _get_pdf_data(year, month_from, month_to, reporting_range):
     # and they were acquired by checking the post data on the California
     # aggregate report site.
     return {
-        'DataType': 'Facility',
-        'ReportingRange': reporting_range,
-        'year': year,
-        'Month_From': month_from,
-        'Month_To': month_to,
-        'Sort_By': 'Date',
-        'jurisdictions': ['6', '21', '25', '28', '500', '36', '44', '50',
-                          '505', '57', '61', '64', '68', '76', '84', '89',
-                          '93', '97', '101', '108', '125', '132', '134', '140',
-                          '145', '150', '156', '161', '168', '177', '12', '181',
-                          '185', '190', '196', '204', '209', '216', '220',
-                          '221', '222', '236', '241', '244', '252', '614',
-                          '257', '264', '260', '272', '109', '550', '277',
-                          '280', '285', '288', '292', '297', '304', '575',
-                          '309', '314', '316', '321', '324', '325', '332',
-                          '340'],
-        'variables': ['2', '3', '4', '5', '6'],
-        'RunQuery': 'Excel'
+        "DataType": "Facility",
+        "ReportingRange": reporting_range,
+        "year": year,
+        "Month_From": month_from,
+        "Month_To": month_to,
+        "Sort_By": "Date",
+        "jurisdictions": [
+            "6",
+            "21",
+            "25",
+            "28",
+            "500",
+            "36",
+            "44",
+            "50",
+            "505",
+            "57",
+            "61",
+            "64",
+            "68",
+            "76",
+            "84",
+            "89",
+            "93",
+            "97",
+            "101",
+            "108",
+            "125",
+            "132",
+            "134",
+            "140",
+            "145",
+            "150",
+            "156",
+            "161",
+            "168",
+            "177",
+            "12",
+            "181",
+            "185",
+            "190",
+            "196",
+            "204",
+            "209",
+            "216",
+            "220",
+            "221",
+            "222",
+            "236",
+            "241",
+            "244",
+            "252",
+            "614",
+            "257",
+            "264",
+            "260",
+            "272",
+            "109",
+            "550",
+            "277",
+            "280",
+            "285",
+            "288",
+            "292",
+            "297",
+            "304",
+            "575",
+            "309",
+            "314",
+            "316",
+            "321",
+            "324",
+            "325",
+            "332",
+            "340",
+        ],
+        "variables": ["2", "3", "4", "5", "6"],
+        "RunQuery": "Excel",
     }
 
 
@@ -83,10 +139,11 @@ def get_urls_to_download() -> List[Tuple[str, Dict]]:
     if not (match and date_from and date_to):
         date_from = datetime.date(year=1995, month=9, day=5)
         date_to = aggregate_ingest_utils.subtract_month(
-            datetime.date.today().replace(day=1))
+            datetime.date.today().replace(day=1)
+        )
 
     aggregate_urls = []
-    for i in range(date_from.year, date_to.year+1):
+    for i in range(date_from.year, date_to.year + 1):
         month_from = 1
         month_to = 12
         if i == date_from.year:

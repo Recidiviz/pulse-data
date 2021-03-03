@@ -18,28 +18,29 @@
 incarceration_population_by_prioritized_race_and_ethnicity_by_period view.
 """
 
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
-from recidiviz.calculator.query.state.views.public_dashboard.incarceration.incarceration_population_by_prioritized_race_and_ethnicity_by_period import \
-    INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_NAME
+from recidiviz.calculator.query.state.views.public_dashboard.incarceration.incarceration_population_by_prioritized_race_and_ethnicity_by_period import (
+    INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_NAME,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
-from recidiviz.validation.views.utils.internal_consistency_templates import internal_consistency_query
+from recidiviz.validation.views.utils.internal_consistency_templates import (
+    internal_consistency_query,
+)
 
-INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_NAME = \
-    'incarceration_population_by_prioritized_race_and_ethnicity_by_period_internal_consistency'
+INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_NAME = "incarceration_population_by_prioritized_race_and_ethnicity_by_period_internal_consistency"
 
-INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_DESCRIPTION = \
-    """ Builds validation table to ensure internal consistency across breakdowns in the 
+INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_DESCRIPTION = """ Builds validation table to ensure internal consistency across breakdowns in the 
  incarceration_population_by_prioritized_race_and_ethnicity_by_period view."""
 
 
-PARTITION_COLUMNS = ['state_code', 'metric_period_months']
-CALCULATED_COLUMNS_TO_VALIDATE = ['population_count']
-MUTUALLY_EXCLUSIVE_BREAKDOWN_COLUMNS = ['race_or_ethnicity']
+PARTITION_COLUMNS = ["state_code", "metric_period_months"]
+CALCULATED_COLUMNS_TO_VALIDATE = ["population_count"]
+MUTUALLY_EXCLUSIVE_BREAKDOWN_COLUMNS = ["race_or_ethnicity"]
 
 INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_QUERY_TEMPLATE = f"""
 /*{{description}}*/
@@ -48,18 +49,15 @@ INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CO
                             calculated_columns_to_validate=CALCULATED_COLUMNS_TO_VALIDATE)}
 """
 
-INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER = \
-    SimpleBigQueryViewBuilder(
-        dataset_id=dataset_config.VIEWS_DATASET,
-        view_id=INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_NAME,
-        view_query_template=
-        INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_QUERY_TEMPLATE,
-        description=
-        INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_DESCRIPTION,
-        validated_table_dataset_id=state_dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
-        validated_table_id=INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_NAME
-    )
+INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+    dataset_id=dataset_config.VIEWS_DATASET,
+    view_id=INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_NAME,
+    view_query_template=INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_QUERY_TEMPLATE,
+    description=INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_DESCRIPTION,
+    validated_table_dataset_id=state_dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
+    validated_table_id=INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_NAME,
+)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER.build_and_print()

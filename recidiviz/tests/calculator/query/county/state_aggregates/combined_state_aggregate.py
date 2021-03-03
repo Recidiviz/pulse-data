@@ -22,13 +22,15 @@ from unittest import TestCase
 import pandas as pd
 
 import recidiviz.common.constants.aggregate.enum_canonical_strings as enum_strings
-from recidiviz.calculator.query.county.views.state_aggregates import \
-    combined_state_aggregate
-from recidiviz.persistence.database.base_schema import \
-    JailsBase
+from recidiviz.calculator.query.county.views.state_aggregates import (
+    combined_state_aggregate,
+)
+from recidiviz.persistence.database.base_schema import JailsBase
 from recidiviz.persistence.database.schema.aggregate import dao
-from recidiviz.persistence.database.schema.aggregate.schema import \
-    CaFacilityAggregate, FlFacilityAggregate
+from recidiviz.persistence.database.schema.aggregate.schema import (
+    CaFacilityAggregate,
+    FlFacilityAggregate,
+)
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.utils import fakes
 
@@ -44,43 +46,51 @@ class TestAggregateView(TestCase):
 
     def test_toQuery(self) -> None:
         # Arrange
-        ca_data = pd.DataFrame({
-            'jurisdiction_name': ['Alameda Sheriff\'s Dept.',
-                                  'Alameda Sheriff\'s Dept.'],
-            'facility_name': ['Glen Dyer Jail', 'Santa Rita Jail'],
-            'average_daily_population': [379, 2043],
-            'unsentenced_male_adp': [356, 1513],
-            'unsentenced_female_adp': [0, 192],
-            'sentenced_male_adp': [23, 301],
-            'sentenced_female_adp': [0, 37],
-            'report_date': 2 * [datetime.date(2017, 1, 31)],
-            'fips': ['06001', '06001'],
-            'aggregation_window': 2 * [enum_strings.monthly_granularity],
-            'report_frequency': 2 * [enum_strings.monthly_granularity]
-        })
+        ca_data = pd.DataFrame(
+            {
+                "jurisdiction_name": [
+                    "Alameda Sheriff's Dept.",
+                    "Alameda Sheriff's Dept.",
+                ],
+                "facility_name": ["Glen Dyer Jail", "Santa Rita Jail"],
+                "average_daily_population": [379, 2043],
+                "unsentenced_male_adp": [356, 1513],
+                "unsentenced_female_adp": [0, 192],
+                "sentenced_male_adp": [23, 301],
+                "sentenced_female_adp": [0, 37],
+                "report_date": 2 * [datetime.date(2017, 1, 31)],
+                "fips": ["06001", "06001"],
+                "aggregation_window": 2 * [enum_strings.monthly_granularity],
+                "report_frequency": 2 * [enum_strings.monthly_granularity],
+            }
+        )
         dao.write_df(CaFacilityAggregate, ca_data)
 
-        fl_data = pd.DataFrame({
-            'facility_name': [
-                'Alachua CSO, Department of the Jail',
-                'Alachua County Work Release',
-                'Baker County Detention Center',
-                'Bay County Jail and Annex',
-                'Bradford County Jail'],
-            'average_daily_population': [749., 50, 478, 1015, 141],
-            'number_felony_pretrial': [463., 4, 81, 307, 50],
-            'number_misdemeanor_pretrial': [45., 1, 15, 287, 9],
-            'fips': ['12001', '12001', '12003', '12005', '12007'],
-            'report_date': 5 * [datetime.date(2017, 1, 31)],
-            'aggregation_window': 5 * [enum_strings.monthly_granularity],
-            'report_frequency': 5 * [enum_strings.monthly_granularity]
-        })
+        fl_data = pd.DataFrame(
+            {
+                "facility_name": [
+                    "Alachua CSO, Department of the Jail",
+                    "Alachua County Work Release",
+                    "Baker County Detention Center",
+                    "Bay County Jail and Annex",
+                    "Bradford County Jail",
+                ],
+                "average_daily_population": [749.0, 50, 478, 1015, 141],
+                "number_felony_pretrial": [463.0, 4, 81, 307, 50],
+                "number_misdemeanor_pretrial": [45.0, 1, 15, 287, 9],
+                "fips": ["12001", "12001", "12003", "12005", "12007"],
+                "report_date": 5 * [datetime.date(2017, 1, 31)],
+                "aggregation_window": 5 * [enum_strings.monthly_granularity],
+                "report_frequency": 5 * [enum_strings.monthly_granularity],
+            }
+        )
         dao.write_df(FlFacilityAggregate, fl_data)
 
         # Act
         # pylint: disable=protected-access
         query = SessionFactory.for_schema_base(JailsBase).query(
-            combined_state_aggregate._UNIONED_STATEMENT)
+            combined_state_aggregate._UNIONED_STATEMENT
+        )
         result = query.all()
 
         # Assert

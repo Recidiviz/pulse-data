@@ -15,19 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Historical total population by month, compartment, outflow compartment, and model run date"""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-POPULATION_OUTFLOWS_VIEW_NAME = 'population_outflows'
+POPULATION_OUTFLOWS_VIEW_NAME = "population_outflows"
 
-POPULATION_OUTFLOWS_VIEW_DESCRIPTION = \
-    """"Historical total population by month, compartment, outflow compartment, and model run date"""
+POPULATION_OUTFLOWS_VIEW_DESCRIPTION = """"Historical total population by month, compartment, outflow compartment, and model run date"""
 
-POPULATION_OUTFLOWS_QUERY_TEMPLATE = \
-    """
+POPULATION_OUTFLOWS_QUERY_TEMPLATE = """
     WITH cte AS (
         SELECT
             run_date,
@@ -74,9 +72,9 @@ POPULATION_OUTFLOWS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=POPULATION_OUTFLOWS_VIEW_DESCRIPTION,
     analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
     population_projection_dataset=dataset_config.POPULATION_PROJECTION_DATASET,
-    should_materialize=False
+    should_materialize=False,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         POPULATION_OUTFLOWS_VIEW_BUILDER.build_and_print()

@@ -15,20 +15,19 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """View tracking characteristics/composition of the supervision population in each district by month"""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_VIEW_NAME = \
+SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_VIEW_NAME = (
     "supervision_population_attributes_by_district_by_month"
+)
 
-SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_VIEW_DESCRIPTION = \
-    "Captures demographic composition of supervision population for a given month by district"
+SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_VIEW_DESCRIPTION = "Captures demographic composition of supervision population for a given month by district"
 
-SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_QUERY_TEMPLATE = \
-    """
+SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT
         state_code,
@@ -59,9 +58,9 @@ SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_VIEW_BUILDER = SimpleBigQ
     view_query_template=SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_QUERY_TEMPLATE,
     description=SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_VIEW_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    should_materialize=True
+    should_materialize=True,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_VIEW_BUILDER.build_and_print()

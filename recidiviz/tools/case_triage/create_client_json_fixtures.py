@@ -44,7 +44,6 @@ def csv_row_to_etl_client_json(row: List[str]) -> Dict[str, Any]:
         person_external_id=row[1],
         state_code=row[9],
         supervising_officer_external_id=row[0],
-
         full_name=row[2],
         gender=row[13],
         current_address=row[3],
@@ -65,16 +64,16 @@ def csv_row_to_etl_client_json(row: List[str]) -> Dict[str, Any]:
 
 def generate_json_fixtures_from_csv() -> None:
     clients = []
-    with open('./recidiviz/tools/case_triage/fixtures/etl_clients.csv') as csvfile:
+    with open("./recidiviz/tools/case_triage/fixtures/etl_clients.csv") as csvfile:
         csv_reader = csv.reader(csvfile)
         for row in csv_reader:
-            if row[0] != 'SIN':  # Only take entries belonging to the agent SIN
+            if row[0] != "SIN":  # Only take entries belonging to the agent SIN
                 continue
             clients.append(csv_row_to_etl_client_json(row))
 
-    with open('./recidiviz/case_triage/fixtures/dummy_clients.json', 'w') as jsonfile:
+    with open("./recidiviz/case_triage/fixtures/dummy_clients.json", "w") as jsonfile:
         json.dump(clients, jsonfile, default=str)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     generate_json_fixtures_from_csv()

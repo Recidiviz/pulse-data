@@ -30,41 +30,49 @@ from recidiviz.utils.metadata import local_project_id_override
 # so that it is consistent with other databases. This will require splitting Dimensions and DimensionValues out into
 # their own entities in the Postgres schema, as arrays are not supported in CSV imports to BQ. We can then build a view
 # to recreate the arrays here.
-TABLE_QUERY_TEMPLATE = \
-    """
+TABLE_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT
         *
     FROM EXTERNAL_QUERY("{project_id}.US.justice_counts_cloudsql", "SELECT {columns} FROM {table};")
     """
 
+
 def get_table_view_builders() -> List[SimpleBigQueryViewBuilder]:
+    """Returns populated, formatted query builders for all Justice Counts BigQuery views."""
     table_view_builders = []
     for table in get_justice_counts_table_classes():
         select_columns = []
         for column in table.columns:
             if isinstance(column.type, sqlalchemy.Enum):
                 select_columns.append(f"CAST({column.name} as VARCHAR)")
-            elif isinstance(column.type, sqlalchemy.ARRAY) and isinstance(column.type.item_type, sqlalchemy.String):
+            elif isinstance(column.type, sqlalchemy.ARRAY) and isinstance(
+                column.type.item_type, sqlalchemy.String
+            ):
                 # BigQuery, while claiming to support NULL values in an array, actually does not. For strings, we
                 # instead replace NULL with the empty string. Arrays of other types are not modified, so if they
                 # include NULL values they will fail.
-                select_columns.append(f"ARRAY_REPLACE({column.name}, NULL, '') as {column.name}")
+                select_columns.append(
+                    f"ARRAY_REPLACE({column.name}, NULL, '') as {column.name}"
+                )
             else:
                 select_columns.append(column.name)
 
-        table_view_builders.append(SimpleBigQueryViewBuilder(
-            dataset_id=dataset_config.JUSTICE_COUNTS_BASE_DATASET,
-            view_id=table.name,
-            view_query_template=TABLE_QUERY_TEMPLATE,
-            should_materialize=True,
-            description=f"Data from the {table.name} table imported into BQ",
-            columns=', '.join(select_columns),
-            table=table.name,
-        ))
+        table_view_builders.append(
+            SimpleBigQueryViewBuilder(
+                dataset_id=dataset_config.JUSTICE_COUNTS_BASE_DATASET,
+                view_id=table.name,
+                view_query_template=TABLE_QUERY_TEMPLATE,
+                should_materialize=True,
+                description=f"Data from the {table.name} table imported into BQ",
+                columns=", ".join(select_columns),
+                table=table.name,
+            )
+        )
     return table_view_builders
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         for builder in get_table_view_builders():
             builder.build_and_print()

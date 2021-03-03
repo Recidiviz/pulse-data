@@ -29,7 +29,10 @@ from recidiviz.persistence.entity.county import entities
 def validate_county_person(person: entities.Person) -> bool:
     """Returns True if the person's bookings are valid, and False if an error was logged."""
     if _has_malformed_dates(person):
-        logging.error("Booking found with release date before admission date for person: [%s]", person)
+        logging.error(
+            "Booking found with release date before admission date for person: [%s]",
+            person,
+        )
         return False
     if _has_overlapping_bookings(person):
         logging.error("Overlapping historical bookings found for person: [%s]", person)
@@ -40,16 +43,24 @@ def validate_county_person(person: entities.Person) -> bool:
 def _has_malformed_dates(person: entities.Person) -> bool:
     """Returns True if any booking has a release date before its admission
     date."""
-    return any(booking.admission_date and booking.release_date
-               and booking.release_date < booking.admission_date
-               for booking in person.bookings)
+    return any(
+        booking.admission_date
+        and booking.release_date
+        and booking.release_date < booking.admission_date
+        for booking in person.bookings
+    )
 
 
 def _has_overlapping_bookings(person: entities.Person) -> bool:
     """Determines if a person has bookings with overlapping date ranges."""
-    DateRange = collections.namedtuple('DateRange', ['start', 'end'])
-    booking_ranges = (DateRange(b.admission_date or datetime.date.min,
-                                b.release_date or datetime.date.max)
-                      for b in person.bookings)
-    return any(range_2.start < range_1.end for range_1, range_2
-               in more_itertools.pairwise(sorted(booking_ranges)))
+    DateRange = collections.namedtuple("DateRange", ["start", "end"])
+    booking_ranges = (
+        DateRange(
+            b.admission_date or datetime.date.min, b.release_date or datetime.date.max
+        )
+        for b in person.bookings
+    )
+    return any(
+        range_2.start < range_1.end
+        for range_1, range_2 in more_itertools.pairwise(sorted(booking_ranges))
+    )

@@ -19,14 +19,12 @@
 from enum import unique
 
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
-import recidiviz.common.constants.state.enum_canonical_strings as \
-    state_enum_strings
+import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
 
 
 @unique
 class StatePersonAliasType(EntityEnum, metaclass=EntityEnumMeta):
-    AFFILIATION_NAME = \
-        state_enum_strings.state_person_alias_alias_type_affiliation_name
+    AFFILIATION_NAME = state_enum_strings.state_person_alias_alias_type_affiliation_name
     ALIAS = state_enum_strings.state_person_alias_alias_type_alias
     GIVEN_NAME = state_enum_strings.state_person_alias_alias_type_given_name
     MAIDEN_NAME = state_enum_strings.state_person_alias_alias_type_maiden_name
@@ -38,12 +36,12 @@ class StatePersonAliasType(EntityEnum, metaclass=EntityEnumMeta):
 
 
 _ALIAS_TYPE_MAP = {
-    'AFFILIATION NAME': StatePersonAliasType.AFFILIATION_NAME,
-    'GANG NAME': StatePersonAliasType.AFFILIATION_NAME,
-    'ALIAS': StatePersonAliasType.ALIAS,
-    'GIVEN': StatePersonAliasType.GIVEN_NAME,
-    'GIVEN NAME': StatePersonAliasType.GIVEN_NAME,
-    'MAIDEN': StatePersonAliasType.MAIDEN_NAME,
-    'MAIDEN NAME': StatePersonAliasType.MAIDEN_NAME,
-    'NICKNAME': StatePersonAliasType.NICKNAME,
+    "AFFILIATION NAME": StatePersonAliasType.AFFILIATION_NAME,
+    "GANG NAME": StatePersonAliasType.AFFILIATION_NAME,
+    "ALIAS": StatePersonAliasType.ALIAS,
+    "GIVEN": StatePersonAliasType.GIVEN_NAME,
+    "GIVEN NAME": StatePersonAliasType.GIVEN_NAME,
+    "MAIDEN": StatePersonAliasType.MAIDEN_NAME,
+    "MAIDEN NAME": StatePersonAliasType.MAIDEN_NAME,
+    "NICKNAME": StatePersonAliasType.NICKNAME,
 }

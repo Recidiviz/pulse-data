@@ -49,39 +49,49 @@ class TestSchema(TestCase):
 
     @classmethod
     def tearDownClass(cls) -> None:
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(cls.temp_db_dir)
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.temp_db_dir
+        )
 
     def testSchema_insertRows_returnedInQuery(self):
         # Create an object of each type with proper relationships
         act_session = SessionFactory.for_schema_base(JusticeCountsBase)
 
-        source = schema.Source(name='Test Source')
+        source = schema.Source(name="Test Source")
         act_session.add(source)
 
-        report = schema.Report(source=source,
-                               type='Monthly Prison Report',
-                               instance='September 2020',
-                               publish_date=datetime.date(2020, 10, 1),
-                               acquisition_method=schema.AcquisitionMethod.SCRAPED)
+        report = schema.Report(
+            source=source,
+            type="Monthly Prison Report",
+            instance="September 2020",
+            publish_date=datetime.date(2020, 10, 1),
+            acquisition_method=schema.AcquisitionMethod.SCRAPED,
+        )
         act_session.add(report)
 
-        table_definition = schema.ReportTableDefinition(metric_type=schema.MetricType.POPULATION,
-                                                        measurement_type=schema.MeasurementType.INSTANT,
-                                                        filtered_dimensions=['global/state', 'global/population_type'],
-                                                        filtered_dimension_values=['US_XX', 'prison'],
-                                                        aggregated_dimensions=['global/gender'])
+        table_definition = schema.ReportTableDefinition(
+            metric_type=schema.MetricType.POPULATION,
+            measurement_type=schema.MeasurementType.INSTANT,
+            filtered_dimensions=["global/state", "global/population_type"],
+            filtered_dimension_values=["US_XX", "prison"],
+            aggregated_dimensions=["global/gender"],
+        )
         act_session.add(table_definition)
 
-        table_instance = schema.ReportTableInstance(report=report,
-                                                    report_table_definition=table_definition,
-                                                    time_window_start=datetime.date(2020, 9, 30),
-                                                    time_window_end=datetime.date(2020, 9, 30),
-                                                    methodology='Some methodological description')
+        table_instance = schema.ReportTableInstance(
+            report=report,
+            report_table_definition=table_definition,
+            time_window_start=datetime.date(2020, 9, 30),
+            time_window_end=datetime.date(2020, 9, 30),
+            methodology="Some methodological description",
+        )
         act_session.add(table_instance)
 
-        cell = schema.Cell(report_table_instance=table_instance,
-                           aggregated_dimension_values=['female'],
-                           value=123)
+        cell = schema.Cell(
+            report_table_instance=table_instance,
+            aggregated_dimension_values=["female"],
+            value=123,
+        )
         act_session.add(cell)
 
         act_session.commit()
@@ -97,8 +107,8 @@ class TestSchema(TestCase):
         table_definition = table_instance.report_table_definition
         self.assertEqual(schema.MetricType.POPULATION, table_definition.metric_type)
         report = table_instance.report
-        self.assertEqual('Monthly Prison Report', report.type)
+        self.assertEqual("Monthly Prison Report", report.type)
         source = report.source
-        self.assertEqual('Test Source', source.name)
+        self.assertEqual("Test Source", source.name)
 
         assert_session.close()

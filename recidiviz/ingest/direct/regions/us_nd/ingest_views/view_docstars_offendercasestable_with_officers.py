@@ -16,8 +16,9 @@
 # =============================================================================
 """Query containing cases table with officers information."""
 
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import \
-    DirectIngestPreProcessedIngestViewBuilder
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    DirectIngestPreProcessedIngestViewBuilder,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -55,12 +56,12 @@ SELECT * FROM offendercases_with_terminating_and_recent_pos
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
-    region='us_nd',
-    ingest_view_name='docstars_offendercasestable_with_officers',
+    region="us_nd",
+    ingest_view_name="docstars_offendercasestable_with_officers",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols='CASE_NUMBER',
+    order_by_cols="CASE_NUMBER",
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         VIEW_BUILDER.build_and_print()

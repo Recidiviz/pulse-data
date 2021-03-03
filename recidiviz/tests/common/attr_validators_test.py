@@ -31,52 +31,61 @@ class AttrValidatorsTest(unittest.TestCase):
         @attr.s
         class _TestClass:
             my_required_str: str = attr.ib(validator=attr_validators.is_str)
-            my_optional_str: Optional[str] = attr.ib(validator=attr_validators.is_opt_str, default=None)
+            my_optional_str: Optional[str] = attr.ib(
+                validator=attr_validators.is_opt_str, default=None
+            )
 
         with self.assertRaises(TypeError) as e:
             _ = _TestClass()  # type: ignore[call-arg]
 
         self.assertEqual(
             "__init__() missing 1 required positional argument: 'my_required_str'",
-            str(e.exception.args[0]))
+            str(e.exception.args[0]),
+        )
 
         with self.assertRaises(TypeError) as e:
             _ = _TestClass(my_required_str=None)  # type: ignore[arg-type]
 
         self.assertEqual(
             "'my_required_str' must be <class 'str'> (got None that is a <class 'NoneType'>).",
-            str(e.exception.args[0]))
+            str(e.exception.args[0]),
+        )
 
         with self.assertRaises(TypeError) as e:
-            _ = _TestClass(my_required_str='foo', my_optional_str=True)  # type: ignore[arg-type]
+            _ = _TestClass(my_required_str="foo", my_optional_str=True)  # type: ignore[arg-type]
 
         self.assertEqual(
             "'my_optional_str' must be <class 'str'> (got True that is a <class 'bool'>).",
-            str(e.exception.args[0]))
+            str(e.exception.args[0]),
+        )
 
         # These don't crash
-        _ = _TestClass(my_required_str='foo', my_optional_str=None)
-        _ = _TestClass(my_required_str='foo', my_optional_str='bar')
+        _ = _TestClass(my_required_str="foo", my_optional_str=None)
+        _ = _TestClass(my_required_str="foo", my_optional_str="bar")
 
     def test_bool_validators(self) -> None:
         @attr.s
         class _TestClass:
             my_required_bool: bool = attr.ib(validator=attr_validators.is_bool)
-            my_optional_bool: Optional[bool] = attr.ib(validator=attr_validators.is_opt_bool, default=None)
+            my_optional_bool: Optional[bool] = attr.ib(
+                validator=attr_validators.is_opt_bool, default=None
+            )
 
         with self.assertRaises(TypeError) as e:
             _ = _TestClass(my_required_bool=None)  # type: ignore[arg-type]
 
         self.assertEqual(
             "'my_required_bool' must be <class 'bool'> (got None that is a <class 'NoneType'>).",
-            str(e.exception.args[0]))
+            str(e.exception.args[0]),
+        )
 
         with self.assertRaises(TypeError) as e:
-            _ = _TestClass(my_required_bool=True, my_optional_bool='True')  # type: ignore[arg-type]
+            _ = _TestClass(my_required_bool=True, my_optional_bool="True")  # type: ignore[arg-type]
 
         self.assertEqual(
             "'my_optional_bool' must be <class 'bool'> (got 'True' that is a <class 'str'>).",
-            str(e.exception.args[0]))
+            str(e.exception.args[0]),
+        )
 
         # These don't crash
         _ = _TestClass(my_required_bool=False, my_optional_bool=None)
@@ -86,21 +95,25 @@ class AttrValidatorsTest(unittest.TestCase):
         @attr.s
         class _TestClass:
             my_required_int: int = attr.ib(validator=attr_validators.is_int)
-            my_optional_int: Optional[int] = attr.ib(validator=attr_validators.is_opt_int, default=None)
+            my_optional_int: Optional[int] = attr.ib(
+                validator=attr_validators.is_opt_int, default=None
+            )
 
         with self.assertRaises(TypeError) as e:
             _ = _TestClass(my_required_int=None)  # type: ignore[arg-type]
 
         self.assertEqual(
             "'my_required_int' must be <class 'int'> (got None that is a <class 'NoneType'>).",
-            str(e.exception.args[0]))
+            str(e.exception.args[0]),
+        )
 
         with self.assertRaises(TypeError) as e:
-            _ = _TestClass(my_required_int=19, my_optional_int='True')  # type: ignore[arg-type]
+            _ = _TestClass(my_required_int=19, my_optional_int="True")  # type: ignore[arg-type]
 
         self.assertEqual(
             "'my_optional_int' must be <class 'int'> (got 'True' that is a <class 'str'>).",
-            str(e.exception.args[0]))
+            str(e.exception.args[0]),
+        )
 
         # These don't crash
         _ = _TestClass(my_required_int=10, my_optional_int=None)
@@ -110,31 +123,43 @@ class AttrValidatorsTest(unittest.TestCase):
         @attr.s
         class _TestClass:
             my_required_date: datetime.date = attr.ib(validator=attr_validators.is_date)
-            my_optional_date: Optional[datetime.date] = attr.ib(validator=attr_validators.is_opt_date, default=None)
+            my_optional_date: Optional[datetime.date] = attr.ib(
+                validator=attr_validators.is_opt_date, default=None
+            )
 
         with self.assertRaises(TypeError) as e:
             _ = _TestClass(my_required_date=None)  # type: ignore[arg-type]
 
         self.assertEqual(
             "'my_required_date' must be <class 'datetime.date'> (got None that is a <class 'NoneType'>).",
-            str(e.exception.args[0]))
+            str(e.exception.args[0]),
+        )
 
         with self.assertRaises(TypeError) as e:
-            _ = _TestClass(my_required_date=datetime.date.today(), my_optional_date='True')  # type: ignore[arg-type]
+            _ = _TestClass(my_required_date=datetime.date.today(), my_optional_date="True")  # type: ignore[arg-type]
 
         self.assertEqual(
             "'my_optional_date' must be <class 'datetime.date'> (got 'True' that is a <class 'str'>).",
-            str(e.exception.args[0]))
+            str(e.exception.args[0]),
+        )
 
         # These don't crash
         _ = _TestClass(my_required_date=datetime.date.today(), my_optional_date=None)
-        _ = _TestClass(my_required_date=datetime.date.today(), my_optional_date=datetime.date.today())
-        _ = _TestClass(my_required_date=datetime.datetime.now(), my_optional_date=datetime.datetime.now())
+        _ = _TestClass(
+            my_required_date=datetime.date.today(),
+            my_optional_date=datetime.date.today(),
+        )
+        _ = _TestClass(
+            my_required_date=datetime.datetime.now(),
+            my_optional_date=datetime.datetime.now(),
+        )
 
     def test_list_validators(self) -> None:
         @attr.s
         class _TestClass:
-            my_required_list: List['_TestChildClass'] = attr.ib(validator=attr_validators.is_list, factory=list)
+            my_required_list: List["_TestChildClass"] = attr.ib(
+                validator=attr_validators.is_list, factory=list
+            )
 
         @attr.s
         class _TestChildClass:
@@ -145,18 +170,18 @@ class AttrValidatorsTest(unittest.TestCase):
 
         self.assertEqual(
             "'my_required_list' must be <class 'list'> (got None that is a <class 'NoneType'>).",
-            str(e.exception.args[0]))
+            str(e.exception.args[0]),
+        )
 
         with self.assertRaises(TypeError) as e:
             _ = _TestClass(my_required_list={})  # type: ignore[arg-type]
 
         self.assertEqual(
             "'my_required_list' must be <class 'list'> (got {} that is a <class 'dict'>).",
-            str(e.exception.args[0]))
+            str(e.exception.args[0]),
+        )
 
         # These don't crash
         _ = _TestClass()
         _ = _TestClass(my_required_list=[])
-        _ = _TestClass(my_required_list=[
-            _TestChildClass(my_field='foobar')
-        ])
+        _ = _TestClass(my_required_list=[_TestChildClass(my_field="foobar")])

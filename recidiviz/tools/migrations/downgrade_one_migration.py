@@ -35,7 +35,10 @@ import sys
 
 import alembic.config
 
-from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType, SQLAlchemyEngineManager
+from recidiviz.persistence.database.sqlalchemy_engine_manager import (
+    SchemaType,
+    SQLAlchemyEngineManager,
+)
 from recidiviz.tools.migrations.migration_helpers import (
     confirm_correct_db,
     confirm_correct_git_branch,
@@ -48,26 +51,36 @@ from recidiviz.utils.metadata import local_project_id_override
 
 
 def create_parser() -> argparse.ArgumentParser:
+    """Returns an argument parser for the script."""
     parser = argparse.ArgumentParser(
-        description='Run a single downgrade migration against the specified PostgresQL database.')
-    parser.add_argument('--database',
-                        type=SchemaType,
-                        choices=list(SchemaType),
-                        help='Specifies which database to run against.',
-                        required=True)
-    parser.add_argument('--repo-root',
-                        type=str,
-                        default='./',
-                        help='The path to the root pulse-data/ folder. '
-                             'This is needed to check the current git branch.')
-    parser.add_argument('--project-id',
-                        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
-                        help='Used to select which GCP project in which to run this script.',
-                        required=True)
-    parser.add_argument('--ssl-cert-path',
-                        type=str,
-                        help='The path to the folder where the certs live. ',
-                        required=True)
+        description="Run a single downgrade migration against the specified PostgresQL database."
+    )
+    parser.add_argument(
+        "--database",
+        type=SchemaType,
+        choices=list(SchemaType),
+        help="Specifies which database to run against.",
+        required=True,
+    )
+    parser.add_argument(
+        "--repo-root",
+        type=str,
+        default="./",
+        help="The path to the root pulse-data/ folder. "
+        "This is needed to check the current git branch.",
+    )
+    parser.add_argument(
+        "--project-id",
+        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
+        help="Used to select which GCP project in which to run this script.",
+        required=True,
+    )
+    parser.add_argument(
+        "--ssl-cert-path",
+        type=str,
+        help="The path to the folder where the certs live. ",
+        required=True,
+    )
     return parser
 
 
@@ -81,9 +94,9 @@ def main(database: SchemaType, repo_root: str, ssl_cert_path: str) -> None:
 
     is_prod = metadata.project_id() == GCP_PROJECT_PRODUCTION
     if is_prod:
-        logging.info('RUNNING AGAINST PRODUCTION\n')
+        logging.info("RUNNING AGAINST PRODUCTION\n")
 
-    prompt_for_confirmation('This script will run a DOWNGRADE migration.', 'DOWNGRADE')
+    prompt_for_confirmation("This script will run a DOWNGRADE migration.", "DOWNGRADE")
     confirm_correct_db(database)
     confirm_correct_git_branch(repo_root, is_prod=is_prod)
 
@@ -95,16 +108,18 @@ def main(database: SchemaType, repo_root: str, ssl_cert_path: str) -> None:
 
     # Run downgrade
     try:
-        config = alembic.config.Config(SQLAlchemyEngineManager.get_alembic_file(database))
-        alembic.command.downgrade(config, '-1')
+        config = alembic.config.Config(
+            SQLAlchemyEngineManager.get_alembic_file(database)
+        )
+        alembic.command.downgrade(config, "-1")
     except Exception as e:
-        logging.error('Downgrade failed to run: %s', e)
+        logging.error("Downgrade failed to run: %s", e)
         sys.exit(1)
     finally:
         local_postgres_helpers.restore_local_env_vars(overriden_env_vars)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
 
     args = create_parser().parse_args()

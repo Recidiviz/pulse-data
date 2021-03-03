@@ -26,60 +26,60 @@ import us
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.common import fips, str_field_utils
-from recidiviz.common.constants.aggregate import (
-    enum_canonical_strings as enum_strings
-)
+from recidiviz.common.constants.aggregate import enum_canonical_strings as enum_strings
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
-from recidiviz.persistence.database.schema.aggregate.schema import \
-    TnFacilityAggregate, TnFacilityFemaleAggregate
+from recidiviz.persistence.database.schema.aggregate.schema import (
+    TnFacilityAggregate,
+    TnFacilityFemaleAggregate,
+)
 
 _JAIL_REPORT_COLUMN_NAMES = [
-    'facility_name',
-    'tdoc_backup_population',
-    'local_felons_population',
-    'other_convicted_felons_population',
-    'federal_and_other_population',
-    'convicted_misdemeanor_population',
-    'pretrial_felony_population',
-    'pretrial_misdemeanor_population',
-    'total_jail_population',
-    'total_beds',
+    "facility_name",
+    "tdoc_backup_population",
+    "local_felons_population",
+    "other_convicted_felons_population",
+    "federal_and_other_population",
+    "convicted_misdemeanor_population",
+    "pretrial_felony_population",
+    "pretrial_misdemeanor_population",
+    "total_jail_population",
+    "total_beds",
 ]
 
 _FEMALE_JAIL_REPORT_COLUMN_NAMES = [
-    'facility_name',
-    'tdoc_backup_population',
-    'local_felons_population',
-    'other_convicted_felons_population',
-    'federal_and_other_population',
-    'convicted_misdemeanor_population',
-    'pretrial_felony_population',
-    'pretrial_misdemeanor_population',
-    'female_jail_population',
-    'total_beds',
-    'percent_total_capacity',
-    'female_beds',
+    "facility_name",
+    "tdoc_backup_population",
+    "local_felons_population",
+    "other_convicted_felons_population",
+    "federal_and_other_population",
+    "convicted_misdemeanor_population",
+    "pretrial_felony_population",
+    "pretrial_misdemeanor_population",
+    "female_jail_population",
+    "total_beds",
+    "percent_total_capacity",
+    "female_beds",
 ]
 
 _KEEP_FEMALE_JAIL_REPORT_COLUMN_NAMES = [
-    'facility_name',
-    'tdoc_backup_population',
-    'local_felons_population',
-    'other_convicted_felons_population',
-    'federal_and_other_population',
-    'convicted_misdemeanor_population',
-    'pretrial_felony_population',
-    'pretrial_misdemeanor_population',
-    'female_jail_population',
-    'female_beds',
+    "facility_name",
+    "tdoc_backup_population",
+    "local_felons_population",
+    "other_convicted_felons_population",
+    "federal_and_other_population",
+    "convicted_misdemeanor_population",
+    "pretrial_felony_population",
+    "pretrial_misdemeanor_population",
+    "female_jail_population",
+    "female_beds",
 ]
 
 _MANUAL_FACILITY_TO_COUNTY_MAP = {
-    'Johnson City': 'Washington',
-    'Johnson City (F)': 'Washington',
-    'Kingsport': 'Sullivan',
-    'Kingsport City': 'Sullivan',
-    'Silverdale CCA': 'Hamilton',
+    "Johnson City": "Washington",
+    "Johnson City (F)": "Washington",
+    "Kingsport": "Sullivan",
+    "Kingsport City": "Sullivan",
+    "Silverdale CCA": "Hamilton",
 }
 
 
@@ -87,7 +87,7 @@ def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     # There are two types of reports, total jail population and female
     # jail population. The reports are very similar, but need to be
     # handled slightly differently.
-    is_female = 'female' in filename
+    is_female = "female" in filename
     report_date = _parse_date(filename)
 
     table = _parse_table(location, filename, is_female, report_date)
@@ -95,33 +95,43 @@ def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     names = table.facility_name.apply(_pretend_facility_is_county)
     table = fips.add_column_to_df(table, names, us.states.TN)
 
-    table['report_date'] = report_date
-    table['aggregation_window'] = enum_strings.daily_granularity
-    table['report_frequency'] = enum_strings.monthly_granularity
+    table["report_date"] = report_date
+    table["aggregation_window"] = enum_strings.daily_granularity
+    table["report_frequency"] = enum_strings.monthly_granularity
 
-    return {
-        TnFacilityFemaleAggregate: table
-    } if is_female else {
-        TnFacilityAggregate: table
-    }
+    return (
+        {TnFacilityFemaleAggregate: table}
+        if is_female
+        else {TnFacilityAggregate: table}
+    )
 
 
-def _parse_table(_: str, filename: str, is_female: bool,
-                 report_date: datetime.date) -> pd.DataFrame:
+def _parse_table(
+    _: str, filename: str, is_female: bool, report_date: datetime.date
+) -> pd.DataFrame:
     # Most but not all PDFs have data on pages 2-4.
-    pages = ([1, 2] if 2000 <= report_date.year <= 2005
-             else [3, 4, 5] if report_date.year in (2006, 2009)
-             else [2, 3, 4])
-    table = tabula.read_pdf(filename, pages=pages, multiple_tables=True,
-                            stream=bool(report_date.year == 2020 and report_date.month == 12))
+    pages = (
+        [1, 2]
+        if 2000 <= report_date.year <= 2005
+        else [3, 4, 5]
+        if report_date.year in (2006, 2009)
+        else [2, 3, 4]
+    )
+    table = tabula.read_pdf(
+        filename,
+        pages=pages,
+        multiple_tables=True,
+        stream=bool(report_date.year == 2020 and report_date.month == 12),
+    )
 
     if is_female and report_date.year == 2020 and report_date.month in (4, 5, 6):
-        table = [table[0],
-                 pd.concat((table[1], table[2])),
-                 pd.concat((table[3], table[4]))]
+        table = [
+            table[0],
+            pd.concat((table[1], table[2])),
+            pd.concat((table[3], table[4])),
+        ]
 
-    formatted_dfs = [_format_table(df, is_female, report_date.year)
-                     for df in table]
+    formatted_dfs = [_format_table(df, is_female, report_date.year) for df in table]
 
     table = pd.concat(formatted_dfs, ignore_index=True)
 
@@ -129,7 +139,8 @@ def _parse_table(_: str, filename: str, is_female: bool,
     table = table.iloc[:-1]
 
     table = aggregate_ingest_utils.cast_columns_to_int(
-        table, ignore_columns={'facility_name'})
+        table, ignore_columns={"facility_name"}
+    )
 
     return table
 
@@ -137,19 +148,18 @@ def _parse_table(_: str, filename: str, is_female: bool,
 def _parse_date(filename: str) -> datetime.date:
     # Slashes are converted to underscores in the GCS bucket. This
     # assumes there are no underscores in the URL basename.
-    base_filename = filename.split('_')[-1].replace('female', '')
-    end = base_filename.index('.pdf')
+    base_filename = filename.split("_")[-1].replace("female", "")
+    end = base_filename.index(".pdf")
     start = 4
     d = str_field_utils.parse_date(base_filename[start:end])
 
     if d is None:
-        raise ValueError(f'Unexpected null date parsed from filename [{filename}]')
+        raise ValueError(f"Unexpected null date parsed from filename [{filename}]")
 
     return aggregate_ingest_utils.on_last_day_of_month(d)
 
 
-def _expand_columns_with_spaces_to_new_columns(
-        df: pd.DataFrame) -> pd.DataFrame:
+def _expand_columns_with_spaces_to_new_columns(df: pd.DataFrame) -> pd.DataFrame:
     """Varying numbers of columns are parsed into a single column based
     on headers that change over time. To account for this, create a
     new dataframe with columns that are created by splitting the
@@ -163,8 +173,8 @@ def _expand_columns_with_spaces_to_new_columns(
 
         # Just copy over the first column and columns with no spaces,
         # which haven't been smashed together, presumably.
-        if col_ind == 0 or not col.str.contains(' ').any():
-            expanded_df = expanded_df.join(col, rsuffix=' ')
+        if col_ind == 0 or not col.str.contains(" ").any():
+            expanded_df = expanded_df.join(col, rsuffix=" ")
         else:
             # Extract all the smashed together columns into their own
             # columns.
@@ -177,12 +187,14 @@ def _expand_columns_with_spaces_to_new_columns(
             cur_smashed_col = 0
             while True:
                 smashed_col = col.apply(
-                    lambda smashed, col_ind=cur_smashed_col:
-                    grab_one_smashed_col(smashed, col_ind))
+                    lambda smashed, col_ind=cur_smashed_col: grab_one_smashed_col(
+                        smashed, col_ind
+                    )
+                )
                 if (smashed_col.isnull()).all():
                     break
 
-                smashed_col.name = col.name + '_{}'.format(cur_smashed_col)
+                smashed_col.name = col.name + "_{}".format(cur_smashed_col)
                 expanded_df = expanded_df.join(smashed_col)
                 cur_smashed_col += 1
 
@@ -193,7 +205,7 @@ def _format_table(df: pd.DataFrame, is_female: bool, year: int) -> pd.DataFrame:
     """Format the dataframe that comes from one page of the PDF."""
 
     # The first four rows are parsed containing the column names.
-    df.columns = df.iloc[:4].apply(lambda rows: ' '.join(rows.dropna()).strip())
+    df.columns = df.iloc[:4].apply(lambda rows: " ".join(rows.dropna()).strip())
     df = df.iloc[4:]
 
     df = _expand_columns_with_spaces_to_new_columns(df)
@@ -201,36 +213,41 @@ def _format_table(df: pd.DataFrame, is_female: bool, year: int) -> pd.DataFrame:
     # Discard extra columns and rename the columns based on the table.
     if is_female:
         # Since December 2019, an extra empty column is shifting the data.
-        if df.columns[8] == '':
-            df = df.drop('', axis=1)
-        df = df.iloc[:, 0:len(_FEMALE_JAIL_REPORT_COLUMN_NAMES)]
+        if df.columns[8] == "":
+            df = df.drop("", axis=1)
+        df = df.iloc[:, 0 : len(_FEMALE_JAIL_REPORT_COLUMN_NAMES)]
         df.columns = _FEMALE_JAIL_REPORT_COLUMN_NAMES
-        df = df[[col for col in df.columns if col in
-                 _KEEP_FEMALE_JAIL_REPORT_COLUMN_NAMES]]
+        df = df[
+            [col for col in df.columns if col in _KEEP_FEMALE_JAIL_REPORT_COLUMN_NAMES]
+        ]
 
         # Until 2013, the female reports didn't have beds, so percent
         # capacity gets misinterpreted as female beds.
-        keep_cols = [col for col in df.columns
-                     if not df[col].apply(lambda val: isinstance(val, str) and
-                                          val.endswith('%')).any()]
+        keep_cols = [
+            col
+            for col in df.columns
+            if not df[col]
+            .apply(lambda val: isinstance(val, str) and val.endswith("%"))
+            .any()
+        ]
         df = df[keep_cols]
     else:
         df = _drop_bad_columns(df, year)
 
-        df = df.iloc[:, 0:len(_JAIL_REPORT_COLUMN_NAMES)]
+        df = df.iloc[:, 0 : len(_JAIL_REPORT_COLUMN_NAMES)]
         df.columns = _JAIL_REPORT_COLUMN_NAMES
 
     # When the notes column has more than one line of text, tabula
     # parses a row of null.
-    df = df.dropna(how='all')
+    df = df.dropna(how="all")
 
     # Sometimes there are missing values, the best we can do is make them zeros?
     # The real trouble here is that column shifts might happen if missing values occur in smashed columns.
     df = df.fillna(0)
 
-    df = df.replace('`', 0)
-    df = df.replace('.', 0)
-    df = df.replace('N/A', 0)
+    df = df.replace("`", 0)
+    df = df.replace(".", 0)
+    df = df.replace("N/A", 0)
 
     return df
 
@@ -238,14 +255,14 @@ def _format_table(df: pd.DataFrame, is_female: bool, year: int) -> pd.DataFrame:
 def _drop_bad_columns(df: pd.DataFrame, year: int) -> pd.DataFrame:
     """Some years have pages where an extra column of NaNs is read, which causes
     data to be lost when we assume that our data is in the first 10 columns."""
-    if year == 2006 and 'Pre- trial Misd. 17_1' in df.columns:
-        return df.drop('Pre- trial Misd. 17_1', axis=1)
-    if year == 2007 and 'Pre-   Pre- trial trial 115 77_2' in df.columns:
-        return df.drop('Pre-   Pre- trial trial 115 77_2', axis=1)
-    if year == 2008 and 'Pre-   Pre- trial trial_2' in df.columns:
-        return df.drop('Pre-   Pre- trial trial_2', axis=1)
-    if year == 2009 and 'Pre-   Pre- trial trial Felony Misd._2' in df.columns:
-        return df.drop('Pre-   Pre- trial trial Felony Misd._2', axis=1)
+    if year == 2006 and "Pre- trial Misd. 17_1" in df.columns:
+        return df.drop("Pre- trial Misd. 17_1", axis=1)
+    if year == 2007 and "Pre-   Pre- trial trial 115 77_2" in df.columns:
+        return df.drop("Pre-   Pre- trial trial 115 77_2", axis=1)
+    if year == 2008 and "Pre-   Pre- trial trial_2" in df.columns:
+        return df.drop("Pre-   Pre- trial trial_2", axis=1)
+    if year == 2009 and "Pre-   Pre- trial trial Felony Misd._2" in df.columns:
+        return df.drop("Pre-   Pre- trial trial Felony Misd._2", axis=1)
     return df
 
 
@@ -255,28 +272,28 @@ def _pretend_facility_is_county(facility_name: str) -> str:
         return _MANUAL_FACILITY_TO_COUNTY_MAP[facility_name]
 
     words_after_county_name = [
-        '-',
-        'Annex',
-        'CCA (MDF)',
-        '(closed)',
-        '(closed 4/24)',
-        '(closed 5/31)',
-        'Co. Det. Center',
-        'CJC',
-        'CWC (CDC',
-        'CDC (F)',
-        'CDC (M)',
-        'Det Cntr',
-        'Det. Center',
-        'Det, Center',
-        'Extension',
-        'Extention',
-        'Jail',
-        'SCCC',
-        '(Temporarily closed)',
-        'Work Center',
-        'Workhouse',
-        'WRC/Penal',
+        "-",
+        "Annex",
+        "CCA (MDF)",
+        "(closed)",
+        "(closed 4/24)",
+        "(closed 5/31)",
+        "Co. Det. Center",
+        "CJC",
+        "CWC (CDC",
+        "CDC (F)",
+        "CDC (M)",
+        "Det Cntr",
+        "Det. Center",
+        "Det, Center",
+        "Extension",
+        "Extention",
+        "Jail",
+        "SCCC",
+        "(Temporarily closed)",
+        "Work Center",
+        "Workhouse",
+        "WRC/Penal",
     ]
     for delimiter in words_after_county_name:
         facility_name = facility_name.split(delimiter)[0]

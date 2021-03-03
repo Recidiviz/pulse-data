@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Revocations by officer by metric period months."""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
@@ -24,7 +24,7 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 
-REVOCATIONS_BY_OFFICER_BY_PERIOD_VIEW_NAME = 'revocations_by_officer_by_period'
+REVOCATIONS_BY_OFFICER_BY_PERIOD_VIEW_NAME = "revocations_by_officer_by_period"
 
 REVOCATIONS_BY_OFFICER_BY_PERIOD_DESCRIPTION = """
  Revocations by officer by metric period months.
@@ -35,8 +35,7 @@ REVOCATIONS_BY_OFFICER_BY_PERIOD_DESCRIPTION = """
 
 # TODO(#2231): Join against state_agent instead of temp_officers once state_agent
 #  is properly ingested and entity-matched
-REVOCATIONS_BY_OFFICER_BY_PERIOD_QUERY_TEMPLATE = \
-    """
+REVOCATIONS_BY_OFFICER_BY_PERIOD_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT
       state_code,
@@ -98,13 +97,19 @@ REVOCATIONS_BY_OFFICER_BY_PERIOD_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=REVOCATIONS_BY_OFFICER_BY_PERIOD_VIEW_NAME,
     view_query_template=REVOCATIONS_BY_OFFICER_BY_PERIOD_QUERY_TEMPLATE,
-    dimensions=['state_code', 'metric_period_months', 'supervision_type', 'district', 'officer_external_id'],
+    dimensions=[
+        "state_code",
+        "metric_period_months",
+        "supervision_type",
+        "district",
+        "officer_external_id",
+    ],
     description=REVOCATIONS_BY_OFFICER_BY_PERIOD_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
     metric_period_condition=bq_utils.metric_period_condition(),
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         REVOCATIONS_BY_OFFICER_BY_PERIOD_VIEW_BUILDER.build_and_print()

@@ -23,7 +23,9 @@ from typing import List, Tuple, Optional
 
 import pandas as pd
 
-from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import DirectIngestGCSFileSystem
+from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
+    DirectIngestGCSFileSystem,
+)
 from recidiviz.ingest.direct.controllers.gcsfs_csv_reader import GcsfsCsvReaderDelegate
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 
@@ -57,7 +59,7 @@ class ReadOneGcsfsCsvReaderDelegate(SimpleGcsfsCsvReaderDelegate):
 
     def on_dataframe(self, encoding: str, chunk_num: int, df: pd.DataFrame) -> bool:
         if self.df is not None:
-            raise ValueError('Expected only one DataFrame chunk, found multiple.')
+            raise ValueError("Expected only one DataFrame chunk, found multiple.")
         self.df = df
 
         # Stop iteration after this one chunk
@@ -69,7 +71,9 @@ class SplittingGcsfsCsvReaderDelegate(GcsfsCsvReaderDelegate):
     path.
     """
 
-    def __init__(self, path: GcsfsFilePath, fs: DirectIngestGCSFileSystem, include_header: bool):
+    def __init__(
+        self, path: GcsfsFilePath, fs: DirectIngestGCSFileSystem, include_header: bool
+    ):
         self.path = path
         self.fs = fs
         self.include_header = include_header
@@ -77,46 +81,71 @@ class SplittingGcsfsCsvReaderDelegate(GcsfsCsvReaderDelegate):
         self.output_paths_with_columns: List[Tuple[GcsfsFilePath, List[str]]] = []
 
     def on_start_read_with_encoding(self, encoding: str) -> None:
-        logging.info('Attempting to do chunked upload of [%s] with encoding [%s]', self.path.abs_path(), encoding)
+        logging.info(
+            "Attempting to do chunked upload of [%s] with encoding [%s]",
+            self.path.abs_path(),
+            encoding,
+        )
 
     def on_dataframe(self, encoding: str, chunk_num: int, df: pd.DataFrame) -> bool:
-        logging.info('Loaded DataFrame chunk [%d] has [%d] rows', chunk_num, df.shape[0])
+        logging.info(
+            "Loaded DataFrame chunk [%d] has [%d] rows", chunk_num, df.shape[0]
+        )
 
         transformed_df = self.transform_dataframe(df)
 
-        logging.info('Transformed DataFrame chunk [%d] has [%d] rows', chunk_num, transformed_df.shape[0])
+        logging.info(
+            "Transformed DataFrame chunk [%d] has [%d] rows",
+            chunk_num,
+            transformed_df.shape[0],
+        )
         output_path = self.get_output_path(chunk_num=chunk_num)
 
-        logging.info('Writing DataFrame chunk [%d] to output path [%s]',
-                     chunk_num, output_path.abs_path())
+        logging.info(
+            "Writing DataFrame chunk [%d] to output path [%s]",
+            chunk_num,
+            output_path.abs_path(),
+        )
 
         # We cannot use QUOTE_ALL as it results in empty values being written as "" in our temp file csv.
         # When uploading the temp file to BQ this results in empty strings being uploaded instead of NULLs.
         quoting = csv.QUOTE_MINIMAL
-        self.fs.upload_from_string(output_path,
-                                   transformed_df.to_csv(header=self.include_header, index=False, quoting=quoting),
-                                   'text/csv')
-        logging.info('Done writing to output path')
+        self.fs.upload_from_string(
+            output_path,
+            transformed_df.to_csv(
+                header=self.include_header, index=False, quoting=quoting
+            ),
+            "text/csv",
+        )
+        logging.info("Done writing to output path")
 
         self.output_paths_with_columns.append((output_path, transformed_df.columns))
         return True
 
     def on_unicode_decode_error(self, encoding: str, e: UnicodeError) -> bool:
-        logging.info('Unable to read file [%s] with encoding [%s]', self.path.abs_path(), encoding)
+        logging.info(
+            "Unable to read file [%s] with encoding [%s]",
+            self.path.abs_path(),
+            encoding,
+        )
         self._delete_temp_output_paths()
         return False
 
     def on_exception(self, encoding: str, e: Exception) -> bool:
-        logging.error('Failed to upload to GCS - cleaning up temp paths')
+        logging.error("Failed to upload to GCS - cleaning up temp paths")
         self._delete_temp_output_paths()
         return True
 
     def on_file_read_success(self, encoding: str) -> None:
-        logging.info('Successfully read file [%s] with encoding [%s]', self.path.abs_path(), encoding)
+        logging.info(
+            "Successfully read file [%s] with encoding [%s]",
+            self.path.abs_path(),
+            encoding,
+        )
 
     def _delete_temp_output_paths(self) -> None:
         for temp_output_path in [path for path, _ in self.output_paths_with_columns]:
-            logging.info('Deleting temp file [%s].', temp_output_path.abs_path())
+            logging.info("Deleting temp file [%s].", temp_output_path.abs_path())
             self.fs.delete(temp_output_path)
         self.output_paths_with_columns.clear()
 

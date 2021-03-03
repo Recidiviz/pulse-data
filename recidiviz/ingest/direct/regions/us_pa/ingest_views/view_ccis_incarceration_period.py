@@ -17,14 +17,17 @@
 """Query containing incarceration period information extracted from multiple PADOC files, where the period data
 originates from CCIS (Community Corrections Information System) tables."""
 
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import \
-    DirectIngestPreProcessedIngestViewBuilder
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    DirectIngestPreProcessedIngestViewBuilder,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 # The ordering here advantage of the fact that 'ADM' sorts alphabetically before 'REL', so we are placing 'REL'
 # statuses first when both 'ADM' and 'REL' appear for the same movement_sequence number (e.g. when it's a transfer).
-PARTITION_CLAUSE = "OVER (PARTITION BY inmate_number ORDER BY movement_sequence, movement_type DESC)"
+PARTITION_CLAUSE = (
+    "OVER (PARTITION BY inmate_number ORDER BY movement_sequence, movement_type DESC)"
+)
 
 VIEW_QUERY_TEMPLATE = f"""
 WITH inmate_number_with_control_numbers AS (
@@ -250,13 +253,13 @@ FROM periods
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
-    region='us_pa',
-    ingest_view_name='ccis_incarceration_period',
+    region="us_pa",
+    ingest_view_name="ccis_incarceration_period",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols='control_number, inmate_number, start_date',
-    materialize_raw_data_table_views=False
+    order_by_cols="control_number, inmate_number, start_date",
+    materialize_raw_data_table_views=False,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         VIEW_BUILDER.build_and_print()

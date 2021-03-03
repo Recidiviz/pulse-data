@@ -24,8 +24,8 @@ import us
 
 from recidiviz.utils import environment
 
-STATE_CODE_PATTERN = re.compile(r'US_[A-Z]{2}')
-TEST_STATE_CODE = 'US_XX'
+STATE_CODE_PATTERN = re.compile(r"US_[A-Z]{2}")
+TEST_STATE_CODE = "US_XX"
 
 TEST_STATE_INFO = {
     TEST_STATE_CODE: us.states.State(
@@ -43,12 +43,14 @@ TEST_STATE_INFO = {
             "ap_abbr": "Test",
             "time_zones": ["America/Test", "America/Test"],
             "name_metaphone": "TEST",
-        })
+        }
+    )
 }
 
 
 class StateCode(enum.Enum):
     """Code for every state in the US"""
+
     US_AK = "US_AK"
     US_AL = "US_AL"
     US_AR = "US_AR"
@@ -110,13 +112,15 @@ class StateCode(enum.Enum):
     def _state_info_map(cls) -> Dict[str, us.states.State]:
         info_map = {}
         for e in cls:
-            state_abbrev = e.value[len('US_'):]
+            state_abbrev = e.value[len("US_") :]
             if hasattr(us.states, state_abbrev):
                 info_map[e.value] = getattr(us.states, state_abbrev)
             elif e.value in TEST_STATE_INFO:
                 info_map[e.value] = TEST_STATE_INFO[e.value]
             else:
-                raise ValueError(f'Unexpected state code [{e.value}] has no state info.')
+                raise ValueError(
+                    f"Unexpected state code [{e.value}] has no state info."
+                )
 
         return info_map
 

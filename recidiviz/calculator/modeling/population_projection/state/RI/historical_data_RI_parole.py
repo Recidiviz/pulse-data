@@ -26,22 +26,62 @@ REFERENCE_DATE: January 2014
 TIME_STEP: 1 month
 """
 import pandas as pd
-from recidiviz.calculator.modeling.population_projection.spark_bq_utils import upload_spark_model_inputs
+from recidiviz.calculator.modeling.population_projection.spark_bq_utils import (
+    upload_spark_model_inputs,
+)
 
-transitions_data = pd.DataFrame(columns=['compartment', 'outflow_to', 'crime_type', 'compartment_duration', 'total_population'])
-outflows_data = pd.DataFrame(columns=['compartment', 'outflow_to', 'crime_type', 'time_step', 'total_population'])
-total_population_data = pd.DataFrame(columns=['compartment', 'crime_type', 'time_step', 'total_population'])
+transitions_data = pd.DataFrame(
+    columns=[
+        "compartment",
+        "outflow_to",
+        "crime_type",
+        "compartment_duration",
+        "total_population",
+    ]
+)
+outflows_data = pd.DataFrame(
+    columns=["compartment", "outflow_to", "crime_type", "time_step", "total_population"]
+)
+total_population_data = pd.DataFrame(
+    columns=["compartment", "crime_type", "time_step", "total_population"]
+)
 
 # TRANSITIONS TABLE
-transitions_data = pd.concat([transitions_data, pd.read_csv('recidiviz/calculator/modeling/population_projection/state/RI/RI_data/Parole Transitions Data-Table 1.csv')])
+transitions_data = pd.concat(
+    [
+        transitions_data,
+        pd.read_csv(
+            "recidiviz/calculator/modeling/population_projection/state/RI/RI_data/Parole Transitions Data-Table 1.csv"
+        ),
+    ]
+)
 
 # OUTFLOWS TABLE
-outflows_data = pd.concat([outflows_data, pd.read_csv('recidiviz/calculator/modeling/population_projection/state/RI/RI_data/Parole Outflows Data-Table 1.csv')])
+outflows_data = pd.concat(
+    [
+        outflows_data,
+        pd.read_csv(
+            "recidiviz/calculator/modeling/population_projection/state/RI/RI_data/Parole Outflows Data-Table 1.csv"
+        ),
+    ]
+)
 
-#TOTAL POPULATION TABLE
-total_population_data = pd.concat([total_population_data, pd.read_csv('recidiviz/calculator/modeling/population_projection/state/RI/RI_data/Parole Total Population Data-Table 1.csv')])
+# TOTAL POPULATION TABLE
+total_population_data = pd.concat(
+    [
+        total_population_data,
+        pd.read_csv(
+            "recidiviz/calculator/modeling/population_projection/state/RI/RI_data/Parole Total Population Data-Table 1.csv"
+        ),
+    ]
+)
 
 # STORE DATA
 simulation_tag = "RI_parole"
-upload_spark_model_inputs('recidiviz-staging', simulation_tag, outflows_data, transitions_data,
-                          total_population_data)
+upload_spark_model_inputs(
+    "recidiviz-staging",
+    simulation_tag,
+    outflows_data,
+    transitions_data,
+    total_population_data,
+)

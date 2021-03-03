@@ -10,8 +10,8 @@ from alembic import op
 
 
 # revision identifiers, used by Alembic.
-revision = '1889d05fda36'
-down_revision = 'cf62dcd5f566'
+revision = "1889d05fda36"
+down_revision = "cf62dcd5f566"
 branch_labels = None
 depends_on = None
 
@@ -233,11 +233,13 @@ WHERE ch.ncic_code IS NOT NULL
 
 def upgrade():
     with op.get_context().autocommit_block():
-        op.execute(US_ND_UPGRADE_BY_STATUTE_QUERY.format(table_name='state_charge'))
-        op.execute(US_ND_UPGRADE_BY_STATUTE_QUERY.format(table_name='state_charge_history'))
+        op.execute(US_ND_UPGRADE_BY_STATUTE_QUERY.format(table_name="state_charge"))
+        op.execute(
+            US_ND_UPGRADE_BY_STATUTE_QUERY.format(table_name="state_charge_history")
+        )
 
-        op.execute(UPGRADE_BY_NCIC_CODE_QUERY.format(table_name='state_charge'))
-        op.execute(UPGRADE_BY_NCIC_CODE_QUERY.format(table_name='state_charge_history'))
+        op.execute(UPGRADE_BY_NCIC_CODE_QUERY.format(table_name="state_charge"))
+        op.execute(UPGRADE_BY_NCIC_CODE_QUERY.format(table_name="state_charge_history"))
 
 
 def downgrade():

@@ -27,19 +27,24 @@ from recidiviz.tools.justice_counts import manual_upload
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.params import get_str_param_value
 
-justice_counts_control = Blueprint('justice_counts_control', __name__)
+justice_counts_control = Blueprint("justice_counts_control", __name__)
 
-@justice_counts_control.route('/ingest')
+
+@justice_counts_control.route("/ingest")
 @requires_gae_auth
 def ingest() -> Tuple[str, HTTPStatus]:
-    manifest_path = get_str_param_value('manifest_path', request.args, preserve_case=True)
+    manifest_path = get_str_param_value(
+        "manifest_path", request.args, preserve_case=True
+    )
 
     if not manifest_path:
-        return 'Parameter `manifest_path` is required.', HTTPStatus.BAD_REQUEST
+        return "Parameter `manifest_path` is required.", HTTPStatus.BAD_REQUEST
 
     try:
-        manual_upload.ingest(GcsfsFactory.build(), GcsfsFilePath.from_absolute_path(manifest_path))
+        manual_upload.ingest(
+            GcsfsFactory.build(), GcsfsFilePath.from_absolute_path(manifest_path)
+        )
     except Exception as e:
         return f"Error ingesting data: '{e}'", HTTPStatus.INTERNAL_SERVER_ERROR
 
-    return '', HTTPStatus.OK
+    return "", HTTPStatus.OK

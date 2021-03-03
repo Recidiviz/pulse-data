@@ -15,20 +15,22 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """US_ID supervision community performance during COVID for the 2020 and 2019 cohorts"""
-# pylint: disable=trailing-whitespace,line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import COVID_REPORT_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-US_ID_SUPERVISION_COMMUNITY_PERFORMANCE_VIEW_NAME = 'us_id_supervision_community_performance'
+US_ID_SUPERVISION_COMMUNITY_PERFORMANCE_VIEW_NAME = (
+    "us_id_supervision_community_performance"
+)
 
-US_ID_SUPERVISION_COMMUNITY_PERFORMANCE_DESCRIPTION = \
+US_ID_SUPERVISION_COMMUNITY_PERFORMANCE_DESCRIPTION = (
     """US_ID supervision community performance data per COVID report week"""
+)
 
-US_ID_SUPERVISION_COMMUNITY_PERFORMANCE_QUERY_TEMPLATE = \
-    """
+US_ID_SUPERVISION_COMMUNITY_PERFORMANCE_QUERY_TEMPLATE = """
     /*{description}*/
     WITH report_dates AS (
       -- Date ranges for each report
@@ -122,6 +124,6 @@ US_ID_SUPERVISION_COMMUNITY_PERFORMANCE_VIEW_BUILDER = SimpleBigQueryViewBuilder
     covid_report_dataset=COVID_REPORT_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         US_ID_SUPERVISION_COMMUNITY_PERFORMANCE_VIEW_BUILDER.build_and_print()

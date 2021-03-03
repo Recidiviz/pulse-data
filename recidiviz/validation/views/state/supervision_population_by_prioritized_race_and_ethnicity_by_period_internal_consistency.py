@@ -18,28 +18,29 @@
 supervision_population_by_prioritized_race_and_ethnicity_by_period view.
 """
 
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
-from recidiviz.calculator.query.state.views.public_dashboard.supervision.supervision_population_by_prioritized_race_and_ethnicity_by_period import \
-    SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_NAME
+from recidiviz.calculator.query.state.views.public_dashboard.supervision.supervision_population_by_prioritized_race_and_ethnicity_by_period import (
+    SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_NAME,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
-from recidiviz.validation.views.utils.internal_consistency_templates import internal_consistency_query
+from recidiviz.validation.views.utils.internal_consistency_templates import (
+    internal_consistency_query,
+)
 
-SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_NAME = \
-    'supervision_population_by_prioritized_race_and_ethnicity_by_period_internal_consistency'
+SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_NAME = "supervision_population_by_prioritized_race_and_ethnicity_by_period_internal_consistency"
 
-SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_DESCRIPTION = \
-    """ Builds validation table to ensure internal consistency across breakdowns in the 
+SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_DESCRIPTION = """ Builds validation table to ensure internal consistency across breakdowns in the 
  supervision_population_by_prioritized_race_and_ethnicity_by_period view."""
 
 
-PARTITION_COLUMNS = ['state_code', 'metric_period_months', 'supervision_type']
-CALCULATED_COLUMNS_TO_VALIDATE = ['total_supervision_population']
-MUTUALLY_EXCLUSIVE_BREAKDOWN_COLUMNS = ['race_or_ethnicity']
+PARTITION_COLUMNS = ["state_code", "metric_period_months", "supervision_type"]
+CALCULATED_COLUMNS_TO_VALIDATE = ["total_supervision_population"]
+MUTUALLY_EXCLUSIVE_BREAKDOWN_COLUMNS = ["race_or_ethnicity"]
 
 SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_QUERY_TEMPLATE = f"""
 /*{{description}}*/
@@ -48,18 +49,15 @@ SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONS
                             calculated_columns_to_validate=CALCULATED_COLUMNS_TO_VALIDATE)}
 """
 
-SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER = \
-    SimpleBigQueryViewBuilder(
-        dataset_id=dataset_config.VIEWS_DATASET,
-        view_id=SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_NAME,
-        view_query_template=
-        SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_QUERY_TEMPLATE,
-        description=
-        SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_DESCRIPTION,
-        validated_table_dataset_id=state_dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
-        validated_table_id=SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_NAME
-    )
+SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+    dataset_id=dataset_config.VIEWS_DATASET,
+    view_id=SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_NAME,
+    view_query_template=SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_QUERY_TEMPLATE,
+    description=SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_DESCRIPTION,
+    validated_table_dataset_id=state_dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
+    validated_table_id=SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_NAME,
+)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER.build_and_print()

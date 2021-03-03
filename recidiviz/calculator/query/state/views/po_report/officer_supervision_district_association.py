@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Officer supervision district association by month."""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
@@ -23,15 +23,16 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_VIEW_NAME = 'officer_supervision_district_association'
+OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_VIEW_NAME = (
+    "officer_supervision_district_association"
+)
 
 OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_DESCRIPTION = """
  Officer supervision district association.
  Identifies the district in which a given parole officer has the largest number of cases.
  """
 
-OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_QUERY_TEMPLATE = \
-    """
+OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_QUERY_TEMPLATE = """
     /*{description}*/
     WITH all_officers_to_person_count_in_district AS (
         SELECT 
@@ -65,9 +66,9 @@ OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_VIEW_BUILDER = SimpleBigQueryViewBuilde
     view_query_template=OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_QUERY_TEMPLATE,
     description=OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    thirty_six_month_filter=bq_utils.thirty_six_month_filter()
+    thirty_six_month_filter=bq_utils.thirty_six_month_filter(),
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_VIEW_BUILDER.build_and_print()

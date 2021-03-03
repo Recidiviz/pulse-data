@@ -55,10 +55,10 @@ def requires_gae_auth(func):
             # Bypass GAE auth check in development.
             return func(*args, **kwargs)
 
-        is_cron = request.headers.get('X-Appengine-Cron')
-        is_task = request.headers.get('X-AppEngine-QueueName')
-        incoming_app_id = request.headers.get('X-Appengine-Inbound-Appid')
-        jwt = request.headers.get('x-goog-iap-jwt-assertion')
+        is_cron = request.headers.get("X-Appengine-Cron")
+        is_task = request.headers.get("X-AppEngine-QueueName")
+        incoming_app_id = request.headers.get("X-Appengine-Inbound-Appid")
+        jwt = request.headers.get("x-goog-iap-jwt-assertion")
 
         project_id = metadata.project_id()
         project_number = metadata.project_number()
@@ -71,29 +71,30 @@ def requires_gae_auth(func):
 
         elif incoming_app_id:
             # Check whether this is an intra-app call from our GAE service
-            logging.info("Requester authenticated as app-id: [%s].",
-                         incoming_app_id)
+            logging.info("Requester authenticated as app-id: [%s].", incoming_app_id)
 
             if incoming_app_id == project_id:
                 logging.info("Authenticated intra-app call, proceeding.")
             else:
-                logging.info("App ID is [%s], not allowed - exiting.",
-                             incoming_app_id)
-                return ("Failed: Unauthorized external request.",
-                        HTTPStatus.UNAUTHORIZED)
+                logging.info("App ID is [%s], not allowed - exiting.", incoming_app_id)
+                return (
+                    "Failed: Unauthorized external request.",
+                    HTTPStatus.UNAUTHORIZED,
+                )
         elif jwt:
-            user_id, user_email, error_str = (
-                validate_jwt.validate_iap_jwt_from_app_engine(
-                    jwt, project_number, project_id))
-            logging.info("Requester authenticated as [%s] ([%s]).",
-                         user_id, user_email)
+            (
+                user_id,
+                user_email,
+                error_str,
+            ) = validate_jwt.validate_iap_jwt_from_app_engine(
+                jwt, project_number, project_id
+            )
+            logging.info("Requester authenticated as [%s] ([%s]).", user_id, user_email)
             if error_str:
-                logging.info("Error validating user credentials: [%s].",
-                             error_str)
+                logging.info("Error validating user credentials: [%s].", error_str)
                 return ("Error: %s" % error_str, HTTPStatus.UNAUTHORIZED)
         else:
-            return ("Failed: Unauthorized external request.",
-                    HTTPStatus.UNAUTHORIZED)
+            return ("Failed: Unauthorized external request.", HTTPStatus.UNAUTHORIZED)
 
         # If we made it this far, client is authorized - run the decorated func
         return func(*args, **kwargs)

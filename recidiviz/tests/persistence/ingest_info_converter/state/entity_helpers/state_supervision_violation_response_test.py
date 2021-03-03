@@ -19,16 +19,18 @@
 import unittest
 from datetime import date
 
-from recidiviz.common.constants.state.state_supervision_violation_response \
-    import StateSupervisionViolationResponseType, \
-    StateSupervisionViolationResponseDecision, \
-    StateSupervisionViolationResponseRevocationType, \
-    StateSupervisionViolationResponseDecidingBodyType
+from recidiviz.common.constants.state.state_supervision_violation_response import (
+    StateSupervisionViolationResponseType,
+    StateSupervisionViolationResponseDecision,
+    StateSupervisionViolationResponseRevocationType,
+    StateSupervisionViolationResponseDecidingBodyType,
+)
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.state.entity_helpers import \
-    state_supervision_violation_response
+from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
+    state_supervision_violation_response,
+)
 
 _EMPTY_METADATA = IngestMetadata.new_with_defaults()
 
@@ -39,37 +41,38 @@ class StateSupervisionViolationResponseConverterTest(unittest.TestCase):
     def testParseStateSupervisionViolationResponse(self):
         # Arrange
         ingest_response = ingest_info_pb2.StateSupervisionViolationResponse(
-            response_type='PERMANENT_DECISION',
-            response_subtype='SUBTYPE',
-            decision='REVOCATION',
-            revocation_type='REINCARCERATION',
-            deciding_body_type='PAROLE_BOARD',
-            state_supervision_violation_response_id='RESPONSE_ID',
-            response_date='1/2/2111',
-            state_code='us_nd',
-            is_draft='True',
+            response_type="PERMANENT_DECISION",
+            response_subtype="SUBTYPE",
+            decision="REVOCATION",
+            revocation_type="REINCARCERATION",
+            deciding_body_type="PAROLE_BOARD",
+            state_supervision_violation_response_id="RESPONSE_ID",
+            response_date="1/2/2111",
+            state_code="us_nd",
+            is_draft="True",
         )
 
         # Act
         response_builder = entities.StateSupervisionViolationResponse.builder()
         state_supervision_violation_response.copy_fields_to_builder(
-            response_builder, ingest_response, _EMPTY_METADATA)
+            response_builder, ingest_response, _EMPTY_METADATA
+        )
         result = response_builder.build()
 
         # Assert
         expected_result = entities.StateSupervisionViolationResponse.new_with_defaults(
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
-            response_type_raw_text='PERMANENT_DECISION',
-            response_subtype='SUBTYPE',
+            response_type_raw_text="PERMANENT_DECISION",
+            response_subtype="SUBTYPE",
             decision=StateSupervisionViolationResponseDecision.REVOCATION,
-            decision_raw_text='REVOCATION',
+            decision_raw_text="REVOCATION",
             revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-            revocation_type_raw_text='REINCARCERATION',
+            revocation_type_raw_text="REINCARCERATION",
             deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
-            deciding_body_type_raw_text='PAROLE_BOARD',
-            external_id='RESPONSE_ID',
+            deciding_body_type_raw_text="PAROLE_BOARD",
+            external_id="RESPONSE_ID",
             response_date=date(year=2111, month=1, day=2),
-            state_code='US_ND',
+            state_code="US_ND",
             is_draft=True,
         )
 

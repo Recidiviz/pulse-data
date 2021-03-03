@@ -28,12 +28,13 @@ from sqlalchemy.orm import Session
 
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence.database.database_entity import DatabaseEntity
-from recidiviz.persistence.database.history.county.historical_snapshot_updater \
-    import CountyHistoricalSnapshotUpdater
-from recidiviz.persistence.database.history.state.historical_snapshot_updater \
-    import StateHistoricalSnapshotUpdater
-from recidiviz.persistence.database.schema.schema_person_type import \
-    SchemaPersonType
+from recidiviz.persistence.database.history.county.historical_snapshot_updater import (
+    CountyHistoricalSnapshotUpdater,
+)
+from recidiviz.persistence.database.history.state.historical_snapshot_updater import (
+    StateHistoricalSnapshotUpdater,
+)
+from recidiviz.persistence.database.schema.schema_person_type import SchemaPersonType
 
 from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.database.schema.state import schema as state_schema
@@ -41,10 +42,12 @@ from recidiviz.utils import trace
 
 
 @trace.span
-def update_historical_snapshots(session: Session,
-                                root_people: List[SchemaPersonType],
-                                orphaned_schema_objects: List[DatabaseEntity],
-                                ingest_metadata: IngestMetadata) -> None:
+def update_historical_snapshots(
+    session: Session,
+    root_people: List[SchemaPersonType],
+    orphaned_schema_objects: List[DatabaseEntity],
+    ingest_metadata: IngestMetadata,
+) -> None:
     """For all entities in all record trees rooted at |root_people| and all
     entities in |orphaned_schema_objects|, performs any required historical
     snapshot updates.
@@ -61,12 +64,15 @@ def update_historical_snapshots(session: Session,
     """
     if all(isinstance(person, county_schema.Person) for person in root_people):
         CountyHistoricalSnapshotUpdater().update_historical_snapshots(
-            session, root_people, orphaned_schema_objects, ingest_metadata)
-    elif all(isinstance(person,
-                        state_schema.StatePerson) for person in root_people):
+            session, root_people, orphaned_schema_objects, ingest_metadata
+        )
+    elif all(isinstance(person, state_schema.StatePerson) for person in root_people):
         StateHistoricalSnapshotUpdater().update_historical_snapshots(
-            session, root_people, orphaned_schema_objects, ingest_metadata)
+            session, root_people, orphaned_schema_objects, ingest_metadata
+        )
     else:
-        raise ValueError(f'Expected all types to be the same type, and one of '
-                         f'[{county_schema.Person}] or '
-                         f'[{state_schema.StatePerson}]')
+        raise ValueError(
+            f"Expected all types to be the same type, and one of "
+            f"[{county_schema.Person}] or "
+            f"[{state_schema.StatePerson}]"
+        )

@@ -23,15 +23,20 @@ import locale
 from typing import Optional, Tuple
 
 from recidiviz.common import common_utils
-from recidiviz.common.constants.bond import (BOND_STATUS_MAP, BOND_TYPE_MAP,
-                                             BondStatus, BondType)
-from recidiviz.common.constants.person_characteristics import ResidencyStatus, \
-    RESIDENCY_STATUS_SUBSTRING_MAP
+from recidiviz.common.constants.bond import (
+    BOND_STATUS_MAP,
+    BOND_TYPE_MAP,
+    BondStatus,
+    BondType,
+)
+from recidiviz.common.constants.person_characteristics import (
+    ResidencyStatus,
+    RESIDENCY_STATUS_SUBSTRING_MAP,
+)
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.common.str_field_utils import parse_dollars, normalize, \
-    parse_date
+from recidiviz.common.str_field_utils import parse_dollars, normalize, parse_date
 
-locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
+locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
 
 
 def fn(func, field_name, proto, *additional_func_args, default=None):
@@ -65,7 +70,7 @@ def calculate_birthdate_from_age(age):
     Return:
         (datetime) January 1st of the calculated birth year.
     """
-    if age == '' or age.isspace():
+    if age == "" or age.isspace():
         return None
     try:
         birth_year = datetime.datetime.now().date().year - int(age)
@@ -85,9 +90,7 @@ def parse_birthdate(proto, birthdate_field: str, age_field: str):
     parsed_birthdate_is_inferred = None
 
     birthdate = fn(parse_date, birthdate_field, proto)
-    birthdate_inferred_by_age = fn(calculate_birthdate_from_age,
-                                   age_field,
-                                   proto)
+    birthdate_inferred_by_age = fn(calculate_birthdate_from_age, age_field, proto)
     if birthdate is not None:
         parsed_birthdate = birthdate
         parsed_birthdate_is_inferred = False
@@ -98,16 +101,16 @@ def parse_birthdate(proto, birthdate_field: str, age_field: str):
     return parsed_birthdate, parsed_birthdate_is_inferred
 
 
-def parse_completion_date(proto, metadata: IngestMetadata) \
-        -> Tuple[Optional[datetime.date], Optional[datetime.date]]:
+def parse_completion_date(
+    proto, metadata: IngestMetadata
+) -> Tuple[Optional[datetime.date], Optional[datetime.date]]:
     """Reads completion_date and projected_completion_date from |proto|.
 
     If completion_date is in the future relative to scrape time, will be
     treated as projected_completion_date instead.
     """
-    completion_date = fn(parse_date, 'completion_date', proto)
-    projected_completion_date = fn(
-        parse_date, 'projected_completion_date', proto)
+    completion_date = fn(parse_date, "completion_date", proto)
+    projected_completion_date = fn(parse_date, "projected_completion_date", proto)
 
     if completion_date and completion_date > metadata.ingest_time.date():
         projected_completion_date = completion_date
@@ -117,9 +120,10 @@ def parse_completion_date(proto, metadata: IngestMetadata) \
 
 
 def parse_bond_amount_type_and_status(
-        provided_amount: str, provided_bond_type: Optional[BondType] = None,
-        provided_status: Optional[BondStatus] = None) -> \
-        Tuple[Optional[int], Optional[BondType], BondStatus]:
+    provided_amount: str,
+    provided_bond_type: Optional[BondType] = None,
+    provided_status: Optional[BondStatus] = None,
+) -> Tuple[Optional[int], Optional[BondType], BondStatus]:
     """Returns bond amount, bond type, and bond status, setting any missing
     values that can be inferred from the other fields.
     """
@@ -136,8 +140,11 @@ def parse_bond_amount_type_and_status(
     # This is intentional, to ensure all values that should be converted are
     # properly captured.
     amount = None
-    if provided_amount is not None \
-            and type_from_amount is None and status_from_amount is None:
+    if (
+        provided_amount is not None
+        and type_from_amount is None
+        and status_from_amount is None
+    ):
         amount = parse_dollars(provided_amount)
 
     bond_type = provided_bond_type or type_from_amount
@@ -168,9 +175,9 @@ def parse_residency_status(place_of_residence: str) -> ResidencyStatus:
     return ResidencyStatus.PERMANENT
 
 
-def parse_region_code_with_override(proto,
-                                    region_field_name: str,
-                                    metadata: IngestMetadata):
+def parse_region_code_with_override(
+    proto, region_field_name: str, metadata: IngestMetadata
+):
     """Returns a normalized form of the region code living on the |proto|.
 
     Normalizes the region code at the field with the given |region_field_name|,
@@ -187,4 +194,4 @@ def parse_region_code_with_override(proto,
 def create_comma_separated_list(proto, field_name: str):
     """Returns a normalized, comma-separated string for the list field with the
     given |field_name| on the given |proto|."""
-    return ', '.join([normalize(value) for value in getattr(proto, field_name)])
+    return ", ".join([normalize(value) for value in getattr(proto, field_name)])

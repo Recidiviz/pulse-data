@@ -17,38 +17,40 @@
 
 """Converts an ingest_info proto StateSupervisionCaseTypeEntry to a
 persistence entity."""
-from recidiviz.common.constants.state.state_case_type import \
-    StateSupervisionCaseType
+from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.str_field_utils import normalize
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info import StateSupervisionCaseTypeEntry
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.utils.converter_utils import \
-    fn, parse_region_code_with_override, parse_external_id
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings \
-    import EnumMappings
+from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
+    fn,
+    parse_region_code_with_override,
+    parse_external_id,
+)
+from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
 
 
 def convert(
-        proto: StateSupervisionCaseTypeEntry,
-        metadata: IngestMetadata) -> entities.StateSupervisionCaseTypeEntry:
+    proto: StateSupervisionCaseTypeEntry, metadata: IngestMetadata
+) -> entities.StateSupervisionCaseTypeEntry:
     """Converts an ingest_info proto StateSupervisionCaseTypeEntry to a
     persistence entity.
     """
     new = entities.StateSupervisionCaseTypeEntry.builder()
 
     enum_fields = {
-        'case_type': StateSupervisionCaseType,
+        "case_type": StateSupervisionCaseType,
     }
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 
     # enum values
-    new.state_code = parse_region_code_with_override(
-        proto, 'state_code', metadata)
+    new.state_code = parse_region_code_with_override(proto, "state_code", metadata)
     new.case_type = enum_mappings.get(StateSupervisionCaseType)
-    new.case_type_raw_text = fn(normalize, 'case_type', proto)
+    new.case_type_raw_text = fn(normalize, "case_type", proto)
 
     # 1-to-1 mappings
-    new.external_id = fn(parse_external_id, 'state_supervision_case_type_entry_id', proto)
+    new.external_id = fn(
+        parse_external_id, "state_supervision_case_type_entry_id", proto
+    )
 
     return new.build()

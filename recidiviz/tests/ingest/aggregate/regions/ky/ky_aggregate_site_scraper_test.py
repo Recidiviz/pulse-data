@@ -22,19 +22,21 @@ import requests
 from recidiviz.ingest.aggregate.regions.ky import ky_aggregate_site_scraper
 from recidiviz.tests.ingest import fixtures
 
-REPORTS_HTML = fixtures.as_string('aggregate/regions/ky', 'report.html')
+REPORTS_HTML = fixtures.as_string("aggregate/regions/ky", "report.html")
 
 
 class TestKyAggregateSiteScraper(TestCase):
     """Test that ky_aggregate_site_scraper correctly scrapes urls."""
 
-    @patch.object(requests, 'get')
+    @patch.object(requests, "get")
     def testGetAllUrls(self, mockget):
         mockresponse = Mock()
         mockget.return_value = mockresponse
         mockresponse.text = REPORTS_HTML
-        url1 = ('https://corrections.ky.gov/About/researchandstats/Documents/'
-                'Weekly Jail/2018/08-18-18.pdf')
+        url1 = (
+            "https://corrections.ky.gov/About/researchandstats/Documents/"
+            "Weekly Jail/2018/08-18-18.pdf"
+        )
         expected_urls = {url1}
 
         urls = ky_aggregate_site_scraper.get_urls_to_download()

@@ -15,20 +15,18 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """US_ND counts of incidents (reprehensible offenses while in custody) by facility by week"""
-# pylint: disable=trailing-whitespace,line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import COVID_REPORT_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-INCIDENTS_BY_FACILITY_BY_WEEK_VIEW_NAME = 'incidents_by_facility_by_week'
+INCIDENTS_BY_FACILITY_BY_WEEK_VIEW_NAME = "incidents_by_facility_by_week"
 
-INCIDENTS_BY_FACILITY_BY_WEEK_DESCRIPTION = \
-    """ US_ND counts of incidents (reprehensible offenses while in custody) by facility by week"""
+INCIDENTS_BY_FACILITY_BY_WEEK_DESCRIPTION = """ US_ND counts of incidents (reprehensible offenses while in custody) by facility by week"""
 
-INCIDENTS_BY_FACILITY_BY_WEEK_QUERY_TEMPLATE = \
-    """
+INCIDENTS_BY_FACILITY_BY_WEEK_QUERY_TEMPLATE = """
     /*{description}*/
     WITH incidents AS (
         SELECT
@@ -133,9 +131,9 @@ INCIDENTS_BY_FACILITY_BY_WEEK_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     covid_report_dataset=COVID_REPORT_DATASET,
     date_regex=DATE_REGEX_MATCHER,
     us_nd_report_facilities=US_ND_REPORT_FACILITIES,
-    static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET
+    static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         INCIDENTS_BY_FACILITY_BY_WEEK_VIEW_BUILDER.build_and_print()

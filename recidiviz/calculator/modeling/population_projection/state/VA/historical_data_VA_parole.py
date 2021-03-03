@@ -30,94 +30,147 @@ HIGHEST PRIORITY MISSING DATA: more years of data
 ADDITIONAL NOTES: NA
 """
 import pandas as pd
-from recidiviz.calculator.modeling.population_projection.spark_bq_utils import upload_spark_model_inputs
+from recidiviz.calculator.modeling.population_projection.spark_bq_utils import (
+    upload_spark_model_inputs,
+)
+
 # pylint: skip-file
 
 
-#RAW DATA
+# RAW DATA
 
 mandatory_minimums = {
-    'NAR3085': 5,
-    'NAR3119': 20,
-    'NAR3124': 40,
-    'NAR3114': 20,
-    'NAR3067': 3,
-    'NAR3086': 10,
-    'NAR3126': 2,
-    'NAR3127': 5,
-    'NAR3128': 5,
-    'NAR3063': 2,
-    'NAR3098': 5,
-    'NAR3097': 5,
-    'NAR3090': 20,
-    'NAR3092': 40,
-    'NAR3118': 20,
-    'NAR3123': 40,
-    'NAR3117': 20,
-    'NAR3122': 40,
-    'NAR3116': 20,
-    'NAR3121': 40,
-    'NAR3120': 20,
-    'NAR3125': 40,
-    'NAR3091': 20,
-    'NAR3093': 40,
-    'NAR3038': 3,
-    'NAR3087': 10,
-    'NAR3146': 5,
-    'NAR3113': 20,
-    'NAR3145': 5,
-    'NAR3112': 20,
-    'NAR3144': 5,
-    'NAR3111': 40,
-    'NAR3147': 5,
-    'NAR3149': 3,
-    'NAR3115': 20,
-    'NAR3151': 5,
-    'NAR3133': 3,
-    'NAR3065': 3,
-    'NAR3088': 10,
-    'NAR3066': 3,
-    'NAR3089': 10,
-    'NAR3099': 1,
-    'NAR3041': 1,
-    'NAR3094': 20,
-    'WPN5296': 5,
-    'WPN5297': 2,
+    "NAR3085": 5,
+    "NAR3119": 20,
+    "NAR3124": 40,
+    "NAR3114": 20,
+    "NAR3067": 3,
+    "NAR3086": 10,
+    "NAR3126": 2,
+    "NAR3127": 5,
+    "NAR3128": 5,
+    "NAR3063": 2,
+    "NAR3098": 5,
+    "NAR3097": 5,
+    "NAR3090": 20,
+    "NAR3092": 40,
+    "NAR3118": 20,
+    "NAR3123": 40,
+    "NAR3117": 20,
+    "NAR3122": 40,
+    "NAR3116": 20,
+    "NAR3121": 40,
+    "NAR3120": 20,
+    "NAR3125": 40,
+    "NAR3091": 20,
+    "NAR3093": 40,
+    "NAR3038": 3,
+    "NAR3087": 10,
+    "NAR3146": 5,
+    "NAR3113": 20,
+    "NAR3145": 5,
+    "NAR3112": 20,
+    "NAR3144": 5,
+    "NAR3111": 40,
+    "NAR3147": 5,
+    "NAR3149": 3,
+    "NAR3115": 20,
+    "NAR3151": 5,
+    "NAR3133": 3,
+    "NAR3065": 3,
+    "NAR3088": 10,
+    "NAR3066": 3,
+    "NAR3089": 10,
+    "NAR3099": 1,
+    "NAR3041": 1,
+    "NAR3094": 20,
+    "WPN5296": 5,
+    "WPN5297": 2,
 }
 
-#you may have to change this path to point to wherever you have the file on your computer
-historical_sentences = pd.read_csv('recidiviz/calculator/modeling/population_projection/state/VA/VA_data/processed_va_historical_sentences_v2.csv')
+# you may have to change this path to point to wherever you have the file on your computer
+historical_sentences = pd.read_csv(
+    "recidiviz/calculator/modeling/population_projection/state/VA/VA_data/processed_va_historical_sentences_v2.csv"
+)
 
 # Filter to the supported sentence types
-supported_sentence_types = ['jail', 'prison']
-historical_sentences = historical_sentences[historical_sentences['sentence_type'].isin(supported_sentence_types)]
+supported_sentence_types = ["jail", "prison"]
+historical_sentences = historical_sentences[
+    historical_sentences["sentence_type"].isin(supported_sentence_types)
+]
 
 # Remove sentences with 0 month sentence lengths
-historical_sentences = historical_sentences[historical_sentences['effective_sentence_months'] > 0].copy()
+historical_sentences = historical_sentences[
+    historical_sentences["effective_sentence_months"] > 0
+].copy()
 
 
-#TRANSITIONS TABLE
-jail_prison_sentences = historical_sentences[['offense_group', 'offense_code', 'sentence_type',
-                                              'effective_sentence_years']]\
-    .groupby(['offense_code', 'sentence_type', 'effective_sentence_years'], as_index=False).count()
-jail_prison_sentences = jail_prison_sentences.rename({'offense_group': 'total_population', 'offense_code': 'crime',
-                                                      'effective_sentence_years': 'compartment_duration',
-                                                      'sentence_type': 'inflow_to'}, axis=1)
-jail_prison_sentences = jail_prison_sentences.rename({'inflow_to': 'compartment'}, axis=1)
-jail_prison_sentences['outflow_to'] = 'release'
+# TRANSITIONS TABLE
+jail_prison_sentences = (
+    historical_sentences[
+        ["offense_group", "offense_code", "sentence_type", "effective_sentence_years"]
+    ]
+    .groupby(
+        ["offense_code", "sentence_type", "effective_sentence_years"], as_index=False
+    )
+    .count()
+)
+jail_prison_sentences = jail_prison_sentences.rename(
+    {
+        "offense_group": "total_population",
+        "offense_code": "crime",
+        "effective_sentence_years": "compartment_duration",
+        "sentence_type": "inflow_to",
+    },
+    axis=1,
+)
+jail_prison_sentences = jail_prison_sentences.rename(
+    {"inflow_to": "compartment"}, axis=1
+)
+jail_prison_sentences["outflow_to"] = "release"
 
-for offense_code in set(jail_prison_sentences['crime']):
-    jail_prison_sentences = jail_prison_sentences.append({'crime': offense_code, 'compartment': 'release',
-                                                          'compartment_duration': 100, 'total_population': 1,
-                                                          'outflow_to': 'prison'}, ignore_index=True)
+for offense_code in set(jail_prison_sentences["crime"]):
+    jail_prison_sentences = jail_prison_sentences.append(
+        {
+            "crime": offense_code,
+            "compartment": "release",
+            "compartment_duration": 100,
+            "total_population": 1,
+            "outflow_to": "prison",
+        },
+        ignore_index=True,
+    )
 transitions_data = jail_prison_sentences
 
-#OUTFLOWS TABLE
-jail_prison_admissions = historical_sentences[['offense_group', 'off1_vcc', 'offense_code', 'time_step', 'sentence_type', 'compartment']]\
-    .groupby(['offense_group', 'offense_code', 'compartment', 'sentence_type', 'time_step'], as_index=False).count()
-jail_prison_admissions = jail_prison_admissions.rename({'off1_vcc': 'total_population', 'offense_code': 'crime',
-                                                        'sentence_type': 'outflow_to'}, axis=1).drop('offense_group', axis=1)
+# OUTFLOWS TABLE
+jail_prison_admissions = (
+    historical_sentences[
+        [
+            "offense_group",
+            "off1_vcc",
+            "offense_code",
+            "time_step",
+            "sentence_type",
+            "compartment",
+        ]
+    ]
+    .groupby(
+        ["offense_group", "offense_code", "compartment", "sentence_type", "time_step"],
+        as_index=False,
+    )
+    .count()
+)
+jail_prison_admissions = jail_prison_admissions.rename(
+    {
+        "off1_vcc": "total_population",
+        "offense_code": "crime",
+        "sentence_type": "outflow_to",
+    },
+    axis=1,
+).drop("offense_group", axis=1)
 outflows_data = jail_prison_admissions
 
 # STORE DATA
-upload_spark_model_inputs('recidiviz-staging', 'VA_parole', outflows_data, transitions_data, pd.DataFrame())
+upload_spark_model_inputs(
+    "recidiviz-staging", "VA_parole", outflows_data, transitions_data, pd.DataFrame()
+)

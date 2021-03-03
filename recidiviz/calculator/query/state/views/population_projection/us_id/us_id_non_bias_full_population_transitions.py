@@ -15,19 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Historical total US_ID rider/parole board hold population by outflow compartment and compartment duration (months)"""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-US_ID_PAROLE_BOARD_HOLD_FULL_TRANSITIONS_VIEW_NAME = 'us_id_non_bias_full_transitions'
+US_ID_PAROLE_BOARD_HOLD_FULL_TRANSITIONS_VIEW_NAME = "us_id_non_bias_full_transitions"
 
-US_ID_PAROLE_BOARD_HOLD_POPULATION_TRANSITIONS_VIEW_DESCRIPTION = \
-    """"Historical US_ID Board Hold total population by outflow compartment, and compartment duration (months)"""
+US_ID_PAROLE_BOARD_HOLD_POPULATION_TRANSITIONS_VIEW_DESCRIPTION = """"Historical US_ID Board Hold total population by outflow compartment, and compartment duration (months)"""
 
-US_ID_PAROLE_BOARD_HOLD_POPULATION_TRANSITIONS_QUERY_TEMPLATE = \
-    """
+US_ID_PAROLE_BOARD_HOLD_POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
     /*{description}*/
     WITH remaining_sentences AS (
         -- Count the projected remaining sentences as part of the transition distribution so that the dist isn't bias towards short sentences
@@ -113,9 +111,9 @@ US_ID_PAROLE_BOARD_HOLD_FULL_TRANSITIONS_VIEW_BUILDER = SimpleBigQueryViewBuilde
     description=US_ID_PAROLE_BOARD_HOLD_POPULATION_TRANSITIONS_VIEW_DESCRIPTION,
     analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
     population_projection_dataset=dataset_config.POPULATION_PROJECTION_DATASET,
-    should_materialize=True
+    should_materialize=True,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         US_ID_PAROLE_BOARD_HOLD_FULL_TRANSITIONS_VIEW_BUILDER.build_and_print()

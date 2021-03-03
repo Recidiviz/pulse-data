@@ -21,21 +21,23 @@ from typing import List, Optional, Dict, Any
 
 from google.cloud import tasks_v2
 
-from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import \
-    SCRAPER_PHASE_QUEUE_V2
-from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import \
-    GoogleCloudTasksClientWrapper, HttpMethod
+from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
+    SCRAPER_PHASE_QUEUE_V2,
+)
+from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import (
+    GoogleCloudTasksClientWrapper,
+    HttpMethod,
+)
 
 
 class ScraperCloudTaskManager:
     """Class for interacting with the scraper cloud task queues."""
 
     def __init__(self, project_id: Optional[str] = None):
-        self.cloud_task_client = \
-            GoogleCloudTasksClientWrapper(project_id=project_id)
+        self.cloud_task_client = GoogleCloudTasksClientWrapper(project_id=project_id)
 
     def _format_scrape_task_id(self, region_code: str, rest: str):
-        return '{}-{}'.format(region_code, rest)
+        return "{}-{}".format(region_code, rest)
 
     def purge_scrape_tasks(self, *, region_code: str, queue_name: str):
         """Purge scrape tasks for a given region from its queue.
@@ -45,26 +47,22 @@ class ScraperCloudTaskManager:
             queue_name: `str` queue name.
         """
         for task in self.list_scrape_tasks(
-                region_code=region_code, queue_name=queue_name):
+            region_code=region_code, queue_name=queue_name
+        ):
             self.cloud_task_client.delete_task(task)
 
     def list_scrape_tasks(
-            self,
-            *,
-            region_code: str,
-            queue_name: str
+        self, *, region_code: str, queue_name: str
     ) -> List[tasks_v2.types.task_pb2.Task]:
         """List scrape tasks for the given region and queue"""
-        region_task_id_prefix = self._format_scrape_task_id(region_code, '')
+        region_task_id_prefix = self._format_scrape_task_id(region_code, "")
         return self.cloud_task_client.list_tasks_with_prefix(
-            queue_name, region_task_id_prefix)
+            queue_name, region_task_id_prefix
+        )
 
-    def create_scrape_task(self,
-                           *,
-                           region_code: str,
-                           queue_name: str,
-                           url: str,
-                           body: Dict[str, Any]):
+    def create_scrape_task(
+        self, *, region_code: str, queue_name: str, url: str, body: Dict[str, Any]
+    ):
         """Create a scrape task in a queue.
 
         Args:
@@ -77,7 +75,7 @@ class ScraperCloudTaskManager:
             task_id=self._format_scrape_task_id(region_code, str(uuid.uuid4())),
             queue_name=queue_name,
             relative_uri=url,
-            body=body
+            body=body,
         )
 
     def create_scraper_phase_task(self, *, region_code: str, url: str):
@@ -90,6 +88,6 @@ class ScraperCloudTaskManager:
         self.cloud_task_client.create_task(
             task_id=self._format_scrape_task_id(region_code, str(uuid.uuid4())),
             queue_name=SCRAPER_PHASE_QUEUE_V2,
-            relative_uri=f'{url}?region={region_code}',
-            http_method=HttpMethod.GET
+            relative_uri=f"{url}?region={region_code}",
+            http_method=HttpMethod.GET,
         )

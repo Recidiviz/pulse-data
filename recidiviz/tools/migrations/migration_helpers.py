@@ -22,42 +22,48 @@ import sys
 
 from pygit2.repository import Repository
 
-from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType, SQLAlchemyEngineManager
+from recidiviz.persistence.database.sqlalchemy_engine_manager import (
+    SchemaType,
+    SQLAlchemyEngineManager,
+)
 
 
 def prompt_for_confirmation(input_text: str, accepted_response: str) -> None:
-    check = input(f'{input_text}\nPlease type "{accepted_response}" to confirm. (Anything else exits):\n')
+    check = input(
+        f'{input_text}\nPlease type "{accepted_response}" to confirm. (Anything else exits):\n'
+    )
     if check != accepted_response:
-        logging.warning('\nConfirmation aborted.')
+        logging.warning("\nConfirmation aborted.")
         sys.exit(1)
 
 
 def confirm_correct_db(database: SchemaType) -> None:
     dbname = SQLAlchemyEngineManager.get_stripped_cloudsql_instance_id(database)
     if dbname is None:
-        logging.error('Could not find database instance.')
-        logging.error('Exiting...')
+        logging.error("Could not find database instance.")
+        logging.error("Exiting...")
         sys.exit(1)
 
-    prompt_for_confirmation(f'Running migrations on {dbname}.', dbname)
+    prompt_for_confirmation(f"Running migrations on {dbname}.", dbname)
 
 
 def confirm_correct_git_branch(repo_root: str, is_prod: bool = False) -> None:
     try:
         repo = Repository(repo_root)
     except Exception as e:
-        logging.error('improper project root provided: %s', e)
+        logging.error("improper project root provided: %s", e)
         sys.exit(1)
 
     current_branch = repo.head.shorthand
 
-    if is_prod and not current_branch.startswith('releases/'):
+    if is_prod and not current_branch.startswith("releases/"):
         logging.error(
-            'Migrations run against production must be from a release branch. The current branch is %s.',
-            current_branch
+            "Migrations run against production must be from a release branch. The current branch is %s.",
+            current_branch,
         )
         sys.exit(1)
 
     prompt_for_confirmation(
-        f'This script will execute migrations based on the contents of the current branch ({current_branch}).',
-        current_branch)
+        f"This script will execute migrations based on the contents of the current branch ({current_branch}).",
+        current_branch,
+    )

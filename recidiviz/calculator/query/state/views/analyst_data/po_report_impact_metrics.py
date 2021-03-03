@@ -16,22 +16,25 @@
 # =============================================================================
 """View tracking monthly positive and backstop metrics, along with demographic attributes, at the district level
 for use in impact measurement"""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query import bq_utils
-from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET, ANALYST_VIEWS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    STATE_BASE_DATASET,
+    ANALYST_VIEWS_DATASET,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.calculator.query.state.views.po_report.violation_reports_query import violation_reports_query
+from recidiviz.calculator.query.state.views.po_report.violation_reports_query import (
+    violation_reports_query,
+)
 
 PO_REPORT_IMPACT_METRICS_VIEW_NAME = "po_report_impact_metrics"
 
-PO_REPORT_IMPACT_METRICS_VIEW_DESCRIPTION = \
-    "Reports district-level averages for a variety of metrics to help track impact of PO monthly report rollouts"
+PO_REPORT_IMPACT_METRICS_VIEW_DESCRIPTION = "Reports district-level averages for a variety of metrics to help track impact of PO monthly report rollouts"
 
-PO_REPORT_IMPACT_METRICS_QUERY_TEMPLATE = \
-    """
+PO_REPORT_IMPACT_METRICS_QUERY_TEMPLATE = """
     /*{description}*/
     WITH po_report_metrics_monthly AS
     /* Selects completions, discharges, supervision downgrades, and revocation counts by type from PO monthly report data */
@@ -213,11 +216,11 @@ PO_REPORT_IMPACT_METRICS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     should_materialize=True,
     violation_reports_query=violation_reports_query(
         state_dataset=dataset_config.STATE_BASE_DATASET,
-        reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET
+        reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     ),
-    rolling_average_months_dimension=bq_utils.unnest_rolling_average_months()
+    rolling_average_months_dimension=bq_utils.unnest_rolling_average_months(),
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         PO_REPORT_IMPACT_METRICS_VIEW_BUILDER.build_and_print()

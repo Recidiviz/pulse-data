@@ -16,10 +16,12 @@
 # =============================================================================
 """Query for all external ids ever associated with any person in the DOC or PBPP systems."""
 
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import \
-    DirectIngestPreProcessedIngestViewBuilder
-from recidiviz.ingest.direct.regions.us_pa.ingest_views.templates_person_external_ids import \
-    MASTER_STATE_IDS_FRAGMENT
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    DirectIngestPreProcessedIngestViewBuilder,
+)
+from recidiviz.ingest.direct.regions.us_pa.ingest_views.templates_person_external_ids import (
+    MASTER_STATE_IDS_FRAGMENT,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -34,12 +36,12 @@ FROM recidiviz_master_person_ids
 GROUP BY recidiviz_master_person_id;"""
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
-    region='us_pa',
-    ingest_view_name='person_external_ids',
+    region="us_pa",
+    ingest_view_name="person_external_ids",
     view_query_template=VIEW_QUERY_TEMPLATE,
     order_by_cols=None,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         VIEW_BUILDER.build_and_print()

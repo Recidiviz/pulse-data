@@ -15,19 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Historical population that should be excluded from population projection inputs and outputs"""
-# pylint: disable=line-too-long, trailing-whitespace
+# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-US_ID_EXCLUDED_POPULATION_VIEW_NAME = 'us_id_excluded_population'
+US_ID_EXCLUDED_POPULATION_VIEW_NAME = "us_id_excluded_population"
 
-US_ID_EXCLUDED_POPULATION_VIEW_DESCRIPTION = \
-    """"Historical population to exclude from population projection inputs and outputs per year and month"""
+US_ID_EXCLUDED_POPULATION_VIEW_DESCRIPTION = """"Historical population to exclude from population projection inputs and outputs per year and month"""
 
-US_ID_EXCLUDED_POPULATION_QUERY_TEMPLATE = \
-    """
+US_ID_EXCLUDED_POPULATION_QUERY_TEMPLATE = """
     SELECT
       state_code,
       compartment,
@@ -53,9 +51,9 @@ US_ID_EXCLUDED_POPULATION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=US_ID_EXCLUDED_POPULATION_QUERY_TEMPLATE,
     description=US_ID_EXCLUDED_POPULATION_VIEW_DESCRIPTION,
     population_projection_dataset=dataset_config.POPULATION_PROJECTION_DATASET,
-    should_materialize=False
+    should_materialize=False,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         US_ID_EXCLUDED_POPULATION_VIEW_BUILDER.build_and_print()

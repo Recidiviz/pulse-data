@@ -24,16 +24,12 @@ import pytest
 from more_itertools import one
 from sqlalchemy import func
 
-from recidiviz.common.constants.aggregate import (
-    enum_canonical_strings as enum_strings
-)
+from recidiviz.common.constants.aggregate import enum_canonical_strings as enum_strings
 from recidiviz.ingest.aggregate.regions.ny import ny_aggregate_ingest
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.base_schema import \
-    JailsBase
+from recidiviz.persistence.database.base_schema import JailsBase
 from recidiviz.persistence.database.schema.aggregate import dao
-from recidiviz.persistence.database.schema.aggregate.schema import \
-    NyFacilityAggregate
+from recidiviz.persistence.database.schema.aggregate.schema import NyFacilityAggregate
 from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.utils import fakes
 
@@ -42,9 +38,11 @@ from recidiviz.tests.utils import fakes
 @pytest.fixture(scope="class")
 def parsed_pdf(request):
     request.cls.parsed_pdf = ny_aggregate_ingest.parse(
-        '', fixtures.as_filepath('jail_population.pdf'))
+        "", fixtures.as_filepath("jail_population.pdf")
+    )
     request.cls.parsed_pdf_3_pages = ny_aggregate_ingest.parse(
-        '', fixtures.as_filepath('jail_population_2019.pdf'))
+        "", fixtures.as_filepath("jail_population_2019.pdf")
+    )
 
 
 @pytest.mark.usefixtures("parsed_pdf")
@@ -61,118 +59,128 @@ class TestNyAggregateIngest(TestCase):
         result = self.parsed_pdf[NyFacilityAggregate]
 
         # Assert Head
-        expected_head = pd.DataFrame({
-            'report_date': [
-                datetime.date(year=2017, month=12, day=31),
-                datetime.date(year=2018, month=1, day=31),
-                datetime.date(year=2018, month=2, day=28)
-            ],
-            'census': [574, 552, 540],
-            'in_house': [610, 589, 586],
-            'boarded_in': [37, 39, 47],
-            'boarded_out': [1, 1, 1],
-            'sentenced': [146, 139, 155],
-            'civil': [0, 0, 0],
-            'federal': [41, 36, 28],
-            'technical_parole_violators': [41, 35, 32],
-            'state_readies': [18, 22, 16],
-            'other_unsentenced': [365, 357, 355],
-            'facility_name': [
-                'Albany County Jail',
-                'Albany County Jail',
-                'Albany County Jail'
-            ],
-            'fips': ['36001', '36001', '36001'],
-            'aggregation_window': 3 * [enum_strings.monthly_granularity],
-            'report_frequency': 3 * [enum_strings.monthly_granularity]
-        })
+        expected_head = pd.DataFrame(
+            {
+                "report_date": [
+                    datetime.date(year=2017, month=12, day=31),
+                    datetime.date(year=2018, month=1, day=31),
+                    datetime.date(year=2018, month=2, day=28),
+                ],
+                "census": [574, 552, 540],
+                "in_house": [610, 589, 586],
+                "boarded_in": [37, 39, 47],
+                "boarded_out": [1, 1, 1],
+                "sentenced": [146, 139, 155],
+                "civil": [0, 0, 0],
+                "federal": [41, 36, 28],
+                "technical_parole_violators": [41, 35, 32],
+                "state_readies": [18, 22, 16],
+                "other_unsentenced": [365, 357, 355],
+                "facility_name": [
+                    "Albany County Jail",
+                    "Albany County Jail",
+                    "Albany County Jail",
+                ],
+                "fips": ["36001", "36001", "36001"],
+                "aggregation_window": 3 * [enum_strings.monthly_granularity],
+                "report_frequency": 3 * [enum_strings.monthly_granularity],
+            }
+        )
         assert_frame_equal(result.head(n=3), expected_head, check_names=False)
 
         # Assert Tail
-        expected_tail = pd.DataFrame({
-            'report_date': [
-                datetime.date(year=2018, month=10, day=31),
-                datetime.date(year=2018, month=11, day=30),
-                datetime.date(year=2018, month=12, day=31)
-            ],
-            'census': [39, 42, 40],
-            'in_house': [43, 45, 40],
-            'boarded_in': [4, 2, 1],
-            'boarded_out': [0, 0, 0],
-            'sentenced': [15, 13, 11],
-            'civil': [0, 0, 0],
-            'federal': [5, 6, 6],
-            'technical_parole_violators': [2, 6, 3],
-            'state_readies': [2, 2, 1],
-            'other_unsentenced': [18, 18, 19],
-            'facility_name': [
-                'Yates County Jail',
-                'Yates County Jail',
-                'Yates County Jail'
-            ],
-            'fips': ['36123', '36123', '36123'],
-            'aggregation_window': 3 * [enum_strings.monthly_granularity],
-            'report_frequency': 3 * [enum_strings.monthly_granularity]
-        }, index=range(816, 819))
+        expected_tail = pd.DataFrame(
+            {
+                "report_date": [
+                    datetime.date(year=2018, month=10, day=31),
+                    datetime.date(year=2018, month=11, day=30),
+                    datetime.date(year=2018, month=12, day=31),
+                ],
+                "census": [39, 42, 40],
+                "in_house": [43, 45, 40],
+                "boarded_in": [4, 2, 1],
+                "boarded_out": [0, 0, 0],
+                "sentenced": [15, 13, 11],
+                "civil": [0, 0, 0],
+                "federal": [5, 6, 6],
+                "technical_parole_violators": [2, 6, 3],
+                "state_readies": [2, 2, 1],
+                "other_unsentenced": [18, 18, 19],
+                "facility_name": [
+                    "Yates County Jail",
+                    "Yates County Jail",
+                    "Yates County Jail",
+                ],
+                "fips": ["36123", "36123", "36123"],
+                "aggregation_window": 3 * [enum_strings.monthly_granularity],
+                "report_frequency": 3 * [enum_strings.monthly_granularity],
+            },
+            index=range(816, 819),
+        )
         assert_frame_equal(result.tail(n=3), expected_tail, check_names=False)
 
     def testParseThreeTablesPerPage_ParsesHeadAndTail(self):
         result = self.parsed_pdf_3_pages[NyFacilityAggregate]
 
         # Assert Head
-        expected_head = pd.DataFrame({
-            'report_date': [
-                datetime.date(year=2018, month=1, day=31),
-                datetime.date(year=2018, month=2, day=28),
-                datetime.date(year=2018, month=3, day=31)
-            ],
-            'census': [552, 540, 520],
-            'in_house': [589, 586, 565],
-            'boarded_in': [39, 47, 46],
-            'boarded_out': [1, 1, 1],
-            'sentenced': [139, 155, 137],
-            'civil': [0, 0, 0],
-            'federal': [36, 28, 27],
-            'technical_parole_violators': [35, 32, 36],
-            'state_readies': [22, 16, 18],
-            'other_unsentenced': [357, 355, 347],
-            'facility_name': [
-                'Albany County Jail',
-                'Albany County Jail',
-                'Albany County Jail'
-            ],
-            'fips': ['36001', '36001', '36001'],
-            'aggregation_window': 3 * [enum_strings.monthly_granularity],
-            'report_frequency': 3 * [enum_strings.monthly_granularity]
-        })
+        expected_head = pd.DataFrame(
+            {
+                "report_date": [
+                    datetime.date(year=2018, month=1, day=31),
+                    datetime.date(year=2018, month=2, day=28),
+                    datetime.date(year=2018, month=3, day=31),
+                ],
+                "census": [552, 540, 520],
+                "in_house": [589, 586, 565],
+                "boarded_in": [39, 47, 46],
+                "boarded_out": [1, 1, 1],
+                "sentenced": [139, 155, 137],
+                "civil": [0, 0, 0],
+                "federal": [36, 28, 27],
+                "technical_parole_violators": [35, 32, 36],
+                "state_readies": [22, 16, 18],
+                "other_unsentenced": [357, 355, 347],
+                "facility_name": [
+                    "Albany County Jail",
+                    "Albany County Jail",
+                    "Albany County Jail",
+                ],
+                "fips": ["36001", "36001", "36001"],
+                "aggregation_window": 3 * [enum_strings.monthly_granularity],
+                "report_frequency": 3 * [enum_strings.monthly_granularity],
+            }
+        )
         assert_frame_equal(result.head(n=3), expected_head, check_names=False)
 
         # Assert Tail
-        expected_tail = pd.DataFrame({
-            'report_date': [
-                datetime.date(year=2018, month=11, day=30),
-                datetime.date(year=2018, month=12, day=31),
-                datetime.date(year=2019, month=1, day=31)
-            ],
-            'census': [42, 40, 39],
-            'in_house': [45, 40, 39],
-            'boarded_in': [2, 1, 1],
-            'boarded_out': [0, 0, 0],
-            'sentenced': [13, 11, 11],
-            'civil': [0, 0, 0],
-            'federal': [6, 6, 5],
-            'technical_parole_violators': [6, 3, 2],
-            'state_readies': [2, 1, 0],
-            'other_unsentenced': [18, 19, 20],
-            'facility_name': [
-                'Yates County Jail',
-                'Yates County Jail',
-                'Yates County Jail'
-            ],
-            'fips': ['36123', '36123', '36123'],
-            'aggregation_window': 3 * [enum_strings.monthly_granularity],
-            'report_frequency': 3 * [enum_strings.monthly_granularity]
-        }, index=range(816, 819))
+        expected_tail = pd.DataFrame(
+            {
+                "report_date": [
+                    datetime.date(year=2018, month=11, day=30),
+                    datetime.date(year=2018, month=12, day=31),
+                    datetime.date(year=2019, month=1, day=31),
+                ],
+                "census": [42, 40, 39],
+                "in_house": [45, 40, 39],
+                "boarded_in": [2, 1, 1],
+                "boarded_out": [0, 0, 0],
+                "sentenced": [13, 11, 11],
+                "civil": [0, 0, 0],
+                "federal": [6, 6, 5],
+                "technical_parole_violators": [6, 3, 2],
+                "state_readies": [2, 1, 0],
+                "other_unsentenced": [18, 19, 20],
+                "facility_name": [
+                    "Yates County Jail",
+                    "Yates County Jail",
+                    "Yates County Jail",
+                ],
+                "fips": ["36123", "36123", "36123"],
+                "aggregation_window": 3 * [enum_strings.monthly_granularity],
+                "report_frequency": 3 * [enum_strings.monthly_granularity],
+            },
+            index=range(816, 819),
+        )
         assert_frame_equal(result.tail(n=3), expected_tail, check_names=False)
 
     def testWrite_CalculatesSum(self):
@@ -182,7 +190,8 @@ class TestNyAggregateIngest(TestCase):
 
         # Assert
         query = SessionFactory.for_schema_base(JailsBase).query(
-            func.sum(NyFacilityAggregate.in_house))
+            func.sum(NyFacilityAggregate.in_house)
+        )
         result = one(one(query.all()))
 
         expected_sum_in_house = 189012

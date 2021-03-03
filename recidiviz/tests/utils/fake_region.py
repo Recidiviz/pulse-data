@@ -20,25 +20,27 @@ from typing import Any, Dict, Optional, Union
 
 from mock import create_autospec
 
-from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
-    BaseDirectIngestController
+from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
+    BaseDirectIngestController,
+)
 from recidiviz.ingest.scrape.base_scraper import BaseScraper
 from recidiviz.utils.regions import Region
 
 
-def fake_region(*,
-                region_code: str = 'us_xx',
-                agency_type: str = 'prison',
-                environment: str = 'local',
-                jurisdiction_id: str = 'unknown',
-                ingestor: Optional[Union[BaseScraper,
-                                         BaseDirectIngestController]] = None,
-                is_raw_vs_ingest_file_name_detection_enabled: bool = False,
-                are_raw_data_bq_imports_enabled_in_env: bool = False,
-                are_ingest_view_exports_enabled_in_env: bool = False,
-                queue: Optional[Dict[str, Any]] = None,
-                shared_queue: Optional[str] = None,
-                region_module: Optional[ModuleType] = None) -> Region:
+def fake_region(
+    *,
+    region_code: str = "us_xx",
+    agency_type: str = "prison",
+    environment: str = "local",
+    jurisdiction_id: str = "unknown",
+    ingestor: Optional[Union[BaseScraper, BaseDirectIngestController]] = None,
+    is_raw_vs_ingest_file_name_detection_enabled: bool = False,
+    are_raw_data_bq_imports_enabled_in_env: bool = False,
+    are_ingest_view_exports_enabled_in_env: bool = False,
+    queue: Optional[Dict[str, Any]] = None,
+    shared_queue: Optional[str] = None,
+    region_module: Optional[ModuleType] = None
+) -> Region:
     """Fake Region Object"""
     region = create_autospec(Region)
     region.region_code = region_code
@@ -46,20 +48,27 @@ def fake_region(*,
     region.environment = environment
     region.jurisdiction_id = jurisdiction_id
     region.region_module = region_module
-    region.get_ingestor.return_value = \
+    region.get_ingestor.return_value = (
         ingestor if ingestor else create_autospec(BaseDirectIngestController)
+    )
 
     def fake_is_launched_in_env():
         return Region.is_ingest_launched_in_env(region)
 
     region.is_ingest_launched_in_env = fake_is_launched_in_env
-    region.is_raw_vs_ingest_file_name_detection_enabled.return_value = is_raw_vs_ingest_file_name_detection_enabled
-    region.are_raw_data_bq_imports_enabled_in_env.return_value = are_raw_data_bq_imports_enabled_in_env
-    region.are_ingest_view_exports_enabled_in_env.return_value = are_ingest_view_exports_enabled_in_env
+    region.is_raw_vs_ingest_file_name_detection_enabled.return_value = (
+        is_raw_vs_ingest_file_name_detection_enabled
+    )
+    region.are_raw_data_bq_imports_enabled_in_env.return_value = (
+        are_raw_data_bq_imports_enabled_in_env
+    )
+    region.are_ingest_view_exports_enabled_in_env.return_value = (
+        are_ingest_view_exports_enabled_in_env
+    )
     region.queue = queue
     region.shared_queue = shared_queue
     return region
 
 
-TEST_STATE_REGION = fake_region(region_code='us_xx', agency_type='prison')
-TEST_COUNTY_REGION = fake_region(region_code='us_xx_yyyyy', agency_type='jail')
+TEST_STATE_REGION = fake_region(region_code="us_xx", agency_type="prison")
+TEST_COUNTY_REGION = fake_region(region_code="us_xx_yyyyy", agency_type="jail")

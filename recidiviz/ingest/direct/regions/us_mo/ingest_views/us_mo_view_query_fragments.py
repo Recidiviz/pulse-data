@@ -17,8 +17,7 @@
 
 """Shared helper fragments for the US_MO ingest view queries."""
 
-INCARCERATION_SUB_SUBCYCLE_SPANS_FRAGMENT = \
-    """
+INCARCERATION_SUB_SUBCYCLE_SPANS_FRAGMENT = """
     status_bw AS (
         SELECT
             *
@@ -176,8 +175,7 @@ INCARCERATION_SUB_SUBCYCLE_SPANS_FRAGMENT = \
     )
     """
 
-STATUSES_BY_DATE_FRAGMENT = \
-    """
+STATUSES_BY_DATE_FRAGMENT = """
     all_scd_codes_by_date AS (
         -- All SCD status codes grouped by DOC, CYC, and SY (Date).
         SELECT
@@ -192,8 +190,7 @@ STATUSES_BY_DATE_FRAGMENT = \
     """
 
 # For use in same query as INCARCERATION_SUB_SUBCYCLE_SPANS_FRAGMENT
-MOST_RECENT_STATUS_UPDATES_FRAGMENT = \
-    """
+MOST_RECENT_STATUS_UPDATES_FRAGMENT = """
     most_recent_status_updates as (
         SELECT
             BW_DOC, BW_CYC,
@@ -203,8 +200,7 @@ MOST_RECENT_STATUS_UPDATES_FRAGMENT = \
     )
     """
 
-NON_INVESTIGATION_SUPERVISION_SENTENCES_FRAGMENT = \
-    """
+NON_INVESTIGATION_SUPERVISION_SENTENCES_FRAGMENT = """
     non_investigation_supervision_sentences_bu AS (
         -- Chooses only probation sentences that are non-investigation (not INV)
         SELECT *
@@ -212,8 +208,7 @@ NON_INVESTIGATION_SUPERVISION_SENTENCES_FRAGMENT = \
         WHERE BU_PBT != 'INV'
     )"""
 
-TAK142_FINALLY_FORMED_DOCUMENT_FRAGMENT = \
-    """
+TAK142_FINALLY_FORMED_DOCUMENT_FRAGMENT = """
         -- Finally formed documents are ones which are no longer in a draft
         -- state.
         SELECT
@@ -231,8 +226,7 @@ TAK142_FINALLY_FORMED_DOCUMENT_FRAGMENT = \
             finally_formed_documents_e6.E6_CYC,
             finally_formed_documents_e6.E6_DOS"""
 
-ALL_OFFICERS_FRAGMENT = \
-    """all_officers AS (
+ALL_OFFICERS_FRAGMENT = """all_officers AS (
         -- Combination of 2 officer tables into one source of truth. Both tables
         -- contain information about different groups of officers. From
         -- conversations with MO contacts, we should use a combination of both

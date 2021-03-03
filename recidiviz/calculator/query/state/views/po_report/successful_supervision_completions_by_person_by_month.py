@@ -22,8 +22,9 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-SUCCESSFUL_SUPERVISION_COMPLETIONS_BY_PERSON_BY_MONTH_VIEW_NAME = \
-    'successful_supervision_completions_by_person_by_month'
+SUCCESSFUL_SUPERVISION_COMPLETIONS_BY_PERSON_BY_MONTH_VIEW_NAME = (
+    "successful_supervision_completions_by_person_by_month"
+)
 
 SUCCESSFUL_SUPERVISION_COMPLETIONS_BY_PERSON_BY_MONTH_DESCRIPTION = """
  Successful supervision completions by person by month.
@@ -32,8 +33,7 @@ SUCCESSFUL_SUPERVISION_COMPLETIONS_BY_PERSON_BY_MONTH_DESCRIPTION = """
 # TODO(#4586): Update all references to "discharges" in the PO report dataset to instead be "successful completions"
 # TODO(#4155): Use the supervision_termination_metrics instead of the raw state_supervision_period table
 # TODO(#4491): Consider using `external_id` instead of `agent_external_id`
-SUCCESSFUL_SUPERVISION_COMPLETIONS_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = \
-    """
+SUCCESSFUL_SUPERVISION_COMPLETIONS_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = """
     /*{description}*/
     WITH supervision_periods AS (
       SELECT
@@ -89,9 +89,9 @@ SUCCESSFUL_SUPERVISION_COMPLETIONS_BY_PERSON_BY_MONTH_VIEW_BUILDER = SimpleBigQu
     view_query_template=SUCCESSFUL_SUPERVISION_COMPLETIONS_BY_PERSON_BY_MONTH_QUERY_TEMPLATE,
     description=SUCCESSFUL_SUPERVISION_COMPLETIONS_BY_PERSON_BY_MONTH_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    state_dataset=dataset_config.STATE_BASE_DATASET
+    state_dataset=dataset_config.STATE_BASE_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         SUCCESSFUL_SUPERVISION_COMPLETIONS_BY_PERSON_BY_MONTH_VIEW_BUILDER.build_and_print()

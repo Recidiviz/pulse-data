@@ -30,18 +30,20 @@ def format_greeting(name: Optional[str]) -> str:
 def format_name(name: str) -> str:
     return name.title()
 
-def format_date(str_date: str, current_format: str = '%Y-%m-%d') -> str:
+
+def format_date(str_date: str, current_format: str = "%Y-%m-%d") -> str:
     date = datetime.strptime(str_date, current_format)
-    return datetime.strftime(date, '%m/%d/%Y')
+    return datetime.strftime(date, "%m/%d/%Y")
+
 
 def format_violation_type(violation_type: str) -> str:
-    violation_types = {
-        'NEW_CRIME': 'New Crime',
-        'TECHNICAL': 'Technical Only'
-    }
+    violation_types = {"NEW_CRIME": "New Crime", "TECHNICAL": "Technical Only"}
     return violation_types[violation_type]
 
-def singular_or_plural(prepared_data: dict, value_key: str, text_key: str, singular: str, plural: str) -> None:
+
+def singular_or_plural(
+    prepared_data: dict, value_key: str, text_key: str, singular: str, plural: str
+) -> None:
     """Sets the text at the given text key in the prepared_data dictionary to either the singular or plural
     copy, based on the value at the provided value key."""
     value = int(prepared_data[value_key])
@@ -92,6 +94,6 @@ def align_columns(rows: List[List]) -> str:
     # Compute column widths by taking maximum length of values per column
     column_widths = [max(len(value) for value in col) for col in columns]
     # Formatter outputs string on the left side, padded to width + 4 characters
-    formatter = ' '.join(['%%-%ds' % (width + 4) for width in column_widths])
+    formatter = " ".join(["%%-%ds" % (width + 4) for width in column_widths])
     # Print each row using the computed format
-    return '\n'.join([formatter % tuple(row) for row in rows])
+    return "\n".join([formatter % tuple(row) for row in rows])

@@ -20,11 +20,16 @@ from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     fn,
     parse_external_id,
-    parse_completion_date)
-from recidiviz.common.str_field_utils import parse_dollars, parse_bool, \
-    parse_days, normalize, parse_date
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings \
-    import EnumMappings
+    parse_completion_date,
+)
+from recidiviz.common.str_field_utils import (
+    parse_dollars,
+    parse_bool,
+    parse_days,
+    normalize,
+    parse_date,
+)
+from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
 
 
 def copy_fields_to_builder(sentence_builder, proto, metadata) -> None:
@@ -36,36 +41,41 @@ def copy_fields_to_builder(sentence_builder, proto, metadata) -> None:
     new = sentence_builder
 
     enum_fields = {
-        'status': SentenceStatus,
+        "status": SentenceStatus,
     }
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 
     # Enum mappings
-    new.status = enum_mappings.get(SentenceStatus,
-                                   default=SentenceStatus.PRESENT_WITHOUT_INFO)
-    new.status_raw_text = fn(normalize, 'status', proto)
+    new.status = enum_mappings.get(
+        SentenceStatus, default=SentenceStatus.PRESENT_WITHOUT_INFO
+    )
+    new.status_raw_text = fn(normalize, "status", proto)
 
     # 1-to-1 mappings
-    new.external_id = fn(parse_external_id, 'sentence_id', proto)
-    new.sentencing_region = fn(normalize, 'sentencing_region', proto)
-    new.min_length_days = fn(parse_days, 'min_length', proto)
-    new.max_length_days = fn(parse_days, 'max_length', proto)
-    new.is_life = fn(parse_bool, 'is_life', proto)
-    new.is_probation = fn(parse_bool, 'is_probation', proto)
-    new.is_suspended = fn(parse_bool, 'is_suspended', proto)
-    new.fine_dollars = fn(parse_dollars, 'fine_dollars', proto)
-    new.parole_possible = fn(parse_bool, 'parole_possible', proto)
-    new.post_release_supervision_length_days = \
-        fn(parse_days, 'post_release_supervision_length', proto)
-    new.date_imposed = fn(parse_date, 'date_imposed', proto)
+    new.external_id = fn(parse_external_id, "sentence_id", proto)
+    new.sentencing_region = fn(normalize, "sentencing_region", proto)
+    new.min_length_days = fn(parse_days, "min_length", proto)
+    new.max_length_days = fn(parse_days, "max_length", proto)
+    new.is_life = fn(parse_bool, "is_life", proto)
+    new.is_probation = fn(parse_bool, "is_probation", proto)
+    new.is_suspended = fn(parse_bool, "is_suspended", proto)
+    new.fine_dollars = fn(parse_dollars, "fine_dollars", proto)
+    new.parole_possible = fn(parse_bool, "parole_possible", proto)
+    new.post_release_supervision_length_days = fn(
+        parse_days, "post_release_supervision_length", proto
+    )
+    new.date_imposed = fn(parse_date, "date_imposed", proto)
     new.completion_date, new.projected_completion_date = parse_completion_date(
-        proto, metadata)
+        proto, metadata
+    )
 
     set_status_if_needed(new)
 
 
 def set_status_if_needed(builder):
     # completion_date is guaranteed to be in the past by parse_completion_date
-    if builder.completion_date and \
-            builder.status is SentenceStatus.PRESENT_WITHOUT_INFO:
+    if (
+        builder.completion_date
+        and builder.status is SentenceStatus.PRESENT_WITHOUT_INFO
+    ):
         builder.status = SentenceStatus.COMPLETED

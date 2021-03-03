@@ -19,13 +19,20 @@ import itertools
 from typing import Sequence
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import \
-    DirectIngestRawDataTableLatestViewCollector
+from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
+    DirectIngestRawDataTableLatestViewCollector,
+)
 
 
-DIRECT_INGEST_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = list(itertools.chain.from_iterable((
-    # This returns a list of DirectIngestRawTableLatestViewBuilder, one per raw table in all regions
-    DirectIngestRawDataTableLatestViewCollector().collect_view_builders(),
-)))
+DIRECT_INGEST_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = list(
+    itertools.chain.from_iterable(
+        (
+            # This returns a list of DirectIngestRawTableLatestViewBuilder, one per raw table in all regions
+            DirectIngestRawDataTableLatestViewCollector().collect_view_builders(),
+        )
+    )
+)
 
-VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = DIRECT_INGEST_VIEW_BUILDERS
+VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[
+    BigQueryViewBuilder
+] = DIRECT_INGEST_VIEW_BUILDERS

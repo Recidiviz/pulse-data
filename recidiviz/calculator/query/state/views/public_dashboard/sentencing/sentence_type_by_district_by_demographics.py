@@ -16,7 +16,7 @@
 # =============================================================================
 """Current incarcerated and supervised population, broken down by sentence type (probation/incarceration),
 judicial district, and demographics."""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import state_specific_query_strings
@@ -24,15 +24,15 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_NAME = 'sentence_type_by_district_by_demographics'
+SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_NAME = (
+    "sentence_type_by_district_by_demographics"
+)
 
-SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_DESCRIPTION = \
-    """Current incarcerated and supervised population, broken down by sentence type (probation/incarceration),
+SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_DESCRIPTION = """Current incarcerated and supervised population, broken down by sentence type (probation/incarceration),
         judicial district, and demographics."""
 
 # TODO(#3720): Improve the sentence type classification and make it less ND specific
-SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
-    """
+SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
     /*{description}*/
     WITH incarceration_population AS (
       SELECT
@@ -107,19 +107,24 @@ SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQueryViewBuild
     dataset_id=dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
     view_id=SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_NAME,
     view_query_template=SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE,
-    dimensions=['state_code', 'district', 'race_or_ethnicity', 'gender', 'age_bucket'],
+    dimensions=["state_code", "district", "race_or_ethnicity", "gender", "age_bucket"],
     description=SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    state_specific_race_or_ethnicity_groupings=
-    state_specific_query_strings.state_specific_race_or_ethnicity_groupings('prioritized_race_or_ethnicity'),
-    unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
-    gender_dimension=bq_utils.unnest_column('gender', 'gender'),
-    age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),
-    district_dimension=
-    bq_utils.unnest_district(
-        state_specific_query_strings.state_specific_judicial_district_groupings('judicial_district_code')),
+    state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(
+        "prioritized_race_or_ethnicity"
+    ),
+    unnested_race_or_ethnicity_dimension=bq_utils.unnest_column(
+        "race_or_ethnicity", "race_or_ethnicity"
+    ),
+    gender_dimension=bq_utils.unnest_column("gender", "gender"),
+    age_dimension=bq_utils.unnest_column("age_bucket", "age_bucket"),
+    district_dimension=bq_utils.unnest_district(
+        state_specific_query_strings.state_specific_judicial_district_groupings(
+            "judicial_district_code"
+        )
+    ),
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_BUILDER.build_and_print()

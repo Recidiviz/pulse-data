@@ -30,17 +30,17 @@ class Recipient:
     # Includes various fields for report rendering
     data: dict = attr.ib(default=attr.Factory(dict))
 
-    def create_derived_recipient(self, new_data: dict) -> 'Recipient':
+    def create_derived_recipient(self, new_data: dict) -> "Recipient":
         """ Return a new Recipient, derived from this instance """
         extended_data = {**self.data, **new_data}
 
         return Recipient.from_report_json(extended_data)
 
     @staticmethod
-    def from_report_json(report_json: dict) -> 'Recipient':
+    def from_report_json(report_json: dict) -> "Recipient":
         return Recipient(
             email_address=report_json[utils.KEY_EMAIL_ADDRESS],
             state_code=report_json[utils.KEY_STATE_CODE],
             district=report_json[utils.KEY_DISTRICT],
-            data=report_json
+            data=report_json,
         )

@@ -16,23 +16,25 @@
 # =============================================================================
 """Supervision population by metric period, broken down by race/ethnicity, where a person is counted towards only
 the race/ethnicity category that is least represented in the population of the state."""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
-from recidiviz.calculator.query.state import dataset_config, state_specific_query_strings
+from recidiviz.calculator.query.state import (
+    dataset_config,
+    state_specific_query_strings,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_NAME = \
-    'supervision_population_by_prioritized_race_and_ethnicity_by_period'
+SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_NAME = (
+    "supervision_population_by_prioritized_race_and_ethnicity_by_period"
+)
 
-SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_DESCRIPTION = \
-    """Supervision population by metric period, broken down by race/ethnicity, where a person is counted towards only
+SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_DESCRIPTION = """Supervision population by metric period, broken down by race/ethnicity, where a person is counted towards only
     the race/ethnicity category that is least represented in the population of the state."""
 
 
-SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_QUERY_TEMPLATE = \
-    """
+SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_QUERY_TEMPLATE = """
     /*{description}*/
 
     SELECT
@@ -55,17 +57,24 @@ SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_BUILDER 
     dataset_id=dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
     view_id=SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_NAME,
     view_query_template=SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_QUERY_TEMPLATE,
-    dimensions=['state_code', 'supervision_type', 'metric_period_months', 'race_or_ethnicity'],
+    dimensions=[
+        "state_code",
+        "supervision_type",
+        "metric_period_months",
+        "race_or_ethnicity",
+    ],
     description=SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     metric_period_condition=bq_utils.metric_period_condition(),
-    unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
-    gender_dimension=bq_utils.unnest_column('gender', 'gender'),
-    age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),
-    state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings()
+    unnested_race_or_ethnicity_dimension=bq_utils.unnest_column(
+        "race_or_ethnicity", "race_or_ethnicity"
+    ),
+    gender_dimension=bq_utils.unnest_column("gender", "gender"),
+    age_dimension=bq_utils.unnest_column("age_bucket", "age_bucket"),
+    state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(),
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_BUILDER.build_and_print()

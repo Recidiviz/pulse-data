@@ -23,71 +23,73 @@ from datetime import datetime
 
 import pytest
 import pytz
-from google.api_core import \
-    datetime_helpers  # pylint: disable=no-name-in-module
+from google.api_core import datetime_helpers  # pylint: disable=no-name-in-module
 from google.cloud.pubsub_v1 import types
 from google.protobuf import timestamp_pb2  # pylint: disable=no-name-in-module
 from mock import Mock, call, patch
 
 from recidiviz.ingest.models.scrape_key import ScrapeKey
-from recidiviz.ingest.scrape import (constants, docket, scrape_phase, sessions,
-                                     tracker)
+from recidiviz.ingest.scrape import constants, docket, scrape_phase, sessions, tracker
 
 
-@patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
+@patch("recidiviz.utils.metadata.project_id", Mock(return_value="test-project"))
 class TestTracker:
     """Tests for the methods in the module."""
 
-    @patch('recidiviz.ingest.scrape.docket.get_new_docket_item')
-    @patch('recidiviz.ingest.scrape.sessions'
-           '.add_docket_item_to_current_session')
+    @patch("recidiviz.ingest.scrape.docket.get_new_docket_item")
+    @patch("recidiviz.ingest.scrape.sessions" ".add_docket_item_to_current_session")
     def test_iterate_docket_item(self, mock_session, mock_docket):
         mock_session.return_value = True
         mock_docket.return_value = create_pubsub_message(get_payload())
 
         payload = tracker.iterate_docket_item(
-            ScrapeKey("us_ny", constants.ScrapeType.BACKGROUND))
+            ScrapeKey("us_ny", constants.ScrapeType.BACKGROUND)
+        )
         assert payload == get_payload()
 
-    @patch('recidiviz.ingest.scrape.docket.get_new_docket_item')
-    @patch('recidiviz.ingest.scrape.sessions'
-           '.add_docket_item_to_current_session')
+    @patch("recidiviz.ingest.scrape.docket.get_new_docket_item")
+    @patch("recidiviz.ingest.scrape.sessions" ".add_docket_item_to_current_session")
     def test_iterate_docket_item_no_open_session_to_update(
-            self, mock_session, mock_docket):
+        self, mock_session, mock_docket
+    ):
         mock_session.return_value = False
         mock_docket.return_value = create_pubsub_message(get_payload())
 
         payload = tracker.iterate_docket_item(
-            ScrapeKey("us_ny", constants.ScrapeType.BACKGROUND))
+            ScrapeKey("us_ny", constants.ScrapeType.BACKGROUND)
+        )
         assert not payload
 
-    @patch('recidiviz.ingest.scrape.docket.get_new_docket_item')
+    @patch("recidiviz.ingest.scrape.docket.get_new_docket_item")
     def test_iterate_docket_item_no_matching_items(self, mock_docket):
         mock_docket.return_value = None
 
         payload = tracker.iterate_docket_item(
-            ScrapeKey("us_fl", constants.ScrapeType.BACKGROUND))
+            ScrapeKey("us_fl", constants.ScrapeType.BACKGROUND)
+        )
         assert not payload
 
-    @patch('recidiviz.ingest.scrape.docket.ack_docket_item')
-    @patch('recidiviz.ingest.scrape.sessions.remove_docket_item_from_session')
-    @patch('recidiviz.ingest.scrape.sessions.get_current_session')
+    @patch("recidiviz.ingest.scrape.docket.ack_docket_item")
+    @patch("recidiviz.ingest.scrape.sessions.remove_docket_item_from_session")
+    @patch("recidiviz.ingest.scrape.sessions.get_current_session")
     def test_remove_item_from_session_and_docket(
-            self, mock_current, mock_remove, mock_ack):
+        self, mock_current, mock_remove, mock_ack
+    ):
         scrape_key = ScrapeKey("us_va", constants.ScrapeType.BACKGROUND)
 
-        mock_current.return_value = 'us_va_1'
-        mock_remove.return_value = 'a'
+        mock_current.return_value = "us_va_1"
+        mock_remove.return_value = "a"
 
         tracker.remove_item_from_session_and_docket(scrape_key)
 
-        mock_ack.assert_called_with(scrape_key, 'a')
+        mock_ack.assert_called_with(scrape_key, "a")
 
-    @patch('recidiviz.ingest.scrape.docket.ack_docket_item')
-    @patch('recidiviz.ingest.scrape.sessions.remove_docket_item_from_session')
-    @patch('recidiviz.ingest.scrape.sessions.get_current_session')
+    @patch("recidiviz.ingest.scrape.docket.ack_docket_item")
+    @patch("recidiviz.ingest.scrape.sessions.remove_docket_item_from_session")
+    @patch("recidiviz.ingest.scrape.sessions.get_current_session")
     def test_remove_item_from_session_and_docket_no_open_sessions(
-            self, mock_current, mock_remove, mock_ack):
+        self, mock_current, mock_remove, mock_ack
+    ):
         scrape_key = ScrapeKey("us_va", constants.ScrapeType.BACKGROUND)
         mock_current.return_value = None
         mock_remove.return_value = None
@@ -96,31 +98,32 @@ class TestTracker:
 
         mock_ack.assert_not_called()
 
-    @patch('recidiviz.ingest.scrape.docket.purge_query_docket')
-    @patch('recidiviz.ingest.scrape.sessions.remove_docket_item_from_session')
-    @patch('recidiviz.ingest.scrape.sessions'
-           '.get_sessions_with_leased_docket_items')
-    def test_purge_docket_and_session(
-            self, mock_sessions, mock_remove, mock_purge):
+    @patch("recidiviz.ingest.scrape.docket.purge_query_docket")
+    @patch("recidiviz.ingest.scrape.sessions.remove_docket_item_from_session")
+    @patch("recidiviz.ingest.scrape.sessions" ".get_sessions_with_leased_docket_items")
+    def test_purge_docket_and_session(self, mock_sessions, mock_remove, mock_purge):
         scrape_key = ScrapeKey("us_va", constants.ScrapeType.BACKGROUND)
-        mock_sessions.return_value = ['us_va_1', 'us_va_2']
+        mock_sessions.return_value = ["us_va_1", "us_va_2"]
 
         tracker.purge_docket_and_session(scrape_key)
 
         mock_purge.assert_called_with(scrape_key)
-        mock_remove.assert_has_calls([call('us_va_1'), call('us_va_2')])
+        mock_remove.assert_has_calls([call("us_va_1"), call("us_va_2")])
 
 
 def get_payload():
-    return [{'name': 'Jacoby, Mackenzie'}, {'name': 'Jacoby, Clementine'}]
+    return [{"name": "Jacoby, Mackenzie"}, {"name": "Jacoby, Clementine"}]
 
 
-PUBLISHED_SECONDS = datetime_helpers.to_milliseconds(
-    datetime(2012, 4, 21, 15, 0, tzinfo=pytz.utc)) // 1000
+PUBLISHED_SECONDS = (
+    datetime_helpers.to_milliseconds(datetime(2012, 4, 21, 15, 0, tzinfo=pytz.utc))
+    // 1000
+)
 
 
-def create_pubsub_message(content, ack_id="ACKID", published=PUBLISHED_SECONDS,
-                          **attrs):
+def create_pubsub_message(
+    content, ack_id="ACKID", published=PUBLISHED_SECONDS, **attrs
+):
     return types.ReceivedMessage(
         message=types.PubsubMessage(
             attributes=attrs,
@@ -132,7 +135,7 @@ def create_pubsub_message(content, ack_id="ACKID", published=PUBLISHED_SECONDS,
     )
 
 
-REGIONS = ['us_ny', 'us_va']
+REGIONS = ["us_ny", "us_va"]
 
 
 @pytest.mark.usefixtures("emulator")
@@ -144,14 +147,15 @@ class TestTrackerIntegration:
     """
 
     def setup_method(self, _test_method):
-        self.project_id_patcher = patch('recidiviz.utils.metadata.project_id')
-        self.project_id_patcher.start().return_value = 'test-project'
+        self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
+        self.project_id_patcher.start().return_value = "test-project"
         self.sessions_to_delete = []
 
     def teardown_method(self, _test_method):
         for region in REGIONS:
             docket.purge_query_docket(
-                ScrapeKey(region, constants.ScrapeType.BACKGROUND))
+                ScrapeKey(region, constants.ScrapeType.BACKGROUND)
+            )
         sessions.ds().delete_multi(self.sessions_to_delete)
         self.project_id_patcher.stop()
 
@@ -202,7 +206,9 @@ class TestTrackerIntegration:
     def create_session(self, scrape_key):
         session = sessions.ScrapeSession.new(
             key=sessions.ds().key(sessions.SCRAPE_SESSION_KIND),
-            region=scrape_key.region_code, scrape_type=scrape_key.scrape_type,
-            phase=scrape_phase.ScrapePhase.START)
+            region=scrape_key.region_code,
+            scrape_type=scrape_key.scrape_type,
+            phase=scrape_phase.ScrapePhase.START,
+        )
         sessions.ds().put(session.to_entity())
         self.sessions_to_delete.append(session.to_entity().key)

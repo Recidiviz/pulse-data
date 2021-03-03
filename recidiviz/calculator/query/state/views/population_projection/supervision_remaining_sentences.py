@@ -15,20 +15,20 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Current total population by compartment, outflow compartment, and months until transition will be made"""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
-from recidiviz.calculator.query.state.dataset_config import POPULATION_PROJECTION_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    POPULATION_PROJECTION_DATASET,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-REMAINING_SENTENCES_VIEW_NAME = 'supervision_remaining_sentences'
+REMAINING_SENTENCES_VIEW_NAME = "supervision_remaining_sentences"
 
-REMAINING_SENTENCES_VIEW_DESCRIPTION = \
-    """"Current supervised total population by compartment, outflow compartment, and months until transition will be made"""
+REMAINING_SENTENCES_VIEW_DESCRIPTION = """"Current supervised total population by compartment, outflow compartment, and months until transition will be made"""
 
-REMAINING_SENTENCES_QUERY_TEMPLATE = \
-    """
+REMAINING_SENTENCES_QUERY_TEMPLATE = """
     WITH supervision_cte AS (
       SELECT
         sessions.state_code,
@@ -91,9 +91,9 @@ SUPERVISION_REMAINING_SENTENCES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=REMAINING_SENTENCES_VIEW_DESCRIPTION,
     analyst_dataset=ANALYST_VIEWS_DATASET,
     population_projection_dataset=POPULATION_PROJECTION_DATASET,
-    should_materialize=False
+    should_materialize=False,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         SUPERVISION_REMAINING_SENTENCES_VIEW_BUILDER.build_and_print()

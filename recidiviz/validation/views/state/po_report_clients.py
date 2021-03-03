@@ -25,15 +25,14 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
-PO_REPORT_CLIENTS_VIEW_NAME = 'po_report_clients'
+PO_REPORT_CLIENTS_VIEW_NAME = "po_report_clients"
 
 PO_REPORT_CLIENTS_DESCRIPTION = """
   A list of officers that have a mismatch between the number of clients listed for a category and the number for that
   category.
 """
 
-PO_REPORT_CLIENTS_QUERY_TEMPLATE = \
-    """
+PO_REPORT_CLIENTS_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT DISTINCT
       state_code as region_code, review_month, email_address, 'pos_discharges_clients-mismatch'
@@ -70,6 +69,6 @@ PO_REPORT_CLIENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     po_report_dataset=state_dataset_config.PO_REPORT_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         PO_REPORT_CLIENTS_VIEW_BUILDER.build_and_print()

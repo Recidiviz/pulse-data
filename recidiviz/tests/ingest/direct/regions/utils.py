@@ -26,7 +26,9 @@ def populate_person_backedges(persons: List[entities.StatePerson]) -> None:
     for person in persons:
         children = get_all_entities_from_tree(person)
         for child in children:
-            if (child is not person
-                    and hasattr(child, 'person')
-                    and getattr(child, 'person', None) is None):
-                child.set_field('person', person)
+            if (
+                child is not person
+                and hasattr(child, "person")
+                and getattr(child, "person", None) is None
+            ):
+                child.set_field("person", person)

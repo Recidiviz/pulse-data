@@ -23,55 +23,60 @@ from recidiviz.common.constants.county.booking import (
     AdmissionReason,
     Classification,
     CustodyStatus,
-    ReleaseReason
+    ReleaseReason,
 )
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.common.fid import validate_fid
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
-    fn, parse_external_id)
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings \
-    import EnumMappings
+    fn,
+    parse_external_id,
+)
+from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
 
 
 def copy_fields_to_builder(booking_builder, proto, metadata):
     """Mutates the provided |booking_builder| by converting an ingest_info proto
-     Booking.
+    Booking.
 
-     Note: This will not copy children into the Builder!
-     """
+    Note: This will not copy children into the Builder!
+    """
     new = booking_builder
 
     enum_fields = {
-        'admission_reason': AdmissionReason,
-        'release_reason': ReleaseReason,
-        'custody_status': CustodyStatus,
-        'classification': Classification,
+        "admission_reason": AdmissionReason,
+        "release_reason": ReleaseReason,
+        "custody_status": CustodyStatus,
+        "classification": Classification,
     }
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 
     # Enum mappings
     new.admission_reason = enum_mappings.get(AdmissionReason)
-    new.admission_reason_raw_text = fn(normalize, 'admission_reason', proto)
+    new.admission_reason_raw_text = fn(normalize, "admission_reason", proto)
     new.release_reason = enum_mappings.get(ReleaseReason)
-    new.release_reason_raw_text = fn(normalize, 'release_reason', proto)
+    new.release_reason_raw_text = fn(normalize, "release_reason", proto)
     new.custody_status = enum_mappings.get(
-        CustodyStatus, default=CustodyStatus.PRESENT_WITHOUT_INFO)
-    new.custody_status_raw_text = fn(normalize, 'custody_status', proto)
+        CustodyStatus, default=CustodyStatus.PRESENT_WITHOUT_INFO
+    )
+    new.custody_status_raw_text = fn(normalize, "custody_status", proto)
     new.classification = enum_mappings.get(Classification)
-    new.classification_raw_text = fn(normalize, 'classification', proto)
+    new.classification_raw_text = fn(normalize, "classification", proto)
 
     # 1-to-1 mappings
-    new.external_id = fn(parse_external_id, 'booking_id', proto)
-    new.projected_release_date = fn(parse_date, 'projected_release_date', proto)
-    new.facility = fn(normalize, 'facility', proto)
-    new.facility_id = fn(validate_fid, 'facility_id', proto,
-                             default=metadata.facility_id)
+    new.external_id = fn(parse_external_id, "booking_id", proto)
+    new.projected_release_date = fn(parse_date, "projected_release_date", proto)
+    new.facility = fn(normalize, "facility", proto)
+    new.facility_id = fn(
+        validate_fid, "facility_id", proto, default=metadata.facility_id
+    )
 
     # Inferred attributes
-    new.admission_date, new.admission_date_inferred = \
-        _parse_admission(proto, metadata)
-    new.release_date, new.projected_release_date, new.release_date_inferred = \
-        _parse_release_date(proto, metadata)
+    new.admission_date, new.admission_date_inferred = _parse_admission(proto, metadata)
+    (
+        new.release_date,
+        new.projected_release_date,
+        new.release_date_inferred,
+    ) = _parse_release_date(proto, metadata)
     _set_custody_status_if_needed(new)
 
     # Metadata
@@ -83,15 +88,13 @@ def copy_fields_to_builder(booking_builder, proto, metadata):
 
 def _set_custody_status_if_needed(new):
     # release_date is guaranteed to be in the past by _parse_release_date
-    if (new.release_date and new.custody_status
-            is CustodyStatus.PRESENT_WITHOUT_INFO):
+    if new.release_date and new.custody_status is CustodyStatus.PRESENT_WITHOUT_INFO:
         new.custody_status = CustodyStatus.RELEASED
 
 
 def _parse_release_date(
-        proto,
-        metadata: IngestMetadata) -> \
-        Tuple[Optional[date], Optional[date], Optional[bool]]:
+    proto, metadata: IngestMetadata
+) -> Tuple[Optional[date], Optional[date], Optional[bool]]:
     """Reads release_date and projected_release_date from |proto|.
 
     If release_date is present on proto, sets release_date_inferred to (False).
@@ -99,8 +102,8 @@ def _parse_release_date(
     If release_date is in the future relative to scrape time, will be treated
     as projected_release_date instead.
     """
-    release_date = fn(parse_date, 'release_date', proto)
-    projected_release_date = fn(parse_date, 'projected_release_date', proto)
+    release_date = fn(parse_date, "release_date", proto)
+    projected_release_date = fn(parse_date, "projected_release_date", proto)
 
     if release_date and release_date > metadata.ingest_time.date():
         projected_release_date = release_date
@@ -112,7 +115,7 @@ def _parse_release_date(
 
 
 def _parse_admission(proto, metadata):
-    admission_date = fn(parse_date, 'admission_date', proto)
+    admission_date = fn(parse_date, "admission_date", proto)
 
     if admission_date is None:
         admission_date = metadata.ingest_time.date()

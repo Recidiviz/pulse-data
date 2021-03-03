@@ -18,14 +18,18 @@
 from typing import List
 
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
-from recidiviz.calculator.query.state.views.dashboard.reincarcerations.average_days_at_liberty_by_month import \
-    AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.dashboard.reincarcerations.reincarceration_rate_by_stay_length import \
-    REINCARCERATION_RATE_BY_STAY_LENGTH_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.dashboard.reincarcerations.reincarcerations_by_month import \
-    REINCARCERATIONS_BY_MONTH_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.dashboard.reincarcerations.reincarcerations_by_period import \
-    REINCARCERATIONS_BY_PERIOD_VIEW_BUILDER
+from recidiviz.calculator.query.state.views.dashboard.reincarcerations.average_days_at_liberty_by_month import (
+    AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.dashboard.reincarcerations.reincarceration_rate_by_stay_length import (
+    REINCARCERATION_RATE_BY_STAY_LENGTH_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.dashboard.reincarcerations.reincarcerations_by_month import (
+    REINCARCERATIONS_BY_MONTH_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.dashboard.reincarcerations.reincarcerations_by_period import (
+    REINCARCERATIONS_BY_PERIOD_VIEW_BUILDER,
+)
 
 REINCARCERATIONS_VIEW_BUILDERS: List[MetricBigQueryViewBuilder] = [
     AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_VIEW_BUILDER,

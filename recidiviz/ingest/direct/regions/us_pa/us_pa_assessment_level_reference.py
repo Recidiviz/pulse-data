@@ -23,23 +23,34 @@ from recidiviz.common.constants.state.state_assessment import StateAssessmentLev
 from recidiviz.common.str_field_utils import parse_int
 from recidiviz.ingest.models.ingest_info import StateAssessment
 
-_DATE_SPECIFIC_ORDERED_LSIR_LEVELS = OrderedDict([
-    (datetime.date(2008, 12, 31), {
-        20: StateAssessmentLevel.LOW,
-        28: StateAssessmentLevel.MEDIUM,
-        54: StateAssessmentLevel.HIGH
-    }),
-    (datetime.date(2014, 12, 3), {
-        17: StateAssessmentLevel.LOW,
-        26: StateAssessmentLevel.MEDIUM,
-        54: StateAssessmentLevel.HIGH
-    }),
-    (datetime.date.max, {
-        19: StateAssessmentLevel.LOW,
-        27: StateAssessmentLevel.MEDIUM,
-        54: StateAssessmentLevel.HIGH
-    })
-])
+_DATE_SPECIFIC_ORDERED_LSIR_LEVELS = OrderedDict(
+    [
+        (
+            datetime.date(2008, 12, 31),
+            {
+                20: StateAssessmentLevel.LOW,
+                28: StateAssessmentLevel.MEDIUM,
+                54: StateAssessmentLevel.HIGH,
+            },
+        ),
+        (
+            datetime.date(2014, 12, 3),
+            {
+                17: StateAssessmentLevel.LOW,
+                26: StateAssessmentLevel.MEDIUM,
+                54: StateAssessmentLevel.HIGH,
+            },
+        ),
+        (
+            datetime.date.max,
+            {
+                19: StateAssessmentLevel.LOW,
+                27: StateAssessmentLevel.MEDIUM,
+                54: StateAssessmentLevel.HIGH,
+            },
+        ),
+    ]
+)
 
 
 def set_date_specific_lsir_fields(assessment: StateAssessment) -> StateAssessment:
@@ -57,12 +68,12 @@ def set_date_specific_lsir_fields(assessment: StateAssessment) -> StateAssessmen
     if assessment_score == 60:
         # This value indicates the scoring was not completed
         assessment.assessment_score = None
-        assessment.assessment_level = 'UNKNOWN (60-ATTEMPTED_INCOMPLETE)'
+        assessment.assessment_level = "UNKNOWN (60-ATTEMPTED_INCOMPLETE)"
     elif assessment_score == 70:
         # This person either refused to be assessed or did not need to be assessed because they chose not to be released
         # onto parole
         assessment.assessment_score = None
-        assessment.assessment_level = 'UNKNOWN (70-REFUSED)'
+        assessment.assessment_level = "UNKNOWN (70-REFUSED)"
     elif assessment_score > 55:
         # Assessment score number is over the max value of 54, and isn't one of the expected special-case
         # codes (60, 70, 55)
@@ -72,10 +83,14 @@ def set_date_specific_lsir_fields(assessment: StateAssessment) -> StateAssessmen
         if assessment_score == 55:
             # This should be treated as a 54
             assessment_score = 54
-            assessment.assessment_score = '54'
+            assessment.assessment_score = "54"
 
         assessment_date_raw = assessment.assessment_date
-        assessment_date = str_field_utils.parse_date(assessment_date_raw) if assessment_date_raw else None
+        assessment_date = (
+            str_field_utils.parse_date(assessment_date_raw)
+            if assessment_date_raw
+            else None
+        )
 
         if not assessment_date:
             # At this point we need a valid assessment_date to determine the date-specific LSIR level
@@ -88,6 +103,8 @@ def set_date_specific_lsir_fields(assessment: StateAssessment) -> StateAssessmen
                         assessment.assessment_level = level.value
                         return assessment
 
-        raise ValueError(f"Unhandled assessment_score {assessment_score} with assessment_date {assessment_date}")
+        raise ValueError(
+            f"Unhandled assessment_score {assessment_score} with assessment_date {assessment_date}"
+        )
 
     return assessment

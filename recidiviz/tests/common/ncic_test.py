@@ -36,41 +36,49 @@ class NcicTest(unittest.TestCase):
         codes = ncic.get_all_codes()
 
         with self.assertRaises(FrozenInstanceError):
-            codes[0].description = 'Bogus description change'
+            codes[0].description = "Bogus description change"
 
     def test_get(self):
-        code = ncic.get('2312')
-        self.assertEqual(code,
-                         NcicCode(ncic_code='2312',
-                                  description='THEFT OF CABLE TV',
-                                  is_violent=False))
+        code = ncic.get("2312")
+        self.assertEqual(
+            code,
+            NcicCode(
+                ncic_code="2312", description="THEFT OF CABLE TV", is_violent=False
+            ),
+        )
 
-        last_code = ncic.get('7399')
-        self.assertEqual(last_code, NcicCode(
-            ncic_code='7399',
-            description='PUBLIC ORDER CRIMES - (FREE TEXT)',
-            is_violent=False))
+        last_code = ncic.get("7399")
+        self.assertEqual(
+            last_code,
+            NcicCode(
+                ncic_code="7399",
+                description="PUBLIC ORDER CRIMES - (FREE TEXT)",
+                is_violent=False,
+            ),
+        )
 
-        first_code = ncic.get('0900')
-        self.assertEqual(first_code, NcicCode(
-            ncic_code='0900',
-            description='HOMICIDE - (FREE TEXT)',
-            is_violent=True))
+        first_code = ncic.get("0900")
+        self.assertEqual(
+            first_code,
+            NcicCode(
+                ncic_code="0900", description="HOMICIDE - (FREE TEXT)", is_violent=True
+            ),
+        )
 
     def test_get_not_found(self):
-        self.assertIsNone(ncic.get('9999'))
+        self.assertIsNone(ncic.get("9999"))
 
     def test_get_description(self):
-        description = ncic.get_description('1313')
-        self.assertEqual(description, 'SIMPLE ASSAULT')
+        description = ncic.get_description("1313")
+        self.assertEqual(description, "SIMPLE ASSAULT")
 
     def test_get_description_not_found(self):
-        self.assertIsNone(ncic.get_description('9999'))
+        self.assertIsNone(ncic.get_description("9999"))
 
     def test_get_is_violent(self):
-        self.assertTrue(ncic.get_is_violent('1317'))
-        self.assertFalse(ncic.get_is_violent('2007'))
-        self.assertIsNotNone(ncic.get_is_violent('2007'))
+        self.assertTrue(ncic.get_is_violent("1317"))
+        self.assertFalse(ncic.get_is_violent("2007"))
+        self.assertIsNotNone(ncic.get_is_violent("2007"))
 
     def test_get_is_violent_not_found(self):
-        self.assertIsNone(ncic.get_is_violent('9999'))
+        self.assertIsNone(ncic.get_is_violent("9999"))

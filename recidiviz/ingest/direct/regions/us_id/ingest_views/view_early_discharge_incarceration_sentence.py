@@ -15,22 +15,27 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Query for early discharges of incarceration sentences."""
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import \
-    DirectIngestPreProcessedIngestViewBuilder
-from recidiviz.ingest.direct.regions.us_id.ingest_views.templates_early_discharge import \
-    early_discharge_view_template, EarlyDischargeType
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    DirectIngestPreProcessedIngestViewBuilder,
+)
+from recidiviz.ingest.direct.regions.us_id.ingest_views.templates_early_discharge import (
+    early_discharge_view_template,
+    EarlyDischargeType,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_QUERY_TEMPLATE = early_discharge_view_template(discharge_type=EarlyDischargeType.INCARCERATION)
-
-VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
-    region='us_id',
-    ingest_view_name='early_discharge_incarceration_sentence',
-    view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols='ofndr_num, early_discharge_id',
+VIEW_QUERY_TEMPLATE = early_discharge_view_template(
+    discharge_type=EarlyDischargeType.INCARCERATION
 )
 
-if __name__ == '__main__':
+VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
+    region="us_id",
+    ingest_view_name="early_discharge_incarceration_sentence",
+    view_query_template=VIEW_QUERY_TEMPLATE,
+    order_by_cols="ofndr_num, early_discharge_id",
+)
+
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         VIEW_BUILDER.build_and_print()

@@ -28,6 +28,6 @@ from recidiviz.ingest.models.model_utils import date_converter_or_today
 @attr.s(frozen=True)
 class ScraperSuccess:
     """Scraper success model"""
+
     # Date, or today
-    date: datetime.date = attr.ib(default=None,
-                                  converter=date_converter_or_today)
+    date: datetime.date = attr.ib(default=None, converter=date_converter_or_today)

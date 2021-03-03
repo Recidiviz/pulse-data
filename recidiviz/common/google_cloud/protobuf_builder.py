@@ -19,7 +19,7 @@ from typing import TypeVar, Generic, Type, Any
 
 from google.protobuf.message import Message
 
-ProtoType = TypeVar('ProtoType', bound=Message)
+ProtoType = TypeVar("ProtoType", bound=Message)
 
 
 class ProtobufBuilder(Generic[ProtoType]):
@@ -44,13 +44,13 @@ class ProtobufBuilder(Generic[ProtoType]):
         self.proto_cls: Type[ProtoType] = proto_cls
         self.proto: ProtoType = proto_cls()
 
-    def update_args(self, **kwargs: Any) -> 'ProtobufBuilder[ProtoType]':
+    def update_args(self, **kwargs: Any) -> "ProtobufBuilder[ProtoType]":
         """Update proto message with provided args. If args already exist, will
         overwrite with these values.
         """
         return self.compose(self.proto_cls(**kwargs))
 
-    def compose(self, other_proto: ProtoType) -> 'ProtobufBuilder[ProtoType]':
+    def compose(self, other_proto: ProtoType) -> "ProtobufBuilder[ProtoType]":
         """Compose proto message object into the proto being built by this
         builder.
         """

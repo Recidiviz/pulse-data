@@ -21,8 +21,13 @@ import os
 import unittest
 
 from recidiviz.ingest.direct import regions
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration import DeleteFromRawTableMigration, \
-    UpdateRawTableMigration, RawTableMigration, RAW_TABLE_MIGRATION_FILE_PREFIX, UPDATE_DATETIME_AGNOSTIC_DATETIME
+from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration import (
+    DeleteFromRawTableMigration,
+    UpdateRawTableMigration,
+    RawTableMigration,
+    RAW_TABLE_MIGRATION_FILE_PREFIX,
+    UPDATE_DATETIME_AGNOSTIC_DATETIME,
+)
 from recidiviz.utils.metadata import local_project_id_override
 
 _DATE_1 = datetime.datetime(2020, 4, 14, 0, 31, 0)
@@ -33,185 +38,165 @@ class TestDirectIngestRawTableMigration(unittest.TestCase):
     """Tests for classes in direct_ingest_raw_table_migration.py."""
 
     def setUp(self) -> None:
-        self.region_code = 'us_xx'
+        self.region_code = "us_xx"
 
     def _migration_file_path_for_tag(self, raw_file_tag: str) -> str:
-        return os.path.join(os.path.dirname(regions.__file__),
-                            self.region_code, 'raw_data', 'migrations',
-                            f'{RAW_TABLE_MIGRATION_FILE_PREFIX}{raw_file_tag}.py')
+        return os.path.join(
+            os.path.dirname(regions.__file__),
+            self.region_code,
+            "raw_data",
+            "migrations",
+            f"{RAW_TABLE_MIGRATION_FILE_PREFIX}{raw_file_tag}.py",
+        )
 
     def test_delete_migration(self) -> None:
         migration = DeleteFromRawTableMigration(
-            migrations_file=self._migration_file_path_for_tag('tagC'),
-            update_datetime_filters=[
-                _DATE_1
-            ],
-            filters=[('COL1', '31415')]
+            migrations_file=self._migration_file_path_for_tag("tagC"),
+            update_datetime_filters=[_DATE_1],
+            filters=[("COL1", "31415")],
         )
-        with local_project_id_override('recidiviz-456'):
+        with local_project_id_override("recidiviz-456"):
             project_1_query_map = migration.migration_queries_by_update_datetime()
 
-        with local_project_id_override('recidiviz-789'):
+        with local_project_id_override("recidiviz-789"):
             project_2_query_map = migration.migration_queries_by_update_datetime()
 
         expected_query_map = {
             _DATE_1: "DELETE FROM `recidiviz-456.us_xx_raw_data.tagC` "
-                     "WHERE COL1 = '31415' AND update_datetime = '2020-04-14T00:31:00';"
+            "WHERE COL1 = '31415' AND update_datetime = '2020-04-14T00:31:00';"
         }
         self.assertEqual(expected_query_map, project_1_query_map)
 
         expected_query_map = {
             _DATE_1: "DELETE FROM `recidiviz-789.us_xx_raw_data.tagC` "
-                     "WHERE COL1 = '31415' AND update_datetime = '2020-04-14T00:31:00';"
+            "WHERE COL1 = '31415' AND update_datetime = '2020-04-14T00:31:00';"
         }
         self.assertEqual(expected_query_map, project_2_query_map)
 
     def test_delete_migration_multiple_filters_and_dates(self) -> None:
         migration = DeleteFromRawTableMigration(
-            migrations_file=self._migration_file_path_for_tag('file_tag_first'),
-            update_datetime_filters=[
-                _DATE_1,
-                _DATE_2
-            ],
-            filters=[('col_name_1a', '31415'), ('col_name_1b', '45678')]
+            migrations_file=self._migration_file_path_for_tag("file_tag_first"),
+            update_datetime_filters=[_DATE_1, _DATE_2],
+            filters=[("col_name_1a", "31415"), ("col_name_1b", "45678")],
         )
-        with local_project_id_override('recidiviz-456'):
+        with local_project_id_override("recidiviz-456"):
             query_map = migration.migration_queries_by_update_datetime()
 
         expected_query_map = {
             _DATE_1: "DELETE FROM `recidiviz-456.us_xx_raw_data.file_tag_first` "
-                     "WHERE col_name_1a = '31415' AND col_name_1b = '45678' "
-                     "AND update_datetime = '2020-04-14T00:31:00';",
+            "WHERE col_name_1a = '31415' AND col_name_1b = '45678' "
+            "AND update_datetime = '2020-04-14T00:31:00';",
             _DATE_2: "DELETE FROM `recidiviz-456.us_xx_raw_data.file_tag_first` "
-                     "WHERE col_name_1a = '31415' AND col_name_1b = '45678' "
-                     "AND update_datetime = '2020-08-16T01:02:03';",
+            "WHERE col_name_1a = '31415' AND col_name_1b = '45678' "
+            "AND update_datetime = '2020-08-16T01:02:03';",
         }
         self.assertEqual(expected_query_map, query_map)
 
     def test_delete_migration_update_datetime_agnostic(self) -> None:
         migration = DeleteFromRawTableMigration(
-            migrations_file=self._migration_file_path_for_tag('tagC'),
+            migrations_file=self._migration_file_path_for_tag("tagC"),
             update_datetime_filters=None,
-            filters=[('COL1', '31415')]
+            filters=[("COL1", "31415")],
         )
-        with local_project_id_override('recidiviz-456'):
+        with local_project_id_override("recidiviz-456"):
             project_1_query_map = migration.migration_queries_by_update_datetime()
 
-        with local_project_id_override('recidiviz-789'):
+        with local_project_id_override("recidiviz-789"):
             project_2_query_map = migration.migration_queries_by_update_datetime()
 
         expected_query_map = {
-            UPDATE_DATETIME_AGNOSTIC_DATETIME: "DELETE FROM `recidiviz-456.us_xx_raw_data.tagC` "
-                                               "WHERE COL1 = '31415';"
+            UPDATE_DATETIME_AGNOSTIC_DATETIME: """DELETE FROM `recidiviz-456.us_xx_raw_data.tagC` WHERE COL1 = '31415';"""
         }
         self.assertEqual(expected_query_map, project_1_query_map)
 
         expected_query_map = {
-            UPDATE_DATETIME_AGNOSTIC_DATETIME: "DELETE FROM `recidiviz-789.us_xx_raw_data.tagC` "
-                                               "WHERE COL1 = '31415';"
+            UPDATE_DATETIME_AGNOSTIC_DATETIME: """DELETE FROM `recidiviz-789.us_xx_raw_data.tagC` WHERE COL1 = '31415';"""
         }
         self.assertEqual(expected_query_map, project_2_query_map)
 
     def test_update_migration(self) -> None:
         migration = UpdateRawTableMigration(
-            migrations_file=self._migration_file_path_for_tag('tagC'),
+            migrations_file=self._migration_file_path_for_tag("tagC"),
             update_datetime_filters=[
                 _DATE_2,
             ],
-            filters=[('COL1', '31415')],
-            updates=[('COL1', '91011')]
+            filters=[("COL1", "31415")],
+            updates=[("COL1", "91011")],
         )
-        with local_project_id_override('recidiviz-456'):
+        with local_project_id_override("recidiviz-456"):
             project_1_query_map = migration.migration_queries_by_update_datetime()
 
-        with local_project_id_override('recidiviz-789'):
+        with local_project_id_override("recidiviz-789"):
             project_2_query_map = migration.migration_queries_by_update_datetime()
 
         expected_query_map = {
-            _DATE_2: "UPDATE `recidiviz-456.us_xx_raw_data.tagC` SET COL1 = '91011' "
-                     "WHERE COL1 = '31415' AND update_datetime = '2020-08-16T01:02:03';"
+            _DATE_2: """UPDATE `recidiviz-456.us_xx_raw_data.tagC` SET COL1 = '91011' WHERE COL1 = '31415' AND update_datetime = '2020-08-16T01:02:03';"""
         }
         self.assertEqual(expected_query_map, project_1_query_map)
 
         expected_query_map = {
-            _DATE_2: "UPDATE `recidiviz-789.us_xx_raw_data.tagC` SET COL1 = '91011' "
-                     "WHERE COL1 = '31415' AND update_datetime = '2020-08-16T01:02:03';"
+            _DATE_2: """UPDATE `recidiviz-789.us_xx_raw_data.tagC` SET COL1 = '91011' WHERE COL1 = '31415' AND update_datetime = '2020-08-16T01:02:03';"""
         }
         self.assertEqual(expected_query_map, project_2_query_map)
 
     def test_update_migration_multiples(self) -> None:
         migration = UpdateRawTableMigration(
-            migrations_file=self._migration_file_path_for_tag('file_tag_first'),
-            update_datetime_filters=[
-                _DATE_1,
-                _DATE_2
-            ],
-            filters=[('col_name_1a', '12345'), ('col_name_1b', '4567')],
-            updates=[('col_name_1a', '4567'), ('col_name_1b', '12345')]
+            migrations_file=self._migration_file_path_for_tag("file_tag_first"),
+            update_datetime_filters=[_DATE_1, _DATE_2],
+            filters=[("col_name_1a", "12345"), ("col_name_1b", "4567")],
+            updates=[("col_name_1a", "4567"), ("col_name_1b", "12345")],
         )
-        with local_project_id_override('recidiviz-456'):
+        with local_project_id_override("recidiviz-456"):
             query_map = migration.migration_queries_by_update_datetime()
 
         expected_query_map = {
-            _DATE_1: "UPDATE `recidiviz-456.us_xx_raw_data.file_tag_first` "
-                     "SET col_name_1a = '4567', col_name_1b = '12345' "
-                     "WHERE col_name_1a = '12345' AND col_name_1b = '4567' "
-                     "AND update_datetime = '2020-04-14T00:31:00';",
-
-            _DATE_2: "UPDATE `recidiviz-456.us_xx_raw_data.file_tag_first` "
-                     "SET col_name_1a = '4567', col_name_1b = '12345' "
-                     "WHERE col_name_1a = '12345' AND col_name_1b = '4567' "
-                     "AND update_datetime = '2020-08-16T01:02:03';"
+            _DATE_1: """UPDATE `recidiviz-456.us_xx_raw_data.file_tag_first` SET col_name_1a = '4567', col_name_1b = '12345' WHERE col_name_1a = '12345' AND col_name_1b = '4567' AND update_datetime = '2020-04-14T00:31:00';""",
+            _DATE_2: """UPDATE `recidiviz-456.us_xx_raw_data.file_tag_first` SET col_name_1a = '4567', col_name_1b = '12345' WHERE col_name_1a = '12345' AND col_name_1b = '4567' AND update_datetime = '2020-08-16T01:02:03';""",
         }
         self.assertEqual(expected_query_map, query_map)
 
     def test_update_migration_update_datetime_agnostic(self) -> None:
         migration = UpdateRawTableMigration(
-            migrations_file=self._migration_file_path_for_tag('tagC'),
+            migrations_file=self._migration_file_path_for_tag("tagC"),
             update_datetime_filters=None,
-            filters=[('COL1', '31415')],
-            updates=[('COL1', '91011')]
+            filters=[("COL1", "31415")],
+            updates=[("COL1", "91011")],
         )
-        with local_project_id_override('recidiviz-456'):
+        with local_project_id_override("recidiviz-456"):
             project_1_query_map = migration.migration_queries_by_update_datetime()
 
-        with local_project_id_override('recidiviz-789'):
+        with local_project_id_override("recidiviz-789"):
             project_2_query_map = migration.migration_queries_by_update_datetime()
 
         expected_query_map = {
-            UPDATE_DATETIME_AGNOSTIC_DATETIME: "UPDATE `recidiviz-456.us_xx_raw_data.tagC` SET COL1 = '91011' "
-                                               "WHERE COL1 = '31415';"
+            UPDATE_DATETIME_AGNOSTIC_DATETIME: "UPDATE `recidiviz-456.us_xx_raw_data.tagC` SET COL1 = '91011' WHERE COL1 = '31415';"
         }
         self.assertEqual(expected_query_map, project_1_query_map)
 
         expected_query_map = {
-            UPDATE_DATETIME_AGNOSTIC_DATETIME: "UPDATE `recidiviz-789.us_xx_raw_data.tagC` SET COL1 = '91011' "
-                                               "WHERE COL1 = '31415';"
+            UPDATE_DATETIME_AGNOSTIC_DATETIME: "UPDATE `recidiviz-789.us_xx_raw_data.tagC` SET COL1 = '91011' WHERE COL1 = '31415';"
         }
         self.assertEqual(expected_query_map, project_2_query_map)
 
     def test_print_migrations(self) -> None:
-        migrations_file = self._migration_file_path_for_tag('tagC')
+        migrations_file = self._migration_file_path_for_tag("tagC")
 
         migrations = [
             DeleteFromRawTableMigration(
                 migrations_file=migrations_file,
-                update_datetime_filters=[
-                    _DATE_1,
-                    _DATE_2
-                ],
-                filters=[('COL1', '31415')]
+                update_datetime_filters=[_DATE_1, _DATE_2],
+                filters=[("COL1", "31415")],
             ),
             UpdateRawTableMigration(
                 migrations_file=migrations_file,
                 update_datetime_filters=[
                     _DATE_1,
                 ],
-                filters=[('COL1', '31415')],
-                updates=[('COL1', '91011')]
-            )
+                filters=[("COL1", "31415")],
+                updates=[("COL1", "91011")],
+            ),
         ]
 
         # Shouldn't crash
-        with local_project_id_override('recidiviz-456'):
+        with local_project_id_override("recidiviz-456"):
             RawTableMigration.print_list(migrations)

@@ -19,17 +19,19 @@
 
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.common.jid import validate_jid
-from recidiviz.ingest.models.scraper_success import ScraperSuccess as \
-    ScraperSuccessModel
-from recidiviz.persistence.database.schema.county.schema import \
-    ScraperSuccess as ScraperSuccessEntry
-from recidiviz.persistence.database.schema_utils import \
-    schema_base_for_system_level
+from recidiviz.ingest.models.scraper_success import (
+    ScraperSuccess as ScraperSuccessModel,
+)
+from recidiviz.persistence.database.schema.county.schema import (
+    ScraperSuccess as ScraperSuccessEntry,
+)
+from recidiviz.persistence.database.schema_utils import schema_base_for_system_level
 from recidiviz.persistence.database.session_factory import SessionFactory
 
 
-def store_scraper_success(scraper_success: ScraperSuccessModel,
-                          jurisdiction_id: str) -> bool:
+def store_scraper_success(
+    scraper_success: ScraperSuccessModel, jurisdiction_id: str
+) -> bool:
     """Store a scraper success event"""
 
     jurisdiction_id = validate_jid(jurisdiction_id)
@@ -40,7 +42,8 @@ def store_scraper_success(scraper_success: ScraperSuccessModel,
     )
 
     session = SessionFactory.for_schema_base(
-        schema_base_for_system_level(SystemLevel.COUNTY))
+        schema_base_for_system_level(SystemLevel.COUNTY)
+    )
     session.add(ss)
     session.commit()
 

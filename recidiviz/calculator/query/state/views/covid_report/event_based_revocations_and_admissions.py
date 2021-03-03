@@ -15,21 +15,25 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Event Based Revocations and New Admissions."""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config, state_specific_query_strings
+from recidiviz.calculator.query.state import (
+    dataset_config,
+    state_specific_query_strings,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-EVENT_BASED_REVOCATIONS_AND_ADMISSIONS_VIEW_NAME = 'event_based_revocations_and_admissions'
+EVENT_BASED_REVOCATIONS_AND_ADMISSIONS_VIEW_NAME = (
+    "event_based_revocations_and_admissions"
+)
 
 EVENT_BASED_REVOCATIONS_AND_ADMISSIONS_DESCRIPTION = """
  New admissions and supervision revocations for the COVID report
  """
 
-EVENT_BASED_REVOCATIONS_AND_ADMISSIONS_QUERY_TEMPLATE = \
-    """
+EVENT_BASED_REVOCATIONS_AND_ADMISSIONS_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT DISTINCT * FROM (
       -- Take all new admissions, except those to CPP in US_ND
@@ -59,9 +63,9 @@ EVENT_BASED_REVOCATIONS_AND_ADMISSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=EVENT_BASED_REVOCATIONS_AND_ADMISSIONS_QUERY_TEMPLATE,
     description=EVENT_BASED_REVOCATIONS_AND_ADMISSIONS_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    state_specific_facility_exclusion=state_specific_query_strings.state_specific_facility_exclusion()
+    state_specific_facility_exclusion=state_specific_query_strings.state_specific_facility_exclusion(),
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         EVENT_BASED_REVOCATIONS_AND_ADMISSIONS_VIEW_BUILDER.build_and_print()

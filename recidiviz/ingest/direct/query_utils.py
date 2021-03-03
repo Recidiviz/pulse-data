@@ -18,11 +18,15 @@
 import os
 from typing import List, Tuple, Optional, Set
 
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import DirectIngestRegionRawFileConfig, \
-    DirectIngestRawFileConfig
+from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
+    DirectIngestRegionRawFileConfig,
+    DirectIngestRawFileConfig,
+)
 
 
-def output_sql_queries(query_name_to_query_list: List[Tuple[str, str]], dir_path: Optional[str] = None) -> None:
+def output_sql_queries(
+    query_name_to_query_list: List[Tuple[str, str]], dir_path: Optional[str] = None
+) -> None:
     """If |dir_path| is unspecified, prints the provided |query_name_to_query_list| to the console. Otherwise
     writes the provided |query_name_to_query_list| to the specified |dir_path|.
     """
@@ -32,20 +36,24 @@ def output_sql_queries(query_name_to_query_list: List[Tuple[str, str]], dir_path
         _write_all_queries_to_files(dir_path, query_name_to_query_list)
 
 
-def _write_all_queries_to_files(dir_path: str, query_name_to_query_list: List[Tuple[str, str]]) -> None:
+def _write_all_queries_to_files(
+    dir_path: str, query_name_to_query_list: List[Tuple[str, str]]
+) -> None:
     """Writes the provided queries to files in the provided path."""
     if not os.path.exists(dir_path):
         os.mkdir(dir_path)
 
     for query_name, query_str in query_name_to_query_list:
-        with open(os.path.join(dir_path, f'{query_name}.sql'), 'w') as output_path:
+        with open(os.path.join(dir_path, f"{query_name}.sql"), "w") as output_path:
             output_path.write(query_str)
 
 
-def _print_all_queries_to_console(query_name_to_query_list: List[Tuple[str, str]]) -> None:
+def _print_all_queries_to_console(
+    query_name_to_query_list: List[Tuple[str, str]]
+) -> None:
     """Prints all the provided queries onto the console."""
     for query_name, query_str in query_name_to_query_list:
-        print(f'\n\n/* {query_name.upper()} */\n')
+        print(f"\n\n/* {query_name.upper()} */\n")
         print(query_str)
 
 
@@ -56,13 +64,16 @@ def get_region_raw_file_config(region_code: str) -> DirectIngestRegionRawFileCon
     region_code_lower = region_code.lower()
     global _RAW_TABLE_CONFIGS_BY_STATE
     if region_code_lower not in _RAW_TABLE_CONFIGS_BY_STATE:
-        _RAW_TABLE_CONFIGS_BY_STATE[region_code_lower] = DirectIngestRegionRawFileConfig(region_code_lower)
+        _RAW_TABLE_CONFIGS_BY_STATE[
+            region_code_lower
+        ] = DirectIngestRegionRawFileConfig(region_code_lower)
 
     return _RAW_TABLE_CONFIGS_BY_STATE[region_code_lower]
 
 
-def get_raw_table_config(region_code: str,
-                         raw_table_name: str) -> DirectIngestRawFileConfig:
+def get_raw_table_config(
+    region_code: str, raw_table_name: str
+) -> DirectIngestRawFileConfig:
     return get_region_raw_file_config(region_code).raw_file_configs[raw_table_name]
 
 

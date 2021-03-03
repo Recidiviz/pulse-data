@@ -16,24 +16,26 @@
 # =============================================================================
 """US_ND specific enum helper methods."""
 
-from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodStatus
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodStatus,
+)
 
 
 def incarceration_period_status_mapper(label: str) -> StateIncarcerationPeriodStatus:
     """Parses the custody status from a string containing the external movement edge direction and active flag."""
 
     # TODO(#2865): Update enum normalization so that we separate by a dash instead of spaces
-    direction_code, active_flag = label.split(' ')
+    direction_code, active_flag = label.split(" ")
 
-    if direction_code == 'OUT':
+    if direction_code == "OUT":
         return StateIncarcerationPeriodStatus.NOT_IN_CUSTODY
 
-    if direction_code == 'IN':
-        if active_flag == 'Y':
+    if direction_code == "IN":
+        if active_flag == "Y":
             return StateIncarcerationPeriodStatus.IN_CUSTODY
-        if active_flag == 'N':
+        if active_flag == "N":
             # If the active flag is 'N' we know that the person has left this period of custody, even if the table
             # happens to be missing an OUT edge.
             return StateIncarcerationPeriodStatus.NOT_IN_CUSTODY
 
-    raise ValueError(f'Unexpected incarceration period raw text value [{label}]')
+    raise ValueError(f"Unexpected incarceration period raw text value [{label}]")

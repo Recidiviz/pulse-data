@@ -26,10 +26,11 @@ from recidiviz.persistence.entity.core_entity import CoreEntity
 @attr.s(eq=False)
 class Entity(CoreEntity):
     """Base class for all entity types."""
+
     # Consider Entity abstract and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is Entity:
-            raise Exception('Abstract class cannot be instantiated')
+            raise Exception("Abstract class cannot be instantiated")
         return super().__new__(cls)
 
     def __eq__(self, other):
@@ -43,7 +44,7 @@ class ExternalIdEntity(Entity):
     # Consider Entity abstract and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is ExternalIdEntity:
-            raise Exception('Abstract class cannot be instantiated')
+            raise Exception("Abstract class cannot be instantiated")
         return super().__new__(cls)
 
 
@@ -52,10 +53,11 @@ def _default_should_ignore_field_cb(_: Type, __: str) -> bool:
 
 
 def entity_graph_eq(
-        e1: Optional['Entity'],
-        e2: Optional['Entity'],
-        should_ignore_field_cb: Callable[[Type, str], bool] =
-        _default_should_ignore_field_cb
+    e1: Optional["Entity"],
+    e2: Optional["Entity"],
+    should_ignore_field_cb: Callable[
+        [Type, str], bool
+    ] = _default_should_ignore_field_cb,
 ) -> bool:
     """
     Checks for deep equality between two Entity objects, properly graph
@@ -74,10 +76,10 @@ def entity_graph_eq(
 
 
 def _entity_graph_eq(
-        e1: Optional['Entity'],
-        e2: Optional['Entity'],
-        should_ignore_field_cb: Callable[[Type, str], bool],
-        matching_objects_map: Dict[int, int],
+    e1: Optional["Entity"],
+    e2: Optional["Entity"],
+    should_ignore_field_cb: Callable[[Type, str], bool],
+    matching_objects_map: Dict[int, int],
 ) -> bool:
     """
     Recursive helper for checking deep equality of an Entity graph.
@@ -116,16 +118,13 @@ def _entity_graph_eq(
         value2 = getattr(e2, field)
 
         if isinstance(value1, list):
-            is_match = _entity_graph_list_eq(value1,
-                                             value2,
-                                             should_ignore_field_cb,
-                                             matching_objects_map)
+            is_match = _entity_graph_list_eq(
+                value1, value2, should_ignore_field_cb, matching_objects_map
+            )
         elif isinstance(value1, Entity):
-            is_match = \
-                _entity_graph_entity_eq_check_seen(value1,
-                                                   value2,
-                                                   should_ignore_field_cb,
-                                                   matching_objects_map)
+            is_match = _entity_graph_entity_eq_check_seen(
+                value1, value2, should_ignore_field_cb, matching_objects_map
+            )
         else:
             is_match = value1 == value2
 
@@ -139,10 +138,10 @@ def _entity_graph_eq(
 
 
 def _entity_graph_list_eq(
-        entity_list_1: List['Entity'],
-        entity_list_2: List['Entity'],
-        should_ignore_field_cb: Callable[[Type, str], bool],
-        matching_objects_map: Dict[int, int],
+    entity_list_1: List["Entity"],
+    entity_list_2: List["Entity"],
+    should_ignore_field_cb: Callable[[Type, str], bool],
+    matching_objects_map: Dict[int, int],
 ):
     """Recursive helper for checking deep equality of two list fields in an
     entity graph. Ignores differences in list order.
@@ -169,13 +168,16 @@ def _entity_graph_list_eq(
         child1 = entity_list_1_copy.pop(0)
 
         if id(child1) in matching_objects_map:
-            child2_list = [child2 for child2 in entity_list_2_copy
-                           if id(child2) == matching_objects_map[id(child1)]]
+            child2_list = [
+                child2
+                for child2 in entity_list_2_copy
+                if id(child2) == matching_objects_map[id(child1)]
+            ]
             child2 = child2_list[0] if child2_list else None
         else:
             child2 = _find_match_in_entity_list(
-                child1, entity_list_2_copy,
-                should_ignore_field_cb, matching_objects_map)
+                child1, entity_list_2_copy, should_ignore_field_cb, matching_objects_map
+            )
 
         if not child2:
             return False
@@ -186,8 +188,8 @@ def _entity_graph_list_eq(
 
 
 def _remove_entity_from_list_with_id(
-        e1: 'Entity',
-        entity_list: List['Entity'],
+    e1: "Entity",
+    entity_list: List["Entity"],
 ):
     matches = [i for i, e2 in enumerate(entity_list) if id(e1) == id(e2)]
     if matches:
@@ -195,10 +197,10 @@ def _remove_entity_from_list_with_id(
 
 
 def _entity_graph_entity_eq_check_seen(
-        e1: 'Entity',
-        e2: 'Entity',
-        should_ignore_field_cb: Callable[[Type, str], bool],
-        matching_objects_map: Dict[int, int]
+    e1: "Entity",
+    e2: "Entity",
+    should_ignore_field_cb: Callable[[Type, str], bool],
+    matching_objects_map: Dict[int, int],
 ) -> bool:
     """Recursive helper for checking deep equality of two entity fields, which
     will avoid a recursive call if this object pairing has already been seen.
@@ -221,17 +223,15 @@ def _entity_graph_entity_eq_check_seen(
         return id(e2) == matching_objects_map[id(e1)]
 
     # We haven't seen this object yet, check equality normally.
-    return _entity_graph_eq(e1, e2,
-                            should_ignore_field_cb,
-                            matching_objects_map)
+    return _entity_graph_eq(e1, e2, should_ignore_field_cb, matching_objects_map)
 
 
 def _find_match_in_entity_list(
-        e1: 'Entity',
-        entity_list: List['Entity'],
-        should_ignore_field_cb: Callable[[Type, str], bool],
-        matching_objects_map: Dict[int, int],
-) -> Optional['Entity']:
+    e1: "Entity",
+    entity_list: List["Entity"],
+    should_ignore_field_cb: Callable[[Type, str], bool],
+    matching_objects_map: Dict[int, int],
+) -> Optional["Entity"]:
     """Returns the entity in |entity_list| that is equal to |e1|, or None if no
     match found.
 
@@ -256,22 +256,19 @@ def _find_match_in_entity_list(
             # be equal.
             continue
 
-        if _entity_graph_eq(
-                e1,
-                e2,
-                should_ignore_field_cb,
-                matching_objects_map):
+        if _entity_graph_eq(e1, e2, should_ignore_field_cb, matching_objects_map):
             return e2
 
     return None
 
 
-def _eq_shallow_id(entity: 'Entity',
-                   should_ignore_field_cb: Callable[[Type, str], bool]) -> str:
+def _eq_shallow_id(
+    entity: "Entity", should_ignore_field_cb: Callable[[Type, str], bool]
+) -> str:
     """Generates a string id for an entity that is used to optimize equality
     checks between entities - if the shallow ids don't match, then the entities
     are definitely not equal."""
-    id_parts = [f'{type(entity)}']
+    id_parts = [f"{type(entity)}"]
     for field in attr.fields_dict(type(entity)).keys():
         if should_ignore_field_cb(type(entity), field):
             continue
@@ -284,8 +281,8 @@ def _eq_shallow_id(entity: 'Entity',
             # object ids for comparison here (id(entity)) because we're
             # comparing two different graphs that have different object
             # instances.
-            id_parts.append(f'{field}:{v is None}')
+            id_parts.append(f"{field}:{v is None}")
         else:
-            id_parts.append(f'{field}:{v}')
+            id_parts.append(f"{field}:{v}")
 
-    return ', '.join(id_parts)
+    return ", ".join(id_parts)

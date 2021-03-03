@@ -17,22 +17,28 @@
 
 """Converts an ingest_info proto StateAssessment to a persistence entity."""
 
-from recidiviz.common.constants.state.state_assessment import \
-    StateAssessmentClass, StateAssessmentType, StateAssessmentLevel
+from recidiviz.common.constants.state.state_assessment import (
+    StateAssessmentClass,
+    StateAssessmentType,
+    StateAssessmentLevel,
+)
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.common.str_field_utils import parse_date, normalize, parse_int
 from recidiviz.ingest.models.ingest_info_pb2 import StateAssessment
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.utils.converter_utils import \
-    fn, parse_external_id, parse_region_code_with_override
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import \
-    EnumMappings
+from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
+    fn,
+    parse_external_id,
+    parse_region_code_with_override,
+)
+from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
 
 
 def copy_fields_to_builder(
-        state_assessment_builder: entities.StateAssessment.Builder,
-        proto: StateAssessment,
-        metadata: IngestMetadata) -> None:
+    state_assessment_builder: entities.StateAssessment.Builder,
+    proto: StateAssessment,
+    metadata: IngestMetadata,
+) -> None:
     """Mutates the provided |state_assessment_builder| by converting an
     ingest_info proto StateAssessment.
 
@@ -42,24 +48,23 @@ def copy_fields_to_builder(
     new = state_assessment_builder
 
     enum_fields = {
-        'assessment_class': StateAssessmentClass,
-        'assessment_type': StateAssessmentType,
-        'assessment_level': StateAssessmentLevel,
+        "assessment_class": StateAssessmentClass,
+        "assessment_type": StateAssessmentType,
+        "assessment_level": StateAssessmentLevel,
     }
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 
     # Enum mappings
     new.assessment_class = enum_mappings.get(StateAssessmentClass)
-    new.assessment_class_raw_text = fn(normalize, 'assessment_class', proto)
+    new.assessment_class_raw_text = fn(normalize, "assessment_class", proto)
     new.assessment_type = enum_mappings.get(StateAssessmentType)
-    new.assessment_type_raw_text = fn(normalize, 'assessment_type', proto)
+    new.assessment_type_raw_text = fn(normalize, "assessment_type", proto)
     new.assessment_level = enum_mappings.get(StateAssessmentLevel)
-    new.assessment_level_raw_text = fn(normalize, 'assessment_level', proto)
+    new.assessment_level_raw_text = fn(normalize, "assessment_level", proto)
 
     # 1-to-1 mappings
-    new.external_id = fn(parse_external_id, 'state_assessment_id', proto)
-    new.assessment_date = fn(parse_date, 'assessment_date', proto)
-    new.state_code = parse_region_code_with_override(
-        proto, 'state_code', metadata)
-    new.assessment_score = fn(parse_int, 'assessment_score', proto)
-    new.assessment_metadata = fn(normalize, 'assessment_metadata', proto)
+    new.external_id = fn(parse_external_id, "state_assessment_id", proto)
+    new.assessment_date = fn(parse_date, "assessment_date", proto)
+    new.state_code = parse_region_code_with_override(proto, "state_code", metadata)
+    new.assessment_score = fn(parse_int, "assessment_score", proto)
+    new.assessment_metadata = fn(normalize, "assessment_metadata", proto)

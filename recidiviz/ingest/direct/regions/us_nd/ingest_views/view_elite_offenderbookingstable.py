@@ -16,8 +16,9 @@
 # =============================================================================
 """Query containing offender bookings table information."""
 
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import \
-    DirectIngestPreProcessedIngestViewBuilder
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    DirectIngestPreProcessedIngestViewBuilder,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -28,12 +29,12 @@ WHERE OFFENDER_BOOK_ID IS NOT NULL AND ROOT_OFFENDER_ID IS NOT NULL
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
-    region='us_nd',
-    ingest_view_name='elite_offenderbookingstable',
+    region="us_nd",
+    ingest_view_name="elite_offenderbookingstable",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols='OFFENDER_BOOK_ID',
+    order_by_cols="OFFENDER_BOOK_ID",
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         VIEW_BUILDER.build_and_print()

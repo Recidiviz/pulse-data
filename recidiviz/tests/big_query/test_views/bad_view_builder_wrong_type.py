@@ -16,4 +16,4 @@
 # =============================================================================
 """A test view builder file for big_query_view_collector_test.py"""
 
-VIEW_BUILDER = 'this should be an instance of BigQueryViewBuilder, not str'
+VIEW_BUILDER = "this should be an instance of BigQueryViewBuilder, not str"

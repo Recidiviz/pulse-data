@@ -24,33 +24,39 @@ import attr
 
 # Date Parsing
 
+
 def snake_case_datetime(dt: datetime.datetime) -> str:
     """Converts a datetime to snake case format, e.g '2020_05_17_10_31_08_693498'. Friendly for BQ table names or cloud
     task ids."""
-    return dt.strftime('%Y_%m_%d_%H_%M_%S_%f')
+    return dt.strftime("%Y_%m_%d_%H_%M_%S_%f")
 
 
 def munge_date_string(date_string: str) -> str:
     """Transforms the input date string so it can be parsed, if necessary"""
-    date_string = re.sub(r'\b00:00\s*[Aa][Mm]\b', '12:00 AM', date_string)
+    date_string = re.sub(r"\b00:00\s*[Aa][Mm]\b", "12:00 AM", date_string)
     return re.sub(
-        r'^((?P<year>-?\d+)y)?\s*((?P<month>-?\d+)m)?\s*((?P<day>-?\d+)d)?$',
-        _date_component_match, date_string, flags=re.IGNORECASE)
+        r"^((?P<year>-?\d+)y)?\s*((?P<month>-?\d+)m)?\s*((?P<day>-?\d+)d)?$",
+        _date_component_match,
+        date_string,
+        flags=re.IGNORECASE,
+    )
 
 
 def _date_component_match(match: re.Match) -> str:
     components = []
 
-    if match.group('year'):
-        components.append('{year}year'.format(year=match.group('year')))
-    if match.group('month'):
-        components.append('{month}month'.format(month=match.group('month')))
-    if match.group('day'):
-        components.append('{day}day'.format(day=match.group('day')))
+    if match.group("year"):
+        components.append("{year}year".format(year=match.group("year")))
+    if match.group("month"):
+        components.append("{month}month".format(month=match.group("month")))
+    if match.group("day"):
+        components.append("{day}day".format(day=match.group("day")))
 
-    return ' '.join(components)
+    return " ".join(components)
+
 
 # Date Manipulation
+
 
 def year_and_month_for_today() -> Tuple[int, int]:
     """Returns the year and month of today's date."""
@@ -109,42 +115,54 @@ class DateRange:
         return months_range_overlaps
 
     @classmethod
-    def for_year_of_date(cls, date: datetime.date) -> 'DateRange':
+    def for_year_of_date(cls, date: datetime.date) -> "DateRange":
         return cls.for_year(date.year)
 
     @classmethod
-    def for_year(cls, year: int) -> 'DateRange':
+    def for_year(cls, year: int) -> "DateRange":
         start_of_year = datetime.date(year, 1, 1)
         start_of_next_year = first_day_of_next_year(start_of_year)
 
-        return cls(lower_bound_inclusive_date=start_of_year, upper_bound_exclusive_date=start_of_next_year)
+        return cls(
+            lower_bound_inclusive_date=start_of_year,
+            upper_bound_exclusive_date=start_of_next_year,
+        )
 
     @classmethod
-    def for_month_of_date(cls, date: datetime.date) -> 'DateRange':
+    def for_month_of_date(cls, date: datetime.date) -> "DateRange":
         return cls.for_month(date.year, date.month)
 
     @classmethod
-    def for_month(cls, year: int, month: int) -> 'DateRange':
+    def for_month(cls, year: int, month: int) -> "DateRange":
         start_of_month = datetime.date(year, month, 1)
         start_of_next_month = first_day_of_next_month(start_of_month)
 
-        return cls(lower_bound_inclusive_date=start_of_month, upper_bound_exclusive_date=start_of_next_month)
+        return cls(
+            lower_bound_inclusive_date=start_of_month,
+            upper_bound_exclusive_date=start_of_next_month,
+        )
 
     @classmethod
-    def for_day(cls, date: datetime.date) -> 'DateRange':
+    def for_day(cls, date: datetime.date) -> "DateRange":
         return cls(date, date + datetime.timedelta(days=1))
 
     @classmethod
-    def from_maybe_open_range(cls, start_date: datetime.date, end_date: Optional[datetime.date]) -> 'DateRange':
+    def from_maybe_open_range(
+        cls, start_date: datetime.date, end_date: Optional[datetime.date]
+    ) -> "DateRange":
         return cls(start_date, date_or_tomorrow(end_date))
 
-    def portion_overlapping_with_month(self, year: int, month: int) -> Optional['DateRange']:
+    def portion_overlapping_with_month(
+        self, year: int, month: int
+    ) -> Optional["DateRange"]:
         month_range = DateRange.for_month(year, month)
         return DateRangeDiff(range_1=self, range_2=month_range).overlapping_range
 
     def contains_day(self, day: datetime.date) -> bool:
         day_range = self.for_day(day)
-        overlapping_range = DateRangeDiff(range_1=day_range, range_2=self).overlapping_range
+        overlapping_range = DateRangeDiff(
+            range_1=day_range, range_2=self
+        ).overlapping_range
         return overlapping_range is not None
 
 
@@ -152,8 +170,10 @@ class DateRange:
 class NonNegativeDateRange(DateRange):
     def __attrs_post_init__(self) -> None:
         if self.lower_bound_inclusive_date > self.upper_bound_exclusive_date:
-            raise ValueError(f"Parsed date has to be in chronological order. "
-                             f"Current order: {self.lower_bound_inclusive_date}, {self.upper_bound_exclusive_date}")
+            raise ValueError(
+                f"Parsed date has to be in chronological order. "
+                f"Current order: {self.lower_bound_inclusive_date}, {self.upper_bound_exclusive_date}"
+            )
 
 
 @attr.s
@@ -166,36 +186,46 @@ class DateRangeDiff:
     # Date range that is shared between the two ranges
     @property
     def overlapping_range(self) -> Optional[DateRange]:
-        lower_bound_inclusive_date = max(self.range_1.lower_bound_inclusive_date,
-                                         self.range_2.lower_bound_inclusive_date)
-        upper_bound_exclusive_date = min(self.range_1.upper_bound_exclusive_date,
-                                         self.range_2.upper_bound_exclusive_date)
+        lower_bound_inclusive_date = max(
+            self.range_1.lower_bound_inclusive_date,
+            self.range_2.lower_bound_inclusive_date,
+        )
+        upper_bound_exclusive_date = min(
+            self.range_1.upper_bound_exclusive_date,
+            self.range_2.upper_bound_exclusive_date,
+        )
 
         if upper_bound_exclusive_date <= lower_bound_inclusive_date:
             return None
 
         return DateRange(
             lower_bound_inclusive_date=lower_bound_inclusive_date,
-            upper_bound_exclusive_date=upper_bound_exclusive_date
+            upper_bound_exclusive_date=upper_bound_exclusive_date,
         )
 
     # Date ranges in range_1 that do not overlap with range_2
     @property
     def range_1_non_overlapping_parts(self) -> List[DateRange]:
         parts = []
-        if self.range_1.lower_bound_inclusive_date < self.range_2.lower_bound_inclusive_date:
+        if (
+            self.range_1.lower_bound_inclusive_date
+            < self.range_2.lower_bound_inclusive_date
+        ):
             parts.append(
                 DateRange(
                     lower_bound_inclusive_date=self.range_1.lower_bound_inclusive_date,
-                    upper_bound_exclusive_date=self.range_2.lower_bound_inclusive_date
+                    upper_bound_exclusive_date=self.range_2.lower_bound_inclusive_date,
                 )
             )
 
-        if self.range_1.upper_bound_exclusive_date > self.range_2.upper_bound_exclusive_date:
+        if (
+            self.range_1.upper_bound_exclusive_date
+            > self.range_2.upper_bound_exclusive_date
+        ):
             parts.append(
                 DateRange(
                     lower_bound_inclusive_date=self.range_2.upper_bound_exclusive_date,
-                    upper_bound_exclusive_date=self.range_1.upper_bound_exclusive_date
+                    upper_bound_exclusive_date=self.range_1.upper_bound_exclusive_date,
                 )
             )
         return parts
@@ -204,19 +234,25 @@ class DateRangeDiff:
     @property
     def range_2_non_overlapping_parts(self) -> List[DateRange]:
         parts = []
-        if self.range_2.lower_bound_inclusive_date < self.range_1.lower_bound_inclusive_date:
+        if (
+            self.range_2.lower_bound_inclusive_date
+            < self.range_1.lower_bound_inclusive_date
+        ):
             parts.append(
                 DateRange(
                     lower_bound_inclusive_date=self.range_2.lower_bound_inclusive_date,
-                    upper_bound_exclusive_date=self.range_1.lower_bound_inclusive_date
+                    upper_bound_exclusive_date=self.range_1.lower_bound_inclusive_date,
                 )
             )
 
-        if self.range_2.upper_bound_exclusive_date > self.range_1.upper_bound_exclusive_date:
+        if (
+            self.range_2.upper_bound_exclusive_date
+            > self.range_1.upper_bound_exclusive_date
+        ):
             parts.append(
                 DateRange(
                     lower_bound_inclusive_date=self.range_1.upper_bound_exclusive_date,
-                    upper_bound_exclusive_date=self.range_2.upper_bound_exclusive_date
+                    upper_bound_exclusive_date=self.range_2.upper_bound_exclusive_date,
                 )
             )
         return parts

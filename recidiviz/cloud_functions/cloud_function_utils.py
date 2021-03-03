@@ -38,19 +38,21 @@ from oauth2client.client import GoogleCredentials
 
 
 IAP_CLIENT_ID = {
-    'recidiviz-staging': ('984160736970-flbivauv2l7sccjsppe34p7436l6890m.apps.'
-                          'googleusercontent.com'),
-    'recidiviz-123': ('688733534196-uol4tvqcb345md66joje9gfgm26ufqj6.apps.'
-                      'googleusercontent.com'),
+    "recidiviz-staging": (
+        "984160736970-flbivauv2l7sccjsppe34p7436l6890m.apps." "googleusercontent.com"
+    ),
+    "recidiviz-123": (
+        "688733534196-uol4tvqcb345md66joje9gfgm26ufqj6.apps." "googleusercontent.com"
+    ),
 }
 
-GCP_PROJECT_ID_KEY = 'GCP_PROJECT'
+GCP_PROJECT_ID_KEY = "GCP_PROJECT"
 
-_IAM_SCOPE = 'https://www.googleapis.com/auth/iam'
-_OAUTH_TOKEN_URI = 'https://www.googleapis.com/oauth2/v4/token'
+_IAM_SCOPE = "https://www.googleapis.com/auth/iam"
+_OAUTH_TOKEN_URI = "https://www.googleapis.com/oauth2/v4/token"
 _STATE_DIRECT_INGEST_BUCKET_REGEX = re.compile(
-    r'(recidiviz-staging|recidiviz-123)-direct-ingest-state-'
-    r'([a-z]+-[a-z]+)$')
+    r"(recidiviz-staging|recidiviz-123)-direct-ingest-state-" r"([a-z]+-[a-z]+)$"
+)
 
 # Value to be passed to the GCSFileSystem cache_timeout to indicate that we
 # should not cache.
@@ -59,7 +61,7 @@ GCSFS_NO_CACHING = -1
 # pylint: disable=protected-access
 
 
-def make_iap_request(url: str, client_id: str, method='GET', **kwargs):
+def make_iap_request(url: str, client_id: str, method="GET", **kwargs):
     """Makes a request to an application protected by Identity-Aware Proxy.
 
     Args:
@@ -76,20 +78,18 @@ def make_iap_request(url: str, client_id: str, method='GET', **kwargs):
     # Figure out what environment we're running in and get some preliminary
     # information about the service account.
     bootstrap_credentials, _ = google.auth.default(scopes=[_IAM_SCOPE])
-    if isinstance(bootstrap_credentials,
-                  google.oauth2.credentials.Credentials):
-        raise Exception('make_iap_request is only supported for service '
-                        'accounts.')
+    if isinstance(bootstrap_credentials, google.oauth2.credentials.Credentials):
+        raise Exception("make_iap_request is only supported for service " "accounts.")
 
     # For service accounts using the Compute Engine metadata service,
     # service_account_email isn't available until refresh is called.
     bootstrap_credentials.refresh(Request())
 
     signer_email = bootstrap_credentials.service_account_email
-    if isinstance(bootstrap_credentials,
-                  google.auth.compute_engine.credentials.Credentials):
-        signer = google.auth.iam.Signer(
-            Request(), bootstrap_credentials, signer_email)
+    if isinstance(
+        bootstrap_credentials, google.auth.compute_engine.credentials.Credentials
+    ):
+        signer = google.auth.iam.Signer(Request(), bootstrap_credentials, signer_email)
     else:
         # A Signer object can sign a JWT using the service accounts key.
         signer = bootstrap_credentials.signer
@@ -97,89 +97,105 @@ def make_iap_request(url: str, client_id: str, method='GET', **kwargs):
     # Construct OAuth 2.0 service account credentials using the signer
     # and email acquired from the bootstrap credentials.
     service_account_credentials = google.oauth2.service_account.Credentials(
-        signer, signer_email, token_uri=_OAUTH_TOKEN_URI, additional_claims={
-            'target_audience': client_id
-        })
+        signer,
+        signer_email,
+        token_uri=_OAUTH_TOKEN_URI,
+        additional_claims={"target_audience": client_id},
+    )
 
     # service_account_credentials gives us a JWT signed by the service
     # account. Next, we use that to obtain an OpenID Connect token,
     # which is a JWT signed by Google.
     google_open_id_connect_token = get_google_open_id_connect_token(
-        service_account_credentials)
+        service_account_credentials
+    )
 
     # Fetch the Identity-Aware Proxy-protected URL, including an
     # Authorization header containing "Bearer " followed by a
     # Google-issued OpenID Connect token for the service account.
     response = requests.request(
-        method, url,
-        headers={'Authorization': 'Bearer {}'.format(
-            google_open_id_connect_token)}, **kwargs)
+        method,
+        url,
+        headers={"Authorization": "Bearer {}".format(google_open_id_connect_token)},
+        **kwargs,
+    )
     if response.status_code == 403:
-        raise Exception('Service account {} does not have permission to '
-                        'access the IAP-protected application.'.format(
-                            signer_email))
+        raise Exception(
+            "Service account {} does not have permission to "
+            "access the IAP-protected application.".format(signer_email)
+        )
     if response.status_code != 200:
         raise Exception(
-            'Bad response from application: {!r} / {!r} / {!r}'.format(
-                response.status_code, response.headers, response.text))
+            "Bad response from application: {!r} / {!r} / {!r}".format(
+                response.status_code, response.headers, response.text
+            )
+        )
     return response
 
 
-def trigger_dataflow_job_from_template(project_id: str, bucket: str,
-                                       template: str, job_name: str,
-                                       location: str):
+def trigger_dataflow_job_from_template(
+    project_id: str, bucket: str, template: str, job_name: str, location: str
+):
     """Trigger the Dataflow job at the given template location and execute it
     with the given `job_name`."""
     credentials = GoogleCredentials.get_application_default()
-    service = build('dataflow', 'v1b3', credentials=credentials)
+    service = build("dataflow", "v1b3", credentials=credentials)
 
     body = {
         "jobName": "{job_name}".format(job_name=job_name),
         "gcsPath": "gs://{bucket}/templates/{template}".format(
-            bucket=bucket, template=template),
+            bucket=bucket, template=template
+        ),
         "environment": {
             "tempLocation": "gs://{bucket}/temp".format(bucket=bucket),
-        }
+        },
     }
 
-    request = service.projects().locations().templates().create(
-        projectId=project_id, body=body, location=location)
+    request = (
+        service.projects()
+        .locations()
+        .templates()
+        .create(projectId=project_id, body=body, location=location)
+    )
     response = request.execute()
     return response
 
 
 def get_google_open_id_connect_token(
-        service_account_credentials: google.oauth2.credentials.Credentials):
-    """Get an OpenID Connect token issued by Google for the service account.
-    """
+    service_account_credentials: google.oauth2.credentials.Credentials,
+):
+    """Get an OpenID Connect token issued by Google for the service account."""
 
     service_account_jwt = (
-        service_account_credentials._make_authorization_grant_assertion())
+        service_account_credentials._make_authorization_grant_assertion()
+    )
     request = google.auth.transport.requests.Request()
     body = {
-        'assertion': service_account_jwt,
-        'grant_type': google.oauth2._client._JWT_GRANT_TYPE,
+        "assertion": service_account_jwt,
+        "grant_type": google.oauth2._client._JWT_GRANT_TYPE,
     }
     token_response = google.oauth2._client._token_endpoint_request(
-        request, _OAUTH_TOKEN_URI, body)
-    return token_response['id_token']
+        request, _OAUTH_TOKEN_URI, body
+    )
+    return token_response["id_token"]
 
 
 def get_state_region_code_from_direct_ingest_bucket(bucket) -> Optional[str]:
-    match_obj: Optional[Match] = \
-        re.match(_STATE_DIRECT_INGEST_BUCKET_REGEX, bucket)
+    match_obj: Optional[Match] = re.match(_STATE_DIRECT_INGEST_BUCKET_REGEX, bucket)
     if match_obj is None:
         return None
 
     region_code_match = match_obj.groups()[1]  # Object at index 0 is project_id
-    return region_code_match.replace('-', '_')
+    return region_code_match.replace("-", "_")
 
 
 def get_dataflow_template_bucket(project_id: str) -> str:
-    return f'{project_id}-dataflow-templates'
+    return f"{project_id}-dataflow-templates"
 
 
-def build_query_param_string(request_params: dict, accepted_query_params: List[str]) -> str:
+def build_query_param_string(
+    request_params: dict, accepted_query_params: List[str]
+) -> str:
     """Given a dict of request params from the CF event JSON, it returns a query string for a URL endpoint for the
     request params that are included in the `accepted_query_params` list.
     If the param value is a list, it will add a query param for each value in the list.
@@ -188,11 +204,13 @@ def build_query_param_string(request_params: dict, accepted_query_params: List[s
     query_tuples = []
     for param_key, param_value in request_params.items():
         if param_key not in accepted_query_params:
-            raise KeyError(f"Unexpected key in request: [{param_key}]. "
-                           f"Expected one of the following: {accepted_query_params}")
+            raise KeyError(
+                f"Unexpected key in request: [{param_key}]. "
+                f"Expected one of the following: {accepted_query_params}"
+            )
         if isinstance(param_value, list):
             for val in param_value:
                 query_tuples.append((param_key, val))
         if isinstance(param_value, str):
             query_tuples.append((param_key, param_value))
-    return f'?{urllib.parse.urlencode(query_tuples)}'
+    return f"?{urllib.parse.urlencode(query_tuples)}"

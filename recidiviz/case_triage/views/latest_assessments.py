@@ -20,7 +20,9 @@ TODO(#5769): Move next_assessment_date to the calculation pipeline directly.
 TODO(#5809): Output the assessment score in the calculation pipeline directly.
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_MATERIALIZED_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    DATAFLOW_METRICS_MATERIALIZED_DATASET,
+)
 from recidiviz.case_triage.views.dataset_config import VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -69,11 +71,11 @@ USING (person_id, state_code, assessment_date, external_id)
 
 LATEST_ASSESSMENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=VIEWS_DATASET,
-    view_id='latest_assessments',
+    view_id="latest_assessments",
     view_query_template=LATEST_ASSESSMENTS_QUERY_VIEW,
     dataflow_metrics_materialized_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         LATEST_ASSESSMENTS_VIEW_BUILDER.build_and_print()

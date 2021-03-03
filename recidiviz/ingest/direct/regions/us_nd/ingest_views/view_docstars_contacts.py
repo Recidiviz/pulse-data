@@ -19,8 +19,9 @@
    TODO(#5057): Update description once we ingest contact codes 2 - 6.
    NOTE: This is only capturing contacts logged by the supervising officer."""
 
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import \
-    DirectIngestPreProcessedIngestViewBuilder
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    DirectIngestPreProcessedIngestViewBuilder,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -70,12 +71,12 @@ SELECT
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
-    region='us_nd',
-    ingest_view_name='docstars_contacts',
+    region="us_nd",
+    ingest_view_name="docstars_contacts",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols='SID',
+    order_by_cols="SID",
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         VIEW_BUILDER.build_and_print()

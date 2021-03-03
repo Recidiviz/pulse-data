@@ -15,22 +15,23 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Event based supervision population for the most recent date of supervision."""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-MOST_RECENT_DAILY_SUPERVISION_POPULATION_VIEW_NAME = \
-    'most_recent_daily_supervision_population'
+MOST_RECENT_DAILY_SUPERVISION_POPULATION_VIEW_NAME = (
+    "most_recent_daily_supervision_population"
+)
 
-MOST_RECENT_DAILY_SUPERVISION_POPULATION_DESCRIPTION = \
+MOST_RECENT_DAILY_SUPERVISION_POPULATION_DESCRIPTION = (
     """Event based supervision population for the most recent date of supervision."""
+)
 
 
 # TODO(#5461): Move most_recent_daily joins to dataflow_metrics_materialized
-MOST_RECENT_DAILY_SUPERVISION_POPULATION_QUERY_TEMPLATE = \
-    """
+MOST_RECENT_DAILY_SUPERVISION_POPULATION_QUERY_TEMPLATE = """
     /*{description}*/
     WITH most_recent_job_id AS (
       SELECT
@@ -73,6 +74,6 @@ MOST_RECENT_DAILY_SUPERVISION_POPULATION_VIEW_BUILDER = SimpleBigQueryViewBuilde
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         MOST_RECENT_DAILY_SUPERVISION_POPULATION_VIEW_BUILDER.build_and_print()

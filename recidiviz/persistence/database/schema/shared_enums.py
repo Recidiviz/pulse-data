@@ -31,65 +31,79 @@ import recidiviz.common.constants.enum_canonical_strings as enum_strings
 
 # Person/StatePerson
 
-gender = Enum(enum_strings.external_unknown,
-              enum_strings.gender_female,
-              enum_strings.gender_male,
-              enum_strings.gender_other,
-              enum_strings.gender_trans,
-              enum_strings.gender_trans_female,
-              enum_strings.gender_trans_male,
-              name='gender')
+gender = Enum(
+    enum_strings.external_unknown,
+    enum_strings.gender_female,
+    enum_strings.gender_male,
+    enum_strings.gender_other,
+    enum_strings.gender_trans,
+    enum_strings.gender_trans_female,
+    enum_strings.gender_trans_male,
+    name="gender",
+)
 
-race = Enum(enum_strings.race_american_indian,
-            enum_strings.race_asian,
-            enum_strings.race_black,
-            enum_strings.external_unknown,
-            enum_strings.race_hawaiian,
-            enum_strings.race_other,
-            enum_strings.race_white,
-            name='race')
+race = Enum(
+    enum_strings.race_american_indian,
+    enum_strings.race_asian,
+    enum_strings.race_black,
+    enum_strings.external_unknown,
+    enum_strings.race_hawaiian,
+    enum_strings.race_other,
+    enum_strings.race_white,
+    name="race",
+)
 
-ethnicity = Enum(enum_strings.external_unknown,
-                 enum_strings.ethnicity_hispanic,
-                 enum_strings.ethnicity_not_hispanic,
-                 name='ethnicity')
+ethnicity = Enum(
+    enum_strings.external_unknown,
+    enum_strings.ethnicity_hispanic,
+    enum_strings.ethnicity_not_hispanic,
+    name="ethnicity",
+)
 
-residency_status = Enum(enum_strings.residency_status_homeless,
-                        enum_strings.residency_status_permanent,
-                        enum_strings.residency_status_transient,
-                        name='residency_status')
+residency_status = Enum(
+    enum_strings.residency_status_homeless,
+    enum_strings.residency_status_permanent,
+    enum_strings.residency_status_transient,
+    name="residency_status",
+)
 
 
 # Bond
 
-bond_type = Enum(enum_strings.bond_type_cash,
-                 enum_strings.external_unknown,
-                 enum_strings.bond_type_denied,
-                 enum_strings.bond_type_not_required,
-                 enum_strings.bond_type_partial_cash,
-                 enum_strings.bond_type_secured,
-                 enum_strings.bond_type_unsecured,
-                 name='bond_type')
+bond_type = Enum(
+    enum_strings.bond_type_cash,
+    enum_strings.external_unknown,
+    enum_strings.bond_type_denied,
+    enum_strings.bond_type_not_required,
+    enum_strings.bond_type_partial_cash,
+    enum_strings.bond_type_secured,
+    enum_strings.bond_type_unsecured,
+    name="bond_type",
+)
 
-bond_status = Enum(enum_strings.bond_status_pending,
-                   enum_strings.bond_status_posted,
-                   enum_strings.present_without_info,
-                   enum_strings.removed_without_info,
-                   enum_strings.bond_status_revoked,
-                   enum_strings.bond_status_set,
-                   name='bond_status')
+bond_status = Enum(
+    enum_strings.bond_status_pending,
+    enum_strings.bond_status_posted,
+    enum_strings.present_without_info,
+    enum_strings.removed_without_info,
+    enum_strings.bond_status_revoked,
+    enum_strings.bond_status_set,
+    name="bond_status",
+)
 
 # Charge
 
-charge_status = Enum(enum_strings.charge_status_acquitted,
-                     enum_strings.charge_status_completed,
-                     enum_strings.charge_status_convicted,
-                     enum_strings.charge_status_dropped,
-                     enum_strings.charge_status_inferred_dropped,
-                     enum_strings.external_unknown,
-                     enum_strings.charge_status_pending,
-                     enum_strings.charge_status_pretrial,
-                     enum_strings.charge_status_sentenced,
-                     enum_strings.present_without_info,
-                     enum_strings.removed_without_info,
-                     name='charge_status')
+charge_status = Enum(
+    enum_strings.charge_status_acquitted,
+    enum_strings.charge_status_completed,
+    enum_strings.charge_status_convicted,
+    enum_strings.charge_status_dropped,
+    enum_strings.charge_status_inferred_dropped,
+    enum_strings.external_unknown,
+    enum_strings.charge_status_pending,
+    enum_strings.charge_status_pretrial,
+    enum_strings.charge_status_sentenced,
+    enum_strings.present_without_info,
+    enum_strings.removed_without_info,
+    name="charge_status",
+)

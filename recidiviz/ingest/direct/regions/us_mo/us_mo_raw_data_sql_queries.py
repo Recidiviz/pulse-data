@@ -30,22 +30,19 @@ julian_format_lower_bound_update_date = 0
 # M?MDDYY e.g. January 1, 2016 --> 10116; November 2, 1982 --> 110282;
 mmddyy_format_lower_bound_update_date = 0
 
-FOCTEST_ORAS_ASSESSMENTS_WEEKLY = \
-    """
+FOCTEST_ORAS_ASSESSMENTS_WEEKLY = """
     SELECT *
     FROM
         FOCTEST.ORAS_ASSESSMENTS_WEEKLY;
     """
 
-LANTERN_DA_RA_LIST = \
-    """
+LANTERN_DA_RA_LIST = """
     SELECT *
     FROM
         LANTERN.DA_RA_LIST;
     """
 
-LBAKRCOD_TAK146 = \
-    f"""
+LBAKRCOD_TAK146 = f"""
     SELECT *
     FROM
         LBAKRCOD.TAK146
@@ -54,8 +51,7 @@ LBAKRCOD_TAK146 = \
             COALESCE(FH$DCR, 0)) >= {julian_format_lower_bound_update_date};
     """
 
-LBAKRDTA_TAK001 = \
-    f"""
+LBAKRDTA_TAK001 = f"""
     SELECT *
     FROM
         LBAKRDTA.TAK001
@@ -64,8 +60,7 @@ LBAKRDTA_TAK001 = \
             COALESCE(EK$DCR, 0)) >= {julian_format_lower_bound_update_date};
     """
 
-LBAKRDTA_TAK022 = \
-    f"""
+LBAKRDTA_TAK022 = f"""
     SELECT *
     FROM
         LBAKRDTA.TAK022
@@ -74,8 +69,7 @@ LBAKRDTA_TAK022 = \
             COALESCE(BS$DCR, 0)) >= {julian_format_lower_bound_update_date};
     """
 
-LBAKRDTA_TAK023 = \
-    f"""
+LBAKRDTA_TAK023 = f"""
     SELECT *
     FROM
         LBAKRDTA.TAK023
@@ -84,8 +78,7 @@ LBAKRDTA_TAK023 = \
             COALESCE(BT$DCR, 0)) >= {julian_format_lower_bound_update_date};
     """
 
-LBAKRDTA_TAK024 = \
-    f"""
+LBAKRDTA_TAK024 = f"""
     SELECT *
     FROM
         LBAKRDTA.TAK024
@@ -94,8 +87,7 @@ LBAKRDTA_TAK024 = \
             COALESCE(BU$DCR, 0)) >= {julian_format_lower_bound_update_date};
     """
 
-LBAKRDTA_TAK025 = \
-    f"""
+LBAKRDTA_TAK025 = f"""
     SELECT *
     FROM
         LBAKRDTA.TAK025
@@ -104,8 +96,7 @@ LBAKRDTA_TAK025 = \
             COALESCE(BV$DCR, 0)) >= {julian_format_lower_bound_update_date};
     """
 
-LBAKRDTA_TAK026 = \
-    f"""
+LBAKRDTA_TAK026 = f"""
     SELECT *
     FROM
         LBAKRDTA.TAK026
@@ -114,8 +105,7 @@ LBAKRDTA_TAK026 = \
             COALESCE(BW$DCR, 0)) >= {julian_format_lower_bound_update_date};
     """
 
-LBAKRDTA_TAK028 = \
-    f"""
+LBAKRDTA_TAK028 = f"""
     SELECT *
     FROM
         LBAKRDTA.TAK028
@@ -124,8 +114,7 @@ LBAKRDTA_TAK028 = \
             COALESCE(BY$DCR, 0)) >= {julian_format_lower_bound_update_date};
     """
 
-LBAKRDTA_TAK034 = \
-    f"""
+LBAKRDTA_TAK034 = f"""
     SELECT *
     FROM
         LBAKRDTA.TAK034
@@ -134,8 +123,7 @@ LBAKRDTA_TAK034 = \
             COALESCE(CE$DCR, 0)) >= {julian_format_lower_bound_update_date};
     """
 
-LBAKRDTA_TAK039 = \
-    f"""
+LBAKRDTA_TAK039 = f"""
     SELECT *
     FROM
         LBAKRDTA.TAK039
@@ -144,8 +132,7 @@ LBAKRDTA_TAK039 = \
             COALESCE(DN$DCR, 0)) >= {julian_format_lower_bound_update_date};
     """
 
-LBAKRDTA_TAK040 = \
-    f"""
+LBAKRDTA_TAK040 = f"""
     SELECT *
     FROM
         LBAKRDTA.TAK040
@@ -154,8 +141,7 @@ LBAKRDTA_TAK040 = \
             COALESCE(DQ$DCR, 0)) >= {julian_format_lower_bound_update_date};
     """
 
-LBAKRDTA_TAK042 = \
-    f"""
+LBAKRDTA_TAK042 = f"""
     SELECT *
     FROM
         LBAKRDTA.TAK042
@@ -164,8 +150,7 @@ LBAKRDTA_TAK042 = \
             COALESCE(CF$DCR, 0)) >= {julian_format_lower_bound_update_date};
     """
 
-LBAKRDTA_TAK076 = \
-    f"""
+LBAKRDTA_TAK076 = f"""
     SELECT *
     FROM
         LBAKRDTA.TAK076
@@ -174,8 +159,7 @@ LBAKRDTA_TAK076 = \
             COALESCE(CZ$DCR, 0)) >= {julian_format_lower_bound_update_date};
     """
 
-LBAKRDTA_TAK142 = \
-    f"""
+LBAKRDTA_TAK142 = f"""
     SELECT *
     FROM
         LBAKRDTA.TAK142
@@ -184,15 +168,13 @@ LBAKRDTA_TAK142 = \
             COALESCE(E6$DCR, 0)) >= {julian_format_lower_bound_update_date};
     """
 
-LBAKRDTA_TAK158 = \
-    """
+LBAKRDTA_TAK158 = """
     SELECT *
     FROM
         LBAKRDTA.TAK158
     """
 
-LBAKRDTA_TAK291 = \
-    f"""
+LBAKRDTA_TAK291 = f"""
     SELECT *
     FROM
         LBAKRDTA.TAK291
@@ -201,8 +183,7 @@ LBAKRDTA_TAK291 = \
             COALESCE(JS$DCR, 0)) >= {julian_format_lower_bound_update_date};
     """
 
-LBAKRDTA_TAK292 = \
-    f"""
+LBAKRDTA_TAK292 = f"""
     SELECT *
     FROM
         LBAKRDTA.TAK292
@@ -211,8 +192,7 @@ LBAKRDTA_TAK292 = \
             COALESCE(JT$DCR, 0)) >= {julian_format_lower_bound_update_date};
     """
 
-LBAKRDTA_VAK003 = \
-    f"""
+LBAKRDTA_VAK003 = f"""
     SELECT *
     FROM
         LBAKRDTA.VAK003
@@ -221,8 +201,7 @@ LBAKRDTA_VAK003 = \
             COALESCE(UPDATE_DT, 0)) >= {julian_format_lower_bound_update_date};
     """
 
-LBCMDATA_APFX90 = \
-    f"""
+LBCMDATA_APFX90 = f"""
     SELECT *
     FROM
         LBCMDATA.APFX90
@@ -231,8 +210,7 @@ LBCMDATA_APFX90 = \
             COALESCE(UPDDTE, 0)) >= {mmddyy_format_lower_bound_update_date};
     """
 
-LBCMDATA_APFX91 = \
-    f"""
+LBCMDATA_APFX91 = f"""
     SELECT *
     FROM
         LBCMDATA.APFX91
@@ -240,8 +218,7 @@ LBCMDATA_APFX91 = \
         COALESCE(CRTDTE, 0) >= {mmddyy_format_lower_bound_update_date};
     """
 
-OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW = \
-    """
+OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW = """
     SELECT *
     FROM
         OFNDR_PDB.FOC_SUPERVISION_ENHANCEMENTS_VW;
@@ -250,33 +227,36 @@ OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW = \
 
 def get_query_name_to_query_list() -> List[Tuple[str, str]]:
     return [
-        ('FOCTEST_ORAS_ASSESSMENTS_WEEKLY', FOCTEST_ORAS_ASSESSMENTS_WEEKLY),
-        ('LANTERN_DA_RA_LIST', LANTERN_DA_RA_LIST),
-        ('LBAKRCOD_TAK146', LBAKRCOD_TAK146),
-        ('LBAKRDTA_TAK001', LBAKRDTA_TAK001),
-        ('LBAKRDTA_TAK022', LBAKRDTA_TAK022),
-        ('LBAKRDTA_TAK023', LBAKRDTA_TAK023),
-        ('LBAKRDTA_TAK024', LBAKRDTA_TAK024),
-        ('LBAKRDTA_TAK025', LBAKRDTA_TAK025),
-        ('LBAKRDTA_TAK026', LBAKRDTA_TAK026),
-        ('LBAKRDTA_TAK028', LBAKRDTA_TAK028),
-        ('LBAKRDTA_TAK034', LBAKRDTA_TAK034),
-        ('LBAKRDTA_TAK039', LBAKRDTA_TAK039),
-        ('LBAKRDTA_TAK040', LBAKRDTA_TAK040),
-        ('LBAKRDTA_TAK042', LBAKRDTA_TAK042),
-        ('LBAKRDTA_TAK076', LBAKRDTA_TAK076),
-        ('LBAKRDTA_TAK142', LBAKRDTA_TAK142),
-        ('LBAKRDTA_TAK158', LBAKRDTA_TAK158),
-        ('LBAKRDTA_TAK291', LBAKRDTA_TAK291),
-        ('LBAKRDTA_TAK292', LBAKRDTA_TAK292),
-        ('LBAKRDTA_VAK003', LBAKRDTA_VAK003),
-        ('LBCMDATA_APFX90', LBCMDATA_APFX90),
-        ('LBCMDATA_APFX91', LBCMDATA_APFX91),
-        ('OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW', OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW),
+        ("FOCTEST_ORAS_ASSESSMENTS_WEEKLY", FOCTEST_ORAS_ASSESSMENTS_WEEKLY),
+        ("LANTERN_DA_RA_LIST", LANTERN_DA_RA_LIST),
+        ("LBAKRCOD_TAK146", LBAKRCOD_TAK146),
+        ("LBAKRDTA_TAK001", LBAKRDTA_TAK001),
+        ("LBAKRDTA_TAK022", LBAKRDTA_TAK022),
+        ("LBAKRDTA_TAK023", LBAKRDTA_TAK023),
+        ("LBAKRDTA_TAK024", LBAKRDTA_TAK024),
+        ("LBAKRDTA_TAK025", LBAKRDTA_TAK025),
+        ("LBAKRDTA_TAK026", LBAKRDTA_TAK026),
+        ("LBAKRDTA_TAK028", LBAKRDTA_TAK028),
+        ("LBAKRDTA_TAK034", LBAKRDTA_TAK034),
+        ("LBAKRDTA_TAK039", LBAKRDTA_TAK039),
+        ("LBAKRDTA_TAK040", LBAKRDTA_TAK040),
+        ("LBAKRDTA_TAK042", LBAKRDTA_TAK042),
+        ("LBAKRDTA_TAK076", LBAKRDTA_TAK076),
+        ("LBAKRDTA_TAK142", LBAKRDTA_TAK142),
+        ("LBAKRDTA_TAK158", LBAKRDTA_TAK158),
+        ("LBAKRDTA_TAK291", LBAKRDTA_TAK291),
+        ("LBAKRDTA_TAK292", LBAKRDTA_TAK292),
+        ("LBAKRDTA_VAK003", LBAKRDTA_VAK003),
+        ("LBCMDATA_APFX90", LBCMDATA_APFX90),
+        ("LBCMDATA_APFX91", LBCMDATA_APFX91),
+        (
+            "OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW",
+            OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW,
+        ),
     ]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Uncomment the os.path clause below (change the directory as desired) if you want the queries to write out to
     # separate files instead of to the console.
     output_dir: Optional[str] = None  # os.path.expanduser('~/Downloads/mo_queries')

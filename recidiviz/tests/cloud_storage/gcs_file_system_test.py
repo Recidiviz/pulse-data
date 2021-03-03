@@ -35,17 +35,24 @@ class TestGcsFileSystem(TestCase):
         mock_bucket = create_autospec(Bucket)
         mock_bucket.exists.return_value = True
         # Client first raises a Gateway timeout, then returns a normal bucket.
-        self.mock_storage_client.get_bucket.side_effect = [exceptions.GatewayTimeout('Exception'), mock_bucket]
+        self.mock_storage_client.get_bucket.side_effect = [
+            exceptions.GatewayTimeout("Exception"),
+            mock_bucket,
+        ]
 
         # Should not crash!
-        self.assertTrue(self.fs.exists(GcsfsBucketPath.from_absolute_path('gs://my-bucket')))
+        self.assertTrue(
+            self.fs.exists(GcsfsBucketPath.from_absolute_path("gs://my-bucket"))
+        )
 
     def test_retry_with_fatal_error(self) -> None:
         mock_bucket = create_autospec(Bucket)
         mock_bucket.exists.return_value = True
         # Client first raises a Gateway timeout, then on retry will raise a ValueError
-        self.mock_storage_client.get_bucket.side_effect = [exceptions.GatewayTimeout('Exception'),
-                                                           ValueError('This will crash')]
+        self.mock_storage_client.get_bucket.side_effect = [
+            exceptions.GatewayTimeout("Exception"),
+            ValueError("This will crash"),
+        ]
 
         with self.assertRaises(ValueError):
-            self.fs.exists(GcsfsBucketPath.from_absolute_path('gs://my-bucket'))
+            self.fs.exists(GcsfsBucketPath.from_absolute_path("gs://my-bucket"))

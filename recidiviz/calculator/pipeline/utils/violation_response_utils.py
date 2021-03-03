@@ -19,13 +19,19 @@ import datetime
 from collections import defaultdict
 from typing import List, Optional, Callable, Dict
 
-from recidiviz.persistence.entity.state.entities import StateSupervisionViolationResponse
+from recidiviz.persistence.entity.state.entities import (
+    StateSupervisionViolationResponse,
+)
 
 
 def prepare_violation_responses_for_calculations(
-        violation_responses: List[StateSupervisionViolationResponse],
-        pre_processing_function:
-        Optional[Callable[[List[StateSupervisionViolationResponse]], List[StateSupervisionViolationResponse]]]
+    violation_responses: List[StateSupervisionViolationResponse],
+    pre_processing_function: Optional[
+        Callable[
+            [List[StateSupervisionViolationResponse]],
+            List[StateSupervisionViolationResponse],
+        ]
+    ],
 ) -> List[StateSupervisionViolationResponse]:
     """Performs the provided pre-processing step on the list of StateSupervisionViolationResponses, if applicable.
     Else, returns the original |violation_responses| list."""
@@ -34,19 +40,23 @@ def prepare_violation_responses_for_calculations(
     return violation_responses
 
 
-def responses_on_most_recent_response_date(violation_responses: List[StateSupervisionViolationResponse]) -> \
-        List[StateSupervisionViolationResponse]:
+def responses_on_most_recent_response_date(
+    violation_responses: List[StateSupervisionViolationResponse],
+) -> List[StateSupervisionViolationResponse]:
     """Finds the most recent response_date out of all of the violation_responses, and returns all responses with that
     response_date."""
     if not violation_responses:
         return []
 
-    responses_by_date: Dict[datetime.date, List[StateSupervisionViolationResponse]] = defaultdict(list)
+    responses_by_date: Dict[
+        datetime.date, List[StateSupervisionViolationResponse]
+    ] = defaultdict(list)
 
     for response in violation_responses:
         if not response.response_date:
             raise ValueError(
-                f'Found null response date on response {response} - all null dates should be filtered at this point')
+                f"Found null response date on response {response} - all null dates should be filtered at this point"
+            )
         responses_by_date[response.response_date].append(response)
 
     most_recent_response_date = max(responses_by_date.keys())

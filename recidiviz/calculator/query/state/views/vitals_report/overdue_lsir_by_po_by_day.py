@@ -15,21 +15,20 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Supervisees with overdue LSIR by PO by day."""
-# pylint: disable=line-too-long
+
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-OVERDUE_LSIR_BY_PO_BY_DAY_VIEW_NAME = 'overdue_lsir_by_po_by_day'
+OVERDUE_LSIR_BY_PO_BY_DAY_VIEW_NAME = "overdue_lsir_by_po_by_day"
 
 OVERDUE_LSIR_BY_PO_BY_DAY_DESCRIPTION = """
     Number of supervisees with overdue LSIR by PO by day
  """
 
-OVERDUE_LSIR_BY_PO_BY_DAY_QUERY_TEMPLATE = \
-    """
+OVERDUE_LSIR_BY_PO_BY_DAY_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT
         compliance.state_code,
@@ -67,6 +66,6 @@ OVERDUE_LSIR_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         OVERDUE_LSIR_BY_PO_BY_DAY_VIEW_BUILDER.build_and_print()

@@ -20,58 +20,82 @@ from copy import deepcopy
 import pandas as pd
 from pandas.testing import assert_index_equal
 
-from recidiviz.calculator.modeling.population_projection.simulations.compartment_transitions import \
-    CompartmentTransitions
+from recidiviz.calculator.modeling.population_projection.simulations.compartment_transitions import (
+    CompartmentTransitions,
+)
 from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
-from recidiviz.calculator.modeling.population_projection.simulations.population_simulation.\
-    population_simulation_factory import PopulationSimulationFactory
+from recidiviz.calculator.modeling.population_projection.simulations.population_simulation.population_simulation_factory import (
+    PopulationSimulationFactory,
+)
 
 
 class TestPopulationSimulation(unittest.TestCase):
     """Test the PopulationSimulation class runs correctly"""
 
     def setUp(self):
-        self.test_outflows_data = pd.DataFrame({
-            'total_population': [4, 2, 2, 4, 3],
-            'crime': ['NAR'] * 5,
-            'outflow_to': ['supervision', 'prison', 'supervision', 'prison', 'prison'],
-            'compartment': ['prison', 'supervision', 'prison', 'pretrial', 'pretrial'],
-            'time_step': [0] * 5
-        })
+        self.test_outflows_data = pd.DataFrame(
+            {
+                "total_population": [4, 2, 2, 4, 3],
+                "crime": ["NAR"] * 5,
+                "outflow_to": [
+                    "supervision",
+                    "prison",
+                    "supervision",
+                    "prison",
+                    "prison",
+                ],
+                "compartment": [
+                    "prison",
+                    "supervision",
+                    "prison",
+                    "pretrial",
+                    "pretrial",
+                ],
+                "time_step": [0] * 5,
+            }
+        )
 
-        self.test_transitions_data = pd.DataFrame({
-            'compartment_duration': [1, 1, 2],
-            'total_population': [4, 2, 2],
-            'crime': ['NAR'] * 3,
-            'outflow_to': ['supervision', 'prison', 'supervision'],
-            'compartment': ['prison', 'supervision', 'prison'],
-            'time_step': [0] * 3
-        })
+        self.test_transitions_data = pd.DataFrame(
+            {
+                "compartment_duration": [1, 1, 2],
+                "total_population": [4, 2, 2],
+                "crime": ["NAR"] * 3,
+                "outflow_to": ["supervision", "prison", "supervision"],
+                "compartment": ["prison", "supervision", "prison"],
+                "time_step": [0] * 3,
+            }
+        )
 
-        self.test_total_population_data = pd.DataFrame({
-            'total_population': [10] * 5,
-            'compartment': ['prison'] * 5,
-            'crime': ['NAR'] * 5,
-            'time_step': range(-4, 1)
-        })
+        self.test_total_population_data = pd.DataFrame(
+            {
+                "total_population": [10] * 5,
+                "compartment": ["prison"] * 5,
+                "crime": ["NAR"] * 5,
+                "time_step": range(-4, 1),
+            }
+        )
 
         self.user_inputs = {
-            'projection_time_steps': 10,
-            'policy_time_step': 2,
-            'start_time_step': 0,
-            'constant_admissions': True,
-            'speed_run': False
+            "projection_time_steps": 10,
+            "policy_time_step": 2,
+            "start_time_step": 0,
+            "constant_admissions": True,
+            "speed_run": False,
         }
         self.simulation_architecture = {
-            'pretrial': 'shell', 'prison': 'full', 'supervision': 'full'
+            "pretrial": "shell",
+            "prison": "full",
+            "supervision": "full",
         }
 
     def test_disaggregation_axes_must_be_in_data_dfs(self):
-        test_outflows_data = self.test_outflows_data.drop('crime', axis=1)
+        test_outflows_data = self.test_outflows_data.drop("crime", axis=1)
 
-        test_transitions_data = self.test_transitions_data.drop('crime', axis=1)
+        test_transitions_data = self.test_transitions_data.drop("crime", axis=1)
 
-        test_total_population_data = self.test_total_population_data.drop('crime', axis=1)
+        test_total_population_data = self.test_total_population_data.drop(
+            "crime", axis=1
+        )
 
         with self.assertRaises(ValueError):
             _ = PopulationSimulationFactory.build_population_simulation(
@@ -79,13 +103,13 @@ class TestPopulationSimulation(unittest.TestCase):
                 self.test_transitions_data,
                 test_total_population_data,
                 self.simulation_architecture,
-                ['crime'],
+                ["crime"],
                 self.user_inputs,
                 [],
                 -5,
                 pd.DataFrame(),
                 False,
-                True
+                True,
             )
 
         with self.assertRaises(ValueError):
@@ -94,13 +118,13 @@ class TestPopulationSimulation(unittest.TestCase):
                 self.test_transitions_data,
                 test_total_population_data,
                 self.simulation_architecture,
-                ['crime'],
+                ["crime"],
                 self.user_inputs,
                 [],
                 -5,
                 pd.DataFrame(),
                 False,
-                True
+                True,
             )
 
         with self.assertRaises(ValueError):
@@ -109,13 +133,13 @@ class TestPopulationSimulation(unittest.TestCase):
                 self.test_transitions_data,
                 self.test_total_population_data,
                 self.simulation_architecture,
-                ['crime'],
+                ["crime"],
                 self.user_inputs,
                 [],
                 -5,
                 pd.DataFrame(),
                 False,
-                True
+                True,
             )
 
         with self.assertRaises(ValueError):
@@ -124,13 +148,13 @@ class TestPopulationSimulation(unittest.TestCase):
                 test_transitions_data,
                 self.test_total_population_data,
                 self.simulation_architecture,
-                ['crime'],
+                ["crime"],
                 self.user_inputs,
                 [],
                 -5,
                 pd.DataFrame(),
                 False,
-                True
+                True,
             )
 
     def test_simulation_forces_complete_user_inputs_dict(self):
@@ -144,31 +168,36 @@ class TestPopulationSimulation(unittest.TestCase):
                     self.test_transitions_data,
                     self.test_total_population_data,
                     self.simulation_architecture,
-                    ['crime'],
+                    ["crime"],
                     test_user_inputs,
                     [],
                     -5,
                     pd.DataFrame(),
                     False,
-                    True
+                    True,
                 )
 
     def test_microsim_requires_empty_policy_list(self):
         with self.assertRaises(ValueError):
-            policy_list = \
-                [SparkPolicy(CompartmentTransitions.test_non_retroactive_policy, 'supervision', {'crime': 'NAR'})]
+            policy_list = [
+                SparkPolicy(
+                    CompartmentTransitions.test_non_retroactive_policy,
+                    "supervision",
+                    {"crime": "NAR"},
+                )
+            ]
             _ = PopulationSimulationFactory.build_population_simulation(
                 self.test_outflows_data,
                 self.test_transitions_data,
                 self.test_total_population_data,
                 self.simulation_architecture,
-                ['crime'],
+                ["crime"],
                 self.user_inputs,
                 policy_list,
                 -5,
                 self.test_outflows_data,
                 True,
-                False
+                False,
             )
 
     def test_baseline_with_backcast_projection_on(self):
@@ -178,17 +207,19 @@ class TestPopulationSimulation(unittest.TestCase):
             self.test_transitions_data,
             self.test_total_population_data,
             self.simulation_architecture,
-            ['crime'],
+            ["crime"],
             self.user_inputs,
             [],
             -5,
             pd.DataFrame(),
             False,
-            True
+            True,
         )
         projection = population_simulation.simulate_policies()
 
-        assert_index_equal(projection.index.unique().sort_values(), pd.Int64Index(range(-5, 10)))
+        assert_index_equal(
+            projection.index.unique().sort_values(), pd.Int64Index(range(-5, 10))
+        )
 
     def test_baseline_with_backcast_projection_off(self):
         """Assert that microsim simulation results only have positive time steps"""
@@ -197,17 +228,19 @@ class TestPopulationSimulation(unittest.TestCase):
             self.test_transitions_data,
             self.test_total_population_data,
             self.simulation_architecture,
-            ['crime'],
+            ["crime"],
             self.user_inputs,
             [],
             0,
             self.test_transitions_data,
             True,
-            False
+            False,
         )
         projection = population_simulation.simulate_policies()
 
-        assert_index_equal(projection.index.unique().sort_values(), pd.Int64Index(range(11)))
+        assert_index_equal(
+            projection.index.unique().sort_values(), pd.Int64Index(range(11))
+        )
 
     def test_dropping_data_raises_warning(self):
         """Assert that PopulationSimulation throws an error when some input data goes unused"""
@@ -215,8 +248,12 @@ class TestPopulationSimulation(unittest.TestCase):
         non_disaggregated_transitions_data = self.test_transitions_data.copy()
         non_disaggregated_total_population_data = self.test_total_population_data.copy()
 
-        non_disaggregated_outflows_data.loc[non_disaggregated_outflows_data.compartment != 'pretrial', 'crime'] = None
-        non_disaggregated_transitions_data.loc[non_disaggregated_transitions_data.index == 0, 'crime'] = None
+        non_disaggregated_outflows_data.loc[
+            non_disaggregated_outflows_data.compartment != "pretrial", "crime"
+        ] = None
+        non_disaggregated_transitions_data.loc[
+            non_disaggregated_transitions_data.index == 0, "crime"
+        ] = None
         non_disaggregated_total_population_data.crime = None
 
         with self.assertWarns(Warning):
@@ -225,13 +262,13 @@ class TestPopulationSimulation(unittest.TestCase):
                 self.test_transitions_data,
                 non_disaggregated_total_population_data,
                 self.simulation_architecture,
-                ['crime'],
+                ["crime"],
                 self.user_inputs,
                 [],
                 -5,
                 pd.DataFrame(),
                 False,
-                True
+                True,
             )
 
         with self.assertWarns(Warning):
@@ -240,13 +277,13 @@ class TestPopulationSimulation(unittest.TestCase):
                 non_disaggregated_transitions_data,
                 self.test_total_population_data,
                 self.simulation_architecture,
-                ['crime'],
+                ["crime"],
                 self.user_inputs,
                 [],
                 -5,
                 pd.DataFrame(),
                 False,
-                True
+                True,
             )
 
         with self.assertWarns(Warning):
@@ -255,11 +292,11 @@ class TestPopulationSimulation(unittest.TestCase):
                 self.test_transitions_data,
                 self.test_total_population_data,
                 self.simulation_architecture,
-                ['crime'],
+                ["crime"],
                 self.user_inputs,
                 [],
                 -5,
                 pd.DataFrame(),
                 False,
-                True
+                True,
             )

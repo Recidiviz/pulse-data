@@ -19,12 +19,15 @@
 from enum import unique
 
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
-from recidiviz.common.constants.state import enum_canonical_strings as state_enum_strings
+from recidiviz.common.constants.state import (
+    enum_canonical_strings as state_enum_strings,
+)
 
 
 @unique
 class StateActingBodyType(EntityEnum, metaclass=EntityEnumMeta):
     """Any person or persons who is taking an action."""
+
     COURT = state_enum_strings.state_acting_body_type_court
     PAROLE_BOARD = state_enum_strings.state_acting_body_type_parole_board
     SUPERVISION_OFFICER = state_enum_strings.state_acting_body_type_supervision_officer
@@ -36,10 +39,10 @@ class StateActingBodyType(EntityEnum, metaclass=EntityEnumMeta):
 
 
 _STATE_ACTING_BODY_TYPE_MAP = {
-    'COURT': StateActingBodyType.COURT,
-    'PAROLE BOARD': StateActingBodyType.PAROLE_BOARD,
-    'SUPERVISION OFFICER': StateActingBodyType.SUPERVISION_OFFICER,
-    'SENTENCED PERSON': StateActingBodyType.SENTENCED_PERSON,
+    "COURT": StateActingBodyType.COURT,
+    "PAROLE BOARD": StateActingBodyType.PAROLE_BOARD,
+    "SUPERVISION OFFICER": StateActingBodyType.SUPERVISION_OFFICER,
+    "SENTENCED PERSON": StateActingBodyType.SENTENCED_PERSON,
 }
 
 
@@ -48,10 +51,13 @@ class StateCustodialAuthority(EntityEnum, metaclass=EntityEnumMeta):
     """The type of government entity directly responsible for the person on a period of incarceration or supervision.
     Generally the entity of the agent who is filling out the paperwork and making recommendations for the person. This
     is not necessarily the decision making authority on the period."""
+
     FEDERAL = state_enum_strings.state_custodial_authority_federal
     OTHER_COUNTRY = state_enum_strings.state_custodial_authority_other_country
     OTHER_STATE = state_enum_strings.state_custodial_authority_other_state
-    SUPERVISION_AUTHORITY = state_enum_strings.state_custodial_authority_supervision_authority
+    SUPERVISION_AUTHORITY = (
+        state_enum_strings.state_custodial_authority_supervision_authority
+    )
     STATE_PRISON = state_enum_strings.state_custodial_authority_state_prison
 
     @staticmethod
@@ -60,9 +66,9 @@ class StateCustodialAuthority(EntityEnum, metaclass=EntityEnumMeta):
 
 
 _STATE_CUSTODIAL_AUTHORITY_MAP = {
-    'FEDERAL': StateCustodialAuthority.FEDERAL,
-    'OTHER COUNTRY': StateCustodialAuthority.OTHER_COUNTRY,
-    'OTHER STATE': StateCustodialAuthority.OTHER_STATE,
-    'SUPERVISION AUTHORITY': StateCustodialAuthority.SUPERVISION_AUTHORITY,
-    'STATE PRISON': StateCustodialAuthority.STATE_PRISON
+    "FEDERAL": StateCustodialAuthority.FEDERAL,
+    "OTHER COUNTRY": StateCustodialAuthority.OTHER_COUNTRY,
+    "OTHER STATE": StateCustodialAuthority.OTHER_STATE,
+    "SUPERVISION AUTHORITY": StateCustodialAuthority.SUPERVISION_AUTHORITY,
+    "STATE PRISON": StateCustodialAuthority.STATE_PRISON,
 }

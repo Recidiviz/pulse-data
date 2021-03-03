@@ -22,14 +22,15 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-REVOCATIONS_BY_SUPERVISION_TYPE_BY_MONTH_VIEW_NAME = \
-    'revocations_by_supervision_type_by_month'
+REVOCATIONS_BY_SUPERVISION_TYPE_BY_MONTH_VIEW_NAME = (
+    "revocations_by_supervision_type_by_month"
+)
 
-REVOCATIONS_BY_SUPERVISION_TYPE_BY_MONTH_DESCRIPTION = \
+REVOCATIONS_BY_SUPERVISION_TYPE_BY_MONTH_DESCRIPTION = (
     """ Revocations by supervision type by month """
+)
 
-REVOCATIONS_BY_SUPERVISION_TYPE_BY_MONTH_QUERY_TEMPLATE = \
-    """
+REVOCATIONS_BY_SUPERVISION_TYPE_BY_MONTH_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT
       state_code, year, month,
@@ -54,11 +55,11 @@ REVOCATIONS_BY_SUPERVISION_TYPE_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilde
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=REVOCATIONS_BY_SUPERVISION_TYPE_BY_MONTH_VIEW_NAME,
     view_query_template=REVOCATIONS_BY_SUPERVISION_TYPE_BY_MONTH_QUERY_TEMPLATE,
-    dimensions=['state_code', 'year', 'month', 'district'],
+    dimensions=["state_code", "year", "month", "district"],
     description=REVOCATIONS_BY_SUPERVISION_TYPE_BY_MONTH_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         REVOCATIONS_BY_SUPERVISION_TYPE_BY_MONTH_VIEW_BUILDER.build_and_print()

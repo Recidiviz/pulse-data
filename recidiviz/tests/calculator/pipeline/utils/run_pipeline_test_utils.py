@@ -24,30 +24,38 @@ from apache_beam.testing.test_pipeline import TestPipeline
 from mock import patch
 
 
-from recidiviz.tests.calculator.pipeline.fake_bigquery import FakeReadFromBigQuery, FakeWriteToBigQuery
+from recidiviz.tests.calculator.pipeline.fake_bigquery import (
+    FakeReadFromBigQuery,
+    FakeWriteToBigQuery,
+)
 
 
-def run_test_pipeline(pipeline_module: ModuleType,
-                      state_code: str,
-                      dataset: str,
-                      read_from_bq_constructor: Callable[[str], FakeReadFromBigQuery],
-                      write_to_bq_constructor: Callable[[str, str], FakeWriteToBigQuery],
-                      include_calculation_limit_args: bool = True,
-                      unifying_id_field_filter_set: Optional[Set[int]] = None,
-                      metric_types_filter: Optional[Set[str]] = None,
-
-                      ) -> None:
+def run_test_pipeline(
+    pipeline_module: ModuleType,
+    state_code: str,
+    dataset: str,
+    read_from_bq_constructor: Callable[[str], FakeReadFromBigQuery],
+    write_to_bq_constructor: Callable[[str, str], FakeWriteToBigQuery],
+    include_calculation_limit_args: bool = True,
+    unifying_id_field_filter_set: Optional[Set[int]] = None,
+    metric_types_filter: Optional[Set[str]] = None,
+) -> None:
     """Runs a test version of the pipeline in the provided module with BQ I/O mocked out."""
 
-    project_id, dataset_id = dataset.split('.')
+    project_id, dataset_id = dataset.split(".")
 
     def pipeline_constructor(options: PipelineOptions) -> TestPipeline:
         non_default_options = options.get_all_options(drop_default=True)
-        expected_non_default_options = {'project': project_id, 'save_main_session': True}
+        expected_non_default_options = {
+            "project": project_id,
+            "save_main_session": True,
+        }
 
         if not expected_non_default_options == non_default_options:
-            raise ValueError(f'Expected non-default options [{expected_non_default_options}] do not match actual '
-                             f'non-default options [{non_default_options}]')
+            raise ValueError(
+                f"Expected non-default options [{expected_non_default_options}] do not match actual "
+                f"non-default options [{non_default_options}]"
+            )
         return TestPipeline()
 
     pipeline_package_name = pipeline_module.__name__
@@ -55,19 +63,37 @@ def run_test_pipeline(pipeline_module: ModuleType,
     calculation_limit_args = {}
     if include_calculation_limit_args:
         calculation_limit_args = {
-            'calculation_end_month': None,
-            'calculation_month_count': -1
+            "calculation_end_month": None,
+            "calculation_month_count": -1,
         }
 
-    with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery', read_from_bq_constructor):
-        with patch('recidiviz.calculator.pipeline.utils.beam_utils.ReadFromBigQuery', read_from_bq_constructor):
-            with patch(f'{pipeline_package_name}.WriteAppendToBigQuery', write_to_bq_constructor):
-                with patch(f'{pipeline_package_name}.beam.Pipeline', pipeline_constructor):
-                    metric_types = list(metric_types_filter) if metric_types_filter else ['ALL']
-                    person_filter_ids = \
-                        list(unifying_id_field_filter_set) if unifying_id_field_filter_set else None
+    with patch(
+        "recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery",
+        read_from_bq_constructor,
+    ):
+        with patch(
+            "recidiviz.calculator.pipeline.utils.beam_utils.ReadFromBigQuery",
+            read_from_bq_constructor,
+        ):
+            with patch(
+                f"{pipeline_package_name}.WriteAppendToBigQuery",
+                write_to_bq_constructor,
+            ):
+                with patch(
+                    f"{pipeline_package_name}.beam.Pipeline", pipeline_constructor
+                ):
+                    metric_types = (
+                        list(metric_types_filter) if metric_types_filter else ["ALL"]
+                    )
+                    person_filter_ids = (
+                        list(unifying_id_field_filter_set)
+                        if unifying_id_field_filter_set
+                        else None
+                    )
                     pipeline_module.run(  # type: ignore[attr-defined]
-                        apache_beam_pipeline_options=PipelineOptions(project=project_id),
+                        apache_beam_pipeline_options=PipelineOptions(
+                            project=project_id
+                        ),
                         data_input=dataset_id,
                         reference_view_input=dataset_id,
                         static_reference_input=dataset_id,
@@ -75,5 +101,5 @@ def run_test_pipeline(pipeline_module: ModuleType,
                         metric_types=metric_types,
                         state_code=state_code,
                         person_filter_ids=person_filter_ids,
-                        **calculation_limit_args
+                        **calculation_limit_args,
                     )

@@ -15,23 +15,24 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Converts an ingest_info proto Arrest to a persistence entity."""
-from recidiviz.common.str_field_utils import normalize, normalize_truncated, \
-    parse_date
+from recidiviz.common.str_field_utils import normalize, normalize_truncated, parse_date
 from recidiviz.persistence.entity.county import entities
-from recidiviz.persistence.ingest_info_converter.utils.converter_utils import \
-    fn, parse_external_id
+from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
+    fn,
+    parse_external_id,
+)
 
 
 def convert(proto) -> entities.Arrest:
     """Converts an ingest_info proto Arrest to a persistence entity."""
     new = entities.Arrest.builder()
 
-    new.external_id = fn(parse_external_id, 'arrest_id', proto)
-    new.arrest_date = fn(parse_date, 'arrest_date', proto)
-    new.location = fn(normalize, 'location', proto)
-    new.agency = fn(normalize, 'agency', proto)
-    new.officer_name = fn(normalize, 'officer_name', proto)
-    new.officer_id = fn(normalize, 'officer_id', proto)
-    new.agency = fn(normalize_truncated, 'agency', proto)
+    new.external_id = fn(parse_external_id, "arrest_id", proto)
+    new.arrest_date = fn(parse_date, "arrest_date", proto)
+    new.location = fn(normalize, "location", proto)
+    new.agency = fn(normalize, "agency", proto)
+    new.officer_name = fn(normalize, "officer_name", proto)
+    new.officer_id = fn(normalize, "officer_id", proto)
+    new.agency = fn(normalize_truncated, "agency", proto)
 
     return new.build()

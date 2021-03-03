@@ -23,7 +23,10 @@ class CohortTable:
     """Store population counts for one cohort of people that enter one category in the same year"""
 
     def __init__(self, starting_ts: int, transition_table_max_length: int):
-        self.cohort_df = pd.DataFrame(dtype=float, index=range(starting_ts - transition_table_max_length, starting_ts))
+        self.cohort_df = pd.DataFrame(
+            dtype=float,
+            index=range(starting_ts - transition_table_max_length, starting_ts),
+        )
 
         self.retired_cohort_df = pd.DataFrame()
 
@@ -40,9 +43,11 @@ class CohortTable:
         """Append the cohort sizes for the end of the projection ts"""
         latest_population = self.get_latest_population()
         if (round(cohort_sizes, 8) > round(latest_population, 8)).any():
-            raise ValueError("Cannot append cohort data that is larger than the latest population\n"
-                             f"Latest population: {latest_population[cohort_sizes > latest_population]}\n"
-                             f"Attempting to append: {cohort_sizes[cohort_sizes > latest_population]}")
+            raise ValueError(
+                "Cannot append cohort data that is larger than the latest population\n"
+                f"Latest population: {latest_population[cohort_sizes > latest_population]}\n"
+                f"Attempting to append: {cohort_sizes[cohort_sizes > latest_population]}"
+            )
 
         if projection_ts in self.cohort_df.columns:
             raise ValueError(f"Cannot overwrite cohort for time {projection_ts}")
@@ -52,12 +57,15 @@ class CohortTable:
     def append_cohort(self, cohort_size: float, projection_ts: int) -> None:
         """Add a new cohort to the bottom of the cohort table"""
         if projection_ts not in self.cohort_df.columns:
-            raise ValueError(f"Cannot append cohort with start time {projection_ts} outside of CohortTable timeline "
-                             f"{self.cohort_df.columns}")
+            raise ValueError(
+                f"Cannot append cohort with start time {projection_ts} outside of CohortTable timeline "
+                f"{self.cohort_df.columns}"
+            )
         if projection_ts in self.cohort_df.index:
             raise ValueError(f"Cannot overwrite cohort for time {projection_ts}")
-        self.cohort_df = \
-            self.cohort_df.append(pd.DataFrame({projection_ts: [cohort_size]}, index=[projection_ts])).fillna(0)
+        self.cohort_df = self.cohort_df.append(
+            pd.DataFrame({projection_ts: [cohort_size]}, index=[projection_ts])
+        ).fillna(0)
 
     def scale_cohort_size(self, scalar: float) -> None:
         if scalar < 0:

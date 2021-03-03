@@ -26,54 +26,68 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.justice_counts import control
 
 
-@patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
-@patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
+@patch("recidiviz.utils.metadata.project_id", Mock(return_value="test-project"))
+@patch("recidiviz.utils.metadata.project_number", Mock(return_value="123456789"))
 class TestDirectIngestControl(unittest.TestCase):
     """Tests for requests to the Direct Ingest API."""
 
     def setUp(self) -> None:
         app = Flask(__name__)
         app.register_blueprint(control.justice_counts_control)
-        app.config['TESTING'] = True
+        app.config["TESTING"] = True
         self.client = app.test_client()
 
-        self.storage_client_patcher = patch('google.cloud.storage.Client')
+        self.storage_client_patcher = patch("google.cloud.storage.Client")
         self.storage_client_patcher.start()
 
     def tearDown(self) -> None:
         self.storage_client_patcher.stop()
 
-    @patch('recidiviz.tools.justice_counts.manual_upload.ingest')
+    @patch("recidiviz.tools.justice_counts.manual_upload.ingest")
     def test_withManifest_succeeds(self, mock_ingest: unittest.mock.MagicMock) -> None:
         # Act
-        request_args = {'manifest_path': 'gs://fake-bucket/foo/manifest.yaml'}
-        headers = {'X-Appengine-Cron': 'test-cron'}
-        response = self.client.get('/ingest', query_string=request_args, headers=headers)
+        request_args = {"manifest_path": "gs://fake-bucket/foo/manifest.yaml"}
+        headers = {"X-Appengine-Cron": "test-cron"}
+        response = self.client.get(
+            "/ingest", query_string=request_args, headers=headers
+        )
 
         # Assert
         self.assertEqual(200, response.status_code)
-        mock_ingest.assert_called_with(ANY, GcsfsFilePath(bucket_name='fake-bucket', blob_name='foo/manifest.yaml'))
+        mock_ingest.assert_called_with(
+            ANY, GcsfsFilePath(bucket_name="fake-bucket", blob_name="foo/manifest.yaml")
+        )
 
     def test_withoutManifest_rejectsQuery(self) -> None:
         # Act
         request_args: Dict[str, str] = {}
-        headers = {'X-Appengine-Cron': 'test-cron'}
-        response = self.client.get('/ingest', query_string=request_args, headers=headers)
+        headers = {"X-Appengine-Cron": "test-cron"}
+        response = self.client.get(
+            "/ingest", query_string=request_args, headers=headers
+        )
 
         # Assert
         self.assertEqual(400, response.status_code)
 
-    @patch('recidiviz.tools.justice_counts.manual_upload.ingest')
-    def test_ingestFails_raisesError(self, mock_ingest: unittest.mock.MagicMock) -> None:
+    @patch("recidiviz.tools.justice_counts.manual_upload.ingest")
+    def test_ingestFails_raisesError(
+        self, mock_ingest: unittest.mock.MagicMock
+    ) -> None:
         # Arrange
-        mock_ingest.side_effect = ValueError('Malformed manifest')
+        mock_ingest.side_effect = ValueError("Malformed manifest")
 
         # Act
-        request_args = {'manifest_path': 'gs://fake-bucket/foo/manifest.yaml'}
-        headers = {'X-Appengine-Cron': 'test-cron'}
-        response = self.client.get('/ingest', query_string=request_args, headers=headers)
+        request_args = {"manifest_path": "gs://fake-bucket/foo/manifest.yaml"}
+        headers = {"X-Appengine-Cron": "test-cron"}
+        response = self.client.get(
+            "/ingest", query_string=request_args, headers=headers
+        )
 
         # Assert
         self.assertEqual(500, response.status_code)
-        self.assertEqual('Error ingesting data: \'Malformed manifest\'', response.get_data().decode())
-        mock_ingest.assert_called_with(ANY, GcsfsFilePath(bucket_name='fake-bucket', blob_name='foo/manifest.yaml'))
+        self.assertEqual(
+            "Error ingesting data: 'Malformed manifest'", response.get_data().decode()
+        )
+        mock_ingest.assert_called_with(
+            ANY, GcsfsFilePath(bucket_name="fake-bucket", blob_name="foo/manifest.yaml")
+        )

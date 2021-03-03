@@ -22,20 +22,28 @@ from unittest import TestCase
 from mock import patch
 
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.validation.checks.existence_check import ExistenceValidationChecker, ExistenceDataValidationCheck
-from recidiviz.validation.validation_models import ValidationCheckType, DataValidationJob, DataValidationJobResult
+from recidiviz.validation.checks.existence_check import (
+    ExistenceValidationChecker,
+    ExistenceDataValidationCheck,
+)
+from recidiviz.validation.validation_models import (
+    ValidationCheckType,
+    DataValidationJob,
+    DataValidationJobResult,
+)
 
 
 class TestExistenceValidationChecker(TestCase):
     """Tests for the ExistenceValidationChecker."""
 
     def setUp(self) -> None:
-        self.metadata_patcher = patch('recidiviz.utils.metadata.project_id')
+        self.metadata_patcher = patch("recidiviz.utils.metadata.project_id")
         self.mock_project_id_fn = self.metadata_patcher.start()
-        self.mock_project_id_fn.return_value = 'project-id'
+        self.mock_project_id_fn.return_value = "project-id"
 
         self.client_patcher = patch(
-            'recidiviz.validation.checks.existence_check.BigQueryClientImpl')
+            "recidiviz.validation.checks.existence_check.BigQueryClientImpl"
+        )
         self.mock_client = self.client_patcher.start().return_value
 
     def tearDown(self) -> None:
@@ -45,48 +53,77 @@ class TestExistenceValidationChecker(TestCase):
     def test_existence_check_no_failures(self) -> None:
         self.mock_client.run_query_async.return_value = []
 
-        job = DataValidationJob(region_code='US_VA',
-                                validation=ExistenceDataValidationCheck(
-                                    validation_type=ValidationCheckType.EXISTENCE,
-                                    view=BigQueryView(dataset_id='my_dataset',
-                                                      view_id='test_view',
-                                                      view_query_template='select * from literally_anything')
-                                ))
+        job = DataValidationJob(
+            region_code="US_VA",
+            validation=ExistenceDataValidationCheck(
+                validation_type=ValidationCheckType.EXISTENCE,
+                view=BigQueryView(
+                    dataset_id="my_dataset",
+                    view_id="test_view",
+                    view_query_template="select * from literally_anything",
+                ),
+            ),
+        )
         result = ExistenceValidationChecker.run_check(job)
 
-        self.assertEqual(result,
-                         DataValidationJobResult(validation_job=job, was_successful=True, failure_description=None))
+        self.assertEqual(
+            result,
+            DataValidationJobResult(
+                validation_job=job, was_successful=True, failure_description=None
+            ),
+        )
 
     def test_existence_check_failures(self) -> None:
-        self.mock_client.run_query_async.return_value = ['some result row', 'some other result row']
+        self.mock_client.run_query_async.return_value = [
+            "some result row",
+            "some other result row",
+        ]
 
-        job = DataValidationJob(region_code='US_VA',
-                                validation=ExistenceDataValidationCheck(
-                                    validation_type=ValidationCheckType.EXISTENCE,
-                                    view=BigQueryView(dataset_id='my_dataset',
-                                                      view_id='test_view',
-                                                      view_query_template='select * from literally_anything')
-                                ))
+        job = DataValidationJob(
+            region_code="US_VA",
+            validation=ExistenceDataValidationCheck(
+                validation_type=ValidationCheckType.EXISTENCE,
+                view=BigQueryView(
+                    dataset_id="my_dataset",
+                    view_id="test_view",
+                    view_query_template="select * from literally_anything",
+                ),
+            ),
+        )
         result = ExistenceValidationChecker.run_check(job)
 
-        self.assertEqual(result,
-                         DataValidationJobResult(
-                             validation_job=job,
-                             was_successful=False,
-                             failure_description='Found [2] invalid rows, though [0] were expected'))
+        self.assertEqual(
+            result,
+            DataValidationJobResult(
+                validation_job=job,
+                was_successful=False,
+                failure_description="Found [2] invalid rows, though [0] were expected",
+            ),
+        )
 
     def test_existence_check_failures_below_threshold(self) -> None:
-        self.mock_client.run_query_async.return_value = ['some result row', 'some other result row']
+        self.mock_client.run_query_async.return_value = [
+            "some result row",
+            "some other result row",
+        ]
 
-        job = DataValidationJob(region_code='US_VA',
-                                validation=ExistenceDataValidationCheck(
-                                    validation_type=ValidationCheckType.EXISTENCE,
-                                    view=BigQueryView(dataset_id='my_dataset',
-                                                      view_id='test_view',
-                                                      view_query_template='select * from literally_anything'),
-                                    num_allowed_rows=2
-                                ))
+        job = DataValidationJob(
+            region_code="US_VA",
+            validation=ExistenceDataValidationCheck(
+                validation_type=ValidationCheckType.EXISTENCE,
+                view=BigQueryView(
+                    dataset_id="my_dataset",
+                    view_id="test_view",
+                    view_query_template="select * from literally_anything",
+                ),
+                num_allowed_rows=2,
+            ),
+        )
         result = ExistenceValidationChecker.run_check(job)
 
-        self.assertEqual(result,
-                         DataValidationJobResult(validation_job=job, was_successful=True, failure_description=None))
+        self.assertEqual(
+            result,
+            DataValidationJobResult(
+                validation_job=job, was_successful=True, failure_description=None
+            ),
+        )

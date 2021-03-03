@@ -17,9 +17,9 @@
 """Provides a mapping from region code shorthand to region or district name."""
 
 REGION_CODES = {
-    'US_ID_D3': 'DISTRICT OFFICE 3, CALDWELL',
-    'US_ID_D5': 'DISTRICT OFFICE 5, TWIN FALLS',
-    'US_ID_D7': 'DISTRICT OFFICE 7, IDAHO FALLS',
+    "US_ID_D3": "DISTRICT OFFICE 3, CALDWELL",
+    "US_ID_D5": "DISTRICT OFFICE 5, TWIN FALLS",
+    "US_ID_D7": "DISTRICT OFFICE 7, IDAHO FALLS",
 }
 
 

@@ -19,8 +19,7 @@
 from enum import unique
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
-import recidiviz.common.constants.state.enum_canonical_strings as \
-    state_enum_strings
+import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
@@ -30,8 +29,7 @@ class StateChargeClassificationType(EntityEnum, metaclass=EntityEnumMeta):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     FELONY = state_enum_strings.state_charge_classification_type_felony
     INFRACTION = state_enum_strings.state_charge_classification_type_infraction
-    MISDEMEANOR = \
-        state_enum_strings.state_charge_classification_type_misdemeanor
+    MISDEMEANOR = state_enum_strings.state_charge_classification_type_misdemeanor
     OTHER = state_enum_strings.state_charge_classification_type_other
 
     @staticmethod
@@ -43,36 +41,36 @@ class StateChargeClassificationType(EntityEnum, metaclass=EntityEnumMeta):
 # space. Add mappings here using a single space between words and numbers.
 # For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
 _STATE_CHARGE_CLASSIFICATION_TYPE_MAP = {
-    '*': None,
-    '-': None,
-    '.': None,
-    '0': None,
-    'ADMINISTRATIVE': StateChargeClassificationType.CIVIL,
-    'C': StateChargeClassificationType.CIVIL,
-    'CITED CITATION': StateChargeClassificationType.INFRACTION,
-    'CIVIL': StateChargeClassificationType.CIVIL,
-    'COMM': StateChargeClassificationType.CIVIL,
-    'CRIMINAL TRAFFIC VIOLATION': StateChargeClassificationType.INFRACTION,
-    'ENHANCEMENT': None,
-    'EXTERNAL UNKNOWN': StateChargeClassificationType.EXTERNAL_UNKNOWN,
-    'F': StateChargeClassificationType.FELONY,
-    'FEL': StateChargeClassificationType.FELONY,
-    'FELONY': StateChargeClassificationType.FELONY,
-    'I': StateChargeClassificationType.INFRACTION,
-    'INFRACTION': StateChargeClassificationType.INFRACTION,
-    'M': StateChargeClassificationType.MISDEMEANOR,
-    'MIS': StateChargeClassificationType.MISDEMEANOR,
-    'MISD': StateChargeClassificationType.MISDEMEANOR,
-    'MISDEMEANOR': StateChargeClassificationType.MISDEMEANOR,
-    'MUNICIPAL ORDINANCE VIOLATION': StateChargeClassificationType.INFRACTION,
-    'N A': None,
-    'NA': None,
-    'NON ARREST TRAFFIC VIOLATION': StateChargeClassificationType.INFRACTION,
-    'NON MOVING TRAFFIC VIOLATION': StateChargeClassificationType.INFRACTION,
-    'O': StateChargeClassificationType.OTHER,
-    'OTH': StateChargeClassificationType.OTHER,
-    'OTHER': StateChargeClassificationType.OTHER,
-    'SUMMONS': StateChargeClassificationType.INFRACTION,
-    'U': StateChargeClassificationType.EXTERNAL_UNKNOWN,
-    'UNKNOWN': StateChargeClassificationType.EXTERNAL_UNKNOWN,
+    "*": None,
+    "-": None,
+    ".": None,
+    "0": None,
+    "ADMINISTRATIVE": StateChargeClassificationType.CIVIL,
+    "C": StateChargeClassificationType.CIVIL,
+    "CITED CITATION": StateChargeClassificationType.INFRACTION,
+    "CIVIL": StateChargeClassificationType.CIVIL,
+    "COMM": StateChargeClassificationType.CIVIL,
+    "CRIMINAL TRAFFIC VIOLATION": StateChargeClassificationType.INFRACTION,
+    "ENHANCEMENT": None,
+    "EXTERNAL UNKNOWN": StateChargeClassificationType.EXTERNAL_UNKNOWN,
+    "F": StateChargeClassificationType.FELONY,
+    "FEL": StateChargeClassificationType.FELONY,
+    "FELONY": StateChargeClassificationType.FELONY,
+    "I": StateChargeClassificationType.INFRACTION,
+    "INFRACTION": StateChargeClassificationType.INFRACTION,
+    "M": StateChargeClassificationType.MISDEMEANOR,
+    "MIS": StateChargeClassificationType.MISDEMEANOR,
+    "MISD": StateChargeClassificationType.MISDEMEANOR,
+    "MISDEMEANOR": StateChargeClassificationType.MISDEMEANOR,
+    "MUNICIPAL ORDINANCE VIOLATION": StateChargeClassificationType.INFRACTION,
+    "N A": None,
+    "NA": None,
+    "NON ARREST TRAFFIC VIOLATION": StateChargeClassificationType.INFRACTION,
+    "NON MOVING TRAFFIC VIOLATION": StateChargeClassificationType.INFRACTION,
+    "O": StateChargeClassificationType.OTHER,
+    "OTH": StateChargeClassificationType.OTHER,
+    "OTHER": StateChargeClassificationType.OTHER,
+    "SUMMONS": StateChargeClassificationType.INFRACTION,
+    "U": StateChargeClassificationType.EXTERNAL_UNKNOWN,
+    "UNKNOWN": StateChargeClassificationType.EXTERNAL_UNKNOWN,
 }

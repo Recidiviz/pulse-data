@@ -25,8 +25,9 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
-POPULATION_PROJECTION_MONTHLY_POPULATION_EXTERNAL_COMPARISON_VIEW_NAME = \
-    'population_projection_monthly_population_external_comparison'
+POPULATION_PROJECTION_MONTHLY_POPULATION_EXTERNAL_COMPARISON_VIEW_NAME = (
+    "population_projection_monthly_population_external_comparison"
+)
 
 POPULATION_PROJECTION_MONTHLY_POPULATION_EXTERNAL_COMPARISON_DESCRIPTION = """
 Comparison of values between internal population projection historical population and external monthly
@@ -34,8 +35,7 @@ incarceration/supervision populations.
 """
 
 # TODO(#5998): add the supervision population to this validation
-POPULATION_PROJECTION_MONTHLY_POPULATION_EXTERNAL_COMPARISON_QUERY_TEMPLATE = \
-    """
+POPULATION_PROJECTION_MONTHLY_POPULATION_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
 /*{description}*/
 WITH external_data AS (
     SELECT
@@ -90,6 +90,6 @@ POPULATION_PROJECTION_MONTHLY_POPULATION_EXTERNAL_COMPARISON_VIEW_BUILDER = Simp
     population_projection_dataset=state_dataset_config.POPULATION_PROJECTION_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         POPULATION_PROJECTION_MONTHLY_POPULATION_EXTERNAL_COMPARISON_VIEW_BUILDER.build_and_print()

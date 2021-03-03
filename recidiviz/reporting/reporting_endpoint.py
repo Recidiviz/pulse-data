@@ -35,10 +35,10 @@ from recidiviz.reporting.region_codes import InvalidRegionCodeException
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.params import get_only_str_param_value, get_str_param_values
 
-reporting_endpoint_blueprint = Blueprint('reporting_endpoint_blueprint', __name__)
+reporting_endpoint_blueprint = Blueprint("reporting_endpoint_blueprint", __name__)
 
 
-@reporting_endpoint_blueprint.route('/start_new_batch', methods=['GET', 'POST'])
+@reporting_endpoint_blueprint.route("/start_new_batch", methods=["GET", "POST"])
 @requires_gae_auth
 def start_new_batch() -> Tuple[str, HTTPStatus]:
     """Start a new batch of email generation for the indicated state.
@@ -65,16 +65,20 @@ def start_new_batch() -> Tuple[str, HTTPStatus]:
         Nothing.  Catch everything so that we can always return a response to the request
     """
     try:
-        state_code = get_only_str_param_value('state_code', request.args)
-        report_type = get_only_str_param_value('report_type', request.args)
-        test_address = get_only_str_param_value('test_address', request.args)
-        region_code = get_only_str_param_value('region_code', request.args)
-        raw_email_allowlist = get_only_str_param_value('email_allowlist', request.args)
-        message_body = get_only_str_param_value('message_body', request.args, preserve_case=True)
+        state_code = get_only_str_param_value("state_code", request.args)
+        report_type = get_only_str_param_value("report_type", request.args)
+        test_address = get_only_str_param_value("test_address", request.args)
+        region_code = get_only_str_param_value("region_code", request.args)
+        raw_email_allowlist = get_only_str_param_value("email_allowlist", request.args)
+        message_body = get_only_str_param_value(
+            "message_body", request.args, preserve_case=True
+        )
 
         validate_email_address(test_address)
 
-        email_allowlist: Optional[List[str]] = json.loads(raw_email_allowlist) if raw_email_allowlist else None
+        email_allowlist: Optional[List[str]] = (
+            json.loads(raw_email_allowlist) if raw_email_allowlist else None
+        )
 
         if email_allowlist is not None:
             for recipient_email in email_allowlist:
@@ -91,7 +95,7 @@ def start_new_batch() -> Tuple[str, HTTPStatus]:
 
     # Normalize query param inputs
     state_code = state_code.upper()
-    if test_address == '':
+    if test_address == "":
         test_address = None
     region_code = None if not region_code else region_code.upper()
 
@@ -107,18 +111,24 @@ def start_new_batch() -> Tuple[str, HTTPStatus]:
             message_body=message_body,
         )
     except InvalidRegionCodeException:
-        return 'Invalid region code provided', HTTPStatus.BAD_REQUEST
+        return "Invalid region code provided", HTTPStatus.BAD_REQUEST
     else:
-        test_address_text = f"Emails generated for test address: {test_address}" if test_address else ""
+        test_address_text = (
+            f"Emails generated for test address: {test_address}" if test_address else ""
+        )
         counts_text = f"Successfully generated {success_count} email(s)"
         if failure_count:
             counts_text += f" Failed to generate {failure_count} email(s)"
 
-        return (f"New batch started for {state_code} and {report_type}.  Batch "
-                f"id = {batch_id}. {test_address_text} {counts_text}"), HTTPStatus.OK
+        return (
+            f"New batch started for {state_code} and {report_type}.  Batch "
+            f"id = {batch_id}. {test_address_text} {counts_text}"
+        ), HTTPStatus.OK
 
 
-@reporting_endpoint_blueprint.route('/deliver_emails_for_batch', methods=['GET', 'POST'])
+@reporting_endpoint_blueprint.route(
+    "/deliver_emails_for_batch", methods=["GET", "POST"]
+)
 @requires_gae_auth
 def deliver_emails_for_batch() -> Tuple[str, HTTPStatus]:
     """Deliver a batch of generated emails.
@@ -143,10 +153,12 @@ def deliver_emails_for_batch() -> Tuple[str, HTTPStatus]:
     """
 
     try:
-        batch_id = get_only_str_param_value('batch_id', request.args)
-        redirect_address = get_only_str_param_value('redirect_address', request.args)
-        cc_addresses = get_str_param_values('cc_address', request.args)
-        subject_override = get_only_str_param_value('subject_override', request.args, preserve_case=True)
+        batch_id = get_only_str_param_value("batch_id", request.args)
+        redirect_address = get_only_str_param_value("redirect_address", request.args)
+        cc_addresses = get_str_param_values("cc_address", request.args)
+        subject_override = get_only_str_param_value(
+            "subject_override", request.args, preserve_case=True
+        )
 
         validate_email_address(redirect_address)
         for cc_address in cc_addresses:
@@ -160,13 +172,22 @@ def deliver_emails_for_batch() -> Tuple[str, HTTPStatus]:
         logging.error(msg)
         return msg, HTTPStatus.BAD_REQUEST
 
-    success_count, failure_count = email_delivery.deliver(batch_id,
-                                                          redirect_address=redirect_address,
-                                                          cc_addresses=cc_addresses,
-                                                          subject_override=subject_override)
+    success_count, failure_count = email_delivery.deliver(
+        batch_id,
+        redirect_address=redirect_address,
+        cc_addresses=cc_addresses,
+        subject_override=subject_override,
+    )
 
-    redirect_text = f"to the redirect email address {redirect_address}" if redirect_address else ""
-    cc_addresses_text = f"CC'd {','.join(email for email in cc_addresses)}." if cc_addresses else ""
+    redirect_text = (
+        f"to the redirect email address {redirect_address}" if redirect_address else ""
+    )
+    cc_addresses_text = (
+        f"CC'd {','.join(email for email in cc_addresses)}." if cc_addresses else ""
+    )
 
-    return f"Sent {success_count} emails {redirect_text}. {cc_addresses_text} " \
-           f"{failure_count} emails failed to send", HTTPStatus.OK
+    return (
+        f"Sent {success_count} emails {redirect_text}. {cc_addresses_text} "
+        f"{failure_count} emails failed to send",
+        HTTPStatus.OK,
+    )

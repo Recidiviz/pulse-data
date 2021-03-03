@@ -15,27 +15,28 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Booking counts by day, fips, and most_severe_charge."""
-# pylint: disable=line-too-long
+
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
-from recidiviz.calculator.query.county.views.charges.charge_severity_all_bookings import \
-    CHARGE_SEVERITY_ALL_BOOKINGS_VIEW_BUILDER
-from recidiviz.calculator.query.county.views.vera.county_names import COUNTY_NAMES_VIEW_BUILDER
+from recidiviz.calculator.query.county.views.charges.charge_severity_all_bookings import (
+    CHARGE_SEVERITY_ALL_BOOKINGS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.county.views.vera.county_names import (
+    COUNTY_NAMES_VIEW_BUILDER,
+)
 from recidiviz.persistence.database.schema.county.schema import Booking, Person
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_VIEW_NAME = 'charge_severity_counts_all_bookings'
+CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_VIEW_NAME = "charge_severity_counts_all_bookings"
 
-CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_DESCRIPTION = \
-"""
+CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_DESCRIPTION = """
 Counts the total number of active, admitted, and released Bookings
 on each day and FIPS by their `most_severe_charge`.
 """
 
-CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_QUERY_TEMPLATE = \
-"""
+CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_QUERY_TEMPLATE = """
 /*{description}*/
 WITH
 
@@ -106,9 +107,9 @@ CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     booking_table=Booking.__tablename__,
     person_table=Person.__tablename__,
     charge_severity_all_bookings_view=CHARGE_SEVERITY_ALL_BOOKINGS_VIEW_BUILDER.view_id,
-    county_names_view=COUNTY_NAMES_VIEW_BUILDER.view_id
+    county_names_view=COUNTY_NAMES_VIEW_BUILDER.view_id,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_VIEW_BUILDER.build_and_print()

@@ -20,8 +20,7 @@ from enum import unique
 from typing import Dict
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
-import recidiviz.common.constants.state.enum_canonical_strings as \
-    state_enum_strings
+import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
@@ -39,11 +38,11 @@ class StateIncarcerationType(EntityEnum, metaclass=EntityEnumMeta):
 
 
 _STATE_INCARCERATION_TYPE_MAP: Dict[str, StateIncarcerationType] = {
-    'JAIL': StateIncarcerationType.COUNTY_JAIL,
-    'COUNTY JAIL': StateIncarcerationType.COUNTY_JAIL,
-    'EXTERNAL UNKNOWN': StateIncarcerationType.EXTERNAL_UNKNOWN,
-    'FEDERAL PRISON': StateIncarcerationType.FEDERAL_PRISON,
-    'OUT OF STATE': StateIncarcerationType.OUT_OF_STATE,
-    'PRISON': StateIncarcerationType.STATE_PRISON,
-    'STATE PRISON': StateIncarcerationType.STATE_PRISON
+    "JAIL": StateIncarcerationType.COUNTY_JAIL,
+    "COUNTY JAIL": StateIncarcerationType.COUNTY_JAIL,
+    "EXTERNAL UNKNOWN": StateIncarcerationType.EXTERNAL_UNKNOWN,
+    "FEDERAL PRISON": StateIncarcerationType.FEDERAL_PRISON,
+    "OUT OF STATE": StateIncarcerationType.OUT_OF_STATE,
+    "PRISON": StateIncarcerationType.STATE_PRISON,
+    "STATE PRISON": StateIncarcerationType.STATE_PRISON,
 }

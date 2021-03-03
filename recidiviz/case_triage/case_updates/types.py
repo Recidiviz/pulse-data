@@ -24,23 +24,23 @@ import dateutil.parser
 
 
 class CaseUpdateActionType(Enum):
-    COMPLETED_ASSESSMENT = 'COMPLETED_ASSESSMENT'
-    DISCHARGE_INITIATED = 'DISCHARGE_INITIATED'
-    DOWNGRADE_INITIATED = 'DOWNGRADE_INITIATED'
-    FOUND_EMPLOYMENT = 'FOUND_EMPLOYMENT'
-    SCHEDULED_FACE_TO_FACE = 'SCHEDULED_FACE_TO_FACE'
+    COMPLETED_ASSESSMENT = "COMPLETED_ASSESSMENT"
+    DISCHARGE_INITIATED = "DISCHARGE_INITIATED"
+    DOWNGRADE_INITIATED = "DOWNGRADE_INITIATED"
+    FOUND_EMPLOYMENT = "FOUND_EMPLOYMENT"
+    SCHEDULED_FACE_TO_FACE = "SCHEDULED_FACE_TO_FACE"
 
-    INFORMATION_DOESNT_MATCH_OMS = 'INFORMATION_DOESNT_MATCH_OMS'
-    NOT_ON_CASELOAD = 'NOT_ON_CASELOAD'
-    FILED_REVOCATION_OR_VIOLATION = 'FILED_REVOCATION_OR_VIOLATION'
-    OTHER_DISMISSAL = 'OTHER_DISMISSAL'
+    INFORMATION_DOESNT_MATCH_OMS = "INFORMATION_DOESNT_MATCH_OMS"
+    NOT_ON_CASELOAD = "NOT_ON_CASELOAD"
+    FILED_REVOCATION_OR_VIOLATION = "FILED_REVOCATION_OR_VIOLATION"
+    OTHER_DISMISSAL = "OTHER_DISMISSAL"
 
 
 class CaseUpdateMetadataKeys:
-    ACTION = 'action'
-    ACTION_TIMESTAMP = 'action_ts'
-    LAST_RECORDED_DATE = 'last_recorded_date'
-    LAST_SUPERVISION_LEVEL = 'last_supervision_level'
+    ACTION = "action"
+    ACTION_TIMESTAMP = "action_ts"
+    LAST_RECORDED_DATE = "last_recorded_date"
+    LAST_SUPERVISION_LEVEL = "last_supervision_level"
 
 
 @attr.s(auto_attribs=True)
@@ -54,17 +54,23 @@ class CaseUpdateAction:
     last_supervision_level: Optional[str]
 
     @staticmethod
-    def from_json(action_dict: Dict[str, Any]) -> 'CaseUpdateAction':
+    def from_json(action_dict: Dict[str, Any]) -> "CaseUpdateAction":
         action_type = CaseUpdateActionType(action_dict[CaseUpdateMetadataKeys.ACTION])
-        action_ts = dateutil.parser.parse(action_dict[CaseUpdateMetadataKeys.ACTION_TIMESTAMP])
+        action_ts = dateutil.parser.parse(
+            action_dict[CaseUpdateMetadataKeys.ACTION_TIMESTAMP]
+        )
 
         last_recorded_date = None
         if CaseUpdateMetadataKeys.LAST_RECORDED_DATE in action_dict:
-            last_recorded_date = dateutil.parser.parse(action_dict[CaseUpdateMetadataKeys.LAST_RECORDED_DATE]).date()
+            last_recorded_date = dateutil.parser.parse(
+                action_dict[CaseUpdateMetadataKeys.LAST_RECORDED_DATE]
+            ).date()
 
         last_supervision_level = None
         if CaseUpdateMetadataKeys.LAST_SUPERVISION_LEVEL in action_dict:
-            last_supervision_level = action_dict[CaseUpdateMetadataKeys.LAST_SUPERVISION_LEVEL]
+            last_supervision_level = action_dict[
+                CaseUpdateMetadataKeys.LAST_SUPERVISION_LEVEL
+            ]
 
         return CaseUpdateAction(
             action_type=action_type,
@@ -80,8 +86,12 @@ class CaseUpdateAction:
         }
 
         if self.last_recorded_date is not None:
-            base_json[CaseUpdateMetadataKeys.LAST_RECORDED_DATE] = str(self.last_recorded_date)
+            base_json[CaseUpdateMetadataKeys.LAST_RECORDED_DATE] = str(
+                self.last_recorded_date
+            )
         if self.last_supervision_level is not None:
-            base_json[CaseUpdateMetadataKeys.LAST_SUPERVISION_LEVEL] = self.last_supervision_level
+            base_json[
+                CaseUpdateMetadataKeys.LAST_SUPERVISION_LEVEL
+            ] = self.last_supervision_level
 
         return base_json

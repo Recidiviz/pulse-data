@@ -27,24 +27,24 @@ from recidiviz.persistence.single_count import store_single_count
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.params import get_str_param_value
 
-store_single_count_blueprint = Blueprint('store_single_count', __name__)
+store_single_count_blueprint = Blueprint("store_single_count", __name__)
 
 
 class StoreSingleCountError(Exception):
     """Errors thrown in the store single count endpoint"""
 
 
-@store_single_count_blueprint.route('/single_count')
+@store_single_count_blueprint.route("/single_count")
 @requires_gae_auth
 def store_single_count_endpoint():
     """Endpoint to store a single count"""
 
-    jid = get_str_param_value('jid', request.args)
-    ethnicity = get_str_param_value('ethnicity', request.args)
-    gender = get_str_param_value('gender', request.args)
-    race = get_str_param_value('race', request.args)
-    count = get_str_param_value('count', request.args)
-    date = get_str_param_value('date', request.args)
+    jid = get_str_param_value("jid", request.args)
+    ethnicity = get_str_param_value("ethnicity", request.args)
+    gender = get_str_param_value("gender", request.args)
+    race = get_str_param_value("race", request.args)
+    count = get_str_param_value("count", request.args)
+    date = get_str_param_value("date", request.args)
     sc = SingleCount(
         count=count,
         ethnicity=ethnicity,
@@ -55,11 +55,13 @@ def store_single_count_endpoint():
     stored = store_single_count(sc, jid)
 
     if stored:
-        logging.info("Stored [%d] as [%s] for [%s]",
-                     count,
-                     ' '.join(filter(None, (race, gender, ethnicity))),
-                     jid)
-        return '', HTTPStatus.OK
+        logging.info(
+            "Stored [%d] as [%s] for [%s]",
+            count,
+            " ".join(filter(None, (race, gender, ethnicity))),
+            jid,
+        )
+        return "", HTTPStatus.OK
 
     logging.error("Failed to store single count for [%s]", jid)
-    return '', HTTPStatus.INTERNAL_SERVER_ERROR
+    return "", HTTPStatus.INTERNAL_SERVER_ERROR

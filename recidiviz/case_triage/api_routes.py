@@ -26,40 +26,46 @@ from flask_wtf.csrf import generate_csrf
 from recidiviz.case_triage.case_updates.interface import CaseUpdatesInterface
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
 from recidiviz.case_triage.exceptions import CaseTriageBadRequestException
-from recidiviz.case_triage.querier.querier import CaseTriageQuerier, PersonDoesNotExistError
+from recidiviz.case_triage.querier.querier import (
+    CaseTriageQuerier,
+    PersonDoesNotExistError,
+)
 from recidiviz.case_triage.state_utils.requirements import policy_requirements_for_state
 from recidiviz.case_triage.util import SESSION_ADMIN_KEY
 
 
-api = Blueprint('api', __name__)
+api = Blueprint("api", __name__)
 
 
-@api.route('/clients')
+@api.route("/clients")
 def get_clients() -> str:
-    if session.get(SESSION_ADMIN_KEY) and not getattr(g, 'current_user', None):
-        fixture_path = os.path.abspath(os.path.join(
-            os.path.dirname(os.path.realpath(__file__)),
-            "./fixtures/dummy_clients.json",
-        ))
+    if session.get(SESSION_ADMIN_KEY) and not getattr(g, "current_user", None):
+        fixture_path = os.path.abspath(
+            os.path.join(
+                os.path.dirname(os.path.realpath(__file__)),
+                "./fixtures/dummy_clients.json",
+            )
+        )
         with open(fixture_path) as f:
             return jsonify(json.load(f))
 
-    return jsonify([
-        client.to_json() for client in CaseTriageQuerier.clients_for_officer(
-            current_session,
-            g.current_user,
-        )
-    ])
+    return jsonify(
+        [
+            client.to_json()
+            for client in CaseTriageQuerier.clients_for_officer(
+                current_session,
+                g.current_user,
+            )
+        ]
+    )
 
 
-@api.route('/bootstrap')
+@api.route("/bootstrap")
 def get_bootstrap() -> str:
-    return jsonify({
-        "csrf": generate_csrf(current_app.secret_key)
-    })
+    return jsonify({"csrf": generate_csrf(current_app.secret_key)})
 
 
-@api.route('/policy_requirements_for_state', methods=['POST'])
+@api.route("/policy_requirements_for_state", methods=["POST"])
 def get_policy_requirements_for_state() -> str:
     """Returns policy requirements for a given state. Expects input in the form:
     {
@@ -68,28 +74,28 @@ def get_policy_requirements_for_state() -> str:
     """
     if not request.json:
         raise CaseTriageBadRequestException(
-            code='missing_body',
-            description='A json body must be provided for the request',
+            code="missing_body",
+            description="A json body must be provided for the request",
         )
-    if 'state' not in request.json:
+    if "state" not in request.json:
         raise CaseTriageBadRequestException(
-            code='missing_arg',
-            description='`state` keyword is missing from request',
+            code="missing_arg",
+            description="`state` keyword is missing from request",
         )
-    state = request.json['state']
+    state = request.json["state"]
 
     # NOTE: This will have to be further abstracted and generalized once we understand
     # the requirements for additional states.
-    if state != 'US_ID':
+    if state != "US_ID":
         raise CaseTriageBadRequestException(
-            code='invalid_arg',
-            description=f'Invalid state ({state}) provided',
+            code="invalid_arg",
+            description=f"Invalid state ({state}) provided",
         )
 
     return jsonify(policy_requirements_for_state(state).to_json())
 
 
-@api.route('/record_client_action', methods=['POST'])
+@api.route("/record_client_action", methods=["POST"])
 def post_record_client_action() -> str:
     """Records individual clients actions. Expects JSON body of the form:
     {
@@ -99,43 +105,43 @@ def post_record_client_action() -> str:
     }
     `actions` must be non-empty and only contain approved actions
     """
-    if not getattr(g, 'current_user', None):
+    if not getattr(g, "current_user", None):
         raise CaseTriageBadRequestException(
-            code='not_allowed',
-            description='A user must be associated with the record-action request',
+            code="not_allowed",
+            description="A user must be associated with the record-action request",
         )
     if not request.json:
         raise CaseTriageBadRequestException(
-            code='missing_body',
-            description='A json body must be provided for the request',
+            code="missing_body",
+            description="A json body must be provided for the request",
         )
-    if 'personExternalId' not in request.json:
+    if "personExternalId" not in request.json:
         raise CaseTriageBadRequestException(
-            code='missing_arg',
-            description='`personExternalId` keyword is missing from request',
+            code="missing_arg",
+            description="`personExternalId` keyword is missing from request",
         )
-    if 'actions' not in request.json:
+    if "actions" not in request.json:
         raise CaseTriageBadRequestException(
-            code='missing_arg',
-            description='`actions` keyword is missing from request',
+            code="missing_arg",
+            description="`actions` keyword is missing from request",
         )
 
-    person_external_id = request.json['personExternalId']
-    actions = request.json['actions']
-    other_text = request.json.get('otherText')
+    person_external_id = request.json["personExternalId"]
+    actions = request.json["actions"]
+    other_text = request.json.get("otherText")
 
     if not isinstance(actions, list):
         raise CaseTriageBadRequestException(
-            code='improper_type',
-            description='`actions` must be a list of CaseUpdateActionTypes',
+            code="improper_type",
+            description="`actions` must be a list of CaseUpdateActionTypes",
         )
 
     try:
         user_initiated_actions = [CaseUpdateActionType(a) for a in actions]
     except ValueError as e:
         raise CaseTriageBadRequestException(
-            code='improper_type',
-            description='`actions` must be a list of CaseUpdateActionTypes',
+            code="improper_type",
+            description="`actions` must be a list of CaseUpdateActionTypes",
         ) from e
 
     state_code = g.current_user.state_code
@@ -147,8 +153,8 @@ def post_record_client_action() -> str:
         )
     except PersonDoesNotExistError as e:
         raise CaseTriageBadRequestException(
-            code='invalid_arg',
-            description=f'`personExternalId` does not correspond to a known person: {person_external_id}',
+            code="invalid_arg",
+            description=f"`personExternalId` does not correspond to a known person: {person_external_id}",
         ) from e
 
     CaseUpdatesInterface.update_case_for_person(
@@ -158,7 +164,9 @@ def post_record_client_action() -> str:
         user_initiated_actions,
         other_text,
     )
-    return jsonify({
-        "status": "ok",
-        "status_code": HTTPStatus.OK,
-    })
+    return jsonify(
+        {
+            "status": "ok",
+            "status_code": HTTPStatus.OK,
+        }
+    )

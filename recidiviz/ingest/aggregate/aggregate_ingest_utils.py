@@ -29,9 +29,11 @@ from recidiviz.ingest.aggregate.errors import DataFrameCastError
 
 def collapse_header(columns: pd.MultiIndex) -> pd.MultiIndex:
     """Strip empty information from a multi-index Tabula header."""
-    pruned_headers = [filter(_should_keep_word_in_tabula_header, column_header)
-                      for column_header in columns.values]
-    return [' '.join(word).strip() for word in pruned_headers]
+    pruned_headers = [
+        filter(_should_keep_word_in_tabula_header, column_header)
+        for column_header in columns.values
+    ]
+    return [" ".join(word).strip() for word in pruned_headers]
 
 
 def _should_keep_word_in_tabula_header(word: str) -> bool:
@@ -40,12 +42,12 @@ def _should_keep_word_in_tabula_header(word: str) -> bool:
     header text. Rows that are blank contain the word 'Unnamed' and should be
     ignored.
     """
-    return 'Unnamed' not in word
+    return "Unnamed" not in word
 
 
 def rename_columns_and_select(
-        df: pd.DataFrame, rename_dict: Dict[str, str], *,
-        use_regex: bool = False) -> pd.DataFrame:
+    df: pd.DataFrame, rename_dict: Dict[str, str], *, use_regex: bool = False
+) -> pd.DataFrame:
     """Selects only the DataFrame columns listed in |rename_dict| and performs a
     rename operation as described in |rename_dict|.
 
@@ -59,7 +61,8 @@ def rename_columns_and_select(
 
 
 def _create_rename_dict_from_regex(
-        df: pd.DataFrame, regex_rename_dict: Dict[str, str]) -> Dict[str, str]:
+    df: pd.DataFrame, regex_rename_dict: Dict[str, str]
+) -> Dict[str, str]:
     """Converts a Dict[regex, new_column_name] to a Dict[existing_column_name,
     new_column_name]."""
     rename_dict = {}
@@ -87,8 +90,11 @@ def pairwise(iterable: Iterable[Any]) -> Iterable[Any]:
 
 
 def cast_columns_to_int(
-        df: pd.DataFrame, *, ignore_columns: Optional[Set[str]] = None,
-        nullable_int_columns: Optional[Set[str]] = None) -> pd.DataFrame:
+    df: pd.DataFrame,
+    *,
+    ignore_columns: Optional[Set[str]] = None,
+    nullable_int_columns: Optional[Set[str]] = None
+) -> pd.DataFrame:
     """Casts every column in |df| to an int, unless otherwise specified.
 
     If a column is listed in |ignore_columns| then it will be left as is (likely
@@ -122,7 +128,8 @@ def _validate_column_names(df: pd.DataFrame, column_names: Iterable[str]):
     for column_name in column_names:
         if column_name not in df.columns:
             raise DataFrameCastError(
-                "Invalid column_name when casting: {}".format(column_name))
+                "Invalid column_name when casting: {}".format(column_name)
+            )
 
 
 def on_last_day_of_month(date: datetime.date) -> datetime.date:

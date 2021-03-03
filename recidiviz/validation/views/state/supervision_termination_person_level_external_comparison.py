@@ -26,15 +26,15 @@ from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
 
-SUPERVISION_TERMINATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_NAME = \
-    'supervision_termination_person_level_external_comparison'
+SUPERVISION_TERMINATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_NAME = (
+    "supervision_termination_person_level_external_comparison"
+)
 
 SUPERVISION_TERMINATION_PERSON_LEVEL_EXTERNAL_COMPARISON_DESCRIPTION = """
 Comparison of internal and external lists of supervision terminations.
 """
 
-SUPERVISION_TERMINATION_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = \
-    """
+SUPERVISION_TERMINATION_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
 /*{description}*/
     WITH external_data AS (
       -- NOTE: You can replace this part of the query with your own query to test the SELECT query you will use to
@@ -76,6 +76,6 @@ SUPERVISION_TERMINATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER = SimpleBi
     materialized_metrics_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         SUPERVISION_TERMINATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER.build_and_print()

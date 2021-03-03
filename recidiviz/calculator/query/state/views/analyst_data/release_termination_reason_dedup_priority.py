@@ -16,19 +16,21 @@
 # =============================================================================
 """Dedup priority for session end reasons"""
 # pylint: disable=trailing-whitespace
-# pylint: disable=line-too-long
+
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-RELEASE_TERMINATION_REASON_DEDUP_PRIORITY_VIEW_NAME = 'release_termination_reason_dedup_priority'
+RELEASE_TERMINATION_REASON_DEDUP_PRIORITY_VIEW_NAME = (
+    "release_termination_reason_dedup_priority"
+)
 
-RELEASE_TERMINATION_REASON_DEDUP_PRIORITY_VIEW_DESCRIPTION = \
+RELEASE_TERMINATION_REASON_DEDUP_PRIORITY_VIEW_DESCRIPTION = (
     """Dedup priority for session end reasons"""
+)
 
-RELEASE_TERMINATION_REASON_DEDUP_PRIORITY_QUERY_TEMPLATE = \
-    """
+RELEASE_TERMINATION_REASON_DEDUP_PRIORITY_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT 
         'INCARCERATION_RELEASE' AS metric_source,
@@ -73,9 +75,9 @@ RELEASE_TERMINATION_REASON_DEDUP_PRIORITY_VIEW_BUILDER = SimpleBigQueryViewBuild
     view_id=RELEASE_TERMINATION_REASON_DEDUP_PRIORITY_VIEW_NAME,
     view_query_template=RELEASE_TERMINATION_REASON_DEDUP_PRIORITY_QUERY_TEMPLATE,
     description=RELEASE_TERMINATION_REASON_DEDUP_PRIORITY_VIEW_DESCRIPTION,
-    should_materialize=False
+    should_materialize=False,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         RELEASE_TERMINATION_REASON_DEDUP_PRIORITY_VIEW_BUILDER.build_and_print()

@@ -19,9 +19,15 @@ from typing import List
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import \
-    UsMoSupervisionSentence, UsMoIncarcerationSentence, SupervisionTypeSpan
-from recidiviz.persistence.entity.state.entities import StateSupervisionSentence, StateIncarcerationSentence
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import (
+    UsMoSupervisionSentence,
+    UsMoIncarcerationSentence,
+    SupervisionTypeSpan,
+)
+from recidiviz.persistence.entity.state.entities import (
+    StateSupervisionSentence,
+    StateIncarcerationSentence,
+)
 
 
 @attr.s
@@ -30,16 +36,15 @@ class FakeUsMoSupervisionSentence(UsMoSupervisionSentence):
 
     @classmethod
     def fake_sentence_from_sentence(
-            cls,
-            sentence: StateSupervisionSentence,
-            supervision_type_spans: List[SupervisionTypeSpan]
+        cls,
+        sentence: StateSupervisionSentence,
+        supervision_type_spans: List[SupervisionTypeSpan],
     ) -> UsMoSupervisionSentence:
         sentence = FakeUsMoSupervisionSentence.from_supervision_sentence(
             sentence,
             sentence_statuses_raw=[],
-            subclass_args={
-                'supervision_type_spans': supervision_type_spans
-            })
+            subclass_args={"supervision_type_spans": supervision_type_spans},
+        )
         return sentence
 
 
@@ -49,14 +54,13 @@ class FakeUsMoIncarcerationSentence(UsMoIncarcerationSentence):
 
     @classmethod
     def fake_sentence_from_sentence(
-            cls,
-            sentence: StateIncarcerationSentence,
-            supervision_type_spans: List[SupervisionTypeSpan]
+        cls,
+        sentence: StateIncarcerationSentence,
+        supervision_type_spans: List[SupervisionTypeSpan],
     ) -> UsMoIncarcerationSentence:
         sentence = FakeUsMoIncarcerationSentence.from_incarceration_sentence(
             sentence,
             sentence_statuses_raw=[],
-            subclass_args={
-                'supervision_type_spans': supervision_type_spans
-            })
+            subclass_args={"supervision_type_spans": supervision_type_spans},
+        )
         return sentence

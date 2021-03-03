@@ -24,30 +24,34 @@ import yaml
 # dictionaries, but not lists.
 #
 # Mypy's new type engine does not support recursive types yet, so for now this does not actually provide type safety.
-YAMLDictType = Dict[str, Union[str, float, 'YAMLDictType']]  # type: ignore
+YAMLDictType = Dict[str, Union[str, float, "YAMLDictType"]]  # type: ignore
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class YAMLDict:
     """Wraps a dict parsed from YAML and provides type safety when accessing items within the dict."""
+
     def __init__(self, raw_yaml: YAMLDictType):
         self.raw_yaml = raw_yaml
 
     @classmethod
-    def from_path(cls, yaml_path: str) -> 'YAMLDict':
+    def from_path(cls, yaml_path: str) -> "YAMLDict":
         with open(yaml_path) as yaml_file:
             loaded_raw_yaml = yaml.safe_load(yaml_file)
             if not isinstance(loaded_raw_yaml, dict):
                 raise ValueError(
-                    f"Expected manifest to contain a top-level dictionary, but received: {type(loaded_raw_yaml)}")
+                    f"Expected manifest to contain a top-level dictionary, but received: {type(loaded_raw_yaml)}"
+                )
             return YAMLDict(loaded_raw_yaml)
 
     @classmethod
     def _assert_type(cls, field: str, value: Any, value_type: Type[T]) -> Optional[T]:
         if value is not None and not isinstance(value, value_type):
-            raise ValueError(f"The {field} must be of type {value_type.__name__}. Invalid {field}, expected "
-                             f"{value_type} but received: {repr(value)}")
+            raise ValueError(
+                f"The {field} must be of type {value_type.__name__}. Invalid {field}, expected "
+                f"{value_type} but received: {repr(value)}"
+            )
         return value
 
     def pop_optional(self, field: str, value_type: Type[T]) -> Optional[T]:
@@ -59,17 +63,17 @@ class YAMLDict:
             raise KeyError(f"Expected {field} in input: {repr(self.raw_yaml)}")
         return value
 
-    def pop_dict(self, field: str) -> 'YAMLDict':
+    def pop_dict(self, field: str) -> "YAMLDict":
         return YAMLDict(self.pop(field, dict))
 
-    def pop_dict_optional(self, field: str) -> Optional['YAMLDict']:
+    def pop_dict_optional(self, field: str) -> Optional["YAMLDict"]:
         raw_yaml = self.pop_optional(field, dict)
         if not raw_yaml:
             return None
         return YAMLDict(raw_yaml)
 
     @classmethod
-    def _transform_dicts(cls, field: str, raw_yamls: List) -> List['YAMLDict']:
+    def _transform_dicts(cls, field: str, raw_yamls: List) -> List["YAMLDict"]:
         dicts = []
         for raw_yaml in raw_yamls:
             raw_yaml = cls._assert_type(field, raw_yaml, dict)
@@ -78,10 +82,10 @@ class YAMLDict:
             dicts.append(YAMLDict(raw_yaml))
         return dicts
 
-    def pop_dicts(self, field: str) -> List['YAMLDict']:
+    def pop_dicts(self, field: str) -> List["YAMLDict"]:
         return self._transform_dicts(field, self.pop(field, list))
 
-    def pop_dicts_optional(self, field: str) -> Optional[List['YAMLDict']]:
+    def pop_dicts_optional(self, field: str) -> Optional[List["YAMLDict"]]:
         raw_yamls = self.pop_optional(field, list)
         if not raw_yamls:
             return None

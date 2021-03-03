@@ -15,19 +15,18 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Admissions by type by month"""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-ADMISSIONS_BY_TYPE_BY_MONTH_VIEW_NAME = 'admissions_by_type_by_month'
+ADMISSIONS_BY_TYPE_BY_MONTH_VIEW_NAME = "admissions_by_type_by_month"
 
 ADMISSIONS_BY_TYPE_BY_MONTH_DESCRIPTION = """ Admissions by type by month """
 
-ADMISSIONS_BY_TYPE_BY_MONTH_QUERY_TEMPLATE = \
-    """
+ADMISSIONS_BY_TYPE_BY_MONTH_QUERY_TEMPLATE = """
     /*{description}*/
     -- Combine supervision revocations with new admission incarcerations
     WITH combined_admissions AS (
@@ -88,11 +87,11 @@ ADMISSIONS_BY_TYPE_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=ADMISSIONS_BY_TYPE_BY_MONTH_VIEW_NAME,
     view_query_template=ADMISSIONS_BY_TYPE_BY_MONTH_QUERY_TEMPLATE,
-    dimensions=['state_code', 'year', 'month', 'supervision_type', 'district'],
+    dimensions=["state_code", "year", "month", "supervision_type", "district"],
     description=ADMISSIONS_BY_TYPE_BY_MONTH_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         ADMISSIONS_BY_TYPE_BY_MONTH_VIEW_BUILDER.build_and_print()

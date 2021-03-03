@@ -15,12 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Define views for collapsing state-aggregate data around fips."""
-# pylint:disable=line-too-long
+
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
-from recidiviz.calculator.query.county.views.state_aggregates.combined_state_aggregate import \
-    COMBINED_STATE_AGGREGATE_VIEW_BUILDER
+from recidiviz.calculator.query.county.views.state_aggregates.combined_state_aggregate import (
+    COMBINED_STATE_AGGREGATE_VIEW_BUILDER,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -29,7 +30,9 @@ Select {combined_state_aggregates} and SUM each field around fips, report_date
 and aggregation_window. This has the effect of collapsing records around a
 single fips in a given report. This is necessary since some reports list data
 per facility which all get mapped to the same fips. 
-""".format(combined_state_aggregates=COMBINED_STATE_AGGREGATE_VIEW_BUILDER.view_id)
+""".format(
+    combined_state_aggregates=COMBINED_STATE_AGGREGATE_VIEW_BUILDER.view_id
+)
 
 _QUERY_TEMPLATE = """
 /*{description}*/
@@ -93,15 +96,17 @@ GROUP BY
   fips, report_date, aggregation_window
 """
 
-STATE_AGGREGATES_COLLAPSED_TO_FIPS_BUILDER: SimpleBigQueryViewBuilder = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.VIEWS_DATASET,
-    view_id='state_aggregates_collapsed_to_fips',
-    view_query_template=_QUERY_TEMPLATE,
-    views_dataset=dataset_config.VIEWS_DATASET,
-    combined_state_aggregates=COMBINED_STATE_AGGREGATE_VIEW_BUILDER.view_id,
-    description=_DESCRIPTION
+STATE_AGGREGATES_COLLAPSED_TO_FIPS_BUILDER: SimpleBigQueryViewBuilder = (
+    SimpleBigQueryViewBuilder(
+        dataset_id=dataset_config.VIEWS_DATASET,
+        view_id="state_aggregates_collapsed_to_fips",
+        view_query_template=_QUERY_TEMPLATE,
+        views_dataset=dataset_config.VIEWS_DATASET,
+        combined_state_aggregates=COMBINED_STATE_AGGREGATE_VIEW_BUILDER.view_id,
+        description=_DESCRIPTION,
+    )
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         STATE_AGGREGATES_COLLAPSED_TO_FIPS_BUILDER.build_and_print()

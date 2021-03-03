@@ -24,24 +24,27 @@ from more_itertools import one
 from numpy import NaN
 from sqlalchemy import func
 
-from recidiviz.common.constants.aggregate import (
-    enum_canonical_strings as enum_strings
-)
+from recidiviz.common.constants.aggregate import enum_canonical_strings as enum_strings
 from recidiviz.ingest.aggregate.regions.pa import pa_aggregate_ingest
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.base_schema import \
-    JailsBase
+from recidiviz.persistence.database.base_schema import JailsBase
 from recidiviz.persistence.database.schema.aggregate import dao
-from recidiviz.persistence.database.schema.aggregate.schema import \
-    PaFacilityPopAggregate, PaCountyPreSentencedAggregate
+from recidiviz.persistence.database.schema.aggregate.schema import (
+    PaFacilityPopAggregate,
+    PaCountyPreSentencedAggregate,
+)
 from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.utils import fakes
 
 REPORT_DATE = datetime.date(year=2017, month=1, day=1)
 
 # Cache the parsed result between tests since it's expensive to compute
-PARSED_RESULT = pa_aggregate_ingest.parse('', fixtures.as_filepath(
-    '2018 County Statistics _ General Information - 2017 Data.xlsx'))
+PARSED_RESULT = pa_aggregate_ingest.parse(
+    "",
+    fixtures.as_filepath(
+        "2018 County Statistics _ General Information - 2017 Data.xlsx"
+    ),
+)
 
 
 class TestPaAggregateIngest(TestCase):
@@ -57,66 +60,78 @@ class TestPaAggregateIngest(TestCase):
         result = PARSED_RESULT[PaFacilityPopAggregate]
 
         # Assert Head
-        expected_head = pd.DataFrame({
-            'facility_name': ['Adams', 'Allegheny'],
-            'bed_capacity': [285, 3129],
-            'work_release_community_corrections_beds': [NaN, 0.],
-            'in_house_adp': [196., 2352.],
-            'housed_elsewhere_adp': [7., 0.],
-            'work_release_adp': [113., 0.],
-            'admissions': [2048, 14810],
-            'discharge': [2068, 14642],
-            'report_date': 2 * [REPORT_DATE],
-            'fips': ['42001', '42003'],
-            'aggregation_window': 2 * [enum_strings.yearly_granularity],
-            'report_frequency': 2 * [enum_strings.yearly_granularity]
-        })
+        expected_head = pd.DataFrame(
+            {
+                "facility_name": ["Adams", "Allegheny"],
+                "bed_capacity": [285, 3129],
+                "work_release_community_corrections_beds": [NaN, 0.0],
+                "in_house_adp": [196.0, 2352.0],
+                "housed_elsewhere_adp": [7.0, 0.0],
+                "work_release_adp": [113.0, 0.0],
+                "admissions": [2048, 14810],
+                "discharge": [2068, 14642],
+                "report_date": 2 * [REPORT_DATE],
+                "fips": ["42001", "42003"],
+                "aggregation_window": 2 * [enum_strings.yearly_granularity],
+                "report_frequency": 2 * [enum_strings.yearly_granularity],
+            }
+        )
         assert_frame_equal(result.head(n=2), expected_head)
 
         # Assert Tail
-        expected_tail = pd.DataFrame({
-            'facility_name': ['Wyoming', 'York'],
-            'bed_capacity': [78, 2368],
-            'work_release_community_corrections_beds': [0., 308.],
-            'in_house_adp': [75., 2243.],
-            'housed_elsewhere_adp': [10., 0.],
-            'work_release_adp': [0., 147.],
-            'admissions': [506, 13900],
-            'discharge': [513, 14132],
-            'report_date': 2 * [REPORT_DATE],
-            'fips': ['42131', '42133'],
-            'aggregation_window': 2 * [enum_strings.yearly_granularity],
-            'report_frequency': 2 * [enum_strings.yearly_granularity]
-        }, index=range(65, 67))
+        expected_tail = pd.DataFrame(
+            {
+                "facility_name": ["Wyoming", "York"],
+                "bed_capacity": [78, 2368],
+                "work_release_community_corrections_beds": [0.0, 308.0],
+                "in_house_adp": [75.0, 2243.0],
+                "housed_elsewhere_adp": [10.0, 0.0],
+                "work_release_adp": [0.0, 147.0],
+                "admissions": [506, 13900],
+                "discharge": [513, 14132],
+                "report_date": 2 * [REPORT_DATE],
+                "fips": ["42131", "42133"],
+                "aggregation_window": 2 * [enum_strings.yearly_granularity],
+                "report_frequency": 2 * [enum_strings.yearly_granularity],
+            },
+            index=range(65, 67),
+        )
         assert_frame_equal(result.tail(n=2), expected_tail)
 
     def testParse_Table2_ParsesHeadAndTail(self):
         result = PARSED_RESULT[PaCountyPreSentencedAggregate]
 
         # Assert Head
-        expected_head = pd.DataFrame({
-            'report_date': [datetime.date(year=2017, month=1, day=31),
-                            datetime.date(year=2017, month=4, day=30)],
-            'county_name': ['Adams', 'Adams'],
-            'pre_sentenced_population': [111., 127.],
-            'fips': ['42001', '42001'],
-            'aggregation_window': 2 * [enum_strings.daily_granularity],
-            'report_frequency':
-                2 * [enum_strings.quarterly_granularity]
-        })
+        expected_head = pd.DataFrame(
+            {
+                "report_date": [
+                    datetime.date(year=2017, month=1, day=31),
+                    datetime.date(year=2017, month=4, day=30),
+                ],
+                "county_name": ["Adams", "Adams"],
+                "pre_sentenced_population": [111.0, 127.0],
+                "fips": ["42001", "42001"],
+                "aggregation_window": 2 * [enum_strings.daily_granularity],
+                "report_frequency": 2 * [enum_strings.quarterly_granularity],
+            }
+        )
         assert_frame_equal(result.head(n=2), expected_head)
 
         # Assert Tail
-        expected_tail = pd.DataFrame({
-            'report_date': [datetime.date(year=2017, month=8, day=31),
-                            datetime.date(year=2017, month=12, day=31)],
-            'county_name': ['York', 'York'],
-            'pre_sentenced_population': [715., 687.],
-            'fips': ['42133', '42133'],
-            'aggregation_window': 2 * [enum_strings.daily_granularity],
-            'report_frequency':
-                2 * [enum_strings.quarterly_granularity]
-        }, index=range(246, 248))
+        expected_tail = pd.DataFrame(
+            {
+                "report_date": [
+                    datetime.date(year=2017, month=8, day=31),
+                    datetime.date(year=2017, month=12, day=31),
+                ],
+                "county_name": ["York", "York"],
+                "pre_sentenced_population": [715.0, 687.0],
+                "fips": ["42133", "42133"],
+                "aggregation_window": 2 * [enum_strings.daily_granularity],
+                "report_frequency": 2 * [enum_strings.quarterly_granularity],
+            },
+            index=range(246, 248),
+        )
         assert_frame_equal(result.tail(n=2), expected_tail)
 
     def testWrite_Table1_CalculatesSums(self):
@@ -126,7 +141,8 @@ class TestPaAggregateIngest(TestCase):
 
         # Assert
         query = SessionFactory.for_schema_base(JailsBase).query(
-            func.sum(PaFacilityPopAggregate.housed_elsewhere_adp))
+            func.sum(PaFacilityPopAggregate.housed_elsewhere_adp)
+        )
         result = one(one(query.all()))
 
         # Note: This report contains fractional averages
@@ -140,7 +156,8 @@ class TestPaAggregateIngest(TestCase):
 
         # Assert
         query = SessionFactory.for_schema_base(JailsBase).query(
-            func.sum(PaCountyPreSentencedAggregate.pre_sentenced_population))
+            func.sum(PaCountyPreSentencedAggregate.pre_sentenced_population)
+        )
         result = one(one(query.all()))
 
         expected_pretrial_population = 82521

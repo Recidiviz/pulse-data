@@ -41,8 +41,7 @@ from recidiviz.tests.ingest.fixtures import as_filepath
 # Float between [0, 1] which sets the required fuzzy matching certainty
 _FUZZY_MATCH_CUTOFF = 0.75
 
-_JID = pd.read_csv(as_filepath('jid.csv', subdir='data_sets'),
-                   dtype={'fips': str})
+_JID = pd.read_csv(as_filepath("jid.csv", subdir="data_sets"), dtype={"fips": str})
 
 
 def get(county_name: str, state: us.states) -> str:
@@ -53,11 +52,11 @@ def get(county_name: str, state: us.states) -> str:
 
 
 def validate_jid(jid: str) -> str:
-    """Raises an error if the jurisdiction id string is not properly formatted.
-    """
+    """Raises an error if the jurisdiction id string is not properly formatted."""
     if len(str(jid)) != 8 or not int(str(jid)):
-        raise ValueError(f"Improperly formatted JID [{jid}], must be an 8 "
-                         "character integer.")
+        raise ValueError(
+            f"Improperly formatted JID [{jid}], must be an 8 " "character integer."
+        )
     return str(jid)
 
 
@@ -65,10 +64,11 @@ def _to_county_fips(county_name: str, state: us.states) -> int:
     """Lookup fips by county_name, filtering within the given state"""
     all_fips_for_state_df = get_fips_for(state)
     actual_county_name = best_match(
-        county_name, all_fips_for_state_df.index, _FUZZY_MATCH_CUTOFF)
+        county_name, all_fips_for_state_df.index, _FUZZY_MATCH_CUTOFF
+    )
 
     try:
-        return all_fips_for_state_df.at[actual_county_name, 'fips']
+        return all_fips_for_state_df.at[actual_county_name, "fips"]
     except KeyError as e:
         raise FipsMergingError from e
 
@@ -76,14 +76,13 @@ def _to_county_fips(county_name: str, state: us.states) -> int:
 def _to_jurisdiction_id(county_fips: int) -> str:
     """Lookup jurisdiction_id by manifest_agency_name, filtering within the
     given county_fips"""
-    jids_matching_county_fips = _JID.loc[_JID['fips'] == county_fips]
+    jids_matching_county_fips = _JID.loc[_JID["fips"] == county_fips]
 
     # Some jurisdictions in jid.csv have no listed names.
-    jids_matching_county_fips = \
-        jids_matching_county_fips.dropna(subset=['name'])
+    jids_matching_county_fips = jids_matching_county_fips.dropna(subset=["name"])
 
     # If only one jurisdiction in the county, assume it's a match
     if len(jids_matching_county_fips) == 1:
-        return one(jids_matching_county_fips['jid'])
+        return one(jids_matching_county_fips["jid"])
 
     raise FipsMergingError

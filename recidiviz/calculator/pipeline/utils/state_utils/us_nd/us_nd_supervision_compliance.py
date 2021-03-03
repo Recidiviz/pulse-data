@@ -21,9 +21,12 @@ from typing import Optional, List
 
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.common.constants.state.state_supervision_period import StateSupervisionLevel
-from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager import \
-    StateSupervisionCaseComplianceManager
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
+)
+from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager import (
+    StateSupervisionCaseComplianceManager,
+)
 
 # Please refer to http://go/nd-risk-assessment-policy for context on these values.
 # These values were last verified on 02/23/2021.
@@ -41,36 +44,50 @@ class UsNdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
     def _guidelines_applicable_for_case(self) -> bool:
         """Returns whether the standard state guidelines are applicable for the given supervision case. The standard
         guidelines are not applicable for people who are not classified or who are in interstate compact."""
-        disallowed_supervision_levels: List[StateSupervisionLevel] =\
-            [StateSupervisionLevel.EXTERNAL_UNKNOWN, StateSupervisionLevel.INTERSTATE_COMPACT]
-        return self.supervision_period.supervision_level not in disallowed_supervision_levels
+        disallowed_supervision_levels: List[StateSupervisionLevel] = [
+            StateSupervisionLevel.EXTERNAL_UNKNOWN,
+            StateSupervisionLevel.INTERSTATE_COMPACT,
+        ]
+        return (
+            self.supervision_period.supervision_level
+            not in disallowed_supervision_levels
+        )
 
-    def _num_days_past_required_reassessment(self,
-                                             compliance_evaluation_date: date,
-                                             most_recent_assessment_date: date,
-                                             most_recent_assessment_score: int) -> int:
+    def _num_days_past_required_reassessment(
+        self,
+        compliance_evaluation_date: date,
+        most_recent_assessment_date: date,
+        most_recent_assessment_score: int,
+    ) -> int:
         """Returns the number of days it has been since the required reassessment deadline. Returns 0
         if the reassessment is not overdue."""
-        return self._num_days_compliance_evaluation_date_past_reassessment_deadline(compliance_evaluation_date,
-                                                                                    most_recent_assessment_date)
+        return self._num_days_compliance_evaluation_date_past_reassessment_deadline(
+            compliance_evaluation_date, most_recent_assessment_date
+        )
 
-    def _face_to_face_contact_frequency_is_sufficient(self, compliance_evaluation_date: date) -> Optional[bool]:
+    def _face_to_face_contact_frequency_is_sufficient(
+        self, compliance_evaluation_date: date
+    ) -> Optional[bool]:
         """Returns whether the frequency of face-to-face contacts between the officer and the person on supervision
         is sufficient with respect to the state standards for the level of supervision of the case."""
         # TODO(#5199): Update, once face to face contacts are ingested for US_ND.
         return None
 
-    def _num_days_compliance_evaluation_date_past_reassessment_deadline(self,
-                                                                        compliance_evaluation_date: date,
-                                                                        most_recent_assessment_date: date) -> int:
+    def _num_days_compliance_evaluation_date_past_reassessment_deadline(
+        self, compliance_evaluation_date: date, most_recent_assessment_date: date
+    ) -> int:
         """Returns the number of days that the compliance evaluation is overdue, given the latest evaluation.
         Returns 0 if it is not overdue"""
 
         # Their assessment is up to date if the compliance_evaluation_date is within
         # REASSESSMENT_DEADLINE_DAYS number of days since the last assessment date.
-        reassessment_deadline = \
-            most_recent_assessment_date + relativedelta(days=REASSESSMENT_DEADLINE_DAYS)
+        reassessment_deadline = most_recent_assessment_date + relativedelta(
+            days=REASSESSMENT_DEADLINE_DAYS
+        )
         logging.debug(
             "Last assessment was taken on %s. Re-assessment due by %s, and the compliance evaluation date is %s",
-            most_recent_assessment_date, reassessment_deadline, compliance_evaluation_date)
+            most_recent_assessment_date,
+            reassessment_deadline,
+            compliance_evaluation_date,
+        )
         return max(0, (compliance_evaluation_date - reassessment_deadline).days)

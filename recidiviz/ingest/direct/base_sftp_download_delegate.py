@@ -36,6 +36,8 @@ class BaseSftpDownloadDelegate(abc.ABC):
         that are to be downloaded."""
 
     @abc.abstractmethod
-    def post_process_downloads(self, downloaded_path: GcsfsFilePath, gcsfs: GCSFileSystem) -> str:
+    def post_process_downloads(
+        self, downloaded_path: GcsfsFilePath, gcsfs: GCSFileSystem
+    ) -> str:
         """Should be implemented if any of the downloaded values need post-processing prior to sending to ingest
         (e.g. unzipping a zip file). Returns the absolute path of the post-processed download."""

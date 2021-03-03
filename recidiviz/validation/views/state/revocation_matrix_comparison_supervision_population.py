@@ -25,13 +25,14 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
-REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW_NAME = 'revocation_matrix_comparison_supervision_population'
+REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW_NAME = (
+    "revocation_matrix_comparison_supervision_population"
+)
 
 REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_DESCRIPTION = """ 
 Revocation matrix comparison of summed supervision population counts """
 
-REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_QUERY_TEMPLATE = \
-    """
+REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_QUERY_TEMPLATE = """
     /*{description}*/
     WITH by_district as (
       SELECT state_code as region_code, SUM(supervision_population_count) as total_supervision
@@ -71,6 +72,6 @@ REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW_BUILDER = SimpleBigQuer
     view_dataset=state_dataset_config.DASHBOARD_VIEWS_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW_BUILDER.build_and_print()

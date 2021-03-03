@@ -19,25 +19,36 @@
 from typing import List, Dict, Optional, Callable
 
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
-from recidiviz.common.constants.enum_overrides import EnumOverrides, EnumMapper, EnumIgnorePredicate
+from recidiviz.common.constants.enum_overrides import (
+    EnumOverrides,
+    EnumMapper,
+    EnumIgnorePredicate,
+)
 from recidiviz.common.ingest_metadata import SystemLevel
-from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import CsvGcsfsDirectIngestController
-from recidiviz.ingest.direct.direct_ingest_controller_utils import update_overrides_from_maps
+from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import (
+    CsvGcsfsDirectIngestController,
+)
+from recidiviz.ingest.direct.direct_ingest_controller_utils import (
+    update_overrides_from_maps,
+)
 
 
 class UsTxBrazosController(CsvGcsfsDirectIngestController):
     """Direct ingest controller implementation for US_TX_BRAZOS."""
 
-    def __init__(self,
-                 ingest_directory_path: Optional[str] = None,
-                 storage_directory_path: Optional[str] = None,
-                 max_delay_sec_between_files: Optional[int] = None):
+    def __init__(
+        self,
+        ingest_directory_path: Optional[str] = None,
+        storage_directory_path: Optional[str] = None,
+        max_delay_sec_between_files: Optional[int] = None,
+    ):
         super().__init__(
-            'us_tx_brazos',
+            "us_tx_brazos",
             SystemLevel.STATE,
             ingest_directory_path,
             storage_directory_path,
-            max_delay_sec_between_files=max_delay_sec_between_files)
+            max_delay_sec_between_files=max_delay_sec_between_files,
+        )
         self.enum_overrides = self.generate_enum_overrides()
 
         self.row_post_processors_by_file: Dict[str, List[Callable]] = {}
@@ -61,7 +72,12 @@ class UsTxBrazosController(CsvGcsfsDirectIngestController):
         """Provides US_TX_BRAZOS-specific overrides for enum mappings."""
         base_overrides = super().get_enum_overrides()
         return update_overrides_from_maps(
-            base_overrides, self.ENUM_OVERRIDES, self.ENUM_IGNORES, self.ENUM_MAPPERS, self.ENUM_IGNORE_PREDICATES)
+            base_overrides,
+            self.ENUM_OVERRIDES,
+            self.ENUM_IGNORES,
+            self.ENUM_MAPPERS,
+            self.ENUM_IGNORE_PREDICATES,
+        )
 
     def get_enum_overrides(self) -> EnumOverrides:
         return self.enum_overrides
@@ -75,5 +91,7 @@ class UsTxBrazosController(CsvGcsfsDirectIngestController):
     def _get_primary_key_override_for_file(self, file: str) -> Optional[Callable]:
         return self.primary_key_override_hook_by_file.get(file, None)
 
-    def _get_ancestor_chain_overrides_callback_for_file(self, file: str) -> Optional[Callable]:
+    def _get_ancestor_chain_overrides_callback_for_file(
+        self, file: str
+    ) -> Optional[Callable]:
         return self.ancestor_chain_overrides_callback_by_file.get(file, None)

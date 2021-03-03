@@ -33,9 +33,13 @@ from typing import List, Tuple
 from google.cloud.bigquery import WriteDisposition
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.calculator.dataflow_output_storage_config import DATAFLOW_METRICS_COLD_STORAGE_DATASET, \
-    DATAFLOW_METRICS_TO_TABLES
-from recidiviz.calculator.pipeline.recidivism.metrics import ReincarcerationRecidivismRateMetric
+from recidiviz.calculator.dataflow_output_storage_config import (
+    DATAFLOW_METRICS_COLD_STORAGE_DATASET,
+    DATAFLOW_METRICS_TO_TABLES,
+)
+from recidiviz.calculator.pipeline.recidivism.metrics import (
+    ReincarcerationRecidivismRateMetric,
+)
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
 
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
@@ -53,7 +57,7 @@ def main(dry_run: bool) -> None:
     for table_ref in dataflow_metrics_tables:
         table_id = table_ref.table_id
 
-        logging.info('Migrating data to cold storage for table [%s]', table_id)
+        logging.info("Migrating data to cold storage for table [%s]", table_id)
 
         filter_clause = "WHERE methodology = 'PERSON'"
 
@@ -70,13 +74,18 @@ def main(dry_run: bool) -> None:
             project_id=table_ref.project,
             dataflow_metrics_dataset=table_ref.dataset_id,
             table_id=table_id,
-            filter_clause=filter_clause
+            filter_clause=filter_clause,
         )
 
         if dry_run:
-            logging.info("[DRY RUN] Would insert rows into [%s].[%s] from [%s].[%s] that match this query: %s",
-                         cold_storage_dataset, table_id, dataflow_metrics_dataset, table_id,
-                         insert_query)
+            logging.info(
+                "[DRY RUN] Would insert rows into [%s].[%s] from [%s].[%s] that match this query: %s",
+                cold_storage_dataset,
+                table_id,
+                dataflow_metrics_dataset,
+                table_id,
+                insert_query,
+            )
         else:
             # Move data from the Dataflow metrics dataset into the cold storage table, creating the table if necessary
             insert_job = bq_client.insert_into_table_from_query(
@@ -84,51 +93,59 @@ def main(dry_run: bool) -> None:
                 destination_table_id=table_id,
                 query=insert_query,
                 allow_field_additions=True,
-                write_disposition=WriteDisposition.WRITE_APPEND)
+                write_disposition=WriteDisposition.WRITE_APPEND,
+            )
 
             # Wait for the insert job to complete before running the delete job
             insert_job.result()
 
         if dry_run:
-            logging.info("[DRY RUN] Would delete rows from [%s].[%s] %s",
-                         dataflow_metrics_dataset, table_id, filter_clause)
+            logging.info(
+                "[DRY RUN] Would delete rows from [%s].[%s] %s",
+                dataflow_metrics_dataset,
+                table_id,
+                filter_clause,
+            )
         else:
             # Delete these rows from the Dataflow metrics table
             delete_job = bq_client.delete_from_table_async(
-                dataflow_metrics_dataset, table_id, filter_clause=filter_clause)
+                dataflow_metrics_dataset, table_id, filter_clause=filter_clause
+            )
 
             # Wait for the replace job to complete before moving on
             delete_job.result()
 
-        logging.info('Done migrating data for table [%s]', table_id)
+        logging.info("Done migrating data for table [%s]", table_id)
 
 
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     """Parses the required arguments."""
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--project_id',
-                        dest='project_id',
-                        type=str,
-                        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
-                        required=True)
+    parser.add_argument(
+        "--project_id",
+        dest="project_id",
+        type=str,
+        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
+        required=True,
+    )
 
-    parser.add_argument('--dry_run',
-                        dest='dry_run',
-                        type=str_to_bool,
-                        required=True)
+    parser.add_argument("--dry_run", dest="dry_run", type=str_to_bool, required=True)
 
     return parser.parse_known_args(argv)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
     known_args, _ = parse_arguments(sys.argv)
 
-    logging.warning("This script should only be run by the on-call engineer doing a deploy."
-                    " Are you the on-call engineer running a deploy for the %s project? (Y/n)", known_args.project_id)
+    logging.warning(
+        "This script should only be run by the on-call engineer doing a deploy."
+        " Are you the on-call engineer running a deploy for the %s project? (Y/n)",
+        known_args.project_id,
+    )
     continue_running = input()
-    if continue_running != 'Y':
+    if continue_running != "Y":
         sys.exit()
 
     with local_project_id_override(known_args.project_id):

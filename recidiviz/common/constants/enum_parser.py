@@ -39,13 +39,18 @@ class EnumParser(Generic[EntityEnumT]):
 
         if parsed is not None and not isinstance(parsed, self.enum_cls):
             raise ValueError(
-                f'Unexpected type for parsed enum. Expected type [{self.enum_cls}], found [{type(parsed)}]. '
-                f'Parsed value: [{parsed}].')
+                f"Unexpected type for parsed enum. Expected type [{self.enum_cls}], found [{type(parsed)}]. "
+                f"Parsed value: [{parsed}]."
+            )
         return parsed
 
 
-def get_parser_for_enum_with_default(default: EntityEnumT) -> Callable[[EnumParser[EntityEnumT]], EntityEnumT]:
+def get_parser_for_enum_with_default(
+    default: EntityEnumT,
+) -> Callable[[EnumParser[EntityEnumT]], EntityEnumT]:
     """Returns a converter function that parses a particular enum, but returns the default if parsing returns None."""
+
     def _parse_enum_with_default(enum_parser: EnumParser[EntityEnumT]) -> EntityEnumT:
         return enum_parser.parse() or default
+
     return _parse_enum_with_default

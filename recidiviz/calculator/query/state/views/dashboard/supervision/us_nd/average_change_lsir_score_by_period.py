@@ -26,8 +26,7 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW_NAME = \
-    'average_change_lsir_score_by_period'
+AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW_NAME = "average_change_lsir_score_by_period"
 
 AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_DESCRIPTION = """
     The average change in LSIR score by metric period months of scheduled 
@@ -35,8 +34,7 @@ AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_DESCRIPTION = """
     termination to the second LSIR score of the person's supervision.
 """
 
-AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_QUERY_TEMPLATE = \
-    """
+AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT
       state_code, metric_period_months,
@@ -70,7 +68,7 @@ AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW_NAME,
     view_query_template=AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_QUERY_TEMPLATE,
-    dimensions=['state_code', 'metric_period_months', 'supervision_type', 'district'],
+    dimensions=["state_code", "metric_period_months", "supervision_type", "district"],
     description=AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
@@ -80,6 +78,6 @@ AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW_BUILDER = MetricBigQueryViewBuilder(
     metric_period_condition=bq_utils.metric_period_condition(),
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW_BUILDER.build_and_print()

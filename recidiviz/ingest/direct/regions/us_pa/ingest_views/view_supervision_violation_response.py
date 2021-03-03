@@ -16,8 +16,9 @@
 # =============================================================================
 """Query containing supervision violation response information."""
 
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import \
-    DirectIngestPreProcessedIngestViewBuilder
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    DirectIngestPreProcessedIngestViewBuilder,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -74,12 +75,12 @@ GROUP BY parole_number, parole_count_id, set_id
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
-    region='us_pa',
-    ingest_view_name='supervision_violation_response',
+    region="us_pa",
+    ingest_view_name="supervision_violation_response",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols='parole_number ASC, CAST(parole_count_id AS INT64) ASC, CAST(set_id AS INT64) ASC'
+    order_by_cols="parole_number ASC, CAST(parole_count_id AS INT64) ASC, CAST(set_id AS INT64) ASC",
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         VIEW_BUILDER.build_and_print()

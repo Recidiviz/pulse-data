@@ -19,12 +19,17 @@
 import abc
 from typing import Optional
 
-from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
-    BaseDirectIngestController
+from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
+    BaseDirectIngestController,
+)
 from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgs
-from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
-    DirectIngestCloudTaskManager, ProcessIngestJobCloudTaskQueueInfo, SchedulerCloudTaskQueueInfo, \
-    BQImportExportCloudTaskQueueInfo, SftpCloudTaskQueueInfo
+from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
+    DirectIngestCloudTaskManager,
+    ProcessIngestJobCloudTaskQueueInfo,
+    SchedulerCloudTaskQueueInfo,
+    BQImportExportCloudTaskQueueInfo,
+    SftpCloudTaskQueueInfo,
+)
 from recidiviz.utils.regions import Region
 
 
@@ -38,7 +43,9 @@ class FakeDirectIngestCloudTaskManager(DirectIngestCloudTaskManager):
         self.controller = controller
 
     @abc.abstractmethod
-    def get_process_job_queue_info(self, region: Region) -> ProcessIngestJobCloudTaskQueueInfo:
+    def get_process_job_queue_info(
+        self, region: Region
+    ) -> ProcessIngestJobCloudTaskQueueInfo:
         pass
 
     @abc.abstractmethod
@@ -46,7 +53,9 @@ class FakeDirectIngestCloudTaskManager(DirectIngestCloudTaskManager):
         pass
 
     @abc.abstractmethod
-    def get_bq_import_export_queue_info(self, region: Region) -> BQImportExportCloudTaskQueueInfo:
+    def get_bq_import_export_queue_info(
+        self, region: Region
+    ) -> BQImportExportCloudTaskQueueInfo:
         pass
 
     @abc.abstractmethod
@@ -54,18 +63,19 @@ class FakeDirectIngestCloudTaskManager(DirectIngestCloudTaskManager):
         pass
 
     @abc.abstractmethod
-    def create_direct_ingest_process_job_task(self, region: Region,
-                                              ingest_args: IngestArgs) -> None:
+    def create_direct_ingest_process_job_task(
+        self, region: Region, ingest_args: IngestArgs
+    ) -> None:
         pass
 
     @abc.abstractmethod
-    def create_direct_ingest_scheduler_queue_task(self, region: Region,
-                                                  just_finished_job: bool,
-                                                  delay_sec: int) -> None:
+    def create_direct_ingest_scheduler_queue_task(
+        self, region: Region, just_finished_job: bool, delay_sec: int
+    ) -> None:
         pass
 
     @abc.abstractmethod
-    def create_direct_ingest_handle_new_files_task(self,
-                                                   region: Region,
-                                                   can_start_ingest: bool) -> None:
+    def create_direct_ingest_handle_new_files_task(
+        self, region: Region, can_start_ingest: bool
+    ) -> None:
         pass

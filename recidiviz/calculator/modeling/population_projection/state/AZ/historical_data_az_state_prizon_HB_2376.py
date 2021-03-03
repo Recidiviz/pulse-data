@@ -27,108 +27,143 @@ TIME_STEP: year
 """
 import pandas as pd
 import numpy as np
-from recidiviz.calculator.modeling.population_projection.spark_bq_utils import upload_spark_model_inputs
+from recidiviz.calculator.modeling.population_projection.spark_bq_utils import (
+    upload_spark_model_inputs,
+)
 
-historical_data_2019 = pd.read_csv('AZ_data/HB_2376/2019.csv', sep=';', thousands=',')
-historical_data_2018 = pd.read_csv('AZ_data/HB_2376/2018.csv', sep=';', thousands=',')
-historical_data_2017 = pd.read_csv('AZ_data/HB_2376/2017.csv', sep=';', thousands=',')
+historical_data_2019 = pd.read_csv("AZ_data/HB_2376/2019.csv", sep=";", thousands=",")
+historical_data_2018 = pd.read_csv("AZ_data/HB_2376/2018.csv", sep=";", thousands=",")
+historical_data_2017 = pd.read_csv("AZ_data/HB_2376/2017.csv", sep=";", thousands=",")
 
 felony_classes = historical_data_2019.felony_class.to_list()
 
+
 def get_field_for_felony_class(df, field, felony_class_type):
-    return df.loc[df['felony_class'] == felony_class_type][field].to_list()[0]
+    return df.loc[df["felony_class"] == felony_class_type][field].to_list()[0]
+
 
 def get_yearly_fields_for_felony_class(field, felony_class_type):
     return [
         get_field_for_felony_class(historical_data_2017, field, felony_class_type),
         get_field_for_felony_class(historical_data_2018, field, felony_class_type),
-        get_field_for_felony_class(historical_data_2019, field, felony_class_type)
+        get_field_for_felony_class(historical_data_2019, field, felony_class_type),
     ]
 
-population_by_felony_class = {felony_class: get_yearly_fields_for_felony_class('total', felony_class)
-    for felony_class in felony_classes}
-population_data = pd.DataFrame({
-    'year': [-3, -2, -1],
-    **population_by_felony_class
-})
 
-admissions_by_felony_class = {felony_class: get_yearly_fields_for_felony_class('admissions', felony_class)
-    for felony_class in felony_classes}
-admissions_data = pd.DataFrame({
-    'year': [-3, -2, -1],
-    **admissions_by_felony_class
-})
+population_by_felony_class = {
+    felony_class: get_yearly_fields_for_felony_class("total", felony_class)
+    for felony_class in felony_classes
+}
+population_data = pd.DataFrame({"year": [-3, -2, -1], **population_by_felony_class})
 
-releases_by_felony_class = {felony_class: get_yearly_fields_for_felony_class('releases', felony_class)
-    for felony_class in felony_classes}
-releases_data = pd.DataFrame({
-    'year': [-3, -2, -1],
-    **releases_by_felony_class
-})
+admissions_by_felony_class = {
+    felony_class: get_yearly_fields_for_felony_class("admissions", felony_class)
+    for felony_class in felony_classes
+}
+admissions_data = pd.DataFrame({"year": [-3, -2, -1], **admissions_by_felony_class})
+
+releases_by_felony_class = {
+    felony_class: get_yearly_fields_for_felony_class("releases", felony_class)
+    for felony_class in felony_classes
+}
+releases_data = pd.DataFrame({"year": [-3, -2, -1], **releases_by_felony_class})
 
 transitions_data = pd.DataFrame(
-    columns=['compartment', 'outflow_to', 'total_population', 'compartment_duration', 'felony_class'])
+    columns=[
+        "compartment",
+        "outflow_to",
+        "total_population",
+        "compartment_duration",
+        "felony_class",
+    ]
+)
 outflows_data = pd.DataFrame(
-    columns=['compartment', 'outflow_to', 'total_population', 'time_step', 'felony_class'])
+    columns=[
+        "compartment",
+        "outflow_to",
+        "total_population",
+        "time_step",
+        "felony_class",
+    ]
+)
 total_population_data = pd.DataFrame(
-    columns=['compartment', 'total_population', 'time_step', 'felony_class'])
+    columns=["compartment", "total_population", "time_step", "felony_class"]
+)
 
 # TRANSITIONS TABLE
 def get_mean_for_felony_class(felony_class_type):
-    return np.mean(population_data[felony_class_type]) / np.mean(admissions_data[felony_class_type])
+    return np.mean(population_data[felony_class_type]) / np.mean(
+        admissions_data[felony_class_type]
+    )
 
-average_LOS = {felony_class: get_mean_for_felony_class(felony_class) for felony_class in felony_classes}
+
+average_LOS = {
+    felony_class: get_mean_for_felony_class(felony_class)
+    for felony_class in felony_classes
+}
 
 recidivism_3_year_rate = 0.391
 
 for felony_class in felony_classes:
-    felony_transitions_data = pd.DataFrame({
-        'compartment': ['prison', 'release', 'release', 'release', 'release'],
-        'outflow_to': ['release', 'prison', 'prison', 'prison', 'release'],
-        'total_population': [
-            1,
-            recidivism_3_year_rate / 3,
-            recidivism_3_year_rate / 3,
-            recidivism_3_year_rate / 3,
-            1 - recidivism_3_year_rate
-        ],
-        'compartment_duration': [average_LOS[felony_class], 1, 2, 3, 80],
-        'felony_class': [felony_class] * 5,
-    })
+    felony_transitions_data = pd.DataFrame(
+        {
+            "compartment": ["prison", "release", "release", "release", "release"],
+            "outflow_to": ["release", "prison", "prison", "prison", "release"],
+            "total_population": [
+                1,
+                recidivism_3_year_rate / 3,
+                recidivism_3_year_rate / 3,
+                recidivism_3_year_rate / 3,
+                1 - recidivism_3_year_rate,
+            ],
+            "compartment_duration": [average_LOS[felony_class], 1, 2, 3, 80],
+            "felony_class": [felony_class] * 5,
+        }
+    )
     transitions_data = pd.concat([transitions_data, felony_transitions_data])
 
 # OUTFLOWS TABLE
 for felony_class in felony_classes:
-    admissions_outflows_data = pd.DataFrame({
-        'compartment': ['pre-trial' for year in admissions_data.year],
-        'outflow_to': ['prison' for year in admissions_data.year],
-        'total_population': admissions_data[felony_class].to_list(),
-        'time_step':admissions_data.year.to_list(),
-        'felony_class': [felony_class for year in admissions_data.year],
-    })
-    prison_outflows_data = pd.DataFrame({
-        'compartment': ['prison' for year in releases_data.year],
-        'outflow_to': ['release' for year in releases_data.year],
-        'total_population': releases_data[felony_class].to_list(),
-        'time_step': releases_data.year.to_list(),
-        'felony_class': [felony_class for year in releases_data.year],
-    })
-    outflows_data = pd.concat([outflows_data, admissions_outflows_data, prison_outflows_data])
+    admissions_outflows_data = pd.DataFrame(
+        {
+            "compartment": ["pre-trial" for year in admissions_data.year],
+            "outflow_to": ["prison" for year in admissions_data.year],
+            "total_population": admissions_data[felony_class].to_list(),
+            "time_step": admissions_data.year.to_list(),
+            "felony_class": [felony_class for year in admissions_data.year],
+        }
+    )
+    prison_outflows_data = pd.DataFrame(
+        {
+            "compartment": ["prison" for year in releases_data.year],
+            "outflow_to": ["release" for year in releases_data.year],
+            "total_population": releases_data[felony_class].to_list(),
+            "time_step": releases_data.year.to_list(),
+            "felony_class": [felony_class for year in releases_data.year],
+        }
+    )
+    outflows_data = pd.concat(
+        [outflows_data, admissions_outflows_data, prison_outflows_data]
+    )
 
 # TOTAL POPULATION TABLE
 for felony_class in felony_classes:
-    felony_total_population = pd.DataFrame({
-        'compartment': ['prison' for year in population_data.year],
-        'total_population': population_data[felony_class].to_list(),
-        'time_step': population_data.year.to_list(),
-        'felony_class': [felony_class for year in population_data.year],
-    })
+    felony_total_population = pd.DataFrame(
+        {
+            "compartment": ["prison" for year in population_data.year],
+            "total_population": population_data[felony_class].to_list(),
+            "time_step": population_data.year.to_list(),
+            "felony_class": [felony_class for year in population_data.year],
+        }
+    )
     total_population_data = pd.concat([total_population_data, felony_total_population])
 
 # STORE DATA
-outflows_data = outflows_data.rename({'felony_class': 'crime_type'}, axis=1)
-transitions_data = transitions_data.rename({'felony_class': 'crime_type'}, axis=1)
-total_population_data = total_population_data.rename({'felony_class': 'crime_type'}, axis=1)
+outflows_data = outflows_data.rename({"felony_class": "crime_type"}, axis=1)
+transitions_data = transitions_data.rename({"felony_class": "crime_type"}, axis=1)
+total_population_data = total_population_data.rename(
+    {"felony_class": "crime_type"}, axis=1
+)
 
 final_outflows = pd.DataFrame()
 for year in outflows_data.time_step.unique():
@@ -152,5 +187,10 @@ for year in total_population_data.time_step.unique():
 total_population_data = final_pops
 
 
-upload_spark_model_inputs('recidiviz-staging', 'AZ_HB_2376', outflows_data, transitions_data,
-                          total_population_data)
+upload_spark_model_inputs(
+    "recidiviz-staging",
+    "AZ_HB_2376",
+    outflows_data,
+    transitions_data,
+    total_population_data,
+)

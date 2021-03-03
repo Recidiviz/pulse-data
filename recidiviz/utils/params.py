@@ -22,8 +22,11 @@ from werkzeug.datastructures import MultiDict
 
 
 def get_str_param_value(
-        arg_key: str, args: MultiDict, default: Optional[str] = None,
-        preserve_case: bool = False) -> Optional[str]:
+    arg_key: str,
+    args: MultiDict,
+    default: Optional[str] = None,
+    preserve_case: bool = False,
+) -> Optional[str]:
     """Retrieves URL parameter from request handler params list
 
     Takes a MultiDict of key/value pairs (URL parameters from the request
@@ -43,12 +46,15 @@ def get_str_param_value(
         First value for given param_name if found
         Provided default value if not found
         None if no default provided and not found
-        """
-    return clean_str_param_value(args.get(arg_key, default),
-                                 preserve_case=preserve_case)
+    """
+    return clean_str_param_value(
+        args.get(arg_key, default), preserve_case=preserve_case
+    )
 
 
-def get_only_str_param_value(arg_key: str, args: MultiDict, preserve_case: bool = False) -> Optional[str]:
+def get_only_str_param_value(
+    arg_key: str, args: MultiDict, preserve_case: bool = False
+) -> Optional[str]:
     """Returns a single value for the provided key in the request args.
 
     Raises a ValueError if there is more than one possible value in the args.
@@ -75,22 +81,28 @@ def get_bool_param_value(arg_key: str, args: MultiDict, default: bool) -> bool:
 
 def str_to_bool(bool_str: str, arg_key: Optional[str] = None) -> bool:
     bool_str_lower = bool_str.lower()
-    if bool_str_lower == 'true':
+    if bool_str_lower == "true":
         return True
-    if bool_str_lower == 'false':
+    if bool_str_lower == "false":
         return False
 
-    raise ValueError(
-        f'Unexpected value {bool_str} for bool param {arg_key}')
+    raise ValueError(f"Unexpected value {bool_str} for bool param {arg_key}")
 
 
-def get_str_param_values(arg_key: str, args: MultiDict, preserve_case: bool = False) -> List[str]:
+def get_str_param_values(
+    arg_key: str, args: MultiDict, preserve_case: bool = False
+) -> List[str]:
     """Same as above, but returns all values for a given key"""
-    values = [clean_str_param_value(val, preserve_case=preserve_case) for val in args.getlist(arg_key)]
+    values = [
+        clean_str_param_value(val, preserve_case=preserve_case)
+        for val in args.getlist(arg_key)
+    ]
     return [v for v in values if v is not None]
 
 
-def clean_str_param_value(value: Optional[str], preserve_case: bool = False) -> Optional[str]:
+def clean_str_param_value(
+    value: Optional[str], preserve_case: bool = False
+) -> Optional[str]:
     if value:
         value = unquote(value)
         if preserve_case:

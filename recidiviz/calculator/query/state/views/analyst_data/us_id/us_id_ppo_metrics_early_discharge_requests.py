@@ -15,20 +15,23 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Metric capturing number of unique people receiving an early discharge request each month"""
-# pylint: disable=trailing-whitespace, disable=line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET, ANALYST_VIEWS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    STATE_BASE_DATASET,
+    ANALYST_VIEWS_DATASET,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-US_ID_PPO_METRICS_EARLY_DISCHARGE_REQUESTS_VIEW_NAME = 'us_id_ppo_metrics_early_discharge_requests'
+US_ID_PPO_METRICS_EARLY_DISCHARGE_REQUESTS_VIEW_NAME = (
+    "us_id_ppo_metrics_early_discharge_requests"
+)
 
-US_ID_PPO_METRICS_EARLY_DISCHARGE_REQUESTS_VIEW_DESCRIPTION = \
-    """Metric capturing number of unique people receiving a valid early discharge request each month for the past 3 years"""
+US_ID_PPO_METRICS_EARLY_DISCHARGE_REQUESTS_VIEW_DESCRIPTION = """Metric capturing number of unique people receiving a valid early discharge request each month for the past 3 years"""
 
-US_ID_PPO_METRICS_EARLY_DISCHARGE_REQUESTS_QUERY_TEMPLATE = \
-    """
+US_ID_PPO_METRICS_EARLY_DISCHARGE_REQUESTS_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT
       state_code,
@@ -75,9 +78,9 @@ US_ID_PPO_METRICS_EARLY_DISCHARGE_REQUESTS_VIEW_BUILDER = SimpleBigQueryViewBuil
     description=US_ID_PPO_METRICS_EARLY_DISCHARGE_REQUESTS_VIEW_DESCRIPTION,
     base_dataset=STATE_BASE_DATASET,
     analyst_dataset=ANALYST_VIEWS_DATASET,
-    should_materialize=True
+    should_materialize=True,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         US_ID_PPO_METRICS_EARLY_DISCHARGE_REQUESTS_VIEW_BUILDER.build_and_print()

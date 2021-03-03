@@ -37,12 +37,12 @@ import recidiviz
 
 
 class GCPEnvironment(Enum):
-    STAGING = 'staging'
-    PRODUCTION = 'production'
+    STAGING = "staging"
+    PRODUCTION = "production"
 
 
-GCP_PROJECT_STAGING = 'recidiviz-staging'
-GCP_PROJECT_PRODUCTION = 'recidiviz-123'
+GCP_PROJECT_STAGING = "recidiviz-staging"
+GCP_PROJECT_PRODUCTION = "recidiviz-123"
 
 
 GCP_ENVIRONMENTS = {env.value for env in GCPEnvironment}
@@ -50,7 +50,7 @@ GCP_PROJECTS = [GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION]
 
 
 def in_gcp() -> bool:
-    """ Check whether we're currently running on local dev machine or in prod
+    """Check whether we're currently running on local dev machine or in prod
 
     Checks whether the current instance is running hosted on GCP (if not, likely
     running on local devserver).
@@ -77,7 +77,7 @@ def get_gcp_environment() -> Optional[str]:
     Returns:
         The gae instance we are running in, or None if it is not set
     """
-    return os.getenv('RECIDIVIZ_ENV')
+    return os.getenv("RECIDIVIZ_ENV")
 
 
 def in_gcp_production() -> bool:
@@ -132,8 +132,10 @@ def local_only(func: Callable) -> Callable:
         if deployed:
             # Production environment - fail
             logging.error("This API call is not allowed in production.")
-            return ('Not available, see service logs.',
-                    HTTPStatus.INTERNAL_SERVER_ERROR)
+            return (
+                "Not available, see service logs.",
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+            )
 
         # Local development server - continue
         logging.info("Test environment, proceeding.")
@@ -146,10 +148,10 @@ def local_only(func: Callable) -> Callable:
 def in_test():
     """Check whether we are running in a test"""
     # Pytest sets recidiviz.called_from_test in conftest.py
-    if not hasattr(recidiviz, 'called_from_test'):
+    if not hasattr(recidiviz, "called_from_test"):
         # If it is not set, we may have been called from unittest. Check if unittest has been imported, if it has then
         # we assume we are running from a unittest
-        recidiviz.called_from_test = 'unittest' in sys.modules.keys()
+        recidiviz.called_from_test = "unittest" in sys.modules.keys()
     return recidiviz.called_from_test
 
 

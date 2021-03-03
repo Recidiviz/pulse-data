@@ -24,18 +24,22 @@ from recidiviz.utils import metadata
 from recidiviz.common.google_cloud import google_cloud_task_queue_config
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--project_id', required=True,
-                        help='Project to initialize queues for')
-    parser.add_argument('--google_auth_token', required=True,
-                        help='Auth token (obtained via '
-                             '`gcloud auth print-access-token`).')
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    parser.add_argument(
+        "--project_id", required=True, help="Project to initialize queues for"
+    )
+    parser.add_argument(
+        "--google_auth_token",
+        required=True,
+        help="Auth token (obtained via " "`gcloud auth print-access-token`).",
+    )
 
     args = parser.parse_args()
 
-    logging.basicConfig(level=logging.INFO, format='%(message)s')
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
 
     with metadata.local_project_id_override(args.project_id):
         google_cloud_task_queue_config.initialize_queues(

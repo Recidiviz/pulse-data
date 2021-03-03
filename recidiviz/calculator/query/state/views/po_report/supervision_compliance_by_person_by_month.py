@@ -15,21 +15,22 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Supervision case compliance to state standards by person by month."""
-# pylint: disable=trailing-whitespace,line-too-long
+# pylint: disable=trailing-whitespace
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-SUPERVISION_COMPLIANCE_BY_PERSON_BY_MONTH_VIEW_NAME = 'supervision_compliance_by_person_by_month'
+SUPERVISION_COMPLIANCE_BY_PERSON_BY_MONTH_VIEW_NAME = (
+    "supervision_compliance_by_person_by_month"
+)
 
 SUPERVISION_COMPLIANCE_BY_PERSON_BY_MONTH_DESCRIPTION = """
     Supervision case compliance to state standards by person by month
  """
 
-SUPERVISION_COMPLIANCE_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = \
-    """
+SUPERVISION_COMPLIANCE_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = """
     /*{description}*/
     WITH compliance AS (
       SELECT 
@@ -67,6 +68,6 @@ SUPERVISION_COMPLIANCE_BY_PERSON_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuild
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         SUPERVISION_COMPLIANCE_BY_PERSON_BY_MONTH_VIEW_BUILDER.build_and_print()

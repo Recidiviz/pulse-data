@@ -49,19 +49,20 @@ from recidiviz.tools.justice_counts.manual_upload import csv_filename
 
 # If modifying these scopes, delete the file token.pickle from your credentials directory.
 SCOPES = [
-    'https://www.googleapis.com/auth/drive.readonly',
-    'https://www.googleapis.com/auth/spreadsheets.readonly'
+    "https://www.googleapis.com/auth/drive.readonly",
+    "https://www.googleapis.com/auth/spreadsheets.readonly",
 ]
+
 
 def get_credentials(directory: str) -> Credentials:
     creds = None
 
-    token_path = os.path.join(directory, 'token.pickle')
+    token_path = os.path.join(directory, "token.pickle")
     # The file token.pickle stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
     # time.
     if os.path.exists(token_path):
-        with open(token_path, 'rb') as token:
+        with open(token_path, "rb") as token:
             creds = pickle.load(token)
     # If there are no (valid) credentials available, let the user log in.
     if not creds or not creds.valid:
@@ -69,25 +70,29 @@ def get_credentials(directory: str) -> Credentials:
             creds.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file(
-                os.path.join(directory, 'credentials.json'), SCOPES)
+                os.path.join(directory, "credentials.json"), SCOPES
+            )
             creds = flow.run_local_server(port=0)
         # Save the credentials for the next run
-        with open(token_path, 'wb') as token:
+        with open(token_path, "wb") as token:
             pickle.dump(creds, token)
 
     return creds
 
+
 def get_drive_service(creds: Credentials) -> Resource:
-    return build('drive', 'v3', credentials=creds)
+    return build("drive", "v3", credentials=creds)
+
 
 class FileType(enum.Enum):
     # YAML is just a binary file
-    BINARY = 'application/octet-stream'
-    CSV = 'text/csv'
-    DOC = 'application/vnd.google-apps.document'
-    FOLDER = 'application/vnd.google-apps.folder'
-    PLAINTEXT = 'text/plain'
-    SHEET = 'application/vnd.google-apps.spreadsheet'
+    BINARY = "application/octet-stream"
+    CSV = "text/csv"
+    DOC = "application/vnd.google-apps.document"
+    FOLDER = "application/vnd.google-apps.folder"
+    PLAINTEXT = "text/plain"
+    SHEET = "application/vnd.google-apps.spreadsheet"
+
 
 @attr.s
 class DriveItem:
@@ -95,8 +100,10 @@ class DriveItem:
     name: str = attr.ib()
     file_type: FileType = attr.ib(converter=FileType)
 
+
 class Drive:
     """Utility class for working with the Drive and Sheets clients."""
+
     drive: Resource
     gc: gspread.Client
 
@@ -105,7 +112,10 @@ class Drive:
         self.drive = get_drive_service(creds)
         self.gc = gspread.authorize(creds)
 
-    def get_items(self, parent_id: str, file_type: Optional[FileType], name: Optional[str] = None) -> List[DriveItem]:
+    def get_items(
+        self, parent_id: str, file_type: Optional[FileType], name: Optional[str] = None
+    ) -> List[DriveItem]:
+        """Returns all of the matching files in Google Drive."""
         query_string = f'"{parent_id}" in parents'
         if file_type is not None:
             query_string += f' and mimeType="{file_type.value}"'
@@ -115,20 +125,28 @@ class Drive:
         results: List[DriveItem] = []
         page_token: Optional[str] = None
         while not results or page_token is not None:
-            logging.info('get %s', query_string)
-            response = self.drive.files().list(
-                q=query_string,
-                pageSize=10,
-                fields="nextPageToken, files(id, name, mimeType)",
-                spaces='drive',
-                pageToken=page_token).execute()
-            items = response.get('files', [])
+            logging.info("get %s", query_string)
+            response = (
+                self.drive.files()
+                .list(
+                    q=query_string,
+                    pageSize=10,
+                    fields="nextPageToken, files(id, name, mimeType)",
+                    spaces="drive",
+                    pageToken=page_token,
+                )
+                .execute()
+            )
+            items = response.get("files", [])
 
             if not items:
                 break
 
-            results.extend(DriveItem(id=item['id'], name=item['name'], file_type=item['mimeType']) for item in items)
-            page_token = response.get('nextPageToken')
+            results.extend(
+                DriveItem(id=item["id"], name=item["name"], file_type=item["mimeType"])
+                for item in items
+            )
+            page_token = response.get("nextPageToken")
 
         return results
 
@@ -144,7 +162,9 @@ class Drive:
 
         for worksheet in sheet.worksheets():
             csv_name = csv_filename(sheet.title, worksheet.title)
-            logging.info("Downloading worksheet '%s' to '%s'", worksheet.title, csv_name)
+            logging.info(
+                "Downloading worksheet '%s' to '%s'", worksheet.title, csv_name
+            )
             df = pd.DataFrame(worksheet.get_all_records())
             df.to_csv(os.path.join(local_directory, csv_name), index=False)
 
@@ -160,7 +180,7 @@ class Drive:
     def download_file(self, item: DriveItem, local_directory: str) -> None:
         logging.info("Exporting file '%s'", item.name)
         request = self.drive.files().get_media(fileId=item.id)
-        fh = io.FileIO(os.path.join(local_directory, item.name), mode='wb')
+        fh = io.FileIO(os.path.join(local_directory, item.name), mode="wb")
         downloader = MediaIoBaseDownload(fh, request)
         done = False
         while done is False:
@@ -170,7 +190,7 @@ class Drive:
     def download_manifests(self, parent_id: str, local_directory: str) -> None:
         items = self.get_items(parent_id, None)
         for item in items:
-            if item.name.endswith('.yaml'):
+            if item.name.endswith(".yaml"):
                 # If a YAML is ever opened with Google Docs, it will create a separate DOC file. This can't be
                 # downloaded directly so we skip it.
                 if item.file_type is FileType.DOC:
@@ -184,10 +204,18 @@ class Drive:
 
         # Recursively download files from subfolders.
         for folder in self.get_items(parent_id, FileType.FOLDER):
-            self.download_data(folder.id, local_directory=os.path.join(local_directory, folder.name))
+            self.download_data(
+                folder.id, local_directory=os.path.join(local_directory, folder.name)
+            )
 
-def download_data(state_code: states.StateCode, system: schema.System, base_drive_folder_id: str,
-                  base_local_directory: str, credentials_directory: str) -> None:
+
+def download_data(
+    state_code: states.StateCode,
+    system: schema.System,
+    base_drive_folder_id: str,
+    base_local_directory: str,
+    credentials_directory: str,
+) -> None:
     local_directory = os.path.join(base_local_directory, state_code.value, system.value)
     os.makedirs(local_directory, exist_ok=True)
 
@@ -195,37 +223,53 @@ def download_data(state_code: states.StateCode, system: schema.System, base_driv
 
     state_folder = drive.get_folder(state_code.get_state().name, base_drive_folder_id)
     corrections_folder = drive.get_folder(system.value.title(), state_folder.id)
-    data_folder = drive.get_folder('Data', corrections_folder.id)
+    data_folder = drive.get_folder("Data", corrections_folder.id)
     drive.download_data(data_folder.id, local_directory=local_directory)
+
 
 def _create_parser() -> argparse.ArgumentParser:
     """Creates the CLI argument parser."""
     parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument(
-        '--state', required=True, choices=[state.value for state in states.StateCode],
-        help="The state to download manual data for."
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument(
-        '--system', required=True, choices=[system.value for system in schema.System],
+        "--state",
+        required=True,
+        choices=[state.value for state in states.StateCode],
+        help="The state to download manual data for.",
     )
     parser.add_argument(
-        '--base-directory', required=True, type=str,
-        help="The base local directory to write downloaded files to."
+        "--system",
+        required=True,
+        choices=[system.value for system in schema.System],
     )
     parser.add_argument(
-        '--drive-folder-id', required=True, type=str,
+        "--base-directory",
+        required=True,
+        type=str,
+        help="The base local directory to write downloaded files to.",
+    )
+    parser.add_argument(
+        "--drive-folder-id",
+        required=True,
+        type=str,
         help="The id for the folder root Justice Counts Data Collection folder, which contains subdirectories with all "
-             "of the states. The id is the last part of the url, e.g. 'abc123' from "
-             "'https://drive.google.com/drive/folders/abc123'."
+        "of the states. The id is the last part of the url, e.g. 'abc123' from "
+        "'https://drive.google.com/drive/folders/abc123'.",
     )
     parser.add_argument(
-        '--credentials-directory', required=False, default='.', type=str,
-        help="Directory where the 'credentials.json' live, as well as the cached token."
+        "--credentials-directory",
+        required=False,
+        default=".",
+        type=str,
+        help="Directory where the 'credentials.json' live, as well as the cached token.",
     )
     parser.add_argument(
-        '--log', required=False, default='INFO', type=logging.getLevelName,
-        help="Set the logging level"
+        "--log",
+        required=False,
+        default="INFO",
+        type=logging.getLevelName,
+        help="Set the logging level",
     )
     return parser
 
@@ -235,10 +279,15 @@ def _configure_logging(level: str) -> None:
     root.setLevel(level)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     arg_parser = _create_parser()
     arguments = arg_parser.parse_args()
 
     _configure_logging(arguments.log)
-    download_data(states.StateCode(arguments.state), schema.System(arguments.system), arguments.drive_folder_id,
-                  arguments.base_directory, arguments.credentials_directory)
+    download_data(
+        states.StateCode(arguments.state),
+        schema.System(arguments.system),
+        arguments.drive_folder_id,
+        arguments.base_directory,
+        arguments.credentials_directory,
+    )

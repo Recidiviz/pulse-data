@@ -22,7 +22,9 @@ from recidiviz.reporting.context.report_context import ReportContext
 from recidiviz.reporting.recipient import Recipient
 
 
-def get_report_context(state_code: str, report_type: str, recipient: Recipient) -> ReportContext:
+def get_report_context(
+    state_code: str, report_type: str, recipient: Recipient
+) -> ReportContext:
     """Returns the appropriate report context for the given parameters, choosing the correct ReportContext
     implementation.
 

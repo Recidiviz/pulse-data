@@ -26,43 +26,43 @@ from recidiviz.utils import monitoring
 # pylint: disable=redefined-outer-name
 @pytest.fixture
 def mock_mmap():
-    with patch('recidiviz.utils.monitoring.stats') as mock:
+    with patch("recidiviz.utils.monitoring.stats") as mock:
         yield mock.return_value.stats_recorder.new_measurement_map.return_value
 
 
 def test_measurements(mock_mmap):
-    tags = {'alice': 'foo'}
+    tags = {"alice": "foo"}
     with monitoring.measurements(tags) as mmap:
-        tags['bob'] = 'bar'
+        tags["bob"] = "bar"
         assert mmap == mock_mmap
 
-    assert_recorded_tags(mock_mmap, [{'alice': 'foo', 'bob': 'bar'}])
+    assert_recorded_tags(mock_mmap, [{"alice": "foo", "bob": "bar"}])
 
 
 def test_measurements_with_exception(mock_mmap):
     with pytest.raises(Exception):
-        tags = {'alice': 'foo'}
+        tags = {"alice": "foo"}
         with monitoring.measurements(tags) as mmap:
-            tags['bob'] = 'bar'
+            tags["bob"] = "bar"
             assert mmap == mock_mmap
             raise Exception
 
-    assert_recorded_tags(mock_mmap, [{'alice': 'foo', 'bob': 'bar'}])
+    assert_recorded_tags(mock_mmap, [{"alice": "foo", "bob": "bar"}])
 
 
 def test_measurements_with_region_decorator(mock_mmap):
     @monitoring.with_region_tag
     def inner(_region_code):
-        tags = {'alice': 'foo'}
+        tags = {"alice": "foo"}
         with monitoring.measurements(tags) as mmap:
-            tags['bob'] = 'bar'
+            tags["bob"] = "bar"
             assert mmap == mock_mmap
 
-    inner('us_ny')
+    inner("us_ny")
 
-    assert_recorded_tags(mock_mmap, [{
-        'alice': 'foo', 'bob': 'bar', monitoring.TagKey.REGION: 'us_ny'
-    }])
+    assert_recorded_tags(
+        mock_mmap, [{"alice": "foo", "bob": "bar", monitoring.TagKey.REGION: "us_ny"}]
+    )
 
 
 def test_tags_multiple_threads():
@@ -72,8 +72,10 @@ def test_tags_multiple_threads():
     def inner(region_code):
         results[region_code] = monitoring.context_tags()
 
-    threads = [threading.Thread(target=inner, args=[region_code])
-               for region_code in ['us_ny', 'us_pa']]
+    threads = [
+        threading.Thread(target=inner, args=[region_code])
+        for region_code in ["us_ny", "us_pa"]
+    ]
 
     for thread in threads:
         thread.start()
@@ -82,49 +84,57 @@ def test_tags_multiple_threads():
         thread.join()
 
     assert {region: tags.map for region, tags in results.items()} == {
-        'us_ny': {monitoring.TagKey.REGION: 'us_ny'},
-        'us_pa': {monitoring.TagKey.REGION: 'us_pa'},
+        "us_ny": {monitoring.TagKey.REGION: "us_ny"},
+        "us_pa": {monitoring.TagKey.REGION: "us_pa"},
     }
 
 
 def test_measurements_with_push_tags(mock_mmap):
-    tags = {'alice': 'foo'}
+    tags = {"alice": "foo"}
 
     # inside of pushed tag
-    with monitoring.push_tags({'eve': 'baz'}):
+    with monitoring.push_tags({"eve": "baz"}):
         with monitoring.measurements(tags) as mmap:
-            tags['bob'] = 'bar'
+            tags["bob"] = "bar"
             assert mmap == mock_mmap
 
     # outside of pushed tag
     with monitoring.measurements(tags) as mmap:
-        tags['other'] = 'thing'
+        tags["other"] = "thing"
         assert mmap == mock_mmap
 
-    assert_recorded_tags(mock_mmap,
-                         [{'alice': 'foo', 'bob': 'bar', 'eve': 'baz'},
-                          {'alice': 'foo', 'bob': 'bar', 'other': 'thing'}])
+    assert_recorded_tags(
+        mock_mmap,
+        [
+            {"alice": "foo", "bob": "bar", "eve": "baz"},
+            {"alice": "foo", "bob": "bar", "other": "thing"},
+        ],
+    )
 
 
 def test_measurements_with_push_tags_and_exception(mock_mmap):
-    tags = {'alice': 'foo'}
+    tags = {"alice": "foo"}
 
     # inside of pushed tag
     with pytest.raises(Exception):
-        with monitoring.push_tags({'eve': 'baz'}):
+        with monitoring.push_tags({"eve": "baz"}):
             with monitoring.measurements(tags) as mmap:
-                tags['bob'] = 'bar'
+                tags["bob"] = "bar"
                 assert mmap == mock_mmap
                 raise Exception
 
     # outside of pushed tag
     with monitoring.measurements(tags) as mmap:
-        tags['other'] = 'thing'
+        tags["other"] = "thing"
         assert mmap == mock_mmap
 
-    assert_recorded_tags(mock_mmap,
-                         [{'alice': 'foo', 'bob': 'bar', 'eve': 'baz'},
-                          {'alice': 'foo', 'bob': 'bar', 'other': 'thing'}])
+    assert_recorded_tags(
+        mock_mmap,
+        [
+            {"alice": "foo", "bob": "bar", "eve": "baz"},
+            {"alice": "foo", "bob": "bar", "other": "thing"},
+        ],
+    )
 
 
 def assert_recorded_tags(mock_mmap, expected_tag_calls):

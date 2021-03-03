@@ -20,12 +20,15 @@ from typing import List, Type, TypeVar, Generic, Dict
 
 import attr
 
-from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import GoogleCloudTasksClientWrapper
+from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import (
+    GoogleCloudTasksClientWrapper,
+)
 
 
 @attr.s
 class CloudTaskQueueInfo:
     """Holds info about a Cloud Task queue."""
+
     queue_name: str = attr.ib()
 
     # Task names for tasks in queue, in order.
@@ -39,7 +42,7 @@ class CloudTaskQueueInfo:
         return len(self.task_names)
 
 
-QueueInfoType = TypeVar('QueueInfoType', bound=CloudTaskQueueInfo)
+QueueInfoType = TypeVar("QueueInfoType", bound=CloudTaskQueueInfo)
 
 
 class CloudTaskQueueManager(Generic[QueueInfoType]):
@@ -50,27 +53,25 @@ class CloudTaskQueueManager(Generic[QueueInfoType]):
         self.queue_info_cls = queue_info_cls
         self.queue_name = queue_name
 
-    def get_queue_info(self,
-                       *,
-                       task_id_prefix: str = '') -> QueueInfoType:
-        tasks_list = \
-            self.cloud_task_client.list_tasks_with_prefix(
-                queue_name=self.queue_name,
-                task_id_prefix=task_id_prefix)
+    def get_queue_info(self, *, task_id_prefix: str = "") -> QueueInfoType:
+        tasks_list = self.cloud_task_client.list_tasks_with_prefix(
+            queue_name=self.queue_name, task_id_prefix=task_id_prefix
+        )
         task_names = [task.name for task in tasks_list] if tasks_list else []
-        return self.queue_info_cls(queue_name=self.queue_name,
-                                   task_names=task_names)
+        return self.queue_info_cls(queue_name=self.queue_name, task_names=task_names)
 
-    def create_task(self,
-                    *,
-                    task_id: str,
-                    relative_uri: str,
-                    body: Dict[str, str],
-                    schedule_delay_seconds: int = 0) -> None:
+    def create_task(
+        self,
+        *,
+        task_id: str,
+        relative_uri: str,
+        body: Dict[str, str],
+        schedule_delay_seconds: int = 0
+    ) -> None:
         self.cloud_task_client.create_task(
             task_id=task_id,
             queue_name=self.queue_name,
             relative_uri=relative_uri,
             body=body,
-            schedule_delay_seconds=schedule_delay_seconds
+            schedule_delay_seconds=schedule_delay_seconds,
         )

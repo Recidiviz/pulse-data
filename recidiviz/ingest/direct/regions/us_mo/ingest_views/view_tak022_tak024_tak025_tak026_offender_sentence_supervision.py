@@ -16,15 +16,16 @@
 # =============================================================================
 """Query containing supervision sentence information."""
 
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import \
-    DirectIngestPreProcessedIngestViewBuilder
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    DirectIngestPreProcessedIngestViewBuilder,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.ingest.direct.regions.us_mo.ingest_views.us_mo_view_query_fragments import \
-    NON_INVESTIGATION_SUPERVISION_SENTENCES_FRAGMENT
+from recidiviz.ingest.direct.regions.us_mo.ingest_views.us_mo_view_query_fragments import (
+    NON_INVESTIGATION_SUPERVISION_SENTENCES_FRAGMENT,
+)
 
-SUPERVISION_SENTENCE_STATUS_XREF_FRAGMENT = \
-    """
+SUPERVISION_SENTENCE_STATUS_XREF_FRAGMENT = """
     classified_status_bw AS (
         /* Helper to classify statuses in ways that will help us figure out the types of their associated supervision
         sentences */
@@ -143,15 +144,13 @@ SUPERVISION_SENTENCE_STATUS_XREF_FRAGMENT = \
         WHERE CAST(BV_FSO as INT64) > 0
     )"""
 
-DISTINCT_SUPERVISION_SENTENCE_IDS_FRAGMENT = \
-    """
+DISTINCT_SUPERVISION_SENTENCE_IDS_FRAGMENT = """
     distinct_supervision_sentence_ids AS (
         SELECT DISTINCT BU_DOC, BU_CYC, BU_SEO, BU_FSO
         FROM non_investigation_supervision_sentences_bu
     )"""
 
-SUPERVISION_SENTENCE_TYPE_CLASSIFIER_FRAGMENT = \
-    """
+SUPERVISION_SENTENCE_TYPE_CLASSIFIER_FRAGMENT = """
     collapsed_sentence_status_type_classification AS (
        SELECT
           BV_DOC, BV_CYC, BV_SEO,
@@ -199,8 +198,7 @@ SUPERVISION_SENTENCE_TYPE_CLASSIFIER_FRAGMENT = \
             distinct_supervision_sentence_ids.BU_SEO = collapsed_sentence_status_type_classification.BV_SEO
     )"""
 
-FULL_SUPERVISION_SENTENCE_INFO_FRAGMENT = \
-    """
+FULL_SUPERVISION_SENTENCE_INFO_FRAGMENT = """
     full_supervision_sentence_info AS (
         SELECT sentence_bs.*, non_investigation_supervision_sentences_bu.*
         FROM
@@ -324,12 +322,12 @@ VIEW_QUERY_TEMPLATE = f"""
     """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
-    region='us_mo',
-    ingest_view_name='tak022_tak024_tak025_tak026_offender_sentence_supervision',
+    region="us_mo",
+    ingest_view_name="tak022_tak024_tak025_tak026_offender_sentence_supervision",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols='BS_DOC, BS_CYC, BS_SEO',
+    order_by_cols="BS_DOC, BS_CYC, BS_SEO",
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         VIEW_BUILDER.build_and_print()

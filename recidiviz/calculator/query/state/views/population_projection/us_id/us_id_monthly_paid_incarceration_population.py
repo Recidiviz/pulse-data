@@ -15,24 +15,26 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Historical incarceration population for ID by month only counting the commitments that are paid by the IDOC"""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_VIEW_NAME = 'us_id_monthly_paid_incarceration_population'
+US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_VIEW_NAME = (
+    "us_id_monthly_paid_incarceration_population"
+)
 
-US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_VIEW_DESCRIPTION = \
+US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_VIEW_DESCRIPTION = (
     """"Historical population by compartment and month"""
+)
 
 US_ID_INCARCERATION_DISAGGREGATED_COUNTY_JAILS = [
-    'BONNEVILLE COUNTY SHERIFF DEPARTMENT',
-    'JEFFERSON COUNTY SHERIFF DEPARTMENT'
+    "BONNEVILLE COUNTY SHERIFF DEPARTMENT",
+    "JEFFERSON COUNTY SHERIFF DEPARTMENT",
 ]
 
-US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_QUERY_TEMPLATE = \
-    """
+US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_QUERY_TEMPLATE = """
     WITH parsed_movements AS (
         SELECT
             state_code,
@@ -127,10 +129,12 @@ US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_VIEW_BUILDER = SimpleBigQueryViewBui
     population_projection_dataset=dataset_config.POPULATION_PROJECTION_DATASET,
     state_base_dataset=dataset_config.STATE_BASE_DATASET,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
-    disaggregated_county_jails="', '".join(US_ID_INCARCERATION_DISAGGREGATED_COUNTY_JAILS),
-    should_materialize=False
+    disaggregated_county_jails="', '".join(
+        US_ID_INCARCERATION_DISAGGREGATED_COUNTY_JAILS
+    ),
+    should_materialize=False,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_VIEW_BUILDER.build_and_print()

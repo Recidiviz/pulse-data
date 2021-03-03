@@ -22,11 +22,12 @@ from recidiviz.common.constants.person_characteristics import Ethnicity
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.state.entity_helpers import \
-    state_person_ethnicity
+from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
+    state_person_ethnicity,
+)
 
 _EMPTY_METADATA = IngestMetadata.new_with_defaults(
-    region='us_nd',
+    region="us_nd",
 )
 
 
@@ -36,20 +37,21 @@ class StatePersonEthnicityConverterTest(unittest.TestCase):
     def testParseStatePersonEthnicity(self) -> None:
         # Arrange
         ingest_person_ethnicity = ingest_info_pb2.StatePersonEthnicity(
-            ethnicity='HISPANIC',
-            state_code='US_ND',
-            state_person_ethnicity_id='123',
+            ethnicity="HISPANIC",
+            state_code="US_ND",
+            state_person_ethnicity_id="123",
         )
 
         # Act
-        result = state_person_ethnicity.convert(ingest_person_ethnicity,
-                                                _EMPTY_METADATA)
+        result = state_person_ethnicity.convert(
+            ingest_person_ethnicity, _EMPTY_METADATA
+        )
 
         # Assert
         expected_result = entities.StatePersonEthnicity(
             ethnicity=Ethnicity.HISPANIC,
-            ethnicity_raw_text='HISPANIC',
-            state_code='US_ND',
+            ethnicity_raw_text="HISPANIC",
+            state_code="US_ND",
         )
 
         self.assertEqual(result, expected_result)

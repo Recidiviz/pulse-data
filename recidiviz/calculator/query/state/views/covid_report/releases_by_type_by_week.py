@@ -15,19 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Releases from incarceration by week, broken down by total releases and conditional releases"""
-# pylint: disable=trailing-whitespace,line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-RELEASES_BY_TYPE_BY_WEEK_VIEW_NAME = 'releases_by_type_by_week'
+RELEASES_BY_TYPE_BY_WEEK_VIEW_NAME = "releases_by_type_by_week"
 
-RELEASES_BY_TYPE_BY_WEEK_DESCRIPTION = \
-    """ Releases from incarceration by week, broken down by total releases and conditional releases """
+RELEASES_BY_TYPE_BY_WEEK_DESCRIPTION = """ Releases from incarceration by week, broken down by total releases and conditional releases """
 
-RELEASES_BY_TYPE_BY_WEEK_QUERY_TEMPLATE = \
-    """
+RELEASES_BY_TYPE_BY_WEEK_QUERY_TEMPLATE = """
     /*{description}*/
     WITH releases AS (
         SELECT
@@ -92,6 +90,6 @@ RELEASES_BY_TYPE_BY_WEEK_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         RELEASES_BY_TYPE_BY_WEEK_VIEW_BUILDER.build_and_print()

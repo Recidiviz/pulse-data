@@ -24,14 +24,14 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_VIEW_NAME = 'supervision_location_restricted_access_emails'
+SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_VIEW_NAME = (
+    "supervision_location_restricted_access_emails"
+)
 
-SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_DESCRIPTION = \
-    """Reference table for Recidiviz users who should only have access to data from a single or limited set of
-    supervision locations"""
+SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_DESCRIPTION = """Reference table for Recidiviz users
+who should only have access to data from a single or limited set of supervision locations"""
 
-SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_QUERY_TEMPLATE = \
-    """
+SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_QUERY_TEMPLATE = """
     /*{description}*/
     WITH
     mo_level_1_supervision_location_restricted_access AS (
@@ -53,6 +53,6 @@ SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_VIEW_BUILDER = SimpleBigQueryViewB
     description=SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_DESCRIPTION,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_VIEW_BUILDER.build_and_print()

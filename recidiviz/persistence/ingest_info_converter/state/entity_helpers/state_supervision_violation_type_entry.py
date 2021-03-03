@@ -17,37 +17,37 @@
 """Converts an ingest_info proto StateSupervisionViolationTypeEntry to a
 persistence entity."""
 
-from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
+from recidiviz.common.constants.state.state_supervision_violation import (
+    StateSupervisionViolationType,
+)
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.common.str_field_utils import normalize
-from recidiviz.ingest.models.ingest_info_pb2 import \
-    StateSupervisionViolationTypeEntry
+from recidiviz.ingest.models.ingest_info_pb2 import StateSupervisionViolationTypeEntry
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.utils.converter_utils import \
-    fn, parse_region_code_with_override
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import \
-    EnumMappings
+from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
+    fn,
+    parse_region_code_with_override,
+)
+from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
 
 
 def convert(
-        proto: StateSupervisionViolationTypeEntry,
-        metadata: IngestMetadata
+    proto: StateSupervisionViolationTypeEntry, metadata: IngestMetadata
 ) -> entities.StateSupervisionViolationTypeEntry:
     """Converts an ingest_info proto StateSupervisionViolationTypeEntry to a
     persistence entity."""
     new = entities.StateSupervisionViolationTypeEntry.builder()
 
     enum_fields = {
-        'violation_type': StateSupervisionViolationType,
+        "violation_type": StateSupervisionViolationType,
     }
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 
     # Enum mappings
     new.violation_type = enum_mappings.get(StateSupervisionViolationType)
-    new.violation_type_raw_text = fn(normalize, 'violation_type', proto)
+    new.violation_type_raw_text = fn(normalize, "violation_type", proto)
 
     # 1-to-1 mappings
-    new.state_code = parse_region_code_with_override(
-        proto, 'state_code', metadata)
+    new.state_code = parse_region_code_with_override(proto, "state_code", metadata)
 
     return new.build()

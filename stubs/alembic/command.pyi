@@ -19,7 +19,15 @@ from typing import Optional
 
 from alembic.config import Config
 
-
-def downgrade(config: Config, revision: str, sql: bool = False, tag: Optional[str] = None) -> None: ...
-def revision(config: Config, message: Optional[str] = None, autogenerate: bool = False, sql: bool = False) -> None: ...
-def upgrade(config: Config, revision: str, sql: bool = False, tag: Optional[str] = None) -> None: ...
+def downgrade(
+    config: Config, revision: str, sql: bool = False, tag: Optional[str] = None
+) -> None: ...
+def revision(
+    config: Config,
+    message: Optional[str] = None,
+    autogenerate: bool = False,
+    sql: bool = False,
+) -> None: ...
+def upgrade(
+    config: Config, revision: str, sql: bool = False, tag: Optional[str] = None
+) -> None: ...

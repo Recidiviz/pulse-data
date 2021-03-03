@@ -18,9 +18,14 @@
 import unittest
 
 from recidiviz.calculator.pipeline.utils import violation_utils
-from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
-from recidiviz.persistence.entity.state.entities import StateSupervisionViolation, StateSupervisionViolationTypeEntry, \
-    StateSupervisionViolatedConditionEntry
+from recidiviz.common.constants.state.state_supervision_violation import (
+    StateSupervisionViolationType,
+)
+from recidiviz.persistence.entity.state.entities import (
+    StateSupervisionViolation,
+    StateSupervisionViolationTypeEntry,
+    StateSupervisionViolatedConditionEntry,
+)
 
 
 class TestIdentifyMostSevereViolationType(unittest.TestCase):
@@ -28,35 +33,48 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
 
     def test_identify_most_severe_violation_type(self) -> None:
         violation = StateSupervisionViolation.new_with_defaults(
-            state_code='US_XX',
+            state_code="US_XX",
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
-                    state_code='US_XX',
-                    violation_type=StateSupervisionViolationType.TECHNICAL
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.TECHNICAL,
                 ),
                 StateSupervisionViolationTypeEntry.new_with_defaults(
-                    state_code='US_XX',
-                    violation_type=StateSupervisionViolationType.FELONY
-                )
-            ])
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.FELONY,
+                ),
+            ],
+        )
 
-        most_severe_violation_type, most_severe_violation_type_subtype = \
-            violation_utils.identify_most_severe_violation_type_and_subtype([violation])
+        (
+            most_severe_violation_type,
+            most_severe_violation_type_subtype,
+        ) = violation_utils.identify_most_severe_violation_type_and_subtype([violation])
 
-        self.assertEqual(most_severe_violation_type, StateSupervisionViolationType.FELONY)
-        self.assertEqual(most_severe_violation_type_subtype, StateSupervisionViolationType.FELONY.value)
+        self.assertEqual(
+            most_severe_violation_type, StateSupervisionViolationType.FELONY
+        )
+        self.assertEqual(
+            most_severe_violation_type_subtype,
+            StateSupervisionViolationType.FELONY.value,
+        )
 
     def test_identify_most_severe_violation_type_test_all_types(self) -> None:
         for violation_type in StateSupervisionViolationType:
             violation = StateSupervisionViolation.new_with_defaults(
-                state_code='US_XX',
+                state_code="US_XX",
                 supervision_violation_types=[
                     StateSupervisionViolationTypeEntry.new_with_defaults(
-                        state_code='US_XX',
-                        violation_type=violation_type)
-                ])
-            most_severe_violation_type, most_severe_violation_type_subtype = \
-                violation_utils.identify_most_severe_violation_type_and_subtype([violation])
+                        state_code="US_XX", violation_type=violation_type
+                    )
+                ],
+            )
+            (
+                most_severe_violation_type,
+                most_severe_violation_type_subtype,
+            ) = violation_utils.identify_most_severe_violation_type_and_subtype(
+                [violation]
+            )
 
             self.assertEqual(most_severe_violation_type, violation_type)
             self.assertEqual(violation_type.value, most_severe_violation_type_subtype)
@@ -68,190 +86,209 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
     def test_get_violation_type_frequency_counter(self) -> None:
         violations = [
             StateSupervisionViolation.new_with_defaults(
-                state_code='US_XX',
+                state_code="US_XX",
                 supervision_violation_types=[
                     StateSupervisionViolationTypeEntry.new_with_defaults(
-                        state_code='US_XX',
-                        violation_type=StateSupervisionViolationType.ABSCONDED
+                        state_code="US_XX",
+                        violation_type=StateSupervisionViolationType.ABSCONDED,
                     ),
                     StateSupervisionViolationTypeEntry.new_with_defaults(
-                        state_code='US_XX',
-                        violation_type=StateSupervisionViolationType.FELONY
-                    )
+                        state_code="US_XX",
+                        violation_type=StateSupervisionViolationType.FELONY,
+                    ),
                 ],
             )
         ]
 
-        violation_type_frequency_counter = violation_utils.get_violation_type_frequency_counter(violations)
+        violation_type_frequency_counter = (
+            violation_utils.get_violation_type_frequency_counter(violations)
+        )
 
-        self.assertEqual([['ABSCONDED', 'FELONY']], violation_type_frequency_counter)
+        self.assertEqual([["ABSCONDED", "FELONY"]], violation_type_frequency_counter)
 
     def test_get_violation_type_frequency_counter_no_types(self) -> None:
-        violations = [
-            StateSupervisionViolation.new_with_defaults(state_code='US_XX')
-        ]
+        violations = [StateSupervisionViolation.new_with_defaults(state_code="US_XX")]
 
-        violation_type_frequency_counter = violation_utils.get_violation_type_frequency_counter(violations)
+        violation_type_frequency_counter = (
+            violation_utils.get_violation_type_frequency_counter(violations)
+        )
 
         self.assertIsNone(violation_type_frequency_counter)
 
     def test_get_violation_type_frequency_counter_us_mo(self) -> None:
         violations = [
             StateSupervisionViolation.new_with_defaults(
-                state_code='US_MO',
+                state_code="US_MO",
                 supervision_violation_types=[
                     StateSupervisionViolationTypeEntry.new_with_defaults(
-                        state_code='US_XX',
-                        violation_type=StateSupervisionViolationType.ABSCONDED
+                        state_code="US_XX",
+                        violation_type=StateSupervisionViolationType.ABSCONDED,
                     ),
                     StateSupervisionViolationTypeEntry.new_with_defaults(
-                        state_code='US_XX',
-                        violation_type=StateSupervisionViolationType.FELONY
-                    )
+                        state_code="US_XX",
+                        violation_type=StateSupervisionViolationType.FELONY,
+                    ),
                 ],
                 supervision_violated_conditions=[
                     StateSupervisionViolatedConditionEntry.new_with_defaults(
-                        state_code='US_XX',
-                        condition='DRG'
+                        state_code="US_XX", condition="DRG"
                     )
-                ]
+                ],
             )
         ]
 
-        violation_type_frequency_counter = violation_utils.get_violation_type_frequency_counter(violations)
+        violation_type_frequency_counter = (
+            violation_utils.get_violation_type_frequency_counter(violations)
+        )
 
-        self.assertEqual([['ABSCONDED', 'FELONY', 'SUBSTANCE_ABUSE']],
-                         violation_type_frequency_counter)
+        self.assertEqual(
+            [["ABSCONDED", "FELONY", "SUBSTANCE_ABUSE"]],
+            violation_type_frequency_counter,
+        )
 
     def test_get_violation_type_frequency_counter_us_mo_technical_only(self) -> None:
         violations = [
             StateSupervisionViolation.new_with_defaults(
-                state_code='US_MO',
+                state_code="US_MO",
                 supervision_violation_types=[
                     StateSupervisionViolationTypeEntry.new_with_defaults(
-                        state_code='US_XX',
-                        violation_type=StateSupervisionViolationType.TECHNICAL
+                        state_code="US_XX",
+                        violation_type=StateSupervisionViolationType.TECHNICAL,
                     )
                 ],
                 supervision_violated_conditions=[
                     StateSupervisionViolatedConditionEntry.new_with_defaults(
-                        state_code='US_XX',
-                        condition='DRG'
+                        state_code="US_XX", condition="DRG"
                     )
-                ]
+                ],
             )
         ]
 
-        violation_type_frequency_counter = violation_utils.get_violation_type_frequency_counter(violations)
+        violation_type_frequency_counter = (
+            violation_utils.get_violation_type_frequency_counter(violations)
+        )
 
-        self.assertEqual([['SUBSTANCE_ABUSE']], violation_type_frequency_counter)
+        self.assertEqual([["SUBSTANCE_ABUSE"]], violation_type_frequency_counter)
 
-    def test_get_violation_type_frequency_counter_us_mo_technical_only_no_conditions(self) -> None:
+    def test_get_violation_type_frequency_counter_us_mo_technical_only_no_conditions(
+        self,
+    ) -> None:
         violations = [
             StateSupervisionViolation.new_with_defaults(
-                state_code='US_MO',
+                state_code="US_MO",
                 supervision_violation_types=[
                     StateSupervisionViolationTypeEntry.new_with_defaults(
-                        state_code='US_XX',
-                        violation_type=StateSupervisionViolationType.TECHNICAL
+                        state_code="US_XX",
+                        violation_type=StateSupervisionViolationType.TECHNICAL,
                     )
-                ]
+                ],
             )
         ]
 
-        violation_type_frequency_counter = violation_utils.get_violation_type_frequency_counter(violations)
+        violation_type_frequency_counter = (
+            violation_utils.get_violation_type_frequency_counter(violations)
+        )
 
-        self.assertEqual([[StateSupervisionViolationType.TECHNICAL.value]],
-                         violation_type_frequency_counter)
+        self.assertEqual(
+            [[StateSupervisionViolationType.TECHNICAL.value]],
+            violation_type_frequency_counter,
+        )
 
-    def test_get_violation_type_frequency_counter_us_mo_multiple_violations(self) -> None:
+    def test_get_violation_type_frequency_counter_us_mo_multiple_violations(
+        self,
+    ) -> None:
         violations = [
             StateSupervisionViolation.new_with_defaults(
-                state_code='US_MO',
+                state_code="US_MO",
                 supervision_violation_types=[
                     StateSupervisionViolationTypeEntry.new_with_defaults(
-                        state_code='US_XX',
-                        violation_type=StateSupervisionViolationType.ABSCONDED
+                        state_code="US_XX",
+                        violation_type=StateSupervisionViolationType.ABSCONDED,
                     ),
                     StateSupervisionViolationTypeEntry.new_with_defaults(
-                        state_code='US_XX',
-                        violation_type=StateSupervisionViolationType.FELONY
-                    )
+                        state_code="US_XX",
+                        violation_type=StateSupervisionViolationType.FELONY,
+                    ),
                 ],
                 supervision_violated_conditions=[
                     StateSupervisionViolatedConditionEntry.new_with_defaults(
-                        state_code='US_XX',
-                        condition='WEA'
+                        state_code="US_XX", condition="WEA"
                     )
-                ]
+                ],
             ),
             StateSupervisionViolation.new_with_defaults(
-                state_code='US_MO',
+                state_code="US_MO",
                 supervision_violation_types=[
                     StateSupervisionViolationTypeEntry.new_with_defaults(
-                        state_code='US_XX',
-                        violation_type=StateSupervisionViolationType.MISDEMEANOR
+                        state_code="US_XX",
+                        violation_type=StateSupervisionViolationType.MISDEMEANOR,
                     ),
                     StateSupervisionViolationTypeEntry.new_with_defaults(
-                        state_code='US_XX',
-                        violation_type=StateSupervisionViolationType.TECHNICAL
-                    )
+                        state_code="US_XX",
+                        violation_type=StateSupervisionViolationType.TECHNICAL,
+                    ),
                 ],
                 supervision_violated_conditions=[
                     StateSupervisionViolatedConditionEntry.new_with_defaults(
-                        state_code='US_XX',
-                        condition='DRG'
+                        state_code="US_XX", condition="DRG"
                     ),
                     StateSupervisionViolatedConditionEntry.new_with_defaults(
-                        state_code='US_XX',
-                        condition='EMP'
-                    )
-                ]
-            )
+                        state_code="US_XX", condition="EMP"
+                    ),
+                ],
+            ),
         ]
 
-        violation_type_frequency_counter = violation_utils.get_violation_type_frequency_counter(violations)
+        violation_type_frequency_counter = (
+            violation_utils.get_violation_type_frequency_counter(violations)
+        )
 
-        self.assertEqual([['ABSCONDED', 'FELONY', 'WEA'], ['MISDEMEANOR', 'SUBSTANCE_ABUSE', 'EMP']],
-                         violation_type_frequency_counter)
+        self.assertEqual(
+            [["ABSCONDED", "FELONY", "WEA"], ["MISDEMEANOR", "SUBSTANCE_ABUSE", "EMP"]],
+            violation_type_frequency_counter,
+        )
 
     def test_get_violation_type_frequency_counter_us_pa(self) -> None:
         violations = [
             StateSupervisionViolation.new_with_defaults(
-                state_code='US_PA',
+                state_code="US_PA",
                 supervision_violation_types=[
                     StateSupervisionViolationTypeEntry.new_with_defaults(
-                        state_code='US_XX',
-                        violation_type=StateSupervisionViolationType.ABSCONDED
+                        state_code="US_XX",
+                        violation_type=StateSupervisionViolationType.ABSCONDED,
                     ),
                     StateSupervisionViolationTypeEntry.new_with_defaults(
-                        state_code='US_XX',
-                        violation_type=StateSupervisionViolationType.FELONY
+                        state_code="US_XX",
+                        violation_type=StateSupervisionViolationType.FELONY,
                     ),
                     StateSupervisionViolationTypeEntry.new_with_defaults(
-                        state_code='US_XX',
+                        state_code="US_XX",
                         violation_type=StateSupervisionViolationType.TECHNICAL,
-                        violation_type_raw_text='L05'
+                        violation_type_raw_text="L05",
                     ),
-                ]
+                ],
             ),
             StateSupervisionViolation.new_with_defaults(
-                state_code='US_PA',
+                state_code="US_PA",
                 supervision_violation_types=[
                     StateSupervisionViolationTypeEntry.new_with_defaults(
-                        state_code='US_XX',
-                        violation_type=StateSupervisionViolationType.MISDEMEANOR
+                        state_code="US_XX",
+                        violation_type=StateSupervisionViolationType.MISDEMEANOR,
                     ),
                     StateSupervisionViolationTypeEntry.new_with_defaults(
-                        state_code='US_XX',
+                        state_code="US_XX",
                         violation_type=StateSupervisionViolationType.TECHNICAL,
-                        violation_type_raw_text='H12'
-                    )
-                ]
-            )
+                        violation_type_raw_text="H12",
+                    ),
+                ],
+            ),
         ]
 
-        violation_type_frequency_counter = violation_utils.get_violation_type_frequency_counter(violations)
+        violation_type_frequency_counter = (
+            violation_utils.get_violation_type_frequency_counter(violations)
+        )
 
-        self.assertEqual([['ABSCONDED', 'FELONY', 'LOW_TECH'], ['MISDEMEANOR', 'SUBSTANCE_ABUSE']],
-                         violation_type_frequency_counter)
+        self.assertEqual(
+            [["ABSCONDED", "FELONY", "LOW_TECH"], ["MISDEMEANOR", "SUBSTANCE_ABUSE"]],
+            violation_type_frequency_counter,
+        )

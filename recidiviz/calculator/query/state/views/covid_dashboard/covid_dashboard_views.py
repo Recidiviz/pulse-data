@@ -17,12 +17,16 @@
 """All views that populate the public data in the COVID dashboard."""
 from typing import List
 
-from recidiviz.calculator.query.state.views.covid_dashboard.facility_case_data import FACILITY_CASE_DATA_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.covid_dashboard.facility_metadata import FACILITY_METADATA_VIEW_BUILDER
+from recidiviz.calculator.query.state.views.covid_dashboard.facility_case_data import (
+    FACILITY_CASE_DATA_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.covid_dashboard.facility_metadata import (
+    FACILITY_METADATA_VIEW_BUILDER,
+)
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 
 
 COVID_DASHBOARD_VIEW_BUILDERS: List[MetricBigQueryViewBuilder] = [
     FACILITY_CASE_DATA_VIEW_BUILDER,
-    FACILITY_METADATA_VIEW_BUILDER
+    FACILITY_METADATA_VIEW_BUILDER,
 ]

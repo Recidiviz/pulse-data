@@ -21,8 +21,7 @@ from recidiviz.ingest.views.dataset_config import VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-LATEST_INGESTED_UPPER_BOUNDS_QUERY_TEMPLATE = \
-    """
+LATEST_INGESTED_UPPER_BOUNDS_QUERY_TEMPLATE = """
 WITH
 ingest_file_dates AS (
     SELECT
@@ -83,11 +82,11 @@ USING (state_code)
 
 LATEST_INGESTED_UPPER_BOUNDS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=VIEWS_DATASET,
-    view_id='ingest_metadata_latest_ingested_upper_bounds',
+    view_id="ingest_metadata_latest_ingested_upper_bounds",
     view_query_template=LATEST_INGESTED_UPPER_BOUNDS_QUERY_TEMPLATE,
 )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         LATEST_INGESTED_UPPER_BOUNDS_VIEW_BUILDER.build_and_print()

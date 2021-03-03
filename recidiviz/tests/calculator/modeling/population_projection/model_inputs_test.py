@@ -26,27 +26,34 @@ import pandas
 
 
 from recidiviz.calculator.modeling import population_projection
-from recidiviz.calculator.modeling.population_projection.simulations.super_simulation.super_simulation_factory import \
-    SuperSimulationFactory
+from recidiviz.calculator.modeling.population_projection.simulations.super_simulation.super_simulation_factory import (
+    SuperSimulationFactory,
+)
 
-root_dir_path = os.path.join(os.path.dirname(population_projection.__file__), 'state')
+root_dir_path = os.path.join(os.path.dirname(population_projection.__file__), "state")
 
 
 class TestModelInputs(unittest.TestCase):
     """Test that all model inputs for population projections are valid"""
 
-    @patch('recidiviz.calculator.modeling.population_projection.spark_bq_utils.load_spark_table_from_big_query',
-           mock.MagicMock(return_value=pandas.DataFrame([])))
-    @patch('recidiviz.calculator.modeling.population_projection.ignite_bq_utils.load_ignite_table_from_big_query',
-           mock.MagicMock(return_value=pandas.DataFrame([])))
+    @patch(
+        "recidiviz.calculator.modeling.population_projection.spark_bq_utils.load_spark_table_from_big_query",
+        mock.MagicMock(return_value=pandas.DataFrame([])),
+    )
+    @patch(
+        "recidiviz.calculator.modeling.population_projection.ignite_bq_utils.load_ignite_table_from_big_query",
+        mock.MagicMock(return_value=pandas.DataFrame([])),
+    )
     def test_existing_model_inputs(self) -> None:
         for dir_path, _, files in os.walk(root_dir_path):
             for file in files:
-                if not file.endswith('yaml') and not file.endswith('yml'):
+                if not file.endswith("yaml") and not file.endswith("yml"):
                     continue
                 file_path = os.path.join(dir_path, file)
                 try:
                     _ = SuperSimulationFactory.build_super_simulation(file_path)
                 except Exception as e:
-                    e.args = (f"Invalid configuration at {file}. " + e.args[0],) + e.args[1:]
+                    e.args = (
+                        f"Invalid configuration at {file}. " + e.args[0],
+                    ) + e.args[1:]
                     raise

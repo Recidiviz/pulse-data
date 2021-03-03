@@ -18,30 +18,42 @@
 from typing import List
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.calculator.query.state.views.covid_report.incarceration_population_by_purpose_by_day import \
-    INCARCERATION_POPULATION_BY_PURPOSE_BY_DAY_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.covid_report.us_nd.admissions_to_cpp_by_week import \
-    ADMISSIONS_TO_CPP_BY_WEEK_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.covid_report.event_based_revocations_and_admissions import \
-    EVENT_BASED_REVOCATIONS_AND_ADMISSIONS_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.covid_report.facility_population_by_age_with_capacity_by_day import \
-    FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.covid_report.us_nd.incidents_by_facility_by_week import \
-    INCIDENTS_BY_FACILITY_BY_WEEK_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.covid_report.releases_by_type_by_week import \
-    RELEASES_BY_TYPE_BY_WEEK_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.covid_report.supervision_termination_by_type_by_week import \
-    SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.covid_report.us_id.us_id_released_community_performance import \
-    US_ID_RELEASED_COMMUNITY_PERFORMANCE_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.covid_report.us_id.us_id_supervision_community_performance import \
-    US_ID_SUPERVISION_COMMUNITY_PERFORMANCE_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.covid_report.us_nd.us_nd_covid_special_releases import \
-    US_ND_COVID_SPECIAL_RELEASES_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.covid_report.us_nd.us_nd_cpp_community_performance import \
-    US_ND_CPP_COMMUNITY_PERFORMANCE_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.covid_report.us_nd.us_nd_supervision_community_performance import \
-    US_ND_SUPERVISION_COMMUNITY_PERFORMANCE_VIEW_BUILDER
+from recidiviz.calculator.query.state.views.covid_report.incarceration_population_by_purpose_by_day import (
+    INCARCERATION_POPULATION_BY_PURPOSE_BY_DAY_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.covid_report.us_nd.admissions_to_cpp_by_week import (
+    ADMISSIONS_TO_CPP_BY_WEEK_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.covid_report.event_based_revocations_and_admissions import (
+    EVENT_BASED_REVOCATIONS_AND_ADMISSIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.covid_report.facility_population_by_age_with_capacity_by_day import (
+    FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.covid_report.us_nd.incidents_by_facility_by_week import (
+    INCIDENTS_BY_FACILITY_BY_WEEK_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.covid_report.releases_by_type_by_week import (
+    RELEASES_BY_TYPE_BY_WEEK_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.covid_report.supervision_termination_by_type_by_week import (
+    SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.covid_report.us_id.us_id_released_community_performance import (
+    US_ID_RELEASED_COMMUNITY_PERFORMANCE_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.covid_report.us_id.us_id_supervision_community_performance import (
+    US_ID_SUPERVISION_COMMUNITY_PERFORMANCE_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.covid_report.us_nd.us_nd_covid_special_releases import (
+    US_ND_COVID_SPECIAL_RELEASES_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.covid_report.us_nd.us_nd_cpp_community_performance import (
+    US_ND_CPP_COMMUNITY_PERFORMANCE_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.covid_report.us_nd.us_nd_supervision_community_performance import (
+    US_ND_SUPERVISION_COMMUNITY_PERFORMANCE_VIEW_BUILDER,
+)
 
 COVID_REPORT_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     ADMISSIONS_TO_CPP_BY_WEEK_VIEW_BUILDER,

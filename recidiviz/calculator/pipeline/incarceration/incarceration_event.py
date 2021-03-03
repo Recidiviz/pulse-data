@@ -19,11 +19,17 @@ from typing import Optional
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEventWithSingularDate
-from recidiviz.common.constants.state.state_incarceration_period import \
-    StateIncarcerationPeriodAdmissionReason, \
-    StateIncarcerationPeriodReleaseReason, StateSpecializedPurposeForIncarceration
-from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
+from recidiviz.calculator.pipeline.utils.event_utils import (
+    IdentifierEventWithSingularDate,
+)
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodAdmissionReason,
+    StateIncarcerationPeriodReleaseReason,
+    StateSpecializedPurposeForIncarceration,
+)
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodSupervisionType,
+)
 
 
 @attr.s(frozen=True)
@@ -33,6 +39,7 @@ class IncarcerationEvent(IdentifierEventWithSingularDate):
     Describes a date on which a person interacted with incarceration. This includes the information pertaining to the
     interaction that we will want to track when calculating incarceration metrics.
     """
+
     # Facility
     facility: Optional[str] = attr.ib(default=None)
 
@@ -53,20 +60,26 @@ class IncarcerationStayEvent(IncarcerationEvent):
     most_serious_offense_statute: Optional[str] = attr.ib(default=None)
 
     # The most recent "official" admission reason for this time of incarceration
-    admission_reason: Optional[StateIncarcerationPeriodAdmissionReason] = attr.ib(default=None)
+    admission_reason: Optional[StateIncarcerationPeriodAdmissionReason] = attr.ib(
+        default=None
+    )
 
     # Raw text value of the most recent "official" admission reason for this time of incarceration
     admission_reason_raw_text: Optional[str] = attr.ib(default=None)
 
     # Supervision type at the time of admission, if any.
-    supervision_type_at_admission: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(default=None)
+    supervision_type_at_admission: Optional[
+        StateSupervisionPeriodSupervisionType
+    ] = attr.ib(default=None)
 
     # Area of jurisdictional coverage of the court that sentenced the person to this incarceration
     judicial_district_code: Optional[str] = attr.ib(default=None)
 
     # TODO(#3275): Rename to purpose_for_incarceration
     # Specialized purpose for incarceration
-    specialized_purpose_for_incarceration: Optional[StateSpecializedPurposeForIncarceration] = attr.ib(default=None)
+    specialized_purpose_for_incarceration: Optional[
+        StateSpecializedPurposeForIncarceration
+    ] = attr.ib(default=None)
 
     @property
     def date_of_stay(self):
@@ -87,10 +100,14 @@ class IncarcerationAdmissionEvent(IncarcerationEvent):
 
     # TODO(#3275): Rename to purpose_for_incarceration
     # Specialized purpose for incarceration
-    specialized_purpose_for_incarceration: Optional[StateSpecializedPurposeForIncarceration] = attr.ib(default=None)
+    specialized_purpose_for_incarceration: Optional[
+        StateSpecializedPurposeForIncarceration
+    ] = attr.ib(default=None)
 
     # Supervision type at the time of admission, if any.
-    supervision_type_at_admission: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(default=None)
+    supervision_type_at_admission: Optional[
+        StateSupervisionPeriodSupervisionType
+    ] = attr.ib(default=None)
 
     @property
     def admission_date(self):
@@ -104,7 +121,9 @@ class IncarcerationReleaseEvent(IncarcerationEvent):
     # Most relevant admission reason for a continuous stay in prison. For example, in some states, if the initial
     # incarceration period has an admission reason of TEMPORARY_CUSTODY, the admission reason is drawn from the
     # subsequent admission period, if present.
-    admission_reason: Optional[StateIncarcerationPeriodAdmissionReason] = attr.ib(default=None)
+    admission_reason: Optional[StateIncarcerationPeriodAdmissionReason] = attr.ib(
+        default=None
+    )
 
     # Release reason
     release_reason: StateIncarcerationPeriodReleaseReason = attr.ib(default=None)
@@ -113,10 +132,14 @@ class IncarcerationReleaseEvent(IncarcerationEvent):
     release_reason_raw_text: Optional[str] = attr.ib(default=None)
 
     # Type of incarceration the release was from
-    purpose_for_incarceration: Optional[StateSpecializedPurposeForIncarceration] = attr.ib(default=None)
+    purpose_for_incarceration: Optional[
+        StateSpecializedPurposeForIncarceration
+    ] = attr.ib(default=None)
 
     # Supervision type at the time of release, if any.
-    supervision_type_at_release: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(default=None)
+    supervision_type_at_release: Optional[
+        StateSupervisionPeriodSupervisionType
+    ] = attr.ib(default=None)
 
     # The length, in days, of the continuous stay in prison.
     total_days_incarcerated: Optional[int] = attr.ib(default=None)

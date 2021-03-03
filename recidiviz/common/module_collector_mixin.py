@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""A mixin class that helps with traversing Python modules / directory tress."""
+"""A mixin class that helps with traversing Python modules / directory trees."""
 
 import importlib
 import os
@@ -24,25 +24,37 @@ from typing import List, Optional
 
 
 class ModuleCollectorMixin:
+    """A mixin class that helps with traversing Python modules / directory trees."""
+
     @staticmethod
-    def get_relative_module(base_module: ModuleType,
-                            sub_module_parts: List[str]) -> ModuleType:
+    def get_relative_module(
+        base_module: ModuleType, sub_module_parts: List[str]
+    ) -> ModuleType:
         module = base_module
         for part in sub_module_parts:
-            module = importlib.import_module(f'{module.__name__}.{part}')
+            module = importlib.import_module(f"{module.__name__}.{part}")
         return module
 
     @staticmethod
-    def _get_submodule_names(base_module: ModuleType,
-                             submodule_name_prefix_filter: Optional[str]) -> List[str]:
+    def _get_submodule_names(
+        base_module: ModuleType, submodule_name_prefix_filter: Optional[str]
+    ) -> List[str]:
         base_module_path = os.path.dirname(base_module.__file__)
-        return [name for _, name, _ in pkgutil.iter_modules([base_module_path])
-                if not submodule_name_prefix_filter or name.startswith(submodule_name_prefix_filter)]
+        return [
+            name
+            for _, name, _ in pkgutil.iter_modules([base_module_path])
+            if not submodule_name_prefix_filter
+            or name.startswith(submodule_name_prefix_filter)
+        ]
 
     @classmethod
-    def get_submodules(cls, base_module: ModuleType, submodule_name_prefix_filter: Optional[str]) -> List[ModuleType]:
+    def get_submodules(
+        cls, base_module: ModuleType, submodule_name_prefix_filter: Optional[str]
+    ) -> List[ModuleType]:
         submodules = []
-        for submodule_name in cls._get_submodule_names(base_module, submodule_name_prefix_filter):
+        for submodule_name in cls._get_submodule_names(
+            base_module, submodule_name_prefix_filter
+        ):
             submodules.append(cls.get_relative_module(base_module, [submodule_name]))
 
         return submodules

@@ -15,21 +15,22 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Links SupervisionPeriods and their associated supervising agent."""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME = \
-    'supervision_period_to_agent_association'
+SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME = (
+    "supervision_period_to_agent_association"
+)
 
-SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_DESCRIPTION = \
+SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_DESCRIPTION = (
     """Links SupervisionPeriods and their associated agent."""
+)
 
-SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_QUERY_TEMPLATE = \
-    """
+SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT 
       sup.state_code, 
@@ -54,6 +55,6 @@ SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_BUILDER = SimpleBigQueryViewBuilder
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_BUILDER.build_and_print()

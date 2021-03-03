@@ -27,16 +27,16 @@ source that actually creates the id in the real world.
 
 # StatePersonExternalId.id_type
 
-US_ID_DOC = 'US_ID_DOC'
+US_ID_DOC = "US_ID_DOC"
 
-US_MO_DOC = 'US_MO_DOC'
-US_MO_SID = 'US_MO_SID'
-US_MO_FBI = 'US_MO_FBI'
-US_MO_OLN = 'US_MO_OLN'
+US_MO_DOC = "US_MO_DOC"
+US_MO_SID = "US_MO_SID"
+US_MO_FBI = "US_MO_FBI"
+US_MO_OLN = "US_MO_OLN"
 
-US_ND_ELITE = 'US_ND_ELITE'
-US_ND_SID = 'US_ND_SID'
+US_ND_ELITE = "US_ND_ELITE"
+US_ND_SID = "US_ND_SID"
 
-US_PA_CONTROL = 'US_PA_CONT'
-US_PA_PBPP = 'US_PA_PBPP'
-US_PA_SID = 'US_PA_SID'
+US_PA_CONTROL = "US_PA_CONT"
+US_PA_PBPP = "US_PA_PBPP"
+US_PA_SID = "US_PA_SID"

@@ -31,50 +31,68 @@ from recidiviz.big_query.export.big_query_view_exporter import (
     JsonLinesBigQueryViewExporter,
     ViewExportValidationError,
 )
-from recidiviz.big_query.export.big_query_view_export_validator import ExistsBigQueryViewExportValidator
+from recidiviz.big_query.export.big_query_view_export_validator import (
+    ExistsBigQueryViewExportValidator,
+)
 from recidiviz.big_query.export.export_query_config import ExportOutputFormatType
 from recidiviz.big_query.view_update_manager import BigQueryViewNamespace
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.metrics.export.export_config import ExportBigQueryViewConfig, ExportViewCollectionConfig
-from recidiviz.metrics.export.optimized_metric_big_query_view_exporter import OptimizedMetricBigQueryViewExporter
-from recidiviz.metrics.export.optimized_metric_big_query_view_export_validator import \
-    OptimizedMetricBigQueryViewExportValidator
-from recidiviz.metrics.export.view_export_cloud_task_manager import ViewExportCloudTaskManager
+from recidiviz.metrics.export.export_config import (
+    ExportBigQueryViewConfig,
+    ExportViewCollectionConfig,
+)
+from recidiviz.metrics.export.optimized_metric_big_query_view_exporter import (
+    OptimizedMetricBigQueryViewExporter,
+)
+from recidiviz.metrics.export.optimized_metric_big_query_view_export_validator import (
+    OptimizedMetricBigQueryViewExportValidator,
+)
+from recidiviz.metrics.export.view_export_cloud_task_manager import (
+    ViewExportCloudTaskManager,
+)
 from recidiviz.utils import metadata, monitoring
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.params import get_str_param_value
 
 m_failed_metric_export_validation = measure.MeasureInt(
     "bigquery/metric_view_export_manager/metric_view_export_validation_failure",
-    "Counted every time a set of exported metric views fails validation", "1")
+    "Counted every time a set of exported metric views fails validation",
+    "1",
+)
 
 failed_metric_export_validation_view = opencensus_view.View(
     "bigquery/metric_view_export_manager/num_metric_view_export_validation_failure",
     "The sum of times a set of exported metric views fails validation",
     [monitoring.TagKey.REGION, monitoring.TagKey.METRIC_VIEW_EXPORT_NAME],
     m_failed_metric_export_validation,
-    aggregation.SumAggregation())
+    aggregation.SumAggregation(),
+)
 
 m_failed_metric_export_job = measure.MeasureInt(
     "bigquery/metric_view_export_manager/metric_view_export_job_failure",
-    "Counted every time a set of exported metric views fails for non-validation reasons", "1")
+    "Counted every time a set of exported metric views fails for non-validation reasons",
+    "1",
+)
 
 failed_metric_export_view = opencensus_view.View(
     "bigquery/metric_view_export_manager/num_metric_view_export_job_failure",
     "The sum of times a set of exported metric views fails to export for non-validation reasons",
     [monitoring.TagKey.REGION, monitoring.TagKey.METRIC_VIEW_EXPORT_NAME],
     m_failed_metric_export_job,
-    aggregation.SumAggregation())
+    aggregation.SumAggregation(),
+)
 
-monitoring.register_views([failed_metric_export_validation_view, failed_metric_export_view])
+monitoring.register_views(
+    [failed_metric_export_validation_view, failed_metric_export_view]
+)
 
 
-export_blueprint = Blueprint('export', __name__)
+export_blueprint = Blueprint("export", __name__)
 
 
-@export_blueprint.route('/create_metric_view_data_export_task')
+@export_blueprint.route("/create_metric_view_data_export_task")
 @requires_gae_auth
 def create_metric_view_data_export_task() -> Tuple[str, HTTPStatus]:
     """Queues a task to export data in BigQuery metric views to cloud storage buckets.
@@ -94,14 +112,19 @@ def create_metric_view_data_export_task() -> Tuple[str, HTTPStatus]:
     export_job_filter = get_str_param_value("export_job_filter", request.args)
 
     if not export_job_filter:
-        return 'missing required export_job_filter URL parameter', HTTPStatus.BAD_REQUEST
+        return (
+            "missing required export_job_filter URL parameter",
+            HTTPStatus.BAD_REQUEST,
+        )
 
-    ViewExportCloudTaskManager().create_metric_view_data_export_task(export_job_filter=export_job_filter)
+    ViewExportCloudTaskManager().create_metric_view_data_export_task(
+        export_job_filter=export_job_filter
+    )
 
-    return '', HTTPStatus.OK
+    return "", HTTPStatus.OK
 
 
-@export_blueprint.route('/metric_view_data', methods=['GET', 'POST'])
+@export_blueprint.route("/metric_view_data", methods=["GET", "POST"])
 @requires_gae_auth
 def metric_view_data_export() -> Tuple[str, HTTPStatus]:
     """Exports data in BigQuery metric views to cloud storage buckets.
@@ -121,15 +144,20 @@ def metric_view_data_export() -> Tuple[str, HTTPStatus]:
     export_job_filter = get_str_param_value("export_job_filter", request.args)
 
     if not export_job_filter:
-        return 'missing required export_job_filter URL parameter', HTTPStatus.BAD_REQUEST
+        return (
+            "missing required export_job_filter URL parameter",
+            HTTPStatus.BAD_REQUEST,
+        )
 
     export_view_data_to_cloud_storage(export_job_filter)
 
-    return '', HTTPStatus.OK
+    return "", HTTPStatus.OK
 
 
-def export_view_data_to_cloud_storage(export_job_filter: str,
-                                      override_view_exporter: Optional[BigQueryViewExporter] = None) -> None:
+def export_view_data_to_cloud_storage(
+    export_job_filter: str,
+    override_view_exporter: Optional[BigQueryViewExporter] = None,
+) -> None:
     """Exports data in BigQuery metric views to cloud storage buckets.
 
     Optionally takes in a BigQueryViewExporter for performing the export operation. If none is provided, this defaults
@@ -140,30 +168,41 @@ def export_view_data_to_cloud_storage(export_job_filter: str,
     bq_view_namespaces_to_update: Set[BigQueryViewNamespace] = set()
     for dataset_export_config in export_config.VIEW_COLLECTION_EXPORT_CONFIGS:
         if not dataset_export_config.matches_filter(export_job_filter):
-            logging.info("Skipped metric export for config [%s] with filter [%s]", dataset_export_config,
-                         export_job_filter)
+            logging.info(
+                "Skipped metric export for config [%s] with filter [%s]",
+                dataset_export_config,
+                export_job_filter,
+            )
             continue
 
         export_configs_for_filter.append(dataset_export_config)
         bq_view_namespaces_to_update.add(dataset_export_config.bq_view_namespace)
 
     if not export_configs_for_filter:
-        raise ValueError("Export filter did not match any export configs: ", export_job_filter)
+        raise ValueError(
+            "Export filter did not match any export configs: ", export_job_filter
+        )
 
     for bq_view_namespace_to_update in bq_view_namespaces_to_update:
-        view_builders_for_views_to_update = view_update_manager.VIEW_BUILDERS_BY_NAMESPACE[
-            bq_view_namespace_to_update]
+        view_builders_for_views_to_update = (
+            view_update_manager.VIEW_BUILDERS_BY_NAMESPACE[bq_view_namespace_to_update]
+        )
 
         # TODO(#5125): Once view update is consistently trivial, always update all views in namespace
-        if bq_view_namespace_to_update in export_config.NAMESPACES_REQUIRING_FULL_UPDATE:
-            view_update_manager.create_dataset_and_deploy_views_for_view_builders(bq_view_namespace_to_update,
-                                                                                  view_builders_for_views_to_update)
+        if (
+            bq_view_namespace_to_update
+            in export_config.NAMESPACES_REQUIRING_FULL_UPDATE
+        ):
+            view_update_manager.create_dataset_and_deploy_views_for_view_builders(
+                bq_view_namespace_to_update, view_builders_for_views_to_update
+            )
 
         # The view deploy will only have rematerialized views that had been updated since the last deploy, this call
         # will ensure that all materialized tables get refreshed.
         view_update_manager.rematerialize_views_for_namespace(
             bq_view_namespace=bq_view_namespace_to_update,
-            candidate_view_builders=view_builders_for_views_to_update)
+            candidate_view_builders=view_builders_for_views_to_update,
+        )
 
     gcsfs_client = GcsfsFactory.build()
     if override_view_exporter is None:
@@ -171,12 +210,15 @@ def export_view_data_to_cloud_storage(export_job_filter: str,
 
         # Some our views intentionally export empty files (e.g. some of the ingest_metadata views)
         # so we just check for existence
-        csv_exporter = CSVBigQueryViewExporter(bq_client,
-                                               ExistsBigQueryViewExportValidator(gcsfs_client))
-        json_exporter = JsonLinesBigQueryViewExporter(bq_client,
-                                                      ExistsBigQueryViewExportValidator(gcsfs_client))
+        csv_exporter = CSVBigQueryViewExporter(
+            bq_client, ExistsBigQueryViewExportValidator(gcsfs_client)
+        )
+        json_exporter = JsonLinesBigQueryViewExporter(
+            bq_client, ExistsBigQueryViewExportValidator(gcsfs_client)
+        )
         metric_exporter = OptimizedMetricBigQueryViewExporter(
-            bq_client, OptimizedMetricBigQueryViewExportValidator(gcsfs_client))
+            bq_client, OptimizedMetricBigQueryViewExportValidator(gcsfs_client)
+        )
 
         delegate_export_map = {
             ExportOutputFormatType.CSV: csv_exporter,
@@ -195,43 +237,59 @@ def export_view_data_to_cloud_storage(export_job_filter: str,
     project_id = metadata.project_id()
 
     for dataset_export_config in export_configs_for_filter:
-        logging.info("Starting metric export for dataset_config [%s] with filter [%s]", dataset_export_config,
-                     export_job_filter)
+        logging.info(
+            "Starting metric export for dataset_config [%s] with filter [%s]",
+            dataset_export_config,
+            export_job_filter,
+        )
 
-        view_export_configs = dataset_export_config.export_configs_for_views_to_export(project_id=project_id)
+        view_export_configs = dataset_export_config.export_configs_for_views_to_export(
+            project_id=project_id
+        )
 
         # The export will error if the validations fail for the set of view_export_configs. We want to log this failure
         # as a warning, but not block on the rest of the exports.
         try:
-            export_views_with_exporters(gcsfs_client, view_export_configs, delegate_export_map)
+            export_views_with_exporters(
+                gcsfs_client, view_export_configs, delegate_export_map
+            )
         except ViewExportValidationError:
-            warning_message = f"Export validation failed for {dataset_export_config.export_name}"
+            warning_message = (
+                f"Export validation failed for {dataset_export_config.export_name}"
+            )
 
             if dataset_export_config.state_code_filter is not None:
-                warning_message += f" for state: {dataset_export_config.state_code_filter}"
+                warning_message += (
+                    f" for state: {dataset_export_config.state_code_filter}"
+                )
 
             logging.warning(warning_message)
-            with monitoring.measurements({
-                monitoring.TagKey.METRIC_VIEW_EXPORT_NAME: dataset_export_config.export_name,
-                monitoring.TagKey.REGION: dataset_export_config.state_code_filter
-            }) as measurements:
+            with monitoring.measurements(
+                {
+                    monitoring.TagKey.METRIC_VIEW_EXPORT_NAME: dataset_export_config.export_name,
+                    monitoring.TagKey.REGION: dataset_export_config.state_code_filter,
+                }
+            ) as measurements:
                 measurements.measure_int_put(m_failed_metric_export_validation, 1)
 
             # Do not treat validation failures as fatal errors
             continue
         except Exception as e:
-            with monitoring.measurements({
-                monitoring.TagKey.METRIC_VIEW_EXPORT_NAME: dataset_export_config.export_name,
-                monitoring.TagKey.REGION: dataset_export_config.state_code_filter
-            }) as measurements:
+            with monitoring.measurements(
+                {
+                    monitoring.TagKey.METRIC_VIEW_EXPORT_NAME: dataset_export_config.export_name,
+                    monitoring.TagKey.REGION: dataset_export_config.state_code_filter,
+                }
+            ) as measurements:
                 measurements.measure_int_put(m_failed_metric_export_job, 1)
             raise e
 
 
-def export_views_with_exporters(gcsfs: GCSFileSystem,
-                                export_configs: Sequence[ExportBigQueryViewConfig],
-                                delegate_exporter_for_output: Dict[ExportOutputFormatType, BigQueryViewExporter]) -> \
-        List[GcsfsFilePath]:
+def export_views_with_exporters(
+    gcsfs: GCSFileSystem,
+    export_configs: Sequence[ExportBigQueryViewConfig],
+    delegate_exporter_for_output: Dict[ExportOutputFormatType, BigQueryViewExporter],
+) -> List[GcsfsFilePath]:
     """Runs all exporters on relevant export configs, first placing contents into a staging/ directory
     before copying all results over when everything is seen to have succeeded."""
     if not export_configs or not delegate_exporter_for_output:
@@ -241,23 +299,32 @@ def export_views_with_exporters(gcsfs: GCSFileSystem,
     all_staging_paths: List[GcsfsFilePath] = []
 
     for export_type, view_exporter in delegate_exporter_for_output.items():
-        staging_configs = [config.pointed_to_staging_subdirectory()
-                           for config in export_configs if export_type in config.export_output_formats]
+        staging_configs = [
+            config.pointed_to_staging_subdirectory()
+            for config in export_configs
+            if export_type in config.export_output_formats
+        ]
 
-        logging.info("Beginning staged export of results for view exporter delegate [%s]",
-                     view_exporter.__class__.__name__)
+        logging.info(
+            "Beginning staged export of results for view exporter delegate [%s]",
+            view_exporter.__class__.__name__,
+        )
 
         staging_paths = view_exporter.export_and_validate(staging_configs)
         all_staging_paths.extend(staging_paths)
 
-        logging.info("Completed staged export of results for view exporter delegate [%s]",
-                     view_exporter.__class__.__name__)
+        logging.info(
+            "Completed staged export of results for view exporter delegate [%s]",
+            view_exporter.__class__.__name__,
+        )
 
         logging.info("Copying staged export results to final location")
 
     final_paths = []
     for staging_path in all_staging_paths:
-        final_path = ExportBigQueryViewConfig.revert_staging_path_to_original(staging_path)
+        final_path = ExportBigQueryViewConfig.revert_staging_path_to_original(
+            staging_path
+        )
         gcsfs.copy(staging_path, final_path)
         final_paths.append(final_path)
 

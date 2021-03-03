@@ -24,18 +24,24 @@ import sys
 from typing import Tuple, List
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.calculator.dataflow_output_storage_config import DATAFLOW_METRICS_TO_TABLES
+from recidiviz.calculator.dataflow_output_storage_config import (
+    DATAFLOW_METRICS_TO_TABLES,
+)
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
 from recidiviz.utils.metadata import local_project_id_override
 
 
-def update_dataflow_metric_tables_schemas(dataflow_metrics_dataset_id: str = DATAFLOW_METRICS_DATASET) -> None:
+def update_dataflow_metric_tables_schemas(
+    dataflow_metrics_dataset_id: str = DATAFLOW_METRICS_DATASET,
+) -> None:
     """For each table that stores Dataflow metric output in the |dataflow_metrics_dataset_id|, ensures that all
     attributes on the corresponding metric are present in the table in BigQuery. If no |dataflow_metrics_dataset_id| is
     provided, defaults to the DATAFLOW_METRICS_DATASET."""
     bq_client = BigQueryClientImpl()
-    dataflow_metrics_dataset_ref = bq_client.dataset_ref_for_id(dataflow_metrics_dataset_id)
+    dataflow_metrics_dataset_ref = bq_client.dataset_ref_for_id(
+        dataflow_metrics_dataset_id
+    )
 
     bq_client.create_dataset_if_necessary(dataflow_metrics_dataset_ref)
 
@@ -44,26 +50,32 @@ def update_dataflow_metric_tables_schemas(dataflow_metrics_dataset_id: str = DAT
 
         if bq_client.table_exists(dataflow_metrics_dataset_ref, table_id):
             # Compare schema derived from metric class to existing dataflow views and update if necessary.
-            bq_client.update_schema(dataflow_metrics_dataset_id, table_id, schema_for_metric_class)
+            bq_client.update_schema(
+                dataflow_metrics_dataset_id, table_id, schema_for_metric_class
+            )
         else:
             # Create a table with this schema
-            bq_client.create_table_with_schema(dataflow_metrics_dataset_id, table_id, schema_for_metric_class)
+            bq_client.create_table_with_schema(
+                dataflow_metrics_dataset_id, table_id, schema_for_metric_class
+            )
 
 
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     """Parses the arguments needed to call the desired function."""
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--project_id',
-                        dest='project_id',
-                        type=str,
-                        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
-                        required=True)
+    parser.add_argument(
+        "--project_id",
+        dest="project_id",
+        type=str,
+        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
+        required=True,
+    )
 
     return parser.parse_known_args(argv)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
     known_args, _ = parse_arguments(sys.argv)
 

@@ -24,8 +24,8 @@ import requests
 
 from recidiviz.utils import environment
 
-BASE_METADATA_URL = 'http://metadata/computeMetadata/v1/'
-HEADERS = {'Metadata-Flavor': 'Google'}
+BASE_METADATA_URL = "http://metadata/computeMetadata/v1/"
+HEADERS = {"Metadata-Flavor": "Google"}
 TIMEOUT = 2
 
 _metadata_cache: Dict[str, str] = {}
@@ -40,18 +40,17 @@ def _get_metadata(url: str):
 
     if not allow_local_metadata_call:
         if environment.in_test() or not environment.in_gcp():
-            raise RuntimeError("May not be called from test, should this have a local override?")
+            raise RuntimeError(
+                "May not be called from test, should this have a local override?"
+            )
 
     try:
-        r = requests.get(
-            BASE_METADATA_URL + url,
-            headers=HEADERS,
-            timeout=TIMEOUT)
+        r = requests.get(BASE_METADATA_URL + url, headers=HEADERS, timeout=TIMEOUT)
         r.raise_for_status()
         _metadata_cache[url] = r.text
         return r.text
     except Exception as e:
-        logging.error('Failed to fetch metadata [%s]: [%s]', url, e)
+        logging.error("Failed to fetch metadata [%s]: [%s]", url, e)
         return None
 
 
@@ -59,10 +58,10 @@ def project_number():
     """Gets the numeric_project_id (project number) for this instance from the
     Compute Engine metadata server.
     """
-    return _get_metadata('project/numeric-project-id')
+    return _get_metadata("project/numeric-project-id")
 
 
-_PROJECT_ID_URL = 'project/project-id'
+_PROJECT_ID_URL = "project/project-id"
 
 _override_set = False
 
@@ -91,7 +90,7 @@ class local_project_id_override:
     def __enter__(self):
         global _override_set
         if _override_set:
-            raise ValueError(f'Project id override already set to {project_id()}')
+            raise ValueError(f"Project id override already set to {project_id()}")
         _override_set = True
 
         if _PROJECT_ID_URL in _metadata_cache:
@@ -113,22 +112,20 @@ def project_id():
     application is running locally and falls back to the GOOGLE_CLOUD_PROJECT
     environment variable.
     """
-    return (
-        _get_metadata(_PROJECT_ID_URL) or os.getenv('GOOGLE_CLOUD_PROJECT')
-    )
+    return _get_metadata(_PROJECT_ID_URL) or os.getenv("GOOGLE_CLOUD_PROJECT")
 
 
 def instance_id():
     """Returns the GCP instnance ID of the current instance."""
-    return _get_metadata('instance/id')
+    return _get_metadata("instance/id")
 
 
 def zone():
     """Returns the GCP zone of the current instance."""
-    zone_string = _get_metadata('instance/zone')
+    zone_string = _get_metadata("instance/zone")
     if zone_string:
         # Of the form 'projects/123456789012/zones/us-east1-c'
-        zone_string = zone_string.split('/')[-1]
+        zone_string = zone_string.split("/")[-1]
 
     return zone_string
 
@@ -139,7 +136,7 @@ def region():
     zone_string = zone()
     if zone_string:
         # Of the form 'us-east1-c'
-        region_split = zone_string.split('-')[:2]
-        region_string = '-'.join(region_split)
+        region_split = zone_string.split("-")[:2]
+        region_string = "-".join(region_split)
 
     return region_string

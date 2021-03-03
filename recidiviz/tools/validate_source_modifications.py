@@ -42,7 +42,9 @@ from recidiviz.ingest.models import ingest_info, ingest_info_pb2
 from recidiviz.persistence.database.schema.aggregate import schema as aggregate_schema
 from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.database.migrations.jails import versions as jails_versions
-from recidiviz.persistence.database.migrations.operations import versions as operations_versions
+from recidiviz.persistence.database.migrations.operations import (
+    versions as operations_versions,
+)
 from recidiviz.persistence.database.schema.operations import schema as operations_schema
 from recidiviz.persistence.database.migrations.state import versions as state_versions
 from recidiviz.persistence.database.schema.state import schema as state_schema
@@ -55,7 +57,7 @@ class RequiredModificationSets:
     then_modified_files: FrozenSet[str]
 
     @staticmethod
-    def for_symmetric_check(files: FrozenSet[str]) -> 'RequiredModificationSets':
+    def for_symmetric_check(files: FrozenSet[str]) -> "RequiredModificationSets":
         return RequiredModificationSets(
             if_modified_files=files,
             then_modified_files=files,
@@ -76,81 +78,145 @@ COUNTY_KEY = "county"
 OPERATIONS_KEY = "operations"
 STATE_KEY = "state"
 INGEST_DOCS_KEY = "ingest_docs"
-CASE_TRIAGE_FIXTURES_KEY = 'case_triage_fixtures'
+CASE_TRIAGE_FIXTURES_KEY = "case_triage_fixtures"
 
 MODIFIED_FILE_ASSERTIONS: Dict[str, List[RequiredModificationSets]] = {
     # ingest info files
-    INGEST_KEY: [RequiredModificationSets(
-        if_modified_files=frozenset({
-            os.path.relpath(ingest_info.__file__),  # python object
-            os.path.relpath(ingest_info.__file__)[:-2] + 'proto',  # proto
-        }),
-        then_modified_files=frozenset({
-            os.path.relpath(ingest_info.__file__),  # python object
-            os.path.relpath(ingest_info.__file__)[:-2] + 'proto',  # proto
-            os.path.relpath(ingest_info_pb2.__file__),  # generated proto source
-            os.path.relpath(ingest_info_pb2.__file__) + 'i',  # proto type hints
-        }),
-    )],
+    INGEST_KEY: [
+        RequiredModificationSets(
+            if_modified_files=frozenset(
+                {
+                    os.path.relpath(ingest_info.__file__),  # python object
+                    os.path.relpath(ingest_info.__file__)[:-2] + "proto",  # proto
+                }
+            ),
+            then_modified_files=frozenset(
+                {
+                    os.path.relpath(ingest_info.__file__),  # python object
+                    os.path.relpath(ingest_info.__file__)[:-2] + "proto",  # proto
+                    os.path.relpath(ingest_info_pb2.__file__),  # generated proto source
+                    os.path.relpath(ingest_info_pb2.__file__) + "i",  # proto type hints
+                }
+            ),
+        )
+    ],
     # pipfile
-    PIPFILE_KEY: [RequiredModificationSets(
-        if_modified_files=frozenset({'Pipfile'}),
-        then_modified_files=frozenset({'Pipfile.lock'}),
-    )],
+    PIPFILE_KEY: [
+        RequiredModificationSets(
+            if_modified_files=frozenset({"Pipfile"}),
+            then_modified_files=frozenset({"Pipfile.lock"}),
+        )
+    ],
     # aggregate schema
-    AGGREGATE_KEY: [RequiredModificationSets.for_symmetric_check(frozenset({
-        os.path.relpath(aggregate_schema.__file__),  # aggregate schema
-        os.path.relpath(jails_versions.__file__[:-len('__init__.py')])  # versions
-    }))],
+    AGGREGATE_KEY: [
+        RequiredModificationSets.for_symmetric_check(
+            frozenset(
+                {
+                    os.path.relpath(aggregate_schema.__file__),  # aggregate schema
+                    os.path.relpath(
+                        jails_versions.__file__[: -len("__init__.py")]
+                    ),  # versions
+                }
+            )
+        )
+    ],
     # county schema
-    COUNTY_KEY: [RequiredModificationSets.for_symmetric_check(frozenset({
-        os.path.relpath(county_schema.__file__),  # county schema
-        os.path.relpath(jails_versions.__file__[:-len('__init__.py')])  # versions
-    }))],
+    COUNTY_KEY: [
+        RequiredModificationSets.for_symmetric_check(
+            frozenset(
+                {
+                    os.path.relpath(county_schema.__file__),  # county schema
+                    os.path.relpath(
+                        jails_versions.__file__[: -len("__init__.py")]
+                    ),  # versions
+                }
+            )
+        )
+    ],
     # operations schema
-    OPERATIONS_KEY: [RequiredModificationSets.for_symmetric_check(frozenset({
-        os.path.relpath(operations_schema.__file__),  # operations schema
-        os.path.relpath(operations_versions.__file__[:-len('__init__.py')])  # versions
-    }))],
+    OPERATIONS_KEY: [
+        RequiredModificationSets.for_symmetric_check(
+            frozenset(
+                {
+                    os.path.relpath(operations_schema.__file__),  # operations schema
+                    os.path.relpath(
+                        operations_versions.__file__[: -len("__init__.py")]
+                    ),  # versions
+                }
+            )
+        )
+    ],
     # state schema
-    STATE_KEY: [RequiredModificationSets.for_symmetric_check(frozenset({
-        os.path.relpath(state_schema.__file__),  # state schema
-        os.path.relpath(state_versions.__file__[:-len('__init__.py')])  # versions
-    }))],
+    STATE_KEY: [
+        RequiredModificationSets.for_symmetric_check(
+            frozenset(
+                {
+                    os.path.relpath(state_schema.__file__),  # state schema
+                    os.path.relpath(
+                        state_versions.__file__[: -len("__init__.py")]
+                    ),  # versions
+                }
+            )
+        )
+    ],
     # ingest docs
-    INGEST_DOCS_KEY: [RequiredModificationSets(
-        if_modified_files=frozenset({f"recidiviz/ingest/direct/regions/{region_code}/"}),
-        then_modified_files=frozenset({f"docs/ingest/{region_code}/"}),
-    ) for region_code in get_supported_direct_ingest_region_codes()],
+    INGEST_DOCS_KEY: [
+        RequiredModificationSets(
+            if_modified_files=frozenset(
+                {f"recidiviz/ingest/direct/regions/{region_code}/"}
+            ),
+            then_modified_files=frozenset({f"docs/ingest/{region_code}/"}),
+        )
+        for region_code in get_supported_direct_ingest_region_codes()
+    ],
     # case triage dummy data
-    CASE_TRIAGE_FIXTURES_KEY: [RequiredModificationSets(
-        if_modified_files=frozenset({'recidiviz/tools/case_triage/fixtures/etl_clients.csv'}),
-        then_modified_files=frozenset({'recidiviz/case_triage/fixtures/dummy_clients.json'}),
-    )],
+    CASE_TRIAGE_FIXTURES_KEY: [
+        RequiredModificationSets(
+            if_modified_files=frozenset(
+                {"recidiviz/tools/case_triage/fixtures/etl_clients.csv"}
+            ),
+            then_modified_files=frozenset(
+                {"recidiviz/case_triage/fixtures/dummy_clients.json"}
+            ),
+        )
+    ],
 }
 
 
-def _match_filenames(modified_files: FrozenSet[str],
-                     required_modification_sets: RequiredModificationSets) -> Tuple[FrozenSet[str], FrozenSet[str]]:
+def _match_filenames(
+    modified_files: FrozenSet[str], required_modification_sets: RequiredModificationSets
+) -> Tuple[FrozenSet[str], FrozenSet[str]]:
     """Returns all of the assertions in the set of expected assertions which are actually contained within the set of
     modified files."""
-    matched_prefixes = frozenset(file_prefix for file_prefix in required_modification_sets.if_modified_files
-                                 if any(modified_file.startswith(file_prefix)
-                                        for modified_file in modified_files))
+    matched_prefixes = frozenset(
+        file_prefix
+        for file_prefix in required_modification_sets.if_modified_files
+        if any(
+            modified_file.startswith(file_prefix) for modified_file in modified_files
+        )
+    )
     if not matched_prefixes:
         return frozenset(), frozenset()
-    matched_assertions = frozenset(file_prefix for file_prefix in required_modification_sets.then_modified_files
-                                   if any(modified_file.startswith(file_prefix)
-                                          for modified_file in modified_files))
+    matched_assertions = frozenset(
+        file_prefix
+        for file_prefix in required_modification_sets.then_modified_files
+        if any(
+            modified_file.startswith(file_prefix) for modified_file in modified_files
+        )
+    )
 
     if matched_assertions < required_modification_sets.then_modified_files:
-        return matched_prefixes, required_modification_sets.then_modified_files - matched_assertions
+        return (
+            matched_prefixes,
+            required_modification_sets.then_modified_files - matched_assertions,
+        )
 
     return matched_prefixes, frozenset()
 
 
-def check_assertions(modified_files: FrozenSet[str],
-                     sets_to_skip: FrozenSet[str]) -> List[Tuple[FrozenSet[str], FrozenSet[str]]]:
+def check_assertions(
+    modified_files: FrozenSet[str], sets_to_skip: FrozenSet[str]
+) -> List[Tuple[FrozenSet[str], FrozenSet[str]]]:
     """Checks that all of the the modified files against the global set of modification assertions, and returns any
     failed assertions.
 
@@ -162,11 +228,13 @@ def check_assertions(modified_files: FrozenSet[str],
 
     for set_to_validate, modifications in MODIFIED_FILE_ASSERTIONS.items():
         if set_to_validate in sets_to_skip:
-            logging.info('Skipping %s check due to skip commits.', set_to_validate)
+            logging.info("Skipping %s check due to skip commits.", set_to_validate)
             continue
 
         for required_modification_sets in modifications:
-            matched_prefixes, failed_prefixes = _match_filenames(modified_files, required_modification_sets)
+            matched_prefixes, failed_prefixes = _match_filenames(
+                modified_files, required_modification_sets
+            )
             if failed_prefixes:
                 failed_assertion_files.append((matched_prefixes, failed_prefixes))
 
@@ -176,7 +244,8 @@ def check_assertions(modified_files: FrozenSet[str],
 def _get_modified_files(commit_range: str) -> FrozenSet[str]:
     """Returns a set of all files that have been modified in the given commit range."""
     git = subprocess.Popen(
-        ['git', 'diff', '--name-only', commit_range], stdout=subprocess.PIPE)
+        ["git", "diff", "--name-only", commit_range], stdout=subprocess.PIPE
+    )
     modified_files, _ = git.communicate()
     git.wait()
     return frozenset(modified_files.decode().splitlines())
@@ -184,14 +253,13 @@ def _get_modified_files(commit_range: str) -> FrozenSet[str]:
 
 def _format_failure(failure: Tuple[FrozenSet[str], FrozenSet[str]]) -> str:
     """Returns the set of source modification assertion failures in a pretty-printable format."""
-    return \
-        'Failure:\n\tModified file(s):\n{}\n\tWithout modifying file(s):\n{}' \
-        .format(
-            '\n'.join(map(lambda file: '\t\t' + file, failure[0])),
-            '\n'.join(map(lambda file: '\t\t' + file, failure[1])))
+    return "Failure:\n\tModified file(s):\n{}\n\tWithout modifying file(s):\n{}".format(
+        "\n".join(map(lambda file: "\t\t" + file, failure[0])),
+        "\n".join(map(lambda file: "\t\t" + file, failure[1])),
+    )
 
 
-_SKIP_COMMIT_REGEX = r'\[skip validation.*\]'
+_SKIP_COMMIT_REGEX = r"\[skip validation.*\]"
 
 
 def _should_skip(validation_message: str, validation_key: str) -> bool:
@@ -206,20 +274,33 @@ def _get_assertions_to_skip(commit_range: str) -> FrozenSet[str]:
     either all assertion sets or specific assertion sets.
     """
     git = subprocess.Popen(
-        ['git', 'log', '--format=%h %B', '--grep={}'.format(_SKIP_COMMIT_REGEX),
-         commit_range], stdout=subprocess.PIPE)
+        [
+            "git",
+            "log",
+            "--format=%h %B",
+            "--grep={}".format(_SKIP_COMMIT_REGEX),
+            commit_range,
+        ],
+        stdout=subprocess.PIPE,
+    )
     skip_commits, _ = git.communicate()
     git.wait()
 
     if git.returncode != 0:
-        logging.error('git log failed')
+        logging.error("git log failed")
         sys.exit(git.returncode)
 
     sets_to_skip = set()  # type: Set[str]
-    full_validation_message = re.findall(r'\[skip validation(.*?)\]', skip_commits.decode())
+    full_validation_message = re.findall(
+        r"\[skip validation(.*?)\]", skip_commits.decode()
+    )
     if full_validation_message:
         for valid_message in full_validation_message:
-            skip_sets = [key for key in MODIFIED_FILE_ASSERTIONS if _should_skip(valid_message, key)]
+            skip_sets = [
+                key
+                for key in MODIFIED_FILE_ASSERTIONS
+                if _should_skip(valid_message, key)
+            ]
             sets_to_skip = sets_to_skip.union(skip_sets)
 
     return frozenset(sets_to_skip)
@@ -238,10 +319,14 @@ def main(commit_range: str) -> None:
     sys.exit(return_code)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--commit-range', default='master...HEAD',
-                        help='The git commit range to compare against.')
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    parser.add_argument(
+        "--commit-range",
+        default="master...HEAD",
+        help="The git commit range to compare against.",
+    )
     args = parser.parse_args()
     main(args.commit_range)

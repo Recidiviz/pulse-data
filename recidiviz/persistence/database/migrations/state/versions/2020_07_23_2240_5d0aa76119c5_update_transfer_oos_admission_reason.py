@@ -11,33 +11,43 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '5d0aa76119c5'
-down_revision = 'e5949964b987'
+revision = "5d0aa76119c5"
+down_revision = "e5949964b987"
 branch_labels = None
 depends_on = None
 
-ADMISSION_REASON_QUERY = "SELECT incarceration_period_id FROM" \
-                          " state_incarceration_period" \
-                          " WHERE state_code = 'US_ND' AND admission_reason_raw_text = 'OOS'"
+ADMISSION_REASON_QUERY = (
+    "SELECT incarceration_period_id FROM"
+    " state_incarceration_period"
+    " WHERE state_code = 'US_ND' AND admission_reason_raw_text = 'OOS'"
+)
 
 
-UPDATE_QUERY = "UPDATE state_incarceration_period SET admission_reason = '{new_value}'" \
-               " WHERE incarceration_period_id IN ({ids_query});"
+UPDATE_QUERY = (
+    "UPDATE state_incarceration_period SET admission_reason = '{new_value}'"
+    " WHERE incarceration_period_id IN ({ids_query});"
+)
 
 
 def upgrade():
     connection = op.get_bind()
 
-    updated_admission_reason = 'TRANSFERRED_FROM_OUT_OF_STATE'
+    updated_admission_reason = "TRANSFERRED_FROM_OUT_OF_STATE"
 
-    connection.execute(UPDATE_QUERY.format(new_value=updated_admission_reason,
-                                           ids_query=ADMISSION_REASON_QUERY))
+    connection.execute(
+        UPDATE_QUERY.format(
+            new_value=updated_admission_reason, ids_query=ADMISSION_REASON_QUERY
+        )
+    )
 
 
 def downgrade():
     connection = op.get_bind()
 
-    updated_admission_reason = 'TRANSFER'
+    updated_admission_reason = "TRANSFER"
 
-    connection.execute(UPDATE_QUERY.format(new_value=updated_admission_reason,
-                                           ids_query=ADMISSION_REASON_QUERY))
+    connection.execute(
+        UPDATE_QUERY.format(
+            new_value=updated_admission_reason, ids_query=ADMISSION_REASON_QUERY
+        )
+    )

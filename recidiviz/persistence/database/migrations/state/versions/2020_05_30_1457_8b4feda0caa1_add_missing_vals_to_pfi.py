@@ -11,37 +11,69 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '8b4feda0caa1'
-down_revision = '4b9155409eb1'
+revision = "8b4feda0caa1"
+down_revision = "4b9155409eb1"
 branch_labels = None
 depends_on = None
 
 # Without new value
-old_values = ['GENERAL', 'PAROLE_BOARD_HOLD', 'SHOCK_INCARCERATION', 'TREATMENT_IN_PRISON']
+old_values = [
+    "GENERAL",
+    "PAROLE_BOARD_HOLD",
+    "SHOCK_INCARCERATION",
+    "TREATMENT_IN_PRISON",
+]
 
 # With new value
-new_values = ['EXTERNAL_UNKNOWN', 'INTERNAL_UNKNOWN', 'GENERAL', 'PAROLE_BOARD_HOLD', 'SHOCK_INCARCERATION', 'TREATMENT_IN_PRISON']
+new_values = [
+    "EXTERNAL_UNKNOWN",
+    "INTERNAL_UNKNOWN",
+    "GENERAL",
+    "PAROLE_BOARD_HOLD",
+    "SHOCK_INCARCERATION",
+    "TREATMENT_IN_PRISON",
+]
 
 
 def upgrade():
-    op.execute('ALTER TYPE state_specialized_purpose_for_incarceration RENAME TO state_specialized_purpose_for_incarceration_old;')
-    sa.Enum(*new_values, name='state_specialized_purpose_for_incarceration').create(bind=op.get_bind())
-    op.alter_column('state_incarceration_period', column_name='specialized_purpose_for_incarceration',
-                    type_=sa.Enum(*new_values, name='state_specialized_purpose_for_incarceration'),
-                    postgresql_using='specialized_purpose_for_incarceration::text::state_specialized_purpose_for_incarceration')
-    op.alter_column('state_incarceration_period_history', column_name='specialized_purpose_for_incarceration',
-                    type_=sa.Enum(*new_values, name='state_specialized_purpose_for_incarceration'),
-                    postgresql_using='specialized_purpose_for_incarceration::text::state_specialized_purpose_for_incarceration')
-    op.execute('DROP TYPE state_specialized_purpose_for_incarceration_old;')
+    op.execute(
+        "ALTER TYPE state_specialized_purpose_for_incarceration RENAME TO state_specialized_purpose_for_incarceration_old;"
+    )
+    sa.Enum(*new_values, name="state_specialized_purpose_for_incarceration").create(
+        bind=op.get_bind()
+    )
+    op.alter_column(
+        "state_incarceration_period",
+        column_name="specialized_purpose_for_incarceration",
+        type_=sa.Enum(*new_values, name="state_specialized_purpose_for_incarceration"),
+        postgresql_using="specialized_purpose_for_incarceration::text::state_specialized_purpose_for_incarceration",
+    )
+    op.alter_column(
+        "state_incarceration_period_history",
+        column_name="specialized_purpose_for_incarceration",
+        type_=sa.Enum(*new_values, name="state_specialized_purpose_for_incarceration"),
+        postgresql_using="specialized_purpose_for_incarceration::text::state_specialized_purpose_for_incarceration",
+    )
+    op.execute("DROP TYPE state_specialized_purpose_for_incarceration_old;")
 
 
 def downgrade():
-    op.execute('ALTER TYPE state_specialized_purpose_for_incarceration RENAME TO state_specialized_purpose_for_incarceration_old;')
-    sa.Enum(*old_values, name='state_specialized_purpose_for_incarceration').create(bind=op.get_bind())
-    op.alter_column('state_incarceration_period', column_name='specialized_purpose_for_incarceration',
-                    type_=sa.Enum(*old_values, name='state_specialized_purpose_for_incarceration'),
-                    postgresql_using='specialized_purpose_for_incarceration::text::state_specialized_purpose_for_incarceration')
-    op.alter_column('state_incarceration_period_history', column_name='specialized_purpose_for_incarceration',
-                    type_=sa.Enum(*old_values, name='state_specialized_purpose_for_incarceration'),
-                    postgresql_using='specialized_purpose_for_incarceration::text::state_specialized_purpose_for_incarceration')
-    op.execute('DROP TYPE state_specialized_purpose_for_incarceration_old;')
+    op.execute(
+        "ALTER TYPE state_specialized_purpose_for_incarceration RENAME TO state_specialized_purpose_for_incarceration_old;"
+    )
+    sa.Enum(*old_values, name="state_specialized_purpose_for_incarceration").create(
+        bind=op.get_bind()
+    )
+    op.alter_column(
+        "state_incarceration_period",
+        column_name="specialized_purpose_for_incarceration",
+        type_=sa.Enum(*old_values, name="state_specialized_purpose_for_incarceration"),
+        postgresql_using="specialized_purpose_for_incarceration::text::state_specialized_purpose_for_incarceration",
+    )
+    op.alter_column(
+        "state_incarceration_period_history",
+        column_name="specialized_purpose_for_incarceration",
+        type_=sa.Enum(*old_values, name="state_specialized_purpose_for_incarceration"),
+        postgresql_using="specialized_purpose_for_incarceration::text::state_specialized_purpose_for_incarceration",
+    )
+    op.execute("DROP TYPE state_specialized_purpose_for_incarceration_old;")

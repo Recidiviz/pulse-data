@@ -38,17 +38,18 @@ class StateEnumsTest(unittest.TestCase):
         enum_classes = []
         packages = pkgutil.walk_packages([STATE_CONSTANTS_MODULE_DIR])
         for package in packages:
-            if package.name.startswith('state'):
+            if package.name.startswith("state"):
 
-                module_name = f'{state_constants.__name__}.{package.name}'
+                module_name = f"{state_constants.__name__}.{package.name}"
 
                 importlib.import_module(module_name)
-                all_members_in_current_module = \
-                    inspect.getmembers(sys.modules[module_name],
-                                       inspect.isclass)
+                all_members_in_current_module = inspect.getmembers(
+                    sys.modules[module_name], inspect.isclass
+                )
                 for _, member in all_members_in_current_module:
-                    if member.__module__ == module_name and \
-                            issubclass(member, EntityEnum):
+                    if member.__module__ == module_name and issubclass(
+                        member, EntityEnum
+                    ):
                         enum_classes.append(member)
 
         return enum_classes
@@ -72,11 +73,12 @@ class StateEnumsTest(unittest.TestCase):
             default_enum_mappings = entity_enum_cls._get_default_map()
 
             for entity_enum in entity_enum_cls:
-                normalized_value = normalize(entity_enum.value,
-                                             remove_punctuation=True)
-                self.assertIn(normalized_value, default_enum_mappings,
-                              f'[{normalized_value}] not found in '
-                              f'{entity_enum_cls} default mappings.')
+                normalized_value = normalize(entity_enum.value, remove_punctuation=True)
+                self.assertIn(
+                    normalized_value,
+                    default_enum_mappings,
+                    f"[{normalized_value}] not found in "
+                    f"{entity_enum_cls} default mappings.",
+                )
 
-                self.assertEqual(default_enum_mappings[normalized_value],
-                                 entity_enum)
+                self.assertEqual(default_enum_mappings[normalized_value], entity_enum)

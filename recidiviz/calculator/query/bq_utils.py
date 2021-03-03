@@ -22,20 +22,22 @@ def unnest_column(input_column_name: str, output_column_name: str) -> str:
     return f"UNNEST ([{input_column_name}, 'ALL']) AS {output_column_name}"
 
 
-def unnest_district(district_column: str = 'supervising_district_external_id') -> str:
-    return unnest_column(district_column, 'district')
+def unnest_district(district_column: str = "supervising_district_external_id") -> str:
+    return unnest_column(district_column, "district")
 
 
-def unnest_supervision_type(supervision_type_column: str = 'supervision_type') -> str:
-    return unnest_column(supervision_type_column, 'supervision_type')
+def unnest_supervision_type(supervision_type_column: str = "supervision_type") -> str:
+    return unnest_column(supervision_type_column, "supervision_type")
 
 
-def unnest_charge_category(category_column: str = 'case_type') -> str:
-    return unnest_column(category_column, 'charge_category')
+def unnest_charge_category(category_column: str = "case_type") -> str:
+    return unnest_column(category_column, "charge_category")
 
 
 def unnest_reported_violations() -> str:
-    return "UNNEST ([CAST(reported_violations AS STRING), 'ALL']) AS reported_violations"
+    return (
+        "UNNEST ([CAST(reported_violations AS STRING), 'ALL']) AS reported_violations"
+    )
 
 
 def unnest_metric_period_months() -> str:

@@ -64,13 +64,17 @@ class Auth0Config:
         # If presented with a token that was not issued by this value, we will raise an `AuthorizationError` exception
         self.issuer: str = f"https://{self.domain}/"
 
-        jwks = PyJWKSet.from_json(urlopen(f"https://{self.domain}/.well-known/jwks.json").read())
+        jwks = PyJWKSet.from_json(
+            urlopen(f"https://{self.domain}/.well-known/jwks.json").read()
+        )
 
         self.jwks: Dict[str, RSAPublicKey] = {jwk.key_id: jwk.key for jwk in jwks.keys}
 
         # Validate `algorithms` input value
         if "RS256" not in self.algorithms or len(self.algorithms) > 1:
-            raise ValueError('Our Auth0 integration currently only supports the RS256 algorithm')
+            raise ValueError(
+                "Our Auth0 integration currently only supports the RS256 algorithm"
+            )
 
     def get_key(self, key_id: str) -> Optional[RSAPublicKey]:
         return self.jwks.get(key_id, None)
@@ -86,8 +90,7 @@ class Auth0Config:
 
 
 def get_token_auth_header() -> str:
-    """Obtains the Access Token from the Authorization Header
-    """
+    """Obtains the Access Token from the Authorization Header"""
     auth = request.headers.get("Authorization", None)
     if not auth:
         raise AuthorizationError(
@@ -118,13 +121,12 @@ def get_token_auth_header() -> str:
 
 
 def build_auth0_authorization_decorator(
-        authorization_config: Auth0Config,
-        on_successful_authorization: Callable
+    authorization_config: Auth0Config, on_successful_authorization: Callable
 ) -> Callable:
     """ Decorator builder for Auth0 authorization """
 
     def decorated(route: Callable):
-        @ wraps(route)
+        @wraps(route)
         def inner(*args: List[Any], **kwargs: Dict[str, Any]) -> Any:
             """
             Determines if the access token provided in the request `Authorization` header is valid
@@ -151,9 +153,11 @@ def build_auth0_authorization_decorator(
                         code="token_expired",
                         description="token is expired",
                     ) from e
-                except (jwt.InvalidIssuerError,
-                        jwt.InvalidAudienceError,
-                        jwt.MissingRequiredClaimError) as e:
+                except (
+                    jwt.InvalidIssuerError,
+                    jwt.InvalidAudienceError,
+                    jwt.MissingRequiredClaimError,
+                ) as e:
                     raise AuthorizationError(
                         code="invalid_claims",
                         description="incorrect claims, please check the audience and issuer",
@@ -181,7 +185,8 @@ def build_auth0_authorization_decorator(
 
 def get_userinfo(domain: str, token: str) -> Dict[str, str]:
     """ Fetch the user's information from Auth0 """
-    response = requests.get(f'https://{domain}/userinfo',
-                            headers={'Authorization': f'Bearer {token}'})
+    response = requests.get(
+        f"https://{domain}/userinfo", headers={"Authorization": f"Bearer {token}"}
+    )
 
     return json.loads(response.text)

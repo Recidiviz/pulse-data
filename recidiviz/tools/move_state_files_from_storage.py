@@ -49,15 +49,25 @@ from typing import Optional, List, Tuple
 from progress.bar import Bar
 
 from recidiviz.common.ingest_metadata import SystemLevel
-from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
-    to_normalized_unprocessed_file_path_from_normalized_path
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
-    gcsfs_direct_ingest_storage_directory_path_for_region, \
-    gcsfs_direct_ingest_directory_path_for_region, GcsfsDirectIngestFileType
-from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import \
-    DIRECT_INGEST_SCHEDULER_QUEUE_V2, DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2, DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2
+from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
+    to_normalized_unprocessed_file_path_from_normalized_path,
+)
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
+    gcsfs_direct_ingest_storage_directory_path_for_region,
+    gcsfs_direct_ingest_directory_path_for_region,
+    GcsfsDirectIngestFileType,
+)
+from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
+    DIRECT_INGEST_SCHEDULER_QUEUE_V2,
+    DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2,
+    DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2,
+)
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
-from recidiviz.tools.gsutil_shell_helpers import gsutil_ls, gsutil_mv, gsutil_get_storage_subdirs_containing_file_types
+from recidiviz.tools.gsutil_shell_helpers import (
+    gsutil_ls,
+    gsutil_mv,
+    gsutil_get_storage_subdirs_containing_file_types,
+)
 from recidiviz.utils.params import str_to_bool
 
 # pylint: disable=not-callable
@@ -68,38 +78,48 @@ class MoveFilesFromStorageController:
     bucket.
     """
 
-    FILE_TO_MOVE_RE = \
-        re.compile(r'^(processed_|unprocessed_|un)?(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}:\d{6}(raw|ingest_view)?.*)')
+    FILE_TO_MOVE_RE = re.compile(
+        r"^(processed_|unprocessed_|un)?(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}:\d{6}(raw|ingest_view)?.*)"
+    )
 
-    QUEUES_TO_PAUSE = {DIRECT_INGEST_SCHEDULER_QUEUE_V2,
-                       DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2,
-                       DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2}
+    QUEUES_TO_PAUSE = {
+        DIRECT_INGEST_SCHEDULER_QUEUE_V2,
+        DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2,
+        DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2,
+    }
 
-    PAUSE_QUEUE_URL = 'https://cloudtasks.googleapis.com/v2/projects/{}/locations/us-east1/queues/{}:pause'
+    PAUSE_QUEUE_URL = "https://cloudtasks.googleapis.com/v2/projects/{}/locations/us-east1/queues/{}:pause"
 
-    PURGE_QUEUE_URL = 'https://cloudtasks.googleapis.com/v2/projects/{}/locations/us-east1/queues/{}:purge'
+    PURGE_QUEUE_URL = "https://cloudtasks.googleapis.com/v2/projects/{}/locations/us-east1/queues/{}:purge"
 
-    CURL_POST_REQUEST_TEMPLATE = 'curl -X POST -H "Authorization: Bearer $(gcloud auth print-access-token)" {}'
+    CURL_POST_REQUEST_TEMPLATE = (
+        'curl -X POST -H "Authorization: Bearer $(gcloud auth print-access-token)" {}'
+    )
 
-    def __init__(self,
-                 project_id: str,
-                 region: str,
-                 file_type_to_move: GcsfsDirectIngestFileType,
-                 destination_file_type: GcsfsDirectIngestFileType,
-                 start_date_bound: Optional[str],
-                 end_date_bound: Optional[str],
-                 dry_run: bool,
-                 file_filter: Optional[str]):
+    def __init__(
+        self,
+        project_id: str,
+        region: str,
+        file_type_to_move: GcsfsDirectIngestFileType,
+        destination_file_type: GcsfsDirectIngestFileType,
+        start_date_bound: Optional[str],
+        end_date_bound: Optional[str],
+        dry_run: bool,
+        file_filter: Optional[str],
+    ):
 
         self.project_id = project_id
         self.region = region
         self.file_type_to_move = file_type_to_move
         self.destination_file_type = destination_file_type
 
-        if self.file_type_to_move != self.destination_file_type and \
-                self.file_type_to_move != GcsfsDirectIngestFileType.UNSPECIFIED:
+        if (
+            self.file_type_to_move != self.destination_file_type
+            and self.file_type_to_move != GcsfsDirectIngestFileType.UNSPECIFIED
+        ):
             raise ValueError(
-                'Args file_type_to_move and destination_file_type must match if type to move is UNSPECIFIED')
+                "Args file_type_to_move and destination_file_type must match if type to move is UNSPECIFIED"
+            )
 
         self.start_date_bound = start_date_bound
         self.end_date_bound = end_date_bound
@@ -107,11 +127,15 @@ class MoveFilesFromStorageController:
         self.file_filter = file_filter
 
         self.storage_bucket = GcsfsDirectoryPath.from_absolute_path(
-            gcsfs_direct_ingest_storage_directory_path_for_region(region,
-                                                                  SystemLevel.STATE,
-                                                                  project_id=self.project_id))
+            gcsfs_direct_ingest_storage_directory_path_for_region(
+                region, SystemLevel.STATE, project_id=self.project_id
+            )
+        )
         self.ingest_bucket = GcsfsDirectoryPath.from_absolute_path(
-            gcsfs_direct_ingest_directory_path_for_region(region, SystemLevel.STATE, project_id=self.project_id))
+            gcsfs_direct_ingest_directory_path_for_region(
+                region, SystemLevel.STATE, project_id=self.project_id
+            )
+        )
 
         self.mutex = threading.Lock()
         self.collect_progress: Optional[Bar] = None
@@ -119,27 +143,37 @@ class MoveFilesFromStorageController:
         self.moves_list: List[Tuple[str, str]] = []
         self.log_output_path = os.path.join(
             os.path.dirname(__file__),
-            f'move_result_{region}_{self.project_id}_start_bound_{self.start_date_bound}_end_bound_'
-            f'{self.end_date_bound}_dry_run_{self.dry_run}_{datetime.datetime.now().isoformat()}.txt')
+            f"move_result_{region}_{self.project_id}_start_bound_{self.start_date_bound}_end_bound_"
+            f"{self.end_date_bound}_dry_run_{self.dry_run}_{datetime.datetime.now().isoformat()}.txt",
+        )
 
     def run_move(self) -> None:
         """Main method of script - executes move, or runs a dry run of a move."""
         if self.dry_run:
             logging.info("Running in DRY RUN mode for region [%s]", self.region)
         else:
-            i = input(f"This will move [{self.region}] files in [{self.project_id}] that were uploaded starting on date"
-                      f"[{self.start_date_bound}] and ending on date [{self.end_date_bound}]. Type {self.project_id} "
-                      f"to continue: ")
+            i = input(
+                f"This will move [{self.region}] files in [{self.project_id}] that were uploaded starting on date"
+                f"[{self.start_date_bound}] and ending on date [{self.end_date_bound}]. Type {self.project_id} "
+                f"to continue: "
+            )
 
             if i != self.project_id:
                 return
 
         if self.dry_run:
-            logging.info("DRY RUN: Would pause [%s] in project [%s]", self.QUEUES_TO_PAUSE, self.project_id)
+            logging.info(
+                "DRY RUN: Would pause [%s] in project [%s]",
+                self.QUEUES_TO_PAUSE,
+                self.project_id,
+            )
         else:
-            i = input(f"Pausing queues {self.QUEUES_TO_PAUSE} in project " f"[{self.project_id}] - continue? [y/n]: ")
+            i = input(
+                f"Pausing queues {self.QUEUES_TO_PAUSE} in project "
+                f"[{self.project_id}] - continue? [y/n]: "
+            )
 
-            if i.upper() != 'Y':
+            if i.upper() != "Y":
                 return
 
             self.pause_and_purge_queues()
@@ -149,9 +183,12 @@ class MoveFilesFromStorageController:
         if self.dry_run:
             logging.info("DRY RUN: Found [%s] dates to move", len(date_subdir_paths))
         else:
-            i = input(f"Found [{len(date_subdir_paths)}] dates to move - " f"continue? [y/n]: ")
+            i = input(
+                f"Found [{len(date_subdir_paths)}] dates to move - "
+                f"continue? [y/n]: "
+            )
 
-            if i.upper() != 'Y':
+            if i.upper() != "Y":
                 return
 
         thread_pool = ThreadPool(processes=12)
@@ -165,16 +202,20 @@ class MoveFilesFromStorageController:
         self.write_moves_to_log_file()
 
         if self.dry_run:
-            logging.info("DRY RUN: See results in [%s].\n"
-                         "Rerun with [--dry-run False] to execute move.",
-                         self.log_output_path)
+            logging.info(
+                "DRY RUN: See results in [%s].\n"
+                "Rerun with [--dry-run False] to execute move.",
+                self.log_output_path,
+            )
         else:
             logging.info(
                 "Move complete! See results in [%s].\n"
                 "\nNext steps:"
                 "\n1. (If doing a full re-ingest) Drop Google Cloud database for [%s]"
                 "\n2. Resume queues here:",
-                self.log_output_path, self.project_id)
+                self.log_output_path,
+                self.project_id,
+            )
 
             for queue_name in self.QUEUES_TO_PAUSE:
                 logging.info("\t%s", self.queue_console_url(queue_name))
@@ -184,19 +225,25 @@ class MoveFilesFromStorageController:
             storage_bucket_path=self.storage_bucket.abs_path(),
             file_type=self.file_type_to_move,
             upper_bound_date=self.end_date_bound,
-            lower_bound_date=self.start_date_bound
+            lower_bound_date=self.start_date_bound,
         )
 
-    def collect_files_to_move(self, date_subdir_paths: List[str], thread_pool: ThreadPool) -> List[str]:
+    def collect_files_to_move(
+        self, date_subdir_paths: List[str], thread_pool: ThreadPool
+    ) -> List[str]:
         """Searches the given list of directory paths for files directly in those directories that should be moved to
         the ingest directory and returns a list of string paths to those files.
         """
-        msg_prefix = 'DRY_RUN: ' if self.dry_run else ''
-        self.collect_progress = Bar(f"{msg_prefix}Gathering paths to move...", max=len(date_subdir_paths))
-        collect_files_res = thread_pool.map(self.get_files_to_move_from_path, date_subdir_paths)
+        msg_prefix = "DRY_RUN: " if self.dry_run else ""
+        self.collect_progress = Bar(
+            f"{msg_prefix}Gathering paths to move...", max=len(date_subdir_paths)
+        )
+        collect_files_res = thread_pool.map(
+            self.get_files_to_move_from_path, date_subdir_paths
+        )
 
         if not self.collect_progress:
-            raise ValueError('Progress bar should not be None')
+            raise ValueError("Progress bar should not be None")
         self.collect_progress.finish()
 
         return [f for sublist in collect_files_res for f in sublist]
@@ -217,25 +264,29 @@ class MoveFilesFromStorageController:
 
         Note: Move order is not guaranteed - file moves are parallelized.
         """
-        msg_prefix = 'DRY_RUN: ' if self.dry_run else ''
+        msg_prefix = "DRY_RUN: " if self.dry_run else ""
         self.move_progress = Bar(f"{msg_prefix}Moving files...", max=len(files_to_move))
         thread_pool.map(self.move_file, files_to_move)
 
         if not self.move_progress:
-            raise ValueError('Progress bar should not be None')
+            raise ValueError("Progress bar should not be None")
         self.move_progress.finish()
 
     def queue_console_url(self, queue_name: str) -> str:
         """Returns the url to the GCP console page for a queue with a given name."""
-        return f'https://console.cloud.google.com/cloudtasks/queue/{queue_name}?project={self.project_id}'
+        return f"https://console.cloud.google.com/cloudtasks/queue/{queue_name}?project={self.project_id}"
 
     def do_post_request(self, url: str) -> None:
         """Executes a googleapis.com curl POST request with the given url. """
-        res = subprocess.Popen(self.CURL_POST_REQUEST_TEMPLATE.format(url), shell=True, stdout=subprocess.PIPE)
+        res = subprocess.Popen(
+            self.CURL_POST_REQUEST_TEMPLATE.format(url),
+            shell=True,
+            stdout=subprocess.PIPE,
+        )
         stdout, _stderr = res.communicate()
         response = json.loads(stdout)
-        if 'error' in response:
-            raise ValueError(response['error'])
+        if "error" in response:
+            raise ValueError(response["error"])
 
     def pause_queue(self, queue_name: str) -> None:
         """Posts a request to pause the queue with the given name."""
@@ -254,8 +305,7 @@ class MoveFilesFromStorageController:
             self.purge_queue(queue_name)
 
     def get_files_to_move_from_path(self, gs_dir_path: str) -> List[str]:
-        """Returns files directly in the given directory that should be moved back into the ingest directory.
-        """
+        """Returns files directly in the given directory that should be moved back into the ingest directory."""
         file_paths = gsutil_ls(gs_dir_path)
 
         result = []
@@ -285,70 +335,97 @@ class MoveFilesFromStorageController:
             if self.move_progress:
                 self.move_progress.next()
 
-    def build_moved_file_path(self,
-                              original_file_path: str) -> str:
+    def build_moved_file_path(self, original_file_path: str) -> str:
         """Builds the desired path for the given file in the ingest bucket, changing the prefix to 'unprocessed' as is
         necessary.
         """
 
         path_as_unprocessed = to_normalized_unprocessed_file_path_from_normalized_path(
-            original_file_path,
-            file_type_override=self.destination_file_type)
+            original_file_path, file_type_override=self.destination_file_type
+        )
 
         _, file_name = os.path.split(path_as_unprocessed)
 
         if not re.match(self.FILE_TO_MOVE_RE, file_name):
             raise ValueError(f"Invalid file name {file_name}")
 
-        return os.path.join('gs://', self.ingest_bucket.abs_path(), file_name)
+        return os.path.join("gs://", self.ingest_bucket.abs_path(), file_name)
 
     def write_moves_to_log_file(self) -> None:
         self.moves_list.sort()
-        with open(self.log_output_path, 'w') as f:
+        with open(self.log_output_path, "w") as f:
             if self.dry_run:
                 template = "DRY RUN: Would move {} -> {}\n"
             else:
                 template = "Moved {} -> {}\n"
 
-            f.writelines(template.format(original_path, new_path) for original_path, new_path in self.moves_list)
+            f.writelines(
+                template.format(original_path, new_path)
+                for original_path, new_path in self.moves_list
+            )
 
 
 def main() -> None:
     """Runs the move_state_files_to_storage script."""
     parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--project-id', required=True,
-                        help='Which project\'s files should be moved (e.g. recidiviz-123).')
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    parser.add_argument(
+        "--project-id",
+        required=True,
+        help="Which project's files should be moved (e.g. recidiviz-123).",
+    )
 
-    parser.add_argument('--region', required=True, help='E.g. \'us_nd\'')
+    parser.add_argument("--region", required=True, help="E.g. 'us_nd'")
 
-    parser.add_argument('--file-type-to-move', required=True,
-                        choices=[file_type.value for file_type in GcsfsDirectIngestFileType],
-                        help='Defines what type of files to move out of storage.')
+    parser.add_argument(
+        "--file-type-to-move",
+        required=True,
+        choices=[file_type.value for file_type in GcsfsDirectIngestFileType],
+        help="Defines what type of files to move out of storage.",
+    )
 
-    parser.add_argument('--destination-file-type', required=True,
-                        choices=[file_type.value for file_type in {GcsfsDirectIngestFileType.RAW_DATA,
-                                                                   GcsfsDirectIngestFileType.INGEST_VIEW}],
-                        help='Defines what type the files should be after they have been moved. Must match '
-                             'file-type-to-move unless file-type-to-move is \'unspecified\'.'
-                        )
+    parser.add_argument(
+        "--destination-file-type",
+        required=True,
+        choices=[
+            file_type.value
+            for file_type in {
+                GcsfsDirectIngestFileType.RAW_DATA,
+                GcsfsDirectIngestFileType.INGEST_VIEW,
+            }
+        ],
+        help="Defines what type the files should be after they have been moved. Must match "
+        "file-type-to-move unless file-type-to-move is 'unspecified'.",
+    )
 
-    parser.add_argument('--start-date-bound',
-                        help='The lower bound date to start from, inclusive. For partial replays of ingested files. '
-                             'E.g. 2019-09-23.')
+    parser.add_argument(
+        "--start-date-bound",
+        help="The lower bound date to start from, inclusive. For partial replays of ingested files. "
+        "E.g. 2019-09-23.",
+    )
 
-    parser.add_argument('--end-date-bound',
-                        help='The upper bound date to end at, inclusive. For partial replays of ingested files. '
-                             'E.g. 2019-09-23.')
+    parser.add_argument(
+        "--end-date-bound",
+        help="The upper bound date to end at, inclusive. For partial replays of ingested files. "
+        "E.g. 2019-09-23.",
+    )
 
-    parser.add_argument('--dry-run', default=True, type=str_to_bool,
-                        help='Runs move in dry-run mode, only prints the file moves it would do.')
+    parser.add_argument(
+        "--dry-run",
+        default=True,
+        type=str_to_bool,
+        help="Runs move in dry-run mode, only prints the file moves it would do.",
+    )
 
-    parser.add_argument('--file-filter', default=None,
-                        help='Regex name filter - when set, will only move files that match this regex.')
+    parser.add_argument(
+        "--file-filter",
+        default=None,
+        help="Regex name filter - when set, will only move files that match this regex.",
+    )
     args = parser.parse_args()
 
-    logging.basicConfig(level=logging.INFO, format='%(message)s')
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
 
     MoveFilesFromStorageController(
         project_id=args.project_id,
@@ -358,9 +435,9 @@ def main() -> None:
         start_date_bound=args.start_date_bound,
         end_date_bound=args.end_date_bound,
         dry_run=args.dry_run,
-        file_filter=args.file_filter
+        file_filter=args.file_filter,
     ).run_move()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

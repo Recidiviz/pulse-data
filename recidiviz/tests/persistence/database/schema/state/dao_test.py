@@ -32,11 +32,11 @@ from recidiviz.persistence.database.schema.state import dao
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.tools.postgres import local_postgres_helpers
 
-_REGION = 'region'
-_FULL_NAME = 'full_name'
-_EXTERNAL_ID = 'external_id'
-_EXTERNAL_ID2 = 'external_id_2'
-_STATE_CODE = 'US_ND'
+_REGION = "region"
+_FULL_NAME = "full_name"
+_EXTERNAL_ID = "external_id"
+_EXTERNAL_ID2 = "external_id_2"
+_STATE_CODE = "US_ND"
 _BIRTHDATE = datetime.date(year=2012, month=1, day=2)
 
 
@@ -59,16 +59,18 @@ class TestDao(TestCase):
 
     @classmethod
     def tearDownClass(cls) -> None:
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(cls.temp_db_dir)
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.temp_db_dir
+        )
 
     def test_readPeople_byFullName(self) -> None:
         # Arrange
-        person = schema.StatePerson(person_id=8,
-                                    full_name=_FULL_NAME,
-                                    state_code=_STATE_CODE)
-        person_different_name = schema.StatePerson(person_id=9,
-                                                   full_name='diff_name',
-                                                   state_code=_STATE_CODE)
+        person = schema.StatePerson(
+            person_id=8, full_name=_FULL_NAME, state_code=_STATE_CODE
+        )
+        person_different_name = schema.StatePerson(
+            person_id=9, full_name="diff_name", state_code=_STATE_CODE
+        )
 
         session = SessionFactory.for_schema_base(StateBase)
         session.add(person)
@@ -84,15 +86,14 @@ class TestDao(TestCase):
 
     def test_readPeople_byBirthdate(self) -> None:
         # Arrange
-        person = schema.StatePerson(person_id=8,
-                                    birthdate=_BIRTHDATE,
-                                    state_code=_STATE_CODE)
+        person = schema.StatePerson(
+            person_id=8, birthdate=_BIRTHDATE, state_code=_STATE_CODE
+        )
         person_different_birthdate = schema.StatePerson(
             state_code=_STATE_CODE,
             person_id=9,
-            birthdate=datetime.date(year=2002,
-                                    month=1,
-                                    day=2))
+            birthdate=datetime.date(year=2002, month=1, day=2),
+        )
 
         session = SessionFactory.for_schema_base(StateBase)
         session.add(person)
@@ -108,19 +109,20 @@ class TestDao(TestCase):
 
     def test_readPeople(self) -> None:
         # Arrange
-        person = schema.StatePerson(person_id=8,
-                                    full_name=_FULL_NAME,
-                                    birthdate=_BIRTHDATE,
-                                    state_code=_STATE_CODE)
-        person_different_name = schema.StatePerson(person_id=9,
-                                                   full_name='diff_name',
-                                                   state_code=_STATE_CODE)
+        person = schema.StatePerson(
+            person_id=8,
+            full_name=_FULL_NAME,
+            birthdate=_BIRTHDATE,
+            state_code=_STATE_CODE,
+        )
+        person_different_name = schema.StatePerson(
+            person_id=9, full_name="diff_name", state_code=_STATE_CODE
+        )
         person_different_birthdate = schema.StatePerson(
             state_code=_STATE_CODE,
             person_id=10,
-            birthdate=datetime.date(year=2002,
-                                    month=1,
-                                    day=2))
+            birthdate=datetime.date(year=2002, month=1, day=2),
+        )
         session = SessionFactory.for_schema_base(StateBase)
         session.add(person)
         session.add(person_different_name)
@@ -131,11 +133,7 @@ class TestDao(TestCase):
         people = dao.read_people(session, full_name=None, birthdate=None)
 
         # Assert
-        expected_people = [
-            person,
-            person_different_name,
-            person_different_birthdate
-        ]
+        expected_people = [person, person_different_name, person_different_birthdate]
 
         self.assertCountEqual(people, expected_people)
 
@@ -167,7 +165,9 @@ class TestDao(TestCase):
     def test_readPeopleByRootExternalIds(self) -> None:
         # Arrange
         person_no_match = schema.StatePerson(person_id=1, state_code=_STATE_CODE)
-        person_match_external_id = schema.StatePerson(person_id=2, state_code=_STATE_CODE)
+        person_match_external_id = schema.StatePerson(
+            person_id=2, state_code=_STATE_CODE
+        )
         person_external_id = schema.StatePersonExternalId(
             person_external_id_id=1,
             external_id=_EXTERNAL_ID,
@@ -184,7 +184,8 @@ class TestDao(TestCase):
 
         # Act
         people = dao.read_people_by_cls_external_ids(
-            session, _STATE_CODE, schema.StatePerson, [_EXTERNAL_ID])
+            session, _STATE_CODE, schema.StatePerson, [_EXTERNAL_ID]
+        )
 
         # Assert
         expected_people = [person_match_external_id]
@@ -216,7 +217,8 @@ class TestDao(TestCase):
 
         # Act
         people = dao.read_people_by_cls_external_ids(
-            session, _STATE_CODE, schema.StatePerson, [_EXTERNAL_ID])
+            session, _STATE_CODE, schema.StatePerson, [_EXTERNAL_ID]
+        )
 
         # Assert
         expected_people = [person]
@@ -231,13 +233,15 @@ class TestDao(TestCase):
             external_id=_EXTERNAL_ID,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
             state_code=_STATE_CODE,
-            person=person)
+            person=person,
+        )
         sentence_group_2 = schema.StateSentenceGroup(
             sentence_group_id=2,
             external_id=_EXTERNAL_ID2,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
             state_code=_STATE_CODE,
-            person=person)
+            person=person,
+        )
         person.sentence_groups = [sentence_group, sentence_group_2]
 
         session = SessionFactory.for_schema_base(StateBase)
@@ -246,7 +250,8 @@ class TestDao(TestCase):
 
         # Act
         people = dao.read_people_by_cls_external_ids(
-            session, _STATE_CODE, schema.StateSentenceGroup, [_EXTERNAL_ID])
+            session, _STATE_CODE, schema.StateSentenceGroup, [_EXTERNAL_ID]
+        )
 
         # Assert
         expected_people = [person]
@@ -256,7 +261,9 @@ class TestDao(TestCase):
     def test_readPeopleByExternalId(self) -> None:
         # Arrange
         person_no_match = schema.StatePerson(person_id=1, state_code=_STATE_CODE)
-        person_match_external_id = schema.StatePerson(person_id=2, state_code=_STATE_CODE)
+        person_match_external_id = schema.StatePerson(
+            person_id=2, state_code=_STATE_CODE
+        )
         person_external_id = schema.StatePersonExternalId(
             person_external_id_id=1,
             external_id=_EXTERNAL_ID,
@@ -272,17 +279,17 @@ class TestDao(TestCase):
         session.commit()
 
         ingested_person = entities.StatePerson.new_with_defaults(state_code=_STATE_CODE)
-        ingested_person.external_ids = \
-            [entities.StatePersonExternalId.new_with_defaults(
+        ingested_person.external_ids = [
+            entities.StatePersonExternalId.new_with_defaults(
                 external_id=_EXTERNAL_ID,
                 id_type=external_id_types.US_ND_SID,
                 state_code=_STATE_CODE,
                 person=ingested_person,
-            )]
+            )
+        ]
 
         # Act
-        people = dao.read_people_by_external_ids(session, _REGION,
-                                                 [ingested_person])
+        people = dao.read_people_by_external_ids(session, _REGION, [ingested_person])
 
         # Assert
         expected_people = [person_match_external_id]
@@ -315,21 +322,21 @@ class TestDao(TestCase):
 
         ingested_person = entities.StatePerson.new_with_defaults(state_code=_STATE_CODE)
 
-        ingested_person.external_ids = \
-            [
-                entities.StatePersonExternalId.new_with_defaults(
-                    external_id=_EXTERNAL_ID,
-                    id_type=external_id_types.US_ND_SID,
-                    state_code=_STATE_CODE),
-                entities.StatePersonExternalId.new_with_defaults(
-                    external_id=_EXTERNAL_ID2,
-                    id_type=external_id_types.US_ND_SID,
-                    state_code=_STATE_CODE)
-            ]
+        ingested_person.external_ids = [
+            entities.StatePersonExternalId.new_with_defaults(
+                external_id=_EXTERNAL_ID,
+                id_type=external_id_types.US_ND_SID,
+                state_code=_STATE_CODE,
+            ),
+            entities.StatePersonExternalId.new_with_defaults(
+                external_id=_EXTERNAL_ID2,
+                id_type=external_id_types.US_ND_SID,
+                state_code=_STATE_CODE,
+            ),
+        ]
 
         # Act
-        people = dao.read_people_by_external_ids(session, _REGION,
-                                                 [ingested_person])
+        people = dao.read_people_by_external_ids(session, _REGION, [ingested_person])
 
         # Assert
         expected_people = [person]
@@ -365,21 +372,21 @@ class TestDao(TestCase):
 
         ingested_person = entities.StatePerson.new_with_defaults(state_code=_STATE_CODE)
 
-        ingested_person.external_ids = \
-            [
-                entities.StatePersonExternalId.new_with_defaults(
-                    external_id=_EXTERNAL_ID,
-                    id_type=external_id_types.US_ND_SID,
-                    state_code=_STATE_CODE),
-                entities.StatePersonExternalId.new_with_defaults(
-                    external_id=_EXTERNAL_ID2,
-                    id_type=external_id_types.US_ND_SID,
-                    state_code=_STATE_CODE)
-            ]
+        ingested_person.external_ids = [
+            entities.StatePersonExternalId.new_with_defaults(
+                external_id=_EXTERNAL_ID,
+                id_type=external_id_types.US_ND_SID,
+                state_code=_STATE_CODE,
+            ),
+            entities.StatePersonExternalId.new_with_defaults(
+                external_id=_EXTERNAL_ID2,
+                id_type=external_id_types.US_ND_SID,
+                state_code=_STATE_CODE,
+            ),
+        ]
 
         # Act
-        people = dao.read_people_by_external_ids(session, _REGION,
-                                                 [ingested_person])
+        people = dao.read_people_by_external_ids(session, _REGION, [ingested_person])
 
         # Assert
         expected_people = [person1, person2]
@@ -420,7 +427,9 @@ class TestDao(TestCase):
                     external_id=_EXTERNAL_ID,
                     id_type=external_id_types.US_ND_SID,
                     state_code=_STATE_CODE,
-                )])
+                )
+            ],
+        )
 
         ingested_person2 = entities.StatePerson.new_with_defaults(
             state_code=_STATE_CODE,
@@ -429,22 +438,25 @@ class TestDao(TestCase):
                     external_id=_EXTERNAL_ID2,
                     id_type=external_id_types.US_ND_SID,
                     state_code=_STATE_CODE,
-                )])
+                )
+            ],
+        )
 
         ingested_person3 = entities.StatePerson.new_with_defaults(
             state_code=_STATE_CODE,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
-                    external_id='NONEXISTENT_ID',
+                    external_id="NONEXISTENT_ID",
                     id_type=external_id_types.US_ND_SID,
                     state_code=_STATE_CODE,
-                )])
+                )
+            ],
+        )
 
         # Act
         people = dao.read_people_by_external_ids(
-            session, _REGION, [ingested_person1,
-                               ingested_person2,
-                               ingested_person3])
+            session, _REGION, [ingested_person1, ingested_person2, ingested_person3]
+        )
 
         # Assert
         expected_people = [person1, person2]
@@ -483,7 +495,9 @@ class TestDao(TestCase):
                     external_id=_EXTERNAL_ID,
                     id_type=external_id_types.US_ND_SID,
                     state_code=_STATE_CODE,
-                )])
+                )
+            ],
+        )
 
         ingested_person2 = entities.StatePerson.new_with_defaults(
             state_code=_STATE_CODE,
@@ -492,12 +506,14 @@ class TestDao(TestCase):
                     external_id=_EXTERNAL_ID2,
                     id_type=external_id_types.US_ND_SID,
                     state_code=_STATE_CODE,
-                )])
+                )
+            ],
+        )
 
         # Act
         people = dao.read_people_by_external_ids(
-            session, _REGION, [ingested_person1,
-                               ingested_person2])
+            session, _REGION, [ingested_person1, ingested_person2]
+        )
 
         # Assert
         expected_people = [person]
@@ -511,7 +527,8 @@ class TestDao(TestCase):
             external_id=_EXTERNAL_ID,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
             state_code=_STATE_CODE,
-            person=person_1)
+            person=person_1,
+        )
         person_1.sentence_groups = [sentence_group_1]
 
         person_2 = schema.StatePerson(person_id=2, state_code=_STATE_CODE)
@@ -520,22 +537,27 @@ class TestDao(TestCase):
             external_id=_EXTERNAL_ID,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
             state_code=_STATE_CODE,
-            person=person_2)
+            person=person_2,
+        )
         sentence_group_2 = schema.StateSentenceGroup(
             sentence_group_id=3,
             external_id=_EXTERNAL_ID2,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
             state_code=_STATE_CODE,
-            person=person_2)
+            person=person_2,
+        )
         placeholder_sentence_group = schema.StateSentenceGroup(
             sentence_group_id=4,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
             state_code=_STATE_CODE,
-            person=person_2)
+            person=person_2,
+        )
 
-        person_2.sentence_groups = [sentence_group_1_dup,
-                                    sentence_group_2,
-                                    placeholder_sentence_group]
+        person_2.sentence_groups = [
+            sentence_group_1_dup,
+            sentence_group_2,
+            placeholder_sentence_group,
+        ]
 
         session = SessionFactory.for_schema_base(StateBase)
         session.add(person_1)
@@ -544,7 +566,8 @@ class TestDao(TestCase):
 
         # Act
         external_ids = dao.read_external_ids_of_cls_with_external_id_match(
-            session, _STATE_CODE, schema.StateSentenceGroup)
+            session, _STATE_CODE, schema.StateSentenceGroup
+        )
 
         # Assert
         self.assertEqual(external_ids, [_EXTERNAL_ID])

@@ -16,13 +16,11 @@
 # =============================================================================
 """Queue names for shared Google Cloud Task queues."""
 
-BIGQUERY_QUEUE_V2 = 'bigquery-v2'
-DIRECT_INGEST_SCHEDULER_QUEUE_V2 = 'direct-ingest-scheduler-v2'
-DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2 = 'direct-ingest-bq-import-export-v2'
-DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2 = \
-    'direct-ingest-state-process-job-queue-v2'
-DIRECT_INGEST_JAILS_PROCESS_JOB_QUEUE_V2 = \
-    'direct-ingest-jpp-process-job-queue-v2'
-DIRECT_INGEST_SFTP_DOWNLOAD_QUEUE_V1 = 'direct-ingest-sftp-download-queue-v1'
-JOB_MONITOR_QUEUE_V2 = 'job-monitor-v2'
-SCRAPER_PHASE_QUEUE_V2 = 'scraper-phase-v2'
+BIGQUERY_QUEUE_V2 = "bigquery-v2"
+DIRECT_INGEST_SCHEDULER_QUEUE_V2 = "direct-ingest-scheduler-v2"
+DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2 = "direct-ingest-bq-import-export-v2"
+DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2 = "direct-ingest-state-process-job-queue-v2"
+DIRECT_INGEST_JAILS_PROCESS_JOB_QUEUE_V2 = "direct-ingest-jpp-process-job-queue-v2"
+DIRECT_INGEST_SFTP_DOWNLOAD_QUEUE_V1 = "direct-ingest-sftp-download-queue-v1"
+JOB_MONITOR_QUEUE_V2 = "job-monitor-v2"
+SCRAPER_PHASE_QUEUE_V2 = "scraper-phase-v2"

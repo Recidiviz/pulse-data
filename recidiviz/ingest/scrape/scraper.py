@@ -29,31 +29,26 @@ import urllib3
 
 from recidiviz.ingest.ingestor import Ingestor
 from recidiviz.ingest.models.scrape_key import ScrapeKey
-from recidiviz.ingest.scrape import (constants, scraper_utils, sessions,
-                                     tracker)
+from recidiviz.ingest.scrape import constants, scraper_utils, sessions, tracker
 from recidiviz.ingest.scrape.constants import BATCH_PUBSUB_TYPE
-from recidiviz.ingest.scrape.scraper_cloud_task_manager import \
-    ScraperCloudTaskManager
+from recidiviz.ingest.scrape.scraper_cloud_task_manager import ScraperCloudTaskManager
 from recidiviz.ingest.scrape.task_params import QueueRequest, Task
 from recidiviz.utils import regions, pubsub_helper
 
 
 class FetchPageError(Exception):
-
     def __init__(self, request, response):
-        details = ''
+        details = ""
         if request is not None:
-            details += ("\n\nRequest headers: \n{0}"
-                        "\n\nMethod: {1}"
-                        "\n\nBody: \n{2} ") \
-                .format(request.headers, request.method, request.body)
+            details += (
+                "\n\nRequest headers: \n{0}" "\n\nMethod: {1}" "\n\nBody: \n{2} "
+            ).format(request.headers, request.method, request.body)
         if response is not None:
-            details += ("\n\nResponse: \n{0} / {1}"
-                        "\n\nHeaders: \n{2}"
-                        "\n\nText: \n{3}") \
-                .format(response.status_code, response.reason,
-                        response.headers,
-                        response.text)
+            details += (
+                "\n\nResponse: \n{0} / {1}" "\n\nHeaders: \n{2}" "\n\nText: \n{3}"
+            ).format(
+                response.status_code, response.reason, response.headers, response.text
+            )
 
         msg = "Problem retrieving page: {}".format(details)
         super().__init__(msg)
@@ -83,7 +78,7 @@ class Scraper(Ingestor, metaclass=abc.ABCMeta):
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
         self.region = regions.get_region(region_name)
-        self.scraper_work_url = '/scraper/work/{}'.format(region_name)
+        self.scraper_work_url = "/scraper/work/{}".format(region_name)
         self.cloud_task_manager = ScraperCloudTaskManager()
 
     @abc.abstractmethod
@@ -125,18 +120,24 @@ class Scraper(Ingestor, metaclass=abc.ABCMeta):
         docket_item = self.iterate_docket_item(scrape_type)
         scrape_key = ScrapeKey(self.get_region().region_code, scrape_type)
         # Ensure that the topic and subscription are created on start.
-        pubsub_helper.create_topic_and_subscription(
-            scrape_key, BATCH_PUBSUB_TYPE)
+        pubsub_helper.create_topic_and_subscription(scrape_key, BATCH_PUBSUB_TYPE)
         if not docket_item:
-            logging.error("Found no %s docket items for %s, shutting down.",
-                          scrape_type, self.get_region().region_code)
+            logging.error(
+                "Found no %s docket items for %s, shutting down.",
+                scrape_type,
+                self.get_region().region_code,
+            )
             sessions.close_session(scrape_key)
             return
 
-        self.add_task(self.get_initial_task_method(),
-                      QueueRequest(scrape_type=scrape_type,
-                                   scraper_start_time=datetime.now(),
-                                   next_task=self.get_initial_task()))
+        self.add_task(
+            self.get_initial_task_method(),
+            QueueRequest(
+                scrape_type=scrape_type,
+                scraper_start_time=datetime.now(),
+                next_task=self.get_initial_task(),
+            ),
+        )
 
     def stop_scrape(self, scrape_type, respect_is_stoppable=False) -> bool:
         """Stops all active scraping tasks, resume non-targeted scrape types
@@ -164,25 +165,28 @@ class Scraper(Ingestor, metaclass=abc.ABCMeta):
             logging.info(
                 "Stop scrape was called and ignored for the region: %s "
                 "because the region's manifest is flagged as not stoppable",
-                region.region_code)
+                region.region_code,
+            )
             return False
 
         logging.info("Stopping scrape for the region: %s", region.region_code)
 
         try:
             self.cloud_task_manager.purge_scrape_tasks(
-                region_code=region.region_code,
-                queue_name=region.get_queue_name())
+                region_code=region.region_code, queue_name=region.get_queue_name()
+            )
         except Exception as e:
-            logging.error("Caught an exception while trying to purge scrape "
-                          "tasks. The message was:\n%s", str(e))
+            logging.error(
+                "Caught an exception while trying to purge scrape "
+                "tasks. The message was:\n%s",
+                str(e),
+            )
             return False
 
         # Check for other running scrapes, and if found kick off a delayed
         # resume for them since the taskqueue purge will kill them.
         other_scrapes = set([])
-        open_sessions = sessions.get_sessions(region.region_code,
-                                              include_closed=False)
+        open_sessions = sessions.get_sessions(region.region_code, include_closed=False)
         for session in open_sessions:
             if session.scrape_type != scrape_type:
                 other_scrapes.add(session.scrape_type)
@@ -221,8 +225,9 @@ class Scraper(Ingestor, metaclass=abc.ABCMeta):
             # the docket un-leased. It will get deleted the next time
             # we start a new background scrape.
 
-            recent_sessions = sessions.get_recent_sessions(ScrapeKey(
-                self.get_region().region_code, scrape_type))
+            recent_sessions = sessions.get_recent_sessions(
+                ScrapeKey(self.get_region().region_code, scrape_type)
+            )
 
             last_scraped = None
             for session in recent_sessions:
@@ -231,10 +236,11 @@ class Scraper(Ingestor, metaclass=abc.ABCMeta):
                     break
 
             if last_scraped:
-                content = last_scraped.split(', ')
+                content = last_scraped.split(", ")
             else:
-                logging.error("No earlier session with last_scraped found; "
-                              "cannot resume.")
+                logging.error(
+                    "No earlier session with last_scraped found; " "cannot resume."
+                )
                 return
 
         else:
@@ -247,17 +253,29 @@ class Scraper(Ingestor, metaclass=abc.ABCMeta):
             content = self.iterate_docket_item(scrape_type)
             if not content:
                 sessions.close_session(
-                    ScrapeKey(self.get_region().region_code, scrape_type))
+                    ScrapeKey(self.get_region().region_code, scrape_type)
+                )
                 return
 
-        self.add_task(self.get_initial_task_method(),
-                      QueueRequest(scrape_type=scrape_type,
-                                   scraper_start_time=datetime.now(),
-                                   next_task=self.get_initial_task()))
+        self.add_task(
+            self.get_initial_task_method(),
+            QueueRequest(
+                scrape_type=scrape_type,
+                scraper_start_time=datetime.now(),
+                next_task=self.get_initial_task(),
+            ),
+        )
 
     @staticmethod
-    def fetch_page(url, headers=None, cookies=None, params=None,
-                   post_data=None, json_data=None, should_proxy=True):
+    def fetch_page(
+        url,
+        headers=None,
+        cookies=None,
+        params=None,
+        post_data=None,
+        json_data=None,
+        should_proxy=True,
+    ):
         """Fetch content from a URL. If data is None (the default), we perform
         a GET for the page. If the data is set, it must be a dict of parameters
         to use as POST data in a POST request to the url.
@@ -283,23 +301,36 @@ class Scraper(Ingestor, metaclass=abc.ABCMeta):
         else:
             proxies = None
         headers = headers.copy() if headers else {}
-        if 'User-Agent' not in headers:
+        if "User-Agent" not in headers:
             headers.update(scraper_utils.get_headers())
 
         try:
             if post_data is None and json_data is None:
                 page = requests.get(
-                    url, proxies=proxies, headers=headers, cookies=cookies,
-                    params=params, verify=False)
+                    url,
+                    proxies=proxies,
+                    headers=headers,
+                    cookies=cookies,
+                    params=params,
+                    verify=False,
+                )
             elif params is None:
                 page = requests.post(
-                    url, proxies=proxies, headers=headers, cookies=cookies,
-                    data=post_data, json=json_data, verify=False)
+                    url,
+                    proxies=proxies,
+                    headers=headers,
+                    cookies=cookies,
+                    data=post_data,
+                    json=json_data,
+                    verify=False,
+                )
             else:
                 raise ValueError(
                     "Both params ({}) for a GET request and either post_data "
-                    "({}) or json_data ({}) for a POST request were set."
-                    .format(params, post_data, json_data))
+                    "({}) or json_data ({}) for a POST request were set.".format(
+                        params, post_data, json_data
+                    )
+                )
             page.raise_for_status()
         except requests.exceptions.RequestException as ce:
             raise FetchPageError(ce.request, ce.response) from ce
@@ -307,7 +338,7 @@ class Scraper(Ingestor, metaclass=abc.ABCMeta):
         return page
 
     def add_task(self, task_name, request: QueueRequest):
-        """ Add a task to the task queue.
+        """Add a task to the task queue.
 
         Args:
             task_name: (string) name of the function in the scraper class to
@@ -319,10 +350,10 @@ class Scraper(Ingestor, metaclass=abc.ABCMeta):
             queue_name=self.get_region().get_queue_name(),
             url=self.scraper_work_url,
             body={
-                'region': self.get_region().region_code,
-                'task': task_name,
-                'params': request.to_serializable(),
-            }
+                "region": self.get_region().region_code,
+                "task": task_name,
+                "params": request.to_serializable(),
+            },
         )
 
     def iterate_docket_item(self, scrape_type):
@@ -341,7 +372,8 @@ class Scraper(Ingestor, metaclass=abc.ABCMeta):
         """
 
         item_content = tracker.iterate_docket_item(
-            ScrapeKey(self.get_region().region_code, scrape_type))
+            ScrapeKey(self.get_region().region_code, scrape_type)
+        )
 
         if item_content is None:
             return False

@@ -22,26 +22,32 @@ from typing import List, Optional, Type, Callable
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity_matching import entity_matching_utils
-from recidiviz.persistence.entity_matching.entity_matching_types import \
-    EntityTree
-from recidiviz.persistence.entity_matching.state. \
-    base_state_matching_delegate import BaseStateMatchingDelegate
-from recidiviz.persistence.entity_matching.state.state_incarceration_incident_matching_utils import \
-    move_incidents_onto_periods
-from recidiviz.persistence.entity_matching.state.state_matching_utils import \
-    nonnull_fields_entity_match
-from recidiviz.persistence.entity_matching.state.us_nd.us_nd_matching_utils import associate_revocation_svrs_with_ips, \
-    update_temporary_holds, merge_incarceration_periods, merge_incomplete_periods, is_incarceration_period_match
+from recidiviz.persistence.entity_matching.entity_matching_types import EntityTree
+from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import (
+    BaseStateMatchingDelegate,
+)
+from recidiviz.persistence.entity_matching.state.state_incarceration_incident_matching_utils import (
+    move_incidents_onto_periods,
+)
+from recidiviz.persistence.entity_matching.state.state_matching_utils import (
+    nonnull_fields_entity_match,
+)
+from recidiviz.persistence.entity_matching.state.us_nd.us_nd_matching_utils import (
+    associate_revocation_svrs_with_ips,
+    update_temporary_holds,
+    merge_incarceration_periods,
+    merge_incomplete_periods,
+    is_incarceration_period_match,
+)
 
 
 class UsNdMatchingDelegate(BaseStateMatchingDelegate):
     """Class that contains matching logic specific to US_ND."""
 
     def __init__(self):
-        super().__init__('us_nd', [schema.StatePerson, schema.StateSentenceGroup])
+        super().__init__("us_nd", [schema.StatePerson, schema.StateSentenceGroup])
 
-    def perform_match_postprocessing(self,
-                                     matched_persons: List[schema.StatePerson]):
+    def perform_match_postprocessing(self, matched_persons: List[schema.StatePerson]):
         """Performs the following ND specific postprocessing on the provided
         |matched_persons| directly after they have been entity matched:
             - Move IncarcerationIncidents onto IncarcerationPeriods based on
@@ -56,50 +62,50 @@ class UsNdMatchingDelegate(BaseStateMatchingDelegate):
         logging.info("[Entity matching] Move incidents into periods")
         move_incidents_onto_periods(matched_persons)
 
-        logging.info("[Entity matching] Transform incarceration periods into "
-                     "holds")
+        logging.info("[Entity matching] Transform incarceration periods into " "holds")
         update_temporary_holds(matched_persons, self.region)
 
         logging.info("[Entity matching] Associate revocation SVRs with IPs")
         associate_revocation_svrs_with_ips(matched_persons)
 
-    def perform_match_preprocessing(
-            self, ingested_persons: List[schema.StatePerson]):
+    def perform_match_preprocessing(self, ingested_persons: List[schema.StatePerson]):
         """Performs the following ND specific preprocessing on the provided
         |ingested_persons| directly before they are entity matched:
             - Merge incomplete IncarcerationPeriods when possible.
         """
-        logging.info("[Entity matching] Pre-processing: Merge incarceration "
-                     "periods")
+        logging.info("[Entity matching] Pre-processing: Merge incarceration " "periods")
         merge_incarceration_periods(ingested_persons)
 
     def get_non_external_id_match(
-            self, ingested_entity_tree: EntityTree,
-            db_entity_trees: List[EntityTree]) -> Optional[EntityTree]:
+        self, ingested_entity_tree: EntityTree, db_entity_trees: List[EntityTree]
+    ) -> Optional[EntityTree]:
         """ND specific logic to match the |ingested_entity_tree| to one of the
         |db_entity_trees| that does not rely solely on matching by external_id.
         If such a match is found, it is returned.
         """
-        if isinstance(ingested_entity_tree.entity,
-                      schema.StateIncarcerationPeriod):
+        if isinstance(ingested_entity_tree.entity, schema.StateIncarcerationPeriod):
             return entity_matching_utils.get_only_match(
-                ingested_entity_tree, db_entity_trees,
-                is_incarceration_period_match)
-        if isinstance(ingested_entity_tree.entity,
-                      (schema.StateAgent,
-                       schema.StateIncarcerationSentence,
-                       schema.StateAssessment,
-                       schema.StateSupervisionPeriod,
-                       schema.StateSupervisionViolation,
-                       schema.StateSupervisionViolationResponse)):
+                ingested_entity_tree, db_entity_trees, is_incarceration_period_match
+            )
+        if isinstance(
+            ingested_entity_tree.entity,
+            (
+                schema.StateAgent,
+                schema.StateIncarcerationSentence,
+                schema.StateAssessment,
+                schema.StateSupervisionPeriod,
+                schema.StateSupervisionViolation,
+                schema.StateSupervisionViolationResponse,
+            ),
+        ):
             return entity_matching_utils.get_only_match(
-                ingested_entity_tree, db_entity_trees,
-                nonnull_fields_entity_match)
+                ingested_entity_tree, db_entity_trees, nonnull_fields_entity_match
+            )
         return None
 
     def get_merge_flat_fields_override_for_type(
-            self, cls: Type[DatabaseEntity])\
-            -> Optional[Callable[..., DatabaseEntity]]:
+        self, cls: Type[DatabaseEntity]
+    ) -> Optional[Callable[..., DatabaseEntity]]:
         """Returns ND specific callable to handle merging of entities of type
         |cls|, if a specialized merge is necessary.
         """

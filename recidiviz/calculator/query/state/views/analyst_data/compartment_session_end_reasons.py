@@ -16,20 +16,21 @@
 # =============================================================================
 """Combined view of supervision terminations and incarceration releases used to determine the end reason of a session"""
 # pylint: disable=trailing-whitespace
-# pylint: disable=line-too-long
+
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET, DATAFLOW_METRICS_MATERIALIZED_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    ANALYST_VIEWS_DATASET,
+    DATAFLOW_METRICS_MATERIALIZED_DATASET,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-COMPARTMENT_SESSION_END_REASONS_VIEW_NAME = 'compartment_session_end_reasons'
+COMPARTMENT_SESSION_END_REASONS_VIEW_NAME = "compartment_session_end_reasons"
 
-COMPARTMENT_SESSION_END_REASONS_VIEW_DESCRIPTION = \
-    """Combined view of supervision terminations and incarceration releases used to determine the end reason of a 
+COMPARTMENT_SESSION_END_REASONS_VIEW_DESCRIPTION = """Combined view of supervision terminations and incarceration releases used to determine the end reason of a 
     session"""
 
-COMPARTMENT_SESSION_END_REASONS_QUERY_TEMPLATE = \
-    """
+COMPARTMENT_SESSION_END_REASONS_QUERY_TEMPLATE = """
     /*{description}*/
     WITH release_metric_cte AS
     /*
@@ -80,9 +81,9 @@ COMPARTMENT_SESSION_END_REASONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=COMPARTMENT_SESSION_END_REASONS_VIEW_DESCRIPTION,
     materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     analyst_dataset=ANALYST_VIEWS_DATASET,
-    should_materialize=True
+    should_materialize=True,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         COMPARTMENT_SESSION_END_REASONS_VIEW_BUILDER.build_and_print()

@@ -15,20 +15,22 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Revocations Matrix Filtered Caseload."""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config, state_specific_query_strings
+from recidiviz.calculator.query.state import (
+    dataset_config,
+    state_specific_query_strings,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-REVOCATIONS_MATRIX_FILTERED_CASELOAD_VIEW_NAME = 'revocations_matrix_filtered_caseload'
+REVOCATIONS_MATRIX_FILTERED_CASELOAD_VIEW_NAME = "revocations_matrix_filtered_caseload"
 
 REVOCATIONS_MATRIX_FILTERED_CASELOAD_DESCRIPTION = """
  Person-level violation and caseload information for all of the people revoked to prison from supervision.
  """
 
-REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE = \
-    """
+REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE = """
     /*{description}*/
   WITH inclusion_ranks_by_person AS (
     SELECT
@@ -115,14 +117,26 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=REVOCATIONS_MATRIX_FILTERED_CASELOAD_VIEW_NAME,
     view_query_template=REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE,
-    dimensions=['state_code', 'metric_period_months', 'district', 'level_1_supervision_location',
-                'level_2_supervision_location', 'supervision_type', 'supervision_level',
-                'charge_category', 'risk_level', 'violation_type', 'reported_violations', 'state_id', 'officer'],
+    dimensions=[
+        "state_code",
+        "metric_period_months",
+        "district",
+        "level_1_supervision_location",
+        "level_2_supervision_location",
+        "supervision_type",
+        "supervision_level",
+        "charge_category",
+        "risk_level",
+        "violation_type",
+        "reported_violations",
+        "state_id",
+        "officer",
+    ],
     description=REVOCATIONS_MATRIX_FILTERED_CASELOAD_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     state_specific_supervision_level=state_specific_query_strings.state_specific_supervision_level(),
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         REVOCATIONS_MATRIX_FILTERED_CASELOAD_VIEW_BUILDER.build_and_print()

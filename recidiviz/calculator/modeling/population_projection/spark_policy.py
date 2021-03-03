@@ -22,8 +22,13 @@ from typing import Any, Callable, Dict, List
 class SparkPolicy:
     """Policy function encapsulation"""
 
-    def __init__(self, policy_fn: Callable, spark_compartment: str, sub_population: Dict[str, str],
-                 apply_retroactive: bool = False):
+    def __init__(
+        self,
+        policy_fn: Callable,
+        spark_compartment: str,
+        sub_population: Dict[str, str],
+        apply_retroactive: bool = False,
+    ):
         """
         Create an object to store the policy metadata including the area where the policy should be applied
 
@@ -39,7 +44,9 @@ class SparkPolicy:
         self.apply_retroactive = apply_retroactive
 
     @staticmethod
-    def _get_applicable_policies(policy_list: List, population_type: str, population_key: Any):
+    def _get_applicable_policies(
+        policy_list: List, population_type: str, population_key: Any
+    ):
         """Return a list of SparkPolicy objects relevant to the specific sub population or compartment.
 
         `policy_list` List of SparkPolicy objects
@@ -47,15 +54,23 @@ class SparkPolicy:
         `population_key` the identifier used to match the specific sub population or compartment
         """
         # Select all values where the policy attribute matches the provided key
-        policy_subset = [policy for policy in policy_list if getattr(policy, population_type) == population_key]
+        policy_subset = [
+            policy
+            for policy in policy_list
+            if getattr(policy, population_type) == population_key
+        ]
         return policy_subset
 
     @staticmethod
     def get_compartment_policies(policy_list: List, spark_compartment: str):
         """Return a list of SparkPolicy objects for the specific compartment."""
-        return SparkPolicy._get_applicable_policies(policy_list, 'spark_compartment', spark_compartment)
+        return SparkPolicy._get_applicable_policies(
+            policy_list, "spark_compartment", spark_compartment
+        )
 
     @staticmethod
     def get_sub_population_policies(policy_list: List, sub_population: Dict[str, str]):
         """Return a list of SparkPolicy objects for the specific sub_population."""
-        return SparkPolicy._get_applicable_policies(policy_list, 'sub_population', sub_population)
+        return SparkPolicy._get_applicable_policies(
+            policy_list, "sub_population", sub_population
+        )

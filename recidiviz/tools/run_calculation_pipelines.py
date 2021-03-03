@@ -61,21 +61,21 @@ import logging
 import sys
 from typing import List, Tuple
 
-from recidiviz.calculator.pipeline.incarceration import \
-    pipeline as incarceration_pipeline
-from recidiviz.calculator.pipeline.program import \
-    pipeline as program_pipeline
-from recidiviz.calculator.pipeline.recidivism import \
-    pipeline as recidivism_pipeline
-from recidiviz.calculator.pipeline.supervision import \
-    pipeline as supervision_pipeline
-from recidiviz.calculator.pipeline.utils.pipeline_args_utils import get_apache_beam_pipeline_options_from_args
+from recidiviz.calculator.pipeline.incarceration import (
+    pipeline as incarceration_pipeline,
+)
+from recidiviz.calculator.pipeline.program import pipeline as program_pipeline
+from recidiviz.calculator.pipeline.recidivism import pipeline as recidivism_pipeline
+from recidiviz.calculator.pipeline.supervision import pipeline as supervision_pipeline
+from recidiviz.calculator.pipeline.utils.pipeline_args_utils import (
+    get_apache_beam_pipeline_options_from_args,
+)
 
 PIPELINE_MODULES = {
-    'incarceration': incarceration_pipeline,
-    'recidivism': recidivism_pipeline,
-    'supervision': supervision_pipeline,
-    'program': program_pipeline
+    "incarceration": incarceration_pipeline,
+    "recidivism": recidivism_pipeline,
+    "supervision": supervision_pipeline,
+    "program": program_pipeline,
 }
 
 
@@ -83,12 +83,14 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     """Parses the arguments needed to run pipelines."""
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--pipeline',
-                        dest='pipeline',
-                        type=str,
-                        choices=PIPELINE_MODULES.keys(),
-                        help='The type of pipeline that should be run.',
-                        required=True)
+    parser.add_argument(
+        "--pipeline",
+        dest="pipeline",
+        type=str,
+        choices=PIPELINE_MODULES.keys(),
+        help="The type of pipeline that should be run.",
+        required=True,
+    )
 
     return parser.parse_known_args(argv)
 
@@ -116,11 +118,13 @@ def run_calculation_pipelines() -> None:
 def run_pipeline(pipeline_module, argv: List[str]) -> None:
     """Runs the given pipeline_module with the arguments contained in argv."""
     known_args, remaining_args = pipeline_module.get_arg_parser().parse_known_args(argv)
-    apache_beam_pipeline_options = get_apache_beam_pipeline_options_from_args(remaining_args)
+    apache_beam_pipeline_options = get_apache_beam_pipeline_options_from_args(
+        remaining_args
+    )
 
     pipeline_module.run(apache_beam_pipeline_options, **vars(known_args))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
     run_calculation_pipelines()

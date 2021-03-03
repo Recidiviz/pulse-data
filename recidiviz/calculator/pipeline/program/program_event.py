@@ -19,9 +19,17 @@ from typing import Optional
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.event_utils import AssessmentEventMixin, IdentifierEventWithSingularDate
-from recidiviz.common.constants.state.state_assessment import StateAssessmentType, StateAssessmentLevel
-from recidiviz.common.constants.state.state_program_assignment import StateProgramAssignmentParticipationStatus
+from recidiviz.calculator.pipeline.utils.event_utils import (
+    AssessmentEventMixin,
+    IdentifierEventWithSingularDate,
+)
+from recidiviz.common.constants.state.state_assessment import (
+    StateAssessmentType,
+    StateAssessmentLevel,
+)
+from recidiviz.common.constants.state.state_program_assignment import (
+    StateProgramAssignmentParticipationStatus,
+)
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 
 
@@ -32,6 +40,7 @@ class ProgramEvent(IdentifierEventWithSingularDate):
     Describes a date on which a person interacted with a
     program. This includes the information pertaining to the interaction
     that we will want to track when calculating program metrics."""
+
     # Program ID
     program_id: str = attr.ib()
 
@@ -45,7 +54,9 @@ class ProgramReferralEvent(ProgramEvent, AssessmentEventMixin):
     supervision_type: Optional[StateSupervisionType] = attr.ib(default=None)
 
     # Program participation status
-    participation_status: Optional[StateProgramAssignmentParticipationStatus] = attr.ib(default=None)
+    participation_status: Optional[StateProgramAssignmentParticipationStatus] = attr.ib(
+        default=None
+    )
 
     # Most recent assessment score at the time of referral
     assessment_score: Optional[int] = attr.ib(default=None)

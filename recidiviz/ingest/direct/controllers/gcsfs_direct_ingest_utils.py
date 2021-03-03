@@ -27,23 +27,25 @@ import attr
 from recidiviz.common.date import snake_case_datetime
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.ingest.direct.controllers.direct_ingest_types import CloudTaskArgs, IngestArgs
-from recidiviz.ingest.direct.errors import DirectIngestError, \
-    DirectIngestErrorType
+from recidiviz.ingest.direct.controllers.direct_ingest_types import (
+    CloudTaskArgs,
+    IngestArgs,
+)
+from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
 from recidiviz.utils import metadata
 
 # TODO(#3162): Make file_type non-optional once we've added these specifiers to every file
-_FILEPATH_REGEX = \
-    re.compile(
-        r'(unprocessed|processed)_'  # processed_state
-        r'(\d{4}-\d{2}-\d{2}T\d{2}[:_]\d{2}[:_]\d{2}[:_]\d{6})_'  # timestamp
-        r'((raw|ingest_view)_)?'  # file_type
-        r'([A-Za-z][A-Za-z\d]*(_[A-Za-z][A-Za-z\d]*)*)'  # file_tag
-        r'(_(\d+([^-]*)))?'  # Optional filename_suffix
-        r'(-\(\d+\))?'  # Optional file conflict suffix (e.g. '-(1)')
-        r'\.([A-Za-z]+)')  # Extension
+_FILEPATH_REGEX = re.compile(
+    r"(unprocessed|processed)_"  # processed_state
+    r"(\d{4}-\d{2}-\d{2}T\d{2}[:_]\d{2}[:_]\d{2}[:_]\d{6})_"  # timestamp
+    r"((raw|ingest_view)_)?"  # file_type
+    r"([A-Za-z][A-Za-z\d]*(_[A-Za-z][A-Za-z\d]*)*)"  # file_tag
+    r"(_(\d+([^-]*)))?"  # Optional filename_suffix
+    r"(-\(\d+\))?"  # Optional file conflict suffix (e.g. '-(1)')
+    r"\.([A-Za-z]+)"
+)  # Extension
 
-_FILENAME_SUFFIX_REGEX = re.compile(r'.*(_file_split(_size(\d+))?)')
+_FILENAME_SUFFIX_REGEX = re.compile(r".*(_file_split(_size(\d+))?)")
 
 
 class GcsfsDirectIngestFileType(Enum):
@@ -53,19 +55,19 @@ class GcsfsDirectIngestFileType(Enum):
     will live in different subdirectories in a region's storage bucket."""
 
     # Raw data received directly from state
-    RAW_DATA = 'raw'
+    RAW_DATA = "raw"
 
     # Ingest-ready file
-    INGEST_VIEW = 'ingest_view'
+    INGEST_VIEW = "ingest_view"
 
     # For regions that have not yet been migrated to SQL pre-processing support and do not have raw/ingest_view tags in
     # file names in the ingest bucket, these files are treated as INGEST_VIEW files. If a region has been configured
     # to have SQL pre-processing support, we will throw if encountering an UNSPECIFIED file.
     # TODO(#3162): Once all region files are fully migrated to having valid file types, remove this type entirely.
-    UNSPECIFIED = 'unspecified'
+    UNSPECIFIED = "unspecified"
 
     @classmethod
-    def from_string(cls, type_str: Optional[str]) -> 'GcsfsDirectIngestFileType':
+    def from_string(cls, type_str: Optional[str]) -> "GcsfsDirectIngestFileType":
         if type_str is None:
             return GcsfsDirectIngestFileType.UNSPECIFIED
         if type_str == GcsfsDirectIngestFileType.RAW_DATA.value:
@@ -73,7 +75,7 @@ class GcsfsDirectIngestFileType(Enum):
         if type_str == GcsfsDirectIngestFileType.INGEST_VIEW.value:
             return GcsfsDirectIngestFileType.INGEST_VIEW
 
-        raise ValueError(f'Unknown direct ingest file type string: [{type_str}]')
+        raise ValueError(f"Unknown direct ingest file type string: [{type_str}]")
 
 
 @attr.s(frozen=True)
@@ -110,9 +112,8 @@ class GcsfsFilenameParts:
 
     @stripped_file_name.default
     def _stripped_file_name(self) -> str:
-        suffix_str = \
-            f'_{self.filename_suffix}' if self.filename_suffix else ''
-        return f'{self.file_tag}{suffix_str}'
+        suffix_str = f"_{self.filename_suffix}" if self.filename_suffix else ""
+        return f"{self.file_tag}{suffix_str}"
 
 
 @attr.s(frozen=True)
@@ -121,7 +122,7 @@ class GcsfsIngestArgs(IngestArgs):
 
     def task_id_tag(self) -> str:
         parts = filename_parts_from_path(self.file_path)
-        return f'ingest_job_{parts.stripped_file_name}_{parts.date_str}'
+        return f"ingest_job_{parts.stripped_file_name}_{parts.date_str}"
 
 
 @attr.s(frozen=True)
@@ -130,7 +131,7 @@ class GcsfsRawDataBQImportArgs(CloudTaskArgs):
 
     def task_id_tag(self) -> str:
         parts = filename_parts_from_path(self.raw_data_file_path)
-        return f'raw_data_import_{parts.stripped_file_name}_{parts.date_str}'
+        return f"raw_data_import_{parts.stripped_file_name}_{parts.date_str}"
 
 
 @attr.s(frozen=True)
@@ -140,36 +141,38 @@ class GcsfsIngestViewExportArgs(CloudTaskArgs):
     upper_bound_datetime_to_export: datetime.datetime = attr.ib()
 
     def task_id_tag(self) -> str:
-        tag = f'ingest_view_export_{self.ingest_view_name}'
+        tag = f"ingest_view_export_{self.ingest_view_name}"
         if self.upper_bound_datetime_prev:
-            tag += f'-{snake_case_datetime(self.upper_bound_datetime_prev)}'
+            tag += f"-{snake_case_datetime(self.upper_bound_datetime_prev)}"
         else:
-            tag += '-None'
-        tag += f'-{snake_case_datetime(self.upper_bound_datetime_to_export)}'
+            tag += "-None"
+        tag += f"-{snake_case_datetime(self.upper_bound_datetime_to_export)}"
         return tag
 
 
-def gcsfs_direct_ingest_temporary_output_directory_path(project_id: Optional[str] = None) -> str:
+def gcsfs_direct_ingest_temporary_output_directory_path(
+    project_id: Optional[str] = None,
+) -> str:
     if project_id is None:
         project_id = metadata.project_id()
         if not project_id:
             raise ValueError("Project id not set")
 
-    return f'{project_id}-direct-ingest-temporary-files'
+    return f"{project_id}-direct-ingest-temporary-files"
 
 
 def gcsfs_direct_ingest_storage_directory_path_for_region(
-        region_code: str,
-        system_level: SystemLevel,
-        file_type: GcsfsDirectIngestFileType = GcsfsDirectIngestFileType.UNSPECIFIED,
-        project_id: Optional[str] = None) -> str:
+    region_code: str,
+    system_level: SystemLevel,
+    file_type: GcsfsDirectIngestFileType = GcsfsDirectIngestFileType.UNSPECIFIED,
+    project_id: Optional[str] = None,
+) -> str:
     if project_id is None:
         project_id = metadata.project_id()
         if not project_id:
             raise ValueError("Project id not set")
 
-    storage_bucket = \
-        f'{project_id}-direct-ingest-{system_level.value.lower()}-storage'
+    storage_bucket = f"{project_id}-direct-ingest-{system_level.value.lower()}-storage"
 
     if file_type is GcsfsDirectIngestFileType.UNSPECIFIED:
         return os.path.join(storage_bucket, region_code)
@@ -177,27 +180,24 @@ def gcsfs_direct_ingest_storage_directory_path_for_region(
     return os.path.join(storage_bucket, region_code, file_type.value)
 
 
-
 def gcsfs_direct_ingest_directory_path_for_region(
-        region_code: str,
-        system_level: SystemLevel,
-        project_id: Optional[str] = None) -> str:
+    region_code: str, system_level: SystemLevel, project_id: Optional[str] = None
+) -> str:
     if project_id is None:
         project_id = metadata.project_id()
         if not project_id:
             raise ValueError("Project id not set")
 
     if system_level == SystemLevel.COUNTY:
-        bucket = f'{project_id}-direct-ingest-county'
+        bucket = f"{project_id}-direct-ingest-county"
         return os.path.join(bucket, region_code)
     if system_level == SystemLevel.STATE:
-        normalized_region_code = region_code.replace('_', '-')
-        return f'{project_id}-direct-ingest-state-{normalized_region_code}'
+        normalized_region_code = region_code.replace("_", "-")
+        return f"{project_id}-direct-ingest-state-{normalized_region_code}"
 
     raise DirectIngestError(
-        msg=f"Cannot determine ingest directory path for region: "
-            f"[{region_code}]",
-        error_type=DirectIngestErrorType.INPUT_ERROR
+        msg=f"Cannot determine ingest directory path for region: " f"[{region_code}]",
+        error_type=DirectIngestErrorType.INPUT_ERROR,
     )
 
 
@@ -206,12 +206,12 @@ def filename_parts_from_path(file_path: GcsfsFilePath) -> GcsfsFilenameParts:
     if not match:
         raise DirectIngestError(
             msg=f"Could not parse upload_ts, file_tag, extension "
-                f"from path [{file_path.abs_path()}]",
-            error_type=DirectIngestErrorType.INPUT_ERROR)
+            f"from path [{file_path.abs_path()}]",
+            error_type=DirectIngestErrorType.INPUT_ERROR,
+        )
 
     full_upload_timestamp_str = match.group(2)
-    utc_upload_datetime = \
-        datetime.datetime.fromisoformat(full_upload_timestamp_str)
+    utc_upload_datetime = datetime.datetime.fromisoformat(full_upload_timestamp_str)
 
     file_type = GcsfsDirectIngestFileType.from_string(match.group(4))
 
@@ -219,13 +219,13 @@ def filename_parts_from_path(file_path: GcsfsFilePath) -> GcsfsFilenameParts:
     is_file_split = False
     file_split_size = None
     if filename_suffix:
-        filename_suffix_file_split_match = \
-            re.match(_FILENAME_SUFFIX_REGEX, filename_suffix)
+        filename_suffix_file_split_match = re.match(
+            _FILENAME_SUFFIX_REGEX, filename_suffix
+        )
         if filename_suffix_file_split_match is not None:
             is_file_split = True
             file_split_size_str = filename_suffix_file_split_match.group(3)
-            file_split_size = \
-                int(file_split_size_str) if file_split_size_str else None
+            file_split_size = int(file_split_size_str) if file_split_size_str else None
 
     return GcsfsFilenameParts(
         processed_state=match.group(1),

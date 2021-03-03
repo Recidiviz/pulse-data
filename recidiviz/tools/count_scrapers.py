@@ -26,12 +26,50 @@ from recidiviz.ingest.scrape import scraper as scraper_module
 from recidiviz.utils import regions
 
 GRANTEE_FIPS = [
-    '13051', '17163', '20045', '21009', '21013', '21021', '21051', '21071',
-    '21095', '21109', '21119', '21121', '21125', '21131', '21133', '21151',
-    '21193', '21195', '21205', '21235', '26077', '28001', '28005', '28037',
-    '28157', '36007', '37001', '37065', '37127', '37195', '42003', '42013',
-    '42027', '42063', '47107', '47131', '47155', '48021', '48085', '48121',
-    '48181', '48209', '48423', '48491'
+    "13051",
+    "17163",
+    "20045",
+    "21009",
+    "21013",
+    "21021",
+    "21051",
+    "21071",
+    "21095",
+    "21109",
+    "21119",
+    "21121",
+    "21125",
+    "21131",
+    "21133",
+    "21151",
+    "21193",
+    "21195",
+    "21205",
+    "21235",
+    "26077",
+    "28001",
+    "28005",
+    "28037",
+    "28157",
+    "36007",
+    "37001",
+    "37065",
+    "37127",
+    "37195",
+    "42003",
+    "42013",
+    "42027",
+    "42063",
+    "47107",
+    "47131",
+    "47155",
+    "48021",
+    "48085",
+    "48121",
+    "48181",
+    "48209",
+    "48423",
+    "48491",
 ]
 
 
@@ -50,34 +88,43 @@ def count_scrapers_by_vendor() -> None:
     scrape_regions = regions.get_supported_scrape_regions()
 
     all_scrapers = Counter(
-        get_parent_class(region).__name__ for region in scrape_regions)
+        get_parent_class(region).__name__ for region in scrape_regions
+    )
     print(f"Of {sum(all_scrapers.values())} total scrapers:")
     pprint(all_scrapers)
 
     ky_scrapers = Counter(
-        get_parent_class(region).__name__ for region in scrape_regions
-        if get_state(region) is us.states.KY)
+        get_parent_class(region).__name__
+        for region in scrape_regions
+        if get_state(region) is us.states.KY
+    )
     print(f"Of {sum(ky_scrapers.values())} KY scrapers:")
     pprint(ky_scrapers)
 
     tn_scrapers = Counter(
-        get_parent_class(region).__name__ for region in scrape_regions
-        if get_state(region) is us.states.TN)
+        get_parent_class(region).__name__
+        for region in scrape_regions
+        if get_state(region) is us.states.TN
+    )
     print(f"Of {sum(tn_scrapers.values())} TN scrapers:")
     pprint(tn_scrapers)
 
     in_scrapers = Counter(
-        get_parent_class(region).__name__ for region in scrape_regions
-        if get_state(region) is us.states.IN)
+        get_parent_class(region).__name__
+        for region in scrape_regions
+        if get_state(region) is us.states.IN
+    )
     print(f"Of {sum(in_scrapers.values())} IN scrapers:")
     pprint(in_scrapers)
 
     grantee_scrapers = Counter(
-        get_parent_class(region).__name__ for region in scrape_regions
-        if region.jurisdiction_id[:5] in GRANTEE_FIPS)
+        get_parent_class(region).__name__
+        for region in scrape_regions
+        if region.jurisdiction_id[:5] in GRANTEE_FIPS
+    )
     print(f"Of {sum(grantee_scrapers.values())} grantee scrapers:")
     pprint(grantee_scrapers)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     count_scrapers_by_vendor()

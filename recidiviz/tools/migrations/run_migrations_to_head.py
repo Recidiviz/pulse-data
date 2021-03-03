@@ -43,8 +43,14 @@ import sys
 
 import alembic.config
 
-from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType, SQLAlchemyEngineManager
-from recidiviz.tools.migrations.migration_helpers import confirm_correct_db, confirm_correct_git_branch
+from recidiviz.persistence.database.sqlalchemy_engine_manager import (
+    SchemaType,
+    SQLAlchemyEngineManager,
+)
+from recidiviz.tools.migrations.migration_helpers import (
+    confirm_correct_db,
+    confirm_correct_git_branch,
+)
 from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
@@ -52,32 +58,47 @@ from recidiviz.utils.metadata import local_project_id_override
 
 
 def create_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description='Run migrations against PostgresQL database.')
-    parser.add_argument('--database',
-                        type=SchemaType,
-                        choices=list(SchemaType),
-                        help='Specifies which database to run against.',
-                        required=True)
-    parser.add_argument('--repo-root',
-                        type=str,
-                        default='./',
-                        help='The path to the root pulse-data/ folder. '
-                             'This is needed to check the current git branch.')
-    parser.add_argument('--dry-run',
-                        help='If set, this runs all migrations locally instead of against prod/staging databases.',
-                        action='store_true')
-    parser.add_argument('--project-id',
-                        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
-                        help='Used to select which GCP project in which to run this script.',
-                        required=True)
-    parser.add_argument('--ssl-cert-path',
-                        type=str,
-                        help='The path to the folder where the certs live. '
-                             'This argument is required if running against live databases.')
+    """Returns an argument parser for the script."""
+    parser = argparse.ArgumentParser(
+        description="Run migrations against PostgresQL database."
+    )
+    parser.add_argument(
+        "--database",
+        type=SchemaType,
+        choices=list(SchemaType),
+        help="Specifies which database to run against.",
+        required=True,
+    )
+    parser.add_argument(
+        "--repo-root",
+        type=str,
+        default="./",
+        help="The path to the root pulse-data/ folder. "
+        "This is needed to check the current git branch.",
+    )
+    parser.add_argument(
+        "--dry-run",
+        help="If set, this runs all migrations locally instead of against prod/staging databases.",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--project-id",
+        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
+        help="Used to select which GCP project in which to run this script.",
+        required=True,
+    )
+    parser.add_argument(
+        "--ssl-cert-path",
+        type=str,
+        help="The path to the folder where the certs live. "
+        "This argument is required if running against live databases.",
+    )
     return parser
 
 
-def main(database: SchemaType, repo_root: str, ssl_cert_path: str, dry_run: bool) -> None:
+def main(
+    database: SchemaType, repo_root: str, ssl_cert_path: str, dry_run: bool
+) -> None:
     """
     Invokes the main code path for running migrations.
 
@@ -86,26 +107,30 @@ def main(database: SchemaType, repo_root: str, ssl_cert_path: str, dry_run: bool
     """
     if dry_run:
         if not local_postgres_helpers.can_start_on_disk_postgresql_database():
-            logging.error('pg_ctl is not installed. Cannot perform a dry-run.')
-            logging.error('Exiting...')
+            logging.error("pg_ctl is not installed. Cannot perform a dry-run.")
+            logging.error("Exiting...")
             sys.exit(1)
-        logging.info('Creating a dry-run...\n')
+        logging.info("Creating a dry-run...\n")
     else:
         if not ssl_cert_path:
-            logging.error("SSL certificates are required when running against live databases")
-            logging.error('Exiting...')
+            logging.error(
+                "SSL certificates are required when running against live databases"
+            )
+            logging.error("Exiting...")
             sys.exit(1)
-        logging.info('Using SSL certificate path: %s', ssl_cert_path)
+        logging.info("Using SSL certificate path: %s", ssl_cert_path)
 
     is_prod = metadata.project_id() == GCP_PROJECT_PRODUCTION
     if is_prod:
-        logging.info('RUNNING AGAINST PRODUCTION\n')
+        logging.info("RUNNING AGAINST PRODUCTION\n")
 
     confirm_correct_db(database)
     confirm_correct_git_branch(repo_root, is_prod=is_prod)
 
     if dry_run:
-        overriden_env_vars = local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
+        overriden_env_vars = (
+            local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
+        )
     else:
         overriden_env_vars = SQLAlchemyEngineManager.update_sqlalchemy_env_vars(
             database,
@@ -116,24 +141,28 @@ def main(database: SchemaType, repo_root: str, ssl_cert_path: str, dry_run: bool
     # Run migrations
     try:
         if dry_run:
-            logging.info('Starting local postgres database for migrations dry run')
+            logging.info("Starting local postgres database for migrations dry run")
             db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
-        config = alembic.config.Config(SQLAlchemyEngineManager.get_alembic_file(database))
-        alembic.command.upgrade(config, 'head')
+        config = alembic.config.Config(
+            SQLAlchemyEngineManager.get_alembic_file(database)
+        )
+        alembic.command.upgrade(config, "head")
     except Exception as e:
-        logging.error('Migrations failed to run: %s', e)
+        logging.error("Migrations failed to run: %s", e)
         sys.exit(1)
     finally:
         local_postgres_helpers.restore_local_env_vars(overriden_env_vars)
         if dry_run:
             try:
-                logging.info('Stopping local postgres database')
-                local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(db_dir)
+                logging.info("Stopping local postgres database")
+                local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+                    db_dir
+                )
             except Exception as e2:
-                logging.error('Error cleaning up postgres: %s', e2)
+                logging.error("Error cleaning up postgres: %s", e2)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
 
     args = create_parser().parse_args()

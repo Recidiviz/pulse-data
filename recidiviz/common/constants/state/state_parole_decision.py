@@ -19,8 +19,7 @@
 from enum import unique
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
-import recidiviz.common.constants.state.enum_canonical_strings as \
-    state_enum_strings
+import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
@@ -36,11 +35,11 @@ class StateParoleDecisionOutcome(EntityEnum, metaclass=EntityEnumMeta):
 
 
 _STATE_PAROLE_DECISION_OUTCOME_MAP = {
-    'EXTERNAL UNKNOWN': StateParoleDecisionOutcome.EXTERNAL_UNKNOWN,
-    'DENIED': StateParoleDecisionOutcome.PAROLE_DENIED,
-    'DENIED PAROLE': StateParoleDecisionOutcome.PAROLE_DENIED,
-    'PAROLE DENIED': StateParoleDecisionOutcome.PAROLE_DENIED,
-    'GRANTED': StateParoleDecisionOutcome.PAROLE_GRANTED,
-    'GRANTED PAROLE': StateParoleDecisionOutcome.PAROLE_GRANTED,
-    'PAROLE GRANTED': StateParoleDecisionOutcome.PAROLE_GRANTED,
+    "EXTERNAL UNKNOWN": StateParoleDecisionOutcome.EXTERNAL_UNKNOWN,
+    "DENIED": StateParoleDecisionOutcome.PAROLE_DENIED,
+    "DENIED PAROLE": StateParoleDecisionOutcome.PAROLE_DENIED,
+    "PAROLE DENIED": StateParoleDecisionOutcome.PAROLE_DENIED,
+    "GRANTED": StateParoleDecisionOutcome.PAROLE_GRANTED,
+    "GRANTED PAROLE": StateParoleDecisionOutcome.PAROLE_GRANTED,
+    "PAROLE GRANTED": StateParoleDecisionOutcome.PAROLE_GRANTED,
 }

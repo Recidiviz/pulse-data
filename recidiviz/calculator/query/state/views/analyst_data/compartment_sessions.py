@@ -16,19 +16,17 @@
 # =============================================================================
 """Sessionized view of each individual. Session defined as continuous stay within a compartment"""
 # pylint: disable=trailing-whitespace
-# pylint: disable=line-too-long
+
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-COMPARTMENT_SESSIONS_VIEW_NAME = 'compartment_sessions'
+COMPARTMENT_SESSIONS_VIEW_NAME = "compartment_sessions"
 
-COMPARTMENT_SESSIONS_VIEW_DESCRIPTION = \
-    """Sessionized view of each individual. Session defined as continuous stay within a compartment"""
+COMPARTMENT_SESSIONS_VIEW_DESCRIPTION = """Sessionized view of each individual. Session defined as continuous stay within a compartment"""
 
-COMPARTMENT_SESSIONS_QUERY_TEMPLATE = \
-    """
+COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
     /*{description}*/
     WITH sessions AS 
     /*
@@ -123,9 +121,9 @@ COMPARTMENT_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=COMPARTMENT_SESSIONS_QUERY_TEMPLATE,
     description=COMPARTMENT_SESSIONS_VIEW_DESCRIPTION,
     analyst_dataset=ANALYST_VIEWS_DATASET,
-    should_materialize=True
+    should_materialize=True,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         COMPARTMENT_SESSIONS_VIEW_BUILDER.build_and_print()

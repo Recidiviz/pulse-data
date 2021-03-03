@@ -18,8 +18,9 @@
 from typing import List
 
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
-from recidiviz.calculator.query.state.views.public_dashboard.racial_disparity.racial_disparities import \
-    RACIAL_DISPARITIES_VIEW_BUILDER
+from recidiviz.calculator.query.state.views.public_dashboard.racial_disparity.racial_disparities import (
+    RACIAL_DISPARITIES_VIEW_BUILDER,
+)
 
 RACIAL_DISPARITY_VIEW_BUILDERS: List[MetricBigQueryViewBuilder] = [
     RACIAL_DISPARITIES_VIEW_BUILDER

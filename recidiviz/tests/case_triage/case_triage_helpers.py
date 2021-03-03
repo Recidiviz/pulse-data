@@ -19,31 +19,38 @@ import json
 from datetime import date
 from typing import Optional
 
-from recidiviz.persistence.database.schema.case_triage.schema import ETLClient, ETLOfficer
+from recidiviz.persistence.database.schema.case_triage.schema import (
+    ETLClient,
+    ETLOfficer,
+)
 
 
-def generate_fake_officer(officer_id: str, email: str = 'nonexistent_email.com') -> ETLOfficer:
+def generate_fake_officer(
+    officer_id: str, email: str = "nonexistent_email.com"
+) -> ETLOfficer:
     return ETLOfficer(
         external_id=officer_id,
         email_address=email,
-        state_code='US_XX',
-        given_names='Test',
-        surname='Officer',
+        state_code="US_XX",
+        given_names="Test",
+        surname="Officer",
     )
 
 
-def generate_fake_client(client_id: str,
-                         supervising_officer_id: str = 'id_1',
-                         last_assessment_date: Optional[date] = None,
-                         last_face_to_face_date: Optional[date] = None) -> ETLClient:
+def generate_fake_client(
+    client_id: str,
+    supervising_officer_id: str = "id_1",
+    last_assessment_date: Optional[date] = None,
+    last_face_to_face_date: Optional[date] = None,
+) -> ETLClient:
     return ETLClient(
         person_external_id=client_id,
-        full_name=json.dumps({'given_name': 'TEST NAME'}),
+        full_name=json.dumps({"given_name": "TEST NAME"}),
         supervising_officer_external_id=supervising_officer_id,
-        supervision_type='PAROLE',
-        case_type='GENERAL',
-        supervision_level='MEDIUM',
-        state_code='US_XX',
+        supervision_type="PAROLE",
+        case_type="GENERAL",
+        supervision_level="MEDIUM",
+        state_code="US_XX",
         supervision_start_date=date(2018, 1, 1),
         most_recent_assessment_date=last_assessment_date,
         assessment_score=1,

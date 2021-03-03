@@ -29,7 +29,7 @@ def is_forward_ref(attribute: attr.Attribute) -> bool:
     """Returns true if the attribute is a ForwardRef type."""
 
     if not isinstance(attribute, attr.Attribute):
-        raise TypeError(f'Unexpected type [{type(attribute)}]')
+        raise TypeError(f"Unexpected type [{type(attribute)}]")
 
     attr_type = attribute.type
     if not attr_type:
@@ -50,7 +50,7 @@ def is_bool(attribute: attr.Attribute) -> bool:
     """Returns true if the attribute is a bool type."""
 
     if not isinstance(attribute, attr.Attribute):
-        raise TypeError(f'Unexpected type [{type(attribute)}]')
+        raise TypeError(f"Unexpected type [{type(attribute)}]")
 
     attr_type = attribute.type
     if not attr_type:
@@ -66,7 +66,7 @@ def is_enum(attribute: attr.Attribute) -> bool:
     """Returns true if the attribute is an Enum type."""
 
     if not isinstance(attribute, attr.Attribute):
-        raise TypeError(f'Unexpected type [{type(attribute)}]')
+        raise TypeError(f"Unexpected type [{type(attribute)}]")
 
     attr_type = attribute.type
     if not attr_type:
@@ -82,7 +82,7 @@ def is_date(attribute: attr.Attribute) -> bool:
     """Returns true if the attribute is a date type."""
 
     if not isinstance(attribute, attr.Attribute):
-        raise TypeError(f'Unexpected type [{type(attribute)}]')
+        raise TypeError(f"Unexpected type [{type(attribute)}]")
 
     attr_type = attribute.type
     if not attr_type:
@@ -98,7 +98,7 @@ def is_float(attribute: attr.Attribute) -> bool:
     """Returns true if the attribute is a float type."""
 
     if not isinstance(attribute, attr.Attribute):
-        raise TypeError(f'Unexpected type [{type(attribute)}]')
+        raise TypeError(f"Unexpected type [{type(attribute)}]")
 
     attr_type = attribute.type
     if not attr_type:
@@ -114,7 +114,7 @@ def is_list(attribute: attr.Attribute) -> bool:
     """Returns true if the attribute is a List type."""
 
     if not isinstance(attribute, attr.Attribute):
-        raise TypeError(f'Unexpected type [{type(attribute)}]')
+        raise TypeError(f"Unexpected type [{type(attribute)}]")
 
     attr_type = attribute.type
     if not attr_type:
@@ -130,7 +130,7 @@ def is_str(attribute: attr.Attribute) -> bool:
     """Returns true if the attribute is a str type."""
 
     if not isinstance(attribute, attr.Attribute):
-        raise TypeError(f'Unexpected type [{type(attribute)}]')
+        raise TypeError(f"Unexpected type [{type(attribute)}]")
 
     attr_type = attribute.type
     if not attr_type:
@@ -146,7 +146,7 @@ def is_int(attribute: attr.Attribute) -> bool:
     """Returns true if the attribute is an int type."""
 
     if not isinstance(attribute, attr.Attribute):
-        raise TypeError(f'Unexpected type [{type(attribute)}]')
+        raise TypeError(f"Unexpected type [{type(attribute)}]")
 
     attr_type = attribute.type
     if not attr_type:
@@ -159,8 +159,7 @@ def is_int(attribute: attr.Attribute) -> bool:
 
 
 def _is_list(attr_type: Type) -> bool:
-    return hasattr(attr_type, '__origin__') \
-        and attr_type.__origin__ is list
+    return hasattr(attr_type, "__origin__") and attr_type.__origin__ is list
 
 
 def _is_str(attr_type: Type) -> bool:
@@ -185,11 +184,11 @@ def get_enum_cls(attribute: attr.Attribute) -> Optional[Type[Enum]]:
     """
 
     if not isinstance(attribute, attr.Attribute):
-        raise TypeError(f'Unexpected type [{type(attribute)}]')
+        raise TypeError(f"Unexpected type [{type(attribute)}]")
 
     attr_type = attribute.type
     if not attr_type:
-        raise ValueError(f'Unexpected None type for attribute [{attribute}]')
+        raise ValueError(f"Unexpected None type for attribute [{attribute}]")
 
     if _is_enum_cls(attr_type):
         return attribute.type
@@ -201,8 +200,7 @@ def get_enum_cls(attribute: attr.Attribute) -> Optional[Type[Enum]]:
 
 
 def _is_union(attr_type: Type) -> bool:
-    return hasattr(attr_type, '__origin__') \
-        and attr_type.__origin__ is Union
+    return hasattr(attr_type, "__origin__") and attr_type.__origin__ is Union
 
 
 def _is_enum_cls(attr_type: Type) -> bool:
@@ -222,10 +220,12 @@ def _is_forward_ref_in_union(union: Type[Union[Any, None]]) -> bool:
 
 
 def _is_forward_ref(attr_type: Type) -> bool:
-    return hasattr(attr_type, '__forward_arg__')
+    return hasattr(attr_type, "__forward_arg__")
 
 
-def _extract_mappable_enum_from_union(union: Type[Union[Any, None]]) -> Optional[Type[Enum]]:
+def _extract_mappable_enum_from_union(
+    union: Type[Union[Any, None]]
+) -> Optional[Type[Enum]]:
     """Extracts a MappableEnum from a Union.
 
     This method throws an Error if multiple Enums exist and returns None if
@@ -243,12 +243,13 @@ def _extract_mappable_enum_from_union(union: Type[Union[Any, None]]) -> Optional
         return next(iter(result))
 
     raise TypeError(
-        f"Can't extract Enum from a union containing multiple Enums: "
-        f"{union}")
+        f"Can't extract Enum from a union containing multiple Enums: " f"{union}"
+    )
 
 
-def _is_type_is_union(union: Type[Union[Any, None]],
-                      type_check_func: Callable[[Type], bool]) -> bool:
+def _is_type_is_union(
+    union: Type[Union[Any, None]], type_check_func: Callable[[Type], bool]
+) -> bool:
     """Looks for the presence of a single type in the Union. Looks for type where the type_check_func returns True.
     Returns whether exactly one is present."""
 

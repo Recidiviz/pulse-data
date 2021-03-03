@@ -19,15 +19,17 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
 
-from recidiviz.calculator.query.county.views.population.population_admissions_releases_race_gender import \
-    POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_VIEW_BUILDER
+from recidiviz.calculator.query.county.views.population.population_admissions_releases_race_gender import (
+    POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_VIEW_BUILDER,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_ALL_VIEW_NAME = 'population_admissions_releases_race_gender_all'
+POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_ALL_VIEW_NAME = (
+    "population_admissions_releases_race_gender_all"
+)
 
-POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_ALL_DESCRIPTION = \
-"""
+POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_ALL_DESCRIPTION = """
 Combines 'OTHER' and 'EXTERNAL_UNKNOWN' Race into 'OTHER/UNKNOWN'.
 
 Create fake 'ALL' enums for Race and Gender fields.
@@ -40,8 +42,7 @@ Similarly, Race: 'ALL' sums every race for each gender.
 DO NOT sum along race or gender, or you will double-count by including 'ALL'.
 """
 
-POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_ALL_QUERY_TEMPLATE = \
-"""
+POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_ALL_QUERY_TEMPLATE = """
 /*{description}*/
 
 WITH
@@ -119,9 +120,9 @@ POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_ALL_VIEW_BUILDER = SimpleBigQueryView
     view_query_template=POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_ALL_QUERY_TEMPLATE,
     description=POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_ALL_DESCRIPTION,
     views_dataset=dataset_config.VIEWS_DATASET,
-    population_admissions_releases_race_gender_view=POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_VIEW_BUILDER.view_id
+    population_admissions_releases_race_gender_view=POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_VIEW_BUILDER.view_id,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_ALL_VIEW_BUILDER.build_and_print()

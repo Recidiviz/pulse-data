@@ -20,7 +20,15 @@ The below schema uses only generic SQLAlchemy types, and therefore should be
 portable between database implementations.
 """
 
-from sqlalchemy import Column, String, Integer, DateTime, Boolean, CheckConstraint, UniqueConstraint
+from sqlalchemy import (
+    Column,
+    String,
+    Integer,
+    DateTime,
+    Boolean,
+    CheckConstraint,
+    UniqueConstraint,
+)
 
 from recidiviz.persistence.database.base_schema import OperationsBase
 
@@ -31,7 +39,9 @@ class _DirectIngestFileMetadataRowSharedColumns:
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is _DirectIngestFileMetadataRowSharedColumns:
-            raise Exception('_DirectIngestFileMetadataRowSharedColumns cannot be instantiated')
+            raise Exception(
+                "_DirectIngestFileMetadataRowSharedColumns cannot be instantiated"
+            )
         return super().__new__(cls)
 
     file_id = Column(Integer, primary_key=True)
@@ -50,31 +60,55 @@ class _DirectIngestFileMetadataRowSharedColumns:
     processed_time = Column(DateTime)
 
 
-class DirectIngestRawFileMetadata(OperationsBase, _DirectIngestFileMetadataRowSharedColumns):
-    __tablename__ = 'direct_ingest_raw_file_metadata'
+class DirectIngestRawFileMetadata(
+    OperationsBase, _DirectIngestFileMetadataRowSharedColumns
+):
+    __tablename__ = "direct_ingest_raw_file_metadata"
 
     __table_args__ = (
-        UniqueConstraint('region_code', 'normalized_file_name', name='one_normalized_name_per_region'),
-        CheckConstraint('discovery_time IS NOT NULL', name='nonnull_raw_file_discovery_time'),
-        CheckConstraint('normalized_file_name IS NOT NULL', name='nonnull_raw_normalized_file_name')
+        UniqueConstraint(
+            "region_code", "normalized_file_name", name="one_normalized_name_per_region"
+        ),
+        CheckConstraint(
+            "discovery_time IS NOT NULL", name="nonnull_raw_file_discovery_time"
+        ),
+        CheckConstraint(
+            "normalized_file_name IS NOT NULL", name="nonnull_raw_normalized_file_name"
+        ),
     )
 
     datetimes_contained_upper_bound_inclusive = Column(DateTime, nullable=False)
 
 
-class DirectIngestIngestFileMetadata(OperationsBase, _DirectIngestFileMetadataRowSharedColumns):
-    __tablename__ = 'direct_ingest_ingest_file_metadata'
+class DirectIngestIngestFileMetadata(
+    OperationsBase, _DirectIngestFileMetadataRowSharedColumns
+):
+    """Represents the metadata known about a file that we processed through direct ingest."""
+
+    __tablename__ = "direct_ingest_ingest_file_metadata"
 
     __table_args__ = (
-        CheckConstraint('export_time IS NULL OR normalized_file_name IS NOT NULL',
-                        name='export_after_normalized_file_name_set'),
-        CheckConstraint('discovery_time IS NULL OR export_time IS NOT NULL', name='discovery_after_export'),
-        CheckConstraint('processed_time IS NULL OR discovery_time IS NOT NULL', name='processed_after_discovery'),
-        CheckConstraint('datetimes_contained_lower_bound_exclusive IS NULL OR '
-                        'datetimes_contained_lower_bound_exclusive < datetimes_contained_upper_bound_inclusive',
-                        name='datetimes_contained_ordering'),
-        CheckConstraint('NOT is_file_split OR normalized_file_name IS NOT NULL',
-                        name='split_files_created_with_file_name'),
+        CheckConstraint(
+            "export_time IS NULL OR normalized_file_name IS NOT NULL",
+            name="export_after_normalized_file_name_set",
+        ),
+        CheckConstraint(
+            "discovery_time IS NULL OR export_time IS NOT NULL",
+            name="discovery_after_export",
+        ),
+        CheckConstraint(
+            "processed_time IS NULL OR discovery_time IS NOT NULL",
+            name="processed_after_discovery",
+        ),
+        CheckConstraint(
+            "datetimes_contained_lower_bound_exclusive IS NULL OR "
+            "datetimes_contained_lower_bound_exclusive < datetimes_contained_upper_bound_inclusive",
+            name="datetimes_contained_ordering",
+        ),
+        CheckConstraint(
+            "NOT is_file_split OR normalized_file_name IS NOT NULL",
+            name="split_files_created_with_file_name",
+        ),
     )
 
     # These fields are first set at export job creation time

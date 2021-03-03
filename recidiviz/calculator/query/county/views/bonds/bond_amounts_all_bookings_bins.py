@@ -15,21 +15,23 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Add categorical bins to bond_amounts_all_bookings."""
-# pylint: disable=line-too-long
+
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
-from recidiviz.calculator.query.county.views.bonds.bond_amounts_all_bookings \
-    import BOND_AMOUNTS_ALL_BOOKINGS_VIEW_BUILDER
-from recidiviz.calculator.query.county.views.vera.county_names import COUNTY_NAMES_VIEW_BUILDER
+from recidiviz.calculator.query.county.views.bonds.bond_amounts_all_bookings import (
+    BOND_AMOUNTS_ALL_BOOKINGS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.county.views.vera.county_names import (
+    COUNTY_NAMES_VIEW_BUILDER,
+)
 from recidiviz.common.constants.enum_canonical_strings import bond_type_denied
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-BOND_AMOUNTS_ALL_BOOKINGS_BINS_VIEW_NAME = 'bond_amounts_all_bookings_bins'
+BOND_AMOUNTS_ALL_BOOKINGS_BINS_VIEW_NAME = "bond_amounts_all_bookings_bins"
 
-BOND_AMOUNTS_ALL_BOOKINGS_BINS_DESCRIPTION = \
-"""
+BOND_AMOUNTS_ALL_BOOKINGS_BINS_DESCRIPTION = """
 Adds a 'bond_amount_category' field to `{bond_amounts_all_bookings_view}`
 with either '{bond_type_denied}', 'UNKNOWN', or bins from:
 0-500
@@ -43,11 +45,10 @@ Also sums the counts of populations, admissions, and releases for each
 day-fips-category grouping.
 """.format(
     bond_amounts_all_bookings_view=BOND_AMOUNTS_ALL_BOOKINGS_VIEW_BUILDER.view_id,
-    bond_type_denied=bond_type_denied
+    bond_type_denied=bond_type_denied,
 )
 
-BOND_AMOUNTS_ALL_BOOKINGS_BINS_QUERY_TEMPLATE = \
-"""
+BOND_AMOUNTS_ALL_BOOKINGS_BINS_QUERY_TEMPLATE = """
 /*{description}*/
 
 WITH
@@ -146,9 +147,9 @@ BOND_AMOUNTS_ALL_BOOKINGS_BINS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=BOND_AMOUNTS_ALL_BOOKINGS_BINS_DESCRIPTION,
     views_dataset=dataset_config.VIEWS_DATASET,
     bond_amounts_all_bookings_view=BOND_AMOUNTS_ALL_BOOKINGS_VIEW_BUILDER.view_id,
-    county_names_view=COUNTY_NAMES_VIEW_BUILDER.view_id
+    county_names_view=COUNTY_NAMES_VIEW_BUILDER.view_id,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         BOND_AMOUNTS_ALL_BOOKINGS_BINS_VIEW_BUILDER.build_and_print()

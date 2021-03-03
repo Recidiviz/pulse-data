@@ -22,24 +22,24 @@ from recidiviz.calculator.query.county import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-SINGLE_COUNT_AGGREGATE_VIEW_ID: str = 'single_count_aggregate'
+SINGLE_COUNT_AGGREGATE_VIEW_ID: str = "single_count_aggregate"
 
 _DESCRIPTION = """
 Copy single count data to a format for stitching.
 """
 
-with open(os.path.splitext(__file__)[0] + '.sql') as fp:
+with open(os.path.splitext(__file__)[0] + ".sql") as fp:
     _QUERY_TEMPLATE = fp.read()
 
 SINGLE_COUNT_STITCH_SUBSET_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
-    view_id='single_count_stitch_subset',
+    view_id="single_count_stitch_subset",
     view_query_template=_QUERY_TEMPLATE,
     base_dataset=dataset_config.COUNTY_BASE_DATASET,
     single_count_aggregate=SINGLE_COUNT_AGGREGATE_VIEW_ID,
-    description=_DESCRIPTION
+    description=_DESCRIPTION,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         SINGLE_COUNT_STITCH_SUBSET_VIEW_BUILDER.build_and_print()

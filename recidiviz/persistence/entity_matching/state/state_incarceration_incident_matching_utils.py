@@ -21,8 +21,10 @@ from typing import List, Tuple, Optional
 
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.entity_utils import is_placeholder
-from recidiviz.persistence.entity_matching.state.state_matching_utils import add_child_to_entity, \
-    remove_child_from_entity
+from recidiviz.persistence.entity_matching.state.state_matching_utils import (
+    add_child_to_entity,
+    remove_child_from_entity,
+)
 
 
 def move_incidents_onto_periods(merged_persons: List[schema.StatePerson]):
@@ -32,14 +34,21 @@ def move_incidents_onto_periods(merged_persons: List[schema.StatePerson]):
     This will only move incidents between periods that are part of the same sentence group."""
     for person in merged_persons:
         for sentence_group in person.sentence_groups:
-            placeholder_periods, non_placeholder_periods = _get_periods_in_sentence_group(sentence_group)
+            (
+                placeholder_periods,
+                non_placeholder_periods,
+            ) = _get_periods_in_sentence_group(sentence_group)
             _move_incidents_onto_periods_helper(
-                placeholder_periods=placeholder_periods, non_placeholder_periods=non_placeholder_periods)
+                placeholder_periods=placeholder_periods,
+                non_placeholder_periods=non_placeholder_periods,
+            )
 
 
-def _move_incidents_onto_periods_helper(*,
-                                        placeholder_periods: List[schema.StateIncarcerationPeriod],
-                                        non_placeholder_periods: List[schema.StateIncarcerationPeriod]):
+def _move_incidents_onto_periods_helper(
+    *,
+    placeholder_periods: List[schema.StateIncarcerationPeriod],
+    non_placeholder_periods: List[schema.StateIncarcerationPeriod]
+):
     """Moves all StateIncarcerationIncidents on any of the provided |placeholder_periods| onto periods in
     |non_placeholder_periods|, if a matching non-placeholder period exists."""
     for placeholder_period in placeholder_periods:
@@ -54,25 +63,28 @@ def _move_incidents_onto_periods_helper(*,
         for match_period, incident in incidents_to_remove:
             add_child_to_entity(
                 entity=match_period,
-                child_field_name='incarceration_incidents',
-                child_to_add=incident)
+                child_field_name="incarceration_incidents",
+                child_to_add=incident,
+            )
             remove_child_from_entity(
                 entity=placeholder_period,
-                child_field_name='incarceration_incidents',
-                child_to_remove=incident)
+                child_field_name="incarceration_incidents",
+                child_to_remove=incident,
+            )
 
 
-def _get_periods_in_sentence_group(sentence_group: schema.StateSentenceGroup) \
-        -> Tuple[List[schema.StateIncarcerationPeriod], List[schema.StateIncarcerationPeriod]]:
+def _get_periods_in_sentence_group(
+    sentence_group: schema.StateSentenceGroup,
+) -> Tuple[
+    List[schema.StateIncarcerationPeriod], List[schema.StateIncarcerationPeriod]
+]:
     """Finds all placeholder and non-placeholder StateIncarcerationPeriods in the provided |sentence_group|, and
     returns the two lists in a tuple."""
     placeholder_periods = []
     non_placeholder_periods = []
 
-    for incarceration_sentence in \
-            sentence_group.incarceration_sentences:
-        for incarceration_period in \
-                incarceration_sentence.incarceration_periods:
+    for incarceration_sentence in sentence_group.incarceration_sentences:
+        for incarceration_period in incarceration_sentence.incarceration_periods:
             if is_placeholder(incarceration_period):
                 placeholder_periods.append(incarceration_period)
             else:
@@ -80,9 +92,10 @@ def _get_periods_in_sentence_group(sentence_group: schema.StateSentenceGroup) \
     return placeholder_periods, non_placeholder_periods
 
 
-def _find_matching_period(incident: schema.StateIncarcerationIncident,
-                          potential_periods: List[schema.StateIncarcerationPeriod]) \
-        -> Optional[schema.StateIncarcerationPeriod]:
+def _find_matching_period(
+    incident: schema.StateIncarcerationIncident,
+    potential_periods: List[schema.StateIncarcerationPeriod],
+) -> Optional[schema.StateIncarcerationPeriod]:
     """Given the |incident|, finds a matching StateIncarcerationPeriod from the provided |periods|, if one exists."""
     incident_date = incident.incident_date
     if not incident_date:
@@ -100,6 +113,9 @@ def _find_matching_period(incident: schema.StateIncarcerationIncident,
         if not release_date:
             release_date = datetime.date.max
 
-        if admission_date <= incident_date <= release_date and incident.facility == potential_period.facility:
+        if (
+            admission_date <= incident_date <= release_date
+            and incident.facility == potential_period.facility
+        ):
             return potential_period
     return None

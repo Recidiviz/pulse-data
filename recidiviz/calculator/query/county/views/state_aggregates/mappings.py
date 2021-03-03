@@ -42,6 +42,7 @@ class Mappings:
         1. Can be found in multiple aggregate reports or a websites
         2. Will be used to answer questions in cross-county analysis
     """
+
     # Required Primary Key
     fips: Column
     facility_name: Column
@@ -134,5 +135,4 @@ class Mappings:
 
             select_statements.append(select_statement)
 
-        return SessionFactory.for_schema_base(JailsBase).query(
-            *select_statements)
+        return SessionFactory.for_schema_base(JailsBase).query(*select_statements)

@@ -19,8 +19,7 @@
 from enum import unique
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
-import recidiviz.common.constants.state.enum_canonical_strings as \
-    state_enum_strings
+import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
@@ -50,13 +49,13 @@ class StateSentenceStatus(EntityEnum, metaclass=EntityEnumMeta):
 # space. Add mappings here using a single space between words and numbers.
 # For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
 _STATE_SENTENCE_STATUS_MAP = {
-    'COMMUTED': StateSentenceStatus.COMMUTED,
-    'COMPLETED': StateSentenceStatus.COMPLETED,
-    'EXTERNAL UNKNOWN': StateSentenceStatus.EXTERNAL_UNKNOWN,
-    'PARDONED': StateSentenceStatus.PARDONED,
-    'PRESENT WITHOUT INFO': StateSentenceStatus.PRESENT_WITHOUT_INFO,
-    'REVOKED': StateSentenceStatus.REVOKED,
-    'SERVING': StateSentenceStatus.SERVING,
-    'SUSPENDED': StateSentenceStatus.SUSPENDED,
-    'VACATED': StateSentenceStatus.VACATED,
+    "COMMUTED": StateSentenceStatus.COMMUTED,
+    "COMPLETED": StateSentenceStatus.COMPLETED,
+    "EXTERNAL UNKNOWN": StateSentenceStatus.EXTERNAL_UNKNOWN,
+    "PARDONED": StateSentenceStatus.PARDONED,
+    "PRESENT WITHOUT INFO": StateSentenceStatus.PRESENT_WITHOUT_INFO,
+    "REVOKED": StateSentenceStatus.REVOKED,
+    "SERVING": StateSentenceStatus.SERVING,
+    "SUSPENDED": StateSentenceStatus.SUSPENDED,
+    "VACATED": StateSentenceStatus.VACATED,
 }

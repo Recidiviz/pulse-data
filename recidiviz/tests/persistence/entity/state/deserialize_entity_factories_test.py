@@ -29,41 +29,41 @@ class TestDeserializeEntityFactories(unittest.TestCase):
 
     def test_deserialize_StatePerson(self) -> None:
         result = deserialize_entity_factories.StatePersonFactory.deserialize(
-            state_code='us_xx',
-            gender=EnumParser('MALE', Gender, EnumOverrides.empty()),
-            gender_raw_text='MALE',
+            state_code="us_xx",
+            gender=EnumParser("MALE", Gender, EnumOverrides.empty()),
+            gender_raw_text="MALE",
             full_name='{"full_name": "full NAME"}',
-            birthdate='12-31-1999',
-            current_address='NNN\n  STREET \t ZIP',
-            residency_status='NNN\n  STREET \t ZIP'
+            birthdate="12-31-1999",
+            current_address="NNN\n  STREET \t ZIP",
+            residency_status="NNN\n  STREET \t ZIP",
         )
 
         # Assert
         expected_result = entities.StatePerson.new_with_defaults(
             gender=Gender.MALE,
-            gender_raw_text='MALE',
+            gender_raw_text="MALE",
             full_name='{"full_name": "FULL NAME"}',
             birthdate=date(year=1999, month=12, day=31),
             birthdate_inferred_from_age=None,
-            current_address='NNN STREET ZIP',
+            current_address="NNN STREET ZIP",
             residency_status=ResidencyStatus.PERMANENT,
-            state_code='US_XX'
+            state_code="US_XX",
         )
 
         self.assertEqual(result, expected_result)
 
     def test_deserialize_StatePersonExternalId(self) -> None:
         result = deserialize_entity_factories.StatePersonExternalIdFactory.deserialize(
-            external_id='123a',
-            id_type='state_id',
-            state_code='us_xx',
+            external_id="123a",
+            id_type="state_id",
+            state_code="us_xx",
         )
 
         # Assert
         expected_result = entities.StatePersonExternalId(
-            external_id='123A',
-            id_type='STATE_ID',
-            state_code='US_XX',
+            external_id="123A",
+            id_type="STATE_ID",
+            state_code="US_XX",
         )
 
         self.assertEqual(result, expected_result)

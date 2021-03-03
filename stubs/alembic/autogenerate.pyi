@@ -17,5 +17,4 @@
 
 from typing import Any
 
-
 def render_python_code(up_or_down_op: Any) -> str: ...

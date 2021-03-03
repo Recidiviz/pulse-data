@@ -36,54 +36,74 @@ class TestSecrets:
         secrets.CACHED_SECRETS.clear()
 
     def test_get_in_cache(self):
-        write_to_local('top_track', 'An Eagle In Your Mind')
+        write_to_local("top_track", "An Eagle In Your Mind")
 
-        actual = secrets.get_secret('top_track')
-        assert actual == 'An Eagle In Your Mind'
+        actual = secrets.get_secret("top_track")
+        assert actual == "An Eagle In Your Mind"
 
-    @patch('recidiviz.utils.metadata.project_id')
+    @patch("recidiviz.utils.metadata.project_id")
     def test_get_not_in_cache(self, mock_project_id):
-        mock_project_id.return_value = 'test-project'
-        payload = SecretPayload(data=bytes('Olson'.encode('UTF-8')))
+        mock_project_id.return_value = "test-project"
+        payload = SecretPayload(data=bytes("Olson".encode("UTF-8")))
 
         mock_client = Mock()
         mock_client.secret_version_path.return_value = "test-project.top_track.latest"
-        mock_client.access_secret_version.return_value = service_pb2.AccessSecretVersionResponse(payload=payload)
-        with patch('google.cloud.secretmanager_v1beta1.SecretManagerServiceClient', return_value=mock_client):
-            actual = secrets.get_secret('top_track')
-            assert actual == 'Olson'
+        mock_client.access_secret_version.return_value = (
+            service_pb2.AccessSecretVersionResponse(payload=payload)
+        )
+        with patch(
+            "google.cloud.secretmanager_v1beta1.SecretManagerServiceClient",
+            return_value=mock_client,
+        ):
+            actual = secrets.get_secret("top_track")
+            assert actual == "Olson"
 
-    @patch('recidiviz.utils.metadata.project_id')
+    @patch("recidiviz.utils.metadata.project_id")
     def test_get_not_in_cache_not_found(self, mock_project_id):
-        mock_project_id.return_value = 'test-project'
+        mock_project_id.return_value = "test-project"
 
         mock_client = Mock()
         mock_client.secret_version_path.return_value = "test-project.top_track.latest"
-        mock_client.access_secret_version.side_effect = exceptions.NotFound('Could not find it')
-        with patch('google.cloud.secretmanager_v1beta1.SecretManagerServiceClient', return_value=mock_client):
-            actual = secrets.get_secret('top_track')
+        mock_client.access_secret_version.side_effect = exceptions.NotFound(
+            "Could not find it"
+        )
+        with patch(
+            "google.cloud.secretmanager_v1beta1.SecretManagerServiceClient",
+            return_value=mock_client,
+        ):
+            actual = secrets.get_secret("top_track")
             assert actual is None
 
-    @patch('recidiviz.utils.metadata.project_id')
+    @patch("recidiviz.utils.metadata.project_id")
     def test_get_not_in_cache_error(self, mock_project_id):
-        mock_project_id.return_value = 'test-project'
+        mock_project_id.return_value = "test-project"
 
         mock_client = Mock()
         mock_client.secret_version_path.return_value = "test-project.top_track.latest"
-        mock_client.access_secret_version.side_effect = Exception('Something bad happened')
-        with patch('google.cloud.secretmanager_v1beta1.SecretManagerServiceClient', return_value=mock_client):
-            actual = secrets.get_secret('top_track')
+        mock_client.access_secret_version.side_effect = Exception(
+            "Something bad happened"
+        )
+        with patch(
+            "google.cloud.secretmanager_v1beta1.SecretManagerServiceClient",
+            return_value=mock_client,
+        ):
+            actual = secrets.get_secret("top_track")
             assert actual is None
 
-    @patch('recidiviz.utils.metadata.project_id')
+    @patch("recidiviz.utils.metadata.project_id")
     def test_get_not_in_cache_bad_payload(self, mock_project_id):
-        mock_project_id.return_value = 'test-project'
+        mock_project_id.return_value = "test-project"
 
         mock_client = Mock()
         mock_client.secret_version_path.return_value = "test-project.top_track.latest"
-        mock_client.access_secret_version.return_value = service_pb2.AccessSecretVersionResponse(payload=None)
-        with patch('google.cloud.secretmanager_v1beta1.SecretManagerServiceClient', return_value=mock_client):
-            actual = secrets.get_secret('top_track')
+        mock_client.access_secret_version.return_value = (
+            service_pb2.AccessSecretVersionResponse(payload=None)
+        )
+        with patch(
+            "google.cloud.secretmanager_v1beta1.SecretManagerServiceClient",
+            return_value=mock_client,
+        ):
+            actual = secrets.get_secret("top_track")
             assert actual is None
 
 

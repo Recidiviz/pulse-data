@@ -51,11 +51,13 @@ from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import constants, ingest_utils, sessions
-from recidiviz.ingest.scrape.errors import ScraperFetchError, \
-    ScraperGetMoreTasksError, ScraperPopulateDataError
+from recidiviz.ingest.scrape.errors import (
+    ScraperFetchError,
+    ScraperGetMoreTasksError,
+    ScraperPopulateDataError,
+)
 from recidiviz.ingest.scrape.scraper import Scraper
-from recidiviz.ingest.scrape.task_params import QueueRequest, ScrapedData, \
-    Task
+from recidiviz.ingest.scrape.task_params import QueueRequest, ScrapedData, Task
 from recidiviz.persistence import batch_persistence, persistence, single_count
 
 
@@ -63,7 +65,7 @@ class ParsingError(Exception):
     """Exception containing the text that failed to parse"""
 
     def __init__(self, response_type: constants.ResponseType, text: str):
-        msg = 'Error parsing response as {}:\n{}'.format(response_type, text)
+        msg = "Error parsing response as {}:\n{}".format(response_type, text)
         super().__init__(msg)
 
 
@@ -85,14 +87,21 @@ class BaseScraper(Scraper):
             The name of the task to run first.
 
         """
-        return '_generic_scrape'
+        return "_generic_scrape"
 
     # Each scraper can override this, by default it is treated as a url endpoint
     # but any scraper can override this and treat it as a different type of
     # endpoint like an API endpoint for example.
-    def _fetch_content(self, endpoint, response_type, headers=None,
-                       cookies=None, params=None, post_data=None,
-                       json_data=None) -> Tuple[Any, Optional[Dict[str, str]]]:
+    def _fetch_content(
+        self,
+        endpoint,
+        response_type,
+        headers=None,
+        cookies=None,
+        params=None,
+        post_data=None,
+        json_data=None,
+    ) -> Tuple[Any, Optional[Dict[str, str]]]:
         """Returns the page content.
 
         Args:
@@ -110,8 +119,14 @@ class BaseScraper(Scraper):
         # Create cookie jar to pass to fetch
         should_proxy = self.get_region().should_proxy
         response = self.fetch_page(
-            endpoint, headers=headers, cookies=cookies, params=params,
-            post_data=post_data, json_data=json_data, should_proxy=should_proxy)
+            endpoint,
+            headers=headers,
+            cookies=cookies,
+            params=params,
+            post_data=post_data,
+            json_data=json_data,
+            should_proxy=should_proxy,
+        )
 
         # Extract any cookies from the response and convert back to dict.
         cookies.update(response.cookies.get_dict())
@@ -119,9 +134,10 @@ class BaseScraper(Scraper):
         # If the character set was not explicitly set in the response, use the
         # detected encoding instead of defaulting to 'ISO-8859-1'. See
         # http://docs.python-requests.org/en/master/user/advanced/#encodings
-        if ('content-type' not in response.headers or \
-            'charset' not in response.headers['content-type']) and \
-            not response.apparent_encoding == 'ascii':
+        if (
+            "content-type" not in response.headers
+            or "charset" not in response.headers["content-type"]
+        ) and not response.apparent_encoding == "ascii":
             response.encoding = response.apparent_encoding
 
         if response_type is constants.ResponseType.HTML:
@@ -149,14 +165,16 @@ class BaseScraper(Scraper):
 
         raise ValueError(
             "Unexpected response type '{}' for endpoint '{}'".format(
-                response_type, endpoint))
+                response_type, endpoint
+            )
+        )
 
     @staticmethod
     def _jsonp_to_json(jsonp: str) -> str:
         """Takes 'JSONP' and turns it to a JSON string.
         JSONP looks like foo(<regular serialized JSON>);
-         """
-        return jsonp[jsonp.index("(") + 1:jsonp.rindex(")")]
+        """
+        return jsonp[jsonp.index("(") + 1 : jsonp.rindex(")")]
 
     def _parse_html_content(self, content_string: str) -> html.HtmlElement:
         """Parses a string into a structured HtmlElement.
@@ -202,9 +220,14 @@ class BaseScraper(Scraper):
                 # default value of None if this scraper doesn't set it.
                 try:
                     content, cookies = self._fetch_content(
-                        task.endpoint, task.response_type, headers=task.headers,
-                        cookies=task.cookies, params=task.params,
-                        post_data=post_data, json_data=task.json)
+                        task.endpoint,
+                        task.response_type,
+                        headers=task.headers,
+                        cookies=task.cookies,
+                        params=task.params,
+                        post_data=post_data,
+                        json_data=task.json,
+                    )
                 except Exception as e:
                     raise ScraperFetchError(str(e)) from e
 
@@ -212,17 +235,24 @@ class BaseScraper(Scraper):
             if self.should_scrape_data(task.task_type):
                 # If we want to scrape data, we should either create an
                 # ingest_info object or get the one that already exists.
-                logging.info("Scraping data for [%s] and endpoint: [%s]",
-                             self.region.region_code, task.endpoint)
+                logging.info(
+                    "Scraping data for [%s] and endpoint: [%s]",
+                    self.region.region_code,
+                    task.endpoint,
+                )
                 try:
                     scraped_data = self.populate_data(
-                        content, task, request.ingest_info or IngestInfo())
+                        content, task, request.ingest_info or IngestInfo()
+                    )
                 except Exception as e:
                     raise ScraperPopulateDataError(str(e)) from e
 
             if self.should_get_more_tasks(task.task_type):
-                logging.info("Getting more tasks for [%s] and endpoint: [%s]",
-                             self.region.region_code, task.endpoint)
+                logging.info(
+                    "Getting more tasks for [%s] and endpoint: [%s]",
+                    self.region.region_code,
+                    task.endpoint,
+                )
 
                 # Only send along ingest info if it will not be persisted now.
                 ingest_info_to_send = None
@@ -239,36 +269,48 @@ class BaseScraper(Scraper):
                     if cookies:
                         cookies.update(next_task.cookies)
                         next_task = Task.evolve(next_task, cookies=cookies)
-                    self.add_task('_generic_scrape', QueueRequest(
-                        scrape_type=request.scrape_type,
-                        scraper_start_time=request.scraper_start_time,
-                        next_task=next_task,
-                        ingest_info=ingest_info_to_send,
-                    ))
+                    self.add_task(
+                        "_generic_scrape",
+                        QueueRequest(
+                            scrape_type=request.scrape_type,
+                            scraper_start_time=request.scraper_start_time,
+                            next_task=next_task,
+                            ingest_info=ingest_info_to_send,
+                        ),
+                    )
 
             if scraped_data is not None and scraped_data.persist:
                 if scraped_data.ingest_info:
-                    logging.info("Logging at most 4 people (were %d):",
-                                 len(scraped_data.ingest_info.people))
-                    loop_count = min(len(scraped_data.ingest_info.people),
-                                     constants.MAX_PEOPLE_TO_LOG)
+                    logging.info(
+                        "Logging at most 4 people (were %d):",
+                        len(scraped_data.ingest_info.people),
+                    )
+                    loop_count = min(
+                        len(scraped_data.ingest_info.people),
+                        constants.MAX_PEOPLE_TO_LOG,
+                    )
                     for i in range(loop_count):
-                        logging.info("[%s]",
-                                     str(scraped_data.ingest_info.people[i]))
-                    logging.info("Last seen time of person being set as: [%s]",
-                                 request.scraper_start_time)
-                    metadata = IngestMetadata(self.region.region_code,
-                                              self.region.jurisdiction_id,
-                                              request.scraper_start_time,
-                                              self.get_enum_overrides())
+                        logging.info("[%s]", str(scraped_data.ingest_info.people[i]))
+                    logging.info(
+                        "Last seen time of person being set as: [%s]",
+                        request.scraper_start_time,
+                    )
+                    metadata = IngestMetadata(
+                        self.region.region_code,
+                        self.region.jurisdiction_id,
+                        request.scraper_start_time,
+                        self.get_enum_overrides(),
+                    )
                     if self.BATCH_WRITES:
                         logging.info(
                             "Queuing ingest_info ([%d] people) to "
                             "batch_persistence for [%s]",
                             len(scraped_data.ingest_info.people),
-                            self.region.region_code)
+                            self.region.region_code,
+                        )
                         scrape_key = ScrapeKey(
-                            self.region.region_code, request.scrape_type)
+                            self.region.region_code, request.scrape_type
+                        )
                         batch_persistence.write(
                             ingest_info=scraped_data.ingest_info,
                             scrape_key=scrape_key,
@@ -279,23 +321,26 @@ class BaseScraper(Scraper):
                             "Writing ingest_info ([%d] people) to the database"
                             " for [%s]",
                             len(scraped_data.ingest_info.people),
-                            self.region.region_code)
+                            self.region.region_code,
+                        )
                         persistence.write(
                             ingest_utils.convert_ingest_info_to_proto(
-                                scraped_data.ingest_info), metadata)
+                                scraped_data.ingest_info
+                            ),
+                            metadata,
+                        )
                 for sc in scraped_data.single_counts:
                     if not sc.date:
-                        scrape_key = ScrapeKey(self.region.region_code,
-                                               constants.ScrapeType.BACKGROUND)
+                        scrape_key = ScrapeKey(
+                            self.region.region_code, constants.ScrapeType.BACKGROUND
+                        )
                         session = sessions.get_current_session(scrape_key)
                         if session:
                             sc = attr.evolve(sc, date=session.start.date())
-                    single_count.store_single_count(sc,
-                                                    self.region.jurisdiction_id)
+                    single_count.store_single_count(sc, self.region.jurisdiction_id)
         except Exception as e:
             if self.BATCH_WRITES:
-                scrape_key = ScrapeKey(
-                    self.region.region_code, request.scrape_type)
+                scrape_key = ScrapeKey(self.region.region_code, request.scrape_type)
                 batch_persistence.write_error(
                     error=str(e),
                     trace_id=get_trace_id_from_flask(),
@@ -355,8 +400,9 @@ class BaseScraper(Scraper):
         raise NoMoreTasksError()
 
     @abc.abstractmethod
-    def populate_data(self, content, task: Task,
-                      ingest_info: IngestInfo) -> ScrapedData:
+    def populate_data(
+        self, content, task: Task, ingest_info: IngestInfo
+    ) -> ScrapedData:
         """
         Populates the ingest info object from the content and task given
 

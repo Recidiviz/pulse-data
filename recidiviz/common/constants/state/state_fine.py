@@ -20,8 +20,7 @@ from enum import unique
 from typing import Dict
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
-import recidiviz.common.constants.state.enum_canonical_strings as \
-    state_enum_strings
+import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
@@ -38,8 +37,8 @@ class StateFineStatus(EntityEnum, metaclass=EntityEnumMeta):
 
 
 _STATE_FINE_STATUS_MAP: Dict[str, StateFineStatus] = {
-    'EXTERNAL UNKNOWN': StateFineStatus.EXTERNAL_UNKNOWN,
-    'PAID': StateFineStatus.PAID,
-    'PRESENT WITHOUT INFO': StateFineStatus.PRESENT_WITHOUT_INFO,
-    'UNPAID': StateFineStatus.UNPAID,
+    "EXTERNAL UNKNOWN": StateFineStatus.EXTERNAL_UNKNOWN,
+    "PAID": StateFineStatus.PAID,
+    "PRESENT WITHOUT INFO": StateFineStatus.PRESENT_WITHOUT_INFO,
+    "UNPAID": StateFineStatus.UNPAID,
 }
