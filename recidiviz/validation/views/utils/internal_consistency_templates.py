@@ -223,7 +223,7 @@ def sums_and_totals_consistency_query(
         columns_with_breakdown_counts: The columns containing the sums that are broken down by the
             |breakdown_dimensions|.
     """
-    dimensions = view_builder.dimensions
+    dimensions = list(view_builder.dimensions)
     # Remove the breakdown_dimensions from the dimension columns, because we want to sum across these dimensions
     for col in breakdown_dimensions:
         dimensions.remove(col)

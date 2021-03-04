@@ -144,7 +144,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_VIEW_BUILDER = MetricBigQueryViewBuilder
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_VIEW_NAME,
     view_query_template=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY_TEMPLATE,
-    dimensions=[
+    dimensions=(
         "state_code",
         "metric_period_months",
         "level_1_supervision_location",
@@ -155,7 +155,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_VIEW_BUILDER = MetricBigQueryViewBuilder
         "reported_violations",
         "charge_category",
         "race",
-    ],
+    ),
     description=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     race_dimension=bq_utils.unnest_column("prioritized_race_or_ethnicity", "race"),

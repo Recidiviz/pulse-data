@@ -69,7 +69,7 @@ FTR_REFERRALS_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=FTR_REFERRALS_BY_MONTH_VIEW_NAME,
     view_query_template=FTR_REFERRALS_BY_MONTH_QUERY_TEMPLATE,
-    dimensions=["state_code", "year", "month", "district", "supervision_type"],
+    dimensions=("state_code", "year", "month", "district", "supervision_type"),
     description=FTR_REFERRALS_BY_MONTH_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )

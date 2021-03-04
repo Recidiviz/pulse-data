@@ -68,13 +68,13 @@ AVERAGE_CHANGE_LSIR_SCORE_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=AVERAGE_CHANGE_LSIR_SCORE_MONTH_VIEW_NAME,
     view_query_template=AVERAGE_CHANGE_LSIR_SCORE_MONTH_QUERY_TEMPLATE,
-    dimensions=[
+    dimensions=(
         "state_code",
         "termination_year",
         "termination_month",
         "supervision_type",
         "district",
-    ],
+    ),
     description=AVERAGE_CHANGE_LSIR_SCORE_MONTH_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,

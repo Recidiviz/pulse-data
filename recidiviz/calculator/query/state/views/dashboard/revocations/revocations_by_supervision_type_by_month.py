@@ -55,7 +55,7 @@ REVOCATIONS_BY_SUPERVISION_TYPE_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilde
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=REVOCATIONS_BY_SUPERVISION_TYPE_BY_MONTH_VIEW_NAME,
     view_query_template=REVOCATIONS_BY_SUPERVISION_TYPE_BY_MONTH_QUERY_TEMPLATE,
-    dimensions=["state_code", "year", "month", "district"],
+    dimensions=("state_code", "year", "month", "district"),
     description=REVOCATIONS_BY_SUPERVISION_TYPE_BY_MONTH_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )

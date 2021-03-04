@@ -57,7 +57,7 @@ REVOCATIONS_MATRIX_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=REVOCATIONS_MATRIX_BY_MONTH_VIEW_NAME,
     view_query_template=REVOCATIONS_MATRIX_BY_MONTH_QUERY_TEMPLATE,
-    dimensions=[
+    dimensions=(
         "state_code",
         "year",
         "month",
@@ -68,7 +68,7 @@ REVOCATIONS_MATRIX_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
         "violation_type",
         "reported_violations",
         "charge_category",
-    ],
+    ),
     description=REVOCATIONS_MATRIX_BY_MONTH_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )

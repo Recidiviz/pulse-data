@@ -41,7 +41,7 @@ STATE_GENDER_POPULATION_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=STATE_GENDER_POPULATION_VIEW_NAME,
     view_query_template=STATE_GENDER_POPULATION_VIEW_QUERY_TEMPLATE,
-    dimensions=["state_code", "gender"],
+    dimensions=("state_code", "gender"),
     description=STATE_GENDER_POPULATION_VIEW_DESCRIPTION,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
 )

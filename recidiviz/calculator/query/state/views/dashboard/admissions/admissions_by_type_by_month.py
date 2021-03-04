@@ -87,7 +87,7 @@ ADMISSIONS_BY_TYPE_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=ADMISSIONS_BY_TYPE_BY_MONTH_VIEW_NAME,
     view_query_template=ADMISSIONS_BY_TYPE_BY_MONTH_QUERY_TEMPLATE,
-    dimensions=["state_code", "year", "month", "supervision_type", "district"],
+    dimensions=("state_code", "year", "month", "supervision_type", "district"),
     description=ADMISSIONS_BY_TYPE_BY_MONTH_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
