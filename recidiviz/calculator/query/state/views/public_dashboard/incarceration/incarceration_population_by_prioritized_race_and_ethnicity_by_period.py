@@ -66,7 +66,7 @@ INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_BUILDE
     dataset_id=dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
     view_id=INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_NAME,
     view_query_template=INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_QUERY_TEMPLATE,
-    dimensions=["state_code", "metric_period_months", "race_or_ethnicity"],
+    dimensions=("state_code", "metric_period_months", "race_or_ethnicity"),
     description=INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     metric_period_condition=bq_utils.metric_period_condition(),

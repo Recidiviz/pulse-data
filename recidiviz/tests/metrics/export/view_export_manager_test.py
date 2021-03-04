@@ -67,7 +67,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             dataset_id=self.mock_dataset.dataset_id,
             view_id="test_view",
             view_query_template="SELECT NULL LIMIT 0",
-            dimensions=[],
+            dimensions=tuple(),
         )
 
         self.view_buidlers_for_dataset = [

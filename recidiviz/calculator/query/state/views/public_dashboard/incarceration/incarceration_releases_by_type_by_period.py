@@ -92,13 +92,13 @@ INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_VIEW_BUILDER = MetricBigQueryViewBuilde
     dataset_id=dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
     view_id=INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_VIEW_NAME,
     view_query_template=INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_VIEW_QUERY_TEMPLATE,
-    dimensions=[
+    dimensions=(
         "state_code",
         "metric_period_months",
         "race_or_ethnicity",
         "gender",
         "age_bucket",
-    ],
+    ),
     description=INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_VIEW_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,

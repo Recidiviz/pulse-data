@@ -57,7 +57,7 @@ FACILITY_CASE_DATA_VIEW_BUILDER = MetricBigQueryViewBuilder(
     view_id=FACILITY_CASE_DATA_VIEW_NAME,
     view_query_template=FACILITY_CASE_DATA_VIEW_QUERY_TEMPLATE,
     description=FACILITY_CASE_DATA_VIEW_DESCRIPTION,
-    dimensions=["facility_id", "date"],
+    dimensions=("facility_id", "date"),
     covid_dashboard_reference_dataset=dataset_config.COVID_DASHBOARD_REFERENCE_DATASET,
 )
 

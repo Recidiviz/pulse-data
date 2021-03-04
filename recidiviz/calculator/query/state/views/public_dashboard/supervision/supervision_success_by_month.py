@@ -73,13 +73,13 @@ SUPERVISION_SUCCESS_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
     view_id=SUPERVISION_SUCCESS_BY_MONTH_VIEW_NAME,
     view_query_template=SUPERVISION_SUCCESS_BY_MONTH_VIEW_QUERY_TEMPLATE,
-    dimensions=[
+    dimensions=(
         "state_code",
         "supervision_type",
         "projected_year",
         "projected_month",
         "district",
-    ],
+    ),
     description=SUPERVISION_SUCCESS_BY_MONTH_VIEW_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,

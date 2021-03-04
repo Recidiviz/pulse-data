@@ -484,7 +484,7 @@ class ConvertQueryResultsTest(unittest.TestCase):
                 dataset_id="test_dataset",
                 view_id="test_view",
                 view_query_template="you know",
-                dimensions=["district", "year", "month", "supervision_type"],
+                dimensions=("district", "year", "month", "supervision_type"),
             ).build(),
             view_filter_clause="WHERE state_code = 'US_XX'",
             intermediate_table_name="tubular",

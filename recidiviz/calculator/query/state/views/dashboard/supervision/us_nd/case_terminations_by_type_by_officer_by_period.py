@@ -79,13 +79,13 @@ CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_VIEW_BUILDER = MetricBigQueryView
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_VIEW_NAME,
     view_query_template=CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_QUERY_TEMPLATE,
-    dimensions=[
+    dimensions=(
         "state_code",
         "metric_period_months",
         "supervision_type",
         "district",
         "officer_external_id",
-    ],
+    ),
     description=CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_DESCRIPTION,
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
     metric_period_condition=bq_utils.metric_period_condition(),

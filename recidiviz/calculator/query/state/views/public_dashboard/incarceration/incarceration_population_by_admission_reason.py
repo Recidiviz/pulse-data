@@ -74,13 +74,13 @@ INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_BUILDER = MetricBigQueryViewBu
     dataset_id=dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
     view_id=INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_NAME,
     view_query_template=INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_QUERY_TEMPLATE,
-    dimensions=[
+    dimensions=(
         "state_code",
         "date_of_stay",
         "race_or_ethnicity",
         "gender",
         "age_bucket",
-    ],
+    ),
     description=INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column(

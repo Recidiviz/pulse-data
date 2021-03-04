@@ -117,7 +117,7 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=REVOCATIONS_MATRIX_FILTERED_CASELOAD_VIEW_NAME,
     view_query_template=REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE,
-    dimensions=[
+    dimensions=(
         "state_code",
         "metric_period_months",
         "district",
@@ -131,7 +131,7 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_VIEW_BUILDER = MetricBigQueryViewBuilder(
         "reported_violations",
         "state_id",
         "officer",
-    ],
+    ),
     description=REVOCATIONS_MATRIX_FILTERED_CASELOAD_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     state_specific_supervision_level=state_specific_query_strings.state_specific_supervision_level(),

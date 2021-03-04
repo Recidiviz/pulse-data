@@ -53,7 +53,7 @@ class ExportManagerCompositeExportTest(unittest.TestCase):
             dataset_id="dataset",
             view_id="view1",
             view_query_template="select * from table",
-            dimensions=["a", "b", "c"],
+            dimensions=("a", "b", "c"),
         ).build()
 
         export_config_one = ExportBigQueryViewConfig(
@@ -77,7 +77,7 @@ class ExportManagerCompositeExportTest(unittest.TestCase):
             dataset_id="dataset",
             view_id="view2",
             view_query_template="select * from view2",
-            dimensions=["d", "e", "f"],
+            dimensions=("d", "e", "f"),
         ).build()
 
         export_config_two = ExportBigQueryViewConfig(
@@ -199,7 +199,7 @@ class ExportManagerCompositeExportTest(unittest.TestCase):
             dataset_id="dataset",
             view_id="view1",
             view_query_template="select * from table",
-            dimensions=["a", "b", "c"],
+            dimensions=("a", "b", "c"),
         ).build()
 
         export_config_one = ExportBigQueryViewConfig(
@@ -223,7 +223,7 @@ class ExportManagerCompositeExportTest(unittest.TestCase):
             dataset_id="dataset",
             view_id="view2",
             view_query_template="select * from view2",
-            dimensions=["d", "e", "f"],
+            dimensions=("d", "e", "f"),
         ).build()
 
         export_config_two = ExportBigQueryViewConfig(
@@ -285,7 +285,7 @@ class ExportManagerCompositeExportTest(unittest.TestCase):
             dataset_id="dataset",
             view_id="view1",
             view_query_template="select * from table",
-            dimensions=["a", "b", "c"],
+            dimensions=("a", "b", "c"),
         ).build()
 
         export_config_one = ExportBigQueryViewConfig(
@@ -309,7 +309,7 @@ class ExportManagerCompositeExportTest(unittest.TestCase):
             dataset_id="dataset",
             view_id="view2",
             view_query_template="select * from view2",
-            dimensions=["d", "e", "f"],
+            dimensions=("d", "e", "f"),
         ).build()
 
         export_config_two = ExportBigQueryViewConfig(
