@@ -42,6 +42,8 @@ REQUIRED_PACKAGES = [
     # TODO(#4231): Pinned due to dependency version introduced in version 2.0.0 on 10/5/20
     "google-cloud-monitoring==1.1.0",
     "google-cloud-secret-manager",
+    "html5lib",
+    "lxml",
     "more-itertools",
     "oauth2client",
     "opencensus",
@@ -59,4 +61,5 @@ setuptools.setup(
     version="1.0.76",
     install_requires=REQUIRED_PACKAGES,
     packages=setuptools.find_packages(),
+    package_data={"recidiviz.common": ["data_sets/*.csv"]},
 )
