@@ -51,7 +51,7 @@ columns:
       City
   - name: codestateid
     description: |-
-      Code describing which state the address is in
+      Code describing which state the address is in. Can be looked up in `static_reference_tables.state_ids`
   - name: zipcode
     description: |-
       Zipcode

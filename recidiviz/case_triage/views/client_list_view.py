@@ -22,6 +22,7 @@ from recidiviz.big_query.selected_columns_big_query_view import (
 from recidiviz.calculator.query.state.dataset_config import (
     CASE_TRIAGE_DATASET,
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    STATIC_REFERENCE_TABLES_DATASET,
 )
 from recidiviz.case_triage.views.dataset_config import VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -80,6 +81,40 @@ latest_employment AS (
     WHERE
         employment_periods.recorded_end_date IS NULL OR employment_periods.recorded_end_date > CURRENT_DATE()
 ),
+-- HACK ALERT 
+-- TODO(#6200): Until a full ID ingest re-run is a complete, we need to grab address data on the fly
+-- HACK ALERT
+latest_idaho_address AS (
+   SELECT 
+    'US_ID' as state_code,
+    offendernumber as person_external_id,
+    current_address
+   FROM
+        (SELECT
+          cis_offender.offendernumber,
+          ARRAY_TO_STRING([line1, city, state_abbreviation, cis_personaddress.zipcode], ', ') AS current_address,
+          ROW_NUMBER() OVER (PARTITION BY personid ORDER BY startdate DESC) as row_num
+        FROM
+            `{project_id}.us_id_raw_data_up_to_date_views.cis_offenderaddress_latest` cis_offenderaddress
+        FULL OUTER JOIN
+            `{project_id}.us_id_raw_data_up_to_date_views.cis_personaddress_latest` cis_personaddress
+        ON
+            id = personaddressid
+        LEFT JOIN
+            `{project_id}.{static_reference_tables_dataset}.state_ids`
+        ON
+            codestateid = CAST(state_id AS STRING)
+        LEFT JOIN
+            `{project_id}.us_id_raw_data_up_to_date_views.cis_offender_latest` cis_offender
+        ON 
+            cis_offender.id = cis_personaddress.personid
+        WHERE cis_personaddress.personid IS NOT NULL
+            AND cis_offenderaddress.validaddress = 'T' -- Valid address
+            AND cis_offenderaddress.enddate IS NULL -- Active address
+            AND cis_personaddress.codeaddresstypeid IN ('1') -- Physical address
+         ) latest_idaho_addresses
+    WHERE row_num = 1
+),
 -- TODO(#5943): Make ideal_query the main query body.
 ideal_query AS (
 SELECT
@@ -113,7 +148,7 @@ WHERE
 --
 -- TODO(#5943): We unfortunately have to pull straight from raw data from Idaho due to internal
 -- inconsistencies in Idaho's data. Our ingest pipeline assumed that the historical record
--- was accurate, but unforunately that no longer seems to be the case. The long-term solution
+-- was accurate, but unfortunately that no longer seems to be the case. The long-term solution
 -- involves fetching an updates one-off historical dump of the casemgr table, re-running ingest,
 -- and adding validation to ensure this doesn't happen, but the timescale of this is much
 -- slower than we want to move for Case Triage.
@@ -128,13 +163,18 @@ WHERE
 -- HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT
 with_derived_supervising_officer as (
     SELECT
-      ideal_query.* EXCEPT (supervising_officer_external_id),
-      IF(state_code != 'US_ID', ideal_query.supervising_officer_external_id, UPPER(ofndr_agnt.agnt_id)) AS supervising_officer_external_id
-    FROM
+      ideal_query.* EXCEPT (current_address, supervising_officer_external_id),
+      IF(state_code != 'US_ID', ideal_query.supervising_officer_external_id, UPPER(ofndr_agnt.agnt_id)) AS supervising_officer_external_id,
+      -- TODO(#6200): Until a full ID ingest re-run is a complete, we need to grab address data on the fly
+      IF(state_code != 'US_ID', ideal_query.current_address, latest_idaho_address.current_address) as current_address,
+  FROM
       ideal_query
     LEFT OUTER JOIN
       `{project_id}.us_id_raw_data_up_to_date_views.ofndr_agnt_latest` ofndr_agnt
     ON ideal_query.person_external_id = ofndr_agnt.ofndr_num
+    LEFT OUTER JOIN 
+        latest_idaho_address
+    USING (person_external_id, state_code)
 )
 SELECT *
 FROM with_derived_supervising_officer
@@ -147,12 +187,12 @@ CLIENT_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     view_query_template=CLIENT_LIST_QUERY_TEMPLATE,
     case_triage_dataset=CASE_TRIAGE_DATASET,
     dataflow_metrics_materialized_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    static_reference_tables_dataset=STATIC_REFERENCE_TABLES_DATASET,
     columns=[
         "state_code",
         "person_external_id",
         "full_name",
         "gender",
-        "current_address",
         "birthdate",
         "birthdate_inferred_from_age",
         "supervision_start_date",
@@ -168,6 +208,8 @@ CLIENT_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         # this list because of the way that we have to derive this result from
         # the ofndr_agnt table for Idaho.
         "supervising_officer_external_id",
+        # TODO(#6200): Until a full ID ingest re-run is a complete, we need to grab address data on the fly
+        "current_address",
     ],
 )
 
