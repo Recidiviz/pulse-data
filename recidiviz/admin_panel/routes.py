@@ -122,7 +122,16 @@ def fetch_data_freshness() -> Tuple[str, HTTPStatus]:
 @requires_gae_auth
 def fetch_etl_view_ids() -> Tuple[str, HTTPStatus]:
     return (
-        jsonify([builder.view_id for builder in CASE_TRIAGE_EXPORTED_VIEW_BUILDERS]),
+        jsonify(
+            [
+                builder.view_id
+                for builder in CASE_TRIAGE_EXPORTED_VIEW_BUILDERS
+                if builder.view_id != "etl_officers"
+                # TODO(#6202): Until we get more consistent rosters, pushing `etl_officers`
+                # may lead to inconsistincies (as we had to manually add 1-2 trusted testers
+                # who were not on our rosters).
+            ]
+        ),
         HTTPStatus.OK,
     )
 
@@ -136,7 +145,12 @@ def run_gcs_import() -> Tuple[str, HTTPStatus]:
         return "`viewIds` must be present in arugment list", HTTPStatus.BAD_REQUEST
 
     known_view_builders = {
-        builder.view_id: builder for builder in CASE_TRIAGE_EXPORTED_VIEW_BUILDERS
+        builder.view_id: builder
+        for builder in CASE_TRIAGE_EXPORTED_VIEW_BUILDERS
+        if builder.view_id != "etl_officers"
+        # TODO(#6202): Until we get more consistent rosters, pushing `etl_officers`
+        # may lead to inconsistincies (as we had to manually add 1-2 trusted testers
+        # who were not on our rosters).
     }
     for view_id in request.json["viewIds"]:
         if view_id not in known_view_builders:
