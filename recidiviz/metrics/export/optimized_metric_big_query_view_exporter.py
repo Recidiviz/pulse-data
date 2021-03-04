@@ -305,7 +305,9 @@ class OptimizedMetricBigQueryViewExporter(BigQueryViewExporter):
         return out.getvalue()
 
 
-def _initialize_dimension_manifest(dimension_keys: List[str]) -> Dict[str, Set[str]]:
+def _initialize_dimension_manifest(
+    dimension_keys: Tuple[str, ...]
+) -> Dict[str, Set[str]]:
     """Initializes an empty dictionary-based dimension manifest.
 
     Each of the given keys will be put in the dictionary with an empty set as its value.

@@ -77,14 +77,14 @@ SUPERVISION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQueryVie
     dataset_id=dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
     view_id=SUPERVISION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_NAME,
     view_query_template=SUPERVISION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE,
-    dimensions=[
+    dimensions=(
         "state_code",
         "supervision_type",
         "population_date",
         "race_or_ethnicity",
         "gender",
         "age_bucket",
-    ],
+    ),
     description=SUPERVISION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column(

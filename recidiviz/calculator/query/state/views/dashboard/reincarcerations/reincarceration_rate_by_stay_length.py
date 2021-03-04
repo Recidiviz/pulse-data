@@ -73,13 +73,13 @@ REINCARCERATION_RATE_BY_STAY_LENGTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=REINCARCERATION_RATE_BY_STAY_LENGTH_VIEW_NAME,
     view_query_template=REINCARCERATION_RATE_BY_STAY_LENGTH_QUERY_TEMPLATE,
-    dimensions=[
+    dimensions=(
         "state_code",
         "release_cohort",
         "follow_up_period",
         "stay_length_bucket",
         "district",
-    ],
+    ),
     description=REINCARCERATION_RATE_BY_STAY_LENGTH_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     district_dimension=bq_utils.unnest_district(district_column="county_of_residence"),

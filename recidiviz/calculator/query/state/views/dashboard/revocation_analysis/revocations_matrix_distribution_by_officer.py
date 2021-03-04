@@ -146,7 +146,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_VIEW_BUILDER = MetricBigQueryViewBuil
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_VIEW_NAME,
     view_query_template=REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_QUERY_TEMPLATE,
-    dimensions=[
+    dimensions=(
         "state_code",
         "metric_period_months",
         "level_1_supervision_location",
@@ -157,7 +157,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_VIEW_BUILDER = MetricBigQueryViewBuil
         "reported_violations",
         "charge_category",
         "officer",
-    ],
+    ),
     description=REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )

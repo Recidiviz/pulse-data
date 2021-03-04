@@ -77,13 +77,13 @@ REVOCATIONS_BY_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_BUILDER = MetricBigQueryViewBui
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=REVOCATIONS_BY_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_NAME,
     view_query_template=REVOCATIONS_BY_RACE_AND_ETHNICITY_BY_PERIOD_QUERY_TEMPLATE,
-    dimensions=[
+    dimensions=(
         "state_code",
         "metric_period_months",
         "supervision_type",
         "district",
         "race_or_ethnicity",
-    ],
+    ),
     description=REVOCATIONS_BY_RACE_AND_ETHNICITY_BY_PERIOD_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
