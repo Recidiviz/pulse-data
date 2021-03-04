@@ -1238,8 +1238,8 @@ class UsNdController(CsvGcsfsDirectIngestController):
             StateSupervisionLevel.MAXIMUM: ["3", "6"],
             StateSupervisionLevel.DIVERSION: ["7"],
             StateSupervisionLevel.INTERSTATE_COMPACT: ["9"],
-            # 5 means not classified yet
-            StateSupervisionLevel.EXTERNAL_UNKNOWN: ["5"],
+            # 4 is no longer used now, 5 means not classified yet
+            StateSupervisionLevel.EXTERNAL_UNKNOWN: ["4", "5"],
             StateSupervisionPeriodTerminationReason.ABSCONSION: [
                 "13"  # Terminated - Absconded (Active Petition To Revoke)
             ],
