@@ -139,6 +139,8 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_QUERY_TEMPLATE = """
       (SELECT * FROM termination_counts WHERE gender != 'ALL') gender_term
     USING (state_code, violation_type, reported_violations, gender, supervision_type, supervision_level, charge_category,
       level_1_supervision_location, level_2_supervision_location, metric_period_months)
+    -- Filter out any rows that don't have a specified violation_type
+    WHERE violation_type != 'NO_VIOLATION_TYPE'
     """
 
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_VIEW_BUILDER = MetricBigQueryViewBuilder(

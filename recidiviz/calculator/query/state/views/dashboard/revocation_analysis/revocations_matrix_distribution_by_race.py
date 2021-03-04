@@ -138,6 +138,8 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY_TEMPLATE = """
       (SELECT * FROM termination_counts WHERE race != 'ALL') race_term
     USING (state_code, violation_type, reported_violations, race, supervision_type, supervision_level, charge_category,
       level_1_supervision_location, level_2_supervision_location, metric_period_months)
+    -- Filter out any rows that don't have a specified violation_type
+    WHERE violation_type != 'NO_VIOLATION_TYPE'
     """
 
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_VIEW_BUILDER = MetricBigQueryViewBuilder(

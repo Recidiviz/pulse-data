@@ -140,6 +140,8 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_QUERY_TEMPLATE = """
     USING (state_code, metric_period_months, officer) 
     WHERE revocation_count > 0
         AND officer != 'EXTERNAL_UNKNOWN'
+        -- Filter out any rows that don't have a specified violation_type
+        AND violation_type != 'NO_VIOLATION_TYPE'
     """
 
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_VIEW_BUILDER = MetricBigQueryViewBuilder(
