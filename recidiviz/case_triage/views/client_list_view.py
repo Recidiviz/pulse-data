@@ -56,30 +56,18 @@ latest_face_to_face AS (
     person_external_id IS NOT NULL
   GROUP BY person_id, state_code
 ),
-latest_employment_start_date AS (
-   SELECT DISTINCT
-        state_code,
-        person_external_id,
-        FIRST_VALUE(recorded_start_date) OVER (
-            PARTITION BY person_external_id
-            ORDER BY recorded_start_date DESC
-        ) AS latest_start_date
-    FROM
-        `{project_id}.{case_triage_dataset}.employment_periods`
-),
 latest_employment AS (
-    SELECT
-        employment_periods.state_code,
-        employment_periods.person_external_id,
-        employment_periods.employer
-    FROM
-        `{project_id}.{case_triage_dataset}.employment_periods` employment_periods
-    JOIN latest_employment_start_date
-        ON latest_employment_start_date.person_external_id = employment_periods.person_external_id
-        AND latest_employment_start_date.state_code = employment_periods.state_code
-        AND latest_employment_start_date.latest_start_date = employment_periods.recorded_start_date
-    WHERE
-        employment_periods.recorded_end_date IS NULL OR employment_periods.recorded_end_date > CURRENT_DATE()
+    SELECT * EXCEPT (row_num) FROM (
+        SELECT 
+            employment_periods.state_code,
+            employment_periods.person_external_id,
+            employment_periods.employer,
+            ROW_NUMBER() over (PARTITION BY person_external_id ORDER BY recorded_start_date DESC) as row_num
+         FROM
+            `{project_id}.{case_triage_dataset}.employment_periods` employment_periods
+        WHERE recorded_end_date IS NULL OR recorded_end_date > CURRENT_DATE()
+    ) employments
+    WHERE row_num = 1
 ),
 -- HACK ALERT 
 -- TODO(#6200): Until a full ID ingest re-run is a complete, we need to grab address data on the fly
