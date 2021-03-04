@@ -21,24 +21,40 @@ from datetime import datetime
 from shutil import rmtree, copytree, ignore_patterns
 from typing import Dict
 
+import recidiviz
 from recidiviz.ingest.direct import regions as regions_module
 from recidiviz.ingest.direct import templates as ingest_templates_module
+from recidiviz.persistence.entity_matching import state as state_module
 from recidiviz.persistence.entity_matching import (
     templates as persistence_templates_module,
 )
-from recidiviz.persistence.entity_matching import state as state_module
-from recidiviz.tests.ingest.direct import regions as regions_tests_module
+from recidiviz.tests.ingest.direct import (
+    regions as regions_test_module,
+)
 from recidiviz.tests.ingest.direct import templates as test_templates_module
 
 _PLACEHOLDER = "TO" + "DO"
+_DEFAULT_WORKING_DIR: str = os.path.dirname(recidiviz.__file__)
+
+DEFAULT_WORKING_DIR: str = os.path.dirname(recidiviz.__file__)
+REGIONS_DIR_PATH = os.path.dirname(
+    os.path.relpath(regions_module.__file__, start=DEFAULT_WORKING_DIR)
+)
+PERSISTENCE_DIR_PATH = os.path.dirname(
+    os.path.relpath(state_module.__file__, start=DEFAULT_WORKING_DIR)
+)
+TESTS_DIR_PATH = os.path.dirname(
+    os.path.relpath(regions_test_module.__file__, start=DEFAULT_WORKING_DIR)
+)
 
 
 class DirectIngestFilesGenerator:
     """A class for generating necessary directories and files for direct ingest."""
 
-    def __init__(self, region_code: str):
+    def __init__(self, region_code: str, curr_directory: str = DEFAULT_WORKING_DIR):
         self.region_code: str = region_code
-        self.current_year = datetime.today().year
+        self.current_year: int = datetime.today().year
+        self.curr_directory: str = curr_directory
 
     def generate_all_new_dirs_and_files(self) -> None:
         """
@@ -51,13 +67,13 @@ class DirectIngestFilesGenerator:
         """
 
         new_region_dir_path = os.path.join(
-            os.path.dirname(regions_module.__file__), self.region_code
+            self.curr_directory, REGIONS_DIR_PATH, self.region_code
         )
         new_region_persistence_dir_path = os.path.join(
-            os.path.dirname(state_module.__file__), self.region_code
+            self.curr_directory, PERSISTENCE_DIR_PATH, self.region_code
         )
         new_region_tests_dir_path = os.path.join(
-            os.path.dirname(regions_tests_module.__file__), self.region_code
+            self.curr_directory, TESTS_DIR_PATH, self.region_code
         )
 
         dirs_to_create = [

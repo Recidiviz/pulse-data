@@ -39,11 +39,6 @@ def pytest_configure(config) -> None:
     config.addinivalue_line(
         "markers", "uses_db: for tests that spin up a new database."
     )
-    config.addinivalue_line(
-        "markers",
-        "no_parallel: for tests that should not be run in parallel (e.g. they write to shared "
-        "filesystem space).",
-    )
 
 
 def pytest_unconfigure() -> None:
@@ -79,15 +74,10 @@ def pytest_runtest_setup(item: pytest.Item) -> None:
         if item.get_closest_marker("uses_db") is not None:
             if test_set == "parallel":
                 pytest.skip("[parallel tests] skipping because test requires database")
-        elif item.get_closest_marker("no_parallel") is not None:
-            if test_set == "parallel":
-                pytest.skip(
-                    "[parallel tests] skipping because test requires parallel execution"
-                )
         else:
             if test_set == "not-parallel":
                 pytest.skip(
-                    "[not-parallel tests] skipping because test does not require parallel execution"
+                    "[not-parallel tests] skipping because test does not require database or emulator"
                 )
 
 
