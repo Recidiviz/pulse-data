@@ -19,8 +19,8 @@ from recidiviz.common import fips
 
 
 def test_getStateAndCountyForFips_removes_city_suffix_properly():
-    [state1, county1] = fips.get_state_and_county_for_fips(32510)
-    [state2, county2] = fips.get_state_and_county_for_fips(51510)
+    [state1, county1] = fips.get_state_and_county_for_fips("32510")
+    [state2, county2] = fips.get_state_and_county_for_fips("51510")
     assert county1 == "carson_city".upper()
     assert state1 == "US_NV"
     assert county2 == "alexandria".upper()

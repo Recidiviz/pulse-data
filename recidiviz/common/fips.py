@@ -30,7 +30,7 @@ share the same county names.
 More info: https://en.wikipedia.org/wiki/FIPS_county_code
 """
 import re
-from typing import Tuple
+from typing import Tuple, Set, Dict
 import pandas as pd
 import us
 
@@ -42,6 +42,10 @@ from recidiviz.tests.ingest.fixtures import as_filepath
 _FUZZY_MATCH_CUTOFF = 0.75
 
 _FIPS = pd.read_csv(as_filepath("fips.csv", subdir="data_sets"), dtype={"fips": str})
+
+_SANITIZED_COUNTIES = None
+
+_FIPS_MAPPING = None
 
 
 def add_column_to_df(
@@ -88,12 +92,7 @@ def validate_county_code(county_code: str) -> None:
     if cleaned_county_code in ["st_mary_parish", "translyvania", "carter_vendengine"]:
         return
 
-    df_fips = _FIPS.copy()
-    sanitized_counties = [
-        _sanitize_county_name(row["county_name"]) for _, row in df_fips.iterrows()
-    ]
-
-    if cleaned_county_code not in sanitized_counties:
+    if cleaned_county_code not in _get_valid_counties():
         raise ValueError(
             f"county_code does could not be found in sanitized fips: {county_code}"
         )
@@ -108,19 +107,23 @@ def _standardize_raw_state(state: str) -> str:
     return f"US_{state}".upper()
 
 
-def get_state_and_county_for_fips(fips: int) -> Tuple[str, str]:
-    """Get the [state, county] for the provided |fips| in this format ['US_AL','BARBOUR']."""
+def _get_fip_mappings() -> Dict[str, Tuple[str, str]]:
+    global _FIPS_MAPPING
+    if _FIPS_MAPPING is None:
+        _FIPS_MAPPING = {
+            row["fips"]: (
+                _standardize_raw_state(row["state_abbrev"]),
+                _sanitize_county_name(row["county_name"]).upper(),
+            )
+            for _, row in _FIPS.iterrows()
+        }
+    return _FIPS_MAPPING
 
-    # Copy _FIPS to allow mutating the view created after filtering by state
-    df_fips = _FIPS.copy()
-    df_fips["fips"] = pd.to_numeric(df_fips["fips"])
-    df_fips = df_fips[df_fips.fips == fips]
-    if df_fips.empty:
-        raise FipsMergingError(f"Failed to find FIPS code: {fips}")
-    raw_state = df_fips.iloc[0, 0]
-    raw_county = df_fips.iloc[0, 3]
 
-    return _standardize_raw_state(raw_state), _sanitize_county_name(raw_county).upper()
+def get_state_and_county_for_fips(fips: str) -> Tuple[str, str]:
+    """Get the [state, county] for the provided |fips| in this format ['US_AL','BARBOUR'].
+    Fips should be 5 characters and zero padded"""
+    return _get_fip_mappings()[fips]
 
 
 def _sanitize_county_name(county_name: str) -> str:
@@ -137,4 +140,15 @@ def _sanitize_county_name(county_name: str) -> str:
     county = county.replace(" parish", "")
     county = county.replace(" municipio", "")
     county = county.replace(" ", "_")
+    county = county.replace("-", "_")
     return county
+
+
+def _get_valid_counties() -> Set[str]:
+    global _SANITIZED_COUNTIES
+    if _SANITIZED_COUNTIES is None:
+        _SANITIZED_COUNTIES = {
+            _sanitize_county_name(row["county_name"]) for _, row in _FIPS.iterrows()
+        }
+
+    return _SANITIZED_COUNTIES
