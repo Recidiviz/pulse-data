@@ -25,8 +25,9 @@ from recidiviz.case_triage.querier.querier import (
     CaseTriageQuerier,
     PersonDoesNotExistError,
 )
-from recidiviz.persistence.database.base_schema import CaseTriageBase
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.case_triage.case_triage_helpers import (
     generate_fake_client,
     generate_fake_officer,
@@ -46,10 +47,11 @@ class TestCaseTriageQuerier(TestCase):
         cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
-        local_postgres_helpers.use_on_disk_postgresql_database(CaseTriageBase)
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
+        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(CaseTriageBase)
+        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -60,12 +62,12 @@ class TestCaseTriageQuerier(TestCase):
     def test_fetch_officer_id_happy_path(self) -> None:
         officer_1 = generate_fake_officer("id_1", "officer1@recidiviz.org")
         officer_2 = generate_fake_officer("id_2", "officer2@recidiviz.org")
-        session = SessionFactory.for_schema_base(CaseTriageBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(officer_1)
         session.add(officer_2)
         session.commit()
 
-        read_session = SessionFactory.for_schema_base(CaseTriageBase)
+        read_session = SessionFactory.for_database(self.database_key)
         first_fetch = CaseTriageQuerier.officer_for_email(
             read_session, "officer1@recidiviz.org"
         )
@@ -76,7 +78,7 @@ class TestCaseTriageQuerier(TestCase):
         self.assertEqual(second_fetch.external_id, "id_2")
 
     def test_nonexistent_officer(self) -> None:
-        session = SessionFactory.for_schema_base(CaseTriageBase)
+        session = SessionFactory.for_database(self.database_key)
 
         with self.assertRaises(sqlalchemy.orm.exc.NoResultFound):
             CaseTriageQuerier.officer_for_email(session, "nonexistent@email.com")
@@ -88,7 +90,7 @@ class TestCaseTriageQuerier(TestCase):
         client_1 = generate_fake_client("client_1", "id_1")
         client_2 = generate_fake_client("client_2", "id_1")
         client_3 = generate_fake_client("client_3", "id_2")
-        session = SessionFactory.for_schema_base(CaseTriageBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(officer_1)
         session.add(officer_2)
         session.add(officer_3)
@@ -97,7 +99,7 @@ class TestCaseTriageQuerier(TestCase):
         session.add(client_3)
         session.commit()
 
-        read_session = SessionFactory.for_schema_base(CaseTriageBase)
+        read_session = SessionFactory.for_database(self.database_key)
         self.assertEqual(
             len(CaseTriageQuerier.clients_for_officer(read_session, officer_1)),
             2,
@@ -113,11 +115,11 @@ class TestCaseTriageQuerier(TestCase):
 
     def test_etl_client_with_id_and_state_code(self) -> None:
         client_1 = generate_fake_client("client_1")
-        session = SessionFactory.for_schema_base(CaseTriageBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(client_1)
         session.commit()
 
-        read_session = SessionFactory.for_schema_base(CaseTriageBase)
+        read_session = SessionFactory.for_database(self.database_key)
         with self.assertRaises(PersonDoesNotExistError):
             CaseTriageQuerier.etl_client_with_id_and_state_code(
                 read_session, "nonexistent", "US_XX"

@@ -29,7 +29,7 @@ from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
     BIGQUERY_QUEUE_V2,
     JOB_MONITOR_QUEUE_V2,
 )
-from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
+from recidiviz.persistence.database.schema_utils import SchemaType
 
 
 class BQRefreshCloudTaskManager:

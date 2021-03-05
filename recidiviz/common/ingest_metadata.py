@@ -23,12 +23,24 @@ import attr
 
 from recidiviz.common.attr_mixins import DefaultableAttr
 from recidiviz.common.constants.enum_overrides import EnumOverrides
+from recidiviz.persistence.database.schema_utils import (
+    SchemaType,
+)
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 
 
 @enum.unique
 class SystemLevel(enum.Enum):
     COUNTY = "COUNTY"
     STATE = "STATE"
+
+    def schema_type(self) -> SchemaType:
+        if self == SystemLevel.STATE:
+            return SchemaType.STATE
+        if self == SystemLevel.COUNTY:
+            return SchemaType.JAILS
+
+        raise ValueError(f"Unsupported SystemLevel type: {self}")
 
 
 @attr.s(frozen=True)
@@ -55,3 +67,14 @@ class IngestMetadata(DefaultableAttr):
 
     # The default facility id for the region e.g. 01CNT02502506100
     facility_id: Optional[str] = attr.ib(default=None)
+
+    @property
+    def database_key(self) -> SQLAlchemyDatabaseKey:
+        # TODO(#6077): Update this class to require database_key be set as a field,
+        #  then wire proper database_key with region/database version where necessary
+        #  from ingest.
+        schema_type = self.system_level.schema_type()
+        if schema_type == SchemaType.STATE:
+            return SQLAlchemyDatabaseKey(SchemaType.STATE)
+
+        return SQLAlchemyDatabaseKey.for_schema(schema_type)

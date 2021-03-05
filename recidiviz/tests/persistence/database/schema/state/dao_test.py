@@ -25,11 +25,12 @@ import pytest
 
 from recidiviz.common.constants.state import external_id_types
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.base_schema import StateBase
-from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.database.schema.state import dao
 from recidiviz.persistence.database.schema.state import schema
+from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.persistence.entity.state import entities
 from recidiviz.tools.postgres import local_postgres_helpers
 
 _REGION = "region"
@@ -52,10 +53,11 @@ class TestDao(TestCase):
         cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
-        local_postgres_helpers.use_on_disk_postgresql_database(StateBase)
+        self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(StateBase)
+        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -72,7 +74,7 @@ class TestDao(TestCase):
             person_id=9, full_name="diff_name", state_code=_STATE_CODE
         )
 
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(person)
         session.add(person_different_name)
         session.commit()
@@ -95,7 +97,7 @@ class TestDao(TestCase):
             birthdate=datetime.date(year=2002, month=1, day=2),
         )
 
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(person)
         session.add(person_different_birthdate)
         session.commit()
@@ -123,7 +125,7 @@ class TestDao(TestCase):
             person_id=10,
             birthdate=datetime.date(year=2002, month=1, day=2),
         )
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(person)
         session.add(person_different_name)
         session.add(person_different_birthdate)
@@ -149,7 +151,7 @@ class TestDao(TestCase):
         )
         person.external_ids = [person_external_id]
 
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(placeholder_person)
         session.add(person)
         session.commit()
@@ -177,7 +179,7 @@ class TestDao(TestCase):
         )
         person_match_external_id.external_ids = [person_external_id]
 
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(person_no_match)
         session.add(person_match_external_id)
         session.commit()
@@ -211,7 +213,7 @@ class TestDao(TestCase):
         )
         person.external_ids = [external_id_match, external_id_no_match]
 
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(person)
         session.commit()
 
@@ -244,7 +246,7 @@ class TestDao(TestCase):
         )
         person.sentence_groups = [sentence_group, sentence_group_2]
 
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(person)
         session.commit()
 
@@ -273,7 +275,7 @@ class TestDao(TestCase):
         )
         person_match_external_id.external_ids = [person_external_id]
 
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(person_no_match)
         session.add(person_match_external_id)
         session.commit()
@@ -316,7 +318,7 @@ class TestDao(TestCase):
         )
         person.external_ids = [person_external_id, person_external_id2]
 
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(person)
         session.commit()
 
@@ -365,7 +367,7 @@ class TestDao(TestCase):
         )
         person2.external_ids = [person2_external_id]
 
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(person1)
         session.add(person2)
         session.commit()
@@ -415,7 +417,7 @@ class TestDao(TestCase):
         )
         person2.external_ids = [person2_external_id]
 
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(person1)
         session.add(person2)
         session.commit()
@@ -484,7 +486,7 @@ class TestDao(TestCase):
 
         person.external_ids = [person_external_id, person_external_id2]
 
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(person)
         session.commit()
 
@@ -559,7 +561,7 @@ class TestDao(TestCase):
             placeholder_sentence_group,
         ]
 
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(person_1)
         session.add(person_2)
         session.flush()

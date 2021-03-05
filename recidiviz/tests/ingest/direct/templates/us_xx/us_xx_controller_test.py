@@ -17,11 +17,10 @@
 """Unit and integration tests for US_XX direct ingest."""
 from typing import Type
 
-from sqlalchemy.ext.declarative import DeclarativeMeta
-
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import (
     GcsfsDirectIngestController,
 )
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests import (
     BaseDirectIngestControllerTests,
 )
@@ -41,5 +40,5 @@ class TestUsXxController(BaseDirectIngestControllerTests):
         pass  # Return instance of UsXxController
 
     @classmethod
-    def schema_base(cls) -> DeclarativeMeta:
+    def schema_type(cls) -> SchemaType:
         raise NotImplementedError("Choose one of StateBase or JailsBase")

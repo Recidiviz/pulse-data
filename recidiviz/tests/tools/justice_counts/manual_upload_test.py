@@ -26,16 +26,17 @@ import pytest
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import sql
 
-from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.entity_enum import (
     EntityEnum,
     EntityEnumMeta,
     EnumParsingError,
 )
-from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
-from recidiviz.persistence.database.base_schema import JusticeCountsBase
+from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.persistence.database.schema.justice_counts import schema
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.tools.justice_counts import test_utils
 from recidiviz.tools.justice_counts import manual_upload
 from recidiviz.tools.justice_counts.manual_upload import (
@@ -184,11 +185,12 @@ class ManualUploadTest(unittest.TestCase):
         cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
-        local_postgres_helpers.use_on_disk_postgresql_database(JusticeCountsBase)
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
+        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
         self.fs = FakeGCSFileSystem()
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(JusticeCountsBase)
+        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -203,7 +205,7 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_schema_base(JusticeCountsBase)
+        session = SessionFactory.for_database(self.database_key)
 
         [source] = session.query(schema.Source).all()
         self.assertEqual("Colorado Department of Corrections", source.name)
@@ -314,7 +316,7 @@ class ManualUploadTest(unittest.TestCase):
         # it each time
 
         # Assert
-        session = SessionFactory.for_schema_base(JusticeCountsBase)
+        session = SessionFactory.for_database(self.database_key)
 
         # There should still only be a single source, report, and table definition
         [source] = session.query(schema.Source).all()
@@ -353,7 +355,7 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_schema_base(JusticeCountsBase)
+        session = SessionFactory.for_database(self.database_key)
 
         [facility_totals_definition, facility_demographics_definition] = (
             session.query(schema.ReportTableDefinition)
@@ -497,7 +499,7 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_schema_base(JusticeCountsBase)
+        session = SessionFactory.for_database(self.database_key)
 
         [source] = session.query(schema.Source).all()
         self.assertEqual("Colorado Department of Corrections", source.name)
@@ -625,7 +627,7 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_schema_base(JusticeCountsBase)
+        session = SessionFactory.for_database(self.database_key)
 
         [source] = session.query(schema.Source).all()
         self.assertEqual("Colorado Department of Corrections", source.name)
@@ -746,7 +748,7 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_schema_base(JusticeCountsBase)
+        session = SessionFactory.for_database(self.database_key)
 
         [table_definition] = session.query(schema.ReportTableDefinition).all()
         self.assertEqual(
@@ -788,7 +790,7 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_schema_base(JusticeCountsBase)
+        session = SessionFactory.for_database(self.database_key)
 
         [table_definition] = session.query(schema.ReportTableDefinition).all()
         self.assertEqual(
@@ -901,7 +903,7 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_schema_base(JusticeCountsBase)
+        session = SessionFactory.for_database(self.database_key)
 
         cells = session.query(schema.Cell).all()
 
@@ -953,7 +955,7 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_schema_base(JusticeCountsBase)
+        session = SessionFactory.for_database(self.database_key)
 
         cells = session.query(schema.Cell).all()
         self.assertEqual(
@@ -981,7 +983,7 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_schema_base(JusticeCountsBase)
+        session = SessionFactory.for_database(self.database_key)
 
         [table_definition] = session.query(schema.ReportTableDefinition).all()
         self.assertEqual(
@@ -1036,7 +1038,7 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_schema_base(JusticeCountsBase)
+        session = SessionFactory.for_database(self.database_key)
 
         [type_definition, total_definition] = (
             session.query(schema.ReportTableDefinition)
@@ -1151,7 +1153,7 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_schema_base(JusticeCountsBase)
+        session = SessionFactory.for_database(self.database_key)
 
         [type_definition] = session.query(schema.ReportTableDefinition).all()
         self.assertEqual(
@@ -1189,7 +1191,7 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_schema_base(JusticeCountsBase)
+        session = SessionFactory.for_database(self.database_key)
 
         [table_definition] = session.query(schema.ReportTableDefinition).all()
         self.assertEqual(
@@ -1244,7 +1246,7 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_schema_base(JusticeCountsBase)
+        session = SessionFactory.for_database(self.database_key)
 
         report_table = session.query(schema.ReportTableInstance).all()
         self.assertEqual(
@@ -1264,7 +1266,7 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_schema_base(JusticeCountsBase)
+        session = SessionFactory.for_database(self.database_key)
 
         report_table = session.query(schema.ReportTableInstance).all()
         self.assertEqual(
@@ -1297,7 +1299,7 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_schema_base(JusticeCountsBase)
+        session = SessionFactory.for_database(self.database_key)
 
         cells = session.query(schema.Cell).all()
         self.assertEqual(
@@ -1327,7 +1329,7 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_schema_base(JusticeCountsBase)
+        session = SessionFactory.for_database(self.database_key)
 
         [table_definition] = session.query(schema.ReportTableDefinition).all()
         self.assertEqual(
@@ -1443,7 +1445,7 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_schema_base(JusticeCountsBase)
+        session = SessionFactory.for_database(self.database_key)
 
         [table_definition] = session.query(schema.ReportTableDefinition).all()
         self.assertEqual(
@@ -1481,7 +1483,7 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_schema_base(JusticeCountsBase)
+        session = SessionFactory.for_database(self.database_key)
 
         [table_definition] = session.query(schema.ReportTableDefinition).all()
         self.assertEqual(
@@ -1532,7 +1534,7 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_schema_base(JusticeCountsBase)
+        session = SessionFactory.for_database(self.database_key)
         cells = session.query(schema.Cell).all()
         self.assertEqual(
             [([], decimal.Decimal(1000))],
@@ -1561,7 +1563,7 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Initial Assert
-        session = SessionFactory.for_schema_base(JusticeCountsBase)
+        session = SessionFactory.for_database(self.database_key)
 
         cells = session.query(schema.Cell).all()
         self.assertEqual(
@@ -1582,7 +1584,7 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Re-ingest Assert
-        session = SessionFactory.for_schema_base(JusticeCountsBase)
+        session = SessionFactory.for_database(self.database_key)
 
         cells = session.query(schema.Cell).all()
         self.assertEqual(

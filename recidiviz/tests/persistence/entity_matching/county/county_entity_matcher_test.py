@@ -26,12 +26,13 @@ from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.constants.county.hold import HoldStatus
 from recidiviz.common.constants.person_characteristics import Gender
-from recidiviz.persistence.database.base_schema import JailsBase
 from recidiviz.persistence.database.schema.county import schema
 from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter,
 )
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.entity_matching import entity_matching
 from recidiviz.persistence.entity_matching.county import (
@@ -73,7 +74,8 @@ class TestCountyEntityMatcher(TestCase):
     """Tests for entity matching logic"""
 
     def setUp(self) -> None:
-        fakes.use_in_memory_sqlite_database(JailsBase)
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS)
+        fakes.use_in_memory_sqlite_database(self.database_key)
 
     def tearDown(self) -> None:
         fakes.teardown_in_memory_sqlite_databases()
@@ -109,7 +111,7 @@ class TestCountyEntityMatcher(TestCase):
             external_id=_EXTERNAL_ID_ANOTHER,
         )
 
-        session = SessionFactory.for_schema_base(JailsBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(schema_person)
         session.add(schema_person_another)
         session.commit()
@@ -175,7 +177,7 @@ class TestCountyEntityMatcher(TestCase):
             bookings=[schema_booking],
         )
 
-        session = SessionFactory.for_schema_base(JailsBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(schema_person)
         session.commit()
 
@@ -263,7 +265,7 @@ class TestCountyEntityMatcher(TestCase):
             bookings=[schema_booking_another],
         )
 
-        session = SessionFactory.for_schema_base(JailsBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(schema_person)
         session.add(schema_person_another)
         session.commit()
@@ -353,7 +355,7 @@ class TestCountyEntityMatcher(TestCase):
             bookings=[schema_booking_external_id],
         )
 
-        session = SessionFactory.for_schema_base(JailsBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(schema_person)
         session.add(schema_person_external_id)
         session.commit()
@@ -424,7 +426,7 @@ class TestCountyEntityMatcher(TestCase):
         schema_person_mismatch.person_id = _PERSON_ID_ANOTHER
         schema_person_mismatch.gender = Gender.FEMALE.value
 
-        session = SessionFactory.for_schema_base(JailsBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(schema_person)
         session.add(schema_person_mismatch)
         session.commit()

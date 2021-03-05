@@ -32,9 +32,10 @@ from recidiviz.case_triage.impersonate_users import (
     ImpersonateUser,
 )
 from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
-from recidiviz.persistence.database.base_schema import CaseTriageBase
 from recidiviz.persistence.database.schema.case_triage.schema import CaseUpdate
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.case_triage.case_triage_helpers import (
     generate_fake_client,
     generate_fake_officer,
@@ -70,6 +71,7 @@ class TestCaseTriageAPIRoutes(TestCase):
             response.status_code = ex.status_code
             return response
 
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
         self.overridden_env_vars = (
             local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
         )
@@ -112,7 +114,7 @@ class TestCaseTriageAPIRoutes(TestCase):
         )
         self.client_2.most_recent_assessment_date = date(2022, 2, 2)
 
-        sess = SessionFactory.for_schema_base(CaseTriageBase)
+        sess = SessionFactory.for_database(self.database_key)
         sess.add(self.officer_1)
         sess.add(self.client_1)
         sess.add(self.client_2)
@@ -122,7 +124,9 @@ class TestCaseTriageAPIRoutes(TestCase):
 
     def tearDown(self) -> None:
         local_postgres_helpers.restore_local_env_vars(self.overridden_env_vars)
-        local_postgres_helpers.teardown_on_disk_postgresql_database(CaseTriageBase)
+        local_postgres_helpers.teardown_on_disk_postgresql_database(
+            SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
+        )
 
     @classmethod
     def tearDownClass(cls) -> None:

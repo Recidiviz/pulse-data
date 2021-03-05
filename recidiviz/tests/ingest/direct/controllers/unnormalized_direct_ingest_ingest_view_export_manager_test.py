@@ -48,13 +48,14 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestFileMetadataManager,
 )
-from recidiviz.persistence.database.base_schema import OperationsBase
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter,
 )
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.operations.entities import (
     DirectIngestIngestFileMetadata,
@@ -284,7 +285,8 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         self.mock_project_id = "recidiviz-456"
         self.mock_project_id_fn.return_value = self.mock_project_id
 
-        fakes.use_in_memory_sqlite_database(OperationsBase)
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
+        fakes.use_in_memory_sqlite_database(self.database_key)
         self.client_patcher = patch(
             "recidiviz.big_query.big_query_client.BigQueryClient"
         )
@@ -539,7 +541,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             upper_bound_datetime_to_export=_DATE_2,
         )
 
-        session = SessionFactory.for_schema_base(OperationsBase)
+        session = SessionFactory.for_database(self.database_key)
         metadata = schema.DirectIngestIngestFileMetadata(
             file_id=_ID,
             region_code=region.region_code,
@@ -564,7 +566,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         self.mock_client.run_query_async.assert_not_called()
         self.mock_client.export_query_results_to_cloud_storage.assert_not_called()
         self.mock_client.delete_table.assert_not_called()
-        assert_session = SessionFactory.for_schema_base(OperationsBase)
+        assert_session = SessionFactory.for_database(self.database_key)
         found_metadata = self.to_entity(
             one(assert_session.query(schema.DirectIngestIngestFileMetadata).all())
         )
@@ -581,7 +583,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             upper_bound_datetime_to_export=_DATE_2,
         )
 
-        session = SessionFactory.for_schema_base(OperationsBase)
+        session = SessionFactory.for_database(self.database_key)
         metadata = schema.DirectIngestIngestFileMetadata(
             file_id=_ID,
             region_code=region.region_code,
@@ -632,7 +634,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
                 )
             ]
         )
-        assert_session = SessionFactory.for_schema_base(OperationsBase)
+        assert_session = SessionFactory.for_database(self.database_key)
         found_metadata = self.to_entity(
             one(assert_session.query(schema.DirectIngestIngestFileMetadata).all())
         )
@@ -649,7 +651,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             upper_bound_datetime_to_export=_DATE_2,
         )
 
-        session = SessionFactory.for_schema_base(OperationsBase)
+        session = SessionFactory.for_database(self.database_key)
         metadata = schema.DirectIngestIngestFileMetadata(
             file_id=_ID,
             region_code=region.region_code,
@@ -715,7 +717,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             ]
         )
 
-        assert_session = SessionFactory.for_schema_base(OperationsBase)
+        assert_session = SessionFactory.for_database(self.database_key)
         found_metadata = self.to_entity(
             one(assert_session.query(schema.DirectIngestIngestFileMetadata).all())
         )
@@ -736,7 +738,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             upper_bound_datetime_to_export=_DATE_2,
         )
 
-        session = SessionFactory.for_schema_base(OperationsBase)
+        session = SessionFactory.for_database(self.database_key)
         metadata = schema.DirectIngestIngestFileMetadata(
             file_id=_ID,
             region_code=region.region_code,
@@ -798,7 +800,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             ]
         )
 
-        assert_session = SessionFactory.for_schema_base(OperationsBase)
+        assert_session = SessionFactory.for_database(self.database_key)
         found_metadata = self.to_entity(
             one(assert_session.query(schema.DirectIngestIngestFileMetadata).all())
         )
@@ -817,7 +819,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             upper_bound_datetime_to_export=_DATE_2,
         )
 
-        session = SessionFactory.for_schema_base(OperationsBase)
+        session = SessionFactory.for_database(self.database_key)
         metadata = schema.DirectIngestIngestFileMetadata(
             file_id=_ID,
             region_code=region.region_code,
@@ -845,7 +847,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         self.mock_client.export_query_results_to_cloud_storage.assert_not_called()
         self.mock_client.delete_table.assert_not_called()
 
-        assert_session = SessionFactory.for_schema_base(OperationsBase)
+        assert_session = SessionFactory.for_database(self.database_key)
         found_metadata = self.to_entity(
             one(assert_session.query(schema.DirectIngestIngestFileMetadata).all())
         )
@@ -864,7 +866,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             upper_bound_datetime_to_export=_DATE_2,
         )
 
-        session = SessionFactory.for_schema_base(OperationsBase)
+        session = SessionFactory.for_database(self.database_key)
         metadata = schema.DirectIngestIngestFileMetadata(
             file_id=_ID,
             region_code=region.region_code,
@@ -925,7 +927,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             ]
         )
 
-        assert_session = SessionFactory.for_schema_base(OperationsBase)
+        assert_session = SessionFactory.for_database(self.database_key)
         found_metadata = self.to_entity(
             one(assert_session.query(schema.DirectIngestIngestFileMetadata).all())
         )

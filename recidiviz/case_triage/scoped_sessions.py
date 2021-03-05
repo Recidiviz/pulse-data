@@ -22,7 +22,8 @@ from flask import Flask
 from flask_sqlalchemy_session import flask_scoped_session
 from sqlalchemy.orm import sessionmaker
 
-from recidiviz.persistence.database.base_schema import CaseTriageBase
+from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
@@ -30,7 +31,8 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
 
 def setup_scoped_sessions(app: Flask, db_url: str) -> None:
     engine = SQLAlchemyEngineManager.init_engine_for_postgres_instance(
-        db_url, CaseTriageBase
+        database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE),
+        db_url=db_url,
     )
     session_factory = sessionmaker(bind=engine)
     app.scoped_session = flask_scoped_session(session_factory, app)

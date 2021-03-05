@@ -26,9 +26,10 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     is_revocation_admission,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.entity.entity_utils import is_placeholder
+from recidiviz.persistence.entity_matching.entity_matching_types import EntityTree
 from recidiviz.persistence.entity_matching.state.state_matching_utils import (
     _is_match,
     generate_child_entity_trees,
@@ -44,9 +45,6 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import (
     read_db_entity_trees_of_cls_to_merge,
     read_persons,
 )
-from recidiviz.persistence.entity.entity_utils import is_placeholder
-
-from recidiviz.persistence.entity_matching.entity_matching_types import EntityTree
 from recidiviz.persistence.errors import EntityMatchingError
 from recidiviz.tests.persistence.entity_matching.state.base_state_entity_matcher_test_classes import (
     BaseStateMatchingUtilsTest,
@@ -526,7 +524,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
     def test_readPersons_default(self) -> None:
         schema_person = schema.StatePerson(person_id=1, state_code=_STATE_CODE)
         schema_person_2 = schema.StatePerson(person_id=2, state_code=_STATE_CODE)
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(schema_person)
         session.add(schema_person_2)
         session.commit()
@@ -605,7 +603,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         )
         schema_person_other_state.external_ids = [schema_external_id_other_state]
 
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(schema_person_with_root_entity)
         session.add(placeholder_schema_person)
         session.add(schema_person_other_state)
@@ -636,7 +634,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         ingested_person = schema.StatePerson(sentence_groups=[ingested_sentence_group])
 
         with pytest.raises(ValueError):
-            session = SessionFactory.for_schema_base(StateBase)
+            session = SessionFactory.for_database(self.database_key)
             read_persons_by_root_entity_cls(
                 session,
                 "us_nd",
@@ -683,7 +681,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             placeholder_sentence_group,
         ]
 
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(person_1)
         session.add(person_2)
         session.flush()

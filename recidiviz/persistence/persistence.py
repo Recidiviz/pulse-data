@@ -20,28 +20,33 @@ import logging
 from typing import Callable, List, Optional, Union, Dict
 
 import psycopg2
-from psycopg2.errorcodes import SERIALIZATION_FAILURE
 import sqlalchemy
 from opencensus.stats import aggregation, measure, view
 from opencensus.stats.measurement_map import MeasurementMap
+from psycopg2.errorcodes import SERIALIZATION_FAILURE
 
 from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.constants.county.hold import HoldStatus
 from recidiviz.common.constants.county.sentence import SentenceStatus
-from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
+from recidiviz.common.ingest_metadata import (
+    IngestMetadata,
+    SystemLevel,
+)
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.persistence import persistence_utils
 from recidiviz.persistence.database import database
-from recidiviz.persistence.database.base_schema import JailsBase
 from recidiviz.persistence.database.schema.county import dao as county_dao
 from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter,
 )
-from recidiviz.persistence.database.schema_utils import schema_base_for_system_level
+from recidiviz.persistence.database.schema_utils import (
+    SchemaType,
+)
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database_invariant_validator import (
     database_invariant_validator,
 )
@@ -162,7 +167,9 @@ def infer_release_on_open_bookings(
             bookings. Defaults to INFERRED_RELEASE
     """
 
-    session = SessionFactory.for_schema_base(JailsBase)
+    session = SessionFactory.for_database(
+        SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS)
+    )
     try:
         logging.info("Reading all bookings that happened before [%s]", last_ingest_time)
         people = county_dao.read_people_with_open_bookings_scraped_before_time(
@@ -550,9 +557,7 @@ def write(
 
         try:
             if not run_txn_fn(
-                SessionFactory.for_schema_base(
-                    schema_base_for_system_level(ingest_metadata.system_level)
-                ),
+                SessionFactory.for_database(ingest_metadata.database_key),
                 measurements,
                 match_and_write_people,
                 5,

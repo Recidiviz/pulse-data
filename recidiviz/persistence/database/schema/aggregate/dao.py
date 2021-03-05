@@ -24,10 +24,11 @@ import pandas as pd
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
+from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
-from recidiviz.persistence.database.base_schema import JailsBase
 
 
 def write_df(table: DeclarativeMeta, df: pd.DataFrame) -> None:
@@ -41,7 +42,9 @@ def write_df(table: DeclarativeMeta, df: pd.DataFrame) -> None:
     try:
         df.to_sql(
             table.__tablename__,
-            SQLAlchemyEngineManager.get_engine_for_schema_base(JailsBase),
+            SQLAlchemyEngineManager.get_engine_for_database(
+                SQLAlchemyDatabaseKey(schema_type=SchemaType.JAILS)
+            ),
             if_exists="append",
             index=False,
         )
@@ -57,7 +60,9 @@ def _write_df_only_successful_rows(table: DeclarativeMeta, df: pd.DataFrame) -> 
         try:
             row.to_sql(
                 table.__tablename__,
-                SQLAlchemyEngineManager.get_engine_for_schema_base(JailsBase),
+                SQLAlchemyEngineManager.get_engine_for_database(
+                    SQLAlchemyDatabaseKey(schema_type=SchemaType.JAILS)
+                ),
                 if_exists="append",
                 index=False,
             )

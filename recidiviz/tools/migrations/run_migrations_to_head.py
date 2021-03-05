@@ -43,12 +43,13 @@ import sys
 
 import alembic.config
 
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
-    SchemaType,
     SQLAlchemyEngineManager,
 )
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.tools.migrations.migration_helpers import (
-    confirm_correct_db,
+    confirm_correct_db_instance,
     confirm_correct_git_branch,
 )
 from recidiviz.tools.postgres import local_postgres_helpers
@@ -97,7 +98,7 @@ def create_parser() -> argparse.ArgumentParser:
 
 
 def main(
-    database: SchemaType, repo_root: str, ssl_cert_path: str, dry_run: bool
+    schema_type: SchemaType, repo_root: str, ssl_cert_path: str, dry_run: bool
 ) -> None:
     """
     Invokes the main code path for running migrations.
@@ -124,8 +125,12 @@ def main(
     if is_prod:
         logging.info("RUNNING AGAINST PRODUCTION\n")
 
-    confirm_correct_db(database)
+    confirm_correct_db_instance(schema_type)
     confirm_correct_git_branch(repo_root, is_prod=is_prod)
+
+    # TODO(#6073): Actually loop over all dbs for a schema (use
+    #  SQLAlchemyDatabaseKey.all()) and operate on them.
+    database_key = SQLAlchemyDatabaseKey.canonical_for_schema(schema_type)
 
     if dry_run:
         overriden_env_vars = (
@@ -133,7 +138,7 @@ def main(
         )
     else:
         overriden_env_vars = SQLAlchemyEngineManager.update_sqlalchemy_env_vars(
-            database,
+            database_key=database_key,
             ssl_cert_path=ssl_cert_path,
             migration_user=True,
         )
@@ -143,9 +148,7 @@ def main(
         if dry_run:
             logging.info("Starting local postgres database for migrations dry run")
             db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
-        config = alembic.config.Config(
-            SQLAlchemyEngineManager.get_alembic_file(database)
-        )
+        config = alembic.config.Config(database_key.alembic_file)
         alembic.command.upgrade(config, "head")
     except Exception as e:
         logging.error("Migrations failed to run: %s", e)

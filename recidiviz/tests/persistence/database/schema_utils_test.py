@@ -23,6 +23,8 @@ from recidiviz.persistence.database.schema_utils import (
     get_state_database_entity_with_name,
     _get_all_database_entities_in_module,
     get_non_history_state_database_entities,
+    SchemaType,
+    schema_type_to_schema_base,
 )
 
 from recidiviz.persistence.database.schema.aggregate import schema as aggregate_schema
@@ -31,7 +33,7 @@ from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema.operations import schema as operations_schema
 
 
-def test_get_all_database_entity_classes():
+def test_get_all_database_entity_classes() -> None:
     aggregate_database_entity_names = [
         "CaFacilityAggregate",
         "DcFacilityAggregate",
@@ -146,14 +148,14 @@ def test_get_all_database_entity_classes():
         + list(_get_all_database_entities_in_module(operations_schema))
     )
 
-    all_database_entity_names = _database_entities_to_qualified_names(
+    all_database_entity_names = _database_entities_to_qualified_names(  # type: ignore[assignment]
         all_database_entity_names
     )
 
-    assert sorted(all_database_entity_names) == sorted(expected_qualified_names)
+    assert sorted(all_database_entity_names) == sorted(expected_qualified_names)  # type: ignore[type-var]
 
 
-def test_get_all_table_classes():
+def test_get_all_table_classes() -> None:
     aggregate_table_names = [
         "ca_facility_aggregate",
         "dc_facility_aggregate",
@@ -287,7 +289,7 @@ def test_get_all_table_classes():
     )
 
 
-def test_get_state_table_class_with_name():
+def test_get_state_table_class_with_name() -> None:
     class_name = "StateSupervisionViolation"
 
     assert (
@@ -296,14 +298,14 @@ def test_get_state_table_class_with_name():
     )
 
 
-def test_get_state_table_class_with_name_invalid_name():
+def test_get_state_table_class_with_name_invalid_name() -> None:
     class_name = "XXX"
 
     with pytest.raises(LookupError):
         get_state_database_entity_with_name(class_name)
 
 
-def test_get_non_history_state_database_entities():
+def test_get_non_history_state_database_entities() -> None:
     state_database_entity_names = [
         "StateAgent",
         "StateAssessment",
@@ -348,9 +350,20 @@ def _prefix_module_name(module_name: str, class_name_list: List[str]) -> List[st
     return [f"{module_name}.{class_name}" for class_name in class_name_list]
 
 
-def _database_entities_to_qualified_names(database_entities):
+def _database_entities_to_qualified_names(database_entities) -> List[str]:
     return [f"{cls.__module__}.{cls.__name__}" for cls in list(database_entities)]
 
 
-def _table_classes_to_qualified_names(table_classes):
+def _table_classes_to_qualified_names(table_classes) -> List[str]:
     return [f"{table.name}" for table in list(table_classes)]
+
+
+def test_schema_type_to_schema_base() -> None:
+    schema_bases = [
+        # Shouldn't crash for any schema
+        schema_type_to_schema_base(schema_type)
+        for schema_type in SchemaType
+    ]
+
+    # Shouldn't return duplicate schemas
+    assert len(set(schema_bases)) == len(schema_bases)

@@ -24,10 +24,9 @@ import os
 import unittest
 from typing import List, Type, Optional, cast
 
+import pytest
 from freezegun import freeze_time
 from mock import create_autospec, patch
-from sqlalchemy.ext.declarative import DeclarativeMeta
-import pytest
 
 from recidiviz import IngestInfo
 from recidiviz.common.ingest_metadata import SystemLevel
@@ -39,13 +38,15 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
     GcsfsIngestViewExportArgs,
 )
-from recidiviz.persistence.database.base_schema import OperationsBase, StateBase
+from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema.operations import schema as operations_schema
 from recidiviz.persistence.database.schema.state import dao
 from recidiviz.persistence.database.schema_entity_converter.state.schema_entity_converter import (
     StateSchemaToEntityConverter,
 )
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
     person_has_id,
@@ -98,7 +99,7 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
 
     @classmethod
     @abc.abstractmethod
-    def schema_base(cls) -> DeclarativeMeta:
+    def schema_type(cls) -> SchemaType:
         pass
 
     # Stores the location of the postgres DB for this test run
@@ -115,8 +116,16 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
         self.mock_project_id_fn = self.metadata_patcher.start()
         self.mock_project_id_fn.return_value = "recidiviz-staging"
 
-        local_postgres_helpers.use_on_disk_postgresql_database(self.schema_base())
-        local_postgres_helpers.use_on_disk_postgresql_database(OperationsBase)
+        self.main_database_key = SQLAlchemyDatabaseKey.canonical_for_schema(
+            self.schema_type()
+        )
+        self.operations_database_key = SQLAlchemyDatabaseKey.for_schema(
+            SchemaType.OPERATIONS
+        )
+        local_postgres_helpers.use_on_disk_postgresql_database(self.main_database_key)
+        local_postgres_helpers.use_on_disk_postgresql_database(
+            self.operations_database_key
+        )
 
         self.controller = build_gcsfs_controller_for_tests(
             self.controller_cls(),
@@ -144,8 +153,12 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
         self.entity_matching_error_threshold_patcher.start()
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(OperationsBase)
-        local_postgres_helpers.teardown_on_disk_postgresql_database(self.schema_base())
+        local_postgres_helpers.teardown_on_disk_postgresql_database(
+            self.operations_database_key
+        )
+        local_postgres_helpers.teardown_on_disk_postgresql_database(
+            self.main_database_key
+        )
         self.metadata_patcher.stop()
         self.entity_matching_error_threshold_patcher.stop()
 
@@ -210,9 +223,8 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
 
         return final_info
 
-    @staticmethod
-    def invalidate_ingest_view_metadata() -> None:
-        session = SessionFactory.for_schema_base(OperationsBase)
+    def invalidate_ingest_view_metadata(self) -> None:
+        session = SessionFactory.for_database(self.operations_database_key)
         try:
             session.query(operations_schema.DirectIngestIngestFileMetadata).update(
                 {operations_schema.DirectIngestIngestFileMetadata.is_invalidated: True}
@@ -313,7 +325,11 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
 
         if debug:
             print("\n\n************** ASSERTING *************")
-        session = SessionFactory.for_schema_base(StateBase)
+
+        if not self.schema_type() == SchemaType.STATE:
+            raise ValueError(f"Unsupported schema type [{self.schema_type()}]")
+
+        session = SessionFactory.for_database(self.main_database_key)
         found_people_from_db = dao.read_people(session)
         found_people = cast(
             List[StatePerson], self.convert_and_clear_db_ids(found_people_from_db)

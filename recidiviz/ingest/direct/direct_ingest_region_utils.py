@@ -18,7 +18,7 @@
 import os
 from typing import List
 import recidiviz
-
+from recidiviz.common.constants.states import StateCode
 
 _REGIONS_DIR = os.path.dirname(recidiviz.ingest.direct.regions.__file__)
 
@@ -34,4 +34,12 @@ def get_existing_region_dir_names() -> List[str]:
         d
         for d in os.listdir(_REGIONS_DIR)
         if os.path.isdir(os.path.join(_REGIONS_DIR, d)) and not d.startswith("__")
+    ]
+
+
+def get_existing_direct_ingest_states() -> List[StateCode]:
+    return [
+        StateCode(region_code.upper())
+        for region_code in get_existing_region_dir_names()
+        if StateCode.is_state_code(region_code)
     ]

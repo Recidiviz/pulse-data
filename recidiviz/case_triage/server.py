@@ -35,10 +35,11 @@ from recidiviz.case_triage.impersonate_users import (
 from recidiviz.case_triage.querier.querier import CaseTriageQuerier
 from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
 from recidiviz.case_triage.util import get_local_secret, SESSION_ADMIN_KEY
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
-    SchemaType,
 )
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils.auth.auth0 import (
     Auth0Config,
@@ -65,7 +66,7 @@ if in_development():
     db_url = local_postgres_helpers.postgres_db_url_from_env_vars()
 else:
     db_url = SQLAlchemyEngineManager.get_server_postgres_instance_url(
-        schema_type=SchemaType.CASE_TRIAGE
+        database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
     )
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_SECURE"] = True
