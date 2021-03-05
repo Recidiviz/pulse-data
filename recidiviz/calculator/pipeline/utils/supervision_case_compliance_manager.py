@@ -35,7 +35,6 @@ from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactType,
     StateSupervisionContactStatus,
 )
-from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import (
     StateSupervisionPeriod,
     StateAssessment,
@@ -82,10 +81,10 @@ class StateSupervisionCaseComplianceManager:
              A SupervisionCaseCompliance object containing information regarding the ways the case is or isn't in
              compliance with state standards on the given compliance_evaluation_date.
         """
-        assessment_count = self._completed_assessments_in_compliance_month(
+        assessment_count = self._completed_assessments_on_date(
             compliance_evaluation_date
         )
-        face_to_face_count = self._face_to_face_contacts_in_compliance_month(
+        face_to_face_count = self._face_to_face_contacts_on_date(
             compliance_evaluation_date
         )
 
@@ -197,22 +196,10 @@ class StateSupervisionCaseComplianceManager:
 
         return max(contact_dates)
 
-    def _face_to_face_contacts_in_compliance_month(
-        self, compliance_evaluation_date: date
-    ) -> int:
-        """Returns the number of face-to-face contacts that were completed between the first of the month of the
-        compliance_evaluation_date and the compliance_evaluation_date (inclusive)."""
-
-        # TODO(#5199): Implement in us_nd_supervision_compliance once face to face contacts are ingested.
-        if self.supervision_period.state_code == StateCode.US_ND.value:
-            return 0
-
-        compliance_month = compliance_evaluation_date.month
-        compliance_year = compliance_evaluation_date.year
-        first_day_of_month = date(compliance_year, compliance_month, 1)
-
+    def _face_to_face_contacts_on_date(self, compliance_evaluation_date: date) -> int:
+        """Returns the number of face-to-face contacts that were completed on compliance_evaluation_date."""
         applicable_contacts = self._get_applicable_face_to_face_contacts_between_dates(
-            lower_bound_inclusive=first_day_of_month,
+            lower_bound_inclusive=compliance_evaluation_date,
             upper_bound_inclusive=compliance_evaluation_date,
         )
 
@@ -240,26 +227,17 @@ class StateSupervisionCaseComplianceManager:
             and lower_bound_inclusive <= contact.contact_date <= upper_bound_inclusive
         ]
 
-    def _completed_assessments_in_compliance_month(
-        self, compliance_evaluation_date: date
-    ) -> int:
-        """Returns the number of assessments that were completed between the first of the month of the
-        compliance_evaluation_date and the compliance_evaluation_date (inclusive)."""
-        compliance_month = compliance_evaluation_date.month
-        compliance_year = compliance_evaluation_date.year
-        first_day_of_month = date(compliance_year, compliance_month, 1)
-
-        num_assessments_this_month = [
+    def _completed_assessments_on_date(self, compliance_evaluation_date: date) -> int:
+        """Returns the number of assessments that were completed on the compliance evaluation date."""
+        assessments_on_compliance_date = [
             assessment
             for assessment in self.assessments
             if assessment.assessment_date is not None
             and assessment.assessment_score is not None
-            and first_day_of_month
-            <= assessment.assessment_date
-            <= compliance_evaluation_date
+            and assessment.assessment_date == compliance_evaluation_date
         ]
 
-        return len(num_assessments_this_month)
+        return len(assessments_on_compliance_date)
 
     @abc.abstractmethod
     def _guidelines_applicable_for_case(self) -> bool:

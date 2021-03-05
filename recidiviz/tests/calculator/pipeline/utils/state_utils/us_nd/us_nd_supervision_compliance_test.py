@@ -63,13 +63,13 @@ class TestAssessmentsCompletedInComplianceMonth(unittest.TestCase):
             state_code=StateCode.US_ND.value,
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=1,
-            assessment_date=date(2018, 4, 2),
+            assessment_date=date(2018, 4, 30),
         )
         assessment_2 = StateAssessment.new_with_defaults(
             state_code=StateCode.US_ND.value,
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=100,
-            assessment_date=date(2018, 4, 10),
+            assessment_date=date(2018, 4, 30),
         )
         assessment_no_score = StateAssessment.new_with_defaults(
             state_code=StateCode.US_ND.value,
@@ -108,7 +108,7 @@ class TestAssessmentsCompletedInComplianceMonth(unittest.TestCase):
 
         self.assertEqual(
             len(expected_assessments),
-            us_nd_supervision_compliance._completed_assessments_in_compliance_month(
+            us_nd_supervision_compliance._completed_assessments_on_date(
                 evaluation_date
             ),
         )
@@ -143,7 +143,7 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
         )
         self.assertEqual(
             0,
-            us_nd_supervision_compliance._face_to_face_contacts_in_compliance_month(
+            us_nd_supervision_compliance._face_to_face_contacts_on_date(
                 evaluation_date
             ),
         )
