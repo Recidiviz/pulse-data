@@ -11898,9 +11898,12 @@ def _generate_case_compliances(
         else end_date_override
     )
 
-    # If there is no end date for generating a list of case compliances, there should not be case compliance output.
+    # If there is no end date for generating a list of case compliances, raise an error.
     if not end_date:
-        return {}
+        raise ValueError(
+            "Generation of case compliances requires an end date, which is either the supervision period's"
+            "termination date or a passed in end date override."
+        )
 
     state_specific_case_compliance_manager: Optional[
         StateSupervisionCaseComplianceManager
