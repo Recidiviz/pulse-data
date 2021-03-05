@@ -15,6 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-output "connection_name" {
-  value = google_sql_database_instance.data.connection_name
+# States with Terraform-managed infrastructure for direct ingest
+locals {
+  direct_ingest_state_codes = [
+    "US_ID",
+    "US_MI",
+    "US_MO",
+    "US_ND",
+    "US_PA",
+    "US_TN",
+  ]
 }
