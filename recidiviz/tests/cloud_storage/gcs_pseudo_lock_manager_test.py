@@ -227,3 +227,33 @@ class GCSPseudoLockManagerTest(unittest.TestCase):
         with self.assertRaises(GCSPseudoLockDoesNotExist):
             lock_manager.unlock_locks_with_prefix(self.PREFIX)
         self.assertTrue(lock_manager.no_active_locks_with_prefix(self.PREFIX))
+
+    def test_using_lock(self) -> None:
+        lock_manager = GCSPseudoLockManager()
+        with lock_manager.using_lock(self.LOCK_NAME, self.CONTENTS):
+            self.assertTrue(lock_manager.is_locked(self.LOCK_NAME))
+
+            # Contents appropriately set
+            actual_contents = lock_manager.get_lock_contents(self.LOCK_NAME)
+            self.assertEqual(self.CONTENTS, actual_contents)
+
+        # lock should be unlocked outside of with
+        self.assertFalse(lock_manager.is_locked(self.LOCK_NAME))
+
+    def test_raise_from_using_lock(self) -> None:
+        lock_manager = GCSPseudoLockManager()
+
+        with self.assertRaises(ValueError):
+            with lock_manager.using_lock(self.LOCK_NAME, self.CONTENTS):
+                raise ValueError
+
+        # lock should be unlocked outside of with
+        self.assertFalse(lock_manager.is_locked(self.LOCK_NAME))
+
+    def test_using_lock_when_already_locked(self) -> None:
+        lock_manager = GCSPseudoLockManager()
+        lock_manager.lock(self.LOCK_NAME)
+
+        with self.assertRaises(GCSPseudoLockAlreadyExists):
+            with lock_manager.using_lock(self.LOCK_NAME, self.CONTENTS):
+                pass

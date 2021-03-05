@@ -16,9 +16,10 @@
 # =============================================================================
 """Creates pseudo lock manager class built on GCSFS.
 This isn't a traditional lock and is not suitable for all the general use cases."""
-
+from contextlib import contextmanager
 from datetime import datetime
-from typing import Optional
+from typing import Iterator, Optional
+
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.utils import metadata
@@ -105,6 +106,14 @@ class GCSPseudoLockManager:
             )
         contents = self.fs.download_as_string(path)
         return contents
+
+    @contextmanager
+    def using_lock(self, name: str, contents: Optional[str] = None) -> Iterator[None]:
+        self.lock(name, contents)
+        try:
+            yield
+        finally:
+            self.unlock(name)
 
 
 class GCSPseudoLockAlreadyExists(ValueError):

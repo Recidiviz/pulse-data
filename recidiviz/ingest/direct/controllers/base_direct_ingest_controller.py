@@ -26,7 +26,7 @@ from recidiviz import IngestInfo
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
     GCSPseudoLockManager,
     GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME,
-    GCSPseudoLockDoesNotExist,
+    GCSPseudoLockAlreadyExists,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_types import (
     ContentsHandleType,
@@ -230,18 +230,12 @@ class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandl
         ) or self.lock_manager.is_locked(
             postgres_to_bq_lock_name_for_schema(SchemaType.OPERATIONS)
         ):
-            logging.info("Postgres to BigQuery export is running, can not run ingest")
-            return
-
-        try:
-            self.lock_manager.lock(self.ingest_process_lock_for_region())
-        except GCSPseudoLockDoesNotExist:
-            logging.warning(
-                "Lock for process unexpectedly exists already. Not performing ingest."
+            raise GCSPseudoLockAlreadyExists(
+                "Postgres to BigQuery export is running, can not run ingest"
             )
-            return
-        should_schedule = self._run_ingest_job(args)
-        self.lock_manager.unlock(self.ingest_process_lock_for_region())
+
+        with self.lock_manager.using_lock(self.ingest_process_lock_for_region()):
+            should_schedule = self._run_ingest_job(args)
 
         if should_schedule:
             self.kick_scheduler(just_finished_job=True)
