@@ -36,6 +36,7 @@ EVENT_BASED_REVOCATIONS_FOR_MATRIX_QUERY_TEMPLATE = """
         state_code,
         year,
         month,
+        {state_specific_admission_type},
         revocation_admission_date,
         most_severe_violation_type,
         most_severe_violation_type_subtype,
@@ -58,7 +59,7 @@ EVENT_BASED_REVOCATIONS_FOR_MATRIX_QUERY_TEMPLATE = """
         violation_history_description AS violation_record,
         violation_type_frequency_counter
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_revocation_analysis_metrics_materialized`
-    WHERE revocation_type = 'REINCARCERATION'
+    WHERE {state_specific_admission_type_inclusion_filter}
     """
 
 EVENT_BASED_REVOCATIONS_FOR_MATRIX_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -72,6 +73,8 @@ EVENT_BASED_REVOCATIONS_FOR_MATRIX_VIEW_BUILDER = SimpleBigQueryViewBuilder(
         input_col="most_recent_response_decision"
     ),
     state_specific_recommended_for_revocation=state_specific_query_strings.state_specific_recommended_for_revocation(),
+    state_specific_admission_type_inclusion_filter=state_specific_query_strings.state_specific_admission_type_inclusion_filter(),
+    state_specific_admission_type=state_specific_query_strings.state_specific_admission_type(),
 )
 
 if __name__ == "__main__":

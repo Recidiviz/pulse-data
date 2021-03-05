@@ -21,6 +21,9 @@ from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.reference.augmented_agent_info import (
     AUGMENTED_AGENT_INFO_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reference.admission_types_per_state_for_matrix import (
+    ADMISSION_TYPES_PER_STATE_FOR_MATRIX_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.reference.covid_report_weeks import (
     COVID_REPORT_WEEKS_VIEW_BUILDER,
 )
@@ -84,6 +87,7 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     EVENT_BASED_SUPERVISION_VIEW_BUILDER,
     REVOCATIONS_MATRIX_BY_PERSON_VIEW_BUILDER,
     SUPERVISION_MATRIX_BY_PERSON_VIEW_BUILDER,
+    ADMISSION_TYPES_PER_STATE_FOR_MATRIX_VIEW_BUILDER,
     US_MO_SENTENCE_STATUSES_VIEW_BUILDER,
     COVID_REPORT_WEEKS_VIEW_BUILDER,
     SENTENCE_GROUP_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,

@@ -37,7 +37,7 @@ REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_QUERY_TEMPLATE = """
     WITH cell_counts AS (
       SELECT 
         state_code AS region_code, metric_period_months, level_1_supervision_location, level_2_supervision_location,
-        charge_category, supervision_type, supervision_level,
+        charge_category, supervision_type, supervision_level, admission_type,
         SUM(total_revocations) AS total_revocations
       FROM `{project_id}.{view_dataset}.revocations_matrix_cells`
       -- Only including dimensional combinations that can be compared between the matrix and the caseload --
@@ -52,21 +52,23 @@ REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_QUERY_TEMPLATE = """
             END 
           AND (state_code = 'US_PA' OR (supervision_type NOT IN ('ALL', 'EXTERNAL_UNKNOWN')
                                         AND charge_category NOT IN ('ALL', 'EXTERNAL_UNKNOWN')))
-          AND (state_code = 'US_MO' or (supervision_level NOT IN ('ALL', 'EXTERNAL_UNKNOWN')))
+          AND (state_code = 'US_MO' or (supervision_level NOT IN ('ALL', 'EXTERNAL_UNKNOWN')
+                                        AND admission_type NOT IN ('ALL', 'EXTERNAL_UNKNOWN')))
           )
         OR 
           (level_1_supervision_location = 'ALL'
           AND level_2_supervision_location = 'ALL'
           AND charge_category = 'ALL'
           AND supervision_type = 'ALL'
-          AND supervision_level = 'ALL')
+          AND supervision_level = 'ALL'
+          AND admission_type = 'ALL')
       GROUP BY state_code, metric_period_months, level_1_supervision_location, level_2_supervision_location,
-               charge_category, supervision_type, supervision_level
+               charge_category, supervision_type, supervision_level, admission_type
     ),
     caseload_counts AS (
       SELECT 
         state_code AS region_code, metric_period_months, level_1_supervision_location, level_2_supervision_location,
-        charge_category, supervision_type, supervision_level,
+        charge_category, supervision_type, supervision_level, admission_type,
         COUNT(DISTINCT state_id) AS total_revocations,
         -- This should always be equal to the total_revocations since a single state_id should never be included
         -- more than once in a given dimensional breakdown
@@ -85,9 +87,10 @@ REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_QUERY_TEMPLATE = """
             END
           AND (state_code = 'US_PA' OR (supervision_type NOT IN ('ALL', 'EXTERNAL_UNKNOWN')
                                         AND charge_category NOT IN ('ALL', 'EXTERNAL_UNKNOWN')))
-          AND (state_code = 'US_MO' or (supervision_level NOT IN ('ALL', 'EXTERNAL_UNKNOWN'))))
+          AND (state_code = 'US_MO' or (supervision_level NOT IN ('ALL', 'EXTERNAL_UNKNOWN')
+                                        AND admission_type NOT IN ('ALL', 'EXTERNAL_UNKNOWN'))))
       GROUP BY state_code, metric_period_months, level_1_supervision_location, level_2_supervision_location,
-               charge_category, supervision_type, supervision_level
+               charge_category, supervision_type, supervision_level, admission_type
       
       UNION ALL
       
@@ -101,6 +104,7 @@ REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_QUERY_TEMPLATE = """
         'ALL' AS charge_category,
         'ALL' AS supervision_type,
         'ALL' AS supervision_level,
+        'ALL' AS admission_type,
       COUNT(DISTINCT state_id) AS total_revocations,
         -- This should always be equal to the total_revocations since a single state_id should never be included
         -- more than once in a given dimensional breakdown
@@ -108,20 +112,20 @@ REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_QUERY_TEMPLATE = """
       FROM `{project_id}.{view_dataset}.revocations_matrix_filtered_caseload`
       WHERE reported_violations != 'ALL' AND violation_type NOT IN ('ALL', 'NO_VIOLATION_TYPE')
       GROUP BY state_code, metric_period_months, level_1_supervision_location, level_2_supervision_location,
-               charge_category, supervision_type, supervision_level
+               charge_category, supervision_type, supervision_level, admission_type
     )
     SELECT 
       region_code, metric_period_months, level_1_supervision_location, level_2_supervision_location, charge_category,
-      supervision_type, supervision_level,
+      supervision_type, supervision_level, admission_type,
       IFNULL(c.total_revocations, 0) AS cell_sum,
       IFNULL(cl.total_revocations, 0) AS caseload_sum,
       IFNULL(cl.total_rows, 0) AS caseload_num_rows
     FROM cell_counts c 
     FULL OUTER JOIN caseload_counts cl
     USING (region_code, metric_period_months, level_1_supervision_location, level_2_supervision_location,
-           charge_category, supervision_type, supervision_level)
+           charge_category, supervision_type, supervision_level, admission_type)
     ORDER BY region_code, metric_period_months, level_1_supervision_location, level_2_supervision_location,
-             charge_category, supervision_type, supervision_level      
+             charge_category, supervision_type, supervision_level, admission_type
 """
 
 REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW_BUILDER = SimpleBigQueryViewBuilder(

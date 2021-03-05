@@ -44,6 +44,7 @@ REVOCATION_MATRIX_COMPARISON_REVOCATIONS_BY_OFFICER_QUERY_TEMPLATE = """
         AND charge_category = 'ALL'
         AND violation_type = 'ALL'
         AND reported_violations = 'ALL'
+        AND admission_type = 'ALL'
       GROUP BY state_code, metric_period_months, level_1_supervision_location, level_2_supervision_location, officer
     ), caseload_counts AS (
       SELECT

@@ -53,12 +53,14 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE = """
       violation_type,
       reported_violations,
       metric_period_months,
+      admission_type,
       ROW_NUMBER() OVER (PARTITION BY state_code, metric_period_months, person_external_id
                            -- We only want to include an ALL value if that person has no other set values
                            -- for the dimension
                             ORDER BY supervision_type != 'ALL' DESC,
                                      supervision_level != 'ALL' DESC,
                                      charge_category != 'ALL' DESC,
+                                     admission_type != 'ALL' DESC,
                                      level_1_supervision_location != 'ALL' DESC,
                                      level_2_supervision_location != 'ALL' DESC) AS inclusion_order
       FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person_materialized`
@@ -97,6 +99,11 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE = """
              WHEN charge_category = 'ALL' THEN 'EXTERNAL_UNKNOWN'
              ELSE charge_category
              END AS charge_category,
+        -- admission_type is always ALL in US_MO --
+        CASE WHEN state_code = 'US_MO' THEN 'ALL'
+             WHEN admission_type = 'ALL' THEN 'EXTERNAL_UNKNOWN'
+             ELSE admission_type
+             END AS admission_type,
         risk_level,
         violation_type,
         reported_violations,
@@ -123,6 +130,7 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_VIEW_BUILDER = MetricBigQueryViewBuilder(
         "district",
         "level_1_supervision_location",
         "level_2_supervision_location",
+        "admission_type",
         "supervision_type",
         "supervision_level",
         "charge_category",

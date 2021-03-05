@@ -40,6 +40,7 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = """
         SELECT
             state_code,
             metric_period_months,
+            admission_type,
             revocation_admission_date,
             {most_severe_violation_type_subtype_grouping},
             IF(response_count > 8, 8, response_count) as reported_violations,
@@ -67,11 +68,12 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = """
         FROM `{project_id}.{reference_views_dataset}.event_based_revocations_for_matrix_materialized`,
         {metric_period_dimension}
         WHERE {metric_period_condition}
-        AND {state_specific_inclusion_filter}
+        AND {state_specific_supervision_type_inclusion_filter}
     ), person_based_unnested AS (
         SELECT
             state_code,
             metric_period_months,
+            admission_type,
             revocation_admission_date,
             violation_type,
             reported_violations,
@@ -92,6 +94,7 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = """
             violation_record,
             violation_type_frequency_counter
         FROM revocations,
+        {admission_type_dimension},
         {level_1_supervision_location_dimension},
         {level_2_supervision_location_dimension},
         {supervision_type_dimension},
@@ -105,6 +108,7 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = """
     SELECT
         state_code,
         metric_period_months,
+        admission_type,
         revocation_admission_date,
         violation_type,
         reported_violations,
@@ -159,8 +163,11 @@ REVOCATIONS_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     ),
     state_specific_supervision_level=state_specific_query_strings.state_specific_supervision_level(),
     state_specific_supervision_location_optimization_filter=state_specific_query_strings.state_specific_supervision_location_optimization_filter(),
-    state_specific_dimension_filter=state_specific_query_strings.state_specific_dimension_filter(),
-    state_specific_inclusion_filter=state_specific_query_strings.state_specific_inclusion_filter(),
+    state_specific_dimension_filter=state_specific_query_strings.state_specific_dimension_filter(
+        filter_admission_type=True
+    ),
+    state_specific_supervision_type_inclusion_filter=state_specific_query_strings.state_specific_supervision_type_inclusion_filter(),
+    admission_type_dimension=bq_utils.unnest_column("admission_type", "admission_type"),
 )
 
 if __name__ == "__main__":

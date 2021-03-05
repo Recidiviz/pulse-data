@@ -229,6 +229,12 @@ def sums_and_totals_consistency_query(
         dimensions.remove(col)
 
     dimension_columns = ", \n\t\t".join(dimensions)
+
+    dimensions_without_state_code = dimensions
+    dimensions_without_state_code.remove("state_code")
+
+    dimension_cols_without_state_code = ", \n\t\t".join(dimensions_without_state_code)
+
     totals_columns = " ,\n".join(columns_with_totals)
 
     sum_rows = ", \n".join(
@@ -254,7 +260,7 @@ def sums_and_totals_consistency_query(
     
     SELECT
       state_code AS region_code,
-      {dimension_columns},
+      {dimension_cols_without_state_code},
       {totals_columns},
       {sum_columns}
     FROM
