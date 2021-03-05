@@ -33,6 +33,7 @@ from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
     drop_periods_not_under_state_custodial_authority,
     _infer_missing_dates_and_statuses,
     _ip_is_nested_in_previous_period,
+    _drop_zero_day_erroneous_periods,
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -1321,6 +1322,69 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
         self.assertEqual(
             validated_incarceration_periods,
             [valid_incarceration_period_1, valid_incarceration_period_2],
+        )
+
+    def test_prepare_incarceration_periods_for_calculations_drop_invalid_zero_day(
+        self,
+    ):
+        state_code = "US_XX"
+        valid_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id="1",
+            state_code=state_code,
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.RETURN_FROM_SUPERVISION,
+            release_date=date(2009, 12, 4),
+            release_reason=ReleaseReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+        )
+
+        invalid_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2222,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id="1",
+            state_code=state_code,
+            admission_date=date(2009, 12, 4),
+            admission_reason=AdmissionReason.PAROLE_REVOCATION,
+            release_date=date(2009, 12, 4),
+            release_reason=ReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION,
+        )
+
+        valid_incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=3333,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id="3",
+            state_code=state_code,
+            admission_date=date(2009, 12, 4),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2014, 12, 19),
+            release_reason=ReleaseReason.SENTENCE_SERVED,
+        )
+
+        incarceration_periods = [
+            valid_incarceration_period_1,
+            invalid_incarceration_period,
+            valid_incarceration_period_2,
+        ]
+
+        validated_incarceration_periods = (
+            prepare_incarceration_periods_for_calculations(
+                state_code,
+                incarceration_periods,
+                collapse_transfers=True,
+                collapse_temporary_custody_periods_with_revocation=False,
+                collapse_transfers_with_different_pfi=True,
+                overwrite_facility_information_in_transfers=True,
+            )
+        )
+
+        self.assertEqual(
+            [valid_incarceration_period_1, valid_incarceration_period_2],
+            validated_incarceration_periods,
         )
 
     def test_sort_incarceration_periods(self):
@@ -3409,7 +3473,7 @@ class TestIpIsNestedInPreviousPeriod(unittest.TestCase):
 
         self.assertTrue(is_nested)
 
-    def test_ip_is_nested_in_previous_period_single_day_period(self):
+    def test_ip_is_nested_in_previous_period_zero_day_period(self):
         previous_ip = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
@@ -3436,7 +3500,7 @@ class TestIpIsNestedInPreviousPeriod(unittest.TestCase):
 
         self.assertTrue(is_nested)
 
-    def test_ip_is_nested_in_previous_period_two_single_day_periods(self):
+    def test_ip_is_nested_in_previous_period_two_zero_day_periods(self):
         previous_ip = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
@@ -3463,7 +3527,7 @@ class TestIpIsNestedInPreviousPeriod(unittest.TestCase):
 
         self.assertFalse(is_nested)
 
-    def test_ip_is_nested_in_previous_period_single_day_period_on_release(self):
+    def test_ip_is_nested_in_previous_period_zero_day_period_on_release(self):
         previous_ip = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
@@ -3516,3 +3580,143 @@ class TestIpIsNestedInPreviousPeriod(unittest.TestCase):
 
         with pytest.raises(ValueError):
             _ip_is_nested_in_previous_period(ip, previous_ip)
+
+
+class TestDropZeroDayErroneousPeriods(unittest.TestCase):
+    """Tests the _drop_zero_day_erroneous_periods function."""
+
+    def test_drop_zero_day_erroneous_periods(self):
+        state_code = "US_XX"
+        invalid_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id="1",
+            state_code=state_code,
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.PAROLE_REVOCATION,
+            release_date=date(2008, 11, 20),
+            release_reason=ReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION,
+        )
+
+        incarceration_periods = [invalid_incarceration_period]
+
+        filtered_incarceration_periods = _drop_zero_day_erroneous_periods(
+            incarceration_periods
+        )
+
+        self.assertEqual([], filtered_incarceration_periods)
+
+    def test_drop_zero_day_erroneous_periods_valid(self):
+        state_code = "US_XX"
+        valid_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id="1",
+            state_code=state_code,
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.PAROLE_REVOCATION,
+            # Don't drop a period if admission_date != release_date
+            release_date=date(2008, 11, 21),
+            release_reason=ReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION,
+        )
+
+        incarceration_periods = [valid_incarceration_period]
+
+        filtered_incarceration_periods = _drop_zero_day_erroneous_periods(
+            incarceration_periods
+        )
+
+        self.assertEqual([valid_incarceration_period], filtered_incarceration_periods)
+
+    def test_drop_zero_day_erroneous_periods_multiple(self):
+        state_code = "US_XX"
+        invalid_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id="1",
+            state_code=state_code,
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.PAROLE_REVOCATION,
+            release_date=date(2008, 11, 20),
+            release_reason=ReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION,
+        )
+
+        valid_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2222,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id="1",
+            state_code=state_code,
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.PAROLE_REVOCATION,
+            release_date=date(2008, 11, 30),
+            release_reason=ReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION,
+        )
+
+        incarceration_periods = [
+            invalid_incarceration_period,
+            valid_incarceration_period,
+        ]
+
+        filtered_incarceration_periods = _drop_zero_day_erroneous_periods(
+            incarceration_periods
+        )
+
+        self.assertEqual([valid_incarceration_period], filtered_incarceration_periods)
+
+    def test_drop_zero_day_erroneous_periods_no_periods(self):
+        incarceration_periods = []
+
+        filtered_incarceration_periods = _drop_zero_day_erroneous_periods(
+            incarceration_periods
+        )
+
+        self.assertEqual([], filtered_incarceration_periods)
+
+    def test_drop_zero_day_erroneous_periods_transfer_adm(self):
+        state_code = "US_XX"
+        valid_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id="1",
+            state_code=state_code,
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.TRANSFER,
+            release_date=date(2008, 11, 20),
+            release_reason=ReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION,
+        )
+
+        incarceration_periods = [valid_incarceration_period]
+
+        filtered_incarceration_periods = _drop_zero_day_erroneous_periods(
+            incarceration_periods
+        )
+
+        self.assertEqual([valid_incarceration_period], filtered_incarceration_periods)
+
+    def test_drop_zero_day_erroneous_periods_non_erroneous_admission(self):
+
+        state_code = "US_XX"
+        valid_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id="1",
+            state_code=state_code,
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.PROBATION_REVOCATION,
+            release_date=date(2008, 11, 20),
+            release_reason=ReleaseReason.SENTENCE_SERVED,
+        )
+
+        incarceration_periods = [valid_incarceration_period]
+
+        filtered_incarceration_periods = _drop_zero_day_erroneous_periods(
+            incarceration_periods
+        )
+
+        self.assertEqual([valid_incarceration_period], filtered_incarceration_periods)

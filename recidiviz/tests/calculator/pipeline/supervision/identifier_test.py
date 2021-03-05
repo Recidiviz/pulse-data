@@ -4753,8 +4753,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         self.assertCountEqual(expected_buckets, supervision_time_buckets)
 
     def test_find_supervision_time_buckets_us_pa_shock_incarceration_revocation(self):
-        """Tests the find_supervision_time_buckets function for periods in US_PA, where there is a revocation return
-        for shock incarceration."""
+        """Tests the find_supervision_time_buckets function for periods in US_PA, where
+        there is a revocation return for shock incarceration."""
         state_code = "US_PA"
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -4914,7 +4914,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         self,
     ):
         """Tests the find_supervision_time_buckets function for periods in US_PA, where there is a revocation return
-        to a Parole Violator Center (PVC)."""
+        to a Parole Violator Center (PVC) following a parole board hold and a single-day revocation admission
+        before being transferred to the PVC."""
         state_code = "US_PA"
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -4944,6 +4945,31 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessment_date=date(2017, 12, 1),
         )
 
+        parole_board_hold = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            external_id="ip1",
+            state_code=state_code,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2018, 1, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+            release_date=date(2018, 1, 11),
+            release_reason=ReleaseReason.TRANSFER,
+        )
+
+        invalid_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2222,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id="1",
+            state_code=state_code,
+            admission_date=date(2018, 1, 11),
+            admission_reason=AdmissionReason.PAROLE_REVOCATION,
+            release_date=date(2018, 1, 11),
+            release_reason=ReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION,
+        )
+
         pvc_revocation = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
             external_id="ip2",
@@ -4961,7 +4987,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_sentences = []
         supervision_periods = [supervision_period]
-        incarceration_periods = [pvc_revocation]
+        incarceration_periods = [
+            parole_board_hold,
+            pvc_revocation,
+            invalid_incarceration_period,
+        ]
         assessments = [assessment]
         violation_responses = []
         supervision_contacts = []
@@ -5005,7 +5035,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         expected_buckets.extend(
             expected_non_revocation_return_time_buckets(
                 supervision_period,
-                end_date=pvc_revocation.admission_date,
+                end_date=parole_board_hold.admission_date,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 assessment_score=assessment.assessment_score,
                 assessment_level=StateAssessmentLevel.HIGH,
