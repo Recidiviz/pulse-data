@@ -1,6 +1,45 @@
 file_tag: dbo_SanctionTracking
+file_description: |-
+  A table describing violations of supervision conditions committed during specific periods of supervision, as well as
+  the official responses to those violations.
 primary_key_cols:
   - ParoleNumber
   - ParoleCountID
   - SetID
   - SequenceID
+columns:
+  - name: ParoleNumber
+    description: |-
+      External ID for a unique person who has been supervised by PADOC.
+  - name: ParoleCountID
+    description: |-
+      External ID for a particular stint of a particular person under supervision by PADOC.
+  - name: SetID
+    description: |-
+      ID of a particular set of violation and violation responses. There is typically one Decision, one to many
+      Sanctions (responses), and one to many Violations.
+  - name: SequenceID
+    description: |-
+      ID of a particular violation or response thereof in the set. The sequence ID increments across set IDs but within
+      a single ParoleCountID, e.g. SetID=1 may have SequenceIDs=1,2,3, and SetID=2 may then have SequenceIds=4,5,6.
+  - name: Type
+    description: |-
+      Type of event included in the set. D=Decision, S=Sanction, V=Violation.
+  - name: SanctionCode
+    description: |-
+      The decision code, sanction code, or violation code, depending on which Type of event this represents.
+  - name: SanctionDate
+    description: |-
+      The date of the sanction, if this is a sanction event.
+  - name: ViolationDate
+    description: |-
+      The date of the violation, if this is a violation event.
+  - name: LastModifiedBy
+    description: |-
+      Who this record was last modified by.
+  - name: LastModifiedDateTime
+    description: |-
+      When this record was last modified.
+  - name: OrgCode
+    description: |-
+      Code of the field office where the supervision was served at the time of this set of events.

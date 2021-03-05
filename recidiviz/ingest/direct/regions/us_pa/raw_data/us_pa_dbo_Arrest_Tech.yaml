@@ -1,5 +1,27 @@
 file_tag: dbo_Arrest_Tech
+file_description: |-
+  A table containing arrests for technical violations.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - ParoleNumber
 #      - ArrestReportNO
 primary_key_cols: []
+columns:
+  - name: ParoleNumber
+  - name: ArrestReportNO
+  - name: ArrestLocation
+  - name: ProblemsEncountered
+  - name: ProblemsEncounteredDesc
+  - name: TechViolations
+  - name: AR_Cont48HrDetainer
+  - name: AR_LodgeWrrntCommitDetain
+  - name: AR_DetainPendDispTV
+  - name: AR_Other
+  - name: AR_OtherDesc
+  - name: FR_DetainRecommit
+  - name: FR_ContinueUnderSuprvsn
+  - name: FR_Other
+  - name: FR_OtherDesc
+  - name: Charge
+  - name: NoticeDate
+  - name: LastModifiedBy
+  - name: LastModifiedDate

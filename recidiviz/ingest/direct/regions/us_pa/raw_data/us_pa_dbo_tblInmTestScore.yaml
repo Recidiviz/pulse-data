@@ -1,6 +1,48 @@
 file_tag: dbo_tblInmTestScore
+file_description: |-
+  A table containing assessments administered to people incarcerated under the authority of PADOC. This version of the
+  table specifically contains assessments for people who are currently incarcerated.
 primary_key_cols:
   - Control_Number
   - Inmate_number
   - Test_Id
   - AsmtVer_Num
+columns:
+  - name: Test_Id
+    description: |-
+      ID of the specific assessment administered.
+  - name: Control_Number
+    description: |-
+      External ID that follows a person through all encounters with the PADOC (ideally). In practice, there are mistakes
+      and this is retroactively edited with some low frequency.
+  - name: Test_Desc
+    description: |-
+      Type of assessment administered.
+  - name: Inmate_number
+    description: |-
+      External ID for a for a single sentence of a given person into incarceration and the subsequent period of
+      incarceration served.
+  - name: Test_Dt
+    is_datetime: True
+    description: |-
+      Date the assessment was administered.
+  - name: Fac_Cd
+    description: |-
+      Code of the facility where the assessment was administered.
+  - name: Test_Score
+    description: |-
+      Assessment score.
+  - name: ModBy_EmpNum
+    description: |-
+      PADOC employee number of the staff member who last modified this record.
+  - name: LstMod_Dt
+    is_datetime: True
+    description: |-
+      Date this record was last modified.
+  - name: AsmtVer_Num
+    description: |-
+      Assessment version number (sequence ID for a particular instance of a particular assessment for a particular person).
+  - name: Fab_ind
+  - name: RSTRvsd_Flg
+    description: |-
+      For RST assessments, whether this was the latest version of the assessment that was administered.

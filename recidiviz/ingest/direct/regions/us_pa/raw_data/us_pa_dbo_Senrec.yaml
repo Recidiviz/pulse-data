@@ -1,15 +1,169 @@
 file_tag: dbo_Senrec
+file_description: |-
+  A table containing sentences to incarceration to be served under the authority of PADOC. This includes information
+  about the terms of the sentence, as well as a small amount of information about the offenses and court case that led
+  to the sentence.
 primary_key_cols:
   - curr_inmate_num
   - type_number
 columns:
   - name: curr_inmate_num
-    description: The inmate number of the person associated with this sentence.
+    description: |-
+      External ID for a for a single sentence of a given person into incarceration and the subsequent period of
+      incarceration served.
+  - name: type_number
+    description: |-
+      A type of sequence ID that is almost always 1 but is sometimes 2 to indicate a person serving multiple concurrent
+      sentences.
+  - name: addit_sent_detnr
+  - name: bail_yrs
+    description: |-
+      Bail years.
+  - name: bail_mths
+    description: |-
+      Bail months.
+  - name: bail_days
+    description: |-
+      Bail days.
+  - name: class_of_sent
+    description: |-
+      Class of sentence, including whether this is a life sentence or capital punishment.
+  - name: commit_crdit_yrs
+    description: |-
+      Commitment credit years (credit awarded against a sentence, usually for pretrial confinement).
+  - name: commit_crdit_mths
+    description: |-
+      Commitment credit months.
+  - name: commit_crdit_days
+    description: |-
+      Commitment credit days.
+  - name: max_cort_sent_yrs
+    description: |-
+      Max court sentence years.
+  - name: max_cort_sent_mths
+    description: |-
+      Max court sentence months.
+  - name: max_cort_sent_days
+    description: |-
+      Max court sentence days.
+  - name: max_cort_sent_l_da
+    description: |-
+      Max court sentence total days less days subtracted by judge.
+  - name: min_cort_sent_yrs
+    description: |-
+      Min court sentence years.
+  - name: min_cort_sent_mths
+    description: |-
+      Min court sentence months.
+  - name: min_cort_sent_days
+    description: |-
+      Min court sentence days.
+  - name: min_cort_sent_l_da
+    description: |-
+      Min court sentence total days less days subtracted by judge.
+  - name: effective_date
+    description: |-
+      Effective date for beginning of min sentence.
+  - name: escape_yrs
+    description: |-
+      Escape time years (time added to a sentence in response to an escape attempt).
+  - name: escape_mths
+    description: |-
+      Escape time months.
+  - name: escape_days
+    description: |-
+      Escape time days.
+  - name: max_expir_date
+    description: |-
+      Max expiration date, redundant of max_cort_sent fields.
+  - name: min_expir_date
+    description: |-
+      Min expiration date, redundant of min_cort_sent fields.
+  - name: max_fac_sent_yrs
+    description: |-
+      Max factored time years (this is an inconsistent field, sometimes a combination of years + months + days factored into simpler forms, sometimes the same as court sentence, sometimes all 9s for life sentences, sometimes all 0s for no discernible reason).
+  - name: max_fac_sent_mths
+    description: |-
+      Max factored time months.
+  - name: max_fac_sent_days
+    description: |-
+      Max factored time days.
+  - name: min_fac_sent_yrs
+    description: |-
+      Min factored time years.
+  - name: min_fac_sent_mths
+    description: |-
+      Min factored time months.
+  - name: min_fac_sent_days
+    description: |-
+      Min factored time days.
+  - name: gbmi
+    description: |-
+      "Guilty but mentally ill."
+  - name: indictment_num
+    description: |-
+      Court case ID.
+  - name: judge
+    description: |-
+      Judge presiding over the court case.
+  - name: offense_code
+    description: |-
+      Code of the statute/offense that this sentence is in response to.
   - name: offense_track_num
     description: The ID of the charge associated with this sentence.
+  - name: parole_status_cde
+    description: |-
+      Parole status code.
+  - name: parole_status_dt
+    is_datetime: True
+    description: |-
+      Parole status date.
   - name: sent_date
-    description: The date this sentence was imposed.
+    is_datetime: True
+    description: |-
+      The date this sentence was imposed.
   - name: sent_start_date
-    description: The date the person started serving the sentence.
+    is_datetime: True
+    description: |-
+      The date the person started serving the sentence.
+  - name: sent_status_code
+    description: |-
+      Current sentence status.
+  - name: sent_status_date
+    is_datetime: True
+    description: |-
+      Date sentence status was determined.
   - name: sent_stop_date
-    description: The date the sentence was completed / terminated.
+    is_datetime: True
+    description: |-
+      The date the sentence was completed / terminated.
+  - name: sentcing_cnty
+    description: |-
+      County where the sentence was handed down.
+  - name: st_to_frm_compact
+    description: |-
+      State transferred to or from via the interstate compact, if applicable.
+  - name: term_of_cort
+    description: |-
+      Term of court (year).
+  - name: type_of_sent
+    description: |-
+      Type of incarceration sentenced to.
+  - name: crime_facts_ind
+  - name: megans_law_ind
+    description: |-
+      Megan's Law Indicator.
+  - name: sig_date
+    is_datetime: True
+    description: |-
+      Date this record was first entered.
+  - name: sig_time
+    description: |-
+      Time this record was first entered.
+  - name: user_id
+    description: |-
+      ID of the staff member who first entered this record.
+  - name: cntinued_frm_doc_n
+    description: |-
+      Prior Inmate Number when an inmate rolls over into a new sentence without
+      being released.

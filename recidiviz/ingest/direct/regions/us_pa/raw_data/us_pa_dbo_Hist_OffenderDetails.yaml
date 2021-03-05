@@ -1,6 +1,35 @@
 file_tag: dbo_Hist_OffenderDetails
+file_description: |-
+  A table with detailed demographic information for people under supervision in the past.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - ParoleNumber
 #      - ParoleCountID
 #      - HOffenderDetailsID
 primary_key_cols: []
+columns:
+  - name: ParoleNumber
+  - name: ParoleCountID
+  - name: HOffenderDetailsID
+  - name: PA_Drugs
+  - name: PA_Alcoholic
+  - name: PA_Psychiatric
+  - name: PA_DomesticViolence
+  - name: PA_Other
+  - name: PA_Commutation
+  - name: PA_OtherDesc
+  - name: FBINo
+  - name: PictureID
+  - name: Notes
+  - name: Alias
+  - name: PA_Assaultive
+  - name: PA_Sexual
+  - name: SSAN
+  - name: PA_PastAssaultive
+  - name: PType_BoardParole
+  - name: PType_SpecProbParole
+  - name: PType_OtherStateParole
+  - name: PType_OtherStateProb
+  - name: PType_BoardReParole
+  - name: Miscellaneous
+  - name: DateRtndToInst
+  - name: RtndToInstitution

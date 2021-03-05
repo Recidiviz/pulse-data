@@ -1,4 +1,13 @@
 file_tag: dbo_LU_BoardActionClass
+file_description: |-
+  A lookup table with codes describing possible board action classifications.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - ActionClassCode
 primary_key_cols: []
+columns:
+  - name: ActionClassCode
+  - name: ActionCodeDescrip
+  - name: ICMAActionCode
+  - name: Act_122
+  - name: OVABdActionDesc
+  - name: OVABdActionValue

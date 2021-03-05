@@ -1,5 +1,24 @@
 file_tag: dbo_LSIR
+file_description: |-
+  A table containing LSIR assessments which have been conducted for people under supervision by PADOC.
 primary_key_cols:
   - ParoleNumber
   - ParoleCountID
   - LsirID
+columns:
+  - name: ParoleNumber
+    description: |-
+      External ID for a unique person who has been supervised by PADOC.
+  - name: ParoleCountID
+    description: |-
+      External ID for a particular stint of a particular person under supervision by PADOC.
+  - name: LsirID
+    description: |-
+      Sequence ID of a particular LSIR assessment that was conducted for this particular period of supervision.
+  - name: LSIRScore
+    description: |-
+      LSIR score recorded at the end of the assessment.
+  - name: InterviewDate
+    is_datetime: True
+    description: |-
+      Date when the LSIR assessment interview took place.

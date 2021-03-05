@@ -1,5 +1,87 @@
 file_tag: dbo_Docket
+file_description: |-
+  A table containing the docket of new board actions that may be taken in the future.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - ParoleNumber
 #      - DocketID
 primary_key_cols: []
+columns:
+  - name: ParoleNumber
+  - name: InstitutionNumber
+  - name: DocketID
+  - name: DckMinDateYear
+  - name: DckMinDateMonth
+  - name: DckMinDateDay
+  - name: DckSCICode
+  - name: DcktTypeOfRecord
+  - name: DckDocControlNumber
+  - name: WangClientLastName
+  - name: WangClientFirstName
+  - name: WangClientMiddleName
+  - name: WangClientSuffix
+  - name: DckSIDNumber
+  - name: DctTransferFrom
+  - name: DcktActionField
+  - name: DcktTechnician
+  - name: DcktDateAssignedByCOYear
+  - name: DcktDateAssignedByCOMonth
+  - name: DcktDateAssignedByCODay
+  - name: DcktTransferDateYear
+  - name: DcktTransferDateMonth
+  - name: DcktTransferDateDay
+  - name: DcktDateCompletedByCOYear
+  - name: DcktDateCompletedByCOMonth
+  - name: DcktDateCompletedByCODay
+  - name: DckSixDigitInstitutionCode
+  - name: DcktPriorityCode
+  - name: DcktEffectiveParoleDateYear
+  - name: DcktEffectiveParoleDateMonth
+  - name: DcktEffectiveParoleDateDay
+  - name: DckReleaseToDO
+  - name: DckOldReleaseTypeNotUsed
+  - name: DckTascCase
+  - name: DckActualReleaseDateYear
+  - name: DckActualReleaseDateMonth
+  - name: DckActualReleaseDateDay
+  - name: DckReasonNotInterviewed
+  - name: DckOfficialCrimeVersion
+  - name: DckDOCRecommendation
+  - name: Dck361ViolentIndicator
+  - name: DckVictimInput
+  - name: DckDetainerSequence
+  - name: DckDateBoardTookActionYear
+  - name: DckDateBoardTookActionMonth
+  - name: DckDateBoardTookActionDay
+  - name: DckBdActionEntSystemDateYear
+  - name: DckBdActionEntSystemDateMonth
+  - name: DckBdActionEntSystemDateDay
+  - name: DckCaseFolderSequence
+  - name: DckAssignmentRefNumber
+  - name: DckAssignmentRefDateYear
+  - name: DckAssignmentRefDateMonth
+  - name: DckAssignmentRefDateDay
+  - name: DckSentToDOC
+  - name: DckGrnStDocRecDateYear
+  - name: DckGrnStDocRecDateMonth
+  - name: DckGrnStDocRecDateDay
+  - name: DckGrnStInmRecDateYear
+  - name: DckGrnStInmRecDateMonth
+  - name: DckGrnStInmRecDateDay
+  - name: DckProgCode
+  - name: DckFacility
+  - name: DckBdActDateYear
+  - name: DckBdActDateMonth
+  - name: DckBdActDateDay
+  - name: DckInterviewDateYear
+  - name: DckInterviewDateMonth
+  - name: DckInterviewDateDay
+  - name: DckRelReleaseDateYear
+  - name: DckRelReleaseDateMonth
+  - name: DckRelReleaseDateDay
+  - name: DckGrnStDOCStaffRecDateYear
+  - name: DckGrnStDOCStaffRecDateMonth
+  - name: DckGrnStDOCStaffRecDateDay
+  - name: DckShortMin
+  - name: DckRRRIInd
+  - name: DckBoardActionID
+  - name: DckBdActTypeCode

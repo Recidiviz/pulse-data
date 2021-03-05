@@ -1,7 +1,71 @@
 file_tag: dbo_ICMA_InmateSummarization
+file_description: |-
+  A table containing a rough summary of people who were previously incarcerated.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - InstitutionNumber
 #      - ParoleCountId
 #      - ParoleNumber
 #      - SequenceNumber
 primary_key_cols: []
+columns:
+  - name: InstitutionNumber
+  - name: ParoleCountId
+  - name: ParoleNumber
+  - name: SequenceNumber
+  - name: InstitutionCode
+  - name: SubmitReportDate
+  - name: SubmitReport
+  - name: SummarizationType
+  - name: ReportGenDate
+  - name: FinesCostAmt
+  - name: RestitutionAmt
+  - name: DOCAct84Amt
+  - name: ProblemArea
+  - name: SuperintendentRecommendation
+  - name: SuperintendentRecommendationOthers
+  - name: GuideLinesRecommendation
+  - name: GuideLinesRecommendationScore
+  - name: DNARegistrationRequired
+  - name: DNARegistrationComplete
+  - name: MegansLawRegistration
+  - name: VictimCompensation
+  - name: DrugRelatedCrime
+  - name: VictimAwarenessEducation
+  - name: CurrentSentence
+  - name: Detainers
+  - name: OfficialVersion
+  - name: SupervisionHistory
+  - name: OffenderVersion
+  - name: Arrests
+  - name: Convictions
+  - name: Confinements
+  - name: ProbationRevocation
+  - name: ParoleRevocation
+  - name: Family_Siblings
+  - name: Education
+  - name: Marital
+  - name: DomesticViolenceHistory
+  - name: EmploymentHistory
+  - name: FinancialStatus
+  - name: Mobility
+  - name: DrugAlcoholHistory
+  - name: MedicalHistory
+  - name: SocialHistoryUpdate
+  - name: InstitutionAdjustment
+  - name: MentalHealthEvaluation
+  - name: ParolePlanning
+  - name: AgentName
+  - name: SupervisorName
+  - name: ReportUsed
+  - name: LastModifiedBy
+  - name: LastModifiedDatetime
+  - name: JuvenileAge
+  - name: FinesCostDetail
+  - name: RestitutionDetail
+  - name: DOCAct84Detail
+  - name: InterviewType
+  - name: OffenderVersionViolation
+  - name: GuidelineId
+  - name: LastModifiedByName
+  - name: LastModifiedByClassTitle
+

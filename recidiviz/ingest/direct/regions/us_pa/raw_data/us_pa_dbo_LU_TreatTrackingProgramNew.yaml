@@ -1,4 +1,19 @@
 file_tag: dbo_LU_TreatTrackingProgramNew
+file_description: |-
+  A lookup table with codes describing treatments and programs available to people under PADOC authority.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - TreatTrackProgCode
 primary_key_cols: []
+columns:
+  - name: Type
+  - name: SortID
+  - name: TreatTrackProgCode
+  - name: TreatTrackProgDescrip
+  - name: TreatTrackClass
+  - name: TreatTrackNo
+  - name: Active
+  - name: LastModifiedBy
+  - name: LastModifiedDateTime
+  - name: EnableResourceTab
+  - name: SortViolSevID
+  - name: TechID

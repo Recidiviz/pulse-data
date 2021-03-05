@@ -1,5 +1,36 @@
 file_tag: dbo_Hist_ParoleeAddress
+file_description: |-
+  A table with address information for historical supervision cases.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - ParoleNumber
 #      - EffDate
 primary_key_cols: []
+columns:
+  - name: ParoleNumber
+  - name: HParoleeAddressID
+  - name: EffDate
+  - name: Address1
+  - name: Address2
+  - name: City
+  - name: State
+  - name: Zip
+  - name: Phone
+  - name: PhoneExt
+  - name: LastContactDate
+  - name: CensusTract
+  - name: ParoleCountID
+  - name: WorkLoadWeight
+  - name: Program
+  - name: MAddress1
+  - name: MAddress2
+  - name: MCity
+  - name: MZip
+  - name: chk_Mailing
+  - name: CellPhone
+  - name: MState
+  - name: Program_ID
+  - name: FirstName
+  - name: LastName
+  - name: Relation_ID
+  - name: LastModifiedDate
+  - name: LastModifiedBy

@@ -1,6 +1,34 @@
 file_tag: dbo_Mischg
+file_description: |-
+  A table with additional charge information about "misconduct" events involving incarcerated people. This provides
+  additional information for `dbo_Miscon`.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - inmate_cnt_num1
 #      - inmate_cnt_num2
 #      - miscndct_number
 primary_key_cols: []
+columns:
+  - name: inmate_cnt_num2
+  - name: miscndct_date2
+  - name: miscndct_number
+  - name: category_charge
+  - name: reference_code
+  - name: inmate_cnt_num1
+  - name: category_charge1
+  - name: reference_code1
+  - name: miscndct_number1
+  - name: sig_date
+  - name: sig_time
+  - name: user_id
+  - name: counts
+  - name: chrg_description
+  - name: inmte_plea_gilty
+  - name: inmte_plea_ngilty
+  - name: inmte_plea_nplea
+  - name: vrdict_guilty
+  - name: vrdict_nguilty
+  - name: vrdict_dismis_wp
+  - name: vrdict_dismis_wop
+  - name: vrdict_reduced
+  - name: was_amended
+  - name: flag
