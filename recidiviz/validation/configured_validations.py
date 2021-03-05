@@ -312,7 +312,10 @@ def get_all_validations() -> List[DataValidationCheck]:
         SamenessDataValidationCheck(
             view=REVOCATION_MATRIX_DISTRIBUTION_BY_RACE_COMPARISON_VIEW_BUILDER.build(),
             validation_name_suffix="supervision",
-            comparison_columns=["supervision_count_all", "supervision_count_sum"],
+            comparison_columns=[
+                "supervision_count_all",
+                "supervision_population_count_sum",
+            ],
         ),
         SamenessDataValidationCheck(
             view=REVOCATION_MATRIX_DISTRIBUTION_BY_RACE_COMPARISON_VIEW_BUILDER.build(),
@@ -330,7 +333,10 @@ def get_all_validations() -> List[DataValidationCheck]:
         SamenessDataValidationCheck(
             view=REVOCATION_MATRIX_DISTRIBUTION_BY_GENDER_COMPARISON_VIEW_BUILDER.build(),
             validation_name_suffix="supervision",
-            comparison_columns=["supervision_count_all", "supervision_count_sum"],
+            comparison_columns=[
+                "supervision_count_all",
+                "supervision_population_count_sum",
+            ],
         ),
         SamenessDataValidationCheck(
             view=REVOCATION_MATRIX_DISTRIBUTION_BY_GENDER_COMPARISON_VIEW_BUILDER.build(),

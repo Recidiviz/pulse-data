@@ -36,6 +36,7 @@ REVOCATIONS_MATRIX_BY_MONTH_QUERY_TEMPLATE = """
         state_code,
         EXTRACT(YEAR FROM revocation_admission_date) as year,
         EXTRACT(MONTH FROM revocation_admission_date) as month,
+        admission_type,
         violation_type,
         reported_violations,
         supervision_type,
@@ -50,7 +51,7 @@ REVOCATIONS_MATRIX_BY_MONTH_QUERY_TEMPLATE = """
         -- Filter out any rows that don't have a specified violation_type
         AND violation_type != 'NO_VIOLATION_TYPE'
     GROUP BY state_code, year, month, violation_type, reported_violations, supervision_type, supervision_level,
-        charge_category, level_1_supervision_location, level_2_supervision_location
+        charge_category, level_1_supervision_location, level_2_supervision_location, admission_type
     """
 
 REVOCATIONS_MATRIX_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
@@ -63,6 +64,7 @@ REVOCATIONS_MATRIX_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
         "month",
         "level_1_supervision_location",
         "level_2_supervision_location",
+        "admission_type",
         "supervision_type",
         "supervision_level",
         "violation_type",

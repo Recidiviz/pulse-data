@@ -147,16 +147,46 @@ def state_specific_supervision_location_optimization_filter() -> str:
         END"""
 
 
-def state_specific_dimension_filter() -> str:
+def state_specific_dimension_filter(filter_admission_type: bool = False) -> str:
     """State-specific logic for filtering rows based on dimensions that are supported on the FE. This helps us avoid
     sending data to the FE that is never used."""
-    return """-- US_MO doesn't support the supervision_level dimension
-        (state_code != 'US_MO' OR supervision_level = 'ALL')
+    us_mo_comment = (
+        """-- US_MO doesn't support the"""
+        f""" {"admission_type or " if filter_admission_type else ''}supervision_level filters"""
+    )
+    us_mo_filter = f"""({"admission_type = 'ALL' AND " if filter_admission_type else ''}supervision_level = 'ALL'))"""
+
+    return f"""{us_mo_comment}
+        (state_code != 'US_MO' OR {us_mo_filter}
         -- US_PA doesn't support the supervision_type or charge category filters
         AND (state_code != 'US_PA' OR (supervision_type = 'ALL' AND charge_category = 'ALL'))"""
 
 
-def state_specific_inclusion_filter() -> str:
+def state_specific_supervision_type_inclusion_filter() -> str:
     """State-specific logic for filtering rows based on dimension values that are not supported for a given state."""
     return """-- US_PA only includes PAROLE
         (state_code != 'US_PA' OR supervision_type = 'PAROLE')"""
+
+
+def state_specific_admission_type_inclusion_filter() -> str:
+    """State-specific admission_type inclusions """
+    return """
+    -- US_PO only includes Legal Revocation admissions
+    (state_code != 'US_MO' OR revocation_type = 'REINCARCERATION')
+    -- US_PA includes Legal Revocation and Shock Incarceration admissions
+    AND (state_code != 'US_PA' OR revocation_type IN ('REINCARCERATION', 'SHOCK_INCARCERATION'))"""
+
+
+def state_specific_admission_type() -> str:
+    return """CASE WHEN revocation_type = 'REINCARCERATION' THEN 'LEGAL_REVOCATION'
+             WHEN state_code = 'US_PA' THEN
+                 CASE WHEN revocation_type = 'SHOCK_INCARCERATION' THEN
+                         CASE WHEN revocation_type_subtype = 'PVC' THEN 'SHOCK_INCARCERATION_PVC'
+                              WHEN revocation_type_subtype = 'RESCR' THEN 'SHOCK_INCARCERATION_0_TO_6_MONTHS'
+                              WHEN revocation_type_subtype = 'RESCR6' THEN 'SHOCK_INCARCERATION_6_MONTHS'
+                              WHEN revocation_type_subtype = 'RESCR9' THEN 'SHOCK_INCARCERATION_9_MONTHS'
+                              WHEN revocation_type_subtype = 'RESCR12' THEN 'SHOCK_INCARCERATION_12_MONTHS'
+                         END
+                  END
+             ELSE revocation_type
+        END AS admission_type"""
