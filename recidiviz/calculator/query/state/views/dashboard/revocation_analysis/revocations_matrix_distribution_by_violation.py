@@ -48,6 +48,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY_TEMPLATE = """
     WITH violation_counts AS (
       SELECT
           state_code,
+          admission_type,
           metric_period_months,
           supervision_type,
           supervision_level,
@@ -63,6 +64,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY_TEMPLATE = """
     ) , unnested_violation_type_entries AS (
       SELECT
         state_code,
+        admission_type,
         metric_period_months,
         supervision_type,
         supervision_level,
@@ -95,6 +97,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY_TEMPLATE = """
     
     SELECT
       state_code,
+      admission_type,
       metric_period_months,
       supervision_type,
       supervision_level,
@@ -119,7 +122,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY_TEMPLATE = """
     WHERE {state_specific_supervision_location_optimization_filter}
         -- Filter out any rows that don't have a specified violation_type
         AND violation_type != 'NO_VIOLATION_TYPE'
-    GROUP BY state_code, metric_period_months, supervision_type, supervision_level, charge_category,
+    GROUP BY state_code, admission_type, metric_period_months, supervision_type, supervision_level, charge_category,
       level_1_supervision_location, level_2_supervision_location, reported_violations, violation_type
 """
 
@@ -132,6 +135,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_VIEW_BUILDER = MetricBigQueryViewBu
         "metric_period_months",
         "level_1_supervision_location",
         "level_2_supervision_location",
+        "admission_type",
         "supervision_type",
         "supervision_level",
         "violation_type",
