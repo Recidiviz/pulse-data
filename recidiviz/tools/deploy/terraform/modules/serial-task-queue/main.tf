@@ -15,26 +15,20 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-module "scheduler-queue" {
-  source = "../serial-task-queue"
+resource "google_cloud_tasks_queue" "serial_queue" {
+  name     = var.queue_name
+  location = var.region
 
-  queue_name                = "${local.direct_ingest_formatted_str}-scheduler"
-  region                    = var.region
-  max_dispatches_per_second = 100
-}
+  rate_limits {
+    max_dispatches_per_second = var.max_dispatches_per_second
+    max_concurrent_dispatches = 1
+  }
 
-module "process-job-queue" {
-  source = "../serial-task-queue"
+  retry_config {
+    max_attempts = var.max_retry_attempts
+  }
 
-  queue_name                = "${local.direct_ingest_formatted_str}-process-job-queue"
-  region                    = var.region
-  max_dispatches_per_second = 100
-}
-
-module "bq-import-export-queue" {
-  source = "../serial-task-queue"
-
-  queue_name                = "${local.direct_ingest_formatted_str}-bq-import-export"
-  region                    = var.region
-  max_dispatches_per_second = 100
+  stackdriver_logging_config {
+    sampling_ratio = var.logging_sampling_ratio
+  }
 }
