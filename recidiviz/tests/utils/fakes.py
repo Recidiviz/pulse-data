@@ -19,8 +19,7 @@ import sqlite3
 import threading
 from typing import Set
 
-from sqlalchemy.ext.declarative import DeclarativeMeta
-
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
@@ -30,7 +29,7 @@ _in_memory_sqlite_connection_thread_ids: Set[int] = set()
 
 
 @environment.local_only
-def use_in_memory_sqlite_database(declarative_base: DeclarativeMeta) -> None:
+def use_in_memory_sqlite_database(database_key: SQLAlchemyDatabaseKey) -> None:
     """Creates a new SqlDatabase object used to communicate to a fake in-memory
     sqlite database.
 
@@ -64,30 +63,15 @@ def use_in_memory_sqlite_database(declarative_base: DeclarativeMeta) -> None:
         return connection
 
     SQLAlchemyEngineManager.init_engine_for_db_instance(
+        database_key=database_key,
         db_url="sqlite:///:memory:",
-        schema_base=declarative_base,
         creator=connection_creator,
     )
 
 
 @environment.test_only
-def teardown_in_memory_sqlite_databases():
+def teardown_in_memory_sqlite_databases() -> None:
     """Cleans up state after a test started with use_in_memory_sqlite_database() is complete."""
     global _in_memory_sqlite_connection_thread_ids
     _in_memory_sqlite_connection_thread_ids.clear()
     SQLAlchemyEngineManager.teardown_engines()
-
-
-@environment.test_only
-def use_on_disk_sqlite_database(declarative_base: DeclarativeMeta) -> None:
-    """Creates a new SqlDatabase object used to communicate to an on-disk
-    sqlite database.
-
-    This includes:
-    1. Creates a new on-disk sqlite database engine
-    2. Create all tables in the newly created sqlite database
-    3. Bind the global SessionMaker to the new database engine
-    """
-    SQLAlchemyEngineManager.init_engine_for_db_instance(
-        db_url="sqlite:///recidiviz.db", schema_base=declarative_base
-    )

@@ -39,10 +39,11 @@ import sys
 from alembic.command import revision, upgrade
 import alembic.config
 
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
-    SchemaType,
     SQLAlchemyEngineManager,
 )
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -73,7 +74,7 @@ def create_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(database: SchemaType, message: str, use_local_db: bool) -> None:
+def main(schema_type: SchemaType, message: str, use_local_db: bool) -> None:
     """Runs the script to autogenerate migrations."""
     if use_local_db:
         # TODO(#4619): We should eventually move this from a local postgres instance to running
@@ -91,11 +92,13 @@ def main(database: SchemaType, message: str, use_local_db: bool) -> None:
             local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
         )
     else:
+        database_key = SQLAlchemyDatabaseKey.canonical_for_schema(schema_type)
+
         # TODO(Recidiviz/zenhub-tasks#134): This code path will throw when pointed at staging
         # because we havne't created valid read-only users there just yet.
         try:
             original_env_vars = SQLAlchemyEngineManager.update_sqlalchemy_env_vars(
-                database, readonly_user=True
+                database_key=database_key, readonly_user=True
             )
         except ValueError as e:
             logging.warning("Error fetching SQLAlchemy credentials: %s", e)
@@ -106,9 +109,7 @@ def main(database: SchemaType, message: str, use_local_db: bool) -> None:
             sys.exit(1)
 
     try:
-        config = alembic.config.Config(
-            SQLAlchemyEngineManager.get_alembic_file(database)
-        )
+        config = alembic.config.Config(database_key.alembic_file)
         if use_local_db:
             upgrade(config, "head")
         revision(config, autogenerate=True, message=message)

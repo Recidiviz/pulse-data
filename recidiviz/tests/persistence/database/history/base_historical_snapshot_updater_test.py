@@ -23,9 +23,11 @@ from unittest import TestCase
 
 from more_itertools import one
 
-from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
+from recidiviz.common.ingest_metadata import (
+    IngestMetadata,
+    SystemLevel,
+)
 from recidiviz.persistence.database.database_entity import DatabaseEntity
-from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.history.historical_snapshot_update import (
     update_historical_snapshots,
 )
@@ -37,10 +39,11 @@ from recidiviz.persistence.database.schema_utils import (
     historical_table_class_from_obj,
     _get_all_database_entities_in_module,
     HISTORICAL_TABLE_CLASS_SUFFIX,
-    schema_base_for_system_level,
-    schema_base_for_schema_module,
-    schema_base_for_object,
+    schema_type_for_schema_module,
+    schema_type_for_object,
 )
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.core_entity import (
     primary_key_name_from_obj,
     primary_key_value_from_obj,
@@ -58,8 +61,8 @@ class BaseHistoricalSnapshotUpdaterTest(TestCase):
         system_level: SystemLevel,
         ingest_time: datetime.datetime,
     ):
-        act_session = SessionFactory.for_schema_base(
-            schema_base_for_system_level(system_level)
+        act_session = SessionFactory.for_database(
+            SQLAlchemyDatabaseKey.canonical_for_schema(system_level.schema_type())
         )
         merged_person = act_session.merge(person)
 
@@ -130,7 +133,11 @@ class BaseHistoricalSnapshotUpdaterTest(TestCase):
             DB.
         """
 
-        session = SessionFactory.for_schema_base(schema_base_for_schema_module(schema))
+        session = SessionFactory.for_database(
+            SQLAlchemyDatabaseKey.canonical_for_schema(
+                schema_type_for_schema_module(schema)
+            )
+        )
         person = one(session.query(schema_person_type).all())
 
         schema_objects: Set[DatabaseEntity] = {person}
@@ -187,8 +194,10 @@ class BaseHistoricalSnapshotUpdaterTest(TestCase):
 
         self.assertIsNotNone(schema_obj_foreign_key_column_in_history_table)
 
-        assert_session = SessionFactory.for_schema_base(
-            schema_base_for_object(expected_schema_object)
+        assert_session = SessionFactory.for_database(
+            SQLAlchemyDatabaseKey.canonical_for_schema(
+                schema_type_for_object(expected_schema_object)
+            )
         )
         history_snapshots: List[DatabaseEntity] = (
             assert_session.query(history_table_class)

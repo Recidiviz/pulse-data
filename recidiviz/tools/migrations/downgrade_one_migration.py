@@ -35,12 +35,13 @@ import sys
 
 import alembic.config
 
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
-    SchemaType,
     SQLAlchemyEngineManager,
 )
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.tools.migrations.migration_helpers import (
-    confirm_correct_db,
+    confirm_correct_db_instance,
     confirm_correct_git_branch,
     prompt_for_confirmation,
 )
@@ -84,7 +85,7 @@ def create_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(database: SchemaType, repo_root: str, ssl_cert_path: str) -> None:
+def main(schema_type: SchemaType, repo_root: str, ssl_cert_path: str) -> None:
     """
     Invokes the main code path for running a downgrade.
 
@@ -97,20 +98,24 @@ def main(database: SchemaType, repo_root: str, ssl_cert_path: str) -> None:
         logging.info("RUNNING AGAINST PRODUCTION\n")
 
     prompt_for_confirmation("This script will run a DOWNGRADE migration.", "DOWNGRADE")
-    confirm_correct_db(database)
+    confirm_correct_db_instance(schema_type)
     confirm_correct_git_branch(repo_root, is_prod=is_prod)
 
+    # TODO(#6073): Update this script to loop over all DBs in an instance (use
+    #  SQLAlchemyDatabaseKey.all()), and also require that you pass in the "target
+    #  migration" to this script so we don't over-downgrade in the case of a partially
+    #  succeeded upgrade.
+    database_key = SQLAlchemyDatabaseKey.canonical_for_schema(schema_type)
+
     overriden_env_vars = SQLAlchemyEngineManager.update_sqlalchemy_env_vars(
-        database,
+        database_key=database_key,
         ssl_cert_path=ssl_cert_path,
         migration_user=True,
     )
 
     # Run downgrade
     try:
-        config = alembic.config.Config(
-            SQLAlchemyEngineManager.get_alembic_file(database)
-        )
+        config = alembic.config.Config(database_key.alembic_file)
         alembic.command.downgrade(config, "-1")
     except Exception as e:
         logging.error("Downgrade failed to run: %s", e)

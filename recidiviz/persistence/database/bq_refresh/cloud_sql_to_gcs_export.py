@@ -27,11 +27,12 @@ import googleapiclient.errors
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
     CloudSqlToBQConfig,
 )
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqladmin_client import sqladmin_client
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
-    SchemaType,
 )
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.utils import metadata
 
 
@@ -54,13 +55,19 @@ def create_export_context(
     Returns:
         export_context dict which can be passed to client.instances.export().
     """
+    if schema_type == SchemaType.STATE:
+        # TODO(#6078): Wire the state_code through to this function (or just pass a full
+        #  SQLAlchemyDatabaseKey) so we can pick the non-legacy 'postgres' instance.
+        database_key = SQLAlchemyDatabaseKey(SchemaType.STATE)
+    else:
+        database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
 
     export_context = {
         "exportContext": {
             "kind": "sql#exportContext",
             "fileType": "CSV",
             "uri": export_uri,
-            "databases": [SQLAlchemyEngineManager.get_db_name(schema_type)],
+            "databases": [database_key.db_name],
             "csvExportOptions": {"selectQuery": export_query},
         }
     }

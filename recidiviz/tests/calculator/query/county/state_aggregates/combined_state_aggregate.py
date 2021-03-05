@@ -25,13 +25,14 @@ import recidiviz.common.constants.aggregate.enum_canonical_strings as enum_strin
 from recidiviz.calculator.query.county.views.state_aggregates import (
     combined_state_aggregate,
 )
-from recidiviz.persistence.database.base_schema import JailsBase
 from recidiviz.persistence.database.schema.aggregate import dao
 from recidiviz.persistence.database.schema.aggregate.schema import (
     CaFacilityAggregate,
     FlFacilityAggregate,
 )
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.utils import fakes
 
 
@@ -39,7 +40,8 @@ class TestAggregateView(TestCase):
     """Test for combining aggregate reports into a BQ view."""
 
     def setUp(self) -> None:
-        fakes.use_in_memory_sqlite_database(JailsBase)
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS)
+        fakes.use_in_memory_sqlite_database(self.database_key)
 
     def tearDown(self) -> None:
         fakes.teardown_in_memory_sqlite_databases()
@@ -88,7 +90,7 @@ class TestAggregateView(TestCase):
 
         # Act
         # pylint: disable=protected-access
-        query = SessionFactory.for_schema_base(JailsBase).query(
+        query = SessionFactory.for_database(self.database_key).query(
             combined_state_aggregate._UNIONED_STATEMENT
         )
         result = query.all()

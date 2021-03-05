@@ -18,14 +18,16 @@
 from types import ModuleType
 from typing import Type
 from unittest import TestCase
+from unittest.mock import create_autospec
 
 from more_itertools import one
 
-from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.schema_entity_converter.base_schema_entity_converter import (
     BaseSchemaEntityConverter,
     FieldNameType,
 )
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.entity_utils import SchemaEdgeDirectionChecker
 from recidiviz.tests.persistence.database.schema_entity_converter import (
     test_entities as entities,
@@ -76,9 +78,12 @@ class TestBaseSchemaEntityConverter(TestCase):
     """Tests for BaseSchemaEntityConverter"""
 
     def setUp(self) -> None:
-        fakes.use_in_memory_sqlite_database(TestBase)
+        self.database_key = create_autospec(SQLAlchemyDatabaseKey)
+        self.database_key.declarative_meta = TestBase
+        self.database_key.isolation_level = "SERIALIZABLE"
+        fakes.use_in_memory_sqlite_database(self.database_key)
 
-        session = SessionFactory.for_schema_base(TestBase)
+        session = SessionFactory.for_database(self.database_key)
         self.assertEqual(len(session.query(schema.Root).all()), 0)
         self.assertEqual(len(session.query(schema.Parent).all()), 0)
         self.assertEqual(len(session.query(schema.Child).all()), 0)
@@ -87,7 +92,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         fakes.teardown_in_memory_sqlite_databases()
 
     def test_add_behavior(self):
-        session = SessionFactory.for_schema_base(TestBase)
+        session = SessionFactory.for_database(self.database_key)
         self.assertEqual(len(session.query(schema.Root).all()), 0)
         self.assertEqual(len(session.query(schema.Parent).all()), 0)
         self.assertEqual(len(session.query(schema.Child).all()), 0)
@@ -98,7 +103,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         converter = _TestSchemaEntityConverter()
         schema_parent = converter.convert(parent)
 
-        session = SessionFactory.for_schema_base(TestBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(schema_parent)
         session.commit()
 
@@ -136,7 +141,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         converter = _TestSchemaEntityConverter()
         schema_parent = converter.convert(parent)
 
-        session = SessionFactory.for_schema_base(TestBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(schema_parent)
         session.commit()
 
@@ -165,7 +170,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         converter = _TestSchemaEntityConverter()
         schema_parent = converter.convert(parent)
 
-        session = SessionFactory.for_schema_base(TestBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(schema_parent)
         session.commit()
 
@@ -190,7 +195,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         # one already.
         self.assertIsNone(schema_parent.parent_id)
 
-        session = SessionFactory.for_schema_base(TestBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(schema_parent)
         session.commit()
 
@@ -227,7 +232,7 @@ class TestBaseSchemaEntityConverter(TestCase):
     def _run_nuclear_family_test(self, parent_entities, child_entities):
         schema_parents = _TestSchemaEntityConverter().convert_all(parent_entities)
 
-        session = SessionFactory.for_schema_base(TestBase)
+        session = SessionFactory.for_database(self.database_key)
         for parent in schema_parents:
             session.add(parent)
         session.commit()
@@ -350,7 +355,7 @@ class TestBaseSchemaEntityConverter(TestCase):
 
         schema_root = _TestSchemaEntityConverter().convert(family.root)
 
-        session = SessionFactory.for_schema_base(TestBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(schema_root)
         session.commit()
 
@@ -377,7 +382,7 @@ class TestBaseSchemaEntityConverter(TestCase):
 
         schema_root = _TestSchemaEntityConverter().convert(family.root)
 
-        session = SessionFactory.for_schema_base(TestBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(schema_root)
         session.commit()
 
@@ -408,7 +413,7 @@ class TestBaseSchemaEntityConverter(TestCase):
 
         schema_root = _TestSchemaEntityConverter().convert(family.root)
 
-        session = SessionFactory.for_schema_base(TestBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(schema_root)
         session.commit()
 

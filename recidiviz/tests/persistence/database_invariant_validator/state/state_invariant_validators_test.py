@@ -16,17 +16,18 @@
 # =============================================================================
 """Tests for state_database_invariant_validators.py."""
 
-from typing import Optional
 import unittest
+from typing import Optional
 
 import pytest
 from more_itertools import one
 
 from recidiviz.common.ingest_metadata import SystemLevel
-from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema.state.dao import SessionIsDirtyError
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database_invariant_validator.database_invariant_validator import (
     validate_invariants,
 )
@@ -53,13 +54,14 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
         cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
-        local_postgres_helpers.use_on_disk_postgresql_database(StateBase)
+        self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
 
         self.system_level = SystemLevel.STATE
         self.state_code = "US_XX"
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(StateBase)
+        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -69,7 +71,7 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
 
     def test_clean_session(self) -> None:
         # Arrange
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
 
         # Act
         errors = validate_invariants(session, self.system_level, self.state_code, [])
@@ -80,7 +82,7 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
 
     def test_add_person_simple_no_flush(self) -> None:
         # Arrange
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
 
         db_external_id = generate_external_id(
             state_code=self.state_code, external_id=EXTERNAL_ID_1, id_type=ID_TYPE_1
@@ -108,7 +110,7 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
 
     def test_add_person_simple(self) -> None:
         # Arrange
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
 
         db_external_id = generate_external_id(
             state_code=self.state_code, external_id=EXTERNAL_ID_1, id_type=ID_TYPE_1
@@ -134,7 +136,7 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
 
     def test_add_person_two_ids_same_type(self) -> None:
         # Arrange
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
 
         db_external_id = generate_external_id(
             state_code=self.state_code, external_id=EXTERNAL_ID_1, id_type=ID_TYPE_1
@@ -165,7 +167,7 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
     def test_add_person_two_ids_same_type_us_pa(self) -> None:
         # Arrange
         self.state_code = "US_PA"
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
 
         db_external_id = generate_external_id(
             state_code=self.state_code, external_id=EXTERNAL_ID_1, id_type=ID_TYPE_1
@@ -195,7 +197,7 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
 
     def test_add_person_update_with_new_id(self) -> None:
         # Arrange
-        arrange_session = SessionFactory.for_schema_base(StateBase)
+        arrange_session = SessionFactory.for_database(self.database_key)
 
         db_external_id = generate_external_id(
             state_code=self.state_code, external_id=EXTERNAL_ID_1, id_type=ID_TYPE_1
@@ -213,7 +215,7 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
         )
 
         # Act
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
 
         result = session.query(schema.StatePerson).all()
 
@@ -251,7 +253,7 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
         )
 
         # Act
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
 
         session.add(db_person)
         session.add(db_person_2)

@@ -54,7 +54,6 @@ from recidiviz.persistence.database.schema.justice_counts import (
     schema as justice_counts_schema,
 )
 
-from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
 from recidiviz.utils import environment
 from recidiviz.persistence.database import base_schema
 from recidiviz.utils import metadata
@@ -73,6 +72,7 @@ from recidiviz.persistence.database.schema_utils import (
     BQ_TYPES,
     get_region_code_col,
     schema_has_region_code_query_support,
+    SchemaType,
 )
 from recidiviz.persistence.database.schema_table_region_filtered_query_builder import (
     CloudSqlSchemaTableRegionFilteredQueryBuilder,

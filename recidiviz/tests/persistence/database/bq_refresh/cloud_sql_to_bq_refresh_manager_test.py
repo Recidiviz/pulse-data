@@ -33,7 +33,7 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
 from recidiviz.common.google_cloud.cloud_task_queue_manager import CloudTaskQueueInfo
 from recidiviz.ingest.direct import direct_ingest_control
 from recidiviz.persistence.database.bq_refresh import cloud_sql_to_bq_refresh_manager
-from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME = cloud_sql_to_bq_refresh_manager.__name__

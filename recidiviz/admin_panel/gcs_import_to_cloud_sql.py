@@ -20,10 +20,11 @@ from typing import List
 
 from recidiviz.cloud_sql.cloud_sql_client import CloudSQLClientImpl
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
-    SchemaType,
 )
+from recidiviz.persistence.database.schema_utils import SchemaType
 
 
 def import_gcs_csv_to_cloud_sql(
@@ -31,8 +32,8 @@ def import_gcs_csv_to_cloud_sql(
 ) -> None:
     """Implements the import of GCS CSV to Cloud SQL by creating a temporary table, uploading the
     results to the temporary table, and then swapping the contents of the table."""
-    engine = SQLAlchemyEngineManager.get_engine_for_schema_base(
-        SQLAlchemyEngineManager.declarative_method_for_schema(SchemaType.CASE_TRIAGE)
+    engine = SQLAlchemyEngineManager.get_engine_for_database(
+        SQLAlchemyDatabaseKey(schema_type=SchemaType.CASE_TRIAGE)
     )
     if engine is None:
         raise RuntimeError("Could not create postgres sqlalchemy engine")

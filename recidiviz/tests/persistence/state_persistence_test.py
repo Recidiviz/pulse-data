@@ -28,6 +28,18 @@ from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.persistence import persistence
 from recidiviz.persistence.database.database_entity import DatabaseEntity
+from recidiviz.persistence.database.schema.state import schema, dao
+from recidiviz.persistence.database.schema_entity_converter import (
+    schema_entity_converter as converter,
+)
+from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.persistence.entity.state.entities import (
+    StatePerson,
+    StatePersonExternalId,
+    StateSentenceGroup,
+)
 from recidiviz.persistence.entity_matching.entity_matching_types import (
     EntityTree,
     IndividualMatchResult,
@@ -44,17 +56,6 @@ from recidiviz.persistence.persistence import (
     ENTITY_MATCHING_THRESHOLD,
     ENUM_THRESHOLD,
     DATABASE_INVARIANT_THRESHOLD,
-)
-from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.base_schema import StateBase
-from recidiviz.persistence.database.schema.state import schema, dao
-from recidiviz.persistence.database.schema_entity_converter import (
-    schema_entity_converter as converter,
-)
-from recidiviz.persistence.entity.state.entities import (
-    StatePerson,
-    StatePersonExternalId,
-    StateSentenceGroup,
 )
 from recidiviz.tools.postgres import local_postgres_helpers
 
@@ -159,7 +160,8 @@ class TestStatePersistence(TestCase):
         cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
-        local_postgres_helpers.use_on_disk_postgresql_database(StateBase)
+        self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
 
         # State persistence ends up having to instantiate the us_nd_controller to
         # get enum overrides, and the controller goes on to create bigquery,
@@ -172,7 +174,7 @@ class TestStatePersistence(TestCase):
         self.task_client_patcher.start()
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(StateBase)
+        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
 
         self.bq_client_patcher.stop()
         self.storage_client_patcher.stop()
@@ -277,14 +279,14 @@ class TestStatePersistence(TestCase):
         expected_person = self.to_entity(db_person)
         expected_person_2 = self.to_entity(db_person_2)
 
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(db_person)
         session.add(db_person_2)
         session.commit()
 
         # Act
         persistence.write(ingest_info, DEFAULT_METADATA)
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
         persons = dao.read_people(session)
 
         # Assert
@@ -378,7 +380,7 @@ class TestStatePersistence(TestCase):
         db_person_2.external_ids = [db_external_id_2]
         db_person_2.sentence_groups = [db_sentence_group_3]
 
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(db_person)
         session.add(db_person_2)
         session.commit()
@@ -442,7 +444,7 @@ class TestStatePersistence(TestCase):
 
         # Act
         persistence.write(ingest_info, DEFAULT_METADATA)
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
         persons = dao.read_people(session)
 
         # Assert

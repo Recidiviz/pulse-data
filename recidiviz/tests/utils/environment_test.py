@@ -62,8 +62,9 @@ def test_local_only_is_prod(mock_os):
     def get():
         return (track, 200)
 
-    response = get()
-    assert response == ("Not available, see service logs.", 500)
+    with pytest.raises(RuntimeError) as e:
+        _ = get()
+    assert str(e.value) == "Not available, see service logs."
 
 
 def test_test_in_test():

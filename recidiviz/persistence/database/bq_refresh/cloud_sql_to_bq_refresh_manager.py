@@ -57,7 +57,7 @@ from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config im
 from recidiviz.persistence.database.bq_refresh.bq_refresh_cloud_task_manager import (
     BQRefreshCloudTaskManager,
 )
-from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils import pubsub_helper
 

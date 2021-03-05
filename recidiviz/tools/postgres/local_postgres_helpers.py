@@ -22,7 +22,6 @@ import subprocess
 import tempfile
 from typing import Callable, Optional, Dict
 
-from sqlalchemy.ext.declarative import DeclarativeMeta
 from sqlalchemy.orm.session import close_all_sessions
 
 from recidiviz.persistence.database import (
@@ -40,6 +39,7 @@ from recidiviz.persistence.database.base_schema import (
     CaseTriageBase,
 )
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
@@ -263,7 +263,7 @@ def _stop_on_disk_postgresql_database(
 
 
 @environment.local_only
-def use_on_disk_postgresql_database(declarative_base: DeclarativeMeta) -> None:
+def use_on_disk_postgresql_database(database_key: SQLAlchemyDatabaseKey) -> None:
     """Connects SQLAlchemy to a local test postgres server. Should be called after the test database and user have
     already been initialized.
 
@@ -271,11 +271,12 @@ def use_on_disk_postgresql_database(declarative_base: DeclarativeMeta) -> None:
     1. Create all tables in the newly created sqlite database
     2. Bind the global SessionMaker to the new database engine
     """
-    if declarative_base not in DECLARATIVE_BASES:
-        raise ValueError(f"Unexpected declarative base: {declarative_base}.")
+    if database_key.declarative_meta not in DECLARATIVE_BASES:
+        raise ValueError(f"Unexpected database key: {database_key}.")
 
     SQLAlchemyEngineManager.init_engine_for_postgres_instance(
-        db_url=on_disk_postgres_db_url(), schema_base=declarative_base
+        database_key=database_key,
+        db_url=on_disk_postgres_db_url(),
     )
 
 
@@ -293,7 +294,7 @@ def postgres_db_url_from_env_vars() -> str:
 
 
 @environment.local_only
-def teardown_on_disk_postgresql_database(declarative_base: DeclarativeMeta) -> None:
+def teardown_on_disk_postgresql_database(database_key: SQLAlchemyDatabaseKey) -> None:
     """Clears state in an on-disk postgres database for a given schema, for use once a single test has completed. As an
     optimization, does not actually drop tables, just clears them. As a best practice, you should call
     stop_and_clear_on_disk_postgresql_database() once all tests in a test class are complete to actually drop the
@@ -302,9 +303,9 @@ def teardown_on_disk_postgresql_database(declarative_base: DeclarativeMeta) -> N
     # Ensure all sessions are closed, otherwise the below may hang.
     close_all_sessions()
 
-    session = SessionFactory.for_schema_base(declarative_base)
+    session = SessionFactory.for_database(database_key)
     try:
-        for table in reversed(declarative_base.metadata.sorted_tables):
+        for table in reversed(database_key.declarative_meta.metadata.sorted_tables):
             session.execute(table.delete())
         session.commit()
     except Exception as e:
@@ -313,4 +314,4 @@ def teardown_on_disk_postgresql_database(declarative_base: DeclarativeMeta) -> N
     finally:
         session.close()
 
-    SQLAlchemyEngineManager.teardown_engine_for_schema(declarative_base)
+    SQLAlchemyEngineManager.teardown_engine_for_database_key(database_key=database_key)

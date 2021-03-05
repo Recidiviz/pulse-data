@@ -22,11 +22,12 @@ from mock import patch
 from more_itertools import one
 
 from recidiviz.ingest.scrape import constants, scrape_phase, sessions
-from recidiviz.persistence.database.base_schema import JailsBase
 from recidiviz.persistence.database.schema.county.schema import ScraperSuccess
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.utils import regions
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.utils import fakes
+from recidiviz.utils import regions
 from recidiviz.utils.regions import Region
 
 _REGION_CODE = "us_al_jackson"
@@ -37,7 +38,8 @@ class TestScraperStop(TestCase):
     """Tests for requests to the Scraper Stop API."""
 
     def setUp(self) -> None:
-        fakes.use_in_memory_sqlite_database(JailsBase)
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS)
+        fakes.use_in_memory_sqlite_database(self.database_key)
 
     def tearDown(self) -> None:
         fakes.teardown_in_memory_sqlite_databases()
@@ -58,7 +60,7 @@ class TestScraperStop(TestCase):
 
         sessions.update_phase(session, scrape_phase.ScrapePhase.DONE)
 
-        query = SessionFactory.for_schema_base(JailsBase).query(ScraperSuccess)
+        query = SessionFactory.for_database(self.database_key).query(ScraperSuccess)
         result = one(query.all())
 
         region = regions.get_region(_REGION_CODE)

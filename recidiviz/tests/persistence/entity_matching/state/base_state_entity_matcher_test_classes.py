@@ -24,8 +24,10 @@ from mock import patch, create_autospec
 from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter,
 )
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.schema.state import dao, schema
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.entity_utils import print_entity_trees
 from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.tests.persistence.entity.state.entities_test_utils import (
@@ -51,7 +53,8 @@ class BaseStateEntityMatcherTest(TestCase):
         cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
-        local_postgres_helpers.use_on_disk_postgresql_database(StateBase)
+        self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
         self.get_region_patcher = patch(
             "recidiviz.persistence.entity_matching.state."
             "base_state_matching_delegate.get_region",
@@ -61,7 +64,7 @@ class BaseStateEntityMatcherTest(TestCase):
         self.addCleanup(self.get_region_patcher.stop)
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(StateBase)
+        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -123,7 +126,7 @@ class BaseStateEntityMatcherTest(TestCase):
         self.assertCountEqual(expected_with_backedges, converted_matched)
 
     def _session(self):
-        return SessionFactory.for_schema_base(StateBase)
+        return SessionFactory.for_database(self.database_key)
 
     def _commit_to_db(self, *persons):
         session = self._session()
@@ -146,10 +149,11 @@ class BaseStateMatchingUtilsTest(TestCase):
         cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
-        local_postgres_helpers.use_on_disk_postgresql_database(StateBase)
+        self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(StateBase)
+        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
 
     @classmethod
     def tearDownClass(cls) -> None:

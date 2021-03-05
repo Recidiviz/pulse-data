@@ -25,8 +25,9 @@ import attr
 from sqlalchemy import null, Column
 from sqlalchemy.orm import Query
 
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.base_schema import JailsBase
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 
 
 @attr.s(frozen=True, kw_only=True, auto_attribs=True)
@@ -135,4 +136,6 @@ class Mappings:
 
             select_statements.append(select_statement)
 
-        return SessionFactory.for_schema_base(JailsBase).query(*select_statements)
+        return SessionFactory.for_database(
+            SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS)
+        ).query(*select_statements)

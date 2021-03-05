@@ -24,14 +24,15 @@ from unittest import TestCase
 from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info import IngestInfo
-from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.base_schema import JailsBase
-from recidiviz.persistence.entity.county import entities
+from recidiviz.persistence.database.schema.county import dao
+from recidiviz.persistence.database.schema.county.schema import Booking, Person
 from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter,
 )
-from recidiviz.persistence.database.schema.county import dao
-from recidiviz.persistence.database.schema.county.schema import Booking, Person
+from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.persistence.entity.county import entities
 from recidiviz.tests.utils import fakes
 
 _REGION = "region"
@@ -56,7 +57,8 @@ class TestDao(TestCase):
     """Test that the methods in dao.py correctly read from the SQL database."""
 
     def setUp(self) -> None:
-        fakes.use_in_memory_sqlite_database(JailsBase)
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS)
+        fakes.use_in_memory_sqlite_database(self.database_key)
 
     def tearDown(self) -> None:
         fakes.teardown_in_memory_sqlite_databases()
@@ -108,7 +110,7 @@ class TestDao(TestCase):
             last_seen_time=date_in_past,
         )
 
-        session = SessionFactory.for_schema_base(JailsBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(person)
         session.add(person_resolved_booking)
         session.add(person_most_recent_scrape)
@@ -152,7 +154,7 @@ class TestDao(TestCase):
             external_id=_EXTERNAL_ID,
         )
 
-        session = SessionFactory.for_schema_base(JailsBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(person_no_match)
         session.add(person_match_external_id)
         session.commit()
@@ -204,7 +206,7 @@ class TestDao(TestCase):
             bookings=[closed_booking],
         )
 
-        session = SessionFactory.for_schema_base(JailsBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(person_no_match)
         session.add(person_no_open_bookings)
         session.add(person_match_full_name)

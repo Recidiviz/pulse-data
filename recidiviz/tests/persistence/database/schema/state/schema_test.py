@@ -48,14 +48,15 @@ from recidiviz.common.constants.state.state_early_discharge import (
 )
 from recidiviz.common.constants.state.state_fine import StateFineStatus
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema import shared_enums
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_utils import (
     get_all_table_classes_in_module,
     _get_all_database_entities_in_module,
+    SchemaType,
 )
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
     state_supervision_case_type_entry,
 )
@@ -178,12 +179,13 @@ class TestUniqueExternalIdConstraint(unittest.TestCase):
         cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
-        local_postgres_helpers.use_on_disk_postgresql_database(StateBase)
+        self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
 
         self.state_code = "US_XX"
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(StateBase)
+        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -193,7 +195,7 @@ class TestUniqueExternalIdConstraint(unittest.TestCase):
 
     def test_add_person_conflicting_external_id(self) -> None:
         # Arrange
-        arrange_session = SessionFactory.for_schema_base(StateBase)
+        arrange_session = SessionFactory.for_database(self.database_key)
 
         db_external_id = generate_external_id(
             state_code=self.state_code,
@@ -219,7 +221,7 @@ class TestUniqueExternalIdConstraint(unittest.TestCase):
         )
 
         # Act
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
 
         session.add(db_person_new)
         session.flush()
@@ -229,7 +231,7 @@ class TestUniqueExternalIdConstraint(unittest.TestCase):
 
     def test_add_person_conflicting_external_id_no_flush(self) -> None:
         # Arrange
-        arrange_session = SessionFactory.for_schema_base(StateBase)
+        arrange_session = SessionFactory.for_database(self.database_key)
 
         db_external_id = generate_external_id(
             state_code=self.state_code,
@@ -255,14 +257,14 @@ class TestUniqueExternalIdConstraint(unittest.TestCase):
         )
 
         # Act
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(db_person_new)
         with self.assertRaises(sqlalchemy.exc.IntegrityError):
             session.commit()
 
     def test_add_person_conflicting_external_id_different_type(self) -> None:
         # Arrange
-        arrange_session = SessionFactory.for_schema_base(StateBase)
+        arrange_session = SessionFactory.for_database(self.database_key)
 
         db_external_id = generate_external_id(
             state_code=self.state_code,
@@ -288,7 +290,7 @@ class TestUniqueExternalIdConstraint(unittest.TestCase):
         )
 
         # Act
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
 
         session.add(db_person_new)
         session.flush()
@@ -296,7 +298,7 @@ class TestUniqueExternalIdConstraint(unittest.TestCase):
 
     def test_add_person_conflicting_external_id_different_state(self) -> None:
         # Arrange
-        arrange_session = SessionFactory.for_schema_base(StateBase)
+        arrange_session = SessionFactory.for_database(self.database_key)
 
         db_external_id = generate_external_id(
             state_code="OTHER_STATE_CODE",
@@ -322,7 +324,7 @@ class TestUniqueExternalIdConstraint(unittest.TestCase):
         )
 
         # Act
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
 
         session.add(db_person_new)
         session.flush()
@@ -351,7 +353,7 @@ class TestUniqueExternalIdConstraint(unittest.TestCase):
         )
 
         # Act
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
 
         session.add(db_person)
         session.add(db_person_2)
@@ -390,12 +392,17 @@ class TestStateSchemaUniqueConstraints(unittest.TestCase):
         cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
-        local_postgres_helpers.use_on_disk_postgresql_database(StateBase)
+        self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        local_postgres_helpers.use_on_disk_postgresql_database(
+            SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        )
 
         self.state_code = "US_XX"
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(StateBase)
+        local_postgres_helpers.teardown_on_disk_postgresql_database(
+            SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        )
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -406,7 +413,7 @@ class TestStateSchemaUniqueConstraints(unittest.TestCase):
     @parameterized.expand(generate_functions)
     def test_add_object_conflicting_external_id(self, generate_func) -> None:
         # Arrange
-        arrange_session = SessionFactory.for_schema_base(StateBase)
+        arrange_session = SessionFactory.for_database(self.database_key)
 
         db_external_id = generate_external_id(
             state_code=self.state_code,
@@ -440,7 +447,7 @@ class TestStateSchemaUniqueConstraints(unittest.TestCase):
         )
 
         # Act
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
 
         session.add(db_object_new)
         session.flush()
@@ -451,7 +458,7 @@ class TestStateSchemaUniqueConstraints(unittest.TestCase):
     @parameterized.expand(generate_functions)
     def test_add_object_conflicting_external_id_no_flush(self, generate_func) -> None:
         # Arrange
-        arrange_session = SessionFactory.for_schema_base(StateBase)
+        arrange_session = SessionFactory.for_database(self.database_key)
 
         db_external_id = generate_external_id(
             state_code=self.state_code,
@@ -481,7 +488,7 @@ class TestStateSchemaUniqueConstraints(unittest.TestCase):
         )
 
         # Act
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(db_object_new)
         with self.assertRaises(sqlalchemy.exc.IntegrityError):
             session.commit()
@@ -491,7 +498,7 @@ class TestStateSchemaUniqueConstraints(unittest.TestCase):
         self, generate_func
     ) -> None:
         # Arrange
-        arrange_session = SessionFactory.for_schema_base(StateBase)
+        arrange_session = SessionFactory.for_database(self.database_key)
 
         db_external_id = generate_external_id(
             state_code="OTHER_STATE_CODE",
@@ -527,7 +534,7 @@ class TestStateSchemaUniqueConstraints(unittest.TestCase):
         )
 
         # Act
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
 
         session.add(db_object_new)
         session.flush()
@@ -567,7 +574,7 @@ class TestStateSchemaUniqueConstraints(unittest.TestCase):
         )
 
         # Act
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
 
         session.add(db_object_new)
         session.add(db_object_new_2)
@@ -579,7 +586,7 @@ class TestStateSchemaUniqueConstraints(unittest.TestCase):
     @parameterized.expand(generate_functions)
     def test_add_object_diff_external_id_same_state(self, generate_func) -> None:
         # Arrange
-        arrange_session = SessionFactory.for_schema_base(StateBase)
+        arrange_session = SessionFactory.for_database(self.database_key)
 
         db_external_id = generate_external_id(
             state_code=self.state_code,
@@ -615,7 +622,7 @@ class TestStateSchemaUniqueConstraints(unittest.TestCase):
         )
 
         # Act
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
 
         session.add(db_object_new)
         session.flush()
@@ -644,12 +651,17 @@ class TestUniqueExternalIdConstraintOnFine(unittest.TestCase):
         cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
-        local_postgres_helpers.use_on_disk_postgresql_database(StateBase)
+        self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        local_postgres_helpers.use_on_disk_postgresql_database(
+            SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        )
 
         self.state_code = "US_XX"
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(StateBase)
+        local_postgres_helpers.teardown_on_disk_postgresql_database(
+            SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        )
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -659,7 +671,7 @@ class TestUniqueExternalIdConstraintOnFine(unittest.TestCase):
 
     def test_add_fine_conflicting_external_id(self) -> None:
         # Arrange
-        arrange_session = SessionFactory.for_schema_base(StateBase)
+        arrange_session = SessionFactory.for_database(self.database_key)
 
         db_person = schema.StatePerson(
             full_name=self.FULL_NAME, state_code=self.state_code
@@ -715,7 +727,7 @@ class TestUniqueExternalIdConstraintOnFine(unittest.TestCase):
         db_person_dupe.external_ids = [db_external_id_dupe]
 
         # Act
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
 
         session.add(db_fine_dupe)
         session.flush()
@@ -725,7 +737,7 @@ class TestUniqueExternalIdConstraintOnFine(unittest.TestCase):
 
     def test_add_fine_conflicting_external_id_no_flush(self) -> None:
         # Arrange
-        arrange_session = SessionFactory.for_schema_base(StateBase)
+        arrange_session = SessionFactory.for_database(self.database_key)
 
         db_person = schema.StatePerson(
             person_id=self._ID_1, full_name=self.FULL_NAME, state_code=self.state_code
@@ -789,14 +801,14 @@ class TestUniqueExternalIdConstraintOnFine(unittest.TestCase):
         db_person_dupe.external_ids = [db_external_id_dupe]
 
         # Act
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(db_fine_dupe)
         with self.assertRaises(sqlalchemy.exc.IntegrityError):
             session.commit()
 
     def test_add_fine_conflicting_external_id_different_state(self) -> None:
         # Arrange
-        arrange_session = SessionFactory.for_schema_base(StateBase)
+        arrange_session = SessionFactory.for_database(self.database_key)
         db_person = schema.StatePerson(
             person_id=self._ID_1, full_name=self.FULL_NAME, state_code=self.state_code
         )
@@ -859,7 +871,7 @@ class TestUniqueExternalIdConstraintOnFine(unittest.TestCase):
         db_person_dupe.external_ids = [db_external_id_dupe]
 
         # Act
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
 
         session.add(db_fine_dupe)
         session.flush()
@@ -918,7 +930,7 @@ class TestUniqueExternalIdConstraintOnFine(unittest.TestCase):
         db_person_dupe.external_ids = [db_external_id_dupe]
 
         # Act
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
 
         session.add(db_fine)
         session.add(db_fine_dupe)
@@ -929,7 +941,7 @@ class TestUniqueExternalIdConstraintOnFine(unittest.TestCase):
 
     def test_add_fine_different_external_id_same_state(self) -> None:
         # Arrange
-        arrange_session = SessionFactory.for_schema_base(StateBase)
+        arrange_session = SessionFactory.for_database(self.database_key)
         db_person = schema.StatePerson(
             person_id=self._ID_1, full_name=self.FULL_NAME, state_code=self.state_code
         )
@@ -990,7 +1002,7 @@ class TestUniqueExternalIdConstraintOnFine(unittest.TestCase):
         db_person_dupe.external_ids = [db_external_id_dupe]
 
         # Act
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
 
         session.add(db_fine_dupe)
         session.flush()

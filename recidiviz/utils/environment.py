@@ -22,12 +22,11 @@ static and cannot be trivially made environment-specific. So this includes
 functionality for determining which environment we are in and loading the
 appropriate variables.
 """
-from enum import Enum
-from http import HTTPStatus
 import logging
 import os
-from functools import wraps
 import sys
+from enum import Enum
+from functools import wraps
 from typing import Callable, Optional
 
 import requests
@@ -132,10 +131,7 @@ def local_only(func: Callable) -> Callable:
         if deployed:
             # Production environment - fail
             logging.error("This API call is not allowed in production.")
-            return (
-                "Not available, see service logs.",
-                HTTPStatus.INTERNAL_SERVER_ERROR,
-            )
+            raise RuntimeError("Not available, see service logs.")
 
         # Local development server - continue
         logging.info("Test environment, proceeding.")

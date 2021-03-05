@@ -27,10 +27,8 @@ from alembic.autogenerate import render_python_code
 from pytest_alembic import runner  # type: ignore
 from sqlalchemy import create_engine
 
-from recidiviz.persistence.database.sqlalchemy_engine_manager import (
-    SQLAlchemyEngineManager,
-    SchemaType,
-)
+from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tools.postgres import local_postgres_helpers
 
 
@@ -46,6 +44,7 @@ class MigrationsTestBase:
 
     def setUp(self) -> None:
         self.db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+        self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(self.schema_type)
         self.overridden_env_vars = (
             local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
         )
@@ -81,10 +80,8 @@ class MigrationsTestBase:
 
     def default_config(self) -> Dict[str, str]:
         return {
-            "file": SQLAlchemyEngineManager.get_alembic_file(self.schema_type),
-            "script_location": SQLAlchemyEngineManager.get_migrations_location(
-                self.schema_type
-            ),
+            "file": self.database_key.alembic_file,
+            "script_location": self.database_key.migrations_location,
         }
 
     @property
@@ -108,10 +105,7 @@ class MigrationsTestBase:
             local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
         )
 
-        declarative_base = SQLAlchemyEngineManager.declarative_method_for_schema(
-            self.schema_type
-        )
-        local_postgres_helpers.use_on_disk_postgresql_database(declarative_base)
+        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
 
         # Check enum values
         schema_enums = self.fetch_all_enums()
@@ -132,7 +126,7 @@ class MigrationsTestBase:
             )
 
         # Cleanup needed for this method.
-        local_postgres_helpers.teardown_on_disk_postgresql_database(declarative_base)
+        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
 
     def test_full_upgrade(self):
         """Enforce that migrations can be run forward to completion."""

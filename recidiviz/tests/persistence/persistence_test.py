@@ -17,23 +17,22 @@
 """Tests for persistence.py."""
 
 import abc
-from copy import deepcopy
-from datetime import date, datetime, timedelta
 import logging
 import threading
 import time
+from copy import deepcopy
+from datetime import date, datetime, timedelta
 from typing import Callable, Optional, Dict
 from unittest import TestCase
 
-
 import attr
-from mock import call, create_autospec, patch, Mock
 import mock
-from opencensus.stats.measurement_map import MeasurementMap
 import psycopg2
-from psycopg2.errorcodes import NOT_NULL_VIOLATION, SERIALIZATION_FAILURE
 import pytest
 import sqlalchemy
+from mock import call, create_autospec, patch, Mock
+from opencensus.stats.measurement_map import MeasurementMap
+from psycopg2.errorcodes import NOT_NULL_VIOLATION, SERIALIZATION_FAILURE
 
 from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.charge import ChargeStatus
@@ -42,11 +41,6 @@ from recidiviz.common.constants.county.hold import HoldStatus
 from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.common.constants.state.external_id_types import US_MO_DOC, US_ND_ELITE
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
-from recidiviz.ingest.models.ingest_info_pb2 import (
-    IngestInfo as IngestInfoProto,
-    Charge,
-    Sentence,
-)
 from recidiviz.ingest.models.ingest_info import (
     IngestInfo,
     StateAlias,
@@ -55,10 +49,14 @@ from recidiviz.ingest.models.ingest_info import (
     StatePersonRace,
     StateSentenceGroup,
 )
+from recidiviz.ingest.models.ingest_info_pb2 import (
+    IngestInfo as IngestInfoProto,
+    Charge,
+    Sentence,
+)
 from recidiviz.ingest.scrape.ingest_utils import convert_ingest_info_to_proto
 from recidiviz.persistence import persistence
 from recidiviz.persistence.database import database
-from recidiviz.persistence.database.base_schema import JailsBase, StateBase
 from recidiviz.persistence.database.schema.county import (
     schema as county_schema,
     dao as county_dao,
@@ -70,8 +68,10 @@ from recidiviz.persistence.database.schema.state import (
 from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter,
 )
-from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session import Session
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.entity_matching.entity_matching_types import MatchedEntities
 from recidiviz.persistence.ingest_info_converter.base_converter import (
@@ -168,7 +168,8 @@ class TestPersistence(TestCase):
     """Test that the persistence layer correctly writes to the SQL database."""
 
     def setUp(self) -> None:
-        fakes.use_in_memory_sqlite_database(JailsBase)
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS)
+        fakes.use_in_memory_sqlite_database(self.database_key)
 
     def tearDown(self) -> None:
         fakes.teardown_in_memory_sqlite_databases()
@@ -181,7 +182,9 @@ class TestPersistence(TestCase):
 
             # Act
             persistence.write(ingest_info, DEFAULT_METADATA)
-            result = county_dao.read_people(SessionFactory.for_schema_base(JailsBase))
+            result = county_dao.read_people(
+                SessionFactory.for_database(self.database_key)
+            )
 
             # Assert
             assert not result
@@ -196,7 +199,9 @@ class TestPersistence(TestCase):
 
             # Act
             persistence.write(ingest_info, DEFAULT_METADATA)
-            result = county_dao.read_people(SessionFactory.for_schema_base(JailsBase))
+            result = county_dao.read_people(
+                SessionFactory.for_database(self.database_key)
+            )
 
             # Assert
             assert len(result) == 1
@@ -280,7 +285,7 @@ class TestPersistence(TestCase):
 
         # Act
         persistence.write(ingest_info, DEFAULT_METADATA)
-        result = county_dao.read_people(SessionFactory.for_schema_base(JailsBase))
+        result = county_dao.read_people(SessionFactory.for_database(self.database_key))
 
         # Assert
         assert len(result) == 2
@@ -296,7 +301,7 @@ class TestPersistence(TestCase):
 
         # Act
         self.assertFalse(persistence.write(ingest_info, DEFAULT_METADATA))
-        result = county_dao.read_people(SessionFactory.for_schema_base(JailsBase))
+        result = county_dao.read_people(SessionFactory.for_database(self.database_key))
 
         # Assert
         assert not result
@@ -321,7 +326,7 @@ class TestPersistence(TestCase):
 
         # Act
         self.assertFalse(persistence.write(ingest_info, DEFAULT_METADATA))
-        result = county_dao.read_people(SessionFactory.for_schema_base(JailsBase))
+        result = county_dao.read_people(SessionFactory.for_database(self.database_key))
 
         # Assert
         assert not result
@@ -353,7 +358,7 @@ class TestPersistence(TestCase):
 
         # Act
         self.assertFalse(persistence.write(ingest_info, DEFAULT_METADATA))
-        result = county_dao.read_people(SessionFactory.for_schema_base(JailsBase))
+        result = county_dao.read_people(SessionFactory.for_database(self.database_key))
 
         # Assert
         assert not result
@@ -371,7 +376,7 @@ class TestPersistence(TestCase):
 
         # Act
         self.assertFalse(persistence.write(ingest_info, DEFAULT_METADATA))
-        result = county_dao.read_people(SessionFactory.for_schema_base(JailsBase))
+        result = county_dao.read_people(SessionFactory.for_database(self.database_key))
 
         # Assert
         assert not result
@@ -396,7 +401,7 @@ class TestPersistence(TestCase):
 
         # Act
         self.assertFalse(persistence.write(ingest_info, DEFAULT_METADATA))
-        result = county_dao.read_people(SessionFactory.for_schema_base(JailsBase))
+        result = county_dao.read_people(SessionFactory.for_database(self.database_key))
 
         # Assert
         assert not result
@@ -422,7 +427,7 @@ class TestPersistence(TestCase):
 
         # Act
         persistence.write(ingest_info, DEFAULT_METADATA)
-        result = county_dao.read_people(SessionFactory.for_schema_base(JailsBase))
+        result = county_dao.read_people(SessionFactory.for_database(self.database_key))
 
         # Assert
         assert len(result) == 2
@@ -444,7 +449,7 @@ class TestPersistence(TestCase):
         # Act
         persistence.write(ingest_info, DEFAULT_METADATA)
         result = county_dao.read_people(
-            SessionFactory.for_schema_base(JailsBase),
+            SessionFactory.for_database(self.database_key),
             full_name=_format_full_name(FULL_NAME_1),
         )
 
@@ -513,7 +518,7 @@ class TestPersistence(TestCase):
 
         # Act
         persistence.write(ingest_info, metadata)
-        result = county_dao.read_people(SessionFactory.for_schema_base(JailsBase))
+        result = county_dao.read_people(SessionFactory.for_database(self.database_key))
 
         # Assert
         assert len(result) == 1
@@ -567,7 +572,7 @@ class TestPersistence(TestCase):
             bookings=[schema_booking],
         )
 
-        session = SessionFactory.for_schema_base(JailsBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(schema_person)
         session.commit()
 
@@ -604,7 +609,7 @@ class TestPersistence(TestCase):
         )
         self.assertEqual(
             [expected_person],
-            county_dao.read_people(SessionFactory.for_schema_base(JailsBase)),
+            county_dao.read_people(SessionFactory.for_database(self.database_key)),
         )
 
     def test_write_preexisting_person_duplicate_charges(self):
@@ -643,7 +648,7 @@ class TestPersistence(TestCase):
             bookings=[schema_booking],
         )
 
-        session = SessionFactory.for_schema_base(JailsBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(schema_person)
         session.commit()
 
@@ -691,7 +696,7 @@ class TestPersistence(TestCase):
         )
         self.assertEqual(
             [expected_person],
-            county_dao.read_people(SessionFactory.for_schema_base(JailsBase)),
+            county_dao.read_people(SessionFactory.for_database(self.database_key)),
         )
 
     def test_write_noPeople(self):
@@ -709,7 +714,7 @@ class TestPersistence(TestCase):
         persistence.write(ingest_info, metadata)
 
         # Assert
-        people = county_dao.read_people(SessionFactory.for_schema_base(JailsBase))
+        people = county_dao.read_people(SessionFactory.for_database(self.database_key))
         self.assertFalse(people)
 
     def test_inferReleaseDateOnOpenBookings(self):
@@ -776,7 +781,7 @@ class TestPersistence(TestCase):
             bookings=[booking_open_most_recent_scrape],
         )
 
-        session = SessionFactory.for_schema_base(JailsBase)
+        session = SessionFactory.for_database(self.database_key)
         database.write_people(
             session,
             converter.convert_entity_people_to_schema_people(
@@ -822,7 +827,7 @@ class TestPersistence(TestCase):
         )
 
         # Assert
-        people = county_dao.read_people(SessionFactory.for_schema_base(JailsBase))
+        people = county_dao.read_people(SessionFactory.for_database(self.database_key))
         self.assertCountEqual(people, [expected_person, person_unmatched])
 
     def test_write_different_arrest(self):
@@ -854,7 +859,7 @@ class TestPersistence(TestCase):
             bookings=[schema_booking],
         )
 
-        session = SessionFactory.for_schema_base(JailsBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(schema_person)
         session.commit()
 
@@ -898,7 +903,7 @@ class TestPersistence(TestCase):
 
         self.assertEqual(
             [expected_person],
-            county_dao.read_people(SessionFactory.for_schema_base(JailsBase)),
+            county_dao.read_people(SessionFactory.for_database(self.database_key)),
         )
 
     def test_write_new_empty_arrest(self):
@@ -930,7 +935,7 @@ class TestPersistence(TestCase):
             bookings=[schema_booking],
         )
 
-        session = SessionFactory.for_schema_base(JailsBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(schema_person)
         session.commit()
 
@@ -973,7 +978,7 @@ class TestPersistence(TestCase):
         self.maxDiff = None
         self.assertEqual(
             [expected_person],
-            county_dao.read_people(SessionFactory.for_schema_base(JailsBase)),
+            county_dao.read_people(SessionFactory.for_database(self.database_key)),
         )
 
 
@@ -1055,7 +1060,7 @@ class MultipleStateTestMixin:
         # Arrange
         # Write initial placeholder person to database
         placeholder_person = state_schema.StatePerson(person_id=0, state_code="US_ND")
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(placeholder_person)
         session.commit()
 
@@ -1066,7 +1071,7 @@ class MultipleStateTestMixin:
         )
 
         # Assert
-        result = state_dao.read_people(SessionFactory.for_schema_base(StateBase))
+        result = state_dao.read_people(SessionFactory.for_database(self.database_key))
 
         assert len(result) == 3
         names = {person.full_name for person in result}
@@ -1079,7 +1084,7 @@ class MultipleStateTestMixin:
     def test_insertOverlappingTypes_succeeds(self):
         # Arrange
         # Write initial placeholder person to database
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
         placeholder_person = state_schema.StatePerson(person_id=0, state_code="US_ND")
         session.add(placeholder_person)
         session.commit()
@@ -1112,7 +1117,7 @@ class MultipleStateTestMixin:
         )
 
         # Assert
-        result = state_dao.read_people(SessionFactory.for_schema_base(StateBase))
+        result = state_dao.read_people(SessionFactory.for_database(self.database_key))
 
         assert len(result) == 3
         assert result[0].full_name is None
@@ -1124,7 +1129,7 @@ class MultipleStateTestMixin:
     def test_insertNonOverlappingTypes_succeeds(self):
         # Arrange
         # Write initial placeholder person to database
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
         placeholder_person = state_schema.StatePerson(person_id=0, state_code="US_ND")
         session.add(placeholder_person)
         session.commit()
@@ -1157,7 +1162,7 @@ class MultipleStateTestMixin:
         )
 
         # Assert
-        result = state_dao.read_people(SessionFactory.for_schema_base(StateBase))
+        result = state_dao.read_people(SessionFactory.for_database(self.database_key))
 
         assert len(result) == 3
         assert result[0].full_name is None
@@ -1169,7 +1174,7 @@ class MultipleStateTestMixin:
     def test_updateOverlappingTypes_succeeds(self):
         # Arrange
         # Write initial placeholder person to database
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
         placeholder_person = state_schema.StatePerson(person_id=0, state_code="US_ND")
         session.add(placeholder_person)
         session.commit()
@@ -1202,7 +1207,7 @@ class MultipleStateTestMixin:
         )
 
         # Assert
-        result = state_dao.read_people(SessionFactory.for_schema_base(StateBase))
+        result = state_dao.read_people(SessionFactory.for_database(self.database_key))
 
         assert len(result) == 3
         assert result[0].full_name is None
@@ -1216,7 +1221,7 @@ class MultipleStateTestMixin:
     def test_updateNonOverlappingTypes_succeeds(self):
         # Arrange
         # Write initial placeholder person to database
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.database_key)
         placeholder_person = state_schema.StatePerson(person_id=0, state_code="US_ND")
         session.add(placeholder_person)
         session.commit()
@@ -1249,7 +1254,7 @@ class MultipleStateTestMixin:
         )
 
         # Assert
-        result = state_dao.read_people(SessionFactory.for_schema_base(StateBase))
+        result = state_dao.read_people(SessionFactory.for_database(self.database_key))
 
         assert len(result) == 3
         assert result[0].full_name is None
@@ -1289,16 +1294,18 @@ class TestPersistenceMultipleThreadsOverlapping(TestCase, MultipleStateTestMixin
         self.storage_client_patcher.start()
         self.task_client_patcher.start()
 
-        self.isolation_level_patcher = patch(
-            "recidiviz.persistence.database.sqlalchemy_engine_manager.SQLAlchemyEngineManager.get_isolation_level",
+        self.isolation_level_patcher = patch.object(
+            SQLAlchemyDatabaseKey,
+            "isolation_level",
             # TODO(#3622): Set to 'SERIALIZABLE'
-            return_value="REPEATABLE READ",
+            "REPEATABLE READ",
         )
         self.isolation_level_patcher.start()
-        local_postgres_helpers.use_on_disk_postgresql_database(StateBase)
+        self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(StateBase)
+        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
         self.isolation_level_patcher.stop()
 
         self.bq_client_patcher.stop()
@@ -1452,16 +1459,18 @@ class TestPersistenceMultipleThreadsInterleaved(TestCase, MultipleStateTestMixin
         self.storage_client_patcher.start()
         self.task_client_patcher.start()
 
-        self.isolation_level_patcher = patch(
-            "recidiviz.persistence.database.sqlalchemy_engine_manager.SQLAlchemyEngineManager.get_isolation_level",
+        self.isolation_level_patcher = patch.object(
+            SQLAlchemyDatabaseKey,
+            "isolation_level",
             # TODO(#3622): Set to 'SERIALIZABLE'
-            return_value="REPEATABLE READ",
+            "REPEATABLE READ",
         )
         self.isolation_level_patcher.start()
-        local_postgres_helpers.use_on_disk_postgresql_database(StateBase)
+        self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(StateBase)
+        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
         self.isolation_level_patcher.stop()
 
         self.bq_client_patcher.stop()

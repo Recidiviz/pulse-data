@@ -20,6 +20,7 @@ Postgres table.
 import datetime
 from typing import Optional, List
 
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.controllers.direct_ingest_file_metadata_manager import (
     DirectIngestFileMetadataManager,
 )
@@ -31,13 +32,13 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     filename_parts_from_path,
     GcsfsDirectIngestFileType,
 )
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.persistence.database.base_schema import OperationsBase
 from recidiviz.persistence.database.schema.operations import schema, dao
 from recidiviz.persistence.database.schema_entity_converter.schema_entity_converter import (
     convert_schema_object_to_entity,
 )
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.operations.entities import (
     DirectIngestRawFileMetadata,
     DirectIngestIngestFileMetadata,
@@ -52,11 +53,12 @@ class PostgresDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
 
     def __init__(self, region_code: str):
         self.region_code = region_code.upper()
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
 
     def register_ingest_file_export_job(
         self, ingest_view_job_args: GcsfsIngestViewExportArgs
     ) -> DirectIngestIngestFileMetadata:
-        session = SessionFactory.for_schema_base(OperationsBase)
+        session = SessionFactory.for_database(self.database_key)
 
         try:
             metadata = schema.DirectIngestIngestFileMetadata(
@@ -84,7 +86,7 @@ class PostgresDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
         original_file_metadata: DirectIngestIngestFileMetadata,
         path: GcsfsFilePath,
     ) -> DirectIngestIngestFileMetadata:
-        session = SessionFactory.for_schema_base(OperationsBase)
+        session = SessionFactory.for_database(self.database_key)
 
         try:
             metadata = schema.DirectIngestIngestFileMetadata(
@@ -140,7 +142,7 @@ class PostgresDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
             raise ValueError("Expect only unprocessed paths in this function.")
 
         parts = filename_parts_from_path(path)
-        session = SessionFactory.for_schema_base(OperationsBase)
+        session = SessionFactory.for_database(self.database_key)
 
         try:
             if parts.file_type == GcsfsDirectIngestFileType.INGEST_VIEW:
@@ -172,7 +174,7 @@ class PostgresDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
             session.close()
 
     def get_file_metadata(self, path: GcsfsFilePath) -> DirectIngestFileMetadata:
-        session = SessionFactory.for_schema_base(OperationsBase)
+        session = SessionFactory.for_database(self.database_key)
 
         try:
             metadata = dao.get_file_metadata_row_for_path(
@@ -196,7 +198,7 @@ class PostgresDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
         return metadata_entity
 
     def mark_file_as_processed(self, path: GcsfsFilePath) -> None:
-        session = SessionFactory.for_schema_base(OperationsBase)
+        session = SessionFactory.for_database(self.database_key)
 
         try:
             metadata = dao.get_file_metadata_row_for_path(
@@ -214,7 +216,7 @@ class PostgresDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
         self, ingest_view_job_args: GcsfsIngestViewExportArgs
     ) -> DirectIngestIngestFileMetadata:
 
-        session = SessionFactory.for_schema_base(OperationsBase)
+        session = SessionFactory.for_database(self.database_key)
 
         try:
             metadata = dao.get_ingest_view_metadata_for_export_job(
@@ -248,7 +250,7 @@ class PostgresDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
         if parts.file_type != GcsfsDirectIngestFileType.INGEST_VIEW:
             raise ValueError(f"Exported path has unexpected type {parts.file_type}")
 
-        session = SessionFactory.for_schema_base(OperationsBase)
+        session = SessionFactory.for_database(self.database_key)
 
         try:
             metadata = dao.get_file_metadata_row(
@@ -272,7 +274,7 @@ class PostgresDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
     def mark_ingest_view_exported(
         self, metadata_entity: DirectIngestIngestFileMetadata
     ) -> None:
-        session = SessionFactory.for_schema_base(OperationsBase)
+        session = SessionFactory.for_database(self.database_key)
 
         try:
             metadata = dao.get_file_metadata_row(
@@ -289,7 +291,7 @@ class PostgresDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
     def get_ingest_view_metadata_for_most_recent_valid_job(
         self, ingest_view_tag: str
     ) -> Optional[DirectIngestIngestFileMetadata]:
-        session = SessionFactory.for_schema_base(OperationsBase)
+        session = SessionFactory.for_database(self.database_key)
 
         try:
             metadata = dao.get_ingest_view_metadata_for_most_recent_valid_job(
@@ -312,7 +314,7 @@ class PostgresDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
     def get_ingest_view_metadata_pending_export(
         self,
     ) -> List[DirectIngestIngestFileMetadata]:
-        session = SessionFactory.for_schema_base(OperationsBase)
+        session = SessionFactory.for_database(self.database_key)
 
         try:
             results = dao.get_ingest_view_metadata_pending_export(
@@ -337,7 +339,7 @@ class PostgresDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
         raw_file_tag: str,
         discovery_time_lower_bound_exclusive: Optional[datetime.datetime],
     ) -> List[DirectIngestRawFileMetadata]:
-        session = SessionFactory.for_schema_base(OperationsBase)
+        session = SessionFactory.for_database(self.database_key)
 
         try:
             results = dao.get_metadata_for_raw_files_discovered_after_datetime(

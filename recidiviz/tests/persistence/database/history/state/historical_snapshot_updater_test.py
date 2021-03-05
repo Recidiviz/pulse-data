@@ -19,18 +19,19 @@
 import datetime
 from typing import Optional
 
-from more_itertools import one
 import pytest
+from more_itertools import one
 
 from recidiviz.common.ingest_metadata import SystemLevel
-from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.schema.state import schema as state_schema
-from recidiviz.persistence.database.base_schema import StateBase
-from recidiviz.tests.persistence.database.history.base_historical_snapshot_updater_test import (
-    BaseHistoricalSnapshotUpdaterTest,
-)
+from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.persistence.database.database_test_utils import (
     generate_schema_state_person_obj_tree,
+)
+from recidiviz.tests.persistence.database.history.base_historical_snapshot_updater_test import (
+    BaseHistoricalSnapshotUpdaterTest,
 )
 from recidiviz.tools.postgres import local_postgres_helpers
 
@@ -47,10 +48,11 @@ class TestStateHistoricalSnapshotUpdater(BaseHistoricalSnapshotUpdaterTest):
         cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
-        local_postgres_helpers.use_on_disk_postgresql_database(StateBase)
+        self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(StateBase)
+        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -73,7 +75,7 @@ class TestStateHistoricalSnapshotUpdater(BaseHistoricalSnapshotUpdaterTest):
             )
 
         # Commit an update to the StatePerson
-        update_session = SessionFactory.for_schema_base(StateBase)
+        update_session = SessionFactory.for_database(self.database_key)
         person = one(update_session.query(state_schema.StatePerson).all())
         person.full_name = "new name"
         ingest_time_2 = datetime.datetime(2018, 7, 31)
@@ -82,7 +84,7 @@ class TestStateHistoricalSnapshotUpdater(BaseHistoricalSnapshotUpdaterTest):
 
         # Check that StatePerson had a new history table row written, but not
         # its child SentenceGroup.
-        assert_session = SessionFactory.for_schema_base(StateBase)
+        assert_session = SessionFactory.for_database(self.database_key)
         person = one(assert_session.query(state_schema.StatePerson).all())
         sentence_group = one(
             assert_session.query(state_schema.StateSentenceGroup).all()

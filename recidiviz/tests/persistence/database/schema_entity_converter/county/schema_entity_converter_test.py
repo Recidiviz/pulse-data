@@ -21,30 +21,31 @@ from unittest import TestCase
 from more_itertools import one
 
 from recidiviz.common.constants.bond import BondType, BondStatus
+from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.county.booking import (
     CustodyStatus,
     ReleaseReason,
     Classification,
     AdmissionReason,
 )
-from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.county.charge import ChargeClass, ChargeDegree
 from recidiviz.common.constants.county.hold import HoldStatus
+from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.common.constants.person_characteristics import (
     Gender,
     Race,
     Ethnicity,
     ResidencyStatus,
 )
-from recidiviz.common.constants.county.sentence import SentenceStatus
-from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.base_schema import JailsBase
+from recidiviz.persistence.database.schema.county import schema
 from recidiviz.persistence.database.schema_entity_converter.county.schema_entity_converter import (
     CountyEntityToSchemaConverter,
     CountySchemaToEntityConverter,
 )
+from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.county import entities
-from recidiviz.persistence.database.schema.county import schema
 from recidiviz.tests.utils import fakes
 
 _PERSON = entities.Person.new_with_defaults(
@@ -163,14 +164,15 @@ _PERSON = entities.Person.new_with_defaults(
 
 class TestCountySchemaEntityConverter(TestCase):
     def setUp(self) -> None:
-        fakes.use_in_memory_sqlite_database(JailsBase)
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS)
+        fakes.use_in_memory_sqlite_database(self.database_key)
 
     def tearDown(self) -> None:
         fakes.teardown_in_memory_sqlite_databases()
 
     def test_convert_person(self):
         schema_person = CountyEntityToSchemaConverter().convert(_PERSON)
-        session = SessionFactory.for_schema_base(JailsBase)
+        session = SessionFactory.for_database(self.database_key)
         session.add(schema_person)
         session.commit()
 

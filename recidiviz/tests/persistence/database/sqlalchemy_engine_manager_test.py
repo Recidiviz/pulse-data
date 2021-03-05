@@ -19,6 +19,8 @@
 from unittest.case import TestCase
 from mock import call, patch
 
+from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.database import sqlalchemy_database_key
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
@@ -30,12 +32,21 @@ class SQLAlchemyEngineManagerTest(TestCase):
     def tearDown(self):
         SQLAlchemyEngineManager.teardown_engines()
 
+    @patch(
+        f"{sqlalchemy_database_key.__name__}.get_existing_direct_ingest_states",
+        return_value=[StateCode.US_PA, StateCode.US_HI],
+    )
     @patch("sqlalchemy.create_engine")
     @patch("recidiviz.environment.in_gcp_production")
     @patch("recidiviz.environment.in_gcp")
     @patch("recidiviz.utils.secrets.get_secret")
     def testInitEngines_usesCorrectIsolationLevels(
-        self, mock_get_secret, mock_in_gcp, mock_in_production, mock_create_engine
+        self,
+        mock_get_secret,
+        mock_in_gcp,
+        mock_in_production,
+        mock_create_engine,
+        mock_get_states,
     ):
         # Arrange
         mock_in_gcp.return_value = True
@@ -47,45 +58,82 @@ class SQLAlchemyEngineManagerTest(TestCase):
         SQLAlchemyEngineManager.init_engines_for_server_postgres_instances()
 
         # Assert
-        assert mock_create_engine.call_args_list == [
-            call(
-                "postgresql://sqlalchemy_db_user_value:sqlalchemy_db_password_value@/sqlalchemy_db_name_value"
-                "?host=/cloudsql/sqlalchemy_cloudsql_instance_id_value",
-                isolation_level=None,
-                pool_recycle=600,
-            ),
-            call(
-                "postgresql://state_db_user_value:state_db_password_value@/state_db_name_value"
-                "?host=/cloudsql/state_cloudsql_instance_id_value",
-                isolation_level="SERIALIZABLE",
-                pool_recycle=600,
-            ),
-            call(
-                "postgresql://operations_db_user_value:operations_db_password_value@/operations_db_name_value"
-                "?host=/cloudsql/operations_cloudsql_instance_id_value",
-                isolation_level=None,
-                pool_recycle=600,
-            ),
-            call(
-                "postgresql://justice_counts_db_user_value:justice_counts_db_password_value@/"
-                "justice_counts_db_name_value?host=/cloudsql/justice_counts_cloudsql_instance_id_value",
-                isolation_level="SERIALIZABLE",
-                pool_recycle=600,
-            ),
-            call(
-                "postgresql://case_triage_db_user_value:case_triage_db_password_value@/"
-                "case_triage_db_name_value?host=/cloudsql/case_triage_cloudsql_instance_id_value",
-                isolation_level=None,
-                pool_recycle=600,
-            ),
-        ]
+        self.assertEqual(
+            mock_create_engine.call_args_list,
+            [
+                call(
+                    "postgresql://sqlalchemy_db_user_value:sqlalchemy_db_password_value@/postgres"
+                    "?host=/cloudsql/sqlalchemy_cloudsql_instance_id_value",
+                    isolation_level=None,
+                    pool_recycle=600,
+                ),
+                call(
+                    "postgresql://state_db_user_value:state_db_password_value@/postgres"
+                    "?host=/cloudsql/state_cloudsql_instance_id_value",
+                    isolation_level="SERIALIZABLE",
+                    pool_recycle=600,
+                ),
+                call(
+                    "postgresql://operations_db_user_value:operations_db_password_value@/postgres"
+                    "?host=/cloudsql/operations_cloudsql_instance_id_value",
+                    isolation_level=None,
+                    pool_recycle=600,
+                ),
+                call(
+                    "postgresql://justice_counts_db_user_value:justice_counts_db_password_value@/"
+                    "postgres?host=/cloudsql/justice_counts_cloudsql_instance_id_value",
+                    isolation_level="SERIALIZABLE",
+                    pool_recycle=600,
+                ),
+                call(
+                    "postgresql://case_triage_db_user_value:case_triage_db_password_value@/"
+                    "postgres?host=/cloudsql/case_triage_cloudsql_instance_id_value",
+                    isolation_level=None,
+                    pool_recycle=600,
+                ),
+                call(
+                    "postgresql://state_db_user_value:state_db_password_value@/us_pa_primary"
+                    "?host=/cloudsql/state_cloudsql_instance_id_value",
+                    isolation_level="SERIALIZABLE",
+                    pool_recycle=600,
+                ),
+                call(
+                    "postgresql://state_db_user_value:state_db_password_value@/us_hi_primary"
+                    "?host=/cloudsql/state_cloudsql_instance_id_value",
+                    isolation_level="SERIALIZABLE",
+                    pool_recycle=600,
+                ),
+                call(
+                    "postgresql://state_db_user_value:state_db_password_value@/us_pa_secondary"
+                    "?host=/cloudsql/state_cloudsql_instance_id_value",
+                    isolation_level="SERIALIZABLE",
+                    pool_recycle=600,
+                ),
+                call(
+                    "postgresql://state_db_user_value:state_db_password_value@/us_hi_secondary"
+                    "?host=/cloudsql/state_cloudsql_instance_id_value",
+                    isolation_level="SERIALIZABLE",
+                    pool_recycle=600,
+                ),
+            ],
+        )
+        mock_get_states.assert_called()
 
+    @patch(
+        f"{sqlalchemy_database_key.__name__}.get_existing_direct_ingest_states",
+        return_value=[StateCode.US_PA, StateCode.US_HI],
+    )
     @patch("sqlalchemy.create_engine")
     @patch("recidiviz.environment.in_gcp_staging")
     @patch("recidiviz.environment.in_gcp")
     @patch("recidiviz.utils.secrets.get_secret")
     def testInitEngines_usesCorrectIsolationLevelsInStaging(
-        self, mock_get_secret, mock_in_gcp, mock_in_staging, mock_create_engine
+        self,
+        mock_get_secret,
+        mock_in_gcp,
+        mock_in_staging,
+        mock_create_engine,
+        mock_get_states,
     ):
         # Arrange
         mock_in_gcp.return_value = True
@@ -97,38 +145,66 @@ class SQLAlchemyEngineManagerTest(TestCase):
         SQLAlchemyEngineManager.init_engines_for_server_postgres_instances()
 
         # Assert
-        assert mock_create_engine.call_args_list == [
-            call(
-                "postgresql://sqlalchemy_db_user_value:sqlalchemy_db_password_value@/sqlalchemy_db_name_value"
-                "?host=/cloudsql/sqlalchemy_cloudsql_instance_id_value",
-                isolation_level=None,
-                pool_recycle=600,
-            ),
-            call(
-                "postgresql://state_db_user_value:state_db_password_value@/state_db_name_value"
-                "?host=/cloudsql/state_cloudsql_instance_id_value",
-                isolation_level="SERIALIZABLE",
-                pool_recycle=600,
-            ),
-            call(
-                "postgresql://operations_db_user_value:operations_db_password_value@/operations_db_name_value"
-                "?host=/cloudsql/operations_cloudsql_instance_id_value",
-                isolation_level=None,
-                pool_recycle=600,
-            ),
-            call(
-                "postgresql://justice_counts_db_user_value:justice_counts_db_password_value@/"
-                "justice_counts_db_name_value?host=/cloudsql/justice_counts_cloudsql_instance_id_value",
-                isolation_level="SERIALIZABLE",
-                pool_recycle=600,
-            ),
-            call(
-                "postgresql://case_triage_db_user_value:case_triage_db_password_value@/"
-                "case_triage_db_name_value?host=/cloudsql/case_triage_cloudsql_instance_id_value",
-                isolation_level=None,
-                pool_recycle=600,
-            ),
-        ]
+        self.assertEqual(
+            mock_create_engine.call_args_list,
+            [
+                call(
+                    "postgresql://sqlalchemy_db_user_value:sqlalchemy_db_password_value@/postgres"
+                    "?host=/cloudsql/sqlalchemy_cloudsql_instance_id_value",
+                    isolation_level=None,
+                    pool_recycle=600,
+                ),
+                call(
+                    "postgresql://state_db_user_value:state_db_password_value@/postgres"
+                    "?host=/cloudsql/state_cloudsql_instance_id_value",
+                    isolation_level="SERIALIZABLE",
+                    pool_recycle=600,
+                ),
+                call(
+                    "postgresql://operations_db_user_value:operations_db_password_value@/postgres"
+                    "?host=/cloudsql/operations_cloudsql_instance_id_value",
+                    isolation_level=None,
+                    pool_recycle=600,
+                ),
+                call(
+                    "postgresql://justice_counts_db_user_value:justice_counts_db_password_value@/"
+                    "postgres?host=/cloudsql/justice_counts_cloudsql_instance_id_value",
+                    isolation_level="SERIALIZABLE",
+                    pool_recycle=600,
+                ),
+                call(
+                    "postgresql://case_triage_db_user_value:case_triage_db_password_value@/"
+                    "postgres?host=/cloudsql/case_triage_cloudsql_instance_id_value",
+                    isolation_level=None,
+                    pool_recycle=600,
+                ),
+                call(
+                    "postgresql://state_db_user_value:state_db_password_value@/us_pa_primary"
+                    "?host=/cloudsql/state_cloudsql_instance_id_value",
+                    isolation_level="SERIALIZABLE",
+                    pool_recycle=600,
+                ),
+                call(
+                    "postgresql://state_db_user_value:state_db_password_value@/us_hi_primary"
+                    "?host=/cloudsql/state_cloudsql_instance_id_value",
+                    isolation_level="SERIALIZABLE",
+                    pool_recycle=600,
+                ),
+                call(
+                    "postgresql://state_db_user_value:state_db_password_value@/us_pa_secondary"
+                    "?host=/cloudsql/state_cloudsql_instance_id_value",
+                    isolation_level="SERIALIZABLE",
+                    pool_recycle=600,
+                ),
+                call(
+                    "postgresql://state_db_user_value:state_db_password_value@/us_hi_secondary"
+                    "?host=/cloudsql/state_cloudsql_instance_id_value",
+                    isolation_level="SERIALIZABLE",
+                    pool_recycle=600,
+                ),
+            ],
+        )
+        mock_get_states.assert_called()
 
     @patch("recidiviz.utils.secrets.get_secret")
     def testGetAllStrippedCloudSqlInstanceIds_returnsOnlyConfiguredIds(

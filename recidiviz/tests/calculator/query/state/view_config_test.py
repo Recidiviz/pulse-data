@@ -20,14 +20,15 @@ import unittest
 
 import mock
 
-from recidiviz.metrics.export import export_config
-from recidiviz.calculator.query.state import view_config
 from recidiviz.big_query.big_query_view import (
     BigQueryView,
     BigQueryViewBuilder,
     BigQueryViewBuilderShouldNotBuildError,
 )
-from recidiviz.persistence.database.base_schema import JailsBase
+from recidiviz.calculator.query.state import view_config
+from recidiviz.metrics.export import export_config
+from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.utils import fakes
 
 
@@ -39,7 +40,8 @@ class ViewExportConfigTest(unittest.TestCase):
         self.mock_project_id_fn = self.metadata_patcher.start()
         self.mock_project_id_fn.return_value = "recidiviz-456"
 
-        fakes.use_in_memory_sqlite_database(JailsBase)
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS)
+        fakes.use_in_memory_sqlite_database(self.database_key)
 
     def tearDown(self) -> None:
         self.metadata_patcher.stop()

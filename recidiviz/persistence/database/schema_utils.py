@@ -16,7 +16,7 @@
 # ============================================================================
 
 """Utilities for working with the database schemas."""
-
+import enum
 import inspect
 import sys
 from types import ModuleType
@@ -27,12 +27,12 @@ import sqlalchemy
 from sqlalchemy import Table, ForeignKeyConstraint
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
-from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.persistence.database.base_schema import (
     JailsBase,
     JusticeCountsBase,
     StateBase,
     OperationsBase,
+    CaseTriageBase,
 )
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.aggregate import schema as aggregate_schema
@@ -45,7 +45,6 @@ from recidiviz.persistence.database.schema.justice_counts import (
 )
 from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema.operations import schema as operations_schema
-from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
 
 _SCHEMA_MODULES: List[ModuleType] = [
     aggregate_schema,
@@ -202,43 +201,51 @@ def historical_table_class_from_obj(
     return getattr(schema_module, history_table_class_name, None)
 
 
-def schema_base_for_system_level(system_level: SystemLevel) -> DeclarativeMeta:
-    if system_level == SystemLevel.STATE:
-        return StateBase
-    if system_level == SystemLevel.COUNTY:
-        return JailsBase
-
-    raise ValueError(f"Unsupported SystemLevel type: {system_level}")
-
-
-def schema_type_for_system_level(system_level: SystemLevel) -> SchemaType:
-    if system_level == SystemLevel.STATE:
-        return SchemaType.STATE
-    if system_level == SystemLevel.COUNTY:
-        return SchemaType.JAILS
-
-    raise ValueError(f"Unsupported SystemLevel type: {system_level}")
+@enum.unique
+class SchemaType(enum.Enum):
+    JAILS = "JAILS"
+    STATE = "STATE"
+    OPERATIONS = "OPERATIONS"
+    JUSTICE_COUNTS = "JUSTICE_COUNTS"
+    CASE_TRIAGE = "CASE_TRIAGE"
 
 
-def schema_base_for_schema_module(module: ModuleType) -> DeclarativeMeta:
+def schema_type_for_schema_module(module: ModuleType) -> SchemaType:
     if module in (aggregate_schema, county_schema):
-        return JailsBase
+        return SchemaType.JAILS
     if module == state_schema:
-        return StateBase
+        return SchemaType.STATE
     if module == operations_schema:
-        return OperationsBase
+        return SchemaType.OPERATIONS
 
     raise ValueError(f"Unsupported module: {module}")
 
 
-def schema_base_for_object(schema_object: DatabaseEntity) -> DeclarativeMeta:
+def schema_type_for_object(schema_object: DatabaseEntity) -> SchemaType:
     if isinstance(schema_object, JailsBase):
-        return JailsBase
+        return SchemaType.JAILS
     if isinstance(schema_object, JusticeCountsBase):
-        return JusticeCountsBase
+        return SchemaType.JUSTICE_COUNTS
     if isinstance(schema_object, StateBase):
-        return StateBase
+        return SchemaType.STATE
     if isinstance(schema_object, OperationsBase):
-        return OperationsBase
+        return SchemaType.OPERATIONS
+    if isinstance(schema_object, CaseTriageBase):
+        return SchemaType.CASE_TRIAGE
 
     raise ValueError(f"Object of type [{type(schema_object)}] has unknown schema base.")
+
+
+def schema_type_to_schema_base(schema_type: SchemaType) -> DeclarativeMeta:
+    if schema_type == SchemaType.JAILS:
+        return JailsBase
+    if schema_type == SchemaType.STATE:
+        return StateBase
+    if schema_type == SchemaType.OPERATIONS:
+        return OperationsBase
+    if schema_type == SchemaType.JUSTICE_COUNTS:
+        return JusticeCountsBase
+    if schema_type == SchemaType.CASE_TRIAGE:
+        return CaseTriageBase
+
+    raise ValueError(f"Unexpected schema type [{schema_type}].")
