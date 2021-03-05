@@ -26,6 +26,7 @@ from typing import Optional, Tuple
 from flask import Blueprint, request
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockAlreadyExists
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
@@ -410,7 +411,10 @@ def process_job() -> Tuple[str, HTTPStatus]:
                     return str(e), HTTPStatus.BAD_REQUEST
                 raise e
 
-            controller.run_ingest_job_and_kick_scheduler_on_completion(ingest_args)
+            try:
+                controller.run_ingest_job_and_kick_scheduler_on_completion(ingest_args)
+            except GCSPseudoLockAlreadyExists as e:
+                return str(e), HTTPStatus.CONFLICT
     return "", HTTPStatus.OK
 
 

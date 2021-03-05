@@ -45,6 +45,9 @@ from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import (
     GcsfsDirectIngestController,
 )
+from recidiviz.ingest.direct.controllers.direct_ingest_types import (
+    IngestArgsType,
+)
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsIngestArgs,
     filename_parts_from_path,
@@ -129,6 +132,31 @@ class BaseTestCsvGcsfsDirectIngestController(CsvGcsfsDirectIngestController):
             if os.path.exists(path):
                 return True
         return False
+
+
+class CrashingStateTestGcsfsDirectIngestController(
+    BaseTestCsvGcsfsDirectIngestController
+):
+    def __init__(
+        self,
+        ingest_directory_path: str,
+        storage_directory_path: str,
+        max_delay_sec_between_files: int = 0,
+    ):
+        super().__init__(
+            TEST_STATE_REGION.region_code,
+            SystemLevel.STATE,
+            ingest_directory_path,
+            storage_directory_path,
+            max_delay_sec_between_files,
+        )
+
+    @classmethod
+    def get_file_tag_rank_list(cls) -> List[str]:
+        return ["tagC"]
+
+    def _run_ingest_job(self, args: IngestArgsType) -> bool:
+        raise Exception("insta-crash")
 
 
 class StateTestGcsfsDirectIngestController(BaseTestCsvGcsfsDirectIngestController):
@@ -520,6 +548,28 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                 ("tagC", True),
             ],
         )
+
+    @patch(
+        "recidiviz.cloud_storage.gcs_pseudo_lock_manager.GcsfsFactory.build",
+        Mock(return_value=FakeGCSFileSystem()),
+    )
+    @patch(
+        "recidiviz.utils.regions.get_region",
+        Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION),
+    )
+    def test_crash_releases_lock(self) -> None:
+        controller = build_gcsfs_controller_for_tests(
+            CrashingStateTestGcsfsDirectIngestController,
+            self.FIXTURE_PATH_PREFIX,
+            run_async=True,
+        )
+        file_tags = list(reversed(sorted(controller.get_file_tag_rank_list())))
+        add_paths_with_tags(controller, file_tags)
+        with self.assertRaises(Exception):
+            run_task_queues_to_empty(controller)
+
+        # Assert that there are no leftover locks
+        self.assertTrue(controller.lock_manager.no_active_locks_with_prefix(""))
 
     @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_COUNTY_REGION))
     def test_county_runs_files_in_order(self) -> None:

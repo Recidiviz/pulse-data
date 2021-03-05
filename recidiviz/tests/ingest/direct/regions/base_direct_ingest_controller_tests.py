@@ -23,6 +23,7 @@ import datetime
 import os
 import unittest
 from typing import List, Type, Optional, cast
+
 from freezegun import freeze_time
 from mock import create_autospec, patch
 from sqlalchemy.ext.declarative import DeclarativeMeta
