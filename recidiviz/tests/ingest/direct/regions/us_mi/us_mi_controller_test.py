@@ -17,13 +17,11 @@
 """Unit and integration tests for US_MI direct ingest."""
 from typing import Type
 
-from sqlalchemy.ext.declarative import DeclarativeMeta
-
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import (
     GcsfsDirectIngestController,
 )
 from recidiviz.ingest.direct.regions.us_mi.us_mi_controller import UsMiController
-from recidiviz.persistence.database.base_schema import StateBase
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests import (
     BaseDirectIngestControllerTests,
 )
@@ -43,5 +41,5 @@ class TestUsMiController(BaseDirectIngestControllerTests):
         return UsMiController
 
     @classmethod
-    def schema_base(cls) -> DeclarativeMeta:
-        return StateBase
+    def schema_type(cls) -> SchemaType:
+        return SchemaType.STATE

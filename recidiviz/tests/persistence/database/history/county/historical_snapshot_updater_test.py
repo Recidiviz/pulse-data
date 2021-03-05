@@ -20,26 +20,27 @@ import datetime
 from typing import Dict, Type, Optional
 
 from recidiviz.common.constants.bond import BondStatus, BondType
+from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.county.booking import (
     AdmissionReason,
     Classification,
     CustodyStatus,
     ReleaseReason,
 )
-from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.county.charge import ChargeClass, ChargeDegree
 from recidiviz.common.constants.county.hold import HoldStatus
+from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.common.constants.person_characteristics import (
     Ethnicity,
     Gender,
     Race,
     ResidencyStatus,
 )
-from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import SystemLevel
-from recidiviz.persistence.database.base_schema import JailsBase
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.county import schema as county_schema
+from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.core_entity import primary_key_value_from_obj
 from recidiviz.tests.persistence.database.history.base_historical_snapshot_updater_test import (
     BaseHistoricalSnapshotUpdaterTest,
@@ -57,7 +58,8 @@ class TestCountyHistoricalSnapshotUpdater(BaseHistoricalSnapshotUpdaterTest):
     """Tests for CountyHistoricalSnapshotUpdater"""
 
     def setUp(self) -> None:
-        fakes.use_in_memory_sqlite_database(JailsBase)
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS)
+        fakes.use_in_memory_sqlite_database(self.database_key)
 
     def tearDown(self) -> None:
         fakes.teardown_in_memory_sqlite_databases()

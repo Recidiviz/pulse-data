@@ -20,8 +20,6 @@ import datetime
 import json
 from typing import Type
 
-from sqlalchemy.ext.declarative import DeclarativeMeta
-
 from recidiviz import IngestInfo
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import (
@@ -97,7 +95,7 @@ from recidiviz.ingest.models.ingest_info import (
     StateSupervisionViolationResponse,
     StateSupervisionViolationResponseDecisionEntry,
 )
-from recidiviz.persistence.database.base_schema import StateBase
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests import (
     BaseDirectIngestControllerTests,
@@ -119,8 +117,8 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         return UsPaController
 
     @classmethod
-    def schema_base(cls) -> DeclarativeMeta:
-        return StateBase
+    def schema_type(cls) -> SchemaType:
+        return SchemaType.STATE
 
     def test_populate_data_person_external_ids(self) -> None:
         expected = IngestInfo(

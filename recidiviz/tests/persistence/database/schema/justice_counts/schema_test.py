@@ -23,9 +23,10 @@ from unittest.case import TestCase
 
 import pytest
 
-from recidiviz.persistence.database.base_schema import JusticeCountsBase
 from recidiviz.persistence.database.schema.justice_counts import schema
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tools.postgres import local_postgres_helpers
 
 
@@ -42,10 +43,11 @@ class TestSchema(TestCase):
         cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
-        local_postgres_helpers.use_on_disk_postgresql_database(JusticeCountsBase)
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
+        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(JusticeCountsBase)
+        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -55,7 +57,7 @@ class TestSchema(TestCase):
 
     def testSchema_insertRows_returnedInQuery(self):
         # Create an object of each type with proper relationships
-        act_session = SessionFactory.for_schema_base(JusticeCountsBase)
+        act_session = SessionFactory.for_database(self.database_key)
 
         source = schema.Source(name="Test Source")
         act_session.add(source)
@@ -98,7 +100,7 @@ class TestSchema(TestCase):
         act_session.close()
 
         # Query the cell and trace the relationships back up
-        assert_session = SessionFactory.for_schema_base(JusticeCountsBase)
+        assert_session = SessionFactory.for_database(self.database_key)
 
         [cell] = assert_session.query(schema.Cell).all()
         self.assertEqual(123, cell.value)

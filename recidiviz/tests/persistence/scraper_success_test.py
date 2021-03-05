@@ -24,11 +24,12 @@ from more_itertools import one
 from recidiviz.ingest.models.scraper_success import (
     ScraperSuccess as ScraperSuccessModel,
 )
-from recidiviz.persistence.database.base_schema import JailsBase
 from recidiviz.persistence.database.schema.county.schema import (
     ScraperSuccess as ScraperSuccessTable,
 )
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.scraper_success import store_scraper_success
 from recidiviz.tests.utils import fakes
 
@@ -46,7 +47,8 @@ class TestScraperSuccessPersist(TestCase):
     """Test that store_scraper_success correctly persists."""
 
     def setUp(self) -> None:
-        fakes.use_in_memory_sqlite_database(JailsBase)
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS)
+        fakes.use_in_memory_sqlite_database(self.database_key)
 
     def tearDown(self) -> None:
         fakes.teardown_in_memory_sqlite_databases()
@@ -55,7 +57,9 @@ class TestScraperSuccessPersist(TestCase):
     def testWrite_SingleCount(self):
         store_scraper_success(ScraperSuccessModel(), "01001001")
 
-        query = SessionFactory.for_schema_base(JailsBase).query(ScraperSuccessTable)
+        query = SessionFactory.for_database(self.database_key).query(
+            ScraperSuccessTable
+        )
         result = one(query.all())
 
         self.assertEqual(result.jid, _JID)
@@ -64,7 +68,9 @@ class TestScraperSuccessPersist(TestCase):
     def testWrite_ScraperSuccessWithDate(self):
         store_scraper_success(ScraperSuccessModel(date=_TODAY), "01001001")
 
-        query = SessionFactory.for_schema_base(JailsBase).query(ScraperSuccessTable)
+        query = SessionFactory.for_database(self.database_key).query(
+            ScraperSuccessTable
+        )
         result = one(query.all())
 
         self.assertEqual(result.jid, _JID)

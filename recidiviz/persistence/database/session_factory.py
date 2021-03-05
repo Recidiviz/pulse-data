@@ -20,28 +20,35 @@ Class for generating SQLAlchemy Sessions objects for the appropriate schema.
 
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
-from recidiviz.persistence.database.base_schema import OperationsBase
+from recidiviz.persistence.database.base_schema import (
+    OperationsBase,
+)
 from recidiviz.persistence.database.schema.operations.session_listener import (
     session_listener as operations_session_listener,
 )
+from recidiviz.persistence.database.session import Session
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
-from recidiviz.persistence.database.session import Session
 
 
 class SessionFactory:
     """Creates SQLAlchemy sessions for the given database schema"""
 
     @classmethod
-    def for_schema_base(cls, schema_base: DeclarativeMeta) -> Session:
-        engine = SQLAlchemyEngineManager.get_engine_for_schema_base(schema_base)
+    def for_database(cls, database_key: SQLAlchemyDatabaseKey) -> Session:
+        engine = SQLAlchemyEngineManager.get_engine_for_database(
+            database_key=database_key
+        )
         if engine is None:
-            raise ValueError(f"No engine set for base [{schema_base.__name__}]")
+            raise ValueError(f"No engine set for key [{database_key}]")
 
         session = Session(bind=engine)
         cls._alter_session_variables(session)
-        cls._apply_session_listener_for_schema_base(schema_base, session)
+        cls._apply_session_listener_for_schema_base(
+            database_key.declarative_meta, session
+        )
         return session
 
     @classmethod

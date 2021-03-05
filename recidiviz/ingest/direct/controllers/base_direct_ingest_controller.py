@@ -28,6 +28,10 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
     GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME,
     GCSPseudoLockAlreadyExists,
 )
+from recidiviz.common.ingest_metadata import (
+    IngestMetadata,
+    SystemLevel,
+)
 from recidiviz.ingest.direct.controllers.direct_ingest_types import (
     ContentsHandleType,
     IngestArgsType,
@@ -35,7 +39,6 @@ from recidiviz.ingest.direct.controllers.direct_ingest_types import (
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     DirectIngestCloudTaskManagerImpl,
 )
-from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.ingest.direct.direct_ingest_controller_utils import (
     check_is_region_launched_in_env,
 )
@@ -46,8 +49,9 @@ from recidiviz.persistence import persistence
 from recidiviz.persistence.database.bq_refresh.bq_refresh_utils import (
     postgres_to_bq_lock_name_for_schema,
 )
-from recidiviz.persistence.database.schema_utils import schema_type_for_system_level
-from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
+from recidiviz.persistence.database.schema_utils import (
+    SchemaType,
+)
 from recidiviz.utils import regions, trace
 
 
@@ -121,9 +125,7 @@ class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandl
             return
 
         if self.lock_manager.is_locked(
-            postgres_to_bq_lock_name_for_schema(
-                schema_type_for_system_level(self.system_level)
-            )
+            postgres_to_bq_lock_name_for_schema(self.system_level.schema_type())
         ) or self.lock_manager.is_locked(
             postgres_to_bq_lock_name_for_schema(SchemaType.OPERATIONS)
         ):
@@ -224,9 +226,7 @@ class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandl
         check_is_region_launched_in_env(self.region)
 
         if self.lock_manager.is_locked(
-            postgres_to_bq_lock_name_for_schema(
-                schema_type_for_system_level(self.system_level)
-            )
+            postgres_to_bq_lock_name_for_schema(self.system_level.schema_type())
         ) or self.lock_manager.is_locked(
             postgres_to_bq_lock_name_for_schema(SchemaType.OPERATIONS)
         ):

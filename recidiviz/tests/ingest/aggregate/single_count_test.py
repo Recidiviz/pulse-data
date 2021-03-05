@@ -26,9 +26,10 @@ from more_itertools import one
 from recidiviz.common import str_field_utils
 from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
 from recidiviz.ingest.aggregate.single_count import store_single_count_blueprint
-from recidiviz.persistence.database.base_schema import JailsBase
 from recidiviz.persistence.database.schema.aggregate.schema import SingleCountAggregate
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.utils import fakes
 
 APP_ID = "recidiviz-scraper-aggregate-report-test"
@@ -47,7 +48,8 @@ class TestSingleCountIngest(TestCase):
 
     def setUp(self) -> None:
         self.client = app.test_client()
-        fakes.use_in_memory_sqlite_database(JailsBase)
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS)
+        fakes.use_in_memory_sqlite_database(self.database_key)
 
     def tearDown(self) -> None:
         fakes.teardown_in_memory_sqlite_databases()
@@ -65,7 +67,9 @@ class TestSingleCountIngest(TestCase):
         self.assertEqual(response.status_code, 200)
 
         # Assert
-        query = SessionFactory.for_schema_base(JailsBase).query(SingleCountAggregate)
+        query = SessionFactory.for_database(self.database_key).query(
+            SingleCountAggregate
+        )
         result = one(query.all())
 
         self.assertEqual(result.count, params["count"])
@@ -85,7 +89,9 @@ class TestSingleCountIngest(TestCase):
         self.assertEqual(response.status_code, 200)
 
         # Assert
-        query = SessionFactory.for_schema_base(JailsBase).query(SingleCountAggregate)
+        query = SessionFactory.for_database(self.database_key).query(
+            SingleCountAggregate
+        )
         result = one(query.all())
 
         self.assertEqual(result.count, params["count"])
@@ -106,7 +112,9 @@ class TestSingleCountIngest(TestCase):
         self.assertEqual(response.status_code, 200)
 
         # Assert
-        query = SessionFactory.for_schema_base(JailsBase).query(SingleCountAggregate)
+        query = SessionFactory.for_database(self.database_key).query(
+            SingleCountAggregate
+        )
         result = one(query.all())
 
         self.assertEqual(result.count, params["count"])
@@ -127,7 +135,9 @@ class TestSingleCountIngest(TestCase):
         self.assertEqual(response.status_code, 200)
 
         # Assert
-        query = SessionFactory.for_schema_base(JailsBase).query(SingleCountAggregate)
+        query = SessionFactory.for_database(self.database_key).query(
+            SingleCountAggregate
+        )
         result = one(query.all())
 
         self.assertEqual(result.count, params["count"])
@@ -148,7 +158,9 @@ class TestSingleCountIngest(TestCase):
         self.assertEqual(response.status_code, 200)
 
         # Assert
-        query = SessionFactory.for_schema_base(JailsBase).query(SingleCountAggregate)
+        query = SessionFactory.for_database(self.database_key).query(
+            SingleCountAggregate
+        )
         result = one(query.all())
 
         self.assertEqual(result.count, params["count"])
@@ -171,7 +183,9 @@ class TestSingleCountIngest(TestCase):
         self.assertEqual(response.status_code, 200)
 
         # Assert
-        query = SessionFactory.for_schema_base(JailsBase).query(SingleCountAggregate)
+        query = SessionFactory.for_database(self.database_key).query(
+            SingleCountAggregate
+        )
         result = one(query.all())
 
         self.assertEqual(result.count, params["count"])

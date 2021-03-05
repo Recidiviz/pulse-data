@@ -58,12 +58,15 @@ from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_ma
     PostgresDirectIngestFileMetadataManager,
 )
 from recidiviz.ingest.direct.errors import DirectIngestError
-from recidiviz.persistence.database.base_schema import OperationsBase
 from recidiviz.persistence.database.bq_refresh.bq_refresh_utils import (
     postgres_to_bq_lock_name_with_suffix,
 )
 from recidiviz.persistence.database.schema.operations import schema
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.tests.ingest.direct import fixture_util
 from recidiviz.tests.ingest.direct.direct_ingest_util import (
     build_gcsfs_controller_for_tests,
     add_paths_with_tags_and_process,
@@ -77,11 +80,9 @@ from recidiviz.tests.ingest.direct.direct_ingest_util import (
 from recidiviz.tests.ingest.direct.fake_direct_ingest_big_query_client import (
     FakeDirectIngestBigQueryClient,
 )
-from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest.direct.fake_synchronous_direct_ingest_cloud_task_manager import (
     FakeSynchronousDirectIngestCloudTaskManager,
 )
-from recidiviz.tests.ingest.direct import fixture_util
 from recidiviz.tests.utils.fake_region import (
     TEST_STATE_REGION,
     TEST_COUNTY_REGION,
@@ -260,10 +261,17 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
-        local_postgres_helpers.use_on_disk_postgresql_database(OperationsBase)
+        self.operations_database_key = SQLAlchemyDatabaseKey.for_schema(
+            SchemaType.OPERATIONS
+        )
+        local_postgres_helpers.use_on_disk_postgresql_database(
+            self.operations_database_key
+        )
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(OperationsBase)
+        local_postgres_helpers.teardown_on_disk_postgresql_database(
+            self.operations_database_key
+        )
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -303,7 +311,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         ):
             self.fail(f"Unexpected file_metadata_manager type {file_metadata_manager}")
 
-        session = SessionFactory.for_schema_base(OperationsBase)
+        session = SessionFactory.for_database(self.operations_database_key)
         try:
             raw_file_results = session.query(schema.DirectIngestRawFileMetadata).all()
 

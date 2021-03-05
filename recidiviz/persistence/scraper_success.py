@@ -25,8 +25,8 @@ from recidiviz.ingest.models.scraper_success import (
 from recidiviz.persistence.database.schema.county.schema import (
     ScraperSuccess as ScraperSuccessEntry,
 )
-from recidiviz.persistence.database.schema_utils import schema_base_for_system_level
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 
 
 def store_scraper_success(
@@ -41,8 +41,8 @@ def store_scraper_success(
         date=scraper_success.date,
     )
 
-    session = SessionFactory.for_schema_base(
-        schema_base_for_system_level(SystemLevel.COUNTY)
+    session = SessionFactory.for_database(
+        SQLAlchemyDatabaseKey.for_schema(SystemLevel.COUNTY.schema_type())
     )
     session.add(ss)
     session.commit()

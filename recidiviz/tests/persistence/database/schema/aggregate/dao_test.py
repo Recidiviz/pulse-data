@@ -20,18 +20,19 @@
 import datetime
 from unittest import TestCase
 
-from more_itertools import one
 import pandas as pd
+from more_itertools import one
 from sqlalchemy import func
 
 from recidiviz.common.constants.aggregate import enum_canonical_strings as enum_strings
-from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.base_schema import JailsBase
 from recidiviz.persistence.database.schema.aggregate import dao
 from recidiviz.persistence.database.schema.aggregate.schema import (
     FlCountyAggregate,
     FlFacilityAggregate,
 )
+from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.utils import fakes
 
 DATE_SCRAPED = datetime.date(year=2019, month=1, day=1)
@@ -41,7 +42,8 @@ class TestDao(TestCase):
     """Test that the methods in dao.py correctly read from the SQL database."""
 
     def setUp(self) -> None:
-        fakes.use_in_memory_sqlite_database(JailsBase)
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS)
+        fakes.use_in_memory_sqlite_database(self.database_key)
 
     def tearDown(self) -> None:
         fakes.teardown_in_memory_sqlite_databases()
@@ -72,7 +74,7 @@ class TestDao(TestCase):
 
         # Assert
         query = (
-            SessionFactory.for_schema_base(JailsBase)
+            SessionFactory.for_database(self.database_key)
             .query(FlCountyAggregate)
             .filter(FlCountyAggregate.county_name == "Bay")
         )
@@ -126,7 +128,7 @@ class TestDao(TestCase):
 
         # Assert
         query = (
-            SessionFactory.for_schema_base(JailsBase)
+            SessionFactory.for_database(self.database_key)
             .query(FlCountyAggregate)
             .filter(FlCountyAggregate.county_name == "Bay")
         )
@@ -156,7 +158,7 @@ class TestDao(TestCase):
         dao.write_df(FlCountyAggregate, subject)
 
         # Assert
-        query = SessionFactory.for_schema_base(JailsBase).query(FlCountyAggregate)
+        query = SessionFactory.for_database(self.database_key).query(FlCountyAggregate)
         self.assertEqual(len(query.all()), 1)
 
     def testWriteDf_OverlappingData_WritesNewAndIgnoresDuplicateRows(self):
@@ -198,7 +200,7 @@ class TestDao(TestCase):
         dao.write_df(FlCountyAggregate, subject)
 
         # Assert
-        query = SessionFactory.for_schema_base(JailsBase).query(
+        query = SessionFactory.for_database(self.database_key).query(
             func.sum(FlCountyAggregate.county_population)
         )
         result = one(one(query.all()))

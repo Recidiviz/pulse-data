@@ -17,12 +17,5 @@
 
 # States with Terraform-managed infrastructure for direct ingest
 locals {
-  direct_ingest_state_codes = [
-    "US_ID",
-    "US_MI",
-    "US_MO",
-    "US_ND",
-    "US_PA",
-    "US_TN",
-  ]
+  direct_ingest_state_codes = yamldecode(file("${path.module}/direct_ingest_state_codes.yaml"))
 }

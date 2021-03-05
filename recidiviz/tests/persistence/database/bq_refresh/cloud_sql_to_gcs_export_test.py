@@ -24,7 +24,7 @@ from unittest import mock
 import googleapiclient.errors
 
 from recidiviz.persistence.database.bq_refresh import cloud_sql_to_gcs_export
-from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
+from recidiviz.persistence.database.schema_utils import SchemaType
 
 CLOUD_SQL_TO_GCS_EXPORT_PACKAGE_NAME = cloud_sql_to_gcs_export.__name__
 
@@ -106,7 +106,7 @@ class CloudSqlToGcsExportTest(unittest.TestCase):
                 "kind": "sql#exportContext",
                 "fileType": "CSV",
                 "uri": self.mock_export_uri,
-                "databases": [self.mock_database],
+                "databases": ["postgres"],
                 "csvExportOptions": {"selectQuery": self.mock_table_query},
             }
         }

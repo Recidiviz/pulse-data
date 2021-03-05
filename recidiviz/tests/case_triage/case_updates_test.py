@@ -31,9 +31,10 @@ from recidiviz.case_triage.case_updates.types import (
     CaseUpdateActionType,
     CaseUpdateMetadataKeys,
 )
-from recidiviz.persistence.database.base_schema import CaseTriageBase
 from recidiviz.persistence.database.schema.case_triage.schema import CaseUpdate
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.case_triage.case_triage_helpers import (
     generate_fake_client,
     generate_fake_officer,
@@ -53,7 +54,8 @@ class TestCaseUpdatesInterface(TestCase):
         cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
-        local_postgres_helpers.use_on_disk_postgresql_database(CaseTriageBase)
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
+        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
 
         self.mock_officer = generate_fake_officer("id_1")
         self.mock_client = generate_fake_client(
@@ -62,7 +64,7 @@ class TestCaseUpdatesInterface(TestCase):
         )
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(CaseTriageBase)
+        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -71,7 +73,7 @@ class TestCaseUpdatesInterface(TestCase):
         )
 
     def test_insert_case_update_for_person(self) -> None:
-        commit_session = SessionFactory.for_schema_base(CaseTriageBase)
+        commit_session = SessionFactory.for_database(self.database_key)
 
         CaseUpdatesInterface.update_case_for_person(
             commit_session,
@@ -80,13 +82,13 @@ class TestCaseUpdatesInterface(TestCase):
             [CaseUpdateActionType.DISCHARGE_INITIATED],
         )
 
-        read_session = SessionFactory.for_schema_base(CaseTriageBase)
+        read_session = SessionFactory.for_database(self.database_key)
         self.assertEqual(len(read_session.query(CaseUpdate).all()), 1)
 
     @freeze_time("2020-01-02 00:00")
     def test_update_case_for_person(self) -> None:
         now = datetime(2020, 1, 2, 0, 0, 0)
-        commit_session = SessionFactory.for_schema_base(CaseTriageBase)
+        commit_session = SessionFactory.for_database(self.database_key)
 
         CaseUpdatesInterface.update_case_for_person(
             commit_session,
@@ -96,7 +98,7 @@ class TestCaseUpdatesInterface(TestCase):
         )
 
         # Validate initial insert
-        read_session = SessionFactory.for_schema_base(CaseTriageBase)
+        read_session = SessionFactory.for_database(self.database_key)
         self.assertEqual(len(read_session.query(CaseUpdate).all()), 1)
         self.assertEqual(
             read_session.query(CaseUpdate).one().update_metadata["actions"],
@@ -109,7 +111,7 @@ class TestCaseUpdatesInterface(TestCase):
         )
 
         # Perform update
-        commit_session = SessionFactory.for_schema_base(CaseTriageBase)
+        commit_session = SessionFactory.for_database(self.database_key)
 
         CaseUpdatesInterface.update_case_for_person(
             commit_session,
@@ -119,7 +121,7 @@ class TestCaseUpdatesInterface(TestCase):
         )
 
         # Validate update as expected
-        read_session = SessionFactory.for_schema_base(CaseTriageBase)
+        read_session = SessionFactory.for_database(self.database_key)
         self.assertEqual(len(read_session.query(CaseUpdate).all()), 1)
         self.assertEqual(
             read_session.query(CaseUpdate).one().update_metadata["actions"],

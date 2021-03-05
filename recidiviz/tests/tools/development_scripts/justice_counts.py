@@ -24,8 +24,8 @@ python -m recidiviz.tests.tools.development_scripts.justice_counts \
 import argparse
 import logging
 
-import recidiviz
-from recidiviz.persistence.database.base_schema import JusticeCountsBase
+from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.tools.justice_counts import test_utils
 from recidiviz.tools.justice_counts import manual_upload
@@ -90,7 +90,9 @@ if __name__ == "__main__":
     _configure_logging(arguments.log)
 
     tmp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
-    local_postgres_helpers.use_on_disk_postgresql_database(JusticeCountsBase)
+    local_postgres_helpers.use_on_disk_postgresql_database(
+        SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
+    )
 
     fs = FakeGCSFileSystem()
     try:

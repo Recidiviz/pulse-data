@@ -19,16 +19,17 @@ import datetime
 from unittest import TestCase
 
 import pandas as pd
-from pandas.testing import assert_frame_equal
 from more_itertools import one
+from pandas.testing import assert_frame_equal
 from sqlalchemy import func
 
 from recidiviz.common.constants.aggregate import enum_canonical_strings as enum_strings
 from recidiviz.ingest.aggregate.regions.ca import ca_aggregate_ingest
-from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.base_schema import JailsBase
 from recidiviz.persistence.database.schema.aggregate import dao
 from recidiviz.persistence.database.schema.aggregate.schema import CaFacilityAggregate
+from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.utils import fakes
 
@@ -43,7 +44,8 @@ class TestCaAggregateIngest(TestCase):
     """Test that ca_aggregate_ingest correctly parses the CA report file."""
 
     def setUp(self) -> None:
-        fakes.use_in_memory_sqlite_database(JailsBase)
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS)
+        fakes.use_in_memory_sqlite_database(self.database_key)
 
     def tearDown(self) -> None:
         fakes.teardown_in_memory_sqlite_databases()
@@ -146,7 +148,7 @@ class TestCaAggregateIngest(TestCase):
             dao.write_df(table, df)
 
         # Assert
-        query = SessionFactory.for_schema_base(JailsBase).query(
+        query = SessionFactory.for_database(self.database_key).query(
             func.sum(CaFacilityAggregate.average_daily_population)
         )
         result = one(one(query.all()))

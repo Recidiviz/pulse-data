@@ -19,7 +19,6 @@ import datetime
 from typing import Type
 
 import attr
-from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz import IngestInfo
 from recidiviz.common.constants.charge import ChargeStatus
@@ -105,7 +104,7 @@ from recidiviz.ingest.models.ingest_info import (
     StateSupervisionCaseTypeEntry,
     StateSupervisionContact,
 )
-from recidiviz.persistence.database.base_schema import StateBase
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests import (
     BaseDirectIngestControllerTests,
@@ -127,8 +126,8 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         return UsIdController
 
     @classmethod
-    def schema_base(cls) -> DeclarativeMeta:
-        return StateBase
+    def schema_type(cls) -> SchemaType:
+        return SchemaType.STATE
 
     def test_populate_data_offender_ofndr_dob_address(self) -> None:
         expected = IngestInfo(

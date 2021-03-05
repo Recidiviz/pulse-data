@@ -33,8 +33,7 @@ from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config im
 from recidiviz.persistence.database.schema_table_region_filtered_query_builder import (
     BigQuerySchemaTableRegionFilteredQueryBuilder,
 )
-from recidiviz.persistence.database.schema_utils import is_association_table
-from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
+from recidiviz.persistence.database.schema_utils import is_association_table, SchemaType
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 

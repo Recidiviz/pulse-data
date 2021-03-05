@@ -24,9 +24,10 @@ from more_itertools import one
 from recidiviz.common.constants.entity_enum import EnumParsingError
 from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
 from recidiviz.ingest.models.single_count import SingleCount
-from recidiviz.persistence.database.base_schema import JailsBase
 from recidiviz.persistence.database.schema.aggregate.schema import SingleCountAggregate
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.single_count import store_single_count
 from recidiviz.tests.utils import fakes
 
@@ -46,7 +47,8 @@ class TestSingleCountPersist(TestCase):
     """Test that store_single_count correctly persists a count."""
 
     def setUp(self) -> None:
-        fakes.use_in_memory_sqlite_database(JailsBase)
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS)
+        fakes.use_in_memory_sqlite_database(self.database_key)
 
     def tearDown(self) -> None:
         fakes.teardown_in_memory_sqlite_databases()
@@ -55,7 +57,9 @@ class TestSingleCountPersist(TestCase):
     def testWrite_SingleCount(self):
         store_single_count(SingleCount(count=_COUNT), "01001001")
 
-        query = SessionFactory.for_schema_base(JailsBase).query(SingleCountAggregate)
+        query = SessionFactory.for_database(self.database_key).query(
+            SingleCountAggregate
+        )
         result = one(query.all())
 
         self.assertEqual(result.jid, _JID)
@@ -66,7 +70,9 @@ class TestSingleCountPersist(TestCase):
     def testWrite_SingleStrCount(self):
         store_single_count(SingleCount(count=str(_COUNT)), "01001001")
 
-        query = SessionFactory.for_schema_base(JailsBase).query(SingleCountAggregate)
+        query = SessionFactory.for_database(self.database_key).query(
+            SingleCountAggregate
+        )
         result = one(query.all())
 
         self.assertEqual(result.jid, _JID)
@@ -76,7 +82,9 @@ class TestSingleCountPersist(TestCase):
     def testWrite_SingleCountWithDate(self):
         store_single_count(SingleCount(count=_COUNT, date=_TODAY), "01001001")
 
-        query = SessionFactory.for_schema_base(JailsBase).query(SingleCountAggregate)
+        query = SessionFactory.for_database(self.database_key).query(
+            SingleCountAggregate
+        )
         result = one(query.all())
 
         self.assertEqual(result.jid, _JID)
@@ -88,7 +96,9 @@ class TestSingleCountPersist(TestCase):
             SingleCount(count=_COUNT, ethnicity=Ethnicity.HISPANIC), "01001001"
         )
 
-        query = SessionFactory.for_schema_base(JailsBase).query(SingleCountAggregate)
+        query = SessionFactory.for_database(self.database_key).query(
+            SingleCountAggregate
+        )
         result = one(query.all())
 
         self.assertEqual(result.jid, _JID)
@@ -98,7 +108,9 @@ class TestSingleCountPersist(TestCase):
     def testWrite_SingleCountWithGender(self):
         store_single_count(SingleCount(count=_COUNT, gender=Gender.FEMALE), "01001001")
 
-        query = SessionFactory.for_schema_base(JailsBase).query(SingleCountAggregate)
+        query = SessionFactory.for_database(self.database_key).query(
+            SingleCountAggregate
+        )
         result = one(query.all())
 
         self.assertEqual(result.jid, _JID)
@@ -108,7 +120,9 @@ class TestSingleCountPersist(TestCase):
     def testWrite_SingleCountWithRace(self):
         store_single_count(SingleCount(count=_COUNT, race=Race.ASIAN), "01001001")
 
-        query = SessionFactory.for_schema_base(JailsBase).query(SingleCountAggregate)
+        query = SessionFactory.for_database(self.database_key).query(
+            SingleCountAggregate
+        )
         result = one(query.all())
 
         self.assertEqual(result.jid, _JID)
@@ -117,7 +131,7 @@ class TestSingleCountPersist(TestCase):
 
     def testWrite_SingleCountBadDataFails(self):
         def test_db_empty():
-            query = SessionFactory.for_schema_base(JailsBase).query(
+            query = SessionFactory.for_database(self.database_key).query(
                 SingleCountAggregate
             )
             self.assertEqual(query.all(), [])

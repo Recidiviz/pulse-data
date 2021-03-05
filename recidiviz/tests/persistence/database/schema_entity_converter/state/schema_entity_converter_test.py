@@ -21,11 +21,12 @@ from unittest import TestCase
 import pytest
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
-from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema_entity_converter.state.schema_entity_converter import (
     StateEntityToSchemaConverter,
     StateSchemaToEntityConverter,
 )
+from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import print_entity_trees
 from recidiviz.tests.persistence.entity.state.entities_test_utils import (
@@ -46,10 +47,14 @@ class TestStateSchemaEntityConverter(TestCase):
         cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
-        local_postgres_helpers.use_on_disk_postgresql_database(StateBase)
+        local_postgres_helpers.use_on_disk_postgresql_database(
+            SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        )
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(StateBase)
+        local_postgres_helpers.teardown_on_disk_postgresql_database(
+            SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        )
 
     @classmethod
     def tearDownClass(cls) -> None:

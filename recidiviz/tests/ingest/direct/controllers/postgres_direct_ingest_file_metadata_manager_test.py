@@ -24,6 +24,7 @@ from freezegun import freeze_time
 from mock import patch
 from more_itertools import one
 
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
     to_normalized_unprocessed_file_path,
@@ -32,13 +33,13 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
     GcsfsIngestViewExportArgs,
 )
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestFileMetadataManager,
 )
-from recidiviz.persistence.database.base_schema import OperationsBase
 from recidiviz.persistence.database.schema.operations import schema
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.base_entity import entity_graph_eq, Entity
 from recidiviz.persistence.entity.operations.entities import (
     DirectIngestRawFileMetadata,
@@ -51,7 +52,8 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
     """Tests for PostgresDirectIngestFileMetadataManagerTest."""
 
     def setUp(self) -> None:
-        fakes.use_in_memory_sqlite_database(OperationsBase)
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
+        fakes.use_in_memory_sqlite_database(self.database_key)
         self.metadata_manager = PostgresDirectIngestFileMetadataManager(
             region_code="us_xx"
         )
@@ -344,7 +346,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
                 args, self.metadata_manager, ingest_view_unprocessed_path
             )
 
-        session = SessionFactory.for_schema_base(OperationsBase)
+        session = SessionFactory.for_database(self.database_key)
         results = session.query(schema.DirectIngestIngestFileMetadata).all()
         self.assertEqual(1, len(results))
 
@@ -363,7 +365,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
         )
 
         # Invalidate the previous row
-        session = SessionFactory.for_schema_base(OperationsBase)
+        session = SessionFactory.for_database(self.database_key)
         results = session.query(schema.DirectIngestIngestFileMetadata).all()
         result = one(results)
         result.is_invalidated = True
@@ -411,7 +413,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
             args, self.metadata_manager, ingest_view_unprocessed_path_2
         )
 
-        session = SessionFactory.for_schema_base(OperationsBase)
+        session = SessionFactory.for_database(self.database_key)
         results = session.query(schema.DirectIngestIngestFileMetadata).all()
 
         self.assertEqual(
@@ -700,7 +702,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
         )
 
         # Invalidate the row that was just returned
-        session = SessionFactory.for_schema_base(OperationsBase)
+        session = SessionFactory.for_database(self.database_key)
         results = (
             session.query(schema.DirectIngestIngestFileMetadata)
             .filter_by(file_id=most_recent_valid_job.file_id)

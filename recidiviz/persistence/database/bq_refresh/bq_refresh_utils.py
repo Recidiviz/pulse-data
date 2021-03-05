@@ -18,7 +18,7 @@
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
     POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME,
 )
-from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
+from recidiviz.persistence.database.schema_utils import SchemaType
 
 
 def postgres_to_bq_lock_name_with_suffix(suffix: str) -> str:

@@ -82,7 +82,9 @@ from recidiviz.cloud_storage.gcs_file_system import (
 )
 from recidiviz.persistence.database.base_schema import JusticeCountsBase
 from recidiviz.persistence.database.schema.justice_counts import schema
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.utils.yaml_dict import YAMLDict
 from recidiviz.utils import metadata
 
@@ -2279,7 +2281,9 @@ def _convert_entities(
 
 
 def _persist_report(report: Report, report_metadata: Metadata) -> None:
-    session: Session = SessionFactory.for_schema_base(JusticeCountsBase)
+    session: Session = SessionFactory.for_database(
+        SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
+    )
 
     try:
         _convert_entities(session, report, report_metadata)

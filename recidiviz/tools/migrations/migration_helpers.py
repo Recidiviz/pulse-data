@@ -23,9 +23,9 @@ import sys
 from pygit2.repository import Repository
 
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
-    SchemaType,
     SQLAlchemyEngineManager,
 )
+from recidiviz.persistence.database.schema_utils import SchemaType
 
 
 def prompt_for_confirmation(input_text: str, accepted_response: str) -> None:
@@ -37,7 +37,7 @@ def prompt_for_confirmation(input_text: str, accepted_response: str) -> None:
         sys.exit(1)
 
 
-def confirm_correct_db(database: SchemaType) -> None:
+def confirm_correct_db_instance(database: SchemaType) -> None:
     dbname = SQLAlchemyEngineManager.get_stripped_cloudsql_instance_id(database)
     if dbname is None:
         logging.error("Could not find database instance.")

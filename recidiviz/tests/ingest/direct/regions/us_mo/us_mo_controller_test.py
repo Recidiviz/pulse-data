@@ -19,7 +19,6 @@
 import datetime
 from typing import Type, cast, List
 
-from sqlalchemy.ext.declarative import DeclarativeMeta
 from recidiviz import IngestInfo
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import Gender, Race, Ethnicity
@@ -81,8 +80,8 @@ from recidiviz.ingest.models.ingest_info import (
     StateAssessment,
     StateSupervisionCaseTypeEntry,
 )
-from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema.state import dao
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests import (
@@ -105,8 +104,8 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         return UsMoController
 
     @classmethod
-    def schema_base(cls) -> DeclarativeMeta:
-        return StateBase
+    def schema_type(cls) -> SchemaType:
+        return SchemaType.STATE
 
     def test_parse_mo_julian_date(self) -> None:
         self.assertEqual(UsMoController.mo_julian_date_to_iso(""), None)
@@ -4085,7 +4084,7 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             "tak158_tak023_tak026_incarceration_period_from_incarceration_sentence.csv"
         )
 
-        session = SessionFactory.for_schema_base(StateBase)
+        session = SessionFactory.for_database(self.main_database_key)
         found_people_from_db = dao.read_people(session)
         found_people = cast(
             List[entities.StatePerson],
