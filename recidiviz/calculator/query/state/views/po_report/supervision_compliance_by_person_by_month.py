@@ -32,22 +32,35 @@ SUPERVISION_COMPLIANCE_BY_PERSON_BY_MONTH_DESCRIPTION = """
 
 SUPERVISION_COMPLIANCE_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = """
     /*{description}*/
-    WITH compliance AS (
+    WITH monthly_assessment_and_face_to_face_counts AS (
+        SELECT
+          person_id,
+          state_code,
+          year,
+          month,
+          SUM(assessment_count) as month_assessment_count,
+          SUM(face_to_face_count) as month_face_to_face_count,
+        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_case_compliance_metrics_materialized`
+        GROUP BY state_code, year, month, person_id
+    ),
+    compliance AS (
       SELECT 
-        state_code, year, month, person_id, 
+        comp.state_code, year, month, person_id, 
         supervising_officer_external_id AS officer_external_id,
-        assessment_count,
-        face_to_face_count,
+        monthly_assessment_and_face_to_face_counts.month_assessment_count as assessment_count,
+        monthly_assessment_and_face_to_face_counts.month_face_to_face_count as face_to_face_count,
         num_days_assessment_overdue,
         face_to_face_frequency_sufficient,
+        -- There should only be one compliance metric output per month/supervising_officer_external_id/person_id,
+        -- but we do this to ensure a person-based count, prioritizing a case being out of compliance.
         ROW_NUMBER() OVER (PARTITION BY state_code, year, month, supervising_officer_external_id, person_id
-         ORDER BY assessment_count DESC, face_to_face_count DESC, num_days_assessment_overdue DESC, face_to_face_frequency_sufficient DESC) as inclusion_order
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_case_compliance_metrics_materialized`
+         ORDER BY num_days_assessment_overdue DESC, face_to_face_frequency_sufficient) as inclusion_order
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_case_compliance_metrics_materialized` comp
+    LEFT JOIN monthly_assessment_and_face_to_face_counts USING (state_code, year, month, person_id)
       WHERE supervising_officer_external_id IS NOT NULL
         AND date_of_evaluation = LAST_DAY(DATE(year, month, 1), MONTH)
         AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 3 YEAR))
     )
-    
     SELECT 
       state_code, year, month, person_id, 
       officer_external_id,

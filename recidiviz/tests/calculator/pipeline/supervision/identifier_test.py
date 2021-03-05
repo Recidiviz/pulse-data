@@ -35,6 +35,11 @@ from recidiviz.calculator.pipeline.supervision.identifier import _get_projected_
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import (
     SupervisionCaseCompliance,
 )
+
+from recidiviz.calculator.pipeline.utils.assessment_utils import (
+    find_most_recent_applicable_assessment_of_class_for_state,
+)
+
 from recidiviz.calculator.pipeline.utils.incarceration_period_index import (
     IncarcerationPeriodIndex,
 )
@@ -49,14 +54,26 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import (
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_supervising_officer_and_location_info_from_supervision_period,
+    get_state_specific_case_compliance_manager,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import (
     SupervisionTypeSpan,
 )
+
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_compliance import (
+    REASSESSMENT_DEADLINE_DAYS as US_ND_REASSESSMENT_DEADLINE_DAYS,
+    LSIR_INITIAL_NUMBER_OF_DAYS_COMPLIANCE as US_ND_INITIAL_ASSESMENT_DEADLINE_DAYS,
+)
+
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_revocation_utils import (
     PURPOSE_FOR_INCARCERATION_PVC,
     SHOCK_INCARCERATION_9_MONTHS,
 )
+
+from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager import (
+    StateSupervisionCaseComplianceManager,
+)
+
 from recidiviz.calculator.pipeline.utils.supervision_period_index import (
     SupervisionPeriodIndex,
 )
@@ -64,6 +81,7 @@ from recidiviz.common.constants.state.shared_enums import StateCustodialAuthorit
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentType,
     StateAssessmentLevel,
+    StateAssessmentClass,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
@@ -342,78 +360,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_period,
                 supervision_period_supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
-                case_compliances={
-                    date(2018, 3, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 3, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2018, 4, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 4, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=26,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2018, 5, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 5, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=57,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2018, 6, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 6, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=87,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2018, 7, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 7, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=118,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2018, 8, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 8, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=149,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2018, 9, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 9, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=179,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2018, 10, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 10, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=210,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2018, 11, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 11, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=240,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2018, 12, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 12, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=271,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=supervision_period.start_date,
+                    supervision_period=supervision_period,
+                ),
             )
         )
 
@@ -507,22 +457,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             expected_non_revocation_return_time_buckets(
                 first_supervision_period,
                 first_supervision_period_supervision_type,
-                case_compliances={
-                    date(2018, 3, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 3, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2018, 4, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 4, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=26,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=first_supervision_period.start_date,
+                    supervision_period=first_supervision_period,
+                ),
             )
         )
 
@@ -530,36 +468,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             expected_non_revocation_return_time_buckets(
                 second_supervision_period,
                 second_supervision_period_supervision_type,
-                case_compliances={
-                    date(2019, 8, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2019, 8, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=514,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2019, 9, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2019, 9, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=544,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2019, 10, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2019, 10, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=575,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2019, 11, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2019, 11, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=605,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=first_supervision_period.start_date,
+                    supervision_period=second_supervision_period,
+                ),
             )
         )
 
@@ -654,22 +566,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             expected_non_revocation_return_time_buckets(
                 first_supervision_period,
                 first_supervision_period_supervision_type,
-                case_compliances={
-                    date(2018, 3, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 3, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2018, 4, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 4, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=26,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=first_supervision_period.start_date,
+                    supervision_period=first_supervision_period,
+                ),
             )
         )
 
@@ -677,29 +577,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             expected_non_revocation_return_time_buckets(
                 second_supervision_period,
                 second_supervision_period_supervision_type,
-                case_compliances={
-                    date(2018, 4, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 4, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=26,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2018, 5, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 5, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=57,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2018, 6, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 6, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=87,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=first_supervision_period.start_date,
+                    supervision_period=second_supervision_period,
+                ),
             )
         )
 
@@ -795,22 +676,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             expected_non_revocation_return_time_buckets(
                 first_supervision_period,
                 first_supervision_period_supervision_type,
-                case_compliances={
-                    date(2018, 3, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 3, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2018, 4, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 4, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=26,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=first_supervision_period.start_date,
+                    supervision_period=first_supervision_period,
+                ),
             )
         )
 
@@ -818,29 +687,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             expected_non_revocation_return_time_buckets(
                 second_supervision_period,
                 overlapping_supervision_period_supervision_type,
-                case_compliances={
-                    date(2018, 4, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 4, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=26,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2018, 5, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 5, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=57,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2018, 6, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 6, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=87,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=first_supervision_period.start_date,
+                    supervision_period=second_supervision_period,
+                ),
             )
         )
 
@@ -943,22 +793,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             expected_non_revocation_return_time_buckets(
                 first_supervision_period,
                 first_supervision_period_supervision_type,
-                case_compliances={
-                    date(2017, 3, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 3, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2017, 4, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 4, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=26,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=first_supervision_period.start_date,
+                    supervision_period=first_supervision_period,
+                ),
             )
         )
 
@@ -1187,24 +1025,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             expected_non_revocation_return_time_buckets(
                 supervision_period,
                 supervision_period.supervision_period_supervision_type,
-                case_compliances={
-                    date(2017, 3, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 3, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=1,
-                        most_recent_face_to_face_date=date(2017, 3, 5),
-                        face_to_face_frequency_sufficient=True,
-                    ),
-                    date(2017, 4, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 4, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=11,
-                        face_to_face_count=0,
-                        most_recent_face_to_face_date=date(2017, 3, 5),
-                        face_to_face_frequency_sufficient=True,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=supervision_period.start_date,
+                    supervision_period=supervision_period,
+                    face_to_face_contacts=supervision_contacts,
+                ),
             )
         )
 
@@ -1319,22 +1144,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             expected_non_revocation_return_time_buckets(
                 supervision_period,
                 supervision_period.supervision_period_supervision_type,
-                case_compliances={
-                    date(2017, 3, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 3, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=False,
-                    ),
-                    date(2017, 4, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 4, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=11,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=False,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=supervision_period.start_date,
+                    supervision_period=supervision_period,
+                ),
             )
         )
 
@@ -1486,22 +1299,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervising_officer_external_id="Officer1",
                 level_1_supervision_location_external_id="Y",
                 level_2_supervision_location_external_id="X",
-                case_compliances={
-                    date(2017, 3, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 3, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=False,
-                    ),
-                    date(2017, 4, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 4, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=11,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=False,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=supervision_period.start_date,
+                    supervision_period=supervision_period,
+                ),
             )
         )
 
@@ -1614,22 +1415,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             expected_non_revocation_return_time_buckets(
                 supervision_period,
                 supervision_period.supervision_period_supervision_type,
-                case_compliances={
-                    date(2017, 3, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 3, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=False,
-                    ),
-                    date(2017, 4, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 4, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=11,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=False,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=supervision_period.start_date,
+                    supervision_period=supervision_period,
+                ),
             )
         )
 
@@ -1713,6 +1502,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             expected_non_revocation_return_time_buckets(
                 supervision_period,
                 supervision_period.supervision_period_supervision_type,
+                case_compliances=_generate_case_compliances(
+                    start_date=supervision_period.start_date,
+                    supervision_period=supervision_period,
+                ),
             )
         )
         self.assertCountEqual(expected_time_buckets, supervision_time_buckets)
@@ -1936,22 +1729,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             expected_non_revocation_return_time_buckets(
                 supervision_period,
                 supervision_period.supervision_period_supervision_type,
-                case_compliances={
-                    date(2017, 3, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 3, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=False,
-                    ),
-                    date(2017, 4, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 4, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=11,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=False,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=supervision_period.start_date,
+                    supervision_period=supervision_period,
+                ),
             )
         )
 
@@ -2055,22 +1836,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             expected_non_revocation_return_time_buckets(
                 supervision_period,
                 supervision_period.supervision_period_supervision_type,
-                case_compliances={
-                    date(2017, 3, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 3, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=False,
-                    ),
-                    date(2017, 4, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 4, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=11,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=False,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=supervision_period.start_date,
+                    supervision_period=supervision_period,
+                ),
             )
         )
 
@@ -2211,22 +1980,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             expected_non_revocation_return_time_buckets(
                 supervision_period,
                 supervision_period.supervision_period_supervision_type,
-                case_compliances={
-                    date(2017, 3, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 3, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=False,
-                    ),
-                    date(2017, 4, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 4, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=11,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=False,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=supervision_period.start_date,
+                    supervision_period=supervision_period,
+                ),
             )
         )
 
@@ -2365,22 +2122,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             expected_non_revocation_return_time_buckets(
                 first_supervision_period,
                 first_supervision_period_supervision_type,
-                case_compliances={
-                    date(2017, 3, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 3, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2017, 4, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 4, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=26,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=first_supervision_period.start_date,
+                    supervision_period=first_supervision_period,
+                ),
             )
         )
 
@@ -2388,36 +2133,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             expected_non_revocation_return_time_buckets(
                 second_supervision_period,
                 second_supervision_period_supervision_type,
-                case_compliances={
-                    date(2018, 8, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 8, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=514,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2018, 9, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 9, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=544,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2018, 10, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 10, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=575,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2018, 11, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 11, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=605,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=first_supervision_period.start_date,
+                    supervision_period=second_supervision_period,
+                ),
             )
         )
 
@@ -2532,22 +2251,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             expected_non_revocation_return_time_buckets(
                 first_supervision_period,
                 first_supervision_period_supervision_type,
-                case_compliances={
-                    date(2017, 3, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 3, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2017, 4, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 4, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=26,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=first_supervision_period.start_date,
+                    supervision_period=first_supervision_period,
+                ),
             )
         )
 
@@ -2665,22 +2372,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 first_supervision_period,
                 first_supervision_period_supervision_type,
                 incarceration_period.admission_date,
-                case_compliances={
-                    date(2017, 3, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 3, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2017, 4, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 4, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=26,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=first_supervision_period.start_date,
+                    supervision_period=first_supervision_period,
+                ),
             )
         )
 
@@ -2691,36 +2386,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     start_date=incarceration_period.release_date,
                 ),
                 second_supervision_period_supervision_type,
-                case_compliances={
-                    date(2017, 4, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 4, 30),
-                        assessment_count=26,
-                        num_days_assessment_overdue=11,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2017, 9, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 9, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=179,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2017, 10, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 10, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=210,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2017, 11, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 11, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=240,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=first_supervision_period.start_date,
+                    supervision_period=second_supervision_period,
+                ),
             )
         )
 
@@ -2843,8 +2512,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         self.assertCountEqual(expected_buckets, supervision_time_buckets)
 
     def test_transition_from_parole_to_probation_in_month(self):
-        """Tests the find_supervision_time_buckets function for transition between
-        two supervision periods in a month."""
+        """Tests the find_supervision_time_buckets function for transition between two supervision periods in a month."""
         first_supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
@@ -2929,22 +2597,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             expected_non_revocation_return_time_buckets(
                 first_supervision_period,
                 first_supervision_period_supervision_type,
-                case_compliances={
-                    date(2018, 3, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 3, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2018, 4, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 4, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=26,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=first_supervision_period.start_date,
+                    supervision_period=first_supervision_period,
+                ),
             )
         )
 
@@ -2952,15 +2608,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             expected_non_revocation_return_time_buckets(
                 second_supervision_period,
                 second_supervision_period_supervision_type,
-                case_compliances={
-                    date(2018, 5, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 5, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=57,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    )
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=first_supervision_period.start_date,
+                    supervision_period=second_supervision_period,
+                ),
             )
         )
 
@@ -3089,22 +2740,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 first_supervision_period,
                 first_supervision_period_supervision_type,
                 incarceration_period.admission_date,
-                case_compliances={
-                    date(2017, 3, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 3, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2017, 4, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 4, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=26,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=first_supervision_period.start_date,
+                    supervision_period=first_supervision_period,
+                ),
             )
         )
 
@@ -3113,71 +2752,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 second_supervision_period,
                 second_supervision_period_supervision_type,
                 incarceration_period.admission_date,
-                case_compliances={
-                    date(2017, 3, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 3, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2017, 4, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 4, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=26,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2017, 5, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 5, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2017, 6, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 6, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2017, 7, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 7, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2017, 8, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 8, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2017, 9, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 9, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2017, 10, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 10, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=11,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2017, 11, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 1, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=11,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=first_supervision_period.start_date,
+                    supervision_period=second_supervision_period,
+                ),
             )
         )
 
@@ -3188,29 +2766,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     start_date=incarceration_period.release_date,
                 ),
                 second_supervision_period_supervision_type,
-                case_compliances={
-                    date(2017, 9, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 9, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=179,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2017, 10, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 10, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=210,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2017, 11, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2017, 11, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=240,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=second_supervision_period.start_date,
+                    supervision_period=second_supervision_period,
+                ),
             )
         )
 
@@ -3326,22 +2885,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 level_1_supervision_location_external_id="X",
                 level_2_supervision_location_external_id=None,
                 judicial_district_code="XXX",
-                case_compliances={
-                    date(2018, 3, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 3, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2018, 4, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 4, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=26,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=supervision_period.start_date,
+                    supervision_period=supervision_period,
+                ),
             )
         )
 
@@ -3460,22 +3007,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 level_1_supervision_location_external_id="X",
                 level_2_supervision_location_external_id=None,
                 judicial_district_code="XXX",
-                case_compliances={
-                    date(2018, 3, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 3, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2018, 4, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 4, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=26,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=supervision_period.start_date,
+                    supervision_period=supervision_period,
+                ),
             )
         )
 
@@ -3591,22 +3126,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 level_1_supervision_location_external_id="X",
                 level_2_supervision_location_external_id=None,
                 judicial_district_code="XXX",
-                case_compliances={
-                    date(2018, 10, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 10, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2018, 11, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 11, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=26,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=supervision_period.start_date,
+                    supervision_period=supervision_period,
+                ),
             )
         )
 
@@ -3697,22 +3220,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             expected_non_revocation_return_time_buckets(
                 supervision_period,
                 supervision_period_supervision_type,
-                case_compliances={
-                    date(2018, 3, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 3, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2018, 4, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 4, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=26,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=supervision_period.start_date,
+                    supervision_period=supervision_period,
+                ),
             )
         )
 
@@ -3803,22 +3314,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             expected_non_revocation_return_time_buckets(
                 supervision_period,
                 supervision_period_supervision_type,
-                case_compliances={
-                    date(2015, 3, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2015, 3, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2015, 4, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2015, 4, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=26,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=supervision_period.start_date,
+                    supervision_period=supervision_period,
+                ),
             )
         )
 
@@ -3937,29 +3436,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_period,
                 supervision_period_supervision_type,
                 first_incarceration_period.admission_date,
-                case_compliances={
-                    date(2018, 1, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 1, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2018, 2, 28): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 2, 28),
-                        assessment_count=0,
-                        num_days_assessment_overdue=24,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2018, 8, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 8, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=208,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=supervision_period.start_date,
+                    supervision_period=supervision_period,
+                ),
             )
         )
 
@@ -3971,15 +3451,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 ),
                 supervision_period_supervision_type,
                 second_incarceration_period.admission_date,
-                case_compliances={
-                    date(2018, 8, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 8, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=208,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    )
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=first_incarceration_period.release_date,
+                    supervision_period=supervision_period,
+                    num_days_assessment_overdue_increment=179,
+                ),
             )
         )
 
@@ -3990,6 +3466,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     start_date=second_incarceration_period.release_date,
                 ),
                 supervision_period_supervision_type,
+                case_compliances=_generate_case_compliances(
+                    start_date=second_incarceration_period.release_date,
+                    supervision_period=supervision_period,
+                    num_days_assessment_overdue_increment=301,
+                ),
             )
         )
 
@@ -4145,29 +3626,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 first_supervision_period,
                 first_supervision_period_supervision_type,
                 first_incarceration_period.admission_date,
-                case_compliances={
-                    date(2018, 1, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 1, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2018, 2, 28): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 2, 28),
-                        assessment_count=0,
-                        num_days_assessment_overdue=24,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2018, 8, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 8, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=11,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=first_supervision_period.start_date,
+                    supervision_period=first_supervision_period,
+                ),
             )
         )
 
@@ -4179,15 +3641,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 ),
                 first_supervision_period_supervision_type,
                 second_incarceration_period.admission_date,
-                case_compliances={
-                    date(2018, 8, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 8, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=208,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    )
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=first_incarceration_period.release_date,
+                    supervision_period=first_supervision_period,
+                    num_days_assessment_overdue_increment=179,
+                ),
             )
         )
 
@@ -4198,12 +3656,23 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     start_date=second_incarceration_period.release_date,
                 ),
                 first_supervision_period_supervision_type,
+                case_compliances=_generate_case_compliances(
+                    start_date=second_incarceration_period.release_date,
+                    supervision_period=first_supervision_period,
+                    num_days_assessment_overdue_increment=301,
+                ),
             )
         )
 
         expected_buckets.extend(
             expected_non_revocation_return_time_buckets(
-                second_supervision_period, second_supervision_period_supervision_type
+                second_supervision_period,
+                second_supervision_period_supervision_type,
+                case_compliances=_generate_case_compliances(
+                    start_date=second_supervision_period.start_date,
+                    supervision_period=second_supervision_period,
+                    num_days_assessment_overdue_increment=331,
+                ),
             )
         )
 
@@ -4419,6 +3888,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 first_supervision_period,
                 first_supervision_period_supervision_type,
                 projected_supervision_completion_date=first_supervision_sentence.projected_completion_date,
+                case_compliances=_generate_case_compliances(
+                    start_date=first_supervision_period.start_date,
+                    supervision_period=first_supervision_period,
+                ),
             )
         )
 
@@ -4427,6 +3900,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 second_supervision_period,
                 second_supervision_period_supervision_type,
                 projected_supervision_completion_date=second_supervision_sentence.projected_completion_date,
+                case_compliances=_generate_case_compliances(
+                    start_date=first_supervision_period.start_date,
+                    supervision_period=second_supervision_period,
+                ),
             )
         )
 
@@ -4523,22 +4000,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             expected_non_revocation_return_time_buckets(
                 supervision_period,
                 supervision_period_supervision_type,
-                case_compliances={
-                    date(2018, 3, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 3, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2018, 4, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 4, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=26,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=supervision_period.start_date,
+                    supervision_period=supervision_period,
+                ),
             )
         )
 
@@ -4643,24 +4108,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 assessment_type=assessment.assessment_type,
                 level_1_supervision_location_external_id="OFFICE_2",
                 level_2_supervision_location_external_id="DISTRICT_1",
-                case_compliances={
-                    date(2018, 3, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 3, 31),
-                        assessment_count=1,
-                        most_recent_assessment_date=date(2018, 3, 1),
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=False,
-                    ),
-                    date(2018, 4, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 4, 30),
-                        assessment_count=0,
-                        most_recent_assessment_date=date(2018, 3, 1),
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=False,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=supervision_period.start_date,
+                    supervision_period=supervision_period,
+                    assessments=assessments,
+                ),
             )
         )
 
@@ -5183,24 +4635,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 assessment_score=assessment.assessment_score,
                 assessment_level=assessment.assessment_level,
                 assessment_type=assessment.assessment_type,
-                case_compliances={
-                    date(2018, 3, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 3, 31),
-                        assessment_count=0,
-                        most_recent_assessment_date=date(2018, 2, 10),
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2018, 4, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 4, 30),
-                        assessment_count=0,
-                        most_recent_assessment_date=date(2018, 2, 10),
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=supervision_period.start_date,
+                    supervision_period=supervision_period,
+                    assessments=assessments,
+                ),
                 projected_supervision_completion_date=supervision_sentence.projected_completion_date,
             )
         )
@@ -5297,24 +4736,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 assessment_score=assessment.assessment_score,
                 assessment_level=assessment.assessment_level,
                 assessment_type=assessment.assessment_type,
-                case_compliances={
-                    date(2018, 3, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 3, 31),
-                        assessment_count=1,
-                        most_recent_assessment_date=date(2018, 3, 1),
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2018, 4, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 4, 30),
-                        assessment_count=0,
-                        most_recent_assessment_date=date(2018, 3, 1),
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=supervision_period.start_date,
+                    supervision_period=supervision_period,
+                    assessments=assessments,
+                ),
                 projected_supervision_completion_date=supervision_sentence.projected_completion_date,
             )
         )
@@ -5516,24 +4942,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 assessment_score=assessment.assessment_score,
                 assessment_level=assessment.assessment_level,
                 assessment_type=assessment.assessment_type,
-                case_compliances={
-                    date(2018, 3, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 3, 31),
-                        assessment_count=1,
-                        most_recent_assessment_date=date(2018, 3, 1),
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=False,
-                    ),
-                    date(2018, 4, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 4, 30),
-                        assessment_count=0,
-                        most_recent_assessment_date=date(2018, 3, 1),
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=False,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=supervision_period.start_date,
+                    supervision_period=supervision_period,
+                    assessments=assessments,
+                ),
             )
         )
 
@@ -5651,24 +5064,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 assessment_score=assessment.assessment_score,
                 assessment_level=assessment.assessment_level,
                 assessment_type=assessment.assessment_type,
-                case_compliances={
-                    date(2018, 3, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 3, 31),
-                        assessment_count=1,
-                        most_recent_assessment_date=date(2018, 3, 1),
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2018, 4, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 4, 30),
-                        assessment_count=0,
-                        most_recent_assessment_date=date(2018, 3, 1),
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=supervision_period.start_date,
+                    supervision_period=supervision_period,
+                    assessments=assessments,
+                ),
             )
         )
 
@@ -5680,24 +5080,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 assessment_score=assessment.assessment_score,
                 assessment_level=assessment.assessment_level,
                 assessment_type=assessment.assessment_type,
-                case_compliances={
-                    date(2018, 3, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 3, 31),
-                        assessment_count=1,
-                        most_recent_assessment_date=date(2018, 3, 1),
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2018, 4, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 4, 30),
-                        assessment_count=0,
-                        most_recent_assessment_date=date(2018, 3, 1),
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=supervision_period.start_date,
+                    supervision_period=supervision_period,
+                    assessments=assessments,
+                ),
             )
         )
 
@@ -5709,24 +5096,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 assessment_score=assessment.assessment_score,
                 assessment_level=assessment.assessment_level,
                 assessment_type=assessment.assessment_type,
-                case_compliances={
-                    date(2018, 3, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 3, 31),
-                        assessment_count=1,
-                        most_recent_assessment_date=date(2018, 3, 1),
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2018, 4, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 4, 30),
-                        assessment_count=0,
-                        most_recent_assessment_date=date(2018, 3, 1),
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=supervision_period.start_date,
+                    supervision_period=supervision_period,
+                    assessments=assessments,
+                ),
             )
         )
 
@@ -5857,29 +5231,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_period,
                 StateSupervisionPeriodSupervisionType.PROBATION,
                 date.today(),
-                case_compliances={
-                    date(2019, 6, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2019, 6, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2019, 7, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2019, 7, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=29,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2019, 8, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2019, 8, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=60,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=supervision_period.start_date,
+                    supervision_period=supervision_period,
+                    end_date_override=date(2019, 9, 3),
+                ),
             )
         )
 
@@ -5988,29 +5344,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_period,
                 supervision_period_supervision_type,
                 first_incarceration_period.admission_date,
-                case_compliances={
-                    date(2018, 3, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 3, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2018, 4, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 4, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=26,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2018, 5, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2018, 5, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=57,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=supervision_period.start_date,
+                    supervision_period=supervision_period,
+                ),
             )
         )
 
@@ -8340,29 +7677,11 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                 supervision_period,
                 supervision_period_supervision_type,
                 incarceration_period.admission_date,
-                case_compliances={
-                    date(2003, 7, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2003, 7, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=0,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2003, 8, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2003, 8, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=27,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2003, 9, 30): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2003, 9, 30),
-                        assessment_count=0,
-                        num_days_assessment_overdue=57,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=supervision_period.start_date,
+                    supervision_period=supervision_period,
+                    end_date_override=date(2003, 10, 10),
+                ),
             ),
         )
 
@@ -8437,15 +7756,10 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             supervision_period,
             supervision_period_supervision_type,
             incarceration_period.admission_date,
-            case_compliances={
-                date(2018, 3, 31): SupervisionCaseCompliance(
-                    date_of_evaluation=date(2018, 3, 31),
-                    assessment_count=0,
-                    num_days_assessment_overdue=0,
-                    face_to_face_count=0,
-                    face_to_face_frequency_sufficient=None,
-                )
-            },
+            case_compliances=_generate_case_compliances(
+                start_date=supervision_period.start_date,
+                supervision_period=supervision_period,
+            ),
         )
         self.assertCountEqual(expected_buckets, supervision_time_buckets)
 
@@ -8518,22 +7832,11 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             supervision_period,
             supervision_period_supervision_type,
             incarceration_period.admission_date,
-            case_compliances={
-                date(2019, 3, 31): SupervisionCaseCompliance(
-                    date_of_evaluation=date(2019, 3, 31),
-                    assessment_count=0,
-                    num_days_assessment_overdue=0,
-                    face_to_face_count=0,
-                    face_to_face_frequency_sufficient=None,
-                ),
-                date(2019, 4, 30): SupervisionCaseCompliance(
-                    date_of_evaluation=date(2019, 4, 30),
-                    assessment_count=0,
-                    num_days_assessment_overdue=26,
-                    face_to_face_count=0,
-                    face_to_face_frequency_sufficient=None,
-                ),
-            },
+            case_compliances=_generate_case_compliances(
+                start_date=supervision_period.start_date,
+                supervision_period=supervision_period,
+                end_date_override=date(2019, 11, 2),
+            ),
         )
 
         expected_buckets.extend(
@@ -8542,15 +7845,12 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                     supervision_period, start_date=incarceration_period.release_date
                 ),
                 supervision_period_supervision_type,
-                case_compliances={
-                    date(2019, 10, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2019, 10, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=210,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    )
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=incarceration_period.release_date,
+                    supervision_period=supervision_period,
+                    end_date_override=date(2019, 11, 3),
+                    num_days_assessment_overdue_increment=196,
+                ),
             )
         )
 
@@ -8623,29 +7923,10 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             supervision_period,
             supervision_period_supervision_type,
             incarceration_period.admission_date,
-            case_compliances={
-                date(2018, 3, 31): SupervisionCaseCompliance(
-                    date_of_evaluation=date(2018, 3, 31),
-                    assessment_count=0,
-                    num_days_assessment_overdue=0,
-                    face_to_face_count=0,
-                    face_to_face_frequency_sufficient=None,
-                ),
-                date(2018, 4, 30): SupervisionCaseCompliance(
-                    date_of_evaluation=date(2018, 4, 30),
-                    assessment_count=0,
-                    num_days_assessment_overdue=26,
-                    face_to_face_count=0,
-                    face_to_face_frequency_sufficient=None,
-                ),
-                date(2018, 5, 31): SupervisionCaseCompliance(
-                    date_of_evaluation=date(2018, 5, 31),
-                    assessment_count=0,
-                    num_days_assessment_overdue=57,
-                    face_to_face_count=0,
-                    face_to_face_frequency_sufficient=None,
-                ),
-            },
+            case_compliances=_generate_case_compliances(
+                start_date=supervision_period.start_date,
+                supervision_period=supervision_period,
+            ),
         )
 
         self.assertCountEqual(expected_buckets, supervision_time_buckets)
@@ -8720,29 +8001,10 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             supervision_period,
             supervision_period_supervision_type,
             incarceration_period.admission_date,
-            case_compliances={
-                date(2008, 3, 31): SupervisionCaseCompliance(
-                    date_of_evaluation=date(2008, 3, 31),
-                    assessment_count=0,
-                    num_days_assessment_overdue=0,
-                    face_to_face_count=0,
-                    face_to_face_frequency_sufficient=None,
-                ),
-                date(2008, 4, 30): SupervisionCaseCompliance(
-                    date_of_evaluation=date(2008, 4, 30),
-                    assessment_count=0,
-                    num_days_assessment_overdue=26,
-                    face_to_face_count=0,
-                    face_to_face_frequency_sufficient=None,
-                ),
-                date(2008, 5, 31): SupervisionCaseCompliance(
-                    date_of_evaluation=date(2008, 5, 31),
-                    assessment_count=0,
-                    num_days_assessment_overdue=57,
-                    face_to_face_count=0,
-                    face_to_face_frequency_sufficient=None,
-                ),
-            },
+            case_compliances=_generate_case_compliances(
+                start_date=supervision_period.start_date,
+                supervision_period=supervision_period,
+            ),
         )
 
         expected_buckets.extend(
@@ -8751,29 +8013,10 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                     supervision_period, start_date=incarceration_period.release_date
                 ),
                 supervision_period_supervision_type,
-                case_compliances={
-                    date(2009, 12, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2009, 12, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=636,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2010, 1, 31): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2010, 1, 31),
-                        assessment_count=0,
-                        num_days_assessment_overdue=667,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                    date(2010, 2, 28): SupervisionCaseCompliance(
-                        date_of_evaluation=date(2010, 2, 28),
-                        assessment_count=0,
-                        num_days_assessment_overdue=695,
-                        face_to_face_count=0,
-                        face_to_face_frequency_sufficient=None,
-                    ),
-                },
+                case_compliances=_generate_case_compliances(
+                    start_date=supervision_period.start_date,
+                    supervision_period=supervision_period,
+                ),
             )
         )
 
@@ -8836,50 +8079,10 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
         expected_buckets = expected_non_revocation_return_time_buckets(
             supervision_period,
             supervision_period_supervision_type,
-            case_compliances={
-                date(2001, 1, 31): SupervisionCaseCompliance(
-                    date_of_evaluation=date(2001, 1, 31),
-                    assessment_count=0,
-                    num_days_assessment_overdue=0,
-                    face_to_face_count=0,
-                    face_to_face_frequency_sufficient=None,
-                ),
-                date(2001, 2, 28): SupervisionCaseCompliance(
-                    date_of_evaluation=date(2001, 2, 28),
-                    assessment_count=0,
-                    num_days_assessment_overdue=24,
-                    face_to_face_count=0,
-                    face_to_face_frequency_sufficient=None,
-                ),
-                date(2001, 3, 31): SupervisionCaseCompliance(
-                    date_of_evaluation=date(2001, 3, 31),
-                    assessment_count=0,
-                    num_days_assessment_overdue=55,
-                    face_to_face_count=0,
-                    face_to_face_frequency_sufficient=None,
-                ),
-                date(2001, 4, 30): SupervisionCaseCompliance(
-                    date_of_evaluation=date(2001, 4, 30),
-                    assessment_count=0,
-                    num_days_assessment_overdue=85,
-                    face_to_face_count=0,
-                    face_to_face_frequency_sufficient=None,
-                ),
-                date(2001, 5, 31): SupervisionCaseCompliance(
-                    date_of_evaluation=date(2001, 5, 31),
-                    assessment_count=0,
-                    num_days_assessment_overdue=116,
-                    face_to_face_count=0,
-                    face_to_face_frequency_sufficient=None,
-                ),
-                date(2001, 6, 30): SupervisionCaseCompliance(
-                    date_of_evaluation=date(2001, 6, 30),
-                    assessment_count=0,
-                    num_days_assessment_overdue=146,
-                    face_to_face_count=0,
-                    face_to_face_frequency_sufficient=None,
-                ),
-            },
+            case_compliances=_generate_case_compliances(
+                start_date=supervision_period.start_date,
+                supervision_period=supervision_period,
+            ),
         )
 
         self.assertEqual(
@@ -8961,43 +8164,10 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
         expected_buckets = expected_non_revocation_return_time_buckets(
             supervision_period,
             supervision_period_supervision_type,
-            case_compliances={
-                date(2001, 1, 31): SupervisionCaseCompliance(
-                    date_of_evaluation=date(2001, 1, 31),
-                    assessment_count=0,
-                    num_days_assessment_overdue=0,
-                    face_to_face_count=0,
-                    face_to_face_frequency_sufficient=None,
-                ),
-                date(2001, 2, 28): SupervisionCaseCompliance(
-                    date_of_evaluation=date(2001, 2, 28),
-                    assessment_count=0,
-                    num_days_assessment_overdue=24,
-                    face_to_face_count=0,
-                    face_to_face_frequency_sufficient=None,
-                ),
-                date(2001, 3, 31): SupervisionCaseCompliance(
-                    date_of_evaluation=date(2001, 3, 31),
-                    assessment_count=0,
-                    num_days_assessment_overdue=55,
-                    face_to_face_count=0,
-                    face_to_face_frequency_sufficient=None,
-                ),
-                date(2001, 4, 30): SupervisionCaseCompliance(
-                    date_of_evaluation=date(2001, 4, 30),
-                    assessment_count=0,
-                    num_days_assessment_overdue=85,
-                    face_to_face_count=0,
-                    face_to_face_frequency_sufficient=None,
-                ),
-                date(2001, 5, 31): SupervisionCaseCompliance(
-                    date_of_evaluation=date(2001, 5, 31),
-                    assessment_count=0,
-                    num_days_assessment_overdue=116,
-                    face_to_face_count=0,
-                    face_to_face_frequency_sufficient=None,
-                ),
-            },
+            case_compliances=_generate_case_compliances(
+                start_date=supervision_period.start_date,
+                supervision_period=supervision_period,
+            ),
         )
 
         self.assertEqual(
@@ -9010,6 +8180,15 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                 supervision_type=supervision_period_supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
                 is_on_supervision_last_day_of_month=False,
+                case_compliance=SupervisionCaseCompliance(
+                    date_of_evaluation=date(2001, 6, 29),
+                    assessment_count=0,
+                    most_recent_assessment_date=None,
+                    num_days_assessment_overdue=145,
+                    face_to_face_count=0,
+                    most_recent_face_to_face_date=None,
+                    face_to_face_frequency_sufficient=None,
+                ),
             ),
         )
 
@@ -9233,24 +8412,11 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             assessment_score=assessment.assessment_score,
             assessment_level=assessment.assessment_level,
             assessment_type=assessment.assessment_type,
-            case_compliances={
-                date(2018, 1, 31): SupervisionCaseCompliance(
-                    date_of_evaluation=date(2018, 1, 31),
-                    assessment_count=0,
-                    most_recent_assessment_date=date(2017, 12, 17),
-                    num_days_assessment_overdue=0,
-                    face_to_face_count=0,
-                    face_to_face_frequency_sufficient=None,
-                ),
-                date(2018, 2, 28): SupervisionCaseCompliance(
-                    date_of_evaluation=date(2018, 2, 28),
-                    assessment_count=0,
-                    most_recent_assessment_date=date(2017, 12, 17),
-                    num_days_assessment_overdue=0,
-                    face_to_face_count=0,
-                    face_to_face_frequency_sufficient=None,
-                ),
-            },
+            case_compliances=_generate_case_compliances(
+                start_date=supervision_period.start_date,
+                supervision_period=supervision_period,
+                assessments=assessments,
+            ),
         )
 
         self.assertCountEqual(expected_buckets, supervision_time_buckets)
@@ -9327,15 +8493,11 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             supervision_downgrade_date=date(2018, 3, 19),
             supervision_downgrade_occurred=True,
             previous_supervision_level=StateSupervisionLevel.HIGH,
-            case_compliances={
-                date(2018, 3, 31): SupervisionCaseCompliance(
-                    date_of_evaluation=date(2018, 3, 31),
-                    assessment_count=0,
-                    num_days_assessment_overdue=55,
-                    face_to_face_count=0,
-                    face_to_face_frequency_sufficient=None,
-                )
-            },
+            case_compliances=_generate_case_compliances(
+                start_date=supervision_periods[1].start_date,
+                supervision_period=supervision_periods[1],
+                num_days_assessment_overdue_increment=43,
+            ),
         )
 
         self.assertCountEqual(expected_buckets, supervision_time_buckets)
@@ -9409,15 +8571,11 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
         expected_buckets = expected_non_revocation_return_time_buckets(
             supervision_periods[1],
             supervision_period_supervision_type,
-            case_compliances={
-                date(2018, 3, 31): SupervisionCaseCompliance(
-                    date_of_evaluation=date(2018, 3, 31),
-                    assessment_count=0,
-                    num_days_assessment_overdue=2977,
-                    face_to_face_count=0,
-                    face_to_face_frequency_sufficient=None,
-                )
-            },
+            case_compliances=_generate_case_compliances(
+                start_date=supervision_periods[1].start_date,
+                supervision_period=supervision_periods[1],
+                num_days_assessment_overdue_increment=2965,
+            ),
         )
 
         self.assertCountEqual(expected_buckets, supervision_time_buckets)
@@ -12721,3 +11879,62 @@ def create_termination_bucket_from_period(period, **kwargs):
     )
     bucket = attr.evolve(bucket, **kwargs)
     return bucket
+
+
+def _generate_case_compliances(
+    start_date: date,
+    supervision_period: StateSupervisionPeriod,
+    assessments: Optional[List[StateAssessment]] = None,
+    face_to_face_contacts: Optional[List[StateSupervisionContact]] = None,
+    end_date_override: Optional[date] = None,
+    num_days_assessment_overdue_increment: Optional[int] = None,
+) -> Dict[date, SupervisionCaseCompliance]:
+    """Generates the expected list of supervision case compliances. Because case compliance logic is tested in
+    supervision_case_compliance_manager_test and state-specific compliance tests, this function generates expected case
+    compliances using the compliance manager."""
+    end_date: Optional[date] = (
+        supervision_period.termination_date
+        if not end_date_override
+        else end_date_override
+    )
+
+    # If there is no end date for generating a list of case compliances, there should not be case compliance output.
+    if not end_date:
+        return {}
+
+    state_specific_case_compliance_manager: Optional[
+        StateSupervisionCaseComplianceManager
+    ] = get_state_specific_case_compliance_manager(
+        supervision_period,
+        StateSupervisionCaseType.GENERAL,
+        start_date,
+        assessments or [],
+        face_to_face_contacts or [],
+    )
+    # There will only be case compliance output if there's a case compliance manager implemented for the given state.
+    if not state_specific_case_compliance_manager:
+        return {}
+
+    current_date: date = start_date
+    case_compliances: Dict[date, SupervisionCaseCompliance] = {}
+    while start_date <= current_date <= end_date:
+        case_compliance: Optional[
+            SupervisionCaseCompliance
+        ] = state_specific_case_compliance_manager.get_case_compliance_on_date(
+            current_date
+        )
+
+        if num_days_assessment_overdue_increment:
+            # If there is value for `num_days_assessment_overdue_increment`, update the case compliance's value to it,
+            # and increment it.
+            num_days_assessment_overdue: int = num_days_assessment_overdue_increment
+            case_compliance = attr.evolve(
+                case_compliance, num_days_assessment_overdue=num_days_assessment_overdue
+            )
+            num_days_assessment_overdue_increment += 1
+
+        if case_compliance:
+            case_compliances[current_date] = case_compliance
+        current_date += relativedelta(days=1)
+
+    return case_compliances
