@@ -1,4 +1,54 @@
 file_tag: dbo_Hist_Investigation
+file_description: |-
+  A table containing historical investigations to be conducted in response to a development in some supervision case.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - InvUPAR
 primary_key_cols: []
+columns:
+  - name: InvUPAR
+  - name: InvHistID
+  - name: InvHistDO
+  - name: InvHistUnit
+  - name: InvHistAgent
+  - name: InvHistOffName
+  - name: InvHistDateAssignedYear
+  - name: InvHistDateAssignedMonth
+  - name: InvHistDateAssignedDay
+  - name: InvHistDueDateYear
+  - name: InvHistDueDateMonth
+  - name: InvHistDueDateDay
+  - name: InvHistKind
+  - name: InvHistDateComplitedYear
+  - name: InvHistDateComplitedMonth
+  - name: InvHistDateComplitedDay
+  - name: InvHistDateProcessedYear
+  - name: InvHistDateProcessedMonth
+  - name: InvHistDateProcessedDay
+  - name: InvHistUcou
+  - name: InvHistComments
+  - name: InvHistDAGTYear
+  - name: InvHistDAGTMonth
+  - name: InvHistDAGTDay
+  - name: InvHistDateCompletedYear
+  - name: InvHistDateCompletedMonth
+  - name: InvHistDateCompletedDay
+  - name: temp_InvHistAgent
+  - name: temp_InvHistUnit
+  - name: ParoleNumber
+  - name: InvHistInvestigationSubType
+  - name: InvHistMiscDescription
+  - name: InvHistExtension1DueMonth
+  - name: InvHistExtension1DueDay
+  - name: InvHistExtension1DueYear
+  - name: InvHistExtension2DueMonth
+  - name: InvHistExtension2DueDay
+  - name: InvHistExtension2DueYear
+  - name: InvHistApplicationReceivedDateMonth
+  - name: InvHistApplicationReceivedDateDay
+  - name: InvHistApplicationReceivedDateYear
+  - name: InvHistLastModifiedBy
+  - name: InvHistLastModifiedDateTime
+  - name: InvHistSentenceDateDay
+  - name: InvHistSentenceDateMonth
+  - name: InvHistSentenceDateYear
+  - name: InvHistSequenceId

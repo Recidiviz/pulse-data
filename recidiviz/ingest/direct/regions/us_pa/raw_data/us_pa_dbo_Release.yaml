@@ -1,4 +1,64 @@
 file_tag: dbo_Release
+file_description: |-
+  A table describing specific periods of supervision currently being served by a particular person under the authority
+  of PADOC. Release in this context refers to the release of a person from incarceration to supervision, though a
+  minority of these rows include, for example, stints of probation being served in lieu of incarceration.
+
+  This includes when the period of supervision began and the type of supervision is being served. This table is
+  typically joined with several other "Release" related tables that round out the picture of a period of supervision.
 primary_key_cols:
   - ParoleNumber
   - ParoleCountID
+columns:
+  - name: ParoleNumber
+    description: |-
+      External ID for a unique person who has been supervised by PADOC.
+  - name: ParoleCountID
+    description: |-
+      External ID for a particular stint of a particular person under supervision by PADOC.
+  - name: RelEntryCodeOfCase
+    description: |-
+      Type of supervision being served, as well as the admission reason.
+  - name: RelEntryCodeOfCase2
+    description: |-
+      Type of supervision being served, as well as the admission reason, if there are multiple types associated.
+  - name: RelAcceptanceDateYear
+    description: |-
+      Year when the person was accepted into an officer's caseload.
+  - name: RelAcceptanceDateMonth
+    description: |-
+      Month when the person was accepted into an officer's caseload.
+  - name: RelAcceptanceDateDay
+    description: |-
+      Day when the person was accepted into an officer's caseload.
+  - name: RelReleaseDateYear
+    description: |-
+      Year when the period of supervision began, i.e. when released from prison, started probation sentence,
+      or exchanged through interstate compact.
+  - name: RelReleaseDateMonth
+    description: |-
+      Month when the period of supervision began, i.e. when released from prison, started probation sentence,
+      or exchanged through interstate compact.
+  - name: RelReleaseDateDay
+    description: |-
+      Day when the period of supervision began, i.e. when released from prison, started probation sentence,
+      or exchanged through interstate compact.
+  - name: ReleaseProcessingDateYear
+  - name: ReleaseProcessingDateMonth
+  - name: ReleaseProcessingDateDay
+  - name: RelEntryProcessingDateYear
+    description: |-
+      Year when the person's supervision record was created by field staff.
+  - name: RelEntryProcessingDateMonth
+    description: |-
+      Month when the person's supervision record was created by field staff.
+  - name: RelEntryProcessingDateDay
+    description: |-
+      Day when the person's supervision record was created by field staff.
+  - name: LastModifiedDate
+    is_datetime: True
+    description: |-
+      When the record was last modified.
+  - name: LastModifiedBy
+    description: |-
+      Who the record was last modified by.

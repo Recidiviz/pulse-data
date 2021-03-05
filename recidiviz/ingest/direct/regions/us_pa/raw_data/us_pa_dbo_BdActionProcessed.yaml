@@ -1,6 +1,15 @@
 file_tag: dbo_BdActionProcessed
+file_description: |-
+  A table describing when board actions were processed.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - ParoleNumber
 #      - ParoleCountID
 #      - BdActionID
 primary_key_cols: []
+columns:
+  - name: ParoleNumber
+  - name: ParoleCountID
+  - name: BdActionID
+  - name: TypeTransaction
+  - name: DateProcessed
+  - name: NTUserID

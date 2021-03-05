@@ -1,5 +1,61 @@
 file_tag: dbo_Hist_Arrest_Crim
+file_description: |-
+  A table containing arrests for historical criminal offenses.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - ParoleNumber
 #      - ArrestReportNO
 primary_key_cols: []
+columns:
+  - name: ParoleNumber
+  - name: HArrestCrimID
+  - name: ArrestReportNO
+  - name: NotificationDate
+  - name: OTN
+  - name: BoardWarrantNum
+  - name: DateBailPosted
+  - name: BailNotPosted
+  - name: DateBailRevoked
+  - name: NewCrimChrgsAndGrdng
+  - name: NewCrimChrgsDetail
+  - name: AR_DetainPendDispNCC
+  - name: AR_LodgeWrrntCommitDetain
+  - name: AR_ContinueUnderSuprvsn
+  - name: AR_ContinuePendDispNCC
+  - name: AR_Other
+  - name: AR_OtherDesc
+  - name: CntyIndctmntCnvctnGrdng
+  - name: Sentence
+  - name: Verdict
+  - name: VerdictDate
+  - name: VerificationDate
+  - name: Judge
+  - name: SentenceDate
+  - name: EffectiveSentenceDate
+  - name: InstitutionOfSentence
+  - name: ConvictionDetails
+  - name: TechViolChrgd
+  - name: TVC_ReferTo257T
+  - name: FR_RevokeRecommit
+  - name: FR_ContinueUnderSuprvsn
+  - name: FR_Other
+  - name: FR_OtherDesc
+  - name: HearingDate
+  - name: DistrictJusticeCourt
+  - name: Disposition
+  - name: CPH_AgentNameSgntr
+  - name: CPH_AgentNameSgntrDate
+  - name: CPH_SupvrNameSgntr
+  - name: CPH_SupvrNameSgntrDate
+  - name: Charge
+  - name: NoticeDate
+  - name: ParoleCountID
+  - name: LastModifiedBy
+  - name: LastModifiedDateTime
+  - name: AR_DecDelinqCtrlPurp
+  - name: AR_DecDelinqCtrlPurpDate
+  - name: InstofSentence_ID
+  - name: InstofSentencetype
+  - name: TPVCrimCharges
+  - name: Disposition_ID
+  - name: Verdict_ID
+  - name: OtherCharges

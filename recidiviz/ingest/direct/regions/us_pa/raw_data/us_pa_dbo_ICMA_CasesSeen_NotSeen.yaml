@@ -1,5 +1,38 @@
 file_tag: dbo_ICMA_CasesSeen_NotSeen
+file_description: |-
+  A table containing an index of supervision cases that have been undertaken by specific officers.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - ParoleNumber
 #      - InstitutionNumber
 primary_key_cols: []
+columns:
+  - name: ParoleNumber
+  - name: InstitutionNumber
+  - name: Docket_Hist_ID
+  - name: WangClientLastName
+  - name: WangClientFirstName
+  - name: WangClientMiddleName
+  - name: WangClientSuffix
+  - name: StateCase
+  - name: ViolentIndicator
+  - name: InterviewType
+  - name: InstitutionCode
+  - name: ReasonId
+  - name: Cases_Seen_NotSeen
+  - name: DateMonth
+  - name: DateYear
+  - name: HistDck_Flag
+  - name: BdactDescription
+  - name: Bdactionid
+  - name: BDactionPrintFlag
+  - name: OrgInterviewDateDay
+  - name: OrgInterviewDateMonth
+  - name: OrgInterviewDateYear
+  - name: RescheduleCounter
+  - name: Interviewed_InstCode
+  - name: DckH_ScheduledForInterviewYear
+  - name: DckH_ScheduledForInterviewMon
+  - name: DckH_ActualInterviewDateYear
+  - name: DckH_ActualInterviewDateMonth
+  - name: DckH_ActualInterviewDateDay
+  - name: LastModifiedDate

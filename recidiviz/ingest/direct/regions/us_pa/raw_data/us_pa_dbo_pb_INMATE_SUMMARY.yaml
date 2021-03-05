@@ -1,6 +1,46 @@
 file_tag: dbo_pb_INMATE_SUMMARY
+file_description: |-
+  A table containing a rough summary of people who were previously incarcerated.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - sid
 #      - inmate_number
 #      - control_number
 primary_key_cols: []
+columns:
+  - name: sid
+  - name: inmate_number
+  - name: control_number
+  - name: last_name
+  - name: first_name
+  - name: middle_name
+  - name: name_suff
+  - name: birth_date
+  - name: gender
+  - name: race
+  - name: marital_status
+  - name: religion
+  - name: height
+  - name: weight
+  - name: eyes
+  - name: hair
+  - name: complexion
+  - name: build
+  - name: permanent_location
+  - name: permanent_locationCD
+  - name: current_location
+  - name: current_locationCD
+  - name: current_location_typeCD
+  - name: contact_phone
+  - name: reception_date
+  - name: more_ssn_indicator
+  - name: fbi_number
+  - name: philadelphia_photo_number
+  - name: pittsburgh_photo_number
+  - name: parole_board_number
+  - name: citizenship
+  - name: city_of_birth
+  - name: state_of_birth
+  - name: country_of_birth
+  - name: last_modified
+  - name: ssp_indicator
+  - name: sdtp_code

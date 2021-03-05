@@ -1,3 +1,37 @@
 file_tag: dbo_OffenderDetails
+file_description: |-
+  A table containing demographic information for people who have been supervised by PADOC.
 primary_key_cols:
   - ParoleNumber
+columns:
+  - name: ParoleNumber
+  - name: PA_Drugs
+  - name: PA_Alcoholic
+  - name: PA_Psychiatric
+  - name: PA_DomesticViolence
+  - name: PA_Other
+  - name: PA_Commutation
+  - name: PA_OtherDesc
+  - name: FBINo
+  - name: PictureID
+  - name: Notes
+  - name: Alias
+  - name: PA_Assaultive
+  - name: PA_Sexual
+  - name: SSAN
+  - name: PA_PastAssaultive
+  - name: PType_BoardParole
+  - name: PType_SpecProbParole
+  - name: PType_OtherStateParole
+  - name: PType_OtherStateProb
+  - name: PType_BoardReParole
+  - name: Miscellaneous
+  - name: DateRtndToInst
+  - name: RtndToInstitution
+  - name: DriversLicenseNo
+  - name: LastModifiedDate
+  - name: LastModifiedBy
+  - name: OffVetFlgY
+  - name: OffVetDischargeType
+  - name: OffVetVerifiedHow
+  - name: OffVetVerifiedOtherHow

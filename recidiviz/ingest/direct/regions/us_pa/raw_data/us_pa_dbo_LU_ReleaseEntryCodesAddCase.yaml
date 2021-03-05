@@ -1,3 +1,25 @@
 file_tag: dbo_LU_ReleaseEntryCodesAddCase
+file_description: |-
+  A lookup table mapping "Release table" entry codes to additional contextual information.
 primary_key_cols:
   - ReleaseEntryCode
+columns:
+  - name: ReleaseEntryCode
+    description: |-
+      A Release entry code, i.e. a type of supervision being served and/or admission reason for the supervision period.
+  - name: ReleaseEntryDescrip
+    description: |-
+      A longer description of the code.
+  - name: CaseType
+    description: |-
+      A or R.
+  - name: Active
+    description: |-
+      Whether this entry code is still in active use.
+  - name: LastModifiedby
+    description: |-
+      Who this record was last modified by.
+  - name: LastModifiedDatetime
+    is_datetime: True
+    description: |-
+      When this record was last modified.

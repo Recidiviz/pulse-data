@@ -1,5 +1,46 @@
 file_tag: dbo_pb_SENTENCE
+file_description: |-
+  A table containing a rough summary of sentences to incarceration under PADOC authority.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - sid
 #      - inmate_number
 primary_key_cols: []
+columns:
+  - name: sid
+  - name: inmate_number
+  - name: sentence_status
+  - name: sentence_status_code
+  - name: sent_type_code
+  - name: sentence_class
+  - name: sentence_class_code
+  - name: indictment_number
+  - name: megans_law_indicator
+  - name: min_sentence_years
+  - name: min_sentence_months
+  - name: min_sentence_days
+  - name: min_sentence_less_days
+  - name: min_expire_date
+  - name: max_sentence_years
+  - name: max_sentence_months
+  - name: max_sentence_days
+  - name: max_sentence_less_days
+  - name: max_expire_date
+  - name: min_offense_tracking_number
+  - name: min_offense
+  - name: max_offense_tracking_number
+  - name: max_offense
+  - name: max_offense_code
+  - name: additional_sentence_indicator
+  - name: crime_history_indicator
+  - name: committing_county
+  - name: sentence_date
+  - name: sentencing_county
+  - name: term_of_court
+  - name: sentencing_judge
+  - name: mandatory_sentence_indicator
+  - name: custody_for_return
+  - name: recomputed_max
+  - name: sentence_or_detentioner
+  - name: parole_status
+  - name: parole_status_code
+  - name: last_modified

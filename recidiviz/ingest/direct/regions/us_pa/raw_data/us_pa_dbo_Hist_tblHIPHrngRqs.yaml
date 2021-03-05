@@ -1,6 +1,52 @@
 file_tag: dbo_Hist_tblHIPHrngRqs
+file_description: |-
+  Unclear as of yet.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - HrngID
 #      - PrlNum
 #      - ParoleCountID
 primary_key_cols: []
+columns:
+  - name: HrngID
+  - name: PrlNum
+  - name: ParoleCountID
+  - name: NmAlsID
+  - name: OfndrLastNm
+  - name: OfndrFirstNm
+  - name: OfndrMiddleNm
+  - name: RqsDt
+  - name: ArstDt
+  - name: WrntDt
+  - name: CnvctDt
+  - name: CnvctNtcDt
+  - name: VerfnDtID
+  - name: StartCntDnFlg
+  - name: SpvnStfID
+  - name: HCID
+  - name: VltnTpeID
+  - name: HrngTpeID
+  - name: PnlHrngFlg
+  - name: HrngAtID
+  - name: InstCd
+  - name: CCCID
+  - name: DistrictOfficeCode
+  - name: SubOfficeCd
+  - name: CountyAbbrev6
+  - name: vltnCentre
+  - name: OtherLoc
+  - name: Chgs
+  - name: RqsCnslFlg
+  - name: RqsPnlFlg
+  - name: CnslNm
+  - name: CnslAddr
+  - name: CnslCity
+  - name: CnslSt
+  - name: CnslZip
+  - name: CnslPhn
+  - name: StfCommnts
+  - name: HrngStatusCd
+  - name: NewHrngID
+  - name: LstModBy
+  - name: LstModDtTm
+  - name: Waiver72A
+  - name: TechViolCharges

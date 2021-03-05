@@ -1,6 +1,34 @@
 file_tag: dbo_Treatment
+file_description: |-
+  A table with information on referred treatments for people under supervision.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - ParoleNumber
 #      - ParoleCountID
 #      - TreatmentID
 primary_key_cols: []
+columns:
+  - name: ParoleNumber
+  - name: ParoleCountID
+  - name: TreatmentID
+  - name: TrtType
+  - name: TrtDO
+  - name: TrtCounty
+  - name: TrtClassCode
+  - name: TrtIndProgID
+  - name: TrtStartDateYear
+  - name: TrtStartDateMonth
+  - name: TrtStartDateDay
+  - name: TrtEndDateYear
+  - name: TrtEndDateMonth
+  - name: TrtEndDateDay
+  - name: TrtStatusCode
+  - name: TrtProgramCode
+  - name: TrtProgramDescription
+  - name: TrtIndexAct97
+  - name: OtherState
+  - name: OtherStateFac
+  - name: LastModifiedBy
+  - name: LastModifiedDateTime
+  - name: TrtHrsImposed
+  - name: TrtHrsCompleted
+

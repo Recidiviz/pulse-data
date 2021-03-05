@@ -1,7 +1,29 @@
 file_tag: dbo_Interview
+file_description: |-
+  A table listing interviews that have been conducted for people under supervision as part of some board action to be
+  conducted.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - InstitutionNumber
 #      - ParoleNumber
 #      - DocketID
 #      - InterviewID
 primary_key_cols: []
+columns:
+  - name: InstitutionNumber
+  - name: ParoleNumber
+  - name: DocketID
+  - name: InterviewID
+  - name: InterviewDateYear
+  - name: InterviewDateMonth
+  - name: InterviewDateDay
+  - name: InterviewType
+  - name: InterviewerName
+  - name: temp_InterviewerName
+  - name: dckDateInterviewedMonth
+  - name: dckDateInterviewedDay
+  - name: dckDateInterviewedYear
+  - name: OrgInterviewDateDay
+  - name: OrgInterviewDateMonth
+  - name: OrgInterviewDateYear
+  - name: RescheduleCounter
+  - name: Interviewed_InstCode

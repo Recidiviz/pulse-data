@@ -1,4 +1,216 @@
 file_tag: dbo_Hist_Release
+file_description: |-
+  A table describing specific periods of supervision that were served in the past by a particular person under the
+  authority of PADOC. Release in this context refers to the release of a person from incarceration to supervision,
+  though a minority of these rows include, for example, stints of probation being served in lieu of incarceration.
+
+  This table is the historical version tying together all of `dbo_Release`, `dbo_ReleaseInfo`, `dbo_RelStatus`, and
+  `dbo_RelEmployment`. When a period of supervision is terminated and the person is now at liberty or has been convicted
+  of an entirely new offense with entirely new and separate sentences, the records from the aforementioned tables are
+  consolidated together into a row in this table.
 primary_key_cols:
   - ParoleNumber
   - ParoleCountID
+columns:
+  - name: ParoleNumber
+    description: |-
+      External ID for a unique person who has been supervised by PADOC.
+  - name: HReleaseID
+    description: |-
+      ID of this particular history record.
+  - name: ParoleCountID
+    description: |-
+      External ID for a particular stint of a particular person under supervision by PADOC.
+  - name: HReOffenderHisName
+    description: |-
+      Name of the person who was under supervision.
+  - name: HReRace
+    description: |-
+      Race or ethnicity of the person who was under supervision.
+  - name: HReSex
+    description: |-
+      Sex of the person who was under supervision.
+  - name: HReEmpstat
+    description: |-
+      Last employment status of the person while under this particular period of supervision.
+  - name: HReCmcCode
+    description: |-
+      Unclear, and almost always null.
+  - name: HReRelFrom
+    description: |-
+      The location where the person was released into supervision from, e.g. a state prison or a county jail,
+      or another county or state for county probationers or people supervised under the interstate compact.
+  - name: HReCntyRes
+    description: |-
+      Current county of residence for the supervised person.
+  - name: HReDo
+    description: |-
+      District office where the person is currently being supervised, including any temporary adjustments.
+  - name: HReOffense
+    description: |-
+      PBPP code of the offense with the longest sentence.
+  - name: HReReldate
+    is_datetime: True
+    description: |-
+      Date when the period of supervision began, i.e. when released from prison, started probation sentence,
+      or exchanged through interstate compact.
+  - name: HReMaxDate
+    is_datetime: True
+    description: |-
+      Date when the period of supervision expires.
+  - name: HReSidNo
+    description: |-
+      State identification number of the person who was under supervision.
+  - name: HReAgentName
+    description: |-
+      Name and ID of the last supervising officer for this period of supervision.
+  - name: HReSSNo
+    description: |-
+      SSN of the person who was under supervision.
+  - name: HReTransDate
+    is_datetime: True
+    description: |-
+      Date when the person was last transferred during this period of supervision.
+  - name: HReTprocDate
+    is_datetime: True
+    description: |-
+      Date when the original transfer record was created by field staff.
+  - name: HRePurgeCode
+    description: |-
+      Unclear, almost always null.
+  - name: HReDOB
+    is_datetime: True
+    description: |-
+      Date of birth of the person who was under supervision.
+  - name: HReEntryCode
+    description: |-
+      Type of supervision that was served served, as well as the admission reason.
+  - name: HReAcceptDate
+    is_datetime: True
+    description: |-
+      Date when the person was accepted into an officer's caseload.
+  - name: HReEprocDate
+    is_datetime: True
+    description: |-
+      Date when the original release record was created by field staff.
+  - name: HReStatcode
+    description: |-
+      Last supervision status of this period of supervision.
+  - name: HReStatDate
+    is_datetime: True
+    description: |-
+      When the last supervision status took effect.
+  - name: HReSprocDate
+    is_datetime: True
+    description: |-
+      Date when the original status record was created by field staff.
+  - name: HReGradeSup
+    description: |-
+      Last supervision level of this period of supervision.
+  - name: HReGradeSupDt
+    description: |-
+      When the last supervision level took effect.
+  - name: HReGprProcDate
+    is_datetime: True
+    description: |-
+      Date when the original supervision level record was created by field staff.
+  - name: HReOtna
+    description: |-
+      Offense Tracking Number of the offense with the longest sentence.
+  - name: HReMina
+    description: |-
+      The shortest amount of time that can be served to complete the sentence with the longest sentence term.
+  - name: HReMaxa
+    description: |-
+      When the sentence of the offense with the longest sentence expires.
+  - name: HReOffa
+    description: |-
+      PADOC lookup ID of the offense with the longest sentence.
+  - name: HReOtnb
+    description: |-
+      Offense Tracking Number of the offense with the second longest sentence.
+  - name: HReMinb
+    description: |-
+      The shortest amount of time that can be served to complete the sentence with the second longest sentence term.
+  - name: HReMaxb
+    description: |-
+      When the sentence of the offense with the second longest sentence expires.
+  - name: HReOffb
+    description: |-
+      PADOC lookup ID of the offense with the second longest sentence.
+  - name: HReOtnc
+    description: |-
+      Offense Tracking Number of the offense with the third longest sentence.
+  - name: HReMinc
+    description: |-
+      The shortest amount of time that can be served to complete the sentence with the third longest sentence term.
+  - name: HReMaxc
+    description: |-
+      When the sentence of the offense with the third longest sentence expires.
+  - name: HReOffc
+    description: |-
+      PADOC lookup ID of the offense with the third longest sentence.
+  - name: HReDelCode
+    description: |-
+      Code for the termination reason of the period of supervision.
+  - name: HReDelDate
+    is_datetime: True
+    description: |-
+      Date the period of supervision was terminated.
+  - name: HReDProcDate
+    is_datetime: True
+    description: |-
+      Date when the original release record was closed by field staff.
+  - name: HReRisk
+    description: |-
+      Last risk score during this period of supervision.
+  - name: HReNeeds
+    description: |-
+      Last needs score during this period of supervision.
+  - name: HReAssessDt
+    description: |-
+      Date when the last risk assessment took place during the period of supervision.
+  - name: HReEmpDt
+    description: |-
+      Date when the last employment status took effect during the period of supervision.
+  - name: HReOveride
+  - name: HReWant
+  - name: temp_HReAgentName
+    description: |-
+      Name and ID of the temporary supervising agent, if a temporary change was made.
+  - name: HSupervisor
+    description: |-
+      Name and ID of the supervision of the last supervising officer during this period of supervision.
+  - name: HRelWeight
+  - name: HOrgCode
+    description: |-
+      Code of the field office where the supervision was served.
+  - name: HRelDelCodeID
+    description: |-
+      Code for the termination reason of the period of supervision.
+  - name: LastModifiedBy
+    description: |-
+      Who the record was last modified by.
+  - name: LastModifiedDatetime
+    is_datetime: True
+    description: |-
+      Date when the record was last modified.
+  - name: HRskAct97Positive
+    description: |-
+      Whether the person tested positive for non-prescribed drugs while incarcerated (under Act 97-1).
+  - name: HRskAct97ViolationOfSbstanceAct
+    description: |-
+      Whether the person is serving a sentence arising from a conviction under the
+      “Controlled Substance, Drug Device and Cosmetic Act” (Act 97-2).
+  - name: HRskAct97DrugRelatedOffense
+    description: |-
+      Whether the person is serving a sentence arising from a "drug-related crime" (Act 97-3).
+  - name: HRskUrinalysis
+    description: |-
+      Whether the person must receive urinalysis while supervised.
+  - name: HRskBoardMandatedUrinala
+    description: |-
+      Whether the board has mandated that the person must receive urinalysis while supervised.
+  - name: HRskAct97Other
+    description: |-
+      Whether any other Act 97 considerations apply to this period of supervision.

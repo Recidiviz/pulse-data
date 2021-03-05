@@ -1,5 +1,35 @@
 file_tag: dbo_ParoleeAddress
+file_description: |-
+  A table with address information for people under supervision.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - ParoleNumber
 #      - EffDate
 primary_key_cols: []
+columns:
+  - name: ParoleNumber
+  - name: EffDate
+  - name: Address1
+  - name: Address2
+  - name: City
+  - name: State
+  - name: Zip
+  - name: Phone
+  - name: PhoneExt
+  - name: LastContactDate
+  - name: CensusTract
+  - name: WorkLoadWeight
+  - name: TimeStamp
+  - name: Program
+  - name: MAddress1
+  - name: MAddress2
+  - name: MCity
+  - name: MZip
+  - name: chk_Mailing
+  - name: CellPhone
+  - name: MState
+  - name: Program_ID
+  - name: FirstName
+  - name: LastName
+  - name: Relation_ID
+  - name: LastModifiedDate
+  - name: LastModifiedBy

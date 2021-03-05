@@ -1,6 +1,86 @@
 file_tag: dbo_Sentence
+file_description: |-
+  A table containing sentences to incarceration or supervision to be served under the authority of PADOC. Because
+  probation is administered almost entirely at the county level in Pennsylvania and PADOC/PBPP primarily deals with
+  parole, the majority of sentences in this table are sentences to incarceration that in turn led to releases to parole.
+  Consequently, much of this information is redundant of the information directly from the DOC side of PADOC via
+  `dbo_Senrec` and may not be as reliable/consistent.
 primary_key_cols:
   - ParoleNumber
   - ParoleCountID
   - Sent16DGroupNumber
   - SentenceID
+columns:
+  - name: ParoleNumber
+    description: |-
+      External ID for a unique person who has been supervised by PADOC.
+  - name: ParoleCountID
+    description: |-
+      External ID for a particular stint of a particular person under supervision by PADOC.
+  - name: Sent16DGroupNumber
+    description: |-
+      ID for a group of related sentences which led to this particular parole count.
+  - name: SentenceID
+    description: |-
+      Sequence ID of this sentence within the group of related sentences.
+  - name: SentMonth
+    description: |-
+      Month the sentence began.
+  - name: SentDay
+    description: |-
+      Day the sentence began.
+  - name: SentYear
+    description: |-
+      Year the sentence began.
+  - name: SentTerm
+    description: |-
+      Length of the sentence to be served.
+  - name: SentType
+    description: |-
+      Type of sentence to be served.
+  - name: SentOffense
+    description: |-
+      Code of the offense with the longest sentence.
+  - name: SentOTN
+    description: |-
+      Offense Tracking Number of the offense with the longest sentence.
+  - name: SentMinSentenceYear
+    description: |-
+      Minimum sentence years.
+  - name: SentMinSentenceMonth
+    description: |-
+      Minimum sentence month.
+  - name: SentMinSentenceDay
+    description: |-
+      Minimum sentence days.
+  - name: SentMaxSentenceYear
+    description: |-
+      Maximum sentence years.
+  - name: SentMaxSentenceMonth
+    description: |-
+      Maximum sentence months.
+  - name: SentMaxSentenceDay
+    description: |-
+      Maximum sentence days.
+  - name: SentCounty
+    description: |-
+      County where the sentence was handed down.
+  - name: SentOffense2
+    description: |-
+      Code of the offense with the second longest sentence.
+  - name: SentOffense3
+    description: |-
+      Code of the offense with the third longest sentence.
+  - name: SentCentury
+    description: |-
+      Century in which the sentence was handed down.
+  - name: sentCodeSentOffense
+    description: |-
+      Statute code of the offense with the longest sentence.
+  - name: sentCodeSentOffense2
+    description: |-
+      Statute code of the offense with the second longest sentence.
+  - name: sentCodeSentOffense3
+    description: |-
+      Statute code of the offense with the third longest sentence.
+  - name: Display

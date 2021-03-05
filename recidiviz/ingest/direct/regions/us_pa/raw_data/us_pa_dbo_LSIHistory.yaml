@@ -1,2 +1,220 @@
 file_tag: dbo_LSIHistory
+file_description: |-
+  A table containing LSIR assessments which have been conducted for people under supervision by PADOC.
 primary_key_cols: []
+columns:
+  - name: ParoleNumber
+    description: |-
+      External ID for a unique person who has been supervised by PADOC.
+  - name: LsirID
+    description: |-
+      Sequence ID of a particular LSIR assessment that was conducted for this particular period of supervision.
+  - name: ParoleCountID
+    description: |-
+      External ID for a particular stint of a particular person under supervision by PADOC.
+  - name: ReleaseStatus
+    description: |-
+      Whether or not the person has since been released from this period of supervision.
+  - name: InstitutionNumber
+    description: |-
+      ID of the institution under whose authority the assessment was administered.
+  - name: RecordNumber
+    description: |-
+      ID of a particular LSIR assessment that was conducted, globally.
+  - name: LSIType
+    description: |-
+      Type of LSIR assessment administered, almost always 1.
+  - name: QuikAdmin
+  - name: AssessmentAge
+    description: |-
+      Age of the person at the time of the assessment.
+  - name: AssessmentTime
+    is_datetime: True
+    description: |-
+      Date when the assessment was administered.
+  - name: AssessmentGender
+    description: |-
+      Gender of the person at the time of the assessment.
+  - name: ClientAccount
+    description: |-
+      Unclear, always 0.
+  - name: Status
+    description: |-
+      Whether the assessment has been successfully completed.
+  - name: NumOmitQuestions
+    description: |-
+      Number of questions that were omitted during the assessment interview.
+  - name: TotalScore
+    description: |-
+      Total score recorded at the end of the assessment.
+  - name: Percentile
+    description: |-
+      Percentile of this score among all assessments to this point in time.
+  - name: ScoreCount
+  - name: HistoryResults
+    description: |-
+      Redundant format concatenating TotalScore, Percentile, and OriginalClassification.
+  - name: HistoryRemark
+    description: |-
+      Always null.
+  - name: OriginalClassification
+    description: |-
+      Supervision level assigned as a result of this assessment.
+  - name: OverridingClassification
+    description: |-
+      Supervision level overridden by the supervision officer as a result of this assessment.
+  - name: SSNOrSIN
+    description: |-
+      Always null.
+  - name: OtherID
+    description: |-
+      Redundant ID format concatenating ParoleCountID and InstitutionNumber.
+  - name: ReferralSource
+    description: |-
+      Who the assessment was referred by.
+  - name: ReferralReason
+    description: |-
+      Why the assessment was referred.
+  - name: Disposition
+    description: |-
+      Notes on the person's disposition at the time of the assessment.
+  - name: PresentOffenses
+    description: |-
+      Whether there are any outstanding offenses to be charged against the person at the time of the assessment.
+  - name: Rater
+    description: |-
+      Name of the person scoring the assessment.
+  - name: Code
+    description: |-
+      Always 0.
+  - name: PoliceFingerPrintNum
+    description: |-
+      Always null.
+  - name: GradeLevel
+    description: |-
+      Supervision level at the time of the assessment.
+  - name: MaritalStatus
+    description: |-
+      Marital status at the time of the assessment.
+  - name: OccupationalStanding
+    description: |-
+      Code indicating occupational standing at the time of the assessment.
+  - name: Employment
+    description: |-
+      Employment status at the time of the assessment.
+  - name: ReportPurpose
+    description: |-
+      Always null.
+  - name: Context
+    description: |-
+      Free text notes on the context of this particular assessment, e.g. initial assessment or why now.
+  - name: HomelessOrTransient
+    description: |-
+      Whether or not the person is homeless or transient at the time of the assessment.
+  - name: HealthProblem
+    description: |-
+      Whether or not the person has health problems at the time of the assessment.
+  - name: HealthSpecify
+    description: |-
+      Free text notes about any existing health problems.
+  - name: PhysicalDisability
+    description: |-
+      Whether or not the person has physical ability issues at the time of the assessment.
+  - name: PhysicalSpecify
+    description: |-
+      Free text notes about any existing physical ability issues.
+  - name: Suicidal
+    description: |-
+      Whether or not the person appears suicidal at the time of the assessment.
+  - name: SuicidalSpecify
+    description: |-
+      Free text notes about any apparent suicidal tendencies.
+  - name: LearningDisability
+    description: |-
+      Whether or not the person has learning ability issues at the time of the assessment.
+  - name: Immigration
+    description: |-
+      Whether or not the person has any known immigration concerns at the time of the assessment.
+  - name: IssueOther
+    description: |-
+      Whether or not the person has any other notable issues at the time of the assessment.
+  - name: IssueSpecify
+    description: |-
+      Free text notes about the other notable issues.
+  - name: ProbMinfrom
+    description: |-
+      Minimum level score lower bound - "Prob"
+  - name: ProbMinto
+    description: |-
+      Minimum level score upper bound - "Prob"
+  - name: ProbMedfrom
+    description: |-
+      Medium level score lower bound - "Prob"
+  - name: ProbMedto
+    description: |-
+      Medium level score upper bound - "Prob"
+  - name: ProbMax
+    description: |-
+      Maximum level score lower bound - "Prob"
+  - name: HHPAFrom
+    description: |-
+      HHPA level score lower bound
+  - name: HHPAto
+    description: |-
+      HHPA level score upper bound
+  - name: HHPCloseSupfrom
+    description: |-
+      HHPA closer supervision score lower bound
+  - name: HHPCloseSupto
+    description: |-
+      HHPA closer supervision score upper bound
+  - name: HHPIntenseSup
+    description: |-
+      HHPA intense supervision score lower bound
+  - name: IcMinfrom
+    description: |-
+      Minimum level score lower bound - "Ic"
+  - name: IcMinto
+    description: |-
+      Minimum level score upper bound - "Ic"
+  - name: IcMedfrom
+    description: |-
+      Medium level score lower bound - "Ic"
+  - name: IcMedto
+    description: |-
+      Medium level score upper bound - "Ic"
+  - name: IcHighMedfrom
+    description: |-
+      High-Medium level score lower bound - "Ic"
+  - name: IcHighMedto
+    description: |-
+      High-Medium level score upper bound - "Ic"
+  - name: IcMax
+    description: |-
+      Maximum level score lower bound - "Ic"
+  - name: AnsToQuestions
+    description: |-
+      A concatenation of characters representing answers to questions on the assessment, in order, e.g. YYNYNNN?Y?...
+  - name: AnsQuest1Specify
+    description: |-
+      Further context on the answer to question 1.
+  - name: AnsQuest4Specify
+    description: |-
+      Further context on the answer to question 4.
+  - name: AnsQuest8Specify
+    description: |-
+      Further context on the answer to question 8.
+  - name: AnsQuest40Specify
+    description: |-
+      Further context on the answer to question 40.
+  - name: AnsQuest45Specify
+    description: |-
+      Further context on the answer to question 45.
+  - name: AnsQuest50Specify
+    description: |-
+      Further context on the answer to question 50.
+  - name: ObjectID
+  - name: LastModifiedDateTime
+    is_datetime: True
+    description: |-
+      Date when the record was last modified.

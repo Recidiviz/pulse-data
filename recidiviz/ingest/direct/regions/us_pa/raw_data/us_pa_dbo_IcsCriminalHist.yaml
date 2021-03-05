@@ -1,5 +1,29 @@
 file_tag: dbo_IcsCriminalHist
+file_description: |-
+  A table containing a brief history of arrest information for people who have been incarcerated.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - Doc_Id
 #      - CrmlHistSeq_Id
 primary_key_cols: []
+columns:
+  - name: Doc_Id
+  - name: CrmlHistType_Cd
+  - name: CrmlHistSeq_Id
+  - name: Arrest_Mo
+  - name: Arrest_Day
+  - name: Arrest_Yr
+  - name: ArrestCharge_Cd
+  - name: AdjRating_Id
+  - name: ArrestCharge_Des
+  - name: PlaceOfArrest_Txt
+  - name: Dspn_Id
+  - name: Arrest_Commnt
+  - name: Agency_Cd
+  - name: ChangeReqr_Flg
+  - name: EmpFirst_Nm
+  - name: EmpMid_Nm
+  - name: EmpLast_Nm
+  - name: EmpSuffix_Nm
+  - name: LastMod_Date
+  - name: LastModEmp_Num
+  - name: CrmlHistSource_Cd

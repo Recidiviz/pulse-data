@@ -1,6 +1,25 @@
 file_tag: dbo_Mishea
+file_description: |-
+  A table with additional hearing information about "misconduct" events involving incarcerated people. This provides
+  additional information for `dbo_Miscon`.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - Inmate_Cnt_Num
 #      - Miscndct_Number
 #      - Sequence_Number
 primary_key_cols: []
+columns:
+  - name: Inmate_Cnt_Num
+  - name: Continuance_Rqustd
+  - name: Miscndct_Number
+  - name: Hearing_Date
+  - name: Sequence_Number
+  - name: Sig_Date
+  - name: Sig_Time
+  - name: User_ID
+  - name: Hearing_Hour
+  - name: Hearing_Min
+  - name: Examiner_Number
+  - name: Examiner_Name
+  - name: Inmate_Waivers
+  - name: Inmt_Wvrs_Hvl_Dsc
+  - name: Witnesses

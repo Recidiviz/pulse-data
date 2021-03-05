@@ -1,3 +1,71 @@
 file_tag: dbo_LU_PBPP_Organization
+file_description: |-
+  A lookup table mapping organization unit codes to the context of that organizational unit within the broader PBPP.
 primary_key_cols:
   - Org_cd
+columns:
+  - name: Org_cd
+    description: |-
+      ID for this organizational unit.
+  - name: Recordid
+    description: |-
+      ID for the record tracking this organizational unit.
+  - name: Org_Name
+    description: |-
+      Human-readable name of the unit.
+  - name: AddressL1
+    description: |-
+      Address line 1.
+  - name: City
+    description: |-
+      Address city.
+  - name: State
+    description: |-
+      Address state.
+  - name: ZipCode
+    description: |-
+      Address zip code.
+  - name: Phone_No
+    description: |-
+      Phone number for contact purposes.
+  - name: Ext
+    description: |-
+      Extension to phone number for contact purposes.
+  - name: Region
+    description: |-
+      Region within the Commonwealth where the unit is located.
+  - name: Region_Code
+    description: |-
+      Code for the aforementioned region.
+  - name: DistrictOfficeCode
+    description: |-
+      Code for the district office associated with this organizational unit.
+  - name: DO_Orgcode
+    description: |-
+      The organizational unit ID for that district office specifically.
+  - name: InstitutionCode
+    description: |-
+      ID of the institution associated with this organizational unit.
+  - name: Username
+    description: |-
+      Who this record was last modified by.
+  - name: DateModified
+    is_datetime: True
+    description: |-
+      Date this record was last modified.
+  - name: SO_Identifier
+  - name: Fax_No
+    description: |-
+      Fax number for contact purposes.
+  - name: Office
+    description: |-
+      Code for the physical office where this unit is located.
+  - name: FaxExt
+    description: |-
+      Fax number extension for contact purposes.
+  - name: Active
+    description: |-
+      Whether this organizational unit is active.
+  - name: PropertyLocation
+    description: |-
+      Whether this organizational unit has a physical location.

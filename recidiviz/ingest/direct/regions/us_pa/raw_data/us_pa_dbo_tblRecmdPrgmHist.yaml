@@ -1,5 +1,18 @@
 file_tag: dbo_tblRecmdPrgmHist
+file_description: |-
+  A table containing referrals to programming for people previously incarcerated.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - Control_Number
 #      - Prgm_Cd
 primary_key_cols: []
+columns:
+  - name: Control_Number
+  - name: Prgm_Cd
+  - name: Prgm_CatgryCd
+  - name: Fac_cd
+  - name: Recmdr_EmpNum
+  - name: Inm_RecmdDt
+  - name: Hist_Dt
+  - name: InmateRefuses_Flag
+  - name: Priority_Id
+  - name: Inm_UnSuitable_Flag

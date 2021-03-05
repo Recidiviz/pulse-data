@@ -1,5 +1,114 @@
 file_tag: dbo_SentenceGroup
+file_description: |-
+  A table containing "roll-up" information about all sentences in a group of sentences to incarceration or supervision
+  to be served under the authority of PADOC. Because probation is administered almost entirely at the county level in
+  Pennsylvania and PADOC/PBPP primarily deals with parole, the majority of sentences in this table are sentences to
+  incarceration that in turn led to releases to parole. Consequently, much of this information is redundant of the
+  information directly from the DOC side of PADOC via `dbo_Senrec` and may not be as reliable/consistent.
 primary_key_cols:
   - ParoleNumber
   - ParoleCountID
   - Sent16DGroupNumber
+columns:
+  - name: ParoleNumber
+    description: |-
+      External ID for a unique person who has been supervised by PADOC.
+  - name: ParoleCountID
+    description: |-
+      External ID for a particular stint of a particular person under supervision by PADOC.
+  - name: Sent16DGroupNumber
+    description: |-
+      ID for a group of related sentences which led to this particular parole count.
+  - name: SenProbInd
+    description: |-
+      Whether this is a rare sentence to probation, likely sentenced by a county but to be administered by PADOC.
+  - name: SenTotMinYear
+    description: |-
+      Rolled up minimum sentence length years.
+  - name: SenTotMinMonth
+    description: |-
+      Rolled up minimum sentence length months.
+  - name: SenTotMinDay
+    description: |-
+      Rolled up minimum sentence length days.
+  - name: SenTotMaxYear
+    description: |-
+      Rolled up maximum sentence length years.
+  - name: SenTotMaxMonth
+    description: |-
+      Rolled up maximum sentence length months.
+  - name: SenTotMaxDay
+    description: |-
+      Rolled up maximum sentence length days.
+  - name: SenMinMonth
+    description: |-
+      Minimum sentence length months for the smallest sentence in the group.
+  - name: SenMinDay
+    description: |-
+      Minimum sentence length days for the smallest sentence in the group.
+  - name: SenMinYear
+    description: |-
+      Minimum sentence length years for the smallest sentence in the group.
+  - name: SenMaxMonth
+    description: |-
+      Maximum sentence length months for the smallest sentence in the group.
+  - name: SenMaxDay
+    description: |-
+      Maximum sentence length days for the smallest sentence in the group.
+  - name: SenMaxYear
+    description: |-
+      Maximum sentence length years for the smallest sentence in the group.
+  - name: SenLetter
+  - name: SenAmisc
+  - name: SenAddDate
+    is_datetime: True
+    description: |-
+      Date that a sentence was most recently added to this group.
+  - name: SenLastModDate
+    is_datetime: True
+    description: |-
+      Date that a sentence was most recently modified within this group.
+  - name: SentEffectiveDate
+    is_datetime: True
+    description: |-
+      Date the first sentence in the group became effective.
+  - name: WANGDataFlag
+  - name: SenOffLastName
+    description: |-
+      Last name of the sentenced person.
+  - name: SenOffFirstName
+    description: |-
+      First name of the sentenced person.
+  - name: SenOffMidName
+    description: |-
+      Middle name of the sentenced person.
+  - name: SenOffSuffix
+    description: |-
+      Name suffix of the sentenced person.
+  - name: SenInstitution
+    description: |-
+      Institution (e.g. prison or field office) under which the sentence is to be served.
+  - name: SenInstNumber
+    description: |-
+      ID of a sub-unit within this institution under which the sentence is to be served.
+  - name: SenAdjMaxMonth
+    description: |-
+      Adjusted maximum sentence (by a judge) months.
+  - name: SenAdjMaxDay
+    description: |-
+      Adjusted maximum sentence (by a judge) days.
+  - name: SenAdjMaxYear
+    description: |-
+      Adjusted maximum sentence (by a judge) years.
+  - name: senRRRICaseInd
+    description: |-
+      Whether or not this is an RRRI case.
+  - name: senRRRIDate
+    is_datetime: True
+    description: |-
+      RRRI minimum date.
+  - name: senRebuttCaseInd
+  - name: senTrueMinDate
+    is_datetime: True
+    description: |-
+      "True" minimum date of release from this sentence, with all factors included.
