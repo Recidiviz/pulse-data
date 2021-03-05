@@ -20,7 +20,8 @@ locals {
 }
 
 module "case_triage_database" {
-  source                 = "./modules/cloud-sql"
+  source = "./modules/cloud-sql-instance"
+
   base_secret_name       = "case_triage"
   region                 = var.region
   zone                   = var.zone
@@ -31,7 +32,8 @@ module "case_triage_database" {
 
 
 module "jails_database" {
-  source           = "./modules/cloud-sql"
+  source = "./modules/cloud-sql-instance"
+
   base_secret_name = "sqlalchemy"
   database_version = "POSTGRES_9_6"
   region           = "us-east4"
@@ -43,7 +45,8 @@ module "jails_database" {
 
 
 module "justice_counts_database" {
-  source                         = "./modules/cloud-sql"
+  source = "./modules/cloud-sql-instance"
+
   base_secret_name               = "justice_counts"
   region                         = "us-east1"
   zone                           = "us-east1-c"
@@ -54,7 +57,8 @@ module "justice_counts_database" {
 
 
 module "operations_database" {
-  source            = "./modules/cloud-sql"
+  source = "./modules/cloud-sql-instance"
+
   base_secret_name  = "operations"
   database_version  = "POSTGRES_11"
   region            = "us-east1"
@@ -65,7 +69,8 @@ module "operations_database" {
 
 
 module "state_database" {
-  source            = "./modules/cloud-sql"
+  source = "./modules/cloud-sql-instance"
+
   base_secret_name  = "state"
   database_version  = "POSTGRES_9_6"
   region            = "us-east1"

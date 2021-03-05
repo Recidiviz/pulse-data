@@ -29,32 +29,7 @@ data "google_secret_manager_secret_version" "po_report_cdn_static_ip" {
 }
 
 locals {
-  repo_url      = "https://source.developers.google.com/projects/${var.project_id}/repos/github_Recidiviz_pulse-data/revisions/${var.git_hash}/paths/recidiviz/cloud_functions"
-}
-
-
-resource "google_cloudfunctions_function" "direct-ingest-states" {
-  for_each = toset(["US_ID", "US_MO", "US_ND", "US_PA", "US_TN", "US_MI"])
-
-  name    = "direct-ingest-state-${replace(lower(each.key), "_", "-")}"
-  runtime = "python37"
-  labels = {
-    "deployment-tool" = "terraform"
-  }
-
-  event_trigger {
-    event_type = "google.storage.object.finalize"
-    resource   = "${var.project_id}-direct-ingest-state-${replace(lower(each.key), "_", "-")}"
-  }
-
-  entry_point           = "handle_state_direct_ingest_file"
-  environment_variables = {}
-
-  source_repository {
-    url = local.repo_url
-  }
-
-  timeouts {}
+  repo_url = "https://source.developers.google.com/projects/${var.project_id}/repos/github_Recidiviz_pulse-data/revisions/${var.git_hash}/paths/recidiviz/cloud_functions"
 }
 
 # Cloud Functions that trigger file name normalization and nothing else for buckets designated as automatic upload
