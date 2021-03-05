@@ -228,7 +228,7 @@ class TestCaseCompliance(unittest.TestCase):
         self.assertEqual(
             SupervisionCaseCompliance(
                 date_of_evaluation=compliance_evaluation_date,
-                assessment_count=1,
+                assessment_count=0,
                 most_recent_assessment_date=date(2020, 3, 6),
                 num_days_assessment_overdue=0,
                 face_to_face_count=0,
@@ -335,7 +335,7 @@ class TestCaseCompliance(unittest.TestCase):
             SupervisionCaseCompliance(
                 date_of_evaluation=compliance_evaluation_date,
                 most_recent_assessment_date=date(2018, 7, 10),
-                assessment_count=1,
+                assessment_count=0,
                 num_days_assessment_overdue=0,
                 face_to_face_count=0,
                 face_to_face_frequency_sufficient=None,
@@ -380,7 +380,7 @@ class TestCaseCompliance(unittest.TestCase):
             ),
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
-                contact_date=date(2018, 4, 6),
+                contact_date=date(2018, 4, 30),
                 contact_type=StateSupervisionContactType.FACE_TO_FACE,
                 status=StateSupervisionContactStatus.COMPLETED,
             ),
@@ -405,7 +405,7 @@ class TestCaseCompliance(unittest.TestCase):
                 most_recent_assessment_date=date(2018, 3, 10),
                 num_days_assessment_overdue=0,
                 face_to_face_count=1,
-                most_recent_face_to_face_date=date(2018, 4, 6),
+                most_recent_face_to_face_date=date(2018, 4, 30),
                 face_to_face_frequency_sufficient=True,
             ),
             compliance,
@@ -456,7 +456,7 @@ class TestCaseCompliance(unittest.TestCase):
             ),
         ]
 
-        compliance_evaluation_date = date(2018, 4, 30)
+        compliance_evaluation_date = date(2018, 4, 6)
 
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
             supervision_period=supervision_period,
@@ -544,14 +544,14 @@ class TestCaseCompliance(unittest.TestCase):
                 assessment_type=StateAssessmentType.LSIR,
                 assessment_score=33,
                 assessment_level=StateAssessmentLevel.HIGH,
-                assessment_date=date(2018, 3, 10),
+                assessment_date=date(2018, 3, 31),
             )
         ]
 
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
-                contact_date=date(2018, 3, 6),
+                contact_date=date(2018, 3, 31),
                 contact_type=StateSupervisionContactType.FACE_TO_FACE,
                 status=StateSupervisionContactStatus.COMPLETED,
             )
@@ -579,7 +579,7 @@ class TestCaseCompliance(unittest.TestCase):
                 assessment_count=1,
                 num_days_assessment_overdue=None,
                 face_to_face_count=1,
-                most_recent_face_to_face_date=date(2018, 3, 6),
+                most_recent_face_to_face_date=date(2018, 3, 31),
                 face_to_face_frequency_sufficient=None,
             ),
             compliance,

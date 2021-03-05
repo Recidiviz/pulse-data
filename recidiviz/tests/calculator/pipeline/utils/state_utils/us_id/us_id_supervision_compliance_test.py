@@ -79,7 +79,7 @@ MINIMUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE = (
 
 
 class TestAssessmentsInComplianceMonth(unittest.TestCase):
-    """Tests for _completed_assessments_in_compliance_month."""
+    """Tests for _completed_assessments_on_date."""
 
     def test_completed_assessments_in_compliance_month(self):
         evaluation_date = date(2018, 4, 30)
@@ -97,13 +97,13 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
             state_code="US_ID",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=1,
-            assessment_date=date(2018, 4, 2),
+            assessment_date=date(2018, 4, 30),
         )
         assessment_2 = StateAssessment.new_with_defaults(
             state_code="US_ID",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=100,
-            assessment_date=date(2018, 4, 10),
+            assessment_date=date(2018, 4, 30),
         )
         assessment_no_score = StateAssessment.new_with_defaults(
             state_code="US_ID",
@@ -141,14 +141,14 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
 
         self.assertEqual(
             len(expected_assessments),
-            us_id_supervision_compliance._completed_assessments_in_compliance_month(
+            us_id_supervision_compliance._completed_assessments_on_date(
                 evaluation_date
             ),
         )
 
 
 class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
-    """Tests for _face_to_face_contacts_in_compliance_month."""
+    """Tests for _face_to_face_contacts_on_dates."""
 
     def test_face_to_face_contacts_in_compliance_month(self):
         evaluation_date = date(2018, 4, 30)
@@ -210,7 +210,7 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
             contact_out_of_range,
             contact_wrong_type,
         ]
-        expected_contacts = [contact_1, contact_2, contact_3]
+        expected_contacts = [contact_3]
 
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
             supervision_period=supervision_period,
@@ -221,7 +221,7 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
         )
         self.assertEqual(
             len(expected_contacts),
-            us_id_supervision_compliance._face_to_face_contacts_in_compliance_month(
+            us_id_supervision_compliance._face_to_face_contacts_on_date(
                 evaluation_date
             ),
         )

@@ -452,14 +452,12 @@ def find_time_buckets_for_supervision_period(
 
             case_compliance: Optional[SupervisionCaseCompliance] = None
 
-            # For now, we are only calculating case compliance at the end of each month
-            if is_on_supervision_last_day_of_month:
-                case_compliance = None
-
-                if state_specific_case_compliance_manager:
-                    case_compliance = state_specific_case_compliance_manager.get_case_compliance_on_date(
+            if state_specific_case_compliance_manager:
+                case_compliance = (
+                    state_specific_case_compliance_manager.get_case_compliance_on_date(
                         event_date
                     )
+                )
 
             deprecated_supervising_district_external_id = (
                 level_2_supervision_location_external_id
