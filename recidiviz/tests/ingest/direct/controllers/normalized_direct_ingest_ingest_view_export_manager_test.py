@@ -14,7 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for direct_ingest_ingest_view_export_manager.py."""
+"""Tests for direct_ingest_ingest_view_export_manager.py.
+
+TODO(#6197): This file should be cleaned up after the new normalized views land.
+"""
 import datetime
 import unittest
 from typing import List, Optional, Dict
@@ -29,8 +32,8 @@ from more_itertools import one
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestView,
+from recidiviz.ingest.direct.views.unnormalized_direct_ingest_big_query_view_types import (
+    UnnormalizedDirectIngestPreProcessedIngestView as DirectIngestPreProcessedIngestView,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_ingest_view_export_manager import (
     DirectIngestIngestViewExportManager,

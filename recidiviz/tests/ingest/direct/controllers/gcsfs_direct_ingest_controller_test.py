@@ -221,10 +221,16 @@ class CountyTestGcsfsDirectIngestController(BaseTestCsvGcsfsDirectIngestControll
         return ["tagA", "tagB"]
 
 
+# TODO(#6197): These patches should be cleaned up after the new normalized direct ingest BQ views land.
 @pytest.mark.uses_db
 @patch("recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-staging"))
 @patch(
-    "recidiviz.ingest.direct.views.direct_ingest_big_query_view_types"
+    "recidiviz.ingest.direct.views.normalized_direct_ingest_big_query_view_types"
+    ".get_region_raw_file_config",
+    Mock(return_value=FakeDirectIngestRegionRawFileConfig("US_XX")),
+)
+@patch(
+    "recidiviz.ingest.direct.views.unnormalized_direct_ingest_big_query_view_types"
     ".get_region_raw_file_config",
     Mock(return_value=FakeDirectIngestRegionRawFileConfig("US_XX")),
 )

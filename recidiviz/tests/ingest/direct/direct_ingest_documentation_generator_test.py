@@ -145,12 +145,26 @@ tagPrimaryKeyColsMissing file description
                 error.value, "Missing raw data configs for region: US_NOT_REAL"
             )
 
+    # TODO(#6197): These patches should be cleaned up after the new normalized direct ingest BQ views land.
     @patch(
-        "recidiviz.ingest.direct.views.direct_ingest_big_query_view_types"
+        "recidiviz.ingest.direct.views.normalized_direct_ingest_big_query_view_types"
         ".get_region_raw_file_config"
     )
-    def test_get_referencing_views(self, mock_config_fn: MagicMock) -> None:
-        mock_config_fn.return_value = FakeDirectIngestRegionRawFileConfig("US_XX")
+    @patch(
+        "recidiviz.ingest.direct.views.unnormalized_direct_ingest_big_query_view_types"
+        ".get_region_raw_file_config"
+    )
+    def test_get_referencing_views(
+        self,
+        mock_normalized_config_fn: MagicMock,
+        mock_unnormalized_config_fn: MagicMock,
+    ) -> None:
+        mock_normalized_config_fn.return_value = FakeDirectIngestRegionRawFileConfig(
+            "US_XX"
+        )
+        mock_unnormalized_config_fn.return_value = FakeDirectIngestRegionRawFileConfig(
+            "US_XX"
+        )
         documentation_generator = DirectIngestDocumentationGenerator()
         tags = ["tagA", "tagB", "tagC"]
         my_collector = FakeDirectIngestPreProcessedIngestViewCollector(

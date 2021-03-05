@@ -14,22 +14,27 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for types defined in direct_ingest_big_query_view_types_test.py"""
+"""Tests for types defined in direct_ingest_big_query_view_types_test.py
+
+TODO(#6197): This file should be cleaned up after the new normalized views land.
+"""
 import unittest
 import attr
 
 from mock import patch
 
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestRawDataTableLatestView,
+from recidiviz.ingest.direct.views.unnormalized_direct_ingest_big_query_view_types import (
+    UnnormalizedDirectIngestRawDataTableLatestView as DirectIngestRawDataTableLatestView,
+    UnnormalizedDirectIngestRawDataTableUpToDateView as DirectIngestRawDataTableUpToDateView,
+    UnnormalizedDirectIngestPreProcessedIngestView as DirectIngestPreProcessedIngestView,
     RAW_DATA_LATEST_VIEW_QUERY_TEMPLATE,
-    DirectIngestRawDataTableUpToDateView,
     RAW_DATA_UP_TO_DATE_VIEW_QUERY_TEMPLATE,
-    DirectIngestPreProcessedIngestView,
     RAW_DATA_LATEST_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE,
     RAW_DATA_UP_TO_DATE_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE,
-    RawTableViewType,
+)
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DestinationTableType,
+    RawTableViewType,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
