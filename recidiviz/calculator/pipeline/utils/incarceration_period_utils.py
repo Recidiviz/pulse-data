@@ -303,6 +303,10 @@ def _filter_and_update_incarceration_periods_for_calculations(
         state_code, filtered_incarceration_periods
     )
 
+    filtered_incarceration_periods = _drop_zero_day_erroneous_periods(
+        filtered_incarceration_periods
+    )
+
     return filtered_incarceration_periods
 
 
@@ -539,3 +543,31 @@ def _collapse_incarceration_periods_for_calculations(
         )
 
     return collapsed_periods
+
+
+def _drop_zero_day_erroneous_periods(
+    incarceration_periods: List[StateIncarcerationPeriod],
+) -> List[StateIncarcerationPeriod]:
+    """Removes any incarceration periods where the admission_date is the same as the
+    release_date, where the release_reason is RELEASED_FROM_ERRONEOUS_ADMISSION, and
+    where the admission_reason is not TRANSFER. It is reasonable to assume that these
+    periods are erroneous and should not be considered in any metrics involving
+    incarceration.
+
+    Returns the filtered incarceration periods.
+    """
+    periods_to_keep: List[StateIncarcerationPeriod] = []
+
+    for ip in incarceration_periods:
+        if (
+            ip.admission_date
+            and ip.release_date
+            and ip.admission_date == ip.release_date
+            and ip.release_reason == ReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION
+            and ip.admission_reason != AdmissionReason.TRANSFER
+        ):
+            continue
+
+        periods_to_keep.append(ip)
+
+    return periods_to_keep

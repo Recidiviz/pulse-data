@@ -1071,7 +1071,7 @@ class StateIncarcerationPeriod(
             and self.status != StateIncarcerationPeriodStatus.IN_CUSTODY
         ):
             raise ValueError(
-                "Unexpected missing release date. _infer_missing_dates_and_statuses is not properly"
+                "Unexpected missing release date. IP pre-processing is not properly"
                 " setting missing dates."
             )
 
