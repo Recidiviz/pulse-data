@@ -1,5 +1,87 @@
 file_tag: dbo_Arrest_Header
+file_description: |-
+  A table containing general metadata about arrests and bookings thereof.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - ParoleNumber
 #      - ArrestReportNO
 primary_key_cols: []
+columns:
+  - name: ParoleNumber
+  - name: ArrestReportNO
+  - name: ArrestType
+  - name: DateOfReport
+  - name: ArrestDate
+  - name: PlaceOfConfinement
+  - name: ArrestAuthority
+  - name: SearchConducted
+  - name: SearchSupvrApproval
+  - name: SearchSupvrApprovalDesc
+  - name: EvidenceConfiscated
+  - name: EvidenceConfiscatedList
+  - name: RTD_Delinquency
+  - name: RTD_RiskAbsconding
+  - name: RTD_Seriousness
+  - name: RTD_EarlyFailure
+  - name: RTD_FailureToRespond
+  - name: RTD_AssultativeBehave
+  - name: RTD_Weapons
+  - name: RTD_SubstanceAbuse
+  - name: RTD_PriorSuprvsn
+  - name: RTD_Other
+  - name: RTD_OtherDesc
+  - name: RTC_AmeneableToSuprvsn
+  - name: RTC_StableResidence
+  - name: RTC_Counseling
+  - name: RTC_SteadEmploy
+  - name: RTC_Other
+  - name: RTC_OtherDesc
+  - name: ParoleSupvrRcmndDetain
+  - name: ParoleSupvrRcmndContinue
+  - name: ParoleSupvrRcmndName
+  - name: ParoleSupvrRcmndDate
+  - name: DirDecisionDetain
+  - name: DirDecisionContinue
+  - name: DirDecisionName
+  - name: DirDecisionDate
+  - name: Date48HrDetainerFiled
+  - name: WarrantNum
+  - name: DateWarrantFiled
+  - name: DateWarrantRmvd
+  - name: OpenCrimCharges
+  - name: OCC_ReferTo257C
+  - name: FR_AgentNameSgntr
+  - name: FR_AgentNameSgntrDate
+  - name: FR_SupvrNameSgntr
+  - name: FR_SupvrNameSgntrDate
+  - name: FR_OfficeName
+  - name: DateRtndToInst
+  - name: PreliminaryHear
+  - name: ViolationHear
+  - name: DetentionHear
+  - name: RevocationHear
+  - name: ProbableCauseHear
+  - name: HearDate
+  - name: HearTime
+  - name: PublicDefenderName
+  - name: PublicDefenderAddress1
+  - name: PublicDefenderAddress2
+  - name: PublicDefenderCity
+  - name: PublicDefenderState
+  - name: PublicDefenderZip
+  - name: Location
+  - name: LocationAddress1
+  - name: LocationAddress2
+  - name: LocationCity
+  - name: LocationState
+  - name: LocationZip
+  - name: PanelHear
+  - name: Gagnon1Hear
+  - name: Gagnon2Hear
+  - name: LastModifiedBy
+  - name: LastModifiedDateTime
+  - name: PlaceofConf_ID
+  - name: PlaceofConfCtyInst
+  - name: DirDecision_ID
+  - name: LocationType
+  - name: Location_ID
+  - name: InstOfSentence

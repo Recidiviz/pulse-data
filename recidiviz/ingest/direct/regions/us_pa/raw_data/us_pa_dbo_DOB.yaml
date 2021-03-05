@@ -1,5 +1,25 @@
 file_tag: dbo_DOB
-# Best initial (unconfirmed) guess at primary keys for this table:
-#      - ParoleNumber
-#      - DOBID
-primary_key_cols: []
+file_description: |-
+  A table containing information about dates of birth for people ever supervised by PADOC.
+primary_key_cols:
+  - ParoleNumber
+  - DOBID
+columns:
+  - name: ParoleNumber
+    description: |-
+      External ID for a unique person who has been supervised by PADOC.
+  - name: DOBID
+    description: |-
+      ID for the date of birth record.
+  - name: BirthStateID
+    description: |-
+      Where the birth occurred, always null.
+  - name: DOBYear
+    description: |-
+      Year of birth.
+  - name: DOBMonth
+    description: |-
+      Month of birth.
+  - name: DOBDay
+    description: |-
+      Day of birth.

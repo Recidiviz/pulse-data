@@ -1,4 +1,14 @@
 file_tag: dbo_LU_BoardActionKeyword_New
+file_description: |-
+  A lookup table with codes describing possible board action classifications, searchable by keywords.
 primary_key_cols:
   - KeywordCode
   - KeywordBoardactCounter
+columns:
+  - name: KeywordCode
+  - name: KeywordBoardactCounter
+  - name: ActionClassCode
+  - name: ActionCodeDescrip
+  - name: KeywordBoardactLang
+  - name: KeywordCursorPos
+  - name: SpecialCondnDesc

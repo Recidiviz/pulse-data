@@ -1,2 +1,25 @@
 file_tag: dbo_Hist_Treatment
+file_description: |-
+  A table with information on referred treatments for people under supervision in the past.
 primary_key_cols: []
+columns:
+  - name: ParoleNumber
+  - name: TrtHistoryID
+  - name: TrtHistType
+  - name: TrtHistStartDateYear
+  - name: TrtHistStartDateMonth
+  - name: TrtHistStartDateDay
+  - name: TrtHistEndDateYear
+  - name: TrtHistEndDateMonth
+  - name: TrtHistEndDateDay
+  - name: TrtHistProgramCode
+  - name: TrtHistOutcomeStatusCode
+  - name: TrtHistTreatmentDescription
+  - name: TrtHistDOCO
+  - name: ParoleCountID
+  - name: OtherState
+  - name: OtherStateFac
+  - name: LastModifiedBy
+  - name: LastModifiedDateTime
+  - name: TrtHistHrsImposed
+  - name: TrtHistHrsCompleted

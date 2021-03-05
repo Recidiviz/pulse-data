@@ -1,3 +1,105 @@
 file_tag: dbo_Offender
+file_description: |-
+  A table containing demographic and identifier information for people who have been supervised by PADOC.
 primary_key_cols:
   - ParoleNumber
+columns:
+  - name: ParoleNumber
+    description: |-
+      External ID for a unique person who has been supervised by PADOC.
+  - name: PrlStatusCodeID
+    description: |-
+      Current parole status of the person within PADOC.
+  - name: OffSID
+    description: |-
+      State identifier of the person.
+  - name: OffReceptionDate
+    is_datetime: True
+    description: |-
+      Date when the person was first received into PADOC custody.
+  - name: OffEducationGrade
+    description: |-
+      Highest grade of education the person has received, unused.
+  - name: OffCitizenship
+    description: |-
+      Citizenship status of this person, unused.
+  - name: OffAct14Notify
+    description: |-
+      Always null.
+  - name: OffHeight
+    description: |-
+      Height of the person, unused.
+  - name: OffWeight
+    description: |-
+      Weight of the person, unused.
+  - name: OffFingerPrintCode
+    description: |-
+      Finger print code of the person, unused.
+  - name: OffSex
+    description: |-
+      Sex of the person.
+  - name: OffCaseNumberAtInstitution
+    description: |-
+      Always null.
+  - name: OffReligionActive
+    description: |-
+      Religion of the person, unused.
+  - name: OffReligionOtherInfo
+    description: |-
+      Other religious information about the person, unused.
+  - name: OffCountyOfProgram
+    description: |-
+      County where this person has most recently received programming from PADOC.
+  - name: OffRaceEthnicGroup
+    description: |-
+      Race or ethnicity of the person.
+  - name: OffEyeColor
+    description: |-
+      Eye color of the person, unused.
+  - name: OffHairColor
+    description: |-
+      Hair color of the person, unused.
+  - name: OffSkinTone
+    description: |-
+      Skin tone of the person, unused.
+  - name: OffMiscellaneous
+    description: |-
+      Other miscellaneous information about the person.
+  - name: OffPreSentence
+    description: |-
+      Whether this person is currently being held pre-sentence.
+  - name: OffStatusDateYear
+    description: |-
+      Year when the latest recorded status for the person became effective.
+  - name: OffStatusDateMonth
+    description: |-
+      Month when the latest recorded status for the person became effective.
+  - name: OffStatusDateDay
+    description: |-
+      Day when the latest recorded status for the person became effective.
+  - name: OffRecordNumber
+  - name: OffSexOld
+    description: |-
+      Previous sex of the person, unused.
+  - name: OffRaceEthnicGroupOld
+    description: |-
+      Previous race or ethnicity of the person, unused.
+  - name: EyeColor_ID
+    description: |-
+      Eye color of the person, unused.
+  - name: HairColor_ID
+    description: |-
+      Hair color of the person, unused.
+  - name: SkinTone_ID
+    description: |-
+      Skin tone of the person, unused.
+  - name: GangAffiliation_ID
+    description: |-
+      Gang affilitation of the person.
+  - name: LastModifiedDate
+    is_datetime: True
+    description: |-
+      Date when this record was last modified.
+  - name: LastModifiedBy
+    description: |-
+      Who this record was last modified by.

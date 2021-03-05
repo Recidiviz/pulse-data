@@ -1,6 +1,27 @@
 file_tag: dbo_ConditionCode
+file_description: |-
+  A table describing specific conditions of supervision that must be abided by for a particular stint under supervision.
+  Specifically, these are conditions of a particular stint of supervision that were imposed as part of a particular
+  board action, which may have been simply the initial imposition of a supervision sentence or a later action taken in
+  response to, say, a supervision violation.
 primary_key_cols:
   - ParoleNumber
   - ParoleCountID
   - BdActionID
   - ConditionCodeID
+columns:
+  - name: ParoleNumber
+    description: |-
+      External ID for a unique person who has been supervised by PADOC.
+  - name: ParoleCountID
+    description: |-
+      External ID for a particular stint of a particular person under supervision by PADOC.
+  - name: BdActionID
+    description: |-
+      ID of the specific action taken by the board that led to the imposition of this condition.
+  - name: ConditionCodeID
+    description: |-
+      ID of the imposed condition within the context of this specific stint of supervision, like a sequence number.
+  - name: CndConditionCode
+    description: |-
+      A short code describing the actual condition imposed.

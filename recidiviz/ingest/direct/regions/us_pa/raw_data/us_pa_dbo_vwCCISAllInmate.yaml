@@ -1,13 +1,32 @@
 file_tag: dbo_vwCCISAllInmate
+file_description: |-
+  A table from the Community Corrections Information System (CCIS) tracking the
+  set of individuals incarcerated within Community Corrections Centers and Community Contract
+  Facilities.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - Control_Number
 #      - Inmate_Number
 primary_key_cols: []
 columns:
+  - name: Control_Number
+  - name: Inmate_Number
+  - name: Region_CD
+  - name: Center_CD
   - name: Bed_Dt
     is_datetime: True
+  - name: Ref_Inst_Cd
+  - name: Case_Id
+  - name: Cur_Status_Id
   - name: Cur_Status_Dt
     is_datetime: True
+  - name: Cur_Status_Tm
+  - name: Comments
   - name: LstMod_Dt
     is_datetime: True
+  - name: LstMod_EmpNum
+  - name: SODate
+  - name: SexOffFlg
+  - name: ApprHomePlanFlg
+  - name: GrnStpMo
+  - name: Cnslr_EmpNum
 encoding: ISO-8859-1

@@ -1,12 +1,141 @@
 file_tag: dbo_Miscon
+file_description: |-
+  A table describing conduct events that have taken place in a carceral setting involving an incarcerated person. This
+  includes details about the event itself, as well as information about the outcome of that event, e.g. hearings held,
+  reports drafted, and consequences handed down.
 primary_key_cols:
   - misconduct_number
 columns:
+  - name: institution
+    description: |-
+      ID of the institution, e.g. state prison or county jail, where the conduct event took place.
+  - name: misconduct_date
+    is_datetime: True
+    description: |-
+      Date when the conduct event took place.
+  - name: form_141
+    description: |-
+      Type of action (administrative vs disciplinary).
+  - name: data_followup
+    description: |-
+      Whether a hearing was held, redundant of hearings_held.
   - name: control_number
-    is_datetime: False
-    description: |
-      ID that follows a person through all encounters with the PA DOC (ideally). In practice, they make mistakes and
-      this is retroactively edited with some frequency.
+    description: |-
+      External ID that follows a person through all encounters with the PADOC (ideally). In practice, there are mistakes
+      and this is retroactively edited with some low frequency.
   - name: misconduct_number
-    is_datetime: False
-    description: Unique identifier for a given misconduct entry. Reliably globally unique within this table.
+    description: |-
+      Unique identifier for a given conduct event entry. Reliably globally unique within this table.
+  - name: sig_date
+    description: |-
+      Date record was last updated.
+  - name: sig_time
+    description: |-
+      Time record was last updated.
+  - name: user_id
+    description: |-
+      Id of agent who last updated the record.
+  - name: inst_hvl_desc
+    description: |-
+      Institution description, redundant of institution.
+  - name: report_date
+    is_datetime: True
+    description: |-
+      Date when the conduct event's outcome report became official.
+  - name: place_hvl_desc
+    description: |-
+      Place within facility description, redundant of place_hvl_code.
+  - name: place_hvl_code
+    description: |-
+      Place within facility where the conduct event took place.
+  - name: place_extended
+    description: |-
+      Additional information on the plae within the facility where the event took place.
+  - name: misconduct_time
+    is_datetime: True
+    description: |-
+      Time when the conduct event took place.
+  - name: others_involved
+    description: |-
+      Others classes of people involved, e.g. other incarcerated people, staff, visitors, etc.
+  - name: ctgory_of_chrgs_1
+    description: |-
+      Whether charge category 1 conduct events took place.
+  - name: ctgory_of_chrgs_2
+    description: |-
+      Whether charge category 2 conduct events took place.
+  - name: ctgory_of_chrgs_3
+    description: |-
+      Whether charge category 3 conduct events took place.
+  - name: ctgory_of_chrgs_4
+    description: |-
+      Whether charge category 4 conduct events took place.
+  - name: ctgory_of_chrgs_5
+    description: |-
+      Whether charge category 5 conduct events took place.
+  - name: confinement
+    description: |-
+      Whether confinement is a result of the conduct event.
+  - name: confinement_date
+    is_datetime: True
+    description: |-
+      Date confinement began.
+  - name: confinement_time
+    description: |-
+      Time confinement began.
+  - name: hearings_held
+    description: |-
+      Code describing what kind of hearing was held.
+  - name: witnesses
+    description: |-
+      Whether or not there were witnesses to the event.
+  - name: inmate_version
+  - name: recording_staff
+    description: |-
+      Id of agent who recorded the event.
+  - name: rcrdng_staff_last
+    description: |-
+      Name of agent who recorded the event.
+  - name: reviewing_staff
+    description: |-
+      Id of agent who reviewed the outcome report.
+  - name: revwng_staff_last
+    description: |-
+      Name of agent who reviewed the outcome report.
+  - name: date_reviewed
+    is_datetime: True
+    description: |-
+      Date the outcome report was reviewed prior to becoming official.
+  - name: inmate_notice_date
+    is_datetime: True
+    description: |-
+      Date that the incarcerated person was given notice of the report.
+  - name: inmate_notice_time
+    description: |-
+      Time that the incarcerated person was given notice of the report.
+  - name: hearing_after_date
+    is_datetime: True
+    description: |-
+      Date when the outcome hearing took place.
+  - name: hearing_after_time
+    description: |-
+      Time when the outcome hearing took place.
+  - name: status_141
+    description: |-
+      Act 141 status.
+  - name: stat_hvl_dsc_141
+    description: |-
+      Act 141 status description, redundant of status_141.
+  - name: reason_802
+    description: |-
+      Reason for 802 administrative custody.
+  - name: rsn_hvl_desc_802
+    description: |-
+      Description for 802 administrative custody, redundant of reason_802.
+  - name: comment
+    description: |-
+      Unclear and inconsistently used.
+  - name: drug_related
+    description: |-
+      Whether or not the event was drug-related.
+  - name: refer_formal_ind

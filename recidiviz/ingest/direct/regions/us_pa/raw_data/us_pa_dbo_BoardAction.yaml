@@ -1,5 +1,78 @@
 file_tag: dbo_BoardAction
+file_description: |-
+  A table describing actions taken by the Pennsylvania Board of Parole and Probation in response to some action taken by
+  or charge levied against a person under supervision, e.g. responses to supervision violations.
 primary_key_cols:
   - ParoleNumber
   - ParoleCountID
   - BdActionID
+columns:
+  - name: ParoleNumber
+    description: |-
+      External ID for a unique person who has been supervised by PADOC.
+  - name: ParoleCountID
+    description: |-
+      External ID for a particular stint of a particular person under supervision by PADOC.
+  - name: BdActionID
+    description: |-
+      ID of the specific action taken by the board.
+  - name: BdActInstitution
+    description: |-
+      The specific institution under whose authority this action took place, often a state prison or field office.
+  - name: BdActInstNumber
+    description: |-
+      ID of an actor within that institution under whose authority this action took place.
+  - name: BdActSubInstitution
+    description: |-
+      An optional sub-unit within the institution under whose authority this action took place.
+  - name: BdActDateMonth
+    description: |-
+      Effective month of the board action.
+  - name: BdActDateDay
+    description: |-
+      Effective day of the board action.
+  - name: BdActDateYear
+    description: |-
+      Effective year of the board action.
+  - name: BdActEntryDateMonth
+    description: |-
+      Month when the board action was officially recorded.
+  - name: BdActEntryDateDay
+    description: |-
+      Day when the board action was officially recorded.
+  - name: BdActEntryDateYear
+    description: |-
+      Year when the board action was officially recorded.
+  - name: BdActInitial
+    description: |-
+      Code describing the action that was taken.
+  - name: BdActAdmin
+    description: |-
+      Whether this action was taken by some admistrator.
+  - name: BdActMaxDateYear
+    description: |-
+      Year when the action taken by the board expires.
+  - name: BdActMaxDateMonth
+    description: |-
+      Month when the action taken by the board expires.
+  - name: BdActMaxDateDay
+    description: |-
+      Day when the action taken by the board expires.
+  - name: BdActIsWarehouse
+    description: |-
+      Whether this record was archived at some past point in time.
+  - name: BdActOffLastName
+    description: |-
+      Last name of the officer chiefly responsible for this action.
+  - name: BdActOffFirstName
+    description: |-
+      First name of the officer chiefly responsible for this action.
+  - name: BdActOffMidName
+    description: |-
+      Middle name of the officer chiefly responsible for this action.
+  - name: BdActOffSuffix
+    description: |-
+      Name suffix of the officer chiefly responsible for this action.
+  - name: BdActDOPrint
+  - name: BdActDOPrintDate
+    is_datetime: True

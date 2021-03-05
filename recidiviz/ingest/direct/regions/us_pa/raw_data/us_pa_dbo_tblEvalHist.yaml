@@ -1,4 +1,32 @@
 file_tag: dbo_tblEvalHist
+file_description: |-
+  A table containing assignments to programming for people previously incarcerated.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - Control_Number
 primary_key_cols: []
+columns:
+  - name: Control_Number
+  - name: Grp_Cd
+  - name: Prgm_Cd
+  - name: Fac_Cd
+  - name: Hist_Dt
+  - name: ComplOrFail_SW
+  - name: Fail_RsnCd
+  - name: Attend_Cd
+  - name: AcqrdKnwldg_Cd
+  - name: SubjectiveAsemt_Cd
+  - name: OvrlAsemt_Cd
+  - name: Inm_StrDt
+  - name: Inm_EndDt
+  - name: Eval_Des
+  - name: Evltr_EmpNum
+  - name: Mdfyr_EmpNum
+  - name: AfterCare_RcmdFlag
+  - name: AfterCare_Id
+  - name: Partcptn_Id
+  - name: Discharge_Id
+  - name: PrsntPrblm_Id
+  - name: SchdSess_Num
+  - name: SchdPerSessHrs_Num
+  - name: AttendSess_Num
+  - name: AttendHrs_Num

@@ -6,16 +6,66 @@ file_description: |-
 primary_key_cols:
   - CCISMvmt_ID
 columns:
-  - name: Bed_Dt
-    is_datetime: True
-    description: The date the person was scheduled to arrive at the facility.
   - name: CCISMvmt_ID
-    is_datetime: False
-    description: Unique identifier for a given movement entry. Reliably globally unique within this table.
-  - name: LstMod_Dt
-    is_datetime: True
-    description: The last datetime at which a given entry was updated.
+    description: |-
+      Unique identifier for a given movement entry. Reliably globally unique within this table.
+  - name: Mvmt_SeqNum
+    description: |-
+      Sequence ID of the movement among all movements for this inmate number.
+  - name: Case_id
+    description: |-
+      ID of the CCI case associated with the movement.
+  - name: Inmate_Number
+    description: |-
+      External ID for a for a single sentence of a given person into incarceration and the subsequent period of
+      incarceration served.
+  - name: Status_Id
+    description: |-
+      Code for the status of the given movement.
   - name: Status_Dt
     is_datetime: True
-    description: The date that the movement occurred.
+    description: |-
+      The date that the movement occurred.
+  - name: Status_Tm
+    description: |-
+      Time that the movement occurred.
+  - name: Move_Cd
+    description: |-
+      Code of the kind of movement.
+  - name: SentStatus_Cd
+    description: |-
+      Sentence status at the time of the movement.
+  - name: ParoleStatus_Cd
+    description: |-
+      Parole status at the time of the movement.
+  - name: RegionFrom
+    description: |-
+      Region from which the movement began.
+  - name: LocationFrom_Cd
+    description: |-
+      Code of the location from which the movement began.
+  - name: LocationTo_Cd
+    description: |-
+      Code of the location to which the movement went.
+  - name: CommentTypeId
+    description: |-
+      Type of comment to be entered by a staff member about the movement.
+  - name: CommentType_Desc
+    description: |-
+      Sub-type of comment to be entered by a staff member about the movement.
+  - name: Comments
+    description: |-
+      Free text comments entered by a staff member about the movement.
+  - name: LstMod_Dt
+    is_datetime: True
+    description: |-
+      The last datetime at which a given entry was updated.
+  - name: LstMod_EmpNum
+    description: |-
+      Employee number of the person who last modified the record.
+  - name: Bed_Dt
+    is_datetime: True
+    description: |-
+      The date the person was scheduled to arrive at the facility.
+  - name: Cnslr_EmpNum
 encoding: ISO-8859-1

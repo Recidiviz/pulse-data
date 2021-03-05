@@ -1,4 +1,31 @@
 file_tag: dbo_InstantOffense
+file_description: |-
+  A table listing offenses that people have been convicted and sentenced for under PADOC authority.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - PrimaryKey
 primary_key_cols: []
+columns:
+  - name: PrimaryKey
+  - name: ParoleNumber
+  - name: CountyStateOfConviction
+  - name: PresentOffense
+  - name: Sentence
+  - name: MinimumDate
+  - name: ReleaseDate
+  - name: MaximumDate
+  - name: LifeSentence
+  - name: BillAndTerm
+  - name: Judge
+  - name: Institution
+  - name: InstitutionNum
+  - name: EffDateOfDelinq
+  - name: SentenceDate
+  - name: State_ID
+  - name: County
+  - name: Sent16DGroupNumber
+  - name: PresentOffense_IDs
+  - name: Indefinite
+  - name: LastModifiedDate
+  - name: LastModifiedBy
+  - name: CaseType
+  - name: SentenceID

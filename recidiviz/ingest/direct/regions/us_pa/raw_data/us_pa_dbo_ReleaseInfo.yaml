@@ -1,4 +1,177 @@
 file_tag: dbo_ReleaseInfo
+file_description: |-
+  A table describing specific periods of supervision currently being served by a particular person under the authority
+  of PADOC. Release in this context refers to the release of a person from incarceration to supervision, though a
+  minority of these rows include, for example, stints of probation being served in lieu of incarceration.
+
+  This includes a wide variety of kinds of metadata, including the supervision officer and field office, the offenses
+  that this period of supervision was sentenced for, and more. This table is typically joined with several other
+  "Release" related tables that round out the picture of a period of supervision.
 primary_key_cols:
   - ParoleNumber
   - ParoleCountID
+columns:
+  - name: ParoleNumber
+    description: |-
+      External ID for a unique person who has been supervised by PADOC.
+  - name: ParoleCountID
+    description: |-
+      External ID for a particular stint of a particular person under supervision by PADOC.
+  - name: RelCMCCode
+    description: |-
+      Unclear, and almost always null.
+  - name: ReleaseFrom
+    description: |-
+      The location where the person was released into supervision from, e.g. a state prison or a county jail,
+      or another county or state for county probationers or people supervised under the interstate compact.
+  - name: RelCountyResidence
+    description: |-
+      Current county of residence for the supervised person.
+  - name: RelDO
+    description: |-
+      District office where the person is currently being supervised, including any temporary adjustments.
+  - name: RelPBPPOffenseCode
+    description: |-
+      PBPP code of the offense with the longest sentence.
+  - name: WangAgentName
+    description: |-
+      Name and ID of the supervising agent.
+  - name: RelPurgeCode
+    description: |-
+      Unclear, always null.
+  - name: RelOverRideIndicator
+    description: |-
+      Unclear, almost always null.
+  - name: RelWantIndicator
+    description: |-
+      Unclear, almost always null.
+  - name: RelTransferDateYear
+    description: |-
+      Year when the person most recently transferred agents.
+  - name: RelTransferDateMonth
+    description: |-
+      Month when the person most recently transferred agents.
+  - name: RelTransferDateDay
+    description: |-
+      Day when the person most recently transferred agents.
+  - name: RelMaxDate
+    is_datetime: True
+    description: |-
+      Date when the period of supervision expires.
+  - name: WangClientName
+    description: |-
+      Name of the person being supervised.
+  - name: RelPBPPOffenseCode2
+    description: |-
+      PBPP code of the offense with the second longest sentence.
+  - name: RelPBPPOffenseCode3
+    description: |-
+      PBPP code of the offense with the third longest sentence.
+  - name: RelDOOld
+    description: |-
+      Previous district office where the person was being supervised.
+  - name: RelDONew
+    description: |-
+      Latest district office where the person is being supervised.
+  - name: RelOTN1
+    description: |-
+      Offense Tracking Number of the offense with the longest sentence.
+  - name: RelOTN2
+    description: |-
+      Offense Tracking Number of the offense with the second longest sentence.
+  - name: RelOTN3
+    description: |-
+      Offense Tracking Number of the offense with the third longest sentence.
+  - name: RelMaxDate1
+    description: |-
+      When the sentence of the offense with the longest sentence expires.
+  - name: RelMaxDate2
+    description: |-
+      When the sentence of the offense with the second longest sentence expires.
+  - name: RelMaxDate3
+    description: |-
+      When the sentence of the offense with the third longest sentence expires.
+  - name: RelMinDate1
+    description: |-
+      The shortest amount of time that can be served to complete the sentence with the longest sentence term.
+  - name: RelMinDate2
+    description: |-
+      The shortest amount of time that can be served to complete the sentence with the second longest sentence term.
+  - name: RelMinDate3
+    description: |-
+      The shortest amount of time that can be served to complete the sentence with the third longest sentence term.
+  - name: relCurrentRiskGrade
+    description: |-
+      Currently assigned supervision level.
+  - name: relCurrentRiskGradeOverRide
+    description: |-
+      Agent-overridden supervision level, if overridden.
+  - name: relCurrentRiskGradeDateYear
+    description: |-
+      Year when the current supervision level was assigned.
+  - name: relCurrentRiskGradeDateMonth
+    description: |-
+      Month when the current supervision level was assigned.
+  - name: relCurrentRiskGradeDateDay
+    description: |-
+      Day when the current supervision level was assigned.
+  - name: MaxAssessID
+  - name: temp_RelDO
+    description: |-
+      Temporary district office where the person is being supervised, if a temporary change has been made.
+  - name: temp_WangAgentName
+    description: |-
+      Name and ID of the temporary supervising agent, if a temporary change has been made.
+  - name: temp_County
+    description: |-
+      County where the person is being supervised, if a temporary change has been made.
+  - name: temp_RelSupervisor
+    description: |-
+      Name of the supervisor of the supervising agent, if a temporary change has been made.
+  - name: temp_OverRideGrade2
+    description: |-
+      Agent-overridden supervision level, if overridden and if the override is temporary.
+  - name: RelFinalRiskGrade
+    description: |-
+      Effective current supervision level, taking any and all overrides into account.
+  - name: Supervisor
+    description: |-
+      Name and ID of the supervisor of the current supervising agent.
+  - name: relWeight
+  - name: OrgCode
+    description: |-
+      Code of the field office where the supervision is being served.
+  - name: RelLUOffenseID
+    description: |-
+      PADOC lookup ID of the offense with the longest sentence.
+  - name: RelLUOffenseID2
+    description: |-
+      PADOC lookup ID of the offense with the second longest sentence.
+  - name: RelLUOffenseID3
+    description: |-
+      PADOC lookup ID of the offense with the third longest sentence.
+  - name: tempWangAgentName
+    description: |-
+      Name and ID of the temporary supervising agent, if a temporary change has been made.
+  - name: RskAct97Positive
+    description: |-
+      Whether the person tested positive for non-prescribed drugs while incarcerated (under Act 97-1).
+  - name: RskAct97ViolationOfSbstanceAct
+    description: |-
+      Whether the person is serving a sentence arising from a conviction under the
+      “Controlled Substance, Drug Device and Cosmetic Act” (Act 97-2).
+  - name: RskAct97DrugRelatedOffense
+    description: |-
+      Whether the person is serving a sentence arising from a "drug-related crime" (Act 97-3).
+  - name: RskUrinalysis
+    description: |-
+      Whether the person must receive urinalysis while supervised.
+  - name: RskBoardMandatedUrinala
+    description: |-
+      Whether the board has mandated that the person must receive urinalysis while supervised.
+  - name: Rsk03NmbrOfPriorFelonyCnvcts
+    description: |-
+      Number of felony convictions prior to this period of supervision.
+  - name: RskAct97Other
+    description: |-
+      Whether any other Act 97 considerations apply to this period of supervision.

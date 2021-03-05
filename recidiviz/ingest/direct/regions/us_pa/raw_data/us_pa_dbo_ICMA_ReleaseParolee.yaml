@@ -1,6 +1,23 @@
 file_tag: dbo_ICMA_ReleaseParolee
+file_description: |-
+  A table containing a rough summary of people who were previously under supervision.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - InstitutionNumber
 #      - ParoleNumber
 #      - ParoleCountId
 primary_key_cols: []
+columns:
+  - name: InstitutionNumber
+  - name: HistDocketId
+  - name: ParoleNumber
+  - name: ParoleCountId
+  - name: ReleaseTo
+  - name: ReleaseTypeCode
+  - name: ReleaseDateYear
+  - name: ReleaseDateMonth
+  - name: ReleaseDateDay
+  - name: AgentNTUserId
+  - name: AgentEmployeeNumber
+  - name: IntakeDate
+  - name: LastModifiedDateTime
+  - name: LastModifiedBy

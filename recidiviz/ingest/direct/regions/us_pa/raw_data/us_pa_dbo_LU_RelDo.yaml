@@ -1,3 +1,12 @@
 file_tag: dbo_LU_RelDo
+file_description: |-
+  A lookup table mapping district office codes to human-readable district office names.
 primary_key_cols:
   - RelDO
+columns:
+  - name: RelDO
+    description: |-
+      District office where a person can be supervised.
+  - name: DistrictOfficeName
+    description: |-
+      Human-readable name of that district office.

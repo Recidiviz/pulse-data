@@ -1,6 +1,14 @@
 file_tag: dbo_BdActionType
+file_description: |-
+  A table describing type of board actions that have been taken.
 primary_key_cols:
   - ParoleNumber
   - ParoleCountID
   - BdActionID
   - BdActionTypeID
+columns:
+  - name: ParoleNumber
+  - name: ParoleCountID
+  - name: BdActionID
+  - name: BdActionTypeID
+  - name: BdActTypeCode

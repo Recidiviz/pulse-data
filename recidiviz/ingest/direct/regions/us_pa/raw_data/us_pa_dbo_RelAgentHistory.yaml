@@ -1,8 +1,39 @@
 file_tag: dbo_RelAgentHistory
+file_description: |-
+  A table describing transfers between supervising agents for specific periods of supervision presently or previously
+  served under the authority of PADOC. Release in this context refers to the release of a person from incarceration to
+  supervision, though a minority of these rows include, for example, stints of probation being served in lieu of
+  incarceration.
+
+  This table is typically joined with several other "Release" related tables that round out the picture of a period of
+  supervision.
 primary_key_cols:
   - ParoleNumber
   - ParoleCountID
   - LastModifiedDateTime
 columns:
+  - name: ParoleNumber
+    description: |-
+      External ID for a unique person who has been supervised by PADOC.
+  - name: ParoleCountID
+    description: |-
+      External ID for a particular stint of a particular person under supervision by PADOC.
+  - name: AgentName
+    description: |-
+      Name and ID of a supervising agent.
+  - name: SupervisorName
+    description: |-
+      Name and ID of the supervisor of the supervising agent.
+  - name: LastModifiedBy
+    description: |-
+      Who this record was last modified by.
   - name: LastModifiedDateTime
     is_datetime: True
+    description: |-
+      When this agent began supervising this particular period of supervision.
+  - name: Agent_EmpNum
+    description: |-
+      PADOC employee number of the agent.
+  - name: Supervisor_EmpNum
+    description: |-
+      PADOC employee number of the agent's supervisor.

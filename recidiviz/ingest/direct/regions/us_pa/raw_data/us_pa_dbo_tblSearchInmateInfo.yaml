@@ -1,11 +1,276 @@
 file_tag: dbo_tblSearchInmateInfo
+file_description: |-
+  A table that acts as a "roll-up" for various bits of information about a person who is currently or was previously
+  incarcerated under the authority of PADOC. It consolidates information from a variety of tables to provide a single
+  interface to understanding the status of a person.
+
+  Because Recidiviz ingests the underlying tables directly, Recidiviz uses this table specifically to tie together
+  identifiers that otherwise are difficult to tie together, using it as a reference table. This permits the ability to
+  reliably match people records which are located in DOC tables with people records which are located in PBPP tables.
 primary_key_cols:
   - inmate_number
   - control_number
   - state_id_num
 columns:
+  - name: inmate_number
+    description: |-
+      External ID for a for a single sentence of a given person into incarceration and the subsequent period of
+      incarceration served.
   - name: control_number
-    is_datetime: False
     description: |
-      ID that follows a person through all encounters with the PA DOC (ideally). In practice, they make mistakes and
-      this is retroactively edited with some frequency.
+      External ID that follows a person through all encounters with the PADOC (ideally). In practice, there are mistakes
+      and this is retroactively edited with some low frequency.
+  - name: state_id_num
+    description: |-
+      Pennsylvania state identifier.
+  - name: location_in_transi
+    description: |-
+      Unused.
+  - name: location_temporary
+    description: |-
+      Location where the person is temporarily located.
+  - name: location_permanent
+    description: |-
+      Location where the person is to be incarcerated after the temporary location.
+  - name: parole_board_num
+    description: |-
+      External ID for a unique person who has been supervised by PADOC.
+  - name: event_number
+    description: |-
+      Event number.
+  - name: event_date
+    is_datetime: True
+    description: |-
+      Event date.
+  - name: delete_date
+    is_datetime: True
+    description: |-
+      Date the person was released from incarceration.
+  - name: reception_date
+    is_datetime: True
+    description: |-
+      Date the person was first booked into PADOC custody.
+  - name: photo_reason
+    description: |-
+      Reason a photo was taken of the person under custody.
+  - name: date_of_birth
+    description: |-
+      Date of birth.
+  - name: ssn_1
+    description: |-
+      Social Security Number.
+  - name: re_user_id
+    description: |-
+      ID of the PADOC staff member who most recently administered a reclassification.
+  - name: ic_prv_off_cde_1
+    description: |-
+      Initial classification previous offense code 1.
+  - name: re_prev_off_cd_1
+    description: |-
+      Reclassification previous offense code 1.
+  - name: ic_prv_off_cde_2
+    description: |-
+      Initial classification previous offense code 2.
+  - name: re_prev_off_cd_2
+    description: |-
+      Reclassification previous offense code 2.
+  - name: ic_prv_off_cde_3
+    description: |-
+      Initial classification previous offense code 3.
+  - name: re_prev_off_cd_3
+    description: |-
+      Reclassification previous offense code 3.
+  - name: temp_custody
+    description: |-
+      Temporary custody level.
+  - name: custody
+    description: |-
+      Current custody level.
+  - name: temp_p_code_2
+    description: |-
+      Temporary programming code 2.
+  - name: temp_p_code_1
+    description: |-
+      Temporary programming code 1.
+  - name: program_level_1
+    description: |-
+      Current security/housing category of the person.
+  - name: program_level_2
+    description: |-
+      Current security/housing category of the person.
+  - name: temp_p_code_3
+    description: |-
+      Temporary programming code 3.
+  - name: program_level_3
+    description: |-
+      Current security/housing category of the person.
+  - name: phila_photo_num
+    description: |-
+      Philadelphia photo number.
+  - name: pitts_photo_num
+    description: |-
+      Pittsburgh photo number.
+  - name: fbi_num
+    description: |-
+      FBI number.
+  - name: problematic_offenses
+  - name: race_code
+    description: |-
+      Race or ethnicity of the person.
+  - name: sex_type
+    description: |-
+      Sex of the person.
+  - name: commit_cnty
+    description: |-
+      County where the person was committed.
+  - name: marital_status_code
+    description: |-
+      Marital status.
+  - name: religion_code
+    description: |-
+      Religious status.
+  - name: sent_date
+    is_datetime: True
+    description: |-
+      Date the sentence became effective.
+  - name: min_expir_date
+    is_datetime: True
+    description: |-
+      Minimum sentence expiration date.
+  - name: min_cort_sent_yrs
+    description: |-
+      Min court sentence years.
+  - name: min_cort_sent_mths
+    description: |-
+      Min court sentence months.
+  - name: min_cort_sent_days
+    description: |-
+      Min court sentence days.
+  - name: min_cort_sent_l_da
+    description: |-
+      Min court sentence total days less days subtracted by judge.
+  - name: class_of_sent
+    description: |-
+      Class of sentence, including whether this is a life sentence or capital punishment.
+  - name: max_expir_date
+    description: |-
+      Maximum sentence expiration date.
+  - name: max_cort_sent_yrs
+    description: |-
+      Max court sentence years.
+  - name: max_cort_sent_mths
+    description: |-
+      Max court sentence months.
+  - name: max_cort_sent_days
+    description: |-
+      Max court sentence days.
+  - name: max_cort_sent_l_da
+    description: |-
+      Max court sentence total days less days subtracted by judge.
+  - name: type_number
+    description: |-
+      A type of sequence ID that is almost always 1 but is sometimes 2 to indicate a person serving multiple concurrent
+      sentences.
+  - name: offense_code
+    description: |-
+      Code of the statute/offense that this sentence is in response to.
+  - name: parole_status_cde
+    description: |-
+      Parole status code.
+  - name: sent_status_code
+    description: |-
+      Sentence status code.
+  - name: regular_date
+    is_datetime: True
+    description: |-
+      Date the record is to be marked inactive ("deleted").
+  - name: race
+    description: |-
+      Race or ethnicity of the person.
+  - name: sex
+    description: |-
+      Sex of the person.
+  - name: cnty_name
+    description: |-
+      County where the person was committed.
+  - name: offense
+    description: |-
+      Code of the offense with the longest sentence.
+  - name: sentence_status
+    description: |-
+      Sentence status.
+  - name: parole_status
+    description: |-
+      Parole status.
+  - name: marital_status
+    description: |-
+      Marital status.
+  - name: sentence_class
+    description: |-
+      Class of sentence, including whether this is a life sentence or capital punishment.
+  - name: religion
+    description: |-
+      Religious status.
+  - name: photo_desc
+    description: |-
+      Description of any photo on file for the person.
+  - name: facbed_building
+    description: |-
+      Facility building where the person is currently incarcerated.
+  - name: facbed_section
+    description: |-
+      Facility section where the person is currently incarcerated.
+  - name: facbed_level
+    description: |-
+      Facility level where the person is currently incarcerated.
+  - name: facbed_cell_dorm
+    description: |-
+      Whether currently incarcerated in a cell or dormitory.
+  - name: facbed_bed_num
+    description: |-
+      Facility bed where the person is currently incarcerated.
+  - name: max_class_of_sent
+    description: |-
+      Class of maximum sentence, including whether this is a life sentence or capital punishment.
+  - name: max_sentence_class
+    description: |-
+      Class of maximum sentence, including whether this is a life sentence or capital punishment.
+  - name: SSN_2
+    description: |-
+      Social Security Number.
+  - name: rcptpn_regular_date
+    is_datetime: True
+    description: |-
+      Date the record is to be marked inactive ("deleted").
+  - name: Dtn_SW
+  - name: Lst_Nm
+    description: |-
+      Last name of the person.
+  - name: Frst_Nm
+    description: |-
+      First name of the person.
+  - name: Mid_Nm
+    description: |-
+      Middle name of the person.
+  - name: Nm_Suff
+    description: |-
+      Name suffix name of the person.
+  - name: CurrLoc_Cd
+    description: |-
+      Code of the current location of the person.
+  - name: RecmpMax_Dt
+    is_datetime: True
+    description: |-
+      Recomputed maximum date.
+  - name: Reclass_Dt
+    is_datetime: True
+    description: |-
+      Reclassification date.
+  - name: IC_Userid
+    description: |-
+      ID of the PADOC staff member who administered the initial classification.
+  - name: IC_Dt
+    is_datetime: True
+    description: |-
+      Initial classification date.
+  - name: Move_Add

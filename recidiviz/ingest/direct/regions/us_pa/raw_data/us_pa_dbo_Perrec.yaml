@@ -1,3 +1,712 @@
 file_tag: dbo_Perrec
+file_description: |-
+  A table containing demographic and identifier information for people who have been incarcerated by PADOC.
+
+  In addition to basic demographics and identifiers, this table also acts as a "roll-up" table for a variety of bits of
+  information contained in other PADOC tables, in order to serve as a quick interface for understanding the current
+  state of the person.
+
+  A large majority of the fields in this table are unused by Recidiviz, particularly those which delve into highly
+  sensitive information about a person.
 primary_key_cols:
   - control_number
+columns:
+  - name: control_number
+    description: |-
+      External ID that follows a person through all encounters with the PADOC (ideally). In practice, there are mistakes
+      and this is retroactively edited with some low frequency.
+  - name: race
+    description: |-
+      Race or ethnicity of the person.
+  - name: sex
+    description: |-
+      Sex of the person.
+  - name: ssn_1
+    description: |-
+      Social Security Number.
+  - name: date_of_birth
+    description: |-
+      Date of birth of the person.
+  - name: pitts_photo_num
+    description: |-
+      Pittsburgh photo number.
+  - name: ssn_2
+    description: |-
+      Additional Social Security Number.
+  - name: commit_instit
+    description: |-
+      Institution where the person was initially committed upon booking.
+  - name: boot_camp_elig
+    description: |-
+      Whether or not the person is eligible for special "boot camp" incarceration.
+  - name: mandtry_sent_flag
+    description: |-
+      Whether or not the person is serving a mandatory minimum sentence.
+  - name: ethnic_identity
+    description: |-
+      Ethnic group identity of the person.
+  - name: marital_status
+    description: |-
+      Marital status of the person.
+  - name: citizenship
+    description: |-
+      Citizenship status of the person.
+  - name: religion
+    description: |-
+      Religion of the person.
+  - name: fbi_num
+    description: |-
+      FBI number of the person.
+  - name: notify_name
+    description: |-
+      Name of the person to notify of important events or changes.
+  - name: notify_relatnship
+    description: |-
+      Relationship of the notification person to the incarcerated person.
+  - name: notify_phone_num
+    description: |-
+      Notification person phone number.
+  - name: notify_address_1
+    description: |-
+      Notification person address line 1.
+  - name: notify_address_2
+    description: |-
+      Notification person address line 2.
+  - name: notify_city
+    description: |-
+      Notification person address city.
+  - name: notify_state
+    description: |-
+      Notification person address state.
+  - name: notify_zip_code
+    description: |-
+      Notification person address zip code.
+  - name: legal_address_1
+    description: |-
+      Incarcerated person legal address line 1.
+  - name: legal_address_2
+    description: |-
+      Incarcerated person legal address line 2.
+  - name: legal_city
+    description: |-
+      Incarcerated person legal address city.
+  - name: legal_state
+    description: |-
+      Incarcerated person legal address state.
+  - name: legal_zip_code
+    description: |-
+      Incarcerated person legal address zip code.
+  - name: city_of_birth
+    description: |-
+      City of birth of the person.
+  - name: state_of_birth
+    description: |-
+      State of birth of the person.
+  - name: country_of_birth
+    description: |-
+      Country of birth of the person.
+  - name: ssn_other
+    description: |-
+      Additional Social Security Number information.
+  - name: us_military_vet
+    description: |-
+      Whether or not the person is a US military veteran.
+  - name: vietnam_era_srvc
+    description: |-
+      Whether or not the person is a US military veteran of the Vietnam War.
+  - name: mil_from_year
+    description: |-
+      Year when their military service began.
+  - name: mil_from_month
+    description: |-
+      Month when their military service began.
+  - name: mil_to_yr
+    description: |-
+      Year when their military service ended.
+  - name: mil_to_mth
+    description: |-
+      Month when their military service ended.
+  - name: mil_dschrg_type
+    description: |-
+      Military service discharge type.
+  - name: commit_time
+    description: |-
+      Time when the person was first committed to incarceration.
+  - name: commit_date
+    is_datetime: True
+    description: |-
+      Date when the person was first committed to incarceration.
+  - name: commit_cnty
+    description: |-
+      County where the person was first committed to incarceration.
+  - name: height_feet
+    description: |-
+      Height of the person, feet component.
+  - name: height_inches
+    description: |-
+      Height of the person, inches.
+  - name: weight
+    description: |-
+      Weight of the person.
+  - name: eyes
+    description: |-
+      Eye color.
+  - name: hair
+    description: |-
+      Hair color.
+  - name: complexion
+    description: |-
+      Complexion.
+  - name: build
+    description: |-
+      Physical build.
+  - name: accomplices
+    description: |-
+      Known accomplices.
+  - name: affilatns_ind
+    description: |-
+      Whether or not there are any gang affilitations.
+  - name: affilatn_code_1
+    description: |-
+      Gang affilitations code.
+  - name: affilatn_code_2
+    description: |-
+      Gang affilitations code.
+  - name: affilatn_code_3
+    description: |-
+      Gang affilitations code.
+  - name: affilatn_code_4
+    description: |-
+      Gang affilitations code.
+  - name: affilatn_code_5
+    description: |-
+      Gang affilitations code.
+  - name: affilatn_code_6
+    description: |-
+      Gang affilitations code.
+  - name: affilatn_code_7
+    description: |-
+      Gang affilitations code.
+  - name: affilatn_code_8
+    description: |-
+      Gang affilitations code.
+  - name: affilatn_code_9
+    description: |-
+      Gang affilitations code.
+  - name: affilatn_code_10
+    description: |-
+      Gang affilitations code.
+  - name: pulhest_s
+  - name: prob_alcohol
+    description: |-
+      Whether or not there is a noted alcohol issue.
+  - name: prob_drugs
+    description: |-
+      Whether or not there is a noted drug issue.
+  - name: prob_sexual
+    description: |-
+      Whether or not there is a noted sexual issue.
+  - name: prob_assault
+    description: |-
+      Whether or not there is a noted assault issue.
+  - name: prob_escape
+    description: |-
+      Whether or not there is a noted escape issue.
+  - name: prob_suicide
+    description: |-
+      Whether or not there is a noted suicide issue.
+  - name: prob_psyco
+    description: |-
+      Whether or not there is a noted psychological issue.
+  - name: medical_limits
+    description: |-
+      Whether or not the person has medical limitations.
+  - name: intellgnt_rate
+    description: |-
+      IQ score.
+  - name: grade_complete
+    description: |-
+      Highest grade completed.
+  - name: wrat_date
+    description: |-
+      Whether a WRAT or TABE assessment was administered.
+  - name: wrat_test_r
+    description: |-
+      WRAT or TABE reading score.
+  - name: wrat_test_s
+    description: |-
+      WRAT or TABE spelling score.
+  - name: wrat_test_a
+    description: |-
+      WRAT or TABE arithmetic score.
+  - name: total_score
+    description: |-
+      WRAT or TABE total score.
+  - name: program_level_1
+    description: |-
+      Current security/housing category of the person.
+  - name: program_level_2
+    description: |-
+      Current security/housing category of the person.
+  - name: program_level_3
+    description: |-
+      Current security/housing category of the person.
+  - name: ic_user_id
+    description: |-
+      ID of the staff member who entered data at initial classification.
+  - name: ic_data_entry_dt
+    is_datetime: True
+    description: |-
+      Date of initial data entry at initial classification.
+  - name: ic_lst_name
+    description: |-
+      Last name of staff member entering data at initial classification.
+  - name: ic_fst_initial
+    description: |-
+      First initial of staff member entering data at initial classification.
+  - name: ic_title
+    description: |-
+      Title of staff member entering data at initial classification.
+  - name: ic_date
+    is_datetime: True
+    description: |-
+      Date of initial classification.
+  - name: ic_reclass_date
+    is_datetime: True
+    description: |-
+      Date scheduled for reclassification.
+  - name: ic_recls_in_n_mths
+    description: |-
+      How many months until a reclassification should occur.
+  - name: ic_reclass_reason
+    description: |-
+      Reason for reclassification.
+  - name: ic_cur_off_cde_1
+    description: |-
+      Current offense code 1.
+  - name: ic_cur_off_cde_2
+    description: |-
+      Current offense code 2.
+  - name: ic_cur_off_cde_3
+    description: |-
+      Current offense code 3.
+  - name: ic_prv_off_cde_1
+    description: |-
+      Previous offense code 1.
+  - name: ic_prv_off_cde_2
+    description: |-
+      Previous offense code 2.
+  - name: ic_prv_off_cde_3
+    description: |-
+      Previous offense code 3.
+  - name: ic_escpe_hist_1
+    description: |-
+      Escape history 1.
+  - name: ic_escpe_hist_2
+    description: |-
+      Escape history 2.
+  - name: ic_escpe_hist_3
+    description: |-
+      Escape history 3.
+  - name: ic_escpe_hist_4
+    description: |-
+      Escape history 4.
+  - name: ic_escpe_hist_5
+    description: |-
+      Escape history 5.
+  - name: ic_institut_adj
+    description: |-
+      Code describing how the person is "adjusting" to be incarcerated in the institution, in terms of conduct/behavior.
+  - name: ic_prior_commits
+    description: |-
+      Number of prior commitments.
+  - name: ic_mths_to_release
+    description: |-
+      Time expected until release in months.
+  - name: ic_special_sent
+    description: |-
+      Any special sentencing characteristics worth mentioning.
+  - name: ic_mrtl_stat_fr_cl
+    description: |-
+      Marital status at initial classification.
+  - name: ic_employ_ind
+    description: |-
+      Employment status at initial classification.
+  - name: ic_custdy_level
+    description: |-
+      Custody level assigned at initial classification.
+  - name: ic_ovride_cust_lvl
+    description: |-
+      An agent-overridden custody level, overridden at initial classification.
+  - name: ic_prog_code_1
+    description: |-
+      Current security/housing category of the person at initial classification.
+  - name: ic_prog_code_2
+    description: |-
+      Current security/housing category of the person at initial classification.
+  - name: ic_prog_code_3
+    description: |-
+      Current security/housing category of the person at initial classification.
+  - name: ic_medical_cond
+    description: |-
+      Medical condition of the person at initial classification.
+  - name: ic_emotion_cond
+    description: |-
+      Emotional condition of the person at initial classification.
+  - name: ic_s_year
+    description: |-
+      Year of initial classification.
+  - name: ic_s_month
+    description: |-
+      Month of initial classification.
+  - name: ic_s_day
+    description: |-
+      Day of initial classification.
+  - name: ic_da_no_abuse
+    description: |-
+      Drug/alcohol no abuse indicator.
+  - name: ic_da_ed
+    description: |-
+      Drug/alcohol education needed.
+  - name: ic_da_self_help
+    description: |-
+      Whether drug/alcohol issues were self-reported.
+  - name: ic_da_ongoing
+    description: |-
+      Whether drug/alcohol issues are ongoing.
+  - name: ic_da_therap
+    description: |-
+      Whether drug/alcohol therapy is ongoing.
+  - name: ic_alcohol
+    description: |-
+      Alcohol issue indicator.
+  - name: ic_drugs
+    description: |-
+      Drug issue indicator.
+  - name: ic_both_a_d
+    description: |-
+      Both alcohol and drug issue indicator.
+  - name: ic_da_self
+    description: |-
+      Whether drug/alcohol issues were self-reported.
+  - name: ic_da_observa
+    description: |-
+      Whether drug/alcohol issues were identified via a diagnostic tool.
+  - name: ic_da_psi
+    description: |-
+      Whether drug/alcohol issues were identified via a PSI assessment.
+  - name: ic_da_other
+    description: |-
+      Whether drug/alcohol issues were identified via other means.
+  - name: ic_da_score
+    description: |-
+      Drug/alcohol issue "score."
+  - name: ic_ed_cond
+    description: |-
+      Code indicating current educational status.
+  - name: ic_ed_self_rpt
+    description: |-
+      Whether educational needs were self-reported.
+  - name: ic_ed_ed_rec
+    description: |-
+      WHether educational needs were identified via educational records.
+  - name: ic_ed_psi
+    description: |-
+      WHether educational needs were identified via a PSI assessment.
+  - name: ic_ed_other
+    description: |-
+      WHether educational needs were identified via other means.
+  - name: ic_voc_cond
+    description: |-
+      Code indicating current vocational status.
+  - name: ic_voc_self_rpt
+    description: |-
+      Whether vocational needs were self-reported.
+  - name: ic_voc_emp_rec
+    description: |-
+      WHether vocational needs were identified via employment records.
+  - name: ic_voc_psi
+    description: |-
+      WHether vocational needs were identified via a PSI assessment.
+  - name: ic_voc_other
+    description: |-
+      WHether vocational needs were identified via other means.
+  - name: ic_curr_off
+    description: |-
+      Whether sexual issues were related to the current offense.
+  - name: ic_prev_off
+    description: |-
+      Whether sexual issues were related to a previous offense.
+  - name: ic_sex_none_known
+    description: |-
+      Whether there are no known sexual offenses.
+  - name: ic_sex_minor
+    description: |-
+      Whether there have been minor sexual offenses.
+  - name: ic_sex_attempt
+    description: |-
+      Whether there have been serious sexual offenses attempted.
+  - name: ic_sex_serus_force
+    description: |-
+      Whether there have been serious sexual offenses with force or a weapon.
+  - name: ic_sex_serus_death
+    description: |-
+      Whether there have been serious sexual offenses resulting in death.
+  - name: ic_othr_needs_cond
+    description: |-
+      Code indicating other apparent needs.
+  - name: re_user_id
+    description: |-
+      ID of the staff member who entered data at reclassification.
+  - name: re_de_year
+    description: |-
+      Year of reclassification.
+  - name: re_de_month
+    description: |-
+      Month of reclassification.
+  - name: re_de_day
+    description: |-
+      Day of reclassification.
+  - name: re_de_hour
+    description: |-
+      Houe of reclassification.
+  - name: re_de_minute
+    description: |-
+      Minute of reclassification.
+  - name: re_stf_l_name
+    description: |-
+      Last name of staff member entering data at reclassification.
+  - name: re_stf_f_initial
+    description: |-
+      First initial of staff member entering data at reclassification.
+  - name: re_title
+    description: |-
+      Title of staff member entering data at reclassification.
+  - name: recls_date
+    is_datetime: True
+    description: |-
+      Date of reclassification.
+  - name: re_recls_dte
+    is_datetime: True
+    description: |-
+      Date scheduled for next reclassification.
+  - name: re_recls_in_n_mths
+    description: |-
+      How many months until a reclassification should occur, if necessary.
+  - name: re_recls_reason
+    description: |-
+      Reason for reclassification.
+  - name: reclass_day
+    description: |-
+      Day of reclassification.
+  - name: re_curr_off_cd_1
+    description: |-
+      Reclassification current offense code 1.
+  - name: re_curr_off_cd_2
+    description: |-
+      Reclassification current offense code 2.
+  - name: re_curr_off_cd_3
+    description: |-
+      Reclassification current offense code 3.
+  - name: re_prev_off_cd_1
+    description: |-
+      Reclassification previous offense code 1.
+  - name: re_prev_off_cd_2
+    description: |-
+      Reclassification previous offense code 2.
+  - name: re_prev_off_cd_3
+    description: |-
+      Reclassification previous offense code 3.
+  - name: re_instit_violence
+    description: |-
+      Whether the person has been involved in any violent events at time of reclassification.
+  - name: re_discip_reports
+    description: |-
+      Disciplinary reports at time of reclassification.
+  - name: re_most_severe
+    description: |-
+      Most severe conduct event at time of reclassification.
+  - name: re_age_for_class
+    description: |-
+      Age at reclassification.
+  - name: re_escp_hist_1
+    description: |-
+      Escape history 1.
+  - name: re_escp_hist_2
+    description: |-
+      Escape history 2.
+  - name: re_escp_hist_3
+    description: |-
+      Escape history 3.
+  - name: re_escp_hist_4
+    description: |-
+      Escape history 4.
+  - name: re_escp_hist_5
+    description: |-
+      Escape history 5.
+  - name: re_prescript_prog
+    description: |-
+      Level of compliance with prescriptive programming at time of reclassification.
+  - name: re_wrk_performnce
+    description: |-
+      Work performance at time of reclassification.
+  - name: re_hous_perfrmnce
+    description: |-
+      Housing performance at time of reclassification
+  - name: re_custody_level
+    description: |-
+      Custody level at time of reclassification.
+  - name: re_ovride_cust_lvl
+    description: |-
+      Agent-overridden custody level, overridden at reclassification.
+  - name: re_inmt_has_a_rcls
+    description: |-
+      Whether the person has had any reclassification.
+  - name: re_medical_cond
+    description: |-
+      Whether there is a medical condition at time of reclassification.
+  - name: re_emotion_cond
+    description: |-
+      Whether there is an emotional condition at time of reclassification.
+  - name: re_s_rating_date
+    is_datetime: True
+  - name: re_da_no_abuse
+    description: |-
+      Drug/alcohol no abuse indicator.
+  - name: re_da_ed
+    description: |-
+      Drug/alcohol education needed.
+  - name: re_da_self_help
+    description: |-
+      Whether drug/alcohol issues were self-reported.
+  - name: re_da_ongoing
+    description: |-
+      Whether drug/alcohol issues are ongoing.
+  - name: re_da_therap
+    description: |-
+      Whether drug/alcohol therapy is ongoing.
+  - name: re_alcohol
+    description: |-
+      Alcohol issue indicator.
+  - name: re_drugs
+    description: |-
+      Drug issue indicator.
+  - name: re_both_a_d
+    description: |-
+      Both alcohol and drug issue indicator.
+  - name: re_da_self
+    description: |-
+      Whether drug/alcohol issues were self-reported.
+  - name: re_da_observa
+    description: |-
+      Whether drug/alcohol issues were identified via a diagnostic tool.
+  - name: re_da_psi
+    description: |-
+      Whether drug/alcohol issues were identified via a PSI assessment.
+  - name: re_da_other
+    description: |-
+      Whether drug/alcohol issues were identified via other means.
+  - name: re_da_score
+    description: |-
+      Drug/alcohol issue "score."
+  - name: re_ed_cond
+    description: |-
+      Code indicating current educational status.
+  - name: re_ed_self_rpt
+    description: |-
+      Whether educational needs were self-reported.
+  - name: re_ed_ed_rec
+    description: |-
+      WHether educational needs were identified via educational records.
+  - name: re_ed_psi
+    description: |-
+      WHether educational needs were identified via a PSI assessment.
+  - name: re_ed_other
+    description: |-
+      WHether educational needs were identified via other means.
+  - name: re_voc_cond
+    description: |-
+      Code indicating current vocational status.
+  - name: re_voc_self_rpt
+    description: |-
+      Whether vocational needs were self-reported.
+  - name: re_voc_emp_rec
+    description: |-
+      WHether vocational needs were identified via employment records.
+  - name: re_voc_psi
+    description: |-
+      WHether vocational needs were identified via a PSI assessment.
+  - name: re_voc_other
+    description: |-
+      WHether vocational needs were identified via other means.
+  - name: re_curr_off
+    description: |-
+      Whether sexual issues were related to the current offense.
+  - name: re_prev_off
+    description: |-
+      Whether sexual issues were related to a previous offense.
+  - name: re_sex_none_known
+    description: |-
+      Whether there are no known sexual offenses.
+  - name: re_sex_minor
+    description: |-
+      Whether there have been minor sexual offenses.
+  - name: re_sex_attempt
+    description: |-
+      Whether there have been serious sexual offenses attempted.
+  - name: re_sex_ser_force
+    description: |-
+      Whether there have been serious sexual offenses with force or a weapon.
+  - name: re_sex_ser_death
+    description: |-
+      Whether there have been serious sexual offenses resulting in death.
+  - name: re_othr_needs_cond
+    description: |-
+      Code indicating other apparent needs.
+  - name: pulhest_user_id
+  - name: pulhest_entry_date
+  - name: phila_photo_num
+    description: |-
+      Philadelphia photo number.
+  - name: inmate_num
+    description: |-
+      Currently active inmate number.
+  - name: custody
+  - name: conf_ind
+  - name: temp_custody
+    description: |-
+      Temporary custody level.
+  - name: temp_p_code_1
+    description: |-
+      Temporary programming code 1.
+  - name: temp_p_code_2
+    description: |-
+      Temporary programming code 2.
+  - name: temp_p_code_3
+    description: |-
+      Temporary programming code 3.
+  - name: ovride_lock
+    description: |-
+      Unused.
+  - name: out_status_flag
+    description: |-
+      Whether the person is currentl incarcerated.
+  - name: sig_date
+    is_datetime: True
+    description: |-
+      Date when this record was first entered.
+  - name: sig_time
+    description: |-
+      Time when this record was first entered.
+  - name: user_id
+    description: |-
+      ID of the person who first entered this record.
+  - name: ovride_pending
+    description: |-
+      Whether any agent overrides are still pending.
+  - name: confidential_date
+  - name: problematic_offenses
+  - name: parole_board_num
+    description: |-
+      Any assigned parole board number.
+  - name: test_type

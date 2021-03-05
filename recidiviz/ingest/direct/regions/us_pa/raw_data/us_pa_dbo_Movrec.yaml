@@ -1,4 +1,94 @@
 file_tag: dbo_Movrec
+file_description: |-
+  A table describing physical movements of an incarcerated person from one carceral setting to another, e.g. transfers
+  between prisons or temporary movements from prison to a hospital or court or releases from prison to supervision.
+
+  Rows in this table can be used to model "edges" of continuous periods of incarceration, and multiple such rows can be
+  used to model a continuous period of incarceration.
 primary_key_cols:
   - mov_cur_inmt_num
   - mov_seq_num
+columns:
+  - name: mov_cnt_num
+    description: |-
+      External ID that follows a person through all encounters with the PADOC (ideally). In practice, there are mistakes
+      and this is retroactively edited with some low frequency.
+  - name: mov_seq_num
+    description: |-
+      Sequence ID of a particular movement for this person within this particular stint of incarceration. This is unique
+      within a given mov_cur_inmt_num.
+  - name: mov_chg_num
+    description: |-
+      Always 000.
+  - name: mov_cur_inmt_num
+    description: |-
+      External ID for a for a single sentence of a given person into incarceration and the subsequent period of
+      incarceration served.
+  - name: mov_sig_date
+    is_datetime: True
+    description: |-
+      Date at which the record was created.
+  - name: mov_term_id
+  - name: mov_sig_time
+    description: |-
+      Time at which the record was created.
+  - name: mov_user_id
+    description: |-
+      ID of the user who entered the movement record.
+  - name: mov_del_year
+    description: |-
+      Year the person was released from incarceration and their records marked inactive.
+  - name: mov_del_month
+    description: |-
+      Month the person was released from incarceration and their records marked inactive.
+  - name: mov_del_day
+    description: |-
+      Day the person was released from incarceration and their records marked inactive.
+  - name: last_chg_num_used
+    description: |-
+      Always 000.
+  - name: mov_move_code
+    description: |-
+      Code describing the kind of movement that has taken place. Can be used to help determine whether the person has
+      been released from incarceration and why.
+  - name: mov_move_date
+    is_datetime: True
+    description: |-
+      Date when this movement took place.
+  - name: mov_move_time
+    description: |-
+      Time when this movement took place.
+  - name: mov_move_to_loc
+    description: |-
+      Code describing the location the person has been moved to. This can be a state prison, court, hospital, a bus, a
+      release to the community, or other less common locations.
+  - name: parole_stat_cd
+    description: |-
+      Code describing the parole status of the person at this particular movement. Can be used to help determine whether
+      the person has been released from incarceration and why.
+  - name: mov_sent_stat_cd
+    description: |-
+      Code describing the sentence status of the person at this particular movement. Can be used to help determine
+      whether the person has been released from incarceration and why.
+  - name: mov_rec_del_flag
+    description: |-
+      Whether or not this is considered a "bogus" record that should be ignored. Y means ignore.
+  - name: mov_sent_group
+    description: |-
+      Always 00 or null.
+  - name: mov_move_to_location_type
+    description: |-
+      The type of location to which the person has moved (ex. Institution, County, CCC, etc.).
+  - name: mov_move_from_location
+    description: |-
+      Code describing the location the person has been moved from. This can be a state prison, court, hospital, a bus, a
+      brand new sentence to incarceration, or other less common locations.
+  - name: mov_move_from_location_type
+    description: |-
+      The type of location from which the person has moved (ex. Institution, County, CCC, etc.).
+  - name: mov_permanent_institution
+    description: |-
+      The institution to which the person is officially assigned for incarceration.
+  - name: mov_to_institution
+    description: |-
+      The institution the person has been temporarily moved to, if temporary.
