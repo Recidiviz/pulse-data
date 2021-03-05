@@ -32,6 +32,8 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_DESCRIPTION = """
  violations leading up to the revocation, the most severe violation, gender, and the metric period months.
  """
 
+SUPPORTED_GENDER_VALUES = "'FEMALE', 'MALE', 'OTHER'"
+
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_QUERY_TEMPLATE = """
     /*{description}*/
 
@@ -43,7 +45,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_QUERY_TEMPLATE = """
       reported_violations,
       COUNT(DISTINCT person_id) AS supervision_population_count,
       COUNT(DISTINCT IF(recommended_for_revocation, person_id, NULL)) AS recommended_for_revocation_count,
-      gender,
+      IF(gender IN ({supported_gender_values}, 'ALL'), gender, 'OTHER') AS gender,
       supervision_type,
       supervision_level,
       charge_category,
@@ -64,7 +66,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_QUERY_TEMPLATE = """
       violation_type,
       reported_violations,
       COUNT(DISTINCT person_id) AS termination_count,
-      gender,
+      IF(gender IN ({supported_gender_values}, 'ALL'), gender, 'OTHER') AS gender,
       supervision_type,
       supervision_level,
       charge_category,
@@ -84,7 +86,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_QUERY_TEMPLATE = """
       violation_type,
       reported_violations,
       COUNT(DISTINCT person_id) AS revocation_count,
-      gender,
+      IF(gender IN ({supported_gender_values}, 'ALL'), gender, 'OTHER') AS gender,
       supervision_type,
       supervision_level,
       charge_category,
@@ -126,7 +128,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_QUERY_TEMPLATE = """
          GROUP BY state_code, violation_type, reported_violations, supervision_type, supervision_level, charge_category,
         level_1_supervision_location, level_2_supervision_location, metric_period_months, admission_type),
       -- Create one row per gender supported on the FE and per non-empty dimension in the supervision counts --
-      UNNEST(['MALE', 'FEMALE']) as gender) total_pop
+      UNNEST([{supported_gender_values}]) as gender) total_pop
     LEFT JOIN
       (SELECT * FROM    
         (SELECT * EXCEPT(gender, revocation_count), SUM(revocation_count) AS revocation_count_all
@@ -134,7 +136,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_QUERY_TEMPLATE = """
          GROUP BY state_code, violation_type, reported_violations, supervision_type, supervision_level, charge_category,
         level_1_supervision_location, level_2_supervision_location, metric_period_months, admission_type),
       -- Create one row per gender supported on the FE and per non-empty dimension in the revocation counts --
-      UNNEST(['MALE', 'FEMALE']) as gender) total_rev
+      UNNEST([{supported_gender_values}]) as gender) total_rev
     USING (state_code, violation_type, gender, reported_violations,  supervision_type, supervision_level, charge_category,
       level_1_supervision_location, level_2_supervision_location, metric_period_months, admission_type)
     LEFT JOIN
@@ -173,6 +175,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_VIEW_BUILDER = MetricBigQueryViewBuild
     description=REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     gender_dimension=bq_utils.unnest_column("gender", "gender"),
+    supported_gender_values=SUPPORTED_GENDER_VALUES,
 )
 
 
