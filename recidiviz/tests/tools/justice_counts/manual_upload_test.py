@@ -1355,9 +1355,9 @@ class ManualUploadTest(unittest.TestCase):
 
         # Act
         with pytest.raises(ValueError) as exception_info:
-            manual_upload._parse_date_range(
+            manual_upload._parse_date_range(  # pylint: disable=protected-access
                 range_input
-            )  # pylint: disable=protected-access
+            )
 
         # Assert
         assert "Parsed date has to be in chronological order" in str(
@@ -1378,9 +1378,9 @@ class ManualUploadTest(unittest.TestCase):
 
         # Act
         with pytest.raises(ValueError) as exception_info:
-            manual_upload._parse_date_range(
+            manual_upload._parse_date_range(  # pylint: disable=protected-access
                 range_input
-            )  # pylint: disable=protected-access
+            )
 
         # Assert
         assert "Have a maximum of 2 dates for input" in str(exception_info.value)
@@ -1402,9 +1402,9 @@ class ManualUploadTest(unittest.TestCase):
 
         # Act
         with pytest.raises(ValueError) as exception_info:
-            dynamic_range_producer._convert(
+            dynamic_range_producer._convert(  # pylint: disable=protected-access
                 list(args)
-            )  # pylint: disable=protected-access
+            )
 
         # Assert
         assert "Parsed date has to be in chronological order" in str(
@@ -1503,15 +1503,19 @@ class ManualUploadTest(unittest.TestCase):
             [
                 (
                     ["US_TN_MCMINN", "47107", "US_TN", "McMinn County"],
-                    decimal.Decimal(1489),
+                    decimal.Decimal("1489"),
                 ),
                 (
                     ["US_OK_HARMON", "40057", "US_OK", "Harmon County"],
-                    decimal.Decimal(5592),
+                    decimal.Decimal("5592"),
                 ),
                 (
                     ["US_MS_WINSTON", "28159", "US_MS", "Winston County"],
-                    decimal.Decimal(200784),
+                    decimal.Decimal("200784"),
+                ),
+                (
+                    ["US_AL_BALDWIN", "01003", "US_AL", "Baldwin County"],
+                    decimal.Decimal("20784"),
                 ),
             ],
             [(cell.aggregated_dimension_values, cell.value) for cell in cells],

@@ -39,7 +39,7 @@ class TestStates(unittest.TestCase):
         self.mock_in_test.return_value = False
         importlib.reload(states)
 
-        self.assertEqual(50, len(states.StateCode))
+        self.assertEqual(51, len(states.StateCode))
         self.assertEqual("US_AK", list(states.StateCode)[0].value)
         self.assertEqual("US_WY", list(states.StateCode)[-1].value)
 
@@ -49,7 +49,7 @@ class TestStates(unittest.TestCase):
         importlib.reload(states)
 
         # There are 51 states because we are in tests, so US_XX is a valid value
-        self.assertEqual(51, len(states.StateCode))
+        self.assertEqual(52, len(states.StateCode))
         self.assertEqual("US_AK", list(states.StateCode)[0].value)
         self.assertEqual("US_WY", list(states.StateCode)[-2].value)
         self.assertEqual("US_XX", list(states.StateCode)[-1].value)
@@ -65,7 +65,7 @@ class TestStates(unittest.TestCase):
 
         valid_states = ["us_wa", "US_MD", "us_ma"]
         # US_XX is not a valid state_code outside of tests
-        invalid_states = ["us_gu", "us_dc", "US_PR", "UX_CA", "us_xx", "US_XX"]
+        invalid_states = ["us_gu", "US_PR", "UX_CA", "us_xx", "US_XX"]
 
         for state_code in valid_states:
             self.assertTrue(states.StateCode.is_state_code(state_code))

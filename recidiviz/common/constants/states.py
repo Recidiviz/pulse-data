@@ -58,6 +58,9 @@ class StateCode(enum.Enum):
     US_CA = "US_CA"
     US_CO = "US_CO"
     US_CT = "US_CT"
+    US_DC = (
+        "US_DC"  # Counties in DC have a fips "state" code, which is why we need it here
+    )
     US_DE = "US_DE"
     US_FL = "US_FL"
     US_GA = "US_GA"
