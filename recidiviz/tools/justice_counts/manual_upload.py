@@ -167,7 +167,7 @@ class RawDimension(Dimension, metaclass=ABCMeta):
     create a raw, or not normalized, copy version of the dimension.
     """
 
-    value: str = attr.ib()
+    value: str = attr.ib(converter=str)
 
     @classmethod
     def get(
@@ -670,22 +670,17 @@ class County(Dimension):
         fips.validate_county_code(county_code.lower())
 
 
+def _fips_zero_pad(fips_raw: str) -> str:
+    return fips_raw.zfill(5)
+
+
 @attr.s(frozen=True)
 class CountyFIPS(Dimension):
     """
     Dimension that represents the county fips. Can also generate State and County dimensions from fips value.
     """
 
-    value: str = attr.ib(converter=str)
-
-    @value.validator
-    def _values_are_valid(self, _attribute: attr.Attribute, value: str) -> None:
-        if (
-            len(value) != 4 and len(value) != 5
-        ):  # length can be 4 or 5, because it may not having the leading zero
-            raise ValueError(
-                f"fips should have between 4 and 5 digits, current length: {len(value)}"
-            )
+    value: str = attr.ib(converter=_fips_zero_pad)
 
     @classmethod
     def get(
@@ -714,7 +709,9 @@ class CountyFIPS(Dimension):
     def generate_dimension_classes(
         cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
     ) -> List[Dimension]:
-        [state, county] = fips.get_state_and_county_for_fips(int(dimension_cell_value))
+        [state, county] = fips.get_state_and_county_for_fips(
+            _fips_zero_pad(dimension_cell_value)
+        )
         return [State.get(state), County.get(f"{state}_{county}")]
 
     @property
@@ -1485,7 +1482,7 @@ class TableConverter:
                 if column_name in self.dimension_generators:
                     dimension_values_list.extend(
                         self._dimension_values_for_dimension_cell(
-                            column_name, row[column_name]
+                            column_name, str(row[column_name])
                         )
                     )
             dimension_values = tuple(dimension_values_list)
