@@ -99,7 +99,7 @@ def normalize_raw_file_path(data) -> None:
     project_id = os.environ.get(GCP_PROJECT_ID_KEY)
     if not project_id:
         logging.error(
-            "No project id set for call to direct ingest cloud " "function, returning."
+            "No project id set for call to direct ingest cloud function, returning."
         )
         return
 

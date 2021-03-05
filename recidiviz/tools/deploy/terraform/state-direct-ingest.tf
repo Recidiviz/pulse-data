@@ -14,18 +14,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-module "justice-counts-data-bucket" {
-  source = "./modules/cloud-storage-bucket"
 
-  project_id  = var.project_id
-  name_suffix = "justice-counts-data"
-}
+# TODO(#6160): Rename this module to better reflect what it actually is doing for us.
+module "state_direct_ingest_buckets_and_accounts" {
+  for_each = toset(local.direct_ingest_state_codes)
+  source   = "./modules/state-direct-ingest-resources"
 
-# TODO(#6213): We should also import the primary direct-ingest storage bucket.
-module "direct-ingest-state-storage-secondary" {
-  source = "./modules/cloud-storage-bucket"
-
-  project_id  = var.project_id
-  location    = var.direct_ingest_region
-  name_suffix = "direct-ingest-state-storage-secondary"
+  state_code       = each.key
+  region           = var.direct_ingest_region
+  is_production    = local.is_production
+  project_id       = var.project_id
+  state_admin_role = google_project_iam_custom_role.state-admin-role.name
+  git_hash         = var.git_hash
+  db_instance_name = module.state_database.instance_name
 }
