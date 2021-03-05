@@ -27,6 +27,7 @@ from mock import call, create_autospec, patch
 
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig
+from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_CONFIGS
 from recidiviz.metrics.export.optimized_metric_big_query_view_export_validator import (
     OptimizedMetricBigQueryViewExportValidator,
 )
@@ -520,6 +521,27 @@ class ConvertQueryResultsTest(unittest.TestCase):
         mock_bq_client.paged_read_and_process.assert_called()
         mock_bq_client.dataset_ref_for_id.assert_called()
         mock_bq_client.get_table.assert_called()
+
+
+class TestInitializeDimensionManifest(unittest.TestCase):
+    """Tests the _initialize_dimension_manifest function."""
+
+    # pylint: disable=protected-access
+    def test_initialize_dimension_manifest(self):
+        for export_config in VIEW_COLLECTION_EXPORT_CONFIGS:
+            for view_builder in export_config.view_builders_to_export:
+                if isinstance(view_builder, MetricBigQueryViewBuilder):
+                    dimension_manifest = optimized_metric_big_query_view_exporter._initialize_dimension_manifest(
+                        view_builder.dimensions
+                    )
+                    dimension_manifest_keys = list(dimension_manifest.keys())
+
+                    self.assertEqual(
+                        list(view_builder.dimensions), dimension_manifest_keys
+                    )
+                    # Makes sure that all of the dimensions are the full dimension column
+                    # string, and that the dimensions haven't been split into chars
+                    self.assertNotIn("_", dimension_manifest_keys)
 
 
 def _transform_dicts_to_bq_row(data_points: List[Dict]) -> List[bigquery.table.Row]:

@@ -87,7 +87,7 @@ FACILITY_METADATA_VIEW_BUILDER = MetricBigQueryViewBuilder(
     view_id=FACILITY_METADATA_VIEW_NAME,
     view_query_template=FACILITY_METADATA_VIEW_QUERY_TEMPLATE,
     description=FACILITY_METADATA_VIEW_DESCRIPTION,
-    dimensions=tuple("facility_id"),
+    dimensions=("facility_id",),
     covid_dashboard_dataset=dataset_config.COVID_DASHBOARD_DATASET,
     covid_dashboard_reference_dataset=dataset_config.COVID_DASHBOARD_REFERENCE_DATASET,
 )
