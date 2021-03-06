@@ -186,7 +186,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
         self.row_post_processors_by_file: Dict[str, List[Callable]] = {
             "person_external_ids": [self._hydrate_person_external_ids],
-            "doc_person_info_v2": doc_person_info_postprocessors,
+            "doc_person_info": doc_person_info_postprocessors,
             "dbo_tblInmTestScore": [
                 gen_label_single_external_id_hook(US_PA_CONTROL),
                 self._generate_doc_assessment_external_id,
@@ -204,7 +204,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 self._add_incarceration_type,
                 self._concatenate_incarceration_purpose_codes,
             ],
-            "dbo_Miscon_v2": dbo_Miscon_postprocessors,
+            "dbo_Miscon": dbo_Miscon_postprocessors,
             "dbo_Offender": [
                 gen_label_single_external_id_hook(US_PA_PBPP),
                 self._hydrate_races,
@@ -215,7 +215,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 self._generate_pbpp_assessment_external_id,
                 self._enrich_pbpp_assessments,
             ],
-            "supervision_period_v2": supervision_period_postprocessors,
+            "supervision_period": supervision_period_postprocessors,
             "supervision_violation": [
                 self._append_supervision_violation_entries,
             ],
@@ -231,7 +231,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
         self.file_post_processors_by_file: Dict[str, List[Callable]] = {
             "person_external_ids": [],
-            "doc_person_info_v2": [],
+            "doc_person_info": [],
             "dbo_tblInmTestScore": [],
             "dbo_Senrec": [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
@@ -242,12 +242,12 @@ class UsPaController(CsvGcsfsDirectIngestController):
             "ccis_incarceration_period": [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type)
             ],
-            "dbo_Miscon_v2": [
+            "dbo_Miscon": [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
             "dbo_Offender": [],
             "dbo_LSIR": [],
-            "supervision_period_v2": [
+            "supervision_period": [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
             "supervision_violation": [
@@ -263,7 +263,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
         self.primary_key_override_hook_by_file: Dict[str, Callable] = {
             "sci_incarceration_period": _generate_sci_incarceration_period_primary_key,
-            "supervision_period_v2": _generate_supervision_period_primary_key,
+            "supervision_period": _generate_supervision_period_primary_key,
             "supervision_violation": _generate_supervision_violation_primary_key,
             "supervision_violation_response": _generate_supervision_violation_response_primary_key,
             "board_action": _generate_board_action_supervision_violation_response_primary_key,
@@ -664,17 +664,17 @@ class UsPaController(CsvGcsfsDirectIngestController):
             # Data source: Mixed
             "person_external_ids",
             # Data source: DOC
-            "doc_person_info_v2",
+            "doc_person_info",
             "dbo_tblInmTestScore",
             "dbo_Senrec",
             "sci_incarceration_period",
-            "dbo_Miscon_v2",
+            "dbo_Miscon",
             # Data source: CCIS
             "ccis_incarceration_period",
             # Data source: PBPP
             "dbo_Offender",
             "dbo_LSIR",
-            "supervision_period_v2",
+            "supervision_period",
             "supervision_violation",
             "supervision_violation_response",
             "board_action",
@@ -762,12 +762,12 @@ class UsPaController(CsvGcsfsDirectIngestController):
             "dbo_Senrec",
             "sci_incarceration_period",
             "ccis_incarceration_period",
-            "dbo_Miscon_v2",
+            "dbo_Miscon",
         ]:
             return US_PA_CONTROL
 
         if file_tag in [
-            "supervision_period_v2",
+            "supervision_period",
             "supervision_violation",
             "supervision_violation_response",
             "board_action",
