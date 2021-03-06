@@ -49,10 +49,10 @@ _FILENAME_SUFFIX_REGEX = re.compile(r".*(_file_split(_size(\d+))?)")
 
 
 class GcsfsDirectIngestFileType(Enum):
-    """Denotes the type of a file encountered by the GcsfsDirectIngestController. Files with types other than
-    UNSPECIFIED will have their type added to the normalized name and this type will be used to determine how to handle
-    the file (import to BigQuery vs ingest directly to Postgres). When moved to storage, files with different file types
-    will live in different subdirectories in a region's storage bucket."""
+    """Denotes the type of a file encountered by the GcsfsDirectIngestController. Files will have their type added to
+    the normalized name and this type will be used to determine how to handle the file (import to BigQuery vs ingest
+    directly to Postgres). When moved to storage, files with different file types will live in different subdirectories
+    in a region's storage bucket."""
 
     # Raw data received directly from state
     RAW_DATA = "raw"
@@ -60,16 +60,8 @@ class GcsfsDirectIngestFileType(Enum):
     # Ingest-ready file
     INGEST_VIEW = "ingest_view"
 
-    # For regions that have not yet been migrated to SQL pre-processing support and do not have raw/ingest_view tags in
-    # file names in the ingest bucket, these files are treated as INGEST_VIEW files. If a region has been configured
-    # to have SQL pre-processing support, we will throw if encountering an UNSPECIFIED file.
-    # TODO(#3162): Once all region files are fully migrated to having valid file types, remove this type entirely.
-    UNSPECIFIED = "unspecified"
-
     @classmethod
-    def from_string(cls, type_str: Optional[str]) -> "GcsfsDirectIngestFileType":
-        if type_str is None:
-            return GcsfsDirectIngestFileType.UNSPECIFIED
+    def from_string(cls, type_str: str) -> "GcsfsDirectIngestFileType":
         if type_str == GcsfsDirectIngestFileType.RAW_DATA.value:
             return GcsfsDirectIngestFileType.RAW_DATA
         if type_str == GcsfsDirectIngestFileType.INGEST_VIEW.value:
@@ -164,7 +156,7 @@ def gcsfs_direct_ingest_temporary_output_directory_path(
 def gcsfs_direct_ingest_storage_directory_path_for_region(
     region_code: str,
     system_level: SystemLevel,
-    file_type: GcsfsDirectIngestFileType = GcsfsDirectIngestFileType.UNSPECIFIED,
+    file_type: Optional[GcsfsDirectIngestFileType] = None,
     project_id: Optional[str] = None,
 ) -> str:
     if project_id is None:
@@ -174,10 +166,10 @@ def gcsfs_direct_ingest_storage_directory_path_for_region(
 
     storage_bucket = f"{project_id}-direct-ingest-{system_level.value.lower()}-storage"
 
-    if file_type is GcsfsDirectIngestFileType.UNSPECIFIED:
-        return os.path.join(storage_bucket, region_code)
+    if file_type is not None:
+        return os.path.join(storage_bucket, region_code, file_type.value)
 
-    return os.path.join(storage_bucket, region_code, file_type.value)
+    return os.path.join(storage_bucket, region_code)
 
 
 def gcsfs_direct_ingest_directory_path_for_region(

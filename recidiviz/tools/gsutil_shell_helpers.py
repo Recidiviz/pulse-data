@@ -142,17 +142,4 @@ def gsutil_get_storage_subdirs_containing_file_types(
                 ):
                     subdirs_containing_files.append(date_path)
 
-        elif file_type == GcsfsDirectIngestFileType.UNSPECIFIED:
-            # TODO(#3162): For now we assume that all files not in raw/ or ingest_view/ storage subdirs are 'raw'
-            #  files. Once all files have been migrated to raw/ and ingest_view/ subdirs, delete this part.
-            if not is_date_str(outer_subdir_name):
-                continue
-
-            if is_between_date_strs_inclusive(
-                upper_bound_date=upper_bound_date,
-                lower_bound_date=lower_bound_date,
-                date_of_interest=outer_subdir_name,
-            ):
-                subdirs_containing_files.append(outer_subdir_path)
-
     return subdirs_containing_files

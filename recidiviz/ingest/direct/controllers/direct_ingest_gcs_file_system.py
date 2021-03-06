@@ -59,15 +59,7 @@ def _build_file_name(
     extension: str,
     prefix: str,
 ) -> str:
-    file_name_parts = [
-        prefix,
-        utc_iso_timestamp_str,
-    ]
-
-    if file_type != GcsfsDirectIngestFileType.UNSPECIFIED:
-        file_name_parts += [file_type.value]
-
-    file_name_parts += [base_file_name]
+    file_name_parts = [prefix, utc_iso_timestamp_str, file_type.value, base_file_name]
 
     return "_".join(file_name_parts) + f".{extension}"
 
@@ -208,12 +200,10 @@ def to_normalized_unprocessed_file_path_from_normalized_path(
 
 def to_normalized_processed_file_path_from_normalized_path(
     original_normalized_file_path: str,
-    file_type_override: Optional[GcsfsDirectIngestFileType] = None,
 ) -> str:
     return _to_normalized_file_path_from_normalized_path(
         original_normalized_file_path=original_normalized_file_path,
         build_function=_build_processed_file_name,
-        file_type_override=file_type_override,
     )
 
 
@@ -315,8 +305,7 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
         file_type_filter: Optional[GcsfsDirectIngestFileType],
     ) -> List[GcsfsFilePath]:
         """Returns all paths of a given type in the given directory that have yet to be
-        processed. If |file_type_filter| is specified, returns only files with that file type and throws if encountering
-        a file with UNSPECIFIED file type.
+        processed. If |file_type_filter| is specified, returns only files with that file type.
         """
         return self._ls_with_file_prefix(
             directory_path, DIRECT_INGEST_UNPROCESSED_PREFIX, file_type_filter
@@ -478,10 +467,6 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
                 continue
 
             file_type = filename_parts_from_path(path).file_type
-            if file_type == GcsfsDirectIngestFileType.UNSPECIFIED:
-                raise ValueError(
-                    f"Found path {path.abs_path()} with unexpected UNSPECIFIED type."
-                )
 
             if file_type == file_type_filter:
                 result.append(path)
@@ -511,19 +496,12 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
         else:
             opt_storage_subdir = ""
 
-        if (
-            parts.file_type is None
-            or parts.file_type == GcsfsDirectIngestFileType.UNSPECIFIED
-        ):
-            file_type_subidr = ""
-            date_subdir = parts.date_str
-        else:
-            file_type_subidr = parts.file_type.value
-            date_subdir = os.path.join(
-                f"{parts.utc_upload_datetime.year:04}",
-                f"{parts.utc_upload_datetime.month:02}",
-                f"{parts.utc_upload_datetime.day:02}",
-            )
+        file_type_subdir = parts.file_type.value
+        date_subdir = os.path.join(
+            f"{parts.utc_upload_datetime.year:04}",
+            f"{parts.utc_upload_datetime.month:02}",
+            f"{parts.utc_upload_datetime.day:02}",
+        )
 
         for file_num in range(self._RENAME_RETRIES):
             name, ext = path.file_name.split(".")
@@ -534,7 +512,7 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
             storage_path_str = os.path.join(
                 storage_directory_path.bucket_name,
                 storage_directory_path.relative_path,
-                file_type_subidr,
+                file_type_subdir,
                 date_subdir,
                 opt_storage_subdir,
                 actual_file_name,
