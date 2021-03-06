@@ -30,7 +30,7 @@ Example usage (run from `pipenv shell`):
 
 python -m recidiviz.tools.move_state_files_from_storage \
     --project-id recidiviz-staging --region us_nd \
-    --file-type-to-move unspecified --destination-file-type raw \
+    --file-type-to-move raw \
     --start-date-bound 2019-08-12  --end-date-bound 2019-08-13 --dry-run True \
     [--file_filter "docstars_offendercases|elite_offender"]
 """
@@ -101,7 +101,6 @@ class MoveFilesFromStorageController:
         project_id: str,
         region: str,
         file_type_to_move: GcsfsDirectIngestFileType,
-        destination_file_type: GcsfsDirectIngestFileType,
         start_date_bound: Optional[str],
         end_date_bound: Optional[str],
         dry_run: bool,
@@ -111,16 +110,6 @@ class MoveFilesFromStorageController:
         self.project_id = project_id
         self.region = region
         self.file_type_to_move = file_type_to_move
-        self.destination_file_type = destination_file_type
-
-        if (
-            self.file_type_to_move != self.destination_file_type
-            and self.file_type_to_move != GcsfsDirectIngestFileType.UNSPECIFIED
-        ):
-            raise ValueError(
-                "Args file_type_to_move and destination_file_type must match if type to move is UNSPECIFIED"
-            )
-
         self.start_date_bound = start_date_bound
         self.end_date_bound = end_date_bound
         self.dry_run = dry_run
@@ -128,7 +117,10 @@ class MoveFilesFromStorageController:
 
         self.storage_bucket = GcsfsDirectoryPath.from_absolute_path(
             gcsfs_direct_ingest_storage_directory_path_for_region(
-                region, SystemLevel.STATE, project_id=self.project_id
+                region,
+                SystemLevel.STATE,
+                self.file_type_to_move,
+                project_id=self.project_id,
             )
         )
         self.ingest_bucket = GcsfsDirectoryPath.from_absolute_path(
@@ -341,7 +333,7 @@ class MoveFilesFromStorageController:
         """
 
         path_as_unprocessed = to_normalized_unprocessed_file_path_from_normalized_path(
-            original_file_path, file_type_override=self.destination_file_type
+            original_file_path, file_type_override=self.file_type_to_move
         )
 
         _, file_name = os.path.split(path_as_unprocessed)
@@ -386,20 +378,6 @@ def main() -> None:
     )
 
     parser.add_argument(
-        "--destination-file-type",
-        required=True,
-        choices=[
-            file_type.value
-            for file_type in {
-                GcsfsDirectIngestFileType.RAW_DATA,
-                GcsfsDirectIngestFileType.INGEST_VIEW,
-            }
-        ],
-        help="Defines what type the files should be after they have been moved. Must match "
-        "file-type-to-move unless file-type-to-move is 'unspecified'.",
-    )
-
-    parser.add_argument(
         "--start-date-bound",
         help="The lower bound date to start from, inclusive. For partial replays of ingested files. "
         "E.g. 2019-09-23.",
@@ -431,7 +409,6 @@ def main() -> None:
         project_id=args.project_id,
         region=args.region,
         file_type_to_move=GcsfsDirectIngestFileType(args.file_type_to_move),
-        destination_file_type=GcsfsDirectIngestFileType(args.destination_file_type),
         start_date_bound=args.start_date_bound,
         end_date_bound=args.end_date_bound,
         dry_run=args.dry_run,

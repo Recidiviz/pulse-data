@@ -333,19 +333,6 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
                 file_path, create_autospec(DirectIngestFileMetadata)
             )
 
-    def test_import_bq_file_with_unspecified_type_file(self) -> None:
-        file_path = path_for_fixture_file_in_test_gcs_directory(
-            directory=self.ingest_directory_path,
-            filename="file_tag_first.csv",
-            should_normalize=True,
-            file_type=GcsfsDirectIngestFileType.UNSPECIFIED,
-        )
-
-        with self.assertRaises(ValueError):
-            self.import_manager.import_raw_file_to_big_query(
-                file_path, create_autospec(DirectIngestFileMetadata)
-            )
-
     def test_import_bq_file_feature_not_released_throws(self) -> None:
         self.import_manager = DirectIngestRawFileImportManager(
             region=fake_region(
@@ -607,7 +594,8 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self.mock_big_query_client.run_query_async.assert_has_calls(
             [
                 mock.call(
-                    query_str=f"UPDATE `recidiviz-456.us_xx_raw_data.tagC` SET COL1 = '456' WHERE COL1 = '123' AND update_datetime = '{file_datetime.isoformat()}';"
+                    query_str=f"UPDATE `recidiviz-456.us_xx_raw_data.tagC` SET COL1 = '456' "
+                    f"WHERE COL1 = '123' AND update_datetime = '{file_datetime.isoformat()}';"
                 ),
                 mock.call(
                     query_str="DELETE FROM `recidiviz-456.us_xx_raw_data.tagC` WHERE COL1 = '789';"

@@ -211,16 +211,10 @@ class GcsfsDirectIngestController(
             self.ingest_directory_path
         )
 
-        unnormalized_path_file_type = (
-            GcsfsDirectIngestFileType.RAW_DATA
-            if self.region.is_raw_vs_ingest_file_name_detection_enabled()
-            else GcsfsDirectIngestFileType.UNSPECIFIED
-        )
-
         for path in unnormalized_paths:
             logging.info("File [%s] is not yet seen, normalizing.", path.abs_path())
             self.fs.mv_path_to_normalized_path(
-                path, file_type=unnormalized_path_file_type
+                path, file_type=GcsfsDirectIngestFileType.RAW_DATA
             )
 
         if unnormalized_paths:
@@ -723,16 +717,12 @@ class GcsfsDirectIngestController(
             f".{parts.extension}"
         )
 
-        file_type = (
-            GcsfsDirectIngestFileType.INGEST_VIEW
-            if self.region.is_raw_vs_ingest_file_name_detection_enabled()
-            else GcsfsDirectIngestFileType.UNSPECIFIED
-        )
-
         return GcsfsFilePath.from_directory_and_file_name(
             output_dir,
             to_normalized_unprocessed_file_path(
-                updated_file_name, file_type=file_type, dt=parts.utc_upload_datetime
+                updated_file_name,
+                file_type=parts.file_type,
+                dt=parts.utc_upload_datetime,
             ),
         )
 

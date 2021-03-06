@@ -602,7 +602,12 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         file_tags = ["tagA", "Unexpected_Tag", "tagB", "tagC"]
         unexpected_tags = ["Unexpected_Tag"]
 
-        add_paths_with_tags_and_process(self, controller, file_tags, unexpected_tags)
+        add_paths_with_tags_and_process(
+            self,
+            controller,
+            file_tags,
+            unexpected_tags=unexpected_tags,
+        )
 
         if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
             raise ValueError(
@@ -632,7 +637,12 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         file_tags = ["tagA", "Unexpected_Tag", "tagB", "tagC"]
         unexpected_tags = ["Unexpected_Tag"]
 
-        add_paths_with_tags_and_process(self, controller, file_tags, unexpected_tags)
+        add_paths_with_tags_and_process(
+            self,
+            controller,
+            file_tags,
+            unexpected_tags=unexpected_tags,
+        )
 
         if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
             raise ValueError(
@@ -678,7 +688,12 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         file_tags: List[str] = ["tagC"]
         unexpected_tags: List[str] = []
 
-        add_paths_with_tags_and_process(self, controller, file_tags, unexpected_tags)
+        add_paths_with_tags_and_process(
+            self,
+            controller,
+            file_tags,
+            unexpected_tags=unexpected_tags,
+        )
 
         processed_split_file_paths = defaultdict(list)
         if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
@@ -736,7 +751,12 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         file_tags = ["tagA", "Unexpected_Tag", "tagB", "tagC"]
         unexpected_tags = ["Unexpected_Tag"]
 
-        add_paths_with_tags_and_process(self, controller, file_tags, unexpected_tags)
+        add_paths_with_tags_and_process(
+            self,
+            controller,
+            file_tags,
+            unexpected_tags=unexpected_tags,
+        )
 
         if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
             raise ValueError(
@@ -870,10 +890,16 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         task_manager = self.get_fake_task_manager(controller)
 
         file_path = path_for_fixture_file(
-            controller, "tagA.csv", should_normalize=False
+            controller,
+            "tagA.csv",
+            should_normalize=False,
+            file_type=GcsfsDirectIngestFileType.RAW_DATA,
         )
         file_path2 = path_for_fixture_file(
-            controller, "tagB.csv", should_normalize=False
+            controller,
+            "tagB.csv",
+            should_normalize=False,
+            file_type=GcsfsDirectIngestFileType.RAW_DATA,
         )
         if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
             raise ValueError(
@@ -925,12 +951,18 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         task_manager = self.get_fake_task_manager(controller)
 
         file_path = path_for_fixture_file(
-            controller, "tagA.csv", should_normalize=False
+            controller,
+            "tagA.csv",
+            should_normalize=False,
+            file_type=GcsfsDirectIngestFileType.RAW_DATA,
         )
         fixture_util.add_direct_ingest_path(controller.fs.gcs_file_system, file_path)
 
         file_path2 = path_for_fixture_file(
-            controller, "tagB.csv", should_normalize=False
+            controller,
+            "tagB.csv",
+            should_normalize=False,
+            file_type=GcsfsDirectIngestFileType.RAW_DATA,
         )
         fixture_util.add_direct_ingest_path(controller.fs.gcs_file_system, file_path2)
 
@@ -1062,7 +1094,12 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         task_manager = self.get_fake_task_manager(controller)
 
-        path = path_for_fixture_file(controller, "tagB.csv", should_normalize=False)
+        path = path_for_fixture_file(
+            controller,
+            "tagB.csv",
+            should_normalize=False,
+            file_type=GcsfsDirectIngestFileType.RAW_DATA,
+        )
 
         if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
             raise ValueError(
@@ -1107,7 +1144,10 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         file_tags = list(sorted(controller.get_file_tag_rank_list()))
 
         add_paths_with_tags_and_process(
-            self, controller, file_tags, pre_normalize_filename=True
+            self,
+            controller,
+            file_tags,
+            pre_normalized_file_type=GcsfsDirectIngestFileType.RAW_DATA,
         )
 
         self.validate_file_metadata(controller)
@@ -1140,7 +1180,10 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         file_tags = list(sorted(controller.get_file_tag_rank_list()))
 
         add_paths_with_tags_and_process(
-            self, controller, file_tags, pre_normalize_filename=True
+            self,
+            controller,
+            file_tags,
+            pre_normalized_file_type=GcsfsDirectIngestFileType.RAW_DATA,
         )
 
         processed_split_file_paths = defaultdict(list)
@@ -1192,8 +1235,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             self,
             controller,
             file_tags,
-            pre_normalize_filename=True,
-            file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
+            pre_normalized_file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
         )
 
         processed_split_file_paths = defaultdict(list)
@@ -1248,8 +1290,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             self,
             controller,
             file_tags,
-            pre_normalize_filename=True,
-            file_type=GcsfsDirectIngestFileType.RAW_DATA,
+            pre_normalized_file_type=GcsfsDirectIngestFileType.RAW_DATA,
         )
 
         processed_split_file_paths = defaultdict(list)
@@ -1318,8 +1359,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             self,
             controller,
             file_tags,
-            pre_normalize_filename=True,
-            file_type=GcsfsDirectIngestFileType.RAW_DATA,
+            pre_normalized_file_type=GcsfsDirectIngestFileType.RAW_DATA,
         )
 
         processed_split_file_paths = defaultdict(list)
@@ -1370,6 +1410,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             "tagC.csv",
             should_normalize=True,
             dt=datetime.datetime.fromisoformat("2019-09-19"),
+            file_type=GcsfsDirectIngestFileType.RAW_DATA,
         )
         fixture_util.add_direct_ingest_path(
             controller.fs.gcs_file_system, file_path, fail_handle_file_call=True
@@ -1392,68 +1433,6 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         self.assertEqual(
             0, task_manager.get_process_job_queue_info(controller.region).size()
         )
-
-        self.validate_file_metadata(controller)
-
-    @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_STATE_REGION))
-    def test_move_files_from_previous_days_to_storage(self) -> None:
-        controller = build_gcsfs_controller_for_tests(
-            StateTestGcsfsDirectIngestController,
-            self.FIXTURE_PATH_PREFIX,
-            run_async=False,
-        )
-
-        previous_date = "2019-09-15"
-        file_path_from_prev_day = path_for_fixture_file(
-            controller,
-            "tagB.csv",
-            should_normalize=True,
-            dt=datetime.datetime.fromisoformat(previous_date),
-        )
-
-        # pylint:disable=protected-access
-        processed_file_from_prev_day = controller.fs._to_processed_file_path(
-            file_path_from_prev_day
-        )
-
-        unexpected_file_path_from_prev_day = path_for_fixture_file(
-            controller,
-            "Unexpected_Tag.csv",
-            should_normalize=True,
-            dt=datetime.datetime.fromisoformat(previous_date),
-        )
-
-        fixture_util.add_direct_ingest_path(
-            controller.fs.gcs_file_system, processed_file_from_prev_day
-        )
-        fixture_util.add_direct_ingest_path(
-            controller.fs.gcs_file_system, unexpected_file_path_from_prev_day
-        )
-
-        file_tags = list(sorted(controller.get_file_tag_rank_list()))
-
-        # This will test that all paths get moved to storage,
-        # except the unexpected tag.
-        add_paths_with_tags_and_process(
-            self, controller, file_tags, unexpected_tags=["Unexpected_Tag"]
-        )
-
-        paths_from_prev_date = []
-        if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
-            raise ValueError(
-                f"Controller fs must have type "
-                f"FakeGCSFileSystem. Found instead "
-                f"type [{type(controller.fs.gcs_file_system)}]"
-            )
-        for path in controller.fs.gcs_file_system.all_paths:
-            expected_storage_dir_str = os.path.join(
-                controller.storage_directory_path.abs_path(), previous_date
-            )
-            if path.abs_path().startswith(expected_storage_dir_str):
-                paths_from_prev_date.append(path)
-
-        self.assertTrue(len(paths_from_prev_date), 1)
-        self.assertTrue("tagB" in paths_from_prev_date[0].abs_path())
         self.validate_file_metadata(controller)
 
     @patch(
@@ -1630,104 +1609,6 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         )
 
         self.check_tags(controller, controller.get_file_tag_rank_list())
-
-    @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_STATE_REGION))
-    def test_move_files_from_previous_days_to_storage_incomplete_current_day(
-        self,
-    ) -> None:
-        controller = build_gcsfs_controller_for_tests(
-            StateTestGcsfsDirectIngestController,
-            self.FIXTURE_PATH_PREFIX,
-            run_async=False,
-        )
-        if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
-            raise ValueError(
-                f"Controller fs must have type "
-                f"FakeGCSFileSystem. Found instead "
-                f"type [{type(controller.fs.gcs_file_system)}]"
-            )
-
-        prev_date_datetime = datetime.datetime.fromisoformat("2019-09-15")
-        current_date_datetime = datetime.datetime.fromisoformat("2019-09-16")
-
-        file_path_from_prev_day = path_for_fixture_file(
-            controller, "tagB.csv", should_normalize=True, dt=prev_date_datetime
-        )
-
-        # pylint:disable=protected-access
-        processed_file_from_prev_day = controller.fs._to_processed_file_path(
-            file_path_from_prev_day
-        )
-
-        unexpected_file_path_from_prev_day = path_for_fixture_file(
-            controller,
-            "Unexpected_Tag.csv",
-            should_normalize=True,
-            dt=prev_date_datetime,
-        )
-
-        file_path_from_current_day = path_for_fixture_file(
-            controller, "tagA.csv", should_normalize=True, dt=current_date_datetime
-        )
-
-        fixture_util.add_direct_ingest_path(
-            controller.fs.gcs_file_system, processed_file_from_prev_day
-        )
-        fixture_util.add_direct_ingest_path(
-            controller.fs.gcs_file_system, unexpected_file_path_from_prev_day
-        )
-        fixture_util.add_direct_ingest_path(
-            controller.fs.gcs_file_system, file_path_from_current_day
-        )
-
-        run_task_queues_to_empty(controller)
-
-        if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
-            self.fail(
-                f"Unexpected real GCS file system: {type(controller.fs.gcs_file_system)}"
-            )
-        self.assertTrue(len(controller.fs.gcs_file_system.all_paths), 3)
-
-        storage_paths: List[GcsfsFilePath] = []
-        processed_paths: List[GcsfsFilePath] = []
-        for path in controller.fs.gcs_file_system.all_paths:
-            if not isinstance(path, GcsfsFilePath):
-                self.fail(f"Unexpected path type: {path.abs_path()}")
-            if self._path_in_storage_dir(path, controller):
-                if "Unexpected_Tag" in path.abs_path():
-                    self.fail("Unexpected tag found in storage dir")
-                storage_paths.append(path)
-            if controller.fs.is_processed_file(path):
-                processed_paths.append(path)
-
-        self.assertEqual(len(storage_paths), 1)
-
-        expected_storage_dir_str = os.path.join(
-            controller.storage_directory_path.abs_path(),
-            prev_date_datetime.date().isoformat(),
-        )
-        self.assertTrue(
-            storage_paths[0].abs_path().startswith(expected_storage_dir_str),
-            f"Path {storage_paths[0].abs_path()} should start with {expected_storage_dir_str}.",
-        )
-
-        # Path that is moved retains its 'processed_' prefix.
-        self.assertEqual(len(processed_paths), 2)
-
-        processed_paths_not_in_storage = [
-            path
-            for path in processed_paths
-            if not self._path_in_storage_dir(path, controller)
-        ]
-
-        self.assertEqual(len(processed_paths_not_in_storage), 1)
-
-        processed_path_str = processed_paths_not_in_storage[0].abs_path()
-        self.assertTrue(
-            processed_path_str.startswith(controller.ingest_directory_path.abs_path())
-        )
-        self.assertTrue("tagA" in processed_path_str)
-        self.validate_file_metadata(controller)
 
     @patch(
         "recidiviz.utils.regions.get_region",
@@ -1990,13 +1871,22 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         task_manager = self.get_fake_task_manager(controller)
 
         file_path = path_for_fixture_file(
-            controller, "tagA.csv", should_normalize=False
+            controller,
+            "tagA.csv",
+            should_normalize=False,
+            file_type=GcsfsDirectIngestFileType.RAW_DATA,
         )
         file_path2 = path_for_fixture_file(
-            controller, "tagB.csv", should_normalize=False
+            controller,
+            "tagB.csv",
+            should_normalize=False,
+            file_type=GcsfsDirectIngestFileType.RAW_DATA,
         )
         file_path3 = path_for_fixture_file(
-            controller, "tagC.csv", should_normalize=True
+            controller,
+            "tagC.csv",
+            should_normalize=True,
+            file_type=GcsfsDirectIngestFileType.RAW_DATA,
         )
 
         if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
@@ -2041,13 +1931,22 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         task_manager = self.get_fake_task_manager(controller)
 
         file_path = path_for_fixture_file(
-            controller, "tagA.csv", should_normalize=False
+            controller,
+            "tagA.csv",
+            should_normalize=False,
+            file_type=GcsfsDirectIngestFileType.RAW_DATA,
         )
         file_path2 = path_for_fixture_file(
-            controller, "tagB.csv", should_normalize=False
+            controller,
+            "tagB.csv",
+            should_normalize=False,
+            file_type=GcsfsDirectIngestFileType.RAW_DATA,
         )
         file_path3 = path_for_fixture_file(
-            controller, "tagC.csv", should_normalize=False
+            controller,
+            "tagC.csv",
+            should_normalize=False,
+            file_type=GcsfsDirectIngestFileType.RAW_DATA,
         )
 
         if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
@@ -2115,7 +2014,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         file_tags = list(reversed(sorted(controller.get_file_tag_rank_list())))
 
-        add_paths_with_tags(controller, file_tags, pre_normalize_filename=False)
+        add_paths_with_tags(controller, file_tags)
         run_task_queues_to_empty(controller)
 
         if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
@@ -2131,10 +2030,6 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             self.assertTrue(controller.fs.is_seen_unprocessed_file(path))
             self.assertFalse(controller.fs.is_split_file(path))
             self.assertFalse(controller.fs.is_processed_file(path))
-            self.assertEqual(
-                GcsfsDirectIngestFileType.UNSPECIFIED,
-                filename_parts_from_path(path).file_type,
-            )
 
         self.validate_file_metadata(
             controller,
@@ -2162,7 +2057,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         file_tags = list(reversed(sorted(controller.get_file_tag_rank_list())))
 
-        add_paths_with_tags(controller, file_tags, pre_normalize_filename=False)
+        add_paths_with_tags(controller, file_tags)
         run_task_queues_to_empty(controller)
 
         if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
@@ -2204,7 +2099,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             run_async=True,
         )
 
-        add_paths_with_tags(controller, ["tagA"], pre_normalize_filename=False)
+        add_paths_with_tags(controller, ["tagA"])
         with self.assertRaises(DirectIngestError) as e:
             run_task_queues_to_empty(controller)
 
@@ -2248,7 +2143,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             can_start_ingest=False,
         )
 
-        add_paths_with_tags(controller, ["tagA"], pre_normalize_filename=False)
+        add_paths_with_tags(controller, ["tagA"])
         with self.assertRaises(ValueError) as e:
             run_task_queues_to_empty(controller)
 
@@ -2308,7 +2203,12 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         for path_name, has_fixture in path_names:
             fixture_util.add_direct_ingest_path(
                 controller.fs.gcs_file_system,
-                path_for_fixture_file(controller, path_name, should_normalize=False),
+                path_for_fixture_file(
+                    controller,
+                    path_name,
+                    should_normalize=False,
+                    file_type=GcsfsDirectIngestFileType.RAW_DATA,
+                ),
                 has_fixture=has_fixture,
             )
 
