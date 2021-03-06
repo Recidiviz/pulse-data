@@ -230,11 +230,12 @@ class FakeDirectIngestPreProcessedIngestViewBuilder(
             view_query_template or f"SELECT * FROM {{{self.tag}}}"
         )
 
-    # pylint:disable=unused-argument
     def _build(
         self,
         *,
-        dataset_overrides: Optional[Dict[str, str]] = None,
+        dataset_overrides: Optional[  # pylint: disable=unused-argument
+            Dict[str, str]
+        ] = None,
     ) -> DirectIngestPreProcessedIngestView:
         return DirectIngestPreProcessedIngestView(
             ingest_view_name=self.tag,
@@ -368,7 +369,7 @@ def build_gcsfs_controller_for_tests(
                         ):
                             controller = controller_cls(
                                 ingest_directory_path=f"{fixture_path_prefix}/fixtures",
-                                storage_directory_path="storage/path",
+                                storage_directory_path="storage/path/",
                                 **kwargs,
                             )
                             controller.csv_reader = _TestSafeGcsCsvReader(fake_fs)
@@ -408,7 +409,7 @@ def path_for_fixture_file(
     controller: GcsfsDirectIngestController,
     filename: str,
     should_normalize: bool,
-    file_type: Optional[GcsfsDirectIngestFileType] = None,
+    file_type: Optional[GcsfsDirectIngestFileType],
     dt: Optional[datetime.datetime] = None,
 ) -> GcsfsFilePath:
     return path_for_fixture_file_in_test_gcs_directory(
@@ -425,15 +426,14 @@ def path_for_fixture_file_in_test_gcs_directory(
     directory: GcsfsDirectoryPath,
     filename: str,
     should_normalize: bool,
-    file_type: Optional[GcsfsDirectIngestFileType] = None,
+    file_type: Optional[GcsfsDirectIngestFileType],
     dt: Optional[datetime.datetime] = None,
 ) -> GcsfsFilePath:
     file_path_str = filename
 
     if should_normalize:
         if not file_type:
-            file_type = GcsfsDirectIngestFileType.UNSPECIFIED
-
+            raise ValueError("Expected file_type for path normalization but got None")
         file_path_str = to_normalized_unprocessed_file_path(
             original_file_path=file_path_str, file_type=file_type, dt=dt
         )
@@ -453,23 +453,21 @@ def add_paths_with_tags_and_process(
     test_case: unittest.TestCase,
     controller: GcsfsDirectIngestController,
     file_tags: List[str],
+    pre_normalized_file_type: Optional[GcsfsDirectIngestFileType] = None,
     unexpected_tags: List[str] = None,
-    pre_normalize_filename: bool = False,
-    file_type: GcsfsDirectIngestFileType = GcsfsDirectIngestFileType.UNSPECIFIED,
 ) -> None:
     """Runs a test that queues files for all the provided file tags, waits
     for the controller to finish processing everything, then makes sure that
     all files not in |unexpected_tags| have been moved to storage.
     """
-    add_paths_with_tags(controller, file_tags, pre_normalize_filename, file_type)
+    add_paths_with_tags(controller, file_tags, pre_normalized_file_type)
     process_task_queues(test_case, controller, file_tags, unexpected_tags)
 
 
 def add_paths_with_tags(
     controller: GcsfsDirectIngestController,
     file_tags: List[str],
-    pre_normalize_filename: bool = False,
-    file_type: GcsfsDirectIngestFileType = GcsfsDirectIngestFileType.UNSPECIFIED,
+    pre_normalized_file_type: Optional[GcsfsDirectIngestFileType] = None,
 ) -> None:
     if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
         raise ValueError(
@@ -482,8 +480,8 @@ def add_paths_with_tags(
         file_path = path_for_fixture_file(
             controller,
             f"{file_tag}.csv",
-            should_normalize=pre_normalize_filename,
-            file_type=file_type,
+            should_normalize=bool(pre_normalized_file_type),
+            file_type=pre_normalized_file_type,
         )
         # Only get a fixture path if it is a file, if it is a directory leave it as None
         fixture_util.add_direct_ingest_path(controller.fs.gcs_file_system, file_path)

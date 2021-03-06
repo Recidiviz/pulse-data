@@ -247,12 +247,7 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
 
         environ_patcher = patch.dict("os.environ", {"PERSIST_LOCALLY": "true"})
         environ_patcher.start()
-
-        file_type = (
-            GcsfsDirectIngestFileType.INGEST_VIEW
-            if self.controller.region.is_raw_vs_ingest_file_name_detection_enabled()
-            else None
-        )
+        file_type = GcsfsDirectIngestFileType.INGEST_VIEW
 
         if not isinstance(self.controller.fs.gcs_file_system, FakeGCSFileSystem):
             raise ValueError(
