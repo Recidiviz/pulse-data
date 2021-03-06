@@ -126,7 +126,7 @@ FROM people
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region="us_pa",
-    ingest_view_name="doc_person_info_v2",
+    ingest_view_name="doc_person_info",
     view_query_template=VIEW_QUERY_TEMPLATE,
     order_by_cols="recidiviz_master_person_id",
     materialize_raw_data_table_views=True,

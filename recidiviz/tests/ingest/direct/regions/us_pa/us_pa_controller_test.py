@@ -345,7 +345,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "doc_person_info_v2")
+        self.run_parse_file_test(expected, "doc_person_info")
 
     def test_populate_data_dbo_tblInmTestScore(self) -> None:
         expected = IngestInfo(
@@ -1266,7 +1266,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "dbo_Miscon_v2")
+        self.run_parse_file_test(expected, "dbo_Miscon")
 
     def test_populate_data_dbo_Offender(self) -> None:
         expected = IngestInfo(
@@ -1640,7 +1640,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "supervision_period_v2")
+        self.run_parse_file_test(expected, "supervision_period")
 
     def test_populate_data_supervision_violation(self) -> None:
         violation_456B_1_1 = StateSupervisionViolation(
@@ -2522,7 +2522,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         populate_person_backedges(expected_people)
 
         # Act
-        self._run_ingest_job_for_filename("doc_person_info_v2.csv")
+        self._run_ingest_job_for_filename("doc_person_info.csv")
 
         # Assert
         self.assert_expected_db_people(expected_people)
@@ -3725,7 +3725,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         populate_person_backedges(expected_people)
 
         # Act
-        self._run_ingest_job_for_filename("dbo_Miscon_v2.csv")
+        self._run_ingest_job_for_filename("dbo_Miscon.csv")
 
         # Assert
         self.assert_expected_db_people(expected_people)
@@ -4141,7 +4141,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         populate_person_backedges(expected_people)
 
         # Act
-        self._run_ingest_job_for_filename("supervision_period_v2.csv")
+        self._run_ingest_job_for_filename("supervision_period.csv")
 
         # Assert
         self.assert_expected_db_people(expected_people)
