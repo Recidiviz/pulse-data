@@ -132,8 +132,13 @@ resource "google_sql_database_instance" "data" {
   }
 }
 
-resource "google_project_iam_member" "gcs-access" {
+resource "google_project_iam_member" "gcs-read-access" {
   role   = "roles/storage.objectViewer"
+  member = "serviceAccount:${google_sql_database_instance.data.service_account_email_address}"
+}
+
+resource "google_project_iam_member" "gcs-write-access" {
+  role   = "roles/storage.objectCreator"
   member = "serviceAccount:${google_sql_database_instance.data.service_account_email_address}"
 }
 
