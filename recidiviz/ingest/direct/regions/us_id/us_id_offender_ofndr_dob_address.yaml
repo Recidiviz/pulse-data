@@ -49,4 +49,4 @@ keys_to_ignore:
   - birth_ctry_cd       # Unused - birth country code (mostly null)
   - birth_city          # Unused - birth city (mostly null)
   - dob_dtd             # Unused - birth date (not present in manual files)
-  - personid            # Unused - duplicate of docno
+  - offendernumber      # Unused - duplicate of docno
