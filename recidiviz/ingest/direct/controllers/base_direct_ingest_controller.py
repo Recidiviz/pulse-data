@@ -220,6 +220,15 @@ class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandl
     # =================== #
     # SINGLE JOB RUN CODE #
     # =================== #
+    def default_job_lock_timeout_in_seconds(self) -> int:
+        """This method can be overridden by subclasses that need more (or less)
+        time to process jobs to completion, but by default enforces a
+        one hour timeout on locks.
+
+        Jobs may take longer than the alotted time, but if they do so, they
+        will de facto relinquish their hold on the acquired lock."""
+        return 3600
+
     def run_ingest_job_and_kick_scheduler_on_completion(
         self, args: IngestArgsType
     ) -> None:
@@ -230,11 +239,17 @@ class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandl
         ) or self.lock_manager.is_locked(
             postgres_to_bq_lock_name_for_schema(SchemaType.OPERATIONS)
         ):
+            logging.warning(
+                "Postgres to BigQuery export is running, can not run ingest"
+            )
             raise GCSPseudoLockAlreadyExists(
                 "Postgres to BigQuery export is running, can not run ingest"
             )
 
-        with self.lock_manager.using_lock(self.ingest_process_lock_for_region()):
+        with self.lock_manager.using_lock(
+            self.ingest_process_lock_for_region(),
+            expiration_in_seconds=self.default_job_lock_timeout_in_seconds(),
+        ):
             should_schedule = self._run_ingest_job(args)
 
         if should_schedule:
