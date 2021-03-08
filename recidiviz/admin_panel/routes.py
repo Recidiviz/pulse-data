@@ -126,10 +126,11 @@ def fetch_etl_view_ids() -> Tuple[str, HTTPStatus]:
             [
                 builder.view_id
                 for builder in CASE_TRIAGE_EXPORTED_VIEW_BUILDERS
-                if builder.view_id != "etl_officers"
+                if builder.view_id != "etl_officers" or in_gcp_production()
                 # TODO(#6202): Until we get more consistent rosters, pushing `etl_officers`
                 # may lead to inconsistincies (as we had to manually add 1-2 trusted testers
                 # who were not on our rosters).
+                # Adding a temporary escape hatch in prod since we will need to set/update them.
             ]
         ),
         HTTPStatus.OK,
@@ -147,10 +148,11 @@ def run_gcs_import() -> Tuple[str, HTTPStatus]:
     known_view_builders = {
         builder.view_id: builder
         for builder in CASE_TRIAGE_EXPORTED_VIEW_BUILDERS
-        if builder.view_id != "etl_officers"
+        if builder.view_id != "etl_officers" or in_gcp_production()
         # TODO(#6202): Until we get more consistent rosters, pushing `etl_officers`
         # may lead to inconsistincies (as we had to manually add 1-2 trusted testers
         # who were not on our rosters).
+        # Adding a temporary escape hatch in prod since we will need to set/update them.
     }
     for view_id in request.json["viewIds"]:
         if view_id not in known_view_builders:
