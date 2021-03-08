@@ -181,12 +181,14 @@ class GCSPseudoLockManager:
         self.fs.upload_from_string(
             path, json.dumps(lock_contents.to_json(), default=str), "text/plain"
         )
+        logging.debug("Created lock file with name: %s", name)
 
     def unlock(self, name: str) -> None:
         """Unlocks @param name by deleting file with name"""
         if self.is_locked(name):
             path = GcsfsFilePath(bucket_name=self.bucket_name, blob_name=name)
             self.fs.delete(path)
+            logging.debug("Deleting lock file with name: %s", name)
         else:
             raise GCSPseudoLockDoesNotExist(
                 f"Lock with the name {name} does not yet exist in the bucket "
