@@ -157,6 +157,8 @@ def monitor_refresh_bq_tasks() -> Tuple[str, int]:
     if bq_tasks_in_queue:
         logging.info("Tasks still in bigquery queue. Re-queuing bq monitor" " task.")
         task_manager.create_bq_refresh_monitor_task(schema, topic, message)
+        # TODO(#6257): Add an expiration refresh to our lock in case the total export
+        # takes more than an hour.
         return "", HTTPStatus.OK
 
     # Publish a message to the Pub/Sub topic once state BQ export is complete
@@ -174,6 +176,15 @@ def monitor_refresh_bq_tasks() -> Tuple[str, int]:
     kick_all_schedulers()
 
     return ("", HTTPStatus.OK)
+
+
+def export_lock_timeout_for_schema_arg(_schema_arg: str) -> int:
+    """Defines the exported lock timeouts permitted based on the schema arg.
+    For the moment all lock timeouts are set to one hour in length.
+
+    Export jobs may take longer than the alotted time, but if they do so, they
+    will de facto relinquish their hold on the acquired lock."""
+    return 3600
 
 
 @cloud_sql_to_bq_blueprint.route(
@@ -199,22 +210,19 @@ def wait_for_ingest_to_create_tasks(schema_arg: str) -> Tuple[str, HTTPStatus]:
     logging.info("Request lock id: %s", lock_id)
 
     if not lock_manager.is_locked(postgres_to_bq_lock_name_with_suffix(schema_arg)):
-        time = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
-        contents_as_json = {"time": time, "lock_id": lock_id}
-        contents = json.dumps(contents_as_json)
-        lock_manager.lock(postgres_to_bq_lock_name_with_suffix(schema_arg), contents)
+        lock_manager.lock(
+            postgres_to_bq_lock_name_with_suffix(schema_arg),
+            contents=lock_id,
+            expiration_in_seconds=export_lock_timeout_for_schema_arg(schema_arg),
+        )
     else:
-        contents = lock_manager.get_lock_contents(
+        previous_lock_id = lock_manager.get_lock_contents(
             postgres_to_bq_lock_name_with_suffix(schema_arg)
         )
-        try:
-            contents_json = json.loads(contents)
-        except (TypeError, json.decoder.JSONDecodeError):
-            contents_json = {}
-        logging.info("Lock contents: %s", contents_json)
-        if lock_id != contents_json.get("lock_id"):
+        logging.info("Lock contents: %s", previous_lock_id)
+        if lock_id != previous_lock_id:
             raise GCSPseudoLockAlreadyExists(
-                f"UUID {lock_id} does not match existing lock's UUID"
+                f"UUID {lock_id} does not match existing lock's UUID {previous_lock_id}"
             )
 
     no_regions_running = lock_manager.no_active_locks_with_prefix(
