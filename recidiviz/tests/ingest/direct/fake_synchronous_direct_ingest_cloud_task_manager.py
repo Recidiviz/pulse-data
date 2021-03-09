@@ -196,7 +196,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         """Synchronously executes the next queued BQ import/export task, but *does not
         remove it from the queue*."""
         if not self.bq_import_export_tasks:
-            raise ValueError("Scheduler job tasks should not be empty.")
+            raise ValueError("BQ import/export job tasks should not be empty.")
 
         if self.num_finished_bq_import_export_tasks:
             raise ValueError("Must first pop last finished task.")
