@@ -39,6 +39,7 @@ class AuthorizationStore:
         )
         self.allowed_users: List[str] = []
         self.admin_users: List[str] = []
+        self.demo_users: List[str] = []
 
     def refresh(self) -> None:
         data = json.loads(get_local_file(self.allowlist_path))
@@ -46,3 +47,12 @@ class AuthorizationStore:
         self.admin_users = [
             struct["email"] for struct in data if struct.get("is_admin")
         ]
+        self.demo_users = [
+            struct["email"] for struct in data if struct.get("is_demo_user")
+        ]
+
+    def can_impersonate_others(self, email: str) -> bool:
+        return email in self.admin_users
+
+    def can_see_demo_data(self, email: str) -> bool:
+        return email in self.admin_users or email in self.demo_users

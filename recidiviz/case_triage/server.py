@@ -34,7 +34,7 @@ from recidiviz.case_triage.impersonate_users import (
 )
 from recidiviz.case_triage.querier.querier import CaseTriageQuerier
 from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
-from recidiviz.case_triage.util import get_local_secret, SESSION_ADMIN_KEY
+from recidiviz.case_triage.util import get_local_secret
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
@@ -79,7 +79,6 @@ setup_scoped_sessions(app, db_url)
 def on_successful_authorization(_payload: Dict[str, str], token: str) -> None:
     """
     Memoize the user's info (email_address, picture, etc) into our session
-    Expose the user on the flask request global
     """
     if "user_info" not in session:
         session["user_info"] = get_userinfo(authorization_config.domain, token)
@@ -90,9 +89,6 @@ def on_successful_authorization(_payload: Dict[str, str], token: str) -> None:
             code="unauthorized",
             description="You are not authorized to access this application",
         )
-
-    if email in authorization_store.admin_users:
-        session[SESSION_ADMIN_KEY] = True
 
 
 auth0_configuration = get_local_secret("case_triage_auth0")
@@ -136,21 +132,18 @@ def fetch_user_info() -> None:
     If the user is an admin (i.e. an approved Recidiviz employee), and the `impersonated_email` param is
     set, then they can make requests as if they were the impersonated user.
     """
+    email = session["user_info"]["email"]
+    g.can_impersonate = authorization_store.can_impersonate_others(email)
+    g.can_see_demo_data = authorization_store.can_see_demo_data(email)
     try:
-        if (
-            IMPERSONATED_EMAIL_KEY in session
-            and session["user_info"]["email"] in authorization_store.admin_users
-        ):
+        if IMPERSONATED_EMAIL_KEY in session and g.can_impersonate:
             g.current_user = CaseTriageQuerier.officer_for_email(
                 current_session, session[IMPERSONATED_EMAIL_KEY]
             )
-
-        if not getattr(g, "current_user", None):
-            g.current_user = CaseTriageQuerier.officer_for_email(
-                current_session, session["user_info"]["email"]
-            )
+        else:
+            g.current_user = CaseTriageQuerier.officer_for_email(current_session, email)
     except NoResultFound as e:
-        if not session.get(SESSION_ADMIN_KEY):
+        if not g.can_see_demo_data:
             raise CaseTriageAuthorizationError(
                 code="unauthorized",
                 description="You are not authorized to access this application",
