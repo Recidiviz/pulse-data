@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,12 +14,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Queue names for shared Google Cloud Task queues."""
 
-BIGQUERY_QUEUE_V2 = "bigquery-v2"
-DIRECT_INGEST_SCHEDULER_QUEUE_V2 = "direct-ingest-scheduler-v2"
-DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2 = "direct-ingest-bq-import-export-v2"
-DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2 = "direct-ingest-state-process-job-queue-v2"
-DIRECT_INGEST_JAILS_PROCESS_JOB_QUEUE_V2 = "direct-ingest-jpp-process-job-queue-v2"
-JOB_MONITOR_QUEUE_V2 = "job-monitor-v2"
-SCRAPER_PHASE_QUEUE_V2 = "scraper-phase-v2"
+# The state code associated with the buckets and cloud task queues (ex: "US_TN").
+variable "state_code" {
+  type = string
+}
+
+# the project id associated with the buckets and cloud tasks queues (ex: "recidiviz-123").
+variable "project_id" {
+  type = string
+}
+
+# The preferred region for the buckets and cloud task queues (ex: "us-east4").
+variable "region" {
+  type = string
+}
+
+locals {
+  lower_state_code       = replace(lower(var.state_code), "_", "-")
+  direct_ingest_sftp_str = "direct-ingest-state-${local.lower_state_code}-sftp"
+}

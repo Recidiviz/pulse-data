@@ -26,7 +26,7 @@ import attr
 
 from recidiviz.common.date import snake_case_datetime
 from recidiviz.common.ingest_metadata import SystemLevel
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
 from recidiviz.ingest.direct.controllers.direct_ingest_types import (
     CloudTaskArgs,
     IngestArgs,
@@ -189,6 +189,29 @@ def gcsfs_direct_ingest_directory_path_for_region(
 
     raise DirectIngestError(
         msg=f"Cannot determine ingest directory path for region: " f"[{region_code}]",
+        error_type=DirectIngestErrorType.INPUT_ERROR,
+    )
+
+
+def gcsfs_sftp_download_directory_path_for_region(
+    region_code: str, system_level: SystemLevel, project_id: Optional[str] = None
+) -> GcsfsDirectoryPath:
+    """Returns the GCS Directory Path for the bucket that will hold the SFTP downloaded files."""
+    if project_id is None:
+        project_id = metadata.project_id()
+        if not project_id:
+            raise ValueError("Project id not set")
+
+    if system_level == SystemLevel.COUNTY:
+        raise ValueError("SystemLevel.COUNTY is not supported")
+    if system_level == SystemLevel.STATE:
+        normalized_region_code = region_code.replace("_", "-")
+        return GcsfsDirectoryPath.from_absolute_path(
+            f"{project_id}-direct-ingest-state-{normalized_region_code}-sftp"
+        )
+
+    raise DirectIngestError(
+        msg=f"Cannot determine sftp download path for region: " f"[{region_code}]",
         error_type=DirectIngestErrorType.INPUT_ERROR,
     )
 

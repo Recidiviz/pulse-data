@@ -29,7 +29,6 @@ from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
     DIRECT_INGEST_SCHEDULER_QUEUE_V2,
     DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2,
     DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2,
-    DIRECT_INGEST_SFTP_DOWNLOAD_QUEUE_V1,
 )
 from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import (
     QUEUES_REGION,
@@ -398,8 +397,8 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         mock_uuid.uuid4.return_value = uuid
         queue_path = f"{_REGION.shared_queue}-path"
         date = "2021-01-01"
-        task_name = DIRECT_INGEST_SFTP_DOWNLOAD_QUEUE_V1 + "/{}-{}-{}".format(
-            _REGION.region_code, date, uuid
+        task_name = "direct-ingest-state-{}-sftp-queue/{}-{}-{}".format(
+            _REGION.region_code.replace("_", "-"), _REGION.region_code, date, uuid
         )
         task = tasks_v2.types.task_pb2.Task(
             name=task_name,
@@ -418,7 +417,9 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         )
 
         mock_client.return_value.queue_path.assert_called_with(
-            self.mock_project_id, QUEUES_REGION, DIRECT_INGEST_SFTP_DOWNLOAD_QUEUE_V1
+            self.mock_project_id,
+            QUEUES_REGION,
+            f"direct-ingest-state-{_REGION.region_code.replace('_', '-')}-sftp-queue",
         )
         mock_client.return_value.create_task.assert_called_with(
             parent=queue_path, task=task

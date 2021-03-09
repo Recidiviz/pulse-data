@@ -312,7 +312,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
             queue_name=self.bq_import_export_queue.name, task_names=task_names
         )
 
-    def get_sftp_download_queue_info(self, region: Region) -> SftpCloudTaskQueueInfo:
+    def get_sftp_queue_info(self, region: Region) -> SftpCloudTaskQueueInfo:
         with self.sftp_queue.all_tasks_mutex:
             has_unfinished_tasks = self.sftp_queue.get_unfinished_task_names_unsafe()
 
