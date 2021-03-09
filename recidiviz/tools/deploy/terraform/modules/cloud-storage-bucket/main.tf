@@ -41,7 +41,7 @@ resource "google_storage_bucket" "bucket" {
       type = "Delete"
     }
     condition {
-      num_newer_versions = 2
+      num_newer_versions = 3
     }
   }
 
