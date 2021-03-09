@@ -266,3 +266,12 @@ cron:
       min_backoff_seconds: 2.5
       max_doublings: 5
       job_age_limit: 9h
+
+  - description: "[Direct ingest][sftp] Initiate SFTP download for US_ID"
+    url: /direct/handle_sftp_files?region=us_id
+    schedule: every day 9:00
+    timezone: America/New_York
+    retry_parameters:
+      min_backoff_seconds: 30
+      max_doublings: 5
+      job_age_limit: 9h
