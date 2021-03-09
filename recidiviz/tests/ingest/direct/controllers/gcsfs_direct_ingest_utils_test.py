@@ -21,13 +21,14 @@ from unittest import TestCase
 from mock import patch, Mock
 
 from recidiviz.common.ingest_metadata import SystemLevel
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     gcsfs_direct_ingest_storage_directory_path_for_region,
     gcsfs_direct_ingest_directory_path_for_region,
     filename_parts_from_path,
     GcsfsDirectIngestFileType,
     GcsfsIngestViewExportArgs,
+    gcsfs_sftp_download_directory_path_for_region,
 )
 from recidiviz.ingest.direct.errors import DirectIngestError
 
@@ -92,6 +93,26 @@ class GcsfsDirectIngestUtilsTest(TestCase):
             gcsfs_direct_ingest_directory_path_for_region("us_nd", SystemLevel.STATE),
             "recidiviz-staging-direct-ingest-state-us-nd",
         )
+
+    @patch(
+        "recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-staging")
+    )
+    def test_gcsfs_sftp_download_directory_path_for_region(self) -> None:
+        self.assertEqual(
+            gcsfs_sftp_download_directory_path_for_region("us_nd", SystemLevel.STATE),
+            GcsfsDirectoryPath.from_absolute_path(
+                "recidiviz-staging-direct-ingest-state-us-nd-sftp"
+            ),
+        )
+
+    @patch(
+        "recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-staging")
+    )
+    def test_gcsfs_sftp_download_directory_path_fails_for_county(self) -> None:
+        with self.assertRaises(ValueError):
+            _ = gcsfs_sftp_download_directory_path_for_region(
+                "us_xx", SystemLevel.COUNTY
+            )
 
     def test_filename_parts_from_path_with_file_type(self) -> None:
         with self.assertRaises(DirectIngestError):

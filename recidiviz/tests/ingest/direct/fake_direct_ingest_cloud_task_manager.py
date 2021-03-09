@@ -59,7 +59,7 @@ class FakeDirectIngestCloudTaskManager(DirectIngestCloudTaskManager):
         pass
 
     @abc.abstractmethod
-    def get_sftp_download_queue_info(self, region: Region) -> SftpCloudTaskQueueInfo:
+    def get_sftp_queue_info(self, region: Region) -> SftpCloudTaskQueueInfo:
         pass
 
     @abc.abstractmethod

@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,12 +14,21 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Queue names for shared Google Cloud Task queues."""
 
-BIGQUERY_QUEUE_V2 = "bigquery-v2"
-DIRECT_INGEST_SCHEDULER_QUEUE_V2 = "direct-ingest-scheduler-v2"
-DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2 = "direct-ingest-bq-import-export-v2"
-DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2 = "direct-ingest-state-process-job-queue-v2"
-DIRECT_INGEST_JAILS_PROCESS_JOB_QUEUE_V2 = "direct-ingest-jpp-process-job-queue-v2"
-JOB_MONITOR_QUEUE_V2 = "job-monitor-v2"
-SCRAPER_PHASE_QUEUE_V2 = "scraper-phase-v2"
+module "sftp-storage-bucket" {
+  source = "../cloud-storage-bucket"
+
+  project_id  = var.project_id
+  name_suffix = local.direct_ingest_sftp_str
+  location    = var.region
+}
+
+module "sftp-download-queue" {
+  source = "../serial-task-queue"
+
+  queue_name                = "${local.direct_ingest_sftp_str}-queue"
+  region                    = var.region
+  max_dispatches_per_second = 5
+  max_retry_attempts        = 5
+  logging_sampling_ratio    = 1.0
+}

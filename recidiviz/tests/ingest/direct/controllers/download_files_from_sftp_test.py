@@ -340,7 +340,7 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
             [
                 (
                     os.path.join(
-                        "test-project-direct-ingest-state-us-xx",
+                        "test-project-direct-ingest-state-us-xx-sftp",
                         RAW_INGEST_DIRECTORY,
                         "testToday",
                         item,
@@ -413,7 +413,7 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
                         [
                             (
                                 os.path.join(
-                                    "test-project-direct-ingest-state-us-xx",
+                                    "test-project-direct-ingest-state-us-xx-sftp",
                                     RAW_INGEST_DIRECTORY,
                                     "testToday",
                                     item,
@@ -422,7 +422,7 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
                             ),
                             (
                                 os.path.join(
-                                    "test-project-direct-ingest-state-us-xx",
+                                    "test-project-direct-ingest-state-us-xx-sftp",
                                     RAW_INGEST_DIRECTORY,
                                     "testTwoDaysAgo",
                                     item,
@@ -470,7 +470,7 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
             [
                 (
                     os.path.join(
-                        "test-project-direct-ingest-state-us-xx",
+                        "test-project-direct-ingest-state-us-xx-sftp",
                         RAW_INGEST_DIRECTORY,
                         "testToday",
                         "file1.txt",
@@ -485,7 +485,7 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
         self, mock_fs_factory: Mock, _mock_auth: Mock, _mock_download: Mock
     ) -> None:
         mock_fs = create_files(
-            download_dir=f"test-project-direct-ingest-state-us-xx/{RAW_INGEST_DIRECTORY}",
+            download_dir=f"test-project-direct-ingest-state-us-xx-sftp/{RAW_INGEST_DIRECTORY}",
             remotedir="testToday",
             gcsfs=FakeGCSFileSystem(),
         )
