@@ -36,6 +36,9 @@ from recidiviz.persistence.database.base_schema import (
 )
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.aggregate import schema as aggregate_schema
+from recidiviz.persistence.database.schema.case_triage import (
+    schema as case_triage_schema,
+)
 from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.database.schema.history_table_shared_columns_mixin import (
     HistoryTableSharedColumns,
@@ -136,6 +139,10 @@ def get_state_table_classes() -> Iterator[Table]:
 
 def get_operations_table_classes() -> Iterator[Table]:
     yield from get_all_table_classes_in_module(operations_schema)
+
+
+def get_case_triage_table_classes() -> Iterator[Table]:
+    yield from get_all_table_classes_in_module(case_triage_schema)
 
 
 def get_non_history_state_database_entities() -> List[Type[DatabaseEntity]]:
