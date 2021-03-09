@@ -18,6 +18,7 @@ import * as React from "react";
 import { Layout, Menu, Typography } from "antd";
 import { Link, Redirect, Route, Switch, useLocation } from "react-router-dom";
 
+import CloudSQLExportView from "./CloudSQLExportView";
 import CloudSQLImportView from "./CloudSQLImportView";
 import ColumnView from "./ColumnView";
 import DatasetView from "./DatasetView";
@@ -58,6 +59,11 @@ const App = (): JSX.Element => {
                 GCS &rarr; Cloud SQL
               </Link>
             </Menu.Item>
+            <Menu.Item key={CaseTriage.CLOUD_SQL_TO_GCS_CSV_ROUTE}>
+              <Link to={CaseTriage.CLOUD_SQL_TO_GCS_CSV_ROUTE}>
+                Cloud SQL &rarr; GCS
+              </Link>
+            </Menu.Item>
           </Menu.ItemGroup>
         </Menu>
       </Layout.Sider>
@@ -84,6 +90,10 @@ const App = (): JSX.Element => {
             path={CaseTriage.GCS_CSV_TO_CLOUD_SQL_ROUTE}
             component={CloudSQLImportView}
           />
+          <Route
+            path={CaseTriage.CLOUD_SQL_TO_GCS_CSV_ROUTE}
+            component={CloudSQLExportView}
+          />
           <Redirect from="/" to={IngestMetadata.STATE_METADATA_ROUTE} />
         </Switch>
       </div>
@@ -100,6 +110,9 @@ function selectedMenuKeys(pathname: string): string[] {
   }
   if (pathname.startsWith(CaseTriage.GCS_CSV_TO_CLOUD_SQL_ROUTE)) {
     return [CaseTriage.GCS_CSV_TO_CLOUD_SQL_ROUTE];
+  }
+  if (pathname.startsWith(CaseTriage.CLOUD_SQL_TO_GCS_CSV_ROUTE)) {
+    return [CaseTriage.CLOUD_SQL_TO_GCS_CSV_ROUTE];
   }
   return [];
 }
