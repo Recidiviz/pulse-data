@@ -22,6 +22,9 @@ from typing import Dict, Optional, Tuple
 
 from flask import Blueprint, Response, jsonify, request, send_from_directory
 
+from recidiviz.admin_panel.cloud_sql_export_to_gcs import (
+    export_from_cloud_sql_to_gcs_csv,
+)
 from recidiviz.admin_panel.gcs_import_to_cloud_sql import import_gcs_csv_to_cloud_sql
 from recidiviz.admin_panel.ingest_metadata_store import (
     IngestMetadataCountsStore,
@@ -31,6 +34,9 @@ from recidiviz.case_triage.views.view_config import CASE_TRIAGE_EXPORTED_VIEW_BU
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.metrics.export.export_config import (
     CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI,
+)
+from recidiviz.persistence.database.schema.case_triage.schema import (
+    CaseUpdate,
 )
 from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
@@ -137,6 +143,26 @@ def fetch_etl_view_ids() -> Tuple[str, HTTPStatus]:
     )
 
 
+@admin_panel.route("/api/case_triage/generate_case_updates_export", methods=["POST"])
+@requires_gae_auth
+def generate_case_updates_export() -> Tuple[str, HTTPStatus]:
+    export_from_cloud_sql_to_gcs_csv(
+        "case_updates",
+        GcsfsFilePath.from_absolute_path(
+            os.path.join(
+                CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI.format(
+                    project_id=metadata.project_id()
+                ),
+                "exported",
+                "case_updates.csv",
+            )
+        ),
+        [col.name for col in CaseUpdate.__table__.columns],
+    )
+
+    return "", HTTPStatus.OK
+
+
 @admin_panel.route("/api/case_triage/run_gcs_import", methods=["POST"])
 @requires_gae_auth
 def run_gcs_import() -> Tuple[str, HTTPStatus]:
@@ -176,7 +202,7 @@ def run_gcs_import() -> Tuple[str, HTTPStatus]:
             ),
             known_view_builders[view_id].columns,
         )
-        logging.info("View (%s) successfully exported", view_id)
+        logging.info("View (%s) successfully imported", view_id)
 
     return "", HTTPStatus.OK
 
