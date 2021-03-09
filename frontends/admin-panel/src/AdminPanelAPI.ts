@@ -59,6 +59,14 @@ export const fetchDataFreshness = async (): Promise<Response> => {
   return postWithURLAndBody("/api/ingest_metadata/data_freshness", {});
 };
 
+// Cloud SQL -> GCS CSV Export
+export const generateCaseUpdatesExport = async (): Promise<Response> => {
+  return postWithURLAndBody(
+    "/api/case_triage/generate_case_updates_export",
+    {}
+  );
+};
+
 // GCS CSV -> Cloud SQL Import
 export const fetchETLViewIds = async (): Promise<Response> => {
   return postWithURLAndBody("/api/case_triage/fetch_etl_view_ids", {});

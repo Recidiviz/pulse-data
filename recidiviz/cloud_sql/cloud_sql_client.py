@@ -35,6 +35,15 @@ class CloudSQLClient:
         """The Google Cloud project id for this client."""
 
     @abc.abstractmethod
+    def export_to_gcs_csv(
+        self,
+        instance_name: str,
+        table_name: str,
+        gcs_uri: GcsfsFilePath,
+    ) -> Optional[str]:
+        """Triggers a Cloud SQL Export operation and returns the associated operation id or None if unsuccessful."""
+
+    @abc.abstractmethod
     def import_gcs_csv(
         self,
         instance_name: str,
@@ -69,6 +78,31 @@ class CloudSQLClientImpl:
     @property
     def project_id(self) -> str:
         return self._project_id
+
+    def export_to_gcs_csv(
+        self,
+        instance_name: str,
+        table_name: str,
+        gcs_uri: GcsfsFilePath,
+        columns: List[str],
+    ) -> Optional[str]:
+        logging.debug("Starting Cloud SQL export operation.")
+        req = self.service.instances().export(
+            project=self.project_id,
+            instance=instance_name,
+            body={
+                "exportContext": {
+                    "csvExportOptions": {
+                        "selectQuery": f"SELECT {', '.join(columns)} FROM {table_name}",
+                    },
+                    "databases": ["postgres"],
+                    "fileType": "CSV",
+                    "uri": f"gs://{gcs_uri.abs_path()}",
+                },
+            },
+        )
+        resp = req.execute()
+        return resp.get("name")
 
     def import_gcs_csv(
         self,
