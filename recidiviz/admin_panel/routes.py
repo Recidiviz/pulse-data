@@ -22,6 +22,10 @@ from typing import Dict, Optional, Tuple
 
 from flask import Blueprint, Response, jsonify, request, send_from_directory
 
+from recidiviz.admin_panel.case_triage_helpers import (
+    columns_for_case_triage_view,
+    get_importable_csvs,
+)
 from recidiviz.admin_panel.cloud_sql_export_to_gcs import (
     export_from_cloud_sql_to_gcs_csv,
 )
@@ -138,6 +142,7 @@ def fetch_etl_view_ids() -> Tuple[str, HTTPStatus]:
                 # who were not on our rosters).
                 # Adding a temporary escape hatch in prod since we will need to set/update them.
             ]
+            + list(get_importable_csvs().keys())
         ),
         HTTPStatus.OK,
     )
@@ -180,8 +185,31 @@ def run_gcs_import() -> Tuple[str, HTTPStatus]:
         # who were not on our rosters).
         # Adding a temporary escape hatch in prod since we will need to set/update them.
     }
+    importable_csvs = get_importable_csvs()
+
     for view_id in request.json["viewIds"]:
-        if view_id not in known_view_builders:
+        if view_id in importable_csvs:
+            # CSVs put in to_import override ones from known view builders
+            csv_path = importable_csvs[view_id]
+            try:
+                columns = columns_for_case_triage_view(view_id)
+            except ValueError:
+                logging.warning(
+                    "View_id (%s) found in to_import/ folder but does not have corresponding columns",
+                    view_id,
+                )
+                continue
+        elif view_id in known_view_builders:
+            csv_path = GcsfsFilePath.from_absolute_path(
+                os.path.join(
+                    CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI.format(
+                        project_id=metadata.project_id()
+                    ),
+                    f"{view_id}.csv",
+                )
+            )
+            columns = known_view_builders[view_id].columns
+        else:
             logging.warning(
                 "Unexpected view_id (%s) found in call to run_gcs_import", view_id
             )
@@ -192,15 +220,8 @@ def run_gcs_import() -> Tuple[str, HTTPStatus]:
         # in code (yet), but the aim is to preserve this invariant for as long as possible.
         import_gcs_csv_to_cloud_sql(
             view_id,
-            GcsfsFilePath.from_absolute_path(
-                os.path.join(
-                    CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI.format(
-                        project_id=metadata.project_id()
-                    ),
-                    f"{view_id}.csv",
-                )
-            ),
-            known_view_builders[view_id].columns,
+            csv_path,
+            columns,
         )
         logging.info("View (%s) successfully imported", view_id)
 
