@@ -19,7 +19,7 @@ import json
 import os
 from http import HTTPStatus
 
-from flask import Blueprint, current_app, g, jsonify, request, session
+from flask import Blueprint, current_app, g, jsonify, request
 from flask_sqlalchemy_session import current_session
 from flask_wtf.csrf import generate_csrf
 
@@ -31,7 +31,6 @@ from recidiviz.case_triage.querier.querier import (
     PersonDoesNotExistError,
 )
 from recidiviz.case_triage.state_utils.requirements import policy_requirements_for_state
-from recidiviz.case_triage.util import SESSION_ADMIN_KEY
 
 
 api = Blueprint("api", __name__)
@@ -39,7 +38,7 @@ api = Blueprint("api", __name__)
 
 @api.route("/clients")
 def get_clients() -> str:
-    if session.get(SESSION_ADMIN_KEY) and not getattr(g, "current_user", None):
+    if not getattr(g, "current_user", None) and g.can_see_demo_data:
         fixture_path = os.path.abspath(
             os.path.join(
                 os.path.dirname(os.path.realpath(__file__)),
