@@ -53,8 +53,11 @@ class SQLAlchemyEngineManager:
         return cls.init_engine_for_db_instance(
             database_key=database_key,
             db_url=db_url,
-            # Only reuse connections for up to 10 minutes to avoid failures due to stale connections. Cloud SQL will
-            # close connections that have been stale for 10 minutes.
+            # Log information about how connections are being reused.
+            echo_pool=True,
+            # Only reuse connections for up to 10 minutes to avoid failures due
+            # to stale connections. Cloud SQL will close connections that have
+            # been stale for 10 minutes.
             # https://cloud.google.com/sql/docs/postgres/diagnose-issues#compute-engine
             pool_recycle=600,
         )
