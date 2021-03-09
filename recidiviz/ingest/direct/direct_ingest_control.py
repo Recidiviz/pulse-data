@@ -24,7 +24,7 @@ from http import HTTPStatus
 from typing import Optional, Tuple
 
 from flask import Blueprint, request
-
+from opencensus.stats import measure, view, aggregation
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockAlreadyExists
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
@@ -79,6 +79,30 @@ from recidiviz.utils.regions import (
     get_supported_direct_ingest_region_codes,
     get_region,
 )
+
+m_sftp_attempts = measure.MeasureInt(
+    "ingest/sftp/attempts",
+    "Counts of files that were attempted to be uploaded to GCS from SFTP for direct ingest",
+)
+m_sftp_errors = measure.MeasureInt(
+    "ingest/sftp/errors",
+    "Counts of files that errored when attempting to be uploaded to GCS from SFTP for direct ingest",
+)
+sftp_attempts_view = view.View(
+    "recidiviz/ingest/sftp/attempts",
+    "The sum of attempts that were made for SFTP",
+    [monitoring.TagKey.REGION, monitoring.TagKey.SFTP_TASK_TYPE],
+    m_sftp_attempts,
+    aggregation.SumAggregation(),
+)
+sftp_errors_view = view.View(
+    "recidiviz/ingest/sftp/errors",
+    "The sum of errors that were made for SFTP",
+    [monitoring.TagKey.REGION, monitoring.TagKey.SFTP_TASK_TYPE],
+    m_sftp_errors,
+    aggregation.SumAggregation(),
+)
+monitoring.register_views([sftp_attempts_view, sftp_errors_view])
 
 direct_ingest_control = Blueprint("direct_ingest_control", __name__)
 
@@ -507,13 +531,36 @@ def upload_from_sftp() -> Tuple[str, HTTPStatus]:
         )
         downloaded_items, unable_to_download_items = sftp_controller.do_fetch()
 
+        with monitoring.measurements(
+            {TagKey.SFTP_TASK_TYPE: "download"}
+        ) as download_measurements:
+            download_measurements.measure_int_put(
+                m_sftp_attempts, len(downloaded_items) + len(unable_to_download_items)
+            )
+            download_measurements.measure_int_put(
+                m_sftp_errors, len(unable_to_download_items)
+            )
+
         if downloaded_items:
-            _, unable_to_upload_files = UploadStateFilesToIngestBucketController(
+            (
+                uploaded_files,
+                unable_to_upload_files,
+            ) = UploadStateFilesToIngestBucketController(
                 paths_with_timestamps=downloaded_items,
                 project_id=metadata.project_id(),
                 region=region_code,
                 gcs_destination_path=bucket_str,
             ).do_upload()
+
+            with monitoring.measurements(
+                {TagKey.SFTP_TASK_TYPE: "upload"}
+            ) as upload_measurements:
+                upload_measurements.measure_int_put(
+                    m_sftp_attempts, len(uploaded_files) + len(unable_to_upload_files)
+                )
+                upload_measurements.measure_int_put(
+                    m_sftp_errors, len(unable_to_upload_files)
+                )
 
             sftp_controller.clean_up()
 
