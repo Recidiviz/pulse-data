@@ -18,4 +18,6 @@
 # States with Terraform-managed infrastructure for direct ingest
 locals {
   direct_ingest_state_codes = yamldecode(file("${path.module}/direct_ingest_state_codes.yaml"))
+
+  sftp_state_alpha_codes = ["US_ID"]
 }

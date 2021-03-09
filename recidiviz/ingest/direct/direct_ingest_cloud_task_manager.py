@@ -19,6 +19,7 @@ import abc
 import logging
 import os
 import uuid
+from enum import Enum
 from typing import Optional, Dict, Union
 
 import attr
@@ -30,7 +31,6 @@ from recidiviz.common.google_cloud.cloud_task_queue_manager import (
 from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
     DIRECT_INGEST_SCHEDULER_QUEUE_V2,
     DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2,
-    DIRECT_INGEST_SFTP_DOWNLOAD_QUEUE_V1,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_types import (
     CloudTaskArgs,
@@ -69,6 +69,26 @@ def _build_task_id(
         task_id_parts.append(str(uuid.uuid4()))
 
     return "-".join(task_id_parts)
+
+
+class DirectIngestQueueType(Enum):
+    SFTP_QUEUE = "sftp-queue"
+    SCHEDULER = "scheduler"
+    PROCESS_JOB_QUEUE = "process-job-queue"
+    BQ_IMPORT_EXPORT = "bq-import-export"
+
+
+def _build_direct_ingest_queue_name(
+    region_code: str, queue_type: DirectIngestQueueType
+) -> str:
+    """Creates a cloud task queue name for a specific task for a particular region.
+    Names take the form: direct-ingest-<region_code>-<queue_type>.
+
+    For example:
+        _build_direct_ingest_queue_name('us_id', SFTP_QUEUE) ->
+        'direct-ingest-state-us-id-sftp-queue'
+    """
+    return f"direct-ingest-state-{region_code.lower().replace('_', '-')}-{queue_type.value}"
 
 
 @attr.s
@@ -150,7 +170,7 @@ class DirectIngestCloudTaskManager:
         the given region."""
 
     @abc.abstractmethod
-    def get_sftp_download_queue_info(self, region: Region) -> SftpCloudTaskQueueInfo:
+    def get_sftp_queue_info(self, region: Region) -> SftpCloudTaskQueueInfo:
         """Returns information about the tasks in the sftp queue for the given region."""
 
     @abc.abstractmethod
@@ -243,12 +263,11 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
             queue_info_cls=BQImportExportCloudTaskQueueInfo,
             queue_name=DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2,
         )
-        self.sftp_cloud_task_queue_manager = CloudTaskQueueManager(
-            queue_info_cls=SftpCloudTaskQueueInfo,
-            queue_name=DIRECT_INGEST_SFTP_DOWNLOAD_QUEUE_V1,
-        )
         self.region_process_job_queue_managers: Dict[
             str, CloudTaskQueueManager[ProcessIngestJobCloudTaskQueueInfo]
+        ] = {}
+        self.region_sftp_queue_managers: Dict[
+            str, CloudTaskQueueManager[SftpCloudTaskQueueInfo]
         ] = {}
 
     def _get_process_job_queue_manager(
@@ -262,6 +281,20 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
                 queue_name=region.get_queue_name(),
             )
         return self.region_process_job_queue_managers[region.region_code]
+
+    def _get_sftp_queue_manager(
+        self, region: Region
+    ) -> CloudTaskQueueManager[SftpCloudTaskQueueInfo]:
+        """Returns the appropriate SFTP queue for teh given region. This uses a standardized
+        naming scheme based on the queue type."""
+        if region.region_code not in self.region_sftp_queue_managers:
+            self.region_sftp_queue_managers[region.region_code] = CloudTaskQueueManager(
+                queue_info_cls=SftpCloudTaskQueueInfo,
+                queue_name=_build_direct_ingest_queue_name(
+                    region.region_code, DirectIngestQueueType.SFTP_QUEUE
+                ),
+            )
+        return self.region_sftp_queue_managers[region.region_code]
 
     def get_process_job_queue_info(
         self, region: Region
@@ -282,8 +315,8 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
             task_id_prefix=region.region_code
         )
 
-    def get_sftp_download_queue_info(self, region: Region) -> SftpCloudTaskQueueInfo:
-        return self.sftp_cloud_task_queue_manager.get_queue_info(
+    def get_sftp_queue_info(self, region: Region) -> SftpCloudTaskQueueInfo:
+        return self._get_sftp_queue_manager(region).get_queue_info(
             task_id_prefix=region.region_code
         )
 
@@ -381,6 +414,6 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
             region.region_code, task_id_tag="handle_sftp_download", prefix_only=False
         )
         relative_uri = f"/direct/upload_from_sftp?region={region.region_code}"
-        self.sftp_cloud_task_queue_manager.create_task(
+        self._get_sftp_queue_manager(region).create_task(
             task_id=task_id, relative_uri=relative_uri, body={}
         )

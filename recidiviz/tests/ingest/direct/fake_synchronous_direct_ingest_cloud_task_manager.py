@@ -78,7 +78,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
             task_names=[t[0] for t in self.bq_import_export_tasks],
         )
 
-    def get_sftp_download_queue_info(self, region: Region) -> SftpCloudTaskQueueInfo:
+    def get_sftp_queue_info(self, region: Region) -> SftpCloudTaskQueueInfo:
         return SftpCloudTaskQueueInfo(
             queue_name="sftp_download", task_names=[t[0] for t in self.sftp_tasks]
         )
