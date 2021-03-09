@@ -26,7 +26,7 @@ resource "google_storage_bucket" "direct-ingest-bucket" {
       type = "Delete"
     }
     condition {
-      num_newer_versions = 2
+      num_newer_versions = 3
     }
   }
 
@@ -46,7 +46,7 @@ resource "google_storage_bucket" "prod-only-testing-direct-ingest-bucket" {
       type = "Delete"
     }
     condition {
-      num_newer_versions = 2
+      num_newer_versions = 3
     }
   }
 
