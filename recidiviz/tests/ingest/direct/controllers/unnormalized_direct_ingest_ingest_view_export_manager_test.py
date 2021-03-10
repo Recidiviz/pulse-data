@@ -309,7 +309,6 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
     def create_fake_region(ingest_view_exports_enabled: bool = True) -> Region:
         return fake_region(
             region_code="US_XX",
-            is_raw_vs_ingest_file_name_detection_enabled=True,
             are_raw_data_bq_imports_enabled_in_env=True,
             are_ingest_view_exports_enabled_in_env=ingest_view_exports_enabled,
         )

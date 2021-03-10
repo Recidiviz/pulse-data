@@ -113,7 +113,6 @@ class Region:
     facility_id: Optional[str] = attr.ib(default=None)
 
     # TODO(#3162): Once SQL preprocessing flow is enabled for all direct ingest regions, delete these configs
-    raw_vs_ingest_file_name_differentiation_enabled_env = attr.ib(default=None)
     raw_data_bq_imports_enabled_env = attr.ib(default=None)
     ingest_view_exports_enabled_env = attr.ib(default=None)
 
@@ -196,42 +195,6 @@ class Region:
             and self.environment.lower() == GCPEnvironment.PRODUCTION.value.lower()
         )
 
-    def is_raw_vs_ingest_file_name_detection_enabled(self) -> bool:
-        """Returns True if this is ready for ingest to differentiate between files with the 'raw' and 'ingest_view'
-        file types in the file name.
-
-        Side effects when enabled:
-        - When new, un-normalized files are dropped in the region's ingest bucket, the file name will be normalized, now
-            with the file type 'raw' added to the name.
-        - Split files will always get created with normalized names with type 'ingest_view'
-        - Ingest file prioritizer will only look at 'ingest_view' type files. We will not move a file with 'raw' in
-            the name through the pre-existing ingest flow.
-        - Files with 'ingest_view' type that have been ingested to Postgres will be moved to
-            <storage-bucket>/<region-code>/ingest_view/<year>/<month>/<day>/ subdirectory
-        - If a 'raw' file is not in the raw data yaml for this region, we will ignore it after normalizing. Otherwise:
-        - If are_raw_data_bq_imports_enabled_in_env() is not True, we will leave this file as 'unprocessed' in the
-            region ingest bucket. If it is False, we will upload the raw file to BQ raw tables.
-
-        Conditions to enable for region:
-        - Existing normalized files in storage or ingest buckets must be moved to include either 'raw' or 'ingest_view'
-            file type in the names.
-        - Any "derived", ingest-ready files (i.e. based on a SQL query on several tables) that get manually uploaded to
-            the bucket after this is enabled must have a pre-normalized name with 'ingest_view' file type.
-        - We are prepared to manually upload ingest-ready files (MO, ID, PA, any other new states) or we are ready to
-            fully enable raw data imports (ND, other launched direct ingest counties).
-
-        If the |raw_vs_ingest_file_name_differentiation_enabled_env| config is unset, returns False. If it is set to
-        'prod', this will also be enabled in staging.
-        """
-        return (
-            self.raw_vs_ingest_file_name_differentiation_enabled_env is not None
-            and (
-                not environment.in_gcp_production()
-                or self.raw_vs_ingest_file_name_differentiation_enabled_env
-                == environment.get_gcp_environment()
-            )
-        )
-
     def are_raw_data_bq_imports_enabled_in_env(self) -> bool:
         """Returns true if this regions supports raw data import to BQ.
 
@@ -260,14 +223,9 @@ class Region:
         If the |raw_data_bq_imports_enabled_env| config is unset, returns False. If it is set to 'prod',
         BQ import will also be enabled in staging.
         """
-        return (
-            self.is_raw_vs_ingest_file_name_detection_enabled()
-            and self.raw_data_bq_imports_enabled_env is not None
-            and (
-                not environment.in_gcp_production()
-                or self.raw_data_bq_imports_enabled_env
-                == environment.get_gcp_environment()
-            )
+        return self.raw_data_bq_imports_enabled_env is not None and (
+            not environment.in_gcp_production()
+            or self.raw_data_bq_imports_enabled_env == environment.get_gcp_environment()
         )
 
     def are_ingest_view_exports_enabled_in_env(self) -> bool:
@@ -289,8 +247,7 @@ class Region:
         ingest view export will also be enabled in staging.
         """
         return (
-            self.is_raw_vs_ingest_file_name_detection_enabled()
-            and self.are_raw_data_bq_imports_enabled_in_env()
+            self.are_raw_data_bq_imports_enabled_in_env()
             and self.ingest_view_exports_enabled_env is not None
             and (
                 not environment.in_gcp_production()
