@@ -55,7 +55,7 @@ CASE_TERMINATIONS_BY_TYPE_COMPARISON_QUERY_TEMPLATE = """
       SELECT state_code as region_code, year, month,
       COUNT(DISTINCT IF(successful_completion_date IS NOT NULL, person_id, NULL)) as discharge_count,
       COUNT(DISTINCT IF(absconsion_report_date IS NOT NULL, person_id, NULL)) as absconsion_count
-      FROM `{project_id}.{po_report_dataset}.report_data_by_person_by_month`
+      FROM `{project_id}.{po_report_dataset}.report_data_by_person_by_month_materialized`
       GROUP BY region_code, year, month
     )
     SELECT region_code, year, month,
