@@ -137,6 +137,11 @@ class DirectIngestRawFileConfig:
     def datetime_cols(self) -> List[str]:
         return [column.name for column in self.columns if column.is_datetime]
 
+    @property
+    def is_undocumented(self) -> bool:
+        documented_cols = [column.name for column in self.columns if column.description]
+        return not documented_cols
+
     @classmethod
     def from_yaml_dict(
         cls,

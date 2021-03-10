@@ -35,7 +35,7 @@ from recidiviz.ingest.direct.views.unnormalized_direct_ingest_big_query_view_typ
 from recidiviz.ingest.direct.query_utils import get_region_raw_file_config
 
 
-LEGACY_STATES_WITH_INCOMPLETE_DOCUMENTATION = {"US_ID", "US_PA"}
+LEGACY_STATES_WITH_INCOMPLETE_DOCUMENTATION = {"US_PA"}
 
 # A parametrized query for looking at the most recent row for each primary key, among rows with update datetimes
 # before a certain date.
