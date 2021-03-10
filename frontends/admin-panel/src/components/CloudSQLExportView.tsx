@@ -79,6 +79,10 @@ const CloudSQLExportView = (): JSX.Element => {
               Staff Tools team, and you absolutely know what you are doing.
             </p>
             <p>This button exports the current set of recorded case actions.</p>
+            <p>
+              If a CSV has previously been exported and exists in the bucket,
+              this request will fail.
+            </p>
           </>
         }
         type="warning"

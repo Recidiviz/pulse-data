@@ -41,9 +41,9 @@ def export_from_cloud_sql_to_gcs_csv(
         columns=columns,
     )
     if operation_id is None:
-        raise RuntimeError("Cloud SQL import operation was not started successfully.")
+        raise RuntimeError("Cloud SQL export operation was not started successfully.")
 
     operation_succeeded = cloud_sql_client.wait_until_operation_completed(operation_id)
 
     if not operation_succeeded:
-        raise RuntimeError("Cloud SQL import failed.")
+        raise RuntimeError("Cloud SQL export failed.")
