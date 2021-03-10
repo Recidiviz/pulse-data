@@ -342,11 +342,6 @@ class DirectIngestRawFileImportManager:
         ).collect_raw_table_migration_queries()
 
     def get_unprocessed_raw_files_to_import(self) -> List[GcsfsFilePath]:
-        if not self.region.are_raw_data_bq_imports_enabled_in_env():
-            raise ValueError(
-                f"Cannot import raw files for region [{self.region.region_code}]"
-            )
-
         unprocessed_paths = self.fs.get_unprocessed_file_paths(
             self.ingest_directory_path, GcsfsDirectIngestFileType.RAW_DATA
         )
@@ -372,12 +367,6 @@ class DirectIngestRawFileImportManager:
         self, path: GcsfsFilePath, file_metadata: DirectIngestFileMetadata
     ) -> None:
         """Import a raw data file at the given path to the appropriate raw data table in BigQuery."""
-
-        if not self.region.are_raw_data_bq_imports_enabled_in_env():
-            raise ValueError(
-                f"Cannot import raw files for region [{self.region.region_code}]"
-            )
-
         parts = filename_parts_from_path(path)
         if parts.file_tag not in self.region_raw_file_config.raw_file_tags:
             raise ValueError(

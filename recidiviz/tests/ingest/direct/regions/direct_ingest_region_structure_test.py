@@ -197,7 +197,7 @@ class DirectIngestRegionDirStructureBase:
             )
 
             if builders or raw_file_manager.raw_file_configs:
-                if region.raw_data_bq_imports_enabled_env is not None:
+                if region.is_ingest_launched_in_env() is not None:
                     self.test.assertTrue(raw_file_manager.raw_file_configs)
                 config_file_tags = set()
                 for config in raw_file_manager.raw_file_configs.values():

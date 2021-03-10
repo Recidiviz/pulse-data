@@ -183,7 +183,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
         self.project_id_patcher.start().return_value = self.project_id
         self.test_region = fake_region(
-            region_code="us_xx", are_raw_data_bq_imports_enabled_in_env=True
+            region_code="us_xx",
         )
 
         self.region_module_patcher = patch.object(
@@ -326,30 +326,6 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
             filename="file_tag_first.csv",
             should_normalize=True,
             file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
-        )
-
-        with self.assertRaises(ValueError):
-            self.import_manager.import_raw_file_to_big_query(
-                file_path, create_autospec(DirectIngestFileMetadata)
-            )
-
-    def test_import_bq_file_feature_not_released_throws(self) -> None:
-        self.import_manager = DirectIngestRawFileImportManager(
-            region=fake_region(
-                region_code="us_xx", are_raw_data_bq_imports_enabled_in_env=False
-            ),
-            fs=self.fs,
-            ingest_directory_path=self.ingest_directory_path,
-            temp_output_directory_path=self.temp_output_path,
-            region_raw_file_config=self.region_raw_file_config,
-            big_query_client=self.mock_big_query_client,
-        )
-
-        file_path = path_for_fixture_file_in_test_gcs_directory(
-            directory=self.ingest_directory_path,
-            filename="file_tag_first.csv",
-            should_normalize=True,
-            file_type=GcsfsDirectIngestFileType.RAW_DATA,
         )
 
         with self.assertRaises(ValueError):

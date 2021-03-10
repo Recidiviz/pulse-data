@@ -5,5 +5,4 @@ timezone: America/New_York
 environment: staging
 shared_queue: direct-ingest-state-process-job-queue-v2
 jurisdiction_id: unknown  # Template - purposefully unspecified
-raw_data_bq_imports_enabled_env: staging
 ingest_view_exports_enabled_env: staging

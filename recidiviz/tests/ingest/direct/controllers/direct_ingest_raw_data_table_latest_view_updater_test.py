@@ -41,7 +41,7 @@ class DirectIngestRawDataUpdateControllerTest(unittest.TestCase):
 
     def setUp(self) -> None:
         self.test_region = fake_region(
-            region_code="us_xx", are_raw_data_bq_imports_enabled_in_env=True
+            region_code="us_xx",
         )
 
         self.project_id = "recidiviz-456"
