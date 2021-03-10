@@ -276,10 +276,6 @@ class GcsfsDirectIngestController(
         storage on completion.
         """
         check_is_region_launched_in_env(self.region)
-        if not self.region.are_raw_data_bq_imports_enabled_in_env():
-            raise ValueError(
-                f"Raw data imports not enabled for region [{self.region.region_code}]"
-            )
 
         if not self.fs.exists(data_import_args.raw_data_file_path):
             logging.warning(
@@ -379,9 +375,6 @@ class GcsfsDirectIngestController(
         return False
 
     def _schedule_raw_data_import_tasks(self) -> bool:
-        if not self.region.are_raw_data_bq_imports_enabled_in_env():
-            return False
-
         queue_info = self.cloud_task_manager.get_bq_import_export_queue_info(
             self.region
         )

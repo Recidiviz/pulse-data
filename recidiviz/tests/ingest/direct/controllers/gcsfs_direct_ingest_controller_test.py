@@ -242,7 +242,6 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
     TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION = fake_region(
         region_code=TEST_STATE_REGION.region_code,
-        are_raw_data_bq_imports_enabled_in_env=True,
         are_ingest_view_exports_enabled_in_env=True,
     )
 
