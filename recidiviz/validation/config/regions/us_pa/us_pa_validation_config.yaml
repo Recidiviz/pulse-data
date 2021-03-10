@@ -14,19 +14,43 @@ max_allowed_error_overrides:
     override_reason: PA external validation data was generated from snapshots at the time the population for a given
       month was measured. Over time, data gets backfilled as new info about what happened that month comes in, so our
       numbers will get "worse" as time goes on and we get more accurate data about movements.
+  - validation_name: supervision_population_person_level_external_comparison_matching_people_district
+    max_allowed_error_override: 0.12
+    override_reason: TODO(#6251) - We have a known bug in the
+      'supervision_period' ingest view where we aren't properly hydrating supervision
+      districts for periods where no parole officer has been assigned yet or, most
+      critically, where the parole officer was assigned on the same day as the supervision
+      stint started. This will be fixed when an ingest rerun with the
+      'supervision_period_v2' has completed.
+  - validation_name: supervision_termination_person_level_external_comparison
+    max_allowed_error_override: 0.03
+    override_reason: We have a slightly higher error rate (~3%) than we
+      usually allow for our person-level supervision terminations comparison. This is
+      due to a methodology discrepancy between ourselves and US_PA regarding counting a
+      termination if a person continues to be on supervision after the "termination"
+      date. There are some instances where US_PA counts a person as having a supervision
+      termination on a date where the person actually continues on supervision (for
+      another type of supervision). We are not counting these as terminations, causing
+      the ~3% error rate.
 num_allowed_rows_overrides:
   - validation_name: incarceration_admission_after_open_period
-    num_allowed_rows_override: 150
-    override_reason: TODO(#4187) - These bad periods are created as a result of id instability explained further in the
-      task. The actual number of bad periods is 69 as of 10/1 but it will increase over time with new data refreshes
-      so I made this number have some wiggle room.
+    num_allowed_rows_override: 50
+    override_reason: There is a small amount of disagreement between the two data
+      sources we pull data from to hydrate incarceration periods - CCIS tables and DOC
+      tables. This value was 12 as of 3/5/2021 and we expect that it may slowly grow
+      over time as new data is added.
   - validation_name: overlapping_incarceration_periods
-    num_allowed_rows_override: 12500
-    override_reason: TODO(#4187) - These bad periods are created as a result of id instability explained further in the
-      task. The actual number of bad periods is 69 as of 10/1 but it will increase over time with new data refreshes
-      so I made this number have some wiggle room.
+    num_allowed_rows_override: 200
+    override_reason: There is a small amount of disagreement between the two data
+      sources we pull data from to hydrate incarceration periods - CCIS tables and DOC
+      tables. This value was 133 as of 3/5/2021 and we expect that it may slowly grow
+      over time as new data is added.
   - validation_name: overlapping_supervision_periods
-    num_allowed_rows_override: 14000
-    override_reason: TODO(#4616) - We should not have this many overlapping supervision periods in PA. We believe part
-      of this issue is due to unexpected duplicated rows in dbo_Release/dbo_HistRelease. This will require more
-      investigation and a fix to the SQL-preprocessing query.
+    num_allowed_rows_override: 150
+    override_reason: TODO(#6253) - Likely a rare edge case related to ordering movements
+      in the PA supervision_period ingest view. There are 95 of these as of 3/5/2021.
+  - validation_name: supervision_termination_prior_to_start
+    num_allowed_rows_override: 50
+    override_reason: TODO(#6254) - Likely a rare edge case related to how the ingest
+      view and entity matching handles cases where a supervision period is deleted.
+      There are 12 of these as of 3/5/2021.

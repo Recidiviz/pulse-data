@@ -20,13 +20,13 @@ num_allowed_rows_overrides:
     num_allowed_rows_override: 200
     override_reason: In MO we rely on a table where they build incarceration period spans for us; some older rows have issues with overlap.
   - validation_name: overlapping_supervision_periods
-    num_allowed_rows_override: 400
+    num_allowed_rows_override: 450
     override_reason: Older raw data from MO contains overlapping period information that we do not correct.
   - validation_name: supervision_termination_prior_to_start
     num_allowed_rows_override: 5
     override_reason: TODO(#5073) - Edge case related to ids shifting because we're filtering out investigative periods
       and not clearing out None end_date values in entity matching.
   - validation_name: incarceration_admission_after_open_period
-    num_allowed_rows_override: 10
+    num_allowed_rows_override: 200
     override_reason: TODO(#5075) - We are generating a stable SQN number in the incarceration periods queries but not
       actually using it. Doing so will likely make these edge case periods go away.

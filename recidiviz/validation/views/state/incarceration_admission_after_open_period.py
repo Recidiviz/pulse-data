@@ -36,13 +36,29 @@ INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_DESCRIPTION = (
 
 INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_QUERY_TEMPLATE = """
     /*{description}*/
-    WITH periods_with_next_admission AS (
-      SELECT external_id, person_id, state_code as region_code, admission_date, release_date,
-      LEAD(admission_date) OVER (
-        PARTITION BY state_code, person_id order by admission_date ASC, COALESCE(release_date, DATE(3000, 01, 01)) ASC
-      ) AS next_admission_date,
-      FROM `{project_id}.{state_dataset}.state_incarceration_period`
+    WITH 
+    non_zero_day_periods AS (
+        -- Zero-day periods get largely filtered / collapsed out of our calc
+        -- pipelines.
+        SELECT *
+        FROM `{project_id}.{state_dataset}.state_incarceration_period`
+        WHERE admission_date != release_date OR release_date IS NULL
+    ),
+    periods_with_next_admission AS (
+      SELECT 
+        state_code as region_code, 
+        external_id,
+        person_id,
+        admission_date,
+        release_date,
+        LEAD(external_id) OVER next_period AS next_external_id,
+        LEAD(admission_date) OVER next_period AS next_admission_date,
+        LEAD(release_date) OVER next_period AS next_release_date,
+      FROM non_zero_day_periods
       WHERE admission_date IS NOT NULL AND external_id IS NOT NULL
+      WINDOW next_period AS (
+        PARTITION BY state_code, person_id order by admission_date ASC, COALESCE(release_date, DATE(3000, 01, 01)) ASC
+      )
     )
     SELECT * FROM periods_with_next_admission
     WHERE release_date IS NULL AND next_admission_date IS NOT NULL

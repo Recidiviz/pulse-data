@@ -33,9 +33,8 @@ OVERLAPPING_PERIODS_TEMPLATE = """
     AND period.{primary_key_field} != other_period.{primary_key_field}
     AND period.{start_date_field} <= other_period.{start_date_field} 
     AND (period.{end_date_field} IS NULL OR period.{end_date_field} > other_period.{start_date_field})
-    -- Ignore zero-day periods on the start_date
-    AND (other_period.{start_date_field} != other_period.{end_date_field} 
-            OR period.{start_date_field} < other_period.{start_date_field})
+    -- Ignore zero-day periods, which are largely ignored by our calc pipelines pipelines
+    AND (other_period.{start_date_field} != other_period.{end_date_field})
   WHERE other_period.{primary_key_field} IS NOT NULL
 """
 
