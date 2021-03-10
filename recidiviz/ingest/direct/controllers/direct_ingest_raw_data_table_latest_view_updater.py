@@ -85,6 +85,19 @@ class DirectIngestRawDataTableLatestViewUpdater:
                     raw_file_config.file_tag,
                 )
             return
+        if raw_file_config.is_undocumented:
+            if self.dry_run:
+                logging.info(
+                    "[DRY RUN] would have skipped undocumented table named %s",
+                    raw_file_config.file_tag,
+                )
+            else:
+                logging.warning(
+                    "Table config with name %s is undocumented... Skipping "
+                    "update/creation.",
+                    raw_file_config.file_tag,
+                )
+            return
 
         latest_view = DirectIngestRawDataTableLatestView(
             region_code=self.state_code,
