@@ -377,7 +377,7 @@ class TestGetRevocationDetails(unittest.TestCase):
                 )
             ],
             state_code=state_code,
-            supervision_site="DISTRICT_1|OFFICE_2",
+            supervision_site="DISTRICT_1|OFFICE_2|ORG_CODE",
             start_date=date(2017, 12, 5),
             termination_date=date(2018, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -402,8 +402,20 @@ class TestGetRevocationDetails(unittest.TestCase):
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
         )
 
+        # TODO(#6314): Don't send in this temporary reference
+        temporary_sp_agent_associations = {
+            _DEFAULT_SUPERVISION_PERIOD_ID: {
+                "agent_id": 123,
+                "agent_external_id": "DISTRICT_1|OFFICE_2|ORG_CODE#123: JACK STONE",
+                "supervision_period_id": _DEFAULT_SUPERVISION_PERIOD_ID,
+            }
+        }
+
         revocation_details = self._test_get_revocation_details(
-            incarceration_period, supervision_period
+            incarceration_period,
+            supervision_period,
+            # TODO(#6314): Don't send in this temporary reference
+            supervision_period_to_agent_associations=temporary_sp_agent_associations,
         )
 
         self.assertEqual(
@@ -414,10 +426,12 @@ class TestGetRevocationDetails(unittest.TestCase):
                 source_violation_type=None,
                 level_1_supervision_location_external_id="OFFICE_2",
                 level_2_supervision_location_external_id="DISTRICT_1",
-                supervising_officer_external_id=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.get(
-                    supervision_period.supervision_period_id
-                ).get(
-                    "agent_external_id"
-                ),
+                supervising_officer_external_id="123: JACK STONE",
+                # TODO(#6314): Remove other value for supervising_officer_external_id and use:
+                # supervising_officer_external_id=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.get(
+                #     supervision_period.supervision_period_id
+                # ).get(
+                #     "agent_external_id"
+                # ),
             ),
         )
