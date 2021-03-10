@@ -32,6 +32,7 @@ from recidiviz.utils import structured_logging
 DAG_WALKER_MAX_WORKERS = 10
 
 DagKey = Tuple[str, str]
+ParentTable = Tuple[str, str]
 ViewResultT = TypeVar("ViewResultT")
 ParentResultsT = Dict[BigQueryView, ViewResultT]
 
@@ -50,17 +51,23 @@ class BigQueryViewDagNode:
         return self.view.dataset_id, self.view.view_id
 
     @property
+    def parent_tables(self) -> Set[ParentTable]:
+        """The set of actual tables/views referenced by this view."""
+        parents = re.findall(r"`[\w-]*\.([\w-]*)\.([\w-]*)`", self.view.view_query)
+        return {(candidate[0], candidate[1]) for candidate in parents}
+
+    @property
     def parent_keys(self) -> Set[DagKey]:
+        """The set of actual keys to parent DAG nodes for this view."""
         parent_keys: Set[DagKey] = set()
 
-        candidates = re.findall(r"`[\w-]*\.([\w-]*)\.([\w-]*)`", self.view.view_query)
-        for candidate in candidates:
-            if candidate[1].endswith(MATERIALIZED_SUFFIX):
+        for parent_dataset, parent_table_id in self.parent_tables:
+            if parent_table_id.endswith(MATERIALIZED_SUFFIX):
                 parent_keys.add(
-                    (candidate[0], candidate[1][: -len(MATERIALIZED_SUFFIX)])
+                    (parent_dataset, parent_table_id[: -len(MATERIALIZED_SUFFIX)])
                 )
             else:
-                parent_keys.add(candidate)
+                parent_keys.add((parent_dataset, parent_table_id))
 
         return parent_keys
 

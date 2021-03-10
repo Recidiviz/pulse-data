@@ -76,7 +76,7 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
           IF(face_to_face_frequency_sufficient IS FALSE, STRUCT(person_external_id, full_name), NULL)
           IGNORE NULLS
         ) AS facetoface_out_of_date_clients
-      FROM `{project_id}.{po_report_dataset}.report_data_by_person_by_month`
+      FROM `{project_id}.{po_report_dataset}.report_data_by_person_by_month_materialized`
       GROUP BY state_code, year, month, officer_external_id
     ),
     compliance_caseloads AS (
