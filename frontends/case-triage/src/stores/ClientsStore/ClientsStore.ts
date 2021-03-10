@@ -89,22 +89,25 @@ class ClientsStore {
 
       runInAction(() => {
         this.isLoading = false;
-        const decoratedClients = clients.map((client: Client) =>
-          decorateClient(client, this.policyStore)
-        );
+        const decoratedClients = clients
+          .map((client: Client) => decorateClient(client, this.policyStore))
+          // Filter out clients already manged by `clientsMarkedInProgress`
+          .filter(
+            (client: DecoratedClient) =>
+              !this.clientsMarkedInProgress[client.personExternalId]
+          );
+
+        const markedInProgressClients = Object.values(
+          this.clientsMarkedInProgress
+        )
+          .filter(({ client }) => !client.inProgressActions?.length)
+          .map(({ client }) => client);
 
         const upNextClients = decoratedClients
           .filter((client: DecoratedClient) => !client.inProgressActions)
           // Concatenate clients that have been moved to "In progress"
           // This allows us to render their ClientMarkedInProgress list item overlay
-          .concat(
-            Object.values(this.clientsMarkedInProgress)
-              .filter(
-                ({ client }) =>
-                  !client.inProgressActions || !client.inProgressActions.length
-              )
-              .map(({ client }) => client)
-          );
+          .concat(markedInProgressClients);
 
         this.clients = upNextClients.sort(
           (self: DecoratedClient, other: DecoratedClient) => {
@@ -132,6 +135,7 @@ class ClientsStore {
 
         this.inProgressClients = decoratedClients
           .filter((client: DecoratedClient) => client.inProgressSubmissionDate)
+          .concat(markedInProgressClients)
           .sort((self: DecoratedClient, other: DecoratedClient) => {
             if (
               self.inProgressSubmissionDate! > other.inProgressSubmissionDate!
