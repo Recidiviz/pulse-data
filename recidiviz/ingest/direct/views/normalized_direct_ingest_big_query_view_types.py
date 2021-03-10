@@ -24,8 +24,6 @@ from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
     DirectIngestRawFileImportManager,
-    _FILE_ID_COL_NAME,
-    _UPDATE_DATETIME_COL_NAME,
 )
 from recidiviz.ingest.direct.views.unnormalized_direct_ingest_big_query_view_types import (
     DirectIngestPreProcessedIngestView,
@@ -34,8 +32,6 @@ from recidiviz.ingest.direct.views.unnormalized_direct_ingest_big_query_view_typ
 )
 from recidiviz.ingest.direct.query_utils import get_region_raw_file_config
 
-
-LEGACY_STATES_WITH_INCOMPLETE_DOCUMENTATION = {"US_PA"}
 
 # A parametrized query for looking at the most recent row for each primary key, among rows with update datetimes
 # before a certain date.
@@ -50,7 +46,7 @@ WITH normalized_rows AS (
 ),
 rows_with_recency_rank AS (
     SELECT
-        {{columns_clause}}{{legacy_except_clause}},
+        {{columns_clause}},
         ROW_NUMBER() OVER (PARTITION BY {{raw_table_primary_key_str}}
                            ORDER BY update_datetime DESC{{supplemental_order_by_clause}}) AS recency_rank
     FROM
@@ -90,7 +86,7 @@ normalized_rows AS (
 ),
 rows_with_recency_rank AS (
     SELECT
-        {{columns_clause}}{{legacy_except_clause}},
+        {{columns_clause}},
         ROW_NUMBER() OVER (PARTITION BY {{raw_table_primary_key_str}}
                            ORDER BY update_datetime DESC{{supplemental_order_by_clause}}) AS recency_rank
     FROM
@@ -113,7 +109,7 @@ WITH normalized_rows AS (
 ),
 rows_with_recency_rank AS (
     SELECT
-        {columns_clause}{legacy_except_clause},
+        {columns_clause},
         ROW_NUMBER() OVER (PARTITION BY {raw_table_primary_key_str}
                            ORDER BY update_datetime DESC{supplemental_order_by_clause}) AS recency_rank
     FROM
@@ -151,7 +147,7 @@ normalized_rows AS (
 ),
 rows_with_recency_rank AS (
     SELECT
-        {columns_clause}{legacy_except_clause},
+        {columns_clause},
         ROW_NUMBER() OVER (PARTITION BY {raw_table_primary_key_str}
                            ORDER BY update_datetime DESC{supplemental_order_by_clause}) AS recency_rank
     FROM
@@ -196,8 +192,7 @@ class NormalizedDirectIngestRawDataTableBigQueryView(BigQueryView):
         raw_table_dataset_id = (
             DirectIngestRawFileImportManager.raw_tables_dataset_for_region(region_code)
         )
-        columns_clause = self._columns_clause_for_config(raw_file_config, region_code)
-        legacy_except_clause = self._legacy_except_clause_for_config(region_code)
+        columns_clause = self._columns_clause_for_config(raw_file_config)
         supplemental_order_by_clause = self._supplemental_order_by_clause_for_config(
             raw_file_config
         )
@@ -212,7 +207,6 @@ class NormalizedDirectIngestRawDataTableBigQueryView(BigQueryView):
             raw_table_primary_key_str=raw_file_config.primary_key_str,
             columns_clause=columns_clause,
             normalized_columns=normalized_columns,
-            legacy_except_clause=legacy_except_clause,
             supplemental_order_by_clause=supplemental_order_by_clause,
             dataset_overrides=dataset_overrides,
         )
@@ -233,20 +227,10 @@ class NormalizedDirectIngestRawDataTableBigQueryView(BigQueryView):
         return supplemental_order_by_clause
 
     @staticmethod
-    def _columns_clause_for_config(
-        raw_file_config: DirectIngestRawFileConfig, region_code: str
-    ) -> str:
-        # TODO(#5399): Migrate raw file configs for all legacy regions to have column descriptions
-        if region_code.upper() in LEGACY_STATES_WITH_INCOMPLETE_DOCUMENTATION:
-            columns_str = "*"
-        else:
-            columns_str = ", ".join(
-                [
-                    column.name
-                    for column in raw_file_config.columns
-                    if column.description
-                ]
-            )
+    def _columns_clause_for_config(raw_file_config: DirectIngestRawFileConfig) -> str:
+        columns_str = ", ".join(
+            [column.name for column in raw_file_config.columns if column.description]
+        )
         return columns_str
 
     @staticmethod
@@ -267,19 +251,6 @@ class NormalizedDirectIngestRawDataTableBigQueryView(BigQueryView):
                 ]
             )
         )
-
-    @staticmethod
-    def _legacy_except_clause_for_config(region_code: str) -> str:
-        # TODO(#5399): Migrate raw file configs for all legacy regions to have column descriptions
-        if region_code.upper() not in LEGACY_STATES_WITH_INCOMPLETE_DOCUMENTATION:
-            return ""
-
-        # TODO(#3020): Update the raw data yaml format to allow for us to specify other columns that should always be
-        #  excluded for the purposes of diffing (e.g. update date cols that change with every new import).
-        except_cols = [_FILE_ID_COL_NAME, _UPDATE_DATETIME_COL_NAME]
-        except_cols_str = ", ".join(except_cols)
-
-        return f" EXCEPT ({except_cols_str})"
 
 
 class NormalizedDirectIngestRawDataTableLatestView(
