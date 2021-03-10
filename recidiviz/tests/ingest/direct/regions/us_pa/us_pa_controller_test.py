@@ -1461,7 +1461,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                             termination_reason="TRANSFER_WITHIN_STATE",
                                             termination_date="2014-08-10",
                                             county_code="ALLEGH",
-                                            supervision_site="02|02 - North Shore|7113",
+                                            supervision_site="02||",
                                             supervision_level="MAX",
                                             custodial_authority="04",
                                             conditions=[
@@ -1640,7 +1640,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "supervision_period")
+        self.run_parse_file_test(expected, "supervision_period_v2")
 
     def test_populate_data_supervision_violation(self) -> None:
         violation_456B_1_1 = StateSupervisionViolation(
@@ -3958,7 +3958,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             termination_reason_raw_text="TRANSFER_WITHIN_STATE",
             termination_date=datetime.date(year=2014, month=8, day=10),
             county_code="ALLEGH",
-            supervision_site="02|02 - NORTH SHORE|7113",
+            supervision_site="02||",
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
             custodial_authority_raw_text="04",
             supervision_level=StateSupervisionLevel.MAXIMUM,
@@ -4141,10 +4141,10 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         populate_person_backedges(expected_people)
 
         # Act
-        self._run_ingest_job_for_filename("supervision_period.csv")
+        self._run_ingest_job_for_filename("supervision_period_v2.csv")
 
         # Assert
-        self.assert_expected_db_people(expected_people)
+        self.assert_expected_db_people(expected_people, debug=True)
 
         ######################################
         # supervision_violation
