@@ -31,6 +31,9 @@ from recidiviz.big_query.view_update_manager import (
     VIEW_BUILDERS_BY_NAMESPACE,
     VIEW_SOURCE_TABLE_DATASETS,
 )
+from recidiviz.ingest.direct.views.normalized_direct_ingest_big_query_view_types import (
+    NormalizedDirectIngestPreProcessedIngestViewBuilder,
+)
 from recidiviz.ingest.views.metadata_helpers import BigQueryTableChecker
 
 _PROJECT_ID = "fake-recidiviz-project"
@@ -449,6 +452,12 @@ class ViewManagerTest(unittest.TestCase):
     def test_no_views_in_source_data_datasets(self) -> None:
         for view_builder_list in VIEW_BUILDERS_BY_NAMESPACE.values():
             for view_builder in view_builder_list:
+                # TODO(#6314): Remove this check once we delete the us_pa_supervision_period_TEMP view
+                if isinstance(
+                    view_builder, NormalizedDirectIngestPreProcessedIngestViewBuilder
+                ):
+                    continue
+
                 self.assertNotIn(
                     view_builder.dataset_id,
                     VIEW_SOURCE_TABLE_DATASETS,
