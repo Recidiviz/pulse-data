@@ -33,7 +33,6 @@ from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-# TODO(#6251): Delete this once supervision_period_v2 has been rerun in prod.
 VIEW_QUERY_TEMPLATE = """WITH
 parole_count_id_level_info_base AS (
   -- This subquery selects one row per continuous stint a person spends on supervision (i.e. per ParoleCountID), along
@@ -61,6 +60,7 @@ parole_count_id_level_info_base AS (
         NULL as parole_count_id_termination_date,
         ri.RelCountyResidence as county_of_residence,
         ri.RelFinalRiskGrade as supervision_level,
+        ri.RelDO as most_recent_district_office,
         0 AS is_history_row
       FROM {dbo_Release} r
       JOIN {dbo_ReleaseInfo} ri USING (ParoleNumber, ParoleCountID)
@@ -81,6 +81,7 @@ parole_count_id_level_info_base AS (
         hr.HReDelDate as parole_count_id_termination_date,
         hr.HReCntyRes as county_of_residence,
         hr.HReGradeSup as supervision_level,
+        hr.HReDo as most_recent_district_office,
         1 AS is_history_row
       FROM {dbo_Hist_Release} hr
     )
@@ -137,8 +138,6 @@ start_count_edges AS (
         county_of_residence,
         supervision_level,
         CAST(NULL AS STRING) AS supervising_officer_name,
-        # TODO(#6251): Figure out how to determine point-in-time district based on
-        #  updates to dbo_Release* tables.
         CAST(NULL AS STRING) AS district_office,
         CAST(NULL AS STRING) AS district_sub_office_id,
         CAST(NULL AS STRING) AS supervision_location_org_code,
@@ -160,7 +159,7 @@ end_count_edges AS (
         CAST(NULL AS STRING) AS county_of_residence,
         CAST(NULL AS STRING) AS supervision_level,
         CAST(NULL AS STRING) AS supervising_officer_name,
-        CAST(NULL AS STRING) AS district_office,
+        most_recent_district_office AS district_office,
         CAST(NULL AS STRING) AS district_sub_office_id,
         CAST(NULL AS STRING) AS supervision_location_org_code,
         -1 AS open_delta,
@@ -265,7 +264,14 @@ edges_with_sequence_numbers AS (
                 -- Sort unterminated end edges first
                 IF(edge_date IS NULL, 1, 0),
                 edge_date,
-                edge_type DESC,
+                CASE
+                    # Terminate old parole counts first
+                    WHEN edge_type = '3-END' THEN 0
+                    # Start new parole counts next
+                    WHEN edge_type = '1-START' THEN 1
+                    # Register PO changes for (new) parole count next
+                    WHEN edge_type = '2-PO_CHANGE' THEN 2
+                END,
                 CAST(parole_count_id AS INT64)
             ) AS sequence_number
           FROM all_update_dates
@@ -279,6 +285,7 @@ hydrated_edges AS (
   -- their relative position to other edges.
   SELECT
     sequence_number,
+    block_sequence_number,
     open_count,
     open_block_did_change,
     -- The list of supervision types that the person has started up to this point, including supervision types that have
@@ -310,6 +317,18 @@ hydrated_edges AS (
     ORDER BY sequence_number ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
   )
 ),
+hydrated_edges_better_districts AS (
+  -- If an edge doesn't have a district, pull in the district from the first following
+  -- edge that does have a district.
+  SELECT 
+    * EXCEPT(district_office, block_sequence_number),
+    FIRST_VALUE(district_office IGNORE NULLS) OVER following_for_parole_number AS district_office,
+  FROM hydrated_edges
+  WINDOW following_for_parole_number AS (
+    PARTITION BY parole_number, block_sequence_number
+    ORDER BY sequence_number ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING
+  )
+),
 filtered_edges AS (
   -- Further processes the edges to remove PO updates that happen outside the context of a parole count info stint
   -- and to subtract the ended_supervision_types list from the started_supervision_types list to get the list of 
@@ -329,7 +348,7 @@ filtered_edges AS (
     supervising_officer_name,
     condition_codes,
     open_count
-  FROM hydrated_edges, UNNEST([(
+  FROM hydrated_edges_better_districts, UNNEST([(
         -- Subtracts ended types from started types to return the list of current supervision types someone is on
         SELECT
           -- Strips the parole count id from the level and aggregates distinct ongoing levels
@@ -339,9 +358,9 @@ filtered_edges AS (
               -- Strips the parole count id from the level
               SPLIT(started_level, ':')[OFFSET(1)] AS supervision_type
             FROM 
-              UNNEST(SPLIT(hydrated_edges.started_supervision_types, ',')) AS started_level 
+              UNNEST(SPLIT(hydrated_edges_better_districts.started_supervision_types, ',')) AS started_level 
             LEFT OUTER JOIN 
-              UNNEST(SPLIT(hydrated_edges.ended_supervision_types, ','))  AS ended_level
+              UNNEST(SPLIT(hydrated_edges_better_districts.ended_supervision_types, ','))  AS ended_level
             ON started_level = ended_level
             WHERE ended_level IS NULL
         )
@@ -363,6 +382,7 @@ supervision_periods AS (
     county_of_residence,
     supervision_level,
     condition_codes,
+    LEAD(district_office) OVER parole_number_window AS next_district_office,
     LEAD(edge_date) OVER parole_number_window AS termination_date,
     LEAD(edge_reason) OVER parole_number_window AS termination_reason,
     open_count
@@ -381,7 +401,10 @@ SELECT
     termination_reason,
     termination_date,
     county_of_residence,
-    district_office,
+    -- If this person has no agent update dates (and therefor no district), the trailing
+    -- edge of the period will have the most recent district for the given parole count,
+    -- which we can assume to be largely accurate.
+    COALESCE(district_office, next_district_office) AS district_office,
     district_sub_office_id,
     supervision_location_org_code,
     supervision_level,
@@ -394,7 +417,7 @@ WHERE open_count != 0
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region="us_pa",
-    ingest_view_name="supervision_period",
+    ingest_view_name="supervision_period_v2",
     view_query_template=VIEW_QUERY_TEMPLATE,
     order_by_cols="parole_number ASC, period_sequence_number ASC",
 )
