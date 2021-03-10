@@ -83,10 +83,12 @@ from recidiviz.utils.regions import (
 m_sftp_attempts = measure.MeasureInt(
     "ingest/sftp/attempts",
     "Counts of files that were attempted to be uploaded to GCS from SFTP for direct ingest",
+    "1",
 )
 m_sftp_errors = measure.MeasureInt(
     "ingest/sftp/errors",
     "Counts of files that errored when attempting to be uploaded to GCS from SFTP for direct ingest",
+    "1",
 )
 sftp_attempts_view = view.View(
     "recidiviz/ingest/sftp/attempts",
