@@ -376,3 +376,26 @@ class TestGCSPseudoLockManager(unittest.TestCase):
             content_type="text/text",
         )
         self.assertFalse(lock_manager.is_locked(self.LOCK_NAME))
+
+    def test_unlock_expired(self) -> None:
+        now = datetime.now()
+        yesterday = now - timedelta(days=1)
+        lock_manager = GCSPseudoLockManager()
+
+        path = GcsfsFilePath(
+            bucket_name=lock_manager.bucket_name, blob_name=self.LOCK_NAME
+        )
+        self.fs.upload_from_string(
+            path,
+            json.dumps(
+                GCSPseudoLockContents(
+                    lock_time=yesterday, expiration_in_seconds=3600
+                ).to_json(),
+                default=str,
+            ),
+            content_type="text/text",
+        )
+        self.assertFalse(lock_manager.is_locked(self.LOCK_NAME))
+
+        # Should not raise an error
+        lock_manager.unlock(self.LOCK_NAME)

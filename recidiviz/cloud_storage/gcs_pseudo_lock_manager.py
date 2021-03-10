@@ -185,8 +185,11 @@ class GCSPseudoLockManager:
 
     def unlock(self, name: str) -> None:
         """Unlocks @param name by deleting file with name"""
-        if self.is_locked(name):
-            path = GcsfsFilePath(bucket_name=self.bucket_name, blob_name=name)
+        path = GcsfsFilePath(bucket_name=self.bucket_name, blob_name=name)
+
+        # We are not using `is_locked` here because we want to delete expired
+        # locks explicitly.
+        if self.fs.exists(path):
             self.fs.delete(path)
             logging.debug("Deleting lock file with name: %s", name)
         else:
