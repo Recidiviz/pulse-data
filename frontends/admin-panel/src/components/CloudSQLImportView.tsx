@@ -96,7 +96,7 @@ const CloudSQLImportView = (): JSX.Element => {
       />
       <Form {...layout} className="buffer" onFinish={onFinish}>
         <Form.Item
-          label="Views to Export"
+          label="Views to Import"
           name="viewIds"
           rules={[{ required: true }]}
         >
