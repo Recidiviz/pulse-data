@@ -1,6 +1,6 @@
 runtime: custom
 env: flex
-service: default
+service: scrapers
 
 # Note: if we adjust the number of instances or amount of cpu upwards,
 # we may have to adjust the number of max connections in our postgres instances.
@@ -20,9 +20,9 @@ readiness_check:
   app_start_timeout_sec: 120
 
 beta_settings:
-  cloud_sql_instances: recidiviz-staging:us-east1:dev-state-data, recidiviz-staging:us-east1:dev-operations-data, recidiviz-staging:us-east1:dev-justice-counts-data, recidiviz-staging:us-central1:dev-case-triage-data-0af0a
+  cloud_sql_instances: recidiviz-123:us-east4:prod-data, recidiviz-123:us-east1:usmamiddlesex-redundant
 env_variables:
-  RECIDIVIZ_ENV: staging
-  RECIDIVIZ_SERVICE: default
+  RECIDIVIZ_ENV: production
+  RECIDIVIZ_SERVICE: scrapers
   FROM_EMAIL_ADDRESS: reports@recidiviz.org
   FROM_EMAIL_NAME: Recidiviz Reports

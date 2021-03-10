@@ -90,8 +90,16 @@ else
     echo "Skipping configuration and pipeline deploy steps for no promote release build."
 fi
 
-echo "Deploying application"
+# TODO(#3928): Migrate deploy of app engine services to terraform.
+echo "Deploying application - default"
 run_cmd gcloud -q app deploy ${PROMOTE_FLAGS} staging.yaml \
+       --project recidiviz-staging \
+       --version ${GAE_VERSION} \
+       --image-url ${IMAGE_URL} \
+       --verbosity=debug
+
+echo "Deploying application - scrapers"
+run_cmd gcloud -q app deploy ${PROMOTE_FLAGS} staging-scrapers.yaml \
        --project recidiviz-staging \
        --version ${GAE_VERSION} \
        --image-url ${IMAGE_URL} \

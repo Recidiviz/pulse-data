@@ -4,7 +4,7 @@ service: default
 
 # Note: if we adjust the number of instances or amount of cpu upwards,
 # we may have to adjust the number of max connections in our postgres instances.
-# See the dicussion in #5497 for more context, and see the docs:
+# See the discussion in #5497 for more context, and see the docs:
 # https://cloud.google.com/sql/docs/quotas#postgresql for more.
 resources:
   cpu: 4
@@ -20,8 +20,9 @@ readiness_check:
   app_start_timeout_sec: 120
 
 beta_settings:
-  cloud_sql_instances: recidiviz-123:us-east4:prod-data, recidiviz-123:us-east1:usmamiddlesex-redundant, recidiviz-123:us-east1:prod-state-data, recidiviz-123:us-east1:prod-operations-data, recidiviz-123:us-east1:prod-justice-counts-data, recidiviz-123:us-central1:prod-case-triage-data
+  cloud_sql_instances: recidiviz-123:us-east1:prod-state-data, recidiviz-123:us-east1:prod-operations-data, recidiviz-123:us-east1:prod-justice-counts-data, recidiviz-123:us-central1:prod-case-triage-data
 env_variables:
   RECIDIVIZ_ENV: production
+  RECIDIVIZ_SERVICE: default
   FROM_EMAIL_ADDRESS: reports@recidiviz.org
   FROM_EMAIL_NAME: Recidiviz Reports

@@ -17,8 +17,9 @@
 """A class to manage all SQLAlchemy Engines for our database instances."""
 import logging
 import os.path
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict, Optional, List, Set
 
+from opencensus.stats import aggregation, measure, view
 import sqlalchemy
 from sqlalchemy.engine import Engine
 
@@ -33,7 +34,23 @@ from recidiviz.persistence.database import (
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.utils import secrets, environment
+from recidiviz.utils import monitoring, secrets, environment
+
+m_failed_engine_initialization = measure.MeasureInt(
+    "persistence/database/sqlalchemy_engine_initialization_failures",
+    "Counts the number of engine initialization failures",
+    "1",
+)
+
+failed_engine_initialization_view = view.View(
+    "recidiviz/persistence/database/sqlalchemy_engine_initialization_failures",
+    "Sum of all engine initialization failures",
+    [monitoring.TagKey.SCHEMA_TYPE, monitoring.TagKey.DATABASE_NAME],
+    m_failed_engine_initialization,
+    aggregation.SumAggregation(),
+)
+
+monitoring.register_views([failed_engine_initialization_view])
 
 
 class SQLAlchemyEngineManager:
@@ -75,13 +92,28 @@ class SQLAlchemyEngineManager:
         if database_key in cls._engine_for_database:
             raise ValueError(f"Already initialized database [{database_key}]")
 
-        engine = sqlalchemy.create_engine(
-            db_url,
-            isolation_level=database_key.isolation_level,
-            poolclass=database_key.poolclass,
-            **dialect_specific_kwargs,
-        )
-        database_key.declarative_meta.metadata.create_all(engine)
+        try:
+            engine = sqlalchemy.create_engine(
+                db_url,
+                isolation_level=database_key.isolation_level,
+                poolclass=database_key.poolclass,
+                **dialect_specific_kwargs,
+            )
+            database_key.declarative_meta.metadata.create_all(engine)
+        except BaseException as e:
+            logging.error(
+                "Unable to connect to postgres instance for [%s]: %s",
+                database_key,
+                str(e),
+            )
+            with monitoring.measurements(
+                {
+                    monitoring.TagKey.SCHEMA_TYPE: database_key.schema_type.value,
+                    monitoring.TagKey.DATABASE_NAME: database_key.db_name,
+                }
+            ) as measurements:
+                measurements.measure_int_put(m_failed_engine_initialization, 1)
+            raise e
         cls._engine_for_database[database_key] = engine
         return engine
 
@@ -105,20 +137,33 @@ class SQLAlchemyEngineManager:
         )
 
     @classmethod
-    def init_engines_for_server_postgres_instances(cls) -> None:
-        if not environment.in_gcp():
-            logging.info(
-                "Environment is not GCP, not connecting to postgres instances."
-            )
-            return
+    def attempt_init_engines_for_server(cls, schema_types: Set[SchemaType]) -> None:
+        """Attempts to initialize engines for the server for the given schema types.
 
+        Ignores any connections that fail, so that a single down database does not cause
+        our server to crash."""
         for database_key in SQLAlchemyDatabaseKey.all():
-            cls.init_engine(database_key)
+            if database_key.schema_type in schema_types:
+                try:
+                    cls.init_engine(database_key)
+                except BaseException:
+                    pass
 
     @classmethod
     def get_engine_for_database(
         cls, database_key: SQLAlchemyDatabaseKey
     ) -> Optional[Engine]:
+        """Retrieve the engine for a given database.
+
+        Will attempt to create the engine if it does not already exist."""
+        if database_key not in cls._engine_for_database:
+            if not environment.in_gcp():
+                logging.info(
+                    "Environment is not GCP, not connecting to postgres instance for [%s].",
+                    database_key,
+                )
+                return None
+            cls.init_engine(database_key)
         return cls._engine_for_database.get(database_key, None)
 
     @classmethod
