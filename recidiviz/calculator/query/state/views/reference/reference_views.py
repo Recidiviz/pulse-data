@@ -72,6 +72,12 @@ from recidiviz.calculator.query.state.views.reference.revocations_matrix_by_pers
 from recidiviz.calculator.query.state.views.reference.supervision_matrix_by_person import (
     SUPERVISION_MATRIX_BY_PERSON_VIEW_BUILDER,
 )
+from recidiviz.ingest.direct.regions.us_pa.ingest_views import (
+    view_supervision_period_v2 as us_pa_view_supervision_period,
+)
+from recidiviz.ingest.direct.views.normalized_direct_ingest_big_query_view_types import (
+    NormalizedDirectIngestPreProcessedIngestViewBuilder,
+)
 
 # NOTE: These views must be listed in order of dependency. For example, if reference view Y depends on reference view X,
 # then view X should appear in the list before view Y.
@@ -94,4 +100,11 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,
     SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,
     SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_BUILDER,
+    # TODO(#6314): Remove this view builder
+    NormalizedDirectIngestPreProcessedIngestViewBuilder(
+        region="us_pa",
+        ingest_view_name="us_pa_supervision_period_TEMP",
+        view_query_template=us_pa_view_supervision_period.VIEW_BUILDER.view_query_template,
+        order_by_cols=us_pa_view_supervision_period.VIEW_BUILDER.order_by_cols,
+    ),
 ]

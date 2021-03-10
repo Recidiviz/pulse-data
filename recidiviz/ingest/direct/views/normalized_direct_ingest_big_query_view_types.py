@@ -365,6 +365,17 @@ class NormalizedDirectIngestPreProcessedIngestViewBuilder(
     def file_tag(self) -> str:
         return self.ingest_view_name
 
+    # TODO(#6314): Remove this temporary property
+    @property
+    def dataset_id(self) -> str:  # type: ignore
+        if self.ingest_view_name != "us_pa_supervision_period_TEMP":
+            raise ValueError(
+                "This dataset_id property is a temporary hack in order to load the US_PA "
+                "view_supervision_period query into the reference views. Should not be accessed "
+                "outside of this hack."
+            )
+        return "reference_views"
+
     # pylint: disable=unused-argument
     def _build(
         self, *, dataset_overrides: Optional[Dict[str, str]] = None

@@ -4121,7 +4121,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
     def test_find_supervision_time_buckets_us_pa(self):
         """Tests the find_supervision_time_buckets function for periods in US_PA."""
         supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
+            supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
             external_id="sp1",
             status=StateSupervisionPeriodStatus.TERMINATED,
             case_type_entries=[
@@ -4155,6 +4155,16 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_contacts = []
         incarceration_sentences = []
 
+        # TODO(#6314): Don't send in this temporary reference, revert references to
+        #  DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST
+        temporary_sp_agent_associations_list = [
+            {
+                "agent_id": 123,
+                "agent_external_id": "DISTRICT_1|OFFICE_2|1345#XXX",
+                "supervision_period_id": _DEFAULT_SUPERVISION_PERIOD_ID,
+            }
+        ]
+
         supervision_time_buckets = identifier.find_supervision_time_buckets(
             supervision_sentences,
             incarceration_sentences,
@@ -4163,7 +4173,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
+            temporary_sp_agent_associations_list,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
         )
 
@@ -4173,6 +4183,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervising_district_external_id="DISTRICT_1",
                 level_1_supervision_location_external_id="OFFICE_2",
                 level_2_supervision_location_external_id="DISTRICT_1",
+                supervising_officer_external_id="XXX",
+                judicial_district_code="XXX",
             ),
             SupervisionTerminationBucket(
                 state_code=supervision_period.state_code,
@@ -4187,6 +4199,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 level_2_supervision_location_external_id="DISTRICT_1",
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason,
+                supervising_officer_external_id="XXX",
+                judicial_district_code="XXX",
             ),
         ]
 
@@ -4199,6 +4213,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 assessment_type=assessment.assessment_type,
                 level_1_supervision_location_external_id="OFFICE_2",
                 level_2_supervision_location_external_id="DISTRICT_1",
+                supervising_officer_external_id="XXX",
+                judicial_district_code="XXX",
             )
         )
 
@@ -4210,7 +4226,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         state_code = "US_PA"
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
+            supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
             external_id="sp1",
             status=StateSupervisionPeriodStatus.TERMINATED,
             case_type_entries=[
@@ -4290,6 +4306,16 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_contacts = []
         incarceration_sentences = []
 
+        # TODO(#6314): Don't send in this temporary reference, revert references to
+        #  DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST
+        temporary_sp_agent_associations_list = [
+            {
+                "agent_id": 123,
+                "agent_external_id": "DISTRICT_1|OFFICE_2|ORG_CODE#XXX",
+                "supervision_period_id": _DEFAULT_SUPERVISION_PERIOD_ID,
+            }
+        ]
+
         supervision_time_buckets = identifier.find_supervision_time_buckets(
             supervision_sentences,
             incarceration_sentences,
@@ -4298,7 +4324,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
+            temporary_sp_agent_associations_list,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
         )
 
@@ -4308,6 +4334,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervising_district_external_id="DISTRICT_1",
                 level_1_supervision_location_external_id="OFFICE_2",
                 level_2_supervision_location_external_id="DISTRICT_1",
+                supervising_officer_external_id="XXX",
+                judicial_district_code="XXX",
             ),
             SupervisionTerminationBucket(
                 state_code=supervision_period.state_code,
@@ -4322,6 +4350,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 level_2_supervision_location_external_id="DISTRICT_1",
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason,
+                supervising_officer_external_id="XXX",
+                judicial_district_code="XXX",
             ),
         ]
 
@@ -4335,6 +4365,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 assessment_type=assessment.assessment_type,
                 level_1_supervision_location_external_id="OFFICE_2",
                 level_2_supervision_location_external_id="DISTRICT_1",
+                supervising_officer_external_id="XXX",
+                judicial_district_code="XXX",
             )
         )
 
@@ -4350,6 +4382,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervising_district_external_id="DISTRICT_1",
                 level_1_supervision_location_external_id="OFFICE_2",
                 level_2_supervision_location_external_id="DISTRICT_1",
+                supervising_officer_external_id="XXX",
+                judicial_district_code="XXX",
                 case_type=StateSupervisionCaseType.GENERAL,
                 assessment_score=assessment.assessment_score,
                 assessment_level=StateAssessmentLevel.HIGH,
@@ -4371,7 +4405,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         state_code = "US_PA"
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
+            supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
             external_id="sp1",
             status=StateSupervisionPeriodStatus.TERMINATED,
             case_type_entries=[
@@ -4449,6 +4483,16 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_contacts = []
         incarceration_sentences = []
 
+        # TODO(#6314): Don't send in this temporary reference, revert references to
+        #  DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST
+        temporary_sp_agent_associations_list = [
+            {
+                "agent_id": 123,
+                "agent_external_id": "DISTRICT_1|OFFICE_2|ORG_CODE#XXX",
+                "supervision_period_id": _DEFAULT_SUPERVISION_PERIOD_ID,
+            }
+        ]
+
         supervision_time_buckets = identifier.find_supervision_time_buckets(
             supervision_sentences,
             incarceration_sentences,
@@ -4457,7 +4501,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
+            temporary_sp_agent_associations_list,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
         )
 
@@ -4467,6 +4511,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervising_district_external_id="DISTRICT_1",
                 level_1_supervision_location_external_id="OFFICE_2",
                 level_2_supervision_location_external_id="DISTRICT_1",
+                supervising_officer_external_id="XXX",
+                judicial_district_code="XXX",
             ),
             SupervisionTerminationBucket(
                 state_code=supervision_period.state_code,
@@ -4479,6 +4525,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervising_district_external_id="DISTRICT_1",
                 level_1_supervision_location_external_id="OFFICE_2",
                 level_2_supervision_location_external_id="DISTRICT_1",
+                supervising_officer_external_id="XXX",
+                judicial_district_code="XXX",
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason,
             ),
@@ -4494,6 +4542,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 assessment_type=assessment.assessment_type,
                 level_1_supervision_location_external_id="OFFICE_2",
                 level_2_supervision_location_external_id="DISTRICT_1",
+                supervising_officer_external_id="XXX",
+                judicial_district_code="XXX",
             )
         )
 
@@ -4509,6 +4559,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 assessment_type=assessment.assessment_type,
                 level_1_supervision_location_external_id="OFFICE_2",
                 level_2_supervision_location_external_id="DISTRICT_1",
+                supervising_officer_external_id="XXX",
+                judicial_district_code="XXX",
             )
         )
 
@@ -4524,6 +4576,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervising_district_external_id="DISTRICT_1",
                 level_1_supervision_location_external_id="OFFICE_2",
                 level_2_supervision_location_external_id="DISTRICT_1",
+                supervising_officer_external_id="XXX",
+                judicial_district_code="XXX",
                 case_type=StateSupervisionCaseType.GENERAL,
                 assessment_score=assessment.assessment_score,
                 assessment_level=StateAssessmentLevel.HIGH,

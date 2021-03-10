@@ -554,22 +554,47 @@ def get_supervising_officer_and_location_info_from_supervision_period(
                 level_1_supervision_location,
             ) = supervision_period.supervision_site.split("|")
     elif supervision_period.state_code == "US_PA":
-        if supervision_period.supervision_site:
-            if supervision_period.supervision_site.count("|") == 1:
-                # TODO(#5575): Remove this logic once all supervision sites in PA have been migrated to new format with
-                #   three parts.
+        # TODO(#6314): Remove this hack once we've re-run US_PA ingest with the fix.
+        #  Replace the contents of this PA-specific block with:
+        #  supervision_site = supervision_period.supervision_site
+        #  if supervision_site and supervision_site.count("|") == 2:
+        #     # In PA, supervision_site follows format
+        #     # "{supervision district}|{supervision suboffice}|{supervision unit org code}"
+        #     (
+        #         level_2_supervision_location,
+        #         level_1_supervision_location,
+        #         _org_code,
+        #     ) = supervision_site.split("|")
+        period_info = supervision_period_to_agent_associations.get(
+            supervision_period.supervision_period_id
+        )
+        if period_info:
+            supervision_info = period_info["agent_external_id"]
+
+            if supervision_info and supervision_info.count("#") == 1:
                 (
-                    level_2_supervision_location,
-                    level_1_supervision_location,
-                ) = supervision_period.supervision_site.split("|")
-            else:
-                # In PA, supervision_site follows format
-                # "{supervision district}|{supervision suboffice}|{supervision unit org code}"
-                (
-                    level_2_supervision_location,
-                    level_1_supervision_location,
-                    _org_code,
-                ) = supervision_period.supervision_site.split("|")
+                    supervision_site,
+                    supervising_officer_external_id,
+                ) = supervision_info.split("#")
+
+                supervising_officer_external_id = (
+                    supervising_officer_external_id or None
+                )
+
+                if supervision_site and supervision_site.count("|") == 2:
+                    # In PA, supervision_site follows format
+                    # "{supervision district}|{supervision suboffice}|{supervision unit org code}"
+                    (
+                        level_2_supervision_location,
+                        level_1_supervision_location,
+                        _org_code,
+                    ) = supervision_site.split("|")
+            return (
+                supervising_officer_external_id,
+                level_1_supervision_location or None,
+                level_2_supervision_location or None,
+            )
+
     else:
         level_1_supervision_location = supervision_period.supervision_site
 
