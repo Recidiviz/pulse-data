@@ -242,7 +242,6 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
     TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION = fake_region(
         region_code=TEST_STATE_REGION.region_code,
-        is_raw_vs_ingest_file_name_detection_enabled=True,
         are_raw_data_bq_imports_enabled_in_env=True,
         are_ingest_view_exports_enabled_in_env=True,
     )
@@ -285,7 +284,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
     ) -> None:
         """Validates that the file metadata was recorded as expected."""
 
-        if not controller.region.is_raw_vs_ingest_file_name_detection_enabled():
+        if not controller.region.is_ingest_launched_in_env():
             expected_raw_metadata_tags_with_is_processed = []
         elif expected_raw_metadata_tags_with_is_processed is None:
             expected_raw_metadata_tags_with_is_processed = [
@@ -336,7 +335,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             for metadata in raw_file_metadata_list
         ]
 
-        if not controller.region.is_raw_vs_ingest_file_name_detection_enabled():
+        if not controller.region.is_ingest_launched_in_env():
             self.assertEqual([], actual_raw_metadata_tags_with_is_processed)
 
         self.assertEqual(

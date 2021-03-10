@@ -113,16 +113,11 @@ class GcsfsDirectIngestController(
             gcsfs_direct_ingest_temporary_output_directory_path()
         )
 
-        ingest_job_file_type_filter = (
-            GcsfsDirectIngestFileType.INGEST_VIEW
-            if self.region.is_raw_vs_ingest_file_name_detection_enabled()
-            else None
-        )
         self.file_prioritizer = GcsfsDirectIngestJobPrioritizer(
             self.fs,
             self.ingest_directory_path,
             self.get_file_tag_rank_list(),
-            ingest_job_file_type_filter,
+            GcsfsDirectIngestFileType.INGEST_VIEW,
         )
 
         self.ingest_file_split_line_limit = self._INGEST_FILE_SPLIT_LINE_LIMIT
@@ -234,25 +229,18 @@ class GcsfsDirectIngestController(
 
         check_is_region_launched_in_env(self.region)
 
-        unprocessed_raw_paths = []
-
-        ingest_file_type_filter = (
-            GcsfsDirectIngestFileType.INGEST_VIEW
-            if self.region.is_raw_vs_ingest_file_name_detection_enabled()
-            else None
-        )
         unprocessed_ingest_view_paths = self.fs.get_unprocessed_file_paths(
-            self.ingest_directory_path, file_type_filter=ingest_file_type_filter
+            self.ingest_directory_path,
+            file_type_filter=GcsfsDirectIngestFileType.INGEST_VIEW,
         )
-        if self.region.is_raw_vs_ingest_file_name_detection_enabled():
-            unprocessed_raw_paths = self.fs.get_unprocessed_file_paths(
-                self.ingest_directory_path,
-                file_type_filter=GcsfsDirectIngestFileType.RAW_DATA,
-            )
-            self._register_all_new_paths_in_metadata(unprocessed_raw_paths)
+        unprocessed_raw_paths = self.fs.get_unprocessed_file_paths(
+            self.ingest_directory_path,
+            file_type_filter=GcsfsDirectIngestFileType.RAW_DATA,
+        )
+        self._register_all_new_paths_in_metadata(unprocessed_raw_paths)
 
-            if self.region.are_ingest_view_exports_enabled_in_env():
-                self._register_all_new_paths_in_metadata(unprocessed_ingest_view_paths)
+        if self.region.are_ingest_view_exports_enabled_in_env():
+            self._register_all_new_paths_in_metadata(unprocessed_ingest_view_paths)
 
         unprocessed_paths = unprocessed_raw_paths + unprocessed_ingest_view_paths
         did_split = False
@@ -569,10 +557,7 @@ class GcsfsDirectIngestController(
     def _must_split_contents(
         self, file_type: GcsfsDirectIngestFileType, path: GcsfsFilePath
     ) -> bool:
-        if (
-            self.region.is_raw_vs_ingest_file_name_detection_enabled()
-            and file_type == GcsfsDirectIngestFileType.RAW_DATA
-        ):
+        if file_type == GcsfsDirectIngestFileType.RAW_DATA:
             return False
 
         return not self._file_meets_file_line_limit(
@@ -594,10 +579,7 @@ class GcsfsDirectIngestController(
         """Returns a handle to the contents of this path if this file should be split, None otherwise."""
         parts = filename_parts_from_path(path)
 
-        if (
-            self.region.is_raw_vs_ingest_file_name_detection_enabled()
-            and parts.file_type != GcsfsDirectIngestFileType.INGEST_VIEW
-        ):
+        if parts.file_type != GcsfsDirectIngestFileType.INGEST_VIEW:
             raise ValueError(
                 f"Should not be attempting to split files other than ingest view files, found path with "
                 f"file type: {parts.file_type}"
@@ -791,16 +773,10 @@ class GcsfsDirectIngestController(
             should_move_last_processed_date = next_date_str != last_processed_date_str
 
         # Note: at this point, we expect RAW file type files to already have been moved once they were imported to BQ.
-        file_type_to_move = (
-            GcsfsDirectIngestFileType.INGEST_VIEW
-            if self.region.is_raw_vs_ingest_file_name_detection_enabled()
-            else None
-        )
-
         self.fs.mv_processed_paths_before_date_to_storage(
             self.ingest_directory_path,
             self.storage_directory_path,
-            file_type_filter=file_type_to_move,
+            file_type_filter=GcsfsDirectIngestFileType.INGEST_VIEW,
             date_str_bound=last_processed_date_str,
             include_bound=should_move_last_processed_date,
         )
