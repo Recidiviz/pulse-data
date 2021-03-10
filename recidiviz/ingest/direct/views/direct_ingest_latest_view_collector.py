@@ -85,7 +85,7 @@ class DirectIngestRawDataTableLatestViewCollector(
                         ).get_table_exists_predicate(),
                     )
                     for config in raw_file_configs.values()
-                    if config.primary_key_cols
+                    if not config.is_undocumented and config.primary_key_cols
                 ]
             )
         return builder_list
