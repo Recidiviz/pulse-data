@@ -168,3 +168,12 @@ def test_only(func: Callable) -> Callable:
 
 def in_development() -> bool:
     return not in_gcp() and not in_test()
+
+
+class ServiceType(Enum):
+    DEFAULT = "default"
+    SCRAPERS = "scrapers"
+
+
+def get_service_type() -> ServiceType:
+    return ServiceType(os.getenv("RECIDIVIZ_SERVICE", "default"))

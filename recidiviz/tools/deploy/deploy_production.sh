@@ -61,11 +61,15 @@ pre_deploy_configure_infrastructure 'recidiviz-123' "${GIT_VERSION_TAG}" "$DEBUG
 STAGING_IMAGE_URL=us.gcr.io/recidiviz-staging/appengine/default:${GIT_VERSION_TAG} || exit_on_fail
 PROD_IMAGE_URL=us.gcr.io/recidiviz-123/appengine/default:${GIT_VERSION_TAG} || exit_on_fail
 
-echo "Starting deploy of main app"
+echo "Starting deploy of main app - default"
 run_cmd gcloud -q container images add-tag ${STAGING_IMAGE_URL} ${PROD_IMAGE_URL}
 
+# TODO(#3928): Migrate deploy of app engine services to terraform.
 GAE_VERSION=$(echo ${GIT_VERSION_TAG} | tr '.' '-') || exit_on_fail
 run_cmd gcloud -q app deploy prod.yaml --project=recidiviz-123 --version=${GAE_VERSION} --image-url=${PROD_IMAGE_URL}
+
+echo "Starting deploy of main app - scrapers"
+run_cmd gcloud -q app deploy prod-scrapers.yaml --project=recidiviz-123 --version=${GAE_VERSION} --image-url=${PROD_IMAGE_URL}
 
 echo "Deploy succeeded - triggering post-deploy jobs."
 post_deploy_triggers 'recidiviz-123'
