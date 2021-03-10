@@ -282,8 +282,13 @@ class Initializer:
             "transitions_data",
             "total_population_data",
             "remaining_sentence_data",
-            "excluded_population_data",
         ]
+
+        if "excluded_population_data" in big_query_params:
+            input_data_tables.append("excluded_population_data")
+        else:
+            self.data_dict["excluded_population_data"] = pd.DataFrame()
+
         for table_key in input_data_tables:
             table_name = big_query_params[table_key]
             table_data = ignite_bq_utils.load_ignite_table_from_big_query(

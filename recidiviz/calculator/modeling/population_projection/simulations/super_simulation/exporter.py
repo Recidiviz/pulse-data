@@ -67,9 +67,10 @@ class Exporter:
                 time_step, reference_year, microsim_data["time_step"]
             )
             microsim_data = microsim_data.drop("time_step", axis=1)
-            microsim_data = self._prep_for_upload(
-                microsim_data, excluded_pop, total_pop
-            )
+            if not excluded_pop.empty:
+                microsim_data = self._prep_for_upload(
+                    microsim_data, excluded_pop, total_pop
+                )
             ignite_bq_utils.upload_ignite_results(
                 project_id, simulation_tag, microsim_data
             )

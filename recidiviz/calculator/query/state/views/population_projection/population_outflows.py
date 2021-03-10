@@ -47,10 +47,12 @@ POPULATION_OUTFLOWS_QUERY_TEMPLATE = """
             ON start_date < run_date
             -- Cap the historical outflows (admissions) data at 10 years before the run date
             AND DATE_DIFF(run_date, start_date, YEAR) < 10
-        WHERE state_code = 'US_ID'
+        WHERE state_code IN ('US_ID', 'US_ND')
             AND gender IN ('FEMALE', 'MALE')
             -- Restrict the values to verified admissions
-            AND start_reason IN ('NEW_ADMISSION', 'COURT_SENTENCE')
+            AND (start_reason IN ('NEW_ADMISSION', 'COURT_SENTENCE')
+              -- TODO(#5420): restrict logic once US_ND has supervision start reasons
+              OR state_code = 'US_ND')
         GROUP BY 1,2,3,4,5,6
     )
     SELECT

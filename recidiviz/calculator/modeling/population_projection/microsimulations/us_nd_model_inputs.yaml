@@ -1,0 +1,38 @@
+---
+user_inputs:
+  start_year: 2021.0
+  projection_years: 5.0
+  run_date: '2021-01-01'
+
+compartments_architecture:
+    PRETRIAL: shell
+    RELEASE: shell
+    INCARCERATION - GENERAL: full
+    INCARCERATION - RE-INCARCERATION: full
+    SUPERVISION - PAROLE: full
+    SUPERVISION - PROBATION: full
+    RELEASE - RELEASE: full
+
+reference_date: 2021.0
+
+time_step: 0.08333333333
+
+disaggregation_axes:
+  - gender
+
+per_year_costs:
+    INCARCERATION - GENERAL: 0.0
+    INCARCERATION - RE-INCARCERATION: 0.0
+    SUPERVISION - PAROLE: 0.0
+    SUPERVISION - PROBATION: 0.0
+    RELEASE - RELEASE: 0.0
+
+data_inputs:
+  big_query_inputs:
+    project_id: recidiviz-staging
+    input_dataset: population_projection_data
+    outflows_data: population_outflows
+    transitions_data: population_transitions_materialized
+    total_population_data: total_population
+    remaining_sentence_data: remaining_sentences_materialized
+    state_code: US_ND
