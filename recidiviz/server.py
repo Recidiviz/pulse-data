@@ -54,6 +54,7 @@ from recidiviz.persistence.batch_persistence import batch_blueprint
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_manager import (
     cloud_sql_to_bq_blueprint,
 )
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
@@ -65,33 +66,40 @@ structured_logging.setup()
 logging.info("[%s] Running server.py", datetime.datetime.now().isoformat())
 
 app = Flask(__name__)
-app.register_blueprint(admin_panel, url_prefix="/admin")
-app.register_blueprint(scraper_control, url_prefix="/scraper")
-app.register_blueprint(scraper_status, url_prefix="/scraper")
-app.register_blueprint(worker, url_prefix="/scraper")
-app.register_blueprint(direct_ingest_control, url_prefix="/direct")
-app.register_blueprint(actions, url_prefix="/ingest")
-app.register_blueprint(infer_release_blueprint, url_prefix="/infer_release")
-app.register_blueprint(cloud_functions_blueprint, url_prefix="/cloud_function")
-app.register_blueprint(batch_blueprint, url_prefix="/batch")
-app.register_blueprint(
-    scrape_aggregate_reports_blueprint, url_prefix="/scrape_aggregate_reports"
-)
-app.register_blueprint(store_single_count_blueprint, url_prefix="/single_count")
-app.register_blueprint(cloud_sql_to_bq_blueprint, url_prefix="/cloud_sql_to_bq")
-app.register_blueprint(backup_manager_blueprint, url_prefix="/backup_manager")
-app.register_blueprint(dataflow_monitor_blueprint, url_prefix="/dataflow_monitor")
-app.register_blueprint(validation_manager_blueprint, url_prefix="/validation_manager")
-app.register_blueprint(
-    calculation_data_storage_manager_blueprint,
-    url_prefix="/calculation_data_storage_manager",
-)
-app.register_blueprint(reporting_endpoint_blueprint, url_prefix="/reporting")
-app.register_blueprint(export_blueprint, url_prefix="/export")
-app.register_blueprint(justice_counts_control, url_prefix="/justice_counts")
 
-if environment.in_gcp():
-    SQLAlchemyEngineManager.init_engines_for_server_postgres_instances()
+service_type = environment.get_service_type()
+
+if service_type is environment.ServiceType.SCRAPERS:
+    app.register_blueprint(batch_blueprint, url_prefix="/batch")
+    app.register_blueprint(infer_release_blueprint, url_prefix="/infer_release")
+    app.register_blueprint(actions, url_prefix="/ingest")
+    app.register_blueprint(scraper_control, url_prefix="/scraper")
+    app.register_blueprint(scraper_status, url_prefix="/scraper")
+    app.register_blueprint(worker, url_prefix="/scraper")
+    app.register_blueprint(
+        scrape_aggregate_reports_blueprint, url_prefix="/scrape_aggregate_reports"
+    )
+    app.register_blueprint(store_single_count_blueprint, url_prefix="/single_count")
+elif service_type is environment.ServiceType.DEFAULT:
+    app.register_blueprint(admin_panel, url_prefix="/admin")
+    app.register_blueprint(backup_manager_blueprint, url_prefix="/backup_manager")
+    app.register_blueprint(
+        calculation_data_storage_manager_blueprint,
+        url_prefix="/calculation_data_storage_manager",
+    )
+    app.register_blueprint(cloud_functions_blueprint, url_prefix="/cloud_function")
+    app.register_blueprint(cloud_sql_to_bq_blueprint, url_prefix="/cloud_sql_to_bq")
+    app.register_blueprint(dataflow_monitor_blueprint, url_prefix="/dataflow_monitor")
+    app.register_blueprint(direct_ingest_control, url_prefix="/direct")
+    app.register_blueprint(export_blueprint, url_prefix="/export")
+    app.register_blueprint(justice_counts_control, url_prefix="/justice_counts")
+    app.register_blueprint(reporting_endpoint_blueprint, url_prefix="/reporting")
+    app.register_blueprint(
+        validation_manager_blueprint, url_prefix="/validation_manager"
+    )
+else:
+    raise ValueError(f"Unsupported service type: {service_type}")
+
 
 # Export traces and metrics to stackdriver if running in GCP
 if environment.in_gcp():
@@ -130,6 +138,21 @@ config_integration.trace_integrations(
         "sqlalchemy",
     ]
 )
+
+
+if environment.in_gcp():
+    # This attempts to connect to all of our databases. Any connections that fail will
+    # be logged and not raise an error, so that a single database outage doesn't take
+    # down the entire application. Any attempt to use those databases later will
+    # attempt to connect again in case the database was just unhealthy.
+    if service_type is environment.ServiceType.SCRAPERS:
+        schemas = {SchemaType.JAILS}
+    elif service_type is environment.ServiceType.DEFAULT:
+        schemas = set(SchemaType) - {SchemaType.JAILS}
+    else:
+        raise ValueError(f"Unsupported service type: {service_type}")
+
+    SQLAlchemyEngineManager.attempt_init_engines_for_server(schemas)
 
 
 @zope.event.classhandler.handler(events.MemoryUsageThresholdExceeded)

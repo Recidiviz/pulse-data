@@ -21,7 +21,7 @@ from mock import call, patch
 import sqlalchemy
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.database import sqlalchemy_database_key
+from recidiviz.persistence.database import schema_utils, sqlalchemy_database_key
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
@@ -56,7 +56,9 @@ class SQLAlchemyEngineManagerTest(TestCase):
         mock_get_secret.side_effect = lambda key: f"{key}_value"
 
         # Act
-        SQLAlchemyEngineManager.init_engines_for_server_postgres_instances()
+        SQLAlchemyEngineManager.attempt_init_engines_for_server(
+            set(schema_utils.SchemaType)
+        )
 
         # Assert
         self.assertEqual(
@@ -161,7 +163,9 @@ class SQLAlchemyEngineManagerTest(TestCase):
         mock_get_secret.side_effect = lambda key: f"{key}_value"
 
         # Act
-        SQLAlchemyEngineManager.init_engines_for_server_postgres_instances()
+        SQLAlchemyEngineManager.attempt_init_engines_for_server(
+            set(schema_utils.SchemaType)
+        )
 
         # Assert
         self.assertEqual(

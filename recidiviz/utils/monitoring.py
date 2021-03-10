@@ -116,6 +116,8 @@ class TagKey:
     REGION = "region"
     SHOULD_PERSIST = "should_persist"
     STATUS = "status"
+
+    # Bigquery related tags
     VALIDATION_CHECK_TYPE = "validation_check_type"
     VALIDATION_VIEW_ID = "validation_view_id"
     CREATE_UPDATE_VIEWS_NAMESPACE = "create_update_views_namespace"
@@ -124,6 +126,10 @@ class TagKey:
     )
     METRIC_VIEW_EXPORT_NAME = "metric_view_export_name"
     SFTP_TASK_TYPE = "sftp_task_type"
+
+    # Postgres related tags
+    SCHEMA_TYPE = "schema_type"
+    DATABASE_NAME = "database_name"
 
     # Code related tags
     FUNCTION = "function"
