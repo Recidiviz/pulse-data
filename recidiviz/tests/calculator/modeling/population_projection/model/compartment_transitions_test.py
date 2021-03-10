@@ -20,7 +20,7 @@ import unittest
 from copy import deepcopy
 from functools import partial
 import pandas as pd
-from pandas.testing import assert_frame_equal, assert_series_equal
+from pandas.testing import assert_frame_equal, assert_series_equal, assert_index_equal
 import numpy as np
 
 from recidiviz.calculator.modeling.population_projection.simulations.compartment_transitions import (
@@ -359,12 +359,25 @@ class TestPolicyFunctions(TestTransitionTable):
 
     def test_extend_table_extends_table(self):
         """make sure CompartmentTransitions.extend_table is actually adding empty rows"""
-
+        state = "before"
         compartment_transitions = CompartmentTransitions(self.test_data)
+        expected_df_columns = compartment_transitions.transition_dfs[state].columns
+        expected_df_index_name = compartment_transitions.transition_dfs[
+            state
+        ].index.name
         compartment_transitions.extend_tables(15)
         self.assertEqual(
-            set(compartment_transitions.transition_dfs["before"].index),
+            set(compartment_transitions.transition_dfs[state].index),
             set(range(1, 16)),
+        )
+        # Test the DataFrame multi-index was not changed during the extend
+        assert_index_equal(
+            compartment_transitions.transition_dfs[state].columns,
+            expected_df_columns,
+        )
+        self.assertEqual(
+            compartment_transitions.transition_dfs[state].index.name,
+            expected_df_index_name,
         )
 
     def test_chop_technicals_chops_correctly(self):

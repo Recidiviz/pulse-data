@@ -21,8 +21,9 @@ from datetime import datetime
 import os
 from functools import partial
 from mock import patch
+import numpy as np
 import pandas as pd
-from pandas.util.testing import assert_frame_equal
+from pandas.testing import assert_frame_equal
 
 from recidiviz.calculator.modeling.population_projection.simulations.super_simulation.super_simulation_factory import (
     SuperSimulationFactory,
@@ -78,51 +79,49 @@ data_dict_macro = {
 
 outflows_data_micro = pd.DataFrame(
     {
-        "compartment": ["PRETRIAL"] * 12,
-        "outflow_to": ["PRISON"] * 12,
-        "time_step": [datetime(2020, i, 1) for i in range(7, 13)] * 2,
-        "state_code": ["test_state"] * 12,
-        "run_date": [datetime(2021, 1, 1)] * 12,
-        "gender": ["MALE"] * 6 + ["FEMALE"] * 6,
-        "total_population": [100]
-        + [100 + 2 * i for i in range(5)]
-        + [10]
-        + [10 + i for i in range(5)],
+        "compartment": ["PRETRIAL"] * 24,
+        "outflow_to": ["PRISON"] * 24,
+        "time_step": [datetime(2020, i, 1) for i in range(6, 12)] * 2
+        + [datetime(2020, i, 1) for i in range(7, 13)] * 2,
+        "state_code": ["test_state"] * 24,
+        "run_date": [datetime(2020, 12, 1)] * 12 + [datetime(2021, 1, 1)] * 12,
+        "gender": ["MALE"] * 6 + ["FEMALE"] * 6 + ["MALE"] * 6 + ["FEMALE"] * 6,
+        "total_population": np.random.randint(350, 400, 24),
     }
 )
 
 transitions_data_micro = pd.DataFrame(
     {
-        "compartment": ["PRISON", "PRISON", "RELEASE"] * 2,
-        "outflow_to": ["RELEASE", "RELEASE", "RELEASE"] * 2,
-        "compartment_duration": [3, 5, 3] * 2,
-        "state_code": ["test_state"] * 6,
-        "run_date": [datetime(2021, 1, 1)] * 6,
-        "gender": ["MALE"] * 3 + ["FEMALE"] * 3,
-        "total_population": [0.6, 0.4, 1] * 2,
+        "compartment": ["PRISON", "PRISON", "RELEASE"] * 4,
+        "outflow_to": ["RELEASE", "RELEASE", "RELEASE"] * 4,
+        "compartment_duration": [3, 5, 3] * 4,
+        "state_code": ["test_state"] * 12,
+        "run_date": [datetime(2020, 12, 1)] * 6 + [datetime(2021, 1, 1)] * 6,
+        "gender": ["MALE"] * 3 + ["FEMALE"] * 3 + ["MALE"] * 3 + ["FEMALE"] * 3,
+        "total_population": [0.6, 0.4, 1] * 4,
     }
 )
 
 remaining_sentence_data_micro = pd.DataFrame(
     {
-        "compartment": ["PRISON", "PRISON", "RELEASE"] * 2,
-        "outflow_to": ["RELEASE", "RELEASE", "RELEASE"] * 2,
-        "compartment_duration": [1, 2, 1] * 2,
-        "state_code": ["test_state"] * 6,
-        "run_date": [datetime(2021, 1, 1)] * 6,
-        "gender": ["MALE"] * 3 + ["FEMALE"] * 3,
-        "total_population": [60, 40, 1] * 2,
+        "compartment": ["PRISON", "PRISON", "RELEASE"] * 4,
+        "outflow_to": ["RELEASE", "RELEASE", "RELEASE"] * 4,
+        "compartment_duration": [1, 2, 1] * 4,
+        "state_code": ["test_state"] * 12,
+        "run_date": [datetime(2020, 12, 1)] * 6 + [datetime(2021, 1, 1)] * 6,
+        "gender": ["MALE"] * 3 + ["FEMALE"] * 3 + ["MALE"] * 3 + ["FEMALE"] * 3,
+        "total_population": [60, 40, 1] * 4,
     }
 )
 
 total_population_data_micro = pd.DataFrame(
     {
-        "compartment": ["PRISON", "RELEASE"] * 2,
-        "time_step": [datetime(2021, 1, 1)] * 4,
-        "state_code": ["test_state"] * 4,
-        "run_date": [datetime(2021, 1, 1)] * 4,
-        "gender": ["MALE"] * 2 + ["FEMALE"] * 2,
-        "total_population": [300, 500, 30, 50],
+        "compartment": ["PRISON", "RELEASE"] * 4,
+        "time_step": [datetime(2020, 12, 1)] * 4 + [datetime(2021, 1, 1)] * 4,
+        "state_code": ["test_state"] * 8,
+        "run_date": [datetime(2021, 1, 1)] * 8,
+        "gender": ["MALE"] * 2 + ["FEMALE"] * 2 + ["MALE"] * 2 + ["FEMALE"] * 2,
+        "total_population": [300, 500, 430, 410, 200, 250, 300, 350],
     }
 )
 
@@ -194,7 +193,11 @@ class TestSuperSimulation(unittest.TestCase):
         self.microsim = SuperSimulationFactory.build_super_simulation(
             get_inputs_path("super_simulation_microsim_model_inputs.yaml")
         )
-        self.microsim.simulate_baseline(["PRISON"])
+        self.microsim_excluded_pop = SuperSimulationFactory.build_super_simulation(
+            get_inputs_path("super_simulation_microsim_excluded_pop_model_inputs.yaml")
+        )
+        for sim in [self.microsim, self.microsim_excluded_pop]:
+            sim.simulate_baseline(["PRISON"])
 
     def test_simulation_architecture_must_match_compartment_costs(self):
         with self.assertRaises(ValueError):
@@ -330,7 +333,7 @@ class TestSuperSimulation(unittest.TestCase):
     def test_using_remaining_sentences_reduces_prison_population(self):
         """Tests microsim is using remaining sentence data in the right way"""
         microsim = SuperSimulationFactory.build_super_simulation(
-            get_inputs_path("super_simulation_microsim_model_inputs.yaml")
+            get_inputs_path("super_simulation_microsim_excluded_pop_model_inputs.yaml")
         )
         microsim.simulate_baseline(["PRISON"])
 
@@ -393,3 +396,44 @@ class TestSuperSimulation(unittest.TestCase):
         self.assertTrue(
             (substitute_prison_population > regular_prison_population).all()
         )
+
+    @patch(
+        "recidiviz.calculator.modeling.population_projection.ignite_bq_utils.load_ignite_table_from_big_query",
+        mock_load_table_from_big_query_no_remaining_data,
+    )
+    def test_microsim_baseline_over_time_zero_error_for_first_ts(self):
+        """Tests the microsim is initialized with 0 percent error for each initial time step"""
+
+        # Run 2 simulations over different run dates
+        run_dates = pd.date_range(
+            datetime(2020, 12, 1), datetime(2021, 1, 1), freq="MS"
+        ).tolist()
+        self.microsim.microsim_baseline_over_time(run_dates)
+
+        # Test each simulation has 0 percent error for the first time step
+        for key, _ in self.microsim.simulator.pop_simulations.items():
+            total_population_error = self.microsim.get_full_error_output(key)
+            first_ts = total_population_error.index.get_level_values(
+                level="time_step"
+            ).min()
+            initial_error = total_population_error.unstack("compartment").loc[
+                first_ts, "percent_error"
+            ]
+            self.assertTrue((initial_error == 0).all())
+
+    @patch(
+        "recidiviz.calculator.modeling.population_projection.ignite_bq_utils.store_simulation_results"
+    )
+    def test_microsim_upload(self, mock_store_simulation_results):
+        simulations = {
+            "no_excluded_pop": self.microsim,
+            "with_excluded_pop": self.microsim_excluded_pop,
+        }
+        for simulation_name, sim in simulations.items():
+            sim.upload_simulation_results_to_bq(
+                simulation_tag="baseline", cost_multipliers=pd.DataFrame()
+            )
+            self.assertTrue(
+                mock_store_simulation_results.called,
+                f"Simulation '{simulation_name} did not call `store_simulation_results`",
+            )

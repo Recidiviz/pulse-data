@@ -63,7 +63,7 @@ class SubSimulationFactory:
                 raise ValueError(
                     f"Start time must be included in population data input\n"
                     f"Expected: {user_inputs['start_time_step']}, "
-                    f"Actual: {total_population_data.time_step.values}"
+                    f"Actual: {total_population_data.time_step.unique()}"
                 )
 
         transitions_per_compartment, shell_policies = cls._initialize_transition_tables(
@@ -259,21 +259,22 @@ class SubSimulationFactory:
         for compartment_tag, compartment_obj in simulation_compartments.items():
             compartment_obj.initialize_edges(list(simulation_compartments.values()))
 
-            # Microsim
-            if should_initialize_compartment_populations:
-                if isinstance(compartment_obj, FullCompartment):
-                    compartment_population = total_population_data[
-                        total_population_data.compartment == compartment_tag
-                    ]
-                    if compartment_population.empty:
-                        compartment_population = 0
-                    elif len(compartment_population) > 1:
-                        raise ValueError(
-                            f"Multiple total populations for the same compartment and time_step: \n"
-                            f"{compartment_population} "
-                        )
-                    else:
-                        compartment_population = compartment_population.iloc[
-                            0
-                        ].total_population
-                    compartment_obj.single_cohort_intitialize(compartment_population)
+            # Initialize for the microsim
+            if should_initialize_compartment_populations and isinstance(
+                compartment_obj, FullCompartment
+            ):
+                compartment_population = total_population_data[
+                    total_population_data.compartment == compartment_tag
+                ]
+                if compartment_population.empty:
+                    compartment_population = 0
+                elif len(compartment_population) > 1:
+                    raise ValueError(
+                        f"Multiple total populations for the same compartment and time_step: \n"
+                        f"{compartment_population} "
+                    )
+                else:
+                    compartment_population = compartment_population.iloc[
+                        0
+                    ].total_population
+                compartment_obj.single_cohort_intitialize(compartment_population)

@@ -28,4 +28,5 @@ data_inputs:
     transitions_data: test_transitions
     total_population_data: test_total_population
     remaining_sentence_data: test_remaining_sentences
+    excluded_population_data: test_excluded_population
     state_code: test_state
