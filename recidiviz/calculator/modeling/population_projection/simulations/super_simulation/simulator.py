@@ -167,13 +167,14 @@ class Simulator:
 
         for start_date, data_inputs in run_date_data_inputs.items():
             user_inputs["projection_type"] = ProjectionType.MIDDLE.value
+            user_inputs["start_time_step"] = run_date_first_relevant_ts[start_date]
             self.pop_simulations[
-                f"baseline_{start_date}"
+                f"baseline_{start_date.date()}"
             ] = self._build_population_simulation(
                 user_inputs, data_inputs, [], run_date_first_relevant_ts[start_date]
             )
 
-            self.pop_simulations[f"baseline_{start_date}"].simulate_policies()
+            self.pop_simulations[f"baseline_{start_date.date()}"].simulate_policies()
 
     def get_cohort_hydration_simulations(
         self,

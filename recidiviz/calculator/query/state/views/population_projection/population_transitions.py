@@ -117,7 +117,7 @@ POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
     WHERE gender in ('MALE', 'FEMALE')
       -- wasn't sure how to handle this better, so for now 'null' are discarded and reinserted in the model
       AND outflow_to IS NOT NULL
-      AND state_code = 'US_ID'
+      AND state_code IN ('US_ID', 'US_ND')
     GROUP BY compartment, gender, state_code, outflow_to, compartment_duration, run_date, cohort_counts.cohort_count
 
     UNION ALL

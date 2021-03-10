@@ -32,7 +32,6 @@ TOTAL_POPULATION_QUERY_TEMPLATE = """
     (
         SELECT
           state_code,
-          session_id,
           CASE WHEN compartment = 'INCARCERATION - GENERAL' AND previously_incarcerated
             THEN 'INCARCERATION - RE-INCARCERATION'
             ELSE compartment
@@ -46,10 +45,9 @@ TOTAL_POPULATION_QUERY_TEMPLATE = """
         JOIN `{project_id}.{population_projection_dataset}.simulation_run_dates`
           ON start_date < run_date
         WHERE
-          state_code = 'US_ID'
+          state_code IN ('US_ID', 'US_ND')
           AND (compartment LIKE '%INCARCERATION%' OR compartment LIKE '%SUPERVISION%')
-        GROUP BY 1,2,3,4,5,6,7
-        ORDER BY 1,2,3,4,5,6,7
+        GROUP BY state_code, compartment, gender, start_date, end_date, run_date
     )
     SELECT
       cte.compartment,
@@ -60,12 +58,10 @@ TOTAL_POPULATION_QUERY_TEMPLATE = """
       SUM(cte.total_population) as total_population
     FROM cte,
     UNNEST(GENERATE_DATE_ARRAY('2000-01-01', DATE_TRUNC(CURRENT_DATE, MONTH), INTERVAL 1 MONTH)) AS time_step
-    WHERE
-      state_code = 'US_ID'
-      AND gender IN ('FEMALE', 'MALE')
+    WHERE gender IN ('FEMALE', 'MALE')
       AND time_step BETWEEN cte.start_date AND COALESCE(cte.end_date, '9999-01-01')
-    GROUP BY 1,2,3,4,5
-    ORDER BY 1,2,3,4,5
+    GROUP BY compartment, state_code, gender, run_date, time_step
+    ORDER BY compartment, state_code, gender, run_date, time_step
     """
 
 TOTAL_POPULATION_VIEW_BUILDER = SimpleBigQueryViewBuilder(

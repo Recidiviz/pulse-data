@@ -49,7 +49,7 @@ REMAINING_SENTENCES_QUERY_TEMPLATE = """
     --  LEFT JOIN `{project_id}.{analyst_dataset}.compartment_sentences_materialized` sentences
     --    ON sentences.person_id = sessions.person_id
     --    AND sentences.session_id = sessions.session_id
-      WHERE sessions.state_code = 'US_ID'
+      WHERE sessions.state_code IN ('US_ID', 'US_ND')
         AND compartment LIKE 'SUPERVISION%'
         AND gender in ('MALE', 'FEMALE')
         AND GREATEST(DATE_DIFF(run_dates.run_date, sessions.start_date, MONTH), 1) < transitions.compartment_duration

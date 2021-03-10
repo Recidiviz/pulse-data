@@ -35,7 +35,7 @@ REMAINING_SENTENCES_QUERY_TEMPLATE = """
             state_code,
             compartment,
             outflow_to,
-            total_population/SUM(total_population) OVER(PARTITION BY run_date, compartment) as pct_outflow
+            total_population/SUM(total_population) OVER(PARTITION BY run_date, state_code, compartment) as pct_outflow
         FROM
           (
           SELECT
@@ -43,10 +43,11 @@ REMAINING_SENTENCES_QUERY_TEMPLATE = """
             state_code,
             compartment,
             outflow_to,
-            sum(total_population) total_population,
+            SUM(total_population) total_population,
           FROM `{project_id}.{population_projection_dataset}.population_transitions_materialized`
-          -- Union the rider transitions at the end
-          WHERE (compartment LIKE 'INCARCERATION%') and (compartment NOT IN ('INCARCERATION - TREATMENT_IN_PRISON', 'INCARCERATION - PAROLE_BOARD_HOLD'))
+          WHERE compartment LIKE 'INCARCERATION%'
+            -- Union the rider transitions at the end
+            AND compartment NOT IN ('INCARCERATION - TREATMENT_IN_PRISON', 'INCARCERATION - PAROLE_BOARD_HOLD')
             AND outflow_to NOT LIKE '%OTHER%'
           GROUP BY 1,2,3,4
           )
@@ -76,7 +77,7 @@ REMAINING_SENTENCES_QUERY_TEMPLATE = """
             END AS compartment_duration
         FROM `{project_id}.{population_projection_dataset}.population_projection_sessions_materialized` sessions
         LEFT JOIN `{project_id}.{analyst_dataset}.compartment_sentences_materialized`  sentences
-          USING (person_id, session_id)
+          USING (state_code, person_id, session_id)
         JOIN `{project_id}.{population_projection_dataset}.simulation_run_dates` run_date_array
           ON run_date_array.run_date BETWEEN start_date AND coalesce(end_date, '9999-01-01')
         WHERE sessions.compartment LIKE 'INCARCERATION%'
@@ -95,7 +96,7 @@ REMAINING_SENTENCES_QUERY_TEMPLATE = """
     FROM incarceration_cte
     JOIN incarceration_distribution_cte
       USING (state_code, compartment, run_date)
-    WHERE state_code = 'US_ID'
+    WHERE state_code IN ('US_ID', 'US_ND')
         AND incarceration_cte.gender IN ('FEMALE', 'MALE')
         AND incarceration_cte.compartment_duration > 0
     GROUP BY 1,2,3,4,5,6

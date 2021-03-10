@@ -332,17 +332,18 @@ class CompartmentTransitions:
             return
 
         for state in self.transition_dfs:
-            # skip over un-populated tables
+            # Extend the populated transition tables
             if not self.transition_dfs[state].empty:
-
+                extended_index = pd.Index(
+                    data=range(self.max_sentence + 1, new_max_sentence + 1),
+                    name=self.transition_dfs[state].index.name,
+                )
+                extended_df = pd.DataFrame(
+                    index=extended_index,
+                    columns=self.transition_dfs[state].columns,
+                )
                 self.transition_dfs[state] = (
-                    self.transition_dfs[state]
-                    .append(
-                        pd.DataFrame(
-                            index=range(self.max_sentence + 1, new_max_sentence + 1)
-                        )
-                    )
-                    .fillna(0)
+                    self.transition_dfs[state].append(extended_df).fillna(0)
                 )
 
         self.max_sentence = new_max_sentence
