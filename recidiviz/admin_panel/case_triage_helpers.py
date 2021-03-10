@@ -51,7 +51,7 @@ def get_importable_csvs() -> Dict[str, GcsfsFilePath]:
 
 def columns_for_case_triage_view(view_id: str) -> List[str]:
     for table in get_case_triage_table_classes():
-        if table.__tablename__ == view_id:
-            return [col.name for col in table.__table__.columns]
+        if table.name == view_id:
+            return [col.name for col in table.columns]
 
     raise ValueError(f"No table found for view_id: {view_id}")
