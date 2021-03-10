@@ -25,7 +25,7 @@ import unittest
 from typing import Dict
 from unittest.mock import patch
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import BigQueryView, MATERIALIZED_SUFFIX
 from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagWalker,
     BigQueryViewDagNode,
@@ -221,6 +221,35 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
 
         with self.assertRaises(TestDagWalkException):
             _ = walker.process_dag(process_throws_after_root)
+
+    def test_views_use_materialized_if_present(self) -> None:
+        """Checks that each view is using the materialized version of a parent view, if
+        one exists."""
+        walker = BigQueryViewDagWalker(self.all_views)
+
+        def process_check_using_materialized(
+            view: BigQueryView, _parent_results: Dict[BigQueryView, None]
+        ) -> None:
+            node_key = (view.dataset_id, view.view_id)
+            node = walker.nodes_by_key[node_key]
+            for parent_dataset, parent_table_id in node.parent_tables:
+                if parent_table_id.endswith(MATERIALIZED_SUFFIX):
+                    # We are using materialized version of a table
+                    continue
+                parent_key = (parent_dataset, parent_table_id)
+                if parent_key not in walker.nodes_by_key:
+                    # We assume this is a source data table (checked in other tests)
+                    continue
+                parent_view: BigQueryView = walker.nodes_by_key[parent_key].view
+                self.assertIsNone(
+                    parent_view.materialized_view_table_id,
+                    f"Found view [{node_key}] referencing un-materialized version of "
+                    f"view [{parent_key}] when materialized table "
+                    f"[{parent_view.materialized_view_table_id}] exists.",
+                )
+
+        result = walker.process_dag(process_check_using_materialized)
+        self.assertEqual(len(self.all_views), len(result))
 
     def test_dag_with_cycle_at_root(self) -> None:
         view_1 = BigQueryView(
