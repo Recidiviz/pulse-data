@@ -4144,7 +4144,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         self._run_ingest_job_for_filename("supervision_period_v2.csv")
 
         # Assert
-        self.assert_expected_db_people(expected_people, debug=True)
+        self.assert_expected_db_people(expected_people)
 
         ######################################
         # supervision_violation
