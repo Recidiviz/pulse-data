@@ -135,7 +135,7 @@ STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE: Dict[str, Dict[str, float]] = 
     GCP_PROJECT_STAGING: {
         "US_ID": 0.05,
         # TODO(#5313): Decrease back to 5% once entity matching issues are resolved for ND.
-        "US_ND": 0.20,
+        "US_ND": 0.40,
         # Remaining PA entity matching errors not high priority for a fix
         "US_PA": 0.01,
     },
