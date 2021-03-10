@@ -112,7 +112,7 @@ def state_aggregate() -> Tuple[str, HTTPStatus]:
         fs.mv(path, historical_path)
         return "", HTTPStatus.OK
     except Exception as e:
-        return jsonify(e), HTTPStatus.INTERNAL_SERVER_ERROR
+        return jsonify(str(e)), HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 @cloud_functions_blueprint.route("/dataflow_monitor")
