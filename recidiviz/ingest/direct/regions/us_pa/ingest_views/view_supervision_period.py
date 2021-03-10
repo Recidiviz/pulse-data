@@ -136,6 +136,8 @@ start_count_edges AS (
         county_of_residence,
         supervision_level,
         CAST(NULL AS STRING) AS supervising_officer_name,
+        # TODO(#6251): Figure out how to determine point-in-time district based on
+        #  updates to dbo_Release* tables.
         CAST(NULL AS STRING) AS district_office,
         CAST(NULL AS STRING) AS district_sub_office_id,
         CAST(NULL AS STRING) AS supervision_location_org_code,
