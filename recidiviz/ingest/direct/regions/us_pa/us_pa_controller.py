@@ -216,6 +216,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 self._enrich_pbpp_assessments,
             ],
             "supervision_period": supervision_period_postprocessors,
+            # TODO(#6251): Rename to supervision_period and delete previous
+            #  supervision_period v1 view once this version has been rerun in prod.
+            "supervision_period_v2": supervision_period_postprocessors,
             "supervision_violation": [
                 self._append_supervision_violation_entries,
             ],
@@ -250,6 +253,11 @@ class UsPaController(CsvGcsfsDirectIngestController):
             "supervision_period": [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
+            # TODO(#6251): Rename to supervision_period and delete previous
+            #  supervision_period v1 view once this version has been rerun in prod.
+            "supervision_period_v2": [
+                gen_convert_person_ids_to_external_id_objects(self._get_id_type),
+            ],
             "supervision_violation": [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
@@ -264,6 +272,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
         self.primary_key_override_hook_by_file: Dict[str, Callable] = {
             "sci_incarceration_period": _generate_sci_incarceration_period_primary_key,
             "supervision_period": _generate_supervision_period_primary_key,
+            # TODO(#6251): Rename to supervision_period and delete previous
+            #  supervision_period v1 view once this version has been rerun in prod.
+            "supervision_period_v2": _generate_supervision_period_primary_key,
             "supervision_violation": _generate_supervision_violation_primary_key,
             "supervision_violation_response": _generate_supervision_violation_response_primary_key,
             "board_action": _generate_board_action_supervision_violation_response_primary_key,
@@ -674,7 +685,14 @@ class UsPaController(CsvGcsfsDirectIngestController):
             # Data source: PBPP
             "dbo_Offender",
             "dbo_LSIR",
-            "supervision_period",
+        ]
+        if environment.in_gcp():
+            launched_file_tags.append("supervision_period")
+        else:
+            # TODO(#6251): Ungate this for next PA rerun.
+            launched_file_tags.append("supervision_period_v2")
+
+        launched_file_tags += [
             "supervision_violation",
             "supervision_violation_response",
             "board_action",
@@ -768,6 +786,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
         if file_tag in [
             "supervision_period",
+            "supervision_period_v2",
             "supervision_violation",
             "supervision_violation_response",
             "board_action",
@@ -1263,11 +1282,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         supervision_location_org_code = row["supervision_location_org_code"]
         for obj in extracted_objects:
             if isinstance(obj, StateSupervisionPeriod):
-                if (
-                    district_office
-                    and district_sub_office_id
-                    and supervision_location_org_code
-                ):
+                if district_office:
                     obj.supervision_site = f"{district_office}|{district_sub_office_id}|{supervision_location_org_code}"
 
     @staticmethod
