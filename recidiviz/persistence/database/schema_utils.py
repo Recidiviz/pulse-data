@@ -173,6 +173,7 @@ def _is_database_entity_subclass(member: Any) -> bool:
         and member is not JusticeCountsBase
         and member is not StateBase
         and member is not OperationsBase
+        and member is not CaseTriageBase
     )
 
 
