@@ -103,8 +103,6 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
             raw_table_dataset_id="us_xx_raw_data",
             raw_table_name="table_name",
             columns_clause="col1, col2",
-            legacy_except_clause="",
-            legacy_datetime_cols_clause="",
             supplemental_order_by_clause=", CAST(seq_num AS INT64)",
         )
 
@@ -151,8 +149,6 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
                 raw_table_dataset_id="us_xx_raw_data",
                 raw_table_name="table_name",
                 columns_clause="col1, col2",
-                legacy_except_clause="",
-                legacy_datetime_cols_clause="",
                 supplemental_order_by_clause=", CAST(seq_num AS INT64)",
             )
         )
@@ -211,8 +207,6 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
             raw_table_dataset_id="us_xx_raw_data",
             raw_table_name="table_name",
             columns_clause=f"col1, {expected_datetime_cols_clause}",
-            legacy_except_clause="",
-            legacy_datetime_cols_clause="",
             supplemental_order_by_clause="",
         )
 
@@ -268,8 +262,6 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
                 raw_table_dataset_id="us_xx_raw_data",
                 raw_table_name="table_name",
                 columns_clause=f"col1, {expected_datetime_cols_clause}",
-                legacy_except_clause="",
-                legacy_datetime_cols_clause="",
                 supplemental_order_by_clause="",
             )
         )

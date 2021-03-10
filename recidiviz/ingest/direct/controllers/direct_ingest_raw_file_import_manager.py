@@ -145,7 +145,6 @@ class DirectIngestRawFileConfig:
     @classmethod
     def from_yaml_dict(
         cls,
-        region_code: str,
         file_tag: str,
         file_path: str,
         default_encoding: str,
@@ -155,27 +154,15 @@ class DirectIngestRawFileConfig:
     ) -> "DirectIngestRawFileConfig":
         """Returns a DirectIngestRawFileConfig built from a YAMLDict"""
         primary_key_cols = file_config_dict.pop("primary_key_cols", list)
-        # TODO(#5399): Migrate raw file configs for all legacy regions to have file descriptions
-        if region_code.upper() in {"US_PA"}:
-            file_description = (
-                file_config_dict.pop_optional("file_description", str)
-                or "LEGACY_FILE_MISSING_DESCRIPTION"
-            )
-        else:
-            file_description = file_config_dict.pop("file_description", str)
-        # TODO(#5399): Migrate raw file configs for all legacy regions to have column descriptions
-        if region_code.upper() in {"US_PA"}:
-            columns = file_config_dict.pop_optional("columns", list) or []
-        else:
-            columns = file_config_dict.pop("columns", list)
+        file_description = file_config_dict.pop("file_description", str)
+        columns = file_config_dict.pop("columns", list)
 
         column_names = [column["name"] for column in columns]
         if len(column_names) != len(set(column_names)):
             raise ValueError(f"Found duplicate columns in raw_file [{file_tag}]")
 
         missing_columns = set(primary_key_cols) - {column["name"] for column in columns}
-        # TODO(#5399): Remove exempted region codes once legacy primary keys are documented
-        if missing_columns and region_code.upper() not in {"US_PA"}:
+        if missing_columns:
             raise ValueError(
                 f"Column(s) marked as primary keys not listed in"
                 f" columns list for file [{yaml_filename}]: {missing_columns}"
@@ -286,7 +273,6 @@ class DirectIngestRegionRawFileConfig:
                     )
 
                 raw_data_configs[file_tag] = DirectIngestRawFileConfig.from_yaml_dict(
-                    self.region_code,
                     file_tag,
                     yaml_file_path,
                     default_encoding,
