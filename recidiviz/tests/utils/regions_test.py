@@ -263,14 +263,12 @@ class TestRegions(TestCase):
 
     @staticmethod
     def make_sql_preprocessing_flag_region(
-        raw_vs_ingest_file_name_differentiation_enabled_env: Optional[str] = None,
         raw_data_bq_imports_enabled_env: Optional[str] = None,
         ingest_view_exports_enabled_env: Optional[str] = None,
     ):
         region_code = "us_mo"
 
         flag_overrides = {
-            "raw_vs_ingest_file_name_differentiation_enabled_env": raw_vs_ingest_file_name_differentiation_enabled_env,
             "raw_data_bq_imports_enabled_env": raw_data_bq_imports_enabled_env,
             "ingest_view_exports_enabled_env": ingest_view_exports_enabled_env,
         }
@@ -283,48 +281,6 @@ class TestRegions(TestCase):
         return Region(region_code=region_code, is_direct_ingest=True, **kwargs)
 
     @patch("recidiviz.utils.environment.get_gcp_environment")
-    def test_is_raw_vs_ingest_file_name_detection_enabled_production(
-        self, mock_environment
-    ):
-        mock_environment.return_value = "production"
-
-        region = with_manifest(self.make_sql_preprocessing_flag_region)
-        self.assertFalse(region.is_raw_vs_ingest_file_name_detection_enabled())
-
-        region = with_manifest(
-            self.make_sql_preprocessing_flag_region,
-            raw_vs_ingest_file_name_differentiation_enabled_env="staging",
-        )
-        self.assertFalse(region.is_raw_vs_ingest_file_name_detection_enabled())
-
-        region = with_manifest(
-            self.make_sql_preprocessing_flag_region,
-            raw_vs_ingest_file_name_differentiation_enabled_env="production",
-        )
-        self.assertTrue(region.is_raw_vs_ingest_file_name_detection_enabled())
-
-    @patch("recidiviz.utils.environment.get_gcp_environment")
-    def test_is_raw_vs_ingest_file_name_detection_enabled_staging(
-        self, mock_environment
-    ):
-        mock_environment.return_value = "staging"
-
-        region = with_manifest(self.make_sql_preprocessing_flag_region)
-        self.assertFalse(region.is_raw_vs_ingest_file_name_detection_enabled())
-
-        region = with_manifest(
-            self.make_sql_preprocessing_flag_region,
-            raw_vs_ingest_file_name_differentiation_enabled_env="staging",
-        )
-        self.assertTrue(region.is_raw_vs_ingest_file_name_detection_enabled())
-
-        region = with_manifest(
-            self.make_sql_preprocessing_flag_region,
-            raw_vs_ingest_file_name_differentiation_enabled_env="production",
-        )
-        self.assertTrue(region.is_raw_vs_ingest_file_name_detection_enabled())
-
-    @patch("recidiviz.utils.environment.get_gcp_environment")
     def test_are_raw_data_bq_imports_enabled_in_env_production(self, mock_environment):
         mock_environment.return_value = "production"
 
@@ -333,20 +289,12 @@ class TestRegions(TestCase):
 
         region = with_manifest(
             self.make_sql_preprocessing_flag_region,
-            raw_vs_ingest_file_name_differentiation_enabled_env="staging",
             raw_data_bq_imports_enabled_env="staging",
         )
         self.assertFalse(region.are_raw_data_bq_imports_enabled_in_env())
 
         region = with_manifest(
             self.make_sql_preprocessing_flag_region,
-            raw_data_bq_imports_enabled_env="production",
-        )
-        self.assertFalse(region.are_raw_data_bq_imports_enabled_in_env())
-
-        region = with_manifest(
-            self.make_sql_preprocessing_flag_region,
-            raw_vs_ingest_file_name_differentiation_enabled_env="production",
             raw_data_bq_imports_enabled_env="production",
         )
         self.assertTrue(region.are_raw_data_bq_imports_enabled_in_env())
@@ -360,14 +308,12 @@ class TestRegions(TestCase):
 
         region = with_manifest(
             self.make_sql_preprocessing_flag_region,
-            raw_vs_ingest_file_name_differentiation_enabled_env="staging",
             raw_data_bq_imports_enabled_env="staging",
         )
         self.assertTrue(region.are_raw_data_bq_imports_enabled_in_env())
 
         region = with_manifest(
             self.make_sql_preprocessing_flag_region,
-            raw_vs_ingest_file_name_differentiation_enabled_env="production",
             raw_data_bq_imports_enabled_env="production",
         )
         self.assertTrue(region.are_raw_data_bq_imports_enabled_in_env())
@@ -381,7 +327,6 @@ class TestRegions(TestCase):
 
         region = with_manifest(
             self.make_sql_preprocessing_flag_region,
-            raw_vs_ingest_file_name_differentiation_enabled_env="production",
             raw_data_bq_imports_enabled_env="production",
             ingest_view_exports_enabled_env="staging",
         )
@@ -389,7 +334,6 @@ class TestRegions(TestCase):
 
         region = with_manifest(
             self.make_sql_preprocessing_flag_region,
-            raw_vs_ingest_file_name_differentiation_enabled_env="staging",
             raw_data_bq_imports_enabled_env="staging",
             ingest_view_exports_enabled_env="production",
         )
@@ -397,7 +341,6 @@ class TestRegions(TestCase):
 
         region = with_manifest(
             self.make_sql_preprocessing_flag_region,
-            raw_vs_ingest_file_name_differentiation_enabled_env="production",
             raw_data_bq_imports_enabled_env="production",
             ingest_view_exports_enabled_env="production",
         )
@@ -412,7 +355,6 @@ class TestRegions(TestCase):
 
         region = with_manifest(
             self.make_sql_preprocessing_flag_region,
-            raw_vs_ingest_file_name_differentiation_enabled_env="production",
             raw_data_bq_imports_enabled_env="staging",
             ingest_view_exports_enabled_env="staging",
         )
@@ -420,7 +362,6 @@ class TestRegions(TestCase):
 
         region = with_manifest(
             self.make_sql_preprocessing_flag_region,
-            raw_vs_ingest_file_name_differentiation_enabled_env="production",
             raw_data_bq_imports_enabled_env="production",
             ingest_view_exports_enabled_env="production",
         )
