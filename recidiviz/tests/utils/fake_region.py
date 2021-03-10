@@ -34,7 +34,6 @@ def fake_region(
     environment: str = "local",
     jurisdiction_id: str = "unknown",
     ingestor: Optional[Union[BaseScraper, BaseDirectIngestController]] = None,
-    are_raw_data_bq_imports_enabled_in_env: bool = False,
     are_ingest_view_exports_enabled_in_env: bool = False,
     queue: Optional[Dict[str, Any]] = None,
     shared_queue: Optional[str] = None,
@@ -56,9 +55,6 @@ def fake_region(
 
     region.is_ingest_launched_in_env = fake_is_launched_in_env
 
-    region.are_raw_data_bq_imports_enabled_in_env.return_value = (
-        are_raw_data_bq_imports_enabled_in_env
-    )
     region.are_ingest_view_exports_enabled_in_env.return_value = (
         are_ingest_view_exports_enabled_in_env
     )
@@ -71,6 +67,5 @@ TEST_STATE_REGION = fake_region(region_code="us_xx", agency_type="prison")
 TEST_COUNTY_REGION = fake_region(
     region_code="us_xx_yyyyy",
     agency_type="jail",
-    are_raw_data_bq_imports_enabled_in_env=True,
     are_ingest_view_exports_enabled_in_env=True,
 )

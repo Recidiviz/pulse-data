@@ -311,7 +311,7 @@ def create_raw_data_latest_view_update_tasks() -> Tuple[str, HTTPStatus]:
     for region_code in get_existing_region_dir_names():
         with monitoring.push_region_tag(region_code):
             region = get_region(region_code, is_direct_ingest=True)
-            if region.are_raw_data_bq_imports_enabled_in_env():
+            if region.is_ingest_launched_in_env():
                 logging.info(
                     "Creating raw data latest view update task for region [%s]",
                     region_code,
@@ -319,7 +319,7 @@ def create_raw_data_latest_view_update_tasks() -> Tuple[str, HTTPStatus]:
                 raw_update_ctm.create_raw_data_latest_view_update_task(region_code)
             else:
                 logging.info(
-                    "Skipping raw data latest view update for region [%s] - raw data imports not enabled.",
+                    "Skipping raw data latest view update for region [%s] - ingest not enabled.",
                     region_code,
                 )
     return "", HTTPStatus.OK
