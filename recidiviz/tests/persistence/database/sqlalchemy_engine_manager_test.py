@@ -18,6 +18,7 @@
 
 from unittest.case import TestCase
 from mock import call, patch
+import sqlalchemy
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database import sqlalchemy_database_key
@@ -65,6 +66,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     "postgresql://sqlalchemy_db_user_value:sqlalchemy_db_password_value@/postgres"
                     "?host=/cloudsql/sqlalchemy_cloudsql_instance_id_value",
                     isolation_level=None,
+                    poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
                 ),
@@ -72,6 +74,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     "postgresql://state_db_user_value:state_db_password_value@/postgres"
                     "?host=/cloudsql/state_cloudsql_instance_id_value",
                     isolation_level="SERIALIZABLE",
+                    poolclass=sqlalchemy.pool.NullPool,
                     echo_pool=True,
                     pool_recycle=600,
                 ),
@@ -79,6 +82,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     "postgresql://operations_db_user_value:operations_db_password_value@/postgres"
                     "?host=/cloudsql/operations_cloudsql_instance_id_value",
                     isolation_level=None,
+                    poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
                 ),
@@ -86,6 +90,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     "postgresql://justice_counts_db_user_value:justice_counts_db_password_value@/"
                     "postgres?host=/cloudsql/justice_counts_cloudsql_instance_id_value",
                     isolation_level="SERIALIZABLE",
+                    poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
                 ),
@@ -93,6 +98,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     "postgresql://case_triage_db_user_value:case_triage_db_password_value@/"
                     "postgres?host=/cloudsql/case_triage_cloudsql_instance_id_value",
                     isolation_level=None,
+                    poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
                 ),
@@ -100,6 +106,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     "postgresql://state_db_user_value:state_db_password_value@/us_pa_primary"
                     "?host=/cloudsql/state_cloudsql_instance_id_value",
                     isolation_level="SERIALIZABLE",
+                    poolclass=sqlalchemy.pool.NullPool,
                     echo_pool=True,
                     pool_recycle=600,
                 ),
@@ -107,6 +114,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     "postgresql://state_db_user_value:state_db_password_value@/us_hi_primary"
                     "?host=/cloudsql/state_cloudsql_instance_id_value",
                     isolation_level="SERIALIZABLE",
+                    poolclass=sqlalchemy.pool.NullPool,
                     echo_pool=True,
                     pool_recycle=600,
                 ),
@@ -114,6 +122,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     "postgresql://state_db_user_value:state_db_password_value@/us_pa_secondary"
                     "?host=/cloudsql/state_cloudsql_instance_id_value",
                     isolation_level="SERIALIZABLE",
+                    poolclass=sqlalchemy.pool.NullPool,
                     echo_pool=True,
                     pool_recycle=600,
                 ),
@@ -121,6 +130,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     "postgresql://state_db_user_value:state_db_password_value@/us_hi_secondary"
                     "?host=/cloudsql/state_cloudsql_instance_id_value",
                     isolation_level="SERIALIZABLE",
+                    poolclass=sqlalchemy.pool.NullPool,
                     echo_pool=True,
                     pool_recycle=600,
                 ),
@@ -161,6 +171,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     "postgresql://sqlalchemy_db_user_value:sqlalchemy_db_password_value@/postgres"
                     "?host=/cloudsql/sqlalchemy_cloudsql_instance_id_value",
                     isolation_level=None,
+                    poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
                 ),
@@ -168,6 +179,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     "postgresql://state_db_user_value:state_db_password_value@/postgres"
                     "?host=/cloudsql/state_cloudsql_instance_id_value",
                     isolation_level="SERIALIZABLE",
+                    poolclass=sqlalchemy.pool.NullPool,
                     echo_pool=True,
                     pool_recycle=600,
                 ),
@@ -175,6 +187,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     "postgresql://operations_db_user_value:operations_db_password_value@/postgres"
                     "?host=/cloudsql/operations_cloudsql_instance_id_value",
                     isolation_level=None,
+                    poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
                 ),
@@ -182,6 +195,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     "postgresql://justice_counts_db_user_value:justice_counts_db_password_value@/"
                     "postgres?host=/cloudsql/justice_counts_cloudsql_instance_id_value",
                     isolation_level="SERIALIZABLE",
+                    poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
                 ),
@@ -189,6 +203,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     "postgresql://case_triage_db_user_value:case_triage_db_password_value@/"
                     "postgres?host=/cloudsql/case_triage_cloudsql_instance_id_value",
                     isolation_level=None,
+                    poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
                 ),
@@ -196,6 +211,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     "postgresql://state_db_user_value:state_db_password_value@/us_pa_primary"
                     "?host=/cloudsql/state_cloudsql_instance_id_value",
                     isolation_level="SERIALIZABLE",
+                    poolclass=sqlalchemy.pool.NullPool,
                     echo_pool=True,
                     pool_recycle=600,
                 ),
@@ -203,6 +219,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     "postgresql://state_db_user_value:state_db_password_value@/us_hi_primary"
                     "?host=/cloudsql/state_cloudsql_instance_id_value",
                     isolation_level="SERIALIZABLE",
+                    poolclass=sqlalchemy.pool.NullPool,
                     echo_pool=True,
                     pool_recycle=600,
                 ),
@@ -210,6 +227,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     "postgresql://state_db_user_value:state_db_password_value@/us_pa_secondary"
                     "?host=/cloudsql/state_cloudsql_instance_id_value",
                     isolation_level="SERIALIZABLE",
+                    poolclass=sqlalchemy.pool.NullPool,
                     echo_pool=True,
                     pool_recycle=600,
                 ),
@@ -217,6 +235,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     "postgresql://state_db_user_value:state_db_password_value@/us_hi_secondary"
                     "?host=/cloudsql/state_cloudsql_instance_id_value",
                     isolation_level="SERIALIZABLE",
+                    poolclass=sqlalchemy.pool.NullPool,
                     echo_pool=True,
                     pool_recycle=600,
                 ),

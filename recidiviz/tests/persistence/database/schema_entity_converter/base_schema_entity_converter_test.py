@@ -81,6 +81,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         self.database_key = create_autospec(SQLAlchemyDatabaseKey)
         self.database_key.declarative_meta = TestBase
         self.database_key.isolation_level = "SERIALIZABLE"
+        self.database_key.poolclass = None
         fakes.use_in_memory_sqlite_database(self.database_key)
 
         session = SessionFactory.for_database(self.database_key)

@@ -78,6 +78,7 @@ class SQLAlchemyEngineManager:
         engine = sqlalchemy.create_engine(
             db_url,
             isolation_level=database_key.isolation_level,
+            poolclass=database_key.poolclass,
             **dialect_specific_kwargs,
         )
         database_key.declarative_meta.metadata.create_all(engine)

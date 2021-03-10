@@ -20,9 +20,10 @@ is managed by SQLAlchemy.
 
 import os
 from enum import Enum
-from typing import Optional, List
+from typing import Optional, List, Type
 
 import attr
+import sqlalchemy
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.common import attr_validators
@@ -72,7 +73,7 @@ class SQLAlchemyDatabaseKey:
     # Identifies which databse instance to connect to
     schema_type: SchemaType = attr.ib(validator=attr.validators.instance_of(SchemaType))
 
-    # Identifies which individual databse to connect to inside the instance
+    # Identifies which individual database to connect to inside the instance
     db_name: str = attr.ib(default=DEFAULT_DB_NAME, validator=attr_validators.is_str)
 
     @property
@@ -110,6 +111,17 @@ class SQLAlchemyDatabaseKey:
         # TODO(#3734): Consider doing this for all databases.
         if self.schema_type in (SchemaType.STATE, SchemaType.JUSTICE_COUNTS):
             return "SERIALIZABLE"
+        return None
+
+    @property
+    def poolclass(self) -> Optional[Type[sqlalchemy.pool.Pool]]:
+        # Don't pool connections for State databases. We only run a single
+        # request at a time for a particular state database, so it is
+        # unnecessary to maintain a connection from every copy of our
+        # application to all databases all of the time. This does mean that
+        # each request using a State database has to setup its own connection.
+        if self.schema_type is SchemaType.STATE:
+            return sqlalchemy.pool.NullPool
         return None
 
     @classmethod
