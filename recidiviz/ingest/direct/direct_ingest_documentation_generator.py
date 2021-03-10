@@ -94,7 +94,6 @@ class DirectIngestDocumentationGenerator:
         raw_file_config: DirectIngestRawFileConfig,
     ) -> str:
         """Generates documentation for the given raw file config and returns it as a string."""
-        file_columns = sorted(raw_file_config.columns, key=lambda col: col.name)
         primary_key_columns = [col.upper() for col in raw_file_config.primary_key_cols]
 
         def _is_primary_key(column: str) -> str:
@@ -110,7 +109,7 @@ class DirectIngestDocumentationGenerator:
                 column.description or "<No documentation>",
                 _is_primary_key(column.name),
             ]
-            for column in file_columns
+            for column in raw_file_config.columns
         ]
         writer = MarkdownTableWriter(
             headers=["Column", "Column Description", "Part of Primary Key?"],
