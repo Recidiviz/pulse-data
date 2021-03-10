@@ -40,4 +40,4 @@ def is_running_in_ci() -> bool:
     """Returns True if this code is running in the CI environment, False
     otherwise.
     """
-    return in_docker()
+    return os.environ.get("CI") == "true"
