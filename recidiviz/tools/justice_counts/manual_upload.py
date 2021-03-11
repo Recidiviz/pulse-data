@@ -50,6 +50,7 @@ from typing import (
 from urllib import parse
 import webbrowser
 
+import typing
 import attr
 from more_itertools import peekable
 import pandas
@@ -1288,8 +1289,8 @@ class DynamicDateRangeProducer(DateRangeProducer):
             for date_args, split in df.groupby(self.column_names)
         ]
 
-    def _convert(self, args: Union[str, List[str]]) -> DateRange:
-        unified_args: List[str] = [args] if isinstance(args, str) else args
+    def _convert(self, args: Union[int, str, List[str]]) -> DateRange:
+        unified_args: List[str] = [str(args)] if isinstance(args, (str, int)) else args
         parsed_args: List[datetime.date] = [
             parser(arg) for arg, parser in zip(unified_args, self.column_parsers)
         ]
@@ -1518,6 +1519,10 @@ def _sort_dimensions(dimensions: Iterable[HasIdentifierT]) -> List[HasIdentifier
     return sorted(dimensions, key=lambda dimension: dimension.dimension_identifier())
 
 
+def _is_raw_dimension(dimension: HasIdentifierT) -> bool:
+    return dimension.dimension_identifier().endswith("/raw")
+
+
 @attr.s(frozen=True)
 class Table:
     """Ingest model that represents a table in a report"""
@@ -1573,19 +1578,29 @@ class Table:
                     "make sure you have one or the other."
                 )
 
-    def _validate_aggregate_dimensions(self) -> None:
-        unique_dimensions_by_identifiers: Dict[str, Counter] = {
-            dimension.dimension_identifier(): Counter() for dimension in self.dimensions
+    def _validate_unique_dimensions(self) -> None:
+        """
+        Validate that unique dimensions have more than one value.
+        Does not validate raw dimensions since it is okay for raw dimensions to only have one value.
+        """
+        unique_dimension_values_per_identifier: Dict[str, typing.Counter[str]] = {
+            dimension.dimension_identifier(): Counter()
+            for dimension in self.dimensions
+            if not _is_raw_dimension(dimension)
         }
 
         for dimensions, _value in self.data_points:
             for dimension in dimensions:
-                unique_dimensions_by_identifiers[dimension.dimension_identifier()][
-                    dimension
-                ] += 1
-        for _key, unique_dimensions in unique_dimensions_by_identifiers.items():
-            if len(unique_dimensions) == 1:
-                [unique_dimension, occurrences] = unique_dimensions.popitem()
+                if not _is_raw_dimension(dimension):
+                    unique_dimension_values_per_identifier[
+                        dimension.dimension_identifier()
+                    ].update([dimension.dimension_value])
+        for (
+            _key,
+            unique_dimension_values,
+        ) in unique_dimension_values_per_identifier.items():
+            if len(unique_dimension_values) == 1:
+                [unique_dimension, occurrences] = unique_dimension_values.popitem()
                 if occurrences == len(self.data_points):
                     raise AttributeError(
                         f"Attribute '{unique_dimension}' only has one set value, "
@@ -1619,12 +1634,13 @@ class Table:
     def __attrs_post_init__(self) -> None:
         # Validate consistency between `dimensions` and `data`.
         self._validate_metric()
-        dimension_identifiers = {
+        identifiers = [
             dimension.dimension_identifier() for dimension in self.dimensions
-        }
-        if len(dimension_identifiers) != len(self.dimensions):
-            raise ValueError(f"Duplicate dimensions in table: {self.dimensions}")
-        self._validate_aggregate_dimensions()
+        ]
+        duplicates = [item for item, count in Counter(identifiers).items() if count > 1]
+        if duplicates:
+            raise ValueError(f"Duplicate dimensions in table: {duplicates}")
+        self._validate_unique_dimensions()
         _validate_no_dimension_duplicates(self.filters)
         self._validate_dimension_either_filter_or_aggregate()
         for dimensions, _value in self.data_points:
@@ -1633,10 +1649,10 @@ class Table:
             }
             if len(row_dimension_identifiers) != len(dimensions):
                 raise ValueError(f"Duplicate dimensions in row: {dimensions}")
-            if not dimension_identifiers.issuperset(row_dimension_identifiers):
+            if not set(identifiers).issuperset(row_dimension_identifiers):
                 raise ValueError(
                     f"Row has dimensions not defined for table. Row dimensions: "
-                    f"'{row_dimension_identifiers}', table dimensions: '{dimension_identifiers}'"
+                    f"'{row_dimension_identifiers}', table dimensions: '{identifiers}'"
                 )
 
     @classmethod
@@ -2090,7 +2106,16 @@ def _parse_tables(
                 # Raise the original error.
                 raise e from e
         with table_handle.open() as table_file:
-            df = pandas.read_csv(table_file)
+            name = _get_table_filename(
+                spreadsheet_name, name=table_name, file=table_filename
+            )
+            file_extension = os.path.splitext(name)[1]
+            if file_extension == ".csv":
+                df = pandas.read_csv(table_file)
+            elif file_extension == ".tsv":
+                df = pandas.read_table(table_file)
+            else:
+                raise ValueError(f"Received unexpected file extension: {name}")
 
         tables.extend(
             Table.list_from_dataframe(
