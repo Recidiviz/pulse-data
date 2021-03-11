@@ -1,0 +1,18 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.3.0
+    hooks:
+      - id: check-yaml
+  - repo: https://github.com/psf/black
+    rev: 20.8b1
+    hooks:
+      - id: black
+        language_version: python3
+  - repo: local
+    hooks:
+      - id: generate_docs
+        name: generate_docs
+        entry: pipenv run python -m recidiviz.tools.docs.documentation_generator
+        language: system
+        files: ^recidiviz/ingest/direct/regions/
+        require_serial: true
