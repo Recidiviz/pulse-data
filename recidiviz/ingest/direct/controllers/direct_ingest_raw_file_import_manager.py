@@ -62,6 +62,14 @@ from recidiviz.utils.yaml_dict import YAMLDict
 
 
 @attr.s
+class ColumnEnumValueInfo:
+    # The literal enum value
+    value: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # The description that value maps to
+    description: Optional[str] = attr.ib(validator=attr_validators.is_opt_str)
+
+
+@attr.s
 class RawTableColumnInfo:
     # The column name in BigQuery-compatible, normalized form (e.g. punctuation stripped)
     name: str = attr.ib(validator=attr_validators.is_non_empty_str)
@@ -70,6 +78,10 @@ class RawTableColumnInfo:
     # Describes the column contents - if None, this column cannot be used for ingest, nor will you be able to write a
     # raw data migration involving this column.
     description: Optional[str] = attr.ib(validator=attr_validators.is_opt_str)
+    # Describes possible enum values for this column if known
+    known_values: List[ColumnEnumValueInfo] = attr.ib(
+        factory=list, validator=attr_validators.is_list
+    )
 
 
 @attr.s(frozen=True)
@@ -194,6 +206,12 @@ class DirectIngestRawFileConfig:
                     name=column["name"],
                     is_datetime=column.get("is_datetime", False),
                     description=column.get("description", None),
+                    known_values=[
+                        ColumnEnumValueInfo(
+                            value=x["value"], description=x.get("description", None)
+                        )
+                        for x in column.get("known_values", [])
+                    ],
                 )
                 for column in columns
             ],

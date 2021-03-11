@@ -35,6 +35,7 @@ from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager i
     DirectIngestRawFileImportManager,
     DirectIngestRegionRawFileConfig,
     RawTableColumnInfo,
+    ColumnEnumValueInfo,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
@@ -113,7 +114,13 @@ class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
         )
         expected_columns_config_1 = [
             RawTableColumnInfo(
-                name="col_name_1a", is_datetime=False, description="First column."
+                name="col_name_1a",
+                is_datetime=False,
+                description="First column.",
+                known_values=[
+                    ColumnEnumValueInfo(value="A", description="A description"),
+                    ColumnEnumValueInfo(value="B", description=None),
+                ],
             ),
             RawTableColumnInfo(
                 name="col_name_1b",
@@ -121,7 +128,9 @@ class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
                 description=expected_column2_description,
             ),
             RawTableColumnInfo(
-                name="undocumented_column", is_datetime=False, description=None
+                name="undocumented_column",
+                is_datetime=False,
+                description=None,
             ),
         ]
         self.assertEqual(expected_columns_config_1, config_1.columns)
