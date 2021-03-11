@@ -55,8 +55,6 @@ resource "google_cloudfunctions_function" "direct-ingest-states-upload-testing" 
   source_repository {
     url = local.repo_url
   }
-
-  timeouts {}
 }
 
 
@@ -84,8 +82,6 @@ resource "google_cloudfunctions_function" "export_metric_view_data" {
   # cloud function to issue an async request and return an id that can be queried
   # by another process.
   timeout = 540
-
-  timeouts {}
 }
 
 
@@ -106,8 +102,6 @@ resource "google_cloudfunctions_function" "parse-state-aggregate" {
   }
 
   timeout = 540
-
-  timeouts {}
 }
 
 
@@ -154,8 +148,6 @@ resource "google_cloudfunctions_function" "report_start_new_batch" {
   }
 
   timeout = 300
-
-  timeouts {}
 }
 
 resource "google_cloudfunctions_function" "trigger_daily_calculation_pipeline_dag" {
@@ -182,8 +174,6 @@ resource "google_cloudfunctions_function" "trigger_daily_calculation_pipeline_da
   source_repository {
     url = local.repo_url
   }
-
-  timeouts {}
 }
 
 resource "google_cloudfunctions_function" "trigger_calculation_pipeline_historical_incarceration_us_nd" {
@@ -210,8 +200,6 @@ resource "google_cloudfunctions_function" "trigger_calculation_pipeline_historic
   source_repository {
     url = local.repo_url
   }
-
-  timeouts {}
 }
 
 
@@ -239,6 +227,4 @@ resource "google_cloudfunctions_function" "trigger_calculation_pipeline_historic
   source_repository {
     url = local.repo_url
   }
-
-  timeouts {}
 }
