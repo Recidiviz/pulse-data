@@ -32,7 +32,7 @@ ACCEPTABLE_DATE = datetime.date(year=2018, month=8, day=9)
 
 
 def get_urls_to_download() -> Set[str]:
-    page = requests.get(STATE_AGGREGATE_URL).text
+    page = requests.get(STATE_AGGREGATE_URL, verify=False).text
     html_tree = html.fromstring(page)
     links = html_tree.xpath("//a/@href")
 
