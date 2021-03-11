@@ -37,7 +37,7 @@ resource "google_cloudfunctions_function" "primary-ingest" {
     url = local.repo_url
   }
 
-  timeouts {}
+  timeout = 540
 }
 
 resource "google_cloudfunctions_function" "secondary-ingest" {
@@ -61,5 +61,5 @@ resource "google_cloudfunctions_function" "secondary-ingest" {
     url = local.repo_url
   }
 
-  timeouts {}
+  timeout = 540
 }
