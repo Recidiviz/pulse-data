@@ -11,3 +11,6 @@ git config blame.ignoreRevsFile .git-blame-ignore-revs
 export LDFLAGS="-L/usr/local/opt/openssl/lib"
 export CPPFLAGS="-I/usr/local/opt/openssl/include"
 pipenv sync --dev
+
+# Install pre-commit hooks
+pipenv run pre-commit install --overwrite

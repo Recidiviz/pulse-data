@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           # Need sufficient depth in order for merge-base to work
-          fetch-depth: 50
+          fetch-depth: 0
       - uses: actions/setup-python@v2
         with:
           python-version: "3.7.9"
@@ -54,6 +54,13 @@ jobs:
         run: pipenv run ./recidiviz/tools/travis/run_pylint.sh
       - name: Black
         run: pipenv run black . --check
+      - name: pre-commit
+        # If pre-commit proves useful, we can remove redundant checks (e.g. black).
+        uses: pre-commit/action@v2.0.0
+        # The token allows it to push changes back to the branch, if this causes issues
+        # for anyone (frequent conflicts) they should feel free to remove it.
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Yarn caching
         uses: actions/cache@v2
         id: yarn-caching
