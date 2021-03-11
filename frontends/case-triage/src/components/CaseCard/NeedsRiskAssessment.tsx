@@ -45,7 +45,10 @@ const getAssessmentLevelText = (
   cutoffs?: ScoreMinMaxBySupervisionLevel
 ) => {
   if (cutoffs) {
-    const cutoff: ScoreMinMax = cutoffs[client.supervisionLevel];
+    const cutoff = cutoffs[client.supervisionLevel];
+    if (!cutoff) {
+      return null;
+    }
 
     return (
       <>
