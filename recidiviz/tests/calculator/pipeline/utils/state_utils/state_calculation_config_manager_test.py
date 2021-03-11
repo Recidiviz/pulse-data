@@ -556,6 +556,27 @@ class TestGetSupervisingOfficerAndLocationInfoFromSupervisionPeriod(unittest.Tes
         temporary_sp_agent_associations = {
             111: {
                 "agent_id": 123,
+                # Only level_2 location info, officer name has whitespace
+                "agent_external_id": "07||#  ",
+                "supervision_period_id": 111,
+            }
+        }
+
+        (
+            supervising_officer_external_id,
+            level_1_supervision_location,
+            level_2_supervision_location,
+        ) = get_supervising_officer_and_location_info_from_supervision_period(
+            supervision_period, temporary_sp_agent_associations
+        )
+
+        self.assertEqual(None, supervising_officer_external_id)
+        self.assertEqual(None, level_1_supervision_location)
+        self.assertEqual("07", level_2_supervision_location)
+
+        temporary_sp_agent_associations = {
+            111: {
+                "agent_id": 123,
                 # Empty info string
                 "agent_external_id": "||#",
                 "supervision_period_id": 111,
