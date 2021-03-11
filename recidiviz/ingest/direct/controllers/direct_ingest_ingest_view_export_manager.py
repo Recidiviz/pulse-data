@@ -138,9 +138,9 @@ class DirectIngestIngestViewExportManager:
         should be started, given what has updated in the raw data tables since the last time we exported data. Also
         returns any tasks that have not yet completed.
         """
-        if not self.region.are_ingest_view_exports_enabled_in_env():
+        if not self.region.is_ingest_launched_in_env():
             raise ValueError(
-                f"Ingest view exports not enabled for region [{self.region.region_code}]"
+                f"Ingest not enabled for region [{self.region.region_code}]"
             )
 
         logging.info("Gathering export state for each ingest tag")
@@ -379,9 +379,9 @@ class DirectIngestIngestViewExportManager:
         (upper and lower) into temporary tables. The delta between those tables is then queried separately using
         SQL's `EXCEPT DISTINCT` and those final results are exported to Cloud Storage.
         """
-        if not self.region.are_ingest_view_exports_enabled_in_env():
+        if not self.region.is_ingest_launched_in_env():
             raise ValueError(
-                f"Ingest view exports not enabled for region [{self.region.region_code}]"
+                f"Ingest not enabled for region [{self.region.region_code}]"
             )
 
         metadata = self.file_metadata_manager.get_ingest_view_metadata_for_export_job(

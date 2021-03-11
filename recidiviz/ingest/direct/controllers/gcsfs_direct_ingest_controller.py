@@ -30,7 +30,6 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_file_path,
     SPLIT_FILE_SUFFIX,
-    to_normalized_unprocessed_file_path_from_normalized_path,
     DirectIngestGCSFileSystem,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_ingest_view_export_manager import (
@@ -239,8 +238,7 @@ class GcsfsDirectIngestController(
         )
         self._register_all_new_paths_in_metadata(unprocessed_raw_paths)
 
-        if self.region.are_ingest_view_exports_enabled_in_env():
-            self._register_all_new_paths_in_metadata(unprocessed_ingest_view_paths)
+        self._register_all_new_paths_in_metadata(unprocessed_ingest_view_paths)
 
         unprocessed_paths = unprocessed_raw_paths + unprocessed_ingest_view_paths
         did_split = False
@@ -249,16 +247,15 @@ class GcsfsDirectIngestController(
                 did_split = True
 
         if did_split:
-            if self.region.are_ingest_view_exports_enabled_in_env():
-                post_split_unprocessed_ingest_view_paths = (
-                    self.fs.get_unprocessed_file_paths(
-                        self.ingest_directory_path,
-                        file_type_filter=GcsfsDirectIngestFileType.INGEST_VIEW,
-                    )
+            post_split_unprocessed_ingest_view_paths = (
+                self.fs.get_unprocessed_file_paths(
+                    self.ingest_directory_path,
+                    file_type_filter=GcsfsDirectIngestFileType.INGEST_VIEW,
                 )
-                self._register_all_new_paths_in_metadata(
-                    post_split_unprocessed_ingest_view_paths
-                )
+            )
+            self._register_all_new_paths_in_metadata(
+                post_split_unprocessed_ingest_view_paths
+            )
 
             logging.info(
                 "Split at least one path - returning, will handle split "
@@ -302,23 +299,6 @@ class GcsfsDirectIngestController(
             data_import_args.raw_data_file_path, file_metadata
         )
 
-        if not self.region.are_ingest_view_exports_enabled_in_env():
-            # TODO(#3162) This is a stopgap measure for regions that have only partially launched. Delete once SQL
-            #  pre-processing is enabled for all direct ingest regions.
-            parts = filename_parts_from_path(data_import_args.raw_data_file_path)
-            ingest_file_tags = self.get_file_tag_rank_list()
-
-            if parts.file_tag in ingest_file_tags:
-                self.fs.copy(
-                    data_import_args.raw_data_file_path,
-                    GcsfsFilePath.from_absolute_path(
-                        to_normalized_unprocessed_file_path_from_normalized_path(
-                            data_import_args.raw_data_file_path.abs_path(),
-                            file_type_override=GcsfsDirectIngestFileType.INGEST_VIEW,
-                        )
-                    ),
-                )
-
         processed_path = self.fs.mv_path_to_processed_path(
             data_import_args.raw_data_file_path
         )
@@ -333,11 +313,6 @@ class GcsfsDirectIngestController(
         self, ingest_view_export_args: GcsfsIngestViewExportArgs
     ) -> None:
         check_is_region_launched_in_env(self.region)
-        if not self.region.are_ingest_view_exports_enabled_in_env():
-            raise ValueError(
-                f"Ingest view exports not enabled for region [{self.region.region_code}]. Passed args: "
-                f"{ingest_view_export_args}"
-            )
 
         did_export = self.ingest_view_export_manager.export_view_for_args(
             ingest_view_export_args
@@ -404,9 +379,6 @@ class GcsfsDirectIngestController(
         scheduled. If tasks are scheduled or are still running, returns True. Otherwise, if it's safe to proceed with
         next steps of ingest, returns False."""
 
-        if not self.region.are_ingest_view_exports_enabled_in_env():
-            return False
-
         queue_info = self.cloud_task_manager.get_bq_import_export_queue_info(
             self.region
         )
@@ -462,9 +434,6 @@ class GcsfsDirectIngestController(
 
     def _get_next_job_args(self) -> Optional[GcsfsIngestArgs]:
         args = self.file_prioritizer.get_next_job_args()
-
-        if not self.region.are_ingest_view_exports_enabled_in_env():
-            return args
 
         if not args:
             return None
@@ -614,9 +583,7 @@ class GcsfsDirectIngestController(
 
         logging.info("Proceeding to file splitting for path [%s].", path.abs_path())
 
-        original_metadata = None
-        if self.region.are_ingest_view_exports_enabled_in_env():
-            original_metadata = self.file_metadata_manager.get_file_metadata(path)
+        original_metadata = self.file_metadata_manager.get_file_metadata(path)
 
         output_dir = GcsfsDirectoryPath.from_file_path(path)
 
@@ -646,26 +613,23 @@ class GcsfsDirectIngestController(
 
         # We wait to register files with metadata manager until all files have been successfully copied to avoid leaving
         # the metadata manager in an inconsistent state.
-        if self.region.are_ingest_view_exports_enabled_in_env():
-            if not isinstance(original_metadata, DirectIngestIngestFileMetadata):
-                raise ValueError("Attempting to split a non-ingest view type file")
+        if not isinstance(original_metadata, DirectIngestIngestFileMetadata):
+            raise ValueError("Attempting to split a non-ingest view type file")
 
-            logging.info(
-                "Registering [%s] split files with the metadata manager.",
-                len(upload_paths),
+        logging.info(
+            "Registering [%s] split files with the metadata manager.",
+            len(upload_paths),
+        )
+
+        for upload_path in upload_paths:
+            ingest_file_metadata = (
+                self.file_metadata_manager.register_ingest_file_split(
+                    original_metadata, upload_path
+                )
             )
+            self.file_metadata_manager.mark_ingest_view_exported(ingest_file_metadata)
 
-            for upload_path in upload_paths:
-                ingest_file_metadata = (
-                    self.file_metadata_manager.register_ingest_file_split(
-                        original_metadata, upload_path
-                    )
-                )
-                self.file_metadata_manager.mark_ingest_view_exported(
-                    ingest_file_metadata
-                )
-
-            self.file_metadata_manager.mark_file_as_processed(path)
+        self.file_metadata_manager.mark_file_as_processed(path)
 
         logging.info(
             "Done splitting file [%s] into [%s] paths, moving it to storage.",
@@ -709,8 +673,7 @@ class GcsfsDirectIngestController(
     def _do_cleanup(self, args: GcsfsIngestArgs) -> None:
         self.fs.mv_path_to_processed_path(args.file_path)
 
-        if self.region.are_ingest_view_exports_enabled_in_env():
-            self.file_metadata_manager.mark_file_as_processed(args.file_path)
+        self.file_metadata_manager.mark_file_as_processed(args.file_path)
 
         parts = filename_parts_from_path(args.file_path)
         self._move_processed_files_to_storage_as_necessary(
