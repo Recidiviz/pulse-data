@@ -15,13 +15,8 @@ max_allowed_error_overrides:
       month was measured. Over time, data gets backfilled as new info about what happened that month comes in, so our
       numbers will get "worse" as time goes on and we get more accurate data about movements.
   - validation_name: supervision_population_person_level_external_comparison_matching_people_district
-    max_allowed_error_override: 0.12
-    override_reason: TODO(#6251) - We have a known bug in the
-      'supervision_period' ingest view where we aren't properly hydrating supervision
-      districts for periods where no parole officer has been assigned yet or, most
-      critically, where the parole officer was assigned on the same day as the supervision
-      stint started. This will be fixed when an ingest rerun with the
-      'supervision_period_v2' has completed.
+    max_allowed_error_override: 0.01
+    override_reason: Here we make the threshold stricter than the default of 0.02.
   - validation_name: supervision_termination_person_level_external_comparison
     max_allowed_error_override: 0.03
     override_reason: We have a slightly higher error rate (~3%) than we
