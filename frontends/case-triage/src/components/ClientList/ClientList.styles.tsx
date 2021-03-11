@@ -91,3 +91,7 @@ export const ClientListTableHeading = styled.div`
     flex: 1 1 0%;
   }
 `;
+
+export const ClientListContainer = styled.div`
+  margin-bottom: ${spacing.lg};
+`;

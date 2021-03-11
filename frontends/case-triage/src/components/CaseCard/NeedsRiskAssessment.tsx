@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { IconSVG, Need, NeedState } from "@recidiviz/case-triage-components";
+import moment from "moment";
 import * as React from "react";
 import {
   Caption,
@@ -25,7 +26,6 @@ import {
 import { NeedsCheckboxButton } from "./NeedsCheckboxButton";
 import { DecoratedClient } from "../../stores/ClientsStore/Client";
 import { useRootStore } from "../../stores";
-import { SupervisionLevel } from "../../stores/ClientsStore";
 import {
   ScoreMinMax,
   ScoreMinMaxBySupervisionLevel,
@@ -102,11 +102,34 @@ const NeedsRiskAssessment: React.FC<NeedsRiskAssessmentProps> = ({
           {getAssessmentScoreText(client)}
           {getAssessmentLevelText(client, supervisionLevelCutoffs)}
         </div>
-        Last assessed on {mostRecentAssessmentDate.format("MMMM Do, YYYY")}
+        <div>
+          Last assessed on {mostRecentAssessmentDate.format("MMMM Do, YYYY")}
+        </div>
       </>
     );
   } else {
     caption = `A risk assessment has never been completed`;
+  }
+
+  let nextAssessmentText;
+  if (client.nextAssessmentDate) {
+    const beginningOfDay = moment().startOf("day");
+
+    // Upcoming assessments are set to day boundaries. Use the beginning of today when calculating distance
+    // Thus, showing a minimum unit of "In a day" rather than "In X hours"
+    const timeAgo = client.nextAssessmentDate.from(beginningOfDay, true);
+
+    if (client.nextAssessmentDate.isSame(beginningOfDay, "day")) {
+      nextAssessmentText = <div>Next assessment recommended today</div>;
+    } else if (client.nextAssessmentDate.isAfter(beginningOfDay, "day")) {
+      nextAssessmentText = <div>Next assessment recommended in {timeAgo}</div>;
+    } else {
+      nextAssessmentText = <div>Risk assessment recommended {timeAgo} ago</div>;
+    }
+  } else {
+    nextAssessmentText = (
+      <div>No regular assessment is needed, unless prompted by an event</div>
+    );
   }
 
   const onToggleCheck = (checked: boolean) => {
@@ -123,7 +146,10 @@ const NeedsRiskAssessment: React.FC<NeedsRiskAssessmentProps> = ({
       <CaseCardInfo>
         <strong>{title}</strong>
         <br />
-        <Caption>{caption}</Caption>
+        <Caption>
+          {caption}
+          {nextAssessmentText}
+        </Caption>
         {!client.needsMet.assessment ? (
           <CheckboxButtonContainer>
             <NeedsCheckboxButton
