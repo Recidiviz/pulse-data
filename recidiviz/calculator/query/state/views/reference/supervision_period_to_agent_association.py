@@ -42,7 +42,7 @@ SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_QUERY_TEMPLATE = """
                 FORMAT("%s|%s|%s", IFNULL(district_office, ''),
                     IFNULL(district_sub_office_id, ''),
                     IFNULL(supervision_location_org_code, '')),
-                FORMAT("%s %s %s", IFNULL(CONCAT(agent_id, ':'), ''), IFNULL(first_name, ''), IFNULL(last_name, ''))
+                TRIM(FORMAT("%s %s %s", IFNULL(CONCAT(agent_id, ':'), ''), IFNULL(first_name, ''), IFNULL(last_name, '')))
             ) AS agent_external_id
         FROM
         (SELECT

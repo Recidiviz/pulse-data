@@ -577,9 +577,9 @@ def get_supervising_officer_and_location_info_from_supervision_period(
                     supervising_officer_external_id,
                 ) = supervision_info.split("#")
 
-                supervising_officer_external_id = (
-                    supervising_officer_external_id or None
-                )
+                # If the supervising_officer_external_id is only whitespace, set to None
+                if not supervising_officer_external_id.strip():
+                    supervising_officer_external_id = None
 
                 if supervision_site and supervision_site.count("|") == 2:
                     # In PA, supervision_site follows format
