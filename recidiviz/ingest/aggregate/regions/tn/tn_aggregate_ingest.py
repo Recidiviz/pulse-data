@@ -109,7 +109,9 @@ def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
 def _parse_table(
     _: str, filename: str, is_female: bool, report_date: datetime.date
 ) -> pd.DataFrame:
+    """Read PDF and format resulting dataframes into a single table."""
     # Most but not all PDFs have data on pages 2-4.
+
     pages = (
         [1, 2]
         if 2000 <= report_date.year <= 2005
@@ -121,7 +123,7 @@ def _parse_table(
         filename,
         pages=pages,
         multiple_tables=True,
-        stream=bool(report_date.year == 2020 and report_date.month == 12),
+        stream=bool(report_date >= datetime.date(2020, 12, 1)),
     )
 
     if is_female and report_date.year == 2020 and report_date.month in (4, 5, 6):
@@ -131,7 +133,7 @@ def _parse_table(
             pd.concat((table[3], table[4])),
         ]
 
-    formatted_dfs = [_format_table(df, is_female, report_date.year) for df in table]
+    formatted_dfs = [_format_table(df, is_female, report_date) for df in table]
 
     table = pd.concat(formatted_dfs, ignore_index=True)
 
@@ -173,7 +175,7 @@ def _expand_columns_with_spaces_to_new_columns(df: pd.DataFrame) -> pd.DataFrame
 
         # Just copy over the first column and columns with no spaces,
         # which haven't been smashed together, presumably.
-        if col_ind == 0 or not col.str.contains(" ").any():
+        if col_ind == 0 or not col.astype("str").str.contains(" ").any():
             expanded_df = expanded_df.join(col, rsuffix=" ")
         else:
             # Extract all the smashed together columns into their own
@@ -201,12 +203,16 @@ def _expand_columns_with_spaces_to_new_columns(df: pd.DataFrame) -> pd.DataFrame
     return expanded_df
 
 
-def _format_table(df: pd.DataFrame, is_female: bool, year: int) -> pd.DataFrame:
+def _format_table(
+    df: pd.DataFrame, is_female: bool, report_date: datetime.date
+) -> pd.DataFrame:
     """Format the dataframe that comes from one page of the PDF."""
 
-    # The first four rows are parsed containing the column names.
-    df.columns = df.iloc[:4].apply(lambda rows: " ".join(rows.dropna()).strip())
-    df = df.iloc[4:]
+    row_start = 4 if report_date.year <= 2020 and report_date.month < 12 else 3
+
+    # The first 3 or 4 rows are parsed containing the column names.
+    df.columns = df.iloc[:row_start].apply(lambda rows: " ".join(rows.dropna()).strip())
+    df = df.iloc[row_start:]
 
     df = _expand_columns_with_spaces_to_new_columns(df)
 
@@ -232,7 +238,7 @@ def _format_table(df: pd.DataFrame, is_female: bool, year: int) -> pd.DataFrame:
         ]
         df = df[keep_cols]
     else:
-        df = _drop_bad_columns(df, year)
+        df = _drop_bad_columns(df, report_date.year)
 
         df = df.iloc[:, 0 : len(_JAIL_REPORT_COLUMN_NAMES)]
         df.columns = _JAIL_REPORT_COLUMN_NAMES
