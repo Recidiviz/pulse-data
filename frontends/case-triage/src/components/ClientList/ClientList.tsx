@@ -17,13 +17,17 @@
 import { observer } from "mobx-react-lite";
 import * as React from "react";
 import { useRootStore } from "../../stores";
-import { ClientListHeading, ClientListTableHeading } from "./ClientList.styles";
+import {
+  ClientListContainer,
+  ClientListHeading,
+  ClientListTableHeading,
+} from "./ClientList.styles";
 import ClientListCard from "./ClientListCard";
 import MarkedInProgressCard from "./MarkedInProgressCard";
 import InProgressEmptyState from "./InProgressEmptyStateCard";
 
 // Update this if the <ClientListHeading/> height changes
-export const HEADING_HEIGHT_MAGIC_NUMBER = 118;
+export const HEADING_HEIGHT_MAGIC_NUMBER = 128;
 
 const ClientList = () => {
   const { clientsStore, policyStore } = useRootStore();
@@ -74,11 +78,11 @@ const ClientList = () => {
   }
 
   return (
-    <div>
+    <ClientListContainer>
       <ClientListHeading>Up Next</ClientListHeading>
       <ClientListTableHeading>
         <span>Client</span>
-        <span>Needs</span>
+        <span>Needs Met</span>
         <span>Recommended Contact</span>
       </ClientListTableHeading>
 
@@ -95,7 +99,7 @@ const ClientList = () => {
       {clientsStore.isLoading || policyStore.isLoading
         ? `Loading... ${clientsStore.error || ""}`
         : inProgressClients}
-    </div>
+    </ClientListContainer>
   );
 };
 

@@ -28,7 +28,6 @@ import {
   Caption,
   CaseCardFeedback,
   CaseCardFooter,
-  CaseCardSection,
   CaseCardHeading,
   CloseButton,
 } from "./CaseCard.styles";
@@ -51,7 +50,7 @@ const useCardFeedback = (client: DecoratedClient) => {
       See something wrong?
       <br />
       <Button kind="link" onClick={() => setFeedbackModalIsOpen(true)}>
-        Give us feedback.
+        Submit a correction
       </Button>
       <Modal
         isOpen={feedbackModalIsOpen}
