@@ -7,6 +7,10 @@ primary_key_cols:
 columns:
   - name: col_name_1a
     description: First column.
+    known_values:
+      - value: A
+        description: A description
+      - value: B
   - name: col_name_1b
     description: |-
       A column description that is long enough to take up
