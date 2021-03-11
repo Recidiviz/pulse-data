@@ -76,10 +76,7 @@ class DirectIngestPreProcessedIngestViewCollector(
         controller_tags_no_view_defined = controller_view_tags_set.difference(
             found_ingest_view_tags_set
         )
-        if (
-            self.region.are_ingest_view_exports_enabled_in_env()
-            and controller_tags_no_view_defined
-        ):
+        if self.region.is_ingest_launched_in_env() and controller_tags_no_view_defined:
             raise ValueError(
                 f"Found controller file tags with no corresponding view defined: {controller_tags_no_view_defined}"
             )

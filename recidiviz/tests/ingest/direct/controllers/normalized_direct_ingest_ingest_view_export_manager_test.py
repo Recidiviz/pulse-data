@@ -306,10 +306,10 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         )
 
     @staticmethod
-    def create_fake_region(ingest_view_exports_enabled: bool = True) -> Region:
+    def create_fake_region(environment: str = "production") -> Region:
         return fake_region(
             region_code="US_XX",
-            are_ingest_view_exports_enabled_in_env=ingest_view_exports_enabled,
+            environment=environment,
         )
 
     def create_export_manager(
@@ -358,7 +358,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
 
     def test_getIngestViewExportTaskArgs_happy(self) -> None:
         # Arrange
-        region = self.create_fake_region(ingest_view_exports_enabled=True)
+        region = self.create_fake_region(environment="production")
         export_manager = self.create_export_manager(region)
         export_manager.file_metadata_manager.get_ingest_view_metadata_for_most_recent_valid_job = Mock(  # type: ignore
             return_value=DirectIngestIngestFileMetadata(
@@ -407,7 +407,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
 
     def test_getIngestViewExportTaskArgs_rawFileOlderThanLastExport(self) -> None:
         # Arrange
-        region = self.create_fake_region(ingest_view_exports_enabled=True)
+        region = self.create_fake_region(environment="production")
         export_manager = self.create_export_manager(region)
         export_manager.file_metadata_manager.get_ingest_view_metadata_for_most_recent_valid_job = Mock(  # type: ignore
             return_value=DirectIngestIngestFileMetadata(
@@ -448,7 +448,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
     def test_getIngestViewExportTaskArgs_rawCodeTableOlderThanLastExport(self) -> None:
         # Arrange
         CODE_TABLE_TAG = "RECIDIVIZ_REFERENCE_ingest_view"
-        region = self.create_fake_region(ingest_view_exports_enabled=True)
+        region = self.create_fake_region(environment="production")
         export_manager = self.create_export_manager(
             region, controller_file_tags=[CODE_TABLE_TAG]
         )
@@ -490,9 +490,13 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         # New code tables are backdated but don't need to be re-ingested, so ignore them.
         self.assertListEqual(args, [])
 
+    @patch(
+        "recidiviz.utils.environment.get_gcp_environment",
+        Mock(return_value="production"),
+    )
     def test_exportViewForArgs_ingestViewExportsDisabled(self) -> None:
         # Arrange
-        region = self.create_fake_region(ingest_view_exports_enabled=False)
+        region = self.create_fake_region(environment="staging")
         export_manager = self.create_export_manager(region)
         export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="ingest_view",

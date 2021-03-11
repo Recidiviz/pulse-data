@@ -240,9 +240,11 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
     FIXTURE_PATH_PREFIX = "direct/controllers"
 
-    TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION = fake_region(
-        region_code=TEST_STATE_REGION.region_code,
-        are_ingest_view_exports_enabled_in_env=True,
+    TEST_INGEST_LAUNCHED_REGION = fake_region(
+        region_code=TEST_STATE_REGION.region_code, environment="production"
+    )
+    TEST_INGEST_LAUNCHED_IN_STAGING_REGION = fake_region(
+        region_code=TEST_STATE_REGION.region_code, environment="staging"
     )
 
     # Stores the location of the postgres DB for this test run
@@ -290,7 +292,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                 (tag, True) for tag in controller.get_file_tag_rank_list()
             ]
 
-        if not controller.region.are_ingest_view_exports_enabled_in_env():
+        if not controller.region.is_ingest_launched_in_env():
             expected_ingest_metadata_tags_with_is_processed = []
         elif expected_ingest_metadata_tags_with_is_processed is None:
             expected_ingest_metadata_tags_with_is_processed = [
@@ -347,7 +349,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             for metadata in ingest_file_metadata_list
         ]
 
-        if not controller.region.are_ingest_view_exports_enabled_in_env():
+        if not controller.region.is_ingest_launched_in_env():
             self.assertEqual([], actual_ingest_metadata_tags_with_is_processed)
 
         self.assertEqual(
@@ -451,9 +453,9 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
     @patch(
         "recidiviz.utils.regions.get_region",
-        Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION),
+        Mock(return_value=TEST_INGEST_LAUNCHED_REGION),
     )
-    def test_state_runs_files_in_order_sql_preprocessing_fully_launched(self) -> None:
+    def test_state_runs_files_in_order(self) -> None:
         controller = self.run_async_file_order_test_for_controller_cls(
             StateTestGcsfsDirectIngestController
         )
@@ -468,7 +470,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
     )
     @patch(
         "recidiviz.utils.regions.get_region",
-        Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION),
+        Mock(return_value=TEST_INGEST_LAUNCHED_REGION),
     )
     def test_state_runs_files_in_order_locking(self) -> None:
         controller = build_gcsfs_controller_for_tests(
@@ -519,7 +521,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
     )
     @patch(
         "recidiviz.utils.regions.get_region",
-        Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION),
+        Mock(return_value=TEST_INGEST_LAUNCHED_REGION),
     )
     def test_state_runs_files_in_order_locking_region(self) -> None:
         controller = build_gcsfs_controller_for_tests(
@@ -570,7 +572,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
     )
     @patch(
         "recidiviz.utils.regions.get_region",
-        Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION),
+        Mock(return_value=TEST_INGEST_LAUNCHED_REGION),
     )
     def test_crash_releases_lock(self) -> None:
         controller = build_gcsfs_controller_for_tests(
@@ -594,9 +596,9 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
     @patch(
         "recidiviz.utils.regions.get_region",
-        Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION),
+        Mock(return_value=TEST_INGEST_LAUNCHED_REGION),
     )
-    def test_state_single_split_tag_sql_preprocessing_fully_launched(self) -> None:
+    def test_state_single_split_tag(self) -> None:
         controller = build_gcsfs_controller_for_tests(
             SingleTagStateTestGcsfsDirectIngestController,
             self.FIXTURE_PATH_PREFIX,
@@ -660,9 +662,9 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
     @patch(
         "recidiviz.utils.regions.get_region",
-        Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION),
+        Mock(return_value=TEST_INGEST_LAUNCHED_REGION),
     )
-    def test_state_unexpected_tag_sql_preprocessing_fully_launched(self) -> None:
+    def test_state_unexpected_tag(self) -> None:
         controller = build_gcsfs_controller_for_tests(
             StateTestGcsfsDirectIngestController,
             self.FIXTURE_PATH_PREFIX,
@@ -715,9 +717,9 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
     @patch(
         "recidiviz.utils.regions.get_region",
-        Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION),
+        Mock(return_value=TEST_INGEST_LAUNCHED_REGION),
     )
-    def test_state_tag_we_import_but_do_not_ingest_sql_preprocessing_fully_launched(
+    def test_state_tag_we_import_but_do_not_ingest(
         self,
     ) -> None:
         controller = build_gcsfs_controller_for_tests(
@@ -759,7 +761,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
     @patch(
         "recidiviz.utils.regions.get_region",
-        Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION),
+        Mock(return_value=TEST_INGEST_LAUNCHED_REGION),
     )
     def test_do_not_queue_same_job_twice(self) -> None:
         controller = build_gcsfs_controller_for_tests(
@@ -796,7 +798,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         # Single process job request should be waiting for the first file
         self.assertEqual(
             task_manager.get_process_job_queue_info(
-                self.TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION
+                self.TEST_INGEST_LAUNCHED_REGION
             ).size(),
             1,
         )
@@ -808,7 +810,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         self.assertEqual(
             task_manager.get_process_job_queue_info(
-                self.TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION
+                self.TEST_INGEST_LAUNCHED_REGION
             ).size(),
             0,
         )
@@ -844,7 +846,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
     @patch(
         "recidiviz.utils.regions.get_region",
-        Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION),
+        Mock(return_value=TEST_INGEST_LAUNCHED_REGION),
     )
     def test_next_schedule_runs_before_process_job_clears(self) -> None:
         controller = build_gcsfs_controller_for_tests(
@@ -925,7 +927,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
     @patch(
         "recidiviz.utils.regions.get_region",
-        Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION),
+        Mock(return_value=TEST_INGEST_LAUNCHED_REGION),
     )
     def test_process_job_task_run_twice(self) -> None:
         # Cloud Tasks has an at-least once guarantee - make sure rerunning a task in series does not crash
@@ -1005,7 +1007,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
     @patch(
         "recidiviz.utils.regions.get_region",
-        Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION),
+        Mock(return_value=TEST_INGEST_LAUNCHED_REGION),
     )
     def test_do_not_schedule_more_than_one_delayed_scheduler_job(self) -> None:
         controller = build_gcsfs_controller_for_tests(
@@ -1038,7 +1040,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         # Should end up with one handle_new_files task in the scheduler queue
         self.assertEqual(
             task_manager.get_scheduler_queue_info(
-                self.TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION
+                self.TEST_INGEST_LAUNCHED_REGION
             ).size(),
             1,
         )
@@ -1070,7 +1072,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
     @patch(
         "recidiviz.utils.regions.get_region",
-        Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION),
+        Mock(return_value=TEST_INGEST_LAUNCHED_REGION),
     )
     def test_process_already_normalized_paths(self) -> None:
         controller = build_gcsfs_controller_for_tests(
@@ -1106,9 +1108,9 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
     @patch(
         "recidiviz.utils.regions.get_region",
-        Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION),
+        Mock(return_value=TEST_INGEST_LAUNCHED_REGION),
     )
-    def test_process_ingest_view_file_that_needs_splitting_sql_preprocessing_fully_launched(
+    def test_process_ingest_view_file_that_needs_splitting(
         self,
     ) -> None:
         controller = build_gcsfs_controller_for_tests(
@@ -1174,7 +1176,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
     @patch(
         "recidiviz.utils.regions.get_region",
-        Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION),
+        Mock(return_value=TEST_INGEST_LAUNCHED_REGION),
     )
     @patch.object(
         GcsfsDirectIngestController,
@@ -1235,9 +1237,9 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
     @patch(
         "recidiviz.utils.regions.get_region",
-        Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION),
+        Mock(return_value=TEST_INGEST_LAUNCHED_REGION),
     )
-    def test_move_files_from_previous_days_to_storage_sql_preprocessing_fully_launched(
+    def test_move_files_from_previous_days_to_storage(
         self,
     ) -> None:
         controller = build_gcsfs_controller_for_tests(
@@ -1326,9 +1328,9 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
     @patch(
         "recidiviz.utils.regions.get_region",
-        Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION),
+        Mock(return_value=TEST_INGEST_LAUNCHED_REGION),
     )
-    def test_move_files_from_previous_days_to_storage_incomplete_current_day_sql_preprocessing_fully_lauched(
+    def test_move_files_from_previous_days_to_storage_incomplete_current_day(
         self,
     ) -> None:
         controller = build_gcsfs_controller_for_tests(
@@ -1458,7 +1460,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
     @patch(
         "recidiviz.utils.regions.get_region",
-        Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION),
+        Mock(return_value=TEST_INGEST_LAUNCHED_REGION),
     )
     def test_cloud_function_fails_on_new_file(self) -> None:
         controller = build_gcsfs_controller_for_tests(
@@ -1521,7 +1523,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
     @patch(
         "recidiviz.utils.regions.get_region",
-        Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION),
+        Mock(return_value=TEST_INGEST_LAUNCHED_REGION),
     )
     def test_cloud_function_fails_on_new_file_rename_later_with_cron(self) -> None:
         controller = build_gcsfs_controller_for_tests(
@@ -1607,9 +1609,9 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
     )
     @patch(
         "recidiviz.utils.regions.get_region",
-        Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION),
+        Mock(return_value=TEST_INGEST_LAUNCHED_REGION),
     )
-    def test_can_start_ingest_is_false_does_not_start_ingest(self) -> None:
+    def test_can_start_ingest_is_false_launched_region_throws(self) -> None:
         controller = build_gcsfs_controller_for_tests(
             StateTestGcsfsDirectIngestController,
             self.FIXTURE_PATH_PREFIX,
@@ -1620,26 +1622,16 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         file_tags = list(reversed(sorted(controller.get_file_tag_rank_list())))
 
         add_paths_with_tags(controller, file_tags)
-        run_task_queues_to_empty(controller)
+        with self.assertRaises(ValueError) as e:
+            run_task_queues_to_empty(controller)
 
-        if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
-            raise ValueError(
-                f"Controller fs must have type "
-                f"FakeGCSFileSystem. Found instead "
-                f"type [{type(controller.fs.gcs_file_system)}]"
-            )
-        for path in controller.fs.gcs_file_system.all_paths:
-            if not isinstance(path, GcsfsFilePath):
-                self.fail(f"Unexpected path type: {path.abs_path()}")
-            self.assertTrue(controller.fs.is_normalized_file_path(path))
-            self.assertTrue(controller.fs.is_seen_unprocessed_file(path))
-            self.assertFalse(controller.fs.is_split_file(path))
-            self.assertFalse(controller.fs.is_processed_file(path))
-
-        self.validate_file_metadata(
-            controller,
-            expected_raw_metadata_tags_with_is_processed=[],
-            expected_ingest_metadata_tags_with_is_processed=[],
+        self.assertEqual(
+            str(e.exception),
+            "The can_start_ingest flag should only be used for regions where ingest is not yet"
+            " launched in a particular environment. If we want to be able to selectively pause"
+            " ingest processing for a state, we will first have to build a config that is"
+            " respected by both the /ensure_all_file_paths_normalized endpoint and any cloud"
+            " functions that trigger ingest.",
         )
 
     @patch(
@@ -1648,9 +1640,9 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
     )
     @patch(
         "recidiviz.utils.regions.get_region",
-        Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION),
+        Mock(return_value=TEST_INGEST_LAUNCHED_IN_STAGING_REGION),
     )
-    def test_can_start_ingest_is_false_does_not_start_ingest_sql_preprocessing_enabled(
+    def test_can_start_ingest_is_false_does_not_start_ingest(
         self,
     ) -> None:
         controller = build_gcsfs_controller_for_tests(
@@ -1695,7 +1687,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
     )
     @patch(
         "recidiviz.utils.regions.get_region",
-        Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION),
+        Mock(return_value=TEST_INGEST_LAUNCHED_IN_STAGING_REGION),
     )
     def test_unlaunched_region_raises_if_can_start_ingest_true(self) -> None:
         controller = build_gcsfs_controller_for_tests(
@@ -1738,7 +1730,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
     @patch(
         "recidiviz.utils.regions.get_region",
-        Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION),
+        Mock(return_value=TEST_INGEST_LAUNCHED_REGION),
     )
     def test_launched_region_raises_if_can_start_ingest_false(self) -> None:
         controller = build_gcsfs_controller_for_tests(
@@ -1777,7 +1769,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
     @patch(
         "recidiviz.utils.regions.get_region",
-        Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION),
+        Mock(return_value=TEST_INGEST_LAUNCHED_REGION),
     )
     def test_processing_continues_if_there_are_subfolders_in_ingest_dir(self) -> None:
         controller = build_gcsfs_controller_for_tests(

@@ -112,9 +112,6 @@ class Region:
     stripe: Optional[str] = attr.ib(default="0")
     facility_id: Optional[str] = attr.ib(default=None)
 
-    # TODO(#3162): Once SQL preprocessing flow is enabled for all direct ingest regions, delete these configs
-    ingest_view_exports_enabled_env = attr.ib(default=None)
-
     @region_code.validator
     def validate_region_code(self, _attr: attr.Attribute, region_code: str) -> None:
         fips.validate_county_code(region_code)
@@ -192,29 +189,6 @@ class Region:
         return (
             self.environment is not None
             and self.environment.lower() == GCPEnvironment.PRODUCTION.value.lower()
-        )
-
-    def are_ingest_view_exports_enabled_in_env(self) -> bool:
-        """Returns true if this regions supports export of ingest views to the ingest bucket.
-
-        Side effects when enabled:
-        - For this region, we will create a us_xx_ingest_views BQ dataset on launch to store raw data tables for that
-            region (if it does not already exist).
-        - Once all raw BQ pre-processing complete, we will export a diff of all updated ingest views based on
-            information in the latest_valid_ingest_file_by_view table in BQ
-        - When a view diff is exported, we will update the ingest_file_metadata table in BQ with information about the
-            exported file.
-
-        Conditions to enable for region:
-        - are_raw_data_bq_imports_enabled_in_env() is already True for this environment w/ all preconditions met
-        - Ingest views implemented in an ingest_views/ directory for all ingest file tags the controller expects to see
-
-        If the |ingest_view_exports_enabled_env| config is unset, returns False. If it is set to 'prod',
-        ingest view export will also be enabled in staging.
-        """
-        return self.ingest_view_exports_enabled_env is not None and (
-            not environment.in_gcp_production()
-            or self.ingest_view_exports_enabled_env == environment.get_gcp_environment()
         )
 
 

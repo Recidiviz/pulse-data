@@ -5,4 +5,3 @@ timezone: America/New_York
 environment: production
 shared_queue: direct-ingest-state-process-job-queue-v2
 jurisdiction_id: unknown
-ingest_view_exports_enabled_env: production
