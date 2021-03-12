@@ -17,10 +17,16 @@
 import { autorun, makeAutoObservable, remove, runInAction, set } from "mobx";
 import PolicyStore from "../PolicyStore";
 import UserStore from "../UserStore";
-import { Client, DecoratedClient, decorateClient } from "./Client";
+import {
+  Client,
+  ClientListSubsection,
+  DecoratedClient,
+  decorateClient,
+} from "./Client";
 
 import API from "../API";
 import { trackPersonSelected } from "../../analytics";
+import { CaseUpdateActionType } from "../CaseUpdatesStore";
 
 interface ClientsStoreProps {
   api: API;
@@ -30,6 +36,7 @@ interface ClientsStoreProps {
 
 export interface ClientMarkedInProgress {
   client: DecoratedClient;
+  listSubsection: ClientListSubsection;
   wasPositiveAction: boolean;
 }
 
@@ -87,29 +94,42 @@ class ClientsStore {
     this.isLoading = true;
 
     try {
-      const clients = await this.api.get<Client[]>("/api/clients");
+      const { clients, isDemoData } = await this.api.get<{
+        clients: Client[];
+        isDemoData: boolean;
+      }>("/api/clients");
 
       runInAction(() => {
         this.isLoading = false;
-        const decoratedClients = clients
-          .map((client: Client) => decorateClient(client, this.policyStore))
-          // Filter out clients already managed by `clientsMarkedInProgress`
-          .filter(
-            (client: DecoratedClient) =>
-              !this.clientsMarkedInProgress[client.personExternalId]
-          );
 
-        const markedInProgressClients = Object.values(
-          this.clientsMarkedInProgress
-        )
-          .filter(({ client }) => !client.inProgressActions?.length)
-          .map(({ client }) => client);
+        const decoratedClients = clients.map((client) =>
+          decorateClient(client, this.policyStore)
+        );
+
+        // This contains the list of clients who have transitioned from being
+        // up next to in-progress and are no longer in the list served by the API.
+        // For demo mode users, the list of clients served by the API never changes,
+        // so technically no users have been filtered out.
+        //
+        // We use this to represent users in the up next list who should have a transition
+        // overlay.
+        const transitionedInProgressClients = isDemoData
+          ? []
+          : Object.values(this.clientsMarkedInProgress)
+              .filter(({ listSubsection }) => listSubsection === "ACTIVE")
+              .map(({ client }) => client);
 
         const upNextClients = decoratedClients
-          .filter((client: DecoratedClient) => !client.inProgressActions)
-          // Concatenate clients that have been moved to "In progress"
-          // This allows us to render their ClientMarkedInProgress list item overlay
-          .concat(markedInProgressClients);
+          .filter((client) => !client.inProgressActions?.length)
+          .filter(
+            (client) =>
+              // If it has been marked in progress in another section, exclude
+              // it from up next
+              !this.clientsMarkedInProgress[client.personExternalId] ||
+              this.clientsMarkedInProgress[client.personExternalId]
+                .listSubsection === "ACTIVE"
+          )
+          .concat(transitionedInProgressClients);
 
         this.clients = upNextClients.sort(
           (self: DecoratedClient, other: DecoratedClient) => {
@@ -135,9 +155,14 @@ class ClientsStore {
           }
         );
 
+        const demoInProgressClients = isDemoData
+          ? Object.values(this.clientsMarkedInProgress).map(
+              ({ client }) => client
+            )
+          : [];
         this.inProgressClients = decoratedClients
           .filter((client: DecoratedClient) => client.inProgressSubmissionDate)
-          .concat(markedInProgressClients)
+          .concat(demoInProgressClients)
           .sort((self: DecoratedClient, other: DecoratedClient) => {
             if (
               self.inProgressSubmissionDate! > other.inProgressSubmissionDate!
@@ -161,38 +186,48 @@ class ClientsStore {
     }
   }
 
-  markAsInProgress(client: DecoratedClient, wasPositiveAction: boolean): void {
+  markAsInProgress(
+    client: DecoratedClient,
+    inProgressActions: CaseUpdateActionType[],
+    listSubsection: ClientListSubsection,
+    wasPositiveAction: boolean
+  ): void {
     runInAction(() => {
-      const alreadyInProgress = this.wasRecentlyMarkedInProgress(client);
-
-      if (!alreadyInProgress) {
-        set(this.clientsMarkedInProgress, client.personExternalId, {
-          client,
-          wasPositiveAction,
-        });
-      }
+      set(this.clientsMarkedInProgress, client.personExternalId, {
+        client: {
+          ...client,
+          inProgressActions,
+          previousInProgressActions: client.inProgressActions,
+        },
+        listSubsection,
+        wasPositiveAction,
+      });
     });
   }
 
   undoMarkAsInProgress(client: DecoratedClient): void {
     runInAction(() => {
+      const storedProgress = this.clientsMarkedInProgress[
+        client.personExternalId
+      ];
       remove(this.clientsMarkedInProgress, client.personExternalId);
 
       // Viewing a CaseCard requires an `activeClientOffset`, which is derived from the DOM `offsetTop` layout property
       // As such, rather than viewing our client directly, we mark them as `clientPendingView`
       // so that the `ClientListCard` calculate the appropriate offset once rendered
-      this.clientPendingView = client;
+      const storedClientActions =
+        storedProgress?.client.previousInProgressActions;
+      this.clientPendingView = {
+        ...client,
+        inProgressActions: storedClientActions,
+        previousInProgressActions: undefined,
+      };
     });
   }
 
-  wasRecentlyMarkedInProgress(
-    client: DecoratedClient
-  ): ClientMarkedInProgress | undefined {
-    return this.clientsMarkedInProgress[client.personExternalId];
-  }
-
   view(client: DecoratedClient | undefined = undefined, offset = 0): void {
-    this.activeClient = client;
+    this.activeClient =
+      this.clientPendingView === null ? client : this.clientPendingView;
     this.activeClientOffset = offset;
     this.clientPendingView = null;
 

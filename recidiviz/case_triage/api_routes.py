@@ -46,16 +46,19 @@ def get_clients() -> str:
             )
         )
         with open(fixture_path) as f:
-            return jsonify(json.load(f))
+            return jsonify({"clients": json.load(f), "isDemoData": True})
 
     return jsonify(
-        [
-            client.to_json()
-            for client in CaseTriageQuerier.clients_for_officer(
-                current_session,
-                g.current_user,
-            )
-        ]
+        {
+            "clients": [
+                client.to_json()
+                for client in CaseTriageQuerier.clients_for_officer(
+                    current_session,
+                    g.current_user,
+                )
+            ],
+            "isDemoData": False,
+        }
     )
 
 

@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Client } from "./stores/ClientsStore/Client";
+import { Client, subsectionForClient } from "./stores/ClientsStore/Client";
 import { CaseUpdateActionType } from "./stores/CaseUpdatesStore/CaseUpdates";
 
 export const identify = (
@@ -44,13 +44,6 @@ const track = (eventName: string, metadata?: Record<string, unknown>): void => {
       )}`
     );
   }
-};
-
-type ListSubsection = "ACTIVE" | "IN_PROGRESS" | "TOP_OPPORTUNITIES";
-
-const subsectionForClient = (client: Client): ListSubsection => {
-  // TODO(#5808): when top opportunities is available, update subsection calculation.
-  return client.inProgressSubmissionDate ? "IN_PROGRESS" : "ACTIVE";
 };
 
 export const trackPersonCaseUpdated = (
