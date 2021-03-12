@@ -62,11 +62,13 @@ def use_in_memory_sqlite_database(database_key: SQLAlchemyDatabaseKey) -> None:
 
         return connection
 
-    SQLAlchemyEngineManager.init_engine_for_db_instance(
+    engine = SQLAlchemyEngineManager.init_engine_for_db_instance(
         database_key=database_key,
         db_url="sqlite:///:memory:",
         creator=connection_creator,
     )
+    # Auto-generate all tables that exist in our schema in this database
+    database_key.declarative_meta.metadata.create_all(engine)
 
 
 @environment.test_only
