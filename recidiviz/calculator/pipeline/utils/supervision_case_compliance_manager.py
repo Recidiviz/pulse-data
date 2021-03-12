@@ -265,10 +265,3 @@ class StateSupervisionCaseComplianceManager:
         # TODO(#5199): Update to return `bool` once face to face contacts are ingested for US_ND.
         """Returns whether the frequency of face-to-face contacts between the officer and the person on supervision
         is sufficient with respect to the state standards for the level of supervision of the case."""
-
-    @abc.abstractmethod
-    def _num_days_compliance_evaluation_date_past_reassessment_deadline(
-        self, compliance_evaluation_date: date, most_recent_assessment_date: date
-    ) -> int:
-        """Returns the number of days that the compliance evaluation is overdue, given the latest evaluation.
-        Returns 0 if it is not overdue"""

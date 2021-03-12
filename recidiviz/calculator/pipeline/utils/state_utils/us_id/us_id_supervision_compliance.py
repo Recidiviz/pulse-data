@@ -191,30 +191,33 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
     ) -> int:
         """Returns the number of days it has been since the required reassessment deadline. Returns 0
         if the reassessment is not overdue."""
-        if self.case_type == StateSupervisionCaseType.GENERAL:
-            if (
-                self.supervision_period.supervision_level
-                == StateSupervisionLevel.MINIMUM
-            ):
-                return 0
-            return self._num_days_compliance_evaluation_date_past_reassessment_deadline(
-                compliance_evaluation_date, most_recent_assessment_date
-            )
-        if self.case_type == StateSupervisionCaseType.SEX_OFFENSE:
+        if self.case_type == StateSupervisionCaseType.GENERAL and (
+            self.supervision_period.supervision_level == StateSupervisionLevel.MINIMUM
+        ):
+            return 0
+        if (
+            self.case_type == StateSupervisionCaseType.SEX_OFFENSE
+            and most_recent_assessment_score
+            < SEX_OFFENSE_LSIR_MINIMUM_SCORE[Gender.FEMALE]
+        ):
             # TODO(#5769): Related to #5809, an extension of the work to bring assessment scores into
             # the calc pipeline is to bring gender information here as well because many cutoff decisions
             # branch based on gender. Right now because the cutoffs are most permissive to people with
             # gender FEMALE, we're going to check the cutoff against that gender type.
             #
             # Better to err on the side of less assessments encouraged than more.
-            if (
-                most_recent_assessment_score
-                >= SEX_OFFENSE_LSIR_MINIMUM_SCORE[Gender.FEMALE]
-            ):
-                return self._num_days_compliance_evaluation_date_past_reassessment_deadline(
-                    compliance_evaluation_date, most_recent_assessment_date
-                )
-        return 0
+            return 0
+
+        reassessment_deadline = most_recent_assessment_date + relativedelta(
+            days=REASSESSMENT_DEADLINE_DAYS
+        )
+        logging.debug(
+            "Last assessment was taken on %s. Re-assessment due by %s, and the compliance evaluation date is %s",
+            most_recent_assessment_date,
+            reassessment_deadline,
+            compliance_evaluation_date,
+        )
+        return max(0, (compliance_evaluation_date - reassessment_deadline).days)
 
     def _face_to_face_contact_frequency_is_sufficient(
         self, compliance_evaluation_date: date
@@ -270,22 +273,6 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         ]
 
         return len(contacts_within_period) >= required_contacts
-
-    def _num_days_compliance_evaluation_date_past_reassessment_deadline(
-        self, compliance_evaluation_date: date, most_recent_assessment_date: date
-    ) -> int:
-        """Computes the number of days the compliance is overdue for a reassessment. Returns 0 if it is
-        not overdue."""
-        reassessment_deadline = most_recent_assessment_date + relativedelta(
-            days=REASSESSMENT_DEADLINE_DAYS
-        )
-        logging.debug(
-            "Last assessment was taken on %s. Re-assessment due by %s, and the compliance evaluation date is %s",
-            most_recent_assessment_date,
-            reassessment_deadline,
-            compliance_evaluation_date,
-        )
-        return max(0, (compliance_evaluation_date - reassessment_deadline).days)
 
     def _get_required_face_to_face_contacts_and_period_days_for_level(
         self,
