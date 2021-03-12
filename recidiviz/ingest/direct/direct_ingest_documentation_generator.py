@@ -16,10 +16,14 @@
 # =============================================================================
 
 """Functionality for generating documentation about our direct ingest integrations."""
+import os
 from collections import defaultdict
+import datetime
 from typing import List, Dict
 import subprocess
 from pytablewriter import MarkdownTableWriter
+
+import recidiviz
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
     DirectIngestRegionRawFileConfig,
@@ -29,7 +33,6 @@ from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import (
     DirectIngestPreProcessedIngestViewCollector,
 )
 from recidiviz.utils import regions
-
 
 STATE_RAW_DATA_FILE_HEADER_TEMPLATE = """# {state_name} Raw Data Description
 
@@ -78,9 +81,15 @@ class DirectIngestDocumentationGenerator:
 
         view_collector = DirectIngestPreProcessedIngestViewCollector(region, [])
         views_by_raw_file = self.get_referencing_views(view_collector)
+        touched_configs = self._get_touched_raw_data_configs(
+            region_config.yaml_config_file_dir
+        )
 
         raw_file_table = self._generate_raw_file_table(
-            config_paths_by_file_tag, file_tags_with_raw_file_configs, views_by_raw_file
+            config_paths_by_file_tag,
+            file_tags_with_raw_file_configs,
+            views_by_raw_file,
+            touched_configs,
         )
 
         docs_per_file = [
@@ -88,6 +97,19 @@ class DirectIngestDocumentationGenerator:
         ]
 
         return file_header + "\n" + raw_file_table + "\n" + "\n\n".join(docs_per_file)
+
+    @staticmethod
+    def _get_touched_raw_data_configs(yaml_config_file_dir: str) -> List[str]:
+        relative_config_dir_path = os.path.relpath(
+            yaml_config_file_dir, recidiviz.__file__
+        )
+        res = subprocess.Popen(
+            rf'git diff --cached --name-only | grep "{relative_config_dir_path}.*\.yaml"',
+            shell=True,
+            stdout=subprocess.PIPE,
+        )
+        stdout, _stderr = res.communicate()
+        return [os.path.basename(filepath) for filepath in stdout.decode().splitlines()]
 
     @staticmethod
     def _generate_docs_for_raw_config(
@@ -125,6 +147,7 @@ class DirectIngestDocumentationGenerator:
         config_paths_by_file_tag: Dict[str, str],
         file_tags_with_raw_file_configs: List[str],
         views_by_raw_file: Dict[str, List[str]],
+        touched_configs: List[str],
     ) -> str:
         """Generates a Markdown-formatted table of contents to be included in a raw file specification."""
         table_matrix = [
@@ -135,8 +158,12 @@ class DirectIngestDocumentationGenerator:
                     else f"{file_tag}"
                 ),
                 ",<br />".join(views_by_raw_file[file_tag]),
-                self._get_last_updated(config_paths_by_file_tag[file_tag]),
-                self._get_updated_by(config_paths_by_file_tag[file_tag]),
+                self._get_last_updated(
+                    config_paths_by_file_tag[file_tag], touched_configs
+                ),
+                self._get_updated_by(
+                    config_paths_by_file_tag[file_tag], touched_configs
+                ),
             ]
             for file_tag in sorted(config_paths_by_file_tag)
         ]
@@ -154,8 +181,17 @@ class DirectIngestDocumentationGenerator:
         return writer.dumps()
 
     @staticmethod
-    def _get_updated_by(path: str) -> str:
+    def _get_updated_by(path: str, touched_configs: List[str]) -> str:
         """Returns the name of the person who last edited the file at the provided path"""
+        if os.path.basename(path) in touched_configs:
+            res = subprocess.Popen(
+                "git config user.name",
+                shell=True,
+                stdout=subprocess.PIPE,
+            )
+            stdout, _stderr = res.communicate()
+            return stdout.decode()
+
         res = subprocess.Popen(
             f'git log -1 --pretty=format:"%an" -- {path}',
             shell=True,
@@ -165,8 +201,10 @@ class DirectIngestDocumentationGenerator:
         return stdout.decode()
 
     @staticmethod
-    def _get_last_updated(path: str) -> str:
+    def _get_last_updated(path: str, touched_configs: List[str]) -> str:
         """Returns the date the file at the given path was last updated."""
+        if os.path.basename(path) in touched_configs:
+            return datetime.datetime.today().strftime("%Y-%m-%d")
         res = subprocess.Popen(
             f'git log -1 --date=short --pretty=format:"%ad" -- {path}',
             shell=True,
