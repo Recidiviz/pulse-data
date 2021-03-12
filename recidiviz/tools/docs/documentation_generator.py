@@ -47,11 +47,15 @@ def generate_raw_data_documentation_for_region(region_code: str) -> bool:
         region_code.lower()
     )
     ingest_docs_path = "docs/ingest"
-    markdown_file_path = os.path.join(
-        ingest_docs_path, f"{region_code.lower()}/raw_data.md"
-    )
-    with open(markdown_file_path, "r") as raw_data_md_file:
-        prior_documentation = raw_data_md_file.read()
+    markdown_dir_path = os.path.join(ingest_docs_path, region_code.lower())
+    os.makedirs(markdown_dir_path, exist_ok=True)
+    markdown_file_path = os.path.join(markdown_dir_path, "raw_data.md")
+
+    prior_documentation = None
+    if os.path.exists(markdown_file_path):
+        with open(markdown_file_path, "r") as raw_data_md_file:
+            prior_documentation = raw_data_md_file.read()
+
     if prior_documentation != documentation:
         with open(markdown_file_path, "w") as raw_data_md_file:
             raw_data_md_file.write(documentation)
@@ -79,7 +83,15 @@ def get_touched_raw_data_regions(touched_files: Optional[List[str]]) -> Set[str]
         stdout, _stderr = res.communicate()
         touched_files = stdout.decode().splitlines()
 
-    return {file.split("/")[4] for file in touched_files if os.path.isdir(file)}
+    region_names = {file.split("/")[4] for file in touched_files}
+    return {
+        region_name
+        for region_name in region_names
+        # Skip any that aren't directories (e.g. __init__.py)
+        if os.path.isdir(
+            os.path.join(os.path.dirname(regions_module.__file__), region_name)
+        )
+    }
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
