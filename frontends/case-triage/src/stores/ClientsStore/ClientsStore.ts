@@ -18,7 +18,9 @@ import { autorun, makeAutoObservable, remove, runInAction, set } from "mobx";
 import PolicyStore from "../PolicyStore";
 import UserStore from "../UserStore";
 import { Client, DecoratedClient, decorateClient } from "./Client";
+
 import API from "../API";
+import { trackPersonSelected } from "../../analytics";
 
 interface ClientsStoreProps {
   api: API;
@@ -91,7 +93,7 @@ class ClientsStore {
         this.isLoading = false;
         const decoratedClients = clients
           .map((client: Client) => decorateClient(client, this.policyStore))
-          // Filter out clients already manged by `clientsMarkedInProgress`
+          // Filter out clients already managed by `clientsMarkedInProgress`
           .filter(
             (client: DecoratedClient) =>
               !this.clientsMarkedInProgress[client.personExternalId]
@@ -193,6 +195,10 @@ class ClientsStore {
     this.activeClient = client;
     this.activeClientOffset = offset;
     this.clientPendingView = null;
+
+    if (client) {
+      trackPersonSelected(client);
+    }
   }
 }
 

@@ -26,7 +26,6 @@ declare global {
     AUTH0_CONFIG: Record<string, string>;
 
     // Segment's analytics.js
-    /* eslint-disable @typescript-eslint/no-explicit-any */
-    analytics: any;
+    analytics: SegmentAnalytics.AnalyticsJS;
   }
 }
