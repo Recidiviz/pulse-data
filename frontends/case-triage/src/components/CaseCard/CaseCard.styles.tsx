@@ -51,7 +51,7 @@ export const CaseCardInfo = styled.div`
 
 export const CaseCardBody = styled(CaseCardSection)`
   display: flex;
-  align-items: center;
+  align-items: start;
 `;
 
 export const CaseCardFooter = styled(CaseCardSection)`
