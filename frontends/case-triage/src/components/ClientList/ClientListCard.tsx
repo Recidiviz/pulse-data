@@ -68,8 +68,7 @@ const ClientComponent: React.FC<ClientProps> = ({
     // Check if this card's client is pending a `view`, if so, re-open the Case Card
     if (
       cardRef &&
-      clientsStore.clientPendingView &&
-      clientsStore.clientPendingView.personExternalId ===
+      clientsStore.clientPendingView?.personExternalId ===
         client.personExternalId
     ) {
       viewClient();

@@ -38,7 +38,7 @@ const ClientList = () => {
       const markedInProgress =
         clientsStore.clientsMarkedInProgress[client.personExternalId];
 
-      if (markedInProgress) {
+      if (markedInProgress?.listSubsection === "ACTIVE") {
         return (
           <MarkedInProgressCard client={client} key={client.personExternalId} />
         );
@@ -60,7 +60,7 @@ const ClientList = () => {
       const markedInProgress =
         clientsStore.clientsMarkedInProgress[client.personExternalId];
 
-      if (markedInProgress?.client.inProgressActions?.length) {
+      if (markedInProgress?.listSubsection === "IN_PROGRESS") {
         return (
           <MarkedInProgressCard client={client} key={client.personExternalId} />
         );
