@@ -61,26 +61,6 @@ class UsNdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
     ) -> int:
         """Returns the number of days it has been since the required reassessment deadline. Returns 0
         if the reassessment is not overdue."""
-        return self._num_days_compliance_evaluation_date_past_reassessment_deadline(
-            compliance_evaluation_date, most_recent_assessment_date
-        )
-
-    def _face_to_face_contact_frequency_is_sufficient(
-        self, compliance_evaluation_date: date
-    ) -> Optional[bool]:
-        """Returns whether the frequency of face-to-face contacts between the officer and the person on supervision
-        is sufficient with respect to the state standards for the level of supervision of the case."""
-        # TODO(#5199): Update, once face to face contacts are ingested for US_ND.
-        return None
-
-    def _num_days_compliance_evaluation_date_past_reassessment_deadline(
-        self, compliance_evaluation_date: date, most_recent_assessment_date: date
-    ) -> int:
-        """Returns the number of days that the compliance evaluation is overdue, given the latest evaluation.
-        Returns 0 if it is not overdue"""
-
-        # Their assessment is up to date if the compliance_evaluation_date is within
-        # REASSESSMENT_DEADLINE_DAYS number of days since the last assessment date.
         reassessment_deadline = most_recent_assessment_date + relativedelta(
             days=REASSESSMENT_DEADLINE_DAYS
         )
@@ -91,3 +71,11 @@ class UsNdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
             compliance_evaluation_date,
         )
         return max(0, (compliance_evaluation_date - reassessment_deadline).days)
+
+    def _face_to_face_contact_frequency_is_sufficient(
+        self, compliance_evaluation_date: date
+    ) -> Optional[bool]:
+        """Returns whether the frequency of face-to-face contacts between the officer and the person on supervision
+        is sufficient with respect to the state standards for the level of supervision of the case."""
+        # TODO(#5199): Update, once face to face contacts are ingested for US_ND.
+        return None
