@@ -99,7 +99,6 @@ class SQLAlchemyEngineManager:
                 poolclass=database_key.poolclass,
                 **dialect_specific_kwargs,
             )
-            database_key.declarative_meta.metadata.create_all(engine)
         except BaseException as e:
             logging.error(
                 "Unable to connect to postgres instance for [%s]: %s",
