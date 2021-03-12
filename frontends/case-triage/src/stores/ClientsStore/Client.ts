@@ -72,6 +72,8 @@ export interface DecoratedClient extends Client {
   nextFaceToFaceDate: moment.Moment | null;
   inProgressSubmissionDate: moment.Moment | null;
 
+  previousInProgressActions?: CaseUpdateActionType[];
+
   supervisionLevelText: string;
 }
 
@@ -110,6 +112,16 @@ const decorateClient = (
 
     supervisionLevelText: policyStore.getSupervisionLevelNameForClient(client),
   };
+};
+
+export type ClientListSubsection =
+  | "ACTIVE"
+  | "IN_PROGRESS"
+  | "TOP_OPPORTUNITIES";
+
+export const subsectionForClient = (client: Client): ClientListSubsection => {
+  // TODO(#5808): when top opportunities is available, update subsection calculation.
+  return client.inProgressActions?.length ? "IN_PROGRESS" : "ACTIVE";
 };
 
 export { decorateClient };

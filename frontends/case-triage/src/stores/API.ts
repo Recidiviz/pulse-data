@@ -28,6 +28,7 @@ interface RequestProps {
 
 interface BootstrapResponse {
   csrf: string;
+  isDemoMode: boolean;
 }
 
 const BOOTSTRAP_ROUTE = "/api/bootstrap";

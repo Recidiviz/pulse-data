@@ -24,6 +24,7 @@ import UserStore from "../UserStore";
 
 import API from "../API";
 import { trackPersonCaseUpdated } from "../../analytics";
+import { subsectionForClient } from "../ClientsStore/Client";
 
 interface CaseUpdatesStoreProps {
   api: API;
@@ -60,12 +61,13 @@ class CaseUpdatesStore {
       return;
     }
 
+    const inProgressActions =
+      client.inProgressActions !== undefined
+        ? [...client.inProgressActions, ...actions]
+        : [...actions];
     await this.api.post("/api/record_client_action", {
       personExternalId: client.personExternalId,
-      actions:
-        client.inProgressActions !== undefined
-          ? [...client.inProgressActions, ...actions]
-          : [...actions],
+      actions: inProgressActions,
       otherText,
     });
     trackPersonCaseUpdated(client, client.inProgressActions, actions);
@@ -74,7 +76,13 @@ class CaseUpdatesStore {
     const wasPositiveAction = actions.some((action) =>
       POSITIVE_CASE_UPDATE_ACTIONS.includes(action)
     );
-    this.clientsStore.markAsInProgress(client, wasPositiveAction);
+    const listSubsection = subsectionForClient(client);
+    this.clientsStore.markAsInProgress(
+      client,
+      inProgressActions,
+      listSubsection,
+      wasPositiveAction
+    );
     this.clientsStore.fetchClientsList();
 
     this.isLoading = false;
@@ -93,12 +101,12 @@ class CaseUpdatesStore {
     this.isLoading = true;
 
     const {
-      client: { inProgressActions: previousInProgressActions = [] },
+      client: { personExternalId, previousInProgressActions = [] },
     } = this.clientsStore.clientsMarkedInProgress[client.personExternalId];
 
     try {
       await this.api.post("/api/record_client_action", {
-        personExternalId: client.personExternalId,
+        personExternalId,
         actions: previousInProgressActions,
         otherText: "",
       });
