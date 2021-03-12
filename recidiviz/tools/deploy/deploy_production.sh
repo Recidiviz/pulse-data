@@ -54,9 +54,12 @@ then
     run_cmd git checkout ${GIT_VERSION_TAG}
 fi
 
+TAG_COMMIT_HASH=$(git rev-parse $GIT_VERSION_TAG) || exit_on_fail
+
 echo "Updating configuration / infrastructure in preparation for deploy"
+verify_hash $TAG_COMMIT_HASH
 DEBUG_BUILD_NAME='' # A production build is not a debug build
-pre_deploy_configure_infrastructure 'recidiviz-123' "${GIT_VERSION_TAG}" "$DEBUG_BUILD_NAME"
+pre_deploy_configure_infrastructure 'recidiviz-123' "${GIT_VERSION_TAG}" "$DEBUG_BUILD_NAME" "$TAG_COMMIT_HASH"
 
 STAGING_IMAGE_URL=us.gcr.io/recidiviz-staging/appengine/default:${GIT_VERSION_TAG} || exit_on_fail
 PROD_IMAGE_URL=us.gcr.io/recidiviz-123/appengine/default:${GIT_VERSION_TAG} || exit_on_fail
