@@ -76,7 +76,10 @@ class TestCaseTriageAPIRoutes(TestCase):
             local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
         )
         db_url = local_postgres_helpers.postgres_db_url_from_env_vars()
-        setup_scoped_sessions(self.test_app, db_url)
+        engine = setup_scoped_sessions(self.test_app, db_url)
+        # Auto-generate all tables that exist in our schema in this database
+        database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
+        database_key.declarative_meta.metadata.create_all(engine)
 
         # Add seed data
         self.officer_1 = generate_fake_officer("officer_id_1")

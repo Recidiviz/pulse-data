@@ -274,10 +274,12 @@ def use_on_disk_postgresql_database(database_key: SQLAlchemyDatabaseKey) -> None
     if database_key.declarative_meta not in DECLARATIVE_BASES:
         raise ValueError(f"Unexpected database key: {database_key}.")
 
-    SQLAlchemyEngineManager.init_engine_for_postgres_instance(
+    engine = SQLAlchemyEngineManager.init_engine_for_postgres_instance(
         database_key=database_key,
         db_url=on_disk_postgres_db_url(),
     )
+    # Auto-generate all tables that exist in our schema in this database
+    database_key.declarative_meta.metadata.create_all(engine)
 
 
 @environment.local_only
