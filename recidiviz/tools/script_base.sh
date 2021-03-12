@@ -94,9 +94,7 @@ function version_less_than {
     [[ "$1" = "$2" ]] && return 1 || [[  "$1" = "$min_version" ]]
 }
 
-function safe_git_checkout_remote_branch {
-    BRANCH=$1
-    echo "Checking for clean git status"
+function verify_clean_git_status {
     if [[ ! -z "$(git status --porcelain)" ]]; then
         echo_error "Git status not clean - please stash changes before retrying."
         echo_error "If you have made a local change to fix a deploy issue that cannot be solved by reverting a recent "
@@ -106,6 +104,12 @@ function safe_git_checkout_remote_branch {
         echo_error "!! Please notify the #eng channel if you have to deploy with dirty local status. !!"
         exit 1
     fi
+}
+
+function safe_git_checkout_remote_branch {
+    BRANCH=$1
+    echo "Checking for clean git status"
+    verify_clean_git_status
 
     echo "Checking out [$BRANCH]"
     if ! git checkout -t origin/${BRANCH}
@@ -151,4 +155,17 @@ function check_for_tags_at_branch_tip {
         exit 1
     fi
 
+}
+
+function verify_hash {
+    EXPECTED_HASH=$1
+    CURRENT_HASH=$(git rev-parse HEAD) || exit_on_fail
+
+    verify_clean_git_status
+
+    if [[ "$CURRENT_HASH" != "$EXPECTED_HASH" ]]; then
+        echo_error "Current commit [${CURRENT_HASH:0:7}] does not match expected commit "
+        echo_error "[${EXPECTED_HASH:0:7}]. Please restart at the correct commit."
+        exit 1
+    fi
 }

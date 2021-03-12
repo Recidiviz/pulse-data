@@ -20,12 +20,14 @@ run_cmd safe_git_checkout_remote_branch master
 LAST_VERSION_TAG_ON_MASTER=$(last_version_tag_on_branch master) || exit_on_fail
 NEW_VERSION=$(next_alpha_version ${LAST_VERSION_TAG_ON_MASTER}) || exit_on_fail
 
-script_prompt "Will create tag and deploy version [$NEW_VERSION] at commit [$(git rev-parse HEAD)] which is the \
+COMMIT_HASH=$(git rev-parse HEAD) || exit_on_fail
+script_prompt "Will create tag and deploy version [$NEW_VERSION] at commit [${COMMIT_HASH:0:7}] which is the \
 tip of branch [master]. Continue?"
 
-${BASH_SOURCE_DIR}/base_deploy_to_staging.sh -v ${NEW_VERSION} -p || exit_on_fail
+${BASH_SOURCE_DIR}/base_deploy_to_staging.sh -v ${NEW_VERSION} -c ${COMMIT_HASH} -p || exit_on_fail
 
 echo "Deploy succeeded - creating local tag ${NEW_VERSION}"
+verify_hash $COMMIT_HASH
 run_cmd `git tag -m "Version $NEW_VERSION release - $(date +'%Y-%m-%d %H:%M:%S')" ${NEW_VERSION}`
 
 echo "Pushing tags to remote"

@@ -21,8 +21,6 @@ run_cmd git fetch --all --tags --prune --prune-tags
 
 run_cmd safe_git_checkout_remote_branch ${RELEASE_CANDIDATE_BASE_BRANCH}
 
-HEAD_COMMIT=$(git rev-parse HEAD) || exit_on_fail
-
 echo "Checking for existing release tags at tip of [$RELEASE_CANDIDATE_BASE_BRANCH]"
 check_for_tags_at_branch_tip ${RELEASE_CANDIDATE_BASE_BRANCH} ALLOW_ALPHA
 
@@ -57,12 +55,14 @@ else
     STAGING_PUSH_PROMOTE_FLAG='-n'
 fi
 
-script_prompt "Will create tag and deploy version [$RELEASE_VERSION_TAG] at commit [$(git rev-parse HEAD)] which is \
+COMMIT_HASH=$(git rev-parse HEAD) || exit_on_fail
+script_prompt "Will create tag and deploy version [$RELEASE_VERSION_TAG] at commit [${COMMIT_HASH:0:7}] which is \
 the tip of branch [$RELEASE_CANDIDATE_BASE_BRANCH]. Continue?"
 
-${BASH_SOURCE_DIR}/base_deploy_to_staging.sh -v ${RELEASE_VERSION_TAG} ${STAGING_PUSH_PROMOTE_FLAG} || exit_on_fail
+${BASH_SOURCE_DIR}/base_deploy_to_staging.sh -v ${RELEASE_VERSION_TAG} -c ${COMMIT_HASH} ${STAGING_PUSH_PROMOTE_FLAG} || exit_on_fail
 
 echo "Deploy succeeded - creating local tag [${RELEASE_VERSION_TAG}]"
+verify_hash $COMMIT_HASH
 run_cmd `git tag -m "Version [$RELEASE_VERSION_TAG] release - $(date +'%Y-%m-%d %H:%M:%S')" ${RELEASE_VERSION_TAG}`
 
 echo "Pushing tags to remote"
