@@ -1,15 +1,6 @@
 file_tag: facility
 file_description: |-
   A code table that gives extra details about a given facility.
-
-
-  There is no facility typ code table, but the values are:
-
-  - I - incarceration facility
-  - O - other (hospital, etc)
-  - P - probation or parole district
-  - F - fugitive (marked as an absconder)
-  - H - history
 primary_key_cols:
   - fac_cd
 columns:
@@ -20,6 +11,17 @@ columns:
   - name: fac_typ
     description: |-
       Facility type
+    known_values:
+      - value: I
+        description: incarceration facility
+      - value: O
+        description: other (hospital, etc)
+      - value: P
+        description: probation or parole district
+      - value: F
+        description: fugitive (marked as an absconder)
+      - value: H
+        description: history
   - name: fac_actv_flg
     description: |-
       Whether or not the facility is currently in use
