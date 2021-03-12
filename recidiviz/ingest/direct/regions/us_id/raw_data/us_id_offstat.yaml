@@ -20,7 +20,14 @@ columns:
       ID of the status (unique within this person and incarceration number)
   - name: stat_cd
     description: |-
-      Code for the type of status (P - supervision, H - history, I - incarceration)
+      Code for the type of status
+    known_values:
+      - value: P
+        description: supervision
+      - value: H
+        description: history
+      - value: I
+        description: incarceration
   - name: stat_intake_dtd
     is_datetime: True
     description: |-
@@ -39,7 +46,12 @@ columns:
     is_datetime: True
   - name: stat_strt_typ
     description: |-
-      Code for the status that was valid for this time span (`PB` - probation, `PR` - parole, others unknown)
+      Code for the status that was valid for this time span
+    known_values:
+      - value: PB
+        description: probation
+      - value: PR
+        description: parole
   - name: stat_rls_typ
     description: |-
       Code for the status that began after this status was complete

@@ -109,28 +109,28 @@ found in `us_xx_raw_data_up_to_date_views`.
 
 First raw file.
 
-|       Column        |                                                                      Column Description                                                                       | Part of Primary Key? |
-|---------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------|
-| col_name_1a         | First column.                                                                                                                                                 | YES                  |
-| col_name_1b         | A column description that is long enough to take up multiple lines. This text block will be interpreted literally and trailing/leading whitespace is removed. | YES                  |
-| undocumented_column | <No documentation>                                                                                                                                            |                      |
+|       Column        |                                                                      Column Description                                                                       | Part of Primary Key? |                                            Distinct Values                                             |
+|---------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------|--------------------------------------------------------------------------------------------------------|
+| col_name_1a         | First column.                                                                                                                                                 | YES                  | <ul><li><b>VAL1</b> - value 1</li><li><b>VAL2</b> - value 2</li><li><b>UNKWN</b> - <Unknown></li></ul> |
+| col_name_1b         | A column description that is long enough to take up multiple lines. This text block will be interpreted literally and trailing/leading whitespace is removed. | YES                  | N/A                                                                                                    |
+| undocumented_column | <No documentation>                                                                                                                                            |                      | N/A                                                                                                    |
 
 
 ## tagColumnsMissing
 
 tagColumnsMissing file description
 
-| Column | Column Description | Part of Primary Key? |
-|--------|--------------------|----------------------|
+| Column | Column Description | Part of Primary Key? | Distinct Values |
+|--------|--------------------|----------------------|-----------------|
 
 
 ## tagPrimaryKeyColsMissing
 
 tagPrimaryKeyColsMissing file description
 
-|  Column  |  Column Description  | Part of Primary Key? |
-|----------|----------------------|----------------------|
-| column_1 | column_1 description |                      |
+|  Column  |  Column Description  | Part of Primary Key? | Distinct Values |
+|----------|----------------------|----------------------|-----------------|
+| column_1 | column_1 description |                      | N/A             |
 """
 
         self.assertIsNotNone(documentation)
