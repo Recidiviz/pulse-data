@@ -14,3 +14,5 @@ columns:
     description: |-
       Judicial district code
   - name: judge_nam
+    description: |-
+      Judge name field, needed to coalesce in ingest view until #3345 can be addressed
