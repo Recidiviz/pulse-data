@@ -18,7 +18,7 @@
 """Creates monitoring client for measuring and recording stats."""
 from contextlib import contextmanager
 from functools import wraps
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from opencensus.ext.stackdriver import stats_exporter as stackdriver
 from opencensus.stats import stats as stats_module
@@ -51,7 +51,7 @@ def set_context_tags(tags: Dict[str, Any]):
     return TagContext.contextvar.set(tag_map)
 
 
-def context_tags() -> Optional[TagMap]:
+def context_tags() -> TagMap:
     """Returns a copy of the context TagMap"""
     tag_map = TagContext.get()
     return TagMap(tag_map.map if tag_map else None)

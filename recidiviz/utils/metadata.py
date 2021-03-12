@@ -116,8 +116,13 @@ def project_id():
 
 
 def instance_id():
-    """Returns the GCP instnance ID of the current instance."""
+    """Returns the numerical ID of the current GCP instance."""
     return _get_metadata("instance/id")
+
+
+def instance_name():
+    """Returns the name of the current GCP instance."""
+    return _get_metadata("instance/name")
 
 
 def zone():
