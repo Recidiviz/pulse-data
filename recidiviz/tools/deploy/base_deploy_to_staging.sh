@@ -10,14 +10,16 @@ source ${BASH_SOURCE_DIR}/../script_base.sh
 source ${BASH_SOURCE_DIR}/deploy_helpers.sh
 
 VERSION_TAG=''
+COMMIT_HASH=''
 DEBUG_BUILD_NAME=''
 PROMOTE=''
 NO_PROMOTE=''
 PROMOTE_FLAGS=''
 
 function print_usage {
-    echo_error "usage: $0 -v VERSION [-p -n -d DEBUG_BUILD_NAME]"
+    echo_error "usage: $0 -v VERSION -c COMMIT_SHA [-p -n -d DEBUG_BUILD_NAME]"
     echo_error "  -v: Version tag to deploy (e.g. v1.2.0)"
+    echo_error "  -c: Full SHA of the commit that is to be deployed."
     echo_error "  -p: Indicates that we should promote traffic to the newly deployed version. Can not be used with -n."
     echo_error "  -n: Indicates that we should not promote traffic to the newly deployed version. Can not be used with -p."
     echo_error "  -d: Name to append to the version for a debug local deploy (e.g. anna-test1)."
@@ -27,6 +29,7 @@ function print_usage {
 while getopts "v:pnd:" flag; do
   case "${flag}" in
     v) VERSION_TAG="$OPTARG" ;;
+    c) COMMIT_HASH="$OPTARG" ;;
     p) PROMOTE_FLAGS='--promote' PROMOTE='true';;
     n) PROMOTE_FLAGS='--no-promote' NO_PROMOTE='true';;
     d) DEBUG_BUILD_NAME="$OPTARG" ;;
@@ -37,6 +40,12 @@ done
 
 if [[ -z ${VERSION_TAG} ]]; then
     echo_error "Missing/empty version tag argument"
+    print_usage
+    run_cmd exit 1
+fi
+
+if [[ -z ${COMMIT_HASH} ]]; then
+    echo_error "Missing/empty commit sha argumnet"
     print_usage
     run_cmd exit 1
 fi
@@ -54,9 +63,11 @@ if [[ ! -z ${PROMOTE} && ! -z ${DEBUG_BUILD_NAME} ]]; then
 fi
 
 echo "Performing pre-deploy verification"
+verify_hash $COMMIT_HASH
 run_cmd verify_can_deploy recidiviz-staging
 
 echo "Building docker image"
+verify_hash $COMMIT_HASH
 export DOCKER_BUILDKIT=1
 run_cmd docker build -t recidiviz-image .
 
@@ -72,26 +83,31 @@ IMAGE_BASE=us.gcr.io/recidiviz-staging/appengine/default
 IMAGE_URL=$IMAGE_BASE:${DOCKER_IMAGE_TAG} || exit_on_fail
 
 echo "Tagging image url [$IMAGE_URL] as recidiviz-image"
+verify_hash $COMMIT_HASH
 run_cmd docker tag recidiviz-image ${IMAGE_URL}
 
 echo "Pushing image url [$IMAGE_URL]"
+verify_hash $COMMIT_HASH
 run_cmd docker push ${IMAGE_URL}
 
 if [[ ! -z ${PROMOTE} ]]; then
     # Update latest tag to reflect staging as well
     echo "Updating :latest tag on remote docker image."
+    verify_hash $COMMIT_HASH
     run_cmd docker tag recidiviz-image $IMAGE_BASE:latest
     run_cmd docker push $IMAGE_BASE:latest
 fi
 
 if [[ ! -z ${PROMOTE} || ! -z ${DEBUG_BUILD_NAME} ]]; then
-    pre_deploy_configure_infrastructure 'recidiviz-staging' "${DOCKER_IMAGE_TAG}" "${DEBUG_BUILD_NAME}"
+    verify_hash $COMMIT_HASH
+    pre_deploy_configure_infrastructure 'recidiviz-staging' "${DOCKER_IMAGE_TAG}" "${DEBUG_BUILD_NAME}" "$COMMIT_HASH"
 else
     echo "Skipping configuration and pipeline deploy steps for no promote release build."
 fi
 
 # TODO(#3928): Migrate deploy of app engine services to terraform.
 echo "Deploying application - default"
+verify_hash $COMMIT_HASH
 run_cmd gcloud -q app deploy ${PROMOTE_FLAGS} staging.yaml \
        --project recidiviz-staging \
        --version ${GAE_VERSION} \
@@ -99,6 +115,7 @@ run_cmd gcloud -q app deploy ${PROMOTE_FLAGS} staging.yaml \
        --verbosity=debug
 
 echo "Deploying application - scrapers"
+verify_hash $COMMIT_HASH
 run_cmd gcloud -q app deploy ${PROMOTE_FLAGS} staging-scrapers.yaml \
        --project recidiviz-staging \
        --version ${GAE_VERSION} \
@@ -113,6 +130,7 @@ fi
 
 if [[ ! -z ${PROMOTE} ]]; then
     echo "Deploy succeeded - triggering post-deploy jobs."
+    verify_hash $COMMIT_HASH
     post_deploy_triggers 'recidiviz-staging'
 else
     echo "Deploy succeeded - skipping post deploy triggers for no promote build."
