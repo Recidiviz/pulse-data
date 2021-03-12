@@ -7,6 +7,12 @@ primary_key_cols:
 columns:
   - name: col_name_1a
     description: First column.
+    known_values:
+      - value: VAL1
+        description: value 1
+      - value: VAL2
+        description: value 2
+      - value: UNKWN
   - name: col_name_1b
     description: |-
       A column description that is long enough to take up

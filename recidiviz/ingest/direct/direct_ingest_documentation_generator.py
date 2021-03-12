@@ -28,6 +28,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
     DirectIngestRegionRawFileConfig,
     DirectIngestRawFileConfig,
+    ColumnEnumValueInfo,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import (
     DirectIngestPreProcessedIngestViewCollector,
@@ -121,6 +122,17 @@ class DirectIngestDocumentationGenerator:
         def _is_primary_key(column: str) -> str:
             return "YES" if column.upper() in primary_key_columns else ""
 
+        def _get_enum_bullets(known_values: List[ColumnEnumValueInfo]) -> str:
+            if not known_values:
+                return "N/A"
+            list_contents = "</li><li>".join(
+                [
+                    f"<b>{enum.value}</b> - {enum.description if enum.description else '<Unknown>'}"
+                    for enum in known_values
+                ]
+            )
+            return "<ul><li>" + list_contents + "</li></ul>"
+
         documentation = (
             f"## {raw_file_config.file_tag}\n\n{raw_file_config.file_description}\n\n"
         )
@@ -130,11 +142,17 @@ class DirectIngestDocumentationGenerator:
                 column.name,
                 column.description or "<No documentation>",
                 _is_primary_key(column.name),
+                _get_enum_bullets(column.known_values),
             ]
             for column in raw_file_config.columns
         ]
         writer = MarkdownTableWriter(
-            headers=["Column", "Column Description", "Part of Primary Key?"],
+            headers=[
+                "Column",
+                "Column Description",
+                "Part of Primary Key?",
+                "Distinct Values",
+            ],
             value_matrix=table_matrix,
             margin=1,
         )
