@@ -30,6 +30,7 @@ import { Assets, GlobalStyle, Header } from "@recidiviz/case-triage-components";
 import Home from "./routes/Home";
 import Verify from "./routes/Verify";
 
+import { trackScrolledToBottom } from "./analytics";
 import StoreProvider from "./stores";
 import UserSection from "./components/UserSection";
 
@@ -43,6 +44,21 @@ if (process.env.NODE_ENV !== "development") {
     tracesSampleRate: 1.0,
   });
 }
+
+// Implement scrollToBottom listener
+let isCurrentlyScrolledToBottom = false;
+window.onscroll = function () {
+  const scrolledToBottom =
+    window.innerHeight + window.scrollY >= document.body.offsetHeight;
+  if (scrolledToBottom) {
+    if (!isCurrentlyScrolledToBottom) {
+      isCurrentlyScrolledToBottom = true;
+      trackScrolledToBottom();
+    }
+  } else {
+    isCurrentlyScrolledToBottom = false;
+  }
+};
 
 const Container = styled.div`
   margin: 0 auto;

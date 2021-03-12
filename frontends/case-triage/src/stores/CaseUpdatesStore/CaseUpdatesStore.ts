@@ -14,14 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { makeAutoObservable, runInAction } from "mobx";
+import { makeAutoObservable } from "mobx";
 import {
   CaseUpdateActionType,
   POSITIVE_CASE_UPDATE_ACTIONS,
 } from "./CaseUpdates";
 import ClientsStore, { DecoratedClient } from "../ClientsStore";
 import UserStore from "../UserStore";
+
 import API from "../API";
+import { trackPersonCaseUpdated } from "../../analytics";
 
 interface CaseUpdatesStoreProps {
   api: API;
@@ -66,6 +68,7 @@ class CaseUpdatesStore {
           : [...actions],
       otherText,
     });
+    trackPersonCaseUpdated(client, client.inProgressActions, actions);
 
     this.clientsStore.view();
     const wasPositiveAction = actions.some((action) =>
