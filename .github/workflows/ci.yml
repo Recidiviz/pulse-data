@@ -49,15 +49,17 @@ jobs:
         run: |
           pipenv run python -m recidiviz.tools.validate_source_modifications \
             --commit-range ${{ env.merge_base }}...HEAD
-      - name: pre-commit
-        # If pre-commit proves useful, we can remove redundant checks (e.g. black).
-        uses: pre-commit/action@v2.0.0
-        # This can also create a new commit with changes, but it merges in latest
-        # master and can't re-trigger CI, so we don't do so at this time.
-        with:
-          # Pass extra_args to only run on changed files. The default is '--all-files'.
-          # TODO(#6234): Remove once PA files can be generated again.
-          extra_args: --from-ref ${{ env.merge_base }} --to-ref HEAD
+      # TODO(#6431): pre-commit was flaky in CI, so we turned it off. It should be
+      # re-enabled soon.
+      # - name: pre-commit
+      #   # If pre-commit proves useful, we can remove redundant checks (e.g. black).
+      #   uses: pre-commit/action@v2.0.0
+      #   # This can also create a new commit with changes, but it merges in latest
+      #   # master and can't re-trigger CI, so we don't do so at this time.
+      #   with:
+      #     # Pass extra_args to only run on changed files. The default is '--all-files'.
+      #     # TODO(#6234): Remove once PA files can be generated again.
+      #     extra_args: --from-ref ${{ env.merge_base }} --to-ref HEAD
       - name: Check pipenv is locked
         run: pipenv run python -m recidiviz.tools.is_pipenv_locked
       - name: Mypy check
