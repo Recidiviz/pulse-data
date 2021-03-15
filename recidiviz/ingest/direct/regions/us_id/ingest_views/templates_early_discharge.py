@@ -125,7 +125,10 @@ FROM
 """
 
 
-def _get_relevant_select_args(ids_only: bool) -> str:
+# TODO(#6401) Update to use mitt_srl under ids_only when the ingest views are launched
+def _get_relevant_select_args(ids_only: bool, use_mitt_srl: bool) -> str:
+    if ids_only and use_mitt_srl:
+        return "ofndr_num, incrno, sent_no, early_discharge_id, early_discharge_sent_id, mitt_srl"
     if ids_only:
         return "ofndr_num, incrno, sent_no, early_discharge_id, early_discharge_sent_id"
     return "*"
@@ -141,9 +144,11 @@ def _get_relevant_sentence_query_for_type(discharge_type: EarlyDischargeType) ->
 
 
 def early_discharge_view_template(
-    discharge_type: EarlyDischargeType, ids_only: bool = False
+    discharge_type: EarlyDischargeType,
+    ids_only: bool = False,
+    use_mitt_srl: bool = False,
 ) -> str:
     return EARLY_DISCHARGE_QUERY_TEMPLATE.format(
         relevant_sentence_query=_get_relevant_sentence_query_for_type(discharge_type),
-        relevant_select_args=_get_relevant_select_args(ids_only),
+        relevant_select_args=_get_relevant_select_args(ids_only, use_mitt_srl),
     )
