@@ -312,7 +312,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                             state_sentence_group_id="1111-1",
                             state_incarceration_sentences=[
                                 StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="1111-1",
+                                    state_incarceration_sentence_id="1111-1-1",
                                     status="D",
                                     date_imposed="1/01/08",
                                     start_date="1/01/08",
@@ -326,7 +326,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                                     is_life="False",
                                     state_charges=[
                                         StateCharge(
-                                            state_charge_id="1111-1",
+                                            state_charge_id="1111-1-1",
                                             counts="1",
                                             statute="1-11",
                                             description="CRIME 1 + DESC",
@@ -347,7 +347,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                             state_sentence_group_id="1111-2",
                             state_incarceration_sentences=[
                                 StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="1111-3",
+                                    state_incarceration_sentence_id="1111-2-3",
                                     status="I",
                                     date_imposed="1/01/19",
                                     start_date="1/01/19",
@@ -355,7 +355,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                                     is_life="True",
                                     state_charges=[
                                         StateCharge(
-                                            state_charge_id="1111-3",
+                                            state_charge_id="1111-2-3",
                                             counts="1",
                                             statute="2-22",
                                             description="CRIME 2 + DESC",
@@ -386,7 +386,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                             state_sentence_group_id="2222-1",
                             state_incarceration_sentences=[
                                 StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="2222-2",
+                                    state_incarceration_sentence_id="2222-3-2",
                                     status="I",
                                     date_imposed="1/01/10",
                                     start_date="1/01/10",
@@ -399,7 +399,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                                     is_life="False",
                                     state_charges=[
                                         StateCharge(
-                                            state_charge_id="2222-2",
+                                            state_charge_id="2222-3-2",
                                             counts="1",
                                             statute="3-33",
                                             description="CRIME 3 + DESC",
@@ -442,7 +442,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                             state_sentence_group_id="1111-2",
                             state_supervision_sentences=[
                                 StateSupervisionSentence(
-                                    state_supervision_sentence_id="1111-2",
+                                    state_supervision_sentence_id="1111-1-2",
                                     status="K",
                                     date_imposed="1/01/18",
                                     start_date="01/01/18",
@@ -454,7 +454,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                                     max_length="730",
                                     state_charges=[
                                         StateCharge(
-                                            state_charge_id="1111-2",
+                                            state_charge_id="1111-1-2",
                                             counts="2",
                                             statute="4-44",
                                             description="CRIME 4 + DESC",
@@ -485,7 +485,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                             state_sentence_group_id="2222-1",
                             state_supervision_sentences=[
                                 StateSupervisionSentence(
-                                    state_supervision_sentence_id="2222-1",
+                                    state_supervision_sentence_id="2222-2-1",
                                     status="K",
                                     date_imposed="1/01/09",
                                     start_date="01/01/09",
@@ -497,7 +497,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                                     max_length="1461",
                                     state_charges=[
                                         StateCharge(
-                                            state_charge_id="2222-1",
+                                            state_charge_id="2222-2-1",
                                             counts="2",
                                             statute="5-55",
                                             description="CRIME 5 + DESC",
@@ -528,7 +528,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                             state_sentence_group_id="3333-1",
                             state_supervision_sentences=[
                                 StateSupervisionSentence(
-                                    state_supervision_sentence_id="3333-1",
+                                    state_supervision_sentence_id="3333-3-1",
                                     status="B",
                                     date_imposed="1/01/15",
                                     supervision_type="PROBATION",
@@ -539,7 +539,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                                     max_length="3653",
                                     state_charges=[
                                         StateCharge(
-                                            state_charge_id="3333-1",
+                                            state_charge_id="3333-3-1",
                                             counts="2",
                                             statute="6-66",
                                             description="CRIME 6 + DESC",
@@ -580,7 +580,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                             state_sentence_group_id="1111-2",
                             state_incarceration_sentences=[
                                 StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="1111-3",
+                                    state_incarceration_sentence_id="1111-2-3",
                                     state_early_discharges=[
                                         StateEarlyDischarge(
                                             state_early_discharge_id="ed1-1",
@@ -625,7 +625,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                             state_sentence_group_id="3333-1",
                             state_supervision_sentences=[
                                 StateSupervisionSentence(
-                                    state_supervision_sentence_id="3333-1",
+                                    state_supervision_sentence_id="3333-3-1",
                                     state_early_discharges=[
                                         StateEarlyDischarge(
                                             state_early_discharge_id="ed3-3",
@@ -671,7 +671,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                             state_sentence_group_id="1111-2",
                             state_incarceration_sentences=[
                                 StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="1111-3",
+                                    state_incarceration_sentence_id="1111-2-3",
                                     state_early_discharges=[
                                         StateEarlyDischarge(
                                             state_early_discharge_id="ed2-2",
@@ -685,9 +685,9 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                 ),
             ]
         )
-
+        # TODO(#6401) Update to use mitt_srl under ids_only when the ingest views are launched
         self.run_parse_file_test(
-            expected, "early_discharge_incarceration_sentence_deleted_rows"
+            expected, "early_discharge_incarceration_sentence_deleted_rows_v2"
         )
 
     def test_populate_data_early_discharge_supervision_sentence_deleted_rows(
@@ -707,7 +707,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                             state_sentence_group_id="3333-1",
                             state_supervision_sentences=[
                                 StateSupervisionSentence(
-                                    state_supervision_sentence_id="3333-1",
+                                    state_supervision_sentence_id="3333-3-1",
                                     state_early_discharges=[
                                         StateEarlyDischarge(
                                             state_early_discharge_id="ed4-4",
@@ -721,9 +721,9 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                 ),
             ]
         )
-
+        # TODO(#6401) Update to use mitt_srl under ids_only when the ingest views are launched
         self.run_parse_file_test(
-            expected, "early_discharge_supervision_sentence_deleted_rows"
+            expected, "early_discharge_supervision_sentence_deleted_rows_v2"
         )
 
     def test_populate_data_movement_facility_location_offstat_incarceration_periods(
@@ -1624,7 +1624,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         )
         is_1111_1 = entities.StateIncarcerationSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
-            external_id="1111-1",
+            external_id="1111-1-1",
             status=StateSentenceStatus.COMPLETED,
             status_raw_text="D",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -1643,7 +1643,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         )
         c_1111_1 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
-            external_id="1111-1",
+            external_id="1111-1-1",
             counts=1,
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
             statute="1-11",
@@ -1673,7 +1673,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         )
         is_1111_3 = entities.StateIncarcerationSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
-            external_id="1111-3",
+            external_id="1111-2-3",
             status=StateSentenceStatus.SERVING,
             status_raw_text="I",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -1686,7 +1686,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         )
         c_1111_3 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
-            external_id="1111-3",
+            external_id="1111-2-3",
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
             counts=1,
             statute="2-22",
@@ -1716,7 +1716,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         )
         is_2222_2 = entities.StateIncarcerationSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
-            external_id="2222-2",
+            external_id="2222-3-2",
             status=StateSentenceStatus.SERVING,
             status_raw_text="I",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -1734,7 +1734,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         )
         c_2222_2 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
-            external_id="2222-2",
+            external_id="2222-3-2",
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
             counts=1,
             statute="3-33",
@@ -1792,7 +1792,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
 
         ss_1111_2 = entities.StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
-            external_id="1111-2",
+            external_id="1111-1-2",
             status=StateSentenceStatus.REVOKED,
             status_raw_text="K",
             supervision_type=StateSupervisionType.PROBATION,
@@ -1809,7 +1809,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         )
         c_1111_2 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
-            external_id="1111-2",
+            external_id="1111-1-2",
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
             counts=2,
             statute="4-44",
@@ -1832,7 +1832,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
 
         ss_2222_1 = entities.StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
-            external_id="2222-1",
+            external_id="2222-2-1",
             status=StateSentenceStatus.REVOKED,
             status_raw_text="K",
             supervision_type=StateSupervisionType.PROBATION,
@@ -1849,7 +1849,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         )
         c_2222_1 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
-            external_id="2222-1",
+            external_id="2222-2-1",
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
             counts=2,
             statute="5-55",
@@ -1878,7 +1878,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         )
         ss_3333_1 = entities.StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
-            external_id="3333-1",
+            external_id="3333-3-1",
             status=StateSentenceStatus.SUSPENDED,
             status_raw_text="B",
             supervision_type=StateSupervisionType.PROBATION,
@@ -1894,7 +1894,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         )
         c_3333_1 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
-            external_id="3333-1",
+            external_id="3333-3-1",
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
             counts=2,
             statute="6-66",
@@ -2924,8 +2924,9 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         ed_2.decision_status_raw_text = "INVALID"
 
         # Act
+        # TODO(#6401) Update to use mitt_srl under ids_only when the ingest views are launched
         self._run_ingest_job_for_filename(
-            "early_discharge_incarceration_sentence_deleted_rows.csv"
+            "early_discharge_incarceration_sentence_deleted_rows_v2.csv"
         )
 
         # Assert
@@ -2939,8 +2940,9 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         ed_4.decision_status_raw_text = "INVALID"
 
         # Act
+        # TODO(#6401) Update to use mitt_srl under ids_only when the ingest views are launched
         self._run_ingest_job_for_filename(
-            "early_discharge_supervision_sentence_deleted_rows.csv"
+            "early_discharge_supervision_sentence_deleted_rows_v2.csv"
         )
 
         # Assert
