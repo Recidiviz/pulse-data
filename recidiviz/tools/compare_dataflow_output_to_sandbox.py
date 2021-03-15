@@ -233,25 +233,15 @@ def compare_dataflow_output_to_sandbox(
                 metric_type_value = metric_instance.metric_type.value
 
                 if metric_type_value in metric_types_for_comparison:
-                    dimensions = _get_dimension_columns_for_metric_class(metric_class)
-                    columns_to_compare = dimensions.copy()
-
-                    output_col_exclusion = ""
-
-                    if additional_columns_to_compare:
-                        columns_to_compare.extend(additional_columns_to_compare)
-                        output_col_exclusion = f"EXCEPT ({', '.join(dimensions)})"
-
-                    comparison_query = OUTPUT_COMPARISON_TEMPLATE.format(
-                        project_id=bq_client.project_id,
-                        base_dataset_id=DATAFLOW_METRICS_DATASET,
-                        sandbox_dataset_id=sandbox_dataflow_dataset_id,
-                        table_id=metric_table,
-                        columns_to_compare=", ".join(columns_to_compare),
-                        dimensions=", ".join(dimensions),
-                        base_output_job_id=base_output_job_id,
-                        sandbox_output_job_id=sandbox_output_job_id,
-                        output_col_exclusion=output_col_exclusion,
+                    comparison_query = _query_for_metric_comparison(
+                        bq_client,
+                        base_output_job_id,
+                        sandbox_output_job_id,
+                        sandbox_dataflow_dataset_id,
+                        metric_class,
+                        metric_instance,
+                        metric_table,
+                        additional_columns_to_compare,
                     )
 
                     query_job = bq_client.create_table_from_query_async(
@@ -305,6 +295,47 @@ def compare_dataflow_output_to_sandbox(
         bq_client.delete_dataset(
             sandbox_comparison_output_dataset_ref, delete_contents=True
         )
+
+
+def _query_for_metric_comparison(
+    bq_client: BigQueryClientImpl,
+    base_output_job_id: str,
+    sandbox_output_job_id: str,
+    sandbox_dataflow_dataset_id: str,
+    metric_class: Type[RecidivizMetric],
+    metric_instance: RecidivizMetric,
+    metric_table: str,
+    additional_columns_to_compare: List[str],
+) -> str:
+    """Builds the query to compare the output of the two Dataflow jobs for the given
+    metric type."""
+    dimensions = _get_dimension_columns_for_metric_class(metric_class)
+    columns_to_compare = dimensions.copy()
+
+    output_col_exclusion = ""
+
+    if additional_columns_to_compare:
+        applicable_columns = [
+            col
+            for col in additional_columns_to_compare
+            if hasattr(metric_instance, col)
+        ]
+
+        if applicable_columns:
+            columns_to_compare.extend(applicable_columns)
+            output_col_exclusion = f"EXCEPT ({', '.join(dimensions)})"
+
+    return OUTPUT_COMPARISON_TEMPLATE.format(
+        project_id=bq_client.project_id,
+        base_dataset_id=DATAFLOW_METRICS_DATASET,
+        sandbox_dataset_id=sandbox_dataflow_dataset_id,
+        table_id=metric_table,
+        columns_to_compare=", ".join(columns_to_compare),
+        dimensions=", ".join(dimensions),
+        base_output_job_id=base_output_job_id,
+        sandbox_output_job_id=sandbox_output_job_id,
+        output_col_exclusion=output_col_exclusion,
+    )
 
 
 def _get_dimension_columns_for_metric_class(
