@@ -149,6 +149,14 @@ class CasePresenter:
             self.etl_client.most_recent_assessment_date is None
             or self.etl_client.assessment_score is None
         ):
+            if self.etl_client.supervision_start_date is None:
+                # TODO(#6418): Understand why null start dates are showing up and kill this branch
+                logging.warning(
+                    "Supervision start date unexpectedly empty for client with id %s in state %s",
+                    self.etl_client.person_external_id,
+                    self.etl_client.state_code,
+                )
+                return None
             return self.etl_client.supervision_start_date + timedelta(
                 days=NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS
             )
