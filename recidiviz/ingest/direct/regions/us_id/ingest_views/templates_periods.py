@@ -83,10 +83,28 @@ def get_status_code(period_type: PeriodType) -> str:
 # the ID criminal justice system. By default, each row of this table includes a location and the date that the
 # person arrived at that location (`move_dtd`). New entries into this table are created every time a person's
 # location is updated. However, this table tracks not just movements across facilities (prisons or supervision
-# districts) but also movements within a single facility (changing prison pods, for example). The goal of these
-# query fragments is to transform the raw `movements` table into a set of movement_periods, where each row has
-# a single facility with a start and end date which represent a person's overall time in that facility.
+# districts) but also movements within a single facility (changing prison pods, for example). Additionally, Idaho will
+# assign a incarceration facility for a person to be returned to when they go awol. We need to account for this period
+# using information in `onder_loc_hist` by marking the person as a fugitive during this time instead of being located at
+# their desitnation facility. The goal of these query fragments is to transform the raw `movements` table into a set of
+# movement_periods, where each row has a single facility with a start and end date which represent a person's overall
+# time in that facility.
 FACILITY_PERIOD_FRAGMENT = """
+    movement_with_awol_periods AS (
+      SELECT
+        m.* EXCEPT (fac_cd, move_dtd),
+        SAFE_CAST(m.move_dtd AS DATETIME) AS move_dtd,
+        # Override facility code to be FUGITIVE_FACILITY_CODE when the assignment
+        # reason is going AWOL (code 34)
+        IF(l.assgn_rsn_cd = '34', 'FI', m.fac_cd) as fac_cd
+      FROM
+        {{movement}} m
+      LEFT JOIN
+        {{ofndr_loc_hist}} l
+      ON
+        m.docno = l.ofndr_num
+        AND safe_cast(safe_cast(m.move_dtd AS datetime) AS date) = safe_cast(safe_cast(l.assgn_dt AS datetime) AS date)
+    ),
 
     # Raw movements table with a move_dtd parsed as a datetime
     facilities_with_datetime AS (
@@ -101,27 +119,27 @@ FACILITY_PERIOD_FRAGMENT = """
           lvgunit.lu_cd,
           lvgunit.lu_ldesc,
           m.move_srl,
-          SAFE_CAST(SAFE_CAST(m.move_dtd AS DATETIME) AS DATE) AS move_dtd,
+          SAFE_CAST(m.move_dtd AS DATE) AS move_dtd,
           LAG(m.fac_cd) 
             OVER (PARTITION BY 
               m.docno,
               m.incrno
-              ORDER BY SAFE_CAST(m.move_dtd AS DATETIME))
+              ORDER BY m.move_dtd)
             AS previous_fac_cd,
           LAG(loc.loc_cd) 
             OVER (PARTITION BY 
               m.docno,
               m.incrno
-              ORDER BY SAFE_CAST(m.move_dtd AS DATETIME))
+              ORDER BY m.move_dtd)
           AS previous_loc_cd,
           LAG(lvgunit.lu_cd) 
             OVER (PARTITION BY 
               m.docno,
               m.incrno
-              ORDER BY SAFE_CAST(m.move_dtd AS DATETIME))
+              ORDER BY m.move_dtd)
           AS previous_lu_cd
         FROM 
-          {{movement}} m
+          movement_with_awol_periods m
         LEFT JOIN 
            {{facility}} f
         USING (fac_cd)
@@ -327,15 +345,14 @@ FACILITY_PERIOD_TO_STATUS_INFO_FRAGMENT_TEMPLATE = """
 # The goal of this query fragment is to create a single row per '(incarceration/supervision)period' as Recidiviz has
 # defined it.
 #
-# In this case, it means we need to combine information from two tables: movements and offstat. `movements` is a
-# ledger of all people's physical movements throughout the criminal justice system (i.e. moving prison facilities,
-# districts, prison cells, etc). Offstat is a table which contains relevant status information about people. For
-# purposes of determining incarceration/supervision periods, the most useful statuses are Rider (treatment in
-# prison), investigative (not sentenced yet), and parole violator (temporary custody before parole board determines
-# if a revocation should occur).
-#
-# With the information from these two tables, the goal is create a new row when someone changes facility or when
-# their status changes.
+# In this case, it means we need to combine information from three tables: movements, ofndr_loc_hist and offstat.
+# `movements` is a ledger of all people's physical movements throughout the criminal justice system (i.e. moving prison
+# facilities, districts, prison cells, etc). `offstat` is a table which contains relevant status information about
+# people.  For purposes of determining incarceration/supervision periods, the most useful statuses are Rider (treatment
+# in prison), investigative (not sentenced yet), and parole violator (temporary custody before parole board determines
+# if a revocation should occur). `ofndr_loc_hist` is a table which contains finegrained information about where people
+# are located. With the information from these three tables, the goal is create a new row when someone changes facility
+# or when their status changes.
 #
 # At a high level, our approach is:
 # 1. Create time spans for each person's stay in a specific facility (prison facility or supervision district).

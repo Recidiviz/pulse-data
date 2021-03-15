@@ -1,8 +1,10 @@
 file_tag: ofndr_loc_hist
 file_description: |-
-  Contains a mapping between people and the facility in which they are currently located.
+  Contains a mapping between people and the reason they were assigned to their current facility.
+  Note that ID updates this table in place, so we add `assgn_dt` as a primary key to prevent overwrites.
 primary_key_cols:
   - ofndr_num
+  - assgn_dt
 columns:
   - name: ofndr_num
     description: |-
