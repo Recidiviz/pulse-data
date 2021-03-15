@@ -76,6 +76,7 @@ def create_parser() -> argparse.ArgumentParser:
 
 def main(schema_type: SchemaType, message: str, use_local_db: bool) -> None:
     """Runs the script to autogenerate migrations."""
+    database_key = SQLAlchemyDatabaseKey.canonical_for_schema(schema_type)
     if use_local_db:
         # TODO(#4619): We should eventually move this from a local postgres instance to running
         # postgres from a docker container.
@@ -92,8 +93,6 @@ def main(schema_type: SchemaType, message: str, use_local_db: bool) -> None:
             local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
         )
     else:
-        database_key = SQLAlchemyDatabaseKey.canonical_for_schema(schema_type)
-
         # TODO(Recidiviz/zenhub-tasks#134): This code path will throw when pointed at staging
         # because we havne't created valid read-only users there just yet.
         try:

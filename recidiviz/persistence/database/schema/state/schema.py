@@ -1510,6 +1510,15 @@ class StateIncarcerationSentence(StateBase, _StateIncarcerationSentenceSharedCol
     """Represents a StateIncarcerationSentence in the SQL schema"""
 
     __tablename__ = "state_incarceration_sentence"
+    __table_args__ = (
+        UniqueConstraint(
+            "state_code",
+            "external_id",
+            name="incarceration_sentence_external_ids_unique_within_state",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+    )
 
     incarceration_sentence_id = Column(Integer, primary_key=True)
 
