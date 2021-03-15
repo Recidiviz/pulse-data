@@ -147,7 +147,7 @@ from recidiviz.ingest.models.ingest_info import (
     StateSupervisionCaseTypeEntry,
 )
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
-
+from recidiviz.utils.environment import in_gcp_production
 from recidiviz.utils.params import str_to_bool
 
 
@@ -168,6 +168,11 @@ class UsIdController(CsvGcsfsDirectIngestController):
             max_delay_sec_between_files=max_delay_sec_between_files,
         )
         self.enum_overrides = self.generate_enum_overrides()
+        early_discharge_deleted_rows_processors = [
+            gen_label_single_external_id_hook(US_ID_DOC),
+            self._set_generated_ids,
+            self._set_invalid_early_discharge_status,
+        ]
         self.row_post_processors_by_file: Dict[str, List[Callable]] = {
             "offender_ofndr_dob_address": [
                 copy_name_to_alias,
@@ -243,16 +248,11 @@ class UsIdController(CsvGcsfsDirectIngestController):
                 gen_label_single_external_id_hook(US_ID_DOC),
                 self._add_supervision_contact_fields,
             ],
-            "early_discharge_incarceration_sentence_deleted_rows": [
-                gen_label_single_external_id_hook(US_ID_DOC),
-                self._set_generated_ids,
-                self._set_invalid_early_discharge_status,
-            ],
-            "early_discharge_supervision_sentence_deleted_rows": [
-                gen_label_single_external_id_hook(US_ID_DOC),
-                self._set_generated_ids,
-                self._set_invalid_early_discharge_status,
-            ],
+            "early_discharge_incarceration_sentence_deleted_rows": early_discharge_deleted_rows_processors,
+            "early_discharge_supervision_sentence_deleted_rows": early_discharge_deleted_rows_processors,
+            # TODO(#6401) Clean up when v2 gets launched in which v2 replaces v1
+            "early_discharge_incarceration_sentence_deleted_rows_v2": early_discharge_deleted_rows_processors,
+            "early_discharge_supervision_sentence_deleted_rows_v2": early_discharge_deleted_rows_processors,
         }
         self.file_post_processors_by_file: Dict[str, List[Callable]] = {
             "offender_ofndr_dob_address": [],
@@ -597,7 +597,8 @@ class UsIdController(CsvGcsfsDirectIngestController):
 
     @classmethod
     def get_file_tag_rank_list(cls) -> List[str]:
-        return [
+        # TODO(#6401) Clean up when v2 gets launched in which v2 replaces v1
+        shared_file_tags = [
             "offender_ofndr_dob_address",
             "ofndr_tst_ofndr_tst_cert",
             "mittimus_judge_sentence_offense_sentprob_incarceration_sentences",
@@ -609,9 +610,16 @@ class UsIdController(CsvGcsfsDirectIngestController):
             "ofndr_tst_tst_qstn_rspns_violation_reports",
             "ofndr_tst_tst_qstn_rspns_violation_reports_old",
             "sprvsn_cntc",
-            # TODO(#4252): Determine long term strategy for deleting/tombstoning entities.
-            "early_discharge_incarceration_sentence_deleted_rows",
-            "early_discharge_supervision_sentence_deleted_rows",
+        ]
+        if in_gcp_production():
+            return shared_file_tags + [
+                # TODO(#4252): Determine long term strategy for deleting/tombstoning entities.
+                "early_discharge_incarceration_sentence_deleted_rows",
+                "early_discharge_supervision_sentence_deleted_rows",
+            ]
+        return shared_file_tags + [
+            "early_discharge_incarceration_sentence_deleted_rows_v2",
+            "early_discharge_supervision_sentence_deleted_rows_v2",
         ]
 
     def generate_enum_overrides(self) -> EnumOverrides:
@@ -912,6 +920,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
             person_id = row.get("ofndr_num", "")
 
         sentence_group_id = row.get("incrno", "")
+        mittimus_id = row.get("mitt_srl", "")
         sentence_id = row.get("sent_no", "")
         court_case_id = row.get("caseno", "")
         period_id = row.get("period_id", "")
@@ -924,9 +933,21 @@ class UsIdController(CsvGcsfsDirectIngestController):
                 obj.state_sentence_group_id = f"{person_id}-{sentence_group_id}"
 
             if isinstance(obj, StateIncarcerationSentence):
-                obj.state_incarceration_sentence_id = f"{person_id}-{sentence_id}"
+                # TODO(#6401) Update to use mitt_srl under ids_only when the ingest views are launched
+                if in_gcp_production():
+                    obj.state_incarceration_sentence_id = f"{person_id}-{sentence_id}"
+                else:
+                    obj.state_incarceration_sentence_id = (
+                        f"{person_id}-{mittimus_id}-{sentence_id}"
+                    )
             if isinstance(obj, StateSupervisionSentence):
-                obj.state_supervision_sentence_id = f"{person_id}-{sentence_id}"
+                # TODO(#6401) Update to use mitt_srl under ids_only when the ingest views are launched
+                if in_gcp_production():
+                    obj.state_supervision_sentence_id = f"{person_id}-{sentence_id}"
+                else:
+                    obj.state_supervision_sentence_id = (
+                        f"{person_id}-{mittimus_id}-{sentence_id}"
+                    )
 
             if isinstance(obj, StateIncarcerationPeriod):
                 obj.state_incarceration_period_id = f"{person_id}-{period_id}"
@@ -935,7 +956,11 @@ class UsIdController(CsvGcsfsDirectIngestController):
 
             # Only one charge per sentence so recycle sentence id for the charge.
             if isinstance(obj, StateCharge):
-                obj.state_charge_id = f"{person_id}-{sentence_id}"
+                # TODO(#6401) Update to use mitt_srl under ids_only when the ingest views are launched
+                if in_gcp_production():
+                    obj.state_charge_id = f"{person_id}-{sentence_id}"
+                else:
+                    obj.state_charge_id = f"{person_id}-{mittimus_id}-{sentence_id}"
 
             if isinstance(obj, StateCourtCase):
                 obj.state_court_case_id = f"{person_id}-{court_case_id}"
