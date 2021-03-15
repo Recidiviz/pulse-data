@@ -171,7 +171,7 @@ def state_specific_supervision_type_inclusion_filter() -> str:
 def state_specific_admission_type_inclusion_filter() -> str:
     """State-specific admission_type inclusions """
     return """
-    -- US_PO only includes Legal Revocation admissions
+    -- US_MO only includes Legal Revocation admissions
     (state_code != 'US_MO' OR revocation_type = 'REINCARCERATION')
     -- US_PA includes Legal Revocation and Shock Incarceration admissions
     AND (state_code != 'US_PA' OR revocation_type IN ('REINCARCERATION', 'SHOCK_INCARCERATION'))"""

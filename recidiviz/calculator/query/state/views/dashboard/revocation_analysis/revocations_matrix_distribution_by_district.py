@@ -47,9 +47,9 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_DISTRICT_QUERY_TEMPLATE = """
       level_1_supervision_location,
       level_2_supervision_location,
       metric_period_months    
-    FROM `{project_id}.{reference_views_dataset}.supervision_matrix_by_person_materialized`
-    FULL OUTER JOIN
-         `{project_id}.{reference_views_dataset}.admission_types_per_state_for_matrix_materialized`
+    FROM `{project_id}.{reference_views_dataset}.admission_types_per_state_for_matrix_materialized`
+    LEFT JOIN
+        `{project_id}.{reference_views_dataset}.supervision_matrix_by_person_materialized`
     USING (state_code)
     GROUP BY state_code, violation_type, reported_violations, supervision_type, supervision_level, charge_category,
         level_1_supervision_location, level_2_supervision_location, metric_period_months, admission_type
@@ -65,10 +65,10 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_DISTRICT_QUERY_TEMPLATE = """
       charge_category,
       level_1_supervision_location,
       level_2_supervision_location,
-      metric_period_months    
-    FROM `{project_id}.{reference_views_dataset}.supervision_termination_matrix_by_person_materialized` 
-    FULL OUTER JOIN
-         `{project_id}.{reference_views_dataset}.admission_types_per_state_for_matrix_materialized`
+      metric_period_months 
+    FROM `{project_id}.{reference_views_dataset}.admission_types_per_state_for_matrix_materialized`
+    LEFT JOIN
+        `{project_id}.{reference_views_dataset}.supervision_termination_matrix_by_person_materialized`
     USING (state_code)
     GROUP BY state_code, violation_type, reported_violations, supervision_type, supervision_level, charge_category,
         level_1_supervision_location, level_2_supervision_location, metric_period_months, admission_type
