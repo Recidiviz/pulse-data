@@ -26,7 +26,6 @@ from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration impor
     UpdateRawTableMigration,
     RawTableMigration,
     RAW_TABLE_MIGRATION_FILE_PREFIX,
-    UPDATE_DATETIME_AGNOSTIC_DATETIME,
 )
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -105,12 +104,12 @@ class TestDirectIngestRawTableMigration(unittest.TestCase):
             project_2_query_map = migration.migration_queries_by_update_datetime()
 
         expected_query_map = {
-            UPDATE_DATETIME_AGNOSTIC_DATETIME: """DELETE FROM `recidiviz-456.us_xx_raw_data.tagC` WHERE COL1 = '31415';"""
+            None: """DELETE FROM `recidiviz-456.us_xx_raw_data.tagC` WHERE COL1 = '31415';"""
         }
         self.assertEqual(expected_query_map, project_1_query_map)
 
         expected_query_map = {
-            UPDATE_DATETIME_AGNOSTIC_DATETIME: """DELETE FROM `recidiviz-789.us_xx_raw_data.tagC` WHERE COL1 = '31415';"""
+            None: """DELETE FROM `recidiviz-789.us_xx_raw_data.tagC` WHERE COL1 = '31415';"""
         }
         self.assertEqual(expected_query_map, project_2_query_map)
 
@@ -169,12 +168,12 @@ class TestDirectIngestRawTableMigration(unittest.TestCase):
             project_2_query_map = migration.migration_queries_by_update_datetime()
 
         expected_query_map = {
-            UPDATE_DATETIME_AGNOSTIC_DATETIME: "UPDATE `recidiviz-456.us_xx_raw_data.tagC` SET COL1 = '91011' WHERE COL1 = '31415';"
+            None: "UPDATE `recidiviz-456.us_xx_raw_data.tagC` SET COL1 = '91011' WHERE COL1 = '31415';"
         }
         self.assertEqual(expected_query_map, project_1_query_map)
 
         expected_query_map = {
-            UPDATE_DATETIME_AGNOSTIC_DATETIME: "UPDATE `recidiviz-789.us_xx_raw_data.tagC` SET COL1 = '91011' WHERE COL1 = '31415';"
+            None: "UPDATE `recidiviz-789.us_xx_raw_data.tagC` SET COL1 = '91011' WHERE COL1 = '31415';"
         }
         self.assertEqual(expected_query_map, project_2_query_map)
 

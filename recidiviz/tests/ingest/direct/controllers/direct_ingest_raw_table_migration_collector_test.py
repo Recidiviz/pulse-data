@@ -20,9 +20,6 @@ import datetime
 import unittest
 from unittest.mock import patch, Mock
 
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration import (
-    UPDATE_DATETIME_AGNOSTIC_DATETIME,
-)
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration_collector import (
     DirectIngestRawTableMigrationCollector,
 )
@@ -62,7 +59,7 @@ class TestDirectIngestRawTableMigrationCollector(unittest.TestCase):
                 "UPDATE `recidiviz-456.us_xx_raw_data.tagC` SET COL1 = '456' "
                 "WHERE COL1 = '123' AND update_datetime = '2020-09-21T00:00:00';"
             ],
-            ("tagC", UPDATE_DATETIME_AGNOSTIC_DATETIME): [
+            ("tagC", None): [
                 "DELETE FROM `recidiviz-456.us_xx_raw_data.tagC` WHERE COL1 = '789';"
             ],
         }

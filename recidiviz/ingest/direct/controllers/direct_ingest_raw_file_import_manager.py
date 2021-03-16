@@ -36,9 +36,6 @@ from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration import (
-    UPDATE_DATETIME_AGNOSTIC_DATETIME,
-)
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration_collector import (
     DirectIngestRawTableMigrationCollector,
 )
@@ -408,16 +405,9 @@ class DirectIngestRawFileImportManager:
                 self.raw_table_migrations[(parts.file_tag, parts.utc_upload_datetime)]
             )
 
-        if (
-            parts.file_tag,
-            UPDATE_DATETIME_AGNOSTIC_DATETIME,
-        ) in self.raw_table_migrations:
+        if (parts.file_tag, None) in self.raw_table_migrations:
             # There are migration that should be run on all versions of the file
-            migration_queries.extend(
-                self.raw_table_migrations[
-                    (parts.file_tag, UPDATE_DATETIME_AGNOSTIC_DATETIME)
-                ]
-            )
+            migration_queries.extend(self.raw_table_migrations[(parts.file_tag, None)])
 
         for migration_query in migration_queries:
             query_job = self.big_query_client.run_query_async(query_str=migration_query)
