@@ -28,9 +28,6 @@ RAW_DATA_SUBDIR = "raw_data"
 MIGRATIONS_SUBDIR = "migrations"
 RAW_TABLE_MIGRATION_FILE_PREFIX = "migrations_"
 
-# The file_update_datetime that is used when a migration should run every time we see that file
-UPDATE_DATETIME_AGNOSTIC_DATETIME = datetime.datetime.max
-
 
 class RawTableMigration:
     """Base class for generating migration queries for a given raw data table."""
@@ -50,14 +47,12 @@ class RawTableMigration:
             update_datetime_filters: Optional list of datetimes to filter which update_datetime values the migration
                 should be run on. If null, the migration will be run on all versions of the migrations_file.
         """
-        if (
-            update_datetime_filters
-            and UPDATE_DATETIME_AGNOSTIC_DATETIME in update_datetime_filters
+        if update_datetime_filters and any(
+            dt is None for dt in update_datetime_filters
         ):
             raise ValueError(
-                "To have a migration that will run on all file versions, pass in "
-                "update_datetime_filters=None. The UPDATE_DATETIME_AGNOSTIC_DATETIME cannot be included"
-                "in the list of update_datetime_filters."
+                "Found None value in update_datetime_filters. To have a migration that "
+                "will run on all file versions, pass in update_datetime_filters=None."
             )
 
         self.update_datetime_filters = update_datetime_filters
@@ -72,21 +67,20 @@ class RawTableMigration:
 
         self._validate_column_value_list("filters", filters)
 
-    def migration_queries_by_update_datetime(self) -> Dict[datetime.datetime, str]:
-        """Returns a map of migration queries, indexed by the update datetime for that migration. This map can be used
-        to find queries to run for a given raw data file that has been just uploaded to BQ.
+    def migration_queries_by_update_datetime(
+        self,
+    ) -> Dict[Optional[datetime.datetime], str]:
+        """Returns a map of migration queries, indexed by the update datetime for that
+        migration. The key is None if the migration should be run on files with any
+        update datetime. This map can be used to find queries to run for a given raw
+        data file that has been just uploaded to BQ.
         """
-        if self.update_datetime_filters:
-            return {
-                update_datetime: self._migration_query_for_update_datetime(
-                    update_datetime
-                )
-                for update_datetime in self.update_datetime_filters
-            }
+        if not self.update_datetime_filters:
+            return {None: self._migration_query_for_update_datetime(None)}
+
         return {
-            UPDATE_DATETIME_AGNOSTIC_DATETIME: self._migration_query_for_update_datetime(
-                UPDATE_DATETIME_AGNOSTIC_DATETIME
-            )
+            update_datetime: self._migration_query_for_update_datetime(update_datetime)
+            for update_datetime in self.update_datetime_filters
         }
 
     @classmethod
@@ -110,10 +104,11 @@ class RawTableMigration:
 
     @abc.abstractmethod
     def _migration_query_for_update_datetime(
-        self, file_update_datetime: datetime.datetime
+        self, file_update_datetime: Optional[datetime.datetime]
     ) -> str:
-        """Builds a migration query string to modify rows with the given update datetime. Should be implemented by
-        subclasses based on the query type.
+        """Builds a migration query string to modify rows, filtering for those with the
+        given update datetime, if provided. Should be implemented by subclasses based on
+        the query type.
         """
 
     @staticmethod
@@ -173,14 +168,13 @@ class UpdateRawTableMigration(RawTableMigration):
         )
 
     def _migration_query_for_update_datetime(
-        self, file_update_datetime: datetime.datetime
+        self, file_update_datetime: Optional[datetime.datetime]
     ) -> str:
-        if file_update_datetime != UPDATE_DATETIME_AGNOSTIC_DATETIME:
+        update_datetime_clause = ""
+        if file_update_datetime is not None:
             update_datetime_clause = self.UPDATE_DATETIME_FILTER_TEMPLATE.format(
                 update_datetime=file_update_datetime.isoformat(),
             )
-        else:
-            update_datetime_clause = ""
 
         query = self.UPDATE_MIGRATION_TEMPLATE.format(
             raw_table=self._raw_table,
@@ -202,14 +196,13 @@ class DeleteFromRawTableMigration(RawTableMigration):
     UPDATE_DATETIME_FILTER_TEMPLATE = """ AND update_datetime = '{update_datetime}'"""
 
     def _migration_query_for_update_datetime(
-        self, file_update_datetime: datetime.datetime
+        self, file_update_datetime: Optional[datetime.datetime]
     ) -> str:
-        if file_update_datetime != UPDATE_DATETIME_AGNOSTIC_DATETIME:
+        update_datetime_clause = ""
+        if file_update_datetime is not None:
             update_datetime_clause = self.UPDATE_DATETIME_FILTER_TEMPLATE.format(
                 update_datetime=file_update_datetime.isoformat(),
             )
-        else:
-            update_datetime_clause = ""
 
         query = self.DELETE_FROM_MIGRATION_TEMPLATE.format(
             raw_table=self._raw_table,
