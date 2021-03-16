@@ -21,7 +21,6 @@ from datetime import datetime
 import os
 from functools import partial
 from mock import patch
-import numpy as np
 import pandas as pd
 from pandas.testing import assert_frame_equal
 
@@ -86,7 +85,33 @@ outflows_data_micro = pd.DataFrame(
         "state_code": ["test_state"] * 24,
         "run_date": [datetime(2020, 12, 1)] * 12 + [datetime(2021, 1, 1)] * 12,
         "gender": ["MALE"] * 6 + ["FEMALE"] * 6 + ["MALE"] * 6 + ["FEMALE"] * 6,
-        "total_population": np.random.randint(350, 400, 24),
+        # total_population generated with np.random.randint(350, 400, 24)
+        "total_population": [
+            376,
+            353,
+            375,
+            358,
+            352,
+            355,
+            388,
+            372,
+            375,
+            351,
+            365,
+            363,
+            361,
+            366,
+            382,
+            369,
+            363,
+            371,
+            361,
+            385,
+            373,
+            352,
+            389,
+            392,
+        ],
     }
 )
 
