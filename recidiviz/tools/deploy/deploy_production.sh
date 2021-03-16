@@ -54,7 +54,9 @@ then
     run_cmd git checkout ${GIT_VERSION_TAG}
 fi
 
-TAG_COMMIT_HASH=$(git rev-parse $GIT_VERSION_TAG) || exit_on_fail
+# Use rev-list to get the hash of the commit that the tag points to, rev-parse parse
+# returns the hash of the tag itself.
+TAG_COMMIT_HASH=$(git rev-list -n 1 $GIT_VERSION_TAG) || exit_on_fail
 
 echo "Updating configuration / infrastructure in preparation for deploy"
 verify_hash $TAG_COMMIT_HASH
