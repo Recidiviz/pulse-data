@@ -128,41 +128,48 @@ def main(
     confirm_correct_db_instance(schema_type)
     confirm_correct_git_branch(repo_root, is_prod=is_prod)
 
-    # TODO(#6073): Actually loop over all dbs for a schema (use
-    #  SQLAlchemyDatabaseKey.all()) and operate on them.
-    database_key = SQLAlchemyDatabaseKey.canonical_for_schema(schema_type)
-
     if dry_run:
-        overriden_env_vars = (
-            local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
-        )
+        db_keys = [SQLAlchemyDatabaseKey.canonical_for_schema(schema_type)]
     else:
-        overriden_env_vars = SQLAlchemyEngineManager.update_sqlalchemy_env_vars(
-            database_key=database_key,
-            ssl_cert_path=ssl_cert_path,
-            migration_user=True,
-        )
+        db_keys = [
+            key for key in SQLAlchemyDatabaseKey.all() if key.schema_type == schema_type
+        ]
 
     # Run migrations
-    try:
+    for key in db_keys:
         if dry_run:
-            logging.info("Starting local postgres database for migrations dry run")
-            db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
-        config = alembic.config.Config(database_key.alembic_file)
-        alembic.command.upgrade(config, "head")
-    except Exception as e:
-        logging.error("Migrations failed to run: %s", e)
-        sys.exit(1)
-    finally:
-        local_postgres_helpers.restore_local_env_vars(overriden_env_vars)
-        if dry_run:
-            try:
-                logging.info("Stopping local postgres database")
-                local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-                    db_dir
-                )
-            except Exception as e2:
-                logging.error("Error cleaning up postgres: %s", e2)
+            overriden_env_vars = (
+                local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
+            )
+        else:
+            overriden_env_vars = SQLAlchemyEngineManager.update_sqlalchemy_env_vars(
+                database_key=key,
+                ssl_cert_path=ssl_cert_path,
+                migration_user=True,
+            )
+        try:
+            logging.info(
+                "Starting postgres migrations for schema %s, db_name %s",
+                key.schema_type,
+                key.db_name,
+            )
+            if dry_run:
+                db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+            config = alembic.config.Config(key.alembic_file)
+            alembic.command.upgrade(config, "head")
+        except Exception as e:
+            logging.error("Migrations failed to run: %s", e)
+            sys.exit(1)
+        finally:
+            local_postgres_helpers.restore_local_env_vars(overriden_env_vars)
+            if dry_run:
+                try:
+                    logging.info("Stopping local postgres database")
+                    local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+                        db_dir
+                    )
+                except Exception as e2:
+                    logging.error("Error cleaning up postgres: %s", e2)
 
 
 if __name__ == "__main__":
