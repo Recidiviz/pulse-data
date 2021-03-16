@@ -24,9 +24,10 @@ should be run on a rev where the to-be-rolled-back upgrade migration exists.
 
 Example usage (run from `pipenv shell`):
 
-python -m recidiviz.tools.migrations.downgrade_one_migration \
+python -m recidiviz.tools.migrations.run_downgrade_migration \
     --database STATE \
     --project-id recidiviz-staging \
+    --target-revision [revision_id] \
     --ssl-cert-path ~/dev_state_data_certs
 """
 import argparse
@@ -77,15 +78,23 @@ def create_parser() -> argparse.ArgumentParser:
         required=True,
     )
     parser.add_argument(
+        "--target-revision",
+        type=str,
+        help="The revision id to downgrade to.",
+        required=True,
+    )
+    parser.add_argument(
         "--ssl-cert-path",
         type=str,
-        help="The path to the folder where the certs live. ",
+        help="The path to the folder where the certs live.",
         required=True,
     )
     return parser
 
 
-def main(schema_type: SchemaType, repo_root: str, ssl_cert_path: str) -> None:
+def main(
+    schema_type: SchemaType, repo_root: str, target_revision: str, ssl_cert_path: str
+) -> None:
     """
     Invokes the main code path for running a downgrade.
 
@@ -101,27 +110,25 @@ def main(schema_type: SchemaType, repo_root: str, ssl_cert_path: str) -> None:
     confirm_correct_db_instance(schema_type)
     confirm_correct_git_branch(repo_root, is_prod=is_prod)
 
-    # TODO(#6073): Update this script to loop over all DBs in an instance (use
-    #  SQLAlchemyDatabaseKey.all()), and also require that you pass in the "target
-    #  migration" to this script so we don't over-downgrade in the case of a partially
-    #  succeeded upgrade.
-    database_key = SQLAlchemyDatabaseKey.canonical_for_schema(schema_type)
+    db_keys = [
+        key for key in SQLAlchemyDatabaseKey.all() if key.schema_type == schema_type
+    ]
 
-    overriden_env_vars = SQLAlchemyEngineManager.update_sqlalchemy_env_vars(
-        database_key=database_key,
-        ssl_cert_path=ssl_cert_path,
-        migration_user=True,
-    )
-
-    # Run downgrade
-    try:
-        config = alembic.config.Config(database_key.alembic_file)
-        alembic.command.downgrade(config, "-1")
-    except Exception as e:
-        logging.error("Downgrade failed to run: %s", e)
-        sys.exit(1)
-    finally:
-        local_postgres_helpers.restore_local_env_vars(overriden_env_vars)
+    for key in db_keys:
+        # Run downgrade
+        try:
+            overriden_env_vars = SQLAlchemyEngineManager.update_sqlalchemy_env_vars(
+                database_key=key,
+                ssl_cert_path=ssl_cert_path,
+                migration_user=True,
+            )
+            config = alembic.config.Config(key.alembic_file)
+            alembic.command.downgrade(config, target_revision)
+        except Exception as e:
+            logging.error("Downgrade failed to run: %s", e)
+            sys.exit(1)
+        finally:
+            local_postgres_helpers.restore_local_env_vars(overriden_env_vars)
 
 
 if __name__ == "__main__":
@@ -129,4 +136,4 @@ if __name__ == "__main__":
 
     args = create_parser().parse_args()
     with local_project_id_override(args.project_id):
-        main(args.database, args.repo_root, args.ssl_cert_path)
+        main(args.database, args.repo_root, args.target_revision, args.ssl_cert_path)
