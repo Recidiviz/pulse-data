@@ -121,8 +121,8 @@ class MoveFilesToDeprecatedController:
             elif self.file_type == GcsfsDirectIngestFileType.INGEST_VIEW:
                 logging.info(
                     "[DRY RUN] All associated rows from our postgres table `direct_ingest_ingest_file_"
-                    "metadata` must be deleted before moving these files to a deprecated location. "
-                    "Make sure you have done this before moving these files."
+                    "metadata` must be deleted or marked as invalidated before moving these files to a "
+                    "deprecated location. Make sure you have done this before moving these files."
                 )
 
         else:
@@ -139,8 +139,8 @@ class MoveFilesToDeprecatedController:
             elif self.file_type == GcsfsDirectIngestFileType.INGEST_VIEW:
                 i = input(
                     "All associated rows from our postgres table `direct_ingest_ingest_file_metadata` "
-                    "must be deleted before moving these files to a deprecated location.\n"
-                    "Have you already done so? [y/n]: "
+                    "must be deleted or marked as invalidated before moving these files to a deprecated "
+                    "location.\nHave you already done so? [y/n]: "
                 )
 
                 if i.upper() != "Y":

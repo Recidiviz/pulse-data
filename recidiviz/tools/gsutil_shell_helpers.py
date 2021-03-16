@@ -35,7 +35,7 @@ def gsutil_ls(gs_path: str, directories_only: bool = False) -> List[str]:
     https://cloud.google.com/storage/docs/gsutil/commands/ls
     """
     res = subprocess.Popen(
-        f"gsutil ls {gs_path}",
+        f'gsutil ls "{gs_path}"',
         shell=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -65,7 +65,7 @@ def gsutil_cp(from_path: str, to_path: str) -> None:
     See more documentation here:
     https://cloud.google.com/storage/docs/gsutil/commands/cp
     """
-    command = f"gsutil {_GSUTIL_PARALLEL_COMMAND_OPTIONS} cp {from_path} {to_path}"
+    command = f'gsutil {_GSUTIL_PARALLEL_COMMAND_OPTIONS} cp "{from_path}" "{to_path}"'
     res = subprocess.Popen(
         command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
@@ -83,7 +83,7 @@ def gsutil_mv(from_path: str, to_path: str) -> None:
     """
 
     res = subprocess.Popen(
-        f"gsutil {_GSUTIL_PARALLEL_COMMAND_OPTIONS} mv {from_path} {to_path}",
+        f'gsutil {_GSUTIL_PARALLEL_COMMAND_OPTIONS} mv "{from_path}" "{to_path}"',
         shell=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
