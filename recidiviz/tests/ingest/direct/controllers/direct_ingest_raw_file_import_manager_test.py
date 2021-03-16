@@ -572,6 +572,13 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         )
         fixture_util.add_direct_ingest_path(self.fs.gcs_file_system, file_path)
 
+        mock_query_jobs = [
+            mock.MagicMock(),
+            mock.MagicMock(),
+        ]
+
+        self.mock_big_query_client.run_query_async.side_effect = mock_query_jobs
+
         self.import_manager.import_raw_file_to_big_query(
             file_path, self._metadata_for_unprocessed_file_path(file_path)
         )
@@ -587,3 +594,6 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
                 ),
             ]
         )
+
+        for mock_query_job in mock_query_jobs:
+            mock_query_job.result.assert_called_once()
