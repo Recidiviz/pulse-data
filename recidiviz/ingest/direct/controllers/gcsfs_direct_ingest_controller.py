@@ -366,7 +366,22 @@ class GcsfsDirectIngestController(
             discovered = self.file_metadata_manager.has_file_been_discovered(
                 task_args.raw_data_file_path
             )
-            if discovered and not queue_info.has_task_already_scheduled(task_args):
+            # If the file path has been processed, but still in the GCS bucket, it's likely due
+            # to either a manual move or an accidental duplicate uploading. In either case, we
+            # trust the database to have the source of truth.
+            processed = self.file_metadata_manager.has_file_been_processed(
+                task_args.raw_data_file_path
+            )
+            if processed:
+                logging.warning(
+                    "File [%s] is already marked as processed. Skipping file processing.",
+                    task_args.raw_data_file_path,
+                )
+            if (
+                discovered
+                and not processed
+                and not queue_info.has_task_already_scheduled(task_args)
+            ):
                 self.cloud_task_manager.create_direct_ingest_raw_data_import_task(
                     self.region, task_args
                 )

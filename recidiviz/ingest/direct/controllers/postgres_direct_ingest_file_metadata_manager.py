@@ -197,6 +197,30 @@ class PostgresDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
 
         return metadata_entity
 
+    def has_file_been_processed(self, path: GcsfsFilePath) -> bool:
+        parts = filename_parts_from_path(path)
+
+        try:
+            metadata = self.get_file_metadata(path)
+        except ValueError as e:
+            if parts.file_type != GcsfsDirectIngestFileType.RAW_DATA:
+                raise e
+            # For raw data files, if a file's metadata is not present in the database,
+            # then it is assummed to be not processed, as it is seen as not existing.
+            return False
+
+        if not metadata:
+            raise ValueError(f"Metadata unexpectedly None for path [{path.abs_path()}]")
+
+        if isinstance(metadata, DirectIngestFileMetadata):
+            if metadata.processed_time is None:
+                return False
+            return True
+
+        raise ValueError(
+            f"Unexpected metadata type [{type(metadata)}] for path [{path.abs_path()}]"
+        )
+
     def mark_file_as_processed(self, path: GcsfsFilePath) -> None:
         session = SessionFactory.for_database(self.database_key)
 

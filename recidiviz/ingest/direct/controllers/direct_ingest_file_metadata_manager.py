@@ -63,6 +63,10 @@ class DirectIngestFileMetadataManager:
         """
 
     @abc.abstractmethod
+    def has_file_been_processed(self, path: GcsfsFilePath) -> bool:
+        """Checks whether the file at this path has already been marked as processed."""
+
+    @abc.abstractmethod
     def mark_file_as_processed(self, path: GcsfsFilePath) -> None:
         """Marks the file represented by the |metadata| as processed in the appropriate metadata table."""
 
