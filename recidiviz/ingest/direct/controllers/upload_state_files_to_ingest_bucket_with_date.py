@@ -33,6 +33,9 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     gcsfs_direct_ingest_directory_path_for_region,
     GcsfsDirectIngestFileType,
 )
+from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import (
+    PostgresDirectIngestFileMetadataManager,
+)
 
 # TODO(#6013): refactor recidiviz.tools.UploadStateFilesToIngestBucketController to inherit from this class
 
@@ -63,31 +66,49 @@ class UploadStateFilesToIngestBucketController:
             if gcs_destination_path is None
             else GcsfsDirectoryPath.from_absolute_path(gcs_destination_path)
         )
+        self.postgres_direct_ingest_file_metadata_manager = (
+            PostgresDirectIngestFileMetadataManager(region)
+        )
+
         self.uploaded_files: List[str] = []
+        self.skipped_files: List[str] = []
         self.unable_to_upload_files: List[str] = []
 
     def _copy_to_ingest_bucket(
         self, path: str, full_file_upload_path: GcsfsFilePath
     ) -> None:
-        try:
-            mimetype, _ = guess_type(os.path.basename(path))
-            self.gcsfs.mv(
-                src_path=GcsfsFilePath.from_absolute_path(path),
-                dst_path=full_file_upload_path,
-            )
-            self.gcsfs.set_content_type(
-                full_file_upload_path, mimetype if mimetype else "text/plain"
-            )
-            logging.info("Copied %s -> %s", path, full_file_upload_path.uri())
-            self.uploaded_files.append(path)
-        except BaseException as e:
-            logging.warning(
-                "Could not copy %s -> %s due to error %s",
+        """Uploads the path to the appropriate bucket if it has not already been deemed
+        processed by the file metadata manager."""
+        if not self.postgres_direct_ingest_file_metadata_manager.has_file_been_processed(
+            full_file_upload_path
+        ):
+            try:
+                mimetype, _ = guess_type(os.path.basename(path))
+                self.gcsfs.mv(
+                    src_path=GcsfsFilePath.from_absolute_path(path),
+                    dst_path=full_file_upload_path,
+                )
+                self.gcsfs.set_content_type(
+                    full_file_upload_path, mimetype if mimetype else "text/plain"
+                )
+                logging.info("Copied %s -> %s", path, full_file_upload_path.uri())
+                self.uploaded_files.append(path)
+            except BaseException as e:
+                logging.warning(
+                    "Could not copy %s -> %s due to error %s",
+                    path,
+                    full_file_upload_path.uri(),
+                    e.args,
+                )
+                self.unable_to_upload_files.append(path)
+        else:
+            logging.info(
+                "Skipping %s -> %s, due to %s already being processed",
                 path,
                 full_file_upload_path.uri(),
-                e.args,
+                full_file_upload_path.uri(),
             )
-            self.unable_to_upload_files.append(path)
+            self.skipped_files.append(path)
 
     def _upload_file(self, path_with_timestamp: Tuple[str, datetime.datetime]) -> None:
         path, timestamp = path_with_timestamp
@@ -168,10 +189,11 @@ class UploadStateFilesToIngestBucketController:
 
         logging.info(
             "Upload complete, successfully uploaded %s files to ingest bucket [%s], "
-            "could not upload %s files",
+            "could not upload %s files, skipped %s files",
             len(self.uploaded_files),
             self.gcs_destination_path.uri(),
             len(self.unable_to_upload_files),
+            len(self.skipped_files),
         )
 
         return self.uploaded_files, self.unable_to_upload_files

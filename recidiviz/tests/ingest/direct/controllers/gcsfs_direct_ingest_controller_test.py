@@ -1860,6 +1860,37 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         self.validate_file_metadata(controller)
 
+    @patch(
+        "recidiviz.utils.regions.get_region",
+        Mock(return_value=TEST_INGEST_LAUNCHED_REGION),
+    )
+    def test_do_not_schedule_raw_data_import_task_if_already_processed_yet_in_gcs(
+        self,
+    ) -> None:
+        controller = build_gcsfs_controller_for_tests(
+            StateTestGcsfsDirectIngestController,
+            self.FIXTURE_PATH_PREFIX,
+            run_async=False,
+        )
+        path_to_fixture = path_for_fixture_file(
+            controller,
+            "tagA.csv",
+            should_normalize=True,
+            file_type=GcsfsDirectIngestFileType.RAW_DATA,
+        )
+        fixture_util.add_direct_ingest_path(
+            controller.fs.gcs_file_system, path_to_fixture, has_fixture=True
+        )
+        controller.file_metadata_manager.mark_file_as_discovered(path_to_fixture)
+        controller.file_metadata_manager.mark_file_as_processed(path_to_fixture)
+
+        controller.schedule_next_ingest_job_or_wait_if_necessary(just_finished_job=True)
+        for task_name in controller.cloud_task_manager.get_bq_import_export_queue_info(
+            controller.region
+        ).task_names:
+            self.assertNotRegex(task_name, "raw")
+        run_task_queues_to_empty(controller)
+
     def test_serialize_gcsfs_ingest_args(self) -> None:
         now = datetime.datetime.now()
 
