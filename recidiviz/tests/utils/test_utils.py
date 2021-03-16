@@ -40,4 +40,5 @@ def is_running_in_ci() -> bool:
     """Returns True if this code is running in the CI environment, False
     otherwise.
     """
-    return os.environ.get("CI") == "true"
+    # TODO(#6447): Remove TRAVIS check once pulse-data has stopped using Travis
+    return os.environ.get("CI") == "true" or os.environ.get("TRAVIS") == "true"
