@@ -32,7 +32,7 @@ from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration impor
 
 _MIGRATIONS_LIST_EXPECTED_NAME = "MIGRATIONS"
 
-RawFileKey = Tuple[str, datetime.datetime]
+RawFileKey = Tuple[str, Optional[datetime.datetime]]
 
 
 class DirectIngestRawTableMigrationCollector(ModuleCollectorMixin):
