@@ -47,6 +47,7 @@ VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     ingest_view_name="movement_facility_location_offstat_supervision_periods",
     view_query_template=VIEW_QUERY_TEMPLATE,
     order_by_cols="docno, incrno, start_date, end_date",
+    materialize_raw_data_table_views=True,
 )
 
 if __name__ == "__main__":
