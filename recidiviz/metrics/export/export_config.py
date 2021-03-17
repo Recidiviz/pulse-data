@@ -145,14 +145,6 @@ VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = (
             export_name="PO_MONTHLY",
             bq_view_namespace=BigQueryViewNamespace.STATE,
         ),
-        # Public Dashboard views for US_ND
-        ExportViewCollectionConfig(
-            view_builders_to_export=PUBLIC_DASHBOARD_VIEW_BUILDERS,
-            output_directory_uri_template=PUBLIC_DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
-            state_code_filter="US_ND",
-            export_name="PUBLIC_DASHBOARD",
-            bq_view_namespace=BigQueryViewNamespace.STATE,
-        ),
         # COVID Dashboard views (not state-specific)
         ExportViewCollectionConfig(
             view_builders_to_export=COVID_DASHBOARD_VIEW_BUILDERS,
@@ -208,6 +200,17 @@ VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = (
             bq_view_namespace=BigQueryViewNamespace.STATE,
         )
         for state_code in ["US_ND"]
+    ]
+    + [
+        # Public Dashboard views for all relevant states
+        ExportViewCollectionConfig(
+            view_builders_to_export=PUBLIC_DASHBOARD_VIEW_BUILDERS,
+            output_directory_uri_template=PUBLIC_DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
+            state_code_filter=state_code,
+            export_name="PUBLIC_DASHBOARD",
+            bq_view_namespace=BigQueryViewNamespace.STATE,
+        )
+        for state_code in ["US_ND", "US_PA"]
     ]
 )
 
