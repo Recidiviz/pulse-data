@@ -512,3 +512,107 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
             admission_reason,
             StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
         )
+
+    def test_us_nd_infer_supervision_period_admission_halfway_house_to_parole(
+        self,
+    ):
+        previous_supervision_period: StateSupervisionPeriod = (
+            StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                external_id="sp1",
+                status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
+                state_code="US_XX",
+                supervising_officer="AGENTX",
+                start_date=date(2018, 2, 20),
+                termination_date=date(2018, 2, 22),
+                termination_reason=None,
+                supervision_type=StateSupervisionType.HALFWAY_HOUSE,
+            )
+        )
+        current_supervision_period: StateSupervisionPeriod = (
+            StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                external_id="sp1",
+                status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
+                state_code="US_XX",
+                supervising_officer="AGENTY",
+                start_date=date(2018, 3, 5),
+                termination_date=date(2018, 5, 19),
+                termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+                supervision_type=StateSupervisionType.PAROLE,
+            )
+        )
+
+        supervision_period_index = SupervisionPeriodIndex(
+            supervision_periods=[
+                previous_supervision_period,
+                current_supervision_period,
+            ]
+        )
+
+        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[])
+
+        admission_reason: Optional[
+            StateSupervisionPeriodAdmissionReason
+        ] = us_nd_infer_supervision_period_admission(
+            current_supervision_period,
+            supervision_period_index,
+            incarceration_period_index,
+        )
+
+        self.assertEqual(
+            admission_reason,
+            StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+        )
+
+    def test_us_nd_infer_supervision_period_previous_period_termination_reason_revocation(
+        self,
+    ):
+        previous_supervision_period: StateSupervisionPeriod = (
+            StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                external_id="sp1",
+                status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
+                state_code="US_XX",
+                supervising_officer="AGENTX",
+                start_date=date(2018, 2, 20),
+                termination_date=date(2018, 2, 22),
+                termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+                supervision_type=StateSupervisionType.PAROLE,
+            )
+        )
+        current_supervision_period: StateSupervisionPeriod = (
+            StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                external_id="sp1",
+                status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
+                state_code="US_XX",
+                supervising_officer="AGENTY",
+                start_date=date(2018, 3, 5),
+                termination_date=date(2018, 5, 19),
+                termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+                supervision_type=StateSupervisionType.PAROLE,
+            )
+        )
+
+        supervision_period_index = SupervisionPeriodIndex(
+            supervision_periods=[
+                previous_supervision_period,
+                current_supervision_period,
+            ]
+        )
+
+        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[])
+
+        admission_reason: Optional[
+            StateSupervisionPeriodAdmissionReason
+        ] = us_nd_infer_supervision_period_admission(
+            current_supervision_period,
+            supervision_period_index,
+            incarceration_period_index,
+        )
+
+        self.assertEqual(
+            admission_reason,
+            StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+        )
