@@ -79,15 +79,10 @@ class TestDirectIngestControl(unittest.TestCase):
         # Act
         request_args = {"manifest_path": "gs://fake-bucket/foo/manifest.yaml"}
         headers = {"X-Appengine-Cron": "test-cron"}
-        response = self.client.get(
-            "/ingest", query_string=request_args, headers=headers
-        )
+        with self.assertRaisesRegex(ValueError, "Malformed manifest"):
+            self.client.get("/ingest", query_string=request_args, headers=headers)
 
         # Assert
-        self.assertEqual(500, response.status_code)
-        self.assertEqual(
-            "Error ingesting data: 'Malformed manifest'", response.get_data().decode()
-        )
         mock_ingest.assert_called_with(
             ANY, GcsfsFilePath(bucket_name="fake-bucket", blob_name="foo/manifest.yaml")
         )
