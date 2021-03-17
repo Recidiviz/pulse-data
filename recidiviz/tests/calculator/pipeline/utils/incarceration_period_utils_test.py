@@ -27,13 +27,16 @@ import pytest
 from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
-    drop_placeholder_periods,
     prepare_incarceration_periods_for_calculations,
     collapse_temporary_custody_and_revocation_periods,
-    drop_periods_not_under_state_custodial_authority,
     _infer_missing_dates_and_statuses,
     _ip_is_nested_in_previous_period,
     _drop_zero_day_erroneous_periods,
+    IncarcerationPreProcessingConfig,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
+    drop_non_state_prison_incarceration_type_periods,
+    drop_temporary_custody_periods,
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -49,229 +52,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.calculator.pipeline.utils import incarceration_period_utils as utils
-
-
-class TestDropPeriods(unittest.TestCase):
-    """Tests the drop_placeholder_periods and drop_periods_not_under_state_custodial_authority function."""
-
-    def test_drop_placeholder_periods(self):
-        state_code = "US_XX"
-        placeholder_custody = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=111,
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
-            state_code=state_code,
-        )
-
-        valid_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1111,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code=state_code,
-            admission_date=date(2016, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
-            release_date=date(2017, 12, 4),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
-        )
-
-        incarceration_periods = [placeholder_custody, valid_incarceration_period]
-
-        validated_incarceration_periods = drop_placeholder_periods(
-            incarceration_periods
-        )
-
-        self.assertEqual([valid_incarceration_period], validated_incarceration_periods)
-
-    def test_dropPeriodsNotUnderStateCustodialAuthority(self):
-        state_code = "US_XX"
-        temporary_custody_jail = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=111,
-            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code=state_code,
-            admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
-            release_date=date(2010, 12, 4),
-            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-        )
-        temporary_custody_prison = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=112,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code=state_code,
-            admission_date=date(2008, 12, 20),
-            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
-            release_date=date(2008, 12, 24),
-            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-        )
-        new_admission_prison = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1111,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code=state_code,
-            admission_date=date(2016, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
-            release_date=date(2017, 12, 4),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
-        )
-        incarceration_periods = [
-            temporary_custody_jail,
-            temporary_custody_prison,
-            new_admission_prison,
-        ]
-
-        validated_incarceration_periods = (
-            drop_periods_not_under_state_custodial_authority(
-                state_code, incarceration_periods
-            )
-        )
-
-        self.assertCountEqual(
-            [temporary_custody_prison, new_admission_prison],
-            validated_incarceration_periods,
-        )
-
-    def test_dropPeriodsNotUnderStateCustodialAuthority_usNd(self):
-        state_code = "US_ND"
-        temporary_custody_jail = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=111,
-            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code=state_code,
-            admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
-            release_date=date(2010, 12, 4),
-            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-        )
-        temporary_custody_prison = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=112,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code=state_code,
-            admission_date=date(2008, 12, 20),
-            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
-            release_date=date(2008, 12, 24),
-            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-        )
-        new_admission_prison = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1111,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code=state_code,
-            admission_date=date(2016, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
-            release_date=date(2017, 12, 4),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
-        )
-        incarceration_periods = [
-            temporary_custody_jail,
-            temporary_custody_prison,
-            new_admission_prison,
-        ]
-
-        validated_incarceration_periods = (
-            drop_periods_not_under_state_custodial_authority(
-                state_code, incarceration_periods
-            )
-        )
-
-        self.assertCountEqual([new_admission_prison], validated_incarceration_periods)
-
-    def test_dropPeriodsNotUnderStateCustodialAuthority_usMo(self):
-        state_code = "US_MO"
-        temporary_custody_jail = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=111,
-            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code=state_code,
-            admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
-            release_date=date(2010, 12, 4),
-            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-        )
-        temporary_custody_prison = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=112,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code=state_code,
-            admission_date=date(2008, 12, 20),
-            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
-            release_date=date(2008, 12, 24),
-            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-        )
-        new_admission_prison = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1111,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code=state_code,
-            admission_date=date(2016, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
-            release_date=date(2017, 12, 4),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
-        )
-        incarceration_periods = [
-            temporary_custody_jail,
-            temporary_custody_prison,
-            new_admission_prison,
-        ]
-
-        validated_incarceration_periods = (
-            drop_periods_not_under_state_custodial_authority(
-                state_code, incarceration_periods
-            )
-        )
-
-        self.assertCountEqual(
-            [temporary_custody_prison, new_admission_prison],
-            validated_incarceration_periods,
-        )
-
-    def test_dropPeriodsNotUnderStateCustodialAuthority_usId(self):
-        state_code = "US_ID"
-        temporary_custody_jail = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=111,
-            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code=state_code,
-            admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
-            release_date=date(2010, 12, 4),
-            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-        )
-        temporary_custody_prison = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=112,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code=state_code,
-            admission_date=date(2008, 12, 20),
-            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
-            release_date=date(2008, 12, 24),
-            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-        )
-        new_admission_prison = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1111,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code=state_code,
-            admission_date=date(2016, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
-            release_date=date(2017, 12, 4),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
-        )
-        incarceration_periods = [
-            temporary_custody_jail,
-            temporary_custody_prison,
-            new_admission_prison,
-        ]
-
-        validated_incarceration_periods = (
-            drop_periods_not_under_state_custodial_authority(
-                state_code, incarceration_periods
-            )
-        )
-
-        self.assertCountEqual(
-            [temporary_custody_jail, temporary_custody_prison, new_admission_prison],
-            validated_incarceration_periods,
-        )
 
 
 class TestCollapseIncarcerationPeriods(unittest.TestCase):
@@ -1190,14 +970,20 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
             second_reincarceration_period,
         ]
 
+        ip_pre_processing_config = IncarcerationPreProcessingConfig(
+            drop_temporary_custody_periods=drop_temporary_custody_periods(state_code),
+            drop_non_state_prison_incarceration_type_periods=drop_non_state_prison_incarceration_type_periods(
+                state_code
+            ),
+            collapse_transfers=True,
+            collapse_temporary_custody_periods_with_revocation=False,
+            collapse_transfers_with_different_pfi=True,
+            overwrite_facility_information_in_transfers=True,
+        )
+
         validated_incarceration_periods = (
             prepare_incarceration_periods_for_calculations(
-                state_code,
-                input_incarceration_periods,
-                collapse_transfers=True,
-                collapse_temporary_custody_periods_with_revocation=False,
-                collapse_transfers_with_different_pfi=True,
-                overwrite_facility_information_in_transfers=True,
+                input_incarceration_periods, ip_pre_processing_config
             )
         )
 
@@ -1237,14 +1023,20 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
             second_incarceration_period,
         ]
 
+        ip_pre_processing_config = IncarcerationPreProcessingConfig(
+            drop_temporary_custody_periods=drop_temporary_custody_periods(state_code),
+            drop_non_state_prison_incarceration_type_periods=drop_non_state_prison_incarceration_type_periods(
+                state_code
+            ),
+            collapse_transfers=True,
+            collapse_temporary_custody_periods_with_revocation=False,
+            collapse_transfers_with_different_pfi=True,
+            overwrite_facility_information_in_transfers=True,
+        )
+
         collapsed_incarceration_periods = (
             prepare_incarceration_periods_for_calculations(
-                state_code,
-                input_incarceration_periods,
-                collapse_transfers=True,
-                collapse_temporary_custody_periods_with_revocation=False,
-                collapse_transfers_with_different_pfi=True,
-                overwrite_facility_information_in_transfers=True,
+                input_incarceration_periods, ip_pre_processing_config
             )
         )
 
@@ -1308,14 +1100,20 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
             valid_incarceration_period_2,
         ]
 
+        ip_pre_processing_config = IncarcerationPreProcessingConfig(
+            drop_temporary_custody_periods=drop_temporary_custody_periods(state_code),
+            drop_non_state_prison_incarceration_type_periods=drop_non_state_prison_incarceration_type_periods(
+                state_code
+            ),
+            collapse_transfers=True,
+            collapse_temporary_custody_periods_with_revocation=False,
+            collapse_transfers_with_different_pfi=True,
+            overwrite_facility_information_in_transfers=True,
+        )
+
         validated_incarceration_periods = (
             prepare_incarceration_periods_for_calculations(
-                state_code,
-                incarceration_periods,
-                collapse_transfers=True,
-                collapse_temporary_custody_periods_with_revocation=False,
-                collapse_transfers_with_different_pfi=True,
-                overwrite_facility_information_in_transfers=True,
+                incarceration_periods, ip_pre_processing_config
             )
         )
 
@@ -1371,14 +1169,20 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
             valid_incarceration_period_2,
         ]
 
+        ip_pre_processing_config = IncarcerationPreProcessingConfig(
+            drop_temporary_custody_periods=drop_temporary_custody_periods(state_code),
+            drop_non_state_prison_incarceration_type_periods=drop_non_state_prison_incarceration_type_periods(
+                state_code
+            ),
+            collapse_transfers=True,
+            collapse_temporary_custody_periods_with_revocation=False,
+            collapse_transfers_with_different_pfi=True,
+            overwrite_facility_information_in_transfers=True,
+        )
+
         validated_incarceration_periods = (
             prepare_incarceration_periods_for_calculations(
-                state_code,
-                incarceration_periods,
-                collapse_transfers=True,
-                collapse_temporary_custody_periods_with_revocation=False,
-                collapse_transfers_with_different_pfi=True,
-                overwrite_facility_information_in_transfers=True,
+                incarceration_periods, ip_pre_processing_config
             )
         )
 
@@ -1428,14 +1232,20 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
             first_reincarceration_period,
         ]
 
+        ip_pre_processing_config = IncarcerationPreProcessingConfig(
+            drop_temporary_custody_periods=drop_temporary_custody_periods(state_code),
+            drop_non_state_prison_incarceration_type_periods=drop_non_state_prison_incarceration_type_periods(
+                state_code
+            ),
+            collapse_transfers=True,
+            collapse_temporary_custody_periods_with_revocation=False,
+            collapse_transfers_with_different_pfi=True,
+            overwrite_facility_information_in_transfers=True,
+        )
+
         validated_incarceration_periods = (
             prepare_incarceration_periods_for_calculations(
-                state_code,
-                input_incarceration_periods,
-                collapse_transfers=True,
-                collapse_temporary_custody_periods_with_revocation=False,
-                collapse_transfers_with_different_pfi=True,
-                overwrite_facility_information_in_transfers=True,
+                input_incarceration_periods, ip_pre_processing_config
             )
         )
 
@@ -1487,14 +1297,20 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
             first_reincarceration_period,
         ]
 
+        ip_pre_processing_config = IncarcerationPreProcessingConfig(
+            drop_temporary_custody_periods=drop_temporary_custody_periods(state_code),
+            drop_non_state_prison_incarceration_type_periods=drop_non_state_prison_incarceration_type_periods(
+                state_code
+            ),
+            collapse_transfers=True,
+            collapse_temporary_custody_periods_with_revocation=False,
+            collapse_transfers_with_different_pfi=True,
+            overwrite_facility_information_in_transfers=True,
+        )
+
         validated_incarceration_periods = (
             prepare_incarceration_periods_for_calculations(
-                state_code,
-                input_incarceration_periods,
-                collapse_transfers=True,
-                collapse_temporary_custody_periods_with_revocation=False,
-                collapse_transfers_with_different_pfi=True,
-                overwrite_facility_information_in_transfers=True,
+                input_incarceration_periods, ip_pre_processing_config
             )
         )
 
@@ -1546,14 +1362,20 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
             initial_incarceration_period,
         ]
 
+        ip_pre_processing_config = IncarcerationPreProcessingConfig(
+            drop_temporary_custody_periods=drop_temporary_custody_periods(state_code),
+            drop_non_state_prison_incarceration_type_periods=drop_non_state_prison_incarceration_type_periods(
+                state_code
+            ),
+            collapse_transfers=True,
+            collapse_temporary_custody_periods_with_revocation=False,
+            collapse_transfers_with_different_pfi=True,
+            overwrite_facility_information_in_transfers=True,
+        )
+
         validated_incarceration_periods = (
             prepare_incarceration_periods_for_calculations(
-                state_code,
-                input_incarceration_periods,
-                collapse_transfers=True,
-                collapse_temporary_custody_periods_with_revocation=False,
-                collapse_transfers_with_different_pfi=True,
-                overwrite_facility_information_in_transfers=True,
+                input_incarceration_periods, ip_pre_processing_config
             )
         )
 
@@ -1595,14 +1417,20 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
             first_reincarceration_period,
         ]
 
+        ip_pre_processing_config = IncarcerationPreProcessingConfig(
+            drop_temporary_custody_periods=drop_temporary_custody_periods(state_code),
+            drop_non_state_prison_incarceration_type_periods=drop_non_state_prison_incarceration_type_periods(
+                state_code
+            ),
+            collapse_transfers=True,
+            collapse_temporary_custody_periods_with_revocation=True,
+            collapse_transfers_with_different_pfi=True,
+            overwrite_facility_information_in_transfers=True,
+        )
+
         collapsed_incarceration_periods = (
             prepare_incarceration_periods_for_calculations(
-                state_code,
-                incarceration_periods,
-                collapse_transfers=True,
-                collapse_temporary_custody_periods_with_revocation=False,
-                collapse_transfers_with_different_pfi=True,
-                overwrite_facility_information_in_transfers=True,
+                incarceration_periods, ip_pre_processing_config
             )
         )
 
@@ -1665,14 +1493,20 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
             second_reincarceration_period,
         ]
 
+        ip_pre_processing_config = IncarcerationPreProcessingConfig(
+            drop_temporary_custody_periods=drop_temporary_custody_periods(state_code),
+            drop_non_state_prison_incarceration_type_periods=drop_non_state_prison_incarceration_type_periods(
+                state_code
+            ),
+            collapse_transfers=True,
+            collapse_temporary_custody_periods_with_revocation=True,
+            collapse_transfers_with_different_pfi=True,
+            overwrite_facility_information_in_transfers=True,
+        )
+
         collapsed_incarceration_periods = (
             prepare_incarceration_periods_for_calculations(
-                state_code,
-                incarceration_periods,
-                collapse_transfers=True,
-                collapse_temporary_custody_periods_with_revocation=False,
-                collapse_transfers_with_different_pfi=True,
-                overwrite_facility_information_in_transfers=True,
+                incarceration_periods, ip_pre_processing_config
             )
         )
 
@@ -1738,14 +1572,18 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
             valid_incarceration_period,
         ]
 
+        ip_pre_processing_config = IncarcerationPreProcessingConfig(
+            drop_temporary_custody_periods=False,
+            drop_non_state_prison_incarceration_type_periods=True,
+            collapse_transfers=True,
+            collapse_temporary_custody_periods_with_revocation=False,
+            collapse_transfers_with_different_pfi=True,
+            overwrite_facility_information_in_transfers=True,
+        )
+
         validated_incarceration_periods = (
             prepare_incarceration_periods_for_calculations(
-                state_code,
-                incarceration_periods,
-                collapse_transfers=True,
-                collapse_temporary_custody_periods_with_revocation=False,
-                collapse_transfers_with_different_pfi=True,
-                overwrite_facility_information_in_transfers=True,
+                incarceration_periods, ip_pre_processing_config
             )
         )
 
@@ -1823,14 +1661,18 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
             valid_incarceration_period_3,
         ]
 
+        ip_pre_processing_config = IncarcerationPreProcessingConfig(
+            drop_temporary_custody_periods=True,
+            drop_non_state_prison_incarceration_type_periods=True,
+            collapse_transfers=True,
+            collapse_temporary_custody_periods_with_revocation=False,
+            collapse_transfers_with_different_pfi=True,
+            overwrite_facility_information_in_transfers=True,
+        )
+
         validated_incarceration_periods = (
             prepare_incarceration_periods_for_calculations(
-                state_code,
-                incarceration_periods,
-                collapse_transfers=True,
-                collapse_temporary_custody_periods_with_revocation=False,
-                collapse_transfers_with_different_pfi=True,
-                overwrite_facility_information_in_transfers=True,
+                incarceration_periods, ip_pre_processing_config
             )
         )
 
@@ -1878,14 +1720,20 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         incarceration_periods = [valid_incarceration_period, jail_period]
 
+        ip_pre_processing_config = IncarcerationPreProcessingConfig(
+            drop_temporary_custody_periods=True,
+            drop_non_state_prison_incarceration_type_periods=drop_non_state_prison_incarceration_type_periods(
+                state_code
+            ),
+            collapse_transfers=True,
+            collapse_temporary_custody_periods_with_revocation=False,
+            collapse_transfers_with_different_pfi=True,
+            overwrite_facility_information_in_transfers=True,
+        )
+
         validated_incarceration_periods = (
             prepare_incarceration_periods_for_calculations(
-                state_code,
-                incarceration_periods,
-                collapse_transfers=True,
-                collapse_temporary_custody_periods_with_revocation=False,
-                collapse_transfers_with_different_pfi=True,
-                overwrite_facility_information_in_transfers=True,
+                incarceration_periods, ip_pre_processing_config
             )
         )
 
@@ -1941,15 +1789,21 @@ class TestUsNdPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
             valid_incarceration_period,
         ]
 
+        ip_pre_processing_config = IncarcerationPreProcessingConfig(
+            drop_temporary_custody_periods=drop_temporary_custody_periods(state_code),
+            drop_non_state_prison_incarceration_type_periods=drop_non_state_prison_incarceration_type_periods(
+                state_code
+            ),
+            collapse_transfers=True,
+            collapse_temporary_custody_periods_with_revocation=False,
+            collapse_transfers_with_different_pfi=True,
+            overwrite_facility_information_in_transfers=True,
+        )
+
         for ip_order_combo in permutations(incarceration_periods):
             validated_incarceration_periods = (
                 prepare_incarceration_periods_for_calculations(
-                    state_code,
-                    ip_order_combo,
-                    collapse_transfers=True,
-                    collapse_temporary_custody_periods_with_revocation=False,
-                    collapse_transfers_with_different_pfi=True,
-                    overwrite_facility_information_in_transfers=True,
+                    ip_order_combo, ip_pre_processing_config
                 )
             )
 
@@ -2035,15 +1889,21 @@ class TestUsNdPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
             release_reason=valid_incarceration_period_3.release_reason,
         )
 
+        ip_pre_processing_config = IncarcerationPreProcessingConfig(
+            drop_temporary_custody_periods=drop_temporary_custody_periods(state_code),
+            drop_non_state_prison_incarceration_type_periods=drop_non_state_prison_incarceration_type_periods(
+                state_code
+            ),
+            collapse_transfers=True,
+            collapse_temporary_custody_periods_with_revocation=False,
+            collapse_transfers_with_different_pfi=True,
+            overwrite_facility_information_in_transfers=True,
+        )
+
         for ip_order_combo in permutations(incarceration_periods):
             validated_incarceration_periods = (
                 prepare_incarceration_periods_for_calculations(
-                    state_code,
-                    ip_order_combo,
-                    collapse_transfers=True,
-                    collapse_temporary_custody_periods_with_revocation=False,
-                    collapse_transfers_with_different_pfi=True,
-                    overwrite_facility_information_in_transfers=True,
+                    ip_order_combo, ip_pre_processing_config
                 )
             )
 
@@ -2077,15 +1937,21 @@ class TestUsNdPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         incarceration_periods = [valid_incarceration_period, temporary_custody]
 
+        ip_pre_processing_config = IncarcerationPreProcessingConfig(
+            drop_temporary_custody_periods=drop_temporary_custody_periods(state_code),
+            drop_non_state_prison_incarceration_type_periods=drop_non_state_prison_incarceration_type_periods(
+                state_code
+            ),
+            collapse_transfers=True,
+            collapse_temporary_custody_periods_with_revocation=False,
+            collapse_transfers_with_different_pfi=True,
+            overwrite_facility_information_in_transfers=True,
+        )
+
         for ip_order_combo in permutations(incarceration_periods):
             validated_incarceration_periods = (
                 prepare_incarceration_periods_for_calculations(
-                    state_code,
-                    ip_order_combo,
-                    collapse_transfers=True,
-                    collapse_temporary_custody_periods_with_revocation=False,
-                    collapse_transfers_with_different_pfi=True,
-                    overwrite_facility_information_in_transfers=True,
+                    ip_order_combo, ip_pre_processing_config
                 )
             )
 

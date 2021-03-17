@@ -34,11 +34,14 @@ from recidiviz.calculator.pipeline.utils.execution_utils import (
 )
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
     prepare_incarceration_periods_for_calculations,
+    IncarcerationPreProcessingConfig,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_pre_incarceration_supervision_type,
     get_post_incarceration_supervision_type,
     state_specific_incarceration_admission_reason_override,
+    drop_temporary_custody_periods,
+    drop_non_state_prison_incarceration_type_periods,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodStatus,
@@ -64,18 +67,15 @@ def find_incarceration_events(
     persons_to_recent_county_of_residence: List[Dict[str, Any]],
 ) -> List[IncarcerationEvent]:
     """Finds instances of admission or release from incarceration.
-
     Transforms the person's StateIncarcerationPeriods, which are connected to their StateSentenceGroups, into
     IncarcerationAdmissionEvents, IncarcerationStayEvents, and IncarcerationReleaseEvents, representing admissions,
     stays in, and releases from incarceration in a state prison.
-
     Args:
         - sentence_groups: All of the person's StateSentenceGroups
         - incarceration_period_judicial_district_association: A list of dictionaries with information connecting
             StateIncarcerationPeriod ids to the judicial district responsible for the period of incarceration
         - persons_to_recent_county_of_residence: Reference table rows containing the county that the incarcerated person
             lives in (prior to incarceration).
-
     Returns:
         A list of IncarcerationEvents for the person.
     """
@@ -143,14 +143,20 @@ def find_all_admission_release_events(
         Union[IncarcerationAdmissionEvent, IncarcerationReleaseEvent]
     ] = []
 
+    ip_pre_processing_config = IncarcerationPreProcessingConfig(
+        drop_temporary_custody_periods=drop_temporary_custody_periods(state_code),
+        drop_non_state_prison_incarceration_type_periods=drop_non_state_prison_incarceration_type_periods(
+            state_code
+        ),
+        collapse_transfers=True,
+        collapse_temporary_custody_periods_with_revocation=True,
+        collapse_transfers_with_different_pfi=True,
+        overwrite_facility_information_in_transfers=False,
+    )
+
     incarceration_periods_for_admissions = (
         prepare_incarceration_periods_for_calculations(
-            state_code,
-            original_incarceration_periods,
-            collapse_transfers=True,
-            collapse_temporary_custody_periods_with_revocation=True,
-            collapse_transfers_with_different_pfi=True,
-            overwrite_facility_information_in_transfers=False,
+            original_incarceration_periods, ip_pre_processing_config
         )
     )
 
@@ -169,13 +175,19 @@ def find_all_admission_release_events(
         if admission_event:
             incarceration_events.append(admission_event)
 
-    incarceration_periods_for_releases = prepare_incarceration_periods_for_calculations(
-        state_code,
-        original_incarceration_periods,
+    ip_pre_processing_config = IncarcerationPreProcessingConfig(
+        drop_temporary_custody_periods=drop_temporary_custody_periods(state_code),
+        drop_non_state_prison_incarceration_type_periods=drop_non_state_prison_incarceration_type_periods(
+            state_code
+        ),
         collapse_transfers=True,
         collapse_temporary_custody_periods_with_revocation=True,
         collapse_transfers_with_different_pfi=True,
         overwrite_facility_information_in_transfers=True,
+    )
+
+    incarceration_periods_for_releases = prepare_incarceration_periods_for_calculations(
+        original_incarceration_periods, ip_pre_processing_config
     )
 
     de_duplicated_incarceration_releases = de_duplicated_releases(
@@ -209,13 +221,19 @@ def find_all_stay_events(
     """
     incarceration_stay_events: List[IncarcerationStayEvent] = []
 
-    incarceration_periods = prepare_incarceration_periods_for_calculations(
-        state_code,
-        original_incarceration_periods,
+    ip_pre_processing_config = IncarcerationPreProcessingConfig(
+        drop_temporary_custody_periods=drop_temporary_custody_periods(state_code),
+        drop_non_state_prison_incarceration_type_periods=drop_non_state_prison_incarceration_type_periods(
+            state_code
+        ),
         collapse_transfers=False,
         collapse_temporary_custody_periods_with_revocation=False,
         collapse_transfers_with_different_pfi=False,
         overwrite_facility_information_in_transfers=False,
+    )
+
+    incarceration_periods = prepare_incarceration_periods_for_calculations(
+        original_incarceration_periods, ip_pre_processing_config
     )
 
     original_admission_reasons_by_period_id = _original_admission_reasons_by_period_id(
@@ -382,7 +400,6 @@ def find_most_serious_prior_charge_in_sentence_group(
 ) -> Optional[StateCharge]:
     """Finds the most serious offense associated with a sentence that started prior to the cutoff date and is within the
     same sentence group as the incarceration period.
-
     StateCharges have an optional `ncic_code` field that contains the identifying NCIC code for the offense, as well as
     a `statute` field that describes the offense. NCIC codes decrease in severity as the code increases. E.g. '1010' is
     a more serious offense than '5599'. Therefore, this returns the statute associated with the lowest ranked NCIC code

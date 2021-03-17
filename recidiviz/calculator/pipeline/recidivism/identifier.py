@@ -40,6 +40,7 @@ from recidiviz.calculator.pipeline.utils.execution_utils import (
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
     prepare_incarceration_periods_for_calculations,
     drop_temporary_custody_periods,
+    IncarcerationPreProcessingConfig,
 )
 from recidiviz.calculator.pipeline.utils.violation_utils import (
     identify_most_severe_violation_type_and_subtype,
@@ -108,7 +109,7 @@ def find_release_events_by_cohort_year(
     )
 
     incarceration_periods = prepare_incarceration_periods_for_recidivism_calculations(
-        state_code, incarceration_periods
+        incarceration_periods
     )
 
     for index, incarceration_period in enumerate(incarceration_periods):
@@ -205,17 +206,21 @@ def find_release_events_by_cohort_year(
 
 
 def prepare_incarceration_periods_for_recidivism_calculations(
-    state_code: str, incarceration_periods: List[StateIncarcerationPeriod]
+    incarceration_periods: List[StateIncarcerationPeriod],
 ) -> List[StateIncarcerationPeriod]:
     """Returns a filtered list of the provided |incarceration_periods| to be used for recidivism calculation."""
 
-    incarceration_periods = prepare_incarceration_periods_for_calculations(
-        state_code,
-        incarceration_periods,
+    ip_pre_processing_config = IncarcerationPreProcessingConfig(
+        drop_temporary_custody_periods=False,
+        drop_non_state_prison_incarceration_type_periods=False,
         collapse_transfers=True,
         collapse_temporary_custody_periods_with_revocation=True,
         collapse_transfers_with_different_pfi=True,
         overwrite_facility_information_in_transfers=True,
+    )
+
+    incarceration_periods = prepare_incarceration_periods_for_calculations(
+        incarceration_periods, ip_pre_processing_config
     )
 
     # TODO(#2936): Consider not dropping temporary custody periods when we want to use the recidivism output for states

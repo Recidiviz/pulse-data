@@ -26,6 +26,9 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import (
     RevocationReturnSupervisionTimeBucket,
 )
 from recidiviz.calculator.pipeline.utils.calculator_utils import safe_list_index
+from recidiviz.calculator.pipeline.utils.incarceration_period_index import (
+    IncarcerationPeriodIndex,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_revocation_utils import (
     us_pa_is_revocation_admission,
     us_pa_revoked_supervision_periods_if_revocation_occurred,
@@ -55,6 +58,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_com
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_type_identification import (
     us_nd_get_post_incarceration_supervision_type,
+    us_nd_infer_supervision_period_admission,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa import (
     us_pa_violation_utils,
@@ -113,7 +117,6 @@ def supervision_types_mutually_exclusive_for_state(state_code: str) -> bool:
     """For some states, we want to track people on DUAL supervision as mutually exclusive from the groups of people on
     either PAROLE and PROBATION. For others, a person can be on multiple types of supervision simultaneously
     and contribute to counts for both types.
-
         - US_ID: True
         - US_MO: True
         - US_ND: False
@@ -124,32 +127,31 @@ def supervision_types_mutually_exclusive_for_state(state_code: str) -> bool:
     return state_code.upper() in ("US_ID", "US_MO")
 
 
-def temporary_custody_periods_under_state_authority(state_code: str) -> bool:
-    """Whether or not periods of temporary custody are considered a part of state authority.
-
-    - US_ID: True
-    - US_MO: True
-    - US_ND: False
-    - US_PA: True
-    """
-    return state_code.upper() != "US_ND"
-
-
-def non_prison_periods_under_state_authority(state_code: str) -> bool:
-    """Whether or not incarceration periods that aren't in a STATE_PRISON are considered under the state authority.
-
-    - US_ID: True
+def drop_temporary_custody_periods(state_code: str) -> bool:
+    """Whether or not incarceration periods with an admission_reason of TEMPORARY_CUSTODY
+    should be dropped from calculations.
+    - US_ID: False
     - US_MO: False
     - US_ND: True
-    - US_PA: True
+    - US_PA: False
     """
-    return state_code.upper() in ("US_ID", "US_ND", "US_PA")
+    return state_code.upper() == "US_ND"
+
+
+def drop_non_state_prison_incarceration_type_periods(state_code: str) -> bool:
+    """Whether or not incarceration periods that aren't in a STATE_PRISON
+    should be dropped from calculations.
+    - US_ID: False
+    - US_MO: True
+    - US_ND: False
+    - US_PA: False
+    """
+    return state_code.upper() == "US_MO"
 
 
 def investigation_periods_in_supervision_population(_state_code: str) -> bool:
     """Whether or not supervision periods that have a supervision_period_supervision_type of INVESTIGATION should be
     counted in the supervision calculations.
-
         - US_ID: False
         - US_MO: False
         - US_ND: False
@@ -163,7 +165,6 @@ def should_collapse_transfers_different_purpose_for_incarceration(
 ) -> bool:
     """Whether or not incarceration periods that are connected by a TRANSFER release and a TRANSFER admission should
     be collapsed into one period if they have different specialized_purpose_for_incarceration values.
-
         - US_ID: False
             We need the dates of transfers from parole board holds and treatment custody to identify revocations
             in US_ID.
@@ -177,7 +178,6 @@ def should_collapse_transfers_different_purpose_for_incarceration(
 def filter_out_federal_and_other_country_supervision_periods(state_code: str) -> bool:
     """Whether or not only to filter supervision periods whose custodial authority is out of the country or in federal
     prison.
-
         - US_ID: True
         - US_MO: False
         - US_ND: False
@@ -192,7 +192,6 @@ def include_decisions_on_follow_up_responses_for_most_severe_response(
     """Some StateSupervisionViolationResponses are a 'follow-up' type of response, which is a state-defined response
     that is related to a previously submitted response. This returns whether or not the decision entries on
     follow-up responses should be considered in the calculation of the most severe response decision.
-
         - US_ID: False
         - US_MO: True
         - US_ND: False
@@ -204,7 +203,6 @@ def include_decisions_on_follow_up_responses_for_most_severe_response(
 def second_assessment_on_supervision_is_more_reliable(_state_code: str) -> bool:
     """Some states rely on the first-reassessment (the second assessment) instead of the first assessment when comparing
     terminating assessment scores to a score at the beginning of someone's supervision.
-
         - US_ID: True
         - US_MO: True
         - US_ND: True
@@ -777,11 +775,18 @@ def state_specific_supervision_admission_reason_override(
     state_code: str,
     supervision_period: StateSupervisionPeriod,
     supervision_period_index: SupervisionPeriodIndex,
+    incarceration_period_index: IncarcerationPeriodIndex,
 ) -> Optional[StateSupervisionPeriodAdmissionReason]:
     if state_code == "US_ID":
         return us_id_get_supervision_period_admission_override(
             supervision_period=supervision_period,
             supervision_period_index=supervision_period_index,
+        )
+    if state_code == "US_ND":
+        return us_nd_infer_supervision_period_admission(
+            supervision_period=supervision_period,
+            supervision_period_index=supervision_period_index,
+            incarceration_period_index=incarceration_period_index,
         )
     return supervision_period.admission_reason
 
