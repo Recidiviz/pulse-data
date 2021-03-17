@@ -20,7 +20,7 @@ Note: These classes mirror the SQL Alchemy ORM objects but are kept separate. Th
 objects additional flexibility that the SQL Alchemy ORM objects can't provide.
 """
 
-from typing import Optional, List, TypeVar
+from typing import Optional, List, TypeVar, Union
 
 import datetime
 import attr
@@ -117,7 +117,10 @@ from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
 SentenceType = TypeVar(
     "SentenceType", "StateSupervisionSentence", "StateIncarcerationSentence"
 )
-PeriodType = TypeVar("PeriodType", "StateSupervisionPeriod", "StateIncarcerationPeriod")
+
+PeriodType = TypeVar(
+    "PeriodType", bound=Union["StateSupervisionPeriod", "StateIncarcerationPeriod"]
+)
 
 # **** Entity ordering template *****:
 

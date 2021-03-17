@@ -15,8 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Shared utils for dealing with PeriodType entities (StateIncarcerationPeriod and StateSupervisionPeriod)."""
+from datetime import date
 from functools import cmp_to_key
-from typing import List, Callable
+from typing import List, Callable, Optional
+
+from dateutil.relativedelta import relativedelta
 
 from recidiviz.persistence.entity.state.entities import PeriodType
 
@@ -157,3 +160,35 @@ def sort_periods_by_set_dates_and_statuses(
         return (date_a - date_b).days
 
     periods.sort(key=cmp_to_key(_sort_function))
+
+
+def find_last_terminated_period_before_date(
+    upper_bound_date: date,
+    periods: Optional[List[PeriodType]],
+    maximum_months_proximity: int,
+) -> Optional[PeriodType]:
+    """Looks for the incarceration or supervision period that ended most recently before the upper_bound_date, within
+    the month window defined by |maximum_months_proximity|.
+
+    If no terminated period is found before the upper_bound_date, returns None.
+    """
+    if not periods:
+        return None
+
+    termination_date_cutoff = upper_bound_date - relativedelta(
+        months=maximum_months_proximity
+    )
+
+    previous_periods = [
+        period
+        for period in periods
+        if period.start_date_inclusive is not None
+        and period.end_date_exclusive is not None
+        and period.end_date_exclusive >= termination_date_cutoff
+        and period.start_date_inclusive <= period.end_date_exclusive <= upper_bound_date
+    ]
+
+    if previous_periods:
+        return max(previous_periods, key=lambda p: p.end_date_exclusive or date.min)
+
+    return None

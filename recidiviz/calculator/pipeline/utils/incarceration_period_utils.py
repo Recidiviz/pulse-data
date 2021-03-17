@@ -23,13 +23,12 @@ from datetime import date
 
 from typing import List
 
+import attr
+
 from recidiviz.calculator.pipeline.utils.period_utils import (
     sort_periods_by_set_dates_and_statuses,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
-    temporary_custody_periods_under_state_authority,
-    non_prison_periods_under_state_authority,
-)
+from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -42,6 +41,33 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.date import DateRangeDiff
 from recidiviz.persistence.entity.entity_utils import is_placeholder
+
+
+@attr.s
+class IncarcerationPreProcessingConfig(BuildableAttr):
+    """Defines how the incarceration periods should be prepared for the calculations."""
+
+    # Whether or not to drop periods with an admission_reason of TEMPORARY_CUSTODY
+    drop_temporary_custody_periods: bool = attr.ib()
+
+    # Whether or not to drop periods with an incarceration_type that is not STATE_PRISON
+    drop_non_state_prison_incarceration_type_periods: bool = attr.ib()
+
+    # Whether or not to collapse chronologically adjacent periods that are connected
+    # by a transfer release and transfer admission
+    collapse_transfers: bool = attr.ib()
+
+    # Whether or not to collapse periods of temporary custody that are followed by
+    # admissions to prison for a supervision revocation
+    collapse_temporary_custody_periods_with_revocation: bool = attr.ib()
+
+    # Whether or not to collapse chronologically adjacent periods that are connected
+    # by a transfer release and transfer admission but have different
+    # specialized_purpose_for_incarceration values
+    collapse_transfers_with_different_pfi: bool = attr.ib()
+
+    # Whether or not to overwrite facility information when collapsing transfer edges
+    overwrite_facility_information_in_transfers: bool = attr.ib()
 
 
 def drop_placeholder_periods(
@@ -57,12 +83,10 @@ def collapse_incarceration_period_transfers(
     collapse_transfers_with_different_pfi: bool = True,
 ) -> List[StateIncarcerationPeriod]:
     """Collapses any incarceration periods that are connected by transfers.
-
     Loops through all of the StateIncarcerationPeriods and combines adjacent
     periods that are connected by a transfer. Only connects two periods if the
     release reason of the first is `TRANSFER` and the admission reason for the
     second is also `TRANSFER`.
-
     Args:
         sorted_incarceration_periods: list of StateIncarcerationPeriods for a StatePerson, sorted by ascending
             admission_date
@@ -137,7 +161,6 @@ def collapse_temporary_custody_and_revocation_periods(
     """Looks through the |sorted_incarceration_periods| and collapses consecutive periods only if the first period
     has a temporary custody admission reason and the subsequent period has a revocation admission reason. When the
     periods are collapsed, the revocation admission reason is kept over the temporary custody admission reason.
-
     This method assumes the input |sorted_incarceration_periods| are sorted by ascending admission reason.
     """
 
@@ -183,16 +206,13 @@ def combine_incarceration_periods(
     overwrite_facility_information: bool = False,
 ) -> StateIncarcerationPeriod:
     """Combines two StateIncarcerationPeriods.
-
     Brings together two StateIncarcerationPeriods by setting the following
     fields on a deep copy of the |start| StateIncarcerationPeriod to the values
     on the |end| StateIncarcerationPeriod:
-
         [status, release_date, facility, housing_unit, facility_security_level,
         facility_security_level_raw_text, projected_release_reason,
         projected_release_reason_raw_text, release_reason,
         release_reason_raw_text]
-
         Args:
             start: The starting StateIncarcerationPeriod.
             end: The ending StateIncarcerationPeriod.
@@ -254,38 +274,34 @@ def standard_date_sort_for_incarceration_periods(
 
 
 def prepare_incarceration_periods_for_calculations(
-    state_code: str,
     incarceration_periods: List[StateIncarcerationPeriod],
-    collapse_transfers: bool,
-    collapse_temporary_custody_periods_with_revocation: bool,
-    collapse_transfers_with_different_pfi: bool,
-    overwrite_facility_information_in_transfers: bool,
+    ip_preprocessing_config: IncarcerationPreProcessingConfig,
 ) -> List[StateIncarcerationPeriod]:
     """Validates, sorts, and collapses the incarceration period inputs.
-
     Ensures the necessary dates and fields are set on each incarceration period. If an incarceration period is found
     with missing data, drops the incarceration period from the calculations. Then, sorts the list of valid
     StateIncarcerationPeriods by admission_date, and collapses the ones connected by a transfer.
     """
 
     updated_periods = _filter_and_update_incarceration_periods_for_calculations(
-        state_code, incarceration_periods
+        incarceration_periods, ip_preprocessing_config
     )
 
     sorted_periods = standard_date_sort_for_incarceration_periods(updated_periods)
 
     collapsed_periods = _collapse_incarceration_periods_for_calculations(
         sorted_periods,
-        collapse_transfers=collapse_transfers,
-        collapse_temporary_custody_periods_with_revocation=collapse_temporary_custody_periods_with_revocation,
-        collapse_transfers_with_different_pfi=collapse_transfers_with_different_pfi,
-        overwrite_facility_information_in_transfers=overwrite_facility_information_in_transfers,
+        collapse_transfers=ip_preprocessing_config.collapse_transfers,
+        collapse_temporary_custody_periods_with_revocation=ip_preprocessing_config.collapse_temporary_custody_periods_with_revocation,
+        collapse_transfers_with_different_pfi=ip_preprocessing_config.collapse_transfers_with_different_pfi,
+        overwrite_facility_information_in_transfers=ip_preprocessing_config.overwrite_facility_information_in_transfers,
     )
     return collapsed_periods
 
 
 def _filter_and_update_incarceration_periods_for_calculations(
-    state_code: str, incarceration_periods: List[StateIncarcerationPeriod]
+    incarceration_periods: List[StateIncarcerationPeriod],
+    ip_preprocessing_config: IncarcerationPreProcessingConfig,
 ) -> List[StateIncarcerationPeriod]:
     """Returns a modified and filtered subset of the provided |incarceration_periods| list so that all remaining
     periods have the the fields necessary for calculations.
@@ -299,9 +315,15 @@ def _filter_and_update_incarceration_periods_for_calculations(
         filtered_incarceration_periods
     )
 
-    filtered_incarceration_periods = drop_periods_not_under_state_custodial_authority(
-        state_code, filtered_incarceration_periods
-    )
+    if ip_preprocessing_config.drop_temporary_custody_periods:
+        filtered_incarceration_periods = drop_temporary_custody_periods(
+            filtered_incarceration_periods
+        )
+
+    if ip_preprocessing_config.drop_non_state_prison_incarceration_type_periods:
+        filtered_incarceration_periods = _drop_non_prison_periods(
+            filtered_incarceration_periods
+        )
 
     filtered_incarceration_periods = _drop_zero_day_erroneous_periods(
         filtered_incarceration_periods
@@ -437,7 +459,6 @@ def _ip_is_nested_in_previous_period(
 ) -> bool:
     """Returns whether the StateIncarcerationPeriod |ip| is entirely nested within the |previous_ip|. Both periods
     must have set admission and release dates.
-
     A nested period is defined as an incarceration period that overlaps with the previous_ip and has no parts that are
     non-overlapping with the previous_ip. Single-day periods (admission_date = release_date) by definition do not have
     overlapping ranges with another period because the ranges are end date exclusive. If a single-day period falls
@@ -467,32 +488,12 @@ def _ip_is_nested_in_previous_period(
     )
 
 
-def drop_periods_not_under_state_custodial_authority(
-    state_code: str, incarceration_periods: List[StateIncarcerationPeriod]
-) -> List[StateIncarcerationPeriod]:
-    """Returns a filtered subset of the provided |incarceration_periods| where all periods that are not under state
-    custodial authority are filtered out.
-    """
-    # TODO(#2912): Use `custodial_authority` to determine this instead, when that field exists on incarceration periods.
-    filtered_incarceration_periods = incarceration_periods
-    if not temporary_custody_periods_under_state_authority(state_code):
-        filtered_incarceration_periods = drop_temporary_custody_periods(
-            filtered_incarceration_periods
-        )
-    if not non_prison_periods_under_state_authority(state_code):
-        filtered_incarceration_periods = _drop_non_prison_periods(
-            filtered_incarceration_periods
-        )
-    return filtered_incarceration_periods
-
-
 # TODO(#4661): Update this logic once we have standardized our representation of parole board holds and periods of
 #  temporary custody
 def drop_temporary_custody_periods(
     incarceration_periods: List[StateIncarcerationPeriod],
 ) -> List[StateIncarcerationPeriod]:
     """Removes any incarceration periods that denote an admission to a temporary custody.
-
     Returns the filtered incarceration periods.
     """
 
@@ -507,7 +508,6 @@ def _drop_non_prison_periods(
     incarceration_periods: List[StateIncarcerationPeriod],
 ) -> List[StateIncarcerationPeriod]:
     """Removes any incarceration periods where the incarceration type isn't STATE_PRISON.
-
     Returns the filtered incarceration periods.
     """
     return [
@@ -553,7 +553,6 @@ def _drop_zero_day_erroneous_periods(
     where the admission_reason is not TRANSFER. It is reasonable to assume that these
     periods are erroneous and should not be considered in any metrics involving
     incarceration.
-
     Returns the filtered incarceration periods.
     """
     periods_to_keep: List[StateIncarcerationPeriod] = []
