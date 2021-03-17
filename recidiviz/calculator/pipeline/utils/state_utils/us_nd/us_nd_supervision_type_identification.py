@@ -150,6 +150,21 @@ def us_nd_infer_supervision_period_admission(
             # admission reason should be ABSCONSION.
             return StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION
         if (
+            most_recent_previous_period.termination_reason
+            == StateSupervisionPeriodTerminationReason.REVOCATION
+        ):
+            # If the most recent previous supervision period was a REVOCATION, the current supervision period's
+            # admission reason should be COURT_SENTENCE.
+            return StateSupervisionPeriodAdmissionReason.COURT_SENTENCE
+        if (
+            most_recent_previous_period.supervision_type
+            == StateSupervisionType.HALFWAY_HOUSE
+            and supervision_period.supervision_type == StateSupervisionType.PAROLE
+        ):
+            # If the supervision type transitioned from HALFWAY_HOUSE to PAROLE, the current supervision period's
+            # admission reason should be TRANSFER_WITHIN_STATE.
+            return StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE
+        if (
             most_recent_previous_period.supervision_type == StateSupervisionType.PAROLE
             and supervision_period.supervision_type == StateSupervisionType.PROBATION
         ):
