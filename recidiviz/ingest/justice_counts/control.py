@@ -20,6 +20,7 @@ from http import HTTPStatus
 from typing import Tuple
 
 from flask import Blueprint, request
+from werkzeug import exceptions
 
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
@@ -38,13 +39,10 @@ def ingest() -> Tuple[str, HTTPStatus]:
     )
 
     if not manifest_path:
-        return "Parameter `manifest_path` is required.", HTTPStatus.BAD_REQUEST
+        raise exceptions.BadRequest("Parameter `manifest_path` is required.")
 
-    try:
-        manual_upload.ingest(
-            GcsfsFactory.build(), GcsfsFilePath.from_absolute_path(manifest_path)
-        )
-    except Exception as e:
-        return f"Error ingesting data: '{e}'", HTTPStatus.INTERNAL_SERVER_ERROR
+    manual_upload.ingest(
+        GcsfsFactory.build(), GcsfsFilePath.from_absolute_path(manifest_path)
+    )
 
     return "", HTTPStatus.OK
