@@ -19,7 +19,10 @@
 
 from typing import List
 
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view import (
+    BigQueryViewBuilder,
+    SimpleBigQueryViewBuilder,
+)
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.calculator.query.justice_counts import dataset_config
 from recidiviz.calculator.query.justice_counts.views import metric_by_month
@@ -48,29 +51,131 @@ METRICS = [
     ),
 ]
 
+# TODO(#6020): Implement percentage coverage
+PERCENTAGE_COVERED_VIEW_TEMPLATE = """
+SELECT *, NULL as percentage_covered_county, NULL as percentage_covered_population
+FROM `{project_id}.{input_dataset}.{input_table}`
+"""
+
+
+class PercentageCoveredViewBuilder(SimpleBigQueryViewBuilder):
+    """Factory class for building a view that calculates the percentage of the
+    state's counties and population that are covered by the metric."""
+
+    def __init__(
+        self,
+        *,
+        dataset_id: str,
+        metric_to_calculate: metric_by_month.CalculatedMetricByMonth,
+        input_view: BigQueryViewBuilder,
+    ):
+        super().__init__(
+            dataset_id=dataset_id,
+            view_id=f"{metric_to_calculate.view_prefix}_percentage_covered",
+            view_query_template=PERCENTAGE_COVERED_VIEW_TEMPLATE,
+            # Query Format Arguments
+            description=f"{metric_to_calculate.output_name} percentage covered",
+            input_dataset=input_view.dataset_id,
+            input_table=input_view.view_id,
+        )
+
+
+OUTPUT_VIEW_TEMPLATE = """
+SELECT {aggregated_dimension_columns},
+       '{metric_output_name}' as metric,
+       EXTRACT(YEAR from start_of_month) as year,
+       EXTRACT(MONTH from start_of_month) as month,
+       DATE_SUB(time_window_end, INTERVAL 1 DAY) as date_reported,
+       value as value,
+       -- If there is no row at least a year back to compare to, the following columns will be NULL.
+       EXTRACT(YEAR from compare_start_of_month) as compared_to_year,
+       EXTRACT(MONTH from compare_start_of_month) as compared_to_month,
+       value - compare_value as value_change,
+       -- Note: This can return NULL in the case of divide by zero
+       SAFE_DIVIDE((value - compare_value), compare_value) as percentage_change,
+       percentage_covered_county as percentage_covered_county,
+       percentage_covered_population as percentage_covered_population
+FROM `{project_id}.{input_dataset}.{input_table}`
+"""
+
+
+class JailOutputViewBuilder(SimpleBigQueryViewBuilder):
+    """Factory class for creating corrections output from an input view."""
+
+    def __init__(
+        self,
+        *,
+        dataset_id: str,
+        metric_to_calculate: metric_by_month.CalculatedMetricByMonth,
+        input_view: BigQueryViewBuilder,
+    ):
+        aggregated_dimension_columns = ", ".join(
+            metric_to_calculate.aggregated_dimensions
+        )
+
+        super().__init__(
+            dataset_id=dataset_id,
+            view_id=f"{metric_to_calculate.view_prefix}_output",
+            view_query_template=OUTPUT_VIEW_TEMPLATE,
+            should_materialize=True,
+            # Query Format Arguments
+            description=f"{metric_to_calculate.output_name} dashboard output",
+            base_dataset=dataset_config.JUSTICE_COUNTS_BASE_DATASET,
+            input_dataset=input_view.dataset_id,
+            input_table=input_view.view_id,
+            metric_output_name=metric_to_calculate.output_name,
+            aggregated_dimension_columns=aggregated_dimension_columns,
+        )
+
+
+def view_chain_for_metric(
+    metric: metric_by_month.CalculatedMetricByMonth,
+) -> List[SimpleBigQueryViewBuilder]:
+    calculate_view_builder = metric_by_month.CalculatedMetricByMonthViewBuilder(
+        dataset_id=dataset_config.JUSTICE_COUNTS_JAILS_DATASET,
+        metric_to_calculate=metric,
+    )
+    comparison_view_builder = metric_by_month.CompareToPriorYearViewBuilder(
+        dataset_id=dataset_config.JUSTICE_COUNTS_JAILS_DATASET,
+        metric_to_calculate=metric,
+        input_view=calculate_view_builder,
+    )
+    percentage_covered_view_builder = PercentageCoveredViewBuilder(
+        dataset_id=dataset_config.JUSTICE_COUNTS_JAILS_DATASET,
+        metric_to_calculate=metric,
+        input_view=comparison_view_builder,
+    )
+    dimensions_to_columns_view_builder = metric_by_month.DimensionsToColumnsViewBuilder(
+        dataset_id=dataset_config.JUSTICE_COUNTS_JAILS_DATASET,
+        metric_to_calculate=metric,
+        input_view=percentage_covered_view_builder,
+    )
+    output_view_builder = JailOutputViewBuilder(
+        dataset_id=dataset_config.JUSTICE_COUNTS_JAILS_DATASET,
+        metric_to_calculate=metric,
+        input_view=dimensions_to_columns_view_builder,
+    )
+    return [
+        calculate_view_builder,
+        comparison_view_builder,
+        percentage_covered_view_builder,
+        dimensions_to_columns_view_builder,
+        output_view_builder,
+    ]
+
 
 class JailsMetricsByMonthBigQueryViewCollector(
     BigQueryViewCollector[SimpleBigQueryViewBuilder]
 ):
-    """Collects all views required for jail calculations"""
-
     def __init__(self) -> None:
         self.metric_builders: List[SimpleBigQueryViewBuilder] = []
         unified_query_select_clauses = []
         for metric in METRICS:
-            view_builder = metric_by_month.CalculatedMetricByMonthViewBuilder(
-                dataset_id=dataset_config.JUSTICE_COUNTS_JAILS_DATASET,
-                metric_to_calculate=metric,
-            )
-            # TODO(#6015): Split the CalculatedMetricByMonthViewBuilder to
-            # support more composition of parts and alternative outputs instead of this
-            # hackery.
+            view_builders = view_chain_for_metric(metric)
             unified_query_select_clauses.append(
-                f"SELECT * EXCEPT (source_name, source_url, report_name, raw_source_categories), "
-                f"NULL as percentage_covered_county, NULL as percentage_covered_population "
-                f"FROM `{{project_id}}.{{calculation_dataset}}.{view_builder.view_id}_materialized`"
+                f"SELECT * FROM `{{project_id}}.{{calculation_dataset}}.{view_builders[-1].view_id}_materialized`"
             )
-            self.metric_builders.append(view_builder)
+            self.metric_builders.extend(view_builders)
 
         self.unified_builder = SimpleBigQueryViewBuilder(
             dataset_id=dataset_config.JUSTICE_COUNTS_DASHBOARD_DATASET,
