@@ -149,7 +149,7 @@ def main(
             )
         try:
             logging.info(
-                "Starting postgres migrations for schema %s, db_name %s",
+                "*** Starting postgres migrations for schema [%s], db_name [%s] ***",
                 key.schema_type,
                 key.db_name,
             )
