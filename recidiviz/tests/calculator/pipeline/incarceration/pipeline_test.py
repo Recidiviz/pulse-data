@@ -472,26 +472,11 @@ class TestIncarcerationPipeline(unittest.TestCase):
             person_id=fake_person_id,
         )
 
-        incarceration_period = schema.StateIncarcerationPeriod(
-            incarceration_period_id=1111,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code="US_XX",
-            county_code="124",
-            facility="San Quentin",
-            facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-            admission_date=date(2008, 11, 20),
-            release_date=date(2010, 12, 4),
-            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-            person_id=fake_person_id,
-        )
-
         incarceration_sentence = schema.StateIncarcerationSentence(
             incarceration_sentence_id=1111,
             state_code="US_XX",
             sentence_group_id=sentence_group.sentence_group_id,
-            incarceration_periods=[incarceration_period],
+            incarceration_periods=[],
             person_id=fake_person_id,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
@@ -515,13 +500,11 @@ class TestIncarcerationPipeline(unittest.TestCase):
             normalized_database_base_dict(supervision_sentence)
         ]
 
-        incarceration_periods_data = [
-            normalized_database_base_dict(incarceration_period)
-        ]
+        incarceration_periods_data: Dict[str, Any] = {}
 
         state_incarceration_sentence_incarceration_period_association = [
             {
-                "incarceration_period_id": incarceration_period.incarceration_period_id,
+                "incarceration_period_id": None,
                 "incarceration_sentence_id": incarceration_sentence.incarceration_sentence_id,
             },
         ]
@@ -550,7 +533,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
             {
                 "state_code": "US_XX",
                 "person_id": fake_person_id,
-                "incarceration_period_id": 123,
+                "incarceration_period_id": None,
                 "judicial_district_code": "NW",
             }
         ]
@@ -582,7 +565,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
         return data_dict
 
     def testIncarcerationPipelineNoIncarceration(self):
-        """Tests the incarceration pipeline when a person doesn't have any
+        """Tests the incarceration pipeline when a person does not have any
         incarceration periods."""
         fake_person_id = 12345
         data_dict = self.build_incarceration_pipeline_data_dict_no_incarceration(

@@ -17,8 +17,11 @@
 """Utils for state-specific logic related to identifying revocations in US_ID."""
 from typing import List, Tuple, Optional
 
+from recidiviz.calculator.pipeline.utils.period_utils import (
+    find_last_terminated_period_before_date,
+)
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
-    find_last_supervision_period_terminated_before_date,
+    SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration as PurposeForIncarceration,
@@ -117,9 +120,10 @@ def us_id_revoked_supervision_period_if_revocation_occurred(
 
     if incarceration_admission_date:
         # US_ID does not have overlapping supervision periods, so there there is a maximum of one revoked period.
-        revoked_period = find_last_supervision_period_terminated_before_date(
+        revoked_period = find_last_terminated_period_before_date(
             upper_bound_date=incarceration_admission_date,
-            supervision_periods=filtered_supervision_periods,
+            periods=filtered_supervision_periods,
+            maximum_months_proximity=SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
         )
 
         if revoked_period:
