@@ -18,7 +18,7 @@
 
 import logging
 import re
-from typing import Dict, Iterator, List, Optional, Set, Tuple, Type
+from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple, Type
 import unittest
 
 import attr
@@ -46,7 +46,7 @@ def _replace_iter(query: str, regex: str, replacement: str) -> str:
 class MockTableSchema:
     """Defines the table schema to be used when mocking this table in Postgres"""
 
-    data_types: Optional[Dict[str, sqltypes.SchemaType]] = attr.ib()
+    data_types: Dict[str, sqltypes.SchemaType] = attr.ib()
 
     @classmethod
     def from_sqlalchemy_table(cls, table: sqlalchemy.Table) -> "MockTableSchema":
@@ -167,7 +167,7 @@ class BaseViewTest(unittest.TestCase):
             session.execute(statement)
             session.commit()
         except Exception as e:
-            logging.warning("Failed to cleanup: %s", e)
+            logging.warning("Failed to execute statement: %s\n%s", e, statement)
             session.rollback()
         finally:
             session.close()
@@ -207,6 +207,7 @@ class BaseViewTest(unittest.TestCase):
             name=self._to_postgres_table_name(dataset_id, table_id),
             con=self.postgres_engine,
             dtype=mock_schema.data_types,
+            index=False,
         )
 
     def query_view(
@@ -216,6 +217,10 @@ class BaseViewTest(unittest.TestCase):
         dimensions: List[str],
     ) -> pd.DataFrame:
         view_query = self._rewrite_sql(view_builder.build().view_query)
+        # TODO(#5533): Instead of using read_sql_query, we can use
+        # `create_view` and `read_sql_table`. That can take a schema which will
+        # solve some of the issues. As part of adding `dimensions` to builders
+        # (below) we should likely just define a full output schema.
         results = pd.read_sql_query(view_query, con=self.postgres_engine)
         results = results.astype(data_types)
         # TODO(#5533): If we add `dimensions` to all `BigQueryViewBuilder`, instead of just
@@ -223,6 +228,28 @@ class BaseViewTest(unittest.TestCase):
         # manually.
         results = results.set_index(dimensions)
         return results.sort_index()
+
+    def query_view_chain(
+        self,
+        view_builders: Sequence[BigQueryViewBuilder],
+        data_types: Dict[str, Type],
+        dimensions: List[str],
+    ) -> pd.DataFrame:
+        for view_builder in view_builders[:-1]:
+            self.create_view(view_builder)
+        return self.query_view(view_builders[-1], data_types, dimensions)
+
+    def create_view(self, view_builder: BigQueryViewBuilder) -> None:
+        view = view_builder.build()
+
+        self.mock_bq_tables.add((view.dataset_id, view.table_id))
+
+        query = (
+            f"CREATE TABLE `{view.project}.{view.dataset_id}.{view.table_id}` AS "
+            f"({view.view_query})"
+        )
+        query = self._rewrite_sql(query)
+        self._execute_statement(query)
 
     @classmethod
     def _to_postgres_table_name(cls, dataset_id: str, table_id: str) -> str:
@@ -307,6 +334,10 @@ class BaseViewTest(unittest.TestCase):
             r"SAFE_DIVIDE\((?P<first>.+?), (?P<second>.+?)\)",
             "({first} / NULLIF({second}, 0))",
         )
+
+        # Postgres doesn't support the '* EXCEPT(...)' construct. There is really no
+        # good way to suppport it so just ignore it.
+        query = _replace_iter(query, r"\* EXCEPT\(.*\)", "*")
 
         query = self._rewrite_structs(query)
 

@@ -16,11 +16,18 @@
 # =============================================================================
 """Tests various metrics that can be created from the metric_by_month template."""
 
+import datetime
+from typing import List, Optional, Tuple
+
+import attr
 from mock import Mock, patch
 import numpy as np
 import pandas as pd
 from pandas.testing import assert_frame_equal
+from sqlalchemy.sql import sqltypes
 
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.common import date
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.calculator.query.justice_counts.views import metric_by_month
 from recidiviz.tests.calculator.query.view_test_util import (
@@ -32,9 +39,84 @@ from recidiviz.tools.justice_counts import manual_upload
 _npd = np.datetime64
 
 
+@attr.s(frozen=True)
+class TestState(manual_upload.State):
+    # Change the type to str so that is supports any value.
+    state_code: str = attr.ib()  # type: ignore[assignment]
+
+    @property
+    def dimension_value(self) -> str:
+        return self.state_code
+
+
+def row(
+    source_and_report_id: int,
+    start_date_str: str,
+    dimensions: Tuple[manual_upload.Dimension, ...],
+    raw_source_categories: List[str],
+    value: int,
+    end_date_str: Optional[str] = None,
+) -> Tuple[int, str, List[int], _npd, _npd, _npd, str, str, List[str], int]:
+    """Builds an expected output row for MetricByMonth.
+
+    Makes a few assumptions that helps keep our tests from being even more verbose:
+    - Source and Report id match (one report for each source)
+    - If end date is not provided, defaults to the first day of the following month
+    """
+    start_date = datetime.date.fromisoformat(start_date_str)
+    end_date = (
+        datetime.date.fromisoformat(end_date_str)
+        if end_date_str is not None
+        else date.first_day_of_next_month(start_date)
+    )
+
+    dimension_strings = []
+    for dimension in dimensions:
+        dimension_value = dimension.dimension_value
+        if not dimension_value:
+            dimension_value = '\\"\\"'
+        dimension_strings.append(
+            f'"({dimension.dimension_identifier()},{dimension_value})"'
+        )
+
+    return (
+        source_and_report_id,
+        "_",
+        [source_and_report_id],
+        _npd(
+            date.first_day_of_month(end_date - datetime.timedelta(days=1)).isoformat()
+        ),
+        _npd(start_date.isoformat()),
+        _npd(end_date.isoformat()),
+        f'{{{",".join(dimension_strings)}}}',
+        "|".join(
+            dimension.dimension_value
+            for dimension in sorted(dimensions, key=lambda x: x.dimension_identifier())
+        ),
+        raw_source_categories,
+        value,
+    )
+
+
+METRIC_BY_MONTH_SCHEMA = MockTableSchema(
+    {
+        "source_id": sqltypes.Integer(),
+        "report_type": sqltypes.String(255),
+        "report_ids": sqltypes.ARRAY(sqltypes.Integer),
+        "start_of_month": sqltypes.Date(),
+        "time_window_start": sqltypes.Date(),
+        "time_window_end": sqltypes.Date(),
+        "dimensions": sqltypes.String(255),
+        "dimensions_string": sqltypes.String(255),
+        "collapsed_dimension_values": sqltypes.ARRAY(sqltypes.String(255)),
+        "value": sqltypes.Numeric(),
+    }
+)
+
+
 @patch("recidiviz.utils.metadata.project_id", Mock(return_value="t"))
-class PrisonPopulationViewTest(BaseViewTest):
-    """Tests the Justice Counts Prison Population view."""
+class MetricByMonthViewTest(BaseViewTest):
+    """Tests the Justice Counts metric by month view."""
 
     def test_recent_population(self) -> None:
         """Tests the basic use case of calculating population from various table definitions"""
@@ -195,7 +277,7 @@ class PrisonPopulationViewTest(BaseViewTest):
         )
 
         # Act
-        dimensions = ["state_code", "metric", "year", "month"]
+        dimensions = ["dimensions_string", "start_of_month"]
         prison_population_metric = metric_by_month.CalculatedMetricByMonth(
             system=schema.System.CORRECTIONS,
             metric=schema.MetricType.POPULATION,
@@ -211,108 +293,25 @@ class PrisonPopulationViewTest(BaseViewTest):
             metric_by_month.CalculatedMetricByMonthViewBuilder(
                 dataset_id="fake-dataset", metric_to_calculate=prison_population_metric
             ),
-            data_types={"year": int, "month": int, "value": int},
+            data_types={
+                "time_window_start": _npd,
+                "time_window_end": _npd,
+                "value": int,
+            },
             dimensions=dimensions,
         )
 
         # Assert
         expected = pd.DataFrame(
             [
-                [
-                    "US_XX",
-                    "POP",
-                    2020,
-                    11,
-                    _npd("2020-11-30"),
-                    "XX",
-                    "xx.gov",
-                    "_",
-                    [],
-                    3000,
-                ]
-                + [None] * 4,
-                [
-                    "US_XX",
-                    "POP",
-                    2020,
-                    12,
-                    _npd("2020-12-31"),
-                    "XX",
-                    "xx.gov",
-                    "_",
-                    [],
-                    4000,
-                ]
-                + [None] * 4,
-                [
-                    "US_YY",
-                    "POP",
-                    2020,
-                    11,
-                    _npd("2020-11-30"),
-                    "YY",
-                    "yy.gov",
-                    "_",
-                    [],
-                    1000,
-                ]
-                + [None] * 4,
-                [
-                    "US_YY",
-                    "POP",
-                    2020,
-                    12,
-                    _npd("2020-12-31"),
-                    "YY",
-                    "yy.gov",
-                    "_",
-                    [],
-                    1020,
-                ]
-                + [None] * 4,
-                [
-                    "US_ZZ",
-                    "POP",
-                    2020,
-                    11,
-                    _npd("2020-11-30"),
-                    "ZZ",
-                    "zz.gov",
-                    "_",
-                    [],
-                    400,
-                ]
-                + [None] * 4,
-                [
-                    "US_ZZ",
-                    "POP",
-                    2020,
-                    12,
-                    _npd("2020-12-31"),
-                    "ZZ",
-                    "zz.gov",
-                    "_",
-                    [],
-                    500,
-                ]
-                + [None] * 4,
+                row(1, "2020-11-30", (TestState("US_XX"),), [], 3000),
+                row(1, "2020-12-31", (TestState("US_XX"),), [], 4000),
+                row(2, "2020-11-30", (TestState("US_YY"),), [], 1000),
+                row(2, "2020-12-31", (TestState("US_YY"),), [], 1020),
+                row(3, "2020-11-30", (TestState("US_ZZ"),), [], 400),
+                row(3, "2020-12-31", (TestState("US_ZZ"),), [], 500),
             ],
-            columns=[
-                "state_code",
-                "metric",
-                "year",
-                "month",
-                "date_reported",
-                "source_name",
-                "source_url",
-                "report_name",
-                "raw_source_categories",
-                "value",
-                "compared_to_year",
-                "compared_to_month",
-                "value_change",
-                "percentage_change",
-            ],
+            columns=METRIC_BY_MONTH_SCHEMA.data_types.keys(),
         )
         expected = expected.set_index(dimensions)
         assert_frame_equal(expected, results)
@@ -521,7 +520,7 @@ class PrisonPopulationViewTest(BaseViewTest):
         )
 
         # Act
-        dimensions = ["state_code", "metric", "year", "month"]
+        dimensions = ["dimensions_string", "start_of_month"]
         parole_population = metric_by_month.CalculatedMetricByMonth(
             system=schema.System.CORRECTIONS,
             metric=schema.MetricType.POPULATION,
@@ -540,108 +539,25 @@ class PrisonPopulationViewTest(BaseViewTest):
             metric_by_month.CalculatedMetricByMonthViewBuilder(
                 dataset_id="fake-dataset", metric_to_calculate=parole_population
             ),
-            data_types={"year": int, "month": int, "value": int},
+            data_types={
+                "time_window_start": _npd,
+                "time_window_end": _npd,
+                "value": int,
+            },
             dimensions=dimensions,
         )
 
         # Assert
         expected = pd.DataFrame(
             [
-                [
-                    "US_AA",
-                    "POP",
-                    2020,
-                    11,
-                    _npd("2020-11-30"),
-                    "AA",
-                    "aa.gov",
-                    "_",
-                    ["Parole"],
-                    3000,
-                ]
-                + [None] * 4,
-                [
-                    "US_AA",
-                    "POP",
-                    2020,
-                    12,
-                    _npd("2020-12-31"),
-                    "AA",
-                    "aa.gov",
-                    "_",
-                    ["Parole"],
-                    4000,
-                ]
-                + [None] * 4,
-                [
-                    "US_XX",
-                    "POP",
-                    2020,
-                    11,
-                    _npd("2020-11-30"),
-                    "XX",
-                    "xx.gov",
-                    "_",
-                    ["Parole"],
-                    5000,
-                ]
-                + [None] * 4,
-                [
-                    "US_XX",
-                    "POP",
-                    2020,
-                    12,
-                    _npd("2020-12-31"),
-                    "XX",
-                    "xx.gov",
-                    "_",
-                    ["Parole"],
-                    5001,
-                ]
-                + [None] * 4,
-                [
-                    "US_YY",
-                    "POP",
-                    2020,
-                    11,
-                    _npd("2020-11-30"),
-                    "YY",
-                    "yy.gov",
-                    "_",
-                    [],
-                    400,
-                ]
-                + [None] * 4,
-                [
-                    "US_YY",
-                    "POP",
-                    2020,
-                    12,
-                    _npd("2020-12-31"),
-                    "YY",
-                    "yy.gov",
-                    "_",
-                    [],
-                    500,
-                ]
-                + [None] * 4,
+                row(1, "2020-11-30", (TestState("US_AA"),), ["Parole"], 3000),
+                row(1, "2020-12-31", (TestState("US_AA"),), ["Parole"], 4000),
+                row(2, "2020-11-30", (TestState("US_XX"),), ["Parole"], 5000),
+                row(2, "2020-12-31", (TestState("US_XX"),), ["Parole"], 5001),
+                row(3, "2020-11-30", (TestState("US_YY"),), [], 400),
+                row(3, "2020-12-31", (TestState("US_YY"),), [], 500),
             ],
-            columns=[
-                "state_code",
-                "metric",
-                "year",
-                "month",
-                "date_reported",
-                "source_name",
-                "source_url",
-                "report_name",
-                "raw_source_categories",
-                "value",
-                "compared_to_year",
-                "compared_to_month",
-                "value_change",
-                "percentage_change",
-            ],
+            columns=METRIC_BY_MONTH_SCHEMA.data_types.keys(),
         )
         expected = expected.set_index(dimensions)
         assert_frame_equal(expected, results)
@@ -901,7 +817,7 @@ class PrisonPopulationViewTest(BaseViewTest):
         )
 
         # Act
-        dimensions = ["state_code", "gender", "metric", "year", "month"]
+        dimensions = ["dimensions_string", "start_of_month"]
         parole_population = metric_by_month.CalculatedMetricByMonth(
             system=schema.System.CORRECTIONS,
             metric=schema.MetricType.POPULATION,
@@ -920,255 +836,131 @@ class PrisonPopulationViewTest(BaseViewTest):
             metric_by_month.CalculatedMetricByMonthViewBuilder(
                 dataset_id="fake-dataset", metric_to_calculate=parole_population
             ),
-            data_types={"year": int, "month": int, "value": int},
+            data_types={
+                "time_window_start": _npd,
+                "time_window_end": _npd,
+                "value": int,
+            },
             dimensions=dimensions,
         )
 
         # Assert
         expected = pd.DataFrame(
             [
-                [
-                    "US_XA",
-                    "FEMALE",
-                    "POP",
-                    2020,
-                    11,
-                    _npd("2020-11-30"),
-                    "XA",
-                    "xa.gov",
-                    "_",
-                    ["Female", "Offsite", "Onsite"],
+                row(
+                    4,
+                    "2020-11-30",
+                    (TestState("US_XA"), manual_upload.Gender("FEMALE")),
+                    ["Female", "Offsite", "Female", "Onsite"],
                     110,
-                ]
-                + [None] * 4,
-                [
-                    "US_XA",
-                    "FEMALE",
-                    "POP",
-                    2020,
-                    12,
-                    _npd("2020-12-31"),
-                    "XA",
-                    "xa.gov",
-                    "_",
-                    ["Female", "Offsite", "Onsite"],
+                ),
+                row(
+                    4,
+                    "2020-12-31",
+                    (TestState("US_XA"), manual_upload.Gender("FEMALE")),
+                    ["Female", "Offsite", "Female", "Onsite"],
                     220,
-                ]
-                + [None] * 4,
-                [
-                    "US_XA",
-                    "MALE",
-                    "POP",
-                    2020,
-                    11,
-                    _npd("2020-11-30"),
-                    "XA",
-                    "xa.gov",
-                    "_",
-                    ["Male", "Offsite", "Onsite"],
-                    220,
-                ]
-                + [None] * 4,
-                [
-                    "US_XA",
-                    "MALE",
-                    "POP",
-                    2020,
-                    12,
-                    _npd("2020-12-31"),
-                    "XA",
-                    "xa.gov",
-                    "_",
-                    ["Male", "Offsite", "Onsite"],
-                    330,
-                ]
-                + [None] * 4,
-                [
-                    "US_XB",
-                    "FEMALE",
-                    "POP",
-                    2020,
-                    11,
-                    _npd("2020-11-30"),
-                    "BJS",
-                    "bjs.gov",
-                    "_",
+                ),
+                row(
+                    5,
+                    "2020-11-30",
+                    (TestState("US_XB"), manual_upload.Gender("FEMALE")),
                     ["Female"],
                     2,
-                ]
-                + [None] * 4,
-                [
-                    "US_XB",
-                    "FEMALE",
-                    "POP",
-                    2020,
-                    12,
-                    _npd("2020-12-31"),
-                    "BJS",
-                    "bjs.gov",
-                    "_",
+                ),
+                row(
+                    5,
+                    "2020-12-31",
+                    (TestState("US_XB"), manual_upload.Gender("FEMALE")),
                     ["Female"],
                     6,
-                ]
-                + [None] * 4,
-                [
-                    "US_XB",
-                    "MALE",
-                    "POP",
-                    2020,
-                    11,
-                    _npd("2020-11-30"),
-                    "BJS",
-                    "bjs.gov",
-                    "_",
-                    ["Male"],
-                    1,
-                ]
-                + [None] * 4,
-                [
-                    "US_XB",
-                    "MALE",
-                    "POP",
-                    2020,
-                    12,
-                    _npd("2020-12-31"),
-                    "BJS",
-                    "bjs.gov",
-                    "_",
-                    ["Male"],
+                ),
+                row(
                     5,
-                ]
-                + [None] * 4,
-                [
-                    "US_XC",
-                    "FEMALE",
-                    "POP",
-                    2020,
-                    11,
-                    _npd("2020-11-30"),
-                    "BJS",
-                    "bjs.gov",
-                    "_",
+                    "2020-11-30",
+                    (TestState("US_XC"), manual_upload.Gender("FEMALE")),
                     ["Female"],
                     4,
-                ]
-                + [None] * 4,
-                [
-                    "US_XC",
-                    "FEMALE",
-                    "POP",
-                    2020,
-                    12,
-                    _npd("2020-12-31"),
-                    "BJS",
-                    "bjs.gov",
-                    "_",
+                ),
+                row(
+                    5,
+                    "2020-12-31",
+                    (TestState("US_XC"), manual_upload.Gender("FEMALE")),
                     ["Female"],
                     8,
-                ]
-                + [None] * 4,
-                [
-                    "US_XC",
-                    "MALE",
-                    "POP",
-                    2020,
-                    11,
-                    _npd("2020-11-30"),
-                    "BJS",
-                    "bjs.gov",
-                    "_",
-                    ["Male"],
-                    3,
-                ]
-                + [None] * 4,
-                [
-                    "US_XC",
-                    "MALE",
-                    "POP",
-                    2020,
-                    12,
-                    _npd("2020-12-31"),
-                    "BJS",
-                    "bjs.gov",
-                    "_",
-                    ["Male"],
-                    7,
-                ]
-                + [None] * 4,
-                [
-                    "US_XX",
-                    "FEMALE",
-                    "POP",
-                    2020,
-                    11,
-                    _npd("2020-11-30"),
-                    "XX",
-                    "xx.gov",
-                    "_",
+                ),
+                row(
+                    1,
+                    "2020-11-30",
+                    (TestState("US_XX"), manual_upload.Gender("FEMALE")),
                     ["Female"],
                     1000,
-                ]
-                + [None] * 4,
-                [
-                    "US_XX",
-                    "FEMALE",
-                    "POP",
-                    2020,
-                    12,
-                    _npd("2020-12-31"),
-                    "XX",
-                    "xx.gov",
-                    "_",
+                ),
+                row(
+                    1,
+                    "2020-12-31",
+                    (TestState("US_XX"), manual_upload.Gender("FEMALE")),
                     ["Female"],
                     1500,
-                ]
-                + [None] * 4,
-                [
-                    "US_XX",
-                    "MALE",
-                    "POP",
-                    2020,
-                    11,
-                    _npd("2020-11-30"),
-                    "XX",
-                    "xx.gov",
-                    "_",
+                ),
+                row(
+                    4,
+                    "2020-11-30",
+                    (TestState("US_XA"), manual_upload.Gender("MALE")),
+                    ["Male", "Offsite", "Male", "Onsite"],
+                    220,
+                ),
+                row(
+                    4,
+                    "2020-12-31",
+                    (TestState("US_XA"), manual_upload.Gender("MALE")),
+                    ["Male", "Offsite", "Male", "Onsite"],
+                    330,
+                ),
+                row(
+                    5,
+                    "2020-11-30",
+                    (TestState("US_XB"), manual_upload.Gender("MALE")),
+                    ["Male"],
+                    1,
+                ),
+                row(
+                    5,
+                    "2020-12-31",
+                    (TestState("US_XB"), manual_upload.Gender("MALE")),
+                    ["Male"],
+                    5,
+                ),
+                row(
+                    5,
+                    "2020-11-30",
+                    (TestState("US_XC"), manual_upload.Gender("MALE")),
+                    ["Male"],
+                    3,
+                ),
+                row(
+                    5,
+                    "2020-12-31",
+                    (TestState("US_XC"), manual_upload.Gender("MALE")),
+                    ["Male"],
+                    7,
+                ),
+                row(
+                    1,
+                    "2020-11-30",
+                    (TestState("US_XX"), manual_upload.Gender("MALE")),
                     ["Male"],
                     3000,
-                ]
-                + [None] * 4,
-                [
-                    "US_XX",
-                    "MALE",
-                    "POP",
-                    2020,
-                    12,
-                    _npd("2020-12-31"),
-                    "XX",
-                    "xx.gov",
-                    "_",
+                ),
+                row(
+                    1,
+                    "2020-12-31",
+                    (TestState("US_XX"), manual_upload.Gender("MALE")),
                     ["Male"],
                     4000,
-                ]
-                + [None] * 4,
+                ),
             ],
-            columns=[
-                "state_code",
-                "gender",
-                "metric",
-                "year",
-                "month",
-                "date_reported",
-                "source_name",
-                "source_url",
-                "report_name",
-                "raw_source_categories",
-                "value",
-                "compared_to_year",
-                "compared_to_month",
-                "value_change",
-                "percentage_change",
-            ],
+            columns=METRIC_BY_MONTH_SCHEMA.data_types.keys(),
         )
         expected = expected.set_index(dimensions)
         assert_frame_equal(expected, results)
@@ -1302,7 +1094,7 @@ class PrisonPopulationViewTest(BaseViewTest):
         )
 
         # Act
-        dimensions = ["state_code", "metric", "year", "month"]
+        dimensions = ["dimensions_string", "start_of_month"]
         parole_population = metric_by_month.CalculatedMetricByMonth(
             system=schema.System.CORRECTIONS,
             metric=schema.MetricType.POPULATION,
@@ -1318,56 +1110,21 @@ class PrisonPopulationViewTest(BaseViewTest):
             metric_by_month.CalculatedMetricByMonthViewBuilder(
                 dataset_id="fake-dataset", metric_to_calculate=parole_population
             ),
-            data_types={"year": int, "month": int, "value": int},
+            data_types={
+                "time_window_start": _npd,
+                "time_window_end": _npd,
+                "value": int,
+            },
             dimensions=dimensions,
         )
 
         # Assert
         expected = pd.DataFrame(
             [
-                [
-                    "US_XX",
-                    "POP",
-                    2020,
-                    11,
-                    _npd("2020-11-30"),
-                    "XX Courts",
-                    "courts.xx.gov",
-                    "_",
-                    [],
-                    1000,
-                ]
-                + [None] * 4,
-                [
-                    "US_XX",
-                    "POP",
-                    2020,
-                    12,
-                    _npd("2020-12-31"),
-                    "XX Courts",
-                    "courts.xx.gov",
-                    "_",
-                    [],
-                    1010,
-                ]
-                + [None] * 4,
+                row(2, "2020-11-30", (TestState("US_XX"),), [], 1000),
+                row(2, "2020-12-31", (TestState("US_XX"),), [], 1010),
             ],
-            columns=[
-                "state_code",
-                "metric",
-                "year",
-                "month",
-                "date_reported",
-                "source_name",
-                "source_url",
-                "report_name",
-                "raw_source_categories",
-                "value",
-                "compared_to_year",
-                "compared_to_month",
-                "value_change",
-                "percentage_change",
-            ],
+            columns=METRIC_BY_MONTH_SCHEMA.data_types.keys(),
         )
         expected = expected.set_index(dimensions)
         assert_frame_equal(expected, results)
@@ -1498,7 +1255,7 @@ class PrisonPopulationViewTest(BaseViewTest):
         )
 
         # Act
-        dimensions = ["state_code", "metric", "year", "month"]
+        dimensions = ["dimensions_string", "start_of_month"]
         parole_population = metric_by_month.CalculatedMetricByMonth(
             system=schema.System.CORRECTIONS,
             metric=schema.MetricType.POPULATION,
@@ -1514,56 +1271,21 @@ class PrisonPopulationViewTest(BaseViewTest):
             metric_by_month.CalculatedMetricByMonthViewBuilder(
                 dataset_id="fake-dataset", metric_to_calculate=parole_population
             ),
-            data_types={"year": int, "month": int, "value": int},
+            data_types={
+                "time_window_start": _npd,
+                "time_window_end": _npd,
+                "value": int,
+            },
             dimensions=dimensions,
         )
 
         # Assert
         expected = pd.DataFrame(
             [
-                [
-                    "US_XX",
-                    "POP",
-                    2020,
-                    11,
-                    _npd("2020-11-30"),
-                    "XX",
-                    "xx.gov",
-                    "_",
-                    [],
-                    1000,
-                ]
-                + [None] * 4,
-                [
-                    "US_XX",
-                    "POP",
-                    2020,
-                    12,
-                    _npd("2020-12-31"),
-                    "XX",
-                    "xx.gov",
-                    "_",
-                    [],
-                    2000,
-                ]
-                + [None] * 4,
+                row(1, "2020-11-30", (TestState("US_XX"),), [], 1000),
+                row(1, "2020-12-31", (TestState("US_XX"),), [], 2000),
             ],
-            columns=[
-                "state_code",
-                "metric",
-                "year",
-                "month",
-                "date_reported",
-                "source_name",
-                "source_url",
-                "report_name",
-                "raw_source_categories",
-                "value",
-                "compared_to_year",
-                "compared_to_month",
-                "value_change",
-                "percentage_change",
-            ],
+            columns=METRIC_BY_MONTH_SCHEMA.data_types.keys(),
         )
         expected = expected.set_index(dimensions)
         assert_frame_equal(expected, results)
@@ -1673,7 +1395,7 @@ class PrisonPopulationViewTest(BaseViewTest):
         )
 
         # Act
-        dimensions = ["state_code", "race", "metric", "year", "month"]
+        dimensions = ["dimensions_string", "start_of_month"]
         parole_population = metric_by_month.CalculatedMetricByMonth(
             system=schema.System.CORRECTIONS,
             metric=schema.MetricType.POPULATION,
@@ -1692,73 +1414,40 @@ class PrisonPopulationViewTest(BaseViewTest):
             metric_by_month.CalculatedMetricByMonthViewBuilder(
                 dataset_id="fake-dataset", metric_to_calculate=parole_population
             ),
-            data_types={"year": int, "month": int, "value": int},
+            data_types={
+                "time_window_start": _npd,
+                "time_window_end": _npd,
+                "value": int,
+            },
             dimensions=dimensions,
         )
 
         # Assert
         expected = pd.DataFrame(
             [
-                [
-                    "US_XX",
-                    "",
-                    "POP",
-                    2020,
-                    11,
-                    _npd("2020-11-30"),
-                    "XX",
-                    "xx.gov",
-                    "_",
+                row(
+                    1,
+                    "2020-11-30",
+                    (TestState("US_XX"), manual_upload.Race("")),
                     [],
                     103,
-                ]
-                + [None] * 4,
-                [
-                    "US_XX",
-                    "BLACK",
-                    "POP",
-                    2020,
-                    11,
-                    _npd("2020-11-30"),
-                    "XX",
-                    "xx.gov",
-                    "_",
+                ),
+                row(
+                    1,
+                    "2020-11-30",
+                    (TestState("US_XX"), manual_upload.Race("BLACK")),
                     [],
                     101,
-                ]
-                + [None] * 4,
-                [
-                    "US_XX",
-                    "WHITE",
-                    "POP",
-                    2020,
-                    11,
-                    _npd("2020-11-30"),
-                    "XX",
-                    "xx.gov",
-                    "_",
+                ),
+                row(
+                    1,
+                    "2020-11-30",
+                    (TestState("US_XX"), manual_upload.Race("WHITE")),
                     [],
                     102,
-                ]
-                + [None] * 4,
+                ),
             ],
-            columns=[
-                "state_code",
-                "race",
-                "metric",
-                "year",
-                "month",
-                "date_reported",
-                "source_name",
-                "source_url",
-                "report_name",
-                "raw_source_categories",
-                "value",
-                "compared_to_year",
-                "compared_to_month",
-                "value_change",
-                "percentage_change",
-            ],
+            columns=METRIC_BY_MONTH_SCHEMA.data_types.keys(),
         )
         expected = expected.set_index(dimensions)
         assert_frame_equal(expected, results)
@@ -1863,8 +1552,9 @@ class PrisonPopulationViewTest(BaseViewTest):
                     # February - overlapping, all still get counted
                     [8, 1, 1, "2021-02-01", "2021-02-21", None],
                     [9, 1, 1, "2021-02-07", "2021-03-01", None],
+                    # different source should not be summed
                     [10, 2, 1, "2021-02-07", "2021-03-01", None],
-                ],  # different source should not be summed
+                ],
                 columns=[
                     "id",
                     "report_id",
@@ -1902,7 +1592,7 @@ class PrisonPopulationViewTest(BaseViewTest):
         )
 
         # Act
-        dimensions = ["state_code", "metric", "year", "month"]
+        dimensions = ["dimensions_string", "start_of_month"]
         parole_population = metric_by_month.CalculatedMetricByMonth(
             system=schema.System.CORRECTIONS,
             metric=schema.MetricType.ADMISSIONS,
@@ -1918,56 +1608,21 @@ class PrisonPopulationViewTest(BaseViewTest):
             metric_by_month.CalculatedMetricByMonthViewBuilder(
                 dataset_id="fake-dataset", metric_to_calculate=parole_population
             ),
-            data_types={"year": int, "month": int, "value": int},
+            data_types={
+                "time_window_start": _npd,
+                "time_window_end": _npd,
+                "value": int,
+            },
             dimensions=dimensions,
         )
 
         # Assert
         expected = pd.DataFrame(
             [
-                [
-                    "US_XX",
-                    "ADMISSIONS",
-                    2020,
-                    11,
-                    _npd("2020-11-30"),
-                    "XX",
-                    "xx.gov",
-                    "_",
-                    [],
-                    3,
-                ]
-                + [None] * 4,
-                [
-                    "US_XX",
-                    "ADMISSIONS",
-                    2021,
-                    2,
-                    _npd("2021-02-28"),
-                    "XX",
-                    "xx.gov",
-                    "_",
-                    [],
-                    384,
-                ]
-                + [None] * 4,
+                row(1, "2020-11-01", (TestState("US_XX"),), [], 3),
+                row(1, "2021-02-01", (TestState("US_XX"),), [], 384),
             ],
-            columns=[
-                "state_code",
-                "metric",
-                "year",
-                "month",
-                "date_reported",
-                "source_name",
-                "source_url",
-                "report_name",
-                "raw_source_categories",
-                "value",
-                "compared_to_year",
-                "compared_to_month",
-                "value_change",
-                "percentage_change",
-            ],
+            columns=METRIC_BY_MONTH_SCHEMA.data_types.keys(),
         )
         expected = expected.set_index(dimensions)
         assert_frame_equal(expected, results)
@@ -2087,7 +1742,7 @@ class PrisonPopulationViewTest(BaseViewTest):
         )
 
         # Act
-        dimensions = ["state_code", "metric", "year", "month"]
+        dimensions = ["dimensions_string", "start_of_month"]
         parole_population = metric_by_month.CalculatedMetricByMonth(
             system=schema.System.CORRECTIONS,
             metric=schema.MetricType.ADMISSIONS,
@@ -2103,31 +1758,19 @@ class PrisonPopulationViewTest(BaseViewTest):
             metric_by_month.CalculatedMetricByMonthViewBuilder(
                 dataset_id="fake-dataset", metric_to_calculate=parole_population
             ),
-            data_types={"year": int, "month": int, "value": int},
+            data_types={
+                "time_window_start": _npd,
+                "time_window_end": _npd,
+                "value": int,
+            },
             dimensions=dimensions,
         )
 
         # Assert
-        expected = pd.DataFrame(
-            [],
-            columns=[
-                "state_code",
-                "metric",
-                "year",
-                "month",
-                "date_reported",
-                "source_name",
-                "source_url",
-                "report_name",
-                "raw_source_categories",
-                "value",
-                "compared_to_year",
-                "compared_to_month",
-                "value_change",
-                "percentage_change",
-            ],
+        expected = pd.DataFrame([], columns=METRIC_BY_MONTH_SCHEMA.data_types.keys())
+        expected = expected.astype(
+            {"time_window_start": _npd, "time_window_end": _npd, "value": int}
         )
-        expected = expected.astype({"year": int, "month": int, "value": int})
         expected = expected.set_index(dimensions)
         assert_frame_equal(expected, results)
 
@@ -2205,19 +1848,19 @@ class PrisonPopulationViewTest(BaseViewTest):
                 schema.ReportTableInstance.__table__
             ),
             mock_data=pd.DataFrame(
-                # November - split in halves
                 [
+                    # November - split in halves
                     [1, 1, 1, "2020-11-01", "2020-11-15", None],
-                    [2, 1, 1, "2020-11-15", "2020-12-01", None],
+                    [2, 1, 1, "2020-11-15", "2020-12-01", None],  # pick this
                     # December - reports on Mondays
                     [3, 1, 1, "2020-11-29", "2020-12-06", None],
                     [4, 1, 1, "2020-12-06", "2020-12-13", None],
                     [5, 1, 1, "2020-12-13", "2020-12-20", None],
-                    [6, 1, 1, "2020-12-20", "2020-12-27", None],
-                    [7, 1, 1, "2020-12-27", "2021-01-03", None],
+                    [6, 1, 1, "2020-12-20", "2020-12-27", None],  # pick this
+                    [7, 1, 1, "2020-12-27", "2021-01-03", None],  # pick this
                     # February - overlapping
                     [8, 1, 1, "2021-02-01", "2021-02-21", None],
-                    [9, 1, 1, "2021-02-07", "2021-03-01", None],
+                    [9, 1, 1, "2021-02-07", "2021-03-01", None],  # pick this
                 ],
                 columns=[
                     "id",
@@ -2255,7 +1898,7 @@ class PrisonPopulationViewTest(BaseViewTest):
         )
 
         # Act
-        dimensions = ["state_code", "metric", "year", "month"]
+        dimensions = ["dimensions_string", "start_of_month"]
         parole_population = metric_by_month.CalculatedMetricByMonth(
             system=schema.System.CORRECTIONS,
             metric=schema.MetricType.POPULATION,
@@ -2271,83 +1914,53 @@ class PrisonPopulationViewTest(BaseViewTest):
             metric_by_month.CalculatedMetricByMonthViewBuilder(
                 dataset_id="fake-dataset", metric_to_calculate=parole_population
             ),
-            data_types={"year": int, "month": int, "value": int},
+            data_types={
+                "time_window_start": _npd,
+                "time_window_end": _npd,
+                "value": int,
+            },
             dimensions=dimensions,
         )
 
         # Assert
         expected = pd.DataFrame(
             [
-                [
-                    "US_XX",
-                    "POP",
-                    2020,
-                    11,
-                    _npd("2020-11-30"),
-                    "XX",
-                    "xx.gov",
-                    "_",
+                row(
+                    1,
+                    "2020-11-15",
+                    (TestState("US_XX"),),
                     [],
                     2,
-                ]
-                + [None] * 4,
-                [
-                    "US_XX",
-                    "POP",
-                    2020,
-                    12,
-                    _npd("2020-12-26"),
-                    "XX",
-                    "xx.gov",
-                    "_",
+                    end_date_str="2020-12-01",
+                ),
+                row(
+                    1,
+                    "2020-12-20",
+                    (TestState("US_XX"),),
                     [],
                     32,
-                ]
-                + [None] * 4,
-                [
-                    "US_XX",
-                    "POP",
-                    2021,
+                    end_date_str="2020-12-27",
+                ),
+                row(
                     1,
-                    _npd("2021-01-02"),
-                    "XX",
-                    "xx.gov",
-                    "_",
+                    "2020-12-27",
+                    (TestState("US_XX"),),
                     [],
                     64,
-                ]
-                + [None] * 4,
-                [
-                    "US_XX",
-                    "POP",
-                    2021,
-                    2,
-                    _npd("2021-02-28"),
-                    "XX",
-                    "xx.gov",
-                    "_",
+                    end_date_str="2021-01-03",
+                ),
+                row(
+                    1,
+                    "2021-02-07",
+                    (TestState("US_XX"),),
                     [],
                     256,
-                ]
-                + [None] * 4,
+                    end_date_str="2021-03-01",
+                ),
             ],
-            columns=[
-                "state_code",
-                "metric",
-                "year",
-                "month",
-                "date_reported",
-                "source_name",
-                "source_url",
-                "report_name",
-                "raw_source_categories",
-                "value",
-                "compared_to_year",
-                "compared_to_month",
-                "value_change",
-                "percentage_change",
-            ],
+            columns=METRIC_BY_MONTH_SCHEMA.data_types.keys(),
         )
+
         expected = expected.set_index(dimensions)
         assert_frame_equal(expected, results)
 
@@ -2425,8 +2038,8 @@ class PrisonPopulationViewTest(BaseViewTest):
                 schema.ReportTableInstance.__table__
             ),
             mock_data=pd.DataFrame(
-                # Quarters, attributed to month of end date
                 [
+                    # Quarters, attributed to month of end date
                     [1, 1, 1, "2020-01-01", "2020-04-01", None],
                     [2, 1, 1, "2020-04-01", "2020-07-01", None],
                     [3, 1, 1, "2020-07-01", "2020-10-01", None],
@@ -2466,7 +2079,7 @@ class PrisonPopulationViewTest(BaseViewTest):
         )
 
         # Act
-        dimensions = ["state_code", "metric", "year", "month"]
+        dimensions = ["dimensions_string", "start_of_month"]
         parole_population = metric_by_month.CalculatedMetricByMonth(
             system=schema.System.CORRECTIONS,
             metric=schema.MetricType.POPULATION,
@@ -2482,571 +2095,64 @@ class PrisonPopulationViewTest(BaseViewTest):
             metric_by_month.CalculatedMetricByMonthViewBuilder(
                 dataset_id="fake-dataset", metric_to_calculate=parole_population
             ),
-            data_types={"year": int, "month": int, "value": int},
+            data_types={
+                "time_window_start": _npd,
+                "time_window_end": _npd,
+                "value": int,
+            },
             dimensions=dimensions,
         )
 
         # Assert
         expected = pd.DataFrame(
             [
-                [
-                    "US_XX",
-                    "POP",
-                    2019,
-                    12,
-                    _npd("2019-12-31"),
-                    "XX",
-                    "xx.gov",
-                    "_",
+                row(
+                    1,
+                    "2019-01-01",
+                    (TestState("US_XX"),),
                     [],
                     16,
-                ]
-                + [None] * 4,
-                [
-                    "US_XX",
-                    "POP",
-                    2020,
-                    3,
-                    _npd("2020-03-31"),
-                    "XX",
-                    "xx.gov",
-                    "_",
+                    end_date_str="2020-01-01",
+                ),
+                row(
+                    1,
+                    "2020-01-01",
+                    (TestState("US_XX"),),
                     [],
                     1,
-                ]
-                + [None] * 4,
-                [
-                    "US_XX",
-                    "POP",
-                    2020,
-                    6,
-                    _npd("2020-06-30"),
-                    "XX",
-                    "xx.gov",
-                    "_",
+                    end_date_str="2020-04-01",
+                ),
+                row(
+                    1,
+                    "2020-04-01",
+                    (TestState("US_XX"),),
                     [],
                     2,
-                ]
-                + [None] * 4,
-                [
-                    "US_XX",
-                    "POP",
-                    2020,
-                    9,
-                    _npd("2020-09-30"),
-                    "XX",
-                    "xx.gov",
-                    "_",
+                    end_date_str="2020-07-01",
+                ),
+                row(
+                    1,
+                    "2020-07-01",
+                    (TestState("US_XX"),),
                     [],
                     4,
-                ]
-                + [None] * 4,
-                [
-                    "US_XX",
-                    "POP",
-                    2020,
-                    12,
-                    _npd("2020-12-31"),
-                    "XX",
-                    "xx.gov",
-                    "_",
+                    end_date_str="2020-10-01",
+                ),
+                row(
+                    1,
+                    "2020-10-01",
+                    (TestState("US_XX"),),
                     [],
                     8,
-                    2019,
-                    12,
-                    -8,
-                    -0.5,
-                ],
+                    end_date_str="2021-01-01",
+                ),
             ],
-            columns=[
-                "state_code",
-                "metric",
-                "year",
-                "month",
-                "date_reported",
-                "source_name",
-                "source_url",
-                "report_name",
-                "raw_source_categories",
-                "value",
-                "compared_to_year",
-                "compared_to_month",
-                "value_change",
-                "percentage_change",
-            ],
-        )
-        expected = expected.set_index(dimensions)
-        assert_frame_equal(expected, results)
-
-    def test_comparisons(self) -> None:
-        """Tests comparison logic -- compares to most recent point that is at least a year older"""
-        # Arrange
-        self.create_mock_bq_table(
-            dataset_id="justice_counts",
-            table_id="source_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
-            mock_data=pd.DataFrame([[1, "XX"]], columns=["id", "name"]),
-        )
-        self.create_mock_bq_table(
-            dataset_id="justice_counts",
-            table_id="report_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
-            mock_data=pd.DataFrame(
-                [
-                    [
-                        1,
-                        1,
-                        "_",
-                        "All",
-                        "2021-01-01",
-                        "xx.gov",
-                        "MANUALLY_ENTERED",
-                        "John",
-                    ]
-                ],
-                columns=[
-                    "id",
-                    "source_id",
-                    "type",
-                    "instance",
-                    "publish_date",
-                    "url",
-                    "acquisition_method",
-                    "acquired_by",
-                ],
-            ),
-        )
-        self.create_mock_bq_table(
-            dataset_id="justice_counts",
-            table_id="report_table_definition_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
-                schema.ReportTableDefinition.__table__
-            ),
-            mock_data=pd.DataFrame(
-                [
-                    [
-                        1,
-                        "CORRECTIONS",
-                        "POPULATION",
-                        "INSTANT",
-                        ["global/location/state"],
-                        ["US_XX"],
-                        [],
-                    ]
-                ],
-                columns=[
-                    "id",
-                    "system",
-                    "metric_type",
-                    "measurement_type",
-                    "filtered_dimensions",
-                    "filtered_dimension_values",
-                    "aggregated_dimensions",
-                ],
-            ),
-        )
-        self.create_mock_bq_table(
-            dataset_id="justice_counts",
-            table_id="report_table_instance_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
-                schema.ReportTableInstance.__table__
-            ),
-            mock_data=pd.DataFrame(
-                [
-                    [1, 1, 1, "2022-01-01", "2022-01-02", None],  # Start of 2022-01
-                    [2, 1, 1, "2021-01-01", "2021-01-02", None],  # Start of 2021-01
-                    [3, 1, 1, "2020-01-31", "2020-02-01", None],  # End of 2020-01
-                    [
-                        4,
-                        1,
-                        1,
-                        "2019-02-01",
-                        "2019-02-02",
-                        None,
-                    ],  # Start of 2019-02 -- not quite a year back
-                    [
-                        5,
-                        1,
-                        1,
-                        "2018-02-01",
-                        "2018-02-02",
-                        None,
-                    ],  # Start of 2018-02 -- exactly a year prior
-                    [6, 1, 1, "2017-03-01", "2017-03-02", None],
-                ],  # Start of 2017-03 -- still not quite
-                columns=[
-                    "id",
-                    "report_id",
-                    "report_table_definition_id",
-                    "time_window_start",
-                    "time_window_end",
-                    "methodology",
-                ],
-            ),
-        )
-        self.create_mock_bq_table(
-            dataset_id="justice_counts",
-            table_id="cell_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Cell.__table__),
-            mock_data=pd.DataFrame(
-                [
-                    [1, 1, [], 3],
-                    [2, 2, [], 2],
-                    [3, 3, [], 2],
-                    [4, 4, [], 4],
-                    [5, 5, [], 8],
-                    [6, 6, [], 16],
-                ],
-                columns=[
-                    "id",
-                    "report_table_instance_id",
-                    "aggregated_dimension_values",
-                    "value",
-                ],
-            ),
-        )
-
-        # Act
-        dimensions = ["state_code", "metric", "year", "month"]
-        parole_population = metric_by_month.CalculatedMetricByMonth(
-            system=schema.System.CORRECTIONS,
-            metric=schema.MetricType.POPULATION,
-            filtered_dimensions=[],
-            aggregated_dimensions={
-                "state_code": metric_by_month.Aggregation(
-                    dimension=manual_upload.State, comprehensive=False
-                )
-            },
-            output_name="POP",
-        )
-        results = self.query_view(
-            metric_by_month.CalculatedMetricByMonthViewBuilder(
-                dataset_id="fake-dataset", metric_to_calculate=parole_population
-            ),
-            data_types={"year": int, "month": int, "value": int},
-            dimensions=dimensions,
-        )
-
-        # Assert
-        expected = pd.DataFrame(
-            [
-                [
-                    "US_XX",
-                    "POP",
-                    2017,
-                    3,
-                    _npd("2017-03-01"),
-                    "XX",
-                    "xx.gov",
-                    "_",
-                    [],
-                    16,
-                    None,
-                    None,
-                    None,
-                    None,
-                ],
-                [
-                    "US_XX",
-                    "POP",
-                    2018,
-                    2,
-                    _npd("2018-02-01"),
-                    "XX",
-                    "xx.gov",
-                    "_",
-                    [],
-                    8,
-                    None,
-                    None,
-                    None,
-                    None,
-                ],
-                [
-                    "US_XX",
-                    "POP",
-                    2019,
-                    2,
-                    _npd("2019-02-01"),
-                    "XX",
-                    "xx.gov",
-                    "_",
-                    [],
-                    4,
-                    2018,
-                    2,
-                    -4,
-                    -0.50,
-                ],
-                [
-                    "US_XX",
-                    "POP",
-                    2020,
-                    1,
-                    _npd("2020-01-31"),
-                    "XX",
-                    "xx.gov",
-                    "_",
-                    [],
-                    2,
-                    2018,
-                    2,
-                    -6,
-                    -0.75,
-                ],
-                [
-                    "US_XX",
-                    "POP",
-                    2021,
-                    1,
-                    _npd("2021-01-01"),
-                    "XX",
-                    "xx.gov",
-                    "_",
-                    [],
-                    2,
-                    2020,
-                    1,
-                    0,
-                    0.00,
-                ],
-                [
-                    "US_XX",
-                    "POP",
-                    2022,
-                    1,
-                    _npd("2022-01-01"),
-                    "XX",
-                    "xx.gov",
-                    "_",
-                    [],
-                    3,
-                    2021,
-                    1,
-                    1,
-                    0.50,
-                ],
-            ],
-            columns=[
-                "state_code",
-                "metric",
-                "year",
-                "month",
-                "date_reported",
-                "source_name",
-                "source_url",
-                "report_name",
-                "raw_source_categories",
-                "value",
-                "compared_to_year",
-                "compared_to_month",
-                "value_change",
-                "percentage_change",
-            ],
-        )
-        expected = expected.set_index(dimensions)
-        assert_frame_equal(expected, results)
-
-    def test_comparisons_zero(self) -> None:
-        """Tests that percentage change is null when the prior value was zero"""
-        # Arrange
-        self.create_mock_bq_table(
-            dataset_id="justice_counts",
-            table_id="source_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
-            mock_data=pd.DataFrame([[1, "XX"]], columns=["id", "name"]),
-        )
-        self.create_mock_bq_table(
-            dataset_id="justice_counts",
-            table_id="report_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
-            mock_data=pd.DataFrame(
-                [
-                    [
-                        1,
-                        1,
-                        "_",
-                        "All",
-                        "2021-01-01",
-                        "xx.gov",
-                        "MANUALLY_ENTERED",
-                        "John",
-                    ]
-                ],
-                columns=[
-                    "id",
-                    "source_id",
-                    "type",
-                    "instance",
-                    "publish_date",
-                    "url",
-                    "acquisition_method",
-                    "acquired_by",
-                ],
-            ),
-        )
-        self.create_mock_bq_table(
-            dataset_id="justice_counts",
-            table_id="report_table_definition_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
-                schema.ReportTableDefinition.__table__
-            ),
-            mock_data=pd.DataFrame(
-                [
-                    [
-                        1,
-                        "CORRECTIONS",
-                        "ADMISSIONS",
-                        "DELTA",
-                        ["global/location/state"],
-                        ["US_XX"],
-                        [],
-                    ]
-                ],
-                columns=[
-                    "id",
-                    "system",
-                    "metric_type",
-                    "measurement_type",
-                    "filtered_dimensions",
-                    "filtered_dimension_values",
-                    "aggregated_dimensions",
-                ],
-            ),
-        )
-        self.create_mock_bq_table(
-            dataset_id="justice_counts",
-            table_id="report_table_instance_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
-                schema.ReportTableInstance.__table__
-            ),
-            mock_data=pd.DataFrame(
-                [
-                    [1, 1, 1, "2022-01-01", "2022-02-01", None],
-                    [2, 1, 1, "2021-01-01", "2021-02-01", None],
-                    [3, 1, 1, "2020-01-01", "2020-02-01", None],
-                ],
-                columns=[
-                    "id",
-                    "report_id",
-                    "report_table_definition_id",
-                    "time_window_start",
-                    "time_window_end",
-                    "methodology",
-                ],
-            ),
-        )
-        self.create_mock_bq_table(
-            dataset_id="justice_counts",
-            table_id="cell_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Cell.__table__),
-            mock_data=pd.DataFrame(
-                [[1, 1, [], 3], [2, 2, [], 0], [3, 3, [], 2]],
-                columns=[
-                    "id",
-                    "report_table_instance_id",
-                    "aggregated_dimension_values",
-                    "value",
-                ],
-            ),
-        )
-
-        # Act
-        dimensions = ["state_code", "metric", "year", "month"]
-        parole_population = metric_by_month.CalculatedMetricByMonth(
-            system=schema.System.CORRECTIONS,
-            metric=schema.MetricType.ADMISSIONS,
-            filtered_dimensions=[],
-            aggregated_dimensions={
-                "state_code": metric_by_month.Aggregation(
-                    dimension=manual_upload.State, comprehensive=False
-                )
-            },
-            output_name="ADMISSIONS",
-        )
-        results = self.query_view(
-            metric_by_month.CalculatedMetricByMonthViewBuilder(
-                dataset_id="fake-dataset", metric_to_calculate=parole_population
-            ),
-            data_types={"year": int, "month": int, "value": int},
-            dimensions=dimensions,
-        )
-
-        # Assert
-        expected = pd.DataFrame(
-            [
-                [
-                    "US_XX",
-                    "ADMISSIONS",
-                    2020,
-                    1,
-                    _npd("2020-01-31"),
-                    "XX",
-                    "xx.gov",
-                    "_",
-                    [],
-                    2,
-                    None,
-                    None,
-                    None,
-                    None,
-                ],
-                [
-                    "US_XX",
-                    "ADMISSIONS",
-                    2021,
-                    1,
-                    _npd("2021-01-31"),
-                    "XX",
-                    "xx.gov",
-                    "_",
-                    [],
-                    0,
-                    2020,
-                    1,
-                    -2,
-                    -1.00,
-                ],
-                # Percentage change is None as prior value was 0
-                [
-                    "US_XX",
-                    "ADMISSIONS",
-                    2022,
-                    1,
-                    _npd("2022-01-31"),
-                    "XX",
-                    "xx.gov",
-                    "_",
-                    [],
-                    3,
-                    2021,
-                    1,
-                    3,
-                    None,
-                ],
-            ],
-            columns=[
-                "state_code",
-                "metric",
-                "year",
-                "month",
-                "date_reported",
-                "source_name",
-                "source_url",
-                "report_name",
-                "raw_source_categories",
-                "value",
-                "compared_to_year",
-                "compared_to_month",
-                "value_change",
-                "percentage_change",
-            ],
+            columns=METRIC_BY_MONTH_SCHEMA.data_types.keys(),
         )
         expected = expected.set_index(dimensions)
         assert_frame_equal(expected, results)
 
     def test_collapsed_dimensions(self) -> None:
-        """Tests that percentage change is null when the prior value was zero"""
         # Arrange
         self.create_mock_bq_table(
             dataset_id="justice_counts",
@@ -3155,7 +2261,7 @@ class PrisonPopulationViewTest(BaseViewTest):
         )
 
         # Act
-        dimensions = ["state_code", "metric", "year", "month"]
+        dimensions = ["dimensions_string", "start_of_month"]
         parole_population = metric_by_month.CalculatedMetricByMonth(
             system=schema.System.CORRECTIONS,
             metric=schema.MetricType.ADMISSIONS,
@@ -3171,61 +2277,147 @@ class PrisonPopulationViewTest(BaseViewTest):
             metric_by_month.CalculatedMetricByMonthViewBuilder(
                 dataset_id="fake-dataset", metric_to_calculate=parole_population
             ),
-            data_types={"year": int, "month": int, "value": int},
+            data_types={
+                "time_window_start": _npd,
+                "time_window_end": _npd,
+                "value": int,
+            },
             dimensions=dimensions,
         )
 
         # Assert
         expected = pd.DataFrame(
             [
-                [
-                    "US_XX",
-                    "ADMISSIONS",
-                    2020,
+                row(
                     1,
-                    _npd("2020-01-31"),
-                    "XX",
-                    "xx.gov",
-                    "_",
+                    "2020-01-01",
+                    (TestState("US_XX"),),
                     ["B", "D"],
                     10,
-                    None,
-                    None,
-                    None,
-                    None,
-                ],
-                [
-                    "US_XX",
-                    "ADMISSIONS",
-                    2021,
+                ),
+                row(
                     1,
-                    _npd("2021-01-31"),
-                    "XX",
-                    "xx.gov",
-                    "_",
+                    "2021-01-01",
+                    (TestState("US_XX"),),
                     ["A", "B"],
                     5,
-                    2020,
-                    1,
-                    -5,
-                    -0.5,
-                ],
+                ),
+            ],
+            columns=METRIC_BY_MONTH_SCHEMA.data_types.keys(),
+        )
+        expected = expected.set_index(dimensions)
+        assert_frame_equal(expected, results)
+
+    def test_comparisons(self) -> None:
+        """Tests comparison logic -- compares to most recent point that is at least a year older"""
+        # Arrange
+        # Start of 2022-01
+        row_2022 = row(
+            1,
+            "2022-01-01",
+            (TestState("US_XX"),),
+            [],
+            3,
+            end_date_str="2022-01-02",
+        )
+        # Start of 2021-01
+        row_2021 = row(
+            1,
+            "2021-01-01",
+            (TestState("US_XX"),),
+            [],
+            2,
+            end_date_str="2021-01-02",
+        )
+        # End of 2020-01
+        row_2020 = row(1, "2020-01-31", (TestState("US_XX"),), [], 2)
+        # Start of 2019-02 -- not quite a year prior
+        row_2019 = row(
+            1,
+            "2019-02-01",
+            (TestState("US_XX"),),
+            [],
+            4,
+            end_date_str="2019-02-02",
+        )
+        # Start of 2018-02 -- exactly a year prior
+        row_2018 = row(
+            1,
+            "2018-02-01",
+            (TestState("US_XX"),),
+            [],
+            8,
+            end_date_str="2018-02-02",
+        )
+        # Start of 2017-03 -- still not quite
+        row_2017 = row(
+            1,
+            "2017-03-01",
+            (TestState("US_XX"),),
+            [],
+            16,
+            end_date_str="2017-03-02",
+        )
+        self.create_mock_bq_table(
+            dataset_id="justice_counts",
+            table_id="metric_by_month",
+            mock_schema=METRIC_BY_MONTH_SCHEMA,
+            mock_data=pd.DataFrame(
+                [row_2022, row_2021, row_2020, row_2019, row_2018, row_2017],
+                columns=METRIC_BY_MONTH_SCHEMA.data_types.keys(),
+            ),
+        )
+
+        # Act
+        dimensions = ["dimensions_string", "start_of_month"]
+        parole_population = metric_by_month.CalculatedMetricByMonth(
+            system=schema.System.CORRECTIONS,
+            metric=schema.MetricType.ADMISSIONS,
+            filtered_dimensions=[manual_upload.AdmissionType.NEW_COMMITMENT],
+            aggregated_dimensions={
+                "state_code": metric_by_month.Aggregation(
+                    dimension=manual_upload.State, comprehensive=False
+                )
+            },
+            output_name="ADMISSIONS",
+        )
+        results = self.query_view(
+            metric_by_month.CompareToPriorYearViewBuilder(
+                dataset_id="fake-dataset",
+                metric_to_calculate=parole_population,
+                input_view=SimpleBigQueryViewBuilder(
+                    dataset_id="justice_counts",
+                    view_id="metric_by_month",
+                    view_query_template="",
+                ),
+            ),
+            data_types={
+                "start_of_month": _npd,
+                "time_window_start": _npd,
+                "time_window_end": _npd,
+                "value": int,
+                "compare_start_of_month": _npd,
+            },
+            dimensions=dimensions,
+        )
+        # The query excludes the ordinal column but that clause gets dropped
+        # because postgres doesn't support it so we exclude it manually here.
+        results = results.drop("ordinal", axis=1)
+
+        # Assert
+        expected = pd.DataFrame(
+            [
+                row_2017 + (None, None),
+                row_2018 + (None, None),
+                row_2019 + (_npd("2018-02-01"), 8),
+                row_2020 + (_npd("2018-02-01"), 8),
+                row_2021 + (_npd("2020-01-01"), 2),
+                row_2022 + (_npd("2021-01-01"), 2),
             ],
             columns=[
-                "state_code",
-                "metric",
-                "year",
-                "month",
-                "date_reported",
-                "source_name",
-                "source_url",
-                "report_name",
-                "raw_source_categories",
-                "value",
-                "compared_to_year",
-                "compared_to_month",
-                "value_change",
-                "percentage_change",
+                *METRIC_BY_MONTH_SCHEMA.data_types.keys(),
+                "compare_start_of_month",
+                "compare_value",
             ],
         )
         expected = expected.set_index(dimensions)
