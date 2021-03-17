@@ -1213,6 +1213,15 @@ class StateCharge(StateBase, _StateChargeSharedColumns):
     """Represents a StateCharge in the SQL schema"""
 
     __tablename__ = "state_charge"
+    __table_args__ = (
+        UniqueConstraint(
+            "state_code",
+            "external_id",
+            name="charge_external_ids_unique_within_state",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+    )
 
     charge_id = Column(Integer, primary_key=True)
 
