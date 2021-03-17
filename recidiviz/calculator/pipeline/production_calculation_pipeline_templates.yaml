@@ -33,7 +33,6 @@ daily_pipelines:
     metric_types: PROGRAM_PARTICIPATION PROGRAM_REFERRAL
     region: us-west1
 
-
   # Daily US_MO calculations for the dashboard
   - pipeline: supervision
     job_name: us-mo-supervision-calculations-36
@@ -84,21 +83,68 @@ daily_pipelines:
     metric_types: INCARCERATION_POPULATION
     region: us-east1
 
-# Historical US_ND population calculations for the dashboards
 historical_pipelines:
-  - pipeline: supervision
-    job_name: us-nd-supervision-population-240
-    state_code: US_ND
-    calculation_month_count: 240
-    metric_types: SUPERVISION_POPULATION
-    # This region value must stay in-sync with the REGION arg in the
-    # cloud-functions.tf config for this pipeline
-    region: us-central1
   - pipeline: incarceration
-    job_name: us-nd-incarceration-population-240
+    job_name: us-id-historical-incarceration-calculations-240
+    state_code: US_ID
+    calculation_month_count: 240
+    metric_types: INCARCERATION_ADMISSION INCARCERATION_POPULATION INCARCERATION_RELEASE
+    # This region value must stay in-sync with the REGION arg in the
+    # historical-pipelines.tf config for this pipeline
+    region: us-west1
+  - pipeline: supervision
+    job_name: us-id-historical-supervision-calculations-240
+    state_code: US_ID
+    calculation_month_count: 240
+    metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION SUPERVISION_START SUPERVISION_TERMINATION SUPERVISION_OUT_OF_STATE_POPULATION
+    # This region value must stay in-sync with the REGION arg in the
+    # historical-pipelines.tf config for this pipeline
+    region: us-west1
+  - pipeline: incarceration
+    job_name: us-mo-historical-incarceration-calculations-240
+    state_code: US_MO
+    calculation_month_count: 240
+    metric_types: INCARCERATION_ADMISSION INCARCERATION_POPULATION INCARCERATION_RELEASE
+    # This region value must stay in-sync with the REGION arg in the
+    # historical-pipelines.tf config for this pipeline
+    region: us-west3
+  - pipeline: supervision
+    job_name: us-mo-historical-supervision-calculations-240
+    state_code: US_MO
+    calculation_month_count: 240
+    metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION SUPERVISION_START SUPERVISION_TERMINATION SUPERVISION_OUT_OF_STATE_POPULATION
+    # This region value must stay in-sync with the REGION arg in the
+    # historical-pipelines.tf config for this pipeline
+    region: us-west3
+  - pipeline: incarceration
+    job_name: us-nd-historical-incarceration-calculations-240
     state_code: US_ND
     calculation_month_count: 240
-    metric_types: INCARCERATION_POPULATION
+    metric_types: INCARCERATION_ADMISSION INCARCERATION_POPULATION INCARCERATION_RELEASE
     # This region value must stay in-sync with the REGION arg in the
-    # cloud-functions.tf config for this pipeline
-    region: us-west3
+    # historical-pipelines.tf config for this pipeline
+    region: us-east1
+  - pipeline: supervision
+    job_name: us-nd-historical-supervision-calculations-240
+    state_code: US_ND
+    calculation_month_count: 240
+    metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION SUPERVISION_START SUPERVISION_TERMINATION
+    # This region value must stay in-sync with the REGION arg in the
+    # historical-pipelines.tf config for this pipeline
+    region: us-east1
+  - pipeline: incarceration
+    job_name: us-pa-historical-incarceration-calculations-240
+    state_code: US_PA
+    calculation_month_count: 240
+    metric_types: INCARCERATION_ADMISSION INCARCERATION_POPULATION INCARCERATION_RELEASE
+    # This region value must stay in-sync with the REGION arg in the
+    # historical-pipelines.tf config for this pipeline
+    region: us-central1
+  - pipeline: supervision
+    job_name: us-pa-historical-supervision-calculations-240
+    state_code: US_PA
+    calculation_month_count: 240
+    metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION SUPERVISION_START SUPERVISION_TERMINATION SUPERVISION_OUT_OF_STATE_POPULATION
+    # This region value must stay in-sync with the REGION arg in the
+    # historical-pipelines.tf config for this pipeline
+    region: us-central1
