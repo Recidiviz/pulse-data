@@ -144,13 +144,20 @@ class CasePresenter:
         return in_progress_actions
 
     def _next_assessment_date(self) -> Optional[date]:
-        # TODO(#5769): Eventually move this method to our calculate pipeline.
+        """Calculates the next assessment date for the given case.
+
+        TODO(#5769): Eventually move this method to our calculate pipeline.
+        """
         if (
             self.etl_client.most_recent_assessment_date is None
             or self.etl_client.assessment_score is None
         ):
             if self.etl_client.supervision_start_date is None:
-                # TODO(#6418): Understand why null start dates are showing up and kill this branch
+                # We expect that supervision_start_date is filled in, but in instances where
+                # our default calc pipeline look back period is shorter than the amount of time
+                # someone has been on supervision, it will be empty.
+                #
+                # We log the warning, but still want to fail gracefully.
                 logging.warning(
                     "Supervision start date unexpectedly empty for client with id %s in state %s",
                     self.etl_client.person_external_id,
