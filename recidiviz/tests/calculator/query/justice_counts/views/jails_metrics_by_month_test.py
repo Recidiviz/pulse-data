@@ -1,0 +1,395 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2021 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+"""Tests Jails metrics functionality."""
+from mock import Mock, patch
+
+import numpy as np
+import pandas as pd
+from pandas.testing import assert_frame_equal
+from sqlalchemy.sql import sqltypes
+
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.justice_counts.views import (
+    jails_metrics_by_month,
+    metric_by_month,
+)
+from recidiviz.persistence.database.schema.justice_counts import schema
+from recidiviz.tests.calculator.query.justice_counts.views.metric_by_month_test import (
+    METRIC_BY_MONTH_SCHEMA,
+    TestState,
+    row,
+)
+from recidiviz.tests.calculator.query.view_test_util import (
+    BaseViewTest,
+    MockTableSchema,
+)
+from recidiviz.tools.justice_counts import manual_upload
+
+_npd = np.datetime64
+
+
+@patch("recidiviz.common.fips.validate_county_code", Mock(return_value=None))
+@patch("recidiviz.utils.metadata.project_id", Mock(return_value="t"))
+class JailsOutputViewTest(BaseViewTest):
+    """Tests the Jails output view."""
+
+    INPUT_SCHEMA = MockTableSchema(
+        {
+            **METRIC_BY_MONTH_SCHEMA.data_types,
+            "compare_start_of_month": sqltypes.Date(),
+            "compare_value": sqltypes.Numeric(),
+            "state_code": sqltypes.String(255),
+            "county_code": sqltypes.String(255),
+            "percentage_covered_county": sqltypes.Float(),
+            "percentage_covered_population": sqltypes.Float(),
+        }
+    )
+
+    def test_county_population(self) -> None:
+        """Tests the basic use case of calculating county population"""
+        self.create_mock_bq_table(
+            dataset_id="justice_counts",
+            table_id="metric_by_month",
+            mock_schema=self.INPUT_SCHEMA,
+            mock_data=pd.DataFrame(
+                [
+                    row(
+                        1,
+                        "2020-11-30",
+                        (TestState("US_XX"), manual_upload.County("US_XX_ALPHA")),
+                        [],
+                        3000,
+                    )
+                    + (None, None, "US_XX", "US_XX_ALPHA", None, None),
+                    row(
+                        1,
+                        "2020-11-30",
+                        (TestState("US_XX"), manual_upload.County("US_XX_BETA")),
+                        [],
+                        1000,
+                    )
+                    + (None, None, "US_XX", "US_XX_BETA", None, None),
+                    row(
+                        1,
+                        "2020-12-31",
+                        (TestState("US_XX"), manual_upload.County("US_XX_ALPHA")),
+                        [],
+                        4000,
+                    )
+                    + (None, None, "US_XX", "US_XX_ALPHA", None, None),
+                    row(
+                        1,
+                        "2020-12-31",
+                        (TestState("US_XX"), manual_upload.County("US_XX_BETA")),
+                        [],
+                        1500,
+                    )
+                    + (None, None, "US_XX", "US_XX_BETA", None, None),
+                    row(
+                        1,
+                        "2020-11-30",
+                        (TestState("US_YY"),),
+                        ["US_YY_ALPHA", "US_YY_BETA"],
+                        12000,
+                    )
+                    + (None, None, "US_YY", "", 0.12, 0.5),
+                    row(
+                        1,
+                        "2020-12-31",
+                        (TestState("US_YY"),),
+                        ["US_YY_ALPHA", "US_YY_BETA"],
+                        13000,
+                    )
+                    + (None, None, "US_YY", "", 0.12, 0.5),
+                ],
+                columns=self.INPUT_SCHEMA.data_types.keys(),
+            ),
+        )
+
+        # Act
+        dimensions = ["state_code", "county_code", "metric", "year", "month"]
+        jail_population_metric = metric_by_month.CalculatedMetricByMonth(
+            system=schema.System.CORRECTIONS,
+            metric=schema.MetricType.POPULATION,
+            filtered_dimensions=[manual_upload.PopulationType.JAIL],
+            aggregated_dimensions={
+                "state_code": metric_by_month.Aggregation(
+                    dimension=manual_upload.State, comprehensive=False
+                ),
+                "county_code": metric_by_month.Aggregation(
+                    dimension=manual_upload.County, comprehensive=False
+                ),
+            },
+            output_name="POP",
+        )
+        results = self.query_view(
+            jails_metrics_by_month.JailOutputViewBuilder(
+                dataset_id="fake-dataset",
+                metric_to_calculate=jail_population_metric,
+                input_view=SimpleBigQueryViewBuilder(
+                    dataset_id="justice_counts",
+                    view_id="metric_by_month",
+                    view_query_template="",
+                ),
+            ),
+            data_types={"year": int, "month": int, "value": int},
+            dimensions=dimensions,
+        )
+
+        # Assert
+        expected = pd.DataFrame(
+            [
+                ["US_XX", "US_XX_ALPHA", "POP", 2020, 11, _npd("2020-11-30"), 3000]
+                + [None] * 6,
+                ["US_XX", "US_XX_ALPHA", "POP", 2020, 12, _npd("2020-12-31"), 4000]
+                + [None] * 6,
+                ["US_XX", "US_XX_BETA", "POP", 2020, 11, _npd("2020-11-30"), 1000]
+                + [None] * 6,
+                ["US_XX", "US_XX_BETA", "POP", 2020, 12, _npd("2020-12-31"), 1500]
+                + [None] * 6,
+                ["US_YY", "", "POP", 2020, 11, _npd("2020-11-30"), 12000]
+                + [None] * 4
+                + [0.12, 0.5],
+                ["US_YY", "", "POP", 2020, 12, _npd("2020-12-31"), 13000]
+                + [None] * 4
+                + [0.12, 0.5],
+            ],
+            columns=[
+                "state_code",
+                "county_code",
+                "metric",
+                "year",
+                "month",
+                "date_reported",
+                "value",
+                "compared_to_year",
+                "compared_to_month",
+                "value_change",
+                "percentage_change",
+                "percentage_covered_county",
+                "percentage_covered_population",
+            ],
+        )
+        expected = expected.set_index(dimensions)
+        assert_frame_equal(expected, results)
+
+
+@patch("recidiviz.common.fips.validate_county_code", Mock(return_value=None))
+@patch("recidiviz.utils.metadata.project_id", Mock(return_value="t"))
+class JailsMetricsByMonthIntegrationTest(BaseViewTest):
+    """Tests the Jails output view."""
+
+    INPUT_SCHEMA = MockTableSchema(
+        {
+            **METRIC_BY_MONTH_SCHEMA.data_types,
+            "compare_start_of_month": sqltypes.Date(),
+            "compare_value": sqltypes.Numeric(),
+            "state_code": sqltypes.String(255),
+            "county_code": sqltypes.String(255),
+            "percentage_covered_county": sqltypes.Float(),
+            "percentage_covered_population": sqltypes.Float(),
+        }
+    )
+
+    def test_county_population(self) -> None:
+        """Tests the basic use case of calculating county population"""
+        self.create_mock_bq_table(
+            dataset_id="justice_counts",
+            table_id="report_materialized",
+            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
+            mock_data=pd.DataFrame(
+                [
+                    [
+                        1,
+                        1,
+                        "_",
+                        "All",
+                        "2021-01-01",
+                        "xx.gov",
+                        "MANUALLY_ENTERED",
+                        "John",
+                    ],
+                    [
+                        2,
+                        2,
+                        "_",
+                        "All",
+                        "2021-01-02",
+                        "yy.gov",
+                        "MANUALLY_ENTERED",
+                        "Jane",
+                    ],
+                ],
+                columns=[
+                    "id",
+                    "source_id",
+                    "type",
+                    "instance",
+                    "publish_date",
+                    "url",
+                    "acquisition_method",
+                    "acquired_by",
+                ],
+            ),
+        )
+        self.create_mock_bq_table(
+            dataset_id="justice_counts",
+            table_id="report_table_definition_materialized",
+            mock_schema=MockTableSchema.from_sqlalchemy_table(
+                schema.ReportTableDefinition.__table__
+            ),
+            mock_data=pd.DataFrame(
+                [
+                    [
+                        1,
+                        "CORRECTIONS",
+                        "POPULATION",
+                        "INSTANT",
+                        ["global/location/state", "metric/population/type"],
+                        ["US_XX", "JAIL"],
+                        ["global/location/county"],
+                    ],
+                    [
+                        2,
+                        "CORRECTIONS",
+                        "POPULATION",
+                        "INSTANT",
+                        ["metric/population/type"],
+                        ["JAIL"],
+                        ["global/location/state", "global/location/county"],
+                    ],
+                ],
+                columns=[
+                    "id",
+                    "system",
+                    "metric_type",
+                    "measurement_type",
+                    "filtered_dimensions",
+                    "filtered_dimension_values",
+                    "aggregated_dimensions",
+                ],
+            ),
+        )
+        self.create_mock_bq_table(
+            dataset_id="justice_counts",
+            table_id="report_table_instance_materialized",
+            mock_schema=MockTableSchema.from_sqlalchemy_table(
+                schema.ReportTableInstance.__table__
+            ),
+            mock_data=pd.DataFrame(
+                [
+                    [1, 1, 1, "2020-11-30", "2020-12-01", None],
+                    [2, 1, 1, "2020-12-31", "2021-01-01", None],
+                    [3, 2, 2, "2020-11-30", "2020-12-01", None],
+                    [4, 2, 2, "2020-12-31", "2021-01-01", None],
+                ],
+                columns=[
+                    "id",
+                    "report_id",
+                    "report_table_definition_id",
+                    "time_window_start",
+                    "time_window_end",
+                    "methodology",
+                ],
+            ),
+        )
+        self.create_mock_bq_table(
+            dataset_id="justice_counts",
+            table_id="cell_materialized",
+            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Cell.__table__),
+            mock_data=pd.DataFrame(
+                [
+                    [1, 1, ["US_XX_ALPHA"], 3000],
+                    [2, 1, ["US_XX_BETA"], 1000],
+                    [3, 2, ["US_XX_ALPHA"], 4000],
+                    [4, 2, ["US_XX_BETA"], 1500],
+                    [5, 3, ["US_YY", "US_YY_ALPHA"], 10000],
+                    [6, 3, ["US_ZZ", "US_ZZ_ALPHA"], 20000],
+                    [7, 4, ["US_YY", "US_YY_ALPHA"], 12000],
+                    [8, 4, ["US_ZZ", "US_ZZ_ALPHA"], 22000],
+                ],
+                columns=[
+                    "id",
+                    "report_table_instance_id",
+                    "aggregated_dimension_values",
+                    "value",
+                ],
+            ),
+        )
+
+        # Act
+        dimensions = ["state_code", "county_code", "metric", "year", "month"]
+        jail_population_metric = metric_by_month.CalculatedMetricByMonth(
+            system=schema.System.CORRECTIONS,
+            metric=schema.MetricType.POPULATION,
+            filtered_dimensions=[manual_upload.PopulationType.JAIL],
+            aggregated_dimensions={
+                "state_code": metric_by_month.Aggregation(
+                    dimension=manual_upload.State, comprehensive=False
+                ),
+                "county_code": metric_by_month.Aggregation(
+                    dimension=manual_upload.County, comprehensive=False
+                ),
+            },
+            output_name="POP",
+        )
+        results = self.query_view_chain(
+            jails_metrics_by_month.view_chain_for_metric(
+                metric=jail_population_metric,
+            ),
+            data_types={"year": int, "month": int, "value": int},
+            dimensions=dimensions,
+        )
+
+        # Assert
+        expected = pd.DataFrame(
+            [
+                ["US_XX", "US_XX_ALPHA", "POP", 2020, 11, _npd("2020-11-30"), 3000]
+                + [None] * 6,
+                ["US_XX", "US_XX_ALPHA", "POP", 2020, 12, _npd("2020-12-31"), 4000]
+                + [None] * 6,
+                ["US_XX", "US_XX_BETA", "POP", 2020, 11, _npd("2020-11-30"), 1000]
+                + [None] * 6,
+                ["US_XX", "US_XX_BETA", "POP", 2020, 12, _npd("2020-12-31"), 1500]
+                + [None] * 6,
+                ["US_YY", "US_YY_ALPHA", "POP", 2020, 11, _npd("2020-11-30"), 10000]
+                + [None] * 6,
+                ["US_YY", "US_YY_ALPHA", "POP", 2020, 12, _npd("2020-12-31"), 12000]
+                + [None] * 6,
+                ["US_ZZ", "US_ZZ_ALPHA", "POP", 2020, 11, _npd("2020-11-30"), 20000]
+                + [None] * 6,
+                ["US_ZZ", "US_ZZ_ALPHA", "POP", 2020, 12, _npd("2020-12-31"), 22000]
+                + [None] * 6,
+            ],
+            columns=[
+                "state_code",
+                "county_code",
+                "metric",
+                "year",
+                "month",
+                "date_reported",
+                "value",
+                "compared_to_year",
+                "compared_to_month",
+                "value_change",
+                "percentage_change",
+                "percentage_covered_county",
+                "percentage_covered_population",
+            ],
+        )
+        expected = expected.set_index(dimensions)
+        assert_frame_equal(expected, results)
