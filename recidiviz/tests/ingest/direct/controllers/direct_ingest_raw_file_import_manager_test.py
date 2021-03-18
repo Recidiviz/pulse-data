@@ -586,11 +586,19 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self.mock_big_query_client.run_query_async.assert_has_calls(
             [
                 mock.call(
-                    query_str=f"UPDATE `recidiviz-456.us_xx_raw_data.tagC` SET COL1 = '456' "
-                    f"WHERE COL1 = '123' AND update_datetime = '{file_datetime.isoformat()}';"
+                    query_str="UPDATE `recidiviz-456.us_xx_raw_data.tagC` original\n"
+                    "SET COL1 = updates.new__COL1\n"
+                    "FROM (SELECT * FROM UNNEST([\n"
+                    "    STRUCT('123' AS COL1, CAST('2020-06-10T00:00:00' AS DATETIME) AS update_datetime, '456' AS new__COL1),\n"
+                    "    STRUCT('123' AS COL1, CAST('2020-09-21T00:00:00' AS DATETIME) AS update_datetime, '456' AS new__COL1)\n"
+                    "])) updates\n"
+                    "WHERE original.COL1 = updates.COL1 AND original.update_datetime = updates.update_datetime;"
                 ),
                 mock.call(
-                    query_str="DELETE FROM `recidiviz-456.us_xx_raw_data.tagC` WHERE COL1 = '789';"
+                    query_str="DELETE FROM `recidiviz-456.us_xx_raw_data.tagC`\n"
+                    "WHERE STRUCT(COL1) IN (\n"
+                    "    STRUCT('789')\n"
+                    ");"
                 ),
             ]
         )
