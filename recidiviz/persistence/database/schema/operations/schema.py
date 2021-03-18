@@ -114,8 +114,8 @@ class DirectIngestIngestFileMetadata(
     # These fields are first set at export job creation time
     is_invalidated = Column(Boolean, nullable=False)
 
-    # If true, indicates that this file is a split of an original ingest view export. If false, this file was exported
-    # directly from BigQuery.
+    # If true, indicates that this file is a split of an original ingest view export. If
+    # false, this file was exported directly from BigQuery.
     is_file_split = Column(Boolean, nullable=False)
 
     # Time the export job is first scheduled for these time bounds
@@ -123,5 +123,10 @@ class DirectIngestIngestFileMetadata(
     datetimes_contained_lower_bound_exclusive = Column(DateTime)
     datetimes_contained_upper_bound_inclusive = Column(DateTime, nullable=False)
 
-    # Time of the actual view export (when the file is done writing to GCS), set at same time as normalized_file_name
+    # Time of the actual view export (when the file is done writing to GCS), set at same
+    # time as normalized_file_name
     export_time = Column(DateTime)
+
+    # The name of the database that the data in this file has been or will be written
+    # to.
+    ingest_database_name = Column(String, nullable=False)

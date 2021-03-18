@@ -24,7 +24,10 @@ from sqlalchemy.exc import IntegrityError
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.persistence.database.sqlalchemy_database_key import (
+    SQLAlchemyDatabaseKey,
+    DEFAULT_DB_NAME,
+)
 from recidiviz.tests.utils import fakes
 
 
@@ -38,7 +41,7 @@ class OperationsSchemaTest(unittest.TestCase):
     def tearDown(self) -> None:
         fakes.teardown_in_memory_sqlite_databases()
 
-    def test_raw_file_metadata(self):
+    def test_raw_file_metadata(self) -> None:
         session = SessionFactory.for_database(self.database_key)
         raw_metadata = schema.DirectIngestRawFileMetadata(
             region_code="us_xx_yyyy",
@@ -53,7 +56,7 @@ class OperationsSchemaTest(unittest.TestCase):
         self.assertEqual(result_metadata, raw_metadata)
         self.assertIsNotNone(result_metadata.file_id)
 
-    def test_raw_file_metadata_all_fields(self):
+    def test_raw_file_metadata_all_fields(self) -> None:
         session = SessionFactory.for_database(self.database_key)
         raw_metadata = schema.DirectIngestRawFileMetadata(
             region_code="us_xx_yyyy",
@@ -69,7 +72,7 @@ class OperationsSchemaTest(unittest.TestCase):
         self.assertEqual(result_metadata, raw_metadata)
         self.assertIsNotNone(result_metadata.file_id)
 
-    def test_raw_file_metadata_normalized_file_name_unique_constraint(self):
+    def test_raw_file_metadata_normalized_file_name_unique_constraint(self) -> None:
         session = SessionFactory.for_database(self.database_key)
         raw_metadata_1 = schema.DirectIngestRawFileMetadata(
             region_code="us_xx_yyyy",
@@ -95,7 +98,7 @@ class OperationsSchemaTest(unittest.TestCase):
         session = SessionFactory.for_database(self.database_key)
         self.assertEqual([], session.query(schema.DirectIngestRawFileMetadata).all())
 
-    def test_raw_file_metadata_normalized_file_name_nonnull_constraint(self):
+    def test_raw_file_metadata_normalized_file_name_nonnull_constraint(self) -> None:
         session = SessionFactory.for_database(self.database_key)
         raw_metadata = schema.DirectIngestRawFileMetadata(
             region_code="us_xx_yyyy",
@@ -112,7 +115,7 @@ class OperationsSchemaTest(unittest.TestCase):
         session = SessionFactory.for_database(self.database_key)
         self.assertEqual([], session.query(schema.DirectIngestRawFileMetadata).all())
 
-    def test_raw_file_metadata_discovery_time_name_nonnull_constraint(self):
+    def test_raw_file_metadata_discovery_time_name_nonnull_constraint(self) -> None:
         session = SessionFactory.for_database(self.database_key)
         raw_metadata = schema.DirectIngestRawFileMetadata(
             region_code="us_xx_yyyy",
@@ -129,7 +132,7 @@ class OperationsSchemaTest(unittest.TestCase):
         session = SessionFactory.for_database(self.database_key)
         self.assertEqual([], session.query(schema.DirectIngestRawFileMetadata).all())
 
-    def test_raw_file_metadata_normalized_file_name_unique_constraint_2(self):
+    def test_raw_file_metadata_normalized_file_name_unique_constraint_2(self) -> None:
         session = SessionFactory.for_database(self.database_key)
         raw_metadata_1 = schema.DirectIngestRawFileMetadata(
             region_code="us_xx_yyyy",
@@ -160,7 +163,7 @@ class OperationsSchemaTest(unittest.TestCase):
             1, len(session.query(schema.DirectIngestRawFileMetadata).all())
         )
 
-    def test_ingest_file_metadata(self):
+    def test_ingest_file_metadata(self) -> None:
         session = SessionFactory.for_database(self.database_key)
         ingest_file_metadata = schema.DirectIngestIngestFileMetadata(
             region_code="us_xx_yyyy",
@@ -170,6 +173,7 @@ class OperationsSchemaTest(unittest.TestCase):
             job_creation_time=datetime.datetime.now(),
             datetimes_contained_lower_bound_exclusive=None,
             datetimes_contained_upper_bound_inclusive=datetime.datetime(2020, 5, 11),
+            ingest_database_name=DEFAULT_DB_NAME,
         )
         session.add(ingest_file_metadata)
         session.commit()
@@ -179,7 +183,7 @@ class OperationsSchemaTest(unittest.TestCase):
         self.assertEqual(result_metadata, ingest_file_metadata)
         self.assertIsNotNone(result_metadata.file_id)
 
-    def test_ingest_file_metadata_split_file(self):
+    def test_ingest_file_metadata_split_file(self) -> None:
         session = SessionFactory.for_database(self.database_key)
         ingest_file_metadata = schema.DirectIngestIngestFileMetadata(
             region_code="us_xx_yyyy",
@@ -190,6 +194,7 @@ class OperationsSchemaTest(unittest.TestCase):
             datetimes_contained_lower_bound_exclusive=None,
             datetimes_contained_upper_bound_inclusive=datetime.datetime(2020, 5, 11),
             normalized_file_name="file_name.csv",
+            ingest_database_name=DEFAULT_DB_NAME,
         )
         session.add(ingest_file_metadata)
         session.commit()
@@ -199,7 +204,7 @@ class OperationsSchemaTest(unittest.TestCase):
         self.assertEqual(result_metadata, ingest_file_metadata)
         self.assertIsNotNone(result_metadata.file_id)
 
-    def test_ingest_file_metadata_split_file_no_file_name_raises(self):
+    def test_ingest_file_metadata_split_file_no_file_name_raises(self) -> None:
         session = SessionFactory.for_database(self.database_key)
         ingest_file_metadata = schema.DirectIngestIngestFileMetadata(
             region_code="us_xx_yyyy",
@@ -209,12 +214,13 @@ class OperationsSchemaTest(unittest.TestCase):
             job_creation_time=datetime.datetime.now(),
             datetimes_contained_lower_bound_exclusive=None,
             datetimes_contained_upper_bound_inclusive=datetime.datetime(2020, 5, 11),
+            ingest_database_name=DEFAULT_DB_NAME,
         )
         session.add(ingest_file_metadata)
         with self.assertRaises(IntegrityError):
             session.commit()
 
-    def test_ingest_file_metadata_export_time_without_file_name_raises(self):
+    def test_ingest_file_metadata_export_time_without_file_name_raises(self) -> None:
         session = SessionFactory.for_database(self.database_key)
         ingest_file_metadata = schema.DirectIngestIngestFileMetadata(
             region_code="us_xx_yyyy",
@@ -224,6 +230,7 @@ class OperationsSchemaTest(unittest.TestCase):
             datetimes_contained_lower_bound_exclusive=None,
             datetimes_contained_upper_bound_inclusive=datetime.datetime(2020, 5, 11),
             export_time=datetime.datetime(2020, 5, 12),
+            ingest_database_name=DEFAULT_DB_NAME,
         )
 
         session.add(ingest_file_metadata)
@@ -231,7 +238,9 @@ class OperationsSchemaTest(unittest.TestCase):
         with self.assertRaises(IntegrityError):
             session.commit()
 
-    def test_ingest_file_metadata_file_name_without_export_time_does_not_raise(self):
+    def test_ingest_file_metadata_file_name_without_export_time_does_not_raise(
+        self,
+    ) -> None:
         session = SessionFactory.for_database(self.database_key)
         ingest_file_metadata = schema.DirectIngestIngestFileMetadata(
             region_code="us_xx_yyyy",
@@ -242,6 +251,7 @@ class OperationsSchemaTest(unittest.TestCase):
             datetimes_contained_lower_bound_exclusive=None,
             datetimes_contained_upper_bound_inclusive=datetime.datetime(2020, 5, 11),
             normalized_file_name="foo.txt",
+            ingest_database_name=DEFAULT_DB_NAME,
         )
 
         session.add(ingest_file_metadata)
@@ -252,7 +262,7 @@ class OperationsSchemaTest(unittest.TestCase):
         self.assertEqual(result_metadata, ingest_file_metadata)
         self.assertIsNotNone(result_metadata.file_id)
 
-    def test_ingest_file_discovery_time_no_export_time_raises(self):
+    def test_ingest_file_discovery_time_no_export_time_raises(self) -> None:
         session = SessionFactory.for_database(self.database_key)
         ingest_file_metadata = schema.DirectIngestIngestFileMetadata(
             region_code="us_xx_yyyy",
@@ -262,13 +272,14 @@ class OperationsSchemaTest(unittest.TestCase):
             datetimes_contained_lower_bound_exclusive=None,
             datetimes_contained_upper_bound_inclusive=datetime.datetime(2020, 5, 11),
             discovery_time=datetime.datetime(2020, 5, 12),
+            ingest_database_name=DEFAULT_DB_NAME,
         )
         session.add(ingest_file_metadata)
 
         with self.assertRaises(IntegrityError):
             session.commit()
 
-    def test_ingest_file_processed_time_no_discovery_time_raises(self):
+    def test_ingest_file_processed_time_no_discovery_time_raises(self) -> None:
         session = SessionFactory.for_database(self.database_key)
         ingest_file_metadata = schema.DirectIngestIngestFileMetadata(
             region_code="us_xx_yyyy",
@@ -280,13 +291,14 @@ class OperationsSchemaTest(unittest.TestCase):
             export_time=datetime.datetime(2020, 5, 12),
             normalized_file_name="foo.txt",
             processed_time=datetime.datetime(2020, 5, 13),
+            ingest_database_name=DEFAULT_DB_NAME,
         )
         session.add(ingest_file_metadata)
 
         with self.assertRaises(IntegrityError):
             session.commit()
 
-    def test_ingest_file_datetimes_contained_constraint(self):
+    def test_ingest_file_datetimes_contained_constraint(self) -> None:
         session = SessionFactory.for_database(self.database_key)
         ingest_file_metadata = schema.DirectIngestIngestFileMetadata(
             region_code="us_xx_yyyy",
@@ -299,8 +311,31 @@ class OperationsSchemaTest(unittest.TestCase):
             discovery_time=datetime.datetime(2020, 5, 12),
             normalized_file_name="foo.txt",
             processed_time=datetime.datetime(2020, 5, 13),
+            ingest_database_name=DEFAULT_DB_NAME,
         )
         session.add(ingest_file_metadata)
 
         with self.assertRaises(IntegrityError):
             session.commit()
+
+    def test_ingest_file_metadata_no_default_db(self) -> None:
+        session = SessionFactory.for_database(self.database_key)
+        ingest_file_metadata = schema.DirectIngestIngestFileMetadata(
+            region_code="us_xx_yyyy",
+            file_tag="file_tag",
+            is_invalidated=False,
+            is_file_split=False,
+            job_creation_time=datetime.datetime.now(),
+            datetimes_contained_lower_bound_exclusive=None,
+            datetimes_contained_upper_bound_inclusive=datetime.datetime(2020, 5, 11),
+            ingest_database_name="other_database_name",
+        )
+        session.add(ingest_file_metadata)
+        session.commit()
+        result_metadata = one(
+            session.query(schema.DirectIngestIngestFileMetadata).all()
+        )
+        self.assertEqual(result_metadata, ingest_file_metadata)
+        self.assertIsNotNone(result_metadata.file_id)
+        self.assertIsNotNone(result_metadata.ingest_database_name)
+        self.assertEqual("other_database_name", result_metadata.ingest_database_name)
