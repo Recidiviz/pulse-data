@@ -39,7 +39,10 @@ from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_ma
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.persistence.database.sqlalchemy_database_key import (
+    SQLAlchemyDatabaseKey,
+    DEFAULT_DB_NAME,
+)
 from recidiviz.persistence.entity.base_entity import entity_graph_eq, Entity
 from recidiviz.persistence.entity.operations.entities import (
     DirectIngestRawFileMetadata,
@@ -455,6 +458,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
             export_time=None,
             discovery_time=None,
             processed_time=None,
+            ingest_database_name=DEFAULT_DB_NAME,
         )
 
         self.assertEqual(expected_metadata, ingest_file_metadata)
@@ -568,6 +572,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
             export_time=None,
             discovery_time=None,
             processed_time=None,
+            ingest_database_name=DEFAULT_DB_NAME,
         )
 
         with freeze_time("2015-01-02T03:05:05"):
@@ -755,6 +760,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
                 datetimes_contained_upper_bound_inclusive=datetime.datetime(
                     2015, 1, 2, 3, 3, 3, 3
                 ),
+                ingest_database_name=DEFAULT_DB_NAME,
             )
         ]
 
