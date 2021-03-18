@@ -34,11 +34,10 @@ from recidiviz.ingest.direct.controllers.direct_ingest_types import (
 from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
 from recidiviz.utils import metadata
 
-# TODO(#3162): Make file_type non-optional once we've added these specifiers to every file
 _FILEPATH_REGEX = re.compile(
     r"(unprocessed|processed)_"  # processed_state
     r"(\d{4}-\d{2}-\d{2}T\d{2}[:_]\d{2}[:_]\d{2}[:_]\d{6})_"  # timestamp
-    r"((raw|ingest_view)_)?"  # file_type
+    r"((raw|ingest_view)_)"  # file_type
     r"([A-Za-z][A-Za-z\d]*(_[A-Za-z][A-Za-z\d]*)*)"  # file_tag
     r"(_(\d+([^-]*)))?"  # Optional filename_suffix
     r"(-\(\d+\))?"  # Optional file conflict suffix (e.g. '-(1)')
