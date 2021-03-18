@@ -57,7 +57,7 @@ def add_column_to_df(
     |df| row to the county_name that should be used to join against fips.csv.
     """
     old_index = df.index
-    df.index = county_names.apply(_sanitize_county_name)
+    df.index = county_names.apply(sanitize_county_name)
 
     df = fuzzy_join(df, get_fips_for(state), _FUZZY_MATCH_CUTOFF)
 
@@ -75,7 +75,7 @@ def get_fips_for(state: us.states) -> pd.DataFrame:
     if fips.empty:
         raise FipsMergingError("Failed to find FIPS codes for state: {}".format(state))
 
-    fips["county_name"] = fips["county_name"].apply(_sanitize_county_name)
+    fips["county_name"] = fips["county_name"].apply(sanitize_county_name)
     fips = fips.set_index("county_name")
     return fips[["fips"]]
 
@@ -88,8 +88,7 @@ def validate_county_code(county_code: str) -> None:
     cleaned_county_code = re.sub("^us_[a-z]{2}_", "", county_code)
     if re.search("^us_[a-z]{2}", cleaned_county_code) is not None:
         return
-    # TODO(#6040): remove code for 'st_mary_parish' and 'translyvania' once issue fixed
-    if cleaned_county_code in ["st_mary_parish", "translyvania", "carter_vendengine"]:
+    if cleaned_county_code in {"carter_vendengine"}:
         return
 
     if cleaned_county_code not in _get_valid_counties():
@@ -98,7 +97,7 @@ def validate_county_code(county_code: str) -> None:
         )
 
 
-def _standardize_raw_state(state: str) -> str:
+def standardize_raw_state(state: str) -> str:
     """adds 'US_' to front of state and makes it uppercase, ex. US_WI"""
     if len(state) != 2:
         raise ValueError(
@@ -112,8 +111,8 @@ def _get_fip_mappings() -> Dict[str, Tuple[str, str]]:
     if _FIPS_MAPPING is None:
         _FIPS_MAPPING = {
             row["fips"]: (
-                _standardize_raw_state(row["state_abbrev"]),
-                _sanitize_county_name(row["county_name"]).upper(),
+                standardize_raw_state(row["state_abbrev"]),
+                sanitize_county_name(row["county_name"]).upper(),
             )
             for _, row in _FIPS.iterrows()
         }
@@ -126,11 +125,11 @@ def get_state_and_county_for_fips(fips: str) -> Tuple[str, str]:
     return _get_fip_mappings()[fips]
 
 
-def _sanitize_county_name(county_name: str) -> str:
+def sanitize_county_name(county_name: str) -> str:
     """To ease fuzzy matching, ensure county_names fit a common shape. returns in lower case,
-    ex. 'York Parish' -> 'york'. For county names, capitalized 'City' is kept and lower case 'city' is removed."""
-    county = county_name.replace(" city", "")
-    county = county.lower().replace(" county", "")
+    ex. 'York Parish' -> 'york'."""
+    county = county_name.lower()
+    county = county.replace(" county", "")
     county = county.replace(".", "")
     county = county.replace("'", "")
     county = county.replace(" borough", "")
@@ -148,7 +147,7 @@ def _get_valid_counties() -> Set[str]:
     global _SANITIZED_COUNTIES
     if _SANITIZED_COUNTIES is None:
         _SANITIZED_COUNTIES = {
-            _sanitize_county_name(row["county_name"]) for _, row in _FIPS.iterrows()
+            sanitize_county_name(row["county_name"]) for _, row in _FIPS.iterrows()
         }
 
     return _SANITIZED_COUNTIES
