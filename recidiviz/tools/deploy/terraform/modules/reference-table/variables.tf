@@ -38,5 +38,5 @@ variable "table_name" {
 }
 
 locals {
-  recidiviz_root = dirname(dirname(dirname(path.module)))
+  recidiviz_root = dirname(dirname(dirname(dirname(dirname(path.module)))))
 }
