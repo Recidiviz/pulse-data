@@ -33,6 +33,10 @@ from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.cloud_functions.cloud_function_utils import GCSFS_NO_CACHING
 from recidiviz.common import attr_validators
 from recidiviz.ingest.direct import regions
+from recidiviz.ingest.direct.controllers.direct_ingest_constants import (
+    UPDATE_DATETIME_COL_NAME,
+    FILE_ID_COL_NAME,
+)
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
@@ -306,8 +310,6 @@ class DirectIngestRegionRawFileConfig:
         return set(self.raw_file_configs.keys())
 
 
-_FILE_ID_COL_NAME = "file_id"
-_UPDATE_DATETIME_COL_NAME = "update_datetime"
 _DEFAULT_BQ_UPLOAD_CHUNK_SIZE = 250000
 
 # The number of seconds of spacing we need to have between each table load operation to avoid going over the
@@ -399,16 +401,12 @@ class DirectIngestRawFileImportManager:
         temp_output_paths = self._upload_contents_to_temp_gcs_paths(path, file_metadata)
         self._load_contents_to_bigquery(path, temp_output_paths)
 
-        migration_queries: List[str] = []
-        if (parts.file_tag, parts.utc_upload_datetime) in self.raw_table_migrations:
-            migration_queries.extend(
-                self.raw_table_migrations[(parts.file_tag, parts.utc_upload_datetime)]
-            )
-
-        if (parts.file_tag, None) in self.raw_table_migrations:
-            # There are migration that should be run on all versions of the file
-            migration_queries.extend(self.raw_table_migrations[(parts.file_tag, None)])
-
+        migration_queries = self.raw_table_migrations.get(parts.file_tag, [])
+        logging.info(
+            "Running [%s] migration queries for table [%s]",
+            len(migration_queries),
+            parts.file_tag,
+        )
         for migration_query in migration_queries:
             query_job = self.big_query_client.run_query_async(query_str=migration_query)
             # Wait for the migration query to complete before running the next one
@@ -606,10 +604,10 @@ class DirectIngestRawFileImportManager:
         for name in columns:
             typ_str = bigquery.enums.SqlTypeNames.STRING.value
             mode = "NULLABLE"
-            if name == _FILE_ID_COL_NAME:
+            if name == FILE_ID_COL_NAME:
                 mode = "REQUIRED"
                 typ_str = bigquery.enums.SqlTypeNames.INTEGER.value
-            if name == _UPDATE_DATETIME_COL_NAME:
+            if name == UPDATE_DATETIME_COL_NAME:
                 mode = "REQUIRED"
                 typ_str = bigquery.enums.SqlTypeNames.DATETIME.value
             schema.append(
@@ -679,7 +677,7 @@ class DirectIngestRawDataSplittingGcsfsCsvReaderDelegate(
             file_metadata.file_id,
             parts.utc_upload_datetime,
         )
-        raw_data_df[_FILE_ID_COL_NAME] = file_metadata.file_id
-        raw_data_df[_UPDATE_DATETIME_COL_NAME] = parts.utc_upload_datetime
+        raw_data_df[FILE_ID_COL_NAME] = file_metadata.file_id
+        raw_data_df[UPDATE_DATETIME_COL_NAME] = parts.utc_upload_datetime
 
         return raw_data_df

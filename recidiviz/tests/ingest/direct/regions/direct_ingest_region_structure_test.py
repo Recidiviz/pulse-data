@@ -262,12 +262,12 @@ class DirectIngestRegionDirStructureBase:
                     raw_file_config = raw_file_manager.raw_file_configs[
                         migration.file_tag
                     ]
-                    for col_name, _value in migration.filters:
+                    for col_name in migration.filters:
                         self.assertColumnIsDocumented(
                             migration.file_tag, col_name, raw_file_config
                         )
                     if isinstance(migration, UpdateRawTableMigration):
-                        for col_name, _value in migration.updates:
+                        for col_name in migration.updates:
                             self.assertColumnIsDocumented(
                                 migration.file_tag, col_name, raw_file_config
                             )
