@@ -27,7 +27,7 @@ resource "google_bigquery_table" "table" {
 }
 
 resource "google_bigquery_job" "load" {
-  job_id = "${var.table_name}_load"
+  job_id = "${var.table_name}_load_${google_storage_bucket_object.table_data.crc32c}"
 
   load {
     source_uris = [
