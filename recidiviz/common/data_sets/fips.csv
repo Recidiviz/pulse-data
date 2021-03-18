@@ -80,12 +80,13 @@ AK,02,110,Juneau City and Borough,02110
 AK,02,122,Kenai Peninsula Borough,02122
 AK,02,130,Ketchikan Gateway Borough,02130
 AK,02,150,Kodiak Island Borough,02150
+AK,02,158,Kusilvak Census Area,02158
 AK,02,164,Lake and Peninsula Borough,02164
 AK,02,170,Matanuska-Susitna Borough,02170
 AK,02,180,Nome Census Area,02180
 AK,02,185,North Slope Borough,02185
 AK,02,188,Northwest Arctic Borough,02188
-AK,02,195,Petersburg Census Area,02195
+AK,02,195,Petersburg Borough,02195
 AK,02,198,Prince of Wales-Hyder Census Area,02198
 AK,02,220,Sitka City and Borough,02220
 AK,02,230,Skagway Municipality,02230
@@ -1141,7 +1142,7 @@ LA,22,051,Jefferson Parish,22051
 LA,22,053,Jefferson Davis Parish,22053
 LA,22,055,Lafayette Parish,22055
 LA,22,057,Lafourche Parish,22057
-LA,22,059,La Salle Parish,22059
+LA,22,059,LaSalle Parish,22059
 LA,22,061,Lincoln Parish,22061
 LA,22,063,Livingston Parish,22063
 LA,22,065,Madison Parish,22065
@@ -1801,7 +1802,7 @@ NM,35,006,Cibola County,35006
 NM,35,007,Colfax County,35007
 NM,35,009,Curry County,35009
 NM,35,011,De Baca County,35011
-NM,35,013,Dona Ana County,35013
+NM,35,013,Doña Ana County,35013
 NM,35,015,Eddy County,35015
 NM,35,017,Grant County,35017
 NM,35,019,Guadalupe County,35019
@@ -2411,6 +2412,7 @@ SD,46,095,Mellette County,46095
 SD,46,097,Miner County,46097
 SD,46,099,Minnehaha County,46099
 SD,46,101,Moody County,46101
+SD,46,102,Oglala Lakota County,46102
 SD,46,103,Pennington County,46103
 SD,46,105,Perkins County,46105
 SD,46,107,Potter County,46107
@@ -3157,30 +3159,30 @@ PR,72,003,Aguada Municipio,72003
 PR,72,005,Aguadilla Municipio,72005
 PR,72,007,Aguas Buenas Municipio,72007
 PR,72,009,Aibonito Municipio,72009
-PR,72,011,Anasco Municipio,72011
+PR,72,011,Añasco Municipio,72011
 PR,72,013,Arecibo Municipio,72013
 PR,72,015,Arroyo Municipio,72015
 PR,72,017,Barceloneta Municipio,72017
 PR,72,019,Barranquitas Municipio,72019
-PR,72,021,Bayamon Municipio,72021
+PR,72,021,Bayamón Municipio,72021
 PR,72,023,Cabo Rojo Municipio,72023
 PR,72,025,Caguas Municipio,72025
 PR,72,027,Camuy Municipio,72027
-PR,72,029,Canovanas Municipio,72029
+PR,72,029,Canóvanas Municipio,72029
 PR,72,031,Carolina Municipio,72031
-PR,72,033,Catano Municipio,72033
+PR,72,033,Cataño Municipio,72033
 PR,72,035,Cayey Municipio,72035
 PR,72,037,Ceiba Municipio,72037
 PR,72,039,Ciales Municipio,72039
 PR,72,041,Cidra Municipio,72041
 PR,72,043,Coamo Municipio,72043
-PR,72,045,Comerio Municipio,72045
+PR,72,045,Comerío Municipio,72045
 PR,72,047,Corozal Municipio,72047
 PR,72,049,Culebra Municipio,72049
 PR,72,051,Dorado Municipio,72051
 PR,72,053,Fajardo Municipio,72053
 PR,72,054,Florida Municipio,72054
-PR,72,055,Guanica Municipio,72055
+PR,72,055,Guánica Municipio,72055
 PR,72,057,Guayama Municipio,72057
 PR,72,059,Guayanilla Municipio,72059
 PR,72,061,Guaynabo Municipio,72061
@@ -3190,35 +3192,35 @@ PR,72,067,Hormigueros Municipio,72067
 PR,72,069,Humacao Municipio,72069
 PR,72,071,Isabela Municipio,72071
 PR,72,073,Jayuya Municipio,72073
-PR,72,075,Juana Diaz Municipio,72075
+PR,72,075,Juana Díaz Municipio,72075
 PR,72,077,Juncos Municipio,72077
 PR,72,079,Lajas Municipio,72079
 PR,72,081,Lares Municipio,72081
-PR,72,083,Las Marias Municipio,72083
+PR,72,083,Las Marías Municipio,72083
 PR,72,085,Las Piedras Municipio,72085
-PR,72,087,Loiza Municipio,72087
+PR,72,087,Loíza Municipio,72087
 PR,72,089,Luquillo Municipio,72089
-PR,72,091,Manati Municipio,72091
+PR,72,091,Manatí Municipio,72091
 PR,72,093,Maricao Municipio,72093
 PR,72,095,Maunabo Municipio,72095
-PR,72,097,Mayaguez Municipio,72097
+PR,72,097,Mayagüez Municipio,72097
 PR,72,099,Moca Municipio,72099
 PR,72,101,Morovis Municipio,72101
 PR,72,103,Naguabo Municipio,72103
 PR,72,105,Naranjito Municipio,72105
 PR,72,107,Orocovis Municipio,72107
 PR,72,109,Patillas Municipio,72109
-PR,72,111,Penuelas Municipio,72111
+PR,72,111,Peñuelas Municipio,72111
 PR,72,113,Ponce Municipio,72113
 PR,72,115,Quebradillas Municipio,72115
-PR,72,117,Rincon Municipio,72117
-PR,72,119,Rio Grande Municipio,72119
+PR,72,117,Rincón Municipio,72117
+PR,72,119,Río Grande Municipio,72119
 PR,72,121,Sabana Grande Municipio,72121
 PR,72,123,Salinas Municipio,72123
-PR,72,125,San German Municipio,72125
+PR,72,125,San Germán Municipio,72125
 PR,72,127,San Juan Municipio,72127
 PR,72,129,San Lorenzo Municipio,72129
-PR,72,131,San Sebastian Municipio,72131
+PR,72,131,San Sebastián Municipio,72131
 PR,72,133,Santa Isabel Municipio,72133
 PR,72,135,Toa Alta Municipio,72135
 PR,72,137,Toa Baja Municipio,72137
