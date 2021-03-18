@@ -42,16 +42,12 @@ class GcsfsDirectIngestJobPrioritizer:
         fs: DirectIngestGCSFileSystem,
         ingest_directory_path: GcsfsDirectoryPath,
         file_tag_rank_list: List[str],
-        file_type_filter: Optional[GcsfsDirectIngestFileType],
     ):
         self.fs = fs
         self.ingest_directory_path = ingest_directory_path
         self.ranks_by_file_tag: Dict[str, str] = self._build_ranks_by_file_tag(
             file_tag_rank_list
         )
-
-        # TODO(#3162): Remove once this is INGEST_VIEW for all regions, always filter by INGEST_VIEW files internally
-        self.file_type_filter = file_type_filter
 
     def get_next_job_args(
         self, date_str: Optional[str] = None
@@ -111,11 +107,13 @@ class GcsfsDirectIngestJobPrioritizer:
         """
         if date_str:
             unprocessed_paths = self.fs.get_unprocessed_file_paths_for_day(
-                self.ingest_directory_path, date_str, self.file_type_filter
+                self.ingest_directory_path,
+                date_str,
+                GcsfsDirectIngestFileType.INGEST_VIEW,
             )
         else:
             unprocessed_paths = self.fs.get_unprocessed_file_paths(
-                self.ingest_directory_path, self.file_type_filter
+                self.ingest_directory_path, GcsfsDirectIngestFileType.INGEST_VIEW
             )
 
         if not unprocessed_paths:
@@ -172,7 +170,9 @@ class GcsfsDirectIngestJobPrioritizer:
         This set is built for comparison against the set of expected sort keys.
         """
         already_processed_paths = self.fs.get_processed_file_paths_for_day(
-            self.ingest_directory_path, date_str, file_type_filter=self.file_type_filter
+            self.ingest_directory_path,
+            date_str,
+            file_type_filter=GcsfsDirectIngestFileType.INGEST_VIEW,
         )
 
         sort_keys: Set[str] = set()

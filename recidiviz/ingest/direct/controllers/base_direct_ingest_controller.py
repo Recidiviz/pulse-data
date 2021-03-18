@@ -134,42 +134,13 @@ class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandl
             )
             return
 
-        # TODO(#3020): Add similar logic between the raw data BQ import and ingest view export tasks
-        # TODO(#3162): Delete this wait logic from here once all regions have been transitioned to a SQL
-        #  preprocessing model.
-        wait_time_sec = self._wait_time_sec_for_next_args(next_job_args)
         logging.info(
-            "Found next ingest job to run [%s] with wait time [%s].",
-            self._job_tag(next_job_args),
-            wait_time_sec,
+            "Creating cloud task to run job [%s]", self._job_tag(next_job_args)
         )
-
-        if wait_time_sec:
-            scheduler_queue_info = self.cloud_task_manager.get_scheduler_queue_info(
-                self.region
-            )
-            if scheduler_queue_info.size() <= 1:
-                logging.info(
-                    "Creating cloud task to fire timer in [%s] seconds", wait_time_sec
-                )
-                self.cloud_task_manager.create_direct_ingest_scheduler_queue_task(
-                    region=self.region, just_finished_job=False, delay_sec=wait_time_sec
-                )
-            else:
-                logging.info(
-                    "[%s] tasks already in the scheduler queue for region "
-                    "[%s] - not queueing another task.",
-                    str(scheduler_queue_info.size),
-                    self.region.region_code,
-                )
-        else:
-            logging.info(
-                "Creating cloud task to run job [%s]", self._job_tag(next_job_args)
-            )
-            self.cloud_task_manager.create_direct_ingest_process_job_task(
-                region=self.region, ingest_args=next_job_args
-            )
-            self._on_job_scheduled(next_job_args)
+        self.cloud_task_manager.create_direct_ingest_process_job_task(
+            region=self.region, ingest_args=next_job_args
+        )
+        self._on_job_scheduled(next_job_args)
 
     def _schedule_any_pre_ingest_tasks(self) -> bool:
         """Schedules any tasks related to SQL preprocessing of new files in preparation for ingest of those files into

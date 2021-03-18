@@ -116,7 +116,6 @@ class GcsfsDirectIngestController(
             self.fs,
             self.ingest_directory_path,
             self.get_file_tag_rank_list(),
-            GcsfsDirectIngestFileType.INGEST_VIEW,
         )
 
         self.ingest_file_split_line_limit = self._INGEST_FILE_SPLIT_LINE_LIMIT
