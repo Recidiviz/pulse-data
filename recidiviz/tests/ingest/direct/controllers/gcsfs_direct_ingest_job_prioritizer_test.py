@@ -96,7 +96,6 @@ class TestGcsfsDirectIngestJobPrioritizerIngestViewFilter(unittest.TestCase):
             self.fs,
             self._INGEST_BUCKET_PATH,
             ["tagA", "tagB"],
-            file_type_filter=GcsfsDirectIngestFileType.INGEST_VIEW,
         )
 
     FIXTURE_PATH_PREFIX = "direct/regions/us_nd/fixtures"
