@@ -66,7 +66,6 @@ class CopyFilesFromProdToStagingController:
             gcsfs_direct_ingest_storage_directory_path_for_region(
                 region_code,
                 SystemLevel.STATE,
-                self.file_type,
                 project_id="recidiviz-123",
             )
         )
@@ -74,7 +73,6 @@ class CopyFilesFromProdToStagingController:
             gcsfs_direct_ingest_storage_directory_path_for_region(
                 region_code,
                 SystemLevel.STATE,
-                self.file_type,
                 project_id="recidiviz-staging",
             )
         )
