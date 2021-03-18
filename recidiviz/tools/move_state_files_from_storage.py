@@ -119,7 +119,6 @@ class MoveFilesFromStorageController:
             gcsfs_direct_ingest_storage_directory_path_for_region(
                 region,
                 SystemLevel.STATE,
-                self.file_type_to_move,
                 project_id=self.project_id,
             )
         )
