@@ -55,7 +55,10 @@ from recidiviz.persistence.database.schema_entity_converter import (
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.persistence.database.sqlalchemy_database_key import (
+    SQLAlchemyDatabaseKey,
+    DEFAULT_DB_NAME,
+)
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.operations.entities import (
     DirectIngestIngestFileMetadata,
@@ -374,6 +377,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
                 datetimes_contained_lower_bound_exclusive=_DATE_1,
                 datetimes_contained_upper_bound_inclusive=_DATE_1,
                 discovery_time=_DATE_1,
+                ingest_database_name=DEFAULT_DB_NAME,
             )
         )
         export_manager.file_metadata_manager.get_metadata_for_raw_files_discovered_after_datetime = Mock(  # type: ignore
@@ -423,6 +427,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
                 datetimes_contained_lower_bound_exclusive=_DATE_2,
                 datetimes_contained_upper_bound_inclusive=_DATE_2,
                 discovery_time=_DATE_2,
+                ingest_database_name=DEFAULT_DB_NAME,
             )
         )
         export_manager.file_metadata_manager.get_metadata_for_raw_files_discovered_after_datetime = Mock(  # type: ignore
@@ -467,6 +472,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
                 - datetime.timedelta(days=7),
                 datetimes_contained_upper_bound_inclusive=_DATE_2,
                 discovery_time=_DATE_2,
+                ingest_database_name=DEFAULT_DB_NAME,
             )
         )
         export_manager.file_metadata_manager.get_metadata_for_raw_files_discovered_after_datetime = Mock(  # type: ignore
@@ -555,6 +561,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             export_time=_DATE_2,
             datetimes_contained_lower_bound_exclusive=export_args.upper_bound_datetime_prev,
             datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_to_export,
+            ingest_database_name=DEFAULT_DB_NAME,
         )
         expected_metadata = self.to_entity(metadata)
         session.add(metadata)
@@ -597,6 +604,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             export_time=None,
             datetimes_contained_lower_bound_exclusive=export_args.upper_bound_datetime_prev,
             datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_to_export,
+            ingest_database_name=DEFAULT_DB_NAME,
         )
         expected_metadata = attr.evolve(self.to_entity(metadata), export_time=_DATE_4)
 
@@ -665,6 +673,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             export_time=None,
             datetimes_contained_lower_bound_exclusive=export_args.upper_bound_datetime_prev,
             datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_to_export,
+            ingest_database_name=DEFAULT_DB_NAME,
         )
         expected_metadata = attr.evolve(self.to_entity(metadata), export_time=_DATE_4)
         session.add(metadata)
@@ -752,6 +761,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             export_time=None,
             datetimes_contained_lower_bound_exclusive=export_args.upper_bound_datetime_prev,
             datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_to_export,
+            ingest_database_name=DEFAULT_DB_NAME,
         )
         expected_metadata = attr.evolve(self.to_entity(metadata), export_time=_DATE_4)
         session.add(metadata)
@@ -833,6 +843,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             export_time=None,
             datetimes_contained_lower_bound_exclusive=export_args.upper_bound_datetime_prev,
             datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_to_export,
+            ingest_database_name=DEFAULT_DB_NAME,
         )
         expected_metadata = attr.evolve(self.to_entity(metadata), export_time=_DATE_4)
 
@@ -880,6 +891,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             export_time=None,
             datetimes_contained_lower_bound_exclusive=export_args.upper_bound_datetime_prev,
             datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_to_export,
+            ingest_database_name=DEFAULT_DB_NAME,
         )
         expected_metadata = attr.evolve(self.to_entity(metadata), export_time=_DATE_4)
         session.add(metadata)

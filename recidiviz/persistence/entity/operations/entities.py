@@ -87,3 +87,5 @@ class DirectIngestIngestFileMetadata(DirectIngestFileMetadata):
     export_time: Optional[datetime.datetime] = attr.ib()
 
     discovery_time: Optional[datetime.datetime] = attr.ib()
+
+    ingest_database_name: str = attr.ib()

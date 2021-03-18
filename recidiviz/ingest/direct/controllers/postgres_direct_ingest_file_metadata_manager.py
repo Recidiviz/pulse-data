@@ -38,12 +38,18 @@ from recidiviz.persistence.database.schema_entity_converter.schema_entity_conver
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.persistence.database.sqlalchemy_database_key import (
+    SQLAlchemyDatabaseKey,
+    DEFAULT_DB_NAME,
+)
 from recidiviz.persistence.entity.operations.entities import (
     DirectIngestRawFileMetadata,
     DirectIngestIngestFileMetadata,
     DirectIngestFileMetadata,
 )
+
+# TODO(#6077): Update interface to take in database_name where appropriate and replace
+#   usages of DEFAULT_DB_NAME with database_name var.
 
 
 class PostgresDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
@@ -54,6 +60,14 @@ class PostgresDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
     def __init__(self, region_code: str):
         self.region_code = region_code.upper()
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
+
+    def path_to_ingest_database_name(self, path: GcsfsFilePath) -> str:
+        parts = filename_parts_from_path(path)
+        if not parts.file_type == GcsfsDirectIngestFileType.INGEST_VIEW:
+            raise ValueError(f"Unexpected file type [{parts.file_type}]")
+
+        # TODO(#6077): Map to actual DB name based on bucket!
+        return DEFAULT_DB_NAME
 
     def register_ingest_file_export_job(
         self, ingest_view_job_args: GcsfsIngestViewExportArgs
@@ -69,6 +83,7 @@ class PostgresDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
                 job_creation_time=datetime.datetime.utcnow(),
                 datetimes_contained_lower_bound_exclusive=ingest_view_job_args.upper_bound_datetime_prev,
                 datetimes_contained_upper_bound_inclusive=ingest_view_job_args.upper_bound_datetime_to_export,
+                ingest_database_name=DEFAULT_DB_NAME,
             )
             session.add(metadata)
             session.commit()
@@ -98,6 +113,7 @@ class PostgresDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
                 normalized_file_name=path.file_name,
                 datetimes_contained_lower_bound_exclusive=original_file_metadata.datetimes_contained_lower_bound_exclusive,
                 datetimes_contained_upper_bound_inclusive=original_file_metadata.datetimes_contained_upper_bound_inclusive,
+                ingest_database_name=original_file_metadata.ingest_database_name,
             )
             session.add(metadata)
             session.commit()
@@ -146,8 +162,11 @@ class PostgresDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
 
         try:
             if parts.file_type == GcsfsDirectIngestFileType.INGEST_VIEW:
-                metadata = dao.get_file_metadata_row_for_path(
-                    session, self.region_code, path
+                metadata = dao.get_ingest_file_metadata_row_for_path(
+                    session,
+                    self.region_code,
+                    path,
+                    ingest_database_name=self.path_to_ingest_database_name(path),
                 )
                 dt = datetime.datetime.utcnow()
                 if not metadata.export_time:
@@ -177,18 +196,24 @@ class PostgresDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
         session = SessionFactory.for_database(self.database_key)
 
         try:
-            metadata = dao.get_file_metadata_row_for_path(
-                session, self.region_code, path
-            )
-
-            if isinstance(metadata, schema.DirectIngestRawFileMetadata):
+            parts = filename_parts_from_path(path)
+            if parts.file_type == GcsfsDirectIngestFileType.RAW_DATA:
+                metadata = dao.get_raw_file_metadata_row_for_path(
+                    session, self.region_code, path
+                )
                 metadata_entity: DirectIngestFileMetadata = (
                     self._raw_file_schema_metadata_as_entity(metadata)
                 )
-            elif isinstance(metadata, schema.DirectIngestIngestFileMetadata):
+            elif parts.file_type == GcsfsDirectIngestFileType.INGEST_VIEW:
+                metadata = dao.get_ingest_file_metadata_row_for_path(
+                    session,
+                    self.region_code,
+                    path,
+                    ingest_database_name=self.path_to_ingest_database_name(path),
+                )
                 metadata_entity = self._ingest_file_schema_metadata_as_entity(metadata)
             else:
-                raise ValueError(f"Unexpected metadata type: {type(metadata)}")
+                raise ValueError(f"Unexpected file type: {parts.file_type}")
         except Exception as e:
             session.rollback()
             raise e
@@ -225,9 +250,21 @@ class PostgresDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
         session = SessionFactory.for_database(self.database_key)
 
         try:
-            metadata = dao.get_file_metadata_row_for_path(
-                session, self.region_code, path
-            )
+            parts = filename_parts_from_path(path)
+            if parts.file_type == GcsfsDirectIngestFileType.RAW_DATA:
+                metadata = dao.get_raw_file_metadata_row_for_path(
+                    session, self.region_code, path
+                )
+            elif parts.file_type == GcsfsDirectIngestFileType.INGEST_VIEW:
+                metadata = dao.get_ingest_file_metadata_row_for_path(
+                    session,
+                    self.region_code,
+                    path,
+                    ingest_database_name=self.path_to_ingest_database_name(path),
+                )
+            else:
+                raise ValueError(f"Unexpected file type: {parts.file_type}")
+
             metadata.processed_time = datetime.datetime.utcnow()
             session.commit()
         except Exception as e:
@@ -249,6 +286,7 @@ class PostgresDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
                 file_tag=ingest_view_job_args.ingest_view_name,
                 datetimes_contained_lower_bound_exclusive=ingest_view_job_args.upper_bound_datetime_prev,
                 datetimes_contained_upper_bound_inclusive=ingest_view_job_args.upper_bound_datetime_to_export,
+                ingest_database_name=DEFAULT_DB_NAME,
             )
 
             if not metadata:
@@ -277,8 +315,10 @@ class PostgresDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
         session = SessionFactory.for_database(self.database_key)
 
         try:
-            metadata = dao.get_file_metadata_row(
-                session, GcsfsDirectIngestFileType.INGEST_VIEW, metadata_entity.file_id
+            metadata = dao.get_ingest_file_metadata_row(
+                session=session,
+                file_id=metadata_entity.file_id,
+                ingest_database_name=metadata_entity.ingest_database_name,
             )
 
             if metadata.normalized_file_name:
@@ -301,8 +341,10 @@ class PostgresDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
         session = SessionFactory.for_database(self.database_key)
 
         try:
-            metadata = dao.get_file_metadata_row(
-                session, GcsfsDirectIngestFileType.INGEST_VIEW, metadata_entity.file_id
+            metadata = dao.get_ingest_file_metadata_row(
+                session=session,
+                file_id=metadata_entity.file_id,
+                ingest_database_name=metadata_entity.ingest_database_name,
             )
             metadata.export_time = datetime.datetime.utcnow()
             session.commit()
@@ -319,7 +361,10 @@ class PostgresDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
 
         try:
             metadata = dao.get_ingest_view_metadata_for_most_recent_valid_job(
-                session=session, region_code=self.region_code, file_tag=ingest_view_tag
+                session=session,
+                region_code=self.region_code,
+                file_tag=ingest_view_tag,
+                ingest_database_name=DEFAULT_DB_NAME,
             )
 
             metadata_entity = (
@@ -344,6 +389,7 @@ class PostgresDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
             results = dao.get_ingest_view_metadata_pending_export(
                 session=session,
                 region_code=self.region_code,
+                ingest_database_name=DEFAULT_DB_NAME,
             )
 
             metadata_entities = [
