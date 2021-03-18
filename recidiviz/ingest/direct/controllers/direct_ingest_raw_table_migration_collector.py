@@ -29,6 +29,9 @@ from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration impor
     MIGRATIONS_SUBDIR,
     RAW_DATA_SUBDIR,
 )
+from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration_generator import (
+    RawTableMigrationGenerator,
+)
 
 _MIGRATIONS_LIST_EXPECTED_NAME = "MIGRATIONS"
 
@@ -56,24 +59,19 @@ class DirectIngestRawTableMigrationCollector(ModuleCollectorMixin):
             [self.region_code.lower(), RAW_DATA_SUBDIR, MIGRATIONS_SUBDIR],
         )
 
-    def collect_raw_table_migration_queries(self) -> Dict[RawFileKey, List[str]]:
+    def collect_raw_table_migration_queries(self) -> Dict[str, List[str]]:
         """Finds all migrations defined for this region and returns a dict indexing all migration queries that should be
         run for a given raw file.
         """
-        migrations = defaultdict(list)
         migrations_list = self.collect_raw_table_migrations()
+        migrations_by_file_tag = defaultdict(list)
         for migration in migrations_list:
-            if not isinstance(migration, RawTableMigration):
-                raise ValueError(f"Found unexpected migration type: {type(migration)}")
-            for (
-                update_datetime,
-                migration_query,
-            ) in migration.migration_queries_by_update_datetime().items():
-                migrations[(migration.file_tag, update_datetime)].append(
-                    migration_query
-                )
+            migrations_by_file_tag[migration.file_tag].append(migration)
 
-        return migrations
+        return {
+            file_tag: RawTableMigrationGenerator.migration_queries(migrations)
+            for file_tag, migrations in migrations_by_file_tag.items()
+        }
 
     def collect_raw_table_migrations(self) -> List[RawTableMigration]:
         """Finds all raw table migration objects defined for this region."""
