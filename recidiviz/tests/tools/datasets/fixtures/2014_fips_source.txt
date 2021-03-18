@@ -1,0 +1,7 @@
+AL,01,005,Barbour County,H1
+AL,01,007,Bibb County,H1
+PR,72,153,Yauco Municipio,H1
+UM,74,300,Midway Islands,H4
+VI,78,010,St. Croix Island,H4
+VI,78,020,St. John Island,H4
+VI,78,030,St. Thomas Island,H4

@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,14 +14,3 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for fips.py"""
-from recidiviz.common import fips
-
-
-def test_getStateAndCountyForFips_does_not_remove_city_suffix():
-    [state1, county1] = fips.get_state_and_county_for_fips("32510")
-    [state2, county2] = fips.get_state_and_county_for_fips("51510")
-    assert county1 == "carson_city".upper()
-    assert state1 == "US_NV"
-    assert county2 == "alexandria_city".upper()
-    assert state2 == "US_VA"
