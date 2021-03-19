@@ -118,6 +118,7 @@ class TestCaseTriageAPIRoutes(TestCase):
         self.client_2.most_recent_assessment_date = date(2022, 2, 2)
 
         sess = SessionFactory.for_database(self.database_key)
+        sess.expire_on_commit = False
         sess.add(self.officer_1)
         sess.add(self.client_1)
         sess.add(self.client_2)

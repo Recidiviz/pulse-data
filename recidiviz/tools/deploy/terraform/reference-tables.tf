@@ -40,7 +40,7 @@ module "county_resident_adult_populations_table" {
 [
   {
     "name": "fips",
-    "type": "STRING",
+    "type": "INTEGER",
     "mode": "NULLABLE"
   },
   {
@@ -69,7 +69,7 @@ module "county_resident_populations_table" {
 [
   {
     "name": "fips",
-    "type": "STRING",
+    "type": "INTEGER",
     "mode": "NULLABLE"
   },
   {
@@ -98,7 +98,7 @@ module "county_fips_table" {
 [
   {
     "name": "fips",
-    "type": "STRING",
+    "type": "INTEGER",
     "mode": "NULLABLE"
   },
   {
