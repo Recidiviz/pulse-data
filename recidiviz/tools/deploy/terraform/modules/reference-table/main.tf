@@ -24,10 +24,12 @@ resource "google_storage_bucket_object" "table_data" {
 resource "google_bigquery_table" "table" {
   dataset_id = var.dataset_id
   table_id   = var.table_name
+
+  schema = var.schema
 }
 
 resource "google_bigquery_job" "load" {
-  job_id = "${var.table_name}_load_${google_storage_bucket_object.table_data.crc32c}"
+  job_id = "${var.table_name}_load_${md5(google_storage_bucket_object.table_data.crc32c)}"
 
   load {
     source_uris = [

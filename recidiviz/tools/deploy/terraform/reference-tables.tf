@@ -36,6 +36,25 @@ module "county_resident_adult_populations_table" {
   dataset_id  = google_bigquery_dataset.external_reference.dataset_id
 
   table_name = "county_resident_adult_populations"
+  schema     = <<EOF
+[
+  {
+    "name": "fips",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "year",
+    "type": "INTEGER",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "population",
+    "type": "INTEGER",
+    "mode": "NULLABLE"
+  }
+]
+EOF
 }
 
 module "county_resident_populations_table" {
@@ -46,6 +65,25 @@ module "county_resident_populations_table" {
   dataset_id  = google_bigquery_dataset.external_reference.dataset_id
 
   table_name = "county_resident_populations"
+  schema     = <<EOF
+[
+  {
+    "name": "fips",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "year",
+    "type": "INTEGER",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "population",
+    "type": "INTEGER",
+    "mode": "NULLABLE"
+  }
+]
+EOF
 }
 
 module "county_fips_table" {
@@ -56,4 +94,28 @@ module "county_fips_table" {
   dataset_id  = google_bigquery_dataset.external_reference.dataset_id
 
   table_name = "county_fips"
+  schema     = <<EOF
+[
+  {
+    "name": "fips",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "state_code",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "county_code",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "county_name",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  }
+]
+EOF
 }
