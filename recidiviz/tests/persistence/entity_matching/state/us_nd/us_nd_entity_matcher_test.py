@@ -18,9 +18,7 @@
 import datetime
 
 import attr
-from mock import create_autospec
 
-from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -62,7 +60,6 @@ from recidiviz.tests.persistence.database.schema.state.schema_test_utils import 
 from recidiviz.tests.persistence.entity_matching.state.base_state_entity_matcher_test_classes import (
     BaseStateEntityMatcherTest,
 )
-from recidiviz.utils.regions import Region
 
 _EXTERNAL_ID = "EXTERNAL_ID-1"
 _EXTERNAL_ID_2 = "EXTERNAL_ID-2"
@@ -85,15 +82,6 @@ _DATE_6 = datetime.date(year=2019, month=6, day=1)
 
 class TestNdEntityMatching(BaseStateEntityMatcherTest):
     """Test class for US_ND specific entity matching logic."""
-
-    def get_fake_region(self, **_kwargs):
-        fake_region = create_autospec(Region)
-        overrides_builder = EnumOverrides.Builder()
-        overrides_builder.add(
-            "ADM", StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION
-        )
-        fake_region.get_enum_overrides.return_value = overrides_builder.build()
-        return fake_region
 
     def test_runMatch_checkPlaceholdersWhenNoRootEntityMatch(self) -> None:
         """Tests that ingested people are matched with DB placeholder people
@@ -1009,7 +997,7 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
             incarceration_type=StateIncarcerationType.COUNTY_JAIL.value,
             admission_date=datetime.date(year=2018, month=1, day=1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION.value,
-            admission_reason_raw_text="ADM",
+            admission_reason_raw_text="ADMN",
         )
 
         db_incarceration_sentence = generate_incarceration_sentence(
@@ -1080,7 +1068,7 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
             incarceration_type=StateIncarcerationType.COUNTY_JAIL,
             admission_date=datetime.date(year=2018, month=1, day=1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-            admission_reason_raw_text="ADM",
+            admission_reason_raw_text="ADMN",
             release_date=datetime.date(year=2018, month=1, day=2),
             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
         )

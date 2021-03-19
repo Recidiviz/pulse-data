@@ -63,7 +63,7 @@ class UsNdMatchingDelegate(BaseStateMatchingDelegate):
         move_incidents_onto_periods(matched_persons)
 
         logging.info("[Entity matching] Transform incarceration periods into " "holds")
-        update_temporary_holds(matched_persons, self.region)
+        update_temporary_holds(matched_persons)
 
         logging.info("[Entity matching] Associate revocation SVRs with IPs")
         associate_revocation_svrs_with_ips(matched_persons)

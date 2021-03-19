@@ -26,7 +26,7 @@ from typing import List, Type, Optional, cast
 
 import pytest
 from freezegun import freeze_time
-from mock import create_autospec, patch
+from mock import patch
 
 from recidiviz import IngestInfo
 from recidiviz.common.ingest_metadata import SystemLevel
@@ -77,7 +77,6 @@ from recidiviz.tests.utils.test_utils import (
     is_running_in_ci,
 )
 from recidiviz.tools.postgres import local_postgres_helpers
-from recidiviz.utils.regions import Region
 
 
 @pytest.mark.uses_db
@@ -238,12 +237,6 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
 
     def _run_ingest_job_for_filename(self, filename: str) -> None:
         """Runs ingest for a the ingest view file with the given unnormalized file name."""
-        get_region_patcher = patch(
-            "recidiviz.persistence.entity_matching.state."
-            "base_state_matching_delegate.get_region"
-        )
-        mock_get_region = get_region_patcher.start()
-        mock_get_region.return_value = self._fake_region()
 
         environ_patcher = patch.dict("os.environ", {"PERSIST_LOCALLY": "true"})
         environ_patcher.start()
@@ -279,7 +272,6 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
 
         run_task_queues_to_empty(self.controller)
 
-        get_region_patcher.stop()
         environ_patcher.stop()
 
     def _do_ingest_job_rerun_for_tags(self, file_tags: List[str]) -> None:
@@ -375,10 +367,3 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
         self.assertCountEqual(found_people, expected_db_people)
 
         assert_no_unexpected_entities_in_db(found_people_from_db, session)
-
-    def _fake_region(self) -> Region:
-        fake_region = create_autospec(Region)
-        fake_region.get_enum_overrides.return_value = (
-            self.controller.get_enum_overrides()
-        )
-        return fake_region
