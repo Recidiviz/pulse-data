@@ -35,6 +35,9 @@ from recidiviz.calculator.pipeline.incarceration.incarceration_event import (
     IncarcerationStayEvent,
     IncarcerationEvent,
 )
+from recidiviz.calculator.pipeline.utils.incarceration_period_index import (
+    IncarcerationPeriodIndex,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import (
     SupervisionTypeSpan,
 )
@@ -433,6 +436,145 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                     total_days_incarcerated=(
                         incarceration_period.release_date
                         - incarceration_period.admission_date
+                    ).days,
+                ),
+            ]
+        )
+
+        self.assertCountEqual(expected_events, incarceration_events)
+
+    def test_find_incarceration_events_purpose_for_incarceration_change_us_id(
+        self,
+    ):
+        """Tests that with state code US_ID, treatment in prison periods that are followed by a transfer to general
+        result in the correct IncarcerationStayEvents, IncarcerationAdmissionEvents, and
+        IncarcerationReleaseEvents with updated STATUS_CHANGE reasons"""
+        treatment_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=_DEFAULT_IP_ID,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code="US_ID",
+            facility="PRISON3",
+            admission_date=date(2009, 11, 29),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text="NA",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+            release_date=date(2009, 12, 1),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+        )
+
+        general_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2222,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code="US_ID",
+            facility="PRISON 10",
+            admission_date=date(2009, 12, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            release_date=date(2009, 12, 3),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+        )
+
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            state_code="US_ID",
+            start_date=date(2008, 1, 11),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            incarceration_periods=[
+                treatment_incarceration_period,
+                general_incarceration_period,
+            ],
+            charges=[
+                StateCharge.new_with_defaults(
+                    state_code="US_ID",
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
+                    offense_date=date(2007, 12, 11),
+                    ncic_code="5511",
+                    statute="9999",
+                )
+            ],
+        )
+
+        sentence_group = StateSentenceGroup.new_with_defaults(
+            state_code="US_XX",
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            incarceration_sentences=[incarceration_sentence],
+        )
+
+        treatment_incarceration_period.incarceration_sentences = [
+            incarceration_sentence
+        ]
+        general_incarceration_period.incarceration_sentences = [incarceration_sentence]
+        incarceration_sentence.sentence_group = sentence_group
+
+        sentence_groups = [sentence_group]
+
+        incarceration_events = identifier.find_incarceration_events(
+            sentence_groups,
+            _DEFAULT_INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION,
+            _COUNTY_OF_RESIDENCE_ROWS,
+        )
+
+        expected_events: List[IncarcerationEvent] = expected_incarceration_stay_events(
+            treatment_incarceration_period,
+            most_serious_offense_ncic_code="5511",
+            most_serious_offense_statute="9999",
+            judicial_district_code="NW",
+        )
+
+        expected_events.extend(
+            expected_incarceration_stay_events(
+                general_incarceration_period,
+                original_admission_reason=treatment_incarceration_period.admission_reason,
+                original_admission_reason_raw_text=treatment_incarceration_period.admission_reason_raw_text,
+                most_serious_offense_ncic_code="5511",
+                most_serious_offense_statute="9999",
+            )
+        )
+
+        expected_events.extend(
+            [
+                IncarcerationAdmissionEvent(
+                    state_code=treatment_incarceration_period.state_code,
+                    event_date=treatment_incarceration_period.admission_date,
+                    facility=treatment_incarceration_period.facility,
+                    admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+                    admission_reason_raw_text="NA",
+                    county_of_residence=_COUNTY_OF_RESIDENCE,
+                    specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+                ),
+                IncarcerationAdmissionEvent(
+                    state_code=general_incarceration_period.state_code,
+                    event_date=general_incarceration_period.admission_date,
+                    facility=general_incarceration_period.facility,
+                    admission_reason=StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
+                    county_of_residence=_COUNTY_OF_RESIDENCE,
+                    specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+                ),
+                IncarcerationReleaseEvent(
+                    state_code=treatment_incarceration_period.state_code,
+                    event_date=treatment_incarceration_period.release_date,
+                    facility=treatment_incarceration_period.facility,
+                    county_of_residence=_COUNTY_OF_RESIDENCE,
+                    release_reason=StateIncarcerationPeriodReleaseReason.STATUS_CHANGE,
+                    purpose_for_incarceration=treatment_incarceration_period.specialized_purpose_for_incarceration,
+                    admission_reason=treatment_incarceration_period.admission_reason,
+                    total_days_incarcerated=(
+                        treatment_incarceration_period.release_date
+                        - treatment_incarceration_period.admission_date
+                    ).days,
+                ),
+                IncarcerationReleaseEvent(
+                    state_code=general_incarceration_period.state_code,
+                    event_date=general_incarceration_period.release_date,
+                    facility=general_incarceration_period.facility,
+                    county_of_residence=_COUNTY_OF_RESIDENCE,
+                    release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+                    admission_reason=treatment_incarceration_period.admission_reason,
+                    purpose_for_incarceration=general_incarceration_period.specialized_purpose_for_incarceration,
+                    total_days_incarcerated=(
+                        general_incarceration_period.release_date
+                        - general_incarceration_period.admission_date
                     ).days,
                 ),
             ]
@@ -873,15 +1015,13 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
             123: _DEFAULT_INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION[0]
         }
 
-        original_admission_reasons_by_period_id = (
-            identifier._original_admission_reasons_by_period_id([incarceration_period])
-        )
+        incarceration_period_index = IncarcerationPeriodIndex([incarceration_period])
 
         return identifier.find_incarceration_stays(
             incarceration_sentences,
             supervision_sentences,
             incarceration_period,
-            original_admission_reasons_by_period_id,
+            incarceration_period_index,
             default_incarceration_period_judicial_district_association,
             county_of_residence,
         )
@@ -942,16 +1082,14 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
             }
         }
 
-        original_admission_reasons_by_period_id = (
-            identifier._original_admission_reasons_by_period_id([incarceration_period])
-        )
+        incarceration_period_index = IncarcerationPeriodIndex([incarceration_period])
 
         incarceration_sentences = []
         incarceration_events = identifier.find_incarceration_stays(
             incarceration_sentences,
             [supervision_sentence],
             incarceration_period,
-            original_admission_reasons_by_period_id,
+            incarceration_period_index,
             incarceration_period_judicial_district_association,
             _COUNTY_OF_RESIDENCE,
         )
@@ -1452,10 +1590,8 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
             }
         }
 
-        original_admission_reasons_by_period_id = (
-            identifier._original_admission_reasons_by_period_id(
-                [incarceration_period_1, incarceration_period_2]
-            )
+        incarceration_period_index = IncarcerationPeriodIndex(
+            [incarceration_period_1, incarceration_period_2]
         )
 
         incarceration_sentences = []
@@ -1463,7 +1599,7 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
             incarceration_sentences,
             [],
             incarceration_period_2,
-            original_admission_reasons_by_period_id,
+            incarceration_period_index,
             incarceration_period_judicial_district_association,
             _COUNTY_OF_RESIDENCE,
         )
@@ -1527,18 +1663,14 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
             }
         }
 
-        original_admission_reasons_by_period_id = (
-            identifier._original_admission_reasons_by_period_id(
-                [incarceration_period_1, incarceration_period_2]
-            )
-        )
+        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods)
 
         incarceration_sentences = []
         incarceration_events = identifier.find_incarceration_stays(
             incarceration_sentences,
             [],
             incarceration_period_2,
-            original_admission_reasons_by_period_id,
+            incarceration_period_index,
             incarceration_period_judicial_district_association,
             _COUNTY_OF_RESIDENCE,
         )
@@ -1704,11 +1836,74 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
         """
         incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_sentences: List[StateSupervisionSentence] = []
+        incarceration_period_index = IncarcerationPeriodIndex([incarceration_period])
+
         return identifier.admission_event_for_period(
             incarceration_sentences,
             supervision_sentences,
             incarceration_period,
+            incarceration_period_index,
             county_of_residence,
+        )
+
+    def test_admission_event_for_transfer_to_general_from_treatment_period_us_id(
+        self,
+    ):
+        """Tests that with state code US_ID, treatment in prison periods that are followed by a transfer to general
+        result in an admission event for the general period with the admission_reason STATUS_CHANGE.
+        """
+        previous_treatment_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            external_id="1",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code="US_ID",
+            facility="PRISON",
+            admission_date=date(2008, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+            release_date=date(2008, 12, 20),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+        )
+
+        current_general_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1112,
+            external_id="2",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code="US_ID",
+            facility="PRISON",
+            admission_date=date(2008, 12, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            release_date=date(2008, 12, 21),
+        )
+
+        incarceration_sentences: List[StateIncarcerationSentence] = []
+        supervision_sentences: List[StateSupervisionSentence] = []
+
+        incarceration_period_index = IncarcerationPeriodIndex(
+            [previous_treatment_period, current_general_period]
+        )
+
+        admission_event = identifier.admission_event_for_period(
+            incarceration_sentences,
+            supervision_sentences,
+            current_general_period,
+            incarceration_period_index,
+            _COUNTY_OF_RESIDENCE,
+        )
+
+        self.assertEqual(
+            IncarcerationAdmissionEvent(
+                state_code=current_general_period.state_code,
+                event_date=current_general_period.admission_date,
+                facility=current_general_period.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            ),
+            admission_event,
         )
 
     def test_admission_event_for_period_us_mo(self):
@@ -1750,10 +1945,13 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
         )
         incarceration_sentences = []
 
+        incarceration_period_index = IncarcerationPeriodIndex([incarceration_period])
+
         admission_event = identifier.admission_event_for_period(
             incarceration_sentences,
             [supervision_sentence],
             incarceration_period,
+            incarceration_period_index,
             _COUNTY_OF_RESIDENCE,
         )
 
@@ -1797,11 +1995,13 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
             )
         ]
         incarceration_sentences = []
+        incarceration_period_index = IncarcerationPeriodIndex([incarceration_period])
 
         admission_event = identifier.admission_event_for_period(
             incarceration_sentences,
             supervision_sentences,
             incarceration_period,
+            incarceration_period_index,
             _COUNTY_OF_RESIDENCE,
         )
 
@@ -1939,10 +2139,14 @@ class TestReleaseEventForPeriod(unittest.TestCase):
         """
         incarceration_sentences = []
         supervision_sentences = []
+
+        incarceration_period_index = IncarcerationPeriodIndex([incarceration_period])
+
         return identifier.release_event_for_period(
             incarceration_sentences,
             supervision_sentences,
             incarceration_period,
+            incarceration_period_index,
             county_of_residence,
         )
 
@@ -2071,10 +2275,13 @@ class TestReleaseEventForPeriod(unittest.TestCase):
 
         incarceration_sentences = []
 
+        incarceration_period_index = IncarcerationPeriodIndex([incarceration_period])
+
         release_event = identifier.release_event_for_period(
             incarceration_sentences=incarceration_sentences,
             supervision_sentences=supervision_sentences,
             incarceration_period=incarceration_period,
+            incarceration_period_index=incarceration_period_index,
             county_of_residence=_COUNTY_OF_RESIDENCE,
         )
 
@@ -2092,6 +2299,66 @@ class TestReleaseEventForPeriod(unittest.TestCase):
                 total_days_incarcerated=(
                     incarceration_period.release_date
                     - incarceration_period.admission_date
+                ).days,
+            ),
+            release_event,
+        )
+
+    def test_release_event_for_purpose_for_incarceration_change_us_id(self):
+        """Tests that with state code US_ID, incarceration periods that are followed by another incarceration
+        period that has a different specialized_purpose_for_incarceration results in a release event
+        with the release_reason STATUS_CHANGE.
+        """
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code="US_ID",
+            facility="PRISON3",
+            admission_date=date(2013, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+            release_date=date(2019, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+        )
+
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code="US_ID",
+            facility="PRISON3",
+            admission_date=date(2019, 12, 2),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            release_date=date(2019, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+        )
+
+        incarceration_period_index = IncarcerationPeriodIndex(
+            [incarceration_period_1, incarceration_period_2]
+        )
+
+        release_event = identifier.release_event_for_period(
+            incarceration_sentences=[],
+            supervision_sentences=[],
+            incarceration_period=incarceration_period_1,
+            incarceration_period_index=incarceration_period_index,
+            county_of_residence=_COUNTY_OF_RESIDENCE,
+        )
+
+        self.assertEqual(
+            IncarcerationReleaseEvent(
+                state_code=incarceration_period_1.state_code,
+                event_date=incarceration_period_1.release_date,
+                facility="PRISON3",
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                release_reason=StateIncarcerationPeriodReleaseReason.STATUS_CHANGE,
+                admission_reason=incarceration_period_1.admission_reason,
+                purpose_for_incarceration=incarceration_period_1.specialized_purpose_for_incarceration,
+                total_days_incarcerated=(
+                    incarceration_period_1.release_date
+                    - incarceration_period_1.admission_date
                 ).days,
             ),
             release_event,
@@ -2135,10 +2402,13 @@ class TestReleaseEventForPeriod(unittest.TestCase):
         )
         incarceration_sentences = []
 
+        incarceration_period_index = IncarcerationPeriodIndex([incarceration_period])
+
         release_event = identifier.release_event_for_period(
             incarceration_sentences=incarceration_sentences,
             supervision_sentences=[supervision_sentence],
             incarceration_period=incarceration_period,
+            incarceration_period_index=incarceration_period_index,
             county_of_residence=_COUNTY_OF_RESIDENCE,
         )
 
@@ -2893,305 +3163,6 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
         )
 
         self.assertEqual(most_serious_statute, "8888")
-
-
-class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
-    """Tests the _original_admission_reasons_by_period_id function in the identifier."""
-
-    def test_original_admission_reasons_by_period_id(self):
-        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
-            state_code="US_XX",
-            incarceration_period_id=111,
-            admission_date=date(2000, 1, 1),
-            release_date=date(2000, 10, 3),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
-            state_code="US_XX",
-            incarceration_period_id=222,
-            admission_date=date(2000, 10, 3),
-            release_date=date(2000, 10, 11),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        incarceration_periods = [incarceration_period_1, incarceration_period_2]
-
-        original_admission_reasons_by_period_id = (
-            identifier._original_admission_reasons_by_period_id(incarceration_periods)
-        )
-
-        reason_tuple = (
-            incarceration_period_1.admission_reason,
-            incarceration_period_1.admission_reason_raw_text,
-        )
-
-        expected_output = {
-            incarceration_period_1.incarceration_period_id: reason_tuple,
-            incarceration_period_2.incarceration_period_id: reason_tuple,
-        }
-
-        self.assertEqual(expected_output, original_admission_reasons_by_period_id)
-
-    def test_original_admission_reasons_by_period_id_multiple_official_admissions(self):
-        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
-            state_code="US_XX",
-            incarceration_period_id=111,
-            admission_date=date(2000, 1, 1),
-            release_date=date(2000, 10, 3),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
-            state_code="US_XX",
-            incarceration_period_id=222,
-            admission_date=date(2000, 10, 3),
-            release_date=date(2000, 10, 11),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
-            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
-            state_code="US_XX",
-            incarceration_period_id=333,
-            admission_date=date(2020, 5, 1),
-            release_date=date(2020, 10, 3),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
-            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        incarceration_period_4 = StateIncarcerationPeriod.new_with_defaults(
-            state_code="US_XX",
-            incarceration_period_id=444,
-            admission_date=date(2020, 10, 3),
-            release_date=date(2020, 10, 11),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
-            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        incarceration_periods = [
-            incarceration_period_1,
-            incarceration_period_2,
-            incarceration_period_3,
-            incarceration_period_4,
-        ]
-
-        original_admission_reasons_by_period_id = (
-            identifier._original_admission_reasons_by_period_id(incarceration_periods)
-        )
-
-        first_admission_tuple = (
-            incarceration_period_1.admission_reason,
-            incarceration_period_1.admission_reason_raw_text,
-        )
-        second_admission_tuple = (
-            incarceration_period_3.admission_reason,
-            incarceration_period_3.admission_reason_raw_text,
-        )
-
-        expected_output = {
-            incarceration_period_1.incarceration_period_id: first_admission_tuple,
-            incarceration_period_2.incarceration_period_id: first_admission_tuple,
-            incarceration_period_3.incarceration_period_id: second_admission_tuple,
-            incarceration_period_4.incarceration_period_id: second_admission_tuple,
-        }
-
-        self.assertEqual(expected_output, original_admission_reasons_by_period_id)
-
-    def test_original_admission_reasons_by_period_id_multiple_transfer_periods(self):
-        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
-            state_code="US_XX",
-            incarceration_period_id=111,
-            admission_date=date(2000, 1, 1),
-            release_date=date(2000, 10, 3),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
-            state_code="US_XX",
-            incarceration_period_id=222,
-            admission_date=date(2000, 10, 3),
-            release_date=date(2000, 10, 11),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
-            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
-            state_code="US_XX",
-            incarceration_period_id=333,
-            admission_date=date(2000, 10, 12),
-            release_date=date(2001, 1, 3),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
-            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        incarceration_period_4 = StateIncarcerationPeriod.new_with_defaults(
-            state_code="US_XX",
-            incarceration_period_id=444,
-            admission_date=date(2001, 1, 4),
-            release_date=date(2001, 10, 11),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
-            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        incarceration_periods = [
-            incarceration_period_1,
-            incarceration_period_2,
-            incarceration_period_3,
-            incarceration_period_4,
-        ]
-
-        original_admission_reasons_by_period_id = (
-            identifier._original_admission_reasons_by_period_id(incarceration_periods)
-        )
-
-        admission_tuple = (
-            incarceration_period_1.admission_reason,
-            incarceration_period_1.admission_reason_raw_text,
-        )
-
-        expected_output = {
-            incarceration_period_1.incarceration_period_id: admission_tuple,
-            incarceration_period_2.incarceration_period_id: admission_tuple,
-            incarceration_period_3.incarceration_period_id: admission_tuple,
-            incarceration_period_4.incarceration_period_id: admission_tuple,
-        }
-
-        self.assertEqual(expected_output, original_admission_reasons_by_period_id)
-
-    def test_original_admission_reasons_by_period_id_no_official_admission(self):
-        # The first incarceration period always counts as the official start of incarceration
-        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
-            state_code="US_XX",
-            incarceration_period_id=111,
-            admission_date=date(2000, 1, 1),
-            release_date=date(2000, 10, 3),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
-            state_code="US_XX",
-            incarceration_period_id=222,
-            admission_date=date(2000, 10, 3),
-            release_date=date(2000, 10, 11),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        incarceration_periods = [incarceration_period_1, incarceration_period_2]
-
-        original_admission_reasons_by_period_id = (
-            identifier._original_admission_reasons_by_period_id(incarceration_periods)
-        )
-
-        admission_tuple = (
-            incarceration_period_1.admission_reason,
-            incarceration_period_1.admission_reason_raw_text,
-        )
-
-        expected_output = {
-            incarceration_period_1.incarceration_period_id: admission_tuple,
-            incarceration_period_2.incarceration_period_id: admission_tuple,
-        }
-
-        self.assertEqual(expected_output, original_admission_reasons_by_period_id)
-
-    def test_original_admission_reasons_by_period_id_not_official_admission_after_official_release(
-        self,
-    ):
-        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
-            state_code="US_XX",
-            incarceration_period_id=111,
-            admission_date=date(2000, 1, 1),
-            release_date=date(2000, 10, 3),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            # Because this is an official release, the next period should be mapped to its own admission reason
-            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
-            state_code="US_XX",
-            incarceration_period_id=222,
-            admission_date=date(2015, 10, 3),
-            release_date=date(2015, 10, 11),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        incarceration_periods = [incarceration_period_1, incarceration_period_2]
-
-        original_admission_reasons_by_period_id = (
-            identifier._original_admission_reasons_by_period_id(incarceration_periods)
-        )
-
-        expected_output = {
-            incarceration_period_1.incarceration_period_id: (
-                incarceration_period_1.admission_reason,
-                incarceration_period_1.admission_reason_raw_text,
-            ),
-            incarceration_period_2.incarceration_period_id: (
-                incarceration_period_2.admission_reason,
-                incarceration_period_2.admission_reason_raw_text,
-            ),
-        }
-
-        self.assertEqual(expected_output, original_admission_reasons_by_period_id)
-
-    def test_original_admission_reasons_by_period_id_not_official_admission_after_not_official_release(
-        self,
-    ):
-        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
-            state_code="US_XX",
-            incarceration_period_id=111,
-            admission_date=date(2000, 1, 1),
-            release_date=date(2000, 10, 3),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
-            state_code="US_XX",
-            incarceration_period_id=222,
-            admission_date=date(2015, 10, 3),
-            release_date=date(2015, 10, 11),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        incarceration_periods = [incarceration_period_1, incarceration_period_2]
-
-        original_admission_reasons_by_period_id = (
-            identifier._original_admission_reasons_by_period_id(incarceration_periods)
-        )
-
-        expected_output = {
-            incarceration_period_1.incarceration_period_id: (
-                incarceration_period_1.admission_reason,
-                incarceration_period_1.admission_reason_raw_text,
-            ),
-            incarceration_period_2.incarceration_period_id: (
-                incarceration_period_1.admission_reason,
-                incarceration_period_1.admission_reason_raw_text,
-            ),
-        }
-
-        self.assertEqual(expected_output, original_admission_reasons_by_period_id)
 
 
 def expected_incarceration_stay_events(

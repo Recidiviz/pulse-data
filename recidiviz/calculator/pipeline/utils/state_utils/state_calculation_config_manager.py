@@ -29,6 +29,9 @@ from recidiviz.calculator.pipeline.utils.calculator_utils import safe_list_index
 from recidiviz.calculator.pipeline.utils.incarceration_period_index import (
     IncarcerationPeriodIndex,
 )
+from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
+    period_edges_are_valid_transfer,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_revocation_utils import (
     us_pa_is_revocation_admission,
     us_pa_revoked_supervision_periods_if_revocation_occurred,
@@ -87,6 +90,7 @@ from recidiviz.common.constants.state.state_case_type import StateSupervisionCas
 from recidiviz.common.constants.state.state_incarceration_period import (
     is_revocation_admission,
     StateIncarcerationPeriodAdmissionReason,
+    StateIncarcerationPeriodReleaseReason,
 )
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
@@ -160,7 +164,7 @@ def investigation_periods_in_supervision_population(_state_code: str) -> bool:
     return False
 
 
-def should_collapse_transfers_different_purpose_for_incarceration(
+def should_collapse_transfers_different_purposes_for_incarceration(
     state_code: str,
 ) -> bool:
     """Whether or not incarceration periods that are connected by a TRANSFER release and a TRANSFER admission should
@@ -809,14 +813,15 @@ def state_specific_violation_response_pre_processing_function(
 
 
 def state_specific_incarceration_admission_reason_override(
-    state_code: str,
+    incarceration_period: StateIncarcerationPeriod,
     admission_reason: StateIncarcerationPeriodAdmissionReason,
     supervision_type_at_admission: Optional[StateSupervisionPeriodSupervisionType],
+    previous_incarceration_period: Optional[StateIncarcerationPeriod] = None,
 ) -> StateIncarcerationPeriodAdmissionReason:
-    """Returns a (potentially) updated admission reason to be used in calculations, given the provided |state_code|,
-    |admission_reason|, and |supervision_type_at_admission|.
+    """Returns a (potentially) updated admission reason to be used in calculations, given the provided
+    |incarceration_period|, |admission_reason|, |supervision_type_at_admission|, |previous_incarceration_period|
     """
-    if state_code == "US_ID":
+    if incarceration_period.state_code == "US_ID":
         # If a person was on an investigative supervision period prior to incarceration, their admission reason
         # should be considered a new admission.
         if (
@@ -825,7 +830,49 @@ def state_specific_incarceration_admission_reason_override(
             == StateSupervisionPeriodSupervisionType.INVESTIGATION
         ):
             return StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION
+
+        # If a person's previous IP has a different specialized_purpose_for_incarceration
+        # than the current period, the correct admission reason is STATUS_CHANGE
+        if (
+            previous_incarceration_period
+            and period_edges_are_valid_transfer(
+                previous_incarceration_period,
+                incarceration_period,
+            )
+            and previous_incarceration_period.specialized_purpose_for_incarceration
+            and incarceration_period.specialized_purpose_for_incarceration
+            and previous_incarceration_period.specialized_purpose_for_incarceration
+            != incarceration_period.specialized_purpose_for_incarceration
+        ):
+            return StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE
     return admission_reason
+
+
+def state_specific_incarceration_release_reason_override(
+    incarceration_period: StateIncarcerationPeriod,
+    release_reason: StateIncarcerationPeriodReleaseReason,
+    next_incarceration_period: Optional[StateIncarcerationPeriod] = None,
+) -> StateIncarcerationPeriodReleaseReason:
+    """Returns a (potentially) updated release reason to be used in calculations, given the provided
+    |incarceration_period|, and |next_incarceration_period|.
+    """
+    if incarceration_period.state_code == "US_ID":
+        # If the current purpose_for_incarceration is different from the
+        # next_incarceration_period's specialized_purpose_for_incarceration, then
+        # the release reason should be STATUS_CHANGE
+        if (
+            next_incarceration_period
+            and period_edges_are_valid_transfer(
+                incarceration_period,
+                next_incarceration_period,
+            )
+            and incarceration_period.specialized_purpose_for_incarceration
+            and next_incarceration_period.specialized_purpose_for_incarceration
+            and incarceration_period.specialized_purpose_for_incarceration
+            != next_incarceration_period.specialized_purpose_for_incarceration
+        ):
+            return StateIncarcerationPeriodReleaseReason.STATUS_CHANGE
+    return release_reason
 
 
 def supervision_period_is_out_of_state(

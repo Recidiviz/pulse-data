@@ -31,6 +31,8 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason as AdmissionReason,
     StateIncarcerationPeriodReleaseReason as ReleaseReason,
     StateIncarcerationPeriodStatus,
+    StateIncarcerationPeriodAdmissionReason,
+    StateIncarcerationPeriodReleaseReason,
 )
 from recidiviz.common.date import DateRange, date_or_tomorrow
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
@@ -1100,3 +1102,314 @@ class TestIncarcerationPeriodsNotUnderSupervisionAuthority(unittest.TestCase):
                 expected_periods,
                 index.incarceration_periods_not_under_supervision_authority,
             )
+
+
+class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
+    """Tests the original_admission_reasons_by_period_id function."""
+
+    def test_original_admission_reasons_by_period_id(self):
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            incarceration_period_id=111,
+            admission_date=date(2000, 1, 1),
+            release_date=date(2000, 10, 3),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            incarceration_period_id=222,
+            admission_date=date(2000, 10, 3),
+            release_date=date(2000, 10, 11),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        incarceration_periods = [incarceration_period_1, incarceration_period_2]
+
+        index = IncarcerationPeriodIndex(incarceration_periods)
+
+        original_admission_reasons_by_period_id = (
+            index.original_admission_reasons_by_period_id
+        )
+
+        reason_tuple = (
+            incarceration_period_1.admission_reason,
+            incarceration_period_1.admission_reason_raw_text,
+        )
+
+        expected_output = {
+            incarceration_period_1.incarceration_period_id: reason_tuple,
+            incarceration_period_2.incarceration_period_id: reason_tuple,
+        }
+
+        self.assertEqual(expected_output, original_admission_reasons_by_period_id)
+
+    def test_original_admission_reasons_by_period_id_multiple_official_admissions(self):
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            incarceration_period_id=111,
+            admission_date=date(2000, 1, 1),
+            release_date=date(2000, 10, 3),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            incarceration_period_id=222,
+            admission_date=date(2000, 10, 3),
+            release_date=date(2000, 10, 11),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            incarceration_period_id=333,
+            admission_date=date(2020, 5, 1),
+            release_date=date(2020, 10, 3),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        incarceration_period_4 = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            incarceration_period_id=444,
+            admission_date=date(2020, 10, 3),
+            release_date=date(2020, 10, 11),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        incarceration_periods = [
+            incarceration_period_1,
+            incarceration_period_2,
+            incarceration_period_3,
+            incarceration_period_4,
+        ]
+
+        index = IncarcerationPeriodIndex(incarceration_periods)
+
+        original_admission_reasons_by_period_id = (
+            index.original_admission_reasons_by_period_id
+        )
+
+        first_admission_tuple = (
+            incarceration_period_1.admission_reason,
+            incarceration_period_1.admission_reason_raw_text,
+        )
+        second_admission_tuple = (
+            incarceration_period_3.admission_reason,
+            incarceration_period_3.admission_reason_raw_text,
+        )
+
+        expected_output = {
+            incarceration_period_1.incarceration_period_id: first_admission_tuple,
+            incarceration_period_2.incarceration_period_id: first_admission_tuple,
+            incarceration_period_3.incarceration_period_id: second_admission_tuple,
+            incarceration_period_4.incarceration_period_id: second_admission_tuple,
+        }
+
+        self.assertEqual(expected_output, original_admission_reasons_by_period_id)
+
+    def test_original_admission_reasons_by_period_id_multiple_transfer_periods(self):
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            incarceration_period_id=111,
+            admission_date=date(2000, 1, 1),
+            release_date=date(2000, 10, 3),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            incarceration_period_id=222,
+            admission_date=date(2000, 10, 3),
+            release_date=date(2000, 10, 11),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            incarceration_period_id=333,
+            admission_date=date(2000, 10, 12),
+            release_date=date(2001, 1, 3),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        incarceration_period_4 = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            incarceration_period_id=444,
+            admission_date=date(2001, 1, 4),
+            release_date=date(2001, 10, 11),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        incarceration_periods = [
+            incarceration_period_1,
+            incarceration_period_2,
+            incarceration_period_3,
+            incarceration_period_4,
+        ]
+
+        index = IncarcerationPeriodIndex(incarceration_periods)
+
+        original_admission_reasons_by_period_id = (
+            index.original_admission_reasons_by_period_id
+        )
+
+        admission_tuple = (
+            incarceration_period_1.admission_reason,
+            incarceration_period_1.admission_reason_raw_text,
+        )
+
+        expected_output = {
+            incarceration_period_1.incarceration_period_id: admission_tuple,
+            incarceration_period_2.incarceration_period_id: admission_tuple,
+            incarceration_period_3.incarceration_period_id: admission_tuple,
+            incarceration_period_4.incarceration_period_id: admission_tuple,
+        }
+
+        self.assertEqual(expected_output, original_admission_reasons_by_period_id)
+
+    def test_original_admission_reasons_by_period_id_no_official_admission(self):
+        # The first incarceration period always counts as the official start of incarceration
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            incarceration_period_id=111,
+            admission_date=date(2000, 1, 1),
+            release_date=date(2000, 10, 3),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            incarceration_period_id=222,
+            admission_date=date(2000, 10, 3),
+            release_date=date(2000, 10, 11),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        incarceration_periods = [incarceration_period_1, incarceration_period_2]
+
+        index = IncarcerationPeriodIndex(incarceration_periods)
+
+        original_admission_reasons_by_period_id = (
+            index.original_admission_reasons_by_period_id
+        )
+
+        admission_tuple = (
+            incarceration_period_1.admission_reason,
+            incarceration_period_1.admission_reason_raw_text,
+        )
+
+        expected_output = {
+            incarceration_period_1.incarceration_period_id: admission_tuple,
+            incarceration_period_2.incarceration_period_id: admission_tuple,
+        }
+
+        self.assertEqual(expected_output, original_admission_reasons_by_period_id)
+
+    def test_original_admission_reasons_by_period_id_not_official_admission_after_official_release(
+        self,
+    ):
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            incarceration_period_id=111,
+            admission_date=date(2000, 1, 1),
+            release_date=date(2000, 10, 3),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            # Because this is an official release, the next period should be mapped to its own admission reason
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            incarceration_period_id=222,
+            admission_date=date(2015, 10, 3),
+            release_date=date(2015, 10, 11),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        incarceration_periods = [incarceration_period_1, incarceration_period_2]
+
+        index = IncarcerationPeriodIndex(incarceration_periods)
+
+        original_admission_reasons_by_period_id = (
+            index.original_admission_reasons_by_period_id
+        )
+
+        expected_output = {
+            incarceration_period_1.incarceration_period_id: (
+                incarceration_period_1.admission_reason,
+                incarceration_period_1.admission_reason_raw_text,
+            ),
+            incarceration_period_2.incarceration_period_id: (
+                incarceration_period_2.admission_reason,
+                incarceration_period_2.admission_reason_raw_text,
+            ),
+        }
+
+        self.assertEqual(expected_output, original_admission_reasons_by_period_id)
+
+    def test_original_admission_reasons_by_period_id_not_official_admission_after_not_official_release(
+        self,
+    ):
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            incarceration_period_id=111,
+            admission_date=date(2000, 1, 1),
+            release_date=date(2000, 10, 3),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            incarceration_period_id=222,
+            admission_date=date(2015, 10, 3),
+            release_date=date(2015, 10, 11),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        incarceration_periods = [incarceration_period_1, incarceration_period_2]
+
+        index = IncarcerationPeriodIndex(incarceration_periods)
+
+        original_admission_reasons_by_period_id = (
+            index.original_admission_reasons_by_period_id
+        )
+
+        expected_output = {
+            incarceration_period_1.incarceration_period_id: (
+                incarceration_period_1.admission_reason,
+                incarceration_period_1.admission_reason_raw_text,
+            ),
+            incarceration_period_2.incarceration_period_id: (
+                incarceration_period_1.admission_reason,
+                incarceration_period_1.admission_reason_raw_text,
+            ),
+        }
+
+        self.assertEqual(expected_output, original_admission_reasons_by_period_id)
