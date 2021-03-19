@@ -26,6 +26,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
     is_revocation_admission,
 )
+from recidiviz.ingest.direct.regions.us_nd import us_nd_enum_helpers
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.entity_utils import (
@@ -102,12 +103,12 @@ def _get_closest_matching_incarceration_period(
     return None
 
 
-def update_temporary_holds(ingested_persons: List[schema.StatePerson], region):
+def update_temporary_holds(ingested_persons: List[schema.StatePerson]) -> None:
     """ND specific logic to handle correct setting of admission and release
     reasons for incarceration periods that are holds and that directly succeed
     holds.
     """
-    enum_overrides = region.get_enum_overrides()
+    enum_overrides = us_nd_enum_helpers.generate_enum_overrides()
     for person in ingested_persons:
         for sentence_group in person.sentence_groups:
             for incarceration_sentence in sentence_group.incarceration_sentences:

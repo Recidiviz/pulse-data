@@ -19,7 +19,6 @@ from typing import List, Optional, Sequence
 from unittest.case import TestCase
 
 import pytest
-from mock import patch, create_autospec
 
 from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter,
@@ -38,7 +37,6 @@ from recidiviz.tests.persistence.entity.state.entities_test_utils import (
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.tests.utils.test_utils import print_visible_header_label
 from recidiviz.tools.postgres import local_postgres_helpers
-from recidiviz.utils.regions import Region
 
 
 @pytest.mark.uses_db
@@ -55,13 +53,6 @@ class BaseStateEntityMatcherTest(TestCase):
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
         local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
-        self.get_region_patcher = patch(
-            "recidiviz.persistence.entity_matching.state."
-            "base_state_matching_delegate.get_region",
-            new=self.get_fake_region,
-        )
-        self.get_region_patcher.start()
-        self.addCleanup(self.get_region_patcher.stop)
 
     def tearDown(self) -> None:
         local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
@@ -71,9 +62,6 @@ class BaseStateEntityMatcherTest(TestCase):
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
             cls.temp_db_dir
         )
-
-    def get_fake_region(self, **_kwargs):
-        return create_autospec(Region)
 
     def to_entity(self, schema_obj):
         return converter.convert_schema_object_to_entity(

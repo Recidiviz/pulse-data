@@ -18,7 +18,6 @@
 import datetime
 
 import attr
-from mock import create_autospec
 
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
@@ -61,7 +60,6 @@ from recidiviz.persistence.entity_matching.state.us_nd.us_nd_matching_utils impo
 from recidiviz.tests.persistence.entity_matching.state.base_state_entity_matcher_test_classes import (
     BaseStateMatchingUtilsTest,
 )
-from recidiviz.utils.regions import Region
 
 _DATE_1 = datetime.date(year=2019, month=1, day=1)
 _DATE_2 = datetime.date(year=2019, month=2, day=1)
@@ -96,8 +94,8 @@ _FACILITY_4 = "FACILITY_4"
 class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
     """Test class for US_ND specific matching utils."""
 
-    def create_fake_nd_region(self) -> Region:
-        fake_region = create_autospec(Region)
+    def setUp(self) -> None:
+        super().setUp()
         overrides_builder = EnumOverrides.Builder()
         overrides_builder.add(
             "PV", StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
@@ -108,8 +106,7 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
         overrides_builder.add(
             "ADM", StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION
         )
-        fake_region.get_enum_overrides.return_value = overrides_builder.build()
-        return fake_region
+        self.overrides = overrides_builder.build()
 
     def test_mergeFlatFields(self) -> None:
         ing_entity = schema.StateSentenceGroup(
@@ -233,10 +230,8 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
         ips = [ip_2, ip_4, ip, ip_3]
         expected_ips = [expected_ip, expected_ip_2, expected_ip_3, expected_ip_4]
 
-        overrides = self.create_fake_nd_region().get_enum_overrides()
-
         # Act
-        _update_temporary_holds_helper(ips, overrides)
+        _update_temporary_holds_helper(ips, self.overrides)
 
         # Assert
         entity_ips = [self.to_entity(ip) for ip in ips]
@@ -298,10 +293,8 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
         ips = [ip_2, ip, ip_3]
         expected_ips = [expected_ip, expected_ip_2, expected_ip_3]
 
-        overrides = self.create_fake_nd_region().get_enum_overrides()
-
         # Act
-        _update_temporary_holds_helper(ips, overrides)
+        _update_temporary_holds_helper(ips, self.overrides)
 
         # Assert
         entity_ips = [self.to_entity(ip) for ip in ips]
@@ -339,10 +332,8 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
         ips = [ip, ip_2]
         expected_ips = [expected_ip, expected_ip_2]
 
-        overrides = self.create_fake_nd_region().get_enum_overrides()
-
         # Act
-        _update_temporary_holds_helper(ips, overrides)
+        _update_temporary_holds_helper(ips, self.overrides)
 
         # Assert
         entity_ips = [self.to_entity(ip) for ip in ips]
@@ -365,10 +356,8 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
         ips = [ip]
         expected_ips = [expected_ip]
 
-        overrides = self.create_fake_nd_region().get_enum_overrides()
-
         # Act
-        _update_temporary_holds_helper(ips, overrides)
+        _update_temporary_holds_helper(ips, self.overrides)
 
         # Assert
         entity_ips = [self.to_entity(ip) for ip in ips]
