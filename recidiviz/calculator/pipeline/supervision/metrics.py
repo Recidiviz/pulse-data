@@ -52,7 +52,6 @@ class SupervisionMetricType(RecidivizMetricType):
     SUPERVISION_POPULATION = "SUPERVISION_POPULATION"
     SUPERVISION_OUT_OF_STATE_POPULATION = "SUPERVISION_OUT_OF_STATE_POPULATION"
     SUPERVISION_REVOCATION = "SUPERVISION_REVOCATION"
-    SUPERVISION_REVOCATION_ANALYSIS = "SUPERVISION_REVOCATION_ANALYSIS"
     SUPERVISION_START = "SUPERVISION_START"
     SUPERVISION_SUCCESS = "SUPERVISION_SUCCESS"
     SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED = (
@@ -227,7 +226,7 @@ class SupervisionOutOfStatePopulationMetric(SupervisionPopulationMetric):
 
 @attr.s
 class SupervisionRevocationMetric(
-    SupervisionMetric, PersonLevelMetric, AssessmentMetric
+    SupervisionMetric, PersonLevelMetric, AssessmentMetric, ViolationHistoryMetric
 ):
     """Subclass of SupervisionMetric that contains supervision revocation information."""
 
@@ -249,48 +248,8 @@ class SupervisionRevocationMetric(
     # A string subtype that provides further insight into the revocation_type above.
     revocation_type_subtype: Optional[str] = attr.ib(default=None)
 
-    # StateSupervisionViolationType enum for the type of violation that eventually caused the revocation of supervision
-    source_violation_type: Optional[StateSupervisionViolationType] = attr.ib(
-        default=None
-    )
-
     # For person-level metrics only, the date of the revocation admission
     revocation_admission_date: date = attr.ib(default=None)
-
-    @staticmethod
-    def build_from_metric_key_group(
-        metric_key: Dict[str, Any], job_id: str
-    ) -> Optional["SupervisionRevocationMetric"]:
-        """Builds a SupervisionRevocationMetric object from the given arguments."""
-
-        if not metric_key:
-            raise ValueError("The metric_key is empty.")
-
-        metric_key["job_id"] = job_id
-        metric_key["created_on"] = date.today()
-
-        supervision_metric = cast(
-            SupervisionRevocationMetric,
-            SupervisionRevocationMetric.build_from_dictionary(metric_key),
-        )
-
-        return supervision_metric
-
-
-@attr.s
-class SupervisionRevocationAnalysisMetric(
-    SupervisionRevocationMetric, PersonLevelMetric, ViolationHistoryMetric
-):
-    """Subclass of SupervisionRevocationMetric that contains information for supervision revocation analysis."""
-
-    # Required characteristics
-
-    # The type of SupervisionMetric
-    metric_type: SupervisionMetricType = attr.ib(
-        init=False, default=SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS
-    )
-
-    # Optional characteristics
 
     # A string representation of the violations recorded in the period leading up to the revocation, which is the
     # number of each of the represented types separated by a semicolon
@@ -311,8 +270,8 @@ class SupervisionRevocationAnalysisMetric(
     @staticmethod
     def build_from_metric_key_group(
         metric_key: Dict[str, Any], job_id: str
-    ) -> Optional["SupervisionRevocationAnalysisMetric"]:
-        """Builds a SupervisionRevocationAnalysisMetric object from the given arguments."""
+    ) -> Optional["SupervisionRevocationMetric"]:
+        """Builds a SupervisionRevocationMetric object from the given arguments."""
 
         if not metric_key:
             raise ValueError("The metric_key is empty.")
@@ -321,8 +280,8 @@ class SupervisionRevocationAnalysisMetric(
         metric_key["created_on"] = date.today()
 
         supervision_metric = cast(
-            SupervisionRevocationAnalysisMetric,
-            SupervisionRevocationAnalysisMetric.build_from_dictionary(metric_key),
+            SupervisionRevocationMetric,
+            SupervisionRevocationMetric.build_from_dictionary(metric_key),
         )
 
         return supervision_metric

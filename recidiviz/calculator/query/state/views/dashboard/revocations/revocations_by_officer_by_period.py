@@ -66,9 +66,9 @@ REVOCATIONS_BY_OFFICER_BY_PERIOD_QUERY_TEMPLATE = """
       SELECT
         state_code,
         supervision_type,
-        COUNT(DISTINCT IF(source_violation_type IN ('FELONY', 'MISDEMEANOR', 'LAW'), person_id, NULL)) AS felony_count,
-        COUNT(DISTINCT IF(source_violation_type = 'TECHNICAL', person_id, NULL)) AS technical_count,
-        COUNT(DISTINCT IF(source_violation_type IN ('ESCAPED', 'ABSCONDED'), person_id, NULL)) AS absconsion_count,
+        COUNT(DISTINCT IF(most_severe_violation_type IN ('FELONY', 'MISDEMEANOR', 'LAW'), person_id, NULL)) AS felony_count,
+        COUNT(DISTINCT IF(most_severe_violation_type = 'TECHNICAL', person_id, NULL)) AS technical_count,
+        COUNT(DISTINCT IF(most_severe_violation_type IN ('ESCAPED', 'ABSCONDED'), person_id, NULL)) AS absconsion_count,
         COUNT(DISTINCT person_id) AS all_violation_types_count,
         district,
         officer_external_id,
@@ -76,7 +76,7 @@ REVOCATIONS_BY_OFFICER_BY_PERIOD_QUERY_TEMPLATE = """
       FROM (
         SELECT
           state_code, metric_period_months,
-          person_id, source_violation_type,
+          person_id, most_severe_violation_type,
           supervision_type, district, officer_external_id,
           -- Only use most recent revocation per person/supervision_type/metric_period_months
           ROW_NUMBER() OVER (PARTITION BY state_code, person_id, supervision_type, metric_period_months, district,

@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@ from recidiviz.calculator.pipeline.utils.state_utils import (
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_supervising_officer_and_location_info_from_supervision_period,
+    sorted_violation_responses_in_window,
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
@@ -47,9 +48,13 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodStatus,
     StateSupervisionPeriodSupervisionType,
 )
+from recidiviz.common.constants.state.state_supervision_violation_response import (
+    StateSupervisionViolationResponseType,
+)
 from recidiviz.persistence.entity.state.entities import (
     StateSupervisionPeriod,
     StateIncarcerationPeriod,
+    StateSupervisionViolationResponse,
 )
 
 
@@ -701,4 +706,235 @@ class TestSupervisionPeriodIsOutOfState(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervising_district_external_id=supervising_district_external_id,
             projected_end_date=None,
+        )
+
+
+class TestSortedViolationResponsesInWindow(unittest.TestCase):
+    """Test the sorted_violation_responses_in_window function."""
+
+    def test_sorted_responses_in_window(self):
+        violation_responses = [
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code="US_XX",
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2010, 1, 1),
+            ),
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code="US_XX",
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(1998, 2, 1),
+            ),
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code="US_XX",
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2017, 3, 1),
+            ),
+        ]
+
+        lower_bound_inclusive = date(2009, 1, 17)
+        upper_bound_exclusive = date(2010, 1, 18)
+
+        responses_in_window = sorted_violation_responses_in_window(
+            violation_responses,
+            upper_bound_exclusive=upper_bound_exclusive,
+            lower_bound_inclusive=lower_bound_inclusive,
+            include_follow_up_responses=False,
+        )
+
+        self.assertEqual(
+            [
+                StateSupervisionViolationResponse.new_with_defaults(
+                    state_code="US_XX",
+                    response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                    response_date=date(2010, 1, 1),
+                )
+            ],
+            responses_in_window,
+        )
+
+    def test_sorted_responses_in_window_no_lower_bound(self):
+        violation_responses = [
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code="US_XX",
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2010, 1, 1),
+            ),
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code="US_XX",
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(1990, 2, 1),
+            ),
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code="US_XX",
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2017, 3, 1),
+            ),
+        ]
+
+        upper_bound_exclusive = date(2010, 1, 17)
+
+        responses_in_window = sorted_violation_responses_in_window(
+            violation_responses,
+            upper_bound_exclusive=upper_bound_exclusive,
+            lower_bound_inclusive=None,
+            include_follow_up_responses=False,
+        )
+
+        self.assertEqual(
+            [
+                StateSupervisionViolationResponse.new_with_defaults(
+                    state_code="US_XX",
+                    response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                    response_date=date(1990, 2, 1),
+                ),
+                StateSupervisionViolationResponse.new_with_defaults(
+                    state_code="US_XX",
+                    response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                    response_date=date(2010, 1, 1),
+                ),
+            ],
+            responses_in_window,
+        )
+
+    def test_sorted_responses_in_window_all_outside_of_window(self):
+        violation_responses = [
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code="US_XX",
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2000, 1, 1),
+            ),
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code="US_XX",
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(1998, 2, 1),
+            ),
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code="US_XX",
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2019, 3, 1),
+            ),
+        ]
+
+        lower_bound_inclusive = date(2009, 1, 17)
+        upper_bound_exclusive = date(2010, 1, 18)
+
+        responses_in_window = sorted_violation_responses_in_window(
+            violation_responses,
+            upper_bound_exclusive=upper_bound_exclusive,
+            lower_bound_inclusive=lower_bound_inclusive,
+            include_follow_up_responses=False,
+        )
+
+        self.assertEqual([], responses_in_window)
+
+    def test_sorted_responses_in_window_exclude_before_window(self):
+        violation_responses = [
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code="US_XX",
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2000, 1, 1),
+            ),
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code="US_XX",
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(1998, 2, 1),
+            ),
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code="US_XX",
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(1997, 3, 1),
+            ),
+        ]
+
+        lower_bound_inclusive = date(2009, 1, 17)
+        upper_bound_exclusive = date(2010, 1, 18)
+
+        responses_in_window = sorted_violation_responses_in_window(
+            violation_responses,
+            upper_bound_exclusive=upper_bound_exclusive,
+            lower_bound_inclusive=lower_bound_inclusive,
+            include_follow_up_responses=False,
+        )
+
+        self.assertEqual([], responses_in_window)
+
+    def test_sorted_responses_in_window_exclude_permanent_decision(self):
+        violation_responses = [
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code="US_XX",
+                response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+                response_date=date(2000, 1, 1),
+            ),
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code="US_XX",
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(1998, 2, 1),
+            ),
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code="US_XX",
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(1997, 3, 1),
+            ),
+        ]
+
+        upper_bound_exclusive = date(2000, 1, 18)
+
+        responses_in_window = sorted_violation_responses_in_window(
+            violation_responses,
+            upper_bound_exclusive=upper_bound_exclusive,
+            lower_bound_inclusive=None,
+            include_follow_up_responses=False,
+        )
+
+        self.assertCountEqual(
+            [
+                StateSupervisionViolationResponse.new_with_defaults(
+                    state_code="US_XX",
+                    response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                    response_date=date(1998, 2, 1),
+                ),
+                StateSupervisionViolationResponse.new_with_defaults(
+                    state_code="US_XX",
+                    response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                    response_date=date(1997, 3, 1),
+                ),
+            ],
+            responses_in_window,
+        )
+
+    def test_sorted_responses_in_window_us_mo_do_not_include_supplemental(self):
+        violation_responses = [
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code="US_MO",
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_subtype="INI",
+                response_date=date(1998, 2, 1),
+            ),
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code="US_MO",
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_subtype="SUP",
+                response_date=date(1998, 3, 1),
+            ),
+        ]
+
+        upper_bound_exclusive = date(2000, 1, 18)
+
+        responses_in_window = sorted_violation_responses_in_window(
+            violation_responses,
+            upper_bound_exclusive=upper_bound_exclusive,
+            lower_bound_inclusive=None,
+            include_follow_up_responses=False,
+        )
+
+        self.assertCountEqual(
+            [
+                StateSupervisionViolationResponse.new_with_defaults(
+                    state_code="US_MO",
+                    response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                    response_subtype="INI",
+                    response_date=date(1998, 2, 1),
+                )
+            ],
+            responses_in_window,
         )

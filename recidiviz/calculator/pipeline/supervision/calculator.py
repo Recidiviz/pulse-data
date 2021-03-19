@@ -48,7 +48,6 @@ from recidiviz.calculator.pipeline.supervision.metrics import (
     SupervisionTerminationMetric,
     SupervisionCaseComplianceMetric,
     SuccessfulSupervisionSentenceDaysServedMetric,
-    SupervisionRevocationAnalysisMetric,
     SupervisionDowngradeMetric,
     SupervisionStartMetric,
     SupervisionOutOfStatePopulationMetric,
@@ -76,7 +75,6 @@ BUCKET_TO_METRIC_TYPES: Dict[
         SupervisionMetricType.SUPERVISION_POPULATION,
         SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION,
         SupervisionMetricType.SUPERVISION_REVOCATION,
-        SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS,
     ],
     SupervisionStartBucket: [SupervisionMetricType.SUPERVISION_START],
     SupervisionTerminationBucket: [SupervisionMetricType.SUPERVISION_TERMINATION],
@@ -88,7 +86,6 @@ METRIC_TYPE_TO_CLASS: Dict[SupervisionMetricType, Type[SupervisionMetric]] = {
     SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION: SupervisionOutOfStatePopulationMetric,
     SupervisionMetricType.SUPERVISION_POPULATION: SupervisionPopulationMetric,
     SupervisionMetricType.SUPERVISION_REVOCATION: SupervisionRevocationMetric,
-    SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: SupervisionRevocationAnalysisMetric,
     SupervisionMetricType.SUPERVISION_START: SupervisionStartMetric,
     SupervisionMetricType.SUPERVISION_SUCCESS: SupervisionSuccessMetric,
     SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED: SuccessfulSupervisionSentenceDaysServedMetric,
@@ -257,7 +254,6 @@ def include_event_in_metric(
         )
     if metric_type in (
         SupervisionMetricType.SUPERVISION_REVOCATION,
-        SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS,
         SupervisionMetricType.SUPERVISION_START,
         SupervisionMetricType.SUPERVISION_SUCCESS,
         SupervisionMetricType.SUPERVISION_TERMINATION,

@@ -77,7 +77,7 @@ PO_REPORT_IMPACT_METRICS_QUERY_TEMPLATE = """
                 person_id, revocation_admission_date,
                 IF(revocation_type = 'TREATMENT_IN_PRISON', 1, 0) AS is_rider_revocation,
                 IF(supervision_type = 'PAROLE', 1, 0) AS is_parole_board_hold_revocation
-            FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_revocation_analysis_metrics_materialized`
+            FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_revocation_metrics_materialized`
           )
         GROUP BY state_code, year, month, district
       ),

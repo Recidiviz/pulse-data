@@ -70,12 +70,12 @@ COMPARTMENT_SESSION_START_REASONS_QUERY_TEMPLATE = """
         revocation_admission_date as start_date,
         state_code,
         'REVOCATION' AS start_reason,
-        COALESCE(source_violation_type, 'INTERNAL_UNKNOWN') AS start_sub_reason,
+        COALESCE(most_severe_violation_type, 'INTERNAL_UNKNOWN') AS start_sub_reason,
         'INCARCERATION' AS compartment_level_1,
         metric_type AS metric_source,
         --This is very rare (2 cases) where a person has more that one revocation (with different reasons) on the same day. 
         --In both cases one of the records has a null reason, so here I dedup prioritizing the non-null one.
-        ROW_NUMBER() OVER(PARTITION BY person_id, revocation_admission_date ORDER BY IF(source_violation_type IS NULL, 1, 0)) AS reason_priority,
+        ROW_NUMBER() OVER(PARTITION BY person_id, revocation_admission_date ORDER BY IF(most_severe_violation_type IS NULL, 1, 0)) AS reason_priority,
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_revocation_metrics_materialized`
     UNION ALL
     SELECT 
