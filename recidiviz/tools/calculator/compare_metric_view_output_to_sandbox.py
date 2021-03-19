@@ -59,7 +59,7 @@ If --check_determinism is set to True, the script instead compares the output of
 the output of the views are deterministic. In this case, all columns in the local view are compared.
 
 This can be run on-demand whenever locally with the following command:
-    python -m recidiviz.tools.compare_metric_view_output_to_sandbox
+    python -m recidiviz.tools.calculator.compare_metric_view_output_to_sandbox
         --project_id [PROJECT_ID]
         --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX]
         [--load_sandbox_views]
