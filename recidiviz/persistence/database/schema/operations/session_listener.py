@@ -41,6 +41,7 @@ def session_listener(session):
                 is_file_split=False,
                 region_code=instance.region_code,
                 file_tag=instance.file_tag,
+                ingest_database_name=instance.ingest_database_name,
                 datetimes_contained_lower_bound_exclusive=instance.datetimes_contained_lower_bound_exclusive,
                 datetimes_contained_upper_bound_inclusive=instance.datetimes_contained_upper_bound_inclusive,
             )
@@ -51,6 +52,7 @@ def session_listener(session):
             raise IntegrityError(
                 f"Attempting to commit repeated non-file split DirectIngestIngestFileMetadata row for "
                 f"region_code={instance.region_code}, file_tag={instance.file_tag}, "
+                f"ingest_database_name={instance.ingest_database_name}",
                 f"datetimes_contained_lower_bound_exclusive={instance.datetimes_contained_lower_bound_exclusive}, "
-                f"datetimes_contained_upper_bound_inclusive={instance.datetimes_contained_upper_bound_inclusive}"
+                f"datetimes_contained_upper_bound_inclusive={instance.datetimes_contained_upper_bound_inclusive}",
             )

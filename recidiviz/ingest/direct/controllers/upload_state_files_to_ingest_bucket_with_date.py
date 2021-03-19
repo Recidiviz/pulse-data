@@ -38,6 +38,7 @@ from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_ma
 )
 
 # TODO(#6013): refactor recidiviz.tools.UploadStateFilesToIngestBucketController to inherit from this class
+from recidiviz.persistence.database.sqlalchemy_database_key import DEFAULT_DB_NAME
 
 
 class UploadStateFilesToIngestBucketController:
@@ -66,8 +67,10 @@ class UploadStateFilesToIngestBucketController:
             if gcs_destination_path is None
             else GcsfsDirectoryPath.from_absolute_path(gcs_destination_path)
         )
-        self.postgres_direct_ingest_file_metadata_manager = (
-            PostgresDirectIngestFileMetadataManager(region)
+        self.postgres_direct_ingest_file_metadata_manager = PostgresDirectIngestFileMetadataManager(
+            region,
+            # TODO(#6077): Prepare this call site for cutover to single-state DBs
+            ingest_database_name=DEFAULT_DB_NAME,
         )
 
         self.uploaded_files: List[str] = []

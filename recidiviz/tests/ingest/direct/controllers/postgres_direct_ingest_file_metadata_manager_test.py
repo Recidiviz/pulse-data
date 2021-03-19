@@ -39,10 +39,7 @@ from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_ma
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.sqlalchemy_database_key import (
-    SQLAlchemyDatabaseKey,
-    DEFAULT_DB_NAME,
-)
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.base_entity import entity_graph_eq, Entity
 from recidiviz.persistence.entity.operations.entities import (
     DirectIngestRawFileMetadata,
@@ -58,10 +55,16 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
         fakes.use_in_memory_sqlite_database(self.database_key)
         self.metadata_manager = PostgresDirectIngestFileMetadataManager(
-            region_code="us_xx"
+            region_code="us_xx", ingest_database_name="us_xx_ingest_database_name"
         )
+
+        self.metadata_manager_secondary = PostgresDirectIngestFileMetadataManager(
+            region_code="us_xx",
+            ingest_database_name="us_xx_ingest_database_name_secondary",
+        )
+
         self.metadata_manager_other_region = PostgresDirectIngestFileMetadataManager(
-            region_code="us_yy"
+            region_code="us_yy", ingest_database_name="us_xx_ingest_database_name"
         )
 
         def fake_eq(e1: Entity, e2: Entity) -> bool:
@@ -133,6 +136,9 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
         # Act
         self.metadata_manager.mark_file_as_discovered(raw_unprocessed_path)
         metadata = self.metadata_manager.get_file_metadata(raw_unprocessed_path)
+        metadata_secondary = self.metadata_manager_secondary.get_file_metadata(
+            raw_unprocessed_path
+        )
 
         # Assert
         expected_metadata = DirectIngestRawFileMetadata.new_with_defaults(
@@ -148,8 +154,13 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
 
         self.assertIsInstance(metadata, DirectIngestRawFileMetadata)
         self.assertIsNotNone(metadata.file_id)
-
         self.assertEqual(expected_metadata, metadata)
+
+        # Raw file metadata is not impacted by which ingest database the metadata
+        # manager is associated with.
+        self.assertIsInstance(metadata_secondary, DirectIngestRawFileMetadata)
+        self.assertIsNotNone(metadata_secondary.file_id)
+        self.assertEqual(expected_metadata, metadata_secondary)
 
     @freeze_time("2015-01-02T03:04:06")
     def test_get_raw_file_metadata_unique_to_state(self) -> None:
@@ -287,6 +298,11 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
         )
         self.run_ingest_view_file_progression(
             args, self.metadata_manager, ingest_view_unprocessed_path
+        )
+
+        # Running again for a totally different DB should produce same results
+        self.run_ingest_view_file_progression(
+            args, self.metadata_manager_secondary, ingest_view_unprocessed_path
         )
 
     def test_ingest_view_file_progression_discovery_before_export_recorded(
@@ -458,7 +474,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
             export_time=None,
             discovery_time=None,
             processed_time=None,
-            ingest_database_name=DEFAULT_DB_NAME,
+            ingest_database_name=metadata_manager.ingest_database_name,
         )
 
         self.assertEqual(expected_metadata, ingest_file_metadata)
@@ -572,7 +588,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
             export_time=None,
             discovery_time=None,
             processed_time=None,
-            ingest_database_name=DEFAULT_DB_NAME,
+            ingest_database_name=original_file_metadata.ingest_database_name,
         )
 
         with freeze_time("2015-01-02T03:05:05"):
@@ -623,6 +639,13 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
         )
         self.run_ingest_view_file_progression(
             args, self.metadata_manager, ingest_view_unprocessed_path, split_file=True
+        )
+        # Running again for a totally different DB should produce same results
+        self.run_ingest_view_file_progression(
+            args,
+            self.metadata_manager_secondary,
+            ingest_view_unprocessed_path,
+            split_file=True,
         )
 
     def test_ingest_then_split_progression_discovery_before_export_recorded(
@@ -760,7 +783,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
                 datetimes_contained_upper_bound_inclusive=datetime.datetime(
                     2015, 1, 2, 3, 3, 3, 3
                 ),
-                ingest_database_name=DEFAULT_DB_NAME,
+                ingest_database_name=self.metadata_manager.ingest_database_name,
             )
         ]
 

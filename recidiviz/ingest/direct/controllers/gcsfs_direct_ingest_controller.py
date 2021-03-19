@@ -62,6 +62,7 @@ from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_ma
 from recidiviz.ingest.direct.direct_ingest_controller_utils import (
     check_is_region_launched_in_env,
 )
+from recidiviz.persistence.database.sqlalchemy_database_key import DEFAULT_DB_NAME
 from recidiviz.persistence.entity.operations.entities import (
     DirectIngestIngestFileMetadata,
 )
@@ -112,6 +113,9 @@ class GcsfsDirectIngestController(
             gcsfs_direct_ingest_temporary_output_directory_path()
         )
 
+        # TODO(#6077): Prepare this call site for cutover to single-state DBs
+        self.ingest_database_name = DEFAULT_DB_NAME
+
         self.file_prioritizer = GcsfsDirectIngestJobPrioritizer(
             self.fs,
             self.ingest_directory_path,
@@ -121,7 +125,8 @@ class GcsfsDirectIngestController(
         self.ingest_file_split_line_limit = self._INGEST_FILE_SPLIT_LINE_LIMIT
 
         self.file_metadata_manager = PostgresDirectIngestFileMetadataManager(
-            region_code=self.region.region_code
+            region_code=self.region.region_code,
+            ingest_database_name=self.ingest_database_name,
         )
 
         self.raw_file_import_manager = DirectIngestRawFileImportManager(
