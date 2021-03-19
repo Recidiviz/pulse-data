@@ -26,6 +26,7 @@ import attr
 import dateutil.parser
 
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
+from recidiviz.cloud_storage.gcs_file_system import GCSBlobDoesNotExistError
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.utils import metadata
 
@@ -201,9 +202,10 @@ class GCSPseudoLockManager:
     def is_locked(self, name: str) -> bool:
         """Checks if @param name is locked by checking if file exists. Returns true if locked, false if unlocked"""
         path = GcsfsFilePath(bucket_name=self.bucket_name, blob_name=name)
-        if not self.fs.exists(path):
+        try:
+            lock_string = self.fs.download_as_string(path)
+        except GCSBlobDoesNotExistError:
             return False
-        lock_string = self.fs.download_as_string(path)
         gcs_pseudo_lock_contents = GCSPseudoLockContents.from_json_string(lock_string)
         return (
             not gcs_pseudo_lock_contents
@@ -216,12 +218,13 @@ class GCSPseudoLockManager:
     def get_lock_contents(self, name: str) -> Optional[str]:
         """Returns contents of specified lock as string"""
         path = GcsfsFilePath(bucket_name=self.bucket_name, blob_name=name)
-        if not self.fs.exists(path):
+        try:
+            lock_string = self.fs.download_as_string(path)
+        except GCSBlobDoesNotExistError as e:
             raise GCSPseudoLockDoesNotExist(
                 f"Lock with the name {name} does not yet exist in the bucket "
                 f"{self.bucket_name}"
-            )
-        lock_string = self.fs.download_as_string(path)
+            ) from e
         gcs_pseudo_lock_contents = GCSPseudoLockContents.from_json_string(lock_string)
         if not gcs_pseudo_lock_contents:
             return None
