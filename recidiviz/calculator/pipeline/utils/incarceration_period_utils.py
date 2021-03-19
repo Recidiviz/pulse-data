@@ -21,7 +21,7 @@ import logging
 from copy import deepcopy
 from datetime import date
 
-from typing import List
+from typing import List, Optional
 
 import attr
 
@@ -35,12 +35,17 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason as AdmissionReason,
     StateIncarcerationPeriodStatus,
     is_official_admission,
+    StateIncarcerationPeriodAdmissionReason,
+    StateIncarcerationPeriodReleaseReason,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason as ReleaseReason,
 )
 from recidiviz.common.date import DateRangeDiff
 from recidiviz.persistence.entity.entity_utils import is_placeholder
+
+
+VALID_TRANSFER_THRESHOLD_DAYS: int = 1
 
 
 @attr.s
@@ -570,3 +575,40 @@ def _drop_zero_day_erroneous_periods(
         periods_to_keep.append(ip)
 
     return periods_to_keep
+
+
+def period_edges_are_valid_transfer(
+    first_incarceration_period: Optional[StateIncarcerationPeriod] = None,
+    second_incarceration_period: Optional[StateIncarcerationPeriod] = None,
+) -> bool:
+    """Returns whether the edge between two incarceration periods is a valid transfer.
+    Valid transfer means:
+       - The adjacent release reason and admission reason between two consecutive periods is TRANSFER
+       - The adjacent release date and admission date between two consecutive periods is less than or
+       equal to the VALID_TRANSFER_THRESHOLD
+    """
+    if not first_incarceration_period or not second_incarceration_period:
+        return False
+
+    release_reason = first_incarceration_period.release_reason
+    release_date = first_incarceration_period.release_date
+
+    admission_reason = second_incarceration_period.admission_reason
+    admission_date = second_incarceration_period.admission_date
+
+    if (
+        not release_reason
+        or not release_date
+        or not admission_reason
+        or not admission_date
+    ):
+        # If there is no release reason or admission reason, then this is not a valid period edge
+        return False
+
+    days_between_periods = (admission_date - release_date).days
+
+    return (
+        days_between_periods <= VALID_TRANSFER_THRESHOLD_DAYS
+        and admission_reason == StateIncarcerationPeriodAdmissionReason.TRANSFER
+        and release_reason == StateIncarcerationPeriodReleaseReason.TRANSFER
+    )

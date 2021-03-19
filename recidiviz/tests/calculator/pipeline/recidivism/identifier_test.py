@@ -912,6 +912,7 @@ _SHOULD_BE_FILTERED_OUT_IN_VALIDATION_ADMISSION: List[AdmissionReason] = [
     AdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
     AdmissionReason.TEMPORARY_CUSTODY,
     AdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE,
+    AdmissionReason.STATUS_CHANGE,
 ]
 
 # Stores whether each release type should be included in a release cohort
@@ -932,6 +933,7 @@ RELEASE_REASON_INCLUSION: Dict[ReleaseReason, bool] = {
     ReleaseReason.SENTENCE_SERVED: True,
     ReleaseReason.TRANSFER: False,
     ReleaseReason.TRANSFERRED_OUT_OF_STATE: False,
+    ReleaseReason.STATUS_CHANGE: False,
     ReleaseReason.VACATED: True,
 }
 

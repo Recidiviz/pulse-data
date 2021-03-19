@@ -56,7 +56,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     terminating_supervision_period_supervision_type,
     supervision_period_counts_towards_supervision_population_in_date_range_state_specific,
     state_specific_filter_of_violation_responses,
-    should_collapse_transfers_different_purpose_for_incarceration,
+    should_collapse_transfers_different_purposes_for_incarceration,
     filter_supervision_periods_for_revocation_identification,
     get_pre_revocation_supervision_type,
     should_produce_supervision_time_bucket_for_period,
@@ -219,7 +219,7 @@ def find_supervision_time_buckets(
     )
 
     should_collapse_transfers_with_different_pfi = (
-        should_collapse_transfers_different_purpose_for_incarceration(state_code)
+        should_collapse_transfers_different_purposes_for_incarceration(state_code)
     )
 
     # We don't want to collapse temporary custody periods with revocations because we want to use the actual date
