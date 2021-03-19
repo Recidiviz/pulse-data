@@ -14,6 +14,3 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
-"""us_nd specific regional functionality."""
-from recidiviz.ingest.direct.regions.us_nd import us_nd_controller

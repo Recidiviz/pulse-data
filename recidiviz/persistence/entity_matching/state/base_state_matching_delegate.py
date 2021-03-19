@@ -25,7 +25,6 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import (
     default_merge_flat_fields,
     read_persons_by_root_entity_cls,
 )
-from recidiviz.utils.regions import get_region, Region
 
 
 class BaseStateMatchingDelegate:
@@ -39,7 +38,6 @@ class BaseStateMatchingDelegate:
         ] = None,
     ) -> None:
         self.region_code = region_code.upper()
-        self.region = get_region(region_code=self.region_code, is_direct_ingest=True)
         self.allowed_root_entity_classes: List[Type[DatabaseEntity]] = (
             [schema.StatePerson]
             if not allowed_root_entity_classes_override
@@ -49,10 +47,6 @@ class BaseStateMatchingDelegate:
     def get_region_code(self) -> str:
         """Returns the region code for this object."""
         return self.region_code
-
-    def get_region(self) -> Region:
-        """Returns the region for this object."""
-        return self.region
 
     def read_potential_match_db_persons(
         self, session: Session, ingested_persons: List[schema.StatePerson]
