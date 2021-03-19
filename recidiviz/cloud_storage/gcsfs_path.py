@@ -51,6 +51,10 @@ class GcsfsPath:
     # Name of the bucket for this path in Cloud Storage
     bucket_name: str = attr.ib()
 
+    @property
+    def bucket_path(self) -> "GcsfsBucketPath":
+        return GcsfsBucketPath(self.bucket_name)
+
     @abc.abstractmethod
     def abs_path(self) -> str:
         """Builds full path as a string."""
