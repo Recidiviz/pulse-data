@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -797,7 +797,6 @@ class TestSupervisionPipeline(unittest.TestCase):
         expected_metric_types = {
             SupervisionMetricType.SUPERVISION_POPULATION,
             SupervisionMetricType.SUPERVISION_REVOCATION,
-            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS,
             SupervisionMetricType.SUPERVISION_TERMINATION,
             SupervisionMetricType.SUPERVISION_START,
         }
@@ -846,10 +845,11 @@ class TestSupervisionPipeline(unittest.TestCase):
         ssvr_1 = schema.StateSupervisionViolationResponse(
             supervision_violation_response_id=5578679,
             state_code="US_XX",
-            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
             person_id=fake_person_id,
             revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
             supervision_violation_id=4698615,
+            response_date=date(2015, 4, 15),
         )
         state_agent = database_test_utils.generate_test_assessment_agent()
         ssvr_1.decision_agents = [state_agent]
@@ -881,7 +881,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             release_date=date(2016, 11, 22),
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             person_id=fake_person_id,
-            source_supervision_violation_response_id=ssvr_1.supervision_violation_response_id,
         )
 
         # This probation supervision period ended in a revocation
@@ -1084,7 +1083,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             SupervisionMetricType.SUPERVISION_POPULATION,
             SupervisionMetricType.SUPERVISION_SUCCESS,
             SupervisionMetricType.SUPERVISION_REVOCATION,
-            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS,
             SupervisionMetricType.SUPERVISION_TERMINATION,
             SupervisionMetricType.SUPERVISION_START,
         }
@@ -1340,7 +1338,6 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         expected_metric_types = {
             SupervisionMetricType.SUPERVISION_POPULATION,
-            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS,
             SupervisionMetricType.SUPERVISION_TERMINATION,
             SupervisionMetricType.SUPERVISION_START,
         }
@@ -1585,7 +1582,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             SupervisionMetricType.SUPERVISION_POPULATION,
             SupervisionMetricType.SUPERVISION_SUCCESS,
             SupervisionMetricType.SUPERVISION_REVOCATION,
-            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS,
             SupervisionMetricType.SUPERVISION_TERMINATION,
             SupervisionMetricType.SUPERVISION_START,
             SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED,
@@ -2628,7 +2624,6 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
                 event_date=date(2015, 2, 1),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 revocation_type=RevocationType.REINCARCERATION,
-                source_violation_type=ViolationType.TECHNICAL,
                 is_on_supervision_last_day_of_month=False,
             ),
             RevocationReturnSupervisionTimeBucket(
@@ -2638,7 +2633,6 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
                 event_date=date(2015, 3, 1),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 revocation_type=RevocationType.REINCARCERATION,
-                source_violation_type=ViolationType.TECHNICAL,
                 is_on_supervision_last_day_of_month=False,
             ),
         ]
@@ -2647,7 +2641,6 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
 
         expected_combination_counts = {
             SupervisionMetricType.SUPERVISION_REVOCATION.value: expected_metric_count,
-            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS.value: expected_metric_count,
             SupervisionMetricType.SUPERVISION_POPULATION.value: expected_metric_count,
         }
 
@@ -2862,7 +2855,7 @@ class AssertMatchers:
             with_violation_types = [
                 metric
                 for metric in output
-                if metric["source_violation_type"] == expected_violation.value
+                if metric["most_severe_violation_type"] == expected_violation.value
             ]
 
             if len(with_violation_types) == 0:

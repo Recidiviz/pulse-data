@@ -38,7 +38,7 @@ daily_pipelines:
     job_name: us-mo-supervision-calculations-36
     state_code: US_MO
     calculation_month_count: 36
-    metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION_ANALYSIS SUPERVISION_TERMINATION
+    metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION SUPERVISION_TERMINATION
     region: us-west3
 
   # Daily US_MO calculations for automated data validation not covered by daily calculation runs
@@ -55,7 +55,7 @@ daily_pipelines:
     job_name: us-id-supervision-calculations-24
     state_code: US_ID
     calculation_month_count: 24
-    metric_types: SUPERVISION_POPULATION SUPERVISION_OUT_OF_STATE_POPULATION SUPERVISION_REVOCATION SUPERVISION_REVOCATION_ANALYSIS SUPERVISION_COMPLIANCE SUPERVISION_TERMINATION SUPERVISION_START SUPERVISION_DOWNGRADE
+    metric_types: SUPERVISION_POPULATION SUPERVISION_OUT_OF_STATE_POPULATION SUPERVISION_REVOCATION SUPERVISION_COMPLIANCE SUPERVISION_TERMINATION SUPERVISION_START SUPERVISION_DOWNGRADE
     region: us-central1
 
   # Daily US_ID incarceration calculations for the COVID report
@@ -71,7 +71,7 @@ daily_pipelines:
     job_name: us-pa-supervision-calculations-36
     state_code: US_PA
     calculation_month_count: 36
-    metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION_ANALYSIS SUPERVISION_TERMINATION
+    metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION SUPERVISION_TERMINATION
     region: us-west1
 
   # Daily US_PA calculations for automated data validation not covered by daily calculation runs

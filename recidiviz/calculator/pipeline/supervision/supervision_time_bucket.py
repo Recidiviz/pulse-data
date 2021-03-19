@@ -169,11 +169,6 @@ class RevocationReturnSupervisionTimeBucket(
     # A string subtype that provides further insight into the revocation_type above.
     revocation_type_subtype: Optional[str] = attr.ib(default=None)
 
-    # StateSupervisionViolationType enum for the type of violation that eventually caused the revocation of supervision
-    source_violation_type: Optional[StateSupervisionViolationType] = attr.ib(
-        default=None
-    )
-
     # A string representation of the violations recorded in the period leading up to the revocation
     violation_history_description: Optional[str] = attr.ib(default=None)
 

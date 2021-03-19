@@ -37,7 +37,6 @@ from recidiviz.calculator.pipeline.supervision.metrics import (
     SupervisionOutOfStatePopulationMetric,
     SupervisionRevocationMetric,
     SupervisionSuccessMetric,
-    SupervisionRevocationAnalysisMetric,
     SuccessfulSupervisionSentenceDaysServedMetric,
     SupervisionCaseComplianceMetric,
     SupervisionTerminationMetric,
@@ -285,7 +284,6 @@ class ProduceSupervisionMetrics(beam.DoFn):
             SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION: SupervisionOutOfStatePopulationMetric,
             SupervisionMetricType.SUPERVISION_POPULATION: SupervisionPopulationMetric,
             SupervisionMetricType.SUPERVISION_REVOCATION: SupervisionRevocationMetric,
-            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: SupervisionRevocationAnalysisMetric,
             SupervisionMetricType.SUPERVISION_START: SupervisionStartMetric,
             SupervisionMetricType.SUPERVISION_TERMINATION: SupervisionTerminationMetric,
             SupervisionMetricType.SUPERVISION_SUCCESS: SupervisionSuccessMetric,
@@ -665,7 +663,6 @@ def run(
                 SupervisionMetricType.SUPERVISION_COMPLIANCE.value,
                 SupervisionMetricType.SUPERVISION_POPULATION.value,
                 SupervisionMetricType.SUPERVISION_REVOCATION.value,
-                SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS.value,
                 SupervisionMetricType.SUPERVISION_START.value,
                 SupervisionMetricType.SUPERVISION_SUCCESS.value,
                 SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED.value,
@@ -681,9 +678,6 @@ def run(
         ]
         populations_table_id = DATAFLOW_METRICS_TO_TABLES[SupervisionPopulationMetric]
         revocations_table_id = DATAFLOW_METRICS_TO_TABLES[SupervisionRevocationMetric]
-        revocation_analysis_table_id = DATAFLOW_METRICS_TO_TABLES[
-            SupervisionRevocationAnalysisMetric
-        ]
         successes_table_id = DATAFLOW_METRICS_TO_TABLES[SupervisionSuccessMetric]
         successful_sentence_lengths_table_id = DATAFLOW_METRICS_TO_TABLES[
             SuccessfulSupervisionSentenceDaysServedMetric
@@ -705,14 +699,9 @@ def run(
             )
         )
 
-        _ = (
-            writable_metrics.SUPERVISION_OUT_OF_STATE_POPULATION
-            | f"Write out of state population metrics to BQ table: "
-            f"{out_of_state_populations_table_id}"
-            >> WriteAppendToBigQuery(
-                output_table=out_of_state_populations_table_id,
-                output_dataset=output,
-            )
+        _ = writable_metrics.SUPERVISION_OUT_OF_STATE_POPULATION | f"Write out of state population metrics to BQ table: {out_of_state_populations_table_id}" >> WriteAppendToBigQuery(
+            output_table=out_of_state_populations_table_id,
+            output_dataset=output,
         )
 
         _ = (
@@ -748,16 +737,6 @@ def run(
             | f"Write termination metrics to BQ table: {terminations_table_id}"
             >> WriteAppendToBigQuery(
                 output_table=terminations_table_id,
-                output_dataset=output,
-            )
-        )
-
-        _ = (
-            writable_metrics.SUPERVISION_REVOCATION_ANALYSIS
-            | f"Write revocation analyses metrics to BQ table: "
-            f"{revocation_analysis_table_id}"
-            >> WriteAppendToBigQuery(
-                output_table=revocation_analysis_table_id,
                 output_dataset=output,
             )
         )
