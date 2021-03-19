@@ -237,6 +237,11 @@ def supervision_period_supervision_type_mapper(
         return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
     if "CP" in statuses:  # Court Probation
         return StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION
+    if "TM" in statuses:  # Termer
+        # Note: This in general shouldn't be showing up since Termer is an
+        # incarceration type and not a supervision type. We have this as
+        # a fallback here to handle erroneous instances that we've seen.
+        return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
     return None
 
 
