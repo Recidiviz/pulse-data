@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Runs the incarceration calculation pipeline. See recidiviz/tools/run_calculation_pipelines.py for details on how to
-run.
+"""The program calculation pipeline. See recidiviz/tools/run_sandbox_calculation_pipeline.py
+for details on how to launch a local run.
 """
 import argparse
 import datetime

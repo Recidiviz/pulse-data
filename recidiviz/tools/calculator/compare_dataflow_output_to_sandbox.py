@@ -31,7 +31,7 @@ regular job, with the output directed to the sandbox Dataflow dataset. (For help
 see go/dataflow-dev.) Once this pipeline has completed, we would run this script with the following parameters to
 execute the comparison:
 
-    python -m recidiviz.tools.compare_dataflow_output_to_sandbox
+    python -m recidiviz.tools.calculator.compare_dataflow_output_to_sandbox
         --project_id recidiviz-staging
         --sandbox_dataset_prefix my_github_username
         --job_name_to_compare us-xx-supervision-calculations-36
