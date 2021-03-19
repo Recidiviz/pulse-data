@@ -37,7 +37,7 @@ ADMISSIONS_BY_TYPE_BY_PERIOD_QUERY_TEMPLATE = """
         state_code, year, month,
         person_id,
         revocation_admission_date AS admission_date,
-        source_violation_type,
+        most_severe_violation_type,
         supervision_type,
         district
       FROM `{project_id}.{reference_views_dataset}.event_based_revocations`
@@ -48,7 +48,7 @@ ADMISSIONS_BY_TYPE_BY_PERIOD_QUERY_TEMPLATE = """
         state_code, year, month,
         person_id,
         admission_date,
-        'NEW_ADMISSION' AS source_violation_type,
+        'NEW_ADMISSION' AS most_severe_violation_type,
         'ALL' as supervision_type, 'ALL' as district
       FROM `{project_id}.{reference_views_dataset}.event_based_admissions`
       WHERE admission_reason = 'NEW_ADMISSION'
@@ -57,7 +57,7 @@ ADMISSIONS_BY_TYPE_BY_PERIOD_QUERY_TEMPLATE = """
     most_recent_admission AS (
       SELECT
         state_code, metric_period_months, person_id,
-        source_violation_type, supervision_type, district,
+        most_severe_violation_type, supervision_type, district,
         ROW_NUMBER() OVER (PARTITION BY state_code, metric_period_months, person_id, supervision_type, district
                            ORDER BY admission_date DESC) AS admission_rank
       FROM combined_admissions,
@@ -76,9 +76,9 @@ ADMISSIONS_BY_TYPE_BY_PERIOD_QUERY_TEMPLATE = """
     FROM (
         SELECT
           state_code, metric_period_months,
-          COUNT(IF(source_violation_type = 'NEW_ADMISSION', person_id, NULL)) AS new_admissions,
-          COUNT(IF(source_violation_type = 'TECHNICAL', person_id, NULL)) AS technicals,
-          COUNT(IF(source_violation_type IN ('ABSCONDED', 'ESCAPED', 'FELONY', 'MISDEMEANOR', 'LAW'), person_id, NULL)) AS non_technicals,
+          COUNT(IF(most_severe_violation_type = 'NEW_ADMISSION', person_id, NULL)) AS new_admissions,
+          COUNT(IF(most_severe_violation_type = 'TECHNICAL', person_id, NULL)) AS technicals,
+          COUNT(IF(most_severe_violation_type IN ('ABSCONDED', 'ESCAPED', 'FELONY', 'MISDEMEANOR', 'LAW'), person_id, NULL)) AS non_technicals,
           COUNT(person_id) AS all_violation_types_count,
           supervision_type,
           district

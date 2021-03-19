@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -376,7 +376,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 assessment_level=StateAssessmentLevel.MEDIUM,
                 assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
                 revocation_type=RevocationType.SHOCK_INCARCERATION,
-                source_violation_type=ViolationType.FELONY,
                 most_severe_violation_type=ViolationType.FELONY,
                 most_severe_violation_type_subtype="SUBTYPE",
                 most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
@@ -862,7 +861,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 supervising_officer_external_id="OFFICER",
                 supervising_district_external_id="DISTRICT",
                 revocation_type=RevocationType.SHOCK_INCARCERATION,
-                source_violation_type=ViolationType.FELONY,
                 most_severe_violation_type=StateSupervisionViolationType.FELONY,
                 most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 response_count=19,
@@ -1853,107 +1851,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 _combination,
                 "metric_type",
                 SupervisionMetricType.SUPERVISION_REVOCATION,
-            )
-            for _combination, value in supervision_combinations
-        )
-
-    def test_map_supervision_combinations_only_revocation_analysis(self):
-        person = StatePerson.new_with_defaults(
-            state_code="US_XX",
-            person_id=12345,
-            birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
-        )
-
-        person_external_id = StatePersonExternalId.new_with_defaults(
-            external_id="SID1341", id_type="US_MO_DOC", state_code="US_XX"
-        )
-
-        person.external_ids = [person_external_id]
-
-        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
-        )
-
-        person.ethnicities = [ethnicity]
-
-        termination_bucket = SupervisionTerminationBucket(
-            state_code="US_XX",
-            year=2010,
-            month=1,
-            event_date=date(2010, 1, 13),
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            assessment_score=11,
-            assessment_type=StateAssessmentType.LSIR,
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            assessment_score_change=-9,
-        )
-
-        supervision_time_buckets = [
-            ProjectedSupervisionCompletionBucket(
-                state_code="US_XX",
-                year=2010,
-                month=3,
-                event_date=date(2010, 3, 31),
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                successful_completion=True,
-                supervising_officer_external_id="officer45",
-                supervising_district_external_id="district5",
-            ),
-            termination_bucket,
-            RevocationReturnSupervisionTimeBucket(
-                state_code="US_XX",
-                year=2010,
-                month=1,
-                event_date=date(2010, 1, 1),
-                is_on_supervision_last_day_of_month=False,
-                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                projected_end_date=None,
-            ),
-            NonRevocationReturnSupervisionTimeBucket(
-                state_code="US_XX",
-                year=2010,
-                month=2,
-                event_date=date(2010, 2, 2),
-                is_on_supervision_last_day_of_month=False,
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                projected_end_date=None,
-            ),
-        ]
-
-        inclusions_dict = {
-            metric_type: (
-                metric_type == SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS
-            )
-            for metric_type in SupervisionMetricType
-        }
-
-        supervision_combinations = calculator.map_supervision_combinations(
-            person,
-            supervision_time_buckets,
-            inclusions_dict,
-            calculation_end_month="2010-12",
-            calculation_month_count=12,
-            person_metadata=_DEFAULT_PERSON_METADATA,
-        )
-
-        expected_combinations_count = expected_metric_combos_count(
-            supervision_time_buckets,
-            include_all_metrics=False,
-            metric_to_include=SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS,
-        )
-
-        self.assertEqual(expected_combinations_count, len(supervision_combinations))
-        assert all(value == 1 for _combination, value in supervision_combinations)
-        assert all(
-            combo_has_enum_value_for_key(
-                _combination,
-                "metric_type",
-                SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS,
             )
             for _combination, value in supervision_combinations
         )

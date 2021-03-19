@@ -21,6 +21,8 @@ from datetime import date
 import logging
 from typing import List, Optional, Tuple, Callable, Union, Dict, Any
 
+from dateutil.relativedelta import relativedelta
+
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import (
     NonRevocationReturnSupervisionTimeBucket,
     RevocationReturnSupervisionTimeBucket,
@@ -102,6 +104,7 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseRevocationType,
+    StateSupervisionViolationResponseType,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import DateRange, DateRangeDiff
@@ -887,3 +890,74 @@ def supervision_period_is_out_of_state(
         return False
 
     return us_id_supervision_period_is_out_of_state(supervision_time_bucket)
+
+
+# TODO(#6529):Move sorted_violation_responses_in_window() into violation_response_utils.py
+def sorted_violation_responses_in_window(
+    violation_responses: List[StateSupervisionViolationResponse],
+    upper_bound_exclusive: date,
+    lower_bound_inclusive: Optional[date],
+    include_follow_up_responses: bool,
+) -> List[StateSupervisionViolationResponse]:
+    """First, filters the violation responses to the ones that should be used in analysis. This only includes responses
+    with a set response_date that are not in a draft state and are of type VIOLATION_REPORT or CITATION.
+    Returns the filtered violation responses that have a response_date between the lower_bound_inclusive and
+    upper_bound_exclusive, sorted from oldest to newest."""
+    filtered_responses = [
+        response
+        for response in violation_responses
+        if response.response_date is not None
+        and not response.is_draft
+        and response.response_type
+        in (
+            StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            StateSupervisionViolationResponseType.CITATION,
+        )
+    ]
+
+    state_filtered_responses = state_specific_filter_of_violation_responses(
+        filtered_responses, include_follow_up_responses
+    )
+
+    responses_in_window = [
+        response
+        for response in state_filtered_responses
+        if response.response_date is not None
+        and response.response_date < upper_bound_exclusive
+        # Only limit with a lower bound if one is set
+        and (
+            lower_bound_inclusive is None
+            or lower_bound_inclusive <= response.response_date
+        )
+    ]
+
+    # All responses will have a response_date at this point, but date.min helps to satisfy mypy
+    responses_in_window.sort(key=lambda b: b.response_date or date.min)
+
+    return responses_in_window
+
+
+def state_specific_violation_responses(
+    end_date: date,
+    violation_responses: List[StateSupervisionViolationResponse],
+    incarceration_period: Optional[StateIncarcerationPeriod],
+    violation_history_window_months: int,
+) -> List[StateSupervisionViolationResponse]:
+    """Returns the violation response for an incarceration period when applicable for a state."""
+    if incarceration_period is not None and incarceration_period.state_code == "US_ND":
+        if incarceration_period.source_supervision_violation_response is not None:
+            return [incarceration_period.source_supervision_violation_response]
+        return []
+
+    violation_window_lower_bound_inclusive = end_date - relativedelta(
+        months=violation_history_window_months
+    )
+    violation_window_upper_bound_exclusive = end_date + relativedelta(days=1)
+
+    # Do not include the follow-up responses when evaluating the violation history
+    return sorted_violation_responses_in_window(
+        violation_responses,
+        lower_bound_inclusive=violation_window_lower_bound_inclusive,
+        upper_bound_exclusive=violation_window_upper_bound_exclusive,
+        include_follow_up_responses=False,
+    )

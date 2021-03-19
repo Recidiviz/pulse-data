@@ -39,7 +39,7 @@ EVENT_BASED_REVOCATIONS_QUERY_TEMPLATE = """
       IFNULL(district, 'EXTERNAL_UNKNOWN') as district,
       judicial_district_code,
       supervising_officer_external_id AS officer_external_id,
-      source_violation_type,
+      most_severe_violation_type,
       revocation_admission_date,
       prioritized_race_or_ethnicity as race_or_ethnicity,
       gender,

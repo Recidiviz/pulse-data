@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,8 +22,7 @@ from collections import defaultdict
 from datetime import date
 
 import unittest
-from itertools import permutations
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict
 from unittest import mock
 
 import attr
@@ -3050,6 +3049,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 judicial_district_code="XXX",
                 revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
                 is_on_supervision_last_day_of_month=False,
+                response_count=1,
             ),
         ]
 
@@ -3157,7 +3157,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 judicial_district_code="XXX",
             ),
             RevocationReturnSupervisionTimeBucket(
-                incarceration_period.state_code,
+                state_code=incarceration_period.state_code,
                 year=2019,
                 month=1,
                 event_date=incarceration_period.admission_date,
@@ -3263,7 +3263,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
             ),
             RevocationReturnSupervisionTimeBucket(
-                incarceration_period.state_code,
+                state_code=incarceration_period.state_code,
                 year=2018,
                 month=10,
                 event_date=incarceration_period.admission_date,
@@ -3360,7 +3360,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 termination_reason=supervision_period.termination_reason,
             ),
             RevocationReturnSupervisionTimeBucket(
-                incarceration_period.state_code,
+                state_code=incarceration_period.state_code,
                 year=2017,
                 month=10,
                 event_date=incarceration_period.admission_date,
@@ -5679,7 +5679,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 assessment_level=relevant_assessment.assessment_level,
                 assessment_type=relevant_assessment.assessment_type,
                 revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-                source_violation_type=StateSupervisionViolationType.FELONY,
                 most_severe_violation_type=StateSupervisionViolationType.FELONY,
                 most_severe_violation_type_subtype=StateSupervisionViolationType.FELONY.value,
                 most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
@@ -5934,7 +5933,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 assessment_level=relevant_assessment.assessment_level,
                 assessment_type=relevant_assessment.assessment_type,
                 revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-                source_violation_type=StateSupervisionViolationType.FELONY,
                 most_severe_violation_type=StateSupervisionViolationType.FELONY,
                 most_severe_violation_type_subtype=StateSupervisionViolationType.FELONY.value,
                 most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
@@ -6202,7 +6200,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 assessment_level=assessment.assessment_level,
                 assessment_type=assessment.assessment_type,
                 revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-                source_violation_type=StateSupervisionViolationType.TECHNICAL,
                 most_severe_violation_type=StateSupervisionViolationType.TECHNICAL,
                 most_severe_violation_type_subtype="SUBSTANCE_ABUSE",
                 most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
@@ -6426,7 +6423,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 assessment_level=assessment.assessment_level,
                 assessment_type=assessment.assessment_type,
                 revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-                source_violation_type=StateSupervisionViolationType.TECHNICAL,
                 most_severe_violation_type=StateSupervisionViolationType.TECHNICAL,
                 most_severe_violation_type_subtype="LAW_CITATION",
                 most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
@@ -6680,7 +6676,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 assessment_level=assessment.assessment_level,
                 assessment_type=assessment.assessment_type,
                 revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-                source_violation_type=StateSupervisionViolationType.TECHNICAL,
                 most_severe_violation_type=StateSupervisionViolationType.TECHNICAL,
                 most_severe_violation_type_subtype=StateSupervisionViolationType.TECHNICAL.value,
                 most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
@@ -7415,7 +7410,6 @@ class TestFindRevocationReturnBuckets(unittest.TestCase):
             supervision_type=supervision_period_supervision_type,
             case_type=StateSupervisionCaseType.GENERAL,
             revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-            source_violation_type=None,
             most_severe_violation_type=StateSupervisionViolationType.FELONY,
             most_severe_violation_type_subtype=StateSupervisionViolationType.FELONY.value,
             most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
@@ -7540,7 +7534,6 @@ class TestFindRevocationReturnBuckets(unittest.TestCase):
             supervision_type=supervision_period_supervision_type,
             case_type=StateSupervisionCaseType.GENERAL,
             revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-            source_violation_type=None,
             most_severe_violation_type=StateSupervisionViolationType.TECHNICAL,
             most_severe_violation_type_subtype=StateSupervisionViolationType.TECHNICAL.value,
             most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
@@ -7715,7 +7708,6 @@ class TestFindRevocationReturnBuckets(unittest.TestCase):
             supervision_type=supervision_period_supervision_type,
             case_type=StateSupervisionCaseType.GENERAL,
             revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-            source_violation_type=None,
             most_severe_violation_type=StateSupervisionViolationType.FELONY,
             most_severe_violation_type_subtype=StateSupervisionViolationType.FELONY.value,
             most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
@@ -9375,10 +9367,11 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         supervision_sentences = [supervision_sentence]
         incarceration_periods = []
+        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods)
 
         projected_completion_buckets = identifier.classify_supervision_success(
             supervision_sentences,
-            incarceration_periods,
+            incarceration_period_index,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             self.default_supervision_period_to_judicial_district_associations,
         )
@@ -9410,10 +9403,11 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         supervision_sentences = [supervision_sentence]
         incarceration_periods = []
+        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods)
 
         projected_completion_buckets = identifier.classify_supervision_success(
             supervision_sentences,
-            incarceration_periods,
+            incarceration_period_index,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             self.default_supervision_period_to_judicial_district_associations,
         )
@@ -9446,10 +9440,11 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         supervision_sentences = [supervision_sentence]
         incarceration_periods = []
+        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods)
 
         projected_completion_buckets = identifier.classify_supervision_success(
             supervision_sentences,
-            incarceration_periods,
+            incarceration_period_index,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             self.default_supervision_period_to_judicial_district_associations,
         )
@@ -10071,7 +10066,8 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         end_date = date(2019, 9, 5)
 
         violation_history = identifier.get_violation_and_response_history(
-            end_date, violation_responses
+            end_date,
+            violation_responses,
         )
 
         expected_output = identifier.ViolationHistory(
@@ -10574,7 +10570,8 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         revocation_date = date(2009, 2, 13)
 
         violation_history = identifier.get_violation_and_response_history(
-            revocation_date, [supervision_violation_response]
+            revocation_date,
+            [supervision_violation_response],
         )
 
         expected_output = identifier.ViolationHistory(
@@ -10624,7 +10621,8 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         revocation_date = date(2009, 2, 13)
 
         violation_history = identifier.get_violation_and_response_history(
-            revocation_date, [supervision_violation_response]
+            revocation_date,
+            [supervision_violation_response],
         )
 
         expected_output = identifier.ViolationHistory(
@@ -10683,7 +10681,8 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         revocation_date = date(2009, 2, 13)
 
         violation_history = identifier.get_violation_and_response_history(
-            revocation_date, [supervision_violation_response]
+            revocation_date,
+            [supervision_violation_response],
         )
 
         expected_output = identifier.ViolationHistory(
@@ -10743,237 +10742,6 @@ class TestGetMostSevereResponseDecision(unittest.TestCase):
         )
 
         self.assertIsNone(most_severe_response_decision)
-
-
-class TestSortedViolationResponsesInWindow(unittest.TestCase):
-    """Test the _sorted_violation_responses_in_window function."""
-
-    def test_sorted_responses_in_window(self):
-        violation_responses = [
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_XX",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_date=date(2010, 1, 1),
-            ),
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_XX",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_date=date(1998, 2, 1),
-            ),
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_XX",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_date=date(2017, 3, 1),
-            ),
-        ]
-
-        lower_bound_inclusive = date(2009, 1, 17)
-        upper_bound_exclusive = date(2010, 1, 18)
-
-        responses_in_window = identifier._sorted_violation_responses_in_window(
-            violation_responses,
-            upper_bound_exclusive=upper_bound_exclusive,
-            lower_bound_inclusive=lower_bound_inclusive,
-            include_follow_up_responses=False,
-        )
-
-        self.assertEqual(
-            [
-                StateSupervisionViolationResponse.new_with_defaults(
-                    state_code="US_XX",
-                    response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                    response_date=date(2010, 1, 1),
-                )
-            ],
-            responses_in_window,
-        )
-
-    def test_sorted_responses_in_window_no_lower_bound(self):
-        violation_responses = [
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_XX",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_date=date(2010, 1, 1),
-            ),
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_XX",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_date=date(1990, 2, 1),
-            ),
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_XX",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_date=date(2017, 3, 1),
-            ),
-        ]
-
-        upper_bound_exclusive = date(2010, 1, 17)
-
-        responses_in_window = identifier._sorted_violation_responses_in_window(
-            violation_responses,
-            upper_bound_exclusive=upper_bound_exclusive,
-            lower_bound_inclusive=None,
-            include_follow_up_responses=False,
-        )
-
-        self.assertEqual(
-            [
-                StateSupervisionViolationResponse.new_with_defaults(
-                    state_code="US_XX",
-                    response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                    response_date=date(1990, 2, 1),
-                ),
-                StateSupervisionViolationResponse.new_with_defaults(
-                    state_code="US_XX",
-                    response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                    response_date=date(2010, 1, 1),
-                ),
-            ],
-            responses_in_window,
-        )
-
-    def test_sorted_responses_in_window_all_outside_of_window(self):
-        violation_responses = [
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_XX",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_date=date(2000, 1, 1),
-            ),
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_XX",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_date=date(1998, 2, 1),
-            ),
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_XX",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_date=date(2019, 3, 1),
-            ),
-        ]
-
-        lower_bound_inclusive = date(2009, 1, 17)
-        upper_bound_exclusive = date(2010, 1, 18)
-
-        responses_in_window = identifier._sorted_violation_responses_in_window(
-            violation_responses,
-            upper_bound_exclusive=upper_bound_exclusive,
-            lower_bound_inclusive=lower_bound_inclusive,
-            include_follow_up_responses=False,
-        )
-
-        self.assertEqual([], responses_in_window)
-
-    def test_sorted_responses_in_window_exclude_before_window(self):
-        violation_responses = [
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_XX",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_date=date(2000, 1, 1),
-            ),
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_XX",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_date=date(1998, 2, 1),
-            ),
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_XX",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_date=date(1997, 3, 1),
-            ),
-        ]
-
-        lower_bound_inclusive = date(2009, 1, 17)
-        upper_bound_exclusive = date(2010, 1, 18)
-
-        responses_in_window = identifier._sorted_violation_responses_in_window(
-            violation_responses,
-            upper_bound_exclusive=upper_bound_exclusive,
-            lower_bound_inclusive=lower_bound_inclusive,
-            include_follow_up_responses=False,
-        )
-
-        self.assertEqual([], responses_in_window)
-
-    def test_sorted_responses_in_window_exclude_permanent_decision(self):
-        violation_responses = [
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_XX",
-                response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
-                response_date=date(2000, 1, 1),
-            ),
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_XX",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_date=date(1998, 2, 1),
-            ),
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_XX",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_date=date(1997, 3, 1),
-            ),
-        ]
-
-        upper_bound_exclusive = date(2000, 1, 18)
-
-        responses_in_window = identifier._sorted_violation_responses_in_window(
-            violation_responses,
-            upper_bound_exclusive=upper_bound_exclusive,
-            lower_bound_inclusive=None,
-            include_follow_up_responses=False,
-        )
-
-        self.assertCountEqual(
-            [
-                StateSupervisionViolationResponse.new_with_defaults(
-                    state_code="US_XX",
-                    response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                    response_date=date(1998, 2, 1),
-                ),
-                StateSupervisionViolationResponse.new_with_defaults(
-                    state_code="US_XX",
-                    response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                    response_date=date(1997, 3, 1),
-                ),
-            ],
-            responses_in_window,
-        )
-
-    def test_sorted_responses_in_window_us_mo_do_not_include_supplemental(self):
-        violation_responses = [
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_MO",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_subtype="INI",
-                response_date=date(1998, 2, 1),
-            ),
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_MO",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_subtype="SUP",
-                response_date=date(1998, 3, 1),
-            ),
-        ]
-
-        upper_bound_exclusive = date(2000, 1, 18)
-
-        responses_in_window = identifier._sorted_violation_responses_in_window(
-            violation_responses,
-            upper_bound_exclusive=upper_bound_exclusive,
-            lower_bound_inclusive=None,
-            include_follow_up_responses=False,
-        )
-
-        self.assertCountEqual(
-            [
-                StateSupervisionViolationResponse.new_with_defaults(
-                    state_code="US_MO",
-                    response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                    response_subtype="INI",
-                    response_date=date(1998, 2, 1),
-                )
-            ],
-            responses_in_window,
-        )
 
 
 class TestIdentifyMostSevereCaseType(unittest.TestCase):

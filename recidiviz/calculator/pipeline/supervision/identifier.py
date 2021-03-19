@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -55,7 +55,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     get_month_supervision_type,
     terminating_supervision_period_supervision_type,
     supervision_period_counts_towards_supervision_population_in_date_range_state_specific,
-    state_specific_filter_of_violation_responses,
     should_collapse_transfers_different_purposes_for_incarceration,
     filter_supervision_periods_for_revocation_identification,
     get_pre_revocation_supervision_type,
@@ -68,6 +67,8 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     state_specific_violation_response_pre_processing_function,
     state_specific_supervision_admission_reason_override,
     filter_out_federal_and_other_country_supervision_periods,
+    state_specific_violation_responses,
+    sorted_violation_responses_in_window,
     drop_temporary_custody_periods,
     drop_non_state_prison_incarceration_type_periods,
 )
@@ -107,7 +108,6 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
-    StateSupervisionViolationResponseType,
 )
 from recidiviz.common.date import DateRange, DateRangeDiff, last_day_of_month
 from recidiviz.persistence.entity.entity_utils import get_single_state_code
@@ -786,11 +786,12 @@ ViolationHistory = NamedTuple(
 def get_violation_and_response_history(
     end_date: date,
     violation_responses: List[StateSupervisionViolationResponse],
+    incarceration_period: Optional[StateIncarcerationPeriod] = None,
 ) -> ViolationHistory:
     """Identifies and returns various details of the violation history on the responses that were recorded during the
     VIOLATION_HISTORY_WINDOW_MONTHS of time preceding the |end_date|.
     """
-    if not violation_responses:
+    if not violation_responses and incarceration_period is None:
         return ViolationHistory(
             most_severe_violation_type=None,
             most_severe_violation_type_subtype=None,
@@ -800,17 +801,11 @@ def get_violation_and_response_history(
             violation_type_frequency_counter=None,
         )
 
-    violation_window_lower_bound_inclusive = end_date - relativedelta(
-        months=VIOLATION_HISTORY_WINDOW_MONTHS
-    )
-    violation_window_upper_bound_exclusive = end_date + relativedelta(days=1)
-
-    # Do not include the follow-up responses when evaluating the violation history
-    responses_in_window = _sorted_violation_responses_in_window(
+    responses_in_window = state_specific_violation_responses(
+        end_date,
         violation_responses,
-        lower_bound_inclusive=violation_window_lower_bound_inclusive,
-        upper_bound_exclusive=violation_window_upper_bound_exclusive,
-        include_follow_up_responses=False,
+        incarceration_period,
+        VIOLATION_HISTORY_WINDOW_MONTHS,
     )
 
     violations_in_window: List[StateSupervisionViolation] = []
@@ -939,50 +934,6 @@ def _period_is_within_sentence_bounds(
     return DateRangeDiff(sentence_range, period_range).overlapping_range is not None
 
 
-def _sorted_violation_responses_in_window(
-    violation_responses: List[StateSupervisionViolationResponse],
-    upper_bound_exclusive: date,
-    lower_bound_inclusive: Optional[date],
-    include_follow_up_responses: bool,
-) -> List[StateSupervisionViolationResponse]:
-    """First, filters the violation responses to the ones that should be used in analysis. This only includes responses
-    with a set response_date that are not in a draft state and are of type VIOLATION_REPORT or CITATION.
-    Returns the filtered violation responses that have a response_date between the lower_bound_inclusive and
-    upper_bound_exclusive, sorted from oldest to newest."""
-    filtered_responses = [
-        response
-        for response in violation_responses
-        if response.response_date is not None
-        and not response.is_draft
-        and response.response_type
-        in (
-            StateSupervisionViolationResponseType.VIOLATION_REPORT,
-            StateSupervisionViolationResponseType.CITATION,
-        )
-    ]
-
-    state_filtered_responses = state_specific_filter_of_violation_responses(
-        filtered_responses, include_follow_up_responses
-    )
-
-    responses_in_window = [
-        response
-        for response in state_filtered_responses
-        if response.response_date is not None
-        and response.response_date < upper_bound_exclusive
-        # Only limit with a lower bound if one is set
-        and (
-            lower_bound_inclusive is None
-            or lower_bound_inclusive <= response.response_date
-        )
-    ]
-
-    # All responses will have a response_date at this point, but date.min helps to satisfy mypy
-    responses_in_window.sort(key=lambda b: b.response_date or date.min)
-
-    return responses_in_window
-
-
 def _get_most_severe_response_decision(
     violation_responses: List[StateSupervisionViolationResponse],
 ) -> Optional[StateSupervisionViolationResponseDecision]:
@@ -1070,14 +1021,19 @@ def find_revocation_return_buckets(
         )
 
         # We will use the date of the last response prior to the revocation as the window cutoff.
-        responses_in_window = _sorted_violation_responses_in_window(
+        responses_in_window = sorted_violation_responses_in_window(
             violation_responses,
             upper_bound_exclusive=admission_date + relativedelta(days=1),
             lower_bound_inclusive=None,
             include_follow_up_responses=False,
         )
 
+        violation_history_end_date = incarceration_period.admission_date
+
         if responses_in_window:
+            # If there were violation responses leading up to the revocation admission,
+            # then we want the violation history leading up to the last response_date
+            # instead of the admission_date on the incarceration period
             last_response = responses_in_window[-1]
 
             if not last_response.response_date:
@@ -1085,21 +1041,21 @@ def find_revocation_return_buckets(
                 raise ValueError(
                     "Not effectively filtering out responses without valid response_dates."
                 )
+            violation_history_end_date = last_response.response_date
 
-            # Get details about the violation and response history leading up to the revocation
-            violation_history = get_violation_and_response_history(
-                last_response.response_date, violation_responses
-            )
-        else:
-            # Get an empty violation history tuple
-            violation_history = get_violation_and_response_history(admission_date, [])
+        # Get details about the violation and response history leading up to the revocation
+        violation_history = get_violation_and_response_history(
+            violation_history_end_date,
+            violation_responses,
+            incarceration_period,
+        )
 
         responses_in_window_for_decision_evaluation = responses_in_window
 
         if include_decisions_on_follow_up_responses_for_most_severe_response(
             incarceration_period.state_code
         ):
-            responses_in_window_for_decision_evaluation = _sorted_violation_responses_in_window(
+            responses_in_window_for_decision_evaluation = sorted_violation_responses_in_window(
                 violation_responses,
                 upper_bound_exclusive=(admission_date + relativedelta(days=1)),
                 # We're just looking for the most recent response
@@ -1165,7 +1121,6 @@ def find_revocation_return_buckets(
                         assessment_type=assessment_type,
                         revocation_type=revocation_details.revocation_type,
                         revocation_type_subtype=revocation_details.revocation_type_subtype,
-                        source_violation_type=revocation_details.source_violation_type,
                         most_severe_violation_type=violation_history.most_severe_violation_type,
                         most_severe_violation_type_subtype=violation_history.most_severe_violation_type_subtype,
                         most_severe_response_decision=violation_history.most_severe_response_decision,
@@ -1233,7 +1188,6 @@ def find_revocation_return_buckets(
                     assessment_type=assessment_type,
                     revocation_type=revocation_details.revocation_type,
                     revocation_type_subtype=revocation_details.revocation_type_subtype,
-                    source_violation_type=revocation_details.source_violation_type,
                     most_severe_violation_type=violation_history.most_severe_violation_type,
                     most_severe_violation_type_subtype=violation_history.most_severe_violation_type_subtype,
                     most_severe_response_decision=violation_history.most_severe_response_decision,
@@ -1535,10 +1489,7 @@ BUCKET_TYPES_FOR_METRIC: Dict[
         RevocationReturnSupervisionTimeBucket,
     ],
     SupervisionMetricType.SUPERVISION_REVOCATION: [
-        RevocationReturnSupervisionTimeBucket
-    ],
-    SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: [
-        RevocationReturnSupervisionTimeBucket
+        RevocationReturnSupervisionTimeBucket,
     ],
     SupervisionMetricType.SUPERVISION_START: [SupervisionStartBucket],
     SupervisionMetricType.SUPERVISION_SUCCESS: [ProjectedSupervisionCompletionBucket],
