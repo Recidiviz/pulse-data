@@ -16,7 +16,7 @@
 # =============================================================================
 """This file is used *only* for deploying calculation pipelines in Dataflow.
 
-This is referenced when running the run_calculation_pipelines.py script.
+This is referenced when running Dataflow pipelines or creating pipeline templates.
 This is not used to set up the entire recidiviz package. The REQUIRED_PACKAGES
 are the external packages required by the pipelines in ./recidiviz/calculator,
 and must be manually updated any time a dependency is added to the project that

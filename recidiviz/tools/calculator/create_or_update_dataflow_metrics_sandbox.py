@@ -21,7 +21,7 @@ or some personal unique identifier so it's easy for others to tell who created t
 
 Run locally with the following command:
 
-    python -m recidiviz.tools.create_or_update_dataflow_metrics_sandbox \
+    python -m recidiviz.tools.calculator.create_or_update_dataflow_metrics_sandbox \
         --project_id [PROJECT_ID] \
         --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] \
         [--allow_overwrite]

@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@ from typing import List, Tuple
 import yaml
 
 from recidiviz.calculator import pipeline
-from recidiviz.tools.run_calculation_pipelines import run_pipeline, get_pipeline_module
+from recidiviz.tools.pipeline_launch_util import run_pipeline, get_pipeline_module
 
 STAGING_ONLY_TEMPLATES_PATH = os.path.join(
     os.path.dirname(pipeline.__file__),
