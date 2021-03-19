@@ -260,6 +260,7 @@ def find_valid_reincarceration_period(
             AdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
             AdmissionReason.TEMPORARY_CUSTODY,
             AdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE,
+            AdmissionReason.STATUS_CHANGE,
         ):
             continue
         if ip.admission_reason in (
@@ -435,6 +436,10 @@ def should_include_in_release_cohort(
         # If the person was released from this incarceration period due to a court order, do not include them in the
         # release cohort.
         return False
+    if release_reason == ReleaseReason.STATUS_CHANGE:
+        # If the person was released from this incarceration period because their incarceration status changed, do not
+        # include them in the release cohort.
+        return False
     if release_reason in (
         ReleaseReason.EXTERNAL_UNKNOWN,
         ReleaseReason.INTERNAL_UNKNOWN,
@@ -483,6 +488,7 @@ def get_return_type(
         AdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
         AdmissionReason.TEMPORARY_CUSTODY,
         AdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE,
+        AdmissionReason.STATUS_CHANGE,
     ):
         # This should never happen. Should have been filtered by find_valid_reincarceration_period function.
         raise ValueError(

@@ -32,6 +32,9 @@ from recidiviz.calculator.pipeline.utils.execution_utils import (
     list_of_dicts_to_dict_with_keys,
     extract_county_of_residence_from_rows,
 )
+from recidiviz.calculator.pipeline.utils.incarceration_period_index import (
+    IncarcerationPeriodIndex,
+)
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
     prepare_incarceration_periods_for_calculations,
     IncarcerationPreProcessingConfig,
@@ -40,14 +43,14 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     get_pre_incarceration_supervision_type,
     get_post_incarceration_supervision_type,
     state_specific_incarceration_admission_reason_override,
+    state_specific_incarceration_release_reason_override,
+    should_collapse_transfers_different_purposes_for_incarceration,
     drop_temporary_custody_periods,
     drop_non_state_prison_incarceration_type_periods,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodStatus,
     StateIncarcerationPeriodAdmissionReason,
-    is_official_admission,
-    is_official_release,
 )
 from recidiviz.persistence.entity.entity_utils import get_single_state_code
 from recidiviz.persistence.entity.state.entities import (
@@ -143,6 +146,10 @@ def find_all_admission_release_events(
         Union[IncarcerationAdmissionEvent, IncarcerationReleaseEvent]
     ] = []
 
+    should_collapse_transfers_with_different_pfi = (
+        should_collapse_transfers_different_purposes_for_incarceration(state_code)
+    )
+
     ip_pre_processing_config = IncarcerationPreProcessingConfig(
         drop_temporary_custody_periods=drop_temporary_custody_periods(state_code),
         drop_non_state_prison_incarceration_type_periods=drop_non_state_prison_incarceration_type_periods(
@@ -150,7 +157,7 @@ def find_all_admission_release_events(
         ),
         collapse_transfers=True,
         collapse_temporary_custody_periods_with_revocation=True,
-        collapse_transfers_with_different_pfi=True,
+        collapse_transfers_with_different_pfi=should_collapse_transfers_with_different_pfi,
         overwrite_facility_information_in_transfers=False,
     )
 
@@ -164,11 +171,16 @@ def find_all_admission_release_events(
         incarceration_periods_for_admissions
     )
 
+    incarceration_periods_for_admissions_index = IncarcerationPeriodIndex(
+        incarceration_periods=de_duplicated_incarceration_admissions
+    )
+
     for incarceration_period in de_duplicated_incarceration_admissions:
         admission_event = admission_event_for_period(
             incarceration_sentences,
             supervision_sentences,
             incarceration_period,
+            incarceration_periods_for_admissions_index,
             county_of_residence,
         )
 
@@ -182,7 +194,7 @@ def find_all_admission_release_events(
         ),
         collapse_transfers=True,
         collapse_temporary_custody_periods_with_revocation=True,
-        collapse_transfers_with_different_pfi=True,
+        collapse_transfers_with_different_pfi=should_collapse_transfers_with_different_pfi,
         overwrite_facility_information_in_transfers=True,
     )
 
@@ -194,11 +206,16 @@ def find_all_admission_release_events(
         incarceration_periods_for_releases
     )
 
+    incarceration_periods_for_releases_index = IncarcerationPeriodIndex(
+        incarceration_periods=de_duplicated_incarceration_releases
+    )
+
     for incarceration_period in de_duplicated_incarceration_releases:
         release_event = release_event_for_period(
             incarceration_sentences,
             supervision_sentences,
             incarceration_period,
+            incarceration_periods_for_releases_index,
             county_of_residence,
         )
 
@@ -236,8 +253,8 @@ def find_all_stay_events(
         original_incarceration_periods, ip_pre_processing_config
     )
 
-    original_admission_reasons_by_period_id = _original_admission_reasons_by_period_id(
-        sorted_incarceration_periods=incarceration_periods
+    incarceration_period_index = IncarcerationPeriodIndex(
+        incarceration_periods=incarceration_periods
     )
 
     for incarceration_period in incarceration_periods:
@@ -245,7 +262,7 @@ def find_all_stay_events(
             incarceration_sentences,
             supervision_sentences,
             incarceration_period,
-            original_admission_reasons_by_period_id,
+            incarceration_period_index,
             incarceration_period_to_judicial_district,
             county_of_residence,
         )
@@ -260,9 +277,7 @@ def find_incarceration_stays(
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_sentences: List[StateSupervisionSentence],
     incarceration_period: StateIncarcerationPeriod,
-    original_admission_reasons_by_period_id: Dict[
-        int, Tuple[StateIncarcerationPeriodAdmissionReason, Optional[str]]
-    ],
+    incarceration_period_index: IncarcerationPeriodIndex,
     incarceration_period_to_judicial_district: Dict[int, Dict[Any, Any]],
     county_of_residence: Optional[str],
 ) -> List[IncarcerationStayEvent]:
@@ -304,13 +319,17 @@ def find_incarceration_stays(
             "Unexpected incarceration period without an incarceration_period_id."
         )
 
+    original_admission_reasons_by_period_id = (
+        incarceration_period_index.original_admission_reasons_by_period_id
+    )
+
     (
         original_admission_reason,
         original_admission_reason_raw_text,
     ) = original_admission_reasons_by_period_id[incarceration_period_id]
 
     original_admission_reason = state_specific_incarceration_admission_reason_override(
-        incarceration_period.state_code,
+        incarceration_period,
         original_admission_reason,
         supervision_type_at_admission,
     )
@@ -501,6 +520,7 @@ def admission_event_for_period(
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_sentences: List[StateSupervisionSentence],
     incarceration_period: StateIncarcerationPeriod,
+    incarceration_period_index: IncarcerationPeriodIndex,
     county_of_residence: Optional[str],
 ) -> Optional[IncarcerationAdmissionEvent]:
     """Returns an IncarcerationAdmissionEvent if this incarceration period represents an admission to incarceration."""
@@ -514,11 +534,23 @@ def admission_event_for_period(
         incarceration_period.specialized_purpose_for_incarceration
     )
 
+    ip_index = incarceration_period_index.incarceration_periods.index(
+        incarceration_period
+    )
+
+    preceding_incarceration_period: Optional[StateIncarcerationPeriod] = None
+
+    if ip_index > 0:
+        preceding_incarceration_period = (
+            incarceration_period_index.incarceration_periods[ip_index - 1]
+        )
+
     if admission_date and admission_reason:
         admission_reason = state_specific_incarceration_admission_reason_override(
-            incarceration_period.state_code,
+            incarceration_period,
             admission_reason,
             supervision_type_at_admission,
+            preceding_incarceration_period,
         )
         return IncarcerationAdmissionEvent(
             state_code=incarceration_period.state_code,
@@ -538,6 +570,7 @@ def release_event_for_period(
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_sentences: List[StateSupervisionSentence],
     incarceration_period: StateIncarcerationPeriod,
+    incarceration_period_index: IncarcerationPeriodIndex,
     county_of_residence: Optional[str],
 ) -> Optional[IncarcerationReleaseEvent]:
     """Returns an IncarcerationReleaseEvent if this incarceration period represents an release from incarceration."""
@@ -551,15 +584,43 @@ def release_event_for_period(
         incarceration_sentences, supervision_sentences, incarceration_period
     )
 
-    admission_reason = None
+    incarceration_period_id = incarceration_period.incarceration_period_id
+
+    if not incarceration_period_id:
+        raise ValueError(
+            "Unexpected incarceration period without an incarceration_period_id."
+        )
+
+    ip_index = incarceration_period_index.incarceration_periods.index(
+        incarceration_period
+    )
+
+    next_incarceration_period: Optional[StateIncarcerationPeriod] = None
+    if ip_index < len(incarceration_period_index.incarceration_periods) - 1:
+        next_incarceration_period = incarceration_period_index.incarceration_periods[
+            ip_index + 1
+        ]
+
+    original_admission_reasons_by_period_id: Dict[
+        int, Tuple[StateIncarcerationPeriodAdmissionReason, Optional[str]]
+    ] = incarceration_period_index.original_admission_reasons_by_period_id
+
+    admission_reason, _ = original_admission_reasons_by_period_id[
+        incarceration_period_id
+    ]
+
     if incarceration_period.admission_reason:
         admission_reason = state_specific_incarceration_admission_reason_override(
-            incarceration_period.state_code,
-            incarceration_period.admission_reason,
-            supervision_type_at_admission,
+            incarceration_period, admission_reason, supervision_type_at_admission
         )
 
     if release_date and release_reason:
+        release_reason = state_specific_incarceration_release_reason_override(
+            incarceration_period,
+            release_reason,
+            next_incarceration_period,
+        )
+
         supervision_type_at_release = get_post_incarceration_supervision_type(
             incarceration_sentences, supervision_sentences, incarceration_period
         )
@@ -668,60 +729,3 @@ def _set_backedges_and_return_unique_periods(
             unique_periods.append(period)
 
     return unique_periods
-
-
-def _original_admission_reasons_by_period_id(
-    sorted_incarceration_periods: List[StateIncarcerationPeriod],
-) -> Dict[int, Tuple[StateIncarcerationPeriodAdmissionReason, Optional[str]]]:
-    """Determines the original admission reason each period of incarceration. Returns a dictionary mapping
-    incarceration_period_id values to the original admission_reason and corresponding admission_reason_raw_text that
-    started the period of being incarcerated. People are often transferred between facilities during their time
-    incarcerated, so this in practice is the most recent non-transfer admission reason for the given incarceration
-    period."""
-    original_admission_reasons_by_period_id: Dict[
-        int, Tuple[StateIncarcerationPeriodAdmissionReason, Optional[str]]
-    ] = {}
-
-    most_recent_official_admission_reason = None
-    most_recent_official_admission_reason_raw_text = None
-
-    for index, incarceration_period in enumerate(sorted_incarceration_periods):
-        incarceration_period_id = incarceration_period.incarceration_period_id
-
-        if not incarceration_period_id:
-            raise ValueError(
-                "Unexpected incarceration period without a incarceration_period_id."
-            )
-
-        if not incarceration_period.admission_reason:
-            raise ValueError(
-                "Incarceration period pre-processing is not setting missing admission_reasons correctly."
-            )
-
-        if index == 0 or is_official_admission(incarceration_period.admission_reason):
-            # These indicate that incarceration is "officially" starting
-            most_recent_official_admission_reason = (
-                incarceration_period.admission_reason
-            )
-            most_recent_official_admission_reason_raw_text = (
-                incarceration_period.admission_reason_raw_text
-            )
-
-        if not most_recent_official_admission_reason:
-            original_admission_reasons_by_period_id[incarceration_period_id] = (
-                incarceration_period.admission_reason,
-                incarceration_period.admission_reason_raw_text,
-            )
-        else:
-            original_admission_reasons_by_period_id[incarceration_period_id] = (
-                most_recent_official_admission_reason,
-                most_recent_official_admission_reason_raw_text,
-            )
-
-        if is_official_release(incarceration_period.release_reason):
-            # If the release from this period of incarceration indicates an official end to the period of incarceration,
-            # then subsequent periods should not share the most recent admission reason.
-            most_recent_official_admission_reason = None
-            most_recent_official_admission_reason_raw_text = None
-
-    return original_admission_reasons_by_period_id
