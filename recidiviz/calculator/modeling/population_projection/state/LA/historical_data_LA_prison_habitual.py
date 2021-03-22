@@ -17,9 +17,9 @@
 # pylint: skip-file
 """
 STATE: LA
-POLICY: The proposed policy would reclassify nonviolent habitual offenders as regular offenders and sentence 
+POLICY: The proposed policy would reclassify nonviolent habitual offenders as regular offenders and sentence
 them under regular sentencing guidelines. It would do the same for violent habitual offenders who have only
-committed nonviolent felonies in the past. 
+committed nonviolent felonies in the past.
 VERSION: v1
 DATA SOURCE: https://drive.google.com/drive/folders/1SLNtsOcbV_qBF0eaQsDfUZNdzQSFeRyB?usp=sharing
 DATA QUALITY: reasonable
@@ -27,9 +27,9 @@ HIGHEST PRIORITY MISSING DATA: previous conviction history of violent habitual o
 REFERENCE_DATE: January 2013
 TIME_STEP: 1 month
 ADDITIONAL NOTES: AFP would like us to model two scenarios: the first is the original language of the bill
-that reclassifies both nonviolent offenders and violent offenders with no prior violent felonies; the second 
-is a more conservative reform that only applies to nonviolent offenders. To model the first policy, run the 
-full simulation; to model the second, only run the simulation for the 'nonviolent' disaggregation category. 
+that reclassifies both nonviolent offenders and violent offenders with no prior violent felonies; the second
+is a more conservative reform that only applies to nonviolent offenders. To model the first policy, run the
+full simulation; to model the second, only run the simulation for the 'nonviolent' disaggregation category.
 """
 import pandas as pd
 from recidiviz.calculator.modeling.population_projection.spark_bq_utils import (
@@ -132,4 +132,5 @@ upload_spark_model_inputs(
     outflows_data,
     transitions_data,
     total_population_data,
+    "recidiviz/calculator/modeling/population_projection/state/LA/LA_prison_habitual_model_inputs.yaml",
 )

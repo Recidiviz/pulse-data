@@ -26,10 +26,10 @@ POLICY: Changing parole eligibility requirements
 VERSION: V1
 DATA SOURCE: https://docs.google.com/document/d/1NU6-b2eks14hsKI4B-Cvq7sCjRorV-HvpT7NJqv8qMw/edit
 DATA QUALITY: okay
-HIGHEST PRIORITY MISSING DATA: parole data: eligibility rate, grant rate, parole duration 
+HIGHEST PRIORITY MISSING DATA: parole data: eligibility rate, grant rate, parole duration
 REFERENCE_DATE: 2019
 TIME_STEP: year
-ADDITIONAL NOTES: 
+ADDITIONAL NOTES:
 """
 
 # TODO(#99999): add whatever modules you need
@@ -92,4 +92,5 @@ upload_spark_model_inputs(
     outflows_data,
     transitions_data,
     total_population_data,
+    "recidiviz/calculator/modeling/population_projection/state/MS/SB_2123_Parole_Eligibility/MS_prison_model_inputs.yaml",
 )

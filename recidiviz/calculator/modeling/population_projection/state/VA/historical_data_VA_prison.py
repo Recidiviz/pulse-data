@@ -203,5 +203,10 @@ transitions_data.loc[
 
 # STORE DATA
 upload_spark_model_inputs(
-    "recidiviz-staging", "VA_prison", outflows_data, transitions_data, pd.DataFrame()
+    "recidiviz-staging",
+    "VA_prison",
+    outflows_data,
+    transitions_data,
+    pd.DataFrame(),
+    "recidiviz/calculator/modeling/population_projection/state/VA/VA_prison_model_inputs.yaml",
 )

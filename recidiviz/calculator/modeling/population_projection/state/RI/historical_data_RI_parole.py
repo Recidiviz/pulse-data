@@ -17,7 +17,7 @@
 # pylint: skip-file
 """
 STATE: RI
-POLICY: 
+POLICY:
 VERSION: v1
 DATA SOURCE: https://drive.google.com/drive/folders/1XgE5JBdjlwrDJO5cX-3xMd1ZwHAmw39v?usp=sharing
 DATA QUALITY: reasonable
@@ -84,4 +84,5 @@ upload_spark_model_inputs(
     outflows_data,
     transitions_data,
     total_population_data,
+    "recidiviz/calculator/modeling/population_projection/state/RI/RI_parole_model_inputs.yaml",
 )

@@ -161,4 +161,5 @@ upload_spark_model_inputs(
     outflows_data,
     transitions_data,
     total_population_data,
+    "recidiviz/calculator/modeling/population_projection/state/OK/OK_habitual_sentencing/OK_prison_model_inputs.yaml",
 )

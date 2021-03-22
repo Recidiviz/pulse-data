@@ -100,4 +100,5 @@ upload_spark_model_inputs(
     outflows_data,
     transitions_data,
     pd.DataFrame(),
+    "recidiviz/calculator/modeling/population_projection/state/OK/OK_resentencing/OK_prison_model_inputs.yaml",
 )

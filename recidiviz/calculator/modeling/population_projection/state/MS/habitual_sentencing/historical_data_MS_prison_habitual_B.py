@@ -21,7 +21,7 @@ POLICY: The proposed policy would eliminate habitual sentencing for nonviolent o
 VERSION: v1
 DATA SOURCE: https://drive.google.com/drive/folders/1Lq-2lBmZ3s19nx1YfMmxCl9R4OQdyAoJ?usp=sharing
 DATA QUALITY: good
-HIGHEST PRIORITY MISSING DATA: Admissions and transitions data for 20- sentence year population 
+HIGHEST PRIORITY MISSING DATA: Admissions and transitions data for 20- sentence year population
 REFERENCE_DATE: 2013
 TIME_STEP: 1 year
 """
@@ -115,4 +115,5 @@ upload_spark_model_inputs(
     outflows_data,
     transitions_data,
     total_population_data,
+    "recidiviz/calculator/modeling/population_projection/state/MS/habitual_sentencing/MS_prison_habitual_B_model_inputs.yaml",
 )

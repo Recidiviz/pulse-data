@@ -193,4 +193,5 @@ upload_spark_model_inputs(
     outflows_data,
     transitions_data,
     total_population_data,
+    "recidiviz/calculator/modeling/population_projection/state/AZ/ax_state_prison_HB_2376_model_inputs.yaml",
 )
