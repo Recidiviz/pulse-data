@@ -54,8 +54,8 @@ def main() -> None:
     jurisdiction_id = _get_jurisdiction_id(county_name, state)
 
     substitutions = {
-        "class_name": regions.get_ingestor_name(
-            _gen_region_name(county_name, state, delimiter="_"), "scraper"
+        "class_name": regions.get_scraper_name(
+            _gen_region_name(county_name, state, delimiter="_")
         ),
         "county": county_name,
         "region": _gen_region_name(county_name, state, delimiter="_"),

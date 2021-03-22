@@ -127,13 +127,16 @@ class Region:
                 f"Improperly formatted FID [{self.facility_id}], should be length 16"
             )
 
-    def get_ingestor_class(self):
-        """Retrieve the class for the ingest object for a particular region
+    def get_scraper_class(self):
+        """Retrieve the class for the scraper for a particular region
 
         Returns:
-            An instance of the region's ingest class (e.g., UsNyScraper)
+            An instance of the region's scraper (e.g., UsNyScraper)
         """
-        ingest_type_name = "Controller" if self.is_direct_ingest else "Scraper"
+        if self.is_direct_ingest:
+            raise ValueError("Method not supported for direct ingest region.")
+
+        ingest_type_name = "Scraper"
 
         module_name = (
             f"{self.region_module.__name__}.{self.region_code}"
@@ -141,25 +144,27 @@ class Region:
         )
 
         module = importlib.import_module(module_name)
-        ingest_class = getattr(
-            module, get_ingestor_name(self.region_code, ingest_type_name)
-        )
+        ingest_class = getattr(module, get_scraper_name(self.region_code))
 
         return ingest_class
 
-    def get_ingestor(self):
-        """Retrieve an ingest object for a particular region
+    def get_scraper(self):
+        """Retrieve a scraper for a particular region
 
         Returns:
-            An instance of the region's ingest class (e.g., UsNyScraper)
+            An instance of the region's scraper (e.g., UsNyScraper)
         """
-        ingest_class = self.get_ingestor_class()
+        if self.is_direct_ingest:
+            raise ValueError("Method not supported for direct ingest region.")
+        ingest_class = self.get_scraper_class()
 
         return ingest_class()
 
-    def get_enum_overrides(self) -> EnumOverrides:
-        """Retrieves the overrides object of a region"""
-        obj = self.get_ingestor()
+    def get_scraper_enum_overrides(self) -> EnumOverrides:
+        """Retrieves the overrides object of a scraper region."""
+        if self.is_direct_ingest:
+            raise ValueError("Method not supported for direct ingest region.")
+        obj = self.get_scraper()
         if obj:
             return obj.get_enum_overrides()
         return EnumOverrides.empty()
@@ -335,6 +340,6 @@ def validate_region_code(region_code):
     return region_code in get_supported_scrape_region_codes()
 
 
-def get_ingestor_name(region_code: str, ingest_type_name: str) -> str:
+def get_scraper_name(region_code: str) -> str:
     """Returns the class name for a given region_code and ingest_module"""
-    return "".join(s.title() for s in chain(region_code.split("_"), [ingest_type_name]))
+    return "".join(s.title() for s in chain(region_code.split("_"), ["Scraper"]))

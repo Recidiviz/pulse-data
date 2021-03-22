@@ -16,26 +16,19 @@
 # =============================================================================
 """Factory class for building DirectIngestControllers of various types."""
 import importlib
-from typing import Optional
-
-from gcsfs import GCSFileSystem
+from typing import Type
 
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import (
     GcsfsDirectIngestController,
 )
+from recidiviz.utils.regions import Region
 
 
 class DirectIngestControllerFactory:
     """Factory class for building DirectIngestControllers of various types."""
 
-    _DIRECT_INGEST_REGIONS_MODULE_NAME = "recidiviz.ingest.direct.regions"
-
     @classmethod
-    def build_gcsfs_ingest_controller(
-        cls,
-        region_code: str,
-        fs: GCSFileSystem,
-    ) -> Optional[GcsfsDirectIngestController]:
+    def build(cls, region: Region) -> GcsfsDirectIngestController:
         """Retrieve a direct ingest GcsfsDirectIngestController for a particular
         region.
 
@@ -43,31 +36,39 @@ class DirectIngestControllerFactory:
             An instance of the region's direct ingest controller class (e.g.,
              UsNdController)
         """
-        controller_module_name = (
-            f"{cls._DIRECT_INGEST_REGIONS_MODULE_NAME}."
-            f"{region_code}.{region_code}_controller"
-        )
-
-        try:
-            controller_module = importlib.import_module(controller_module_name)
-        except ModuleNotFoundError:
-            return None
-
-        controller_class = getattr(
-            controller_module, cls.gcsfs_controller_class_name(region_code), None
-        )
-
-        if not controller_class:
-            return None
-
-        controller = controller_class(fs)
+        controller_class = cls.get_controller_class(region)
+        # TODO(#6077): Allow controllers to be instantiated with specific DB-specific
+        #  state (e.g. database name, queue name etc).
+        controller = controller_class()  # type: ignore[call-arg]
         if not isinstance(controller, GcsfsDirectIngestController):
-            return None
+            raise ValueError(f"Unexpected controller class type [{type(controller)}]")
 
         return controller
 
     @classmethod
-    def gcsfs_controller_class_name(cls, region_code: str) -> str:
+    def get_controller_class(cls, region: Region) -> Type[GcsfsDirectIngestController]:
+        region_code = region.region_code.lower()
+        controller_module_name = (
+            f"{region.region_module.__name__}.{region_code}.{region_code}_controller"
+        )
+
+        controller_module = importlib.import_module(controller_module_name)
+
+        controller_class_name = cls.get_controller_class_name(region_code)
+        controller_class = getattr(controller_module, controller_class_name, None)
+
+        if not controller_class:
+            raise ValueError(
+                f"Could not find controller class with name [{controller_class_name}]."
+            )
+
+        if not issubclass(controller_class, GcsfsDirectIngestController):
+            raise ValueError(f"Unexpected controller class type [{controller_class}]")
+
+        return controller_class
+
+    @classmethod
+    def get_controller_class_name(cls, region_code: str) -> str:
         """Returns the GcsfsDirectIngestController class name for a given
         region_code.
         """

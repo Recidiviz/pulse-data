@@ -28,6 +28,9 @@ from parameterized import parameterized
 
 from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct import templates
+from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import (
+    DirectIngestControllerFactory,
+)
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
     DirectIngestRegionRawFileConfig,
     DirectIngestRawFileConfig,
@@ -161,19 +164,22 @@ class DirectIngestRegionDirStructureBase:
                 region_module_override=self.region_module_override,
             )
             with local_project_id_override("project"):
-                self.test.assertIsNotNone(region.get_ingestor_class())
+                controller_class = DirectIngestControllerFactory.get_controller_class(
+                    region
+                )
+                self.test.assertIsNotNone(controller_class)
 
     def test_region_controller_builds(self) -> None:
-        for dir_path in self.region_dir_paths:
-            region_code = os.path.basename(dir_path)
-
+        for region_code in self.region_dir_names:
             region = get_region(
                 region_code,
                 is_direct_ingest=True,
                 region_module_override=self.region_module_override,
             )
             with local_project_id_override("project"):
-                self.test.assertIsNotNone(region.get_ingestor())
+                controller = DirectIngestControllerFactory.build(region)
+                self.test.assertIsNotNone(controller)
+                self.test.assertIsInstance(controller, GcsfsDirectIngestController)
 
     def test_raw_files_yaml_parses_all_regions(self) -> None:
         for region_code in self.region_dir_names:
@@ -183,7 +189,9 @@ class DirectIngestRegionDirStructureBase:
                 region_module_override=self.region_module_override,
             )
 
-            controller_class = region.get_ingestor_class()
+            controller_class = DirectIngestControllerFactory.get_controller_class(
+                region
+            )
             if not issubclass(controller_class, GcsfsDirectIngestController):
                 continue
 
@@ -228,7 +236,9 @@ class DirectIngestRegionDirStructureBase:
                         region_module_override=self.region_module_override,
                     )
 
-                    controller_class = region.get_ingestor_class()
+                    controller_class = (
+                        DirectIngestControllerFactory.get_controller_class(region)
+                    )
                     if not issubclass(controller_class, GcsfsDirectIngestController):
                         continue
 

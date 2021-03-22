@@ -16,13 +16,10 @@
 # =============================================================================
 """Helpers for creating fake regions for use in tests."""
 from types import ModuleType
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional
 
 from mock import create_autospec
 
-from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
-    BaseDirectIngestController,
-)
 from recidiviz.ingest.scrape.base_scraper import BaseScraper
 from recidiviz.utils.regions import Region
 
@@ -33,7 +30,7 @@ def fake_region(
     agency_type: str = "prison",
     environment: str = "local",
     jurisdiction_id: str = "unknown",
-    ingestor: Optional[Union[BaseScraper, BaseDirectIngestController]] = None,
+    scraper: Optional[BaseScraper] = None,
     queue: Optional[Dict[str, Any]] = None,
     shared_queue: Optional[str] = None,
     region_module: Optional[ModuleType] = None
@@ -45,9 +42,7 @@ def fake_region(
     region.environment = environment
     region.jurisdiction_id = jurisdiction_id
     region.region_module = region_module
-    region.get_ingestor.return_value = (
-        ingestor if ingestor else create_autospec(BaseDirectIngestController)
-    )
+    region.get_scraper.return_value = scraper
 
     def fake_is_launched_in_env():
         return Region.is_ingest_launched_in_env(region)

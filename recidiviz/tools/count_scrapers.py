@@ -78,7 +78,7 @@ def get_state(region: regions.Region) -> us.states.State:
 
 
 def get_parent_class(region: regions.Region) -> type:
-    return inspect.getmro(region.get_ingestor_class())[1]
+    return inspect.getmro(region.get_scraper_class())[1]
 
 
 def count_scrapers_by_vendor() -> None:

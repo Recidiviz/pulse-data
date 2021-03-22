@@ -75,7 +75,7 @@ class TestWorker:
         response = self.client.post(PATH, data=form_encoded, headers=headers)
         assert response.status_code == 200
 
-        region.get_ingestor().fake_task.assert_called_with(FAKE_QUEUE_PARAMS)
+        region.get_scraper().fake_task.assert_called_with(FAKE_QUEUE_PARAMS)
 
     @patch("recidiviz.utils.regions.get_region")
     @patch("recidiviz.ingest.scrape.sessions.get_current_session")
@@ -104,7 +104,7 @@ class TestWorker:
             phase=scrape_phase.ScrapePhase.SCRAPE,
         )
         region = create_autospec(Region)
-        region.get_ingestor().fake_task.side_effect = Exception()
+        region.get_scraper().fake_task.side_effect = Exception()
         mock_region.return_value = region
 
         form = {
@@ -117,7 +117,7 @@ class TestWorker:
         with pytest.raises(worker.RequestProcessingError):
             self.client.post(PATH, data=form_encoded, headers=headers)
 
-        region.get_ingestor().fake_task.assert_called_with(FAKE_QUEUE_PARAMS)
+        region.get_scraper().fake_task.assert_called_with(FAKE_QUEUE_PARAMS)
 
     @patch("recidiviz.utils.regions.get_region")
     @patch("recidiviz.ingest.scrape.sessions.get_current_session")
@@ -129,7 +129,7 @@ class TestWorker:
             phase=scrape_phase.ScrapePhase.SCRAPE,
         )
         region = create_autospec(Region)
-        region.get_ingestor().fake_task.side_effect = TimeoutError()
+        region.get_scraper().fake_task.side_effect = TimeoutError()
         mock_region.return_value = region
 
         form = {
@@ -142,7 +142,7 @@ class TestWorker:
         with pytest.raises(worker.RequestProcessingError):
             self.client.post(PATH, data=form_encoded, headers=headers)
 
-        region.get_ingestor().fake_task.assert_called_with(FAKE_QUEUE_PARAMS)
+        region.get_scraper().fake_task.assert_called_with(FAKE_QUEUE_PARAMS)
 
     @patch("recidiviz.utils.validate_jwt.validate_iap_jwt_from_app_engine")
     def test_post_work_not_from_task(self, mock_jwt):

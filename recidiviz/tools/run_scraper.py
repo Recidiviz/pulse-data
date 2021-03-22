@@ -111,7 +111,7 @@ def run_scraper_for_region(region, args) -> None:
 
     # Don't initialize a ScraperCloudTaskManager when running locally.
     scraper_module.ScraperCloudTaskManager = lambda: None  # type: ignore
-    scraper = region.get_ingestor()
+    scraper = region.get_scraper()
     scraper.BATCH_WRITES = False
     task_queue: deque = deque()
 

@@ -195,7 +195,7 @@ def persist_to_database(
     them to the database.
     """
     region = regions.get_region(region_code)
-    overrides = region.get_enum_overrides()
+    overrides = region.get_scraper_enum_overrides()
 
     ingest_info_data_list = _get_batch_ingest_info_list(region_code, session_start_time)
 
