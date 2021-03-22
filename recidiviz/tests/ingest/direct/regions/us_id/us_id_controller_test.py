@@ -80,7 +80,13 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import (
     GcsfsDirectIngestController,
 )
-from recidiviz.ingest.direct.regions.us_id.us_id_controller import UsIdController
+from recidiviz.ingest.direct.regions.us_id.us_id_controller import (
+    UsIdController,
+    _split_violation_response_row,
+)
+from recidiviz.ingest.direct.regions.us_id.us_id_constants import (
+    VIOLATION_REPORT_CONSTANTS_INCLUDING_COMMA,
+)
 from recidiviz.ingest.models.ingest_info import (
     StatePerson,
     StatePersonExternalId,
@@ -2955,4 +2961,31 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         #  new dangling placeholders with each rerun.
         self.assert_expected_db_people(
             expected_people, ignore_dangling_placeholders=True
+        )
+
+    def test_splitting_violation_response_row_happy_path(self) -> None:
+        self.assertCountEqual(
+            _split_violation_response_row("happy,path"), ["happy", "path"]
+        )
+        self.assertCountEqual(
+            _split_violation_response_row("happy path"), ["happy path"]
+        )
+
+    def test_splitting_violation_response_row_contains_comma_const(self) -> None:
+        comma_constant = VIOLATION_REPORT_CONSTANTS_INCLUDING_COMMA[0]
+
+        self.assertCountEqual(
+            _split_violation_response_row(comma_constant), [comma_constant]
+        )
+        self.assertCountEqual(
+            _split_violation_response_row(f"{comma_constant},happy"),
+            [comma_constant, "happy"],
+        )
+        self.assertCountEqual(
+            _split_violation_response_row(f"happy,{comma_constant}"),
+            [comma_constant, "happy"],
+        )
+        self.assertCountEqual(
+            _split_violation_response_row(f"happy,{comma_constant},path"),
+            [comma_constant, "happy", "path"],
         )

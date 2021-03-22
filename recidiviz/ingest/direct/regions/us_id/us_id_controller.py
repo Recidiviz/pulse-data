@@ -82,6 +82,7 @@ from recidiviz.ingest.direct.regions.us_id.us_id_constants import (
     INTERSTATE_FACILITY_CODE,
     FUGITIVE_FACILITY_CODE,
     VIOLATION_REPORT_NO_RECOMMENDATION_VALUES,
+    VIOLATION_REPORT_CONSTANTS_INCLUDING_COMMA,
     ALL_NEW_CRIME_TYPES,
     VIOLENT_CRIME_TYPES,
     SEX_CRIME_TYPES,
@@ -1148,12 +1149,12 @@ class UsIdController(CsvGcsfsDirectIngestController):
         """Adds fields/children to the SupervisionViolationResponses as necessary. This assumes all
         SupervisionViolationResponses are of violation reports.
         """
-        parole_recommendations = row.get("parolee_placement_recommendation", "").split(
-            ","
+        parole_recommendations = _split_violation_response_row(
+            row.get("parolee_placement_recommendation")
         )
-        probation_recommendations = row.get(
-            "probationer_placement_recommendation", ""
-        ).split(",")
+        probation_recommendations = _split_violation_response_row(
+            row.get("probationer_placement_recommendation")
+        )
         recommendations = [
             rec for rec in parole_recommendations + probation_recommendations if rec
         ]
@@ -1280,6 +1281,18 @@ def _get_bool_from_row(arg: str, row: Dict[str, str]) -> bool:
     if not val:
         return False
     return str_to_bool(val)
+
+
+def _split_violation_response_row(row: Optional[str]) -> List[str]:
+    if not row:
+        return []
+    split_row = []
+    for comma_containing_constant in VIOLATION_REPORT_CONSTANTS_INCLUDING_COMMA:
+        if comma_containing_constant in row:
+            row = row.replace(comma_containing_constant, "")
+            split_row.append(comma_containing_constant)
+    split_row.extend(val for val in row.split(",") if val)
+    return split_row
 
 
 def create_supervision_site(
