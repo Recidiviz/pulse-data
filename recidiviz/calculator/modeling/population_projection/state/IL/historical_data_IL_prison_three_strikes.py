@@ -113,4 +113,5 @@ upload_spark_model_inputs(
     outflows_data,
     transitions_data,
     pd.DataFrame(),
+    "recidiviz/calculator/modeling/population_projection/state/IL/IL_prison_three_strikes_model_inputs.yaml",
 )

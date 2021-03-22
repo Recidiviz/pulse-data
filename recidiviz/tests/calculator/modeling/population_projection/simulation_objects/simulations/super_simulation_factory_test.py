@@ -69,16 +69,6 @@ class TestSuperSimulationFactory(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             SuperSimulationFactory.build_super_simulation(
-                get_inputs_path("super_simulation_missing_inputs.yaml")
-            )
-
-        with self.assertRaises(ValueError):
-            SuperSimulationFactory.build_super_simulation(
-                get_inputs_path("super_simulation_unexpected_inputs.yaml")
-            )
-
-        with self.assertRaises(ValueError):
-            SuperSimulationFactory.build_super_simulation(
                 get_inputs_path("super_simulation_extra_data_inputs.yaml")
             )
 

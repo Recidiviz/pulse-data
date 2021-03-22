@@ -17,8 +17,8 @@
 # pylint: skip-file
 """
 STATE: TN
-POLICY: The proposed policy would provide financial incentives for probation and parole offices to reduce 
-revocations to prison through better supervision practices. The incentives would be funded through money 
+POLICY: The proposed policy would provide financial incentives for probation and parole offices to reduce
+revocations to prison through better supervision practices. The incentives would be funded through money
 saved from a reduced prison population.
 VERSION: v1
 DATA SOURCE: https://drive.google.com/drive/folders/1-CmF2fcfpegxHn5VFIDNf4WKidBDv74s?usp=sharing
@@ -114,4 +114,5 @@ upload_spark_model_inputs(
     outflows_data,
     transitions_data,
     total_population_data,
+    "recidiviz/calculator/modeling/population_projection/state/TN/TN_prison_revocations_model_inputs.yaml",
 )

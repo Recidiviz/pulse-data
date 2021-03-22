@@ -77,6 +77,7 @@ total_population_data = pd.concat(
 )
 
 # STORE DATA
+# NB IF YOU RUN THIS FILE: There are multiple yaml files in the folder. Please make sure the correct one is passed in below.
 simulation_tag = "RI_probation"
 upload_spark_model_inputs(
     "recidiviz-staging",
@@ -84,4 +85,5 @@ upload_spark_model_inputs(
     outflows_data,
     transitions_data,
     total_population_data,
+    "recidiviz/calculator/modeling/population_projection/state/RI/RI_probation_model_inputs.yaml",
 )

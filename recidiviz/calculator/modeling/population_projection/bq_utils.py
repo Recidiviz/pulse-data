@@ -22,9 +22,6 @@ import pandas as pd
 def store_simulation_results(project_id, dataset, table_name, table_schema, data):
     """Append the new results to the BigQuery table in the spark output dataset"""
 
-    if project_id not in ["recidiviz-staging", "recidiviz-123"]:
-        raise ValueError(f"`{project_id}` is not a supported gcloud BigQuery project")
-
     # Reorder the columns to match the schema ordering
     column_order = [column["name"] for column in table_schema]
     data = data[column_order]

@@ -149,4 +149,5 @@ upload_spark_model_inputs(
     outflows_data,
     transitions_data,
     fake_total_population_data,
+    "recidiviz/calculator/modeling/population_projection/state/MS/habitual_sentencing/MS_prison_habitual_A_model_inputs.yaml",
 )

@@ -29,7 +29,7 @@ DATA QUALITY: reasonable/good
 HIGHEST PRIORITY MISSING DATA: [fill this out]
 REFERENCE_DATE: 2020
 TIME_STEP: year
-ADDITIONAL NOTES: 
+ADDITIONAL NOTES:
 """
 
 # TODO(#99999): add whatever modules you need
@@ -98,4 +98,5 @@ upload_spark_model_inputs(
     outflows_data,
     transitions_data,
     total_population_data,
+    "recidiviz/calculator/modeling/population_projection/state/OH/Prong2/OH_prison_p2_model_inputs.yaml",
 )

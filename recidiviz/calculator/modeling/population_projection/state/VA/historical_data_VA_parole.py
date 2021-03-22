@@ -172,5 +172,10 @@ outflows_data = jail_prison_admissions
 
 # STORE DATA
 upload_spark_model_inputs(
-    "recidiviz-staging", "VA_parole", outflows_data, transitions_data, pd.DataFrame()
+    "recidiviz-staging",
+    "VA_parole",
+    outflows_data,
+    transitions_data,
+    pd.DataFrame(),
+    "recidiviz/calculator/modeling/population_projection/state/VA/VA_parole_model_inputs.yaml",
 )

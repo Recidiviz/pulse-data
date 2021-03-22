@@ -17,7 +17,7 @@
 # pylint: skip-file
 """
 STATE: IA
-POLICY: The proposed policy would reduce minimum probation terms and introduce discharge credits and education credits. 
+POLICY: The proposed policy would reduce minimum probation terms and introduce discharge credits and education credits.
 VERSION: v1
 DATA SOURCE: https://drive.google.com/drive/folders/1MpuRtk2jFfYg5YtEoer3-3aVIc3lax8Y?usp=sharing
 DATA QUALITY: moderate
@@ -84,4 +84,5 @@ upload_spark_model_inputs(
     outflows_data,
     transitions_data,
     total_population_data,
+    "recidiviz/calculator/modeling/population_projection/state/IA/IAHSB6_model_inputs.yaml",
 )
