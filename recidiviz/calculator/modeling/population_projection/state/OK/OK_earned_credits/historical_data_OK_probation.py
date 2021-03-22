@@ -80,6 +80,12 @@ outflows_data = outflows_data.rename({"placeholder_axis": "crime_type"}, axis=1)
 transitions_data = transitions_data.rename({"placeholder_axis": "crime_type"}, axis=1)
 
 # STORE DATA
+# NB IF YOU RUN THIS FILE: There were two yaml files in the folder - please make sure the one passed in below is the correct one
 upload_spark_model_inputs(
-    "recidiviz-staging", "OK_probation", outflows_data, transitions_data, pd.DataFrame()
+    "recidiviz-staging",
+    "OK_probation",
+    outflows_data,
+    transitions_data,
+    pd.DataFrame(),
+    "recidiviz/calculator/modeling/population_projection/state/OK/OK_earned_credits/OK_probation_model_inputs_average_cost.yaml",
 )

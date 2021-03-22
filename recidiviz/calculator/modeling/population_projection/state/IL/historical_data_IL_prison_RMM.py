@@ -248,4 +248,5 @@ upload_spark_model_inputs(
     monthly_outflows_data,
     transitions_data,
     monthly_total_population_data,
+    "recidiviz/calculator/modeling/population_projection/state/IL/IL_prison_RMM_model_inputs.yaml",
 )

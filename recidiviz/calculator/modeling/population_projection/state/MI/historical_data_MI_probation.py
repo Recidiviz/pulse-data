@@ -320,4 +320,5 @@ upload_spark_model_inputs(
     outflows_data,
     transitions_data,
     total_population_data,
+    "recidiviz/calculator/modeling/population_projection/state/MI/MI_probation_model_inputs.yaml",
 )

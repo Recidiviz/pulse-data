@@ -79,5 +79,10 @@ outflows_data = outflows_data.rename({"offense": "crime_type"}, axis=1)
 
 # STORE DATA
 upload_spark_model_inputs(
-    "recidiviz-staging", "FL_prison", outflows_data, transitions_data, pd.DataFrame()
+    "recidiviz-staging",
+    "FL_prison",
+    outflows_data,
+    transitions_data,
+    pd.DataFrame(),
+    "recidiviz/calculator/modeling/population_projection/state/FL/FL_prison_model_inputs.yaml",
 )

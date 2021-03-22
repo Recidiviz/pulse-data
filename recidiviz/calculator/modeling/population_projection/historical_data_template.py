@@ -70,4 +70,5 @@ upload_spark_model_inputs(
     outflows_data,
     transitions_data,
     total_population_data,
+    "path_to_your_yaml",
 )

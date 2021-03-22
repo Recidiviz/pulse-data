@@ -176,4 +176,5 @@ upload_spark_model_inputs(
     outflows_data,
     transitions_data,
     total_population_data,
+    "recidiviz/calculator/modeling/population_projection/state/VA/HB_2038/VAHB2038_model_inputs.yaml",
 )

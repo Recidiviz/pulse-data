@@ -30,7 +30,7 @@ DATA QUALITY: reasonable/good
 HIGHEST PRIORITY MISSING DATA: population data based on offense - currently estimating drug possession prison population based on % commitments that are for drug possession. Also missing detailed data to estimate the impact of the policy (i.e. % of target population eligible for treatment under new policy)
 REFERENCE_DATE: 2020
 TIME_STEP: year
-ADDITIONAL NOTES: 
+ADDITIONAL NOTES:
 """
 
 # TODO(#99999): add whatever modules you need
@@ -70,4 +70,5 @@ upload_spark_model_inputs(
     outflows_data,
     transitions_data,
     total_population_data,
+    "recidiviz/calculator/modeling/population_projection/state/OH/Prong1/OH_prison_p1_model_inputs.yaml",
 )
