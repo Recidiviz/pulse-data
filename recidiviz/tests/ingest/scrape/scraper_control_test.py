@@ -88,7 +88,7 @@ class TestScraperStart(unittest.TestCase):
         mock_get_sessions.return_value = iter([])
         mock_scraper = create_autospec(BaseScraper)
         mock_region.return_value = fake_region(
-            environment="production", ingestor=mock_scraper
+            environment="production", scraper=mock_scraper
         )
         mock_environment.return_value = "production"
         mock_supported.side_effect = _MockSupported
@@ -141,7 +141,7 @@ class TestScraperStart(unittest.TestCase):
         mock_environment.return_value = "production"
         mock_scraper = create_autospec(BaseScraper)
         mock_region.return_value = fake_region(
-            environment="production", ingestor=mock_scraper
+            environment="production", scraper=mock_scraper
         )
         mock_supported.side_effect = _MockSupported
 
@@ -193,7 +193,7 @@ class TestScraperStart(unittest.TestCase):
         mock_environment.return_value = "staging"
         mock_scraper = create_autospec(BaseScraper)
         mock_region.return_value = fake_region(
-            environment="production", ingestor=mock_scraper
+            environment="production", scraper=mock_scraper
         )
         mock_supported.side_effect = _MockSupported
 
@@ -247,7 +247,7 @@ class TestScraperStart(unittest.TestCase):
         )
         mock_scraper = create_autospec(BaseScraper)
         mock_region.return_value = fake_region(
-            environment="production", ingestor=mock_scraper
+            environment="production", scraper=mock_scraper
         )
         mock_environment.return_value = "production"
         mock_supported.side_effect = _MockSupported
@@ -302,7 +302,7 @@ class TestScraperStart(unittest.TestCase):
         )
         mock_scraper = create_autospec(BaseScraper)
         mock_region.return_value = fake_region(
-            environment="production", ingestor=mock_scraper
+            environment="production", scraper=mock_scraper
         )
         mock_environment.return_value = "production"
         mock_supported.side_effect = _MockSupported
@@ -374,7 +374,7 @@ class TestScraperStop(unittest.TestCase):
         mock_get_session.return_value = session
         mock_sessions.return_value = [session]
         mock_scraper = create_autospec(BaseScraper)
-        mock_region.return_value = fake_region(ingestor=mock_scraper)
+        mock_region.return_value = fake_region(scraper=mock_scraper)
         mock_supported.return_value = ["us_ca", "us_ut"]
 
         request_args = {
@@ -429,7 +429,7 @@ class TestScraperStop(unittest.TestCase):
     ):
         mock_sessions.return_value = None
         mock_scraper = create_autospec(BaseScraper)
-        mock_region.return_value = fake_region(ingestor=mock_scraper)
+        mock_region.return_value = fake_region(scraper=mock_scraper)
         mock_supported.return_value = ["us_ca", "us_ut"]
 
         request_args = {
@@ -479,7 +479,7 @@ class TestScraperStop(unittest.TestCase):
         mock_sessions.return_value = session
         mock_close.return_value = [session]
         mock_scraper = create_autospec(BaseScraper)
-        mock_region.return_value = fake_region(ingestor=mock_scraper)
+        mock_region.return_value = fake_region(scraper=mock_scraper)
         mock_supported.side_effect = _MockSupported
 
         request_args = {
@@ -553,7 +553,7 @@ class TestScraperStop(unittest.TestCase):
         mock_sessions.return_value = session
         mock_close.return_value = [session]
         mock_scraper = create_autospec(BaseScraper)
-        mock_region.return_value = fake_region(ingestor=mock_scraper)
+        mock_region.return_value = fake_region(scraper=mock_scraper)
         mock_region.return_value.is_stoppable = False
         mock_supported.return_value = ["us_ca", "us_ut"]
 
@@ -608,7 +608,7 @@ class TestScraperResume(unittest.TestCase):
     def test_resume(self, mock_sessions, mock_region, mock_supported):
         mock_sessions.return_value = None
         mock_scraper = create_autospec(BaseScraper)
-        mock_region.return_value = fake_region(ingestor=mock_scraper)
+        mock_region.return_value = fake_region(scraper=mock_scraper)
         mock_supported.return_value = ["us_ca"]
 
         region = "us_ca"

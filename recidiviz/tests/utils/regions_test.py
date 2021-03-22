@@ -218,10 +218,10 @@ class TestRegions(TestCase):
         }
         with patch("importlib.import_module", module_obj.get):
             region = with_manifest(regions.get_region, "us_ny")
-            scraper = region.get_ingestor()
+            scraper = region.get_scraper()
             assert scraper is mock_scraper
 
-    def test_get_direct_controller(self):
+    def test_get_scraper_direct_ingest(self):
         mock_package = Mock()
         mock_direct = Mock()
         mock_package.UsMaMiddlesexController.return_value = mock_direct
@@ -234,8 +234,8 @@ class TestRegions(TestCase):
             region = with_manifest(
                 regions.get_region, "us_ma_middlesex", is_direct_ingest=True
             )
-            direct = region.get_ingestor()
-            assert direct is mock_direct
+            with self.assertRaises(ValueError):
+                _ = region.get_scraper()
 
     def test_create_queue_name(self):
         region = with_manifest(regions.get_region, "us_ny")

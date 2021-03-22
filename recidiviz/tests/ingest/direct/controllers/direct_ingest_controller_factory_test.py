@@ -17,27 +17,42 @@
 """Tests for the DirectIngestControllerFactory."""
 import unittest
 
-from mock import Mock, patch, create_autospec
+from mock import patch
 
 from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import (
     DirectIngestControllerFactory,
 )
-from recidiviz.ingest.direct.regions.us_nd.us_nd_controller import UsNdController
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import (
+    GcsfsDirectIngestController,
+)
+from recidiviz.ingest.direct.direct_ingest_region_utils import (
+    get_existing_region_dir_names,
+)
+from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.regions import get_region
 
 
 class TestDirectIngestControllerFactory(unittest.TestCase):
     """Tests for the DirectIngestControllerFactory."""
 
-    def test_build_gcsfs_ingest_controller(self) -> None:
-        mock_package = Mock()
-        mock_controller = create_autospec(spec=UsNdController)
-        mock_package.UsNdController.return_value = mock_controller
+    def setUp(self) -> None:
+        self.bq_client_patcher = patch("google.cloud.bigquery.Client")
+        self.storage_client_patcher = patch("google.cloud.storage.Client")
+        self.task_client_patcher = patch("google.cloud.tasks_v2.CloudTasksClient")
+        self.bq_client_patcher.start()
+        self.storage_client_patcher.start()
+        self.task_client_patcher.start()
 
-        with patch.dict(
-            "sys.modules",
-            {"recidiviz.ingest.direct.regions.us_nd.us_nd_controller": mock_package},
-        ):
-            controller = DirectIngestControllerFactory.build_gcsfs_ingest_controller(
-                region_code="us_nd", fs=Mock()
-            )
-            assert controller is mock_controller
+    def tearDown(self) -> None:
+        self.bq_client_patcher.stop()
+        self.storage_client_patcher.stop()
+        self.task_client_patcher.stop()
+
+    def test_build_gcsfs_ingest_controller_all_regions(self) -> None:
+        with local_project_id_override("project"):
+            for region_code in get_existing_region_dir_names():
+                region = get_region(region_code, is_direct_ingest=True)
+                controller = DirectIngestControllerFactory.build(region)
+
+                self.assertIsNotNone(controller)
+                self.assertIsInstance(controller, GcsfsDirectIngestController)
