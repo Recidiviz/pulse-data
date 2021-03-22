@@ -28,6 +28,9 @@ from opencensus.stats import measure, view, aggregation
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockAlreadyExists
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
+from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import (
+    DirectIngestControllerFactory,
+)
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
@@ -623,7 +626,7 @@ def controller_for_region_code(
     if not allow_unlaunched and not region.is_ingest_launched_in_env():
         check_is_region_launched_in_env(region)
 
-    controller = region.get_ingestor()
+    controller = DirectIngestControllerFactory.build(region)
 
     if not isinstance(controller, BaseDirectIngestController):
         raise DirectIngestError(
