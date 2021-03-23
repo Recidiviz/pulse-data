@@ -28,7 +28,6 @@ import pandas as pd
 
 from recidiviz import IngestInfo
 from recidiviz.cloud_functions.cloud_function_utils import GCSFS_NO_CACHING
-from recidiviz.common.ingest_metadata import SystemLevel
 
 from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import (
@@ -81,14 +80,10 @@ class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
 
     def __init__(
         self,
-        region_name: str,
-        system_level: SystemLevel,
-        ingest_directory_path: Optional[str],
-        storage_directory_path: Optional[str],
+        ingest_directory_path: GcsfsDirectoryPath,
+        storage_directory_path: GcsfsDirectoryPath,
     ):
-        super().__init__(
-            region_name, system_level, ingest_directory_path, storage_directory_path
-        )
+        super().__init__(ingest_directory_path, storage_directory_path)
         self.csv_reader = GcsfsCsvReader(
             gcsfs.GCSFileSystem(
                 project=metadata.project_id(), cache_timeout=GCSFS_NO_CACHING
@@ -207,7 +202,7 @@ class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
             file_post_processors,
             ancestor_chain_overrides_callback,
             primary_key_override_callback,
-            self.system_level,
+            self.system_level(),
             should_set_with_empty_values,
         )
 

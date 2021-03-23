@@ -181,7 +181,7 @@ def gcsfs_direct_ingest_directory_path_for_region(
 
     if system_level == SystemLevel.COUNTY:
         bucket = f"{project_id}-direct-ingest-county"
-        return os.path.join(bucket, region_code)
+        return os.path.join(bucket, region_code.lower())
     if system_level == SystemLevel.STATE:
         normalized_region_code = region_code.lower().replace("_", "-")
         return f"{project_id}-direct-ingest-state-{normalized_region_code}"
@@ -204,7 +204,7 @@ def gcsfs_sftp_download_directory_path_for_region(
     if system_level == SystemLevel.COUNTY:
         raise ValueError("SystemLevel.COUNTY is not supported")
     if system_level == SystemLevel.STATE:
-        normalized_region_code = region_code.replace("_", "-")
+        normalized_region_code = region_code.lower().replace("_", "-")
         return GcsfsDirectoryPath.from_absolute_path(
             f"{project_id}-direct-ingest-state-{normalized_region_code}-sftp"
         )

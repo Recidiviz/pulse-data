@@ -21,7 +21,6 @@ from typing import Optional, List
 
 from recidiviz import IngestInfo
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
@@ -46,8 +45,6 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_job_prioritizer imp
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsIngestArgs,
     filename_parts_from_path,
-    gcsfs_direct_ingest_storage_directory_path_for_region,
-    gcsfs_direct_ingest_directory_path_for_region,
     GcsfsDirectIngestFileType,
     GcsfsRawDataBQImportArgs,
     GcsfsIngestViewExportArgs,
@@ -79,32 +76,13 @@ class GcsfsDirectIngestController(
 
     def __init__(
         self,
-        region_name: str,
-        system_level: SystemLevel,
-        ingest_directory_path: Optional[str] = None,
-        storage_directory_path: Optional[str] = None,
+        ingest_directory_path: GcsfsDirectoryPath,
+        storage_directory_path: GcsfsDirectoryPath,
     ):
-        super().__init__(region_name, system_level)
+        super().__init__()
         self.fs = DirectIngestGCSFileSystem(GcsfsFactory.build())
-
-        if not ingest_directory_path:
-            ingest_directory_path = gcsfs_direct_ingest_directory_path_for_region(
-                region_name, system_level
-            )
-        self.ingest_directory_path = GcsfsDirectoryPath.from_absolute_path(
-            ingest_directory_path
-        )
-
-        if not storage_directory_path:
-            storage_directory_path = (
-                gcsfs_direct_ingest_storage_directory_path_for_region(
-                    region_name, system_level
-                )
-            )
-
-        self.storage_directory_path = GcsfsDirectoryPath.from_absolute_path(
-            storage_directory_path
-        )
+        self.ingest_directory_path = ingest_directory_path
+        self.storage_directory_path = storage_directory_path
 
         self.temp_output_directory_path = GcsfsDirectoryPath.from_absolute_path(
             gcsfs_direct_ingest_temporary_output_directory_path()

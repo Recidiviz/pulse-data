@@ -53,22 +53,30 @@ from recidiviz.persistence.database.schema_utils import (
     SchemaType,
 )
 from recidiviz.utils import regions, trace
+from recidiviz.utils.regions import Region
 
 
 class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandleType]):
     """Parses and persists individual-level info from direct ingest partners."""
 
-    def __init__(self, region_name: str, system_level: SystemLevel):
-        """Initialize the controller.
-
-        Args:
-            region_name: (str) the name of the region to be collected.
-        """
-
-        self.region = regions.get_region(region_name, is_direct_ingest=True)
-        self.system_level = system_level
+    def __init__(self) -> None:
+        """Initialize the controller."""
         self.cloud_task_manager = DirectIngestCloudTaskManagerImpl()
         self.lock_manager = GCSPseudoLockManager()
+
+    @property
+    def region(self) -> Region:
+        return regions.get_region(self.region_code().lower(), is_direct_ingest=True)
+
+    @classmethod
+    @abc.abstractmethod
+    def region_code(cls) -> str:
+        pass
+
+    @classmethod
+    @abc.abstractmethod
+    def system_level(cls) -> SystemLevel:
+        pass
 
     # ============== #
     # JOB SCHEDULING #
@@ -123,7 +131,7 @@ class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandl
             return
 
         if self.lock_manager.is_locked(
-            postgres_to_bq_lock_name_for_schema(self.system_level.schema_type())
+            postgres_to_bq_lock_name_for_schema(self.system_level().schema_type())
         ) or self.lock_manager.is_locked(
             postgres_to_bq_lock_name_for_schema(SchemaType.OPERATIONS)
         ):
@@ -204,7 +212,7 @@ class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandl
         check_is_region_launched_in_env(self.region)
 
         if self.lock_manager.is_locked(
-            postgres_to_bq_lock_name_for_schema(self.system_level.schema_type())
+            postgres_to_bq_lock_name_for_schema(self.system_level().schema_type())
         ) or self.lock_manager.is_locked(
             postgres_to_bq_lock_name_for_schema(SchemaType.OPERATIONS)
         ):
@@ -330,7 +338,7 @@ class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandl
             self.region.jurisdiction_id,
             args.ingest_time,
             self.get_enum_overrides(),
-            self.system_level,
+            self.system_level(),
         )
 
     def ingest_process_lock_for_region(self) -> str:
