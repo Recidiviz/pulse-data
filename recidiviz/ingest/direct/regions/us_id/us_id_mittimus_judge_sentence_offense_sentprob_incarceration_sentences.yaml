@@ -19,8 +19,6 @@ child_key_mappings:
   off_cnt: state_charge.counts
   off_ldesc: state_charge.description
 
-  caseno: state_court_case.state_court_case_id
-
 primary_key:
   docno: state_person.state_person_id
 
@@ -41,6 +39,7 @@ keys_to_ignore:
   - sent_no             # Sentence number - Handled manually in controller
 
   - am_sent_no          # Unused - Amended sentence number.
+  - caseno              # Unused - Case number, removed as part of #6564
   - caseno_seq          # Unused - Case sequence number within a single docket.
   - co_defend           # Unused - Co-defendants
   - consec_sent_no      # Unused - Sequence number indicating rank in the chain of consecutive sentences

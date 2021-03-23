@@ -39,10 +39,6 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentLevel,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
-from recidiviz.common.constants.state.state_court_case import (
-    StateCourtCaseStatus,
-    StateCourtType,
-)
 from recidiviz.common.constants.state.state_early_discharge import (
     StateEarlyDischargeDecision,
     StateEarlyDischargeDecisionStatus,
@@ -97,7 +93,6 @@ from recidiviz.ingest.models.ingest_info import (
     StateSentenceGroup,
     StateIncarcerationSentence,
     StateCharge,
-    StateCourtCase,
     StateAgent,
     StateSupervisionSentence,
     StateIncarcerationPeriod,
@@ -336,14 +331,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                                             counts="1",
                                             statute="1-11",
                                             description="CRIME 1 + DESC",
-                                            state_court_case=StateCourtCase(
-                                                state_court_case_id="1111-123",
-                                                judge=StateAgent(
-                                                    state_agent_id="1",
-                                                    agent_type="JUDGE",
-                                                    full_name="JUDGE 1",
-                                                ),
-                                            ),
                                         )
                                     ],
                                 )
@@ -365,14 +352,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                                             counts="1",
                                             statute="2-22",
                                             description="CRIME 2 + DESC",
-                                            state_court_case=StateCourtCase(
-                                                state_court_case_id="1111-456",
-                                                judge=StateAgent(
-                                                    state_agent_id="1",
-                                                    agent_type="JUDGE",
-                                                    full_name="JUDGE 1",
-                                                ),
-                                            ),
                                         )
                                     ],
                                 )
@@ -409,14 +388,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                                             counts="1",
                                             statute="3-33",
                                             description="CRIME 3 + DESC",
-                                            state_court_case=StateCourtCase(
-                                                state_court_case_id="2222-789",
-                                                judge=StateAgent(
-                                                    state_agent_id="2",
-                                                    agent_type="JUDGE",
-                                                    full_name="JUDGE 2",
-                                                ),
-                                            ),
                                         )
                                     ],
                                 )
@@ -464,14 +435,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                                             counts="2",
                                             statute="4-44",
                                             description="CRIME 4 + DESC",
-                                            state_court_case=StateCourtCase(
-                                                state_court_case_id="1111-234",
-                                                judge=StateAgent(
-                                                    state_agent_id="3",
-                                                    agent_type="JUDGE",
-                                                    full_name="JUDGE 3",
-                                                ),
-                                            ),
                                         )
                                     ],
                                 )
@@ -507,14 +470,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                                             counts="2",
                                             statute="5-55",
                                             description="CRIME 5 + DESC",
-                                            state_court_case=StateCourtCase(
-                                                state_court_case_id="2222-567",
-                                                judge=StateAgent(
-                                                    state_agent_id="4",
-                                                    agent_type="JUDGE",
-                                                    full_name="JUDGE 4",
-                                                ),
-                                            ),
                                         )
                                     ],
                                 )
@@ -549,14 +504,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                                             counts="2",
                                             statute="6-66",
                                             description="CRIME 6 + DESC",
-                                            state_court_case=StateCourtCase(
-                                                state_court_case_id="3333-890",
-                                                judge=StateAgent(
-                                                    state_agent_id="5",
-                                                    agent_type="JUDGE",
-                                                    full_name="JUDGE 5",
-                                                ),
-                                            ),
                                         )
                                     ],
                                 )
@@ -1608,20 +1555,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         # MITTIMUS_JUDGE_SENTENCE_OFFENSE_SENTPROB_INCARCERATION_SENTENCES
         ###################################################################
         # Arrange
-        judge_1 = entities.StateAgent.new_with_defaults(
-            external_id="1",
-            agent_type=StateAgentType.JUDGE,
-            agent_type_raw_text="JUDGE",
-            state_code=_STATE_CODE_UPPER,
-            full_name='{"full_name": "JUDGE 1"}',
-        )
-        judge_2 = entities.StateAgent.new_with_defaults(
-            external_id="2",
-            agent_type=StateAgentType.JUDGE,
-            agent_type_raw_text="JUDGE",
-            state_code=_STATE_CODE_UPPER,
-            full_name='{"full_name": "JUDGE 2"}',
-        )
         sg_1111_1 = entities.StateSentenceGroup.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
@@ -1657,19 +1590,9 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             incarceration_sentences=[is_1111_1],
             person=is_1111_1.person,
         )
-        cc_1111_123 = entities.StateCourtCase.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            external_id="1111-123",
-            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
-            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
-            judge=judge_1,
-            charges=[c_1111_1],
-            person=c_1111_1.person,
-        )
         person_1.sentence_groups.append(sg_1111_1)
         sg_1111_1.incarceration_sentences.append(is_1111_1)
         is_1111_1.charges.append(c_1111_1)
-        c_1111_1.court_case = cc_1111_123
 
         sg_1111_2 = entities.StateSentenceGroup.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -1700,19 +1623,9 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             incarceration_sentences=[is_1111_3],
             person=is_1111_3.person,
         )
-        cc_1111_456 = entities.StateCourtCase.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            external_id="1111-456",
-            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
-            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
-            judge=judge_1,
-            charges=[c_1111_3],
-            person=c_1111_3.person,
-        )
         person_1.sentence_groups.append(sg_1111_2)
         sg_1111_2.incarceration_sentences.append(is_1111_3)
         is_1111_3.charges.append(c_1111_3)
-        c_1111_3.court_case = cc_1111_456
 
         sg_2222_1 = entities.StateSentenceGroup.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -1748,19 +1661,9 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             incarceration_sentences=[is_2222_2],
             person=is_2222_2.person,
         )
-        cc_2222_789 = entities.StateCourtCase.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            external_id="2222-789",
-            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
-            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
-            judge=judge_2,
-            charges=[c_2222_2],
-            person=c_2222_2.person,
-        )
         person_2.sentence_groups.append(sg_2222_1)
         sg_2222_1.incarceration_sentences.append(is_2222_2)
         is_2222_2.charges.append(c_2222_2)
-        c_2222_2.court_case = cc_2222_789
 
         # Act
         self._run_ingest_job_for_filename(
@@ -1774,27 +1677,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         # MITTIMUS_JUDGE_SENTENCE_OFFENSE_SENTPROB_SUPERVISION_SENTENCES
         #################################################################
         # Arrange
-        judge_3 = entities.StateAgent.new_with_defaults(
-            external_id="3",
-            agent_type=StateAgentType.JUDGE,
-            agent_type_raw_text="JUDGE",
-            state_code=_STATE_CODE_UPPER,
-            full_name='{"full_name": "JUDGE 3"}',
-        )
-        judge_4 = entities.StateAgent.new_with_defaults(
-            external_id="4",
-            agent_type=StateAgentType.JUDGE,
-            agent_type_raw_text="JUDGE",
-            state_code=_STATE_CODE_UPPER,
-            full_name='{"full_name": "JUDGE 4"}',
-        )
-        judge_5 = entities.StateAgent.new_with_defaults(
-            external_id="5",
-            agent_type=StateAgentType.JUDGE,
-            agent_type_raw_text="JUDGE",
-            state_code=_STATE_CODE_UPPER,
-            full_name='{"full_name": "JUDGE 5"}',
-        )
 
         ss_1111_2 = entities.StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -1823,18 +1705,8 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             supervision_sentences=[ss_1111_2],
             person=ss_1111_2.person,
         )
-        cc_1111_234 = entities.StateCourtCase.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            external_id="1111-234",
-            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
-            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
-            judge=judge_3,
-            charges=[c_1111_2],
-            person=c_1111_2.person,
-        )
         sg_1111_2.supervision_sentences.append(ss_1111_2)
         ss_1111_2.charges.append(c_1111_2)
-        c_1111_2.court_case = cc_1111_234
 
         ss_2222_1 = entities.StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -1863,18 +1735,8 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             supervision_sentences=[ss_2222_1],
             person=ss_2222_1.person,
         )
-        cc_2222_567 = entities.StateCourtCase.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            external_id="2222-567",
-            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
-            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
-            judge=judge_4,
-            charges=[c_2222_1],
-            person=c_2222_1.person,
-        )
         sg_2222_1.supervision_sentences.append(ss_2222_1)
         ss_2222_1.charges.append(c_2222_1)
-        c_2222_1.court_case = cc_2222_567
 
         sg_3333_1 = entities.StateSentenceGroup.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -1908,19 +1770,9 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             supervision_sentences=[ss_3333_1],
             person=ss_3333_1.person,
         )
-        cc_3333_890 = entities.StateCourtCase.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            external_id="3333-890",
-            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
-            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
-            judge=judge_5,
-            charges=[c_3333_1],
-            person=c_3333_1.person,
-        )
         person_3.sentence_groups.append(sg_3333_1)
         sg_3333_1.supervision_sentences.append(ss_3333_1)
         ss_3333_1.charges.append(c_3333_1)
-        c_3333_1.court_case = cc_3333_890
 
         # Act
         self._run_ingest_job_for_filename(

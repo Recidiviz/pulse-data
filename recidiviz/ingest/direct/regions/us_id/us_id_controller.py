@@ -183,14 +183,12 @@ class UsIdController(CsvGcsfsDirectIngestController):
             "mittimus_judge_sentence_offense_sentprob_incarceration_sentences": [
                 gen_label_single_external_id_hook(US_ID_DOC),
                 self._add_statute_to_charge,
-                self._add_judge_to_court_cases,
                 self._set_extra_sentence_fields,
                 self._set_generated_ids,
             ],
             "mittimus_judge_sentence_offense_sentprob_supervision_sentences": [
                 gen_label_single_external_id_hook(US_ID_DOC),
                 self._add_statute_to_charge,
-                self._add_judge_to_court_cases,
                 self._set_extra_sentence_fields,
                 self._set_generated_ids,
             ],
@@ -682,29 +680,6 @@ class UsIdController(CsvGcsfsDirectIngestController):
         for obj in extracted_objects:
             if isinstance(obj, StateCharge):
                 obj.statute = statute
-
-    @staticmethod
-    def _add_judge_to_court_cases(
-        _file_tag: str,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        judge_id = row.get("judge_cd", "")
-        judge_name = row.get("judge_name", "")
-
-        if not judge_id or not judge_name:
-            return
-
-        judge_to_create = StateAgent(
-            state_agent_id=judge_id,
-            full_name=judge_name,
-            agent_type=StateAgentType.JUDGE.value,
-        )
-
-        for obj in extracted_objects:
-            if isinstance(obj, StateCourtCase):
-                create_if_not_exists(judge_to_create, obj, "judge")
 
     @staticmethod
     def _set_extra_sentence_fields(
