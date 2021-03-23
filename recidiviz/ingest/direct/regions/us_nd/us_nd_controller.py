@@ -21,6 +21,7 @@ import os
 import re
 from typing import List, Optional, Dict, Callable, cast, Pattern, Tuple
 
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.common import ncic
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.enum_overrides import (
@@ -48,6 +49,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseDecision,
     StateSupervisionViolationResponseType,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.common.str_field_utils import (
     parse_days_from_duration_pieces,
@@ -110,14 +112,20 @@ _DOCSTARS_NEGATIVE_PATTERN: Pattern = re.compile(r"^\((?P<value>-?\d+)\)$")
 class UsNdController(CsvGcsfsDirectIngestController):
     """Direct ingest controller implementation for us_nd."""
 
+    @classmethod
+    def region_code(cls) -> str:
+        return StateCode.US_ND.value.lower()
+
+    @classmethod
+    def system_level(cls) -> SystemLevel:
+        return SystemLevel.STATE
+
     def __init__(
         self,
-        ingest_directory_path: Optional[str] = None,
-        storage_directory_path: Optional[str] = None,
+        ingest_directory_path: GcsfsDirectoryPath,
+        storage_directory_path: GcsfsDirectoryPath,
     ):
-        super().__init__(
-            "us_nd", SystemLevel.STATE, ingest_directory_path, storage_directory_path
-        )
+        super().__init__(ingest_directory_path, storage_directory_path)
 
         self.enum_overrides = generate_enum_overrides()
 

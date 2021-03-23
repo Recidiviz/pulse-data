@@ -100,14 +100,10 @@ class BaseTestCsvGcsfsDirectIngestController(CsvGcsfsDirectIngestController):
 
     def __init__(
         self,
-        region_name: str,
-        system_level: SystemLevel,
-        ingest_directory_path: Optional[str],
-        storage_directory_path: Optional[str],
+        ingest_directory_path: GcsfsDirectoryPath,
+        storage_directory_path: GcsfsDirectoryPath,
     ):
-        super().__init__(
-            region_name, system_level, ingest_directory_path, storage_directory_path
-        )
+        super().__init__(ingest_directory_path, storage_directory_path)
         self.local_paths: Set[str] = set()
 
     @classmethod
@@ -130,17 +126,23 @@ class BaseTestCsvGcsfsDirectIngestController(CsvGcsfsDirectIngestController):
         return False
 
 
-class CrashingStateTestGcsfsDirectIngestController(
-    BaseTestCsvGcsfsDirectIngestController
-):
-    def __init__(self, ingest_directory_path: str, storage_directory_path: str):
-        super().__init__(
-            TEST_STATE_REGION.region_code,
-            SystemLevel.STATE,
-            ingest_directory_path,
-            storage_directory_path,
-        )
+class StateTestGcsfsDirectIngestController(BaseTestCsvGcsfsDirectIngestController):
+    @classmethod
+    def region_code(cls) -> str:
+        return TEST_STATE_REGION.region_code
 
+    @classmethod
+    def system_level(cls) -> SystemLevel:
+        return SystemLevel.STATE
+
+    @classmethod
+    def get_file_tag_rank_list(cls) -> List[str]:
+        return ["tagA", "tagB", "tagC"]
+
+
+class CrashingStateTestGcsfsDirectIngestController(
+    StateTestGcsfsDirectIngestController
+):
     @classmethod
     def get_file_tag_rank_list(cls) -> List[str]:
         return ["tagC"]
@@ -149,56 +151,22 @@ class CrashingStateTestGcsfsDirectIngestController(
         raise Exception("insta-crash")
 
 
-class StateTestGcsfsDirectIngestController(BaseTestCsvGcsfsDirectIngestController):
-    def __init__(
-        self,
-        ingest_directory_path: str,
-        storage_directory_path: str,
-    ):
-        super().__init__(
-            TEST_STATE_REGION.region_code,
-            SystemLevel.STATE,
-            ingest_directory_path,
-            storage_directory_path,
-        )
-
-    @classmethod
-    def get_file_tag_rank_list(cls) -> List[str]:
-        return ["tagA", "tagB", "tagC"]
-
-
 class SingleTagStateTestGcsfsDirectIngestController(
-    BaseTestCsvGcsfsDirectIngestController
+    StateTestGcsfsDirectIngestController
 ):
-    def __init__(
-        self,
-        ingest_directory_path: str,
-        storage_directory_path: str,
-    ):
-        super().__init__(
-            TEST_STATE_REGION.region_code,
-            SystemLevel.STATE,
-            ingest_directory_path,
-            storage_directory_path,
-        )
-
     @classmethod
     def get_file_tag_rank_list(cls) -> List[str]:
         return ["tagC"]
 
 
 class CountyTestGcsfsDirectIngestController(BaseTestCsvGcsfsDirectIngestController):
-    def __init__(
-        self,
-        ingest_directory_path: str,
-        storage_directory_path: str,
-    ):
-        super().__init__(
-            TEST_COUNTY_REGION.region_code,
-            SystemLevel.COUNTY,
-            ingest_directory_path,
-            storage_directory_path,
-        )
+    @classmethod
+    def region_code(cls) -> str:
+        return TEST_COUNTY_REGION.region_code
+
+    @classmethod
+    def system_level(cls) -> SystemLevel:
+        return SystemLevel.COUNTY
 
     @classmethod
     def get_file_tag_rank_list(cls) -> List[str]:

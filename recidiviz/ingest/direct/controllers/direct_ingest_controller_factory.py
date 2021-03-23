@@ -18,8 +18,13 @@
 import importlib
 from typing import Type
 
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import (
     GcsfsDirectIngestController,
+)
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
+    gcsfs_direct_ingest_directory_path_for_region,
+    gcsfs_direct_ingest_storage_directory_path_for_region,
 )
 from recidiviz.utils.regions import Region
 
@@ -39,7 +44,22 @@ class DirectIngestControllerFactory:
         controller_class = cls.get_controller_class(region)
         # TODO(#6077): Allow controllers to be instantiated with specific DB-specific
         #  state (e.g. database name, queue name etc).
-        controller = controller_class()  # type: ignore[call-arg]
+        ingest_directory_path = GcsfsDirectoryPath.from_absolute_path(
+            gcsfs_direct_ingest_directory_path_for_region(
+                region.region_code, controller_class.system_level()
+            )
+        )
+
+        storage_directory_path = GcsfsDirectoryPath.from_absolute_path(
+            gcsfs_direct_ingest_storage_directory_path_for_region(
+                region.region_code, controller_class.system_level()
+            )
+        )
+
+        controller = controller_class(
+            ingest_directory_path=ingest_directory_path,
+            storage_directory_path=storage_directory_path,
+        )
         if not isinstance(controller, GcsfsDirectIngestController):
             raise ValueError(f"Unexpected controller class type [{type(controller)}]")
 
