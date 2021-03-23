@@ -255,7 +255,7 @@ INCARCERATION_PERIOD_RELEASE_REASON_TO_STR_MAPPINGS: Dict[
         "TC",  # Transfer to County
         "WT",  # WRIT/ATA
     ],
-    StateIncarcerationPeriodReleaseReason.TRANSFERRED_OUT_OF_STATE: [
+    StateIncarcerationPeriodReleaseReason.TRANSFER_OUT_OF_STATE: [
         # SCI CODES
         "IC",  # In Custody Elsewhere
         "TS",  # Transfer to Other State
