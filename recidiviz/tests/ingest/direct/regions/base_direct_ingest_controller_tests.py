@@ -130,7 +130,6 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
             self.controller_cls(),
             self.fixture_path_prefix(),
             run_async=False,
-            max_delay_sec_between_files=0,
             regions_module=regions,
         )
 

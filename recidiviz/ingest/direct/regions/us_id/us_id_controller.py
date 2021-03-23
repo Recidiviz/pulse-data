@@ -159,14 +159,9 @@ class UsIdController(CsvGcsfsDirectIngestController):
         self,
         ingest_directory_path: Optional[str] = None,
         storage_directory_path: Optional[str] = None,
-        max_delay_sec_between_files: Optional[int] = None,
     ):
         super().__init__(
-            "us_id",
-            SystemLevel.STATE,
-            ingest_directory_path,
-            storage_directory_path,
-            max_delay_sec_between_files=max_delay_sec_between_files,
+            "us_id", SystemLevel.STATE, ingest_directory_path, storage_directory_path
         )
         self.enum_overrides = self.generate_enum_overrides()
         early_discharge_deleted_rows_processors = [

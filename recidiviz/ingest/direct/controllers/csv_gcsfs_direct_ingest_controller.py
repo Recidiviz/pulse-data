@@ -85,14 +85,9 @@ class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
         system_level: SystemLevel,
         ingest_directory_path: Optional[str],
         storage_directory_path: Optional[str],
-        max_delay_sec_between_files: Optional[int] = None,
     ):
         super().__init__(
-            region_name,
-            system_level,
-            ingest_directory_path,
-            storage_directory_path,
-            max_delay_sec_between_files,
+            region_name, system_level, ingest_directory_path, storage_directory_path
         )
         self.csv_reader = GcsfsCsvReader(
             gcsfs.GCSFileSystem(

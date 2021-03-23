@@ -104,14 +104,9 @@ class BaseTestCsvGcsfsDirectIngestController(CsvGcsfsDirectIngestController):
         system_level: SystemLevel,
         ingest_directory_path: Optional[str],
         storage_directory_path: Optional[str],
-        max_delay_sec_between_files: int,
     ):
         super().__init__(
-            region_name,
-            system_level,
-            ingest_directory_path,
-            storage_directory_path,
-            max_delay_sec_between_files,
+            region_name, system_level, ingest_directory_path, storage_directory_path
         )
         self.local_paths: Set[str] = set()
 
@@ -138,18 +133,12 @@ class BaseTestCsvGcsfsDirectIngestController(CsvGcsfsDirectIngestController):
 class CrashingStateTestGcsfsDirectIngestController(
     BaseTestCsvGcsfsDirectIngestController
 ):
-    def __init__(
-        self,
-        ingest_directory_path: str,
-        storage_directory_path: str,
-        max_delay_sec_between_files: int = 0,
-    ):
+    def __init__(self, ingest_directory_path: str, storage_directory_path: str):
         super().__init__(
             TEST_STATE_REGION.region_code,
             SystemLevel.STATE,
             ingest_directory_path,
             storage_directory_path,
-            max_delay_sec_between_files,
         )
 
     @classmethod
@@ -165,14 +154,12 @@ class StateTestGcsfsDirectIngestController(BaseTestCsvGcsfsDirectIngestControlle
         self,
         ingest_directory_path: str,
         storage_directory_path: str,
-        max_delay_sec_between_files: int = 0,
     ):
         super().__init__(
             TEST_STATE_REGION.region_code,
             SystemLevel.STATE,
             ingest_directory_path,
             storage_directory_path,
-            max_delay_sec_between_files,
         )
 
     @classmethod
@@ -187,14 +174,12 @@ class SingleTagStateTestGcsfsDirectIngestController(
         self,
         ingest_directory_path: str,
         storage_directory_path: str,
-        max_delay_sec_between_files: int = 0,
     ):
         super().__init__(
             TEST_STATE_REGION.region_code,
             SystemLevel.STATE,
             ingest_directory_path,
             storage_directory_path,
-            max_delay_sec_between_files,
         )
 
     @classmethod
@@ -207,14 +192,12 @@ class CountyTestGcsfsDirectIngestController(BaseTestCsvGcsfsDirectIngestControll
         self,
         ingest_directory_path: str,
         storage_directory_path: str,
-        max_delay_sec_between_files: int = 0,
     ):
         super().__init__(
             TEST_COUNTY_REGION.region_code,
             SystemLevel.COUNTY,
             ingest_directory_path,
             storage_directory_path,
-            max_delay_sec_between_files,
         )
 
     @classmethod
@@ -1272,7 +1255,6 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             StateTestGcsfsDirectIngestController,
             self.FIXTURE_PATH_PREFIX,
             run_async=False,
-            max_delay_sec_between_files=1,
         )
 
         if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
@@ -1819,7 +1801,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         controller.file_metadata_manager.mark_file_as_discovered(path_to_fixture)
         controller.file_metadata_manager.mark_file_as_processed(path_to_fixture)
 
-        controller.schedule_next_ingest_job_or_wait_if_necessary(just_finished_job=True)
+        controller.schedule_next_ingest_job(just_finished_job=True)
         for task_name in controller.cloud_task_manager.get_bq_import_export_queue_info(
             controller.region
         ).task_names:
