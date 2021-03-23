@@ -19,12 +19,18 @@ import importlib
 from typing import Type
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import (
     GcsfsDirectIngestController,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     gcsfs_direct_ingest_directory_path_for_region,
     gcsfs_direct_ingest_storage_directory_path_for_region,
+)
+from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.sqlalchemy_database_key import (
+    SQLAlchemyDatabaseKey,
+    SQLAlchemyStateDatabaseVersion,
 )
 from recidiviz.utils.regions import Region
 
@@ -56,9 +62,20 @@ class DirectIngestControllerFactory:
             )
         )
 
+        schema_type = controller_class.system_level().schema_type()
+        if schema_type == SchemaType.STATE:
+            database_key = SQLAlchemyDatabaseKey.for_state_code(
+                StateCode(controller_class.region_code().upper()),
+                # TODO(#6077): Pick variable database version.
+                SQLAlchemyStateDatabaseVersion.LEGACY,
+            )
+        else:
+            database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
+
         controller = controller_class(
             ingest_directory_path=ingest_directory_path,
             storage_directory_path=storage_directory_path,
+            ingest_database_key=database_key,
         )
         if not isinstance(controller, GcsfsDirectIngestController):
             raise ValueError(f"Unexpected controller class type [{type(controller)}]")

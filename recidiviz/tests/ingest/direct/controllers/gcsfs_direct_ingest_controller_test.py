@@ -102,8 +102,11 @@ class BaseTestCsvGcsfsDirectIngestController(CsvGcsfsDirectIngestController):
         self,
         ingest_directory_path: GcsfsDirectoryPath,
         storage_directory_path: GcsfsDirectoryPath,
+        ingest_database_key: SQLAlchemyDatabaseKey,
     ):
-        super().__init__(ingest_directory_path, storage_directory_path)
+        super().__init__(
+            ingest_directory_path, storage_directory_path, ingest_database_key
+        )
         self.local_paths: Set[str] = set()
 
     @classmethod
@@ -1489,10 +1492,6 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         self.validate_file_metadata(controller)
 
     @patch(
-        "recidiviz.utils.environment.get_gcp_environment",
-        Mock(return_value="production"),
-    )
-    @patch(
         "recidiviz.utils.regions.get_region",
         Mock(return_value=TEST_INGEST_LAUNCHED_REGION),
     )
@@ -1504,25 +1503,25 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             can_start_ingest=False,
         )
 
-        file_tags = list(reversed(sorted(controller.get_file_tag_rank_list())))
+        with patch(
+            "recidiviz.utils.environment.get_gcp_environment",
+            Mock(return_value="production"),
+        ):
+            file_tags = list(reversed(sorted(controller.get_file_tag_rank_list())))
 
-        add_paths_with_tags(controller, file_tags)
-        with self.assertRaises(ValueError) as e:
-            run_task_queues_to_empty(controller)
+            add_paths_with_tags(controller, file_tags)
+            with self.assertRaises(ValueError) as e:
+                run_task_queues_to_empty(controller)
 
-        self.assertEqual(
-            str(e.exception),
-            "The can_start_ingest flag should only be used for regions where ingest is not yet"
-            " launched in a particular environment. If we want to be able to selectively pause"
-            " ingest processing for a state, we will first have to build a config that is"
-            " respected by both the /ensure_all_file_paths_normalized endpoint and any cloud"
-            " functions that trigger ingest.",
-        )
+            self.assertEqual(
+                str(e.exception),
+                "The can_start_ingest flag should only be used for regions where ingest is not yet"
+                " launched in a particular environment. If we want to be able to selectively pause"
+                " ingest processing for a state, we will first have to build a config that is"
+                " respected by both the /ensure_all_file_paths_normalized endpoint and any cloud"
+                " functions that trigger ingest.",
+            )
 
-    @patch(
-        "recidiviz.utils.environment.get_gcp_environment",
-        Mock(return_value="production"),
-    )
     @patch(
         "recidiviz.utils.regions.get_region",
         Mock(return_value=TEST_INGEST_LAUNCHED_IN_STAGING_REGION),
@@ -1539,8 +1538,12 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         file_tags = list(reversed(sorted(controller.get_file_tag_rank_list())))
 
-        add_paths_with_tags(controller, file_tags)
-        run_task_queues_to_empty(controller)
+        with patch(
+            "recidiviz.utils.environment.get_gcp_environment",
+            Mock(return_value="production"),
+        ):
+            add_paths_with_tags(controller, file_tags)
+            run_task_queues_to_empty(controller)
 
         if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
             raise ValueError(
@@ -1567,10 +1570,6 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         )
 
     @patch(
-        "recidiviz.utils.environment.get_gcp_environment",
-        Mock(return_value="production"),
-    )
-    @patch(
         "recidiviz.utils.regions.get_region",
         Mock(return_value=TEST_INGEST_LAUNCHED_IN_STAGING_REGION),
     )
@@ -1580,14 +1579,17 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             self.FIXTURE_PATH_PREFIX,
             run_async=True,
         )
+        with patch(
+            "recidiviz.utils.environment.get_gcp_environment",
+            Mock(return_value="production"),
+        ):
+            add_paths_with_tags(controller, ["tagA"])
+            with self.assertRaises(DirectIngestError) as e:
+                run_task_queues_to_empty(controller)
 
-        add_paths_with_tags(controller, ["tagA"])
-        with self.assertRaises(DirectIngestError) as e:
-            run_task_queues_to_empty(controller)
-
-        self.assertEqual(
-            str(e.exception), "Bad environment [production] for region [us_xx]."
-        )
+            self.assertEqual(
+                str(e.exception), "Bad environment [production] for region [us_xx]."
+            )
 
         if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
             raise ValueError(
