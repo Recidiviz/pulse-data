@@ -172,7 +172,7 @@ def generate_enum_overrides() -> EnumOverrides:
             "RB",
             "SUPL",
         ],
-        StateIncarcerationPeriodReleaseReason.TRANSFERRED_OUT_OF_STATE: ["TRN"],
+        StateIncarcerationPeriodReleaseReason.TRANSFER_OUT_OF_STATE: ["TRN"],
         StateSupervisionType.HALFWAY_HOUSE: ["COMMUNITY PLACEMENT PGRM"],
         StateSupervisionType.PAROLE: ["SSOP"],
         # TODO(#2891): Ensure that this gets mapped down to a supervision_period_supervision_type of INVESTIGATION

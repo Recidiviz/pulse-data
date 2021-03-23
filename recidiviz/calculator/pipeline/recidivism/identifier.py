@@ -429,7 +429,7 @@ def should_include_in_release_cohort(
         # If the person was released from this incarceration period because they were transferred elsewhere, do not
         # include them in the release cohort.
         return False
-    if release_reason == ReleaseReason.TRANSFERRED_OUT_OF_STATE:
+    if release_reason == ReleaseReason.TRANSFER_OUT_OF_STATE:
         # Releases where the person has been transferred out of state don't really count as true releases.
         return False
     if release_reason == ReleaseReason.COURT_ORDER:

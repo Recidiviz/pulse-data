@@ -932,7 +932,7 @@ RELEASE_REASON_INCLUSION: Dict[ReleaseReason, bool] = {
     ReleaseReason.RELEASED_IN_ERROR: False,
     ReleaseReason.SENTENCE_SERVED: True,
     ReleaseReason.TRANSFER: False,
-    ReleaseReason.TRANSFERRED_OUT_OF_STATE: False,
+    ReleaseReason.TRANSFER_OUT_OF_STATE: False,
     ReleaseReason.STATUS_CHANGE: False,
     ReleaseReason.VACATED: True,
 }

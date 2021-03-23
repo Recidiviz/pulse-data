@@ -131,8 +131,8 @@ class StateIncarcerationPeriodReleaseReason(EntityEnum, metaclass=EntityEnumMeta
         state_enum_strings.state_incarceration_period_release_reason_status_change
     )
     TRANSFER = state_enum_strings.state_incarceration_period_release_reason_transfer
-    TRANSFERRED_OUT_OF_STATE = (
-        state_enum_strings.state_incarceration_period_release_reason_transferred_out_of_state
+    TRANSFER_OUT_OF_STATE = (
+        state_enum_strings.state_incarceration_period_release_reason_transfer_out_of_state
     )
     VACATED = state_enum_strings.state_incarceration_period_release_reason_vacated
 
@@ -261,7 +261,7 @@ def is_official_release(
         StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
         StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         # Transfers out of state are classified as official releases because the custodial authority is changing.
-        StateIncarcerationPeriodReleaseReason.TRANSFERRED_OUT_OF_STATE,
+        StateIncarcerationPeriodReleaseReason.TRANSFER_OUT_OF_STATE,
         StateIncarcerationPeriodReleaseReason.VACATED,
     ]
 
@@ -359,7 +359,7 @@ _STATE_INCARCERATION_PERIOD_RELEASE_REASON_MAP = {
     "HOSPITAL": StateIncarcerationPeriodReleaseReason.TRANSFER,
     "MEDICAL": StateIncarcerationPeriodReleaseReason.TRANSFER,
     "TRANSFER": StateIncarcerationPeriodReleaseReason.TRANSFER,
-    "TRANSFERRED OUT OF STATE": StateIncarcerationPeriodReleaseReason.TRANSFERRED_OUT_OF_STATE,
+    "TRANSFER OUT OF STATE": StateIncarcerationPeriodReleaseReason.TRANSFER_OUT_OF_STATE,
     "VACATED": StateIncarcerationPeriodReleaseReason.VACATED,
     "STATUS CHANGE": StateIncarcerationPeriodReleaseReason.STATUS_CHANGE,
 }

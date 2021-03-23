@@ -166,8 +166,8 @@ state_incarceration_period_release_reason_released_in_error = "RELEASED_IN_ERROR
 state_incarceration_period_release_reason_sentence_served = "SENTENCE_SERVED"
 state_incarceration_period_release_reason_status_change = "STATUS_CHANGE"
 state_incarceration_period_release_reason_transfer = "TRANSFER"
-state_incarceration_period_release_reason_transferred_out_of_state = (
-    "TRANSFERRED_OUT_OF_STATE"
+state_incarceration_period_release_reason_transfer_out_of_state = (
+    "TRANSFER_OUT_OF_STATE"
 )
 state_incarceration_period_release_reason_vacated = "VACATED"
 
