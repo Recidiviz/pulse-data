@@ -467,7 +467,7 @@ def scheduler() -> Tuple[str, HTTPStatus]:
                 return str(e), HTTPStatus.BAD_REQUEST
             raise e
 
-        controller.schedule_next_ingest_job_or_wait_if_necessary(just_finished_job)
+        controller.schedule_next_ingest_job(just_finished_job)
     return "", HTTPStatus.OK
 
 

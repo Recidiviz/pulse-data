@@ -16,7 +16,6 @@
 # =============================================================================
 """Controller for parsing and persisting a file in the GCS filesystem."""
 import abc
-import datetime
 import logging
 from typing import Optional, List
 
@@ -84,11 +83,9 @@ class GcsfsDirectIngestController(
         system_level: SystemLevel,
         ingest_directory_path: Optional[str] = None,
         storage_directory_path: Optional[str] = None,
-        max_delay_sec_between_files: Optional[int] = None,
     ):
         super().__init__(region_name, system_level)
         self.fs = DirectIngestGCSFileSystem(GcsfsFactory.build())
-        self.max_delay_sec_between_files = max_delay_sec_between_files
 
         if not ingest_directory_path:
             ingest_directory_path = gcsfs_direct_ingest_directory_path_for_region(
@@ -270,7 +267,7 @@ class GcsfsDirectIngestController(
             return
 
         if unprocessed_paths:
-            self.schedule_next_ingest_job_or_wait_if_necessary(just_finished_job=False)
+            self.schedule_next_ingest_job(just_finished_job=False)
 
     def do_raw_data_import(self, data_import_args: GcsfsRawDataBQImportArgs) -> None:
         """Process a raw incoming file by importing it to BQ, tracking it in our metadata tables, and moving it to
@@ -344,10 +341,11 @@ class GcsfsDirectIngestController(
         if self._schedule_raw_data_import_tasks():
             logging.info("Found pre-ingest raw data import tasks to schedule.")
             return True
-        # TODO(#3020): We have logic to ensure that we wait 10 min for all files to upload properly before moving on to
-        #  ingest. We probably actually need this to happen between raw data import and ingest view export steps - if we
-        #  haven't seen all files yet and most recent raw data file came in sometime in the last 10 min, we should wait
-        #  to do view exports.
+        # TODO(#3020): We used to have logic to ensure that we wait 10 min for all files
+        #  to upload properly before moving on to ingest. We probably actually need this
+        #  to happen between raw data import and ingest view export steps - if we
+        #  haven't seen all files yet and most recent raw data file came in sometime in
+        #  the last 10 min, we should wait to do view exports.
         if self._schedule_ingest_view_export_tasks():
             logging.info("Found pre-ingest view export tasks to schedule.")
             return True
@@ -470,33 +468,6 @@ class GcsfsDirectIngestController(
             return None
 
         return args
-
-    def _wait_time_sec_for_next_args(self, args: GcsfsIngestArgs) -> int:
-        if self.file_prioritizer.are_next_args_expected(args):
-            # Run job immediately
-            return 0
-
-        now = datetime.datetime.utcnow()
-        file_upload_time: datetime.datetime = filename_parts_from_path(
-            args.file_path
-        ).utc_upload_datetime
-
-        max_delay_sec = (
-            self.max_delay_sec_between_files
-            if self.max_delay_sec_between_files is not None
-            else self._DEFAULT_MAX_PROCESS_JOB_WAIT_TIME_SEC
-        )
-        max_wait_from_file_upload_time = file_upload_time + datetime.timedelta(
-            seconds=max_delay_sec
-        )
-
-        if max_wait_from_file_upload_time <= now:
-            wait_time = 0
-        else:
-            wait_time = (max_wait_from_file_upload_time - now).seconds
-
-        logging.info("Waiting [%s] sec for [%s]", wait_time, self._job_tag(args))
-        return wait_time
 
     def _on_job_scheduled(self, ingest_args: GcsfsIngestArgs) -> None:
         pass

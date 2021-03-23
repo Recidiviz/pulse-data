@@ -114,14 +114,9 @@ class UsNdController(CsvGcsfsDirectIngestController):
         self,
         ingest_directory_path: Optional[str] = None,
         storage_directory_path: Optional[str] = None,
-        max_delay_sec_between_files: Optional[int] = None,
     ):
         super().__init__(
-            "us_nd",
-            SystemLevel.STATE,
-            ingest_directory_path,
-            storage_directory_path,
-            max_delay_sec_between_files=max_delay_sec_between_files,
+            "us_nd", SystemLevel.STATE, ingest_directory_path, storage_directory_path
         )
 
         self.enum_overrides = generate_enum_overrides()

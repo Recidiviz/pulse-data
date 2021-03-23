@@ -224,7 +224,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
             f"{region.region_code}-scheduler",
             with_monitoring(
                 region.region_code,
-                self.controller.schedule_next_ingest_job_or_wait_if_necessary,
+                self.controller.schedule_next_ingest_job,
             ),
             just_finished_job,
         )
