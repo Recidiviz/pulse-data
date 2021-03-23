@@ -24,7 +24,7 @@ from typing import List, Optional, Set, Dict, Tuple
 from flask import Blueprint, request, url_for
 from opencensus.stats import aggregation, measure, view
 
-from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.ingest.models.ingest_info import IngestInfo, Person
 from recidiviz.ingest.models.scrape_key import ScrapeKey
@@ -34,6 +34,8 @@ from recidiviz.ingest.scrape.scraper_cloud_task_manager import ScraperCloudTaskM
 from recidiviz.ingest.scrape.task_params import Task
 from recidiviz.persistence import persistence
 from recidiviz.persistence import datastore_ingest_info
+from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.datastore_ingest_info import BatchIngestInfoData
 from recidiviz.persistence.ingest_info_validator import ingest_info_validator
 from recidiviz.utils import monitoring, regions
@@ -227,6 +229,8 @@ def persist_to_database(
             ingest_time=session_start_time,
             facility_id=region.facility_id,
             enum_overrides=overrides,
+            system_level=SystemLevel.COUNTY,
+            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS),
         )
 
         did_write = persistence.write(proto, metadata)

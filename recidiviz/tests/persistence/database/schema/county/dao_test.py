@@ -22,7 +22,6 @@ from copy import deepcopy
 from unittest import TestCase
 
 from recidiviz.common.constants.county.booking import CustodyStatus
-from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.persistence.database.schema.county import dao
 from recidiviz.persistence.database.schema.county.schema import Booking, Person
@@ -33,6 +32,7 @@ from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.county import entities
+from recidiviz.tests.persistence.database.database_test_utils import TestIngestMetadata
 from recidiviz.tests.utils import fakes
 
 _REGION = "region"
@@ -41,14 +41,8 @@ _JURISDICTION_ID = "12345678"
 _FULL_NAME = "full_name"
 _EXTERNAL_ID = "external_id"
 _BIRTHDATE = datetime.date(year=2012, month=1, day=2)
-_INGEST_TIME = datetime.datetime(year=2020, month=7, day=4)
 _FACILITY = "facility"
-_DEFAULT_METADATA = IngestMetadata.new_with_defaults(
-    region="default_region",
-    jurisdiction_id="jid",
-    ingest_time=_INGEST_TIME,
-    enum_overrides={},
-)
+_DEFAULT_METADATA = TestIngestMetadata.for_county(region="default_region")
 
 DATE_SCRAPED = datetime.date(year=2019, month=1, day=1)
 

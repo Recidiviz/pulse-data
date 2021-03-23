@@ -28,7 +28,6 @@ from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.person_characteristics import Race
-from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence.database import database
 from recidiviz.persistence.database.schema.county import dao as county_dao
 from recidiviz.persistence.database.schema.county import schema as county_schema
@@ -53,6 +52,7 @@ from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.county import entities as county_entities
+from recidiviz.tests.persistence.database.database_test_utils import TestIngestMetadata
 from recidiviz.tests.utils import fakes
 
 _REGION = "region"
@@ -63,7 +63,7 @@ _EXTERNAL_ID = "external_id"
 _BIRTHDATE = datetime.date(year=2012, month=1, day=2)
 _INGEST_TIME = datetime.datetime(year=2020, month=7, day=4)
 _FACILITY = "facility"
-_DEFAULT_METADATA = IngestMetadata(
+_DEFAULT_METADATA = TestIngestMetadata.for_county(
     region="default_region",
     jurisdiction_id="jid",
     ingest_time=_INGEST_TIME,
@@ -77,14 +77,14 @@ class TestDatabase(TestCase):
     """Test that the methods in database.py correctly read from the SQL
     database"""
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS)
         fakes.use_in_memory_sqlite_database(self.database_key)
 
     def tearDown(self) -> None:
         fakes.teardown_in_memory_sqlite_databases()
 
-    def testWritePerson_noExistingSnapshots_createsSnapshots(self):
+    def testWritePerson_noExistingSnapshots_createsSnapshots(self) -> None:
         act_session = SessionFactory.for_database(self.database_key)
 
         person = county_schema.Person(
@@ -162,7 +162,7 @@ class TestDatabase(TestCase):
 
         assert_session.close()
 
-    def testWritePerson_allExistingSnapshots_onlyUpdatesOnChange(self):
+    def testWritePerson_allExistingSnapshots_onlyUpdatesOnChange(self) -> None:
         charge_name_1 = "charge_name_1"
         charge_name_2 = "charge_name_2"
         updated_last_seen_time = datetime.datetime(year=2020, month=7, day=6)
@@ -315,7 +315,7 @@ class TestDatabase(TestCase):
 
         assert_session.close()
 
-    def testWritePerson_someExistingSnapshots_createsAndExtends(self):
+    def testWritePerson_someExistingSnapshots_createsAndExtends(self) -> None:
         charge_name = "charge_name"
         updated_last_seen_time = datetime.datetime(year=2020, month=7, day=6)
         # Pick a date in the past so the assigned snapshot date will always be
@@ -450,7 +450,7 @@ class TestDatabase(TestCase):
 
         assert_session.close()
 
-    def testWritePerson_overlappingSnapshots_doesNotRaiseError(self):
+    def testWritePerson_overlappingSnapshots_doesNotRaiseError(self) -> None:
         name = "Steve Fakename"
         birthdate = datetime.date(year=1980, month=1, day=1)
 
@@ -551,17 +551,16 @@ class TestDatabase(TestCase):
             database.write_people(
                 assert_session,
                 converter.convert_entity_people_to_schema_people([ingest_person]),
-                IngestMetadata(
-                    _REGION,
-                    _JURISDICTION_ID,
-                    datetime.datetime(year=2020, month=7, day=8),
-                    {},
+                TestIngestMetadata.for_county(
+                    region=_REGION,
+                    jurisdiction_id=_JURISDICTION_ID,
+                    ingest_time=datetime.datetime(year=2020, month=7, day=8),
                 ),
             )
         except Exception as e:
             self.fail("Writing person failed with error: {}".format(e))
 
-    def testWritePeople_duplicatePeople_raisesError(self):
+    def testWritePeople_duplicatePeople_raisesError(self) -> None:
         shared_id = 48
         session = SessionFactory.for_database(self.database_key)
 
@@ -588,7 +587,7 @@ class TestDatabase(TestCase):
 
         session.close()
 
-    def testWritePerson_backdatedBooking_backdatesSnapshot(self):
+    def testWritePerson_backdatedBooking_backdatesSnapshot(self) -> None:
         person_scrape_time = datetime.datetime(year=2020, month=6, day=1)
         booking_scrape_time = datetime.datetime(year=2020, month=7, day=7)
         booking_admission_date = datetime.datetime(year=2020, month=7, day=1)
@@ -603,7 +602,11 @@ class TestDatabase(TestCase):
         persisted_person = database.write_person(
             arrange_session,
             person,
-            IngestMetadata(_REGION, _JURISDICTION_ID, person_scrape_time, {}),
+            TestIngestMetadata.for_county(
+                region=_REGION,
+                jurisdiction_id=_JURISDICTION_ID,
+                ingest_time=person_scrape_time,
+            ),
         )
         arrange_session.commit()
         person_id = persisted_person.person_id
@@ -627,7 +630,11 @@ class TestDatabase(TestCase):
         updated_person = database.write_person(
             act_session,
             converter.convert_entity_people_to_schema_people([queried_person])[0],
-            IngestMetadata(_REGION, _JURISDICTION_ID, booking_scrape_time, {}),
+            TestIngestMetadata.for_county(
+                region=_REGION,
+                jurisdiction_id=_JURISDICTION_ID,
+                ingest_time=booking_scrape_time,
+            ),
         )
         act_session.commit()
         booking_id = updated_person.bookings[0].booking_id
@@ -652,7 +659,7 @@ class TestDatabase(TestCase):
         assert_session.commit()
         assert_session.close()
 
-    def testWritePerson_backdatedRelease_backdatesRecordTreeToRelease(self):
+    def testWritePerson_backdatedRelease_backdatesRecordTreeToRelease(self) -> None:
         scrape_time = datetime.datetime(year=2020, month=7, day=7)
         booking_release_date = datetime.datetime(year=2020, month=7, day=1)
 
@@ -676,7 +683,11 @@ class TestDatabase(TestCase):
         persisted_person = database.write_person(
             act_session,
             person,
-            IngestMetadata(_REGION, _JURISDICTION_ID, scrape_time, {}),
+            TestIngestMetadata.for_county(
+                region=_REGION,
+                jurisdiction_id=_JURISDICTION_ID,
+                ingest_time=scrape_time,
+            ),
         )
         act_session.commit()
         person_id = persisted_person.person_id
@@ -709,7 +720,7 @@ class TestDatabase(TestCase):
         assert_session.commit()
         assert_session.close()
 
-    def testWritePerson_releaseAfterScrapeTime_usesScrapeTime(self):
+    def testWritePerson_releaseAfterScrapeTime_usesScrapeTime(self) -> None:
         scrape_time = datetime.datetime(year=2020, month=7, day=7)
         booking_release_date = datetime.datetime(year=2020, month=7, day=15)
 
@@ -733,7 +744,11 @@ class TestDatabase(TestCase):
         persisted_person = database.write_person(
             act_session,
             person,
-            IngestMetadata(_REGION, _JURISDICTION_ID, scrape_time, {}),
+            TestIngestMetadata.for_county(
+                region=_REGION,
+                jurisdiction_id=_JURISDICTION_ID,
+                ingest_time=scrape_time,
+            ),
         )
         act_session.commit()
         person_id = persisted_person.person_id
@@ -766,7 +781,7 @@ class TestDatabase(TestCase):
         assert_session.commit()
         assert_session.close()
 
-    def testWritePerson_admissionAndReleaseDate_createsTwoSnapshots(self):
+    def testWritePerson_admissionAndReleaseDate_createsTwoSnapshots(self) -> None:
         scrape_time = datetime.datetime(year=2020, month=7, day=7)
         admission_date = datetime.datetime(year=2020, month=6, day=1)
         release_date = datetime.datetime(year=2020, month=7, day=1)
@@ -793,7 +808,11 @@ class TestDatabase(TestCase):
         persisted_person = database.write_person(
             act_session,
             person,
-            IngestMetadata(_REGION, _JURISDICTION_ID, scrape_time, {}),
+            TestIngestMetadata.for_county(
+                region=_REGION,
+                jurisdiction_id=_JURISDICTION_ID,
+                ingest_time=scrape_time,
+            ),
         )
         act_session.commit()
         person_id = persisted_person.person_id
@@ -839,7 +858,7 @@ class TestDatabase(TestCase):
         assert_session.commit()
         assert_session.close()
 
-    def testWritePerson_imposedAndCompletionDate_createsTwoSnapshots(self):
+    def testWritePerson_imposedAndCompletionDate_createsTwoSnapshots(self) -> None:
         scrape_time = datetime.datetime(year=2020, month=7, day=7)
         date_imposed = datetime.datetime(year=2020, month=6, day=1)
         completion_date = datetime.datetime(year=2020, month=7, day=1)
@@ -868,7 +887,11 @@ class TestDatabase(TestCase):
         persisted_person = database.write_person(
             act_session,
             person,
-            IngestMetadata(_REGION, _JURISDICTION_ID, scrape_time, {}),
+            TestIngestMetadata.for_county(
+                region=_REGION,
+                jurisdiction_id=_JURISDICTION_ID,
+                ingest_time=scrape_time,
+            ),
         )
         act_session.commit()
         person_id = persisted_person.person_id
@@ -919,7 +942,7 @@ class TestDatabase(TestCase):
         assert_session.commit()
         assert_session.close()
 
-    def testWritePerson_startAfterEnd_usesEndToBackdate(self):
+    def testWritePerson_startAfterEnd_usesEndToBackdate(self) -> None:
         scrape_time = datetime.datetime(year=2020, month=7, day=7)
         date_imposed = datetime.datetime(year=2020, month=7, day=1)
         completion_date = datetime.datetime(year=2020, month=6, day=1)
@@ -948,7 +971,11 @@ class TestDatabase(TestCase):
         persisted_person = database.write_person(
             act_session,
             person,
-            IngestMetadata(_REGION, _JURISDICTION_ID, scrape_time, {}),
+            TestIngestMetadata.for_county(
+                region=_REGION,
+                jurisdiction_id=_JURISDICTION_ID,
+                ingest_time=scrape_time,
+            ),
         )
         act_session.commit()
         person_id = persisted_person.person_id
@@ -988,7 +1015,7 @@ class TestDatabase(TestCase):
         assert_session.commit()
         assert_session.close()
 
-    def testWritePerson_admissionDateChanges_doesNotBackdateSnapshot(self):
+    def testWritePerson_admissionDateChanges_doesNotBackdateSnapshot(self) -> None:
         initial_scrape_time = datetime.datetime(year=2020, month=6, day=1)
         update_scrape_time = datetime.datetime(year=2020, month=7, day=7)
         booking_admission_date = datetime.datetime(year=2020, month=7, day=1)
@@ -1009,7 +1036,11 @@ class TestDatabase(TestCase):
         persisted_person = database.write_person(
             arrange_session,
             person,
-            IngestMetadata(_REGION, _JURISDICTION_ID, initial_scrape_time, {}),
+            TestIngestMetadata.for_county(
+                region=_REGION,
+                jurisdiction_id=_JURISDICTION_ID,
+                ingest_time=initial_scrape_time,
+            ),
         )
         arrange_session.commit()
         booking_id = persisted_person.bookings[0].booking_id
@@ -1028,7 +1059,11 @@ class TestDatabase(TestCase):
         database.write_people(
             act_session,
             converter.convert_entity_people_to_schema_people([queried_person]),
-            IngestMetadata(_REGION, _JURISDICTION_ID, update_scrape_time, {}),
+            TestIngestMetadata.for_county(
+                region=_REGION,
+                jurisdiction_id=_JURISDICTION_ID,
+                ingest_time=update_scrape_time,
+            ),
         )
         act_session.commit()
         act_session.close()
@@ -1047,7 +1082,7 @@ class TestDatabase(TestCase):
         assert_session.commit()
         assert_session.close()
 
-    def testWritePerson_newPersonWithBackdatedBooking_backdatesPerson(self):
+    def testWritePerson_newPersonWithBackdatedBooking_backdatesPerson(self) -> None:
         scrape_time = datetime.datetime(year=2020, month=7, day=7)
         booking_admission_date = datetime.datetime(year=2020, month=7, day=1)
 
@@ -1069,7 +1104,11 @@ class TestDatabase(TestCase):
         persisted_person = database.write_person(
             act_session,
             person,
-            IngestMetadata(_REGION, _JURISDICTION_ID, scrape_time, {}),
+            TestIngestMetadata.for_county(
+                region=_REGION,
+                jurisdiction_id=_JURISDICTION_ID,
+                ingest_time=scrape_time,
+            ),
         )
         act_session.commit()
         person_id = persisted_person.person_id
@@ -1095,7 +1134,7 @@ class TestDatabase(TestCase):
         assert_session.commit()
         assert_session.close()
 
-    def testWritePerson_backdatedBooking_backdatesChildEntities(self):
+    def testWritePerson_backdatedBooking_backdatesChildEntities(self) -> None:
         scrape_time = datetime.datetime(year=2020, month=7, day=7)
         booking_admission_date = datetime.datetime(year=2020, month=7, day=1)
 
@@ -1121,7 +1160,11 @@ class TestDatabase(TestCase):
         persisted_person = database.write_person(
             act_session,
             person,
-            IngestMetadata(_REGION, _JURISDICTION_ID, scrape_time, {}),
+            TestIngestMetadata.for_county(
+                region=_REGION,
+                jurisdiction_id=_JURISDICTION_ID,
+                ingest_time=scrape_time,
+            ),
         )
         act_session.commit()
         charge_id = persisted_person.bookings[0].charges[0].charge_id
@@ -1147,7 +1190,7 @@ class TestDatabase(TestCase):
         assert_session.commit()
         assert_session.close()
 
-    def testWritePerson_backdatedExistingBooking_doesNotBackdateChildren(self):
+    def testWritePerson_backdatedExistingBooking_doesNotBackdateChildren(self) -> None:
         initial_scrape_time = datetime.datetime(year=2020, month=7, day=1)
         update_scrape_time = datetime.datetime(year=2020, month=7, day=7)
         booking_admission_date = datetime.datetime(year=2020, month=6, day=1)
@@ -1170,7 +1213,11 @@ class TestDatabase(TestCase):
         persisted_person = database.write_person(
             arrange_session,
             person,
-            IngestMetadata(_REGION, _JURISDICTION_ID, initial_scrape_time, {}),
+            TestIngestMetadata.for_county(
+                region=_REGION,
+                jurisdiction_id=_JURISDICTION_ID,
+                ingest_time=initial_scrape_time,
+            ),
         )
         arrange_session.commit()
         person_id = persisted_person.person_id
@@ -1192,7 +1239,11 @@ class TestDatabase(TestCase):
         updated_person = database.write_person(
             act_session,
             converter.convert_entity_people_to_schema_people([queried_person])[0],
-            IngestMetadata(_REGION, _JURISDICTION_ID, update_scrape_time, {}),
+            TestIngestMetadata.for_county(
+                region=_REGION,
+                jurisdiction_id=_JURISDICTION_ID,
+                ingest_time=update_scrape_time,
+            ),
         )
         act_session.commit()
         charge_id = updated_person.bookings[0].charges[0].charge_id
@@ -1231,7 +1282,7 @@ class TestDatabase(TestCase):
         assert_session.commit()
         assert_session.close()
 
-    def testWritePerson_backdatedBookingDescendant_usesProvidedStartTime(self):
+    def testWritePerson_backdatedBookingDescendant_usesProvidedStartTime(self) -> None:
         scrape_time = datetime.datetime(year=2020, month=7, day=7)
         booking_admission_date = datetime.datetime(year=2020, month=7, day=1)
         sentence_date_imposed = datetime.datetime(year=2020, month=7, day=3)
@@ -1261,7 +1312,11 @@ class TestDatabase(TestCase):
         persisted_person = database.write_person(
             act_session,
             person,
-            IngestMetadata(_REGION, _JURISDICTION_ID, scrape_time, {}),
+            TestIngestMetadata.for_county(
+                region=_REGION,
+                jurisdiction_id=_JURISDICTION_ID,
+                ingest_time=scrape_time,
+            ),
         )
         act_session.commit()
         booking_id = persisted_person.bookings[0].booking_id
@@ -1287,7 +1342,7 @@ class TestDatabase(TestCase):
         assert_session.commit()
         assert_session.close()
 
-    def test_removeBondFromCharge_shouldNotOrphanOldBond(self):
+    def test_removeBondFromCharge_shouldNotOrphanOldBond(self) -> None:
         arrange_session = SessionFactory.for_database(self.database_key)
 
         person = county_schema.Person(
@@ -1307,7 +1362,7 @@ class TestDatabase(TestCase):
         persisted_person = database.write_person(
             arrange_session,
             person,
-            IngestMetadata.new_with_defaults(
+            TestIngestMetadata.for_county(
                 region="default_region",
                 ingest_time=datetime.datetime(year=2020, month=7, day=6),
             ),
@@ -1329,7 +1384,7 @@ class TestDatabase(TestCase):
         database.write_person(
             act_session,
             fetched_person,
-            IngestMetadata.new_with_defaults(
+            TestIngestMetadata.for_county(
                 region="default_region",
                 ingest_time=datetime.datetime(year=2020, month=7, day=7),
             ),
@@ -1352,7 +1407,7 @@ class TestDatabase(TestCase):
         assert_session.commit()
         assert_session.close()
 
-    def test_removeSentenceFromCharge_shouldNotOrphanOldSentence(self):
+    def test_removeSentenceFromCharge_shouldNotOrphanOldSentence(self) -> None:
         arrange_session = SessionFactory.for_database(self.database_key)
 
         person = county_schema.Person(
@@ -1374,7 +1429,7 @@ class TestDatabase(TestCase):
         persisted_person = database.write_person(
             arrange_session,
             person,
-            IngestMetadata.new_with_defaults(
+            TestIngestMetadata.for_county(
                 region="default_region",
                 ingest_time=datetime.datetime(year=2020, month=7, day=6),
             ),
@@ -1396,7 +1451,7 @@ class TestDatabase(TestCase):
         database.write_person(
             act_session,
             fetched_person,
-            IngestMetadata.new_with_defaults(
+            TestIngestMetadata.for_county(
                 region="default_region",
                 ingest_time=datetime.datetime(year=2020, month=7, day=7),
             ),
@@ -1419,7 +1474,7 @@ class TestDatabase(TestCase):
         assert_session.commit()
         assert_session.close()
 
-    def test_orphanedEntities_shouldStillWriteSnapshots(self):
+    def test_orphanedEntities_shouldStillWriteSnapshots(self) -> None:
         orphan_scrape_time = datetime.datetime(year=2020, month=7, day=8)
 
         arrange_session = SessionFactory.for_database(self.database_key)
@@ -1441,7 +1496,7 @@ class TestDatabase(TestCase):
         persisted_person = database.write_person(
             arrange_session,
             person,
-            IngestMetadata.new_with_defaults(
+            TestIngestMetadata.for_county(
                 region="default_region",
                 ingest_time=datetime.datetime(year=2020, month=7, day=6),
             ),
@@ -1465,7 +1520,7 @@ class TestDatabase(TestCase):
         database.write_person(
             act_session,
             fetched_person,
-            IngestMetadata.new_with_defaults(
+            TestIngestMetadata.for_county(
                 region="default_region", ingest_time=orphan_scrape_time
             ),
             orphaned_entities=[fetched_sentence],
@@ -1491,7 +1546,7 @@ class TestDatabase(TestCase):
         assert_session.commit()
         assert_session.close()
 
-    def test_addBondToExistingBooking_shouldSetBookingIdOnBond(self):
+    def test_addBondToExistingBooking_shouldSetBookingIdOnBond(self) -> None:
         arrange_session = SessionFactory.for_database(self.database_key)
 
         person = county_schema.Person(
@@ -1509,7 +1564,7 @@ class TestDatabase(TestCase):
         persisted_person = database.write_person(
             arrange_session,
             person,
-            IngestMetadata.new_with_defaults(
+            TestIngestMetadata.for_county(
                 region="default_region",
                 ingest_time=datetime.datetime(year=2020, month=7, day=6),
             ),
@@ -1530,7 +1585,7 @@ class TestDatabase(TestCase):
         database.write_person(
             act_session,
             fetched_person,
-            IngestMetadata.new_with_defaults(
+            TestIngestMetadata.for_county(
                 region="default_region",
                 ingest_time=datetime.datetime(year=2020, month=7, day=7),
             ),
@@ -1546,10 +1601,16 @@ class TestDatabase(TestCase):
         final_fetched_person = converter.convert_schema_object_to_entity(
             assert_person_query.first()
         )
-        self.assertEqual(
-            final_fetched_person.bookings[0].charges[0].bond.booking_id,
-            persisted_booking_id,
-        )
+        if not isinstance(final_fetched_person, county_entities.Person):
+            raise ValueError(f"Unexpected person type [{final_fetched_person}]")
+
+        final_charge = final_fetched_person.bookings[0].charges[0]
+        self.assertIsNotNone(final_charge)
+        final_bond = final_charge.bond
+        self.assertIsNotNone(final_bond)
+        if final_bond is None:
+            raise ValueError("Unexpected None bond.")
+        self.assertEqual(final_bond.booking_id, persisted_booking_id)
 
         assert_session.commit()
         assert_session.close()

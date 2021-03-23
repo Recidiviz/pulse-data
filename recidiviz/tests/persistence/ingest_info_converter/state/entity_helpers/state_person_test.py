@@ -21,7 +21,6 @@ import unittest
 from datetime import date, datetime
 
 from recidiviz.common.constants.person_characteristics import Gender, ResidencyStatus
-from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.deserialize_entity_factories import (
@@ -30,6 +29,7 @@ from recidiviz.persistence.entity.state.deserialize_entity_factories import (
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
     state_person,
 )
+from recidiviz.tests.persistence.database.database_test_utils import TestIngestMetadata
 
 _NOW = datetime(2000, 5, 15)
 
@@ -42,9 +42,7 @@ class StatePersonConverterTest(unittest.TestCase):
 
     def testParsesStatePerson(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults(
-            region="us_nd", jurisdiction_id="JURISDICTION_ID"
-        )
+        metadata = TestIngestMetadata.for_state(region="us_nd")
         ingest_person = ingest_info_pb2.StatePerson(
             gender="MALE",
             full_name="FULL_NAME",
@@ -72,7 +70,7 @@ class StatePersonConverterTest(unittest.TestCase):
 
     def testParseStatePerson_WithSurnameAndFullname_ThrowsException(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults()
+        metadata = TestIngestMetadata.for_state(region="us_xx")
         ingest_person = ingest_info_pb2.StatePerson(
             full_name="LAST,FIRST", surname="LAST"
         )
@@ -83,7 +81,7 @@ class StatePersonConverterTest(unittest.TestCase):
 
     def testParseStatePerson_WithSurnameAndGivenNames_UsesFullNameAsJson(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults(region="us_xx")
+        metadata = TestIngestMetadata.for_state(region="us_xx")
         ingest_person = ingest_info_pb2.StatePerson(
             state_code="us_xx",
             surname='UNESCAPED,SURNAME"WITH-CHARS"',
@@ -109,7 +107,7 @@ class StatePersonConverterTest(unittest.TestCase):
 
     def testParseStatePerson_TakesLastZipCodeMatch(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults(region="us_nd")
+        metadata = TestIngestMetadata.for_state(region="us_nd")
         # 5-digit address could be mistaken for a zip code
         ingest_person = ingest_info_pb2.StatePerson(current_address="12345 Main 58503")
 
@@ -128,7 +126,7 @@ class StatePersonConverterTest(unittest.TestCase):
 
     def testParseStatePerson_NoiseInPlaceOfResidence_ParsesResidency(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults(region="us_xx")
+        metadata = TestIngestMetadata.for_state(region="us_xx")
         ingest_person = ingest_info_pb2.StatePerson(
             current_address="transient moves around"
         )

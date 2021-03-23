@@ -336,11 +336,12 @@ class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandl
 
     def _get_ingest_metadata(self, args: IngestArgsType) -> IngestMetadata:
         return IngestMetadata(
-            self.region.region_code,
-            self.region.jurisdiction_id,
-            args.ingest_time,
-            self.get_enum_overrides(),
-            self.system_level(),
+            region=self.region.region_code,
+            jurisdiction_id=self.region.jurisdiction_id,
+            ingest_time=args.ingest_time,
+            enum_overrides=self.get_enum_overrides(),
+            system_level=self.system_level(),
+            database_key=self.ingest_database_key,
         )
 
     def ingest_process_lock_for_region(self) -> str:

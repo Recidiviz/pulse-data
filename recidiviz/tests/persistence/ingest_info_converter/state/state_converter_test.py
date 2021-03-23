@@ -59,7 +59,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseDecision,
     StateSupervisionViolationResponseRevocationType,
 )
-from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
+from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.entities import (
@@ -95,6 +95,7 @@ from recidiviz.persistence.ingest_info_converter import ingest_info_converter
 from recidiviz.persistence.ingest_info_converter.ingest_info_converter import (
     IngestInfoConversionResult,
 )
+from recidiviz.tests.persistence.database.database_test_utils import TestIngestMetadata
 
 _INGEST_TIME = datetime.datetime(year=2019, month=2, day=13, hour=12)
 _JURISDICTION_ID = "JURISDICTION_ID"
@@ -137,9 +138,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
 
     def testConvert_FullIngestInfo(self):
         # Arrange
-        metadata = IngestMetadata(
-            "us_nd", _JURISDICTION_ID, _INGEST_TIME, system_level=SystemLevel.STATE
-        )
+        metadata = TestIngestMetadata.for_state(region="us_nd")
 
         ingest_info = IngestInfo()
         ingest_info.state_agents.add(
@@ -747,7 +746,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
 
     def testConvert_CannotConvertField_RaisesValueError(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults(system_level=SystemLevel.STATE)
+        metadata = metadata = TestIngestMetadata.for_state(region="us_xx")
 
         ingest_info = IngestInfo()
         ingest_info.state_people.add(birthdate="NOT_A_DATE")

@@ -21,7 +21,6 @@ import unittest
 from datetime import date
 
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.deserialize_entity_factories import (
@@ -30,10 +29,9 @@ from recidiviz.persistence.entity.state.deserialize_entity_factories import (
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
     state_sentence_group,
 )
+from recidiviz.tests.persistence.database.database_test_utils import TestIngestMetadata
 
-METADATA = IngestMetadata.new_with_defaults(
-    region="us_nd", system_level=SystemLevel.STATE
-)
+METADATA = TestIngestMetadata.for_state("us_nd")
 
 
 class StateSentenceGroupConverterTest(unittest.TestCase):

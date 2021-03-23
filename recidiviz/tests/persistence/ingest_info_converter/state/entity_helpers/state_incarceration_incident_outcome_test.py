@@ -23,21 +23,20 @@ from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentOutcomeType,
 )
-from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
     state_incarceration_incident_outcome,
 )
-
+from recidiviz.tests.persistence.database.database_test_utils import TestIngestMetadata
 
 _ENUM_OVERRIDES = (
     EnumOverrides.Builder()
     .add("LCP", StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS)
     .build()
 )
-_METADATA_WITH_OVERRIDES = IngestMetadata.new_with_defaults(
-    enum_overrides=_ENUM_OVERRIDES
+_METADATA_WITH_OVERRIDES = TestIngestMetadata.for_state(
+    "us_ca", enum_overrides=_ENUM_OVERRIDES
 )
 
 

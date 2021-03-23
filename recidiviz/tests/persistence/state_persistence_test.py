@@ -64,11 +64,14 @@ EXTERNAL_ID_2 = "EXTERNAL_ID_2"
 FULL_NAME_1 = "TEST_FULL_NAME_1"
 STATE_CODE = "US_ND"
 COUNTY_CODE = "COUNTY"
-DEFAULT_METADATA = IngestMetadata.new_with_defaults(
+DEFAULT_METADATA = IngestMetadata(
     region="us_nd",
     jurisdiction_id="12345678",
     system_level=SystemLevel.STATE,
     ingest_time=datetime(year=1000, month=1, day=1),
+    database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
+        schema_type=SchemaType.STATE
+    ),
 )
 ID_TYPE = "ID_TYPE"
 ID = 1

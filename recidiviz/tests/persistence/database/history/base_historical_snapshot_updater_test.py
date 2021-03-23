@@ -71,6 +71,9 @@ class BaseHistoricalSnapshotUpdaterTest(TestCase):
             jurisdiction_id="12345",
             ingest_time=ingest_time,
             system_level=system_level,
+            database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
+                system_level.schema_type()
+            ),
         )
         update_historical_snapshots(act_session, [merged_person], [], metadata)
 
