@@ -29,7 +29,11 @@ resource "google_bigquery_table" "table" {
 }
 
 resource "google_bigquery_job" "load" {
-  job_id = "${var.table_name}_load_${md5(google_storage_bucket_object.table_data.crc32c)}"
+  # Sets the job id based on the hash of the table_data, so that the table is only
+  # reloaded when the data changes.
+  # Note: Whenever this resource is changed, the `vX` fragment below must be incremented
+  # to ensure the new resource can be created without conflict.
+  job_id = "${var.table_name}_load_v0_${md5(google_storage_bucket_object.table_data.crc32c)}"
 
   load {
     source_uris = [
@@ -44,7 +48,8 @@ resource "google_bigquery_job" "load" {
 
     skip_leading_rows = 1
 
-    write_disposition = "WRITE_TRUNCATE"
-    autodetect        = true
+    create_disposition = "CREATE_NEVER"
+    write_disposition  = "WRITE_TRUNCATE"
+    autodetect         = false
   }
 }
