@@ -20,7 +20,7 @@ import os
 import time
 import unittest
 from types import ModuleType
-from typing import List, Optional, Dict, Type, TextIO, Any
+from typing import List, Optional, Dict, Type, TextIO
 
 import attr
 import gcsfs
@@ -288,32 +288,6 @@ class FakeDirectIngestPreProcessedIngestViewCollector(
         return builders
 
 
-def build_controller_for_tests(
-    controller_cls: Type[BaseDirectIngestController], run_async: bool
-) -> BaseDirectIngestController:
-    """Builds an instance of |controller_cls| for use in tests with several internal classes mocked properly. If
-    |controller_cls| is an instance of GcsfsDirectIngestController, use build_gcsfs_controller_for_tests() instead.
-    """
-    if issubclass(controller_cls, GcsfsDirectIngestController):
-        raise ValueError(
-            f"Controller class {controller_cls} is instance of "
-            f"GcsfsDirectIngestController - use "
-            f"build_gcsfs_controller_for_tests instead."
-        )
-
-    with patch(
-        "recidiviz.ingest.direct.controllers."
-        "base_direct_ingest_controller.DirectIngestCloudTaskManagerImpl"
-    ) as mock_task_factory_cls:
-        task_manager = (
-            FakeAsyncDirectIngestCloudTaskManager()
-            if run_async
-            else FakeSynchronousDirectIngestCloudTaskManager()
-        )
-        mock_task_factory_cls.return_value = task_manager
-        return controller_cls()  # type: ignore[call-arg]
-
-
 @patch("recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-staging"))
 def build_gcsfs_controller_for_tests(
     controller_cls: Type[CsvGcsfsDirectIngestController],
@@ -321,7 +295,6 @@ def build_gcsfs_controller_for_tests(
     run_async: bool,
     can_start_ingest: bool = True,
     regions_module: ModuleType = controller_fixtures,
-    **kwargs: Any,
 ) -> GcsfsDirectIngestController:
     """Builds an instance of |controller_cls| for use in tests with several internal classes mocked properly. """
     fake_fs = FakeGCSFileSystem()
@@ -368,9 +341,12 @@ def build_gcsfs_controller_for_tests(
                             new=regions_module,
                         ):
                             controller = controller_cls(
-                                ingest_directory_path=f"{fixture_path_prefix}/fixtures",
-                                storage_directory_path="storage/path/",
-                                **kwargs,
+                                ingest_directory_path=GcsfsDirectoryPath.from_absolute_path(
+                                    f"{fixture_path_prefix}/fixtures"
+                                ),
+                                storage_directory_path=GcsfsDirectoryPath.from_absolute_path(
+                                    "storage/path/"
+                                ),
                             )
                             controller.csv_reader = _TestSafeGcsCsvReader(fake_fs)
                             controller.raw_file_import_manager.csv_reader = (

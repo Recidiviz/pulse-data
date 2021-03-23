@@ -21,6 +21,7 @@ import json
 import re
 from typing import List, Dict, Optional, Callable
 
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.enum_overrides import (
     EnumOverrides,
@@ -70,6 +71,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseType,
     StateSupervisionViolationResponseDecidingBodyType,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.common.str_field_utils import parse_days_from_duration_pieces
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import (
@@ -133,14 +135,20 @@ AGENT_NAME_AND_ID_REGEX = re.compile(r"(.*?)( (\d+))$")
 class UsPaController(CsvGcsfsDirectIngestController):
     """Direct ingest controller implementation for US_PA."""
 
+    @classmethod
+    def region_code(cls) -> str:
+        return StateCode.US_PA.value.lower()
+
+    @classmethod
+    def system_level(cls) -> SystemLevel:
+        return SystemLevel.STATE
+
     def __init__(
         self,
-        ingest_directory_path: Optional[str] = None,
-        storage_directory_path: Optional[str] = None,
+        ingest_directory_path: GcsfsDirectoryPath,
+        storage_directory_path: GcsfsDirectoryPath,
     ):
-        super().__init__(
-            "us_pa", SystemLevel.STATE, ingest_directory_path, storage_directory_path
-        )
+        super().__init__(ingest_directory_path, storage_directory_path)
         self.enum_overrides = self.generate_enum_overrides()
 
         sci_incarceration_period_row_postprocessors = [

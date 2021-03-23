@@ -18,6 +18,7 @@
 
 from typing import List, Dict, Optional, Callable
 
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.enum_overrides import (
     EnumOverrides,
@@ -36,14 +37,20 @@ from recidiviz.ingest.direct.direct_ingest_controller_utils import (
 class UsXxController(CsvGcsfsDirectIngestController):
     """Direct ingest controller implementation for US_XX."""
 
+    @classmethod
+    def region_code(cls) -> str:
+        return "us_xx"
+
+    @classmethod
+    def system_level(cls) -> SystemLevel:
+        return SystemLevel.STATE
+
     def __init__(
         self,
-        ingest_directory_path: Optional[str] = None,
-        storage_directory_path: Optional[str] = None,
+        ingest_directory_path: GcsfsDirectoryPath,
+        storage_directory_path: GcsfsDirectoryPath,
     ):
-        super().__init__(
-            "us_xx", SystemLevel.STATE, ingest_directory_path, storage_directory_path
-        )
+        super().__init__(ingest_directory_path, storage_directory_path)
         self.enum_overrides = self.generate_enum_overrides()
 
         self.row_post_processors_by_file: Dict[str, List[Callable]] = {}
