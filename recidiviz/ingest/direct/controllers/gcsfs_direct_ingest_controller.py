@@ -58,7 +58,7 @@ from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_ma
 from recidiviz.ingest.direct.direct_ingest_controller_utils import (
     check_is_region_launched_in_env,
 )
-from recidiviz.persistence.database.sqlalchemy_database_key import DEFAULT_DB_NAME
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.operations.entities import (
     DirectIngestIngestFileMetadata,
 )
@@ -78,8 +78,9 @@ class GcsfsDirectIngestController(
         self,
         ingest_directory_path: GcsfsDirectoryPath,
         storage_directory_path: GcsfsDirectoryPath,
+        ingest_database_key: SQLAlchemyDatabaseKey,
     ):
-        super().__init__()
+        super().__init__(ingest_database_key)
         self.fs = DirectIngestGCSFileSystem(GcsfsFactory.build())
         self.ingest_directory_path = ingest_directory_path
         self.storage_directory_path = storage_directory_path
@@ -87,9 +88,6 @@ class GcsfsDirectIngestController(
         self.temp_output_directory_path = GcsfsDirectoryPath.from_absolute_path(
             gcsfs_direct_ingest_temporary_output_directory_path()
         )
-
-        # TODO(#6077): Prepare this call site for cutover to single-state DBs
-        self.ingest_database_name = DEFAULT_DB_NAME
 
         self.file_prioritizer = GcsfsDirectIngestJobPrioritizer(
             self.fs,
@@ -101,7 +99,7 @@ class GcsfsDirectIngestController(
 
         self.file_metadata_manager = PostgresDirectIngestFileMetadataManager(
             region_code=self.region.region_code,
-            ingest_database_name=self.ingest_database_name,
+            ingest_database_name=self.ingest_database_key.db_name,
         )
 
         self.raw_file_import_manager = DirectIngestRawFileImportManager(

@@ -52,6 +52,7 @@ from recidiviz.persistence.database.bq_refresh.bq_refresh_utils import (
 from recidiviz.persistence.database.schema_utils import (
     SchemaType,
 )
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.utils import regions, trace
 from recidiviz.utils.regions import Region
 
@@ -59,10 +60,11 @@ from recidiviz.utils.regions import Region
 class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandleType]):
     """Parses and persists individual-level info from direct ingest partners."""
 
-    def __init__(self) -> None:
+    def __init__(self, ingest_database_key: SQLAlchemyDatabaseKey) -> None:
         """Initialize the controller."""
         self.cloud_task_manager = DirectIngestCloudTaskManagerImpl()
         self.lock_manager = GCSPseudoLockManager()
+        self.ingest_database_key = ingest_database_key
 
     @property
     def region(self) -> Region:
