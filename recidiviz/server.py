@@ -49,7 +49,6 @@ from recidiviz.ingest.scrape.scraper_control import scraper_control
 from recidiviz.ingest.scrape.scraper_status import scraper_status
 from recidiviz.ingest.scrape.worker import worker
 from recidiviz.metrics.export.view_export_manager import export_blueprint
-from recidiviz.persistence.actions import actions
 from recidiviz.persistence.batch_persistence import batch_blueprint
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_manager import (
     cloud_sql_to_bq_blueprint,
@@ -72,7 +71,6 @@ service_type = environment.get_service_type()
 if service_type is environment.ServiceType.SCRAPERS:
     app.register_blueprint(batch_blueprint, url_prefix="/batch")
     app.register_blueprint(infer_release_blueprint, url_prefix="/infer_release")
-    app.register_blueprint(actions, url_prefix="/ingest")
     app.register_blueprint(scraper_control, url_prefix="/scraper")
     app.register_blueprint(scraper_status, url_prefix="/scraper")
     app.register_blueprint(worker, url_prefix="/scraper")

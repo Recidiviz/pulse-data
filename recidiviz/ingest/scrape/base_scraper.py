@@ -47,7 +47,7 @@ from lxml import html
 from lxml.etree import XMLSyntaxError  # pylint:disable=no-name-in-module
 
 from recidiviz.common.common_utils import get_trace_id_from_flask
-from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import constants, ingest_utils, sessions
@@ -59,6 +59,8 @@ from recidiviz.ingest.scrape.errors import (
 from recidiviz.ingest.scrape.scraper import Scraper
 from recidiviz.ingest.scrape.task_params import QueueRequest, ScrapedData, Task
 from recidiviz.persistence import batch_persistence, persistence, single_count
+from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 
 
 class ParsingError(Exception):
@@ -296,10 +298,12 @@ class BaseScraper(Scraper):
                         request.scraper_start_time,
                     )
                     metadata = IngestMetadata(
-                        self.region.region_code,
-                        self.region.jurisdiction_id,
-                        request.scraper_start_time,
-                        self.get_enum_overrides(),
+                        region=self.region.region_code,
+                        jurisdiction_id=self.region.jurisdiction_id,
+                        ingest_time=request.scraper_start_time,
+                        enum_overrides=self.get_enum_overrides(),
+                        system_level=SystemLevel.COUNTY,
+                        database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS),
                     )
                     if self.BATCH_WRITES:
                         logging.info(

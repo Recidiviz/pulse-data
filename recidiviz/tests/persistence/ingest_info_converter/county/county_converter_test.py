@@ -44,6 +44,7 @@ from recidiviz.persistence.entity.county.entities import (
 from recidiviz.persistence.ingest_info_converter.ingest_info_converter import (
     IngestInfoConversionResult,
 )
+from recidiviz.tests.persistence.database.database_test_utils import TestIngestMetadata
 
 _INGEST_TIME = datetime.datetime(year=2019, month=2, day=13, hour=12)
 _RELEASE_DATE = datetime.date(year=2018, month=3, day=1)
@@ -87,8 +88,11 @@ class TestIngestInfoCountyConverter(unittest.TestCase):
 
     def testConvert_FullIngestInfo(self):
         # Arrange
-        metadata = IngestMetadata(
-            "REGION", _JURISDICTION_ID, _INGEST_TIME, facility_id=_FACILITY_ID
+        metadata = TestIngestMetadata.for_county(
+            region="REGION",
+            jurisdiction_id=_JURISDICTION_ID,
+            ingest_time=_INGEST_TIME,
+            facility_id=_FACILITY_ID,
         )
 
         ingest_info = IngestInfo()
@@ -152,7 +156,9 @@ class TestIngestInfoCountyConverter(unittest.TestCase):
 
     def testConvert_FullIngestInfo_NoOpenBookings(self):
         # Arrange
-        metadata = IngestMetadata("REGION", _JURISDICTION_ID, _INGEST_TIME)
+        metadata = TestIngestMetadata.for_county(
+            region="REGION", jurisdiction_id=_JURISDICTION_ID, ingest_time=_INGEST_TIME
+        )
 
         ingest_info = IngestInfo()
         ingest_info.people.add(
@@ -226,7 +232,9 @@ class TestIngestInfoCountyConverter(unittest.TestCase):
 
     def testConvert_FullIngestInfo_GeneratedIds(self):
         # Arrange
-        metadata = IngestMetadata("REGION", _JURISDICTION_ID, _INGEST_TIME)
+        metadata = TestIngestMetadata.for_county(
+            region="REGION", jurisdiction_id=_JURISDICTION_ID, ingest_time=_INGEST_TIME
+        )
 
         ingest_info = IngestInfo()
         ingest_info.people.add(
@@ -297,7 +305,9 @@ class TestIngestInfoCountyConverter(unittest.TestCase):
 
     def testConvert_TotalBondNoCharge_CreatesChargeWithTotalBondAmount(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults(ingest_time=_INGEST_TIME)
+        metadata = TestIngestMetadata.for_county(
+            region="REGION", jurisdiction_id="JURISDICTION_ID", ingest_time=_INGEST_TIME
+        )
 
         ingest_info = IngestInfo()
         ingest_info.people.add(booking_ids=["BOOKING_ID"])
@@ -309,6 +319,8 @@ class TestIngestInfoCountyConverter(unittest.TestCase):
         # Assert
         expected_result = [
             Person.new_with_defaults(
+                region="REGION",
+                jurisdiction_id="JURISDICTION_ID",
                 bookings=[
                     Booking.new_with_defaults(
                         admission_date=_INGEST_TIME.date(),
@@ -328,7 +340,7 @@ class TestIngestInfoCountyConverter(unittest.TestCase):
                             )
                         ],
                     )
-                ]
+                ],
             )
         ]
 
@@ -336,7 +348,9 @@ class TestIngestInfoCountyConverter(unittest.TestCase):
 
     def testConvert_ExternalId_ClearPII(self):
         # Arrange
-        metadata = IngestMetadata("REGION", _JURISDICTION_ID, _INGEST_TIME)
+        metadata = TestIngestMetadata.for_county(
+            region="REGION", jurisdiction_id=_JURISDICTION_ID, ingest_time=_INGEST_TIME
+        )
 
         ingest_info = IngestInfo()
         ingest_info.people.add(
@@ -371,7 +385,9 @@ class TestIngestInfoCountyConverter(unittest.TestCase):
 
     def testConvert_TotalBondWithCharge_SetsTotalBondOnCharge(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults(ingest_time=_INGEST_TIME)
+        metadata = TestIngestMetadata.for_county(
+            region="REGION", jurisdiction_id="JURISDICTION_ID", ingest_time=_INGEST_TIME
+        )
 
         ingest_info = IngestInfo()
         ingest_info.people.add(booking_ids=["BOOKING_ID"])
@@ -386,6 +402,8 @@ class TestIngestInfoCountyConverter(unittest.TestCase):
         # Assert
         expected_result = [
             Person.new_with_defaults(
+                region="REGION",
+                jurisdiction_id="JURISDICTION_ID",
                 bookings=[
                     Booking.new_with_defaults(
                         external_id="BOOKING_ID",
@@ -406,7 +424,7 @@ class TestIngestInfoCountyConverter(unittest.TestCase):
                             )
                         ],
                     )
-                ]
+                ],
             )
         ]
 
@@ -414,7 +432,9 @@ class TestIngestInfoCountyConverter(unittest.TestCase):
 
     def testConvert_TotalBondWithMultipleBonds_ThrowsException(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults(ingest_time=_INGEST_TIME)
+        metadata = TestIngestMetadata.for_county(
+            region="REGION", jurisdiction_id="JURISDICTION_ID", ingest_time=_INGEST_TIME
+        )
 
         ingest_info = IngestInfo()
         ingest_info.people.add(booking_ids=["BOOKING_ID"])
@@ -434,7 +454,9 @@ class TestIngestInfoCountyConverter(unittest.TestCase):
 
     def testConvert_MultipleCountsOfCharge_CreatesDuplicateCharges(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults(ingest_time=_INGEST_TIME)
+        metadata = TestIngestMetadata.for_county(
+            region="REGION", jurisdiction_id="JURISDICTION_ID", ingest_time=_INGEST_TIME
+        )
 
         ingest_info = IngestInfo()
         ingest_info.people.add(booking_ids=["BOOKING_ID"])
@@ -461,6 +483,8 @@ class TestIngestInfoCountyConverter(unittest.TestCase):
         )
         expected_result = [
             Person.new_with_defaults(
+                region="REGION",
+                jurisdiction_id="JURISDICTION_ID",
                 bookings=[
                     Booking.new_with_defaults(
                         external_id="BOOKING_ID",
@@ -487,7 +511,7 @@ class TestIngestInfoCountyConverter(unittest.TestCase):
                             ),
                         ],
                     )
-                ]
+                ],
             )
         ]
 
@@ -510,7 +534,7 @@ class TestIngestInfoCountyConverter(unittest.TestCase):
 
     def testConvert_CannotConvertField_RaisesValueError(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults()
+        metadata = TestIngestMetadata.for_county(region="REGION")
 
         ingest_info = IngestInfo()
         ingest_info.people.add(birthdate="NOT_A_DATE")
@@ -521,7 +545,9 @@ class TestIngestInfoCountyConverter(unittest.TestCase):
 
     def testConvert_PersonInferredBooking(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults(ingest_time=_INGEST_TIME)
+        metadata = TestIngestMetadata.for_county(
+            region="REGION", jurisdiction_id="JURISDICTION_ID", ingest_time=_INGEST_TIME
+        )
 
         ingest_info = IngestInfo()
         ingest_info.people.add()
@@ -532,6 +558,8 @@ class TestIngestInfoCountyConverter(unittest.TestCase):
         # Assert
         expected_result = [
             Person.new_with_defaults(
+                region="REGION",
+                jurisdiction_id="JURISDICTION_ID",
                 bookings=[
                     Booking.new_with_defaults(
                         admission_date_inferred=True,
@@ -540,7 +568,7 @@ class TestIngestInfoCountyConverter(unittest.TestCase):
                         admission_date=_INGEST_TIME.date(),
                         custody_status=CustodyStatus.PRESENT_WITHOUT_INFO,
                     )
-                ]
+                ],
             )
         ]
 
@@ -548,7 +576,9 @@ class TestIngestInfoCountyConverter(unittest.TestCase):
 
     def testConvert_MultipleOpenBookings_RaisesValueError(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults(ingest_time=_INGEST_TIME)
+        metadata = TestIngestMetadata.for_county(
+            region="REGION", jurisdiction_id="JURISDICTION_ID", ingest_time=_INGEST_TIME
+        )
 
         ingest_info = IngestInfo()
         ingest_info.people.add(booking_ids=["BOOKING_ID1", "BOOKING_ID2"])

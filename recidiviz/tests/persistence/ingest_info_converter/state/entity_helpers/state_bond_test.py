@@ -22,12 +22,12 @@ import attr
 
 from recidiviz.common.constants.bond import BondType, BondStatus
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import state_bond
+from recidiviz.tests.persistence.database.database_test_utils import TestIngestMetadata
 
-_EMPTY_METADATA = IngestMetadata.new_with_defaults()
+_EMPTY_METADATA = TestIngestMetadata.for_state("us_xx")
 
 
 class StateBondConverterTest(unittest.TestCase):
@@ -47,7 +47,7 @@ class StateBondConverterTest(unittest.TestCase):
         )
 
         # Act
-        result = state_bond.convert(ingest_bond, _EMPTY_METADATA)
+        result = state_bond.convert(ingest_bond, TestIngestMetadata.for_state("us_nd"))
 
         # Assert
         expected_result = entities.StateBond(

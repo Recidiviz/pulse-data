@@ -19,14 +19,14 @@
 import unittest
 
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
-from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
     state_supervision_case_type_entry,
 )
+from recidiviz.tests.persistence.database.database_test_utils import TestIngestMetadata
 
-_EMPTY_METADATA = IngestMetadata.new_with_defaults()
+_EMPTY_METADATA = TestIngestMetadata.for_state("us_xx")
 
 
 class StateSupervisionCaseTypeEntryTest(unittest.TestCase):
@@ -36,7 +36,7 @@ class StateSupervisionCaseTypeEntryTest(unittest.TestCase):
         # Arrange
         ingest_case_type_entry = ingest_info_pb2.StateSupervisionCaseTypeEntry(
             state_supervision_case_type_entry_id="entry_id",
-            state_code="state",
+            state_code="us_xx",
             case_type="DOMESTIC_VIOLENCE",
         )
 
@@ -47,7 +47,7 @@ class StateSupervisionCaseTypeEntryTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.StateSupervisionCaseTypeEntry(
-            state_code="STATE",
+            state_code="US_XX",
             case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
             case_type_raw_text="DOMESTIC_VIOLENCE",
             external_id="ENTRY_ID",

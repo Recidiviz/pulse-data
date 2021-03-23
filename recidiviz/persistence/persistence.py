@@ -190,7 +190,11 @@ def infer_release_on_open_bookings(
             session,
             db_people,
             IngestMetadata(
-                region=region_code, jurisdiction_id="", ingest_time=last_ingest_time
+                region=region_code,
+                jurisdiction_id="",
+                ingest_time=last_ingest_time,
+                system_level=SystemLevel.COUNTY,
+                database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS),
             ),
         )
         session.commit()

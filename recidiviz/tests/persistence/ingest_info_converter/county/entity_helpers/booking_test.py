@@ -27,10 +27,10 @@ from recidiviz.common.constants.county.booking import (
     AdmissionReason,
 )
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.ingest_info_converter.county.entity_helpers import booking
+from recidiviz.tests.persistence.database.database_test_utils import TestIngestMetadata
 
 _INGEST_TIME = datetime(year=2019, month=2, day=18)
 
@@ -43,7 +43,9 @@ class BookingConverterTest(unittest.TestCase):
 
     def testParseBooking(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults(ingest_time=_INGEST_TIME)
+        metadata = TestIngestMetadata.for_county(
+            region="REGION", ingest_time=_INGEST_TIME
+        )
 
         ingest_booking = ingest_info_pb2.Booking(
             booking_id="BOOKING_ID",
@@ -84,7 +86,8 @@ class BookingConverterTest(unittest.TestCase):
 
     def testParseBooking_SetsDefaults(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults(
+        metadata = TestIngestMetadata.for_county(
+            region="REGION",
             ingest_time=_INGEST_TIME,
         )
         ingest_booking = ingest_info_pb2.Booking()
@@ -106,7 +109,9 @@ class BookingConverterTest(unittest.TestCase):
 
     def testParseBooking_releaseDateWithoutStatus_marksAsReleased(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults(ingest_time=_INGEST_TIME)
+        metadata = TestIngestMetadata.for_county(
+            region="REGION", ingest_time=_INGEST_TIME
+        )
 
         ingest_booking = ingest_info_pb2.Booking(
             booking_id="BOOKING_ID",
@@ -133,7 +138,9 @@ class BookingConverterTest(unittest.TestCase):
 
     def testParseBooking_releaseDateInFuture_setAsProjected(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults(ingest_time=_INGEST_TIME)
+        metadata = TestIngestMetadata.for_county(
+            region="REGION", ingest_time=_INGEST_TIME
+        )
 
         ingest_booking = ingest_info_pb2.Booking(
             booking_id="BOOKING_ID",
@@ -167,8 +174,10 @@ class BookingConverterTest(unittest.TestCase):
             "WORK RELEASE", Classification.WORK_RELEASE, AdmissionReason
         )
         overrides_builder.add("transfer", AdmissionReason.TRANSFER, CustodyStatus)
-        metadata = IngestMetadata.new_with_defaults(
-            ingest_time=_INGEST_TIME, enum_overrides=overrides_builder.build()
+        metadata = TestIngestMetadata.for_county(
+            region="REGION",
+            ingest_time=_INGEST_TIME,
+            enum_overrides=overrides_builder.build(),
         )
         ingest_booking = ingest_info_pb2.Booking(
             admission_reason="work release", custody_status="transfer"
@@ -195,7 +204,8 @@ class BookingConverterTest(unittest.TestCase):
     @patch("recidiviz.common.fid.fid_exists", Mock(return_value=True))
     def testParseBooking_facilityId(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults(
+        metadata = TestIngestMetadata.for_county(
+            region="REGION",
             ingest_time=_INGEST_TIME,
         )
 
@@ -222,7 +232,8 @@ class BookingConverterTest(unittest.TestCase):
     @patch("recidiviz.common.fid.fid_exists", Mock(return_value=False))
     def testParseBooking_facilityId_doesNotExist(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults(
+        metadata = TestIngestMetadata.for_county(
+            region="REGION",
             ingest_time=_INGEST_TIME,
         )
 

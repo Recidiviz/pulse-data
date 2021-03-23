@@ -3,8 +3,11 @@
 import datetime
 from typing import Optional
 
+import attr
+
 from recidiviz.common.constants.bond import BondStatus, BondType
 from recidiviz.common.constants.charge import ChargeStatus
+from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.person_characteristics import Ethnicity, Race
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
@@ -40,7 +43,47 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseDecision,
     StateSupervisionViolationResponseRevocationType,
 )
+from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.persistence.database.schema.state import schema as state_schema
+from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+
+
+@attr.s
+class TestIngestMetadata(IngestMetadata):
+    @classmethod
+    def for_state(
+        cls,
+        region: str,
+        enum_overrides: Optional[EnumOverrides] = None,
+    ) -> IngestMetadata:
+        return IngestMetadata(
+            region=region,
+            jurisdiction_id="",
+            ingest_time=datetime.datetime(2020, 4, 14, 12, 31, 00),
+            enum_overrides=enum_overrides or EnumOverrides.empty(),
+            system_level=SystemLevel.STATE,
+            database_key=SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE),
+        )
+
+    @classmethod
+    def for_county(
+        cls,
+        region: str,
+        jurisdiction_id: Optional[str] = None,
+        ingest_time: Optional[datetime.datetime] = None,
+        enum_overrides: Optional[EnumOverrides] = None,
+        facility_id: Optional[str] = None,
+    ) -> IngestMetadata:
+        return IngestMetadata(
+            region=region,
+            jurisdiction_id=jurisdiction_id or "jurisdiction_id",
+            ingest_time=ingest_time or datetime.datetime(2020, 4, 14, 12, 31, 00),
+            enum_overrides=enum_overrides or EnumOverrides.empty(),
+            facility_id=facility_id,
+            system_level=SystemLevel.COUNTY,
+            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS),
+        )
 
 
 def generate_test_supervision_violation_response(
