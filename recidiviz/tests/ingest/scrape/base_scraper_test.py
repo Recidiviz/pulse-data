@@ -24,13 +24,15 @@ from mock import patch, Mock
 
 from recidiviz import IngestInfo
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import constants
 from recidiviz.ingest.scrape.base_scraper import BaseScraper
 from recidiviz.ingest.scrape.errors import ScraperGetMoreTasksError, ScraperFetchError
 from recidiviz.ingest.scrape.ingest_utils import convert_ingest_info_to_proto
 from recidiviz.ingest.scrape.task_params import QueueRequest, Task, ScrapedData
+from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 
 TEST_TASK = Task(
     task_type=constants.TaskType.GET_MORE_TASKS,
@@ -344,10 +346,12 @@ class TestBaseScraper(TestCase):
         self.assertEqual(mock_write.call_count, 1)
 
         expected_metadata = IngestMetadata(
-            scraper.region.region_code,
-            scraper.region.jurisdiction_id,
-            start_time,
-            scraper.get_enum_overrides(),
+            region=scraper.region.region_code,
+            jurisdiction_id=scraper.region.jurisdiction_id,
+            ingest_time=start_time,
+            enum_overrides=scraper.get_enum_overrides(),
+            system_level=SystemLevel.COUNTY,
+            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS),
         )
         expected_proto = convert_ingest_info_to_proto(self.ii)
         mock_write.assert_called_once_with(expected_proto, expected_metadata)
@@ -386,10 +390,12 @@ class TestBaseScraper(TestCase):
             )
         ]
         expected_metadata = IngestMetadata(
-            scraper.region.region_code,
-            scraper.region.jurisdiction_id,
-            start_time,
-            scraper.get_enum_overrides(),
+            region=scraper.region.region_code,
+            jurisdiction_id=scraper.region.jurisdiction_id,
+            ingest_time=start_time,
+            enum_overrides=scraper.get_enum_overrides(),
+            system_level=SystemLevel.COUNTY,
+            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS),
         )
         expected_proto = convert_ingest_info_to_proto(self.ii)
 
@@ -424,10 +430,12 @@ class TestBaseScraper(TestCase):
         scraper._generic_scrape(req)
 
         expected_metadata = IngestMetadata(
-            scraper.region.region_code,
-            scraper.region.jurisdiction_id,
-            start_time,
-            scraper.get_enum_overrides(),
+            region=scraper.region.region_code,
+            jurisdiction_id=scraper.region.jurisdiction_id,
+            ingest_time=start_time,
+            enum_overrides=scraper.get_enum_overrides(),
+            system_level=SystemLevel.COUNTY,
+            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS),
         )
         expected_proto = convert_ingest_info_to_proto(self.ii)
 

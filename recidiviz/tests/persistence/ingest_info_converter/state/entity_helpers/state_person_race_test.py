@@ -19,14 +19,14 @@
 import unittest
 
 from recidiviz.common.constants.person_characteristics import Race
-from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
     state_person_race,
 )
+from recidiviz.tests.persistence.database.database_test_utils import TestIngestMetadata
 
-_EMPTY_METADATA = IngestMetadata.new_with_defaults(
+_EMPTY_METADATA = TestIngestMetadata.for_state(
     region="us_nd",
 )
 

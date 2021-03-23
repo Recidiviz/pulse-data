@@ -20,13 +20,12 @@ import unittest
 import pytest
 
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
-from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import state_alias
+from recidiviz.tests.persistence.database.database_test_utils import TestIngestMetadata
 
-
-_EMPTY_METADATA = IngestMetadata.new_with_defaults()
+_EMPTY_METADATA = TestIngestMetadata.for_state("us_nd")
 
 
 class StateAliasConverterTest(unittest.TestCase):

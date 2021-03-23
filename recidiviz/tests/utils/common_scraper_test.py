@@ -26,10 +26,12 @@ from recidiviz.common.constants.person_characteristics import (
     Ethnicity,
     Race,
 )
-from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.ingest.models import ingest_info
 from recidiviz.ingest.scrape import constants
 from recidiviz.ingest.scrape.task_params import Task
+from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.utils.individual_ingest_test import IndividualIngestTest
 
 _FAKE_SCRAPER_START_TIME = datetime(year=2020, month=3, day=20)
@@ -186,10 +188,12 @@ class CommonScraperTest(IndividualIngestTest):
         self.assertCountEqual(scrape_data.single_counts, expected_single_counts or [])
 
         metadata = IngestMetadata(
-            self.scraper.region.region_code,
-            self.scraper.region.jurisdiction_id,
-            _FAKE_SCRAPER_START_TIME,
-            self.scraper.get_enum_overrides(),
+            region=self.scraper.region.region_code,
+            jurisdiction_id=self.scraper.region.jurisdiction_id,
+            ingest_time=_FAKE_SCRAPER_START_TIME,
+            enum_overrides=self.scraper.get_enum_overrides(),
+            system_level=SystemLevel.COUNTY,
+            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS),
         )
 
         self.validate_ingest(scrape_data.ingest_info, expected_ingest_info, metadata)

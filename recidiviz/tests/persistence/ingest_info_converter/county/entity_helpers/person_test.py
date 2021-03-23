@@ -26,11 +26,11 @@ from recidiviz.common.constants.person_characteristics import (
     Ethnicity,
     ResidencyStatus,
 )
-from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.ingest.scrape.base_scraper import BaseScraper
 from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.ingest_info_converter.county.entity_helpers import person
+from recidiviz.tests.persistence.database.database_test_utils import TestIngestMetadata
 
 _NOW = datetime(2000, 5, 15)
 
@@ -43,7 +43,7 @@ class PersonConverterTest(unittest.TestCase):
 
     def testParsesPerson(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults(
+        metadata = TestIngestMetadata.for_county(
             region="REGION", jurisdiction_id="JURISDICTION_ID"
         )
         ingest_person = ingest_info_pb2.Person(
@@ -79,7 +79,7 @@ class PersonConverterTest(unittest.TestCase):
 
     def testParsePerson_WithSurnameAndFullname_ThrowsException(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults()
+        metadata = TestIngestMetadata.for_county(region="REGION")
         ingest_person = ingest_info_pb2.Person(full_name="LAST,FIRST", surname="LAST")
 
         # Arrange + Act
@@ -88,7 +88,9 @@ class PersonConverterTest(unittest.TestCase):
 
     def testParsePerson_WithSurnameAndGivenNames_UsesFullNameAsJson(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults()
+        metadata = TestIngestMetadata.for_county(
+            region="REGION", jurisdiction_id="JURISDICTION_ID"
+        )
         ingest_person = ingest_info_pb2.Person(
             surname='UNESCAPED,SURNAME"WITH-CHARS"',
             given_names="GIVEN_NAMES",
@@ -106,14 +108,18 @@ class PersonConverterTest(unittest.TestCase):
             )
         )
         expected_result = entities.Person.new_with_defaults(
-            full_name=expected_full_name
+            region="REGION",
+            jurisdiction_id="JURISDICTION_ID",
+            full_name=expected_full_name,
         )
 
         self.assertEqual(result, expected_result)
 
     def testParsePerson_NoNames_FullNameIsNone(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults()
+        metadata = TestIngestMetadata.for_county(
+            region="REGION", jurisdiction_id="JURISDICTION_ID"
+        )
         ingest_person = ingest_info_pb2.Person(person_id="1234")
 
         # Act
@@ -121,7 +127,9 @@ class PersonConverterTest(unittest.TestCase):
         result = self.subject.build()
 
         # Assert
-        expected_result = entities.Person.new_with_defaults(external_id="1234")
+        expected_result = entities.Person.new_with_defaults(
+            region="REGION", jurisdiction_id="JURISDICTION_ID", external_id="1234"
+        )
 
         self.assertEqual(result, expected_result)
 
@@ -132,7 +140,9 @@ class PersonConverterTest(unittest.TestCase):
     def testParsePerson_InfersBirthdateFromAge(self, mock_datetime):
         # Arrange
         mock_datetime.now.return_value = _NOW
-        metadata = IngestMetadata.new_with_defaults()
+        metadata = TestIngestMetadata.for_county(
+            region="REGION", jurisdiction_id="JURISDICTION_ID"
+        )
         ingest_person = ingest_info_pb2.Person(age="27")
 
         # Act
@@ -141,6 +151,8 @@ class PersonConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.Person.new_with_defaults(
+            region="REGION",
+            jurisdiction_id="JURISDICTION_ID",
             birthdate=datetime(year=_NOW.year - 27, month=1, day=1).date(),
             birthdate_inferred_from_age=True,
         )
@@ -158,8 +170,10 @@ class PersonConverterTest(unittest.TestCase):
                 pass
 
         # Arrange
-        metadata = IngestMetadata.new_with_defaults(
-            enum_overrides=ScraperWithDefaultOverrides().get_enum_overrides()
+        metadata = TestIngestMetadata.for_county(
+            region="REGION",
+            jurisdiction_id="JURISDICTION_ID",
+            enum_overrides=ScraperWithDefaultOverrides().get_enum_overrides(),
         )
         ingest_person = ingest_info_pb2.Person(race="HISPANIC")
 
@@ -169,6 +183,8 @@ class PersonConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.Person.new_with_defaults(
+            region="REGION",
+            jurisdiction_id="JURISDICTION_ID",
             ethnicity=Ethnicity.HISPANIC,
             race_raw_text="HISPANIC",
         )
@@ -177,7 +193,9 @@ class PersonConverterTest(unittest.TestCase):
 
     def testParsePerson_ResidentOfCounty(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults(region="us_ky_allen")
+        metadata = TestIngestMetadata.for_county(
+            region="us_ky_allen", jurisdiction_id="JURISDICTION_ID"
+        )
         # 42164 is in Allen
         ingest_person = ingest_info_pb2.Person(place_of_residence="123 Main 42164")
 
@@ -190,13 +208,16 @@ class PersonConverterTest(unittest.TestCase):
             resident_of_region=True,
             residency_status=ResidencyStatus.PERMANENT,
             region="us_ky_allen",
+            jurisdiction_id="JURISDICTION_ID",
         )
 
         self.assertEqual(result, expected_result)
 
     def testParsePerson_NotResidentOfCounty(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults(region="us_ky_allen")
+        metadata = TestIngestMetadata.for_county(
+            region="us_ky_allen", jurisdiction_id="JURISDICTION_ID"
+        )
         # 40601 is in Frankfort
         ingest_person = ingest_info_pb2.Person(place_of_residence="123 Main 40601")
 
@@ -209,13 +230,16 @@ class PersonConverterTest(unittest.TestCase):
             resident_of_region=False,
             residency_status=ResidencyStatus.PERMANENT,
             region="us_ky_allen",
+            jurisdiction_id="JURISDICTION_ID",
         )
 
         self.assertEqual(result, expected_result)
 
     def testParsePerson_ResidentOfState(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults(region="us_ky")
+        metadata = TestIngestMetadata.for_county(
+            region="us_ky", jurisdiction_id="JURISDICTION_ID"
+        )
         # 42164 is in Allen
         ingest_person = ingest_info_pb2.Person(place_of_residence="123 Main 42164")
 
@@ -228,13 +252,16 @@ class PersonConverterTest(unittest.TestCase):
             resident_of_region=True,
             residency_status=ResidencyStatus.PERMANENT,
             region="us_ky",
+            jurisdiction_id="JURISDICTION_ID",
         )
 
         self.assertEqual(result, expected_result)
 
     def testParsePerson_NotResidentOfState(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults(region="us_ky")
+        metadata = TestIngestMetadata.for_county(
+            region="us_ky", jurisdiction_id="JURISDICTION_ID"
+        )
         # 10011 is in New York
         ingest_person = ingest_info_pb2.Person(place_of_residence="123 Main 10011")
 
@@ -247,13 +274,16 @@ class PersonConverterTest(unittest.TestCase):
             resident_of_region=False,
             residency_status=ResidencyStatus.PERMANENT,
             region="us_ky",
+            jurisdiction_id="JURISDICTION_ID",
         )
 
         self.assertEqual(result, expected_result)
 
     def testParsePerson_TakesLastZipCodeMatch(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults(region="us_ky_allen")
+        metadata = TestIngestMetadata.for_county(
+            region="us_ky_allen", jurisdiction_id="JURISDICTION_ID"
+        )
         # 5-digit address could be mistaken for a zip code
         ingest_person = ingest_info_pb2.Person(place_of_residence="12345 Main 42164")
 
@@ -266,13 +296,16 @@ class PersonConverterTest(unittest.TestCase):
             resident_of_region=True,
             residency_status=ResidencyStatus.PERMANENT,
             region="us_ky_allen",
+            jurisdiction_id="JURISDICTION_ID",
         )
 
         self.assertEqual(result, expected_result)
 
     def testParsePerson_NoiseInPlaceOfResidence_ParsesResidencyStatus(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults(region="us_ky_allen")
+        metadata = TestIngestMetadata.for_county(
+            region="us_ky_allen", jurisdiction_id="JURISDICTION_ID"
+        )
         ingest_person = ingest_info_pb2.Person(
             place_of_residence="transient moves around"
         )
@@ -283,14 +316,18 @@ class PersonConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.Person.new_with_defaults(
-            residency_status=ResidencyStatus.TRANSIENT, region="us_ky_allen"
+            residency_status=ResidencyStatus.TRANSIENT,
+            region="us_ky_allen",
+            jurisdiction_id="JURISDICTION_ID",
         )
 
         self.assertEqual(result, expected_result)
 
     def testParsePerson_ResidenceAndStatusCombined(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults(region="us_ky_allen")
+        metadata = TestIngestMetadata.for_county(
+            region="us_ky_allen", jurisdiction_id="JURISDICTION_ID"
+        )
         ingest_person = ingest_info_pb2.Person(place_of_residence="42164 homeless")
 
         # Act
@@ -302,6 +339,7 @@ class PersonConverterTest(unittest.TestCase):
             resident_of_region=True,
             residency_status=ResidencyStatus.HOMELESS,
             region="us_ky_allen",
+            jurisdiction_id="JURISDICTION_ID",
         )
 
         self.assertEqual(result, expected_result)

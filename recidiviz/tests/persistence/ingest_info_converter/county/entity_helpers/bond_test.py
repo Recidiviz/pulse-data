@@ -21,12 +21,12 @@ import attr
 
 from recidiviz.common.constants.bond import BondType, BondStatus
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.ingest_info_converter.county.entity_helpers import bond
+from recidiviz.tests.persistence.database.database_test_utils import TestIngestMetadata
 
-_EMPTY_METADATA = IngestMetadata.new_with_defaults()
+_EMPTY_METADATA = TestIngestMetadata.for_county("us_xx_county")
 
 
 class BondConverterTest(unittest.TestCase):

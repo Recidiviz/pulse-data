@@ -22,14 +22,14 @@ from datetime import date
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentType,
 )
-from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
     state_incarceration_incident,
 )
+from recidiviz.tests.persistence.database.database_test_utils import TestIngestMetadata
 
-_EMPTY_METADATA = IngestMetadata.new_with_defaults()
+_EMPTY_METADATA = TestIngestMetadata.for_state("us_ca")
 
 
 class StateIncarcerationIncidentConverterTest(unittest.TestCase):

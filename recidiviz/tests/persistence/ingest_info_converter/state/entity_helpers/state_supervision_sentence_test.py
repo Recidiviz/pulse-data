@@ -18,22 +18,18 @@
 """Tests for converting state supervision sentences."""
 
 import unittest
-from datetime import date, datetime
+from datetime import date
 
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
-from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
     state_supervision_sentence,
 )
+from recidiviz.tests.persistence.database.database_test_utils import TestIngestMetadata
 
-METADATA = IngestMetadata.new_with_defaults(
-    region="us_nd",
-    ingest_time=datetime(year=2101, month=1, day=2),
-    system_level=SystemLevel.STATE,
-)
+METADATA = TestIngestMetadata.for_state(region="us_nd")
 
 
 class StateSupervisionSentenceConverterTest(unittest.TestCase):

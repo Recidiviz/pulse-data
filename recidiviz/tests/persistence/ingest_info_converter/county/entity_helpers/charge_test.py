@@ -21,12 +21,12 @@ import unittest
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.county.charge import ChargeClass, ChargeDegree
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.ingest_info_converter.county.entity_helpers import charge
+from recidiviz.tests.persistence.database.database_test_utils import TestIngestMetadata
 
-_EMPTY_METADATA = IngestMetadata.new_with_defaults()
+_EMPTY_METADATA = TestIngestMetadata.for_county("us_xx_county")
 
 
 class ChargeConverterTest(unittest.TestCase):
@@ -119,8 +119,8 @@ class ChargeConverterTest(unittest.TestCase):
         overrides_builder = EnumOverrides.Builder()
         overrides_builder.add("FELONY", ChargeClass.FELONY, ChargeDegree)
         overrides_builder.add("FIRST DEGREE", ChargeDegree.FIRST, ChargeClass)
-        metadata = IngestMetadata.new_with_defaults(
-            enum_overrides=overrides_builder.build()
+        metadata = TestIngestMetadata.for_county(
+            region="REGION", enum_overrides=overrides_builder.build()
         )
         ingest_charge = ingest_info_pb2.Charge(
             charge_class="first degree", degree="felony"

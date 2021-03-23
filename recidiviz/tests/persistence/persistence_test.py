@@ -83,6 +83,7 @@ from recidiviz.persistence.persistence import (
     ENTITY_MATCHING_THRESHOLD,
     DATABASE_INVARIANT_THRESHOLD,
 )
+from recidiviz.tests.persistence.database.database_test_utils import TestIngestMetadata
 from recidiviz.tests.utils import fakes
 from recidiviz.tools.postgres import local_postgres_helpers
 
@@ -99,7 +100,9 @@ CHARGE_NAME_2 = "TEST_CHARGE_2"
 CHARGE_STATUS = "Pending"
 DATE_RAW = "1/1/2011"
 DATE = date(year=2019, day=1, month=2)
+DATETIME = datetime(DATE.year, DATE.month, DATE.day)
 DATE_2 = date(year=2020, day=1, month=2)
+DATETIME_2 = datetime(DATE_2.year, DATE_2.month, DATE_2.day)
 EXTERNAL_PERSON_ID = "EXTERNAL_PERSON_ID"
 EXTERNAL_BOOKING_ID = "EXTERNAL_BOOKING_ID"
 EXTERNAL_ID = "EXTERNAL_ID"
@@ -121,9 +124,8 @@ FULL_NAME_1 = "TEST_FULL_NAME_1"
 FULL_NAME_2 = "TEST_FULL_NAME_2"
 FULL_NAME_3 = "TEST_FULL_NAME_3"
 JURISDICTION_ID = "12345678"
-DEFAULT_METADATA = IngestMetadata.new_with_defaults(
+DEFAULT_METADATA = TestIngestMetadata.for_county(
     region="region_code",
-    system_level=SystemLevel.COUNTY,
     jurisdiction_id="12345678",
     ingest_time=datetime(year=1000, month=1, day=1),
 )
@@ -461,7 +463,7 @@ class TestPersistence(TestCase):
     # TODO(#4135): Rewrite this test to directly test __eq__ between the two People
     def test_readPersonAndAllRelationships(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults(
+        metadata = TestIngestMetadata.for_county(
             region=REGION_1,
             jurisdiction_id=JURISDICTION_ID,
             ingest_time=SCRAPER_START_DATETIME,
@@ -550,7 +552,7 @@ class TestPersistence(TestCase):
     def test_write_preexisting_person(self):
         # Arrange
         most_recent_scrape_time = SCRAPER_START_DATETIME + timedelta(days=1)
-        metadata = IngestMetadata.new_with_defaults(
+        metadata = TestIngestMetadata.for_county(
             region=REGION_1,
             jurisdiction_id=JURISDICTION_ID,
             ingest_time=most_recent_scrape_time,
@@ -615,7 +617,7 @@ class TestPersistence(TestCase):
     def test_write_preexisting_person_duplicate_charges(self):
         # Arrange
         most_recent_scrape_time = SCRAPER_START_DATETIME + timedelta(days=1)
-        metadata = IngestMetadata.new_with_defaults(
+        metadata = TestIngestMetadata.for_county(
             region=REGION_1,
             jurisdiction_id=JURISDICTION_ID,
             ingest_time=most_recent_scrape_time,
@@ -702,7 +704,7 @@ class TestPersistence(TestCase):
     def test_write_noPeople(self):
         # Arrange
         most_recent_scrape_time = SCRAPER_START_DATETIME + timedelta(days=1)
-        metadata = IngestMetadata.new_with_defaults(
+        metadata = TestIngestMetadata.for_county(
             region=REGION_1,
             jurisdiction_id=JURISDICTION_ID,
             ingest_time=most_recent_scrape_time,
@@ -833,7 +835,7 @@ class TestPersistence(TestCase):
     def test_write_different_arrest(self):
         # Arrange
         most_recent_scrape_time = SCRAPER_START_DATETIME + timedelta(days=1)
-        metadata = IngestMetadata.new_with_defaults(
+        metadata = TestIngestMetadata.for_county(
             region=REGION_1,
             jurisdiction_id=JURISDICTION_ID,
             ingest_time=most_recent_scrape_time,
@@ -909,7 +911,7 @@ class TestPersistence(TestCase):
     def test_write_new_empty_arrest(self):
         # Arrange
         most_recent_scrape_time = SCRAPER_START_DATETIME + timedelta(days=1)
-        metadata = IngestMetadata.new_with_defaults(
+        metadata = TestIngestMetadata.for_county(
             region=REGION_1,
             jurisdiction_id=JURISDICTION_ID,
             ingest_time=most_recent_scrape_time,
@@ -1020,29 +1022,41 @@ PERSON_STATE_2_BASE_INGEST_INFO = StatePerson(
         StateSentenceGroup(state_sentence_group_id="123", status="SERVING")
     ],
 )
-INGEST_METADATA_STATE_1_INSERT = IngestMetadata.new_with_defaults(
+INGEST_METADATA_STATE_1_INSERT = IngestMetadata(
     region="US_ND",
     jurisdiction_id=JURISDICTION_ID,
-    ingest_time=DATE,
+    ingest_time=DATETIME,
     system_level=SystemLevel.STATE,
+    database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
+        schema_type=SchemaType.STATE
+    ),
 )
-INGEST_METADATA_STATE_1_UPDATE = IngestMetadata.new_with_defaults(
+INGEST_METADATA_STATE_1_UPDATE = IngestMetadata(
     region="US_ND",
     jurisdiction_id=JURISDICTION_ID,
-    ingest_time=DATE_2,
+    ingest_time=DATETIME_2,
     system_level=SystemLevel.STATE,
+    database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
+        schema_type=SchemaType.STATE
+    ),
 )
-INGEST_METADATA_STATE_2_INSERT = IngestMetadata.new_with_defaults(
+INGEST_METADATA_STATE_2_INSERT = IngestMetadata(
     region="US_MO",
     jurisdiction_id=JURISDICTION_ID,
-    ingest_time=DATE,
+    ingest_time=DATETIME,
     system_level=SystemLevel.STATE,
+    database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
+        schema_type=SchemaType.STATE
+    ),
 )
-INGEST_METADATA_STATE_2_UPDATE = IngestMetadata.new_with_defaults(
+INGEST_METADATA_STATE_2_UPDATE = IngestMetadata(
     region="US_MO",
     jurisdiction_id=JURISDICTION_ID,
-    ingest_time=DATE_2,
+    ingest_time=DATETIME_2,
     system_level=SystemLevel.STATE,
+    database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
+        schema_type=SchemaType.STATE
+    ),
 )
 
 
