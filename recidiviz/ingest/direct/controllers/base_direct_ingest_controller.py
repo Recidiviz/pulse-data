@@ -79,9 +79,7 @@ class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandl
             region=self.region, just_finished_job=just_finished_job, delay_sec=0
         )
 
-    def schedule_next_ingest_job_or_wait_if_necessary(
-        self, just_finished_job: bool
-    ) -> None:
+    def schedule_next_ingest_job(self, just_finished_job: bool) -> None:
         """Creates a cloud task to run the next ingest job. Depending on the
         next job's IngestArgs, we either post a task to direct/scheduler/ if
         a wait_time is specified or direct/process_job/ if we can run the next

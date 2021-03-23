@@ -121,7 +121,7 @@ class TestDirectIngestControl(unittest.TestCase):
         self.assertEqual(200, response.status_code)
 
         mock_region.assert_called_with("us_nd", is_direct_ingest=True)
-        mock_controller.schedule_next_ingest_job_or_wait_if_necessary.assert_called_with(
+        mock_controller.schedule_next_ingest_job.assert_called_with(
             just_finished_job=False
         )
         self.assertEqual(200, response.status_code)
@@ -148,7 +148,7 @@ class TestDirectIngestControl(unittest.TestCase):
             "/scheduler", query_string=request_args, headers=headers
         )
 
-        mock_controller.schedule_next_ingest_job_or_wait_if_necessary.assert_not_called()
+        mock_controller.schedule_next_ingest_job.assert_not_called()
         self.assertEqual(400, response.status_code)
         self.assertEqual(
             response.get_data().decode(),
@@ -177,7 +177,7 @@ class TestDirectIngestControl(unittest.TestCase):
         self.assertEqual(200, response.status_code)
 
         mock_region.assert_called_with("us_nd", is_direct_ingest=True)
-        mock_controller.schedule_next_ingest_job_or_wait_if_necessary.assert_called_with(
+        mock_controller.schedule_next_ingest_job.assert_called_with(
             just_finished_job=True
         )
 
@@ -526,7 +526,7 @@ class TestDirectIngestControl(unittest.TestCase):
             "/handle_new_files", query_string=request_args, headers=headers
         )
 
-        mock_controller.schedule_next_ingest_job_or_wait_if_necessary.assert_not_called()
+        mock_controller.schedule_next_ingest_job.assert_not_called()
         mock_controller.run_ingest_job_and_kick_scheduler_on_completion.assert_not_called()
         mock_controller.handle_new_files.assert_called_with(False)
 

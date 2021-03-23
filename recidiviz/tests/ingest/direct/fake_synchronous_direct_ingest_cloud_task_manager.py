@@ -179,9 +179,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
 
         with monitoring.push_region_tag(self.controller.region.region_code):
             if task_id.endswith("schedule"):
-                self.controller.schedule_next_ingest_job_or_wait_if_necessary(
-                    just_finished_job=task[1]
-                )
+                self.controller.schedule_next_ingest_job(just_finished_job=task[1])
             elif task_id.endswith("handle_new_files"):
                 if not isinstance(self.controller, GcsfsDirectIngestController):
                     raise ValueError(
