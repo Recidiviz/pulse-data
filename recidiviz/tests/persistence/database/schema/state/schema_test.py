@@ -72,10 +72,13 @@ from recidiviz.tests.persistence.database.schema.state.schema_test_utils import 
     generate_incarceration_period,
     generate_supervision_violation_response,
     generate_bond,
+    generate_charge,
     generate_parole_decision,
     generate_early_discharge,
     generate_program_assignment,
     generate_supervision_contact,
+    generate_court_case,
+    generate_agent,
 )
 from recidiviz.tools.postgres import local_postgres_helpers
 
@@ -366,7 +369,7 @@ class TestUniqueExternalIdConstraint(unittest.TestCase):
 @pytest.mark.uses_db
 class TestStateSchemaUniqueConstraints(unittest.TestCase):
     """Generalized Test Class for SupervisionViolation, SupervisionCaseTypeEntry, IncarcerationPeriod,
-    SupervisionViolationResponse, Bond, ParoleDecision, EarlyDischarge, ProgramAssignment, and SupervisionContact"""
+    SupervisionViolationResponse, Bond, ParoleDecision, EarlyDischarge, ProgramAssignment, SupervisionContact, Charge"""
 
     EXTERNAL_ID_1 = "EXTERNAL_ID_1"
     EXTERNAL_ID_2 = "EXTERNAL_ID_2"
@@ -383,6 +386,7 @@ class TestStateSchemaUniqueConstraints(unittest.TestCase):
         (generate_early_discharge,),
         (generate_program_assignment,),
         (generate_supervision_contact,),
+        (generate_charge,),
     ]
     # Stores the location of the postgres DB for this test run
     temp_db_dir: Optional[str]
@@ -1005,5 +1009,170 @@ class TestUniqueExternalIdConstraintOnFine(unittest.TestCase):
         session = SessionFactory.for_database(self.database_key)
 
         session.add(db_fine_dupe)
+        session.flush()
+        session.commit()
+
+
+@pytest.mark.uses_db
+class TestUniqueExternalIdConstraintOnCourtCase(unittest.TestCase):
+    """Tests for UniqueConstraint on StateCourtCase"""
+
+    EXTERNAL_ID_1 = "EXTERNAL_ID_1"
+    EXTERNAL_ID_2 = "EXTERNAL_ID_2"
+    PERSON_ID_1 = 1
+    OTHER_STATE_CODE = "US_YY"
+
+    # Stores the location of the postgres DB for this test run
+    temp_db_dir: Optional[str]
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+
+    def setUp(self) -> None:
+        self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        local_postgres_helpers.use_on_disk_postgresql_database(
+            SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        )
+
+        self.state_code = "US_XX"
+
+    def tearDown(self) -> None:
+        local_postgres_helpers.teardown_on_disk_postgresql_database(
+            SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        )
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.temp_db_dir
+        )
+
+    def test_add_court_case_conflicting_external_id_person_id(self) -> None:
+        # Arrange
+        session = SessionFactory.for_database(self.database_key)
+
+        db_person = generate_person(
+            state_code=self.state_code, person_id=self.PERSON_ID_1
+        )
+        db_judge = generate_agent(
+            state_code=self.state_code, external_id=self.EXTERNAL_ID_1
+        )
+        db_court_case = generate_court_case(
+            person=db_person,
+            external_id=self.EXTERNAL_ID_1,
+            state_code=self.state_code,
+            judge=db_judge,
+        )
+
+        session.add(db_court_case)
+        session.commit()
+
+        db_judge = generate_agent(
+            state_code=self.state_code, external_id=self.EXTERNAL_ID_2
+        )
+        db_court_case_dupe = generate_court_case(
+            person=db_person,
+            external_id=self.EXTERNAL_ID_1,
+            state_code=self.state_code,
+            judge=db_judge,
+        )
+
+        # Act
+        session.add(db_court_case_dupe)
+        session.flush()
+
+        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+            session.commit()
+
+    def test_add_court_case_conflicting_external_id_person_id_no_flush(self) -> None:
+        # Arrange
+        session = SessionFactory.for_database(self.database_key)
+
+        db_person = generate_person(
+            state_code=self.state_code, person_id=self.PERSON_ID_1
+        )
+        db_judge = generate_agent(
+            state_code=self.state_code, external_id=self.EXTERNAL_ID_1
+        )
+        db_court_case = generate_court_case(
+            person=db_person,
+            external_id=self.EXTERNAL_ID_1,
+            state_code=self.state_code,
+            judge=db_judge,
+        )
+
+        session.add(db_court_case)
+        session.commit()
+
+        db_judge = generate_agent(
+            state_code=self.state_code, external_id=self.EXTERNAL_ID_2
+        )
+        db_court_case_dupe = generate_court_case(
+            person=db_person,
+            external_id=self.EXTERNAL_ID_1,
+            state_code=self.state_code,
+            judge=db_judge,
+        )
+
+        # Act
+        session.add(db_court_case_dupe)
+        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+            session.commit()
+
+    def test_add_court_case_conflicting_external_id_person_id_different_state(
+        self,
+    ) -> None:
+        # Arrange
+        arrange_session = SessionFactory.for_database(self.database_key)
+
+        db_person = generate_person(state_code=self.state_code)
+        db_court_case = generate_court_case(
+            person=db_person,
+            external_id=self.EXTERNAL_ID_1,
+            state_code=self.state_code,
+        )
+
+        arrange_session.add(db_court_case)
+        arrange_session.commit()
+
+        db_person_other_state = generate_person(state_code=self.OTHER_STATE_CODE)
+        db_court_case_dupe = generate_court_case(
+            person=db_person_other_state,
+            external_id=self.EXTERNAL_ID_1,
+            state_code=self.OTHER_STATE_CODE,
+        )
+
+        # Act
+        session = SessionFactory.for_database(self.database_key)
+
+        session.add(db_court_case_dupe)
+        session.flush()
+        session.commit()
+
+    def test_add_court_case_different_external_id_same_state(self) -> None:
+        # Arrange
+        arrange_session = SessionFactory.for_database(self.database_key)
+        db_person = generate_person(state_code=self.state_code)
+        db_court_case = generate_court_case(
+            person=db_person,
+            external_id=self.EXTERNAL_ID_1,
+            state_code=self.state_code,
+        )
+
+        arrange_session.add(db_court_case)
+        arrange_session.commit()
+
+        db_person = generate_person(state_code=self.state_code)
+        db_court_case_dupe = generate_court_case(
+            person=db_person,
+            external_id=self.EXTERNAL_ID_2,
+            state_code=self.state_code,
+        )
+
+        # Act
+        session = SessionFactory.for_database(self.database_key)
+
+        session.add(db_court_case_dupe)
         session.flush()
         session.commit()
