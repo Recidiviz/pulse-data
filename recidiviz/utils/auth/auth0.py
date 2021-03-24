@@ -125,7 +125,7 @@ def build_auth0_authorization_decorator(
 ) -> Callable:
     """ Decorator builder for Auth0 authorization """
 
-    def decorated(route: Callable):
+    def decorated(route: Callable) -> Callable:
         @wraps(route)
         def inner(*args: List[Any], **kwargs: Dict[str, Any]) -> Any:
             """
