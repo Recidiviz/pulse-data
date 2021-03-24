@@ -27,7 +27,7 @@ import os
 import sys
 from enum import Enum
 from functools import wraps
-from typing import Callable, Optional
+from typing import Any, Callable, Optional
 
 import requests
 from google.cloud import datastore, environment_vars
@@ -112,7 +112,7 @@ def local_only(func: Callable) -> Callable:
     """
 
     @wraps(func)
-    def check_env(*args, **kwargs):
+    def check_env(*args: Any, **kwargs: Any) -> Any:
         """Decorator child-method to fail if runtime is in prod
 
         This is the function the decorator uses to test whether or not our
@@ -141,14 +141,14 @@ def local_only(func: Callable) -> Callable:
     return check_env
 
 
-def in_test():
+def in_test() -> bool:
     """Check whether we are running in a test"""
     # Pytest sets recidiviz.called_from_test in conftest.py
     if not hasattr(recidiviz, "called_from_test"):
         # If it is not set, we may have been called from unittest. Check if unittest has been imported, if it has then
         # we assume we are running from a unittest
-        recidiviz.called_from_test = "unittest" in sys.modules.keys()
-    return recidiviz.called_from_test
+        setattr(recidiviz, "called_from_test", "unittest" in sys.modules.keys())
+    return getattr(recidiviz, "called_from_test")
 
 
 def test_only(func: Callable) -> Callable:
@@ -158,7 +158,7 @@ def test_only(func: Callable) -> Callable:
     """
 
     @wraps(func)
-    def check_test_and_call(*args, **kwargs) -> Callable:
+    def check_test_and_call(*args: Any, **kwargs: Any) -> Callable:
         if not in_test():
             raise RuntimeError("Function may only be called from tests")
         return func(*args, **kwargs)

@@ -15,9 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tools for handling authentication of requests."""
-from http import HTTPStatus
 import logging
+from http import HTTPStatus
 from functools import wraps
+from typing import Any, Callable
 
 from flask import request
 
@@ -25,7 +26,7 @@ from recidiviz.utils import metadata, validate_jwt
 from recidiviz.utils.environment import in_development
 
 
-def requires_gae_auth(func):
+def requires_gae_auth(func: Callable) -> Callable:
     """Decorator to validate inbound request is authorized for Recidiviz
 
     Decorator function that checks for end-user authentication or that the
@@ -40,7 +41,7 @@ def requires_gae_auth(func):
     """
 
     @wraps(func)
-    def auth_and_call(*args, **kwargs):
+    def auth_and_call(*args: Any, **kwargs: Any) -> Any:
         """Authenticates the inbound request and delegates.
 
         Args:
