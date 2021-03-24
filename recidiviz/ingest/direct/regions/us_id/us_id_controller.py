@@ -25,6 +25,9 @@ from recidiviz.common.constants.enum_overrides import (
     EnumIgnorePredicate,
 )
 from recidiviz.common.constants.person_characteristics import Race, Ethnicity, Gender
+from recidiviz.common.constants.standard_enum_overrides import (
+    get_standard_enum_overrides,
+)
 from recidiviz.common.constants.state.external_id_types import US_ID_DOC
 from recidiviz.common.constants.state.shared_enums import (
     StateActingBodyType,
@@ -628,15 +631,16 @@ class UsIdController(CsvGcsfsDirectIngestController):
             "early_discharge_supervision_sentence_deleted_rows_v2",
         ]
 
-    def generate_enum_overrides(self) -> EnumOverrides:
+    @classmethod
+    def generate_enum_overrides(cls) -> EnumOverrides:
         """Provides Idaho-specific overrides for enum mappings."""
-        base_overrides = super().get_enum_overrides()
+        base_overrides = get_standard_enum_overrides()
         return update_overrides_from_maps(
             base_overrides,
-            self.ENUM_OVERRIDES,
-            self.ENUM_IGNORES,
-            self.ENUM_MAPPERS,
-            self.ENUM_IGNORE_PREDICATES,
+            cls.ENUM_OVERRIDES,
+            cls.ENUM_IGNORES,
+            cls.ENUM_MAPPERS,
+            cls.ENUM_IGNORE_PREDICATES,
         )
 
     def get_enum_overrides(self) -> EnumOverrides:
