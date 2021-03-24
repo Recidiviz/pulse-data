@@ -33,7 +33,7 @@ from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
 )
 from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
 from recidiviz.persistence.ingest_info_converter.utils.zipcodes import (
-    zipcode_search_engine,
+    ZipcodeDatabaseManager,
 )
 
 # Suffixes used in county names in uszipcode library
@@ -116,8 +116,7 @@ def _parse_is_county_resident(residence_zip_code: str, region: str) -> Optional[
     # Replace underscores with spaces because uszipcode uses spaces
     normalized_region_county = region_county.upper().replace("_", " ")
 
-    with zipcode_search_engine() as zipcodes:
-        residence_county = zipcodes.by_zipcode(residence_zip_code).county
+    residence_county = ZipcodeDatabaseManager.county_for_zipcode(residence_zip_code)
     if not residence_county:
         return None
 
@@ -144,8 +143,7 @@ def _parse_is_county_resident(residence_zip_code: str, region: str) -> Optional[
 
 def _parse_is_state_resident(residence_zip_code: str, region: str) -> Optional[bool]:
     region_state_code = region[-2:].upper()
-    with zipcode_search_engine() as zipcodes:
-        residence_state_code = zipcodes.by_zipcode(residence_zip_code).state.upper()
+    residence_state_code = ZipcodeDatabaseManager.state_for_zipcode(residence_zip_code)
     if not residence_state_code:
         return None
     return region_state_code == residence_state_code
