@@ -114,6 +114,7 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
         destination_dataset_ref: bigquery.DatasetReference,
         destination_table_id: str,
         destination_table_schema: List[bigquery.SchemaField],
+        skip_leading_rows: int = 0,
     ) -> bigquery.job.LoadJob:
         raise ValueError("Must be implemented for use in tests.")
 
