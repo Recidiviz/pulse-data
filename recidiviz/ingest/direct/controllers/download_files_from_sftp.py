@@ -106,7 +106,7 @@ class DownloadFilesFromSftpController:
         project_id: str,
         region: str,
         lower_bound_update_datetime: Optional[datetime.datetime],
-        gcs_destination_path: Optional[str] = None,
+        gcs_destination_path: Optional[GcsfsDirectoryPath] = None,
     ):
         self.project_id = project_id
         self.region = region.lower()
@@ -124,7 +124,7 @@ class DownloadFilesFromSftpController:
                 region, SystemLevel.STATE, project_id=self.project_id
             )
             if gcs_destination_path is None
-            else GcsfsDirectoryPath.from_absolute_path(gcs_destination_path)
+            else gcs_destination_path
         )
         self.download_dir = GcsfsDirectoryPath.from_dir_and_subdir(
             dir_path=self.bucket, subdir=RAW_INGEST_DIRECTORY
