@@ -1143,6 +1143,16 @@ class StateCourtCase(StateBase, _StateCourtCaseSharedColumns):
     """Represents a StateCourtCase in the SQL schema"""
 
     __tablename__ = "state_court_case"
+    __table_args__ = (
+        UniqueConstraint(
+            "state_code",
+            "external_id",
+            "person_id",
+            name="court_case_external_ids_unique_within_state_and_person",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+    )
 
     court_case_id = Column(Integer, primary_key=True)
     person = relationship("StatePerson", uselist=False)
