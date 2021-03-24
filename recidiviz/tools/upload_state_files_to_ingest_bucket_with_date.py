@@ -30,151 +30,90 @@ import datetime
 import logging
 import os
 import threading
-from multiprocessing.pool import ThreadPool
 from typing import Optional, List, Tuple
 
 from progress.bar import Bar
 
-from recidiviz.common.ingest_metadata import SystemLevel
-from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
-    to_normalized_unprocessed_file_path,
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.ingest.direct.controllers.upload_state_files_to_ingest_bucket_with_date import (
+    BaseUploadStateFilesToIngestBucketController,
 )
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    GcsfsDirectIngestFileType,
-    gcsfs_direct_ingest_directory_path_for_region,
-)
-from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.tools.gsutil_shell_helpers import gsutil_cp
 from recidiviz.utils.params import str_to_bool
 
 # pylint: disable=not-callable
 
 
-class UploadStateFilesToIngestBucketController:
-    """Class with functionality to upload a file or files to a region's ingest bucket."""
+class ManualUploadStateFilesToIngestBucketController(
+    BaseUploadStateFilesToIngestBucketController
+):
+    """Class with functionality to upload a file or files from a local filesystem to a region's ingest bucket."""
 
     def __init__(
         self, paths: str, project_id: str, region: str, date: str, dry_run: bool
     ):
-
-        self.paths = paths
-        self.project_id = project_id
-        self.region = region.lower()
-        self.datetime = datetime.datetime.fromisoformat(date)
-        self.dry_run = dry_run
-
-        self.ingest_bucket = GcsfsDirectoryPath.from_absolute_path(
-            gcsfs_direct_ingest_directory_path_for_region(
-                region, SystemLevel.STATE, project_id=self.project_id
-            )
+        super().__init__(
+            paths_with_timestamps=[
+                (path, datetime.datetime.fromisoformat(date)) for path in paths
+            ],
+            project_id=project_id,
+            region=region,
         )
+
+        self.dry_run = dry_run
 
         self.mutex = threading.Lock()
         self.move_progress: Optional[Bar] = None
         self.copies_list: List[Tuple[str, str]] = []
         self.log_output_path = os.path.join(
             os.path.dirname(__file__),
-            f"upload_to_ingest_result_{region}_{self.project_id}_date_{self.datetime.date().isoformat()}"
+            f"upload_to_ingest_result_{region}_{self.project_id}_date_{date}"
             f"_dry_run_{self.dry_run}_{datetime.datetime.now().isoformat()}.txt",
         )
 
-    def _copy_to_ingest_bucket(self, path: str, normalized_file_name: str) -> None:
-        full_file_upload_path_uri = GcsfsFilePath.from_directory_and_file_name(
-            self.ingest_bucket, normalized_file_name
-        ).uri()
-
+    def _copy_to_ingest_bucket(
+        self,
+        path: str,
+        full_file_upload_path: GcsfsFilePath,
+    ) -> None:
         if not self.dry_run:
-            gsutil_cp(path, full_file_upload_path_uri)
+            try:
+                gsutil_cp(path, full_file_upload_path.uri())
+                self.uploaded_files.append(path)
+                self.copies_list.append((path, full_file_upload_path.uri()))
+            except ValueError:
+                self.unable_to_upload_files.append(path)
+        else:
+            self.copies_list.append((path, full_file_upload_path.uri()))
 
         with self.mutex:
-            self.copies_list.append((path, full_file_upload_path_uri))
             if self.move_progress:
                 self.move_progress.next()
 
-    def _upload_file(self, path: str) -> None:
-        normalized_file_name = os.path.basename(
-            to_normalized_unprocessed_file_path(
-                path, file_type=GcsfsDirectIngestFileType.RAW_DATA, dt=self.datetime
-            )
-        )
-        self._copy_to_ingest_bucket(path, normalized_file_name)
-
-    def _get_paths_to_upload(self) -> List[str]:
+    def get_paths_to_upload(self) -> List[Tuple[str, datetime.datetime]]:
         path_candidates = []
-        for path in self.paths:
+        for path, timestamp in self.paths_with_timestamps:
             if os.path.isdir(path):
                 for filename in os.listdir(path):
-                    path_candidates.append(os.path.join(path, filename))
+                    if self._is_supported_extension(os.path.join(path, filename)):
+                        path_candidates.append(
+                            (os.path.join(path, filename), timestamp)
+                        )
+                    else:
+                        self.skipped_files.append(os.path.join(path, filename))
             elif os.path.isfile(path):
-                path_candidates.append(path)
+                if self._is_supported_extension(path):
+                    path_candidates.append((path, timestamp))
+                else:
+                    self.skipped_files.append(path)
 
             else:
+                self.unable_to_upload_files.append(path)
                 raise ValueError(
                     f"Could not tell if path [{path}] is a file or directory."
                 )
 
-        result = []
-        for path in path_candidates:
-            _, ext = os.path.splitext(path)
-            if not ext or ext not in (".csv", ".txt"):
-                logging.info("Skipping file [%s] - invalid extension", path)
-                continue
-            result.append(path)
-
-        return result
-
-    def upload_files(self, paths_to_upload: List[str], thread_pool: ThreadPool) -> None:
-        msg_prefix = "DRY_RUN: " if self.dry_run else ""
-        self.move_progress = Bar(
-            f"{msg_prefix}Moving files...", max=len(paths_to_upload)
-        )
-        thread_pool.map(self._upload_file, paths_to_upload)
-
-        if not self.move_progress:
-            raise ValueError("Progress bar should not be None")
-        self.move_progress.finish()
-
-    def do_upload(self) -> None:
-        """Perform upload to ingest bucket."""
-        if self.dry_run:
-            logging.info("Running in DRY RUN mode for region [%s]", self.region)
-        else:
-            i = input(
-                f"This will upload raw files to the [{self.region}] ingest bucket [{self.ingest_bucket.uri()}] "
-                f"with datetime [{self.datetime}]. Type {self.project_id} to continue: "
-            )
-
-            if i != self.project_id:
-                return
-
-        paths_to_upload = self._get_paths_to_upload()
-
-        if self.dry_run:
-            logging.info("DRY RUN: Found [%s] paths to upload", len(paths_to_upload))
-        else:
-            i = input(
-                f"Found [{len(paths_to_upload)}] files to move - " f"continue? [y/n]: "
-            )
-
-            if i.upper() != "Y":
-                return
-
-        thread_pool = ThreadPool(processes=12)
-
-        self.upload_files(paths_to_upload, thread_pool)
-
-        thread_pool.close()
-        thread_pool.join()
-
-        self.write_copies_to_log_file()
-
-        if self.dry_run:
-            logging.info(
-                "DRY RUN: See results in [%s].\nRerun with [--dry-run False] to execute move.",
-                self.log_output_path,
-            )
-        else:
-            logging.info("Upload complete! See results in [%s].", self.log_output_path)
+        return path_candidates
 
     def write_copies_to_log_file(self) -> None:
         self.copies_list.sort()
@@ -188,6 +127,11 @@ class UploadStateFilesToIngestBucketController:
                 template.format(original_path, new_path)
                 for original_path, new_path in self.copies_list
             )
+            if self.unable_to_upload_files:
+                f.writelines(
+                    "Failed to copy {}".format(path)
+                    for path in self.unable_to_upload_files
+                )
 
 
 def main() -> None:
@@ -225,13 +169,47 @@ def main() -> None:
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
-    UploadStateFilesToIngestBucketController(
+    controller = ManualUploadStateFilesToIngestBucketController(
         paths=args.paths,
         project_id=args.project_id,
         region=args.region,
         date=args.date,
         dry_run=args.dry_run,
-    ).do_upload()
+    )
+
+    if controller.dry_run:
+        logging.info("Running in DRY RUN mode for region [%s]", controller.region)
+    else:
+        i = input(
+            f"This will upload raw files to the [{controller.region}] ingest bucket [{controller.gcs_destination_path.uri()}] "
+            f"with datetime [{args.date}]. Type {controller.project_id} to continue: "
+        )
+
+        if i != controller.project_id:
+            return
+
+    msg_prefix = "DRY_RUN: " if controller.dry_run else ""
+    controller.move_progress = Bar(
+        f"{msg_prefix}Moving files...", max=len(controller.get_paths_to_upload())
+    )
+
+    controller.do_upload()
+
+    if not controller.move_progress:
+        raise ValueError("Progress bar should not be None")
+    controller.move_progress.finish()
+
+    controller.write_copies_to_log_file()
+
+    if controller.dry_run:
+        logging.info(
+            "DRY RUN: See results in [%s].\nRerun with [--dry-run False] to execute move.",
+            controller.log_output_path,
+        )
+    else:
+        logging.info(
+            "Upload complete! See results in [%s].", controller.log_output_path
+        )
 
 
 if __name__ == "__main__":

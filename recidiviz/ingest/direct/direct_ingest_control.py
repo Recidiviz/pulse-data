@@ -28,6 +28,7 @@ from opencensus.stats import measure, view, aggregation
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockAlreadyExists
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import (
     DirectIngestControllerFactory,
 )
@@ -518,6 +519,9 @@ def upload_from_sftp() -> Tuple[str, HTTPStatus]:
     region_code = get_str_param_value("region", request.values)
     date_str = get_str_param_value("date", request.values)
     bucket_str = get_str_param_value("bucket", request.values)
+    gcs_destination_path = (
+        GcsfsDirectoryPath.from_absolute_path(bucket_str) if bucket_str else None
+    )
 
     if not region_code:
         return f"Bad parameters [{request.values}]", HTTPStatus.BAD_REQUEST
@@ -532,7 +536,7 @@ def upload_from_sftp() -> Tuple[str, HTTPStatus]:
             project_id=metadata.project_id(),
             region=region_code,
             lower_bound_update_datetime=lower_bound_update_datetime,
-            gcs_destination_path=bucket_str,
+            gcs_destination_path=gcs_destination_path,
         )
         downloaded_items, unable_to_download_items = sftp_controller.do_fetch()
 
@@ -554,7 +558,7 @@ def upload_from_sftp() -> Tuple[str, HTTPStatus]:
                 paths_with_timestamps=downloaded_items,
                 project_id=metadata.project_id(),
                 region=region_code,
-                gcs_destination_path=bucket_str,
+                gcs_destination_path=gcs_destination_path,
             ).do_upload()
 
             with monitoring.measurements(
