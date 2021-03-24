@@ -209,6 +209,7 @@ class BigQueryClient:
         destination_dataset_ref: bigquery.DatasetReference,
         destination_table_id: str,
         destination_table_schema: List[bigquery.SchemaField],
+        skip_leading_rows: int = 0,
     ) -> bigquery.job.LoadJob:
         """Loads a table from CSV data in GCS to BigQuery.
 
@@ -228,6 +229,7 @@ class BigQueryClient:
             destination_table_id: String name of the table to import.
             destination_table_schema: Defines a list of field schema information for each expected column in the input
                 file.
+            skip_leading_rows: Optional number of leading rows to skip. Defaults to zero
         Returns:
             The LoadJob object containing job details.
         """
@@ -690,6 +692,7 @@ class BigQueryClientImpl(BigQueryClient):
         destination_dataset_ref: bigquery.DatasetReference,
         destination_table_id: str,
         destination_table_schema: List[bigquery.SchemaField],
+        skip_leading_rows: int = 0,
     ) -> bigquery.job.LoadJob:
 
         return self._load_table_from_cloud_storage_async(
@@ -698,6 +701,7 @@ class BigQueryClientImpl(BigQueryClient):
             destination_table_id=destination_table_id,
             destination_table_schema=destination_table_schema,
             write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
+            skip_leading_rows=skip_leading_rows,
         )
 
     def _load_table_from_cloud_storage_async(
@@ -707,6 +711,7 @@ class BigQueryClientImpl(BigQueryClient):
         destination_table_id: str,
         destination_table_schema: List[bigquery.SchemaField],
         write_disposition: bigquery.WriteDisposition,
+        skip_leading_rows: int = 0,
     ) -> bigquery.job.LoadJob:
         """Triggers a load job, i.e. a job that will copy all of the data from the given Cloud Storage source into
         the given BigQuery destination. Returns once the job has been started."""
@@ -720,6 +725,7 @@ class BigQueryClientImpl(BigQueryClient):
         job_config.source_format = bigquery.SourceFormat.CSV
         job_config.allow_quoted_newlines = True
         job_config.write_disposition = write_disposition
+        job_config.skip_leading_rows = skip_leading_rows
 
         load_job = self.client.load_table_from_uri(
             source_uri, destination_table_ref, job_config=job_config
