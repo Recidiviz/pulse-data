@@ -81,7 +81,9 @@ class DatabaseEntity(CoreEntity):
         return prop.entity.class_.__name__
 
     @classmethod
-    def get_relationship_property_names_and_properties(cls) -> RelationshipProperty:
+    def get_relationship_property_names_and_properties(
+        cls,
+    ) -> Dict[str, RelationshipProperty]:
         """Returns a dictionary where the keys are the string names of all
         properties of |cls| that correspond to relationships to other database
         entities, and the values are the corresponding properties.

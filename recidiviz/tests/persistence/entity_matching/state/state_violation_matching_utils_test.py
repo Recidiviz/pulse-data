@@ -48,7 +48,7 @@ _STATE_CODE = "US_XX"
 class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
     """Tests for state violation matching utils"""
 
-    def test_completeEnumSet_revokedToPrison(self):
+    def test_completeEnumSet_revokedToPrison(self) -> None:
         svr = schema.StateSupervisionViolationResponse()
         for revocation_type in StateSupervisionViolationResponseRevocationType:
             svr.revocation_type = revocation_type.value
