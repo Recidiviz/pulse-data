@@ -53,7 +53,7 @@ _ID_TYPE = "ID_TYPE"
 class TestStatePeriodMatchingUtils(BaseStateMatchingUtilsTest):
     """Tests for state period matching utils"""
 
-    def test_addSupervisingOfficerToOpenSupervisionPeriods(self):
+    def test_addSupervisingOfficerToOpenSupervisionPeriods(self) -> None:
         # Arrange
         supervising_officer = generate_agent(
             agent_id=_ID, external_id=_EXTERNAL_ID, state_code=_STATE_CODE

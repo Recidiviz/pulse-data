@@ -116,13 +116,11 @@ class BaseStateEntityMatcherTest(TestCase):
     def _session(self):
         return SessionFactory.for_database(self.database_key)
 
-    def _commit_to_db(self, *persons):
+    def _commit_to_db(self, *persons: schema.StatePerson) -> None:
         session = self._session()
         for person in persons:
             session.add(person)
         session.commit()
-
-        return session
 
 
 @pytest.mark.uses_db

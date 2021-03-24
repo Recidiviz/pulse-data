@@ -25,6 +25,7 @@ from more_itertools import one
 
 import apache_beam as beam
 from apache_beam.typehints import with_input_types, with_output_types
+from sqlalchemy.orm.relationships import RelationshipProperty
 
 from recidiviz.calculator.pipeline.utils.execution_utils import select_all_query
 from recidiviz.common.attr_mixins import BuildableAttr
@@ -399,12 +400,12 @@ class _ExtractRelationshipPropertyEntities(beam.PTransform):
         self._state_code = state_code
 
     @staticmethod
-    def _property_class_from_property_object(property_object) -> Type:
-        return (
-            property_object.argument.class_
-            if hasattr(property_object.argument, "class_")
-            else property_object.argument()
-        )
+    def _property_class_name_from_property_object(
+        property_object: RelationshipProperty,
+    ) -> str:
+        if hasattr(property_object.mapper, "class_"):
+            return property_object.mapper.class_.__name__
+        return property_object.argument
 
     def expand(self, input_or_inputs):
         """Extracts all related entities"""
@@ -414,9 +415,9 @@ class _ExtractRelationshipPropertyEntities(beam.PTransform):
         properties_dict = {}
         for property_name, property_object in names_to_properties.items():
             # Get class name associated with the property
-            property_class_name = self._property_class_from_property_object(
+            property_class_name = self._property_class_name_from_property_object(
                 property_object
-            ).__name__
+            )
 
             property_entity_class = entity_utils.get_entity_class_in_module_with_name(
                 state_entities, property_class_name
