@@ -163,8 +163,6 @@ function check_terraform_installed {
         exit 1
     fi
 
-    echo "CHECKING TERRAFORM_VERSION"
-
     # Check that we're on at least the minimum version of Terraform
     TERRAFORM_VERSION=$(terraform --version | grep "^Terraform v" | cut -d ' ' -f 2 | sed 's/v//')
     MIN_REQUIRED_TERRAFORM_VERSION="0.14.8"

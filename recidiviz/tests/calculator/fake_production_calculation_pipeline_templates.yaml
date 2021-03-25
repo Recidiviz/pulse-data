@@ -1,0 +1,35 @@
+# Mock file to test utils that reference the production_calculation_pipeline_templates.yaml
+# file
+
+daily_pipelines:
+  # Full US_XX calculations with no time limit
+  - pipeline: pipeline_no_limit
+    job_name: full-us-xx-pipeline_no_limit-calculations
+    state_code: US_XX
+    metric_types: METRIC_1
+    region: us-west1
+
+  # Daily US_XX calculations
+  - pipeline: pipeline_with_limit
+    job_name: us-xx-pipeline_with_limit-calculations-36
+    state_code: US_XX
+    calculation_month_count: 36
+    metric_types: METRIC_2 METRIC_3
+    region: us-east1
+
+  # Daily US_YY calculations
+  - pipeline: pipeline_with_limit
+    job_name: us-yy-pipeline_with_limit-calculations-24
+    state_code: US_YY
+    calculation_month_count: 24
+    metric_types: METRIC_2 METRIC_3
+    region: us-east1
+
+
+historical_pipelines:
+  - pipeline: pipeline_with_limit
+    job_name: us-yy-historical-pipeline_with_limit-calculations-240
+    state_code: US_YY
+    calculation_month_count: 240
+    metric_types: METRIC_2
+    region: us-west1
