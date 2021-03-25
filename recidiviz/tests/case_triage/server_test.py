@@ -23,7 +23,7 @@ from unittest import mock, TestCase
 import pytest
 from flask import Flask, Response, g, jsonify, session
 
-from recidiviz.case_triage.api_routes import api
+from recidiviz.case_triage.api_routes import create_api_blueprint
 from recidiviz.case_triage.authorization import AuthorizationStore
 from recidiviz.case_triage.case_updates.interface import CaseUpdatesInterface
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
@@ -57,6 +57,7 @@ class TestCaseTriageAPIRoutes(TestCase):
 
     def setUp(self) -> None:
         self.test_app = Flask(__name__)
+        api = create_api_blueprint()
         self.test_app.register_blueprint(api)
         self.test_client = self.test_app.test_client()
 
