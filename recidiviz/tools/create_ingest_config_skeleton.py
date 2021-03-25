@@ -35,8 +35,7 @@ from typing import List
 from pandas import read_csv
 
 from recidiviz.common.constants import states
-
-PLACEHOLDER = "TO" + "DO"  # split tag so we don't trigger the linter
+from recidiviz.tests.ingest.direct.direct_ingest_util import PLACEHOLDER_TO_DO_STRING
 
 
 def make_config_directory(state_code: str) -> str:
@@ -67,8 +66,8 @@ def initialize_state_directories(state_code: str) -> None:
     with open(base_config_path, "w") as file:
         file.writelines(
             [
-                f"default_encoding: {PLACEHOLDER}\n",
-                f"default_separator: {PLACEHOLDER}\n",
+                f"default_encoding: {PLACEHOLDER_TO_DO_STRING}\n",
+                f"default_separator: {PLACEHOLDER_TO_DO_STRING}\n",
             ]
         )
 
@@ -103,7 +102,7 @@ def write_skeleton_config(
     config = [
         f"file_tag: {table_name}",
         "file_description: |-",
-        f"  {PLACEHOLDER}",
+        f"  {PLACEHOLDER_TO_DO_STRING}",
         "primary_key_cols: []",
         "columns:",
     ]
