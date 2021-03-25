@@ -24,9 +24,6 @@ import createAuth0Client, {
 } from "@auth0/auth0-spa-js";
 import qs from "qs";
 
-import { identify } from "../analytics";
-import { sha256 } from "../utils";
-
 interface UserStoreProps {
   authSettings: Auth0ClientOptions;
 }
@@ -86,11 +83,6 @@ export default class UserStore {
         this.isAuthorized = user ? !!user.email_verified : false;
         this.isLoading = false;
       });
-
-      if (user?.email) {
-        const emailHash = await sha256(user.email);
-        identify(emailHash);
-      }
     } else {
       this.isLoading = false;
 
