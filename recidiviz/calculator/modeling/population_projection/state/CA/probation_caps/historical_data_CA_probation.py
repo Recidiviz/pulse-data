@@ -31,7 +31,7 @@ ADDITIONAL NOTES: model built to support policy memo for CA AB1950
 import pandas as pd
 from numpy import mean
 from scipy.stats import chi2
-from recidiviz.calculator.modeling.population_projection.spark_bq_utils import (
+from recidiviz.calculator.modeling.population_projection.utils.spark_bq_utils import (
     upload_spark_model_inputs,
 )
 

@@ -35,7 +35,7 @@ TIME_STEP: 1 month
 
 # add whatever modules you need
 import pandas as pd
-from recidiviz.calculator.modeling.population_projection.spark_bq_utils import (
+from recidiviz.calculator.modeling.population_projection.utils.spark_bq_utils import (
     upload_spark_model_inputs,
 )
 from recidiviz.calculator.modeling.population_projection.spark_preprocessing_utils import (

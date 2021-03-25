@@ -26,7 +26,7 @@ additional years depending on whether a firearm has been possessed, discharged, 
 The policy would reduce the sentence enhancement by an unspecified number of years (coordinate with policy group).
 """
 import pandas as pd
-from recidiviz.calculator.modeling.population_projection.spark_bq_utils import (
+from recidiviz.calculator.modeling.population_projection.utils.spark_bq_utils import (
     upload_spark_model_inputs,
 )
 

@@ -17,7 +17,7 @@
 # pylint: skip-file
 """
 STATE: AZ
-POLICY: The proposed policy would classify non-dangerous class 6 felonies as misdemeanors to reduce 
+POLICY: The proposed policy would classify non-dangerous class 6 felonies as misdemeanors to reduce
 length of sentences in prison.
 VERSION: v1
 DATA SOURCE: https://drive.google.com/drive/folders/1qPNt3Zy06AyG5hLO0oO4bj1qPnl0XdWb?usp=sharing
@@ -27,7 +27,7 @@ REFERENCE_DATE: January 2016
 TIME_STEP: 1 month
 """
 import pandas as pd
-from recidiviz.calculator.modeling.population_projection.spark_bq_utils import (
+from recidiviz.calculator.modeling.population_projection.utils.spark_bq_utils import (
     upload_spark_model_inputs,
 )
 

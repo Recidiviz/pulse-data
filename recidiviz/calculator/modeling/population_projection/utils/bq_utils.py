@@ -15,11 +15,18 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """BigQuery Methods for both Spark and Ignite population projection simulations"""
+from typing import List, Dict
 
 import pandas as pd
 
 
-def store_simulation_results(project_id, dataset, table_name, table_schema, data):
+def store_simulation_results(
+    project_id: str,
+    dataset: str,
+    table_name: str,
+    table_schema: List[Dict[str, str]],
+    data: pd.DataFrame,
+) -> None:
     """Append the new results to the BigQuery table in the spark output dataset"""
 
     # Reorder the columns to match the schema ordering
@@ -36,7 +43,7 @@ def store_simulation_results(project_id, dataset, table_name, table_schema, data
     )
 
 
-def add_simulation_date_column(df):
+def add_simulation_date_column(df: pd.DataFrame) -> pd.DataFrame:
     # Convert the fractional year column into the integer year and month columns
     df["year"] = round(df["year"], 5)
     df["month"] = (12 * (df["year"] % 1)).round(0).astype(int) + 1

@@ -27,7 +27,7 @@ TIME_STEP: year
 """
 import pandas as pd
 import numpy as np
-from recidiviz.calculator.modeling.population_projection.spark_bq_utils import (
+from recidiviz.calculator.modeling.population_projection.utils.spark_bq_utils import (
     upload_spark_model_inputs,
 )
 

@@ -36,7 +36,7 @@ class TestSuperSimulationFactory(unittest.TestCase):
     """Tests the SuperSimulationFactory works correctly."""
 
     @patch(
-        "recidiviz.calculator.modeling.population_projection.spark_bq_utils.load_spark_table_from_big_query",
+        "recidiviz.calculator.modeling.population_projection.utils.spark_bq_utils.load_spark_table_from_big_query",
         mock_load_table_from_big_query_macro,
     )
     def test_build_super_simulation_macrosim(self) -> None:
@@ -49,7 +49,7 @@ class TestSuperSimulationFactory(unittest.TestCase):
         self.assertFalse(macrosim.exporter.microsim)
 
     @patch(
-        "recidiviz.calculator.modeling.population_projection.ignite_bq_utils.load_ignite_table_from_big_query",
+        "recidiviz.calculator.modeling.population_projection.utils.ignite_bq_utils.load_ignite_table_from_big_query",
         mock_load_table_from_big_query_micro,
     )
     def test_build_super_simulation_microsim(self) -> None:
