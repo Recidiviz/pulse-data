@@ -16,7 +16,9 @@
 # =============================================================================
 """Tests the calculation_data_storage_manager."""
 import datetime
+import os
 import unittest
+from enum import Enum
 from unittest import mock
 
 from freezegun import freeze_time
@@ -29,6 +31,19 @@ from recidiviz.calculator import calculation_data_storage_manager
 from recidiviz.calculator.calculation_data_storage_manager import (
     calculation_data_storage_manager_blueprint,
 )
+
+FAKE_PRODUCTION_TEMPLATES_PATH = os.path.join(
+    os.path.dirname(__file__),
+    "fake_production_calculation_pipeline_templates.yaml",
+)
+
+
+class MockMetricEnum(Enum):
+    """Mock for the RecidivizMetricType enum."""
+
+    METRIC_1 = "METRIC_1"
+    METRIC_2 = "METRIC_2"
+    METRIC_3 = "METRIC_3"
 
 
 class CalculationDataStorageManagerTest(unittest.TestCase):
@@ -68,14 +83,21 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
 
         self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset
         self.mock_dataflow_tables = [
-            bigquery.TableReference(self.mock_dataset, "fake_table_1"),
-            bigquery.TableReference(self.mock_dataset, "fake_table_2"),
+            bigquery.TableReference(
+                self.mock_dataset, "fake_pipeline_no_limit_metric_table"
+            ),
+            bigquery.TableReference(
+                self.mock_dataset, "fake_pipeline_with_limit_metric_2_table"
+            ),
+            bigquery.TableReference(
+                self.mock_dataset, "fake_pipeline_with_limit_metric_3_table"
+            ),
         ]
         self.mock_client.list_tables.return_value = self.mock_dataflow_tables
         self.mock_client.project_id.return_value = self.project_id
 
         self.data_storage_config_patcher = mock.patch(
-            "recidiviz.calculator.dataflow_output_storage_config"
+            "recidiviz.calculator.calculation_data_storage_manager.dataflow_output_storage_config"
         )
         self.mock_data_storage_config = self.data_storage_config_patcher.start()
 
@@ -83,11 +105,35 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         self.fake_cold_storage_dataset = "fake_cold_storage_dataset"
         self.fake_max_jobs = 10
 
+        self.fake_dataflow_tables_to_metric_types = {
+            "fake_pipeline_no_limit_metric_table": MockMetricEnum.METRIC_1,
+            "fake_pipeline_with_limit_metric_2_table": MockMetricEnum.METRIC_2,
+            "fake_pipeline_with_limit_metric_3_table": MockMetricEnum.METRIC_3,
+        }
+
         self.mock_data_storage_config.MAX_DAYS_IN_DATAFLOW_METRICS_TABLE.return_value = (
             self.fake_max_jobs
         )
         self.mock_data_storage_config.DATAFLOW_METRICS_COLD_STORAGE_DATASET = (
             self.fake_cold_storage_dataset
+        )
+        self.mock_data_storage_config.DATAFLOW_TABLES_TO_METRIC_TYPES = (
+            self.fake_dataflow_tables_to_metric_types
+        )
+
+        self.pipeline_launch_util_patcher = mock.patch(
+            "recidiviz.calculator.calculation_data_storage_manager.pipeline_launch_util"
+        )
+        self.mock_pipeline_launch_util = self.pipeline_launch_util_patcher.start()
+
+        self.mock_production_template_yaml = FAKE_PRODUCTION_TEMPLATES_PATH
+        self.mock_always_unbounded_date_pipelines = ["pipeline_no_limit"]
+
+        self.mock_pipeline_launch_util.PRODUCTION_TEMPLATES_PATH = (
+            self.mock_production_template_yaml
+        )
+        self.mock_pipeline_launch_util.ALWAYS_UNBOUNDED_DATE_PIPELINES = (
+            self.mock_always_unbounded_date_pipelines
         )
 
         app = Flask(__name__)
@@ -100,6 +146,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         self.project_id_patcher.stop()
         self.project_number_patcher.stop()
         self.data_storage_config_patcher.stop()
+        self.pipeline_launch_util_patcher.stop()
 
     def test_move_old_dataflow_metrics_to_cold_storage(self) -> None:
         """Test that move_old_dataflow_metrics_to_cold_storage gets the list of tables to prune, calls the client to
@@ -109,6 +156,32 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         self.mock_client.list_tables.assert_called()
         self.mock_client.insert_into_table_from_query.assert_called()
         self.mock_client.create_table_from_query_async.assert_called()
+
+    @patch(
+        "recidiviz.calculator.calculation_data_storage_manager._get_month_range_for_metric_and_state"
+    )
+    def test_move_old_dataflow_metrics_to_cold_storage_deprecated_metric(
+        self, mock_get_month_range: mock.MagicMock
+    ) -> None:
+        """Test that the table of a decommissioned Dataflow metric is deleted after its contents have
+        been copied to cold storage."""
+        mock_get_month_range.return_value = {
+            "fake_pipeline_with_limit_metric_3_table": {
+                "US_XX": 36,
+            },
+        }
+
+        self.mock_data_storage_config.DATAFLOW_TABLES_TO_METRIC_TYPES = {
+            # fake_pipeline_with_limit_metric_2_table is in the BigQuery dataset, but is no longer supported
+            "fake_pipeline_with_limit_metric_3_table": MockMetricEnum.METRIC_1,
+        }
+
+        calculation_data_storage_manager.move_old_dataflow_metrics_to_cold_storage()
+
+        self.mock_client.list_tables.assert_called()
+        self.mock_client.insert_into_table_from_query.assert_called()
+        self.mock_client.create_table_from_query_async.assert_called()
+        self.mock_client.delete_table.assert_called()
 
     @patch(
         "recidiviz.calculator.calculation_data_storage_manager.move_old_dataflow_metrics_to_cold_storage"
@@ -200,6 +273,23 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
 
         self.assertEqual(200, response.status_code)
         mock_delete.assert_called()
+
+    def test_get_month_range_for_metric_and_state(self) -> None:
+        expected_month_range_map = {
+            "fake_pipeline_with_limit_metric_2_table": {
+                "US_XX": 36,
+                "US_YY": 240,
+            },
+            "fake_pipeline_with_limit_metric_3_table": {
+                "US_XX": 36,
+                "US_YY": 24,
+            },
+        }
+
+        self.assertEqual(
+            expected_month_range_map,
+            calculation_data_storage_manager._get_month_range_for_metric_and_state(),
+        )
 
 
 class MockDataset:
