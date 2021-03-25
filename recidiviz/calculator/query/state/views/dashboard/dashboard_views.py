@@ -35,6 +35,9 @@ from recidiviz.calculator.query.state.views.dashboard.revocations import (
 from recidiviz.calculator.query.state.views.dashboard.supervision import (
     supervision_views,
 )
+from recidiviz.calculator.query.state.views.dashboard.population_projections import (
+    population_projections_views,
+)
 
 
 CORE_DASHBOARD_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = (
@@ -43,6 +46,7 @@ CORE_DASHBOARD_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = (
     + revocations_views.REVOCATIONS_VIEW_BUILDERS
     + supervision_views.SUPERVISION_VIEW_BUILDERS
     + program_evaluation_views.PROGRAM_EVALUATION_VIEW_BUILDERS
+    + population_projections_views.POPULATION_PROJECTION_VIEW_BUILDERS
 )
 
 
