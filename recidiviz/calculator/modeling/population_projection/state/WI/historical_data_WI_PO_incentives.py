@@ -98,10 +98,12 @@ total_population_data = total_population_data[
 
 # STORE DATA
 simulation_tag = "WI_po_incentives"
+yaml_path = "recidiviz/calculator/modeling/population_projection/state/WI/WI_prison_model_inputs.yaml"
 upload_spark_model_inputs(
     "recidiviz-staging",
     simulation_tag,
     outflows_data,
     transitions_data,
     total_population_data,
+    yaml_path,
 )
