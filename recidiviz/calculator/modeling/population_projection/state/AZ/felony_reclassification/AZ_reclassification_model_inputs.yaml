@@ -1,0 +1,29 @@
+user_inputs:
+    policy_year: 2021.0
+    start_year: 2017.0
+    projection_years: 14.0
+    speed_run: true
+    constant_admissions: true
+
+compartments_architecture:
+    pretrial: shell
+    probation: full
+    prison: full
+    release: full
+
+reference_date: 2016.0
+# january
+time_step: 0.083333333
+# one month
+
+disaggregation_axes: 
+- crime_type
+
+data_inputs:
+  big_query_simulation_tag: AZ_reclassification
+
+per_year_costs:
+# marginal costs
+  prison: 25962.45
+  probation: 2687.0
+  release: 0.0

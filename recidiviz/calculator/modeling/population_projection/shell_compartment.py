@@ -45,6 +45,7 @@ class ShellCompartment(SparkCompartment):
 
         self.policy_list = policy_list
 
+        self.outflows_data = outflows_data
         self.after_data = outflows_data.copy()
         for policy in policy_list:
             policy.policy_fn(self)
@@ -68,10 +69,10 @@ class ShellCompartment(SparkCompartment):
             )
         super().initialize_edges(edges)
 
-    def ingest_incoming_cohort(self, influx: Dict[str, int]):
+    def ingest_incoming_cohort(self, influx: Dict[str, float]):
         """Ingest the population coming from one compartment into another by the end of the `current ts`
 
-        influx: dictionary of cohort type (str) to number of people revoked for the time period (int)
+        influx: dictionary of cohort type (str) to number of people revoked for the time period (float)
         """
         if self.tag in influx:
             raise ValueError(f"Shell compartment {self.tag} cannot ingest cohorts")
@@ -122,3 +123,17 @@ class ShellCompartment(SparkCompartment):
 
         # scale down old outflows
         self.after_data.loc[outflow] *= 1 - reallocation_fraction
+
+    def use_alternate_outflows_data(self, alternate_outflows_data):
+        """Swap in entirely different outflows data for 'after' ARIMA fit."""
+        # get counts of population from historical data aggregated by compartment, outflow, and year
+        preprocessed_data = alternate_outflows_data.groupby(
+            ["compartment", "outflow_to", "time_step"]
+        )["total_population"].sum()
+        # shadows logic in SubSimulationFactory._load_data()
+        self.after_data = (
+            preprocessed_data.unstack(level=["outflow_to", "time_step"])
+            .stack(level="outflow_to", dropna=False)
+            .loc[self.tag]
+            .fillna(0)
+        )
