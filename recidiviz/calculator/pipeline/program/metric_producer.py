@@ -16,11 +16,10 @@
 # =============================================================================
 """Calculates program metrics from program events.
 
-This contains the core logic for calculating program metrics on a person-by-person basis. It transforms ProgramEvents
-into program metrics, key-value pairs where the key represents all of the dimensions represented in the data point, and
-the value represents an indicator of whether the person should contribute to that metric.
+This contains the core logic for calculating program metrics on a person-by-person basis.
+It transforms ProgramEvents into ProgramMetrics.
 """
-from typing import List, Dict, Tuple, Any, Optional, Type
+from typing import List, Dict, Optional, Type
 
 from recidiviz.calculator.pipeline.program.metrics import (
     ProgramMetricType,
@@ -34,7 +33,7 @@ from recidiviz.calculator.pipeline.program.program_event import (
     ProgramParticipationEvent,
 )
 from recidiviz.calculator.pipeline.utils.calculator_utils import (
-    produce_standard_metric_combinations,
+    produce_standard_metrics,
 )
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.persistence.entity.state.entities import StatePerson
@@ -50,21 +49,20 @@ EVENT_TO_METRIC_CLASSES: Dict[Type[ProgramEvent], Type[ProgramMetric]] = {
 }
 
 
-def map_program_combinations(
+def produce_program_metrics(
     person: StatePerson,
     program_events: List[ProgramEvent],
     metric_inclusions: Dict[ProgramMetricType, bool],
     calculation_end_month: Optional[str],
     calculation_month_count: int,
     person_metadata: PersonMetadata,
-) -> List[Tuple[Dict[str, Any], Any]]:
+    pipeline_job_id: str,
+) -> List[ProgramMetric]:
     """Transforms ProgramEvents and a StatePerson into metric combinations.
 
-    Takes in a StatePerson and all of her ProgramEvents and returns an array of "program combinations". These are
-    key-value pairs where the key represents a specific metric and the value represents whether or not
-    the person should be counted as a positive instance of that metric.
-
-    This translates a particular interaction with a program into a program metric.
+    Takes in a StatePerson and all of her ProgramEvents and returns a list of
+    ProgramMetrics by translating a particular interaction with a program into a
+    program metric.
 
     Args:
         person: the StatePerson
@@ -76,11 +74,12 @@ def map_program_combinations(
         calculation_month_count: The number of months (including the month of the calculation_end_month) to
             limit the monthly calculation output to. If set to -1, does not limit the calculations.
         person_metadata: Contains information about the StatePerson that is necessary for the metrics.
+        pipeline_job_id: The job_id of the pipeline that is currently running.
 
     Returns:
-        A list of key-value tuples representing specific metric combinations and the value corresponding to that metric.
+        A list of ProgramMetrics.
     """
-    return produce_standard_metric_combinations(
+    metrics = produce_standard_metrics(
         pipeline="program",
         person=person,
         identifier_events=program_events,
@@ -90,4 +89,17 @@ def map_program_combinations(
         person_metadata=person_metadata,
         event_to_metric_types=EVENT_TO_METRIC_TYPES,
         event_to_metric_classes=EVENT_TO_METRIC_CLASSES,
+        pipeline_job_id=pipeline_job_id,
     )
+
+    program_metrics: List[ProgramMetric] = []
+
+    for metric in metrics:
+        if not isinstance(metric, ProgramMetric):
+            raise ValueError(
+                f"Unexpected metric type {type(metric)}."
+                f" All metrics should be ProgramMetrics."
+            )
+        program_metrics.append(metric)
+
+    return program_metrics

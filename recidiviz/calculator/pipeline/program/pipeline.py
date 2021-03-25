@@ -30,7 +30,7 @@ from apache_beam.typehints import with_input_types, with_output_types
 from recidiviz.calculator.dataflow_output_storage_config import (
     DATAFLOW_METRICS_TO_TABLES,
 )
-from recidiviz.calculator.pipeline.program import identifier, calculator
+from recidiviz.calculator.pipeline.program import identifier, metric_producer
 from recidiviz.calculator.pipeline.program.metrics import (
     ProgramMetric,
     ProgramReferralMetric,
@@ -93,7 +93,7 @@ class GetProgramMetrics(beam.PTransform):
 
     def __init__(
         self,
-        pipeline_options: Dict[str, str],
+        pipeline_options: Dict[str, Any],
         metric_types: Set[str],
         calculation_month_count: int,
         calculation_end_month: Optional[str] = None,
@@ -125,23 +125,13 @@ class GetProgramMetrics(beam.PTransform):
                 self._metric_inclusions[metric_option] = False
 
     def expand(self, input_or_inputs):
-        # Calculate program metric combinations from a StatePerson and their ProgramEvents
-        program_metric_combinations = (
-            input_or_inputs
-            | "Map to metric combinations"
-            >> beam.ParDo(
-                CalculateProgramMetricCombinations(),
-                self._calculation_end_month,
-                self._calculation_month_count,
-                self._metric_inclusions,
-            )
-        )
-
-        # Produce ProgramMetrics
-        program_metrics = (
-            program_metric_combinations
-            | "Produce ProgramMetrics"
-            >> beam.ParDo(ProduceProgramMetrics(), **self._pipeline_options)
+        # Produce ProgramMetrics from a StatePerson and their ProgramEvents
+        program_metrics = input_or_inputs | "Produce ProgramMetrics" >> beam.ParDo(
+            ProduceProgramMetrics(),
+            self._calculation_end_month,
+            self._calculation_month_count,
+            self._metric_inclusions,
+            self._pipeline_options,
         )
 
         return program_metrics
@@ -182,16 +172,22 @@ class ClassifyProgramAssignments(beam.DoFn):
     beam.typehints.Optional[str],
     beam.typehints.Optional[int],
     beam.typehints.Dict[ProgramMetricType, bool],
+    beam.typehints.Dict[str, Any],
 )
-@with_output_types(beam.typehints.Tuple[Dict[str, Any], Any])
-class CalculateProgramMetricCombinations(beam.DoFn):
-    """Calculates program metric combinations."""
+@with_output_types(ProgramMetric)
+class ProduceProgramMetrics(beam.DoFn):
+    """Produces ProgramMetrics."""
 
     # pylint: disable=arguments-differ
     def process(
-        self, element, calculation_end_month, calculation_month_count, metric_inclusions
+        self,
+        element,
+        calculation_end_month,
+        calculation_month_count,
+        metric_inclusions,
+        pipeline_options,
     ):
-        """Produces various program metric combinations.
+        """Produces various ProgramMetrics.
 
         Sends the calculator the StatePerson entity and their corresponding ProgramEvents for mapping all program
         combinations.
@@ -202,81 +198,31 @@ class CalculateProgramMetricCombinations(beam.DoFn):
             calculation_month_count: The number of months to limit the monthly calculation output to.
             metric_inclusions: A dictionary where the keys are each ProgramMetricType, and the values are boolean
                 flags for whether or not to include that metric type in the calculations
+            pipeline_options: A dictionary storing configuration details for the pipeline.
         Yields:
-            Each program metric combination.
+            Each ProgramMetric.
         """
         person, program_events, person_metadata = element
+
+        pipeline_job_id = job_id(pipeline_options)
 
         # Assert all events are of type IncarcerationEvent
         program_events = cast(List[ProgramEvent], program_events)
 
-        # Calculate program metric combinations for this person and their program events
-        metric_combinations = calculator.map_program_combinations(
+        # Produce program metrics for this person and their program events
+        metrics = metric_producer.produce_program_metrics(
             person=person,
             program_events=program_events,
             metric_inclusions=metric_inclusions,
             calculation_end_month=calculation_end_month,
             calculation_month_count=calculation_month_count,
             person_metadata=person_metadata,
+            pipeline_job_id=pipeline_job_id,
         )
 
-        # Return each of the program metric combinations
-        for metric_combination in metric_combinations:
-            yield metric_combination
-
-    def to_runner_api_parameter(self, _):
-        pass  # Passing unused abstract method.
-
-
-@with_input_types(beam.typehints.Tuple[Dict[str, Any], Any])
-@with_output_types(ProgramMetric)
-class ProduceProgramMetrics(beam.DoFn):
-    """Produces ProgramMetrics."""
-
-    def process(self, element, *_args, **kwargs):
-        """Converts a program metric key into a ProgramMetric.
-
-        The pipeline options are sent in as the **kwargs so that the job_id(pipeline_options) function can be called to
-        retrieve the job_id.
-
-        Args:
-            element: A tuple containing the dictionary for the program metric, and the value of that metric.
-            **kwargs: This should be a dictionary with values for the following keys:
-                    - runner: Either 'DirectRunner' or 'DataflowRunner'
-                    - project: GCP project ID
-                    - job_name: Name of the pipeline job
-                    - region: Region where the pipeline job is running
-                    - job_timestamp: Timestamp for the current job, to be used if the job is running locally.
-
-        Yields:
-            The ProgramMetric.
-        """
-        pipeline_options = kwargs
-
-        pipeline_job_id = job_id(pipeline_options)
-
-        (dict_metric_key, _) = element
-
-        if not dict_metric_key:
-            # Due to how the pipeline arrives at this function, this should be impossible.
-            raise ValueError("Empty dict_metric_key.")
-
-        metric_type = dict_metric_key.pop("metric_type")
-
-        if metric_type == ProgramMetricType.PROGRAM_REFERRAL:
-            program_metric = ProgramReferralMetric.build_from_metric_key_group(
-                dict_metric_key, pipeline_job_id
-            )
-        elif metric_type == ProgramMetricType.PROGRAM_PARTICIPATION:
-            program_metric = ProgramParticipationMetric.build_from_metric_key_group(
-                dict_metric_key, pipeline_job_id
-            )
-        else:
-            logging.error("Unexpected metric of type: %s", metric_type)
-            return
-
-        if program_metric:
-            yield program_metric
+        # Return each of the ProgramMetrics
+        for metric in metrics:
+            yield metric
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.

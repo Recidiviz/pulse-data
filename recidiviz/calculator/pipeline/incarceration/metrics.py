@@ -17,7 +17,7 @@
 """Incarceration metrics we calculate."""
 
 from datetime import date
-from typing import Optional, Dict, Any, cast
+from typing import Optional
 
 import attr
 
@@ -71,24 +71,6 @@ class IncarcerationMetric(RecidivizMetric, PersonLevelMetric):
     # County of residence
     county_of_residence: Optional[str] = attr.ib(default=None)
 
-    @staticmethod
-    def build_from_metric_key_group(
-        metric_key: Dict[str, Any], job_id: str
-    ) -> Optional["IncarcerationMetric"]:
-        """Builds a IncarcerationMetric object from the given arguments."""
-
-        if not metric_key:
-            raise ValueError("The metric_key is empty.")
-
-        metric_key["job_id"] = job_id
-        metric_key["created_on"] = date.today()
-
-        incarceration_metric = cast(
-            IncarcerationMetric, IncarcerationMetric.build_from_dictionary(metric_key)
-        )
-
-        return incarceration_metric
-
 
 @attr.s
 class IncarcerationPopulationMetric(IncarcerationMetric):
@@ -136,25 +118,6 @@ class IncarcerationPopulationMetric(IncarcerationMetric):
         StateSpecializedPurposeForIncarceration
     ] = attr.ib(default=None)
 
-    @staticmethod
-    def build_from_metric_key_group(
-        metric_key: Dict[str, Any], job_id: str
-    ) -> Optional["IncarcerationPopulationMetric"]:
-        """Builds a IncarcerationPopulationMetric object from the given arguments."""
-
-        if not metric_key:
-            raise ValueError("The metric_key is empty.")
-
-        metric_key["job_id"] = job_id
-        metric_key["created_on"] = date.today()
-
-        incarceration_metric = cast(
-            IncarcerationPopulationMetric,
-            IncarcerationPopulationMetric.build_from_dictionary(metric_key),
-        )
-
-        return incarceration_metric
-
 
 @attr.s
 class IncarcerationAdmissionMetric(IncarcerationMetric):
@@ -190,25 +153,6 @@ class IncarcerationAdmissionMetric(IncarcerationMetric):
 
     # Admission date
     admission_date: Optional[date] = attr.ib(default=None)
-
-    @staticmethod
-    def build_from_metric_key_group(
-        metric_key: Dict[str, Any], job_id: str
-    ) -> Optional["IncarcerationAdmissionMetric"]:
-        """Builds a IncarcerationAdmissionMetric object from the given arguments."""
-
-        if not metric_key:
-            raise ValueError("The metric_key is empty.")
-
-        metric_key["job_id"] = job_id
-        metric_key["created_on"] = date.today()
-
-        incarceration_metric = cast(
-            IncarcerationAdmissionMetric,
-            IncarcerationAdmissionMetric.build_from_dictionary(metric_key),
-        )
-
-        return incarceration_metric
 
 
 @attr.s
@@ -252,22 +196,3 @@ class IncarcerationReleaseMetric(IncarcerationMetric):
 
     # The length, in days, of the continuous stay in prison.
     total_days_incarcerated: Optional[int] = attr.ib(default=None)
-
-    @staticmethod
-    def build_from_metric_key_group(
-        metric_key: Dict[str, Any], job_id: str
-    ) -> Optional["IncarcerationReleaseMetric"]:
-        """Builds a IncarcerationReleaseMetric object from the given arguments."""
-
-        if not metric_key:
-            raise ValueError("The metric_key is empty.")
-
-        metric_key["job_id"] = job_id
-        metric_key["created_on"] = date.today()
-
-        incarceration_metric = cast(
-            IncarcerationReleaseMetric,
-            IncarcerationReleaseMetric.build_from_dictionary(metric_key),
-        )
-
-        return incarceration_metric
