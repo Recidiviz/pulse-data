@@ -32,7 +32,7 @@ is a more conservative reform that only applies to nonviolent offenders. To mode
 full simulation; to model the second, only run the simulation for the 'nonviolent' disaggregation category.
 """
 import pandas as pd
-from recidiviz.calculator.modeling.population_projection.spark_bq_utils import (
+from recidiviz.calculator.modeling.population_projection.utils.spark_bq_utils import (
     upload_spark_model_inputs,
 )
 

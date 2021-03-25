@@ -17,8 +17,10 @@
 """SuperSimulation composed object for outputting simulation results."""
 from typing import Dict, Any, List, Tuple, Optional
 import pandas as pd
-from recidiviz.calculator.modeling.population_projection import ignite_bq_utils
-from recidiviz.calculator.modeling.population_projection import spark_bq_utils
+from recidiviz.calculator.modeling.population_projection.utils import (
+    ignite_bq_utils,
+    spark_bq_utils,
+)
 from recidiviz.calculator.modeling.population_projection.simulations.super_simulation.initializer import (
     Initializer,
 )
@@ -27,14 +29,17 @@ from recidiviz.calculator.modeling.population_projection.simulations.super_simul
 class Exporter:
     """Manage model exports from SuperSimulation."""
 
-    def __init__(self, microsim: bool, compartment_costs: Dict[str, float]):
+    def __init__(
+        self, microsim: bool, compartment_costs: Dict[str, float], simulation_tag: str
+    ):
         self.microsim = microsim
         self.compartment_costs = compartment_costs
+        self.simulation_tag = simulation_tag
 
     def upload_simulation_results_to_bq(
         self,
         project_id: str,
-        simulation_tag: str,
+        simulation_tag: Optional[str],
         output_data: Dict[str, pd.DataFrame],
         excluded_pop: pd.DataFrame,
         total_pop: pd.DataFrame,
@@ -72,7 +77,7 @@ class Exporter:
                     microsim_data, excluded_pop, total_pop
                 )
             ignite_bq_utils.upload_ignite_results(
-                project_id, simulation_tag, microsim_data
+                project_id, microsim_data, self.simulation_tag
             )
             return {"microsim_data": microsim_data}
 
@@ -97,7 +102,7 @@ class Exporter:
         aggregate_output_data.index = aggregate_output_data.year
         spark_bq_utils.upload_spark_results(
             project_id,
-            simulation_tag,
+            simulation_tag if simulation_tag else self.simulation_tag,
             spending_diff,
             compartment_life_years_diff,
             aggregate_output_data,

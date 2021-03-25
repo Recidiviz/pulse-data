@@ -20,8 +20,10 @@ from warnings import warn
 from typing import Dict, Any, Union, List, Tuple, Optional
 import numpy as np
 import pandas as pd
-from recidiviz.calculator.modeling.population_projection import ignite_bq_utils
-from recidiviz.calculator.modeling.population_projection import spark_bq_utils
+from recidiviz.calculator.modeling.population_projection.utils import (
+    ignite_bq_utils,
+    spark_bq_utils,
+)
 
 
 class Initializer:

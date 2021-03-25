@@ -204,11 +204,11 @@ class TestSuperSimulation(unittest.TestCase):
     """Test the SuperSimulation object runs correctly"""
 
     @patch(
-        "recidiviz.calculator.modeling.population_projection.spark_bq_utils.load_spark_table_from_big_query",
+        "recidiviz.calculator.modeling.population_projection.utils.spark_bq_utils.load_spark_table_from_big_query",
         mock_load_table_from_big_query_macro,
     )
     @patch(
-        "recidiviz.calculator.modeling.population_projection.ignite_bq_utils.load_ignite_table_from_big_query",
+        "recidiviz.calculator.modeling.population_projection.utils.ignite_bq_utils.load_ignite_table_from_big_query",
         mock_load_table_from_big_query_micro,
     )
     def setUp(self):
@@ -231,7 +231,7 @@ class TestSuperSimulation(unittest.TestCase):
             )
 
     @patch(
-        "recidiviz.calculator.modeling.population_projection.spark_bq_utils.load_spark_table_from_big_query",
+        "recidiviz.calculator.modeling.population_projection.utils.spark_bq_utils.load_spark_table_from_big_query",
         mock_load_table_from_big_query_macro,
     )
     def test_reference_year_must_be_integer_time_steps_from_start_year(self):
@@ -246,7 +246,7 @@ class TestSuperSimulation(unittest.TestCase):
             )
 
     @patch(
-        "recidiviz.calculator.modeling.population_projection.spark_bq_utils.load_spark_table_from_big_query",
+        "recidiviz.calculator.modeling.population_projection.utils.spark_bq_utils.load_spark_table_from_big_query",
         mock_load_table_from_big_query_macro,
     )
     def test_macrosim_data_hydrated(self):
@@ -258,7 +258,7 @@ class TestSuperSimulation(unittest.TestCase):
         )
 
     @patch(
-        "recidiviz.calculator.modeling.population_projection.spark_bq_utils.upload_spark_results",
+        "recidiviz.calculator.modeling.population_projection.utils.spark_bq_utils.upload_spark_results",
         mock_upload_spark_results,
     )
     def test_cost_multipliers_multiplicative(self):
@@ -352,7 +352,7 @@ class TestSuperSimulation(unittest.TestCase):
         )
 
     @patch(
-        "recidiviz.calculator.modeling.population_projection.ignite_bq_utils.load_ignite_table_from_big_query",
+        "recidiviz.calculator.modeling.population_projection.utils.ignite_bq_utils.load_ignite_table_from_big_query",
         mock_load_table_from_big_query_no_remaining_data,
     )
     def test_using_remaining_sentences_reduces_prison_population(self):
@@ -423,7 +423,7 @@ class TestSuperSimulation(unittest.TestCase):
         )
 
     @patch(
-        "recidiviz.calculator.modeling.population_projection.ignite_bq_utils.load_ignite_table_from_big_query",
+        "recidiviz.calculator.modeling.population_projection.utils.ignite_bq_utils.load_ignite_table_from_big_query",
         mock_load_table_from_big_query_no_remaining_data,
     )
     def test_microsim_baseline_over_time_zero_error_for_first_ts(self):
@@ -444,10 +444,11 @@ class TestSuperSimulation(unittest.TestCase):
             initial_error = total_population_error.unstack("compartment").loc[
                 first_ts, "percent_error"
             ]
+            # Error should be 0 for each compartment/simulation group on the first ts
             self.assertTrue((initial_error == 0).all())
 
     @patch(
-        "recidiviz.calculator.modeling.population_projection.ignite_bq_utils.store_simulation_results"
+        "recidiviz.calculator.modeling.population_projection.utils.ignite_bq_utils.store_simulation_results"
     )
     def test_microsim_upload(self, mock_store_simulation_results):
         simulations = {

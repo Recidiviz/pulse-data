@@ -17,11 +17,13 @@
 """BigQuery Methods for the Spark population projection simulation"""
 
 import datetime
+from typing import List, Dict, Any
+
 import pandas as pd
 import pandas_gbq
 
 from recidiviz.utils.yaml_dict import YAMLDict
-from recidiviz.calculator.modeling.population_projection.bq_utils import (
+from recidiviz.calculator.modeling.population_projection.utils.bq_utils import (
     store_simulation_results,
     add_simulation_date_column,
 )
@@ -106,7 +108,9 @@ TOTAL_POPULATION_SCHEMA = [
 ]
 
 
-def _validate_schema(schema, dataframe, title: str):
+def _validate_schema(
+    schema: List[Dict[str, str]], dataframe: pd.DataFrame, title: str
+) -> None:
     "Validate that dataframes match schemas"
 
     required_columns = {item["name"] for item in schema if item["mode"] == "REQUIRED"}
@@ -137,7 +141,7 @@ def _validate_schema(schema, dataframe, title: str):
             )
 
 
-def _validate_data(project_id: str, uploads):
+def _validate_data(project_id: str, uploads: List[Dict[str, Any]]) -> None:
     "Basic validation of data in dataframes"
 
     if project_id not in ["recidiviz-staging", "recidiviz-123"]:
@@ -165,7 +169,7 @@ def _validate_data(project_id: str, uploads):
         )
 
 
-def _validate_yaml(yaml_path, uploads):
+def _validate_yaml(yaml_path: str, uploads: List[Dict[str, Any]]) -> None:
     "Validate the contents of the relevant yaml file"
 
     yaml_dict = YAMLDict.from_path(yaml_path)
@@ -210,7 +214,7 @@ def upload_spark_model_inputs(
     transitions_data_df: pd.DataFrame,
     total_population_data_df: pd.DataFrame,
     yaml_path: str,
-):
+) -> None:
     """Reformat the preprocessed model input data to match the table schema and upload them to BigQuery"""
     # Set the upload timestamp for all tables
     upload_time = datetime.datetime.now()
@@ -265,21 +269,23 @@ def upload_spark_model_inputs(
 
 
 def upload_spark_results(
-    project_id,
-    simulation_tag,
-    cost_avoidance_df,
-    life_years_df,
-    population_change_df,
-    cost_avoidance_non_cumulative_df,
-):
+    project_id: str,
+    simulation_tag: str,
+    cost_avoidance_df: pd.DataFrame,
+    life_years_df: pd.DataFrame,
+    population_change_df: pd.DataFrame,
+    cost_avoidance_non_cumulative_df: pd.DataFrame,
+) -> None:
     """Reformat the simulation results to match the table schema and upload them to BigQuery"""
 
     # Set the upload timestamp for all tables
     upload_time = datetime.datetime.now()
-    data_format_args = {"simulation_tag": simulation_tag, "upload_time": upload_time}
 
     cost_avoidance_table = format_spark_results(
-        cost_avoidance_df, "total_cost", **data_format_args
+        cost_avoidance_df,
+        "total_cost",
+        simulation_tag=simulation_tag,
+        upload_time=upload_time,
     )
     store_simulation_results(
         project_id,
@@ -290,7 +296,10 @@ def upload_spark_results(
     )
 
     cost_avoidance_non_cumulative_table = format_spark_results(
-        cost_avoidance_non_cumulative_df, "total_cost", **data_format_args
+        cost_avoidance_non_cumulative_df,
+        "total_cost",
+        simulation_tag=simulation_tag,
+        upload_time=upload_time,
     )
     store_simulation_results(
         project_id,
@@ -301,7 +310,10 @@ def upload_spark_results(
     )
 
     life_years_table = format_spark_results(
-        life_years_df, "life_years", **data_format_args
+        life_years_df,
+        "life_years",
+        simulation_tag=simulation_tag,
+        upload_time=upload_time,
     )
     store_simulation_results(
         project_id,
@@ -312,7 +324,10 @@ def upload_spark_results(
     )
 
     population_table = format_spark_results(
-        population_change_df, "population", **data_format_args
+        population_change_df,
+        "population",
+        simulation_tag=simulation_tag,
+        upload_time=upload_time,
     )
     store_simulation_results(
         project_id,
@@ -323,7 +338,12 @@ def upload_spark_results(
     )
 
 
-def format_spark_results(df, value_name, simulation_tag, upload_time):
+def format_spark_results(
+    df: pd.DataFrame,
+    value_name: str,
+    simulation_tag: str,
+    upload_time: datetime.datetime,
+) -> pd.DataFrame:
     """Change the format of the results to match the table schema with 1 row per compartment, year, and month
     `df` the pandas DataFrame to update
     `value_name` the column name to use for the values in the original results table
@@ -351,7 +371,9 @@ def format_spark_results(df, value_name, simulation_tag, upload_time):
     return df
 
 
-def load_spark_table_from_big_query(table_name: str, simulation_tag: str):
+def load_spark_table_from_big_query(
+    table_name: str, simulation_tag: str
+) -> pd.DataFrame:
     """Pull all data from a table for a specific state and run date"""
 
     query = f"""

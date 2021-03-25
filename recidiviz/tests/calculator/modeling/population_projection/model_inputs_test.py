@@ -37,11 +37,11 @@ class TestModelInputs(unittest.TestCase):
     """Test that all model inputs for population projections are valid"""
 
     @patch(
-        "recidiviz.calculator.modeling.population_projection.spark_bq_utils.load_spark_table_from_big_query",
+        "recidiviz.calculator.modeling.population_projection.utils.spark_bq_utils.load_spark_table_from_big_query",
         mock.MagicMock(return_value=pandas.DataFrame([])),
     )
     @patch(
-        "recidiviz.calculator.modeling.population_projection.ignite_bq_utils.load_ignite_table_from_big_query",
+        "recidiviz.calculator.modeling.population_projection.utils.ignite_bq_utils.load_ignite_table_from_big_query",
         mock.MagicMock(return_value=pandas.DataFrame([])),
     )
     def test_existing_model_inputs(self) -> None:

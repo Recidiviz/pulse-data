@@ -42,13 +42,18 @@ class SuperSimulationFactory:
 
     @classmethod
     def build_super_simulation(cls, yaml_file_path: str) -> SuperSimulation:
+        """Initialize a SuperSimulation object using the config defined in the YAML file"""
         model_params = cls.get_model_params(yaml_file_path)
 
         if "big_query_simulation_tag" in model_params["data_inputs_raw"].keys():
             microsim = False
+            simulation_tag = model_params["data_inputs_raw"]["big_query_simulation_tag"]
 
         elif "big_query_inputs" in model_params["data_inputs_raw"].keys():
             microsim = True
+            simulation_tag = model_params["data_inputs_raw"]["big_query_inputs"][
+                "state_code"
+            ]
 
         else:
             raise RuntimeError(
@@ -67,7 +72,7 @@ class SuperSimulationFactory:
 
         simulator = Simulator(microsim)
         validator = Validator(microsim)
-        exporter = Exporter(microsim, model_params["compartment_costs"])
+        exporter = Exporter(microsim, model_params["compartment_costs"], simulation_tag)
 
         return SuperSimulation(initializer, simulator, validator, exporter)
 

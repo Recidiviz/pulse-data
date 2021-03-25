@@ -20,8 +20,9 @@ import datetime
 import pandas as pd
 import numpy as np
 import pandas_gbq
+from pytz import timezone
 
-from recidiviz.calculator.modeling.population_projection.bq_utils import (
+from recidiviz.calculator.modeling.population_projection.utils.bq_utils import (
     store_simulation_results,
     add_simulation_date_column,
 )
@@ -42,7 +43,7 @@ MICROSIM_SCHEMA = [
 
 def load_ignite_table_from_big_query(
     project_id: str, dataset: str, table_name: str, state_code: str
-):
+) -> pd.DataFrame:
     """Pull all data from a table for a specific state and run date"""
 
     query = (
@@ -53,7 +54,7 @@ def load_ignite_table_from_big_query(
     return table_results
 
 
-def add_transition_rows(transition_data: pd.DataFrame):
+def add_transition_rows(transition_data: pd.DataFrame) -> pd.DataFrame:
     """Add rows for the RELEASE compartment transitions"""
     complete_transitions = transition_data.copy()
     for run_date in transition_data.run_date.unique():
@@ -101,7 +102,7 @@ def add_transition_rows(transition_data: pd.DataFrame):
     return complete_transitions
 
 
-def add_remaining_sentence_rows(remaining_sentence_data: pd.DataFrame):
+def add_remaining_sentence_rows(remaining_sentence_data: pd.DataFrame) -> pd.DataFrame:
     """Add rows for the RELEASE compartment sentences and set the remaining_duration column to True"""
     complete_remaining = remaining_sentence_data.copy()
     for run_date in remaining_sentence_data.run_date.unique():
@@ -122,16 +123,18 @@ def add_remaining_sentence_rows(remaining_sentence_data: pd.DataFrame):
     return complete_remaining
 
 
-def upload_ignite_results(project_id, simulation_tag, microsim_population_df):
+def upload_ignite_results(
+    project_id: str, microsim_population_df: pd.DataFrame, state_code: str
+) -> None:
     """Reformat the simulation results to match the table schema and upload them to BigQuery"""
 
-    # Set the upload timestamp for all tables
-    upload_time = datetime.datetime.now()
+    # Set the upload timestamp for the population output to the current time in PST
+    upload_time = datetime.datetime.now(tz=timezone("US/Pacific"))
 
     microsim_population_df = add_simulation_date_column(microsim_population_df)
 
     # Add metadata columns to the output table
-    microsim_population_df["simulation_tag"] = simulation_tag
+    microsim_population_df["simulation_tag"] = state_code
     microsim_population_df["date_created"] = upload_time
 
     store_simulation_results(
