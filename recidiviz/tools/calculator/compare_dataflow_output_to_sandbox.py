@@ -85,8 +85,9 @@ This can be run on-demand whenever locally with the following command:
 
 import argparse
 import logging
+import os
 import sys
-from typing import Tuple, List, Type
+from typing import Tuple, List, Type, cast
 
 from google.cloud import bigquery
 from google.cloud.bigquery import QueryJob
@@ -96,17 +97,21 @@ from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.view_update_manager import (
     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
 )
+from recidiviz.calculator import pipeline as pipeline_module
 from recidiviz.calculator.dataflow_output_storage_config import (
     DATAFLOW_METRICS_TO_TABLES,
-    DATAFLOW_TABLES_TO_METRIC_TYPES,
 )
 from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
-from recidiviz.tools.pipeline_launch_util import PRODUCTION_TEMPLATES_PATH
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.yaml_dict import YAMLDict
 
+
+PRODUCTION_TEMPLATES_PATH = os.path.join(
+    os.path.dirname(pipeline_module.__file__),
+    "production_calculation_pipeline_templates.yaml",
+)
 
 OUTPUT_COMPARISON_TEMPLATE = """
     WITH base_output AS (
@@ -217,7 +222,15 @@ def compare_dataflow_output_to_sandbox(
             metric_types_for_comparison = pipeline_metric_types.split()
 
             for metric_class, metric_table in DATAFLOW_METRICS_TO_TABLES.items():
-                metric_type_value = DATAFLOW_TABLES_TO_METRIC_TYPES[metric_table].value
+                # Hack to get the value of the metric_type on this RecidivizMetric class
+                metric_instance = cast(
+                    RecidivizMetric,
+                    metric_class.build_from_dictionary(
+                        {"job_id": "xxx", "state_code": "US_XX"}
+                    ),
+                )
+
+                metric_type_value = metric_instance.metric_type.value
 
                 if metric_type_value in metric_types_for_comparison:
                     comparison_query = _query_for_metric_comparison(
@@ -226,6 +239,7 @@ def compare_dataflow_output_to_sandbox(
                         sandbox_output_job_id,
                         sandbox_dataflow_dataset_id,
                         metric_class,
+                        metric_instance,
                         metric_table,
                         additional_columns_to_compare,
                     )
@@ -289,6 +303,7 @@ def _query_for_metric_comparison(
     sandbox_output_job_id: str,
     sandbox_dataflow_dataset_id: str,
     metric_class: Type[RecidivizMetric],
+    metric_instance: RecidivizMetric,
     metric_table: str,
     additional_columns_to_compare: List[str],
 ) -> str:
@@ -301,7 +316,9 @@ def _query_for_metric_comparison(
 
     if additional_columns_to_compare:
         applicable_columns = [
-            col for col in additional_columns_to_compare if hasattr(metric_class, col)
+            col
+            for col in additional_columns_to_compare
+            if hasattr(metric_instance, col)
         ]
 
         if applicable_columns:

@@ -17,29 +17,26 @@
 """Manages the storage of data produced by calculations."""
 import logging
 import datetime
-from collections import defaultdict
 from http import HTTPStatus
-from typing import Tuple, Dict
+from typing import Tuple
 
 import flask
 from google.cloud.bigquery import WriteDisposition
-from google.cloud.bigquery.table import TableListItem
 from more_itertools import peekable
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.calculator import dataflow_output_storage_config
-from recidiviz.tools import pipeline_launch_util
+from recidiviz.calculator.dataflow_output_storage_config import (
+    DATAFLOW_METRICS_COLD_STORAGE_DATASET,
+    MAX_DAYS_IN_DATAFLOW_METRICS_TABLE,
+)
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
 
-from recidiviz.utils.yaml_dict import YAMLDict
-
 # Datasets must be at least 12 hours old to be deleted
 DATASET_DELETION_MIN_SECONDS = 12 * 60 * 60
-
 
 calculation_data_storage_manager_blueprint = flask.Blueprint(
     "calculation_data_storage_manager", __name__
@@ -86,182 +83,36 @@ def _delete_empty_datasets() -> None:
             bq_client.delete_dataset(dataset_ref)
 
 
-def _get_month_range_for_metric_and_state() -> Dict[str, Dict[str, int]]:
-    """Determines the maximum number of months that each metric is calculated regularly
-    for each state.
-
-    Returns a dictionary in the format: {
-        metric_table: {
-                        state_code: int,
-                        state_code: int
-                      }
-        }
-    where the int values are the number of months for which the metric is regularly
-    calculated for that state.
-    """
-    # Map metric type enum values to the corresponding tables in BigQuery
-    metric_type_to_table: Dict[str, str] = {
-        metric_type.value: table
-        for table, metric_type in dataflow_output_storage_config.DATAFLOW_TABLES_TO_METRIC_TYPES.items()
-    }
-
-    all_pipelines = YAMLDict.from_path(pipeline_launch_util.PRODUCTION_TEMPLATES_PATH)
-    daily_pipelines = all_pipelines.pop_dicts("daily_pipelines")
-    historical_pipelines = all_pipelines.pop_dicts("historical_pipelines")
-
-    # Dict with the format: {metric_table: {state_code: int}}
-    month_range_for_metric_and_state: Dict[str, Dict[str, int]] = defaultdict(
-        lambda: defaultdict(int)
-    )
-
-    for pipeline_config_group in [daily_pipelines, historical_pipelines]:
-        for pipeline_config in pipeline_config_group:
-            if (
-                pipeline_config.pop("pipeline", str)
-                in pipeline_launch_util.ALWAYS_UNBOUNDED_DATE_PIPELINES
-            ):
-                # This pipeline is always run in full, and is handled separately
-                continue
-
-            metrics = pipeline_config.pop("metric_types", str)
-            calculation_month_count = pipeline_config.pop(
-                "calculation_month_count", int
-            )
-            state_code = pipeline_config.pop("state_code", str)
-
-            for metric in metrics.split(" "):
-                metric_table = metric_type_to_table[metric]
-                current_max = month_range_for_metric_and_state[metric_table][state_code]
-                month_range_for_metric_and_state[metric_table][state_code] = max(
-                    current_max, calculation_month_count
-                )
-
-    return month_range_for_metric_and_state
-
-
-SOURCE_DATA_JOIN_CLAUSE_NO_MONTH_LIMIT_TEMPLATE = """LEFT JOIN
-            (-- Job_ids that are the most recent for the given metric/state_code
-            SELECT DISTINCT job_id as keep_job_id FROM
-                `{project_id}.{materialized_metrics_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
-            WHERE metric_type = '{metric_type}'
-            )
-        ON job_id = keep_job_id
-        LEFT JOIN 
-          (SELECT DISTINCT created_on AS keep_created_date FROM
-          `{project_id}.{dataflow_metrics_dataset}.{table_id}`
-          ORDER BY created_on DESC
-          LIMIT {day_count_limit})
-        ON created_on = keep_created_date"""
-
-
-SOURCE_DATA_JOIN_CLAUSE_WITH_MONTH_LIMIT_TEMPLATE = """LEFT JOIN
-            (WITH ordered_months AS (
-                -- All months in the output for the state, ordered by recency
-                SELECT *, RANK() OVER (PARTITION BY state_code ORDER BY DATE(year, month, 1) DESC) as month_order 
-                FROM
-                (SELECT DISTINCT state_code, year, month
-                FROM `{project_id}.{dataflow_metrics_dataset}.{table_id}`)
-            ), month_limit_by_state AS (
-                {month_limit_by_state}
-            ), months_in_range AS (
-                -- Only the months that are in range remain
-                SELECT
-                    ordered_months.state_code,
-                    ordered_months.year,
-                    ordered_months.month
-                FROM
-                    month_limit_by_state
-                LEFT JOIN 
-                    ordered_months
-                ON month_limit_by_state.state_code = ordered_months.state_code
-                 AND ordered_months.month_order <= month_limit_by_state.month_limit
-            )
-        
-            -- Job_ids that are the most recent for the given metric/state_code/year/month and are in the month range
-            SELECT DISTINCT job_id as keep_job_id FROM
-                months_in_range
-            LEFT JOIN
-                `{project_id}.{materialized_metrics_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
-            USING (state_code, year, month)
-            WHERE metric_type = '{metric_type}'
-            )
-        ON job_id = keep_job_id
-        LEFT JOIN 
-          (SELECT DISTINCT created_on AS keep_created_date FROM
-          `{project_id}.{dataflow_metrics_dataset}.{table_id}`
-          ORDER BY created_on DESC
-          LIMIT {day_count_limit})
-        ON created_on = keep_created_date"""
-
-
 def move_old_dataflow_metrics_to_cold_storage() -> None:
-    """Moves old output in Dataflow metrics tables to tables in a cold storage dataset.
-    We only keep the MAX_DAYS_IN_DATAFLOW_METRICS_TABLE days worth of data in a Dataflow
-    metric table at once. All other output is moved to cold storage, unless it is the
-    most recent job_id for a metric in a state where that metric is regularly calculated,
-    and where the year and month of the output falls into the window of what is regularly
-    calculated for that metric and state. See the production_calculation_pipeline_templates.yaml
-    file for a list of regularly scheduled calculations.
-
-    If a metric has been entirely decommissioned, handles the deletion of the corresponding table.
+    """Moves old output in Dataflow metrics tables to tables in a cold storage dataset. We only keep the
+    MAX_DAYS_IN_DATAFLOW_METRICS_TABLE days worth of data in a Dataflow metric table at once. All other
+    output is moved to cold storage.
     """
     bq_client = BigQueryClientImpl()
     dataflow_metrics_dataset = DATAFLOW_METRICS_DATASET
-    cold_storage_dataset = (
-        dataflow_output_storage_config.DATAFLOW_METRICS_COLD_STORAGE_DATASET
-    )
+    cold_storage_dataset = DATAFLOW_METRICS_COLD_STORAGE_DATASET
     dataflow_metrics_tables = bq_client.list_tables(dataflow_metrics_dataset)
-
-    month_range_for_metric_and_state = _get_month_range_for_metric_and_state()
 
     for table_ref in dataflow_metrics_tables:
         table_id = table_ref.table_id
 
-        if (
-            table_id
-            not in dataflow_output_storage_config.DATAFLOW_TABLES_TO_METRIC_TYPES
-        ):
-            # This metric has been deprecated. Handle the deletion of the table
-            _decommission_dataflow_metric_table(bq_client, table_ref)
-            continue
-
-        metric_type = dataflow_output_storage_config.DATAFLOW_TABLES_TO_METRIC_TYPES[
-            table_id
-        ].value
-
-        is_unbounded_date_pipeline = any(
-            pipeline in table_id
-            for pipeline in pipeline_launch_util.ALWAYS_UNBOUNDED_DATE_PIPELINES
+        source_data_join_clause = """LEFT JOIN
+                          (SELECT DISTINCT job_id AS keep_job_id FROM
+                          `{project_id}.{materialized_metrics_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`)
+                        ON job_id = keep_job_id
+                        LEFT JOIN 
+                          (SELECT DISTINCT created_on AS keep_created_date FROM
+                          `{project_id}.{dataflow_metrics_dataset}.{table_id}`
+                          ORDER BY created_on DESC
+                          LIMIT {day_count_limit})
+                        ON created_on = keep_created_date
+                        """.format(
+            project_id=table_ref.project,
+            dataflow_metrics_dataset=table_ref.dataset_id,
+            materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
+            table_id=table_id,
+            day_count_limit=MAX_DAYS_IN_DATAFLOW_METRICS_TABLE,
         )
-
-        if is_unbounded_date_pipeline:
-            source_data_join_clause = SOURCE_DATA_JOIN_CLAUSE_NO_MONTH_LIMIT_TEMPLATE.format(
-                project_id=table_ref.project,
-                dataflow_metrics_dataset=table_ref.dataset_id,
-                materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
-                table_id=table_id,
-                day_count_limit=dataflow_output_storage_config.MAX_DAYS_IN_DATAFLOW_METRICS_TABLE,
-                metric_type=metric_type,
-            )
-        else:
-            month_limit_by_state = "\nUNION ALL\n".join(
-                [
-                    f"SELECT '{state_code}' as state_code, {month_limit} as month_limit"
-                    for state_code, month_limit in month_range_for_metric_and_state[
-                        table_id
-                    ].items()
-                ]
-            )
-
-            source_data_join_clause = SOURCE_DATA_JOIN_CLAUSE_WITH_MONTH_LIMIT_TEMPLATE.format(
-                project_id=table_ref.project,
-                dataflow_metrics_dataset=table_ref.dataset_id,
-                materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
-                table_id=table_id,
-                day_count_limit=dataflow_output_storage_config.MAX_DAYS_IN_DATAFLOW_METRICS_TABLE,
-                month_limit_by_state=month_limit_by_state,
-                metric_type=metric_type,
-            )
 
         # Exclude these columns leftover from the exclusion join from being added to the metric tables in cold storage
         columns_to_exclude_from_transfer = ["keep_job_id", "keep_created_date"]
@@ -320,39 +171,3 @@ def move_old_dataflow_metrics_to_cold_storage() -> None:
 
         # Wait for the replace job to complete before moving on
         replace_job.result()
-
-
-def _decommission_dataflow_metric_table(
-    bq_client: BigQueryClientImpl, table_ref: TableListItem
-) -> None:
-    """Decommissions a deprecated Dataflow metric table. Moves all remaining rows
-    to cold storage and deletes the table in the DATAFLOW_METRICS_DATASET."""
-    logging.info("Decommissioning Dataflow metric table: [%s]", table_ref.table_id)
-
-    dataflow_metrics_dataset = DATAFLOW_METRICS_DATASET
-    cold_storage_dataset = (
-        dataflow_output_storage_config.DATAFLOW_METRICS_COLD_STORAGE_DATASET
-    )
-    table_id = table_ref.table_id
-
-    # Move all rows in the table to cold storage
-    insert_query = (
-        """SELECT * FROM `{project_id}.{dataflow_metrics_dataset}.{table_id}""".format(
-            project_id=table_ref.project,
-            dataflow_metrics_dataset=dataflow_metrics_dataset,
-            table_id=table_id,
-        )
-    )
-
-    insert_job = bq_client.insert_into_table_from_query(
-        destination_dataset_id=cold_storage_dataset,
-        destination_table_id=table_id,
-        query=insert_query,
-        allow_field_additions=True,
-        write_disposition=WriteDisposition.WRITE_APPEND,
-    )
-
-    # Wait for the insert job to complete before deleting the table
-    insert_job.result()
-
-    bq_client.delete_table(dataset_id=dataflow_metrics_dataset, table_id=table_id)
