@@ -27,7 +27,7 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
 from recidiviz.utils.segment_client import SegmentClient
 
 
-def _segment_user_id_for_email(email: str) -> str:
+def segment_user_id_for_email(email: str) -> str:
     email_as_bytes = email.lower().encode("ascii")
     digest = sha256(email_as_bytes).digest()
     return b64encode(digest).decode("utf-8")
@@ -43,7 +43,7 @@ class CaseTriageSegmentClient(SegmentClient):
         previous_action_set: List[CaseUpdateActionType],
         new_action_set: List[CaseUpdateActionType],
     ) -> None:
-        user_id = _segment_user_id_for_email(officer.email_address)
+        user_id = segment_user_id_for_email(officer.email_address)
         self.track(
             user_id,
             "backend.person_case_updated",
