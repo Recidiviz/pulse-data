@@ -22,14 +22,17 @@ from recidiviz.calculator.pipeline.incarceration.metrics import (
     IncarcerationAdmissionMetric,
     IncarcerationPopulationMetric,
     IncarcerationReleaseMetric,
+    IncarcerationMetricType,
 )
 from recidiviz.calculator.pipeline.program.metrics import (
     ProgramReferralMetric,
     ProgramParticipationMetric,
+    ProgramMetricType,
 )
 from recidiviz.calculator.pipeline.recidivism.metrics import (
     ReincarcerationRecidivismCountMetric,
     ReincarcerationRecidivismRateMetric,
+    ReincarcerationRecidivismMetricType,
 )
 from recidiviz.calculator.pipeline.supervision.metrics import (
     SupervisionPopulationMetric,
@@ -41,8 +44,12 @@ from recidiviz.calculator.pipeline.supervision.metrics import (
     SupervisionStartMetric,
     SupervisionOutOfStatePopulationMetric,
     SupervisionDowngradeMetric,
+    SupervisionMetricType,
 )
-from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
+from recidiviz.calculator.pipeline.utils.metric_utils import (
+    RecidivizMetric,
+    RecidivizMetricType,
+)
 
 # The maximum number days of output that should be stored in a dataflow metrics table before being moved to cold storage
 MAX_DAYS_IN_DATAFLOW_METRICS_TABLE: int = 7
@@ -73,4 +80,28 @@ DATAFLOW_METRICS_TO_TABLES: Dict[Type[RecidivizMetric], str] = {
     SupervisionSuccessMetric: "supervision_success_metrics",
     SuccessfulSupervisionSentenceDaysServedMetric: "successful_supervision_sentence_days_served_metrics",
     SupervisionTerminationMetric: "supervision_termination_metrics",
+}
+
+# A map from the BigQuery Dataflow metric table to the RecidivizMetricType stored in the table
+DATAFLOW_TABLES_TO_METRIC_TYPES: Dict[str, RecidivizMetricType] = {
+    # IncarcerationMetrics
+    "incarceration_admission_metrics": IncarcerationMetricType.INCARCERATION_ADMISSION,
+    "incarceration_population_metrics": IncarcerationMetricType.INCARCERATION_POPULATION,
+    "incarceration_release_metrics": IncarcerationMetricType.INCARCERATION_RELEASE,
+    # ProgramMetrics
+    "program_referral_metrics": ProgramMetricType.PROGRAM_REFERRAL,
+    "program_participation_metrics": ProgramMetricType.PROGRAM_PARTICIPATION,
+    # ReincarcerationRecidivismMetrics
+    "recidivism_count_metrics": ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT,
+    "recidivism_rate_metrics": ReincarcerationRecidivismMetricType.REINCARCERATION_RATE,
+    # SupervisionMetrics
+    "supervision_case_compliance_metrics": SupervisionMetricType.SUPERVISION_COMPLIANCE,
+    "supervision_downgrade_metrics": SupervisionMetricType.SUPERVISION_DOWNGRADE,
+    "supervision_out_of_state_population_metrics": SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION,
+    "supervision_population_metrics": SupervisionMetricType.SUPERVISION_POPULATION,
+    "supervision_revocation_metrics": SupervisionMetricType.SUPERVISION_REVOCATION,
+    "supervision_start_metrics": SupervisionMetricType.SUPERVISION_START,
+    "supervision_success_metrics": SupervisionMetricType.SUPERVISION_SUCCESS,
+    "successful_supervision_sentence_days_served_metrics": SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED,
+    "supervision_termination_metrics": SupervisionMetricType.SUPERVISION_TERMINATION,
 }
