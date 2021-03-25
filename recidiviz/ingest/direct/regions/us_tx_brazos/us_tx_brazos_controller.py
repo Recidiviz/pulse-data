@@ -40,7 +40,7 @@ class UsTxBrazosController(CsvGcsfsDirectIngestController):
 
     @classmethod
     def region_code(cls) -> str:
-        return "us_tn"
+        return "us_tx_brazos"
 
     @classmethod
     def system_level(cls) -> SystemLevel:

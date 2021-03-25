@@ -168,6 +168,7 @@ class DirectIngestRegionDirStructureBase:
                     region
                 )
                 self.test.assertIsNotNone(controller_class)
+                self.test.assertEqual(region_code, controller_class.region_code())
 
     def test_region_controller_builds(self) -> None:
         for region_code in self.region_dir_names:
