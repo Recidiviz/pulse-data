@@ -15,7 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""A script which will be called using a pre-commit githook to generate portions of a State Ingest Specification."""
+"""A script which will be called using a pre-commit githook to generate portions of a State Ingest Specification.
+
+Can be run on-demand via:
+    $ pipenv run python -m recidiviz.tools.docs.documentation_generator
+"""
 
 import logging
 import os
@@ -23,44 +27,130 @@ import subprocess
 import sys
 
 import argparse
+from os import listdir
+from os.path import isdir, join, isfile
 from typing import List, Optional, Sequence, Set
 
 import recidiviz
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import regions as regions_module
 from recidiviz.ingest.direct.direct_ingest_documentation_generator import (
     DirectIngestDocumentationGenerator,
+    STATE_RAW_DATA_FILE_HEADER_PATH,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 
+_INGEST_CATALOG_ROOT = "docs/ingest"
+
+
 def generate_raw_data_documentation_for_region(region_code: str) -> bool:
     """
     Parses the files available under `recidiviz/ingest/direct/regions/{region_code}/raw_data/` to produce documentation
-    which is suitable to be added to the region ingest specification. Overwrites or creates the markdown file
-    for a given region.
+    which is suitable to be added to the region ingest specification. Overwrites or creates one Markdown file
+    per raw data file, plus one additional header file, for a given region.
 
     Returns True if files were modified, False otherwise.
     """
     documentation_generator = DirectIngestDocumentationGenerator()
-    documentation = documentation_generator.generate_raw_file_docs_for_region(
+    docs_per_file = documentation_generator.generate_raw_file_docs_for_region(
         region_code.lower()
     )
-    ingest_docs_path = "docs/ingest"
-    markdown_dir_path = os.path.join(ingest_docs_path, region_code.lower())
-    os.makedirs(markdown_dir_path, exist_ok=True)
-    markdown_file_path = os.path.join(markdown_dir_path, "raw_data.md")
+    markdown_dir_path = os.path.join(_INGEST_CATALOG_ROOT, region_code.lower())
+    os.makedirs(os.path.join(markdown_dir_path, "raw_data"), exist_ok=True)
 
-    prior_documentation = None
-    if os.path.exists(markdown_file_path):
-        with open(markdown_file_path, "r") as raw_data_md_file:
-            prior_documentation = raw_data_md_file.read()
+    anything_modified = False
+    for file_path, file_contents in docs_per_file.items():
+        if file_path == STATE_RAW_DATA_FILE_HEADER_PATH:
+            markdown_file_path = os.path.join(markdown_dir_path, file_path)
+        else:
+            markdown_file_path = os.path.join(markdown_dir_path, "raw_data", file_path)
 
-    if prior_documentation != documentation:
-        with open(markdown_file_path, "w") as raw_data_md_file:
-            raw_data_md_file.write(documentation)
-            return True
-    return False
+        prior_documentation = None
+        if os.path.exists(markdown_file_path):
+            with open(markdown_file_path, "r") as raw_data_md_file:
+                prior_documentation = raw_data_md_file.read()
+
+        if prior_documentation != file_contents:
+            with open(markdown_file_path, "w") as raw_data_md_file:
+                raw_data_md_file.write(file_contents)
+                anything_modified = True
+
+    return anything_modified
+
+
+def _create_ingest_catalog_summary() -> List[str]:
+    """Creates the State Ingest Catalog portion of SUMMARY.md, as a list of lines."""
+    ingest_catalog_states = sorted(
+        [
+            f.lower()
+            for f in listdir(_INGEST_CATALOG_ROOT)
+            if isdir(join(_INGEST_CATALOG_ROOT, f))
+        ]
+    )
+
+    ingest_catalog_summary = ["## State Ingest Catalog\n\n"]
+
+    for state in ingest_catalog_states:
+        if StateCode.is_state_code(state):
+            state_code = StateCode(state.upper())
+            state_name = state_code.get_state()
+        else:
+            raise ValueError(
+                f"Folder under {_INGEST_CATALOG_ROOT} named {state} is not a valid state code"
+            )
+
+        ingest_catalog_summary.extend(
+            [
+                f"- [{state_name}](ingest/{state}/{state}.md)\n",
+                f"  - [Schema Mappings](ingest/{state}/schema_mappings.md)\n",
+                f"  - [Raw Data Description](ingest/{state}/raw_data.md)\n",
+            ]
+        )
+
+        raw_data_dir = join(_INGEST_CATALOG_ROOT, state, "raw_data")
+        raw_data_files = sorted(
+            [f for f in listdir(raw_data_dir) if isfile(join(raw_data_dir, f))]
+        )
+
+        for file_name in raw_data_files:
+            ingest_catalog_summary.append(
+                f"    - [{file_name[:-3]}](ingest/{state}/raw_data/{file_name})\n"
+            )
+    return ingest_catalog_summary
+
+
+def update_summary_file() -> None:
+    """Updates the docs/SUMMARY.md file to ensure the contents are up-to-date."""
+    ingest_catalog_summary = _create_ingest_catalog_summary()
+
+    summary_path = "docs/SUMMARY.md"
+    with open(summary_path, "r") as summary_file:
+        summary_contents = summary_file.readlines()
+
+    remove_from = next(
+        i
+        for i, line in enumerate(summary_contents)
+        if "## State Ingest Catalog" in line
+    )
+    remove_up_until = (
+        next(
+            i
+            for i, line in enumerate(
+                summary_contents[remove_from + 1 : len(summary_contents)]
+            )
+            if line.startswith("#")
+        )
+        + remove_from
+    )
+
+    updated_summary = summary_contents[:remove_from]
+    updated_summary.extend(ingest_catalog_summary)
+    updated_summary.extend(summary_contents[remove_up_until : len(summary_contents)])
+
+    with open(summary_path, "w") as summary_file:
+        summary_file.write("".join(updated_summary))
 
 
 def get_touched_raw_data_regions(touched_files: Optional[List[str]]) -> Set[str]:
@@ -114,6 +204,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 "Generating raw data documentation for region [%s]", region_code
             )
             modified |= generate_raw_data_documentation_for_region(region_code)
+        if modified:
+            update_summary_file()
         return 1 if modified else 0
 
 

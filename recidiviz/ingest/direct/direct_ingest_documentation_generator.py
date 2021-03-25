@@ -45,12 +45,19 @@ found in `{state_code_lower}_raw_data_up_to_date_views`.
 """
 
 
+STATE_RAW_DATA_FILE_HEADER_PATH = "raw_data.md"
+
+
 class DirectIngestDocumentationGenerator:
     """A class for generating documentation about our direct ingest integrations."""
 
-    def generate_raw_file_docs_for_region(self, region_code: str) -> str:
-        """Generates documentation for all raw file configs for the given region and returns all of it
-        as a combined string."""
+    def generate_raw_file_docs_for_region(self, region_code: str) -> Dict[str, str]:
+        """Generates documentation for all raw file configs for the given region and
+        returns all of it as a combined string.
+
+        Returns one Markdown-formatted string per raw file, mapped to its filename, as
+        well as a header file with a table of contents.
+        """
         region_config = DirectIngestRegionRawFileConfig(region_code=region_code)
 
         sorted_file_tags = sorted(region_config.raw_file_tags)
@@ -93,11 +100,16 @@ class DirectIngestDocumentationGenerator:
             touched_configs,
         )
 
-        docs_per_file = [
-            self._generate_docs_for_raw_config(config) for config in raw_file_configs
-        ]
+        docs_per_file: Dict[str, str] = {
+            f"{config.file_tag}.md": self._generate_docs_for_raw_config(config)
+            for config in raw_file_configs
+        }
 
-        return file_header + "\n" + raw_file_table + "\n" + "\n\n".join(docs_per_file)
+        docs_per_file[STATE_RAW_DATA_FILE_HEADER_PATH] = (
+            file_header + "\n" + raw_file_table
+        )
+
+        return docs_per_file
 
     @staticmethod
     def _get_touched_raw_data_configs(yaml_config_file_dir: str) -> List[str]:
@@ -173,7 +185,7 @@ class DirectIngestDocumentationGenerator:
         table_matrix = [
             [
                 (
-                    f"[{file_tag}](#{file_tag})"
+                    f"[{file_tag}](raw_data/{file_tag}.md)"
                     if file_tag in file_tags_with_raw_file_configs
                     else f"{file_tag}"
                 ),
