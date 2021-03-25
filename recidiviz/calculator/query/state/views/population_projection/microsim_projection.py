@@ -39,34 +39,39 @@ MICROSIM_PROJECTION_QUERY_TEMPLATE = """
           state_code,
           date,
           compartment_level_1 AS compartment,
-          IF(compartment_level_2 = 'DUAL', 'PAROLE', compartment_level_2) AS legal_status,
-          gender,
+          legal_status,
+          simulation_group,
           COUNT(DISTINCT person_id) AS total_population
       FROM `{project_id}.{analyst_dataset}.compartment_sub_sessions_materialized`  sessions
       INNER JOIN historical_dates
-        ON historical_dates.date BETWEEN sessions.start_date AND COALESCE(sessions.end_date, '9999-01-01')
-      WHERE state_code = 'US_ID'
+        ON historical_dates.date BETWEEN sessions.start_date AND COALESCE(sessions.end_date, '9999-01-01'),
+      UNNEST(['ALL', IF(compartment_level_2 = 'DUAL', 'PAROLE', compartment_level_2)]) AS legal_status,
+      UNNEST(['ALL', gender]) AS simulation_group
+      WHERE state_code IN ('US_ID', 'US_ND')
         AND gender IN ('FEMALE', 'MALE')
-        AND compartment_level_1 = 'SUPERVISION'
+        AND ((compartment_level_1 = 'SUPERVISION' AND metric_source = 'SUPERVISION_POPULATION')
+            OR (compartment_level_1 = 'INCARCERATION' AND state_code = 'US_ND')
+        )
         AND compartment_level_2 != 'OTHER'
-        AND metric_source = 'SUPERVISION_POPULATION'
-      GROUP BY state_code, date, compartment, legal_status, gender
+      GROUP BY state_code, date, compartment, legal_status, simulation_group
     ),
     historical_incarceration_population_output AS (
       SELECT
         state_code,
         report_month AS date,
         compartment_level_1 AS compartment,
-        compartment_level_2 AS legal_status,
-        gender,
+        legal_status,
+        simulation_group,
         COUNT(DISTINCT person_id) AS total_population
       FROM `{project_id}.{population_projection_dataset}.us_id_monthly_paid_incarceration_population` inc_pop
       INNER JOIN historical_dates
-        ON historical_dates.date = inc_pop.report_month
+        ON historical_dates.date = inc_pop.report_month,
+      UNNEST(['ALL', compartment_level_2]) AS legal_status,
+      UNNEST(['ALL', gender]) AS simulation_group
       WHERE state_code = 'US_ID'
         AND gender IN ('FEMALE', 'MALE')
         AND compartment_level_2 != 'OTHER'
-      GROUP BY state_code, date, compartment, legal_status, gender
+      GROUP BY state_code, date, compartment, legal_status, simulation_group
     ),
     most_recent_results AS (
       SELECT
@@ -75,35 +80,39 @@ MICROSIM_PROJECTION_QUERY_TEMPLATE = """
       GROUP BY simulation_tag
     )
     SELECT
-      simulation_tag,
+      simulation_tag AS state_code,
+      "BASELINE" AS simulation_tag,
       date_created,
       simulation_date,
       EXTRACT(YEAR FROM simulation_date) AS year,
       EXTRACT(MONTH FROM simulation_date) AS month,
       SPLIT(compartment, ' ')[OFFSET(0)] AS compartment,
-      IF(SPLIT(compartment, ' ')[OFFSET(2)] = 'RE-INCARCERATION', 'GENERAL', SPLIT(compartment, ' ')[OFFSET(2)]) AS legal_status,
+      legal_status,
       simulation_group,
       SUM(total_population) AS total_population,
       SUM(total_population_min) AS total_population_min,
       SUM(total_population_max) AS total_population_max,
     FROM `{project_id}.{population_projection_output_dataset}.microsim_projection_raw`
     INNER JOIN most_recent_results
-    USING (simulation_tag, date_created)
+    USING (simulation_tag, date_created),
+    UNNEST(['ALL', simulation_group]) AS simulation_group,
+    UNNEST(['ALL', IF(SPLIT(compartment, ' ')[OFFSET(2)] = 'RE-INCARCERATION', 'GENERAL', SPLIT(compartment, ' ')[OFFSET(2)])]) AS legal_status
     WHERE compartment NOT LIKE 'RELEASE%'
       AND simulation_date > DATE_TRUNC(DATE_SUB(CURRENT_DATE, INTERVAL 1 MONTH), MONTH)
-    GROUP BY simulation_tag, date_created, simulation_date, year, month, compartment, legal_status, simulation_group
+    GROUP BY state_code, date_created, simulation_date, year, month, compartment, legal_status, simulation_group
 
     UNION ALL
 
     SELECT
-        state_code AS simulation_tag,
+        state_code,
+        "HISTORICAL" AS simulation_tag,
         NULL AS date_created,
         date AS simulation_date,
         EXTRACT(YEAR FROM date) AS year,
         EXTRACT(MONTH FROM date) AS month,
         compartment,
         legal_status,
-        gender AS simulation_group,
+        simulation_group,
         total_population,
         total_population AS total_population_min,
         total_population AS total_population_max
@@ -112,20 +121,21 @@ MICROSIM_PROJECTION_QUERY_TEMPLATE = """
     UNION ALL
 
     SELECT
-        state_code AS simulation_tag,
+        state_code, 
+        "HISTORICAL" AS simulation_tag,
         NULL AS date_created,
         date AS simulation_date,
         EXTRACT(YEAR FROM date) AS year,
         EXTRACT(MONTH FROM date) AS month,
         compartment,
         legal_status,
-        gender AS simulation_group,
+        simulation_group,
         total_population,
         total_population AS total_population_min,
         total_population AS total_population_max
     FROM historical_incarceration_population_output
 
-    ORDER BY compartment, legal_status, simulation_group, simulation_date
+    ORDER BY state_code, compartment, legal_status, simulation_group, simulation_date
     """
 
 MICROSIM_PROJECTION_VIEW_BUILDER = SimpleBigQueryViewBuilder(

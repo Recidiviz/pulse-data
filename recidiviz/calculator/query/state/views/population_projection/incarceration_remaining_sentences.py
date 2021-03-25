@@ -96,7 +96,7 @@ REMAINING_SENTENCES_QUERY_TEMPLATE = """
     FROM incarceration_cte
     JOIN incarceration_distribution_cte
       USING (state_code, compartment, run_date)
-    WHERE state_code IN ('US_ID', 'US_ND')
+    WHERE state_code = 'US_ID'
         AND incarceration_cte.gender IN ('FEMALE', 'MALE')
         AND incarceration_cte.compartment_duration > 0
     GROUP BY 1,2,3,4,5,6

@@ -22,7 +22,7 @@ from typing import Any
 from math import nan
 import pandas as pd
 
-from recidiviz.calculator.modeling.population_projection.spark_bq_utils import (
+from recidiviz.calculator.modeling.population_projection.utils.spark_bq_utils import (
     upload_spark_model_inputs,
 )
 
@@ -284,7 +284,7 @@ class TestSparkBQUtils(unittest.TestCase):
         )
 
     @patch(
-        "recidiviz.calculator.modeling.population_projection.spark_bq_utils.store_simulation_results"
+        "recidiviz.calculator.modeling.population_projection.utils.spark_bq_utils.store_simulation_results"
     )
     def test_upload_spark_model_inputs_with_valid_inputs(self, mock_store: Any) -> None:
         upload_spark_model_inputs(

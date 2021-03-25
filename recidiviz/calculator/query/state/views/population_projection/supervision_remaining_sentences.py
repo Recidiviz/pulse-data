@@ -33,7 +33,10 @@ REMAINING_SENTENCES_QUERY_TEMPLATE = """
       SELECT
         sessions.state_code,
         run_date,
-        compartment,
+        CASE
+              WHEN sessions.compartment = 'INCARCERATION - GENERAL' AND sessions.previously_incarcerated THEN 'INCARCERATION - RE-INCARCERATION'
+              ELSE sessions.compartment
+            END AS compartment,
         gender,
         sessions.person_id,
         transitions.compartment_duration - GREATEST(DATE_DIFF(run_dates.run_date, sessions.start_date, MONTH), 1) AS remaining_compartment_duration,
@@ -50,7 +53,7 @@ REMAINING_SENTENCES_QUERY_TEMPLATE = """
     --    ON sentences.person_id = sessions.person_id
     --    AND sentences.session_id = sessions.session_id
       WHERE sessions.state_code IN ('US_ID', 'US_ND')
-        AND compartment LIKE 'SUPERVISION%'
+        AND (compartment LIKE 'SUPERVISION%' OR state_code = 'US_ND')
         AND gender in ('MALE', 'FEMALE')
         AND GREATEST(DATE_DIFF(run_dates.run_date, sessions.start_date, MONTH), 1) < transitions.compartment_duration
     ),
@@ -76,7 +79,7 @@ REMAINING_SENTENCES_QUERY_TEMPLATE = """
     --  END AS compartment_duration,
       remaining_compartment_duration as compartment_duration,
       outflow_to,
-      CAST(ROUND(SUM(total_population/person_level_normalization_constant), 0) AS INT64) AS total_population
+      SUM(total_population/person_level_normalization_constant) AS total_population
     FROM supervision_cte
     JOIN supervision_normalization_cte
       USING (state_code, run_date, person_id)

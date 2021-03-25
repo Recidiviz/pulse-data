@@ -23,7 +23,7 @@ from recidiviz.utils.metadata import local_project_id_override
 
 POPULATION_TRANSITIONS_VIEW_NAME = "population_transitions"
 
-POPULATION_TRANSITIONS_VIEW_DESCRIPTION = """"Historical total population by compartment, outflow compartment, 
+POPULATION_TRANSITIONS_VIEW_DESCRIPTION = """"Historical total population by compartment, outflow compartment,
 and compartment duration (months)"""
 
 POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
@@ -33,7 +33,10 @@ POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
             THEN 'INCARCERATION - RE-INCARCERATION'
             ELSE compartment
           END AS compartment,
-          CASE WHEN outflow_to = 'INCARCERATION - GENERAL' AND previously_incarcerated
+          -- Count transitions to general incarceration as a re-incarceration if the individual was previously
+          -- incarcerated or is transitioning from parole.
+          CASE WHEN outflow_to = 'INCARCERATION - GENERAL'
+                AND (previously_incarcerated OR compartment = 'SUPERVISION - PAROLE')
             THEN 'INCARCERATION - RE-INCARCERATION'
             ELSE outflow_to
           END AS outflow_to,
@@ -46,13 +49,17 @@ POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
           state_code
       FROM `{project_id}.{population_projection_dataset}.population_projection_sessions_materialized` sessions
       JOIN `{project_id}.{population_projection_dataset}.simulation_run_dates` run_dates
-        ON run_dates.run_date > sessions.start_date
+        ON sessions.start_date < run_dates.run_date
       WHERE (compartment LIKE '%INCARCERATION%' OR compartment LIKE '%SUPERVISION%')
           -- Only take data from the 15 years prior to the run date to match short-term behavior better
           AND DATE_DIFF(run_dates.run_date, sessions.start_date, year) <= 15
           -- Union the rider transitions at the end
           AND compartment NOT IN ('INCARCERATION - TREATMENT_IN_PRISON', 'INCARCERATION - PAROLE_BOARD_HOLD')
           AND outflow_to NOT LIKE '%OTHER%'
+          -- Drop rows that represent transitions from supervision to supervision
+          AND (compartment NOT LIKE '%SUPERVISION%' OR outflow_to IS NULL OR end_date > run_dates.run_date
+                OR outflow_to NOT LIKE '%SUPERVISION%')
+          AND (compartment NOT LIKE '%INCARCERATION%' OR end_reason != 'TRANSFER')
     ),
     cohort_sizes_cte AS (
       -- Collect total cohort size for the outflow fraction denominator
@@ -81,7 +88,7 @@ POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
         END AS outflow_to,
 
         CASE WHEN (run_date < end_date) OR (end_date IS NULL) THEN NULL
-          ELSE DATE_DIFF(end_date, start_date, MONTH)
+          ELSE CEILING(DATE_DIFF(end_date, start_date, DAY)/30)
         END AS compartment_duration,
 
         COUNT(*) AS outflow_population
@@ -90,14 +97,14 @@ POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
     ),
     cohort_counts AS (
       SELECT
-        compartment, 
-        gender, 
+        compartment,
+        gender,
         state_code,
         run_date,
         COUNT(DISTINCT start_month) as cohort_count
-        FROM outflow_population_cte
-        WHERE start_month < run_date
-        GROUP BY 1,2,3,4
+      FROM outflow_population_cte
+      WHERE start_month < run_date
+      GROUP BY compartment, gender, state_code, run_date
     )
     SELECT
       compartment,

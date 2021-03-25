@@ -103,7 +103,7 @@ US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_QUERY_TEMPLATE = """
             AND report_month.run_date BETWEEN paid_status.movement_start_date AND COALESCE(paid_status.movement_end_date, '9999-01-01')
         WHERE sessions.state_code = 'US_ID'
             AND gender IN ('FEMALE', 'MALE')
-            AND compartment_level_2 != 'OTHER'
+            AND compartment_level_2 NOT IN ('OTHER', 'INTERNAL_UNKNOWN')
             AND compartment_level_1 = 'INCARCERATION'
     )
     SELECT

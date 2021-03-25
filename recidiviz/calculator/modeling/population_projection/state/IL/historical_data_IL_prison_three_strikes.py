@@ -28,7 +28,7 @@ of 18 automatically has their third Class 1 or 2 offense upgraded to a Class X s
 policy would limit this sentence enhancement to individuals where all three convictions are forcible felonies.
 """
 import pandas as pd
-from recidiviz.calculator.modeling.population_projection.spark_bq_utils import (
+from recidiviz.calculator.modeling.population_projection.utils.spark_bq_utils import (
     upload_spark_model_inputs,
 )
 

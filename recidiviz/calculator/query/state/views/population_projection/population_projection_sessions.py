@@ -46,7 +46,7 @@ POPULATION_PROJECTION_SESSIONS_QUERY_TEMPLATE = """
         AND prev_rel_session.start_date BETWEEN prev_inc_session.end_date AND session.start_date
         AND prev_rel_session.compartment_level_1 IN ('RELEASE', 'SUPERVISION')
       GROUP BY state_code, person_id, session_id
-    )
+    ), all_sessions AS (
     SELECT
       person_id,
       session_id,
@@ -80,6 +80,36 @@ POPULATION_PROJECTION_SESSIONS_QUERY_TEMPLATE = """
     INNER JOIN previously_incarcerated_cte
       USING (state_code, person_id, session_id)
     WHERE compartment_level_2 != 'OTHER'
+    ),
+    dedup_sessions AS (
+        -- Collapse adjacent sessions with the same compartment in order to merge DUAL and PAROLE supervision
+        SELECT
+            * EXCEPT(session_length_days),
+            session_id = MIN(session_id) OVER(PARTITION BY person_id, temp_session_id) AS first_sub_session_in_session,
+            session_id = MAX(session_id) OVER(PARTITION BY person_id, temp_session_id) AS last_sub_session_in_session,
+            SUM(session_length_days) OVER(PARTITION BY person_id, temp_session_id ORDER BY session_id) AS session_length_days,
+        FROM (
+            SELECT *,
+                -- Increment the temp_session_id whenever the inflow & compartment aren't the same value
+                SUM(IF(compartment != COALESCE(inflow_from,''), 1, 0))
+                    OVER(PARTITION BY person_id ORDER BY session_id) AS temp_session_id
+            FROM all_sessions
+        )
+    )
+    SELECT
+        first.* EXCEPT(end_date, end_reason, outflow_to, session_length_days, temp_session_id,
+            first_sub_session_in_session, last_sub_session_in_session),
+        last.end_date,
+        last.end_reason,
+        last.outflow_to,
+        last.session_length_days
+    FROM dedup_sessions first
+    LEFT JOIN dedup_sessions last
+        ON first.state_code = last.state_code
+        AND first.person_id = last.person_id
+        AND first.temp_session_id = last.temp_session_id
+        AND last.last_sub_session_in_session
+    WHERE first.first_sub_session_in_session
     """
 
 POPULATION_PROJECTION_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(

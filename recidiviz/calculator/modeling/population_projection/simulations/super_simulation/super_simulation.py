@@ -122,8 +122,8 @@ class SuperSimulation:
 
     def upload_simulation_results_to_bq(
         self,
-        simulation_tag: str,
-        cost_multipliers: pd.DataFrame = pd.DataFrame(),
+        simulation_tag: Optional[str] = None,
+        cost_multipliers: Optional[pd.DataFrame] = None,
     ) -> Optional[Dict[str, pd.DataFrame]]:
         output_data = self.validator.get_output_data_for_upload()
         sub_group_ids_dict = self.simulator.get_sub_group_ids_dict()
@@ -137,7 +137,7 @@ class SuperSimulation:
             output_data,
             excluded_pop_data,
             data_inputs["total_population_data"],
-            cost_multipliers,
+            cost_multipliers if cost_multipliers is not None else pd.DataFrame(),
             sub_group_ids_dict,
             time_step,
             reference_year,
