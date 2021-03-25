@@ -16,15 +16,105 @@
 # ============================================================================
 """Logic for Attr objects that can be built with a Builder."""
 from enum import Enum
-from typing import Any, Dict, Optional, Type, Set, TypeVar, Callable
+from typing import Any, Dict, Optional, Type, Set, TypeVar, Callable, Tuple
 import datetime
 import attr
 
 from recidiviz.common.attr_utils import is_enum, is_forward_ref, get_enum_cls, is_date
 from recidiviz.common.str_field_utils import is_yyyymmdd_date, parse_yyyymmdd_date
+from recidiviz.utils import environment
 from recidiviz.utils.types import ClsT
 
 DefaultableAttrType = TypeVar("DefaultableAttrType", bound="DefaultableAttr")
+
+
+class BuildableAttrFieldType(Enum):
+    """Defines categories of attribute types on BuildableAttrs, which assist in setting
+    fields when building a BuildableAttr."""
+
+    FORWARD_REF = "FORWARD_REF"
+    ENUM = "ENUM"
+    DATE = "DATE"
+    OTHER = "OTHER"
+
+
+# Cached _class_structure_reference value
+_class_structure_reference: Optional[
+    Dict[
+        Type, Dict[attr.Attribute, Tuple[BuildableAttrFieldType, Optional[Type[Enum]]]]
+    ]
+] = None
+
+
+def _get_class_structure_reference() -> Dict[
+    Type, Dict[attr.Attribute, Tuple[BuildableAttrFieldType, Optional[Type[Enum]]]]
+]:
+    """Returns the cached _class_structure_reference object, if it exists. If the
+    _class_structure_reference is None, instantiates it as an empty dict."""
+    global _class_structure_reference
+    if not _class_structure_reference:
+        _class_structure_reference = {}
+    return _class_structure_reference
+
+
+@environment.test_only
+def _clear_class_structure_reference() -> None:
+    global _class_structure_reference
+    _class_structure_reference = None
+
+
+def _attribute_field_type_reference_for_class(
+    cls: Type,
+) -> Dict[attr.Attribute, Tuple[BuildableAttrFieldType, Optional[Type[Enum]]]]:
+    """Returns a dictionary mapping the attributes of the given class to the type of
+    field the attribute is and, if the field is of type ENUM, the class of Enum stored
+    in the field.
+
+    Adds the attribute field type reference to the cached class_structure_reference if
+    this class's attribute field types have not yet been indexed.
+    """
+    class_structure_reference = _get_class_structure_reference()
+    attr_field_types = class_structure_reference.get(cls)
+
+    if attr_field_types:
+        return attr_field_types
+
+    attr_field_types = _map_attr_to_type_for_class(cls)
+
+    # Add the field type ref for this class to the cached reference
+    class_structure_reference[cls] = attr_field_types
+    return attr_field_types
+
+
+def _map_attr_to_type_for_class(
+    cls: Type,
+) -> Dict[attr.Attribute, Tuple[BuildableAttrFieldType, Optional[Type[Enum]]]]:
+    """Helper function for _attribute_field_type_reference_for_class to map attributes
+    to their BuildableAttrFieldType for a class if the attributes of the class aren't
+    yet in the cached _class_structure_reference.
+    """
+    attr_field_types: Dict[
+        attr.Attribute, Tuple[BuildableAttrFieldType, Optional[Type[Enum]]]
+    ] = {}
+
+    for attribute in attr.fields_dict(cls).values():
+        if is_forward_ref(attribute):
+            attr_field_types[attribute] = (BuildableAttrFieldType.FORWARD_REF, None)
+        elif is_enum(attribute):
+            enum_cls = get_enum_cls(attribute)
+
+            if not enum_cls:
+                raise ValueError(
+                    f"Did not find enum class for enum attribute [{attribute}]"
+                )
+
+            attr_field_types[attribute] = (BuildableAttrFieldType.ENUM, enum_cls)
+        elif is_date(attribute):
+            attr_field_types[attribute] = (BuildableAttrFieldType.DATE, None)
+        else:
+            attr_field_types[attribute] = (BuildableAttrFieldType.OTHER, None)
+
+    return attr_field_types
 
 
 class DefaultableAttr:
@@ -118,12 +208,14 @@ class BuildableAttr:
             1. Any field without a default/factory value is left unset
             2. Any field is set that doesn't exist on the Attr
             """
-            required_fields = set(attr.fields_dict(self.cls).keys())
+            all_fields = attr.fields_dict(self.cls)
+
+            required_fields = set(all_fields.keys())
 
             fields_provided = set(self.fields.keys())
             fields_with_defaults = {
                 field
-                for field, attribute in attr.fields_dict(self.cls).items()
+                for field, attribute in all_fields.items()
                 if attribute.default is not attr.NOTHING
             }
             fields_with_value = fields_provided | fields_with_defaults
@@ -153,23 +245,28 @@ class BuildableAttr:
 
         cls_builder = cls.builder()
 
-        for field, attribute in attr.fields_dict(cls).items():
+        attributes_and_types = _attribute_field_type_reference_for_class(cls)
+        for attribute, (field_type, type_cls) in attributes_and_types.items():
+            field = attribute.name
+
             if field in build_dict:
-                if is_forward_ref(attribute):
+                if field_type == BuildableAttrFieldType.FORWARD_REF:
                     # TODO(#1886): Implement detection of non-ForwardRefs
-                    # ForwardRef fields are expected to be references to other
-                    # BuildableAttrs
+                    #  ForwardRef fields are expected to be references to other
+                    #  BuildableAttrs
                     raise ValueError(
                         "build_dict should be a dictionary of "
                         "flat values. Should not contain any "
                         f"ForwardRef fields: {build_dict}"
                     )
+                if field_type == BuildableAttrFieldType.ENUM:
+                    if not type_cls:
+                        raise ValueError(f"Expected Enum class for enum field {field}.")
 
-                if is_enum(attribute):
                     value: Optional[Any] = cls.extract_enum_value(
-                        build_dict, field, attribute
+                        type_cls, build_dict, field
                     )
-                elif is_date(attribute):
+                elif field_type == BuildableAttrFieldType.DATE:
                     value = cls.extract_date_value(build_dict, field)
                 else:
                     value = build_dict.get(field)
@@ -180,13 +277,11 @@ class BuildableAttr:
 
     @classmethod
     def extract_enum_value(
-        cls, build_dict: Dict[str, str], field: str, attribute: attr.Attribute
+        cls,
+        enum_cls: Type[Enum],
+        build_dict: Dict[str, str],
+        field: str,
     ) -> Optional[Enum]:
-        enum_cls = get_enum_cls(attribute)
-
-        if not enum_cls:
-            raise ValueError(f"Did not find enum class for attribute [{attribute}]")
-
         value = build_dict.get(field)
 
         if value is None:
