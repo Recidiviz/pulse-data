@@ -35,7 +35,7 @@ from apache_beam.typehints import with_input_types, with_output_types
 from recidiviz.calculator.dataflow_output_storage_config import (
     DATAFLOW_METRICS_TO_TABLES,
 )
-from recidiviz.calculator.pipeline.incarceration import identifier, calculator
+from recidiviz.calculator.pipeline.incarceration import identifier, metric_producer
 from recidiviz.calculator.pipeline.incarceration.incarceration_event import (
     IncarcerationEvent,
 )
@@ -114,7 +114,7 @@ class GetIncarcerationMetrics(beam.PTransform):
 
     def __init__(
         self,
-        pipeline_options: Dict[str, str],
+        pipeline_options: Dict[str, Any],
         metric_types: Set[str],
         calculation_month_count: int,
         calculation_end_month: Optional[str] = None,
@@ -146,23 +146,17 @@ class GetIncarcerationMetrics(beam.PTransform):
                 self._metric_inclusions[metric_option] = False
 
     def expand(self, input_or_inputs):
-        # Calculate incarceration metric combinations from a StatePerson and their IncarcerationEvents
-        incarceration_metric_combinations = (
+        # Produce IncarcerationMetrics
+        incarceration_metrics = (
             input_or_inputs
-            | "Map to metric combinations"
+            | "Produce IncarcerationMetrics"
             >> beam.ParDo(
-                CalculateIncarcerationMetricCombinations(),
+                ProduceIncarcerationMetrics(),
                 self._calculation_end_month,
                 self._calculation_month_count,
                 self._metric_inclusions,
+                self._pipeline_options,
             )
-        )
-
-        # Produce IncarcerationMetrics
-        incarceration_metrics = (
-            incarceration_metric_combinations
-            | "Produce IncarcerationMetrics"
-            >> beam.ParDo(ProduceIncarcerationMetric(), **self._pipeline_options)
         )
 
         # Return IncarcerationMetric objects
@@ -204,14 +198,20 @@ class ClassifyIncarcerationEvents(beam.DoFn):
     beam.typehints.Optional[str],
     beam.typehints.Optional[int],
     beam.typehints.Dict[IncarcerationMetricType, bool],
+    beam.typehints.Dict[str, Any],
 )
-@with_output_types(beam.typehints.Tuple[Dict[str, Any], Any])
-class CalculateIncarcerationMetricCombinations(beam.DoFn):
-    """Calculates incarceration metric combinations."""
+@with_output_types(IncarcerationMetric)
+class ProduceIncarcerationMetrics(beam.DoFn):
+    """Produces IncarcerationMetrics."""
 
     # pylint: disable=arguments-differ
     def process(
-        self, element, calculation_end_month, calculation_month_count, metric_inclusions
+        self,
+        element,
+        calculation_end_month,
+        calculation_month_count,
+        metric_inclusions,
+        pipeline_options,
     ):
         """Produces various incarceration metric combinations.
 
@@ -224,92 +224,31 @@ class CalculateIncarcerationMetricCombinations(beam.DoFn):
             calculation_month_count: The number of months to limit the monthly calculation output to.
             metric_inclusions: A dictionary where the keys are each IncarcerationMetricType, and the values are boolean
                 flags for whether or not to include that metric type in the calculations
+            pipeline_options: A dictionary storing configuration details for the pipeline.
         Yields:
-            Each incarceration metric combination.
+            Each IncarcerationMetric.
         """
         person, incarceration_events, person_metadata = element
+
+        pipeline_job_id = job_id(pipeline_options)
 
         # Assert all events are of type IncarcerationEvent
         incarceration_events = cast(List[IncarcerationEvent], incarceration_events)
 
-        # Calculate incarceration metric combinations for this person and events
-        metric_combinations = calculator.map_incarceration_combinations(
+        # Produce incarceration metrics for this person and events
+        metrics = metric_producer.produce_incarceration_metrics(
             person,
             incarceration_events,
             metric_inclusions,
             calculation_end_month,
             calculation_month_count,
             person_metadata,
+            pipeline_job_id,
         )
 
-        # Return each of the incarceration metric combinations
-        for metric_combination in metric_combinations:
-            yield metric_combination
-
-    def to_runner_api_parameter(self, _):
-        pass  # Passing unused abstract method.
-
-
-@with_input_types(beam.typehints.Tuple[Dict[str, Any], Any])
-@with_output_types(IncarcerationMetric)
-class ProduceIncarcerationMetric(beam.DoFn):
-    """Produces IncarcerationMetrics."""
-
-    def process(self, element, *_args, **kwargs):
-        """Converts an incarceration metric key into a IncarcerationMetric.
-
-        The pipeline options are sent in as the **kwargs so that the job_id(pipeline_options) function can be called to
-        retrieve the job_id.
-
-        Args:
-            element: A tuple containing the dictionary for a given, and a
-                dictionary containing the values for the given metric.
-            **kwargs: This should be a dictionary with values for the following keys:
-                    - runner: Either 'DirectRunner' or 'DataflowRunner'
-                    - project: GCP project ID
-                    - job_name: Name of the pipeline job
-                    - region: Region where the pipeline job is running
-                    - job_timestamp: Timestamp for the current job, to be used if the job is running locally.
-
-        Yields:
-            The IncarcerationMetric.
-        """
-        pipeline_options = kwargs
-
-        pipeline_job_id = job_id(pipeline_options)
-
-        (dict_metric_key, _) = element
-
-        if not dict_metric_key:
-            # Due to how the pipeline arrives at this function, this should be impossible.
-            raise ValueError("Empty dict_metric_key.")
-
-        metric_type = dict_metric_key.pop("metric_type")
-
-        if metric_type == IncarcerationMetricType.INCARCERATION_ADMISSION:
-            incarceration_metric = (
-                IncarcerationAdmissionMetric.build_from_metric_key_group(
-                    dict_metric_key, pipeline_job_id
-                )
-            )
-        elif metric_type == IncarcerationMetricType.INCARCERATION_POPULATION:
-            incarceration_metric = (
-                IncarcerationPopulationMetric.build_from_metric_key_group(
-                    dict_metric_key, pipeline_job_id
-                )
-            )
-        elif metric_type == IncarcerationMetricType.INCARCERATION_RELEASE:
-            incarceration_metric = (
-                IncarcerationReleaseMetric.build_from_metric_key_group(
-                    dict_metric_key, pipeline_job_id
-                )
-            )
-        else:
-            logging.error("Unexpected metric of type: %s", metric_type)
-            return
-
-        if incarceration_metric:
-            yield incarceration_metric
+        # Return each of the IncarcerationMetrics
+        for metric in metrics:
+            yield metric
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.

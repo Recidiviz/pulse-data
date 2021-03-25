@@ -23,7 +23,10 @@ import logging
 from typing import Dict, Any, List, Tuple, Set, Optional, cast
 
 import apache_beam as beam
-from apache_beam.options.pipeline_options import SetupOptions, PipelineOptions
+from apache_beam.options.pipeline_options import (
+    SetupOptions,
+    PipelineOptions,
+)
 from apache_beam.pvalue import AsList
 from apache_beam.typehints import with_input_types, with_output_types
 

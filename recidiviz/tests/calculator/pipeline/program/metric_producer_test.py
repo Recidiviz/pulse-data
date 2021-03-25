@@ -14,17 +14,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for program/calculator.py."""
+"""Tests for program/metric_producer.py."""
 # pylint: disable=unused-import,wrong-import-order
 import unittest
 from collections import defaultdict
 from datetime import date
-from typing import List, Set, Tuple, Dict
+from typing import List, Dict
 
 from freezegun import freeze_time
 
-from recidiviz.calculator.pipeline.program import calculator
-from recidiviz.calculator.pipeline.program.calculator import EVENT_TO_METRIC_TYPES
+from recidiviz.calculator.pipeline.program import metric_producer
+from recidiviz.calculator.pipeline.program.metric_producer import (
+    EVENT_TO_METRIC_TYPES,
+)
 from recidiviz.calculator.pipeline.program.metrics import ProgramMetricType
 from recidiviz.calculator.pipeline.program.program_event import (
     ProgramReferralEvent,
@@ -45,12 +47,14 @@ ALL_METRICS_INCLUSIONS_DICT = {metric_type: True for metric_type in ProgramMetri
 
 _DEFAULT_PERSON_METADATA = PersonMetadata(prioritized_race_or_ethnicity="BLACK")
 
+PIPELINE_JOB_ID = "TEST_JOB_ID"
+
 
 class TestMapProgramCombinations(unittest.TestCase):
-    """Tests the map_program_combinations function."""
+    """Tests the produce_program_metrics function."""
 
     @freeze_time("2030-11-02")
-    def test_map_program_combinations(self):
+    def test_produce_program_metrics(self):
         person = StatePerson.new_with_defaults(
             state_code="US_ND",
             person_id=12345,
@@ -77,21 +81,21 @@ class TestMapProgramCombinations(unittest.TestCase):
             ),
         ]
 
-        program_combinations = calculator.map_program_combinations(
+        metrics = metric_producer.produce_program_metrics(
             person,
             program_events,
             ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
+            pipeline_job_id=PIPELINE_JOB_ID,
         )
 
-        expected_combinations_count = expected_metric_combos_count(program_events)
+        expected_count = expected_metrics_count(program_events)
 
-        self.assertEqual(expected_combinations_count, len(program_combinations))
-        assert all(value == 1 for _combination, value in program_combinations)
+        self.assertEqual(expected_count, len(metrics))
 
-    def test_map_program_combinations_full_info(self):
+    def test_produce_program_metrics_full_info(self):
         person = StatePerson.new_with_defaults(
             state_code="US_ND",
             person_id=12345,
@@ -131,21 +135,21 @@ class TestMapProgramCombinations(unittest.TestCase):
             ),
         ]
 
-        program_combinations = calculator.map_program_combinations(
+        metrics = metric_producer.produce_program_metrics(
             person,
             program_events,
             ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month="2009-10",
             calculation_month_count=1,
             person_metadata=_DEFAULT_PERSON_METADATA,
+            pipeline_job_id=PIPELINE_JOB_ID,
         )
 
-        expected_combinations_count = expected_metric_combos_count(program_events)
+        expected_count = expected_metrics_count(program_events)
 
-        self.assertEqual(expected_combinations_count, len(program_combinations))
-        assert all(value == 1 for _combination, value in program_combinations)
+        self.assertEqual(expected_count, len(metrics))
 
-    def test_map_program_combinations_full_info_probation(self):
+    def test_produce_program_metrics_full_info_probation(self):
         person = StatePerson.new_with_defaults(
             state_code="US_ND",
             person_id=12345,
@@ -185,21 +189,21 @@ class TestMapProgramCombinations(unittest.TestCase):
             ),
         ]
 
-        program_combinations = calculator.map_program_combinations(
+        metrics = metric_producer.produce_program_metrics(
             person,
             program_events,
             ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month="2009-10",
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
+            pipeline_job_id=PIPELINE_JOB_ID,
         )
 
-        expected_combinations_count = expected_metric_combos_count(program_events)
+        expected_count = expected_metrics_count(program_events)
 
-        self.assertEqual(expected_combinations_count, len(program_combinations))
-        assert all(value == 1 for _combination, value in program_combinations)
+        self.assertEqual(expected_count, len(metrics))
 
-    def test_map_program_combinations_multiple_supervision_types(self):
+    def test_produce_program_metrics_multiple_supervision_types(self):
         person = StatePerson.new_with_defaults(
             state_code="US_ND",
             person_id=12345,
@@ -256,22 +260,22 @@ class TestMapProgramCombinations(unittest.TestCase):
             ),
         ]
 
-        program_combinations = calculator.map_program_combinations(
+        metrics = metric_producer.produce_program_metrics(
             person,
             program_events,
             ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month="2009-10",
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
+            pipeline_job_id=PIPELINE_JOB_ID,
         )
 
-        expected_combinations_count = expected_metric_combos_count(program_events)
+        expected_count = expected_metrics_count(program_events)
 
-        self.assertEqual(expected_combinations_count, len(program_combinations))
-        assert all(value == 1 for _combination, value in program_combinations)
+        self.assertEqual(expected_count, len(metrics))
 
     @freeze_time("2012-11-30")
-    def test_map_program_combinations_calculation_month_count_1(self):
+    def test_produce_program_metrics_calculation_month_count_1(self):
         person = StatePerson.new_with_defaults(
             state_code="US_ND",
             person_id=12345,
@@ -299,22 +303,22 @@ class TestMapProgramCombinations(unittest.TestCase):
 
         program_events = [included_event, not_included_event]
 
-        program_combinations = calculator.map_program_combinations(
+        metrics = metric_producer.produce_program_metrics(
             person,
             program_events,
             ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
             calculation_month_count=1,
             person_metadata=_DEFAULT_PERSON_METADATA,
+            pipeline_job_id=PIPELINE_JOB_ID,
         )
 
-        expected_combinations_count = expected_metric_combos_count([included_event])
+        expected_count = expected_metrics_count([included_event])
 
-        self.assertEqual(expected_combinations_count, len(program_combinations))
-        assert all(value == 1 for _combination, value in program_combinations)
+        self.assertEqual(expected_count, len(metrics))
 
     @freeze_time("2012-12-31")
-    def test_map_program_combinations_calculation_month_count_36(self):
+    def test_produce_program_metrics_calculation_month_count_36(self):
         person = StatePerson.new_with_defaults(
             state_code="US_ND",
             person_id=12345,
@@ -342,23 +346,23 @@ class TestMapProgramCombinations(unittest.TestCase):
 
         program_events = [included_event, not_included_event]
 
-        program_combinations = calculator.map_program_combinations(
+        metrics = metric_producer.produce_program_metrics(
             person,
             program_events,
             ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
             calculation_month_count=36,
             person_metadata=_DEFAULT_PERSON_METADATA,
+            pipeline_job_id=PIPELINE_JOB_ID,
         )
 
-        expected_combinations_count = expected_metric_combos_count([included_event])
+        expected_count = expected_metrics_count([included_event])
 
-        self.assertEqual(expected_combinations_count, len(program_combinations))
-        assert all(value == 1 for _combination, value in program_combinations)
+        self.assertEqual(expected_count, len(metrics))
 
 
-def expected_metric_combos_count(program_events: List[ProgramEvent]) -> int:
-    """Calculates the expected number of characteristic combinations given the incarceration events."""
+def expected_metrics_count(program_events: List[ProgramEvent]) -> int:
+    """Calculates the expected number of metrics given the incarceration events."""
     output_count_by_metric_type: Dict[ProgramMetricType, int] = defaultdict(int)
 
     for event_type, metric_type in EVENT_TO_METRIC_TYPES.items():
