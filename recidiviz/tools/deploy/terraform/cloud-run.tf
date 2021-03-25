@@ -46,6 +46,9 @@ resource "google_project_iam_member" "cloud_run_log_writer" {
   member = "serviceAccount:${google_service_account.cloud_run.email}"
 }
 
+# Env vars from secrets
+data "google_secret_manager_secret_version" "segment_write_key" { secret = "case_triage_segment_backend_key" }
+
 # Initializes actual service
 resource "google_cloud_run_service" "case-triage" {
   name     = "case-triage-web"
@@ -61,6 +64,11 @@ resource "google_cloud_run_service" "case-triage" {
         env {
           name  = "RECIDIVIZ_ENV"
           value = var.project_id == "recidiviz-123" ? "production" : "staging"
+        }
+
+        env {
+          name  = "SEGMENT_WRITE_KEY"
+          value = data.google_secret_manager_secret_version.segment_write_key.secret_data
         }
 
         resources {

@@ -37,6 +37,24 @@ class CaseTriageQuerier:
     """Implements Querier abstraction for Case Triage data sources."""
 
     @staticmethod
+    def case_for_client_and_officer(
+        session: Session, client: ETLClient, officer: ETLOfficer
+    ) -> CasePresenter:
+        try:
+            case_update = (
+                session.query(CaseUpdate)
+                .filter_by(
+                    person_external_id=client.person_external_id,
+                    officer_external_id=officer.external_id,
+                    state_code=client.state_code,
+                )
+                .one()
+            )
+        except sqlalchemy.orm.exc.NoResultFound:
+            case_update = None
+        return CasePresenter(client, case_update)
+
+    @staticmethod
     def clients_for_officer(
         session: Session, officer: ETLOfficer
     ) -> List[CasePresenter]:
