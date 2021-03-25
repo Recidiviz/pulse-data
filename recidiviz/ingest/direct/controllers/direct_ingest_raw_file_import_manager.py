@@ -72,6 +72,8 @@ class ColumnEnumValueInfo:
 
 @attr.s
 class RawTableColumnInfo:
+    """Stores information about a single raw data table column."""
+
     # The column name in BigQuery-compatible, normalized form (e.g. punctuation stripped)
     name: str = attr.ib(validator=attr_validators.is_non_empty_str)
     # True if a column is a date/time
@@ -80,9 +82,27 @@ class RawTableColumnInfo:
     # raw data migration involving this column.
     description: Optional[str] = attr.ib(validator=attr_validators.is_opt_str)
     # Describes possible enum values for this column if known
-    known_values: List[ColumnEnumValueInfo] = attr.ib(
-        factory=list, validator=attr_validators.is_list
+    known_values: Optional[List[ColumnEnumValueInfo]] = attr.ib(
+        default=None, validator=attr_validators.is_opt_list
     )
+
+    @property
+    def is_enum(self) -> bool:
+        """If true, this is an 'enum' field, with an enumerable set of values and the
+        known_values field can be auto-refreshed with the enum fetching script."""
+        return self.known_values is not None
+
+    @property
+    def known_values_nonnull(self) -> List[ColumnEnumValueInfo]:
+        """Returns the known_values as a nonnull (but potentially empty) list. Raises if
+        the known_values list is None (i.e. if this column is not an enum column."""
+        if not self.is_enum:
+            raise ValueError(f"Expected is_enum is True for column: [{self.name}]")
+        if self.known_values is None:
+            raise ValueError(
+                f"Expected nonnull column known_values for column: [{self.name}]"
+            )
+        return self.known_values
 
 
 @attr.s(frozen=True)
@@ -151,6 +171,12 @@ class DirectIngestRawFileConfig:
         return [column.name for column in self.columns if column.is_datetime]
 
     @property
+    def has_enums(self) -> bool:
+        """If true, columns with enum values exist within this raw file, and this config is eligible to be refreshed
+        with the for the fetch_column_values_for_state script."""
+        return bool([column.name for column in self.columns if column.is_enum])
+
+    @property
     def is_undocumented(self) -> bool:
         documented_cols = [column.name for column in self.columns if column.description]
         return not documented_cols
@@ -196,7 +222,6 @@ class DirectIngestRawFileConfig:
                 f"Found unexpected config values for raw file"
                 f"[{file_tag}]: {repr(file_config_dict.get())}"
             )
-
         return DirectIngestRawFileConfig(
             file_tag=file_tag,
             file_path=file_path,
@@ -211,8 +236,10 @@ class DirectIngestRawFileConfig:
                         ColumnEnumValueInfo(
                             value=x["value"], description=x.get("description", None)
                         )
-                        for x in column.get("known_values", [])
-                    ],
+                        for x in column["known_values"]
+                    ]
+                    if "known_values" in column
+                    else None,
                 )
                 for column in columns
             ],
@@ -229,6 +256,18 @@ class DirectIngestRawFileConfig:
 
 
 @attr.s
+class DirectIngestRawFileDefaultConfig:
+    """Class that stores information about a region's default config"""
+
+    # The default config file name
+    filename: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # The default encoding for raw files from this region
+    default_encoding: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # The default separator for raw files from this region
+    default_separator: str = attr.ib(validator=attr_validators.is_non_empty_str)
+
+
+@attr.s
 class DirectIngestRegionRawFileConfig:
     """Class that parses and stores raw data import configs for a region"""
 
@@ -237,6 +276,22 @@ class DirectIngestRegionRawFileConfig:
     region_module: ModuleType = attr.ib(default=regions)
     yaml_config_file_dir: str = attr.ib()
     raw_file_configs: Dict[str, DirectIngestRawFileConfig] = attr.ib()
+
+    def default_config(self) -> DirectIngestRawFileDefaultConfig:
+        default_filename = f"{self.region_code.lower()}_default.yaml"
+        default_file_path = os.path.join(self.yaml_config_file_dir, default_filename)
+        if not os.path.exists(default_file_path):
+            raise ValueError(
+                f"Missing default raw data configs for region: {self.region_code}"
+            )
+        default_contents = YAMLDict.from_path(default_file_path)
+        default_encoding = default_contents.pop("default_encoding", str)
+        default_separator = default_contents.pop("default_separator", str)
+        return DirectIngestRawFileDefaultConfig(
+            filename=default_filename,
+            default_encoding=default_encoding,
+            default_separator=default_separator,
+        )
 
     def _region_ingest_dir(self) -> str:
         return os.path.join(
@@ -254,22 +309,13 @@ class DirectIngestRegionRawFileConfig:
     def _get_raw_data_file_configs(self) -> Dict[str, DirectIngestRawFileConfig]:
         """Returns list of file tags we expect to see on raw files for this region."""
         if os.path.isdir(self.yaml_config_file_dir):
-            default_filename = f"{self.region_code}_default.yaml"
-            default_file_path = os.path.join(
-                self.yaml_config_file_dir, default_filename
-            )
-            if not os.path.exists(default_file_path):
-                raise ValueError(
-                    f"Missing default raw data configs for region: {self.region_code}"
-                )
-
-            default_contents = YAMLDict.from_path(default_file_path)
-            default_encoding = default_contents.pop("default_encoding", str)
-            default_separator = default_contents.pop("default_separator", str)
+            default_config = self.default_config()
 
             raw_data_configs = {}
             for filename in os.listdir(self.yaml_config_file_dir):
-                if filename == default_filename:
+                if filename == default_config.filename or not filename.endswith(
+                    ".yaml"
+                ):
                     continue
                 yaml_file_path = os.path.join(self.yaml_config_file_dir, filename)
                 if os.path.isdir(yaml_file_path):
@@ -294,8 +340,8 @@ class DirectIngestRegionRawFileConfig:
                 raw_data_configs[file_tag] = DirectIngestRawFileConfig.from_yaml_dict(
                     file_tag,
                     yaml_file_path,
-                    default_encoding,
-                    default_separator,
+                    default_config.default_encoding,
+                    default_config.default_separator,
                     yaml_contents,
                     filename,
                 )

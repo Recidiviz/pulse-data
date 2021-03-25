@@ -92,6 +92,8 @@ from recidiviz.tests.ingest.direct import fixture_util
 from recidiviz.utils import metadata
 from recidiviz.utils.regions import Region
 
+PLACEHOLDER_TO_DO_STRING = "TO" + "DO"
+
 
 class _TestSafeGcsCsvReader(GcsfsCsvReader):
     def __init__(self, fs: FakeGCSFileSystem):

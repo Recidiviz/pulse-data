@@ -4,5 +4,5 @@ file_description: |-
 primary_key_cols: []
 columns:
   - name: column_1
-    is_datetime: False
-    description: column_1 description
+    description: |-
+      column_1 description

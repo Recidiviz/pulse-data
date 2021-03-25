@@ -128,9 +128,7 @@ class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
                 description=expected_column2_description,
             ),
             RawTableColumnInfo(
-                name="undocumented_column",
-                is_datetime=False,
-                description=None,
+                name="undocumented_column", is_datetime=False, description=None
             ),
         ]
         self.assertEqual(expected_columns_config_1, config_1.columns)
@@ -164,7 +162,11 @@ class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
         self.assertEqual("UTF-8", config_3.encoding)
         self.assertEqual(",", config_3.separator)
         self.assertEqual(
-            [RawTableColumnInfo(name="COL1", is_datetime=False, description=None)],
+            [
+                RawTableColumnInfo(
+                    name="COL1", is_datetime=False, description=None, known_values=None
+                )
+            ],
             config_3.columns,
         )
 

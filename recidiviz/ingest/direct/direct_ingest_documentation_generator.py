@@ -19,7 +19,7 @@
 import os
 from collections import defaultdict
 import datetime
-from typing import List, Dict
+from typing import List, Dict, Optional
 import subprocess
 from pytablewriter import MarkdownTableWriter
 
@@ -122,9 +122,11 @@ class DirectIngestDocumentationGenerator:
         def _is_primary_key(column: str) -> str:
             return "YES" if column.upper() in primary_key_columns else ""
 
-        def _get_enum_bullets(known_values: List[ColumnEnumValueInfo]) -> str:
-            if not known_values:
+        def _get_enum_bullets(known_values: Optional[List[ColumnEnumValueInfo]]) -> str:
+            if known_values is None:
                 return "N/A"
+            if not known_values:
+                return "<No documentation>"
             list_contents = "</li><li>".join(
                 [
                     f"<b>{enum.value}</b> - {enum.description if enum.description else '<Unknown>'}"
