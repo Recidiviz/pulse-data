@@ -32,8 +32,8 @@ from recidiviz.tests.ingest.direct import (
     regions as regions_test_module,
 )
 from recidiviz.tests.ingest.direct import templates as test_templates_module
+from recidiviz.tests.ingest.direct.direct_ingest_util import PLACEHOLDER_TO_DO_STRING
 
-_PLACEHOLDER = "TO" + "DO"
 _DEFAULT_WORKING_DIR: str = os.path.dirname(recidiviz.__file__)
 
 DEFAULT_WORKING_DIR: str = os.path.dirname(recidiviz.__file__)
@@ -153,7 +153,7 @@ class DirectIngestFilesGenerator:
                         line,
                     ).replace("_", "")
                 if re.search("unknown", line):
-                    line = line.rstrip() + f"  # {_PLACEHOLDER}\n"
+                    line = line.rstrip() + f"  # {PLACEHOLDER_TO_DO_STRING}\n"
                 if re.search(r"Copyright \(C\) 2021 Recidiviz", line):
                     line = re.sub("2021", f"{self.current_year}", line)
                 updated_f.write(line)
