@@ -25,7 +25,10 @@ from flask_sqlalchemy_session import current_session
 from flask_wtf.csrf import CSRFError, CSRFProtect
 from sqlalchemy.orm.exc import NoResultFound
 
-from recidiviz.case_triage.analytics import CaseTriageSegmentClient
+from recidiviz.case_triage.analytics import (
+    CaseTriageSegmentClient,
+    segment_user_id_for_email,
+)
 from recidiviz.case_triage.api_routes import create_api_blueprint
 from recidiviz.case_triage.authorization import AuthorizationStore
 from recidiviz.case_triage.exceptions import CaseTriageAuthorizationError
@@ -141,7 +144,8 @@ def fetch_user_info() -> None:
     If the user is an admin (i.e. an approved Recidiviz employee), and the `impersonated_email` param is
     set, then they can make requests as if they were the impersonated user.
     """
-    email = session["user_info"]["email"]
+    email = session["user_info"]["email"].lower()
+    g.segment_user_id = segment_user_id_for_email(email)
     g.can_impersonate = authorization_store.can_impersonate_others(email)
     g.can_see_demo_data = authorization_store.can_see_demo_data(email)
     try:

@@ -68,7 +68,12 @@ def create_api_blueprint(
     api.route("/clients")(get_clients)
 
     def get_bootstrap() -> str:
-        return jsonify({"csrf": generate_csrf(current_app.secret_key)})
+        return jsonify(
+            {
+                "csrf": generate_csrf(current_app.secret_key),
+                "segmentUserId": g.segment_user_id,
+            }
+        )
 
     api.route("/bootstrap")(get_bootstrap)
 

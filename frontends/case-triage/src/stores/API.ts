@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import UserStore from "./UserStore";
+import { identify } from "../analytics";
 
 interface APIProps {
   userStore: UserStore;
@@ -28,7 +29,7 @@ interface RequestProps {
 
 interface BootstrapResponse {
   csrf: string;
-  isDemoMode: boolean;
+  segmentUserId: string;
 }
 
 const BOOTSTRAP_ROUTE = "/api/bootstrap";
@@ -50,10 +51,13 @@ class API {
   bootstrap(): Promise<void> {
     this.bootstrapping =
       this.bootstrapping ||
-      this.get<BootstrapResponse>(BOOTSTRAP_ROUTE).then(({ csrf }) => {
-        this.csrfToken = csrf;
-        this.bootstrapped = true;
-      });
+      this.get<BootstrapResponse>(BOOTSTRAP_ROUTE).then(
+        ({ csrf, segmentUserId }) => {
+          this.csrfToken = csrf;
+          identify(segmentUserId);
+          this.bootstrapped = true;
+        }
+      );
 
     return this.bootstrapping;
   }
