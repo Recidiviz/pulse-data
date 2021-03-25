@@ -43,6 +43,7 @@ class DirectIngestDocumentationGeneratorTest(unittest.TestCase):
         self.metadata_patcher = patch("recidiviz.utils.metadata.project_id")
         self.mock_project_id_fn = self.metadata_patcher.start()
         self.mock_project_id_fn.return_value = "project-id"
+        self.maxDiff = None
 
     def tearDown(self) -> None:
         self.metadata_patcher.stop()
@@ -91,7 +92,7 @@ class DirectIngestDocumentationGeneratorTest(unittest.TestCase):
             region_code
         )
 
-        expected_documentation = """# Test State Raw Data Description
+        expected_raw_data = """# Test State Raw Data Description
 
 All raw data can be found in append-only tables in the dataset `us_xx_raw_data`. Views on the raw data
 table that show the latest state of this table (i.e. select the most recently received row for each primary key) can be
@@ -99,13 +100,14 @@ found in `us_xx_raw_data_up_to_date_views`.
 
 ## Table of Contents
 
-|                       **Table**                       |  **Referencing Views**  | **Last Updated** | **Updated By** |
-|-------------------------------------------------------|-------------------------|------------------|----------------|
-| [multiLineDescription](#multiLineDescription)         | view_one,<br />view_two | 2021-02-10       | Julia Dressel  |
-| [tagColumnsMissing](#tagColumnsMissing)               | view_one                | 2021-02-10       | Julia Dressel  |
-| [tagPrimaryKeyColsMissing](#tagPrimaryKeyColsMissing) |                         | 2021-02-10       | Julia Dressel  |
+|                            **Table**                             |  **Referencing Views**  | **Last Updated** | **Updated By** |
+|------------------------------------------------------------------|-------------------------|------------------|----------------|
+| [multiLineDescription](raw_data/multiLineDescription.md)         | view_one,<br />view_two | 2021-02-10       | Julia Dressel  |
+| [tagColumnsMissing](raw_data/tagColumnsMissing.md)               | view_one                | 2021-02-10       | Julia Dressel  |
+| [tagPrimaryKeyColsMissing](raw_data/tagPrimaryKeyColsMissing.md) |                         | 2021-02-10       | Julia Dressel  |
+"""
 
-## multiLineDescription
+        expected_multi_line = """## multiLineDescription
 
 First raw file.
 
@@ -114,17 +116,17 @@ First raw file.
 | col_name_1a         | First column.                                                                                                                                                 | YES                  | <ul><li><b>VAL1</b> - value 1</li><li><b>VAL2</b> - value 2</li><li><b>UNKWN</b> - <Unknown></li></ul> |
 | col_name_1b         | A column description that is long enough to take up multiple lines. This text block will be interpreted literally and trailing/leading whitespace is removed. | YES                  | N/A                                                                                                    |
 | undocumented_column | <No documentation>                                                                                                                                            |                      | N/A                                                                                                    |
+"""
 
-
-## tagColumnsMissing
+        expected_tag_columns_missing = """## tagColumnsMissing
 
 tagColumnsMissing file description
 
 | Column | Column Description | Part of Primary Key? | Distinct Values |
 |--------|--------------------|----------------------|-----------------|
+"""
 
-
-## tagPrimaryKeyColsMissing
+        expected_tag_primary_key_cols_missing = """## tagPrimaryKeyColsMissing
 
 tagPrimaryKeyColsMissing file description
 
@@ -132,6 +134,13 @@ tagPrimaryKeyColsMissing file description
 |----------|----------------------|----------------------|-----------------|
 | column_1 | column_1 description |                      | N/A             |
 """
+
+        expected_documentation = {
+            "multiLineDescription.md": expected_multi_line,
+            "raw_data.md": expected_raw_data,
+            "tagColumnsMissing.md": expected_tag_columns_missing,
+            "tagPrimaryKeyColsMissing.md": expected_tag_primary_key_cols_missing,
+        }
 
         self.assertIsNotNone(documentation)
         self.assertEqual(expected_documentation, documentation)
