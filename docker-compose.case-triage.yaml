@@ -23,6 +23,7 @@ services:
     environment:
       - FLASK_APP=/app/recidiviz/case_triage/server.py
       - FLASK_ENV=development
+      - SEGMENT_WRITE_KEY=dev-key-wont-send-data
       - SQLALCHEMY_DB_HOST=db
       - SQLALCHEMY_DB_NAME=postgres
       - SQLALCHEMY_DB_USER=postgres

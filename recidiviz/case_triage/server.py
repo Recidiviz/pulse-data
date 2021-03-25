@@ -25,7 +25,8 @@ from flask_sqlalchemy_session import current_session
 from flask_wtf.csrf import CSRFError, CSRFProtect
 from sqlalchemy.orm.exc import NoResultFound
 
-from recidiviz.case_triage.api_routes import api
+from recidiviz.case_triage.analytics import CaseTriageSegmentClient
+from recidiviz.case_triage.api_routes import create_api_blueprint
 from recidiviz.case_triage.authorization import AuthorizationStore
 from recidiviz.case_triage.exceptions import CaseTriageAuthorizationError
 from recidiviz.case_triage.impersonate_users import (
@@ -122,7 +123,15 @@ def set_headers(response: Response) -> Response:
     return response
 
 
+# Segment setup
+write_key = os.getenv("SEGMENT_WRITE_KEY", "")
+segment_client = CaseTriageSegmentClient(write_key)
+
+
 # Routes & Blueprints
+api = create_api_blueprint(segment_client)
+
+
 @api.before_request
 @requires_authorization
 def fetch_user_info() -> None:
