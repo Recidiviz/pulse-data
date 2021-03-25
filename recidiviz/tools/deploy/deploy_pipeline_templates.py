@@ -24,16 +24,23 @@ Run the following command to execute from the command-line:
 """
 import argparse
 import logging
+import os
 import sys
 from typing import List, Tuple
 
 import yaml
 
-from recidiviz.tools.pipeline_launch_util import (
-    run_pipeline,
-    get_pipeline_module,
-    PRODUCTION_TEMPLATES_PATH,
-    STAGING_ONLY_TEMPLATES_PATH,
+from recidiviz.calculator import pipeline
+from recidiviz.tools.pipeline_launch_util import run_pipeline, get_pipeline_module
+
+STAGING_ONLY_TEMPLATES_PATH = os.path.join(
+    os.path.dirname(pipeline.__file__),
+    "staging_only_calculation_pipeline_templates.yaml",
+)
+
+
+PRODUCTION_TEMPLATES_PATH = os.path.join(
+    os.path.dirname(pipeline.__file__), "production_calculation_pipeline_templates.yaml"
 )
 
 TEMPLATE_PATHS = {
@@ -43,8 +50,7 @@ TEMPLATE_PATHS = {
 
 
 def deploy_pipeline_templates(template_yaml_path: str, project_id: str) -> None:
-    """Deploys all pipelines listed in the file at the template_yaml_path to templates
-    in the given project."""
+    """Deploys all pipelines listed in the file at the template_yaml_path to templates in the given project."""
     logging.info(
         "Deploying pipeline templates at %s to %s", template_yaml_path, project_id
     )
