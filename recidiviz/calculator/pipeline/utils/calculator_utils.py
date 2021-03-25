@@ -16,7 +16,7 @@
 # =============================================================================
 """Utils for the various calculation pipelines."""
 import datetime
-from typing import Optional, List, Any, Dict, Type, Tuple, TypeVar
+from typing import Optional, List, Any, Dict, Type, TypeVar
 
 import attr
 from dateutil.relativedelta import relativedelta
@@ -415,7 +415,7 @@ def safe_list_index(list_of_values: List[Any], value: Any, default: int) -> int:
         return default
 
 
-def produce_standard_metric_combinations(
+def produce_standard_metrics(
     pipeline: str,
     person: StatePerson,
     identifier_events: List[IdentifierEventWithSingularDateT],
@@ -429,10 +429,11 @@ def produce_standard_metric_combinations(
     event_to_metric_classes: Dict[
         Type[IdentifierEventWithSingularDateT], Type[RecidivizMetricT]
     ],
-) -> List[Tuple[Dict[str, Any], Any]]:
-    """Produces metric combinations for pipelines with a standard 1:1 mapping of event to metric type, and the value for
-    all metrics is 1."""
-    metrics: List[Tuple[Dict[str, Any], Any]] = []
+    pipeline_job_id: str,
+) -> List[RecidivizMetric]:
+    """Produces metrics for pipelines with a standard 1:1 mapping of event to metric
+    type."""
+    metrics: List[RecidivizMetric] = []
 
     calculation_month_upper_bound = get_calculation_month_upper_bound_date(
         calculation_end_month
@@ -468,23 +469,58 @@ def produce_standard_metric_combinations(
             )
 
         if metric_inclusions.get(metric_type):
-            characteristic_combo = characteristics_dict_builder(
+            metric = _build_metric(
                 pipeline=pipeline,
                 event=event,
                 metric_class=metric_class,
                 person=person,
                 event_date=event_date,
                 person_metadata=person_metadata,
+                pipeline_job_id=pipeline_job_id,
             )
 
-            augmented_combo = augmented_combo_for_calculations(
-                characteristic_combo,
-                event.state_code,
-                metric_type,
-                event_year,
-                event_month,
-            )
-
-            metrics.append((augmented_combo, 1))
+            metrics.append(metric)
 
     return metrics
+
+
+def _build_metric(
+    pipeline: str,
+    event: IdentifierEventT,
+    metric_class: Type[RecidivizMetric],
+    person: StatePerson,
+    event_date: datetime.date,
+    person_metadata: PersonMetadata,
+    pipeline_job_id: str,
+) -> RecidivizMetric:
+    """Builds a RecidivizMetric of the defined metric_class using the provided
+    information.
+    """
+    metric_attributes = attr.fields_dict(metric_class).keys()
+
+    person_attributes = person_characteristics(
+        person, event_date, person_metadata, pipeline
+    )
+
+    metric_cls_builder = metric_class.builder()
+
+    # Set pipeline attributes
+    setattr(metric_cls_builder, "job_id", pipeline_job_id)
+    setattr(metric_cls_builder, "created_on", datetime.date.today())
+
+    # Set date attributes
+    setattr(metric_cls_builder, "year", event_date.year)
+    setattr(metric_cls_builder, "month", event_date.month)
+
+    # Add relevant demographic and person-level dimensions
+    for attribute, value in person_attributes.items():
+        if attribute in metric_attributes:
+            setattr(metric_cls_builder, attribute, value)
+
+    # Add attributes from the event that are relevant to the metric_class
+    for metric_attribute in metric_attributes:
+        if hasattr(event, metric_attribute):
+            attribute_value = getattr(event, metric_attribute)
+            setattr(metric_cls_builder, metric_attribute, attribute_value)
+
+    return metric_cls_builder.build()

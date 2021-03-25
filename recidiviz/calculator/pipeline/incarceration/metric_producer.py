@@ -14,13 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Calculates incarceration metrics from incarceration events.
+"""Calculates IncarcerationMetrics from IncarcerationEvents.
 
-This contains the core logic for calculating incarceration metrics on a person-by-person basis. It transforms
-IncarcerationEvents into incarceration metrics, key-value pairs where the key represents all of the dimensions
-represented in the data point, and the value represents the value the person should contribute to that metric.
+This contains the core logic for calculating incarceration metrics on a person-by-person
+basis. It transforms IncarcerationEvents into IncarcerationMetrics.
 """
-from typing import List, Dict, Tuple, Any, Type, Optional
+from typing import List, Dict, Type, Optional
 
 from recidiviz.calculator.pipeline.incarceration.incarceration_event import (
     IncarcerationEvent,
@@ -36,7 +35,7 @@ from recidiviz.calculator.pipeline.incarceration.metrics import (
     IncarcerationReleaseMetric,
 )
 from recidiviz.calculator.pipeline.utils.calculator_utils import (
-    produce_standard_metric_combinations,
+    produce_standard_metrics,
 )
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.persistence.entity.state.entities import StatePerson
@@ -55,14 +54,15 @@ EVENT_TO_METRIC_CLASSES: Dict[Type[IncarcerationEvent], Type[IncarcerationMetric
 }
 
 
-def map_incarceration_combinations(
+def produce_incarceration_metrics(
     person: StatePerson,
     incarceration_events: List[IncarcerationEvent],
     metric_inclusions: Dict[IncarcerationMetricType, bool],
     calculation_end_month: Optional[str],
     calculation_month_count: int,
     person_metadata: PersonMetadata,
-) -> List[Tuple[Dict[str, Any], Any]]:
+    pipeline_job_id: str,
+) -> List[IncarcerationMetric]:
     """Transforms IncarcerationEvents and a StatePerson into combinations representing IncarcerationMetrics.
 
     Takes in a StatePerson and all of their IncarcerationEvent and returns an array of "incarceration combinations".
@@ -80,10 +80,12 @@ def map_incarceration_combinations(
         calculation_month_count: The number of months (including the month of the calculation_month_upper_bound) to
             limit the monthly calculation output to. If set to -1, does not limit the calculations.
         person_metadata: Contains information about the StatePerson that is necessary for the metrics.
+        pipeline_job_id: The job_id of the pipeline that is currently running.
+
     Returns:
-        A list of key-value tuples representing specific metric combinations and the value corresponding to that metric.
+        A list of IncarcerationMetrics.
     """
-    return produce_standard_metric_combinations(
+    metrics = produce_standard_metrics(
         pipeline="incarceration",
         person=person,
         identifier_events=incarceration_events,
@@ -93,4 +95,17 @@ def map_incarceration_combinations(
         person_metadata=person_metadata,
         event_to_metric_types=EVENT_TO_METRIC_TYPES,
         event_to_metric_classes=EVENT_TO_METRIC_CLASSES,
+        pipeline_job_id=pipeline_job_id,
     )
+
+    incarceration_metrics: List[IncarcerationMetric] = []
+
+    for metric in metrics:
+        if not isinstance(metric, IncarcerationMetric):
+            raise ValueError(
+                f"Unexpected metric type {type(metric)}."
+                f" All metrics should be IncarcerationMetrics."
+            )
+        incarceration_metrics.append(metric)
+
+    return incarceration_metrics

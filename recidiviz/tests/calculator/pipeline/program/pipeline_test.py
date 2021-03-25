@@ -22,12 +22,9 @@ from typing import Optional, Set
 from unittest import mock
 
 import apache_beam as beam
-import pytest
 from apache_beam.testing.util import assert_that, equal_to, BeamAssertException
 from apache_beam.testing.test_pipeline import TestPipeline
-from apache_beam.options.pipeline_options import PipelineOptions
 
-import datetime
 from datetime import date
 
 from freezegun import freeze_time
@@ -37,6 +34,7 @@ from recidiviz.calculator.pipeline.program.metrics import (
     ProgramMetric,
     ProgramMetricType,
     ProgramReferralMetric,
+    ProgramParticipationMetric,
 )
 from recidiviz.calculator.pipeline.program.program_event import (
     ProgramReferralEvent,
@@ -77,6 +75,7 @@ from recidiviz.tests.calculator.pipeline.fake_bigquery import (
 )
 from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
     run_test_pipeline,
+    test_pipeline_options,
 )
 from recidiviz.tests.persistence.database import database_test_utils
 
@@ -805,16 +804,16 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         test_pipeline.run()
 
 
-class TestCalculateProgramMetricCombinations(unittest.TestCase):
-    """Tests the CalculateProgramMetricCombinations DoFn in the pipeline."""
+class TestProduceProgramMetrics(unittest.TestCase):
+    """Tests the ProduceProgramMetrics DoFn in the pipeline."""
 
     def setUp(self) -> None:
         self.fake_person_id = 12345
 
         self.person_metadata = PersonMetadata(prioritized_race_or_ethnicity="BLACK")
 
-    def testCalculateProgramMetricCombinations(self):
-        """Tests the CalculateProgramMetricCombinations DoFn."""
+    def testProduceProgramMetrics(self):
+        """Tests the ProduceProgramMetrics DoFn."""
 
         fake_person = StatePerson.new_with_defaults(
             state_code="US_XX",
@@ -859,25 +858,26 @@ class TestCalculateProgramMetricCombinations(unittest.TestCase):
             test_pipeline
             | beam.Create(inputs)
             | beam.ParDo(ExtractPersonEventsMetadata())
-            | "Calculate Program Metrics"
+            | "Produce Program Metrics"
             >> beam.ParDo(
-                pipeline.CalculateProgramMetricCombinations(),
+                pipeline.ProduceProgramMetrics(),
                 None,
                 -1,
                 ALL_METRIC_INCLUSIONS_DICT,
+                test_pipeline_options(),
             )
         )
 
         assert_that(
             output,
-            AssertMatchers.count_combinations(expected_combination_counts),
+            AssertMatchers.count_metrics(expected_combination_counts),
             "Assert number of metrics is expected value",
         )
 
         test_pipeline.run()
 
-    def testCalculateProgramMetricCombinations_NoReferrals(self):
-        """Tests the CalculateProgramMetricCombinations when there are
+    def testProduceProgramMetrics_NoReferrals(self):
+        """Tests the ProduceProgramMetrics when there are
         no supervision months. This should never happen because any person
         without program events is dropped entirely from the pipeline."""
         fake_person = StatePerson.new_with_defaults(
@@ -904,12 +904,13 @@ class TestCalculateProgramMetricCombinations(unittest.TestCase):
             test_pipeline
             | beam.Create(inputs)
             | beam.ParDo(ExtractPersonEventsMetadata())
-            | "Calculate Program Metrics"
+            | "Produce Program Metrics"
             >> beam.ParDo(
-                pipeline.CalculateProgramMetricCombinations(),
+                pipeline.ProduceProgramMetrics(),
                 None,
                 -1,
                 ALL_METRIC_INCLUSIONS_DICT,
+                test_pipeline_options(),
             )
         )
 
@@ -917,8 +918,8 @@ class TestCalculateProgramMetricCombinations(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testCalculateProgramMetricCombinations_NoInput(self):
-        """Tests the CalculateProgramMetricCombinations when there is
+    def testProduceProgramMetrics_NoInput(self):
+        """Tests the ProduceProgramMetrics when there is
         no input to the function."""
 
         test_pipeline = TestPipeline()
@@ -927,74 +928,19 @@ class TestCalculateProgramMetricCombinations(unittest.TestCase):
             test_pipeline
             | beam.Create([])
             | beam.ParDo(ExtractPersonEventsMetadata())
-            | "Calculate Program Metrics"
+            | "Produce Program Metrics"
             >> beam.ParDo(
-                pipeline.CalculateProgramMetricCombinations(),
+                pipeline.ProduceProgramMetrics(),
                 None,
                 -1,
                 ALL_METRIC_INCLUSIONS_DICT,
+                test_pipeline_options(),
             )
         )
 
         assert_that(output, equal_to([]))
 
         test_pipeline.run()
-
-
-class TestProduceProgramMetric(unittest.TestCase):
-    """Tests the ProduceProgramMetric DoFn in the pipeline."""
-
-    def testProduceProgramMetric(self):
-        metric_key = {
-            "gender": Gender.MALE,
-            "year": 1999,
-            "month": 3,
-            "metric_type": ProgramMetricType.PROGRAM_REFERRAL,
-            "state_code": "US_XX",
-        }
-
-        value = 10
-
-        test_pipeline = TestPipeline()
-
-        all_pipeline_options = PipelineOptions().get_all_options()
-
-        job_timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H_%M_%S.%f")
-        all_pipeline_options["job_timestamp"] = job_timestamp
-
-        output = (
-            test_pipeline
-            | beam.Create([(metric_key, value)])
-            | "Produce Program Metric"
-            >> beam.ParDo(pipeline.ProduceProgramMetrics(), **all_pipeline_options)
-        )
-
-        assert_that(output, AssertMatchers.validate_program_referral_metric())
-
-        test_pipeline.run()
-
-    def testProduceProgramMetric_EmptyMetric(self):
-        metric_key = {}
-
-        value = 102
-
-        test_pipeline = TestPipeline()
-
-        all_pipeline_options = PipelineOptions().get_all_options()
-
-        job_timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H_%M_%S.%f")
-        all_pipeline_options["job_timestamp"] = job_timestamp
-
-        # This should never happen, and we want the pipeline to fail loudly if it does.
-        with pytest.raises(ValueError):
-            _ = (
-                test_pipeline
-                | beam.Create([(metric_key, value)])
-                | "Produce Program Metric"
-                >> beam.ParDo(pipeline.ProduceProgramMetrics(), **all_pipeline_options)
-            )
-
-            test_pipeline.run()
 
 
 class AssertMatchers:
@@ -1016,54 +962,29 @@ class AssertMatchers:
         return _validate_pipeline_test
 
     @staticmethod
-    def count_combinations(expected_combination_counts):
-        """Asserts that the number of metric combinations matches the expected
-        counts."""
+    def count_metrics(expected_metric_counts):
+        """Asserts that the number of ProgramMetrics matches the expected counts."""
 
-        def _count_combinations(output):
-            actual_combination_counts = {}
+        def _count_metrics(output):
+            actual_metric_counts = {}
 
-            for key in expected_combination_counts.keys():
-                actual_combination_counts[key] = 0
+            for key in expected_metric_counts.keys():
+                actual_metric_counts[key] = 0
 
-            for result in output:
-                combination, _ = result
-
-                metric_type = combination.get("metric_type")
-
-                if metric_type == ProgramMetricType.PROGRAM_REFERRAL:
-                    actual_combination_counts["referrals"] = (
-                        actual_combination_counts["referrals"] + 1
+            for metric in output:
+                if isinstance(metric, ProgramReferralMetric):
+                    actual_metric_counts["referrals"] = (
+                        actual_metric_counts["referrals"] + 1
                     )
-                elif metric_type == ProgramMetricType.PROGRAM_PARTICIPATION:
-                    actual_combination_counts["participation"] = (
-                        actual_combination_counts["participation"] + 1
+                elif isinstance(metric, ProgramParticipationMetric):
+                    actual_metric_counts["participation"] = (
+                        actual_metric_counts["participation"] + 1
                     )
 
-            for key in expected_combination_counts:
-                if expected_combination_counts[key] != actual_combination_counts[key]:
+            for key in expected_metric_counts:
+                if expected_metric_counts[key] != actual_metric_counts[key]:
                     raise BeamAssertException(
                         "Failed assert. Count does not match expected value."
                     )
 
-        return _count_combinations
-
-    @staticmethod
-    def validate_program_referral_metric():
-        """Asserts that the ProgramReferral produced by the
-        pipeline matches the expected class."""
-
-        def _validate_program_referral_metric(output):
-            if len(output) != 1:
-                raise BeamAssertException(
-                    "Failed assert. Should be only one " "ProgramReferral returned."
-                )
-
-            program_referral_metric = output[0]
-
-            if not isinstance(program_referral_metric, ProgramReferralMetric):
-                raise BeamAssertException(
-                    "Failed assert. Produced metric " "is not of the expected type."
-                )
-
-        return _validate_program_referral_metric
+        return _count_metrics

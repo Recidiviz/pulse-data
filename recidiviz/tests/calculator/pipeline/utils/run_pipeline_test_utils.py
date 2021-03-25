@@ -15,9 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helper that runs a test version of the pipeline in the provided module."""
-
+import datetime
 from types import ModuleType
-from typing import Optional, Set, Callable
+from typing import Optional, Set, Callable, Dict
 
 from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.testing.test_pipeline import TestPipeline
@@ -28,6 +28,16 @@ from recidiviz.tests.calculator.pipeline.fake_bigquery import (
     FakeReadFromBigQuery,
     FakeWriteToBigQuery,
 )
+
+
+def test_pipeline_options() -> Dict[str, str]:
+    """Returns a dictionary of PipelineOptions augmented with the local job_timestamp
+    for the job_id of the test runs."""
+    all_pipeline_options = PipelineOptions().get_all_options()
+
+    job_timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H_%M_%S.%f")
+    all_pipeline_options["job_timestamp"] = job_timestamp
+    return all_pipeline_options
 
 
 def run_test_pipeline(

@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for incarceration/calculator.py."""
+"""Tests for incarceration/metric_producer.py."""
 # pylint: disable=unused-import,wrong-import-order
 import unittest
 from collections import defaultdict
@@ -23,15 +23,20 @@ from typing import List, Dict
 
 from freezegun import freeze_time
 
-from recidiviz.calculator.pipeline.incarceration.calculator import EVENT_TO_METRIC_TYPES
+from recidiviz.calculator.pipeline.incarceration.metric_producer import (
+    EVENT_TO_METRIC_TYPES,
+)
 from recidiviz.calculator.pipeline.incarceration.incarceration_event import (
     IncarcerationEvent,
     IncarcerationAdmissionEvent,
     IncarcerationReleaseEvent,
     IncarcerationStayEvent,
 )
-from recidiviz.calculator.pipeline.incarceration import calculator
-from recidiviz.calculator.pipeline.incarceration.metrics import IncarcerationMetricType
+from recidiviz.calculator.pipeline.incarceration import metric_producer
+from recidiviz.calculator.pipeline.incarceration.metrics import (
+    IncarcerationMetricType,
+    IncarcerationPopulationMetric,
+)
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.common.constants.person_characteristics import Gender, Race, Ethnicity
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -59,12 +64,13 @@ _STATUTE = "XXXX"
 _NCIC_CODE = "1234"
 
 _DEFAULT_PERSON_METADATA = PersonMetadata(prioritized_race_or_ethnicity="BLACK")
+PIPELINE_JOB_ID = "TEST_JOB_ID"
 
 
-class TestMapIncarcerationCombinations(unittest.TestCase):
-    """Tests the map_incarceration_combinations function."""
+class TestProduceIncarcerationMetrics(unittest.TestCase):
+    """Tests the produce_incarceration_metrics function."""
 
-    def test_map_incarceration_combinations(self):
+    def test_produce_incarceration_metrics(self):
         person = StatePerson.new_with_defaults(
             state_code="CA",
             person_id=12345,
@@ -94,24 +100,24 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
 
         incarceration_events = [incarceration_event]
 
-        incarceration_combinations = calculator.map_incarceration_combinations(
+        metrics = metric_producer.produce_incarceration_metrics(
             person=person,
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month="2000-03",
             calculation_month_count=1,
             person_metadata=_DEFAULT_PERSON_METADATA,
+            pipeline_job_id=PIPELINE_JOB_ID,
         )
 
-        expected_combinations_count = expected_metric_combos_count(incarceration_events)
+        expected_count = expected_metrics_count(incarceration_events)
 
-        self.assertEqual(expected_combinations_count, len(incarceration_combinations))
-        assert all(value == 1 for _combination, value in incarceration_combinations)
+        self.assertEqual(expected_count, len(metrics))
 
-        for combo, _ in incarceration_combinations:
-            assert combo.get("year") == 2000
+        for metric in metrics:
+            assert metric.year == 2000
 
-    def test_map_incarceration_combinations_all_types(self):
+    def test_produce_incarceration_metrics_all_types(self):
         person = StatePerson.new_with_defaults(
             state_code="CA",
             person_id=12345,
@@ -161,21 +167,21 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             ),
         ]
 
-        incarceration_combinations = calculator.map_incarceration_combinations(
+        metrics = metric_producer.produce_incarceration_metrics(
             person=person,
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
+            pipeline_job_id=PIPELINE_JOB_ID,
         )
 
-        expected_combinations_count = expected_metric_combos_count(incarceration_events)
+        expected_count = expected_metrics_count(incarceration_events)
 
-        self.assertEqual(expected_combinations_count, len(incarceration_combinations))
-        assert all(value == 1 for _combination, value in incarceration_combinations)
+        self.assertEqual(expected_count, len(metrics))
 
-    def test_map_incarceration_combinations_two_admissions_same_month(self):
+    def test_produce_incarceration_metrics_two_admissions_same_month(self):
         person = StatePerson.new_with_defaults(
             state_code="CA",
             person_id=12345,
@@ -210,21 +216,21 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             ),
         ]
 
-        incarceration_combinations = calculator.map_incarceration_combinations(
+        metrics = metric_producer.produce_incarceration_metrics(
             person=person,
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
+            pipeline_job_id=PIPELINE_JOB_ID,
         )
 
-        expected_combinations_count = expected_metric_combos_count(incarceration_events)
+        expected_count = expected_metrics_count(incarceration_events)
 
-        self.assertEqual(expected_combinations_count, len(incarceration_combinations))
-        assert all(value == 1 for _combination, value in incarceration_combinations)
+        self.assertEqual(expected_count, len(metrics))
 
-    def test_map_incarceration_combinations_two_releases_same_month(self):
+    def test_produce_incarceration_metrics_two_releases_same_month(self):
         person = StatePerson.new_with_defaults(
             state_code="CA",
             person_id=12345,
@@ -257,22 +263,22 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             ),
         ]
 
-        incarceration_combinations = calculator.map_incarceration_combinations(
+        metrics = metric_producer.produce_incarceration_metrics(
             person=person,
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
+            pipeline_job_id=PIPELINE_JOB_ID,
         )
 
-        expected_combinations_count = expected_metric_combos_count(incarceration_events)
+        expected_count = expected_metrics_count(incarceration_events)
 
-        self.assertEqual(expected_combinations_count, len(incarceration_combinations))
-        assert all(value == 1 for _combination, value in incarceration_combinations)
+        self.assertEqual(expected_count, len(metrics))
 
     @freeze_time("2020-01-01")
-    def test_map_incarceration_combinations_two_stays_same_month(self):
+    def test_produce_incarceration_metrics_two_stays_same_month(self):
         person = StatePerson.new_with_defaults(
             state_code="CA",
             person_id=12345,
@@ -315,21 +321,21 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             ),
         ]
 
-        incarceration_combinations = calculator.map_incarceration_combinations(
+        metrics = metric_producer.produce_incarceration_metrics(
             person=person,
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
+            pipeline_job_id=PIPELINE_JOB_ID,
         )
 
-        expected_combinations_count = expected_metric_combos_count(incarceration_events)
+        expected_count = expected_metrics_count(incarceration_events)
 
-        self.assertEqual(expected_combinations_count, len(incarceration_combinations))
-        assert all(value == 1 for _combination, value in incarceration_combinations)
+        self.assertEqual(expected_count, len(metrics))
 
-    def test_map_incarceration_combinations_two_stays_same_month_facility(self):
+    def test_produce_incarceration_metrics_two_stays_same_month_facility(self):
         person = StatePerson.new_with_defaults(
             state_code="CA",
             person_id=12345,
@@ -370,21 +376,21 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             ),
         ]
 
-        incarceration_combinations = calculator.map_incarceration_combinations(
+        metrics = metric_producer.produce_incarceration_metrics(
             person=person,
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
+            pipeline_job_id=PIPELINE_JOB_ID,
         )
 
-        expected_combinations_count = expected_metric_combos_count(incarceration_events)
+        expected_count = expected_metrics_count(incarceration_events)
 
-        self.assertEqual(expected_combinations_count, len(incarceration_combinations))
-        assert all(value == 1 for _combination, value in incarceration_combinations)
+        self.assertEqual(expected_count, len(metrics))
 
-    def test_map_incarceration_combinations_multiple_stays(self):
+    def test_produce_incarceration_metrics_multiple_stays(self):
         person = StatePerson.new_with_defaults(
             state_code="CA",
             person_id=12345,
@@ -426,21 +432,21 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             ),
         ]
 
-        incarceration_combinations = calculator.map_incarceration_combinations(
+        metrics = metric_producer.produce_incarceration_metrics(
             person=person,
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
+            pipeline_job_id=PIPELINE_JOB_ID,
         )
 
-        expected_combinations_count = expected_metric_combos_count(incarceration_events)
+        expected_count = expected_metrics_count(incarceration_events)
 
-        self.assertEqual(expected_combinations_count, len(incarceration_combinations))
-        assert all(value == 1 for _combination, value in incarceration_combinations)
+        self.assertEqual(expected_count, len(metrics))
 
-    def test_map_incarceration_combinations_multiple_stays_one_month(self):
+    def test_produce_incarceration_metrics_multiple_stays_one_month(self):
         person = StatePerson.new_with_defaults(
             state_code="CA",
             person_id=12345,
@@ -482,21 +488,21 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             ),
         ]
 
-        incarceration_combinations = calculator.map_incarceration_combinations(
+        metrics = metric_producer.produce_incarceration_metrics(
             person=person,
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
+            pipeline_job_id=PIPELINE_JOB_ID,
         )
 
-        expected_combinations_count = expected_metric_combos_count(incarceration_events)
+        expected_count = expected_metrics_count(incarceration_events)
 
-        self.assertEqual(expected_combinations_count, len(incarceration_combinations))
-        assert all(value == 1 for _combination, value in incarceration_combinations)
+        self.assertEqual(expected_count, len(metrics))
 
-    def test_map_incarceration_combinations_multiple_overlapping_stays(self):
+    def test_produce_incarceration_metrics_multiple_overlapping_stays(self):
         person = StatePerson.new_with_defaults(
             state_code="US_ND",
             person_id=12345,
@@ -538,22 +544,22 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             ),
         ]
 
-        incarceration_combinations = calculator.map_incarceration_combinations(
+        metrics = metric_producer.produce_incarceration_metrics(
             person=person,
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
+            pipeline_job_id=PIPELINE_JOB_ID,
         )
 
-        expected_combinations_count = expected_metric_combos_count(incarceration_events)
+        expected_count = expected_metrics_count(incarceration_events)
 
-        self.assertEqual(expected_combinations_count, len(incarceration_combinations))
-        assert all(value == 1 for _combination, value in incarceration_combinations)
+        self.assertEqual(expected_count, len(metrics))
 
     @freeze_time("2000-03-30")
-    def test_map_incarceration_combinations_calculation_month_count(self):
+    def test_produce_incarceration_metrics_calculation_month_count(self):
         person = StatePerson.new_with_defaults(
             state_code="CA",
             person_id=12345,
@@ -580,24 +586,25 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
 
         incarceration_events = [incarceration_event]
 
-        incarceration_combinations = calculator.map_incarceration_combinations(
+        metrics = metric_producer.produce_incarceration_metrics(
             person=person,
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month="2000-03",
             calculation_month_count=1,
             person_metadata=_DEFAULT_PERSON_METADATA,
+            pipeline_job_id=PIPELINE_JOB_ID,
         )
 
-        expected_combinations_count = expected_metric_combos_count(incarceration_events)
+        expected_count = expected_metrics_count(incarceration_events)
 
-        self.assertEqual(expected_combinations_count, len(incarceration_combinations))
-        assert all(value == 1 for _combination, value in incarceration_combinations)
-        for combo, _ in incarceration_combinations:
-            assert combo.get("year") == 2000
+        self.assertEqual(expected_count, len(metrics))
+
+        for metric in metrics:
+            assert metric.year == 2000
 
     @freeze_time("2000-03-30")
-    def test_map_incarceration_combinations_calculation_month_count_exclude(self):
+    def test_produce_incarceration_metrics_calculation_month_count_exclude(self):
         person = StatePerson.new_with_defaults(
             state_code="CA",
             person_id=12345,
@@ -624,19 +631,20 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
 
         incarceration_events = [incarceration_event]
 
-        incarceration_combinations = calculator.map_incarceration_combinations(
+        metrics = metric_producer.produce_incarceration_metrics(
             person=person,
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
             calculation_month_count=1,
             person_metadata=_DEFAULT_PERSON_METADATA,
+            pipeline_job_id=PIPELINE_JOB_ID,
         )
 
-        self.assertEqual(0, len(incarceration_combinations))
+        self.assertEqual(0, len(metrics))
 
     @freeze_time("2000-03-30")
-    def test_map_incarceration_combinations_calculation_month_count_include_one(self):
+    def test_produce_incarceration_metrics_calculation_month_count_include_one(self):
         person = StatePerson.new_with_defaults(
             state_code="CA",
             person_id=12345,
@@ -673,26 +681,25 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             incarceration_event_exclude,
         ]
 
-        incarceration_combinations = calculator.map_incarceration_combinations(
+        metrics = metric_producer.produce_incarceration_metrics(
             person=person,
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
             calculation_month_count=36,
             person_metadata=_DEFAULT_PERSON_METADATA,
+            pipeline_job_id=PIPELINE_JOB_ID,
         )
 
-        expected_combinations_count = expected_metric_combos_count(
-            [incarceration_event_include]
-        )
+        expected_count = expected_metrics_count([incarceration_event_include])
 
-        self.assertEqual(expected_combinations_count, len(incarceration_combinations))
-        assert all(value == 1 for _combination, value in incarceration_combinations)
-        for combo, _ in incarceration_combinations:
-            assert combo.get("year") == 2000
+        self.assertEqual(expected_count, len(metrics))
+
+        for metric in metrics:
+            assert metric.year == 2000
 
     @freeze_time("2010-12-31")
-    def test_map_incarceration_combinations_calculation_month_count_include_monthly(
+    def test_produce_incarceration_metrics_calculation_month_count_include_monthly(
         self,
     ):
         person = StatePerson.new_with_defaults(
@@ -721,23 +728,24 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
 
         incarceration_events = [incarceration_event]
 
-        incarceration_combinations = calculator.map_incarceration_combinations(
+        metrics = metric_producer.produce_incarceration_metrics(
             person=person,
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
             calculation_month_count=37,
             person_metadata=_DEFAULT_PERSON_METADATA,
+            pipeline_job_id=PIPELINE_JOB_ID,
         )
 
-        expected_combinations_count = expected_metric_combos_count(incarceration_events)
+        expected_count = expected_metrics_count(incarceration_events)
 
-        self.assertEqual(expected_combinations_count, len(incarceration_combinations))
-        assert all(value == 1 for _combination, value in incarceration_combinations)
-        for combo, _ in incarceration_combinations:
-            assert combo.get("year") == 2007
+        self.assertEqual(expected_count, len(metrics))
 
-    def test_map_incarceration_combinations_includes_statute_output(self):
+        for metric in metrics:
+            assert metric.year == 2007
+
+    def test_produce_incarceration_metrics_includes_statute_output(self):
         person = StatePerson.new_with_defaults(
             state_code="CA",
             person_id=12345,
@@ -785,28 +793,31 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             ),
         ]
 
-        incarceration_combinations = calculator.map_incarceration_combinations(
+        metrics = metric_producer.produce_incarceration_metrics(
             person=person,
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
+            pipeline_job_id=PIPELINE_JOB_ID,
         )
 
-        expected_combinations_count = expected_metric_combos_count(incarceration_events)
+        expected_count = expected_metrics_count(incarceration_events)
 
-        self.assertEqual(expected_combinations_count, len(incarceration_combinations))
-        assert all(value == 1 for _combination, value in incarceration_combinations)
+        self.assertEqual(expected_count, len(metrics))
+
         assert all(
-            combo.get("most_serious_offense_statute") is not None
-            for combo, value in incarceration_combinations
-            if combo.get("person_id") is not None
+            isinstance(metric, IncarcerationPopulationMetric)
+            and metric.most_serious_offense_statute is not None
+            for metric in metrics
+            if metric.person_id is not None
         )
 
 
-def expected_metric_combos_count(incarceration_events: List[IncarcerationEvent]) -> int:
-    """Calculates the expected number of characteristic combinations given the incarceration events."""
+def expected_metrics_count(incarceration_events: List[IncarcerationEvent]) -> int:
+    """Calculates the expected number of characteristic combinations given the
+    incarceration events."""
     output_count_by_metric_type: Dict[IncarcerationMetricType, int] = defaultdict(int)
 
     for event_type, metric_type in EVENT_TO_METRIC_TYPES.items():

@@ -84,6 +84,7 @@ from recidiviz.tests.calculator.pipeline.fake_bigquery import (
 )
 from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
     run_test_pipeline,
+    test_pipeline_options,
 )
 
 _COUNTY_OF_RESIDENCE = "county_of_residence"
@@ -740,8 +741,8 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
         test_pipeline.run()
 
 
-class TestCalculateIncarcerationMetricCombinations(unittest.TestCase):
-    """Tests the CalculateIncarcerationMetricCombinations DoFn
+class TestProduceIncarcerationMetrics(unittest.TestCase):
+    """Tests the ProduceIncarcerationMetrics DoFn
     in the pipeline."""
 
     def setUp(self) -> None:
@@ -749,8 +750,8 @@ class TestCalculateIncarcerationMetricCombinations(unittest.TestCase):
 
         self.person_metadata = PersonMetadata(prioritized_race_or_ethnicity="BLACK")
 
-    def testCalculateIncarcerationMetricCombinations(self):
-        """Tests the CalculateIncarcerationMetricCombinations DoFn."""
+    def testProduceIncarcerationMetrics(self):
+        """Tests the ProduceIncarcerationMetrics DoFn."""
         fake_person = StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=123,
@@ -778,7 +779,7 @@ class TestCalculateIncarcerationMetricCombinations(unittest.TestCase):
 
         expected_metric_count = 1
 
-        expected_combination_counts = {
+        expected_metric_counts = {
             "admissions": expected_metric_count,
             "releases": expected_metric_count,
         }
@@ -799,25 +800,26 @@ class TestCalculateIncarcerationMetricCombinations(unittest.TestCase):
             test_pipeline
             | beam.Create(inputs)
             | beam.ParDo(ExtractPersonEventsMetadata())
-            | "Calculate Incarceration Metrics"
+            | "Produce Incarceration Metrics"
             >> beam.ParDo(
-                pipeline.CalculateIncarcerationMetricCombinations(),
+                pipeline.ProduceIncarcerationMetrics(),
                 None,
                 -1,
                 ALL_METRICS_INCLUSIONS_DICT,
+                test_pipeline_options(),
             )
         )
 
         assert_that(
             output,
-            AssertMatchers.count_combinations(expected_combination_counts),
+            AssertMatchers.count_metrics(expected_metric_counts),
             "Assert number of metrics is expected value",
         )
 
         test_pipeline.run()
 
-    def testCalculateIncarcerationMetricCombinations_NoIncarceration(self):
-        """Tests the CalculateIncarcerationMetricCombinations when there are
+    def testProduceIncarcerationMetrics_NoIncarceration(self):
+        """Tests the ProduceIncarcerationMetrics when there are
         no incarceration_events. This should never happen because any person
         without incarceration events is dropped entirely from the pipeline."""
         fake_person = StatePerson.new_with_defaults(
@@ -844,12 +846,13 @@ class TestCalculateIncarcerationMetricCombinations(unittest.TestCase):
             test_pipeline
             | beam.Create(inputs)
             | beam.ParDo(ExtractPersonEventsMetadata())
-            | "Calculate Incarceration Metrics"
+            | "Produce Incarceration Metrics"
             >> beam.ParDo(
-                pipeline.CalculateIncarcerationMetricCombinations(),
+                pipeline.ProduceIncarcerationMetrics(),
                 None,
                 -1,
                 ALL_METRICS_INCLUSIONS_DICT,
+                test_pipeline_options(),
             )
         )
 
@@ -857,8 +860,8 @@ class TestCalculateIncarcerationMetricCombinations(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testCalculateIncarcerationMetricCombinations_NoInput(self):
-        """Tests the CalculateIncarcerationMetricCombinations when there is
+    def testProduceIncarcerationMetrics_NoInput(self):
+        """Tests the ProduceIncarcerationMetrics when there is
         no input to the function."""
 
         test_pipeline = TestPipeline()
@@ -866,12 +869,13 @@ class TestCalculateIncarcerationMetricCombinations(unittest.TestCase):
         output = (
             test_pipeline
             | beam.Create([])
-            | "Calculate Incarceration Metrics"
+            | "Produce Incarceration Metrics"
             >> beam.ParDo(
-                pipeline.CalculateIncarcerationMetricCombinations(),
+                pipeline.ProduceIncarcerationMetrics(),
                 None,
                 -1,
                 ALL_METRICS_INCLUSIONS_DICT,
+                test_pipeline_options(),
             )
         )
 
@@ -899,20 +903,18 @@ class AssertMatchers:
         return _validate_metric_type
 
     @staticmethod
-    def count_combinations(expected_combination_counts):
+    def count_metrics(expected_metric_counts):
         """Asserts that the number of metric combinations matches the expected
         counts."""
 
-        def _count_combinations(output):
+        def _count_metrics(output):
             actual_combination_counts = {}
 
-            for key in expected_combination_counts.keys():
+            for key in expected_metric_counts.keys():
                 actual_combination_counts[key] = 0
 
-            for result in output:
-                combination_dict, _ = result
-
-                metric_type = combination_dict.get("metric_type")
+            for metric in output:
+                metric_type = metric.metric_type
 
                 if metric_type == IncarcerationMetricType.INCARCERATION_ADMISSION:
                     actual_combination_counts["admissions"] = (
@@ -923,14 +925,14 @@ class AssertMatchers:
                         actual_combination_counts["releases"] + 1
                     )
 
-            for key in expected_combination_counts:
-                if expected_combination_counts[key] != actual_combination_counts[key]:
+            for key in expected_metric_counts:
+                if expected_metric_counts[key] != actual_combination_counts[key]:
 
                     raise BeamAssertException(
                         "Failed assert. Count does not" "match expected value."
                     )
 
-        return _count_combinations
+        return _count_metrics
 
     @staticmethod
     def validate_pipeline_test(expected_metric_types: Set[IncarcerationMetricType]):

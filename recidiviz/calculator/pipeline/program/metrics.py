@@ -17,7 +17,7 @@
 """Program metrics we calculate."""
 
 from datetime import date
-from typing import Optional, Dict, Any, cast
+from typing import Optional
 
 import attr
 
@@ -66,26 +66,6 @@ class ProgramMetric(RecidivizMetric, PersonLevelMetric):
     # Program ID
     program_id: str = attr.ib(default=None)
 
-    @staticmethod
-    def build_from_metric_key_group(
-        metric_key: Dict[str, Any], job_id: str
-    ) -> Optional["ProgramMetric"]:
-        """Builds a ProgramMetric object from the given
-        arguments.
-        """
-
-        if not metric_key:
-            raise ValueError("The metric_key is empty.")
-
-        metric_key["job_id"] = job_id
-        metric_key["created_on"] = date.today()
-
-        program_metric = cast(
-            ProgramMetric, ProgramMetric.build_from_dictionary(metric_key)
-        )
-
-        return program_metric
-
 
 @attr.s
 class ProgramReferralMetric(ProgramMetric, AssessmentMetric, SupervisionLocationMetric):
@@ -115,27 +95,6 @@ class ProgramReferralMetric(ProgramMetric, AssessmentMetric, SupervisionLocation
     # External ID of the officer who was supervising the person described by this metric
     supervising_officer_external_id: Optional[str] = attr.ib(default=None)
 
-    @staticmethod
-    def build_from_metric_key_group(
-        metric_key: Dict[str, Any], job_id: str
-    ) -> Optional["ProgramReferralMetric"]:
-        """Builds a ProgramReferralMetric object from the given
-        arguments.
-        """
-
-        if not metric_key:
-            raise ValueError("The metric_key is empty.")
-
-        metric_key["job_id"] = job_id
-        metric_key["created_on"] = date.today()
-
-        program_metric = cast(
-            ProgramReferralMetric,
-            ProgramReferralMetric.build_from_dictionary(metric_key),
-        )
-
-        return program_metric
-
 
 @attr.s
 class ProgramParticipationMetric(ProgramMetric):
@@ -162,22 +121,3 @@ class ProgramParticipationMetric(ProgramMetric):
     # Supervision Type
     # TODO(#2891): Make this of type StateSupervisionPeriodSupervisionType
     supervision_type: Optional[StateSupervisionType] = attr.ib(default=None)
-
-    @staticmethod
-    def build_from_metric_key_group(
-        metric_key: Dict[str, Any], job_id: str
-    ) -> Optional["ProgramParticipationMetric"]:
-        """Builds a ProgramParticipationMetric object from the given arguments."""
-
-        if not metric_key:
-            raise ValueError("The metric_key is empty.")
-
-        metric_key["job_id"] = job_id
-        metric_key["created_on"] = date.today()
-
-        program_metric = cast(
-            ProgramParticipationMetric,
-            ProgramParticipationMetric.build_from_dictionary(metric_key),
-        )
-
-        return program_metric
