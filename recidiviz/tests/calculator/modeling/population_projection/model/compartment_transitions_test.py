@@ -179,7 +179,7 @@ class TestPolicyFunctions(TestTransitionTable):
 
     def test_alternate_transitions_data_equal_to_differently_instantiated_transition_table(
         self,
-    ):
+    ) -> None:
         alternate_data = self.test_data.copy()
         alternate_data.compartment_duration *= 2
         alternate_data.total_population = 10 - alternate_data.total_population

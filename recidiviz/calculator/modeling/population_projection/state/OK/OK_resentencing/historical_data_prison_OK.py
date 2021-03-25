@@ -32,7 +32,9 @@ two_or_more_priors = {
     2017: 35.67,
     2018: 31.88,
     2019: 31.12,
+    2020: 33.4,
 }
+
 outflows = {
     2010: 1390.00,
     2011: 1240.00,
@@ -44,7 +46,9 @@ outflows = {
     2017: 1898.00,
     2018: 1721.00,
     2019: 972,
+    2020: 463.00,
 }
+
 releases = {
     2010: 1532.00,
     2011: 1428.00,
@@ -53,20 +57,21 @@ releases = {
     2014: 1327.00,
     2015: 1362.00,
     2016: 1817.00,
-    2017: 2018.00,
+    2017: 2018,
     2018: 1927.00,
     2019: 1707.00,
+    2020: 1459,
 }
 outflows_data = pd.DataFrame(
     {
-        "compartment": ["pretrial"] * 10 + ["prison"] * 10,
-        "outflow_to": ["prison"] * 10 + ["release"] * 10,
-        "time_step": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] * 2,
+        "compartment": ["pretrial"] * 11 + ["prison"] * 11,
+        "outflow_to": ["prison"] * 11 + ["release"] * 11,
+        "time_step": list(range(11)) * 2,
         "total_population": [
-            two_or_more_priors[y] * outflows[y] / 100 for y in outflows
+            two_or_more_priors[y] * outflows[y] * 0.77 / 100 for y in outflows
         ]
         + [two_or_more_priors[y] * releases[y] / 100 for y in outflows],
-        "crime_type": ["NA"] * 20,
+        "crime_type": ["NA"] * 22,
     }
 )
 
@@ -82,15 +87,15 @@ outflows_data = final_outflows
 
 transitions_data = pd.DataFrame(
     {
-        "compartment": ["prison"] * 2 + ["release"] * 36 + ["release", "release_full"],
-        "outflow_to": ["release"] * 2
+        "compartment": ["prison"] * 3 + ["release"] * 36 + ["release", "release_full"],
+        "outflow_to": ["release"] * 3
         + ["prison"] * 36
         + ["release_full", "release_full"],
-        "compartment_duration": [2400.80 / 365 * 12, 2457.60 / 365 * 12]
+        "compartment_duration": [888.2 / 365 * 12, 962.9 / 365 * 12, 1089.9 / 365 * 12]
         + list(range(1, 37))
         + [36, 36],
-        "total_population": [1.0] * 2 + [0.23 / 36] * 36 + [0.77, 1],
-        "crime_type": ["NA"] * 40,
+        "total_population": [1.0] * 3 + [0.23 / 36] * 36 + [0.77, 1],
+        "crime_type": ["NA"] * 41,
     }
 )
 
