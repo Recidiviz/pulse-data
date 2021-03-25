@@ -1,0 +1,32 @@
+---
+user_inputs:
+  policy_year: 2021.0
+  start_year: 2019.0
+  projection_years: 10.0
+  speed_run: true
+
+compartments_architecture:
+  pre-supervision: shell
+  parole: full
+  probation: full
+  parole_revocation: full
+  probation_revocation: full
+  release: full
+
+reference_date: 2010.0
+# january
+time_step: 0.083333333
+# one month
+
+disaggregation_axes:
+- crime_type
+
+data_inputs:
+  big_query_simulation_tag: WI_po_incentives
+
+per_year_costs:
+  probation_revocation: 5300.0
+  parole_revocation: 5300.0
+  parole: 820.0
+  probation: 820.0
+  release: 0.0

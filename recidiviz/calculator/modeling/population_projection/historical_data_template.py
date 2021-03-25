@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,9 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Historical data to be ingested for a particular state x policy combination
-file name should be `historical_data_{state_code}_{primary_compartment}.py`
-    where state_code is of form NJ and primary compartment is the tag of the main compartment relevant to the policy
+Historical data to be ingested for a particular state x policy combination.
+
+File name should be `historical_data_{state_code}_{primary_compartment}.py`
+ where state_code is of form NJ and primary compartment is the tag of the main
+ compartment relevant to the policy.
+
 TODO(#99999): match naming convention for file name
 
 TODO(#99999): fill this out
@@ -40,8 +43,8 @@ from recidiviz.calculator.modeling.population_projection.spark_bq_utils import (
 # TODO(#99999): write in all raw data below
 
 
-# TODO(#99999): add one column to transitions_data & outflows_data per disaggregation axis.
-#  If none exist, add place-holder axis
+# TODO(#99999): add one column to transitions_data & outflows_data per disaggregation
+#  axis. If none exist, add place-holder axis.
 transitions_data = pd.DataFrame(
     columns=["compartment", "outflow_to", "total_population", "compartment_duration"]
 )
