@@ -63,6 +63,21 @@ class ETLOfficer(CaseTriageBase):
     surname = Column(String(255), nullable=False)
 
 
+class ETLOpportunity(CaseTriageBase):
+    """Represents an "opportunity" derived from our ETL pipeline."""
+
+    __tablename__ = "etl_opportunities"
+    state_code = Column(String(255), nullable=False, index=True, primary_key=True)
+    supervising_officer_external_id = Column(
+        String(255), nullable=False, index=True, primary_key=True
+    )
+    person_external_id = Column(
+        String(255), nullable=False, index=True, primary_key=True
+    )
+    opportunity_type = Column(String(255), nullable=False, index=True, primary_key=True)
+    update_metadata = Column(JSONB, nullable=False)
+
+
 class CaseUpdate(CaseTriageBase):
     """Represents an update to a parole officer's case based on actions that an officer
     indicates they have taken on behalf of a client. We only store one active row per
