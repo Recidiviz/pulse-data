@@ -28,15 +28,21 @@ from __future__ import absolute_import
 
 import argparse
 import logging
+import os
 import sys
 from typing import List, Tuple, Dict
 
 from recidiviz.cloud_functions.cloud_function_utils import (
     trigger_dataflow_job_from_template,
 )
-from recidiviz.tools.pipeline_launch_util import PRODUCTION_TEMPLATES_PATH
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
 from recidiviz.utils.yaml_dict import YAMLDict
+
+
+PRODUCTION_TEMPLATES_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)),
+    "calculator/pipeline/production_calculation_pipeline_templates.yaml",
+)
 
 
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
