@@ -54,6 +54,7 @@ class Simulator:
         first_relevant_ts: int,
         policy_list: List[SparkPolicy],
         output_compartment: str,
+        projection_type: ProjectionType = ProjectionType.MIDDLE,
     ) -> pd.DataFrame:
         """
         Run one PopulationSimulation with policy implemented and one baseline, returns cumulative and non-cumulative
@@ -64,6 +65,8 @@ class Simulator:
         `cost_multipliers` should be a df with one column per disaggregation axis and a column `multiplier`
         """
         self._reset_pop_simulations()
+
+        user_inputs["projection_type"] = projection_type.value
 
         self.pop_simulations["policy"] = self._build_population_simulation(
             user_inputs, data_inputs, policy_list, first_relevant_ts

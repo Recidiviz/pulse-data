@@ -17,9 +17,12 @@
 """outflow calculating object for ShellCompartments"""
 from enum import Enum, auto
 from typing import Optional, Dict, Tuple
+from warnings import warn
 
 from statsmodels.tsa.arima_model import ARIMA, ARIMAResults
+from numpy.linalg.linalg import LinAlgError
 import pandas as pd
+import numpy as np
 
 ORDER = (1, 1, 0)
 MIN_NUM_DATA_POINTS = 4
@@ -188,19 +191,37 @@ class PredictedAdmissions:
         return historical_data, constant_admissions
 
     def _train_arima_models(self) -> None:
-        # Create a dictionary to store the forecasted and backcasted trained ARIMA model objects
-        # A dictionary is created for each admission type with both a forecasting model and a backcasting model
+        """
+        Create a dictionary to store the forecasted and backcasted trained ARIMA model objects
+        A dictionary is created for each admission type with both a forecasting model and a backcasting model
+        """
         trained_model_dict = {}
         for outflow_compartment, row in self.historical_data.iterrows():
             model_forecast = ARIMA(row.values, order=ORDER)
             model_backcast = ARIMA(row.iloc[::-1].values, order=ORDER)
-
-            trained_model_dict[
-                (outflow_compartment, PredictionDirectionType.FORWARD)
-            ] = model_forecast.fit(disp=False)
-            trained_model_dict[
-                (outflow_compartment, PredictionDirectionType.BACKWARD)
-            ] = model_backcast.fit(disp=False)
+            try:
+                trained_model_dict[
+                    (outflow_compartment, PredictionDirectionType.FORWARD)
+                ] = model_forecast.fit(disp=False)
+                trained_model_dict[
+                    (outflow_compartment, PredictionDirectionType.BACKWARD)
+                ] = model_backcast.fit(disp=False)
+            except LinAlgError:
+                warn("singular matrix encountered fitting ARIMA model")
+                model_forecast = ARIMA(
+                    row.values + np.random.normal(0, 0.001, len(row.values)),
+                    order=ORDER,
+                )
+                model_backcast = ARIMA(
+                    row.iloc[::-1].values + np.random.normal(0, 0.001, len(row.values)),
+                    order=ORDER,
+                )
+                trained_model_dict[
+                    (outflow_compartment, PredictionDirectionType.FORWARD)
+                ] = model_forecast.fit(disp=False)
+                trained_model_dict[
+                    (outflow_compartment, PredictionDirectionType.BACKWARD)
+                ] = model_backcast.fit(disp=False)
 
         self.trained_model_dict = trained_model_dict
 
@@ -315,3 +336,22 @@ class PredictedAdmissions:
         }
         predictions_df = pd.DataFrame(index=prediction_indexes, data=prediction_data)
         return predictions_df
+
+    def __eq__(self, other: object) -> bool:
+        """Check if two PredictedAdmissions are equal (does not require projection_df to be equal)"""
+        if not isinstance(other, PredictedAdmissions):
+            return False
+
+        try:
+            if (self.historical_data != other.historical_data).any().any():
+                return False
+        except ValueError:
+            return False
+
+        if self.trained_model_dict != other.trained_model_dict:
+            return False
+
+        if self.projection_type != other.projection_type:
+            return False
+
+        return True

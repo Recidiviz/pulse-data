@@ -114,7 +114,7 @@ class FullCompartment(SparkCompartment):
         }
         return outflow_dict
 
-    def ingest_incoming_cohort(self, influx: Dict[str, int]):
+    def ingest_incoming_cohort(self, influx: Dict[str, float]):
         """Ingest the population coming from one compartment into another by the end of the `current_ts`
 
         influx: dictionary of cohort type (str) to number of people revoked for the ts (int)
