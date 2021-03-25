@@ -17,7 +17,7 @@
 """Tests for BuildableAttr base class."""
 
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Dict
 from datetime import date
 import unittest
 import attr
@@ -26,6 +26,10 @@ from recidiviz.common.attr_mixins import (
     BuilderException,
     BuildableAttr,
     DefaultableAttr,
+    _get_class_structure_reference,
+    _clear_class_structure_reference,
+    _attribute_field_type_reference_for_class,
+    BuildableAttrFieldType,
 )
 
 
@@ -335,3 +339,83 @@ class BuildableAttrTests(unittest.TestCase):
 
             # Build from dictionary
             _ = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)
+
+
+class CachedClassStructureReferenceTests(unittest.TestCase):
+    """Tests the functionality of the cached _class_structure_reference."""
+
+    def testCachedClassStructureReference(self):
+        """Tests that the cached _class_structure_reference contains the attr field
+        ref for the FakeBuildableAttrDeluxe class after the build_from_dictionary
+        function was called on the class."""
+        # Clear the _class_structure_reference cache
+        _clear_class_structure_reference()
+
+        class_structure_reference = _get_class_structure_reference()
+        self.assertEqual({}, class_structure_reference)
+
+        # Construct dictionary representation
+        subject_dict = {
+            "required_field": "value",
+            "another_required_field": "another_value",
+            "enum_nonnull_field": FakeEnum.A.value,
+            "date_field": "2001-01-08",
+        }
+
+        # Build from dictionary
+        subject = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)
+
+        # Assert
+        expected_result = FakeBuildableAttrDeluxe(
+            required_field="value",
+            another_required_field="another_value",
+            enum_nonnull_field=FakeEnum.A,
+            date_field=date.fromisoformat("2001-01-08"),
+        )
+
+        self.assertEqual(expected_result, subject)
+
+        cached_class_structure_reference = _get_class_structure_reference()
+
+        self.assertIsNotNone(
+            cached_class_structure_reference.get(FakeBuildableAttrDeluxe)
+        )
+
+    def testAttributeFieldTypeReferenceForClass(self):
+        """Tests that the _attribute_field_type_reference_for_class function returns
+        the expected mapping from Attribute to BuildableAttrFieldType."""
+        # Clear the _class_structure_reference cache
+        _clear_class_structure_reference()
+
+        attributes = attr.fields_dict(FakeBuildableAttrDeluxe).values()
+
+        expected_attr_field_type_ref: Dict[attr.Attribute, BuildableAttrFieldType] = {}
+        for attribute in attributes:
+            if "enum" in attribute.name:
+                enum_cls = FakeEnum
+
+                expected_attr_field_type_ref[attribute] = (
+                    BuildableAttrFieldType.ENUM,
+                    enum_cls,
+                )
+            elif "date" in attribute.name:
+                expected_attr_field_type_ref[attribute] = (
+                    BuildableAttrFieldType.DATE,
+                    None,
+                )
+            elif "forward_ref" in attribute.name:
+                expected_attr_field_type_ref[attribute] = (
+                    BuildableAttrFieldType.FORWARD_REF,
+                    None,
+                )
+            else:
+                expected_attr_field_type_ref[attribute] = (
+                    BuildableAttrFieldType.OTHER,
+                    None,
+                )
+
+        attr_field_type_ref = _attribute_field_type_reference_for_class(
+            FakeBuildableAttrDeluxe
+        )
+
+        self.assertEqual(expected_attr_field_type_ref, attr_field_type_ref)
