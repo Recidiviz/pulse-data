@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Implements BQ View to fetch information on the the latest assessments.
+"""Implements BQ View to fetch information on the latest assessments.
 
 TODO(#5769): Move next_assessment_date to the calculation pipeline directly.
 TODO(#5809): Output the assessment score in the calculation pipeline directly.
