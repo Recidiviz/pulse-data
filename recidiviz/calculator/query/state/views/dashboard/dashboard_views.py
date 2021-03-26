@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -46,7 +46,6 @@ CORE_DASHBOARD_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = (
     + revocations_views.REVOCATIONS_VIEW_BUILDERS
     + supervision_views.SUPERVISION_VIEW_BUILDERS
     + program_evaluation_views.PROGRAM_EVALUATION_VIEW_BUILDERS
-    + population_projections_views.POPULATION_PROJECTION_VIEW_BUILDERS
 )
 
 
@@ -55,8 +54,17 @@ LANTERN_DASHBOARD_VIEW_BUILDERS: Sequence[
 ] = revocation_analysis_views.REVOCATION_ANALYSIS_VIEW_BUILDERS
 
 
+UP_DASHBOARD_VIEW_BUILDERS: Sequence[
+    BigQueryViewBuilder
+] = population_projections_views.POPULATION_PROJECTION_VIEW_BUILDERS
+
+
 DASHBOARD_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = list(
     itertools.chain.from_iterable(
-        (CORE_DASHBOARD_VIEW_BUILDERS, LANTERN_DASHBOARD_VIEW_BUILDERS)
+        (
+            CORE_DASHBOARD_VIEW_BUILDERS,
+            LANTERN_DASHBOARD_VIEW_BUILDERS,
+            UP_DASHBOARD_VIEW_BUILDERS,
+        )
     )
 )
