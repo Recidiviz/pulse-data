@@ -356,22 +356,24 @@ class GcsfsDirectIngestUtilsTest(TestCase):
 
         args = GcsfsIngestViewExportArgs(
             ingest_view_name="my_file_tag",
+            output_bucket_name="an_ingest_bucket",
             upper_bound_datetime_prev=None,
             upper_bound_datetime_to_export=dt_upper,
         )
 
         self.assertEqual(
-            "ingest_view_export_my_file_tag-None-2019_11_22_11_22_33_444444",
+            "ingest_view_export_my_file_tag-an_ingest_bucket-None-2019_11_22_11_22_33_444444",
             args.task_id_tag(),
         )
 
         args = GcsfsIngestViewExportArgs(
             ingest_view_name="my_file_tag",
+            output_bucket_name="an_ingest_bucket",
             upper_bound_datetime_prev=dt_lower,
             upper_bound_datetime_to_export=dt_upper,
         )
 
         self.assertEqual(
-            "ingest_view_export_my_file_tag-2019_01_22_11_22_33_444444-2019_11_22_11_22_33_444444",
+            "ingest_view_export_my_file_tag-an_ingest_bucket-2019_01_22_11_22_33_444444-2019_11_22_11_22_33_444444",
             args.task_id_tag(),
         )

@@ -186,6 +186,7 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
                 ingest_view_name=fixture_file_name,
                 upper_bound_datetime_to_export=now,
                 upper_bound_datetime_prev=yesterday,
+                output_bucket_name=self.controller.ingest_bucket_path.bucket_name,
             )
 
             self.controller.file_metadata_manager.register_ingest_file_export_job(
@@ -252,6 +253,7 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
                 ingest_view_name=os.path.splitext(filename)[0],
                 upper_bound_datetime_to_export=now,
                 upper_bound_datetime_prev=yesterday,
+                output_bucket_name=self.controller.ingest_bucket_path.bucket_name,
             )
 
             self.controller.file_metadata_manager.register_ingest_file_export_job(
