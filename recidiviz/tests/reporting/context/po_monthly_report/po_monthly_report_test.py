@@ -188,7 +188,9 @@ class PoMonthlyReportContextTests(TestCase):
             // Out of Date Face to Face Contacts //
             [654]     Degas, Edgar    
             
-            Please send questions or data issues to feedback@recidiviz.org"""
+            Please send questions or data issues to feedback@recidiviz.org
+
+            Please note: people on probation in custody who technically remain on your caseload are currently counted in your Key Supervision Task percentages, including contacts and risk assessments."""
         )
 
         self.assertEqual(expected, actual["attachment_content"])
@@ -225,7 +227,9 @@ class PoMonthlyReportContextTests(TestCase):
             [456]     Munch, Edvard     New Crime          Revocation recommendation staffed on 12/06/2020    
             [111]     Miro, Joan        Technical Only     Revocation recommendation staffed on 12/10/2020    
             
-            Please send questions or data issues to feedback@recidiviz.org"""
+            Please send questions or data issues to feedback@recidiviz.org
+
+            Please note: people on probation in custody who technically remain on your caseload are currently counted in your Key Supervision Task percentages, including contacts and risk assessments."""
         )
 
         self.assertEqual(expected, actual["attachment_content"])
