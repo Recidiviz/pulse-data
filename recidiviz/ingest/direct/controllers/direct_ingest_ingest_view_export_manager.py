@@ -116,7 +116,7 @@ class DirectIngestIngestViewExportManager:
         *,
         region: Region,
         fs: GCSFileSystem,
-        ingest_bucket_path: GcsfsBucketPath,
+        output_bucket_name: str,
         big_query_client: BigQueryClient,
         file_metadata_manager: DirectIngestFileMetadataManager,
         view_collector: BigQueryViewCollector[
@@ -127,7 +127,7 @@ class DirectIngestIngestViewExportManager:
 
         self.region = region
         self.fs = fs
-        self.ingest_bucket_path = ingest_bucket_path
+        self.output_bucket_name = output_bucket_name
         self.big_query_client = big_query_client
         self.file_metadata_manager = file_metadata_manager
         self.ingest_views_by_tag = {
@@ -186,6 +186,7 @@ class DirectIngestIngestViewExportManager:
                     ingest_view_name=ingest_view_tag,
                     upper_bound_datetime_prev=lower_bound_datetime_exclusive,
                     upper_bound_datetime_to_export=upper_bound_datetime_inclusive,
+                    output_bucket_name=self.output_bucket_name,
                 )
                 logging.info(
                     "Generating job args for tag [%s]: [%s].", ingest_view_tag, args
@@ -385,6 +386,14 @@ class DirectIngestIngestViewExportManager:
         if not self.region.is_ingest_launched_in_env():
             raise ValueError(
                 f"Ingest not enabled for region [{self.region.region_code}]"
+            )
+
+        if self.output_bucket_name != ingest_view_export_args.output_bucket_name:
+            raise ValueError(
+                f"Attempting to export an ingest view file to a bucket that does not "
+                f"match this exporter. Exporter output_bucket_name: "
+                f"[{self.output_bucket_name}]. Args output_bucket_name: "
+                f"[{ingest_view_export_args.output_bucket_name}]."
             )
 
         metadata = self.file_metadata_manager.get_ingest_view_metadata_for_export_job(
@@ -602,7 +611,8 @@ class DirectIngestIngestViewExportManager:
             output_file_name = metadata.normalized_file_name
 
         return GcsfsFilePath.from_directory_and_file_name(
-            self.ingest_bucket_path, output_file_name
+            GcsfsBucketPath(ingest_view_export_args.output_bucket_name),
+            output_file_name,
         )
 
     def _get_export_state_for_ingest_view(
@@ -657,8 +667,8 @@ class DirectIngestIngestViewExportManager:
             raw_table_dependency_updated_metadatas=raw_table_dependency_updated_metadatas,
         )
 
-    @staticmethod
     def _export_args_from_metadata(
+        self,
         metadata_list: List[DirectIngestIngestFileMetadata],
     ) -> List[GcsfsIngestViewExportArgs]:
         return [
@@ -666,6 +676,7 @@ class DirectIngestIngestViewExportManager:
                 ingest_view_name=metadata.file_tag,
                 upper_bound_datetime_prev=metadata.datetimes_contained_lower_bound_exclusive,
                 upper_bound_datetime_to_export=metadata.datetimes_contained_upper_bound_inclusive,
+                output_bucket_name=self.output_bucket_name,
             )
             for metadata in metadata_list
         ]
@@ -693,6 +704,7 @@ if __name__ == "__main__":
                 ingest_view_name=ingest_view_name_,
                 upper_bound_datetime_prev=upper_bound_datetime_prev_,
                 upper_bound_datetime_to_export=upper_bound_datetime_to_export_,
+                output_bucket_name="any_bucket",
             ),
         )
         print(debug_query)
