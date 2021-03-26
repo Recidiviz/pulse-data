@@ -117,7 +117,7 @@ class GcsfsDirectIngestController(
         self.ingest_view_export_manager = DirectIngestIngestViewExportManager(
             region=self.region,
             fs=self.fs,
-            ingest_bucket_path=self.ingest_bucket_path,
+            output_bucket_name=self.ingest_bucket_path.bucket_name,
             file_metadata_manager=self.file_metadata_manager,
             big_query_client=BigQueryClientImpl(),
             view_collector=DirectIngestPreProcessedIngestViewCollector(
@@ -294,7 +294,6 @@ class GcsfsDirectIngestController(
         self, ingest_view_export_args: GcsfsIngestViewExportArgs
     ) -> None:
         check_is_region_launched_in_env(self.region)
-
         did_export = self.ingest_view_export_manager.export_view_for_args(
             ingest_view_export_args
         )

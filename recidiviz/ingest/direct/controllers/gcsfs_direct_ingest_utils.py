@@ -131,12 +131,23 @@ class GcsfsRawDataBQImportArgs(CloudTaskArgs):
 
 @attr.s(frozen=True)
 class GcsfsIngestViewExportArgs(CloudTaskArgs):
+    # The file tag of the ingest view to export. Used to determine which query to run
+    # to generate the exported file.
     ingest_view_name: str = attr.ib()
+
+    # The bucket to output the generated ingest view to.
+    output_bucket_name: str = attr.ib()
+
+    # The lower bound date for updates this query should include. Any rows that have not
+    # changed since this date will not be included.
     upper_bound_datetime_prev: Optional[datetime.datetime] = attr.ib()
+
+    # The upper bound date for updates this query should include. Updates will only
+    # reflect data received up until this date.
     upper_bound_datetime_to_export: datetime.datetime = attr.ib()
 
     def task_id_tag(self) -> str:
-        tag = f"ingest_view_export_{self.ingest_view_name}"
+        tag = f"ingest_view_export_{self.ingest_view_name}-{self.output_bucket_name}"
         if self.upper_bound_datetime_prev:
             tag += f"-{snake_case_datetime(self.upper_bound_datetime_prev)}"
         else:

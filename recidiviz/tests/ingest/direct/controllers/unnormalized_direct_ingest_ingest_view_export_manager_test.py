@@ -44,7 +44,6 @@ from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager i
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsIngestViewExportArgs,
 )
-from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestFileMetadataManager,
 )
@@ -287,6 +286,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
 
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
         self.ingest_database_name = "ingest_database_name"
+        self.output_bucket_name = "output_bucket_name"
         fakes.use_in_memory_sqlite_database(self.database_key)
         self.client_patcher = patch(
             "recidiviz.big_query.big_query_client.BigQueryClient"
@@ -329,7 +329,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         return DirectIngestIngestViewExportManager(
             region=region,
             fs=FakeGCSFileSystem(),
-            ingest_bucket_path=GcsfsBucketPath("ingest_bucket"),
+            output_bucket_name=self.output_bucket_name,
             big_query_client=self.mock_client,
             file_metadata_manager=metadata_manager,
             view_collector=_ViewCollector(  # type: ignore[arg-type]
@@ -401,6 +401,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             [
                 GcsfsIngestViewExportArgs(
                     ingest_view_name="ingest_view",
+                    output_bucket_name=self.output_bucket_name,
                     upper_bound_datetime_prev=_DATE_1,
                     upper_bound_datetime_to_export=_DATE_2,
                 )
@@ -504,6 +505,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         export_manager = self.create_export_manager(region)
         export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="ingest_view",
+            output_bucket_name=self.output_bucket_name,
             upper_bound_datetime_prev=_DATE_1,
             upper_bound_datetime_to_export=_DATE_2,
         )
@@ -524,6 +526,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         export_manager = self.create_export_manager(region)
         export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="ingest_view",
+            output_bucket_name=self.output_bucket_name,
             upper_bound_datetime_prev=_DATE_1,
             upper_bound_datetime_to_export=_DATE_2,
         )
@@ -543,6 +546,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         export_manager = self.create_export_manager(region)
         export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="ingest_view",
+            output_bucket_name=self.output_bucket_name,
             upper_bound_datetime_prev=_DATE_1,
             upper_bound_datetime_to_export=_DATE_2,
         )
@@ -586,6 +590,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         export_manager = self.create_export_manager(region)
         export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="ingest_view",
+            output_bucket_name=self.output_bucket_name,
             upper_bound_datetime_prev=None,
             upper_bound_datetime_to_export=_DATE_2,
         )
@@ -655,6 +660,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         export_manager = self.create_export_manager(region)
         export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="ingest_view",
+            output_bucket_name=self.output_bucket_name,
             upper_bound_datetime_prev=_DATE_1,
             upper_bound_datetime_to_export=_DATE_2,
         )
@@ -743,6 +749,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
 
         export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="ingest_view",
+            output_bucket_name=self.output_bucket_name,
             upper_bound_datetime_prev=_DATE_1,
             upper_bound_datetime_to_export=_DATE_2,
         )
@@ -825,6 +832,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         )
         export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="ingest_view",
+            output_bucket_name=self.output_bucket_name,
             upper_bound_datetime_prev=None,
             upper_bound_datetime_to_export=_DATE_2,
         )
@@ -873,6 +881,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         )
         export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="ingest_view",
+            output_bucket_name=self.output_bucket_name,
             upper_bound_datetime_prev=_DATE_1,
             upper_bound_datetime_to_export=_DATE_2,
         )
@@ -952,6 +961,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         export_manager = self.create_export_manager(region)
         export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="ingest_view",
+            output_bucket_name=self.output_bucket_name,
             upper_bound_datetime_prev=_DATE_1,
             upper_bound_datetime_to_export=_DATE_2,
         )
@@ -1092,6 +1102,7 @@ ORDER BY colA, colC;"""
         )
         export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="ingest_view",
+            output_bucket_name=self.output_bucket_name,
             upper_bound_datetime_prev=_DATE_1,
             upper_bound_datetime_to_export=_DATE_2,
         )

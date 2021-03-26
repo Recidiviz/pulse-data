@@ -897,6 +897,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                 ingest_view_name=parts.file_tag,
                 upper_bound_datetime_prev=None,
                 upper_bound_datetime_to_export=dt,
+                output_bucket_name=controller.ingest_bucket_path.bucket_name,
             )
         )
         controller.file_metadata_manager.register_ingest_view_export_file_name(
