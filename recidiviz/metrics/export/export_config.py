@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -34,6 +34,7 @@ from recidiviz.calculator.query.state.views.covid_dashboard.covid_dashboard_view
 from recidiviz.calculator.query.state.views.dashboard.dashboard_views import (
     LANTERN_DASHBOARD_VIEW_BUILDERS,
     CORE_DASHBOARD_VIEW_BUILDERS,
+    UP_DASHBOARD_VIEW_BUILDERS,
 )
 from recidiviz.calculator.query.state.views.po_report.po_monthly_report_data import (
     PO_MONTHLY_REPORT_DATA_VIEW_BUILDER,
@@ -200,6 +201,17 @@ VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = (
             bq_view_namespace=BigQueryViewNamespace.STATE,
         )
         for state_code in ["US_ND"]
+    ]
+    + [
+        # Unified Product views for all relevant states
+        ExportViewCollectionConfig(
+            view_builders_to_export=UP_DASHBOARD_VIEW_BUILDERS,
+            output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
+            state_code_filter=state_code,
+            export_name="UP",
+            bq_view_namespace=BigQueryViewNamespace.STATE,
+        )
+        for state_code in ["US_ID"]
     ]
     + [
         # Public Dashboard views for all relevant states
