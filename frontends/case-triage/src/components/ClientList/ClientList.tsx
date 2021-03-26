@@ -16,6 +16,7 @@
 // =============================================================================
 import { observer } from "mobx-react-lite";
 import * as React from "react";
+import VisibilitySensor from "react-visibility-sensor";
 import { useRootStore } from "../../stores";
 import {
   ClientListContainer,
@@ -26,10 +27,13 @@ import ClientListCard from "./ClientListCard";
 import MarkedInProgressCard from "./MarkedInProgressCard";
 import InProgressEmptyState from "./InProgressEmptyStateCard";
 
+import { trackScrolledToInProgress } from "../../analytics";
+
 // Update this if the <ClientListHeading/> height changes
 export const HEADING_HEIGHT_MAGIC_NUMBER = 128;
 
 const ClientList = () => {
+  const [inProgressVisible, setInProgressVisible] = React.useState(false);
   const { clientsStore, policyStore } = useRootStore();
 
   let clients;
@@ -94,11 +98,23 @@ const ClientList = () => {
 
       <br />
 
-      <ClientListHeading>In Progress</ClientListHeading>
-      <ClientListTableHeading />
-      {clientsStore.isLoading || policyStore.isLoading
-        ? `Loading... ${clientsStore.error || ""}`
-        : inProgressClients}
+      <VisibilitySensor
+        partialVisibility
+        onChange={(isNowVisible) => {
+          if (!inProgressVisible && isNowVisible) {
+            trackScrolledToInProgress();
+          }
+          setInProgressVisible(isNowVisible);
+        }}
+      >
+        <span>
+          <ClientListHeading>In Progress</ClientListHeading>
+          <ClientListTableHeading />
+          {clientsStore.isLoading || policyStore.isLoading
+            ? `Loading... ${clientsStore.error || ""}`
+            : inProgressClients}
+        </span>
+      </VisibilitySensor>
     </ClientListContainer>
   );
 };
