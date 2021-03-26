@@ -16,7 +16,6 @@
 # =============================================================================
 """Helpers for direct ingest tests."""
 import datetime
-import os
 import time
 import unittest
 from types import ModuleType
@@ -67,14 +66,14 @@ from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsFilePath,
     GcsfsDirectoryPath,
-    GcsfsPath,
+    GcsfsBucketPath,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_csv_reader import GcsfsCsvReader
 from recidiviz.persistence.database.sqlalchemy_database_key import (
     SQLAlchemyDatabaseKey,
 )
 from recidiviz.persistence.entity.operations.entities import DirectIngestFileMetadata
-from recidiviz.tests.ingest.direct.controllers import fixtures as controller_fixtures
+from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
 from recidiviz.tests.ingest.direct.fake_direct_ingest_big_query_client import (
     FakeDirectIngestBigQueryClient,
 )
@@ -114,7 +113,7 @@ class DirectIngestFakeGCSFileSystemDelegate(FakeGCSFileSystemDelegate):
         self.can_start_ingest = can_start_ingest
 
     def on_file_added(self, path: GcsfsFilePath) -> None:
-        if path.abs_path().startswith(self.controller.ingest_directory_path.abs_path()):
+        if path.abs_path().startswith(self.controller.ingest_bucket_path.abs_path()):
             self.controller.handle_file(path, start_ingest=self.can_start_ingest)
 
 
@@ -199,14 +198,14 @@ class FakeDirectIngestRawFileImportManager(DirectIngestRawFileImportManager):
         *,
         region: Region,
         fs: DirectIngestGCSFileSystem,
-        ingest_directory_path: GcsfsDirectoryPath,
+        ingest_bucket_path: GcsfsBucketPath,
         temp_output_directory_path: GcsfsDirectoryPath,
         big_query_client: BigQueryClient,
     ):
         super().__init__(
             region=region,
             fs=fs,
-            ingest_directory_path=ingest_directory_path,
+            ingest_bucket_path=ingest_bucket_path,
             temp_output_directory_path=temp_output_directory_path,
             big_query_client=big_query_client,
             region_raw_file_config=FakeDirectIngestRegionRawFileConfig(
@@ -296,10 +295,9 @@ class FakeDirectIngestPreProcessedIngestViewCollector(
 @patch("recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-staging"))
 def build_gcsfs_controller_for_tests(
     controller_cls: Type[CsvGcsfsDirectIngestController],
-    fixture_path_prefix: str,
     run_async: bool,
     can_start_ingest: bool = True,
-    regions_module: ModuleType = controller_fixtures,
+    regions_module: ModuleType = fake_regions_module,
 ) -> GcsfsDirectIngestController:
     """Builds an instance of |controller_cls| for use in tests with several internal classes mocked properly. """
     fake_fs = FakeGCSFileSystem()
@@ -336,7 +334,9 @@ def build_gcsfs_controller_for_tests(
                     mock_task_factory_cls.return_value = task_manager
                     mock_big_query_client_cls.return_value = (
                         FakeDirectIngestBigQueryClient(
-                            project_id=metadata.project_id(), fs=fake_fs
+                            project_id=metadata.project_id(),
+                            fs=fake_fs,
+                            region_code=controller_cls.region_code(),
                         )
                     )
                     with patch.object(GcsfsFactory, "build", new=mock_build_fs):
@@ -346,8 +346,8 @@ def build_gcsfs_controller_for_tests(
                             new=regions_module,
                         ):
                             controller = controller_cls(
-                                ingest_directory_path=GcsfsDirectoryPath.from_absolute_path(
-                                    f"{fixture_path_prefix}/fixtures"
+                                ingest_bucket_path=GcsfsBucketPath(
+                                    "ingest-bucket-name"
                                 ),
                                 storage_directory_path=GcsfsDirectoryPath.from_absolute_path(
                                     "storage/path/"
@@ -398,7 +398,7 @@ def path_for_fixture_file(
     dt: Optional[datetime.datetime] = None,
 ) -> GcsfsFilePath:
     return path_for_fixture_file_in_test_gcs_directory(
-        directory=controller.ingest_directory_path,
+        bucket_path=controller.ingest_bucket_path,
         filename=filename,
         should_normalize=should_normalize,
         file_type=file_type,
@@ -408,7 +408,7 @@ def path_for_fixture_file(
 
 def path_for_fixture_file_in_test_gcs_directory(
     *,
-    directory: GcsfsDirectoryPath,
+    bucket_path: GcsfsBucketPath,
     filename: str,
     should_normalize: bool,
     file_type: Optional[GcsfsDirectIngestFileType],
@@ -423,9 +423,9 @@ def path_for_fixture_file_in_test_gcs_directory(
             original_file_path=file_path_str, file_type=file_type, dt=dt
         )
 
-    file_path = GcsfsPath.from_bucket_and_blob_name(
-        bucket_name=directory.bucket_name,
-        blob_name=os.path.join(directory.relative_path, file_path_str),
+    file_path = GcsfsFilePath.from_directory_and_file_name(
+        dir_path=bucket_path,
+        file_name=file_path_str,
     )
     if not isinstance(file_path, GcsfsFilePath):
         raise ValueError(
@@ -469,7 +469,11 @@ def add_paths_with_tags(
             file_type=pre_normalized_file_type,
         )
         # Only get a fixture path if it is a file, if it is a directory leave it as None
-        fixture_util.add_direct_ingest_path(controller.fs.gcs_file_system, file_path)
+        fixture_util.add_direct_ingest_path(
+            controller.fs.gcs_file_system,
+            file_path,
+            region_code=controller.region_code(),
+        )
         time.sleep(0.05)
 
 

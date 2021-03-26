@@ -26,12 +26,13 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
 )
 from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
-from recidiviz.tests.ingest import fixtures
+from recidiviz.tests.ingest.direct import direct_ingest_fixtures
 
 
 def add_direct_ingest_path(
     fs: GCSFileSystem,
     path: Union[GcsfsFilePath, GcsfsDirectoryPath],
+    region_code: str,
     has_fixture: bool = True,
     fail_handle_file_call: bool = False,
 ) -> None:
@@ -41,29 +42,34 @@ def add_direct_ingest_path(
         )
     local_path = None
     if has_fixture and isinstance(path, GcsfsFilePath):
-        local_path = _get_fixture_for_direct_ingest_path(path)
+        local_path = _get_fixture_for_direct_ingest_path(path, region_code=region_code)
     fs.test_add_path(path, local_path, fail_handle_file_call)
 
 
-def _get_fixture_for_direct_ingest_path(path: GcsfsFilePath) -> str:
+def _get_fixture_for_direct_ingest_path(path: GcsfsFilePath, region_code: str) -> str:
     """Gets the path to the fixture file based on the input path.
 
-    If `path` is normalized, strips it to just `file_tag`, `filename_suffix`, and `extension`. Takes `path` and uses
-    it as a relative path from `recidiviz/tests/ingest` to get the associated fixture.
+    If `path` is normalized, strips it to just `file_tag`, `filename_suffix`, and
+    `extension`. Then generates a path in the regions ingest fixtures directory
+    at recidiviz/tests/ingest/direct/direct_ingest_fixtures/us_xx/
     """
-    relative_path = path.abs_path()
-
     try:
-        directory_path, _ = os.path.split(path.abs_path())
         parts = filename_parts_from_path(path)
         suffix = f"_{parts.filename_suffix}" if parts.filename_suffix else ""
-        relative_path = os.path.join(
-            directory_path, f"{parts.file_tag}{suffix}.{parts.extension}"
-        )
+        file_name = f"{parts.file_tag}{suffix}.{parts.extension}"
     except DirectIngestError as e:
         if e.error_type != DirectIngestErrorType.INPUT_ERROR:
             raise
-        # Otherwise, assume it failed because it is not a normalized path so we can just use the `fixture_filename`
-        # directly.
+        # Otherwise, assume it failed because it is not a normalized path so we can just
+        # use the path file name directly.
+        file_name = path.file_name
 
-    return fixtures.file_path_from_relative_path(relative_path)
+    return direct_ingest_fixture_path(region_code=region_code, file_name=file_name)
+
+
+def direct_ingest_fixture_path(region_code: str, file_name: str) -> str:
+    directory_path = os.path.join(
+        os.path.dirname(direct_ingest_fixtures.__file__),
+        region_code.lower(),
+    )
+    return os.path.join(directory_path, file_name)

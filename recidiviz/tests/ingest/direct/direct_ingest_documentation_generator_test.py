@@ -22,13 +22,14 @@ import pytest
 from mock import patch, MagicMock
 
 from recidiviz.common.constants import states
+from recidiviz.common.constants.states import TEST_STATE_CODE_DOCS
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.ingest.direct.direct_ingest_documentation_generator import (
     DirectIngestDocumentationGenerator,
 )
-from recidiviz.tests.ingest import fixtures
+from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.ingest.direct.direct_ingest_util import (
     FakeDirectIngestPreProcessedIngestViewCollector,
     FakeDirectIngestRegionRawFileConfig,
@@ -59,7 +60,12 @@ class DirectIngestDocumentationGeneratorTest(unittest.TestCase):
         "recidiviz.ingest.direct.direct_ingest_documentation_generator.DirectIngestDocumentationGenerator"
         "._get_last_updated"
     )
-    @patch("recidiviz.utils.regions.get_region", return_value=fake_region())
+    @patch(
+        "recidiviz.utils.regions.get_region",
+        return_value=fake_region(
+            region_code=TEST_STATE_CODE_DOCS, region_module=fake_regions
+        ),
+    )
     @patch(
         "recidiviz.ingest.direct.direct_ingest_documentation_generator.DirectIngestDocumentationGenerator"
         ".get_referencing_views"
@@ -73,10 +79,10 @@ class DirectIngestDocumentationGeneratorTest(unittest.TestCase):
         mock_raw_config: MagicMock,
     ) -> None:
         importlib.reload(states)
-        region_code = states.StateCode.US_XX.value.lower()
+        region_code = states.StateCode.US_WW.value.lower()
         region_config = DirectIngestRegionRawFileConfig(
             region_code=region_code,
-            yaml_config_file_dir=fixtures.as_filepath(region_code),
+            region_module=fake_regions,
         )
         mock_raw_config.return_value = region_config
         mock_updated_by.return_value = "Julia Dressel"
@@ -94,9 +100,9 @@ class DirectIngestDocumentationGeneratorTest(unittest.TestCase):
 
         expected_raw_data = """# Test State Raw Data Description
 
-All raw data can be found in append-only tables in the dataset `us_xx_raw_data`. Views on the raw data
+All raw data can be found in append-only tables in the dataset `us_ww_raw_data`. Views on the raw data
 table that show the latest state of this table (i.e. select the most recently received row for each primary key) can be
-found in `us_xx_raw_data_up_to_date_views`.
+found in `us_ww_raw_data_up_to_date_views`.
 
 ## Table of Contents
 

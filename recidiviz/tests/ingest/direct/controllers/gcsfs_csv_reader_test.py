@@ -96,7 +96,7 @@ class GcsfsCsvReaderTest(unittest.TestCase):
         self.assertEqual(0, delegate.exceptions)
 
     def test_read_completely_empty_file(self) -> None:
-        empty_file_path = fixtures.as_filepath("tagA.csv")
+        empty_file_path = fixtures.as_filepath("completely_empty.csv")
 
         delegate = _TestGcsfsCsvReaderDelegate()
         self.reader.streaming_read(
@@ -123,7 +123,7 @@ class GcsfsCsvReaderTest(unittest.TestCase):
         self.assertEqual(0, delegate.exceptions)
 
     def test_read_file_with_columns_no_contents(self) -> None:
-        empty_file_path = fixtures.as_filepath("tagB.csv")
+        empty_file_path = fixtures.as_filepath("columns_no_contents.csv")
 
         delegate = _TestGcsfsCsvReaderDelegate()
         self.reader.streaming_read(

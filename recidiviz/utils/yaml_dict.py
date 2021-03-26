@@ -41,7 +41,8 @@ class YAMLDict:
             loaded_raw_yaml = yaml.safe_load(yaml_file)
             if not isinstance(loaded_raw_yaml, dict):
                 raise ValueError(
-                    f"Expected manifest to contain a top-level dictionary, but received: {type(loaded_raw_yaml)}"
+                    f"Expected manifest to contain a top-level dictionary, but "
+                    f"received: {type(loaded_raw_yaml)} at path [{yaml_path}]."
                 )
             return YAMLDict(loaded_raw_yaml)
 

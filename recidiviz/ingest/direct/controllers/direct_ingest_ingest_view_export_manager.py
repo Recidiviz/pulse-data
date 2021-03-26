@@ -49,7 +49,10 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsIngestViewExportArgs,
     GcsfsDirectIngestFileType,
 )
-from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import (
+    GcsfsFilePath,
+    GcsfsBucketPath,
+)
 from recidiviz.persistence.entity.operations.entities import (
     DirectIngestIngestFileMetadata,
     DirectIngestRawFileMetadata,
@@ -113,7 +116,7 @@ class DirectIngestIngestViewExportManager:
         *,
         region: Region,
         fs: GCSFileSystem,
-        ingest_directory_path: GcsfsDirectoryPath,
+        ingest_bucket_path: GcsfsBucketPath,
         big_query_client: BigQueryClient,
         file_metadata_manager: DirectIngestFileMetadataManager,
         view_collector: BigQueryViewCollector[
@@ -124,7 +127,7 @@ class DirectIngestIngestViewExportManager:
 
         self.region = region
         self.fs = fs
-        self.ingest_directory_path = ingest_directory_path
+        self.ingest_bucket_path = ingest_bucket_path
         self.big_query_client = big_query_client
         self.file_metadata_manager = file_metadata_manager
         self.ingest_views_by_tag = {
@@ -599,7 +602,7 @@ class DirectIngestIngestViewExportManager:
             output_file_name = metadata.normalized_file_name
 
         return GcsfsFilePath.from_directory_and_file_name(
-            self.ingest_directory_path, output_file_name
+            self.ingest_bucket_path, output_file_name
         )
 
     def _get_export_state_for_ingest_view(

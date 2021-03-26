@@ -29,7 +29,10 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
+from recidiviz.cloud_storage.gcsfs_path import (
+    GcsfsFilePath,
+    GcsfsBucketPath,
+)
 
 
 class GcsfsDirectIngestJobPrioritizer:
@@ -40,11 +43,11 @@ class GcsfsDirectIngestJobPrioritizer:
     def __init__(
         self,
         fs: DirectIngestGCSFileSystem,
-        ingest_directory_path: GcsfsDirectoryPath,
+        ingest_bucket_path: GcsfsBucketPath,
         file_tag_rank_list: List[str],
     ):
         self.fs = fs
-        self.ingest_directory_path = ingest_directory_path
+        self.ingest_bucket_path = ingest_bucket_path
         self.ranks_by_file_tag: Dict[str, str] = self._build_ranks_by_file_tag(
             file_tag_rank_list
         )
@@ -107,13 +110,13 @@ class GcsfsDirectIngestJobPrioritizer:
         """
         if date_str:
             unprocessed_paths = self.fs.get_unprocessed_file_paths_for_day(
-                self.ingest_directory_path,
+                self.ingest_bucket_path,
                 date_str,
                 GcsfsDirectIngestFileType.INGEST_VIEW,
             )
         else:
             unprocessed_paths = self.fs.get_unprocessed_file_paths(
-                self.ingest_directory_path, GcsfsDirectIngestFileType.INGEST_VIEW
+                self.ingest_bucket_path, GcsfsDirectIngestFileType.INGEST_VIEW
             )
 
         if not unprocessed_paths:
@@ -170,7 +173,7 @@ class GcsfsDirectIngestJobPrioritizer:
         This set is built for comparison against the set of expected sort keys.
         """
         already_processed_paths = self.fs.get_processed_file_paths_for_day(
-            self.ingest_directory_path,
+            self.ingest_bucket_path,
             date_str,
             file_type_filter=GcsfsDirectIngestFileType.INGEST_VIEW,
         )

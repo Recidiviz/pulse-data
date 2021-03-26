@@ -24,7 +24,7 @@ from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     gcsfs_direct_ingest_storage_directory_path_for_region,
-    gcsfs_direct_ingest_directory_path_for_region,
+    gcsfs_direct_ingest_bucket_for_region,
     filename_parts_from_path,
     GcsfsDirectIngestFileType,
     GcsfsIngestViewExportArgs,
@@ -77,20 +77,22 @@ class GcsfsDirectIngestUtilsTest(TestCase):
         )
 
     @patch("recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-123"))
-    def test_get_county_ingest_directory_path_for_region(self) -> None:
+    def test_get_county_ingest_bucket_path_for_region(self) -> None:
         self.assertEqual(
-            gcsfs_direct_ingest_directory_path_for_region(
+            gcsfs_direct_ingest_bucket_for_region(
                 "us_tx_brazos", SystemLevel.COUNTY
-            ),
-            "recidiviz-123-direct-ingest-county/us_tx_brazos",
+            ).abs_path(),
+            "recidiviz-123-direct-ingest-county-us-tx-brazos",
         )
 
     @patch(
         "recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-staging")
     )
-    def test_get_state_ingest_directory_path_for_region(self) -> None:
+    def test_get_state_ingest_bucket_path_for_region(self) -> None:
         self.assertEqual(
-            gcsfs_direct_ingest_directory_path_for_region("us_nd", SystemLevel.STATE),
+            gcsfs_direct_ingest_bucket_for_region(
+                "us_nd", SystemLevel.STATE
+            ).abs_path(),
             "recidiviz-staging-direct-ingest-state-us-nd",
         )
 

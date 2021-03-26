@@ -26,6 +26,7 @@ from recidiviz.utils import environment
 
 STATE_CODE_PATTERN = re.compile(r"US_[A-Z]{2}")
 TEST_STATE_CODE = "US_XX"
+TEST_STATE_CODE_DOCS = "US_WW"
 
 TEST_STATE_INFO = {
     TEST_STATE_CODE: us.states.State(
@@ -44,7 +45,24 @@ TEST_STATE_INFO = {
             "time_zones": ["America/Test", "America/Test"],
             "name_metaphone": "TEST",
         }
-    )
+    ),
+    TEST_STATE_CODE_DOCS: us.states.State(
+        **{
+            "fips": "WW",
+            "name": "Test State",
+            "abbr": "WW",
+            "is_territory": False,
+            "is_obsolete": False,
+            "is_contiguous": False,
+            "is_continental": True,
+            "statehood_year": 9999,
+            "capital": "Test",
+            "capital_tz": "America/Test",
+            "ap_abbr": "Test",
+            "time_zones": ["America/Test", "America/Test"],
+            "name_metaphone": "TEST",
+        }
+    ),
 }
 
 
@@ -106,6 +124,7 @@ class StateCode(enum.Enum):
     US_WY = "US_WY"
 
     if environment.in_test():
+        US_WW = TEST_STATE_CODE_DOCS
         US_XX = TEST_STATE_CODE
 
     def get_state(self) -> us.states.State:
