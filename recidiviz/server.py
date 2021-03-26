@@ -19,9 +19,10 @@
 import datetime
 import gc
 import logging
+from typing import List, Tuple
 
 import zope.event.classhandler
-from flask import Flask
+from flask import Flask, Blueprint
 from gevent import events
 from opencensus.common.transports.async_ import AsyncTransport
 from opencensus.ext.flask.flask_middleware import FlaskMiddleware
@@ -68,33 +69,39 @@ app = Flask(__name__)
 
 service_type = environment.get_service_type()
 
+scraper_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
+    (batch_blueprint, "/batch"),
+    (infer_release_blueprint, "/infer_release"),
+    (scraper_control, "/scraper"),
+    (scraper_status, "/scraper"),
+    (worker, "/scraper"),
+    (scrape_aggregate_reports_blueprint, "/scrape_aggregate_reports"),
+    (store_single_count_blueprint, "/single_count"),
+]
+default_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
+    (admin_panel, "/admin"),
+    (backup_manager_blueprint, "/backup_manager"),
+    (calculation_data_storage_manager_blueprint, "/calculation_data_storage_manager"),
+    (cloud_functions_blueprint, "/cloud_function"),
+    (cloud_sql_to_bq_blueprint, "/cloud_sql_to_bq"),
+    (dataflow_monitor_blueprint, "/dataflow_monitor"),
+    (direct_ingest_control, "/direct"),
+    (export_blueprint, "/export"),
+    (justice_counts_control, "/justice_counts"),
+    (reporting_endpoint_blueprint, "/reporting"),
+    (validation_manager_blueprint, "/validation_manager"),
+]
+all_blueprints_with_url_prefixes = (
+    scraper_blueprints_with_url_prefixes + default_blueprints_with_url_prefixes
+)
+
+
 if service_type is environment.ServiceType.SCRAPERS:
-    app.register_blueprint(batch_blueprint, url_prefix="/batch")
-    app.register_blueprint(infer_release_blueprint, url_prefix="/infer_release")
-    app.register_blueprint(scraper_control, url_prefix="/scraper")
-    app.register_blueprint(scraper_status, url_prefix="/scraper")
-    app.register_blueprint(worker, url_prefix="/scraper")
-    app.register_blueprint(
-        scrape_aggregate_reports_blueprint, url_prefix="/scrape_aggregate_reports"
-    )
-    app.register_blueprint(store_single_count_blueprint, url_prefix="/single_count")
+    for blueprint, url_prefix in scraper_blueprints_with_url_prefixes:
+        app.register_blueprint(blueprint, url_prefix=url_prefix)
 elif service_type is environment.ServiceType.DEFAULT:
-    app.register_blueprint(admin_panel, url_prefix="/admin")
-    app.register_blueprint(backup_manager_blueprint, url_prefix="/backup_manager")
-    app.register_blueprint(
-        calculation_data_storage_manager_blueprint,
-        url_prefix="/calculation_data_storage_manager",
-    )
-    app.register_blueprint(cloud_functions_blueprint, url_prefix="/cloud_function")
-    app.register_blueprint(cloud_sql_to_bq_blueprint, url_prefix="/cloud_sql_to_bq")
-    app.register_blueprint(dataflow_monitor_blueprint, url_prefix="/dataflow_monitor")
-    app.register_blueprint(direct_ingest_control, url_prefix="/direct")
-    app.register_blueprint(export_blueprint, url_prefix="/export")
-    app.register_blueprint(justice_counts_control, url_prefix="/justice_counts")
-    app.register_blueprint(reporting_endpoint_blueprint, url_prefix="/reporting")
-    app.register_blueprint(
-        validation_manager_blueprint, url_prefix="/validation_manager"
-    )
+    for blueprint, url_prefix in default_blueprints_with_url_prefixes:
+        app.register_blueprint(blueprint, url_prefix=url_prefix)
 else:
     raise ValueError(f"Unsupported service type: {service_type}")
 
