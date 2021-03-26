@@ -70,3 +70,7 @@ export const trackPersonSelected = (client: Client): void => {
 export const trackScrolledToBottom = (): void => {
   track("frontend.scrolled_to_bottom");
 };
+
+export const trackScrolledToInProgress = (): void => {
+  track("frontend.scrolled_to_in_progress_section");
+};
