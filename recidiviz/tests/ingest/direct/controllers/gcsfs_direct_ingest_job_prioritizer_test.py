@@ -24,7 +24,10 @@ from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_file_path,
     DirectIngestGCSFileSystem,
 )
-from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import (
+    GcsfsFilePath,
+    GcsfsBucketPath,
+)
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_job_prioritizer import (
     GcsfsDirectIngestJobPrioritizer,
 )
@@ -34,6 +37,9 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
 )
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest.direct import fixture_util
+
+
+_NO_FIXTURES_REGION = "us_ab"
 
 
 class TestGcsfsDirectIngestJobPrioritizerIngestViewFilter(unittest.TestCase):
@@ -86,9 +92,7 @@ class TestGcsfsDirectIngestJobPrioritizerIngestViewFilter(unittest.TestCase):
     _DAY_1 = _DAY_1_TIME_1.date()
     _DAY_2 = _DAY_2_TIME_1.date()
 
-    _INGEST_BUCKET_PATH = GcsfsDirectoryPath.from_absolute_path(
-        "direct/regions/us_nd/fixtures"
-    )
+    _INGEST_BUCKET_PATH = GcsfsBucketPath("ingest-bucket-name")
 
     def setUp(self) -> None:
         self.fs = DirectIngestGCSFileSystem(FakeGCSFileSystem())
@@ -97,8 +101,6 @@ class TestGcsfsDirectIngestJobPrioritizerIngestViewFilter(unittest.TestCase):
             self._INGEST_BUCKET_PATH,
             ["tagA", "tagB"],
         )
-
-    FIXTURE_PATH_PREFIX = "direct/regions/us_nd/fixtures"
 
     def _normalized_path_for_filename(
         self, filename: str, file_type: GcsfsDirectIngestFileType, dt: datetime.datetime
@@ -145,7 +147,10 @@ class TestGcsfsDirectIngestJobPrioritizerIngestViewFilter(unittest.TestCase):
         )
 
         fixture_util.add_direct_ingest_path(
-            self.fs.gcs_file_system, path, has_fixture=False
+            self.fs.gcs_file_system,
+            path,
+            region_code=_NO_FIXTURES_REGION,
+            has_fixture=False,
         )
 
         self._process_jobs_for_paths_with_no_gaps_in_expected_order([path])
@@ -174,7 +179,10 @@ class TestGcsfsDirectIngestJobPrioritizerIngestViewFilter(unittest.TestCase):
 
         for path in paths:
             fixture_util.add_direct_ingest_path(
-                self.fs.gcs_file_system, path, has_fixture=False
+                self.fs.gcs_file_system,
+                path,
+                region_code=_NO_FIXTURES_REGION,
+                has_fixture=False,
             )
 
         # Exclude last raw file
@@ -196,7 +204,10 @@ class TestGcsfsDirectIngestJobPrioritizerIngestViewFilter(unittest.TestCase):
         )
 
         fixture_util.add_direct_ingest_path(
-            self.fs.gcs_file_system, path, has_fixture=False
+            self.fs.gcs_file_system,
+            path,
+            region_code=_NO_FIXTURES_REGION,
+            has_fixture=False,
         )
 
         self.assertTrue(
@@ -238,7 +249,10 @@ class TestGcsfsDirectIngestJobPrioritizerIngestViewFilter(unittest.TestCase):
         ]
         for path in paths:
             fixture_util.add_direct_ingest_path(
-                self.fs.gcs_file_system, path, has_fixture=False
+                self.fs.gcs_file_system,
+                path,
+                region_code=_NO_FIXTURES_REGION,
+                has_fixture=False,
             )
 
         # Exclude last raw file
@@ -270,7 +284,10 @@ class TestGcsfsDirectIngestJobPrioritizerIngestViewFilter(unittest.TestCase):
         ]
         for path in paths:
             fixture_util.add_direct_ingest_path(
-                self.fs.gcs_file_system, path, has_fixture=False
+                self.fs.gcs_file_system,
+                path,
+                region_code=_NO_FIXTURES_REGION,
+                has_fixture=False,
             )
 
         for i, path in enumerate(paths):
@@ -314,7 +331,10 @@ class TestGcsfsDirectIngestJobPrioritizerIngestViewFilter(unittest.TestCase):
         ]
         for path in paths:
             fixture_util.add_direct_ingest_path(
-                self.fs.gcs_file_system, path, has_fixture=False
+                self.fs.gcs_file_system,
+                path,
+                region_code=_NO_FIXTURES_REGION,
+                has_fixture=False,
             )
 
         self._process_jobs_for_paths_with_no_gaps_in_expected_order(paths)
@@ -341,7 +361,10 @@ class TestGcsfsDirectIngestJobPrioritizerIngestViewFilter(unittest.TestCase):
         ]
         for path in paths:
             fixture_util.add_direct_ingest_path(
-                self.fs.gcs_file_system, path, has_fixture=False
+                self.fs.gcs_file_system,
+                path,
+                region_code=_NO_FIXTURES_REGION,
+                has_fixture=False,
             )
 
         for i, path in enumerate(paths):
@@ -383,7 +406,10 @@ class TestGcsfsDirectIngestJobPrioritizerIngestViewFilter(unittest.TestCase):
         ]
         for path in paths:
             fixture_util.add_direct_ingest_path(
-                self.fs.gcs_file_system, path, has_fixture=False
+                self.fs.gcs_file_system,
+                path,
+                region_code=_NO_FIXTURES_REGION,
+                has_fixture=False,
             )
 
         self._process_jobs_for_paths_with_no_gaps_in_expected_order(paths)

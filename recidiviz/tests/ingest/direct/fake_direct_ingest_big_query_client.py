@@ -46,9 +46,10 @@ class FakeQueryJob:
 class FakeDirectIngestBigQueryClient(BigQueryClient):
     """A fake implementation of BigQueryClient for use in direct ingest tests."""
 
-    def __init__(self, project_id: str, fs: FakeGCSFileSystem):
+    def __init__(self, project_id: str, fs: FakeGCSFileSystem, region_code: str):
         self._project_id = project_id
         self.fs = fs
+        self.region_code = region_code
         self.exported_file_tags: List[str] = []
 
     @property
@@ -141,9 +142,12 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
     def export_query_results_to_cloud_storage(
         self, export_configs: List[ExportQueryConfig], print_header: bool
     ) -> None:
+
         for export_config in export_configs:
             export_path = GcsfsFilePath.from_absolute_path(export_config.output_uri)
-            fixture_util.add_direct_ingest_path(self.fs, export_path)
+            fixture_util.add_direct_ingest_path(
+                self.fs, export_path, region_code=self.region_code
+            )
             self.exported_file_tags.append(
                 filename_parts_from_path(export_path).file_tag
             )
@@ -210,7 +214,7 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
         query: str,
         query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
         allow_field_additions: bool = False,
-        write_disposition: bigquery.WriteDisposition = bigquery.WriteDisposition.WRITE_APPEND
+        write_disposition: bigquery.WriteDisposition = bigquery.WriteDisposition.WRITE_APPEND,
     ) -> bigquery.QueryJob:
         raise ValueError("Must be implemented for use in tests.")
 

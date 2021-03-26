@@ -33,6 +33,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
 )
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest.direct import fixture_util
+from recidiviz.tests.utils.fake_region import TEST_STATE_REGION
 
 
 class TestDirectIngestGcsFileSystem(TestCase):
@@ -53,7 +54,10 @@ class TestDirectIngestGcsFileSystem(TestCase):
         processed file, then getting moved to storage."""
 
         fixture_util.add_direct_ingest_path(
-            self.fs.gcs_file_system, path, has_fixture=False
+            self.fs.gcs_file_system,
+            path,
+            region_code=TEST_STATE_REGION.region_code,
+            has_fixture=False,
         )
 
         start_num_total_files = len(self.fs.gcs_file_system.all_paths)

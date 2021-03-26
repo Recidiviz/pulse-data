@@ -23,7 +23,7 @@ from unittest.mock import patch, Mock
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration_collector import (
     DirectIngestRawTableMigrationCollector,
 )
-from recidiviz.tests.ingest.direct.controllers import fixtures
+from recidiviz.tests.ingest.direct import fake_regions
 
 
 DATE_1 = datetime.datetime(2020, 6, 10, 0, 0)
@@ -36,7 +36,7 @@ class TestDirectIngestRawTableMigrationCollector(unittest.TestCase):
 
     def test_collect_queries(self) -> None:
         collector = DirectIngestRawTableMigrationCollector(
-            region_code="us_xx", regions_module_override=fixtures
+            region_code="us_xx", regions_module_override=fake_regions
         )
         queries_map = collector.collect_raw_table_migration_queries()
 

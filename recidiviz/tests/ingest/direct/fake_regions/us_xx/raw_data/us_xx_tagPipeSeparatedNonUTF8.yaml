@@ -5,7 +5,8 @@ primary_key_cols:
   - PRIMARY_COL1
 columns:
   - name: PRIMARY_COL1
-    description: PRIMARY_COL1 description
-separator: '|'
-encoding: ISO-8859-1
+    description: |-
+      PRIMARY_COL1 description
 ignore_quotes: True
+encoding: ISO-8859-1
+separator: '|'

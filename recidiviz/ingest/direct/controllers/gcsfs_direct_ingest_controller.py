@@ -51,7 +51,11 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     gcsfs_direct_ingest_temporary_output_directory_path,
 )
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
+from recidiviz.cloud_storage.gcsfs_path import (
+    GcsfsFilePath,
+    GcsfsDirectoryPath,
+    GcsfsBucketPath,
+)
 from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestFileMetadataManager,
 )
@@ -76,13 +80,13 @@ class GcsfsDirectIngestController(
 
     def __init__(
         self,
-        ingest_directory_path: GcsfsDirectoryPath,
+        ingest_bucket_path: GcsfsBucketPath,
         storage_directory_path: GcsfsDirectoryPath,
         ingest_database_key: SQLAlchemyDatabaseKey,
     ):
         super().__init__(ingest_database_key)
         self.fs = DirectIngestGCSFileSystem(GcsfsFactory.build())
-        self.ingest_directory_path = ingest_directory_path
+        self.ingest_bucket_path = ingest_bucket_path
         self.storage_directory_path = storage_directory_path
 
         self.temp_output_directory_path = GcsfsDirectoryPath.from_absolute_path(
@@ -91,7 +95,7 @@ class GcsfsDirectIngestController(
 
         self.file_prioritizer = GcsfsDirectIngestJobPrioritizer(
             self.fs,
-            self.ingest_directory_path,
+            self.ingest_bucket_path,
             self.get_file_tag_rank_list(),
         )
 
@@ -105,7 +109,7 @@ class GcsfsDirectIngestController(
         self.raw_file_import_manager = DirectIngestRawFileImportManager(
             region=self.region,
             fs=self.fs,
-            ingest_directory_path=self.ingest_directory_path,
+            ingest_bucket_path=self.ingest_bucket_path,
             temp_output_directory_path=self.temp_output_directory_path,
             big_query_client=BigQueryClientImpl(),
         )
@@ -113,7 +117,7 @@ class GcsfsDirectIngestController(
         self.ingest_view_export_manager = DirectIngestIngestViewExportManager(
             region=self.region,
             fs=self.fs,
-            ingest_directory_path=self.ingest_directory_path,
+            ingest_bucket_path=self.ingest_bucket_path,
             file_metadata_manager=self.file_metadata_manager,
             big_query_client=BigQueryClientImpl(),
             view_collector=DirectIngestPreProcessedIngestViewCollector(
@@ -179,7 +183,7 @@ class GcsfsDirectIngestController(
             )
 
         unnormalized_paths = self.fs.get_unnormalized_file_paths(
-            self.ingest_directory_path
+            self.ingest_bucket_path
         )
 
         for path in unnormalized_paths:
@@ -206,11 +210,11 @@ class GcsfsDirectIngestController(
         check_is_region_launched_in_env(self.region)
 
         unprocessed_ingest_view_paths = self.fs.get_unprocessed_file_paths(
-            self.ingest_directory_path,
+            self.ingest_bucket_path,
             file_type_filter=GcsfsDirectIngestFileType.INGEST_VIEW,
         )
         unprocessed_raw_paths = self.fs.get_unprocessed_file_paths(
-            self.ingest_directory_path,
+            self.ingest_bucket_path,
             file_type_filter=GcsfsDirectIngestFileType.RAW_DATA,
         )
         self._register_all_new_paths_in_metadata(unprocessed_raw_paths)
@@ -226,7 +230,7 @@ class GcsfsDirectIngestController(
         if did_split:
             post_split_unprocessed_ingest_view_paths = (
                 self.fs.get_unprocessed_file_paths(
-                    self.ingest_directory_path,
+                    self.ingest_bucket_path,
                     file_type_filter=GcsfsDirectIngestFileType.INGEST_VIEW,
                 )
             )
@@ -696,7 +700,7 @@ class GcsfsDirectIngestController(
 
         # Note: at this point, we expect RAW file type files to already have been moved once they were imported to BQ.
         self.fs.mv_processed_paths_before_date_to_storage(
-            self.ingest_directory_path,
+            self.ingest_bucket_path,
             self.storage_directory_path,
             file_type_filter=GcsfsDirectIngestFileType.INGEST_VIEW,
             date_str_bound=last_processed_date_str,

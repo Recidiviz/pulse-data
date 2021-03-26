@@ -24,7 +24,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import (
     GcsfsDirectIngestController,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    gcsfs_direct_ingest_directory_path_for_region,
+    gcsfs_direct_ingest_bucket_for_region,
     gcsfs_direct_ingest_storage_directory_path_for_region,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
@@ -50,10 +50,8 @@ class DirectIngestControllerFactory:
         controller_class = cls.get_controller_class(region)
         # TODO(#6077): Allow controllers to be instantiated with specific DB-specific
         #  state (e.g. database name, queue name etc).
-        ingest_directory_path = GcsfsDirectoryPath.from_absolute_path(
-            gcsfs_direct_ingest_directory_path_for_region(
-                region.region_code, controller_class.system_level()
-            )
+        ingest_bucket_path = gcsfs_direct_ingest_bucket_for_region(
+            region.region_code, controller_class.system_level()
         )
 
         storage_directory_path = GcsfsDirectoryPath.from_absolute_path(
@@ -73,7 +71,7 @@ class DirectIngestControllerFactory:
             database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
 
         controller = controller_class(
-            ingest_directory_path=ingest_directory_path,
+            ingest_bucket_path=ingest_bucket_path,
             storage_directory_path=storage_directory_path,
             ingest_database_key=database_key,
         )

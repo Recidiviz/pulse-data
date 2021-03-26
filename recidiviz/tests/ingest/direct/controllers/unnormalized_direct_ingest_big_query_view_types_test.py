@@ -41,7 +41,7 @@ from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager i
     DirectIngestRegionRawFileConfig,
     RawTableColumnInfo,
 )
-from recidiviz.tests.ingest import fixtures
+from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
 
 
 class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
@@ -275,7 +275,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
     def test_direct_ingest_preprocessed_view(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code="us_xx",
-            yaml_config_file_dir=fixtures.as_filepath("us_xx"),
+            region_module=fake_regions_module,
         )
 
         view_query_template = """SELECT * FROM {file_tag_first}
@@ -368,7 +368,7 @@ ORDER BY col1, col2;"""
     ) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code="us_xx",
-            yaml_config_file_dir=fixtures.as_filepath("us_xx"),
+            region_module=fake_regions_module,
         )
 
         view_query_template = """SELECT * FROM {file_tag_first}
@@ -397,7 +397,7 @@ USING (col1);"""
     ) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code="us_ww",
-            yaml_config_file_dir=fixtures.as_filepath("us_ww"),
+            region_module=fake_regions_module,
         )
 
         view_query_template = """SELECT * FROM {tagColumnsMissing};"""
@@ -422,7 +422,7 @@ USING (col1);"""
     ) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code="us_xx",
-            yaml_config_file_dir=fixtures.as_filepath("us_xx"),
+            region_module=fake_regions_module,
         )
 
         view_query_template = """SELECT * FROM {file_tag_first}
@@ -451,7 +451,7 @@ USING (col1);"""
     ) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code="us_xx",
-            yaml_config_file_dir=fixtures.as_filepath("us_xx"),
+            region_module=fake_regions_module,
         )
 
         view_query_template = """SELECT * FROM {file_tag_first}
@@ -482,7 +482,7 @@ USING (col1);"""
     def test_direct_ingest_preprocessed_view_detect_row_deletion(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code="us_xx",
-            yaml_config_file_dir=fixtures.as_filepath("us_xx"),
+            region_module=fake_regions_module,
         )
 
         view_query_template = """SELECT * FROM {file_tag_first}
@@ -588,7 +588,7 @@ ORDER BY col1, col2;"""
     def test_direct_ingest_preprocessed_view_with_reference_table(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code="us_xx",
-            yaml_config_file_dir=fixtures.as_filepath("us_xx"),
+            region_module=fake_regions_module,
         )
 
         view_query_template = """SELECT * FROM {file_tag_first}
@@ -658,7 +658,7 @@ ORDER BY col1, col2;"""
     def test_direct_ingest_preprocessed_view_same_table_multiple_places(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code="us_xx",
-            yaml_config_file_dir=fixtures.as_filepath("us_xx"),
+            region_module=fake_regions_module,
         )
 
         view_query_template = """SELECT * FROM {file_tag_first}
@@ -695,7 +695,7 @@ ORDER BY col1, col2;"""
     def test_direct_ingest_preprocessed_view_with_subqueries(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code="us_xx",
-            yaml_config_file_dir=fixtures.as_filepath("us_xx"),
+            region_module=fake_regions_module,
         )
 
         view_query_template = """WITH
@@ -811,7 +811,7 @@ ORDER BY col1, col2;"""
     def test_direct_ingest_preprocessed_view_throws_for_unexpected_tag(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code="us_xx",
-            yaml_config_file_dir=fixtures.as_filepath("us_xx"),
+            region_module=fake_regions_module,
         )
 
         view_query_template = """SELECT * FROM {file_tag_first}
@@ -833,7 +833,7 @@ USING (col1);"""
     ) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code="us_xx",
-            yaml_config_file_dir=fixtures.as_filepath("us_xx"),
+            region_module=fake_regions_module,
         )
 
         view_query_template = """SELECT * FROM {file_tag_first}
@@ -929,7 +929,7 @@ ORDER BY col1, col2;"""
     ) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code="us_xx",
-            yaml_config_file_dir=fixtures.as_filepath("us_xx"),
+            region_module=fake_regions_module,
         )
 
         view_query_template = """
@@ -954,7 +954,7 @@ SELECT * FROM my_subquery;"""
     def test_direct_ingest_preprocessed_view_materialized_raw_table_views(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code="us_xx",
-            yaml_config_file_dir=fixtures.as_filepath("us_xx"),
+            region_module=fake_regions_module,
         )
 
         view_query_template = """WITH
@@ -1074,7 +1074,7 @@ ORDER BY col1, col2;"""
     ) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code="us_xx",
-            yaml_config_file_dir=fixtures.as_filepath("us_xx"),
+            region_module=fake_regions_module,
         )
 
         view_query_template = """WITH
@@ -1184,7 +1184,7 @@ ORDER BY col1, col2
     ) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code="us_xx",
-            yaml_config_file_dir=fixtures.as_filepath("us_xx"),
+            region_module=fake_regions_module,
         )
 
         view_query_template = """WITH

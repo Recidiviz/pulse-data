@@ -48,10 +48,12 @@ class TestStates(unittest.TestCase):
 
         importlib.reload(states)
 
-        # There are 51 states because we are in tests, so US_XX is a valid value
-        self.assertEqual(52, len(states.StateCode))
+        # There are 53 states because we are in tests, so US_XX and US_WW are valid
+        # values.
+        self.assertEqual(53, len(states.StateCode))
         self.assertEqual("US_AK", list(states.StateCode)[0].value)
-        self.assertEqual("US_WY", list(states.StateCode)[-2].value)
+        self.assertEqual("US_WY", list(states.StateCode)[-3].value)
+        self.assertEqual("US_WW", list(states.StateCode)[-2].value)
         self.assertEqual("US_XX", list(states.StateCode)[-1].value)
 
     def test_getState(self) -> None:

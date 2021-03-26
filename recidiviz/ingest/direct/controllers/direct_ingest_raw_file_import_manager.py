@@ -47,7 +47,11 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     filename_parts_from_path,
     GcsfsDirectIngestFileType,
 )
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
+from recidiviz.cloud_storage.gcsfs_path import (
+    GcsfsFilePath,
+    GcsfsDirectoryPath,
+    GcsfsBucketPath,
+)
 from recidiviz.ingest.direct.controllers.gcsfs_csv_reader import (
     GcsfsCsvReader,
     COMMON_RAW_FILE_ENCODINGS,
@@ -282,7 +286,8 @@ class DirectIngestRegionRawFileConfig:
         default_file_path = os.path.join(self.yaml_config_file_dir, default_filename)
         if not os.path.exists(default_file_path):
             raise ValueError(
-                f"Missing default raw data configs for region: {self.region_code}"
+                f"Missing default raw data configs for region: {self.region_code}. "
+                f"None found at path: [{default_file_path}]"
             )
         default_contents = YAMLDict.from_path(default_file_path)
         default_encoding = default_contents.pop("default_encoding", str)
@@ -346,7 +351,10 @@ class DirectIngestRegionRawFileConfig:
                     filename,
                 )
         else:
-            raise ValueError(f"Missing raw data configs for region: {self.region_code}")
+            raise ValueError(
+                f"Missing raw data configs for region: {self.region_code}. "
+                f"None found at path [{self.yaml_config_file_dir}]."
+            )
         return raw_data_configs
 
     raw_file_tags: Set[str] = attr.ib()
@@ -373,7 +381,7 @@ class DirectIngestRawFileImportManager:
         *,
         region: Region,
         fs: DirectIngestGCSFileSystem,
-        ingest_directory_path: GcsfsDirectoryPath,
+        ingest_bucket_path: GcsfsBucketPath,
         temp_output_directory_path: GcsfsDirectoryPath,
         big_query_client: BigQueryClient,
         region_raw_file_config: Optional[DirectIngestRegionRawFileConfig] = None,
@@ -382,7 +390,7 @@ class DirectIngestRawFileImportManager:
 
         self.region = region
         self.fs = fs
-        self.ingest_directory_path = ingest_directory_path
+        self.ingest_bucket_path = ingest_bucket_path
         self.temp_output_directory_path = temp_output_directory_path
         self.big_query_client = big_query_client
         self.region_raw_file_config = (
@@ -406,7 +414,7 @@ class DirectIngestRawFileImportManager:
 
     def get_unprocessed_raw_files_to_import(self) -> List[GcsfsFilePath]:
         unprocessed_paths = self.fs.get_unprocessed_file_paths(
-            self.ingest_directory_path, GcsfsDirectIngestFileType.RAW_DATA
+            self.ingest_bucket_path, GcsfsDirectIngestFileType.RAW_DATA
         )
         paths_to_import = []
         for path in unprocessed_paths:

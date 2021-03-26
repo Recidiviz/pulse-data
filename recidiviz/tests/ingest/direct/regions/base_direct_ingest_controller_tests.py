@@ -128,7 +128,6 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
 
         self.controller = build_gcsfs_controller_for_tests(
             self.controller_cls(),
-            self.fixture_path_prefix(),
             run_async=False,
             regions_module=regions,
         )
@@ -166,10 +165,6 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
             cls.temp_db_dir
         )
 
-    @classmethod
-    def fixture_path_prefix(cls) -> str:
-        return os.path.join("direct", "regions", cls.region_code().lower())
-
     def run_parse_file_test(
         self, expected: IngestInfo, fixture_file_name: str
     ) -> IngestInfo:
@@ -201,7 +196,9 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
             )
         else:
             fixture_util.add_direct_ingest_path(
-                self.controller.fs.gcs_file_system, args.file_path
+                self.controller.fs.gcs_file_system,
+                args.file_path,
+                region_code=self.controller.region_code(),
             )
 
         # pylint:disable=protected-access

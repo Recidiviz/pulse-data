@@ -5,5 +5,6 @@ primary_key_cols:
   - COL_1
 columns:
   - name: COL_1
-    description: COL_1 description
+    description: |-
+      COL_1 description
 always_historical_export: True

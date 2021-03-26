@@ -54,7 +54,7 @@ from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     gcsfs_direct_ingest_storage_directory_path_for_region,
-    gcsfs_direct_ingest_directory_path_for_region,
+    gcsfs_direct_ingest_bucket_for_region,
     GcsfsDirectIngestFileType,
 )
 from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
@@ -122,10 +122,8 @@ class MoveFilesFromStorageController:
                 project_id=self.project_id,
             )
         )
-        self.ingest_bucket = GcsfsDirectoryPath.from_absolute_path(
-            gcsfs_direct_ingest_directory_path_for_region(
-                region, SystemLevel.STATE, project_id=self.project_id
-            )
+        self.ingest_bucket = gcsfs_direct_ingest_bucket_for_region(
+            region, SystemLevel.STATE, project_id=self.project_id
         )
 
         self.mutex = threading.Lock()
