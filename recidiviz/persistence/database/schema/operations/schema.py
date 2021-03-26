@@ -129,6 +129,4 @@ class DirectIngestIngestFileMetadata(
 
     # The name of the database that the data in this file has been or will be written
     # to.
-    # TODO(#6077): Migrate this to nullable=False once all 4 states have valid nonnull
-    #   column data in staging and prod BQ.
-    ingest_database_name = Column(String, nullable=True)
+    ingest_database_name = Column(String, nullable=False)
