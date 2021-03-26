@@ -25,6 +25,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodTerminationReason,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.str_field_utils import normalize
 from recidiviz.ingest.direct.regions.us_mo.us_mo_enum_helpers import (
     supervision_period_admission_reason_mapper,
@@ -34,13 +35,16 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_enum_helpers import (
     STR_TO_INCARCERATION_PERIOD_ADMISSION_REASON_MAPPINGS,
     rank_incarceration_period_admission_reason_status_str,
 )
-from recidiviz.tests.ingest import fixtures
+from recidiviz.tests.ingest.direct.fixture_util import direct_ingest_fixture_path
 
 _STATE_CODE_UPPER = "US_MO"
 
 
 class TestUsMoEnumHelpers(unittest.TestCase):
     """Tests for the US MO enum helpers."""
+
+    def setUp(self) -> None:
+        self.region_code = StateCode.US_MO.value.lower()
 
     def test_parse_supervision_admission_reason_empty(self) -> None:
         input_statuses = ""
@@ -223,8 +227,9 @@ class TestUsMoEnumHelpers(unittest.TestCase):
         """Loops over a file with every single combination of TAK026 incarceration in statuses (*0I*) that are present
         on cycles that started after 2000 and ensures we have a mapping for those statuses.
         """
-        fixture_path = fixtures.as_filepath(
-            "tak026_incarceration_admission_status_combos.txt"
+        fixture_path = direct_ingest_fixture_path(
+            region_code=self.region_code,
+            file_name="tak026_incarceration_admission_status_combos.txt",
         )
         with open(fixture_path, "r") as f:
             while True:

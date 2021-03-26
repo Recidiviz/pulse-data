@@ -24,14 +24,18 @@ from multiprocessing.pool import ThreadPool
 from typing import Optional, List, Tuple
 
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
-from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import (
+    GcsfsDirectoryPath,
+    GcsfsFilePath,
+    GcsfsBucketPath,
+)
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_file_path,
     DirectIngestGCSFileSystem,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    gcsfs_direct_ingest_directory_path_for_region,
+    gcsfs_direct_ingest_bucket_for_region,
     GcsfsDirectIngestFileType,
 )
 from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import (
@@ -56,10 +60,8 @@ class BaseUploadStateFilesToIngestBucketController:
         self.region = region.lower()
 
         self.gcsfs = DirectIngestGCSFileSystem(GcsfsFactory.build())
-        self.gcs_destination_path = GcsfsDirectoryPath.from_absolute_path(
-            gcsfs_direct_ingest_directory_path_for_region(
-                region, SystemLevel.STATE, project_id=self.project_id
-            )
+        self.gcs_destination_path = gcsfs_direct_ingest_bucket_for_region(
+            region, SystemLevel.STATE, project_id=self.project_id
         )
 
         self.uploaded_files: List[str] = []
@@ -150,7 +152,7 @@ class UploadStateFilesToIngestBucketController(
         paths_with_timestamps: List[Tuple[str, datetime.datetime]],
         project_id: str,
         region: str,
-        gcs_destination_path: Optional[GcsfsDirectoryPath] = None,
+        gcs_destination_path: Optional[GcsfsBucketPath] = None,
     ):
         super().__init__(
             paths_with_timestamps=paths_with_timestamps,

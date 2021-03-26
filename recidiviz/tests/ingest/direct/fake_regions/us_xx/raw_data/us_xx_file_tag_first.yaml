@@ -6,7 +6,8 @@ primary_key_cols:
   - col_name_1b
 columns:
   - name: col_name_1a
-    description: First column.
+    description: |-
+      First column.
     known_values:
       - value: A
         description: A description

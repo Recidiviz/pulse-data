@@ -20,7 +20,7 @@ import datetime
 import logging
 import re
 
-from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsBucketPath
 from recidiviz.common import ncic
 from recidiviz.common.constants.entity_enum import EntityEnumMeta, EntityEnum
 from recidiviz.common.constants.enum_overrides import (
@@ -442,12 +442,12 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
     def __init__(
         self,
-        ingest_directory_path: GcsfsDirectoryPath,
+        ingest_bucket_path: GcsfsBucketPath,
         storage_directory_path: GcsfsDirectoryPath,
         ingest_database_key: SQLAlchemyDatabaseKey,
     ):
         super().__init__(
-            ingest_directory_path, storage_directory_path, ingest_database_key
+            ingest_bucket_path, storage_directory_path, ingest_database_key
         )
 
         self.enum_overrides = self.generate_enum_overrides()

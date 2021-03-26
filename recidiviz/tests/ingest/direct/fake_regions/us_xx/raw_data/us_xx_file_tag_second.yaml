@@ -3,10 +3,10 @@ file_description: |-
   Some special/unusual character's in the description &
   long enough to make a second line!\n Trailing/leading white
   space is stripped & the text block is interpreted literally.
-
 primary_key_cols:
   - col_name_2a
 columns:
   - name: col_name_2a
-    description: column description
+    description: |-
+      column description
 separator: '$'

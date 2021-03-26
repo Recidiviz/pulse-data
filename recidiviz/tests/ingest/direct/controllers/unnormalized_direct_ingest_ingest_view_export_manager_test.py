@@ -44,7 +44,7 @@ from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager i
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsIngestViewExportArgs,
 )
-from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestFileMetadataManager,
 )
@@ -61,8 +61,8 @@ from recidiviz.persistence.entity.operations.entities import (
     DirectIngestIngestFileMetadata,
     DirectIngestRawFileMetadata,
 )
-from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.utils import fakes
 from recidiviz.tests.utils.fake_region import fake_region
 from recidiviz.utils.regions import Region
@@ -220,7 +220,7 @@ class _FakeDirectIngestViewBuilder(
     ) -> DirectIngestPreProcessedIngestView:
         region_config = DirectIngestRegionRawFileConfig(
             region_code="us_xx",
-            yaml_config_file_dir=fixtures.as_filepath("us_xx"),
+            region_module=fake_regions,
         )
 
         query = "select * from {file_tag_first} JOIN {tagFullHistoricalExport} USING (COL_1)"
@@ -329,9 +329,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         return DirectIngestIngestViewExportManager(
             region=region,
             fs=FakeGCSFileSystem(),
-            ingest_directory_path=GcsfsDirectoryPath.from_absolute_path(
-                "ingest_bucket"
-            ),
+            ingest_bucket_path=GcsfsBucketPath("ingest_bucket"),
             big_query_client=self.mock_client,
             file_metadata_manager=metadata_manager,
             view_collector=_ViewCollector(  # type: ignore[arg-type]

@@ -27,21 +27,27 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodTerminationReason,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.regions.us_pa.us_pa_controller import UsPaController
 from recidiviz.ingest.direct.regions.us_pa.us_pa_enum_helpers import (
     incarceration_period_admission_reason_mapper,
     incarceration_period_release_reason_mapper,
     incarceration_period_purpose_mapper,
 )
-from recidiviz.tests.ingest import fixtures
+from recidiviz.tests.ingest.direct.fixture_util import direct_ingest_fixture_path
 
 
 class TestUsPaEnumMappings(unittest.TestCase):
     """Tests the mapper functions from the us_pa_enum_helpers file
     which parse raw text from the incarceration period ingest view"""
 
+    def setUp(self) -> None:
+        self.region_code = StateCode.US_PA.value.lower()
+
     def test_incarceration_period_admission_reason_mapper(self) -> None:
-        fixture_path = fixtures.as_filepath("admission_reason_raw_text.csv")
+        fixture_path = direct_ingest_fixture_path(
+            region_code=self.region_code, file_name="admission_reason_raw_text.csv"
+        )
         with open(fixture_path, "r") as f:
             while True:
                 admission_reason_str = f.readline().strip()
@@ -54,7 +60,9 @@ class TestUsPaEnumMappings(unittest.TestCase):
                 self.assertIsInstance(mapping, StateIncarcerationPeriodAdmissionReason)
 
     def test_incarceration_period_release_reason_mapper(self) -> None:
-        fixture_path = fixtures.as_filepath("release_reason_raw_text.csv")
+        fixture_path = direct_ingest_fixture_path(
+            region_code=self.region_code, file_name="release_reason_raw_text.csv"
+        )
         with open(fixture_path, "r") as f:
             while True:
                 release_reason_str = f.readline().strip()
@@ -65,7 +73,9 @@ class TestUsPaEnumMappings(unittest.TestCase):
                 self.assertIsInstance(mapping, StateIncarcerationPeriodReleaseReason)
 
     def test_incarceration_period_purpose_mapper(self) -> None:
-        fixture_path = fixtures.as_filepath("purpose_raw_text.csv")
+        fixture_path = direct_ingest_fixture_path(
+            region_code=self.region_code, file_name="purpose_raw_text.csv"
+        )
         with open(fixture_path, "r") as f:
             while True:
                 purpose_str = f.readline().strip()
@@ -77,7 +87,9 @@ class TestUsPaEnumMappings(unittest.TestCase):
 
     def test_supervision_level_parsing(self) -> None:
         enum_overrides = UsPaController.generate_enum_overrides()
-        fixture_path = fixtures.as_filepath("supervision_level_raw_text.csv")
+        fixture_path = direct_ingest_fixture_path(
+            region_code=self.region_code, file_name="supervision_level_raw_text.csv"
+        )
         with open(fixture_path, "r") as f:
             while True:
                 supervision_level_str = f.readline().strip()
@@ -87,8 +99,9 @@ class TestUsPaEnumMappings(unittest.TestCase):
 
     def test_supervision_period_supervision_type_parsing(self) -> None:
         enum_overrides = UsPaController.generate_enum_overrides()
-        fixture_path = fixtures.as_filepath(
-            "supervision_period_supervision_type_raw_text.csv"
+        fixture_path = direct_ingest_fixture_path(
+            region_code=self.region_code,
+            file_name="supervision_period_supervision_type_raw_text.csv",
         )
         with open(fixture_path, "r") as f:
             while True:
@@ -101,8 +114,9 @@ class TestUsPaEnumMappings(unittest.TestCase):
 
     def test_supervision_period_admission_reason_parsing(self) -> None:
         enum_overrides = UsPaController.generate_enum_overrides()
-        fixture_path = fixtures.as_filepath(
-            "supervision_period_admission_reason_raw_text.csv"
+        fixture_path = direct_ingest_fixture_path(
+            region_code=self.region_code,
+            file_name="supervision_period_admission_reason_raw_text.csv",
         )
         with open(fixture_path, "r") as f:
             while True:
@@ -115,8 +129,9 @@ class TestUsPaEnumMappings(unittest.TestCase):
 
     def test_supervision_period_termination_reason_parsing(self) -> None:
         enum_overrides = UsPaController.generate_enum_overrides()
-        fixture_path = fixtures.as_filepath(
-            "supervision_period_termination_reason_raw_text.csv"
+        fixture_path = direct_ingest_fixture_path(
+            region_code=self.region_code,
+            file_name="supervision_period_termination_reason_raw_text.csv",
         )
         with open(fixture_path, "r") as f:
             while True:

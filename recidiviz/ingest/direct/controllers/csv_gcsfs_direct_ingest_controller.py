@@ -19,7 +19,6 @@ GCSFileSystem.
 """
 
 import abc
-import inspect
 import os
 from typing import List, Optional, Callable, Any
 
@@ -41,7 +40,11 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     filename_parts_from_path,
     GcsfsDirectIngestFileType,
 )
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
+from recidiviz.cloud_storage.gcsfs_path import (
+    GcsfsFilePath,
+    GcsfsDirectoryPath,
+    GcsfsBucketPath,
+)
 from recidiviz.ingest.direct.controllers.gcsfs_csv_reader import GcsfsCsvReader
 from recidiviz.ingest.direct.controllers.gcsfs_csv_reader_delegates import (
     ReadOneGcsfsCsvReaderDelegate,
@@ -81,12 +84,12 @@ class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
 
     def __init__(
         self,
-        ingest_directory_path: GcsfsDirectoryPath,
+        ingest_bucket_path: GcsfsBucketPath,
         storage_directory_path: GcsfsDirectoryPath,
         ingest_database_key: SQLAlchemyDatabaseKey,
     ):
         super().__init__(
-            ingest_directory_path, storage_directory_path, ingest_database_key
+            ingest_bucket_path, storage_directory_path, ingest_database_key
         )
         self.csv_reader = GcsfsCsvReader(
             gcsfs.GCSFileSystem(
@@ -138,8 +141,9 @@ class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
 
     def _yaml_filepath(self, file_tag: str) -> str:
         return os.path.join(
-            os.path.dirname(inspect.getfile(self.__class__)),
-            f"{self.region.region_code}_{file_tag}.yaml",
+            os.path.dirname(self.region.region_module.__file__),
+            self.region.region_code.lower(),
+            f"{self.region.region_code.lower()}_{file_tag}.yaml",
         )
 
     WrappableCallable = Callable[[str, Any], Any]

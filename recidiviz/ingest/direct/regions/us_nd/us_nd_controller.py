@@ -21,7 +21,7 @@ import os
 import re
 from typing import List, Optional, Dict, Callable, cast, Pattern, Tuple
 
-from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsBucketPath
 from recidiviz.common import ncic
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.enum_overrides import (
@@ -123,12 +123,12 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
     def __init__(
         self,
-        ingest_directory_path: GcsfsDirectoryPath,
+        ingest_bucket_path: GcsfsBucketPath,
         storage_directory_path: GcsfsDirectoryPath,
         ingest_database_key: SQLAlchemyDatabaseKey,
     ):
         super().__init__(
-            ingest_directory_path, storage_directory_path, ingest_database_key
+            ingest_bucket_path, storage_directory_path, ingest_database_key
         )
 
         self.enum_overrides = generate_enum_overrides()

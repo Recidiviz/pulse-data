@@ -25,9 +25,6 @@ from mock import create_autospec, call, patch
 from more_itertools import one
 
 from recidiviz.big_query.big_query_client import BigQueryClient
-from recidiviz.ingest.direct.controllers import (
-    direct_ingest_raw_table_migration_collector,
-)
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
@@ -41,11 +38,14 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
     filename_parts_from_path,
 )
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
+from recidiviz.cloud_storage.gcsfs_path import (
+    GcsfsFilePath,
+    GcsfsDirectoryPath,
+    GcsfsBucketPath,
+)
 from recidiviz.persistence.entity.operations.entities import DirectIngestFileMetadata
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
-from recidiviz.tests.ingest import fixtures
-from recidiviz.tests.ingest.direct.controllers.fixtures.us_xx.raw_data.migrations import (
+from recidiviz.tests.ingest.direct.fake_regions.us_xx.raw_data.migrations import (
     migrations_tagC,
 )
 from recidiviz.tests.ingest.direct.direct_ingest_util import (
@@ -53,7 +53,7 @@ from recidiviz.tests.ingest.direct.direct_ingest_util import (
     _TestSafeGcsCsvReader,
 )
 from recidiviz.tests.ingest.direct import fixture_util
-from recidiviz.tests.ingest.direct.controllers import fixtures as controller_fixtures
+from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
 from recidiviz.tests.utils.fake_region import fake_region
 
 
@@ -64,17 +64,19 @@ class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
         with self.assertRaises(ValueError) as e:
             _ = DirectIngestRegionRawFileConfig(
                 region_code="us_yy",
-                yaml_config_file_dir=fixtures.as_filepath("us_yy"),
+                region_module=fake_regions_module,
             )
-        self.assertEqual(
-            str(e.exception), "Missing default raw data configs for region: us_yy"
+        self.assertTrue(
+            str(e.exception).startswith(
+                "Missing default raw data configs for region: us_yy"
+            )
         )
 
     def test_missing_primary_key_columns(self) -> None:
         with self.assertRaises(ValueError) as e:
             _ = DirectIngestRegionRawFileConfig(
                 region_code="us_zz",
-                yaml_config_file_dir=fixtures.as_filepath("us_zz"),
+                region_module=fake_regions_module,
             )
         self.assertEqual(
             str(e.exception),
@@ -85,9 +87,9 @@ class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
     def test_parse_yaml(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code="us_xx",
-            yaml_config_file_dir=fixtures.as_filepath("us_xx"),
+            region_module=fake_regions_module,
         )
-        self.assertEqual(7, len(region_config.raw_file_configs))
+        self.assertEqual(8, len(region_config.raw_file_configs))
         self.assertEqual(
             {
                 "file_tag_first",
@@ -97,8 +99,9 @@ class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
                 "tagInvalidCharacters",
                 "tagNormalizationConflict",
                 "tagPipeSeparatedNonUTF8",
+                "tagColumnsMissing",
             },
-            region_config.raw_file_configs.keys(),
+            set(region_config.raw_file_configs.keys()),
         )
 
         config_1 = region_config.raw_file_configs["file_tag_first"]
@@ -180,10 +183,12 @@ class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
         with self.assertRaises(ValueError) as e:
             region_config = DirectIngestRegionRawFileConfig(
                 region_code="us_xy",
-                yaml_config_file_dir=fixtures.as_filepath("us_xy"),
+                region_module=fake_regions_module,
             )
             _configs = region_config.raw_file_configs
-        self.assertEqual(str(e.exception), "Missing raw data configs for region: us_xy")
+        self.assertTrue(
+            str(e.exception).startswith("Missing raw data configs for region: us_xy")
+        )
 
 
 class DirectIngestRawFileImportManagerTest(unittest.TestCase):
@@ -194,25 +199,15 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
         self.project_id_patcher.start().return_value = self.project_id
         self.test_region = fake_region(
-            region_code="us_xx",
+            region_code="us_xx", region_module=fake_regions_module
         )
-
-        self.region_module_patcher = patch.object(
-            direct_ingest_raw_table_migration_collector,
-            "regions",
-            new=controller_fixtures,
-        )
-        self.region_module_patcher.start()
 
         self.fs = DirectIngestGCSFileSystem(FakeGCSFileSystem())
-        self.ingest_directory_path = GcsfsDirectoryPath(
-            bucket_name="direct/controllers/fixtures"
-        )
+        self.ingest_bucket_path = GcsfsBucketPath(bucket_name="my_ingest_bucket")
         self.temp_output_path = GcsfsDirectoryPath(bucket_name="temp_bucket")
 
         self.region_raw_file_config = DirectIngestRegionRawFileConfig(
-            region_code="us_xx",
-            yaml_config_file_dir=fixtures.as_filepath("us_xx"),
+            region_code="us_xx", region_module=fake_regions_module
         )
 
         self.mock_big_query_client = create_autospec(BigQueryClient)
@@ -225,7 +220,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self.import_manager = DirectIngestRawFileImportManager(
             region=self.test_region,
             fs=self.fs,
-            ingest_directory_path=self.ingest_directory_path,
+            ingest_bucket_path=self.ingest_bucket_path,
             temp_output_directory_path=self.temp_output_path,
             region_raw_file_config=self.region_raw_file_config,
             big_query_client=self.mock_big_query_client,
@@ -246,7 +241,6 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.time_patcher.stop()
-        self.region_module_patcher.stop()
         self.project_id_patcher.stop()
 
     def mock_import_raw_file_to_big_query(
@@ -294,24 +288,30 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self.assertEqual([], self.import_manager.get_unprocessed_raw_files_to_import())
 
         raw_unprocessed = path_for_fixture_file_in_test_gcs_directory(
-            directory=self.ingest_directory_path,
+            bucket_path=self.ingest_bucket_path,
             filename="file_tag_first.csv",
             should_normalize=True,
             file_type=GcsfsDirectIngestFileType.RAW_DATA,
         )
 
         ingest_view_unprocessed = path_for_fixture_file_in_test_gcs_directory(
-            directory=self.ingest_directory_path,
+            bucket_path=self.ingest_bucket_path,
             filename="file_tag_second.csv",
             should_normalize=True,
             file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
         )
 
         fixture_util.add_direct_ingest_path(
-            self.fs.gcs_file_system, raw_unprocessed, has_fixture=False
+            self.fs.gcs_file_system,
+            raw_unprocessed,
+            region_code=self.test_region.region_code,
+            has_fixture=False,
         )
         fixture_util.add_direct_ingest_path(
-            self.fs.gcs_file_system, ingest_view_unprocessed, has_fixture=False
+            self.fs.gcs_file_system,
+            ingest_view_unprocessed,
+            region_code=self.test_region.region_code,
+            has_fixture=False,
         )
 
         self.assertEqual(
@@ -320,7 +320,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
 
     def test_import_bq_file_not_in_tags(self) -> None:
         file_path = path_for_fixture_file_in_test_gcs_directory(
-            directory=self.ingest_directory_path,
+            bucket_path=self.ingest_bucket_path,
             filename="this_path_tag_not_in_yaml.csv",
             should_normalize=True,
             file_type=GcsfsDirectIngestFileType.RAW_DATA,
@@ -333,7 +333,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
 
     def test_import_bq_file_with_ingest_view_file(self) -> None:
         file_path = path_for_fixture_file_in_test_gcs_directory(
-            directory=self.ingest_directory_path,
+            bucket_path=self.ingest_bucket_path,
             filename="file_tag_first.csv",
             should_normalize=True,
             file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
@@ -346,13 +346,15 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
 
     def test_import_bq_file_with_raw_file(self) -> None:
         file_path = path_for_fixture_file_in_test_gcs_directory(
-            directory=self.ingest_directory_path,
+            bucket_path=self.ingest_bucket_path,
             filename="tagC.csv",
             should_normalize=True,
             file_type=GcsfsDirectIngestFileType.RAW_DATA,
         )
 
-        fixture_util.add_direct_ingest_path(self.fs.gcs_file_system, file_path)
+        fixture_util.add_direct_ingest_path(
+            self.fs.gcs_file_system, file_path, region_code=self.test_region.region_code
+        )
 
         self.import_manager.import_raw_file_to_big_query(
             file_path, self._metadata_for_unprocessed_file_path(file_path)
@@ -382,13 +384,15 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self,
     ) -> None:
         file_path = path_for_fixture_file_in_test_gcs_directory(
-            directory=self.ingest_directory_path,
+            bucket_path=self.ingest_bucket_path,
             filename="tagPipeSeparatedNonUTF8.txt",
             should_normalize=True,
             file_type=GcsfsDirectIngestFileType.RAW_DATA,
         )
 
-        fixture_util.add_direct_ingest_path(self.fs.gcs_file_system, file_path)
+        fixture_util.add_direct_ingest_path(
+            self.fs.gcs_file_system, file_path, region_code=self.test_region.region_code
+        )
 
         self.import_manager.import_raw_file_to_big_query(
             file_path, self._metadata_for_unprocessed_file_path(file_path)
@@ -420,13 +424,15 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self.import_manager.upload_chunk_size = 1
 
         file_path = path_for_fixture_file_in_test_gcs_directory(
-            directory=self.ingest_directory_path,
+            bucket_path=self.ingest_bucket_path,
             filename="tagPipeSeparatedNonUTF8.txt",
             should_normalize=True,
             file_type=GcsfsDirectIngestFileType.RAW_DATA,
         )
 
-        fixture_util.add_direct_ingest_path(self.fs.gcs_file_system, file_path)
+        fixture_util.add_direct_ingest_path(
+            self.fs.gcs_file_system, file_path, region_code=self.test_region.region_code
+        )
 
         self.import_manager.import_raw_file_to_big_query(
             file_path, self._metadata_for_unprocessed_file_path(file_path)
@@ -467,13 +473,15 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self.import_manager.upload_chunk_size = 2
 
         file_path = path_for_fixture_file_in_test_gcs_directory(
-            directory=self.ingest_directory_path,
+            bucket_path=self.ingest_bucket_path,
             filename="tagPipeSeparatedNonUTF8.txt",
             should_normalize=True,
             file_type=GcsfsDirectIngestFileType.RAW_DATA,
         )
 
-        fixture_util.add_direct_ingest_path(self.fs.gcs_file_system, file_path)
+        fixture_util.add_direct_ingest_path(
+            self.fs.gcs_file_system, file_path, region_code=self.test_region.region_code
+        )
 
         self.import_manager.import_raw_file_to_big_query(
             file_path, self._metadata_for_unprocessed_file_path(file_path)
@@ -511,13 +519,15 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
 
     def test_import_bq_file_with_raw_file_invalid_column_chars(self) -> None:
         file_path = path_for_fixture_file_in_test_gcs_directory(
-            directory=self.ingest_directory_path,
+            bucket_path=self.ingest_bucket_path,
             filename="tagInvalidCharacters.csv",
             should_normalize=True,
             file_type=GcsfsDirectIngestFileType.RAW_DATA,
         )
 
-        fixture_util.add_direct_ingest_path(self.fs.gcs_file_system, file_path)
+        fixture_util.add_direct_ingest_path(
+            self.fs.gcs_file_system, file_path, region_code=self.test_region.region_code
+        )
 
         self.import_manager.import_raw_file_to_big_query(
             file_path, self._metadata_for_unprocessed_file_path(file_path)
@@ -547,13 +557,17 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
     def test_import_bq_file_with_raw_file_normalization_conflict(self) -> None:
         with self.assertRaises(ValueError) as e:
             file_path = path_for_fixture_file_in_test_gcs_directory(
-                directory=self.ingest_directory_path,
+                bucket_path=self.ingest_bucket_path,
                 filename="tagNormalizationConflict.csv",
                 should_normalize=True,
                 file_type=GcsfsDirectIngestFileType.RAW_DATA,
             )
 
-            fixture_util.add_direct_ingest_path(self.fs.gcs_file_system, file_path)
+            fixture_util.add_direct_ingest_path(
+                self.fs.gcs_file_system,
+                file_path,
+                region_code=self.test_region.region_code,
+            )
 
             self.import_manager.import_raw_file_to_big_query(
                 file_path, self._metadata_for_unprocessed_file_path(file_path)
@@ -566,13 +580,15 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
     def test_import_bq_file_with_migrations(self) -> None:
         file_datetime = migrations_tagC.DATE_1
         file_path = path_for_fixture_file_in_test_gcs_directory(
-            directory=self.ingest_directory_path,
+            bucket_path=self.ingest_bucket_path,
             filename="tagC.csv",
             should_normalize=True,
             file_type=GcsfsDirectIngestFileType.RAW_DATA,
             dt=file_datetime,
         )
-        fixture_util.add_direct_ingest_path(self.fs.gcs_file_system, file_path)
+        fixture_util.add_direct_ingest_path(
+            self.fs.gcs_file_system, file_path, region_code=self.test_region.region_code
+        )
 
         mock_query_jobs = [
             mock.MagicMock(),

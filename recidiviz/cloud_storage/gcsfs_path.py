@@ -51,6 +51,12 @@ class GcsfsPath:
     # Name of the bucket for this path in Cloud Storage
     bucket_name: str = attr.ib()
 
+    def __attrs_post_init__(self) -> None:
+        if "/" in self.bucket_name:
+            raise ValueError(
+                f"Bucket name includes a relative path: [{self.bucket_name}]"
+            )
+
     @property
     def bucket_path(self) -> "GcsfsBucketPath":
         return GcsfsBucketPath(self.bucket_name)
@@ -141,6 +147,13 @@ class GcsfsDirectoryPath(GcsfsPath):
 @attr.s(frozen=True)
 class GcsfsBucketPath(GcsfsDirectoryPath):
     """Represents a path to a bucket in Google Cloud Storage."""
+
+    def __attrs_post_init__(self) -> None:
+        super().__attrs_post_init__()
+        if self.relative_path:
+            raise ValueError(
+                f"Bucket relative path must be empty. Found [{self.relative_path}]."
+            )
 
     def abs_path(self) -> str:
         return self.bucket_name

@@ -15,22 +15,24 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for RawDataConfigWriter."""
-import filecmp
 import tempfile
 import unittest
 
 import os
 
 from recidiviz.tests.ingest.direct.direct_ingest_util import PLACEHOLDER_TO_DO_STRING
-from recidiviz.tests.ingest.direct.fixtures import us_xx
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
     DirectIngestRegionRawFileConfig,
 )
+from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
 from recidiviz.tools.raw_data_config_writer import RawDataConfigWriter
 
 
 class RawDataConfigWriterTest(unittest.TestCase):
     """Tests for DirectIngestDocumentationGenerator."""
+
+    def setUp(self) -> None:
+        self.maxDiff = None
 
     def test_output_to_file(
         self,
@@ -38,7 +40,7 @@ class RawDataConfigWriterTest(unittest.TestCase):
 
         region_config = DirectIngestRegionRawFileConfig(
             region_code="us_xx",
-            yaml_config_file_dir=os.path.dirname(us_xx.__file__),
+            region_module=fake_regions_module,
         )
 
         with tempfile.TemporaryDirectory() as tmpdirname:
@@ -57,6 +59,10 @@ class RawDataConfigWriterTest(unittest.TestCase):
                     for line in lines:
                         if PLACEHOLDER_TO_DO_STRING not in line:
                             f.write(line)
-                self.assertTrue(
-                    filecmp.cmp(config.file_path, test_output_path, shallow=False)
-                )
+
+                with open(config.file_path, "r") as f:
+                    expected_contents = f.read()
+
+                with open(test_output_path, "r") as f:
+                    written_contents = f.read()
+                self.assertEqual(expected_contents, written_contents)
