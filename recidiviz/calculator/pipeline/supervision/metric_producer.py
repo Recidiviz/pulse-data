@@ -14,15 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Calculates supervision metrics from supervision time buckets.
+"""Produces SupervisionMetrics from SupervisionTimeBuckets.
 
-This contains the core logic for calculating supervision metrics on a person-by-person basis. It transforms
-SupervisionTimeBuckets into supervision metrics, key-value pairs where the key represents all of the dimensions
-represented in the data point, and the value represents an indicator of whether the person should contribute to that
-metric.
+This contains the core logic for calculating supervision metrics on a person-by-person
+basis. It transforms SupervisionTimeBuckets into SupervisionMetrics.
 """
 from operator import attrgetter
-from typing import Dict, List, Tuple, Any, Optional, Type
+from typing import Dict, List, Any, Optional, Type
 
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import (
     SupervisionTimeBucket,
@@ -33,11 +31,10 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import (
     SupervisionStartBucket,
 )
 from recidiviz.calculator.pipeline.utils.calculator_utils import (
-    augmented_combo_for_calculations,
     include_in_output,
     get_calculation_month_lower_bound_date,
     get_calculation_month_upper_bound_date,
-    characteristics_dict_builder,
+    build_metric,
 )
 from recidiviz.calculator.pipeline.supervision.metrics import (
     SupervisionMetricType,
@@ -93,21 +90,19 @@ METRIC_TYPE_TO_CLASS: Dict[SupervisionMetricType, Type[SupervisionMetric]] = {
 }
 
 
-def map_supervision_combinations(
+def produce_supervision_metrics(
     person: StatePerson,
     supervision_time_buckets: List[SupervisionTimeBucket],
     metric_inclusions: Dict[SupervisionMetricType, bool],
     calculation_end_month: Optional[str],
     calculation_month_count: int,
     person_metadata: PersonMetadata,
-) -> List[Tuple[Dict[str, Any], Any]]:
-    """Transforms SupervisionTimeBuckets and a StatePerson into metric combinations.
+    pipeline_job_id: str,
+) -> List[SupervisionMetric]:
+    """Transforms SupervisionTimeBuckets and a StatePerson into SuperviisonMetrics.
 
-    Takes in a StatePerson and all of her SupervisionTimeBuckets and returns an array of "supervision combinations".
-    These are key-value pairs where the key represents a specific metric and the value represents whether or not
-    the person should be counted as a positive instance of that metric.
-
-    This translates a particular time on supervision into many different supervision population metrics.
+    Takes in a StatePerson and all of her SupervisionTimeBuckets and returns an array
+    of SupervisionMetrics.
 
     Args:
         person: the StatePerson
@@ -119,10 +114,12 @@ def map_supervision_combinations(
         calculation_month_count: The number of months (including the month of the calculation_end_month) to
             limit the monthly calculation output to. If set to -1, does not limit the calculations.
         person_metadata: Contains information about the StatePerson that is necessary for the metrics.
+        pipeline_job_id: The job_id of the pipeline that is currently running.
+
     Returns:
-        A list of key-value tuples representing specific metric combinations and the value corresponding to that metric.
+        A list of SupervisionMetrics.
     """
-    metrics: List[Tuple[Dict[str, Any], Any]] = []
+    metrics: List[SupervisionMetric] = []
 
     supervision_time_buckets.sort(key=attrgetter("year", "month"))
 
@@ -178,26 +175,37 @@ def map_supervision_combinations(
                 )
 
             if include_event_in_metric(supervision_time_bucket, metric_type):
-                characteristic_combo = characteristics_dict_builder(
+                additional_attributes: Dict[str, Any] = {}
+
+                if (
+                    isinstance(
+                        supervision_time_bucket, ProjectedSupervisionCompletionBucket
+                    )
+                    and metric_type
+                    == SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED
+                ):
+                    additional_attributes[
+                        "days_served"
+                    ] = supervision_time_bucket.sentence_days_served
+
+                metric = build_metric(
                     pipeline="supervision",
                     event=supervision_time_bucket,
                     metric_class=metric_class,
                     person=person,
                     event_date=event_date,
                     person_metadata=person_metadata,
+                    pipeline_job_id=pipeline_job_id,
+                    additional_attributes=additional_attributes,
                 )
 
-                metric_combo = augmented_combo_for_calculations(
-                    characteristic_combo,
-                    supervision_time_bucket.state_code,
-                    metric_type,
-                    event_year,
-                    event_month,
-                )
+                if not isinstance(metric, SupervisionMetric):
+                    raise ValueError(
+                        f"Unexpected metric type {type(metric)}. "
+                        "All metrics should be SupervisionMetric."
+                    )
 
-                value = value_for_metric_combo(supervision_time_bucket, metric_type)
-
-                metrics.append((metric_combo, value))
+                metrics.append(metric)
 
     return metrics
 
@@ -261,34 +269,3 @@ def include_event_in_metric(
         return True
 
     raise ValueError(f"Unhandled metric type {metric_type}")
-
-
-def value_for_metric_combo(
-    supervision_time_bucket: SupervisionTimeBucket, metric_type: SupervisionMetricType
-) -> int:
-    """Returns the value that should be associated with the metric of metric_type produced by this
-    supervision_time_bucket.
-
-       Args:
-           supervision_time_bucket: The SupervisionTimeBucket from which the combination was derived
-           metric_type: The type of metric being tracked by this combo
-
-       Returns:
-           An integer value that will be associated with this metric.
-    """
-    if isinstance(supervision_time_bucket, ProjectedSupervisionCompletionBucket):
-        if metric_type == SupervisionMetricType.SUPERVISION_SUCCESS:
-            # Set 1 for successful completion, 0 for unsuccessful completion
-            return 1 if supervision_time_bucket.successful_completion else 0
-        if (
-            metric_type
-            == SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED
-        ):
-            return supervision_time_bucket.sentence_days_served
-
-        raise ValueError(
-            f"Unsupported metric type {metric_type} for ProjectedSupervisionCompletionBucket."
-        )
-
-    # The default value for all combos is 1
-    return 1

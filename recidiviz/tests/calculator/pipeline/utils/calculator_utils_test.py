@@ -93,23 +93,6 @@ def test_age_bucket():
     assert calculator_utils.age_bucket(40) == "40<"
 
 
-def test_augment_combination():
-    combo = {"age": "<25", "race": "black", "gender": "female"}
-
-    parameters = {"A": "a", "B": 9}
-
-    augmented = calculator_utils.augment_combination(combo, parameters)
-
-    assert augmented == {
-        "age": "<25",
-        "A": "a",
-        "B": 9,
-        "race": "black",
-        "gender": "female",
-    }
-    assert augmented != combo
-
-
 INCLUDED_PIPELINES = ["incarceration", "supervision"]
 
 

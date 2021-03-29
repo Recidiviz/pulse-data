@@ -58,7 +58,7 @@ def produce_program_metrics(
     person_metadata: PersonMetadata,
     pipeline_job_id: str,
 ) -> List[ProgramMetric]:
-    """Transforms ProgramEvents and a StatePerson into metric combinations.
+    """Transforms ProgramEvents and a StatePerson into metrics.
 
     Takes in a StatePerson and all of her ProgramEvents and returns a list of
     ProgramMetrics by translating a particular interaction with a program into a

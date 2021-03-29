@@ -27,7 +27,6 @@ from recidiviz.calculator.pipeline.utils.event_utils import (
 )
 from recidiviz.calculator.pipeline.utils.metric_utils import (
     RecidivizMetric,
-    PersonLevelMetric,
     RecidivizMetricType,
 )
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
@@ -172,30 +171,6 @@ def age_bucket(age: Optional[int]) -> Optional[str]:
     return "40<"
 
 
-def augment_combination(
-    characteristic_combo: Dict[str, Any], parameters: Dict[str, Any]
-) -> Dict[str, Any]:
-    """Returns a copy of the combo with the additional parameters added.
-
-    Creates a shallow copy of the given characteristic combination and sets the
-    given attributes on the copy. This avoids updating the
-    existing characteristic combo.
-
-    Args:
-        characteristic_combo: the combination to copy and augment
-        parameters: dictionary of additional attributes to add to the combo
-
-    Returns:
-        The augmented characteristic combination, ready for tracking.
-    """
-    augmented_combo = characteristic_combo.copy()
-
-    for key, value in parameters.items():
-        augmented_combo[key] = value
-
-    return augmented_combo
-
-
 def identify_most_severe_response_decision(
     decisions: List[StateSupervisionViolationResponseDecision],
 ) -> Optional[StateSupervisionViolationResponseDecision]:
@@ -205,35 +180,6 @@ def identify_most_severe_response_decision(
         (decision for decision in DECISION_SEVERITY_ORDER if decision in decisions),
         None,
     )
-
-
-def augmented_combo_for_calculations(
-    combo: Dict[str, Any],
-    state_code: str,
-    metric_type: RecidivizMetricType,
-    year: Optional[int] = None,
-    month: Optional[int] = None,
-) -> Dict[str, Any]:
-    """Augments the given combo dictionary with the given parameters of the calculation.
-
-    Args:
-        combo: the base combo to be augmented
-        state_code: the state code of the metric combo
-        metric_type: the metric_type of the metric
-        year: the year this metric describes
-        month: the month this metric describes
-
-    Returns: Returns a dictionary that has been augmented with necessary parameters.
-    """
-    parameters: Dict[str, Any] = {"state_code": state_code, "metric_type": metric_type}
-
-    if year:
-        parameters["year"] = year
-
-    if month:
-        parameters["month"] = month
-
-    return augment_combination(combo, parameters)
 
 
 def person_external_id_to_include(
@@ -336,74 +282,6 @@ def get_calculation_month_lower_bound_date(
     )
 
     return calculation_month_lower_bound
-
-
-def characteristics_dict_builder(
-    pipeline: str,
-    event: IdentifierEventT,
-    metric_class: Type[RecidivizMetric],
-    person: StatePerson,
-    event_date: datetime.date,
-    person_metadata: PersonMetadata,
-) -> Dict[str, Any]:
-    """Builds a dictionary from the provided event and person that will eventually populate the values on the given
-    metric_class. Only adds attributes to the dictionary that are relevant to the metric_class.
-
-    Args:
-        - pipeline: The name of the pipeline this dictionary is being populated for
-        - event: The event that was a product of the pipeline's identifier step
-        - metric_class: The type of RecidivizMetric that this event will contribute to
-        - person: The StatePerson related to this event
-        - event_date: The date on which the |event| occurred
-        - include_person_attributes: Whether or not to include person-level information in the dictionary
-        - person_metadata: A dictionary containing information about the StatePerson that may be necessary for the
-            metrics.
-
-    """
-    characteristics: Dict[str, Any] = {}
-    metric_attributes = attr.fields_dict(metric_class).keys()
-
-    person_attributes = person_characteristics(
-        person, event_date, person_metadata, pipeline
-    )
-
-    # Add relevant demographic and person-level dimensions
-    for attribute, value in person_attributes.items():
-        if attribute in metric_attributes:
-            characteristics[attribute] = value
-
-    fields_not_in_events = list(attr.fields_dict(RecidivizMetric).keys())
-    fields_not_in_events.extend(attr.fields_dict(PersonLevelMetric).keys())
-    fields_not_in_events.extend(
-        [
-            # These are determined by the period of time the metric describes
-            "year",
-            "month",
-            "follow_up_period",
-            # This is set by the contents of the `violation_type_frequency_counter` on
-            # RevocationReturnSupervisionTimeBuckets
-            "violation_count_type",
-            # These are currently being set in the `Produce...Metrics` step of each pipeline.
-            "did_recidivate",
-            "days_served",
-        ]
-    )
-
-    # Add attributes from the event that are relevant to the metric_class
-    for metric_attribute in metric_attributes:
-        if (
-            hasattr(event, metric_attribute)
-            and metric_attribute not in fields_not_in_events
-        ):
-            attribute_value = getattr(event, metric_attribute)
-            if attribute_value is not None:
-                characteristics[metric_attribute] = attribute_value
-        elif metric_attribute not in fields_not_in_events:
-            raise ValueError(
-                f"Did not find expected field [{metric_attribute}] in {event.__class__}. Metric class: {metric_class}"
-            )
-
-    return characteristics
 
 
 def safe_list_index(list_of_values: List[Any], value: Any, default: int) -> int:

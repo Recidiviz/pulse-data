@@ -25,12 +25,9 @@ from typing import Set, Optional, Dict, List, Any, Collection
 from unittest import mock
 
 import apache_beam as beam
-import pytest
 from apache_beam.testing.util import assert_that, equal_to, BeamAssertException
 from apache_beam.testing.test_pipeline import TestPipeline
-from apache_beam.options.pipeline_options import PipelineOptions
 
-import datetime
 from datetime import date
 
 import attr
@@ -38,8 +35,10 @@ from freezegun import freeze_time
 from mock import patch
 
 from recidiviz.calculator.pipeline.supervision import pipeline
-from recidiviz.calculator.pipeline.supervision.calculator import METRIC_TYPE_TO_CLASS
-from recidiviz.calculator.pipeline.supervision.metrics import SupervisionMetricType
+from recidiviz.calculator.pipeline.supervision.metrics import (
+    SupervisionMetricType,
+    SupervisionMetric,
+)
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import (
     SupervisionCaseCompliance,
 )
@@ -112,6 +111,7 @@ from recidiviz.tests.calculator.pipeline.fake_bigquery import (
 from recidiviz.tests.calculator.pipeline.supervision import identifier_test
 from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
     run_test_pipeline,
+    test_pipeline_options,
 )
 from recidiviz.tests.calculator.pipeline.utils.us_mo_fakes import (
     FakeUsMoSupervisionSentence,
@@ -2525,8 +2525,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         test_pipeline.run()
 
 
-class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
-    """Tests the CalculateSupervisionMetricCombinations DoFn in the pipeline."""
+class TestProduceSupervisionMetrics(unittest.TestCase):
+    """Tests the ProduceSupervisionMetrics DoFn in the pipeline."""
 
     def setUp(self) -> None:
         self.fake_person_id = 12345
@@ -2537,8 +2537,8 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
 
         self.person_metadata = PersonMetadata(prioritized_race_or_ethnicity="BLACK")
 
-    def testCalculateSupervisionMetricCombinations(self):
-        """Tests the CalculateSupervisionMetricCombinations DoFn."""
+    def testProduceSupervisionMetrics(self):
+        """Tests the ProduceSupervisionMetrics DoFn."""
         fake_person = StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=self.fake_person_id,
@@ -2567,7 +2567,7 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
         expected_population_metric_count = len(supervision_time_buckets)
         expected_compliance_metric_count = len(supervision_time_buckets)
 
-        expected_combination_counts = {
+        expected_metric_counts = {
             SupervisionMetricType.SUPERVISION_POPULATION.value: expected_population_metric_count,
             SupervisionMetricType.SUPERVISION_COMPLIANCE.value: expected_compliance_metric_count,
         }
@@ -2590,23 +2590,24 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
             | beam.ParDo(ExtractPersonEventsMetadata())
             | "Calculate Supervision Metrics"
             >> beam.ParDo(
-                pipeline.CalculateSupervisionMetricCombinations(),
+                pipeline.ProduceSupervisionMetrics(),
                 calculation_end_month=None,
                 calculation_month_count=-1,
                 metric_inclusions=self.metric_inclusions_dict,
+                pipeline_options=test_pipeline_options(),
             )
         )
 
         assert_that(
             output,
-            AssertMatchers.count_combinations(expected_combination_counts),
+            AssertMatchers.count_metrics(expected_metric_counts),
             "Assert number of metrics is expected value",
         )
 
         test_pipeline.run()
 
-    def testCalculateSupervisionMetricCombinations_withRevocations(self):
-        """Tests the CalculateSupervisionMetricCombinations DoFn where
+    def testProduceSupervisionMetrics_withRevocations(self):
+        """Tests the ProduceSupervisionMetrics DoFn where
         revocations are identified."""
         fake_person = StatePerson.new_with_defaults(
             state_code="US_XX",
@@ -2639,7 +2640,7 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
 
         expected_metric_count = len(supervision_time_buckets)
 
-        expected_combination_counts = {
+        expected_metric_counts = {
             SupervisionMetricType.SUPERVISION_REVOCATION.value: expected_metric_count,
             SupervisionMetricType.SUPERVISION_POPULATION.value: expected_metric_count,
         }
@@ -2662,23 +2663,24 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
             | beam.ParDo(ExtractPersonEventsMetadata())
             | "Calculate Supervision Metrics"
             >> beam.ParDo(
-                pipeline.CalculateSupervisionMetricCombinations(),
+                pipeline.ProduceSupervisionMetrics(),
                 calculation_end_month=None,
                 calculation_month_count=-1,
                 metric_inclusions=self.metric_inclusions_dict,
+                pipeline_options=test_pipeline_options(),
             )
         )
 
         assert_that(
             output,
-            AssertMatchers.count_combinations(expected_combination_counts),
+            AssertMatchers.count_metrics(expected_metric_counts),
             "Assert number of metrics is expected value",
         )
 
         test_pipeline.run()
 
-    def testCalculateSupervisionMetricCombinations_NoSupervision(self):
-        """Tests the CalculateSupervisionMetricCombinations when there are
+    def testProduceSupervisionMetrics_NoSupervision(self):
+        """Tests the ProduceSupervisionMetrics when there are
         no supervision months. This should never happen because any person
         without supervision time is dropped entirely from the pipeline."""
         fake_person = StatePerson.new_with_defaults(
@@ -2707,10 +2709,11 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
             | beam.ParDo(ExtractPersonEventsMetadata())
             | "Calculate Supervision Metrics"
             >> beam.ParDo(
-                pipeline.CalculateSupervisionMetricCombinations(),
+                pipeline.ProduceSupervisionMetrics(),
                 calculation_end_month=None,
                 calculation_month_count=-1,
                 metric_inclusions=self.metric_inclusions_dict,
+                pipeline_options=test_pipeline_options(),
             )
         )
 
@@ -2718,8 +2721,8 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testCalculateSupervisionMetricCombinations_NoInput(self):
-        """Tests the CalculateSupervisionMetricCombinations when there is
+    def testProduceSupervisionMetrics_NoInput(self):
+        """Tests the ProduceSupervisionMetrics when there is
         no input to the function."""
 
         test_pipeline = TestPipeline()
@@ -2730,84 +2733,17 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
             | beam.ParDo(ExtractPersonEventsMetadata())
             | "Calculate Supervision Metrics"
             >> beam.ParDo(
-                pipeline.CalculateSupervisionMetricCombinations(),
+                pipeline.ProduceSupervisionMetrics(),
                 calculation_end_month=None,
                 calculation_month_count=-1,
                 metric_inclusions=self.metric_inclusions_dict,
+                pipeline_options=test_pipeline_options(),
             )
         )
 
         assert_that(output, equal_to([]))
 
         test_pipeline.run()
-
-
-class TestProduceSupervisionMetrics(unittest.TestCase):
-    """Tests the ProduceSupervisionMetrics DoFn in the pipeline."""
-
-    def testProduceSupervisionMetrics(self):
-        for metric_type in SupervisionMetricType:
-            assert metric_type in METRIC_TYPE_TO_CLASS.keys()
-
-        metric_key_dict = {
-            "gender": Gender.MALE,
-            "year": 1999,
-            "month": 3,
-            "state_code": "CA",
-        }
-
-        value = 1
-
-        all_pipeline_options = PipelineOptions().get_all_options()
-
-        job_timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H_%M_%S.%f")
-        all_pipeline_options["job_timestamp"] = job_timestamp
-
-        for metric_value, metric_type in METRIC_TYPE_TO_CLASS.items():
-            metric_key_dict["metric_type"] = metric_value
-
-            test_pipeline = TestPipeline()
-
-            output = (
-                test_pipeline
-                | f"Create PCollection for {metric_value}"
-                >> beam.Create([(metric_key_dict, value)])
-                | f"Produce {metric_type}"
-                >> beam.ParDo(
-                    pipeline.ProduceSupervisionMetrics(), **all_pipeline_options
-                )
-            )
-
-            assert_that(
-                output, AssertMatchers.validate_metric_is_expected_type(metric_type)
-            )
-
-            test_pipeline.run()
-
-    def testProduceSupervisionMetrics_EmptyMetric(self):
-        metric_key_dict = {}
-
-        value = 1
-
-        test_pipeline = TestPipeline()
-
-        all_pipeline_options = PipelineOptions().get_all_options()
-
-        job_timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H_%M_%S.%f")
-        all_pipeline_options["job_timestamp"] = job_timestamp
-
-        # This should never happen, and we want the pipeline to fail loudly if it does.
-        with pytest.raises(ValueError):
-            _ = (
-                test_pipeline
-                | beam.Create([(metric_key_dict, value)])
-                | "Produce Supervision Metric"
-                >> beam.ParDo(
-                    pipeline.ProduceSupervisionMetrics(), **all_pipeline_options
-                )
-            )
-
-            test_pipeline.run()
 
 
 class SupervisionPipelineFakeWriteToBigQuery(FakeWriteToBigQuery):
@@ -2868,33 +2804,33 @@ class AssertMatchers:
         return _assert_source_violation_type_set
 
     @staticmethod
-    def count_combinations(expected_combination_counts):
+    def count_metrics(expected_metric_counts):
         """Asserts that the number of metric combinations matches the expected
         counts."""
 
-        def _count_combinations(output):
+        def _count_metrics(output):
             actual_combination_counts = {}
 
-            for key in expected_combination_counts.keys():
+            for key in expected_metric_counts.keys():
                 actual_combination_counts[key] = 0
 
-            for result in output:
-                combination_dict, _ = result
+            for metric in output:
+                assert isinstance(metric, SupervisionMetric)
 
-                metric_type = combination_dict.get("metric_type")
+                metric_type = metric.metric_type
 
                 actual_combination_counts[metric_type.value] = (
                     actual_combination_counts[metric_type.value] + 1
                 )
 
-            for key in expected_combination_counts:
-                if expected_combination_counts[key] != actual_combination_counts[key]:
+            for key in expected_metric_counts:
+                if expected_metric_counts[key] != actual_combination_counts[key]:
                     raise BeamAssertException(
                         "Failed assert. Count does not match expected value:"
-                        f"{expected_combination_counts[key]} != {actual_combination_counts[key]}"
+                        f"{expected_metric_counts[key]} != {actual_combination_counts[key]}"
                     )
 
-        return _count_combinations
+        return _count_metrics
 
     @staticmethod
     def validate_metric_is_expected_type(expected_metric_type):
