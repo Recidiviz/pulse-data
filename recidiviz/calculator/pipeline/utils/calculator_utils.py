@@ -430,6 +430,7 @@ def produce_standard_metrics(
         Type[IdentifierEventWithSingularDateT], Type[RecidivizMetricT]
     ],
     pipeline_job_id: str,
+    additional_attributes: Optional[Dict[str, Any]] = None,
 ) -> List[RecidivizMetric]:
     """Produces metrics for pipelines with a standard 1:1 mapping of event to metric
     type."""
@@ -469,7 +470,7 @@ def produce_standard_metrics(
             )
 
         if metric_inclusions.get(metric_type):
-            metric = _build_metric(
+            metric = build_metric(
                 pipeline=pipeline,
                 event=event,
                 metric_class=metric_class,
@@ -477,6 +478,7 @@ def produce_standard_metrics(
                 event_date=event_date,
                 person_metadata=person_metadata,
                 pipeline_job_id=pipeline_job_id,
+                additional_attributes=additional_attributes,
             )
 
             metrics.append(metric)
@@ -484,7 +486,7 @@ def produce_standard_metrics(
     return metrics
 
 
-def _build_metric(
+def build_metric(
     pipeline: str,
     event: IdentifierEventT,
     metric_class: Type[RecidivizMetric],
@@ -492,6 +494,7 @@ def _build_metric(
     event_date: datetime.date,
     person_metadata: PersonMetadata,
     pipeline_job_id: str,
+    additional_attributes: Optional[Dict[str, Any]] = None,
 ) -> RecidivizMetric:
     """Builds a RecidivizMetric of the defined metric_class using the provided
     information.
@@ -508,9 +511,11 @@ def _build_metric(
     setattr(metric_cls_builder, "job_id", pipeline_job_id)
     setattr(metric_cls_builder, "created_on", datetime.date.today())
 
-    # Set date attributes
-    setattr(metric_cls_builder, "year", event_date.year)
-    setattr(metric_cls_builder, "month", event_date.month)
+    # Set date attributes if applicable
+    if "year" in metric_attributes:
+        setattr(metric_cls_builder, "year", event_date.year)
+    if "month" in metric_attributes:
+        setattr(metric_cls_builder, "month", event_date.month)
 
     # Add relevant demographic and person-level dimensions
     for attribute, value in person_attributes.items():
@@ -522,5 +527,11 @@ def _build_metric(
         if hasattr(event, metric_attribute):
             attribute_value = getattr(event, metric_attribute)
             setattr(metric_cls_builder, metric_attribute, attribute_value)
+
+    # Add any additional attributes not on the event
+    if additional_attributes:
+        for attribute, value in additional_attributes.items():
+            if attribute in metric_attributes:
+                setattr(metric_cls_builder, attribute, value)
 
     return metric_cls_builder.build()
