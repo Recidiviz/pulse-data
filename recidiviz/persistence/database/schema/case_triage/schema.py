@@ -75,7 +75,7 @@ class ETLOpportunity(CaseTriageBase):
         String(255), nullable=False, index=True, primary_key=True
     )
     opportunity_type = Column(String(255), nullable=False, index=True, primary_key=True)
-    update_metadata = Column(JSONB, nullable=False)
+    opportunity_metadata = Column(JSONB, nullable=False)
 
 
 class CaseUpdate(CaseTriageBase):
