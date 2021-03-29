@@ -158,13 +158,15 @@ class GcsfsIngestViewExportArgs(CloudTaskArgs):
 
 def gcsfs_direct_ingest_temporary_output_directory_path(
     project_id: Optional[str] = None,
-) -> str:
+) -> GcsfsDirectoryPath:
     if project_id is None:
         project_id = metadata.project_id()
         if not project_id:
             raise ValueError("Project id not set")
 
-    return f"{project_id}-direct-ingest-temporary-files"
+    return GcsfsDirectoryPath.from_absolute_path(
+        f"{project_id}-direct-ingest-temporary-files"
+    )
 
 
 def gcsfs_direct_ingest_storage_directory_path_for_region(
@@ -172,18 +174,20 @@ def gcsfs_direct_ingest_storage_directory_path_for_region(
     system_level: SystemLevel,
     file_type: Optional[GcsfsDirectIngestFileType] = None,
     project_id: Optional[str] = None,
-) -> str:
+) -> GcsfsDirectoryPath:
     if project_id is None:
         project_id = metadata.project_id()
         if not project_id:
             raise ValueError("Project id not set")
 
-    storage_bucket = f"{project_id}-direct-ingest-{system_level.value.lower()}-storage"
-
+    storage_bucket = GcsfsBucketPath(
+        f"{project_id}-direct-ingest-{system_level.value.lower()}-storage"
+    )
     if file_type is not None:
-        return os.path.join(storage_bucket, region_code, file_type.value)
-
-    return os.path.join(storage_bucket, region_code)
+        subdir = os.path.join(region_code.lower(), file_type.value)
+    else:
+        subdir = region_code.lower()
+    return GcsfsDirectoryPath.from_dir_and_subdir(storage_bucket, subdir)
 
 
 def gcsfs_direct_ingest_bucket_for_region(
