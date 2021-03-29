@@ -62,14 +62,14 @@ class CopyFilesFromProdToStagingController:
         dry_run: bool,
     ):
         self.file_type = file_type
-        self.prod_region_storage_dir_path = GcsfsDirectoryPath.from_absolute_path(
+        self.prod_region_storage_dir_path = (
             gcsfs_direct_ingest_storage_directory_path_for_region(
                 region_code,
                 SystemLevel.STATE,
                 project_id="recidiviz-123",
             )
         )
-        self.staging_region_storage_dir_path = GcsfsDirectoryPath.from_absolute_path(
+        self.staging_region_storage_dir_path = (
             gcsfs_direct_ingest_storage_directory_path_for_region(
                 region_code,
                 SystemLevel.STATE,

@@ -62,7 +62,6 @@ from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
     DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2,
     DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2,
 )
-from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.tools.gsutil_shell_helpers import (
     gsutil_ls,
     gsutil_mv,
@@ -115,12 +114,10 @@ class MoveFilesFromStorageController:
         self.dry_run = dry_run
         self.file_filter = file_filter
 
-        self.storage_bucket = GcsfsDirectoryPath.from_absolute_path(
-            gcsfs_direct_ingest_storage_directory_path_for_region(
-                region,
-                SystemLevel.STATE,
-                project_id=self.project_id,
-            )
+        self.storage_bucket = gcsfs_direct_ingest_storage_directory_path_for_region(
+            region,
+            SystemLevel.STATE,
+            project_id=self.project_id,
         )
         self.ingest_bucket = gcsfs_direct_ingest_bucket_for_region(
             region, SystemLevel.STATE, project_id=self.project_id
