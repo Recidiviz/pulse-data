@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,19 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Calculates recidivism metrics from release events.
+"""Produces recidivism metrics from release events.
 
 This contains the core logic for calculating recidivism metrics on a
-person-by-person basis. It transforms ReleaseEvents into recidivism metrics,
-key-value pairs where the key represents all of the dimensions represented in
-the data point, and the value represents a recidivism value, e.g. 0 for no or 1
-for yes.
+person-by-person basis. It transforms ReleaseEvents into recidivism metrics.
 
 Attributes:
     FOLLOW_UP_PERIODS: a list of integers, the follow-up periods that we measure
         recidivism over, from 1 to 10.
 """
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
 from datetime import date
 from dateutil.relativedelta import relativedelta
@@ -36,6 +33,7 @@ from recidiviz.calculator.pipeline.recidivism.metrics import (
     ReincarcerationRecidivismMetricType,
     ReincarcerationRecidivismCountMetric,
     ReincarcerationRecidivismRateMetric,
+    ReincarcerationRecidivismMetric,
 )
 from recidiviz.calculator.pipeline.recidivism.release_event import (
     ReleaseEvent,
@@ -43,8 +41,7 @@ from recidiviz.calculator.pipeline.recidivism.release_event import (
     NonRecidivismReleaseEvent,
 )
 from recidiviz.calculator.pipeline.utils.calculator_utils import (
-    characteristics_dict_builder,
-    augmented_combo_for_calculations,
+    build_metric,
 )
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.persistence.entity.state.entities import StatePerson
@@ -53,35 +50,20 @@ from recidiviz.persistence.entity.state.entities import StatePerson
 FOLLOW_UP_PERIODS = range(1, 11)
 
 
-def map_recidivism_combinations(
+def produce_recidivism_metrics(
     person: StatePerson,
     release_events: Dict[int, List[ReleaseEvent]],
     metric_inclusions: Dict[ReincarcerationRecidivismMetricType, bool],
     person_metadata: PersonMetadata,
-) -> List[Tuple[Dict[str, Any], Any]]:
-    """Transforms ReleaseEvents and a StatePerson into metric combinations.
+    pipeline_job_id: str,
+) -> List[ReincarcerationRecidivismMetric]:
+    """Transforms ReleaseEvents and a StatePerson into ReincarcerationRecidivismMetrics.
 
-    Takes in a StatePerson and all of her ReleaseEvents and returns an array
-    of "recidivism combinations". These are key-value pairs where the key
-    represents a specific metric and the value represents whether or not
-    recidivism occurred.
+    Takes in a StatePerson and all of her ReleaseEvents and returns a list of
+    ReincarcerationRecidivismMetrics
 
     This translates a particular recidivism event into many different recidivism
-    metrics. Both count-based and rate-based metrics are generated. Each metric
-    represents one of many possible combinations of characteristics being
-    tracked for that event. For example, if an asian male is reincarcerated,
-    there is a metric that corresponds to asian people, one to males,
-    one to asian males, one to all people, and more depending on other
-    dimensions in the data.
-
-    If a release does not count towards recidivism, then the value is 0 for
-    the rate-based metrics in either methodology.
-
-    For both count and rate-based metrics, the value is 0 if the dimensions
-    of the metric do not fully match the attributes of the person and their type
-    of return to incarceration. For example, for a RecidivismReleaseEvent where
-    the return_type is 'REVOCATION', there will be metrics produced where the
-    return_type is 'NEW INCARCERATION_ADMISSION' and the value is 0.
+    metrics. Both count-based and rate-based metrics are generated.
 
     Args:
         person: the StatePerson
@@ -90,62 +72,50 @@ def map_recidivism_combinations(
         metric_inclusions: A dictionary where the keys are each ReincarcerationRecidivismMetricType, and the values
             are boolean flags for whether or not to include that metric type in the calculations
         person_metadata: Contains information about the StatePerson that is necessary for the metrics.
+        pipeline_job_id: The job_id of the pipeline that is currently running.
 
     Returns:
-        A list of key-value tuples representing specific metric combinations and
-        the recidivism value corresponding to that metric.
+        A list of ReincarcerationRecidivismMetrics.
     """
-    metrics = []
+    metrics: List[ReincarcerationRecidivismMetric] = []
     all_reincarcerations = reincarcerations(release_events)
 
     if metric_inclusions.get(ReincarcerationRecidivismMetricType.REINCARCERATION_RATE):
         for events in release_events.values():
             for event in events:
-                event_date = event.release_date
-
-                characteristic_combo = characteristics_dict_builder(
-                    pipeline="recidivism",
-                    event=event,
-                    metric_class=ReincarcerationRecidivismRateMetric,
-                    person=person,
-                    event_date=event_date,
-                    person_metadata=person_metadata,
-                )
-
-                reincarcerations_by_follow_up_period = reincarcerations_by_period(
-                    event_date, all_reincarcerations
-                )
-
-                metrics.extend(
-                    combination_rate_metrics(
-                        characteristic_combo,
-                        event,
-                        reincarcerations_by_follow_up_period,
+                reincarceration_rate_metrics = (
+                    reincarceration_rate_metrics_for_release_event(
+                        release_event=event,
+                        person=person,
+                        person_metadata=person_metadata,
+                        all_reincarcerations=all_reincarcerations,
+                        pipeline_job_id=pipeline_job_id,
                     )
                 )
+
+                metrics.extend(reincarceration_rate_metrics)
 
     if metric_inclusions.get(ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT):
         for reincarceration_event in all_reincarcerations.values():
             event_date = reincarceration_event.reincarceration_date
 
-            characteristic_combo = characteristics_dict_builder(
+            metric = build_metric(
                 pipeline="recidivism",
                 event=reincarceration_event,
                 metric_class=ReincarcerationRecidivismCountMetric,
                 person=person,
                 event_date=event_date,
                 person_metadata=person_metadata,
+                pipeline_job_id=pipeline_job_id,
             )
 
-            augmented_combo = augmented_combo_for_calculations(
-                characteristic_combo,
-                state_code=reincarceration_event.state_code,
-                year=event_date.year,
-                month=event_date.month,
-                metric_type=ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT,
-            )
+            if not isinstance(metric, ReincarcerationRecidivismMetric):
+                raise ValueError(
+                    f"Unexpected metric type {type(metric)}. "
+                    "All metrics should be ReincarcerationRecidivismMetrics."
+                )
 
-            metrics.append((augmented_combo, 1))
+            metrics.append(metric)
 
     return metrics
 
@@ -293,57 +263,90 @@ def relevant_follow_up_periods(
     ]
 
 
-def combination_rate_metrics(
-    combo: Dict[str, Any],
-    event: ReleaseEvent,
-    reincarcerations_by_follow_up_period: Dict[int, List[RecidivismReleaseEvent]],
-) -> List[Tuple[Dict[str, Any], int]]:
-    """Returns all recidivism rate metrics for the combo given the relevant follow-up periods.
-
-    Args:
-        combo: a characteristic combination to convert into metrics
-        event: the release event from which the combination was derived
-        reincarcerations_by_follow_up_period: dictionary where the keys are all relevant periods for measurement, and
-            the values are lists of dictionaries representing the reincarceration admissions during that period
-
-    Returns:
-        A list of key-value tuples representing specific metric combination dictionaries and the recidivism value
-            corresponding to that metric.
+def reincarceration_rate_metrics_for_release_event(
+    release_event: ReleaseEvent,
+    person: StatePerson,
+    person_metadata: PersonMetadata,
+    all_reincarcerations: Dict[date, RecidivismReleaseEvent],
+    pipeline_job_id: str,
+) -> List[ReincarcerationRecidivismMetric]:
     """
-    metrics = []
+    Returns all ReincarcerationRecidivismRateMetric for the release_event given the
+    relevant follow-up periods and attributes of the reincarceration, if applicable.
+    """
+    metrics: List[ReincarcerationRecidivismMetric] = []
+
+    event_date = release_event.release_date
+
+    reincarcerations_by_follow_up_period = reincarcerations_by_period(
+        event_date, all_reincarcerations
+    )
 
     for (
         period,
         reincarceration_admissions,
     ) in reincarcerations_by_follow_up_period.items():
-        augmented_combo = augmented_combo_for_calculations(
-            combo,
-            event.state_code,
-            metric_type=ReincarcerationRecidivismMetricType.REINCARCERATION_RATE,
-        )
-        augmented_combo["follow_up_period"] = period
+        additional_attributes: Dict[str, Any] = {}
+        additional_attributes["follow_up_period"] = period
 
         # If they didn't recidivate at all or not yet for this period (or they didn't recidivate until 10 years had
         # passed), assign a value of 0.
         if (
-            isinstance(event, NonRecidivismReleaseEvent)
+            isinstance(release_event, NonRecidivismReleaseEvent)
             or not reincarceration_admissions
         ):
-            metrics.append((augmented_combo, 0))
+            additional_attributes["did_recidivate"] = False
+            metric = build_metric(
+                pipeline="recidivism",
+                event=release_event,
+                metric_class=ReincarcerationRecidivismRateMetric,
+                person=person,
+                event_date=event_date,
+                person_metadata=person_metadata,
+                pipeline_job_id=pipeline_job_id,
+                additional_attributes=additional_attributes,
+            )
+
+            if not isinstance(metric, ReincarcerationRecidivismMetric):
+                raise ValueError(
+                    f"Unexpected metric type {type(metric)}. "
+                    "All metrics should be ReincarcerationRecidivismMetrics."
+                )
+
+            metrics.append(metric)
 
         # If they recidivated, each unique release of a given person within a follow-up period after the year of release
         # may be counted as an instance of recidivism for event-based measurement.
-        elif isinstance(event, RecidivismReleaseEvent):
+        elif isinstance(release_event, RecidivismReleaseEvent):
+            additional_attributes["did_recidivate"] = True
+
             for reincarceration in reincarceration_admissions:
-                event_combo_copy = augmented_combo.copy()
-                event_combo_copy["return_type"] = reincarceration.return_type
-                event_combo_copy[
+                additional_attributes_copy = additional_attributes.copy()
+                additional_attributes_copy["return_type"] = reincarceration.return_type
+                additional_attributes_copy[
                     "from_supervision_type"
                 ] = reincarceration.from_supervision_type
-                event_combo_copy[
+                additional_attributes_copy[
                     "source_violation_type"
                 ] = reincarceration.source_violation_type
 
-                metrics.append((event_combo_copy, 1))
+                metric = build_metric(
+                    pipeline="recidivism",
+                    event=release_event,
+                    metric_class=ReincarcerationRecidivismRateMetric,
+                    person=person,
+                    event_date=event_date,
+                    person_metadata=person_metadata,
+                    pipeline_job_id=pipeline_job_id,
+                    additional_attributes=additional_attributes_copy,
+                )
+
+                if not isinstance(metric, ReincarcerationRecidivismMetric):
+                    raise ValueError(
+                        f"Unexpected metric type {type(metric)}. "
+                        "All metrics should be ReincarcerationRecidivismMetrics."
+                    )
+
+                metrics.append(metric)
 
     return metrics
