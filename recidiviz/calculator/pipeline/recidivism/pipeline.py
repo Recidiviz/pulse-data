@@ -147,10 +147,14 @@ class GetRecidivismMetrics(beam.PTransform):
 
     def expand(self, input_or_inputs):
         # Produce ReincarcerationRecidivismMetrics
-        metrics = input_or_inputs | "Map to metric combinations" >> beam.ParDo(
-            ProduceRecidivismMetrics(),
-            self.metric_inclusions,
-            self._pipeline_options,
+        metrics = (
+            input_or_inputs
+            | "Produce ReincarcerationRecidivismMetrics"
+            >> beam.ParDo(
+                ProduceRecidivismMetrics(),
+                self.metric_inclusions,
+                self._pipeline_options,
+            )
         )
 
         # Return ReincarcerationRecidivismMetric objects
@@ -225,7 +229,7 @@ class ProduceRecidivismMetrics(beam.DoFn):
             pipeline_options: A dictionary storing configuration details for the pipeline.
 
         Yields:
-            Each recidivism metric combination.
+            Each recidivism metric.
         """
         person, release_events, person_metadata = element
 
