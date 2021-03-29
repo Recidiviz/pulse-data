@@ -86,13 +86,11 @@ class MoveFilesToDeprecatedController:
         self.file_filter = file_filter
         self.project_id = project_id
         self.region_storage_dir_path_for_file_type = (
-            GcsfsDirectoryPath.from_absolute_path(
-                gcsfs_direct_ingest_storage_directory_path_for_region(
-                    region_code,
-                    SystemLevel.STATE,
-                    self.file_type,
-                    project_id=self.project_id,
-                )
+            gcsfs_direct_ingest_storage_directory_path_for_region(
+                region_code,
+                SystemLevel.STATE,
+                self.file_type,
+                project_id=self.project_id,
             )
         )
         self.log_output_path = os.path.join(

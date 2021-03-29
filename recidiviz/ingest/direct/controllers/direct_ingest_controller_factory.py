@@ -18,7 +18,6 @@
 import importlib
 from typing import Type
 
-from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import (
     GcsfsDirectIngestController,
@@ -54,10 +53,8 @@ class DirectIngestControllerFactory:
             region.region_code, controller_class.system_level()
         )
 
-        storage_directory_path = GcsfsDirectoryPath.from_absolute_path(
-            gcsfs_direct_ingest_storage_directory_path_for_region(
-                region.region_code, controller_class.system_level()
-            )
+        storage_directory_path = gcsfs_direct_ingest_storage_directory_path_for_region(
+            region.region_code, controller_class.system_level()
         )
 
         schema_type = controller_class.system_level().schema_type()

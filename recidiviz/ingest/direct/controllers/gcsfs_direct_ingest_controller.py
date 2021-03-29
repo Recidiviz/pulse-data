@@ -89,7 +89,7 @@ class GcsfsDirectIngestController(
         self.ingest_bucket_path = ingest_bucket_path
         self.storage_directory_path = storage_directory_path
 
-        self.temp_output_directory_path = GcsfsDirectoryPath.from_absolute_path(
+        self.temp_output_directory_path = (
             gcsfs_direct_ingest_temporary_output_directory_path()
         )
 

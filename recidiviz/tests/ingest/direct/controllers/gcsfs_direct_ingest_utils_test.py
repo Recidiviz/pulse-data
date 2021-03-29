@@ -41,7 +41,7 @@ class GcsfsDirectIngestUtilsTest(TestCase):
         self.assertEqual(
             gcsfs_direct_ingest_storage_directory_path_for_region(
                 "us_tx_brazos", SystemLevel.COUNTY
-            ),
+            ).abs_path(),
             "recidiviz-123-direct-ingest-county-storage/us_tx_brazos",
         )
 
@@ -52,7 +52,7 @@ class GcsfsDirectIngestUtilsTest(TestCase):
         self.assertEqual(
             gcsfs_direct_ingest_storage_directory_path_for_region(
                 "us_nd", SystemLevel.STATE
-            ),
+            ).abs_path(),
             "recidiviz-staging-direct-ingest-state-storage/us_nd",
         )
 
@@ -61,7 +61,7 @@ class GcsfsDirectIngestUtilsTest(TestCase):
         self.assertEqual(
             gcsfs_direct_ingest_storage_directory_path_for_region(
                 "us_tx_brazos", SystemLevel.COUNTY, GcsfsDirectIngestFileType.RAW_DATA
-            ),
+            ).abs_path(),
             "recidiviz-123-direct-ingest-county-storage/us_tx_brazos/raw",
         )
 
@@ -72,7 +72,7 @@ class GcsfsDirectIngestUtilsTest(TestCase):
         self.assertEqual(
             gcsfs_direct_ingest_storage_directory_path_for_region(
                 "us_nd", SystemLevel.STATE, GcsfsDirectIngestFileType.RAW_DATA
-            ),
+            ).abs_path(),
             "recidiviz-staging-direct-ingest-state-storage/us_nd/raw",
         )
 
