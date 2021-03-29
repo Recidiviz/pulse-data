@@ -1,0 +1,4 @@
+US_ID,SIN,100,OVERDUE_DOWNGRADE,"{""assessmentScore"":1,""latestAssessmentDate"":""2019-10-26""}"
+US_ID,SIN,101,OVERDUE_DOWNGRADE,"{""assessmentScore"":2,""latestAssessmentDate"":""2019-12-20""}"
+US_ID,SIN,102,OVERDUE_DOWNGRADE,"{""assessmentScore"":3,""latestAssessmentDate"":""2019-07-05""}"
+US_ID,ABQ,103,OVERDUE_DOWNGRADE,"{""assessmentScore"":4,""latestAssessmentDate"":""2019-02-04""}"
