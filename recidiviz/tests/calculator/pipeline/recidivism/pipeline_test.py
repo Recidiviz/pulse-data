@@ -22,11 +22,8 @@ import unittest
 from typing import Optional, Set
 
 import apache_beam as beam
-import pytest
-from apache_beam.pvalue import AsDict
 from apache_beam.testing.util import assert_that, equal_to, BeamAssertException
 from apache_beam.testing.test_pipeline import TestPipeline
-from apache_beam.options.pipeline_options import PipelineOptions
 
 import datetime
 from datetime import date
@@ -40,6 +37,7 @@ from recidiviz.calculator.pipeline.recidivism.metrics import (
     ReincarcerationRecidivismMetric,
     ReincarcerationRecidivismRateMetric,
     ReincarcerationRecidivismMetricType,
+    ReincarcerationRecidivismCountMetric,
 )
 from recidiviz.calculator.pipeline.recidivism.metrics import (
     ReincarcerationRecidivismMetricType as MetricType,
@@ -78,6 +76,7 @@ from recidiviz.tests.calculator.pipeline.fake_bigquery import (
 )
 from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
     run_test_pipeline,
+    test_pipeline_options,
 )
 from recidiviz.tests.persistence.database import database_test_utils
 
@@ -980,8 +979,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         test_pipeline.run()
 
 
-class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
-    """Tests for the CalculateRecidivismMetricCombinations DoFn in the
+class TestProduceRecidivismMetrics(unittest.TestCase):
+    """Tests for the ProduceRecidivismMetrics DoFn in the
     pipeline."""
 
     def setUp(self) -> None:
@@ -991,8 +990,8 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
 
     # TODO(#4813): This fails on dates after 2020-12-03 - is this a bug in the pipeline or in the test code?
     @freeze_time("2020-12-03")
-    def testCalculateRecidivismMetricCombinations(self):
-        """Tests the CalculateRecidivismMetricCombinations DoFn in the pipeline."""
+    def testProduceRecidivismMetrics(self):
+        """Tests the ProduceRecidivismMetrics DoFn in the pipeline."""
         fake_person = entities.StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=self.fake_person_id,
@@ -1063,7 +1062,7 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
         # Add count metrics for the 2 events
         expected_count_metric_combinations = 2
 
-        expected_combination_counts = {
+        expected_metric_counts = {
             2010: expected_combinations_count_2010,
             2014: expected_combinations_count_2014,
             "counts": expected_count_metric_combinations,
@@ -1075,23 +1074,24 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
             test_pipeline
             | beam.Create(inputs)
             | beam.ParDo(pipeline.ExtractPersonReleaseEventsMetadata())
-            | "Calculate Metric Combinations"
+            | "Produce Metric Combinations"
             >> beam.ParDo(
-                pipeline.CalculateRecidivismMetricCombinations(),
+                pipeline.ProduceRecidivismMetrics(),
                 ALL_METRIC_INCLUSIONS_DICT,
+                test_pipeline_options(),
             )
         )
 
         assert_that(
             output,
-            AssertMatchers.count_combinations(expected_combination_counts),
+            AssertMatchers.count_metrics(expected_metric_counts),
             "Assert number of metrics is expected value",
         )
 
         test_pipeline.run()
 
-    def testCalculateRecidivismMetricCombinations_NoResults(self):
-        """Tests the CalculateRecidivismMetricCombinations DoFn in the pipeline
+    def testProduceRecidivismMetrics_NoResults(self):
+        """Tests the ProduceRecidivismMetrics DoFn in the pipeline
         when there are no ReleaseEvents associated with the entities.StatePerson."""
         fake_person = entities.StatePerson.new_with_defaults(
             state_code="US_XX",
@@ -1118,10 +1118,11 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
             test_pipeline
             | beam.Create(inputs)
             | beam.ParDo(pipeline.ExtractPersonReleaseEventsMetadata())
-            | "Calculate Metric Combinations"
+            | "Produce Metric Combinations"
             >> beam.ParDo(
-                pipeline.CalculateRecidivismMetricCombinations(),
+                pipeline.ProduceRecidivismMetrics(),
                 ALL_METRIC_INCLUSIONS_DICT,
+                test_pipeline_options(),
             )
         )
 
@@ -1129,8 +1130,8 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testCalculateRecidivismMetricCombinations_NoPersonEvents(self):
-        """Tests the CalculateRecidivismMetricCombinations DoFn in the pipeline
+    def testProduceRecidivismMetrics_NoPersonEvents(self):
+        """Tests the ProduceRecidivismMetrics DoFn in the pipeline
         when there is no entities.StatePerson and no ReleaseEvents."""
 
         inputs = []
@@ -1141,49 +1142,17 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
             test_pipeline
             | beam.Create(inputs)
             | beam.ParDo(pipeline.ExtractPersonReleaseEventsMetadata())
-            | "Calculate Metric Combinations"
+            | "Produce Metric Combinations"
             >> beam.ParDo(
-                pipeline.CalculateRecidivismMetricCombinations(),
+                pipeline.ProduceRecidivismMetrics(),
                 ALL_METRIC_INCLUSIONS_DICT,
+                test_pipeline_options(),
             )
         )
 
         assert_that(output, equal_to([]))
 
         test_pipeline.run()
-
-    def testProduceReincarcerationRecidivismMetric_EmptyMetric(self):
-        """Tests the ProduceReincarcerationRecidivismMetric DoFn in the
-        pipeline when the metric dictionary is empty.
-
-        This should not happen in the pipeline, but we test against it
-        anyways.
-        """
-
-        metric_key_dict = {}
-
-        value = 100
-
-        test_pipeline = TestPipeline()
-
-        all_pipeline_options = PipelineOptions().get_all_options()
-
-        job_timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H_%M_%S.%f")
-        all_pipeline_options["job_timestamp"] = job_timestamp
-
-        # This should never happen, and we want the pipeline to fail loudly if it does.
-        with pytest.raises(ValueError):
-            _ = (
-                test_pipeline
-                | beam.Create([(metric_key_dict, value)])
-                | "Produce Recidivism Metric"
-                >> beam.ParDo(
-                    pipeline.ProduceReincarcerationRecidivismMetric(),
-                    **all_pipeline_options,
-                )
-            )
-
-            test_pipeline.run()
 
 
 class TestRecidivismMetricWritableDict(unittest.TestCase):
@@ -1350,42 +1319,34 @@ class AssertMatchers:
         return _validate_pipeline_test
 
     @staticmethod
-    def count_combinations(expected_combination_counts):
+    def count_metrics(expected_metric_counts):
         """Asserts that the number of metric combinations matches the expected counts for each release cohort year."""
 
-        def _count_combinations(output):
+        def _count_metrics(output):
             actual_combination_counts = {}
 
-            for key in expected_combination_counts.keys():
+            for key in expected_metric_counts.keys():
                 actual_combination_counts[key] = 0
 
-            for result in output:
-                combination_dict, _ = result
-
-                if (
-                    combination_dict.get("metric_type")
-                    == MetricType.REINCARCERATION_RATE
-                ):
-                    release_cohort_year = combination_dict["release_cohort"]
+            for metric in output:
+                if isinstance(metric, ReincarcerationRecidivismRateMetric):
+                    release_cohort_year = metric.release_cohort
                     actual_combination_counts[release_cohort_year] = (
                         actual_combination_counts[release_cohort_year] + 1
                     )
-                elif (
-                    combination_dict.get("metric_type")
-                    == MetricType.REINCARCERATION_COUNT
-                ):
+                elif isinstance(metric, ReincarcerationRecidivismCountMetric):
                     actual_combination_counts["counts"] = (
                         actual_combination_counts["counts"] + 1
                     )
 
-            for key in expected_combination_counts:
-                if expected_combination_counts[key] != actual_combination_counts[key]:
+            for key in expected_metric_counts:
+                if expected_metric_counts[key] != actual_combination_counts[key]:
                     raise BeamAssertException(
                         f"Failed assert. Count {actual_combination_counts[key]} does not match"
-                        f" expected value {expected_combination_counts[key]}."
+                        f" expected value {expected_metric_counts[key]}."
                     )
 
-        return _count_combinations
+        return _count_metrics
 
     @staticmethod
     def validate_job_id_on_metric(expected_job_id):

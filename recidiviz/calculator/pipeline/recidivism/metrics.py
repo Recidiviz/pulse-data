@@ -18,7 +18,7 @@
 """Recidivism metrics we calculate."""
 
 from datetime import date
-from typing import Any, Dict, Optional, cast
+from typing import Optional
 
 import attr
 
@@ -82,25 +82,6 @@ class ReincarcerationRecidivismMetric(RecidivizMetric, PersonLevelMetric):
     # StateSupervisionViolationType enum for the type of violation that eventually caused the revocation of supervision
     source_violation_type: StateSupervisionViolationType = attr.ib(default=None)
 
-    @staticmethod
-    def build_from_metric_key_group(
-        metric_key: Dict[str, Any], job_id: str
-    ) -> Optional["ReincarcerationRecidivismMetric"]:
-        """Builds a ReincarcerationRecidivismMetric object from the given arguments."""
-
-        if not metric_key:
-            raise ValueError("The metric_key is empty.")
-
-        metric_key["job_id"] = job_id
-        metric_key["created_on"] = date.today()
-
-        recidivism_metric = cast(
-            ReincarcerationRecidivismMetric,
-            ReincarcerationRecidivismMetric.build_from_dictionary(metric_key),
-        )
-
-        return recidivism_metric
-
 
 @attr.s
 class ReincarcerationRecidivismCountMetric(ReincarcerationRecidivismMetric):
@@ -127,24 +108,6 @@ class ReincarcerationRecidivismCountMetric(ReincarcerationRecidivismMetric):
 
     # Date of reincarceration
     reincarceration_date: date = attr.ib(default=None)
-
-    @staticmethod
-    def build_from_metric_key_group(
-        metric_key: Dict[str, Any], job_id: str
-    ) -> Optional["ReincarcerationRecidivismCountMetric"]:
-
-        if not metric_key:
-            raise ValueError("The metric_key is empty.")
-
-        metric_key["job_id"] = job_id
-        metric_key["created_on"] = date.today()
-
-        recidivism_metric = cast(
-            ReincarcerationRecidivismCountMetric,
-            ReincarcerationRecidivismCountMetric.build_from_dictionary(metric_key),
-        )
-
-        return recidivism_metric
 
 
 @attr.s
@@ -175,25 +138,3 @@ class ReincarcerationRecidivismRateMetric(ReincarcerationRecidivismMetric):
 
     # Date of release
     release_date: date = attr.ib(default=None)  # non-nullable
-
-    @staticmethod
-    def build_from_metric_key_group(
-        metric_key: Dict[str, Any], job_id: str
-    ) -> Optional["ReincarcerationRecidivismRateMetric"]:
-        """Constructs a RecidivismMetric object from a dictionary containing all required values and the corresponding
-        group of ReleaseEvents, with 1s representing RecidivismReleaseEvents, and 0s representing
-        NonRecidivismReleaseEvents.
-        """
-
-        if not metric_key:
-            raise ValueError("The metric_key is empty.")
-
-        metric_key["job_id"] = job_id
-        metric_key["created_on"] = date.today()
-
-        recidivism_metric = cast(
-            ReincarcerationRecidivismRateMetric,
-            ReincarcerationRecidivismRateMetric.build_from_dictionary(metric_key),
-        )
-
-        return recidivism_metric
