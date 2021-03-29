@@ -63,10 +63,7 @@ def produce_incarceration_metrics(
     person_metadata: PersonMetadata,
     pipeline_job_id: str,
 ) -> List[IncarcerationMetric]:
-    """Transforms IncarcerationEvents and a StatePerson into combinations representing IncarcerationMetrics.
-
-    Takes in a StatePerson and all of their IncarcerationEvent and returns an array of "incarceration combinations".
-    These are key-value pairs where the key represents a specific metric and the value corresponding to that metric.
+    """Transforms IncarcerationEvents and a StatePerson into IncarcerationMetrics.
 
     This translates a particular incarceration event, e.g. admission or release, into an incarceration metric.
 

@@ -213,10 +213,10 @@ class ProduceIncarcerationMetrics(beam.DoFn):
         metric_inclusions,
         pipeline_options,
     ):
-        """Produces various incarceration metric combinations.
+        """Produces various incarceration metrics.
 
-        Sends the calculator the StatePerson entity and their corresponding IncarcerationEvents for mapping all
-        incarceration combinations.
+        Sends the metric producer the StatePerson entity and their corresponding IncarcerationEvents for mapping all
+        incarceration metrics.
 
         Args:
             element: Tuple containing a StatePerson and their IncarcerationEvents

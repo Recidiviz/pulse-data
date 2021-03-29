@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for testing the calculator code."""
-from enum import Enum
 from typing import Any, Dict, List
 
 from recidiviz.common.constants.entity_enum import EntityEnum
@@ -69,17 +68,3 @@ def remove_relationship_properties(database_base: StateBase) -> StateBase:
             database_base.__delattr__(relationship_property)
 
     return database_base
-
-
-def combo_has_enum_value_for_key(combo: Dict[str, Any], key: str, enum: Enum) -> bool:
-    """Checks whether the combo dict has the enum value for a given key.
-    Person-based metrics are currently sent through a JSON conversion step,
-    which removes the Enum values and leaves just the raw values. Therefore,
-    this function checks if the value for the key is either the enum or the
-    enum.value.
-    """
-    value_for_key = combo.get(key)
-
-    if value_for_key:
-        return value_for_key in (enum, enum.value)
-    return False

@@ -33,7 +33,7 @@ from apache_beam.typehints import with_input_types, with_output_types
 from recidiviz.calculator.dataflow_output_storage_config import (
     DATAFLOW_METRICS_TO_TABLES,
 )
-from recidiviz.calculator.pipeline.supervision import identifier, calculator
+from recidiviz.calculator.pipeline.supervision import identifier, metric_producer
 from recidiviz.calculator.pipeline.supervision.metrics import (
     SupervisionMetric,
     SupervisionPopulationMetric,
@@ -151,23 +151,17 @@ class GetSupervisionMetrics(beam.PTransform):
                 self._metric_inclusions[metric_option] = False
 
     def expand(self, input_or_inputs):
-        # Calculate supervision metric combinations from a StatePerson and their SupervisionTimeBuckets
-        supervision_metric_combinations = (
+        # Produce SupervisionMetrics
+        supervision_metrics = (
             input_or_inputs
-            | "Map to metric combinations"
+            | "Produce SupervisionMetrics"
             >> beam.ParDo(
-                CalculateSupervisionMetricCombinations(),
+                ProduceSupervisionMetrics(),
                 self._calculation_end_month,
                 self._calculation_month_count,
                 self._metric_inclusions,
+                self._pipeline_options,
             )
-        )
-
-        # Produce SupervisionMetrics
-        supervision_metrics = (
-            supervision_metric_combinations
-            | "Produce SupervisionMetrics"
-            >> beam.ParDo(ProduceSupervisionMetrics(), **self._pipeline_options)
         )
 
         # Return SupervisionMetrics objects
@@ -210,19 +204,25 @@ class ClassifySupervisionTimeBuckets(beam.DoFn):
     beam.typehints.Optional[str],
     beam.typehints.Optional[int],
     beam.typehints.Dict[SupervisionMetricType, bool],
+    beam.typehints.Dict[str, Any],
 )
-@with_output_types(beam.typehints.Tuple[Dict[str, Any], Any])
-class CalculateSupervisionMetricCombinations(beam.DoFn):
-    """Calculates supervision metric combinations."""
+@with_output_types(SupervisionMetric)
+class ProduceSupervisionMetrics(beam.DoFn):
+    """Produces supervision metrics."""
 
     # pylint: disable=arguments-differ
     def process(
-        self, element, calculation_end_month, calculation_month_count, metric_inclusions
+        self,
+        element,
+        calculation_end_month,
+        calculation_month_count,
+        metric_inclusions,
+        pipeline_options,
     ):
-        """Produces various supervision metric combinations.
+        """Produces various SupervisionMetrics.
 
-        Sends the calculator the StatePerson entity and their corresponding SupervisionTimeBuckets for mapping all
-        supervision combinations.
+        Sends the metric_producer the StatePerson entity and their corresponding SupervisionTimeBuckets for mapping all
+        supervision metrics.
 
         Args:
             element: Dictionary containing the person, SupervisionTimeBuckets, and person_metadata
@@ -230,87 +230,33 @@ class CalculateSupervisionMetricCombinations(beam.DoFn):
             calculation_month_count: The number of months to limit the monthly calculation output to.
             metric_inclusions: A dictionary where the keys are each SupervisionMetricType, and the values are boolean
                 values for whether or not to include that metric type in the calculations
+            pipeline_options: A dictionary storing configuration details for the pipeline.
         Yields:
-            Each supervision metric combination.
+            Each supervision metric.
         """
         person, supervision_time_buckets, person_metadata = element
+
+        pipeline_job_id = job_id(pipeline_options)
 
         # Assert all events are of type SupervisionTimeBucket
         supervision_time_buckets = cast(
             List[SupervisionTimeBucket], supervision_time_buckets
         )
 
-        # Calculate supervision metric combinations for this person and their supervision time buckets
-        metric_combinations = calculator.map_supervision_combinations(
+        # Produce supervision metrics for this person and their supervision time buckets
+        metrics = metric_producer.produce_supervision_metrics(
             person,
             supervision_time_buckets,
             metric_inclusions,
             calculation_end_month,
             calculation_month_count,
             person_metadata,
+            pipeline_job_id,
         )
 
-        # Return each of the supervision metric combinations
-        for metric_combination in metric_combinations:
-            yield metric_combination
-
-    def to_runner_api_parameter(self, _):
-        pass  # Passing unused abstract method.
-
-
-@with_input_types(beam.typehints.Tuple[Dict[str, Any], Any])
-@with_output_types(SupervisionMetric)
-class ProduceSupervisionMetrics(beam.DoFn):
-    """Produces SupervisionMetrics ready for persistence."""
-
-    def process(self, element, *_args, **kwargs):
-        """Produces the metric from the given element"""
-        pipeline_options = kwargs
-
-        pipeline_job_id = job_id(pipeline_options)
-
-        (dict_metric_key, value) = element
-
-        if value is None:
-            # Due to how the pipeline arrives at this function, this should be impossible.
-            raise ValueError("No value associated with this metric key.")
-
-        if not dict_metric_key:
-            # Due to how the pipeline arrives at this function, this should be impossible.
-            raise ValueError("Empty dict_metric_key.")
-
-        metric_type = dict_metric_key.pop("metric_type")
-
-        metrics_without_changes = {
-            SupervisionMetricType.SUPERVISION_COMPLIANCE: SupervisionCaseComplianceMetric,
-            SupervisionMetricType.SUPERVISION_DOWNGRADE: SupervisionDowngradeMetric,
-            SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION: SupervisionOutOfStatePopulationMetric,
-            SupervisionMetricType.SUPERVISION_POPULATION: SupervisionPopulationMetric,
-            SupervisionMetricType.SUPERVISION_REVOCATION: SupervisionRevocationMetric,
-            SupervisionMetricType.SUPERVISION_START: SupervisionStartMetric,
-            SupervisionMetricType.SUPERVISION_TERMINATION: SupervisionTerminationMetric,
-            SupervisionMetricType.SUPERVISION_SUCCESS: SupervisionSuccessMetric,
-        }
-
-        if metric_type in metrics_without_changes:
-            supervision_metric = metrics_without_changes[
-                metric_type
-            ].build_from_metric_key_group(dict_metric_key, pipeline_job_id)
-        elif (
-            metric_type
-            == SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED
-        ):
-            dict_metric_key["days_served"] = value
-
-            supervision_metric = SuccessfulSupervisionSentenceDaysServedMetric.build_from_metric_key_group(
-                dict_metric_key, pipeline_job_id
-            )
-        else:
-            logging.error("Unexpected metric of type: %s", metric_type)
-            return
-
-        if supervision_metric:
-            yield supervision_metric
+        # Return each of the supervision metrics
+        for metric in metrics:
+            yield metric
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.

@@ -189,8 +189,8 @@ class ProduceProgramMetrics(beam.DoFn):
     ):
         """Produces various ProgramMetrics.
 
-        Sends the calculator the StatePerson entity and their corresponding ProgramEvents for mapping all program
-        combinations.
+        Sends the metric producer the StatePerson entity and their corresponding ProgramEvents for mapping all program
+        metrics.
 
         Args:
             element: Tuple containing a StatePerson and their ProgramEvents

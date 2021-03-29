@@ -50,7 +50,7 @@ _DEFAULT_PERSON_METADATA = PersonMetadata(prioritized_race_or_ethnicity="BLACK")
 PIPELINE_JOB_ID = "TEST_JOB_ID"
 
 
-class TestMapProgramCombinations(unittest.TestCase):
+class TestProduceProgramMetrics(unittest.TestCase):
     """Tests the produce_program_metrics function."""
 
     @freeze_time("2030-11-02")
