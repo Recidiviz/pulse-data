@@ -31,6 +31,10 @@ PGDB='postgres'
 PGPASSWORD='example' psql -h $PGDBHOST \
     -U $PGDBUSER \
     -d $PGDB \
+    -c "DELETE FROM etl_opportunities;"
+PGPASSWORD='example' psql -h $PGDBHOST \
+    -U $PGDBUSER \
+    -d $PGDB \
     -c "DELETE FROM etl_clients;"
 PGPASSWORD='example' psql -h $PGDBHOST \
     -U $PGDBUSER \
@@ -46,3 +50,7 @@ PGPASSWORD='example' psql -h $PGDBHOST \
     -U $PGDBUSER \
     -d $PGDB \
     -c "\copy etl_clients FROM 'recidiviz/tools/case_triage/fixtures/etl_clients.csv' delimiter ',' csv"
+PGPASSWORD='example' psql -h $PGDBHOST \
+    -U $PGDBUSER \
+    -d $PGDB \
+    -c "\copy etl_opportunities FROM 'recidiviz/tools/case_triage/fixtures/etl_opportunities.csv' delimiter ',' csv"
