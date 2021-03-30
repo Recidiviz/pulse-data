@@ -176,6 +176,32 @@ class CheckAssertionsTest(unittest.TestCase):
 
         self._run_test(modified_files, [], [INGEST_DOCS_KEY])
 
+    def test_endpoint_docs_happy(self) -> None:
+        modified_files = [
+            "recidiviz/ingest/direct/direct_ingest_control.py",
+            "recidiviz/reporting/reporting_endpoint.py",
+            "docs/endpoints/direct/handle_new_files.md",
+            "docs/endpoints/reporting/start_new_batch.md",
+        ]
+        self._run_test(modified_files, [], [])
+
+    def test_endpoint_docs_unhappy(self) -> None:
+        modified_files = [
+            "recidiviz/admin_panel/routes.py",
+            "recidiviz/ingest/aggregate/single_count.py",
+        ]
+        expected_failures: List[Tuple[FrozenSet[str], FrozenSet[str]]] = [
+            (
+                frozenset(["recidiviz/admin_panel/routes.py"]),
+                frozenset(["docs/endpoints/admin.md", "docs/endpoints/admin"]),
+            ),
+            (
+                frozenset(["recidiviz/ingest/aggregate/single_count.py"]),
+                frozenset(["docs/endpoints/single_count/single_count.md"]),
+            ),
+        ]
+        self._run_test(modified_files, expected_failures, [])
+
     def _run_test(
         self,
         modified_files: List[str],

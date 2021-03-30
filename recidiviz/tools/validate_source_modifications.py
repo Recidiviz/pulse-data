@@ -34,9 +34,13 @@ import os
 import re
 import subprocess
 import sys
-from typing import Dict, FrozenSet, List, Set, Tuple
+from collections import defaultdict
+from inspect import getmembers, isfunction
+from typing import Dict, FrozenSet, List, Set, Tuple, Optional
 
 import attr
+from flask import Flask
+from werkzeug.routing import Rule
 
 from recidiviz.ingest.models import ingest_info, ingest_info_pb2
 from recidiviz.persistence.database.schema.aggregate import schema as aggregate_schema
@@ -48,7 +52,14 @@ from recidiviz.persistence.database.migrations.operations import (
 from recidiviz.persistence.database.schema.operations import schema as operations_schema
 from recidiviz.persistence.database.migrations.state import versions as state_versions
 from recidiviz.persistence.database.schema.state import schema as state_schema
+from recidiviz.tools.docs.endpoint_documentation_generator import (
+    EndpointDocumentationGenerator,
+)
+from recidiviz.server import all_blueprints_with_url_prefixes
 from recidiviz.utils.regions import get_supported_direct_ingest_region_codes
+
+
+ENDPOINT_DOCS_DIRECTORY = "docs/endpoints"
 
 
 @attr.s(auto_attribs=True)
@@ -62,6 +73,73 @@ class RequiredModificationSets:
             if_modified_files=files,
             then_modified_files=files,
         )
+
+
+def _get_file_for_endpoint_rule(rule: Rule) -> Optional[str]:
+    """Given a rule, look for the actual file within the codebase that has the method definition
+    for the endpoint defined. This is done by crawling through all of our customized modules imported
+    and finding the exact function that matches."""
+    endpoint_parts = rule.endpoint.split(".")
+    endpoint_module = endpoint_parts[0]
+    function_name = endpoint_parts[1] if len(endpoint_parts) > 1 else None
+    recidiviz_modules = [
+        module
+        for module in sys.modules
+        if "recidiviz" in module and "tools" not in module and "tests" not in module
+    ]
+    file_for_endpoint: Optional[str] = None
+    for module in recidiviz_modules:
+        if endpoint_module in module or not file_for_endpoint:
+            for func, _ in getmembers(sys.modules[module], isfunction):
+                if func == function_name:
+                    file_for_endpoint = os.path.relpath(sys.modules[module].__file__)
+                    break
+    return file_for_endpoint
+
+
+def _get_modified_endpoints() -> List[RequiredModificationSets]:
+    """Returns the dynamic set of documentation for the App Engine endpoints and the corresponding
+    source code modifications."""
+    temp_app = Flask(__name__)
+    for blueprint, url_prefix in all_blueprints_with_url_prefixes:
+        temp_app.register_blueprint(blueprint, url_prefix=url_prefix)
+
+    doc_generator = EndpointDocumentationGenerator()
+    endpoint_files_to_markdown_paths: Dict[str, List[str]] = defaultdict(list)
+    for rule in temp_app.url_map.iter_rules():
+        file_for_endpoint = _get_file_for_endpoint_rule(rule)
+        if file_for_endpoint:
+            endpoint_markdown = doc_generator.generate_markdown_path_for_endpoint(
+                ENDPOINT_DOCS_DIRECTORY, rule.rule
+            )
+            if len(endpoint_markdown.split("/")) > 1:
+                endpoint_files_to_markdown_paths[file_for_endpoint].append(
+                    endpoint_markdown
+                )
+
+    required_modification_sets = []
+    for (
+        endpoint_file,
+        markdown_paths,
+    ) in endpoint_files_to_markdown_paths.items():
+        common_path = os.path.commonpath(markdown_paths)
+        paths_to_modify = (
+            # If an endpoint python file has methods that produce two endpoints with different url_prefixes,
+            # the common_path will end up being the docs directory (docs/endpoints). So in this case,
+            # we will add the next immediate top-level directories to the set that should be modified,
+            # since that directory is the url_prefix that will be affixed to the endpoint.
+            # (e.g. docs/endpoints/single_count, docs/endpoints/scraper)
+            {"/".join(top_level_dir.split("/")[:3]) for top_level_dir in markdown_paths}
+            if common_path == ENDPOINT_DOCS_DIRECTORY
+            else {common_path}
+        )
+        required_modification_sets.append(
+            RequiredModificationSets(
+                if_modified_files=frozenset({endpoint_file}),
+                then_modified_files=frozenset(paths_to_modify),
+            )
+        )
+    return required_modification_sets
 
 
 # Sets of prefixes to check. For each set, if the changes modify a file matching
@@ -81,6 +159,7 @@ INGEST_DOCS_KEY = "ingest_docs"
 CASE_TRIAGE_FIXTURES_KEY = "case_triage_fixtures"
 # TODO(#6197): Delete this key when we've committed to the new normalized preprocessing rows.
 NORMALIZED_SQL_PREPROCESSING_ROWS_KEY = "normalized_sql_preprocessing_rows"
+ENDPOINTS_DOCS_KEY = "endpoints_docs"
 
 MODIFIED_FILE_ASSERTIONS: Dict[str, List[RequiredModificationSets]] = {
     # ingest info files
@@ -208,6 +287,7 @@ MODIFIED_FILE_ASSERTIONS: Dict[str, List[RequiredModificationSets]] = {
             )
         ),
     ],
+    ENDPOINTS_DOCS_KEY: _get_modified_endpoints(),
 }
 
 
