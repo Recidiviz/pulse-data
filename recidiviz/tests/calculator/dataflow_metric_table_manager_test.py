@@ -14,18 +14,24 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests the calculation_data_storage_manager."""
+"""Tests the dataflow_metric_table_manager."""
 import unittest
+from typing import cast
 from unittest import mock
 from mock import patch
 
 from google.cloud import bigquery
 
 from recidiviz.calculator import dataflow_metric_table_manager
+from recidiviz.calculator.dataflow_config import (
+    DATAFLOW_TABLES_TO_METRIC_TYPES,
+    DATAFLOW_METRICS_TO_TABLES,
+)
+from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
 
 
-class CalculationDataStorageManagerTest(unittest.TestCase):
-    """Tests for calculation_data_storage_manager.py."""
+class DataflowMetricTableManagerTest(unittest.TestCase):
+    """Tests for dataflow_metric_table_manager.py."""
 
     def setUp(self) -> None:
 
@@ -77,3 +83,47 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         dataflow_metric_table_manager.update_dataflow_metric_tables_schemas()
 
         self.mock_client.create_table_with_schema.assert_called()
+
+    def test_dataflow_metric_table_config_consistency(self) -> None:
+        """Asserts that the mapping from RecidivizMetric to table in BigQuery matches
+        the mapping from BigQuery table to the RecidivizMetricType enum in the metric_type
+        column of that table."""
+        # Assert that every metric class in the DATAFLOW_METRICS_TO_TABLES map has
+        # a matching entry in the DATAFLOW_TABLES_TO_METRIC_TYPES map
+        for metric_class, metric_table in DATAFLOW_METRICS_TO_TABLES.items():
+            # Hack to get the value of the metric_type on this RecidivizMetric class
+            metric_instance = cast(
+                RecidivizMetric,
+                metric_class.build_from_dictionary(
+                    {"job_id": "xxx", "state_code": "US_XX"}
+                ),
+            )
+
+            metric_type_from_class = metric_instance.metric_type
+            metric_type_from_table = DATAFLOW_TABLES_TO_METRIC_TYPES[metric_table]
+
+            self.assertEqual(metric_type_from_class, metric_type_from_table)
+
+        # Invert the DATAFLOW_METRICS_TO_TABLES dictionary so that we have
+        # tables -> metric types
+        dataflow_tables_to_metric_classes = {
+            v: k for k, v in DATAFLOW_METRICS_TO_TABLES.items()
+        }
+
+        # Assert that every metric table and metric type in the
+        # DATAFLOW_TABLES_TO_METRIC_TYPES map has a matching entry in the
+        # DATAFLOW_METRICS_TO_TABLES map
+        for metric_table, metric_type in DATAFLOW_TABLES_TO_METRIC_TYPES.items():
+            metric_class_for_table = dataflow_tables_to_metric_classes[metric_table]
+
+            # Hack to get the value of the metric_type on this RecidivizMetric class
+            metric_instance = cast(
+                RecidivizMetric,
+                metric_class_for_table.build_from_dictionary(
+                    {"job_id": "xxx", "state_code": "US_XX"}
+                ),
+            )
+
+            metric_type_from_class = metric_instance.metric_type
+
+            self.assertEqual(metric_type_from_class, metric_type)
