@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Supervisees with overdue LSIR by PO by day."""
+# pylint: disable=line-too-long
 
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
@@ -30,31 +31,40 @@ OVERDUE_LSIR_BY_PO_BY_DAY_DESCRIPTION = """
 
 OVERDUE_LSIR_BY_PO_BY_DAY_QUERY_TEMPLATE = """
     /*{description}*/
+WITH overdue_lsir AS (
     SELECT
         compliance.state_code,
-        date_of_supervision,
+        compliance.date_of_supervision,
         supervising_officer_external_id,
-        IFNULL(compliance.level_1_supervision_location_external_id, 'UNKNOWN') as district_id,
-        locations.level_1_supervision_location_name as district_name,
+        IFNULL(level_1_supervision_location_external_id, 'UNKNOWN') as level_1_supervision_location_external_id,
         COUNT (DISTINCT(IF(num_days_assessment_overdue > 0, person_id, NULL))) as total_overdue,
-        supervision_type,
-        case_type
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_case_compliance_metrics_materialized` compliance
-    LEFT JOIN `{project_id}.{reference_views_dataset}.supervision_location_ids_to_names` locations
-    ON compliance.state_code = locations.state_code
-        AND compliance.level_1_supervision_location_external_id = locations.level_1_supervision_location_external_id
-    # Note: because compliance metrics are calculated EOM for each month, this will currently only produce output for
-    # each of the last days of the past 3 months.
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_case_compliance_metrics_materialized` compliance,
+    UNNEST ([compliance.level_1_supervision_location_external_id, 'ALL']) AS level_1_supervision_location_external_id,
+    UNNEST ([supervising_officer_external_id, 'ALL']) AS supervising_officer_external_id
     WHERE date_of_supervision > DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 90 DAY)
-    GROUP BY
-        state_code,
-        date_of_supervision,
-        supervision_type,
-        case_type,
-        supervising_officer_external_id,
-        district_id,
-        district_name
-    ORDER BY date_of_supervision DESC, total_overdue DESC
+    # TODO(#6614): Generalize to be state agnostic.
+    AND state_code = "US_ND"
+    GROUP BY state_code, date_of_supervision, supervising_officer_external_id, level_1_supervision_location_external_id
+    )
+    
+    SELECT
+        overdue_lsir.state_code,
+        overdue_lsir.date_of_supervision,
+        IFNULL(overdue_lsir.supervising_officer_external_id, 'UNKNOWN') as supervising_officer_external_id,
+        overdue_lsir.level_1_supervision_location_external_id as district_id,
+        locations.level_1_supervision_location_name as district_name,
+        total_overdue,
+        sup_pop.people_under_supervision AS total_under_supervision,
+        SAFE_DIVIDE((sup_pop.people_under_supervision - total_overdue), sup_pop.people_under_supervision) * 100 AS timely_risk_assessment,
+    FROM overdue_lsir
+    LEFT JOIN `{project_id}.{reference_views_dataset}.supervision_location_ids_to_names` locations
+        ON overdue_lsir.state_code = locations.state_code
+        AND overdue_lsir.level_1_supervision_location_external_id = locations.level_1_supervision_location_external_id
+    LEFT JOIN `{project_id}.{vitals_views_dataset}.supervision_population_by_po_by_day_materialized` sup_pop
+        ON sup_pop.state_code = overdue_lsir.state_code
+        AND sup_pop.date_of_supervision = overdue_lsir.date_of_supervision
+        AND sup_pop.supervising_officer_external_id = overdue_lsir.supervising_officer_external_id
+        AND sup_pop.supervising_district_external_id = overdue_lsir.level_1_supervision_location_external_id
     """
 
 OVERDUE_LSIR_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -64,6 +74,7 @@ OVERDUE_LSIR_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=OVERDUE_LSIR_BY_PO_BY_DAY_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    vitals_views_dataset=dataset_config.VITALS_REPORT_DATASET,
 )
 
 if __name__ == "__main__":
