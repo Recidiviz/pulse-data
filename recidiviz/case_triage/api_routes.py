@@ -17,6 +17,7 @@
 """Implements API routes for the Case Triage app."""
 import json
 import os
+from datetime import datetime
 from http import HTTPStatus
 from typing import Optional
 
@@ -35,6 +36,12 @@ from recidiviz.case_triage.querier.querier import (
 from recidiviz.case_triage.state_utils.requirements import policy_requirements_for_state
 
 
+def _is_non_officer_user() -> bool:
+    """Returns true if the user who is logged in is not a parole officer, and is not
+    impersonating a parole officer."""
+    return getattr(g, "current_user", None) is None
+
+
 def create_api_blueprint(
     segment_client: Optional[CaseTriageSegmentClient] = None,
 ) -> Blueprint:
@@ -42,7 +49,7 @@ def create_api_blueprint(
     api = Blueprint("api", __name__)
 
     def get_clients() -> str:
-        if not getattr(g, "current_user", None) and g.can_see_demo_data:
+        if _is_non_officer_user() and g.can_see_demo_data:
             fixture_path = os.path.abspath(
                 os.path.join(
                     os.path.dirname(os.path.realpath(__file__)),
@@ -66,6 +73,23 @@ def create_api_blueprint(
         )
 
     api.route("/clients")(get_clients)
+
+    def get_opportunities() -> str:
+        if _is_non_officer_user():
+            return jsonify([])
+
+        now = datetime.now()
+        return jsonify(
+            [
+                opportunity.to_json()
+                for opportunity in CaseTriageQuerier.opportunities_for_officer(
+                    current_session, g.current_user
+                )
+                if opportunity.opportunity_active_at_time(now)
+            ]
+        )
+
+    api.route("/opportunities")(get_opportunities)
 
     def get_bootstrap() -> str:
         return jsonify(

@@ -22,6 +22,7 @@ from typing import Optional
 from recidiviz.persistence.database.schema.case_triage.schema import (
     ETLClient,
     ETLOfficer,
+    ETLOpportunity,
 )
 
 
@@ -55,4 +56,17 @@ def generate_fake_client(
         most_recent_assessment_date=last_assessment_date,
         assessment_score=1,
         most_recent_face_to_face_date=last_face_to_face_date,
+    )
+
+
+def generate_fake_opportunity(
+    officer_id: str,
+    person_external_id: str = "person_id_1",
+) -> ETLOpportunity:
+    return ETLOpportunity(
+        supervising_officer_external_id=officer_id,
+        person_external_id=person_external_id,
+        state_code="US_XX",
+        opportunity_type="OVERDUE_DISCHARGE",
+        opportunity_metadata={},
     )
