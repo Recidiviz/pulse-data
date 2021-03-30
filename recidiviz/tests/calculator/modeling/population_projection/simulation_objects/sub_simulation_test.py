@@ -17,16 +17,19 @@
 """Test the SubSimulation class"""
 
 import unittest
+from typing import List
+
 import pandas as pd
 from recidiviz.calculator.modeling.population_projection.simulations.sub_simulation.sub_simulation_factory import (
     SubSimulationFactory,
 )
+from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
 
 
 class TestSubSimulation(unittest.TestCase):
     """Test the SubSimulation runs correctly"""
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.test_outflow_data = pd.DataFrame(
             {
                 "total_population": [4, 2, 2, 4, 3],
@@ -71,7 +74,7 @@ class TestSubSimulation(unittest.TestCase):
             "prison": "full",
         }
 
-        self.compartment_policies = []
+        self.compartment_policies: List[SparkPolicy] = []
 
         self.test_user_inputs = {
             "start_time_step": 0,
@@ -81,7 +84,7 @@ class TestSubSimulation(unittest.TestCase):
             "speed_run": False,
         }
 
-    def test_total_population_data_must_include_start_ts(self):
+    def test_total_population_data_must_include_start_ts(self) -> None:
         sparse_total_population_data = self.test_total_population_data[
             self.test_total_population_data.time_step != 0
         ]
@@ -98,7 +101,7 @@ class TestSubSimulation(unittest.TestCase):
                 True,
             )
 
-    def test_dropping_data_raises_warning_or_error(self):
+    def test_dropping_data_raises_warning_or_error(self) -> None:
         """Assert that SubSimulation throws an error when some input data goes unused"""
         typo_transitions = self.test_transitions_data.copy()
         typo_transitions.loc[typo_transitions.index == 0, "compartment"] = "prison "
