@@ -19,8 +19,20 @@
 for Case Triage related entities.
 
 """
-from sqlalchemy import Column, Boolean, Date, Integer, String, Text, UniqueConstraint
+from datetime import datetime
+
+from sqlalchemy import (
+    Column,
+    Boolean,
+    Date,
+    DateTime,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.sql import func
 
 from recidiviz.persistence.database.base_schema import CaseTriageBase
 
@@ -107,3 +119,40 @@ class CaseUpdate(CaseTriageBase):
     # some other format when we know better what we need, but for the moment we will
     # enforce schema decisions and/or migrations largely in code.
     update_metadata = Column(JSONB, nullable=False)
+
+
+class OpportunityDeferral(CaseTriageBase):
+    """Represents an "opportunity" that has been deferred by a PO to be acted on at
+    a later time. This includes both opportunities that a PO wants to be reminded about
+    and ones that they think are not applicable."""
+
+    __tablename__ = "opportunity_deferrals"
+    state_code = Column(String(255), nullable=False, index=True, primary_key=True)
+    supervising_officer_external_id = Column(
+        String(255), nullable=False, index=True, primary_key=True
+    )
+    person_external_id = Column(
+        String(255), nullable=False, index=True, primary_key=True
+    )
+    opportunity_type = Column(String(255), nullable=False, index=True, primary_key=True)
+
+    deferred_at = Column(DateTime, nullable=False, server_default=func.now())
+    deferred_until = Column(DateTime, nullable=False)
+    reminder_was_requested = Column(Boolean, nullable=False)
+    opportunity_metadata = Column(JSONB, nullable=False)
+
+    @staticmethod
+    def from_etl_opportunity(
+        etl_opportunity: ETLOpportunity,
+        deferred_until: datetime,
+        reminder_was_requested: bool,
+    ) -> "OpportunityDeferral":
+        return OpportunityDeferral(
+            state_code=etl_opportunity.state_code,
+            supervising_officer_external_id=etl_opportunity.supervising_officer_external_id,
+            person_external_id=etl_opportunity.person_external_id,
+            opportunity_type=etl_opportunity.opportunity_type,
+            deferred_until=deferred_until,
+            reminder_was_requested=reminder_was_requested,
+            opportunity_metadata=etl_opportunity.opportunity_metadata,
+        )

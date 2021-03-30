@@ -22,10 +22,13 @@ import sqlalchemy.orm.exc
 from sqlalchemy.orm import Session
 
 from recidiviz.case_triage.querier.case_presenter import CasePresenter
+from recidiviz.case_triage.querier.opportunity_presenter import OpportunityPresenter
 from recidiviz.persistence.database.schema.case_triage.schema import (
     ETLClient,
     ETLOfficer,
+    ETLOpportunity,
     CaseUpdate,
+    OpportunityDeferral,
 )
 
 
@@ -99,3 +102,33 @@ class CaseTriageQuerier:
     def officer_for_email(session: Session, officer_email: str) -> ETLOfficer:
         email = officer_email.lower()
         return session.query(ETLOfficer).filter_by(email_address=email).one()
+
+    @staticmethod
+    def opportunities_for_officer(
+        session: Session, officer: ETLOfficer
+    ) -> List[OpportunityPresenter]:
+        opportunity_info = (
+            session.query(ETLOpportunity, OpportunityDeferral)
+            .outerjoin(
+                OpportunityDeferral,
+                (
+                    ETLOpportunity.person_external_id
+                    == OpportunityDeferral.person_external_id
+                )
+                & (ETLOpportunity.state_code == OpportunityDeferral.state_code)
+                & (
+                    ETLOpportunity.supervising_officer_external_id
+                    == OpportunityDeferral.supervising_officer_external_id
+                )
+                & (
+                    ETLOpportunity.opportunity_type
+                    == OpportunityDeferral.opportunity_type
+                ),
+            )
+            .filter(
+                ETLOpportunity.supervising_officer_external_id == officer.external_id,
+                ETLOpportunity.state_code == officer.state_code,
+            )
+            .all()
+        )
+        return [OpportunityPresenter(info[0], info[1]) for info in opportunity_info]
