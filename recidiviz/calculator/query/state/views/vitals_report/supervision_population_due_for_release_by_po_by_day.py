@@ -32,21 +32,41 @@ SUPERVISION_POPULATION_DUE_FOR_RELEASE_BY_PO_BY_DAY_DESCRIPTION = """
 
 SUPERVISION_POPULATION_DUE_FOR_RELEASE_BY_PO_BY_DAY_QUERY_TEMPLATE = """
     /*{description}*/
-    SELECT
-        population.state_code,
-        date_of_supervision,
-        supervising_officer_external_id as supervising_officer,
-        IFNULL(population.level_1_supervision_location_external_id, 'UNKNOWN') as district_id,
+   WITH due_for_release AS (
+        SELECT
+            state_code,
+            date_of_supervision,
+            IFNULL(supervising_officer_external_id, 'UNKNOWN') as supervising_officer_external_id,
+            IFNULL(level_1_supervision_location_external_id, 'UNKNOWN') as level_1_supervision_location_external_id,
+            COUNT (DISTINCT(IF(projected_end_date < date_of_supervision, person_id, NULL))) as due_for_release_count,
+        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`,
+        UNNEST ([level_1_supervision_location_external_id, 'ALL']) AS level_1_supervision_location_external_id,
+        UNNEST ([supervising_officer_external_id, 'ALL']) AS supervising_officer_external_id
+        WHERE date_of_supervision > DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 90 DAY)
+            AND projected_end_date IS NOT NULL
+            AND state_code = "US_ND"
+        GROUP BY state_code, date_of_supervision, supervising_officer_external_id, level_1_supervision_location_external_id
+    )
+    
+    SELECT 
+        due_for_release.state_code,
+        due_for_release.date_of_supervision,
+        due_for_release.supervising_officer_external_id,
+        due_for_release.level_1_supervision_location_external_id as district_id,
         locations.level_1_supervision_location_name as district_name,
-        COUNT (DISTINCT(IF(projected_end_date < date_of_supervision, person_id, NULL))) as due_for_release_count
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized` population
+        due_for_release_count,
+        sup_pop.people_under_supervision AS total_under_supervision,
+        SAFE_DIVIDE((sup_pop.people_under_supervision - due_for_release_count), sup_pop.people_under_supervision) * 100 AS timely_discharge,
+    FROM due_for_release
     LEFT JOIN `{project_id}.{reference_views_dataset}.supervision_location_ids_to_names` locations
-    ON population.state_code = locations.state_code
-        AND population.level_1_supervision_location_external_id = locations.level_1_supervision_location_external_id
-    WHERE date_of_supervision > DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 90 DAY)
-        AND projected_end_date IS NOT NULL
-    GROUP BY state_code, date_of_supervision, supervising_officer, district_id, district_name
-    ORDER BY date_of_supervision DESC, supervising_officer DESC, due_for_release_count DESC
+        ON due_for_release.state_code = locations.state_code
+            AND due_for_release.level_1_supervision_location_external_id = locations.level_1_supervision_location_external_id
+    LEFT JOIN `{project_id}.{vitals_views_dataset}.supervision_population_by_po_by_day_materialized` sup_pop
+        on sup_pop.state_code = due_for_release.state_code
+        AND sup_pop.date_of_supervision = due_for_release.date_of_supervision
+        AND sup_pop.supervising_officer_external_id = due_for_release.supervising_officer_external_id
+        AND sup_pop.supervising_district_external_id = due_for_release.level_1_supervision_location_external_id
+    
     """
 
 SUPERVISION_POPULATION_DUE_FOR_RELEASE_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -56,6 +76,7 @@ SUPERVISION_POPULATION_DUE_FOR_RELEASE_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQuer
     description=SUPERVISION_POPULATION_DUE_FOR_RELEASE_BY_PO_BY_DAY_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    vitals_views_dataset=dataset_config.VITALS_REPORT_DATASET,
 )
 
 if __name__ == "__main__":
