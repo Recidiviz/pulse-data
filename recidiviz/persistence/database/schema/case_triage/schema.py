@@ -59,6 +59,7 @@ class ETLClient(CaseTriageBase):
     case_type = Column(String(255), nullable=False)
     supervision_level = Column(String(255), nullable=False)
     employer = Column(String(255))
+    last_known_date_of_employment = Column(Date)
     most_recent_assessment_date = Column(Date)
     assessment_score = Column(Integer)
     most_recent_face_to_face_date = Column(Date)

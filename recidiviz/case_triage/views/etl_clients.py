@@ -65,7 +65,9 @@ latest_employment AS (
             ROW_NUMBER() over (PARTITION BY person_external_id ORDER BY recorded_start_date DESC) as row_num
          FROM
             `{project_id}.{case_triage_dataset}.employment_periods` employment_periods
-        WHERE recorded_end_date IS NULL OR recorded_end_date > CURRENT_DATE()
+        WHERE
+          NOT is_unemployed
+          AND (recorded_end_date IS NULL OR recorded_end_date > CURRENT_DATE())
     ) employments
     WHERE row_num = 1
 ),
@@ -115,6 +117,9 @@ USING (person_id, gender, state_code)
 -- TODO(#5463): When we ingest employment info, we should replace this joined table with the correct table.
 LEFT JOIN
   latest_employment
+USING (person_external_id, state_code)
+LEFT JOIN
+  `{project_id}.{case_triage_dataset}.last_known_date_of_employment`
 USING (person_external_id, state_code)
 LEFT JOIN
   `{project_id}.{case_triage_dataset}.latest_assessments`
@@ -189,6 +194,7 @@ CLIENT_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "case_type",
         "supervision_level",
         "employer",
+        "last_known_date_of_employment",
         "most_recent_assessment_date",
         "assessment_score",
         "most_recent_face_to_face_date",

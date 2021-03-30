@@ -55,6 +55,7 @@ def csv_row_to_etl_client_json(row: List[str]) -> Dict[str, Any]:
         case_type=row[7],
         supervision_level=row[8],
         employer=row[10],
+        last_known_date_of_employment=parse_nullable_date(row[17]),
         most_recent_assessment_date=parse_nullable_date(row[11]),
         assessment_score=int(row[15]),
         most_recent_face_to_face_date=parse_nullable_date(row[12]),
