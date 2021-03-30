@@ -32,7 +32,7 @@ from recidiviz.calculator.modeling.population_projection.simulations.population_
 class TestPopulationSimulation(unittest.TestCase):
     """Test the PopulationSimulation class runs correctly"""
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.test_outflows_data = pd.DataFrame(
             {
                 "total_population": [4, 2, 2, 4, 3],
@@ -88,7 +88,7 @@ class TestPopulationSimulation(unittest.TestCase):
             "supervision": "full",
         }
 
-    def test_disaggregation_axes_must_be_in_data_dfs(self):
+    def test_disaggregation_axes_must_be_in_data_dfs(self) -> None:
         test_outflows_data = self.test_outflows_data.drop("crime", axis=1)
 
         test_transitions_data = self.test_transitions_data.drop("crime", axis=1)
@@ -157,7 +157,7 @@ class TestPopulationSimulation(unittest.TestCase):
                 True,
             )
 
-    def test_simulation_forces_complete_user_inputs_dict(self):
+    def test_simulation_forces_complete_user_inputs_dict(self) -> None:
 
         for i in self.user_inputs:
             test_user_inputs = deepcopy(self.user_inputs)
@@ -177,7 +177,7 @@ class TestPopulationSimulation(unittest.TestCase):
                     True,
                 )
 
-    def test_microsim_requires_empty_policy_list(self):
+    def test_microsim_requires_empty_policy_list(self) -> None:
         with self.assertRaises(ValueError):
             policy_list = [
                 SparkPolicy(
@@ -200,7 +200,7 @@ class TestPopulationSimulation(unittest.TestCase):
                 False,
             )
 
-    def test_baseline_with_backcast_projection_on(self):
+    def test_baseline_with_backcast_projection_on(self) -> None:
         """Assert that the simulation results has negative time steps when the back-cast is enabled"""
         population_simulation = PopulationSimulationFactory.build_population_simulation(
             self.test_outflows_data,
@@ -221,7 +221,7 @@ class TestPopulationSimulation(unittest.TestCase):
             projection.index.unique().sort_values(), pd.Int64Index(range(-5, 10))
         )
 
-    def test_baseline_with_backcast_projection_off(self):
+    def test_baseline_with_backcast_projection_off(self) -> None:
         """Assert that microsim simulation results only have positive time steps"""
         population_simulation = PopulationSimulationFactory.build_population_simulation(
             self.test_outflows_data,
@@ -242,7 +242,7 @@ class TestPopulationSimulation(unittest.TestCase):
             projection.index.unique().sort_values(), pd.Int64Index(range(11))
         )
 
-    def test_dropping_data_raises_warning(self):
+    def test_dropping_data_raises_warning(self) -> None:
         """Assert that PopulationSimulation throws an error when some input data goes unused"""
         non_disaggregated_outflows_data = self.test_outflows_data.copy()
         non_disaggregated_transitions_data = self.test_transitions_data.copy()

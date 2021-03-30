@@ -20,7 +20,7 @@ import unittest
 from datetime import datetime
 import os
 from functools import partial
-from mock import patch
+from mock import patch, MagicMock
 import pandas as pd
 from pandas.testing import assert_frame_equal
 
@@ -172,12 +172,12 @@ def mock_load_table_from_big_query_macro(
 
 
 def mock_upload_spark_results(
-    project_id,
-    simulation_tag,
-    cost_avoidance_df,
-    life_years_df,
-    population_change_df,
-    cost_avoidance_non_cumulative_df,
+    project_id: str,
+    simulation_tag: str,
+    cost_avoidance_df: pd.DataFrame,
+    life_years_df: pd.DataFrame,
+    population_change_df: pd.DataFrame,
+    cost_avoidance_non_cumulative_df: pd.DataFrame,
 ) -> None:
     pass
 
@@ -211,7 +211,7 @@ class TestSuperSimulation(unittest.TestCase):
         "recidiviz.calculator.modeling.population_projection.utils.ignite_bq_utils.load_ignite_table_from_big_query",
         mock_load_table_from_big_query_micro,
     )
-    def setUp(self):
+    def setUp(self) -> None:
         self.macrosim = SuperSimulationFactory.build_super_simulation(
             get_inputs_path("super_simulation_data_ingest.yaml")
         )
@@ -224,7 +224,7 @@ class TestSuperSimulation(unittest.TestCase):
         for sim in [self.microsim, self.microsim_excluded_pop]:
             sim.simulate_baseline(["PRISON"])
 
-    def test_simulation_architecture_must_match_compartment_costs(self):
+    def test_simulation_architecture_must_match_compartment_costs(self) -> None:
         with self.assertRaises(ValueError):
             SuperSimulationFactory.build_super_simulation(
                 get_inputs_path("super_simulation_mismatched_compartments.yaml")
@@ -234,7 +234,7 @@ class TestSuperSimulation(unittest.TestCase):
         "recidiviz.calculator.modeling.population_projection.utils.spark_bq_utils.load_spark_table_from_big_query",
         mock_load_table_from_big_query_macro,
     )
-    def test_reference_year_must_be_integer_time_steps_from_start_year(self):
+    def test_reference_year_must_be_integer_time_steps_from_start_year(self) -> None:
         """Tests macrosimulation enforces compatibility of start year and time step"""
         with self.assertRaises(ValueError):
             SuperSimulationFactory.build_super_simulation(
@@ -249,7 +249,7 @@ class TestSuperSimulation(unittest.TestCase):
         "recidiviz.calculator.modeling.population_projection.utils.spark_bq_utils.load_spark_table_from_big_query",
         mock_load_table_from_big_query_macro,
     )
-    def test_macrosim_data_hydrated(self):
+    def test_macrosim_data_hydrated(self) -> None:
         """Tests macrosimulation are properly ingesting data from BQ"""
         self.assertFalse(self.macrosim.initializer.data_dict["outflows_data"].empty)
         self.assertFalse(self.macrosim.initializer.data_dict["transitions_data"].empty)
@@ -261,7 +261,7 @@ class TestSuperSimulation(unittest.TestCase):
         "recidiviz.calculator.modeling.population_projection.utils.spark_bq_utils.upload_spark_results",
         mock_upload_spark_results,
     )
-    def test_cost_multipliers_multiplicative(self):
+    def test_cost_multipliers_multiplicative(self) -> None:
         # test doubling multiplier doubles costs
         policy_function = partial(
             CompartmentTransitions.apply_reduction,
@@ -291,6 +291,7 @@ class TestSuperSimulation(unittest.TestCase):
         self.macrosim.simulate_policy(policy_list, "PRISON")
 
         outputs = self.macrosim.upload_simulation_results_to_bq("test")
+        assert outputs
         spending_diff, spending_diff_non_cumulative = (
             outputs["spending_diff"],
             outputs["spending_diff_non_cumulative"],
@@ -298,6 +299,7 @@ class TestSuperSimulation(unittest.TestCase):
         outputs_scaled = self.macrosim.upload_simulation_results_to_bq(
             "test", cost_multipliers
         )
+        assert outputs_scaled
         spending_diff_scaled, spending_diff_non_cumulative_scaled = (
             outputs_scaled["spending_diff"],
             outputs_scaled["spending_diff_non_cumulative"],
@@ -318,6 +320,7 @@ class TestSuperSimulation(unittest.TestCase):
         outputs_doubled = self.macrosim.upload_simulation_results_to_bq(
             "test", partial_cost_multipliers_double
         )
+        assert outputs_doubled
         spending_diff_double, spending_diff_non_cumulative_double = (
             outputs_doubled["spending_diff"],
             outputs_doubled["spending_diff_non_cumulative"],
@@ -326,6 +329,7 @@ class TestSuperSimulation(unittest.TestCase):
         outputs_tripled = self.macrosim.upload_simulation_results_to_bq(
             "test", partial_cost_multipliers_triple
         )
+        assert outputs_tripled
         spending_diff_triple, spending_diff_non_cumulative_triple = (
             outputs_tripled["spending_diff"],
             outputs_tripled["spending_diff_non_cumulative"],
@@ -340,7 +344,7 @@ class TestSuperSimulation(unittest.TestCase):
             (spending_diff_non_cumulative_double - spending_diff_non_cumulative) * 2,
         )
 
-    def test_microsim_data_hydrated(self):
+    def test_microsim_data_hydrated(self) -> None:
         """Tests microsimulation are properly ingesting data from BQ"""
         self.assertFalse(self.microsim.initializer.data_dict["outflows_data"].empty)
         self.assertFalse(self.microsim.initializer.data_dict["transitions_data"].empty)
@@ -355,7 +359,7 @@ class TestSuperSimulation(unittest.TestCase):
         "recidiviz.calculator.modeling.population_projection.utils.ignite_bq_utils.load_ignite_table_from_big_query",
         mock_load_table_from_big_query_no_remaining_data,
     )
-    def test_using_remaining_sentences_reduces_prison_population(self):
+    def test_using_remaining_sentences_reduces_prison_population(self) -> None:
         """Tests microsim is using remaining sentence data in the right way"""
         microsim = SuperSimulationFactory.build_super_simulation(
             get_inputs_path("super_simulation_microsim_excluded_pop_model_inputs.yaml")
@@ -426,7 +430,7 @@ class TestSuperSimulation(unittest.TestCase):
         "recidiviz.calculator.modeling.population_projection.utils.ignite_bq_utils.load_ignite_table_from_big_query",
         mock_load_table_from_big_query_no_remaining_data,
     )
-    def test_microsim_baseline_over_time_zero_error_for_first_ts(self):
+    def test_microsim_baseline_over_time_zero_error_for_first_ts(self) -> None:
         """Tests the microsim is initialized with 0 percent error for each initial time step"""
 
         # Run 2 simulations over different run dates
@@ -450,7 +454,7 @@ class TestSuperSimulation(unittest.TestCase):
     @patch(
         "recidiviz.calculator.modeling.population_projection.utils.ignite_bq_utils.store_simulation_results"
     )
-    def test_microsim_upload(self, mock_store_simulation_results):
+    def test_microsim_upload(self, mock_store_simulation_results: MagicMock) -> None:
         simulations = {
             "no_excluded_pop": self.microsim,
             "with_excluded_pop": self.microsim_excluded_pop,
