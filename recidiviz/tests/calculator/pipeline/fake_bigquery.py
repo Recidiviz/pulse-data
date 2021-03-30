@@ -34,7 +34,7 @@ from apache_beam.testing.util import assert_that, BeamAssertException, equal_to
 import apache_beam
 from more_itertools import one
 
-from recidiviz.calculator.dataflow_output_storage_config import (
+from recidiviz.calculator.dataflow_config import (
     DATAFLOW_METRICS_TO_TABLES,
 )
 from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetricType

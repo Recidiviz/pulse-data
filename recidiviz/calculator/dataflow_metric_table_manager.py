@@ -24,7 +24,7 @@ import sys
 from typing import Tuple, List
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.calculator.dataflow_output_storage_config import (
+from recidiviz.calculator.dataflow_config import (
     DATAFLOW_METRICS_TO_TABLES,
 )
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET

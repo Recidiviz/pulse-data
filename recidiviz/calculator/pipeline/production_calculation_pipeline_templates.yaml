@@ -41,15 +41,6 @@ daily_pipelines:
     metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION SUPERVISION_TERMINATION
     region: us-west3
 
-  # Daily US_MO calculations for automated data validation not covered by daily calculation runs
-  - pipeline: incarceration
-    job_name: us-mo-incarceration-validation-calculations
-    state_code: US_MO
-    calculation_end_month: 2019-12
-    calculation_month_count: 1
-    metric_types: INCARCERATION_POPULATION
-    region: us-east1
-
   # Daily US_ID supervision calculations for the COVID and PO reports
   - pipeline: supervision
     job_name: us-id-supervision-calculations-24
@@ -73,15 +64,6 @@ daily_pipelines:
     calculation_month_count: 36
     metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION SUPERVISION_TERMINATION
     region: us-west1
-
-  # Daily US_PA calculations for automated data validation not covered by daily calculation runs
-  - pipeline: incarceration
-    job_name: us-pa-incarceration-validation-calculations
-    state_code: US_PA
-    calculation_end_month: 2020-05
-    calculation_month_count: 6
-    metric_types: INCARCERATION_POPULATION
-    region: us-east1
 
 historical_pipelines:
   - pipeline: incarceration

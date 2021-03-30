@@ -32,7 +32,7 @@ import apache_beam as beam
 from apache_beam.options.pipeline_options import SetupOptions, PipelineOptions
 from apache_beam.typehints import with_input_types, with_output_types
 
-from recidiviz.calculator.dataflow_output_storage_config import (
+from recidiviz.calculator.dataflow_config import (
     DATAFLOW_METRICS_TO_TABLES,
 )
 from recidiviz.calculator.pipeline.incarceration import identifier, metric_producer

@@ -19,7 +19,7 @@ most_recent_job_id_by_metric_and_state_code_materialized"""
 from typing import List, Dict
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.dataflow_output_storage_config import (
+from recidiviz.calculator.dataflow_config import (
     DATAFLOW_METRICS_TO_TABLES,
 )
 from recidiviz.calculator.query.state.dataset_config import (
