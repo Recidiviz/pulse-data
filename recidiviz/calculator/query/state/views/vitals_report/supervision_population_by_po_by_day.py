@@ -21,7 +21,7 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-SUPERVISION_POPULATION_BY_PO_BY_DAY_VIEW_NAME = "SUPERVISION_POPULATION_BY_PO_BY_DAY"
+SUPERVISION_POPULATION_BY_PO_BY_DAY_VIEW_NAME = "supervision_population_by_po_by_day"
 
 SUPERVISION_POPULATION_BY_PO_BY_DAY_DESCRIPTION = """
     Supervision population by PO by day
@@ -49,6 +49,7 @@ SUPERVISION_POPULATION_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=SUPERVISION_POPULATION_BY_PO_BY_DAY_QUERY_TEMPLATE,
     description=SUPERVISION_POPULATION_BY_PO_BY_DAY_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":
