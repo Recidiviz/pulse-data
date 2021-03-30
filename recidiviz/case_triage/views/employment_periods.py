@@ -33,7 +33,8 @@ SELECT
   employers.name AS employer,
   employment.jobtitle AS job_title,
   IF(employment.startdate IS NULL, NULL, PARSE_DATE("%F", SUBSTR(startdate, 0, 10))) AS recorded_start_date,
-  IF(employment.enddate IS NULL, NULL, PARSE_DATE("%F", SUBSTR(enddate, 0, 10))) AS recorded_end_date
+  IF(employment.enddate IS NULL, NULL, PARSE_DATE("%F", SUBSTR(enddate, 0, 10))) AS recorded_end_date,
+  REGEXP_CONTAINS(UPPER(employers.name), r".*UNEMPLOY.*") AS is_unemployed
 FROM
     `{project_id}.us_id_raw_data_up_to_date_views.cis_offender_latest` offenders
 LEFT JOIN

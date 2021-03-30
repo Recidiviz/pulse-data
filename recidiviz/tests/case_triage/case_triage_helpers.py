@@ -53,6 +53,7 @@ def generate_fake_client(
         supervision_level="MEDIUM",
         state_code="US_XX",
         supervision_start_date=date(2018, 1, 1),
+        last_known_date_of_employment=date(2018, 2, 1),
         most_recent_assessment_date=last_assessment_date,
         assessment_score=1,
         most_recent_face_to_face_date=last_face_to_face_date,
