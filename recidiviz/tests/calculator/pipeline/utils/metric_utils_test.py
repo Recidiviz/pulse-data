@@ -20,7 +20,7 @@ import pytest
 from google.cloud import bigquery
 from google.cloud.bigquery import SchemaField
 
-from recidiviz.calculator.dataflow_output_storage_config import (
+from recidiviz.calculator.dataflow_config import (
     DATAFLOW_METRICS_TO_TABLES,
 )
 from recidiviz.calculator.pipeline.incarceration.metrics import (

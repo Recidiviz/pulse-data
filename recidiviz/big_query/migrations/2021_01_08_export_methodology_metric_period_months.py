@@ -33,7 +33,7 @@ from typing import List, Tuple
 from google.cloud.bigquery import WriteDisposition
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.calculator.dataflow_output_storage_config import (
+from recidiviz.calculator.dataflow_config import (
     DATAFLOW_METRICS_COLD_STORAGE_DATASET,
     DATAFLOW_METRICS_TO_TABLES,
 )

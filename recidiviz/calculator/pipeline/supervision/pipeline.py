@@ -30,7 +30,7 @@ from apache_beam.options.pipeline_options import (
 from apache_beam.pvalue import AsList
 from apache_beam.typehints import with_input_types, with_output_types
 
-from recidiviz.calculator.dataflow_output_storage_config import (
+from recidiviz.calculator.dataflow_config import (
     DATAFLOW_METRICS_TO_TABLES,
 )
 from recidiviz.calculator.pipeline.supervision import identifier, metric_producer

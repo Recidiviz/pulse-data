@@ -30,6 +30,7 @@ from recidiviz.calculator.pipeline.utils.pipeline_args_utils import (
     get_apache_beam_pipeline_options_from_args,
 )
 
+
 PIPELINE_MODULES = {
     "incarceration": incarceration_pipeline,
     "recidivism": recidivism_pipeline,
