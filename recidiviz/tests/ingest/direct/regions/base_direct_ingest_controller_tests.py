@@ -74,9 +74,9 @@ from recidiviz.tests.persistence.entity.state.entities_test_utils import (
 )
 from recidiviz.tests.utils.test_utils import (
     print_visible_header_label,
-    is_running_in_ci,
 )
 from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.utils.environment import in_ci
 
 
 @pytest.mark.uses_db
@@ -340,7 +340,7 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
             expected_db_people = pruned_expected_people
 
         if debug:
-            if is_running_in_ci():
+            if in_ci():
                 self.fail("The |debug| flag should only be used for local debugging.")
             if single_person_to_debug is not None:
                 found_people = [

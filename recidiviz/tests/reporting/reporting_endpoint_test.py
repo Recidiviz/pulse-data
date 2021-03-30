@@ -18,36 +18,34 @@
 """Tests for reporting/email_generation.py."""
 import json
 from http import HTTPStatus
+from typing import Any, Dict
 from unittest import TestCase
 from unittest.mock import patch, MagicMock
 
 import flask
 from flask import Flask
 
+from recidiviz.reporting.reporting_endpoint import reporting_endpoint_blueprint
+
 FIXTURE_FILE = "po_monthly_report_data_fixture.json"
 
 
+@patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project"))
+@patch("recidiviz.utils.metadata.project_number", MagicMock(return_value="123456789"))
+@patch(
+    "recidiviz.utils.validate_jwt.validate_iap_jwt_from_app_engine",
+    MagicMock(return_value=("test-user", "test-user@recidiviz.org", None)),
+)
 class ReportingEndpointTests(TestCase):
     """ Integration tests of our flask endpoints """
 
     def setUp(self) -> None:
-        # No-op authentication decorator
-        self.authentication_patcher = patch(
-            "recidiviz.utils.auth.gae.requires_gae_auth"
-        )
-        self.authentication_patcher.start().side_effect = lambda func: func
-
-        # Our authentication decorator must be patched before module definition
-        # pylint: disable=import-outside-toplevel
-        from recidiviz.reporting.reporting_endpoint import reporting_endpoint_blueprint
-
-        self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
-        self.project_id_patcher.start().return_value = "recidiviz-test"
-
         self.app = Flask(__name__)
         self.app.register_blueprint(reporting_endpoint_blueprint)
+        self.app.config["TESTING"] = True
 
         self.client = self.app.test_client()
+        self.headers: Dict[str, Dict[Any, Any]] = {"x-goog-iap-jwt-assertion": {}}
 
         with self.app.test_request_context():
             self.start_new_batch_url = flask.url_for(
@@ -55,18 +53,13 @@ class ReportingEndpointTests(TestCase):
             )
             self.state_code = "US_ID"
 
-    def tearDown(self) -> None:
-        self.project_id_patcher.stop()
-        self.authentication_patcher.stop()
-
     def test_start_new_batch_validation(self) -> None:
         with self.app.test_request_context():
             base_query_string = {
                 "state_code": self.state_code,
                 "report_type": "po_monthly_report",
             }
-
-            response = self.client.get(self.start_new_batch_url)
+            response = self.client.get(self.start_new_batch_url, headers=self.headers)
 
             self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
             self.assertEqual(
@@ -78,6 +71,7 @@ class ReportingEndpointTests(TestCase):
             response = self.client.get(
                 self.start_new_batch_url,
                 query_string={**base_query_string, "test_address": "fake-email"},
+                headers=self.headers,
             )
 
             self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
@@ -92,6 +86,7 @@ class ReportingEndpointTests(TestCase):
                     **base_query_string,
                     "email_allowlist": json.dumps(["dev@recidiviz.org", "foo"]),
                 },
+                headers=self.headers,
             )
 
             self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
@@ -115,6 +110,7 @@ class ReportingEndpointTests(TestCase):
                         ["dev@recidiviz.org", "other@recidiviz.org"]
                     ),
                 },
+                headers=self.headers,
             )
 
             mock_start.assert_called_with(
@@ -147,6 +143,7 @@ class ReportingEndpointTests(TestCase):
                     "state_code": self.state_code,
                     "report_type": "po_monthly_report",
                 },
+                headers=self.headers,
             )
 
             mock_start.assert_called_with(
@@ -172,7 +169,6 @@ class ReportingEndpointTests(TestCase):
         with self.app.test_request_context():
             mock_generate.return_value = "test_batch_id"
             mock_start.return_value = [0, 1]
-
             response = self.client.get(
                 self.start_new_batch_url,
                 query_string={
@@ -182,6 +178,7 @@ class ReportingEndpointTests(TestCase):
                         ["dev@recidiviz.org", "other@recidiviz.org"]
                     ),
                 },
+                headers=self.headers,
             )
 
             self.assertEqual(HTTPStatus.OK, response.status_code)
@@ -202,6 +199,7 @@ class ReportingEndpointTests(TestCase):
                         ["dev@recidiviz.org", "other@recidiviz.org"]
                     ),
                 },
+                headers=self.headers,
             )
 
             self.assertEqual(HTTPStatus.OK, response.status_code)

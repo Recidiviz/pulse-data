@@ -34,11 +34,3 @@ def in_docker():
         return False
     with open("/proc/1/cgroup", "rt") as ifh:
         return "docker" in ifh.read()
-
-
-def is_running_in_ci() -> bool:
-    """Returns True if this code is running in the CI environment, False
-    otherwise.
-    """
-    print(os.environ)  # For debugging purposes
-    return os.environ.get("CI") == "true"

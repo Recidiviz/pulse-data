@@ -151,6 +151,11 @@ def in_test() -> bool:
     return getattr(recidiviz, "called_from_test")
 
 
+def in_ci() -> bool:
+    """Check whether we are running in a ci environment"""
+    return os.environ.get("CI") == "true"
+
+
 def test_only(func: Callable) -> Callable:
     """Decorator to verify function only runs in tests
 

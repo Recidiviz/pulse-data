@@ -71,6 +71,11 @@ def test_test_in_test():
     assert environment.in_test()
 
 
+def test_test_in_ci():
+    """This test will fail when run locally."""
+    assert environment.in_ci()
+
+
 def test_test_only_is_test():
     track = "Emerald Rush"
 

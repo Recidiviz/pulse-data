@@ -47,6 +47,7 @@ from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import (
     GCP_PROJECT_STAGING,
     in_development,
+    in_ci,
     in_gcp_staging,
     in_gcp_production,
     in_test,
@@ -54,12 +55,19 @@ from recidiviz.utils.environment import (
 from recidiviz.utils.timer import RepeatedTimer
 
 logging.getLogger().setLevel(logging.INFO)
-if in_development():
-    ingest_metadata_store = IngestMetadataCountsStore(
-        override_project_id=GCP_PROJECT_STAGING
-    )
-else:
-    ingest_metadata_store = IngestMetadataCountsStore()
+if not in_ci():
+    if in_development():
+        ingest_metadata_store = IngestMetadataCountsStore(
+            override_project_id=GCP_PROJECT_STAGING
+        )
+    else:
+        ingest_metadata_store = IngestMetadataCountsStore()
+
+    if not in_test():
+        store_refresh = RepeatedTimer(
+            15 * 60, ingest_metadata_store.recalculate_store, run_immediately=True
+        )
+        store_refresh.start()
 
 static_folder = os.path.abspath(
     os.path.join(
@@ -68,11 +76,6 @@ static_folder = os.path.abspath(
     )
 )
 admin_panel = Blueprint("admin_panel", __name__, static_folder=static_folder)
-store_refresh = RepeatedTimer(
-    15 * 60, ingest_metadata_store.recalculate_store, run_immediately=True
-)
-if not in_test():
-    store_refresh.start()
 
 
 def jsonify_ingest_metadata_result(
