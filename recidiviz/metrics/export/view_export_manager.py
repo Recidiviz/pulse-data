@@ -253,7 +253,7 @@ def export_view_data_to_cloud_storage(
             export_views_with_exporters(
                 gcsfs_client, view_export_configs, delegate_export_map
             )
-        except ViewExportValidationError:
+        except ViewExportValidationError as e:
             warning_message = (
                 f"Export validation failed for {dataset_export_config.export_name}"
             )
@@ -263,7 +263,7 @@ def export_view_data_to_cloud_storage(
                     f" for state: {dataset_export_config.state_code_filter}"
                 )
 
-            logging.warning(warning_message)
+            logging.warning("%s\n%s", warning_message, str(e))
             with monitoring.measurements(
                 {
                     monitoring.TagKey.METRIC_VIEW_EXPORT_NAME: dataset_export_config.export_name,
