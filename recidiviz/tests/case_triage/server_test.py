@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements tests for the Case Triage Flask server."""
-from datetime import date
+from datetime import date, datetime, timedelta
 from http import HTTPStatus
 from typing import Optional
 from unittest import mock, TestCase
@@ -32,13 +32,17 @@ from recidiviz.case_triage.impersonate_users import (
     ImpersonateUser,
 )
 from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
-from recidiviz.persistence.database.schema.case_triage.schema import CaseUpdate
+from recidiviz.persistence.database.schema.case_triage.schema import (
+    CaseUpdate,
+    OpportunityDeferral,
+)
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.case_triage.case_triage_helpers import (
     generate_fake_client,
     generate_fake_officer,
+    generate_fake_opportunity,
 )
 from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils.flask_exception import FlaskException
@@ -118,6 +122,19 @@ class TestCaseTriageAPIRoutes(TestCase):
         )
         self.client_2.most_recent_assessment_date = date(2022, 2, 2)
 
+        self.opportunity_1 = generate_fake_opportunity(
+            officer_id=self.officer_1.external_id,
+            person_external_id=self.client_1.person_external_id,
+        )
+        tomorrow = datetime.now() + timedelta(days=1)
+        self.deferral_1 = OpportunityDeferral.from_etl_opportunity(
+            self.opportunity_1, tomorrow, True
+        )
+        self.opportunity_2 = generate_fake_opportunity(
+            officer_id=self.officer_1.external_id,
+            person_external_id=self.client_2.person_external_id,
+        )
+
         sess = SessionFactory.for_database(self.database_key)
         sess.expire_on_commit = False
         sess.add(self.officer_1)
@@ -125,6 +142,9 @@ class TestCaseTriageAPIRoutes(TestCase):
         sess.add(self.client_2)
         sess.add(self.case_update_1)
         sess.add(self.case_update_2)
+        sess.add(self.opportunity_1)
+        sess.add(self.deferral_1)
+        sess.add(self.opportunity_2)
         sess.commit()
 
     def tearDown(self) -> None:
@@ -164,6 +184,27 @@ class TestCaseTriageAPIRoutes(TestCase):
                 [CaseUpdateActionType.COMPLETED_ASSESSMENT.value],
             )
             self.assertTrue("inProgressActions" not in client_json[1])
+
+    def test_no_opportunities(self) -> None:
+        with self.test_app.test_request_context():
+            g.current_user = self.officer_2
+
+            response = self.test_client.get("/opportunities")
+            self.assertEqual(response.status_code, HTTPStatus.OK)
+
+            client_json = response.get_json()
+            self.assertEqual(client_json, [])
+
+    def test_get_opportunities(self) -> None:
+        with self.test_app.test_request_context():
+            g.current_user = self.officer_1
+
+            response = self.test_client.get("/opportunities")
+            self.assertEqual(response.status_code, HTTPStatus.OK)
+
+            opportunity_json = response.get_json()
+            # Only one of the opportunities should be active
+            self.assertEqual(len(opportunity_json), 1)
 
     def test_record_client_action_malformed_input(self) -> None:
         with self.test_app.test_request_context():

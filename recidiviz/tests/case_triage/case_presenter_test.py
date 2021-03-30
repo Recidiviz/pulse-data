@@ -16,7 +16,6 @@
 # =============================================================================
 """Implements tests for the CasePresenter class."""
 import json
-
 from datetime import date, datetime
 from unittest.case import TestCase
 
