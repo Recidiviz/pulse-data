@@ -51,6 +51,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     gcsfs_direct_ingest_storage_directory_path_for_region,
     GcsfsDirectIngestFileType,
     filename_parts_from_path,
+    INGEST_FILEPATH_REGEX,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.tools.gsutil_shell_helpers import (
@@ -58,7 +59,6 @@ from recidiviz.tools.gsutil_shell_helpers import (
     gsutil_ls,
     gsutil_get_storage_subdirs_containing_file_types,
 )
-from recidiviz.tools.utils import INGESTED_FILE_REGEX
 from recidiviz.utils.params import str_to_bool
 
 
@@ -208,7 +208,7 @@ class MoveFilesToDeprecatedController:
             from_paths = gsutil_ls(f"{subdir_path}*.csv")
             for from_path in from_paths:
                 _, file_name = os.path.split(from_path)
-                if re.match(INGESTED_FILE_REGEX, file_name):
+                if re.match(INGEST_FILEPATH_REGEX, file_name):
                     if not self.file_filter or re.search(self.file_filter, file_name):
                         result.append(from_path)
         return result
