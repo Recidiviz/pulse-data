@@ -18,17 +18,19 @@
 CheckConstraint."""
 
 from sqlite3 import IntegrityError
+from typing import Any
 
 from sqlalchemy import event
 
 from recidiviz.persistence.database.schema.operations.schema import (
     DirectIngestIngestFileMetadata,
 )
+from recidiviz.persistence.database.session import Session
 
 
-def session_listener(session):
+def session_listener(session: Session) -> None:
     @event.listens_for(session, "pending_to_persistent")
-    def _pending_to_persistent(session, instance):
+    def _pending_to_persistent(session: Session, instance: Any) -> None:
         """Called when a SQLAlchemy object transitions to a persistent object. If this function throws, the session
         will be rolled back and that object will not be committed."""
         if not isinstance(instance, DirectIngestIngestFileMetadata):
