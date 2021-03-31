@@ -200,6 +200,18 @@ from recidiviz.validation.views.state.analyst_data_validation.sub_sessions_super
 from recidiviz.validation.views.state.analyst_data_validation.sub_sessions_supervision_terminations_to_dataflow_disaggregated import (
     SUB_SESSIONS_SUPERVISION_TERMINATIONS_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED,
 )
+from recidiviz.validation.views.state.analyst_data_validation.reincarcerations_from_dataflow_to_dataflow_disaggregated import (
+    REINCARCERATIONS_FROM_DATAFLOW_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.analyst_data_validation.reincarcerations_from_dataflow_to_dataflow import (
+    REINCARCERATIONS_FROM_DATAFLOW_TO_DATAFLOW_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.analyst_data_validation.reincarcerations_from_sessions_to_dataflow_disaggregated import (
+    REINCARCERATIONS_FROM_SESSIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.analyst_data_validation.reincarcerations_from_sessions_to_dataflow import (
+    REINCARCERATIONS_FROM_SESSIONS_TO_DATAFLOW_VIEW_BUILDER,
+)
 
 VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = [
     ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_INTERNAL_CONSISTENCY_VIEW_BUILDER,
@@ -260,4 +272,8 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = [
     SUB_SESSIONS_INCARCERATION_RELEASES_TO_DATAFLOW_VIEW_BUILDER,
     SUB_SESSIONS_SUPERVISION_TERMINATIONS_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED,
     SUB_SESSIONS_SUPERVISION_TERMINATIONS_TO_DATAFLOW_VIEW_BUILDER,
+    REINCARCERATIONS_FROM_DATAFLOW_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
+    REINCARCERATIONS_FROM_DATAFLOW_TO_DATAFLOW_VIEW_BUILDER,
+    REINCARCERATIONS_FROM_SESSIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
+    REINCARCERATIONS_FROM_SESSIONS_TO_DATAFLOW_VIEW_BUILDER,
 ] + POPULATION_PROJECTION_DATA_VALIDATION_VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE
