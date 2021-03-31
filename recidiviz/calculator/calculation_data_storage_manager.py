@@ -138,7 +138,7 @@ def _get_month_range_for_metric_and_state() -> Dict[str, Dict[str, int]]:
     return month_range_for_metric_and_state
 
 
-SOURCE_DATA_JOIN_CLAUSE_NO_MONTH_LIMIT_TEMPLATE = """LEFT JOIN
+SOURCE_DATA_JOIN_CLAUSE_STANDARD_TEMPLATE = """LEFT JOIN
             (-- Job_ids that are the most recent for the given metric/state_code
             SELECT DISTINCT job_id as keep_job_id FROM
                 `{project_id}.{materialized_metrics_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
@@ -226,16 +226,20 @@ def move_old_dataflow_metrics_to_cold_storage() -> None:
             for pipeline in dataflow_config.ALWAYS_UNBOUNDED_DATE_PIPELINES
         )
 
-        if is_unbounded_date_pipeline:
-            source_data_join_clause = (
-                SOURCE_DATA_JOIN_CLAUSE_NO_MONTH_LIMIT_TEMPLATE.format(
-                    project_id=table_ref.project,
-                    dataflow_metrics_dataset=table_ref.dataset_id,
-                    materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
-                    table_id=table_id,
-                    day_count_limit=dataflow_config.MAX_DAYS_IN_DATAFLOW_METRICS_TABLE,
-                    metric_type=metric_type,
-                )
+        # This means there are no currently scheduled pipelines writing metrics to
+        # this table with specific month ranges
+        no_active_month_range_pipelines = not month_range_for_metric_and_state[
+            table_id
+        ].items()
+
+        if is_unbounded_date_pipeline or no_active_month_range_pipelines:
+            source_data_join_clause = SOURCE_DATA_JOIN_CLAUSE_STANDARD_TEMPLATE.format(
+                project_id=table_ref.project,
+                dataflow_metrics_dataset=table_ref.dataset_id,
+                materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
+                table_id=table_id,
+                day_count_limit=dataflow_config.MAX_DAYS_IN_DATAFLOW_METRICS_TABLE,
+                metric_type=metric_type,
             )
         else:
             month_limit_by_state = "\nUNION ALL\n".join(
@@ -331,7 +335,7 @@ def _decommission_dataflow_metric_table(
 
     # Move all rows in the table to cold storage
     insert_query = (
-        """SELECT * FROM `{project_id}.{dataflow_metrics_dataset}.{table_id}""".format(
+        """SELECT * FROM `{project_id}.{dataflow_metrics_dataset}.{table_id}`""".format(
             project_id=table_ref.project,
             dataflow_metrics_dataset=dataflow_metrics_dataset,
             table_id=table_id,
