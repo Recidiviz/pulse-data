@@ -255,11 +255,13 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         view_1 = BigQueryView(
             dataset_id="dataset_1",
             view_id="table_1",
+            description="table_1 description",
             view_query_template="SELECT * FROM `{project_id}.dataset_2.table_2`",
         )
         view_2 = BigQueryView(
             dataset_id="dataset_2",
             view_id="table_2",
+            description="table_2 description",
             view_query_template="SELECT * FROM `{project_id}.dataset_1.table_1`",
         )
 
@@ -274,17 +276,20 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         view_1 = BigQueryView(
             dataset_id="dataset_1",
             view_id="table_1",
+            description="table_1 description",
             view_query_template="SELECT * FROM `{project_id}.dataset_2.table_2`",
         )
         view_2 = BigQueryView(
             dataset_id="dataset_2",
             view_id="table_2",
+            description="table_2 description",
             view_query_template="SELECT * FROM `{project_id}.dataset_1.table_1`",
         )
 
         view_3 = BigQueryView(
             dataset_id="dataset_3",
             view_id="table_3",
+            description="table_3 description",
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
         )
 
@@ -301,11 +306,13 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         view_1 = BigQueryView(
             dataset_id="dataset_1",
             view_id="table_1",
+            description="table_1 description",
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
         )
         view_2 = BigQueryView(
             dataset_id="dataset_2",
             view_id="table_2",
+            description="table_2 description",
             view_query_template="""
             SELECT * FROM `{project_id}.dataset_1.table_1`
             JOIN `{project_id}.dataset_3.table_3`
@@ -314,6 +321,7 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         view_3 = BigQueryView(
             dataset_id="dataset_3",
             view_id="table_3",
+            description="table_3 description",
             view_query_template="SELECT * FROM `{project_id}.dataset_2.table_2`",
         )
         with self.assertRaises(ValueError) as e:
@@ -328,16 +336,19 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         view_1 = BigQueryView(
             dataset_id="dataset_1",
             view_id="table_1",
+            description="table_1 description",
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
         )
         view_2 = BigQueryView(
             dataset_id="dataset_2",
             view_id="table_2",
+            description="table_2 description",
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
         )
         view_3 = BigQueryView(
             dataset_id="dataset_3",
             view_id="table_3",
+            description="table_3 description",
             view_query_template="""
             SELECT * FROM `{project_id}.dataset_1.table_1`
             JOIN `{project_id}.dataset_2.table_2`
@@ -431,6 +442,7 @@ class TestBigQueryViewDagNode(unittest.TestCase):
         view = BigQueryView(
             dataset_id="my_dataset",
             view_id="my_view_id",
+            description="my view description",
             view_query_template="SELECT * FROM `{project_id}.some_dataset.some_table`",
         )
         node = BigQueryViewDagNode(view)
@@ -449,6 +461,7 @@ class TestBigQueryViewDagNode(unittest.TestCase):
         view = BigQueryView(
             dataset_id="my_dataset",
             view_id="my_view_id",
+            description="my view description",
             view_query_template="SELECT * FROM `{project_id}.some_dataset.some_table_materialized`",
         )
         node = BigQueryViewDagNode(view)
@@ -458,6 +471,7 @@ class TestBigQueryViewDagNode(unittest.TestCase):
         view = BigQueryView(
             dataset_id="my_dataset",
             view_id="my_view_id",
+            description="my view description",
             view_query_template="""SELECT * FROM `{project_id}.some_dataset.some_table_materialized`
             LEFT OUTER JOIN `{project_id}.some_dataset.other_table`
             USING (some_col);

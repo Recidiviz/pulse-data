@@ -40,9 +40,11 @@ class SelectedColumnsBigQueryView(BigQueryView):
         **query_format_kwargs: str,
     ):
         query_format_kwargs["columns"] = ",\n    ".join(columns)
+        description = f"{view_id} view with selected columns"
         super().__init__(
             dataset_id=dataset_id,
             view_id=view_id,
+            description=description,
             view_query_template=view_query_template,
             should_materialize=should_materialize,
             dataset_overrides=dataset_overrides,

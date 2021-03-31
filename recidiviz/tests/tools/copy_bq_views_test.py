@@ -48,6 +48,7 @@ class CopyBQViewsTest(unittest.TestCase):
             project_id=self.mock_source_project_id,
             dataset_id="dataset",
             view_id="test_view",
+            description="test_view description",
             view_query_template="SELECT NULL LIMIT 0",
             should_materialize=True,
         )
@@ -82,6 +83,7 @@ class CopyBQViewsTest(unittest.TestCase):
             project_id=self.mock_destination_project_id,
             dataset_id=self.mock_destination_dataset_id,
             view_id=self.mock_view.view_id,
+            description=self.mock_view.description,
             view_query_template=self.mock_view.view_query,
             should_materialize=True,
         )
@@ -153,6 +155,7 @@ class CopyBQViewsTest(unittest.TestCase):
             project_id=self.mock_source_project_id,
             dataset_id=self.mock_source_dataset_id,
             view_id="test_view",
+            description="test_view description",
             view_query_template=f"SELECT * FROM {self.mock_source_project_id}.other_dataset.table LIMIT 0",
             should_materialize=True,
         )
@@ -172,6 +175,7 @@ class CopyBQViewsTest(unittest.TestCase):
             project_id=self.mock_destination_project_id,
             dataset_id=self.mock_destination_dataset_id,
             view_id="test_view",
+            description="test_view description",
             view_query_template=f"SELECT * FROM {self.mock_destination_project_id}.other_dataset.table LIMIT 0",
             should_materialize=True,
         )

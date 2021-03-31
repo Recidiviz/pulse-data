@@ -69,9 +69,15 @@ INNER JOIN
 USING (person_id, state_code, assessment_date, external_id)
 """
 
+LATEST_ASSESSMENTS_DESCRIPTION = """
+Generates the latest assessments for people on supervision and outputs the associated
+ dates and scores.
+"""
+
 LATEST_ASSESSMENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=VIEWS_DATASET,
     view_id="latest_assessments",
+    description=LATEST_ASSESSMENTS_DESCRIPTION,
     view_query_template=LATEST_ASSESSMENTS_QUERY_VIEW,
     dataflow_metrics_materialized_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )

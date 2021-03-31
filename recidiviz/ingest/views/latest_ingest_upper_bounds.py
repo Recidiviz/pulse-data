@@ -79,10 +79,15 @@ LEFT OUTER JOIN max_processed_dates
 USING (state_code)
 """
 
+LATEST_INGESTED_UPPER_BOUNDS_DESCRIPTION = """A view that reports back on the ingest
+ 'high water mark', i.e. the latest date where all files on or before that date are
+  processed for a given state."""
+
 
 LATEST_INGESTED_UPPER_BOUNDS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=VIEWS_DATASET,
     view_id="ingest_metadata_latest_ingested_upper_bounds",
+    description=LATEST_INGESTED_UPPER_BOUNDS_DESCRIPTION,
     view_query_template=LATEST_INGESTED_UPPER_BOUNDS_QUERY_TEMPLATE,
 )
 

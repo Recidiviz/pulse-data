@@ -48,9 +48,16 @@ WHERE
   codeemploymentstatusid = '1'
 """
 
+CURRENT_EMPLOYMENT_PERIODS_DESCRIPTION = """
+Provides a period-based view of employment data, indicating start and end date for
+ different jobs held by people under the supervision of the state.
+ 
+ Currently only generates data for Idaho."""
+
 CURRENT_EMPLOYMENT_PERIODS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=VIEWS_DATASET,
     view_id="employment_periods",
+    description=CURRENT_EMPLOYMENT_PERIODS_DESCRIPTION,
     view_query_template=CURRENT_EMPLOYMENT_PERIODS_QUERY_TEMPLATE,
 )
 

@@ -42,6 +42,9 @@ def _to_bq_table(query_str: str) -> str:
 _QUERIES = [m.to_query() for m in state_aggregate_mappings.MAPPINGS]
 _UNIONED_STATEMENT = sqlalchemy.union_all(*_QUERIES)
 _BQ_UNIONED_STATEMENT_QUERY_TEMPLATE = _to_bq_table(str(_UNIONED_STATEMENT.compile()))
+COMBINED_STATE_AGGREGATE_DESCRIPTION = """
+The concatenation of all 'state-reported aggregate reports' after mapping each column
+to a shared column_name."""
 
 # This view is the concatenation of all "state-reported aggregate reports" after
 # mapping each column to a shared column_name. The next logical derivation from
@@ -52,6 +55,7 @@ COMBINED_STATE_AGGREGATE_VIEW_BUILDER: SimpleBigQueryViewBuilder = (
     SimpleBigQueryViewBuilder(
         dataset_id=dataset_config.VIEWS_DATASET,
         view_id="combined_state_aggregates",
+        description=COMBINED_STATE_AGGREGATE_DESCRIPTION,
         view_query_template=_BQ_UNIONED_STATEMENT_QUERY_TEMPLATE,
     )
 )

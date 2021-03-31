@@ -180,6 +180,7 @@ class UnnormalizedDirectIngestRawDataTableBigQueryView(BigQueryView):
         *,
         project_id: str = None,
         region_code: str,
+        description: str,
         view_id: str,
         view_query_template: str,
         raw_file_config: DirectIngestRawFileConfig,
@@ -202,6 +203,7 @@ class UnnormalizedDirectIngestRawDataTableBigQueryView(BigQueryView):
             project_id=project_id,
             dataset_id=view_dataset_id,
             view_id=view_id,
+            description=description,
             view_query_template=view_query_template,
             raw_table_dataset_id=raw_table_dataset_id,
             raw_table_name=raw_file_config.file_tag,
@@ -256,6 +258,7 @@ class UnnormalizedDirectIngestRawDataTableLatestView(
         dataset_overrides: Optional[Dict[str, str]],
     ):
         view_id = f"{raw_file_config.file_tag}_latest"
+        description = f"{raw_file_config.file_tag} latest view"
         view_query_template = (
             RAW_DATA_LATEST_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE
             if raw_file_config.always_historical_export
@@ -265,6 +268,7 @@ class UnnormalizedDirectIngestRawDataTableLatestView(
             project_id=project_id,
             region_code=region_code,
             view_id=view_id,
+            description=description,
             view_query_template=view_query_template,
             raw_file_config=raw_file_config,
             dataset_overrides=dataset_overrides,
@@ -290,6 +294,7 @@ class UnnormalizedDirectIngestRawDataTableUpToDateView(
         raw_file_config: DirectIngestRawFileConfig,
     ):
         view_id = f"{raw_file_config.file_tag}_by_update_date"
+        description = f"{raw_file_config.file_tag} parametrized view"
         view_query_template = (
             RAW_DATA_UP_TO_DATE_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE
             if raw_file_config.always_historical_export
@@ -299,6 +304,7 @@ class UnnormalizedDirectIngestRawDataTableUpToDateView(
             project_id=project_id,
             region_code=region_code,
             view_id=view_id,
+            description=description,
             view_query_template=view_query_template,
             raw_file_config=raw_file_config,
         )
@@ -469,9 +475,11 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         )
 
         dataset_id = f"{self._region_code.lower()}_ingest_views"
+        description = f"{ingest_view_name} ingest view"
         super().__init__(
             dataset_id=dataset_id,
             view_id=ingest_view_name,
+            description=description,
             view_query_template=latest_view_query,
         )
 

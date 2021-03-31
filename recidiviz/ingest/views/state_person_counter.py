@@ -82,6 +82,14 @@ ORDER BY state_code, `{column_name}`;
 STATE_PERSON_ENTITY_NAME = "StatePerson"
 STATE_PERSON_TABLE_NAME = "state_person"
 
+STATE_PERSON_ENUM_COLUMN_DESCRIPTION_TEMPLATE = """View that counts the instances of
+ different enum values for column: [{col}], as well as as well as NULL vs non-NULL values
+ for the state_person table"""
+
+STATE_PERSON_NON_ENUM_COLUMN_DESCRIPTION_TEMPLATE = """View that counts the instances of
+ different values for column: [{col}], as well as as well as NULL vs non-NULL values
+ for the state_person table"""
+
 
 class StatePersonBigQueryViewCollector(
     BigQueryViewCollector[SimpleBigQueryViewBuilder]
@@ -96,6 +104,9 @@ class StatePersonBigQueryViewCollector(
             SimpleBigQueryViewBuilder(
                 dataset_id=VIEWS_DATASET,
                 view_id=f"ingest_state_metadata__{STATE_PERSON_TABLE_NAME}__{col}",
+                description=STATE_PERSON_ENUM_COLUMN_DESCRIPTION_TEMPLATE.format(
+                    col=col
+                ),
                 view_query_template=STATE_PERSON_ENUM_QUERY_TEMPLATE,
                 table_name=STATE_PERSON_TABLE_NAME,
                 column_name=col,
@@ -111,6 +122,9 @@ class StatePersonBigQueryViewCollector(
                 SimpleBigQueryViewBuilder(
                     dataset_id=VIEWS_DATASET,
                     view_id=f"ingest_state_metadata__{STATE_PERSON_TABLE_NAME}__{col}",
+                    description=STATE_PERSON_NON_ENUM_COLUMN_DESCRIPTION_TEMPLATE.format(
+                        col=col
+                    ),
                     view_query_template=STATE_PERSON_NON_ENUM_QUERY_TEMPLATE,
                     table_name=STATE_PERSON_TABLE_NAME,
                     column_name=col,
