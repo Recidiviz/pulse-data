@@ -109,7 +109,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = """
     SELECT 
         state_code,
         metric_source,
-        MAX(created_on) AS last_day_of_data
+        MAX(date) AS last_day_of_data
     FROM population_cte
     GROUP BY 1,2
     )   
