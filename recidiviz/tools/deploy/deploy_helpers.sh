@@ -188,17 +188,19 @@ function check_for_too_many_serving_versions {
     PROJECT_ID=$1
 
     # Query for the serving versions in YAML format, select the IDs, count the number of lines and trim whitespace
-    SERVING_VERSIONS=$(gcloud app versions list --project=${PROJECT_ID} --service=default --filter="SERVING_STATUS=SERVING" --format=yaml | pipenv run yq .id | wc -l | xargs) || exit_on_fail
+    SERVING_VERSIONS=$(gcloud app versions list --project=${PROJECT_ID} --filter="SERVING_STATUS=SERVING" --format=yaml | pipenv run yq .id | wc -l | xargs) || exit_on_fail
 
     # Note: if we adjust the number of serving versions upward, we may
     # have to adjust the number of max connections in our postgres instances.
     # See the dicussion in #5497 for more context, and see the docs:
     # https://cloud.google.com/sql/docs/quotas#postgresql for more.
-    MAX_ALLOWED_SERVING_VERSIONS=4
+    # See discussion in #6698 for additional rationale for bumping from 4 -> 8.
+    MAX_ALLOWED_SERVING_VERSIONS=8
     if [[ "$SERVING_VERSIONS" -ge "$MAX_ALLOWED_SERVING_VERSIONS" ]]; then
         echo_error "Found [$SERVING_VERSIONS] already serving versions. You must stop at least one version to proceed"
         echo_error "in order to avoid maxing out the number of allowed database connections."
         echo_error "Stop versions here: https://console.cloud.google.com/appengine/versions?organizationId=448885369991&project=$PROJECT_ID&serviceId=default"
+        echo_error "          and here: https://console.cloud.google.com/appengine/versions?organizationId=448885369991&project=$PROJECT_ID&serviceId=scrapers"
         exit 1
     fi
     echo "Found [$SERVING_VERSIONS] already serving versions - proceeding"
@@ -208,13 +210,14 @@ function check_for_too_many_deployed_versions {
     PROJECT_ID=$1
 
     # Query for the deployed versions in YAML format, select the IDs, count the number of lines and trim whitespace
-    DEPLOYED_VERSIONS=$(gcloud app versions list --project=${PROJECT_ID} --service=default --format=yaml | pipenv run yq .id | wc -l | xargs) || exit_on_fail
+    DEPLOYED_VERSIONS=$(gcloud app versions list --project=${PROJECT_ID} --format=yaml | pipenv run yq .id | wc -l | xargs) || exit_on_fail
     # Our actual limit is 210 versions, but we safeguard against other versions being deployed before this deploy succeeds
     MAX_ALLOWED_DEPLOYED_VERSIONS=200
     if [[ "$DEPLOYED_VERSIONS" -ge "$MAX_ALLOWED_DEPLOYED_VERSIONS" ]]; then
         echo_error "Found [$DEPLOYED_VERSIONS] already deployed versions. You must delete at least one version to proceed"
         echo_error "in order to avoid maxing out the number of allowed deployed versions."
         echo_error "Delete versions here: https://console.cloud.google.com/appengine/versions?organizationId=448885369991&project=$PROJECT_ID&serviceId=default"
+        echo_error "            and here: https://console.cloud.google.com/appengine/versions?organizationId=448885369991&project=$PROJECT_ID&serviceId=scrapers"
         exit 1
     fi
     echo "Found [$DEPLOYED_VERSIONS] already deployed versions - proceeding"
