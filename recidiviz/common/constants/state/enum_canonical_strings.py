@@ -333,6 +333,7 @@ state_program_assignment_participation_status_denied = "DENIED"
 state_program_assignment_participation_status_discharged = "DISCHARGED"
 state_program_assignment_participation_status_in_progress = "IN_PROGRESS"
 state_program_assignment_participation_status_pending = "PENDING"
+state_program_assignment_participation_status_refused = "REFUSED"
 
 state_program_assignment_discharge_reason_absconded = "ABSCONDED"
 state_program_assignment_discharge_reason_adverse_termination = "ADVERSE_TERMINATION"
