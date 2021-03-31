@@ -29,9 +29,13 @@ from recidiviz.persistence.entity_matching import (
     templates as persistence_templates_module,
 )
 from recidiviz.tests.ingest.direct import (
+    direct_ingest_fixtures as regions_test_fixtures_module,
     regions as regions_test_module,
 )
-from recidiviz.tests.ingest.direct import templates as test_templates_module
+from recidiviz.tests.ingest.direct import (
+    fixtures_templates as test_fixtures_templates_module,
+    templates as test_templates_module,
+)
 from recidiviz.tests.ingest.direct.direct_ingest_util import PLACEHOLDER_TO_DO_STRING
 
 _DEFAULT_WORKING_DIR: str = os.path.dirname(recidiviz.__file__)
@@ -45,6 +49,9 @@ PERSISTENCE_DIR_PATH = os.path.dirname(
 )
 TESTS_DIR_PATH = os.path.dirname(
     os.path.relpath(regions_test_module.__file__, start=DEFAULT_WORKING_DIR)
+)
+TEST_FIXTURES_DIR_PATH = os.path.dirname(
+    os.path.relpath(regions_test_fixtures_module.__file__, start=DEFAULT_WORKING_DIR)
 )
 
 
@@ -75,11 +82,15 @@ class DirectIngestFilesGenerator:
         new_region_tests_dir_path = os.path.join(
             self.curr_directory, TESTS_DIR_PATH, self.region_code
         )
+        new_region_test_fixtures_dir_path = os.path.join(
+            self.curr_directory, TEST_FIXTURES_DIR_PATH, self.region_code
+        )
 
         dirs_to_create = [
             new_region_dir_path,
             new_region_persistence_dir_path,
             new_region_tests_dir_path,
+            new_region_test_fixtures_dir_path,
         ]
         existing_dirs = [d for d in dirs_to_create if os.path.exists(d)]
         if existing_dirs:
@@ -93,6 +104,9 @@ class DirectIngestFilesGenerator:
                 persistence_templates_module.__file__
             ): new_region_persistence_dir_path,
             os.path.dirname(test_templates_module.__file__): new_region_tests_dir_path,
+            os.path.dirname(
+                test_fixtures_templates_module.__file__
+            ): new_region_test_fixtures_dir_path,
         }
 
         try:
