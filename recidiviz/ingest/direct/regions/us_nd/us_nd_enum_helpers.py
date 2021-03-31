@@ -313,8 +313,7 @@ def generate_enum_overrides() -> EnumOverrides:
             "Submitted",
             "Pending Coordinator",
         ],
-        # TODO(#5725): Change mapping once we have a StateProgramAssignmentParticipationStatus.REFUSED enum value
-        StateProgramAssignmentParticipationStatus.EXTERNAL_UNKNOWN: ["Refused"],
+        StateProgramAssignmentParticipationStatus.REFUSED: ["Refused"],
         StateSupervisionCaseType.GENERAL: ["0"],
         StateSupervisionCaseType.SEX_OFFENSE: ["-1"],
         StateAssessmentLevel.EXTERNAL_UNKNOWN: ["NOT APPLICABLE", "UNDETERMINED"],
