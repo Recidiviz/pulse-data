@@ -34,9 +34,8 @@ from recidiviz.persistence.database.base_schema import StateBase
 
 # Import anything from the state schema.py files to ensure the table class
 # declarations are run within the Alembic environment
-from recidiviz.persistence.database.schema.state.schema import (
-    StatePerson,
-)  # pylint:disable=unused-import
+# pylint:disable=unused-import
+from recidiviz.persistence.database.schema.state.schema import StatePerson
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -53,12 +52,12 @@ target_metadata = StateBase.metadata
 _DB_TYPE = "postgresql"
 
 
-def get_sqlalchemy_url():
+def get_sqlalchemy_url() -> str:
     """Returns string needed to connect to database"""
 
     # Boolean int (0 or 1) indicating whether to use SSL to connect to the
     # database
-    use_ssl = int(os.getenv(SQLALCHEMY_USE_SSL))
+    use_ssl = int(os.getenv(SQLALCHEMY_USE_SSL, "0"))
 
     if use_ssl == 1:
         return _get_sqlalchemy_url_with_ssl()
@@ -67,7 +66,7 @@ def get_sqlalchemy_url():
     raise RuntimeError("Invalid value for use_ssl: {use_ssl}".format(use_ssl=use_ssl))
 
 
-def run_migrations_offline():
+def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
 
     This configures the context with just a URL
@@ -91,7 +90,7 @@ def run_migrations_offline():
     context.run_migrations()
 
 
-def run_migrations_online():
+def run_migrations_online() -> None:
     """Run migrations in 'online' mode.
 
     In this scenario we need to create an Engine
@@ -114,7 +113,7 @@ def run_migrations_online():
         context.run_migrations()
 
 
-def _get_sqlalchemy_url_without_ssl():
+def _get_sqlalchemy_url_without_ssl() -> str:
     """Returns string used for SQLAlchemy engine, without SSL params"""
 
     user = os.getenv(SQLALCHEMY_DB_USER)
@@ -127,7 +126,7 @@ def _get_sqlalchemy_url_without_ssl():
     )
 
 
-def _get_sqlalchemy_url_with_ssl():
+def _get_sqlalchemy_url_with_ssl() -> str:
     """Returns string used for SQLAlchemy engine, with SSL params"""
 
     ssl_key_path = os.getenv(SQLALCHEMY_SSL_KEY_PATH)

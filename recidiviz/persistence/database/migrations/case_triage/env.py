@@ -34,9 +34,8 @@ from recidiviz.persistence.database.base_schema import CaseTriageBase
 
 # Import anything from the case_triage schema.py files to ensure the table class
 # declarations are run within the Alembic environment
-from recidiviz.persistence.database.schema.case_triage.schema import (
-    ETLClient,
-)  # pylint:disable=unused-import
+# pylint:disable=unused-import
+from recidiviz.persistence.database.schema.case_triage.schema import ETLClient
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -58,7 +57,7 @@ def get_sqlalchemy_url() -> str:
 
     # Boolean int (0 or 1) indicating whether to use SSL to connect to the
     # database
-    use_ssl = int(os.getenv(SQLALCHEMY_USE_SSL, 0))
+    use_ssl = int(os.getenv(SQLALCHEMY_USE_SSL, "0"))
 
     if use_ssl == 1:
         return _get_sqlalchemy_url_with_ssl()

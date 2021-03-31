@@ -21,6 +21,7 @@ for aggregate-level entities.
 The below schema uses only generic SQLAlchemy types, and therefore should be
 portable between database implementations.
 """
+from typing import Any
 
 from sqlalchemy import (
     CheckConstraint,
@@ -66,7 +67,7 @@ class _AggregateTableMixin:
     """A mixin which defines common fields between all Aggregate Tables."""
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls, *_: Any, **__: Any) -> "_AggregateTableMixin":
         if cls is _AggregateTableMixin:
             raise Exception("_AggregateTableMixin cannot be instantiated")
         return super().__new__(cls)
@@ -88,7 +89,7 @@ class _AggregateTableMixin:
     report_frequency = Column(time_granularity, nullable=False)
 
     @validates("fips")
-    def validate_fips(self, _, fips: str) -> str:
+    def validate_fips(self, _: Any, fips: str) -> str:
         if len(fips) != 5:
             raise ValueError(
                 "FIPS code invalid length: {} characters, should be 5".format(len(fips))

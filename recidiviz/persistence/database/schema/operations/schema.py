@@ -19,6 +19,7 @@
 The below schema uses only generic SQLAlchemy types, and therefore should be
 portable between database implementations.
 """
+from typing import Any
 
 from sqlalchemy import (
     Column,
@@ -37,7 +38,7 @@ class _DirectIngestFileMetadataRowSharedColumns:
     """A mixin which defines all columns common to each of the direct ingest file metadata columns."""
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls, *_: Any, **__: Any) -> "_DirectIngestFileMetadataRowSharedColumns":
         if cls is _DirectIngestFileMetadataRowSharedColumns:
             raise Exception(
                 "_DirectIngestFileMetadataRowSharedColumns cannot be instantiated"
