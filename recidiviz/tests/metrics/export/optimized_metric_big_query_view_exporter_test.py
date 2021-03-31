@@ -484,6 +484,7 @@ class ConvertQueryResultsTest(unittest.TestCase):
             view=MetricBigQueryViewBuilder(
                 dataset_id="test_dataset",
                 view_id="test_view",
+                description="test_view description",
                 view_query_template="you know",
                 dimensions=("district", "year", "month", "supervision_type"),
             ).build(),

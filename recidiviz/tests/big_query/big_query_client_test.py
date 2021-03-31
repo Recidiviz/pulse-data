@@ -54,6 +54,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_view = BigQueryView(
             dataset_id="dataset",
             view_id="test_view",
+            description="test_view description",
             view_query_template="SELECT NULL LIMIT 0",
             should_materialize=True,
         )
@@ -375,6 +376,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         invalid_view = BigQueryView(
             dataset_id="dataset",
             view_id="test_view",
+            description="test_view description",
             view_query_template="SELECT NULL LIMIT 0",
             should_materialize=False,
         )

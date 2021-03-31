@@ -49,6 +49,7 @@ class TestExportViewCollectionConfig(unittest.TestCase):
         self.mock_view_builder = MetricBigQueryViewBuilder(
             dataset_id=self.mock_dataset.dataset_id,
             view_id="test_view",
+            description="test_view description",
             view_query_template="SELECT NULL LIMIT 0",
             dimensions=[],
         )

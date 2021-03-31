@@ -51,6 +51,7 @@ class ValidationCheckResolverTest(unittest.TestCase):
                 view=BigQueryView(
                     dataset_id="my_dataset",
                     view_id="test_view",
+                    description="test_view description",
                     view_query_template="select * from literally_anything",
                 ),
             ),

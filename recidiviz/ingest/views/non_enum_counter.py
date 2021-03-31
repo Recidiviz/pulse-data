@@ -76,6 +76,10 @@ GROUP BY state_code, {column_name}
 ORDER BY state_code;
 """
 
+STATE_TABLE_NON_ENUM_COLUMN_DESCRIPTION_TEMPLATE = """View for non-enum column: [{col}]
+ that also counts the number of NULL vs non-NULL values. Its results are split by state
+ and by whether it is a placeholder object."""
+
 
 class StateTableNonEnumCounterBigQueryViewCollector(
     BigQueryViewCollector[SimpleBigQueryViewBuilder]
@@ -103,6 +107,9 @@ class StateTableNonEnumCounterBigQueryViewCollector(
                     SimpleBigQueryViewBuilder(
                         dataset_id=VIEWS_DATASET,
                         view_id=f"ingest_state_metadata__{table_name}__{col}",
+                        description=STATE_TABLE_NON_ENUM_COLUMN_DESCRIPTION_TEMPLATE.format(
+                            col=col
+                        ),
                         view_query_template=template,
                         table_name=table_name,
                         column_name=col,

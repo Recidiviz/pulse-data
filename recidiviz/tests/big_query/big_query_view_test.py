@@ -40,6 +40,7 @@ class BigQueryViewTest(unittest.TestCase):
         view = BigQueryView(
             dataset_id="view_dataset",
             view_id="my_view",
+            description="my_view description",
             view_query_template="SELECT * FROM `{project_id}.some_dataset.table`",
         )
 
@@ -59,6 +60,7 @@ class BigQueryViewTest(unittest.TestCase):
             project_id="other-project",
             dataset_id="view_dataset",
             view_id="my_view",
+            description="my_view description",
             view_query_template="SELECT * FROM `{project_id}.some_dataset.table`",
         )
 
@@ -80,6 +82,7 @@ class BigQueryViewTest(unittest.TestCase):
                 project_id="other-project",
                 dataset_id="view_dataset",
                 view_id="my_view",
+                description="my_view description",
                 view_query_template=f"SELECT * FROM `{self.PROJECT_ID}.some_dataset.table`",
             )
 
@@ -87,6 +90,7 @@ class BigQueryViewTest(unittest.TestCase):
         view = BigQueryView(
             dataset_id="view_dataset",
             view_id="my_view",
+            description="my_view description",
             view_query_template="SELECT {select_col_1}, {select_col_2} FROM `{project_id}.{some_dataset}.table`",
             some_dataset="a_dataset",
             select_col_1="name",
@@ -110,6 +114,7 @@ class BigQueryViewTest(unittest.TestCase):
             _ = BigQueryView(
                 dataset_id="view_dataset",
                 view_id="my_view",
+                description="my_view description",
                 view_query_template="SELECT {select_col_1}, {select_col_2} FROM `{project_id}.{some_dataset}.table`",
                 some_dataset="a_dataset",
                 select_col_2="date",

@@ -52,6 +52,7 @@ class ExportManagerCompositeExportTest(unittest.TestCase):
         metric_view_one = MetricBigQueryViewBuilder(
             dataset_id="dataset",
             view_id="view1",
+            description="view1 description",
             view_query_template="select * from table",
             dimensions=("a", "b", "c"),
         ).build()
@@ -76,6 +77,7 @@ class ExportManagerCompositeExportTest(unittest.TestCase):
         metric_view_two = MetricBigQueryViewBuilder(
             dataset_id="dataset",
             view_id="view2",
+            description="view2 description",
             view_query_template="select * from view2",
             dimensions=("d", "e", "f"),
         ).build()
@@ -198,6 +200,7 @@ class ExportManagerCompositeExportTest(unittest.TestCase):
         metric_view_one = MetricBigQueryViewBuilder(
             dataset_id="dataset",
             view_id="view1",
+            description="view1 description",
             view_query_template="select * from table",
             dimensions=("a", "b", "c"),
         ).build()
@@ -222,6 +225,7 @@ class ExportManagerCompositeExportTest(unittest.TestCase):
         metric_view_two = MetricBigQueryViewBuilder(
             dataset_id="dataset",
             view_id="view2",
+            description="view2 description",
             view_query_template="select * from view2",
             dimensions=("d", "e", "f"),
         ).build()
@@ -284,6 +288,7 @@ class ExportManagerCompositeExportTest(unittest.TestCase):
         metric_view_one = MetricBigQueryViewBuilder(
             dataset_id="dataset",
             view_id="view1",
+            description="view1 description",
             view_query_template="select * from table",
             dimensions=("a", "b", "c"),
         ).build()
@@ -308,6 +313,7 @@ class ExportManagerCompositeExportTest(unittest.TestCase):
         metric_view_two = MetricBigQueryViewBuilder(
             dataset_id="dataset",
             view_id="view2",
+            description="view2 description",
             view_query_template="select * from view2",
             dimensions=("d", "e", "f"),
         ).build()

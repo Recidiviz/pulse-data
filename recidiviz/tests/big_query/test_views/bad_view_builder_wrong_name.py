@@ -26,6 +26,7 @@ with local_project_id_override("my-project-id"):
     BAD_VIEW = BigQueryView(
         dataset_id="my_dataset",
         view_id="early_discharge_incarceration_sentence",
+        description="early_discharge_incarceration_sentence description",
         view_query_template="SELECT * FROM table1",
     )
 

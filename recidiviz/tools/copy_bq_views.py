@@ -74,6 +74,7 @@ def copy_bq_views(
                     project_id=destination_project_id,
                     dataset_id=destination_dataset_id,
                     view_id=table.table_id,
+                    description=table.description,
                     view_query_template=updated_view_query,
                 ),
                 destination_client=destination_client,

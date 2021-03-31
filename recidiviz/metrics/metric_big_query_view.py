@@ -32,6 +32,7 @@ class MetricBigQueryView(BigQueryView):
         *,
         dataset_id: str,
         view_id: str,
+        description: str,
         view_query_template: str,
         dimensions: Tuple[str, ...],
         should_materialize: bool,
@@ -41,6 +42,7 @@ class MetricBigQueryView(BigQueryView):
         super().__init__(
             dataset_id=dataset_id,
             view_id=view_id,
+            description=description,
             view_query_template=view_query_template,
             should_materialize=should_materialize,
             dataset_overrides=dataset_overrides,
@@ -67,6 +69,7 @@ class MetricBigQueryViewBuilder(BigQueryViewBuilder[MetricBigQueryView]):
         *,
         dataset_id: str,
         view_id: str,
+        description: str,
         view_query_template: str,
         dimensions: Tuple[str, ...],
         should_materialize: bool = False,
@@ -75,6 +78,7 @@ class MetricBigQueryViewBuilder(BigQueryViewBuilder[MetricBigQueryView]):
     ):
         self.dataset_id = dataset_id
         self.view_id = view_id
+        self.description = description
         self.view_query_template = view_query_template
         self.dimensions = dimensions
         self.should_materialize = should_materialize
@@ -86,6 +90,7 @@ class MetricBigQueryViewBuilder(BigQueryViewBuilder[MetricBigQueryView]):
         return MetricBigQueryView(
             dataset_id=self.dataset_id,
             view_id=self.view_id,
+            description=self.description,
             view_query_template=self.view_query_template,
             dimensions=self.dimensions,
             should_materialize=self.should_materialize,
