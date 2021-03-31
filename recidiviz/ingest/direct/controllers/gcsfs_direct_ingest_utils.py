@@ -38,7 +38,7 @@ from recidiviz.ingest.direct.controllers.direct_ingest_types import (
 from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
 from recidiviz.utils import metadata
 
-_FILEPATH_REGEX = re.compile(
+INGEST_FILEPATH_REGEX = re.compile(
     r"(unprocessed|processed)_"  # processed_state
     r"(\d{4}-\d{2}-\d{2}T\d{2}[:_]\d{2}[:_]\d{2}[:_]\d{6})_"  # timestamp
     r"((raw|ingest_view)_)"  # file_type
@@ -235,7 +235,7 @@ def gcsfs_sftp_download_directory_path_for_region(
 
 
 def filename_parts_from_path(file_path: GcsfsFilePath) -> GcsfsFilenameParts:
-    match = re.match(_FILEPATH_REGEX, file_path.file_name)
+    match = re.match(INGEST_FILEPATH_REGEX, file_path.file_name)
     if not match:
         raise DirectIngestError(
             msg=f"Could not parse upload_ts, file_tag, extension "

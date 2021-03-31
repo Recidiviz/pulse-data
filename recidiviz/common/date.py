@@ -275,3 +275,29 @@ class DurationMixin(metaclass=ABCMeta):
     @abstractmethod
     def duration(self) -> DateRange:
         """The object's duration, returned as a DateRange"""
+
+
+def is_date_str(potential_date_str: str) -> bool:
+    """Returns True if the string is an ISO-formatted date, (e.g. '2019-09-25'), False otherwise."""
+    try:
+        datetime.datetime.strptime(potential_date_str, "%Y-%m-%d")
+        return True
+    except ValueError:
+        return False
+
+
+def is_between_date_strs_inclusive(
+    *,
+    upper_bound_date: Optional[str],
+    lower_bound_date: Optional[str],
+    date_of_interest: str,
+) -> bool:
+    """Returns true if the provided |date_of_interest| is between the provided |upper_bound_date| and
+    |lower_bound_date|.
+    """
+
+    if (lower_bound_date is None or date_of_interest >= lower_bound_date) and (
+        upper_bound_date is None or date_of_interest <= upper_bound_date
+    ):
+        return True
+    return False

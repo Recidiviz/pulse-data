@@ -22,7 +22,7 @@ from typing import List, Optional
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
 )
-from recidiviz.tools.utils import is_between_date_strs_inclusive, is_date_str
+from recidiviz.common.date import is_date_str, is_between_date_strs_inclusive
 
 
 def gsutil_ls(gs_path: str, directories_only: bool = False) -> List[str]:
