@@ -51,11 +51,13 @@ class BigQueryViewExporterTest(unittest.TestCase):
         self.view_builder = SimpleBigQueryViewBuilder(
             dataset_id="test_dataset",
             view_id="test_view",
+            description="test_view description",
             view_query_template="SELECT NULL LIMIT 0",
         )
         self.second_view_builder = SimpleBigQueryViewBuilder(
             dataset_id="test_dataset",
             view_id="test_view_2",
+            description="test_view_2 description",
             view_query_template="SELECT NULL LIMIT 0",
         )
         self.view_export_configs = [

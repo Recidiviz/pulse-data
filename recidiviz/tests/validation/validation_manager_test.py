@@ -70,6 +70,7 @@ def get_test_validations() -> List[DataValidationJob]:
                 view=BigQueryView(
                     dataset_id="my_dataset",
                     view_id="test_1",
+                    description="test_1 description",
                     view_query_template="select * from literally_anything",
                 )
             ),
@@ -80,6 +81,7 @@ def get_test_validations() -> List[DataValidationJob]:
                 view=BigQueryView(
                     dataset_id="my_dataset",
                     view_id="test_2",
+                    description="test_2 description",
                     view_query_template="select * from literally_anything",
                 )
             ),
@@ -90,6 +92,7 @@ def get_test_validations() -> List[DataValidationJob]:
                 view=BigQueryView(
                     dataset_id="my_dataset",
                     view_id="test_1",
+                    description="test_1 description",
                     view_query_template="select * from literally_anything",
                 )
             ),
@@ -100,6 +103,7 @@ def get_test_validations() -> List[DataValidationJob]:
                 view=BigQueryView(
                     dataset_id="my_dataset",
                     view_id="test_2",
+                    description="test_2 description",
                     view_query_template="select * from literally_anything",
                 )
             ),
@@ -423,12 +427,14 @@ class TestFetchValidations(TestCase):
             project_id="my_project",
             dataset_id="my_dataset",
             view_id="existence_view",
+            description="existence_view description",
             view_query_template="SELECT NULL LIMIT 0",
         )
         sameness_view = BigQueryView(
             project_id="my_project",
             dataset_id="my_dataset",
             view_id="sameness_view",
+            description="sameness_view description",
             view_query_template="SELECT NULL LIMIT 1",
         )
         mock_get_all_validations_fn.return_value = [
@@ -583,11 +589,13 @@ class TestFetchValidations(TestCase):
         view_no_overrides = BigQueryView(
             dataset_id="my_dataset",
             view_id="test_2",
+            description="test_2 description",
             view_query_template="select * from literally_anything",
         )
         view_with_overrides = BigQueryView(
             dataset_id="my_dataset",
             view_id="test_2",
+            description="test_2 description",
             view_query_template="select * from literally_anything",
             dataset_overrides={"my_dataset": "my_dataset_override"},
         )

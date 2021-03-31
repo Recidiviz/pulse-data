@@ -38,6 +38,7 @@ class TestSimpleBigQueryViewBuilderConditions(TestCase):
         builder = SimpleBigQueryViewBuilder(
             dataset_id="fake_dataset",
             view_id="my_fake_view",
+            description="my_fake_view description",
             view_query_template="SELECT NULL LIMIT 0",
             should_build_predicate=(lambda: False),
         )
@@ -48,6 +49,7 @@ class TestSimpleBigQueryViewBuilderConditions(TestCase):
         builder = SimpleBigQueryViewBuilder(
             dataset_id="fake_dataset",
             view_id="my_fake_view",
+            description="my_fake_view description",
             view_query_template="SELECT NULL LIMIT 0",
             should_build_predicate=(lambda: True),
         )

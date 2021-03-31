@@ -58,6 +58,10 @@ GROUP BY state_code, `{column_name}`
 ORDER BY state_code, `{column_name}`;
 """
 
+STATE_TABLE_ENUM_COLUMN_DESCRIPTION_TEMPLATE = """View that counts the instances of
+ different enum values for column: [{col}] in table: [{table_name}]. Its results are
+  split by state and by whether it is a placeholder object."""
+
 
 class StateTableEnumCounterBigQueryViewCollector(
     BigQueryViewCollector[SimpleBigQueryViewBuilder]
@@ -84,6 +88,9 @@ class StateTableEnumCounterBigQueryViewCollector(
                     SimpleBigQueryViewBuilder(
                         dataset_id=VIEWS_DATASET,
                         view_id=f"ingest_state_metadata__{table_name}__{col}",
+                        description=STATE_TABLE_ENUM_COLUMN_DESCRIPTION_TEMPLATE.format(
+                            col=col, table_name=table_name
+                        ),
                         view_query_template=template,
                         table_name=table_name,
                         column_name=col,

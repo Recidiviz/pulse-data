@@ -39,6 +39,7 @@ class TestPointingAtStagingSubdirectory(unittest.TestCase):
             view=SimpleBigQueryViewBuilder(
                 dataset_id="test_dataset",
                 view_id="test_view",
+                description="test_view description",
                 view_query_template="you know",
             ).build(),
             view_filter_clause="WHERE state_code = 'US_XX'",

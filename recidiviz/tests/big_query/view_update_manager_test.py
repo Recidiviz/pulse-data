@@ -73,6 +73,7 @@ class ViewManagerTest(unittest.TestCase):
         mock_view_builders = [
             SimpleBigQueryViewBuilder(
                 dataset_id=_DATASET_NAME,
+                description=f"{view['view_id']} description",
                 view_query_template="a",
                 should_materialize=False,
                 should_build_predicate=None,
@@ -106,12 +107,14 @@ class ViewManagerTest(unittest.TestCase):
             SimpleBigQueryViewBuilder(
                 dataset_id=_DATASET_NAME,
                 view_id="my_fake_view",
+                description="my_fake_view description",
                 view_query_template="SELECT NULL LIMIT 0",
                 should_materialize=True,
             ),
             SimpleBigQueryViewBuilder(
                 dataset_id=_DATASET_NAME,
                 view_id="my_fake_view_2",
+                description="my_fake_view_2 description",
                 view_query_template="SELECT NULL LIMIT 0",
                 should_materialize=False,
             ),
@@ -138,18 +141,21 @@ class ViewManagerTest(unittest.TestCase):
             SimpleBigQueryViewBuilder(
                 dataset_id=_DATASET_NAME,
                 view_id="my_fake_view",
+                description="my_fake_view description",
                 view_query_template="SELECT NULL LIMIT 0",
                 should_materialize=True,
             ),
             SimpleBigQueryViewBuilder(
                 dataset_id=_DATASET_NAME,
                 view_id="my_fake_view_2",
+                description="my_fake_view_2 description",
                 view_query_template="SELECT NULL LIMIT 0",
                 should_materialize=True,
             ),
             SimpleBigQueryViewBuilder(
                 dataset_id=_DATASET_NAME,
                 view_id="my_fake_view_3",
+                description="my_fake_view_3 description",
                 view_query_template=f"SELECT * FROM `{{project_id}}.{_DATASET_NAME}.my_fake_view` "
                 f"JOIN `{{project_id}}.{_DATASET_NAME}.my_fake_view_2`;",
                 should_materialize=True,
@@ -213,18 +219,21 @@ class ViewManagerTest(unittest.TestCase):
             SimpleBigQueryViewBuilder(
                 dataset_id=_DATASET_NAME,
                 view_id="my_fake_view",
+                description="my_fake_view description",
                 view_query_template="SELECT NULL LIMIT 0",
                 should_materialize=True,
             ),
             SimpleBigQueryViewBuilder(
                 dataset_id=_DATASET_NAME,
                 view_id="my_fake_view_2",
+                description="my_fake_view_2 description",
                 view_query_template="SELECT NULL LIMIT 0",
                 should_materialize=True,
             ),
             SimpleBigQueryViewBuilder(
                 dataset_id=_DATASET_NAME,
                 view_id="my_fake_view_3",
+                description="my_fake_view_3 description",
                 view_query_template=f"SELECT * FROM `{{project_id}}.{_DATASET_NAME}.my_fake_view` "
                 f"JOIN `{{project_id}}.{_DATASET_NAME}.my_fake_view_2`;",
                 should_materialize=True,
@@ -306,12 +315,14 @@ class ViewManagerTest(unittest.TestCase):
             SimpleBigQueryViewBuilder(
                 dataset_id=_DATASET_NAME,
                 view_id="my_fake_view",
+                description="my_fake_view description",
                 view_query_template="SELECT NULL LIMIT 0",
                 should_materialize=True,
             ),
             SimpleBigQueryViewBuilder(
                 dataset_id=_DATASET_NAME_2,
                 view_id="my_fake_view_2",
+                description="my_fake_view_2 description",
                 view_query_template="SELECT NULL LIMIT 0",
                 should_materialize=False,
             ),
@@ -374,6 +385,7 @@ class ViewManagerTest(unittest.TestCase):
             SimpleBigQueryViewBuilder(
                 dataset_id=_DATASET_NAME,
                 view_query_template="a",
+                description=f"{view['view_id']} description",
                 should_materialize=False,
                 should_build_predicate=None,
                 **view,
@@ -413,6 +425,7 @@ class ViewManagerTest(unittest.TestCase):
             BigQueryView(
                 dataset_id=_DATASET_NAME,
                 view_id=view["view_id"],
+                description=f"{view['view_id']} description",
                 view_query_template="a",
                 should_materialize=False,
             )

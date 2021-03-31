@@ -70,6 +70,7 @@ class TestSamenessValidationChecker(TestCase):
                 view=BigQueryView(
                     dataset_id="my_dataset",
                     view_id="test_view",
+                    description="test_view description",
                     view_query_template="select * from literally_anything",
                 ),
             )
@@ -86,6 +87,7 @@ class TestSamenessValidationChecker(TestCase):
                 view=BigQueryView(
                     dataset_id="my_dataset",
                     view_id="test_view",
+                    description="test_view description",
                     view_query_template="select * from literally_anything",
                 ),
                 max_allowed_error=1.5,
@@ -103,6 +105,7 @@ class TestSamenessValidationChecker(TestCase):
             view=BigQueryView(
                 dataset_id="my_dataset",
                 view_id="test_view",
+                description="test_view description",
                 view_query_template="select * from literally_anything",
             ),
         )
@@ -116,6 +119,7 @@ class TestSamenessValidationChecker(TestCase):
             view=BigQueryView(
                 dataset_id="my_dataset",
                 view_id="test_view",
+                description="test_view description",
                 view_query_template="select * from literally_anything",
             ),
         )
@@ -133,6 +137,7 @@ class TestSamenessValidationChecker(TestCase):
                 view=BigQueryView(
                     dataset_id="my_dataset",
                     view_id="test_view",
+                    description="test_view description",
                     view_query_template="select * from literally_anything",
                 ),
             ),
@@ -158,6 +163,7 @@ class TestSamenessValidationChecker(TestCase):
                 view=BigQueryView(
                     dataset_id="my_dataset",
                     view_id="test_view",
+                    description="test_view description",
                     view_query_template="select * from literally_anything",
                 ),
             ),
@@ -188,6 +194,7 @@ class TestSamenessValidationChecker(TestCase):
                 view=BigQueryView(
                     dataset_id="my_dataset",
                     view_id="test_view",
+                    description="test_view description",
                     view_query_template="select * from literally_anything",
                 ),
             ),
@@ -214,6 +221,7 @@ class TestSamenessValidationChecker(TestCase):
                 view=BigQueryView(
                     dataset_id="my_dataset",
                     view_id="test_view",
+                    description="test_view description",
                     view_query_template="select * from literally_anything",
                 ),
             ),
@@ -247,6 +255,7 @@ class TestSamenessValidationChecker(TestCase):
                 view=BigQueryView(
                     dataset_id="my_dataset",
                     view_id="test_view",
+                    description="test_view description",
                     view_query_template="select * from literally_anything",
                 ),
             ),
@@ -278,6 +287,7 @@ class TestSamenessValidationChecker(TestCase):
                 view=BigQueryView(
                     dataset_id="my_dataset",
                     view_id="test_view",
+                    description="test_view description",
                     view_query_template="select * from literally_anything",
                 ),
             ),
@@ -305,6 +315,7 @@ class TestSamenessValidationChecker(TestCase):
                 view=BigQueryView(
                     dataset_id="my_dataset",
                     view_id="test_view",
+                    description="test_view description",
                     view_query_template="select * from literally_anything",
                 ),
             ),
@@ -332,6 +343,7 @@ class TestSamenessValidationChecker(TestCase):
                 view=BigQueryView(
                     dataset_id="my_dataset",
                     view_id="test_view",
+                    description="test_view description",
                     view_query_template="select * from literally_anything",
                 ),
             ),
@@ -357,6 +369,7 @@ class TestSamenessValidationChecker(TestCase):
                 view=BigQueryView(
                     dataset_id="my_dataset",
                     view_id="test_view",
+                    description="test_view description",
                     view_query_template="select * from literally_anything",
                 ),
             ),
@@ -382,6 +395,7 @@ class TestSamenessValidationChecker(TestCase):
                 view=BigQueryView(
                     dataset_id="my_dataset",
                     view_id="test_view",
+                    description="test_view description",
                     view_query_template="select * from literally_anything",
                 ),
             ),
@@ -413,6 +427,7 @@ class TestSamenessValidationChecker(TestCase):
                 view=BigQueryView(
                     dataset_id="my_dataset",
                     view_id="test_view",
+                    description="test_view description",
                     view_query_template="select * from literally_anything",
                 ),
             ),
@@ -446,6 +461,7 @@ class TestSamenessValidationChecker(TestCase):
                 view=BigQueryView(
                     dataset_id="my_dataset",
                     view_id="test_view",
+                    description="test_view description",
                     view_query_template="select * from literally_anything",
                 ),
             ),
@@ -476,6 +492,7 @@ class TestSamenessValidationChecker(TestCase):
                 view=BigQueryView(
                     dataset_id="my_dataset",
                     view_id="test_view",
+                    description="test_view description",
                     view_query_template="select * from literally_anything",
                 ),
             ),
@@ -506,6 +523,7 @@ class TestSamenessValidationChecker(TestCase):
                 view=BigQueryView(
                     dataset_id="my_dataset",
                     view_id="test_view",
+                    description="test_view description",
                     view_query_template="select * from literally_anything",
                 ),
             ),

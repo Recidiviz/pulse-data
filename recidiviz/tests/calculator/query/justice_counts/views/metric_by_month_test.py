@@ -2388,6 +2388,7 @@ class MetricByMonthViewTest(BaseViewTest):
                 input_view=SimpleBigQueryViewBuilder(
                     dataset_id="justice_counts",
                     view_id="metric_by_month",
+                    description="metric_by_month view",
                     view_query_template="",
                 ),
             ),

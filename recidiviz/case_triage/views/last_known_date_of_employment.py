@@ -42,9 +42,14 @@ WHERE
 GROUP BY state_code, person_external_id
 """
 
+LAST_KNOWN_DATE_OF_EMPLOYMENT_DESCRIPTION = """
+View for fetching the last known date of employment
+"""
+
 LAST_KNOWN_DATE_OF_EMPLOYMENT_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=VIEWS_DATASET,
     view_id="last_known_date_of_employment",
+    description=LAST_KNOWN_DATE_OF_EMPLOYMENT_DESCRIPTION,
     view_query_template=LAST_KNOWN_DATE_OF_EMPLOYMENT_QUERY_TEMPLATE,
     case_triage_dataset=CASE_TRIAGE_DATASET,
 )

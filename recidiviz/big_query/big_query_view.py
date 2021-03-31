@@ -36,6 +36,7 @@ class BigQueryView(bigquery.TableReference):
         project_id: Optional[str] = None,
         dataset_id: str,
         view_id: str,
+        description: str,
         view_query_template: str,
         should_materialize: bool = False,
         dataset_overrides: Optional[
@@ -73,8 +74,13 @@ class BigQueryView(bigquery.TableReference):
             dataset_id, default_project=project_id
         )
         super().__init__(dataset_ref, view_id)
-        self.query_format_kwargs = {**query_format_kwargs, **override_kwargs}
+        self.query_format_kwargs = {
+            **query_format_kwargs,
+            **override_kwargs,
+            "description": description,
+        }
         self._view_id = view_id
+        self._description = description
         self._view_query = self._format_view_query(
             view_query_template, inject_project_id=True, **self.query_format_kwargs
         )
@@ -139,6 +145,10 @@ class BigQueryView(bigquery.TableReference):
     @property
     def view_id(self) -> str:
         return self.table_id
+
+    @property
+    def description(self) -> str:
+        return self._description
 
     @property
     def view_query(self) -> str:
@@ -228,6 +238,7 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder):
         *,
         dataset_id: str,
         view_id: str,
+        description: str,
         view_query_template: str,
         should_materialize: bool = False,
         should_build_predicate: Optional[Callable[[], bool]] = None,
@@ -236,6 +247,7 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder):
     ):
         self.dataset_id = dataset_id
         self.view_id = view_id
+        self.description = description
         self.view_query_template = view_query_template
         self.should_materialize = should_materialize
         self.should_build_predicate = should_build_predicate
@@ -245,6 +257,7 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder):
         return BigQueryView(
             dataset_id=self.dataset_id,
             view_id=self.view_id,
+            description=self.description,
             view_query_template=self.view_query_template,
             should_materialize=self.should_materialize,
             dataset_overrides=dataset_overrides,

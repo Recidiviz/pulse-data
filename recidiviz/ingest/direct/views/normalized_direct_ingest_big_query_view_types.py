@@ -179,6 +179,7 @@ class NormalizedDirectIngestRawDataTableBigQueryView(BigQueryView):
         project_id: str = None,
         region_code: str,
         view_id: str,
+        description: str,
         view_query_template: str,
         raw_file_config: DirectIngestRawFileConfig,
         dataset_overrides: Optional[Dict[str, str]] = None,
@@ -201,6 +202,7 @@ class NormalizedDirectIngestRawDataTableBigQueryView(BigQueryView):
             project_id=project_id,
             dataset_id=view_dataset_id,
             view_id=view_id,
+            description=description,
             view_query_template=view_query_template,
             raw_table_dataset_id=raw_table_dataset_id,
             raw_table_name=raw_file_config.file_tag,
@@ -269,6 +271,7 @@ class NormalizedDirectIngestRawDataTableLatestView(
         dataset_overrides: Optional[Dict[str, str]],
     ):
         view_id = f"{raw_file_config.file_tag}_latest"
+        description = f"{raw_file_config.file_tag} latest view"
         view_query_template = (
             RAW_DATA_LATEST_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE
             if raw_file_config.always_historical_export
@@ -278,6 +281,7 @@ class NormalizedDirectIngestRawDataTableLatestView(
             project_id=project_id,
             region_code=region_code,
             view_id=view_id,
+            description=description,
             view_query_template=view_query_template,
             raw_file_config=raw_file_config,
             dataset_overrides=dataset_overrides,
@@ -303,6 +307,7 @@ class NormalizedDirectIngestRawDataTableUpToDateView(
         raw_file_config: DirectIngestRawFileConfig,
     ):
         view_id = f"{raw_file_config.file_tag}_by_update_date"
+        description = f"{raw_file_config.file_tag} parametrized view"
         view_query_template = (
             RAW_DATA_UP_TO_DATE_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE
             if raw_file_config.always_historical_export
@@ -312,6 +317,7 @@ class NormalizedDirectIngestRawDataTableUpToDateView(
             project_id=project_id,
             region_code=region_code,
             view_id=view_id,
+            description=description,
             view_query_template=view_query_template,
             raw_file_config=raw_file_config,
         )
