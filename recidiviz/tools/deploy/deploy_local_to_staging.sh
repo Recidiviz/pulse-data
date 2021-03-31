@@ -42,6 +42,7 @@ fi
 VERSION_TAG=$(next_alpha_version ${LAST_VERSION_TAG_ON_MASTER}) || exit_on_fail
 
 # Deploys a debug version to staging without promoting traffic to it
-${BASH_SOURCE_DIR}/base_deploy_to_staging.sh -v ${VERSION_TAG} -d ${DEBUG_BUILD_NAME} -n || exit_on_fail
+COMMIT_HASH=$(git rev-parse HEAD) || exit_on_fail
+${BASH_SOURCE_DIR}/base_deploy_to_staging.sh -v ${VERSION_TAG} -c ${COMMIT_HASH} -d ${DEBUG_BUILD_NAME} -n || exit_on_fail
 
 echo "Local to staging deploy complete."
