@@ -35,6 +35,7 @@ class StateProgramAssignmentParticipationStatus(EntityEnum, metaclass=EntityEnum
     )
     PENDING = state_enum_strings.state_program_assignment_participation_status_pending
     PRESENT_WITHOUT_INFO = enum_canonical_strings.present_without_info
+    REFUSED = state_enum_strings.state_program_assignment_participation_status_refused
 
     @staticmethod
     def _get_default_map():
@@ -48,6 +49,7 @@ _STATE_PROGRAM_ASSIGNMENT_PARTICIPATION_STATUS_MAP = {
     "IN PROGRESS": StateProgramAssignmentParticipationStatus.IN_PROGRESS,
     "PENDING": StateProgramAssignmentParticipationStatus.PENDING,
     "PRESENT WITHOUT INFO": StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO,
+    "REFUSED": StateProgramAssignmentParticipationStatus.REFUSED,
 }
 
 
