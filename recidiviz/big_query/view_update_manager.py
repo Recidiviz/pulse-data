@@ -65,6 +65,7 @@ from recidiviz.utils import monitoring
 from recidiviz.validation.views.dataset_config import EXTERNAL_ACCURACY_DATASET
 from recidiviz.validation.views.view_config import (
     VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as VALIDATION_VIEW_BUILDERS,
+    METADATA_VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as VALIDATION_METADATA_VIEW_BUILDERS,
 )
 
 m_failed_view_update = measure.MeasureInt(
@@ -92,6 +93,7 @@ class BigQueryViewNamespace(Enum):
     CASE_TRIAGE = "case_triage"
     INGEST_METADATA = "ingest_metadata"
     DIRECT_INGEST = "direct_ingest"
+    VALIDATION_METADATA = "validation_metadata"
 
 
 VIEW_BUILDERS_BY_NAMESPACE: Dict[
@@ -104,6 +106,7 @@ VIEW_BUILDERS_BY_NAMESPACE: Dict[
     BigQueryViewNamespace.VALIDATION: VALIDATION_VIEW_BUILDERS,
     BigQueryViewNamespace.CASE_TRIAGE: CASE_TRIAGE_VIEW_BUILDERS,
     BigQueryViewNamespace.INGEST_METADATA: INGEST_METADATA_VIEW_BUILDERS,
+    BigQueryViewNamespace.VALIDATION_METADATA: VALIDATION_METADATA_VIEW_BUILDERS,
 }
 
 RAW_TABLE_DATASETS = {

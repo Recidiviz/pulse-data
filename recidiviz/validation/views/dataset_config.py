@@ -21,3 +21,5 @@ VIEWS_DATASET: str = "validation_views"
 
 # See the validation README for instructions on adding new data to external accuracy tables
 EXTERNAL_ACCURACY_DATASET: str = "validation_external_accuracy_tables"
+
+METADATA_DATASET: str = "validation_metadata"
