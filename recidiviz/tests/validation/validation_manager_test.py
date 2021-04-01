@@ -344,6 +344,11 @@ class TestHandleRequest(TestCase):
                 dataset_overrides=None,
             ),
             call(
+                bq_view_namespace=BigQueryViewNamespace.VALIDATION_METADATA,
+                candidate_view_builders=validation_view_config.METADATA_VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
+                dataset_overrides=None,
+            ),
+            call(
                 bq_view_namespace=BigQueryViewNamespace.DIRECT_INGEST,
                 candidate_view_builders=direct_ingest_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
                 dataset_overrides=None,

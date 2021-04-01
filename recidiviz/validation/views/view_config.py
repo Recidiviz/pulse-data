@@ -19,6 +19,12 @@
 from typing import Sequence
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.validation.views.metadata.column_counter import (
+    ValidationTableColumnCounterBigQueryViewCollector,
+)
+from recidiviz.validation.views.metadata.validation_schema_config import (
+    get_external_validation_schema,
+)
 from recidiviz.validation.views.state.active_program_participation_by_region_internal_consistency import (
     ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
@@ -277,3 +283,15 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = [
     REINCARCERATIONS_FROM_SESSIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
     REINCARCERATIONS_FROM_SESSIONS_TO_DATAFLOW_VIEW_BUILDER,
 ] + POPULATION_PROJECTION_DATA_VALIDATION_VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE
+
+
+VALIDATION_METADATA_BUILDERS: Sequence[
+    BigQueryViewBuilder
+] = ValidationTableColumnCounterBigQueryViewCollector(
+    schema_config=get_external_validation_schema()
+).collect_view_builders()
+
+
+METADATA_VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[
+    BigQueryViewBuilder
+] = VALIDATION_METADATA_BUILDERS
