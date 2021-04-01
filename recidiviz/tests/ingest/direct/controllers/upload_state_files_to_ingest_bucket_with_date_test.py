@@ -42,27 +42,30 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
     """Tests for UploadStateFilesToIngestBucketController."""
 
     def setUp(self) -> None:
-        self.project_id = "test-project"
+        self.project_id = "recidiviz-456"
         self.region = "us_xx"
 
     def test_do_upload_succeeds(self, mock_fs_factory: Mock) -> None:
         mock_fs = FakeGCSFileSystem()
         mock_fs.test_add_path(
             path=GcsfsFilePath.from_bucket_and_blob_name(
-                "test-project-direct-ingest-state-us-xx", "raw_data/test_file.txt"
+                "recidiviz-456-direct-ingest-state-us-xx", "raw_data/test_file.txt"
             ),
             local_path=None,
         )
         mock_fs_factory.return_value = mock_fs
         controller = UploadStateFilesToIngestBucketController(
             paths_with_timestamps=[
-                ("test-project-direct-ingest-state-us-xx/raw_data/test_file.txt", TODAY)
+                (
+                    "recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.txt",
+                    TODAY,
+                )
             ],
-            project_id="test-project",
+            project_id="recidiviz-456",
             region="us_xx",
         )
         expected_result = [
-            "test-project-direct-ingest-state-us-xx/raw_data/test_file.txt"
+            "recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.txt"
         ]
         uploaded_files, unable_to_upload_files = controller.do_upload()
         self.assertEqual(uploaded_files, expected_result)
@@ -76,7 +79,7 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
         mock_fs = FakeGCSFileSystem()
         mock_fs.test_add_path(
             path=GcsfsFilePath.from_bucket_and_blob_name(
-                "test-project-direct-ingest-state-us-xx", "raw_data/test_file.txt"
+                "recidiviz-456-direct-ingest-state-us-xx", "raw_data/test_file.txt"
             ),
             local_path=None,
         )
@@ -84,25 +87,25 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
         controller = UploadStateFilesToIngestBucketController(
             paths_with_timestamps=[
                 (
-                    "test-project-direct-ingest-state-us-xx/raw_data/test_file.txt",
+                    "recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.txt",
                     TODAY,
                 ),
                 (
-                    "test-project-direct-ingest-state-us-xx/raw_data/non_existent_file.txt",
+                    "recidiviz-456-direct-ingest-state-us-xx/raw_data/non_existent_file.txt",
                     TODAY,
                 ),
             ],
-            project_id="test-project",
+            project_id="recidiviz-456",
             region="us_xx",
         )
         uploaded_files, unable_to_upload_files = controller.do_upload()
         self.assertEqual(
             uploaded_files,
-            ["test-project-direct-ingest-state-us-xx/raw_data/test_file.txt"],
+            ["recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.txt"],
         )
         self.assertEqual(
             unable_to_upload_files,
-            ["test-project-direct-ingest-state-us-xx/raw_data/non_existent_file.txt"],
+            ["recidiviz-456-direct-ingest-state-us-xx/raw_data/non_existent_file.txt"],
         )
         self.assertEqual(len(controller.skipped_files), 0)
 
@@ -113,13 +116,13 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
         mock_fs = FakeGCSFileSystem()
         mock_fs.test_add_path(
             path=GcsfsFilePath.from_bucket_and_blob_name(
-                "test-project-direct-ingest-state-us-xx", "raw_data/test_file.txt"
+                "recidiviz-456-direct-ingest-state-us-xx", "raw_data/test_file.txt"
             ),
             local_path=None,
         )
         mock_fs.test_add_path(
             path=GcsfsFilePath.from_bucket_and_blob_name(
-                "test-project-direct-ingest-state-us-xx", "raw_data/test_file.csv"
+                "recidiviz-456-direct-ingest-state-us-xx", "raw_data/test_file.csv"
             ),
             local_path=None,
         )
@@ -127,23 +130,23 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
         controller = UploadStateFilesToIngestBucketController(
             paths_with_timestamps=[
                 (
-                    "test-project-direct-ingest-state-us-xx/raw_data/test_file.txt",
+                    "recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.txt",
                     TODAY,
                 ),
                 (
-                    "test-project-direct-ingest-state-us-xx/raw_data/test_file.csv",
+                    "recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.csv",
                     TODAY,
                 ),
             ],
-            project_id="test-project",
+            project_id="recidiviz-456",
             region="us_xx",
         )
         uploaded_files, _ = controller.do_upload()
         self.assertListEqual(
             uploaded_files,
             [
-                "test-project-direct-ingest-state-us-xx/raw_data/test_file.txt",
-                "test-project-direct-ingest-state-us-xx/raw_data/test_file.csv",
+                "recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.txt",
+                "recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.csv",
             ],
         )
         resulting_content_types = [file.content_type for file in mock_fs.files.values()]
@@ -156,35 +159,35 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
         mock_fs = FakeGCSFileSystem()
         mock_fs.test_add_path(
             path=GcsfsFilePath.from_bucket_and_blob_name(
-                "test-project-direct-ingest-state-us-xx", "raw_data/test_file.txt"
+                "recidiviz-456-direct-ingest-state-us-xx", "raw_data/test_file.txt"
             ),
             local_path=None,
         )
         mock_fs.test_add_path(
             path=GcsfsFilePath.from_bucket_and_blob_name(
-                "test-project-direct-ingest-state-us-xx",
+                "recidiviz-456-direct-ingest-state-us-xx",
                 "raw_data/subdir1/test_file.txt",
             ),
             local_path=None,
         )
         mock_fs.test_add_path(
             path=GcsfsDirectoryPath.from_bucket_and_blob_name(
-                "test-project-direct-ingest-state-us-xx", "raw_data/subdir2/"
+                "recidiviz-456-direct-ingest-state-us-xx", "raw_data/subdir2/"
             ),
             local_path=None,
         )
         mock_fs_factory.return_value = mock_fs
         controller = UploadStateFilesToIngestBucketController(
             paths_with_timestamps=[
-                ("test-project-direct-ingest-state-us-xx/raw_data/", TODAY),
+                ("recidiviz-456-direct-ingest-state-us-xx/raw_data/", TODAY),
             ],
-            project_id="test-project",
+            project_id="recidiviz-456",
             region="us_xx",
         )
         result = [
-            ("test-project-direct-ingest-state-us-xx/raw_data/test_file.txt", TODAY),
+            ("recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.txt", TODAY),
             (
-                "test-project-direct-ingest-state-us-xx/raw_data/subdir1/test_file.txt",
+                "recidiviz-456-direct-ingest-state-us-xx/raw_data/subdir1/test_file.txt",
                 TODAY,
             ),
         ]
@@ -197,13 +200,13 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
         mock_fs = FakeGCSFileSystem()
         mock_fs.test_add_path(
             path=GcsfsFilePath.from_bucket_and_blob_name(
-                "test-project-direct-ingest-state-us-xx", "raw_data/test_file.txt"
+                "recidiviz-456-direct-ingest-state-us-xx", "raw_data/test_file.txt"
             ),
             local_path=None,
         )
         mock_fs.test_add_path(
             path=GcsfsFilePath.from_bucket_and_blob_name(
-                "test-project-direct-ingest-state-us-xx", "raw_data/test_file.csv"
+                "recidiviz-456-direct-ingest-state-us-xx", "raw_data/test_file.csv"
             ),
             local_path=None,
         )
@@ -211,7 +214,7 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
         # phrase "skipped" in the name.
         mock_fs.test_add_path(
             path=GcsfsFilePath.from_bucket_and_blob_name(
-                "test-project-direct-ingest-state-us-xx", "raw_data/skipped.csv"
+                "recidiviz-456-direct-ingest-state-us-xx", "raw_data/skipped.csv"
             ),
             local_path=None,
         )
@@ -219,32 +222,32 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
         controller = UploadStateFilesToIngestBucketController(
             paths_with_timestamps=[
                 (
-                    "test-project-direct-ingest-state-us-xx/raw_data/test_file.txt",
+                    "recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.txt",
                     TODAY,
                 ),
                 (
-                    "test-project-direct-ingest-state-us-xx/raw_data/test_file.csv",
+                    "recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.csv",
                     TODAY,
                 ),
                 (
-                    "test-project-direct-ingest-state-us-xx/raw_data/skipped.csv",
+                    "recidiviz-456-direct-ingest-state-us-xx/raw_data/skipped.csv",
                     TODAY,
                 ),
             ],
-            project_id="test-project",
+            project_id="recidiviz-456",
             region="us_xx",
         )
         uploaded_files, _ = controller.do_upload()
         self.assertListEqual(
             uploaded_files,
             [
-                "test-project-direct-ingest-state-us-xx/raw_data/test_file.txt",
-                "test-project-direct-ingest-state-us-xx/raw_data/test_file.csv",
+                "recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.txt",
+                "recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.csv",
             ],
         )
         self.assertListEqual(
             controller.skipped_files,
             [
-                "test-project-direct-ingest-state-us-xx/raw_data/skipped.csv",
+                "recidiviz-456-direct-ingest-state-us-xx/raw_data/skipped.csv",
             ],
         )

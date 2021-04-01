@@ -65,7 +65,10 @@ class TestDirectIngestInstance(unittest.TestCase):
 
     def test_from_state_ingest_bucket(self) -> None:
         ingest_bucket_path = gcsfs_direct_ingest_bucket_for_region(
-            "us_xx", SystemLevel.STATE, project_id="recidiviz-456"
+            region_code="us_xx",
+            system_level=SystemLevel.STATE,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            project_id="recidiviz-456",
         )
 
         self.assertEqual(
@@ -78,7 +81,10 @@ class TestDirectIngestInstance(unittest.TestCase):
 
     def test_from_county_ingest_bucket(self) -> None:
         ingest_bucket_path = gcsfs_direct_ingest_bucket_for_region(
-            "us_xx_yyyyy", SystemLevel.COUNTY, project_id="recidiviz-456"
+            region_code="us_xx_yyyyy",
+            system_level=SystemLevel.COUNTY,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            project_id="recidiviz-456",
         )
 
         self.assertEqual(

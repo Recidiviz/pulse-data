@@ -34,6 +34,9 @@ from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_file_path,
     DirectIngestGCSFileSystem,
 )
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
+)
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     gcsfs_direct_ingest_bucket_for_region,
     GcsfsDirectIngestFileType,
@@ -60,8 +63,13 @@ class BaseUploadStateFilesToIngestBucketController:
         self.region = region.lower()
 
         self.gcsfs = DirectIngestGCSFileSystem(GcsfsFactory.build())
+
+        # Raw data uploads always default to primary ingest bucket
         self.gcs_destination_path = gcsfs_direct_ingest_bucket_for_region(
-            region, SystemLevel.STATE, project_id=self.project_id
+            region_code=region,
+            system_level=SystemLevel.STATE,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            project_id=self.project_id,
         )
 
         self.uploaded_files: List[str] = []

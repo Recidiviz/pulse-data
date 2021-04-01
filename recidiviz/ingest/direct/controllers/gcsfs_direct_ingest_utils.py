@@ -24,12 +24,22 @@ from typing import Optional
 
 import attr
 
+from recidiviz.cloud_functions.direct_ingest_bucket_name_utils import (
+    INGEST_SECONDARY_BUCKET_SUFFIX,
+    INGEST_PRIMARY_BUCKET_SUFFIX,
+    build_ingest_bucket_name,
+    build_ingest_storage_bucket_name,
+    INGEST_SFTP_BUCKET_SUFFIX,
+)
 from recidiviz.common.date import snake_case_datetime
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsFilePath,
     GcsfsDirectoryPath,
     GcsfsBucketPath,
+)
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_types import (
     CloudTaskArgs,
@@ -169,9 +179,19 @@ def gcsfs_direct_ingest_temporary_output_directory_path(
     )
 
 
+def bucket_suffix_for_ingest_instance(ingest_instance: DirectIngestInstance) -> str:
+    if ingest_instance == DirectIngestInstance.PRIMARY:
+        return INGEST_PRIMARY_BUCKET_SUFFIX
+    if ingest_instance == DirectIngestInstance.SECONDARY:
+        return INGEST_SECONDARY_BUCKET_SUFFIX
+    raise ValueError(f"Unexpected ingest instance [{ingest_instance}]")
+
+
 def gcsfs_direct_ingest_storage_directory_path_for_region(
+    *,
     region_code: str,
     system_level: SystemLevel,
+    ingest_instance: DirectIngestInstance,
     file_type: Optional[GcsfsDirectIngestFileType] = None,
     project_id: Optional[str] = None,
 ) -> GcsfsDirectoryPath:
@@ -180,9 +200,14 @@ def gcsfs_direct_ingest_storage_directory_path_for_region(
         if not project_id:
             raise ValueError("Project id not set")
 
-    storage_bucket = GcsfsBucketPath(
-        f"{project_id}-direct-ingest-{system_level.value.lower()}-storage"
+    suffix = bucket_suffix_for_ingest_instance(ingest_instance)
+    bucket_name = build_ingest_storage_bucket_name(
+        project_id=project_id,
+        system_level_str=system_level.value.lower(),
+        suffix=suffix,
     )
+    storage_bucket = GcsfsBucketPath(bucket_name)
+
     if file_type is not None:
         subdir = os.path.join(region_code.lower(), file_type.value)
     else:
@@ -191,47 +216,43 @@ def gcsfs_direct_ingest_storage_directory_path_for_region(
 
 
 def gcsfs_direct_ingest_bucket_for_region(
-    region_code: str, system_level: SystemLevel, project_id: Optional[str] = None
+    *,
+    region_code: str,
+    system_level: SystemLevel,
+    ingest_instance: DirectIngestInstance,
+    project_id: Optional[str] = None,
 ) -> GcsfsBucketPath:
     if project_id is None:
         project_id = metadata.project_id()
         if not project_id:
             raise ValueError("Project id not set")
 
-    normalized_region_code = region_code.lower().replace("_", "-")
-    if system_level == SystemLevel.COUNTY:
-        bucket_name = f"{project_id}-direct-ingest-county-{normalized_region_code}"
-    elif system_level == SystemLevel.STATE:
-        bucket_name = f"{project_id}-direct-ingest-state-{normalized_region_code}"
-    else:
-        raise DirectIngestError(
-            msg=f"Cannot determine ingest bucket for region: " f"[{region_code}]",
-            error_type=DirectIngestErrorType.INPUT_ERROR,
-        )
+    suffix = bucket_suffix_for_ingest_instance(ingest_instance)
+    bucket_name = build_ingest_bucket_name(
+        project_id=project_id,
+        region_code=region_code,
+        system_level_str=system_level.value.lower(),
+        suffix=suffix,
+    )
     return GcsfsBucketPath(bucket_name=bucket_name)
 
 
-def gcsfs_sftp_download_directory_path_for_region(
+def gcsfs_sftp_download_bucket_path_for_region(
     region_code: str, system_level: SystemLevel, project_id: Optional[str] = None
-) -> GcsfsDirectoryPath:
+) -> GcsfsBucketPath:
     """Returns the GCS Directory Path for the bucket that will hold the SFTP downloaded files."""
     if project_id is None:
         project_id = metadata.project_id()
         if not project_id:
             raise ValueError("Project id not set")
 
-    if system_level == SystemLevel.COUNTY:
-        raise ValueError("SystemLevel.COUNTY is not supported")
-    if system_level == SystemLevel.STATE:
-        normalized_region_code = region_code.lower().replace("_", "-")
-        return GcsfsDirectoryPath.from_absolute_path(
-            f"{project_id}-direct-ingest-state-{normalized_region_code}-sftp"
-        )
-
-    raise DirectIngestError(
-        msg=f"Cannot determine sftp download path for region: " f"[{region_code}]",
-        error_type=DirectIngestErrorType.INPUT_ERROR,
+    bucket_name = build_ingest_bucket_name(
+        project_id=project_id,
+        region_code=region_code,
+        system_level_str=system_level.value.lower(),
+        suffix=INGEST_SFTP_BUCKET_SUFFIX,
     )
+    return GcsfsBucketPath(bucket_name)
 
 
 def filename_parts_from_path(file_path: GcsfsFilePath) -> GcsfsFilenameParts:

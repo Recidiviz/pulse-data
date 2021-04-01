@@ -19,11 +19,21 @@
 import re
 from typing import Optional, Match
 
+INGEST_PRIMARY_BUCKET_SUFFIX = ""
+INGEST_SECONDARY_BUCKET_SUFFIX = "-secondary"
+INGEST_SFTP_BUCKET_SUFFIX = "-sftp"
+
 _DIRECT_INGEST_BUCKET_REGEX = re.compile(
     r"(?P<project>recidiviz-(?:.*))-direct-ingest-"
     r"(?:(state-(?P<state_code>[a-z]{2}-[a-z]{2}))|"
     r"(county-(?P<county_code>[a-z]{2}-[a-z]{2}-[a-z]*)))"
-    r"(?P<suffix>-secondary|-upload-testing)?$"
+    fr"(?P<suffix>{INGEST_SECONDARY_BUCKET_SUFFIX}|"
+    fr"-upload-testing|{INGEST_SFTP_BUCKET_SUFFIX})?$"
+)
+
+_DIRECT_INGEST_STORAGE_BUCKET_REGEX = re.compile(
+    fr"(?P<project>recidiviz-(?:.*))-direct-ingest-(?:state|county)-storage"
+    fr"(?P<suffix>{INGEST_SECONDARY_BUCKET_SUFFIX})?$"
 )
 
 
@@ -57,4 +67,28 @@ def is_secondary_ingest_bucket(ingest_bucket_name: str) -> bool:
     )
     if match_obj is None:
         raise ValueError(f"Invalid ingest bucket [{ingest_bucket_name}]")
-    return match_obj.group("suffix") == "-secondary"
+    return match_obj.group("suffix") == INGEST_SECONDARY_BUCKET_SUFFIX
+
+
+def build_ingest_bucket_name(
+    *, project_id: str, region_code: str, system_level_str: str, suffix: str
+) -> str:
+    normalized_region_code = region_code.lower().replace("_", "-")
+    bucket_name = f"{project_id}-direct-ingest-{system_level_str}-{normalized_region_code}{suffix}"
+    if not re.match(_DIRECT_INGEST_BUCKET_REGEX, bucket_name):
+        raise ValueError(
+            f"Generated ingest bucket name [{bucket_name}] does not match expected regex."
+        )
+    return bucket_name
+
+
+def build_ingest_storage_bucket_name(
+    *, project_id: str, system_level_str: str, suffix: str
+) -> str:
+    bucket_name = f"{project_id}-direct-ingest-{system_level_str}-storage{suffix}"
+    if not re.match(_DIRECT_INGEST_STORAGE_BUCKET_REGEX, bucket_name):
+        raise ValueError(
+            f"Generated ingest bucket name [{bucket_name}] does not match expected regex."
+        )
+
+    return bucket_name

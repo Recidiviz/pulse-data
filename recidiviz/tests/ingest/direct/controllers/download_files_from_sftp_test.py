@@ -268,7 +268,7 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
 
     def setUp(self) -> None:
         self.lower_bound_date = YESTERDAY
-        self.project_id = "test-project"
+        self.project_id = "recidiviz-456"
         self.region = "us_xx"
 
     @patch.object(
@@ -340,7 +340,7 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
             [
                 (
                     os.path.join(
-                        "test-project-direct-ingest-state-us-xx-sftp",
+                        "recidiviz-456-direct-ingest-state-us-xx-sftp",
                         RAW_INGEST_DIRECTORY,
                         "testToday",
                         item,
@@ -413,7 +413,7 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
                         [
                             (
                                 os.path.join(
-                                    "test-project-direct-ingest-state-us-xx-sftp",
+                                    "recidiviz-456-direct-ingest-state-us-xx-sftp",
                                     RAW_INGEST_DIRECTORY,
                                     "testToday",
                                     item,
@@ -422,7 +422,7 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
                             ),
                             (
                                 os.path.join(
-                                    "test-project-direct-ingest-state-us-xx-sftp",
+                                    "recidiviz-456-direct-ingest-state-us-xx-sftp",
                                     RAW_INGEST_DIRECTORY,
                                     "testTwoDaysAgo",
                                     item,
@@ -470,7 +470,7 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
             [
                 (
                     os.path.join(
-                        "test-project-direct-ingest-state-us-xx-sftp",
+                        "recidiviz-456-direct-ingest-state-us-xx-sftp",
                         RAW_INGEST_DIRECTORY,
                         "testToday",
                         "file1.txt",
@@ -485,7 +485,7 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
         self, mock_fs_factory: Mock, _mock_auth: Mock, _mock_download: Mock
     ) -> None:
         mock_fs = create_files(
-            download_dir=f"test-project-direct-ingest-state-us-xx-sftp/{RAW_INGEST_DIRECTORY}",
+            download_dir=f"recidiviz-456-direct-ingest-state-us-xx-sftp/{RAW_INGEST_DIRECTORY}",
             remotedir="testToday",
             gcsfs=FakeGCSFileSystem(),
         )
@@ -496,7 +496,7 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
         )
         controller.clean_up()
         items = mock_fs.ls_with_blob_prefix(
-            bucket_name="test-project-direct-ingest-state-us-xx",
+            bucket_name="recidiviz-456-direct-ingest-state-us-xx",
             blob_prefix=RAW_INGEST_DIRECTORY,
         )
         self.assertEqual(0, len(items))

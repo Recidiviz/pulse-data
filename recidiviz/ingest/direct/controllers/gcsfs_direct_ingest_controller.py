@@ -52,6 +52,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsRawDataBQImportArgs,
     GcsfsIngestViewExportArgs,
     gcsfs_direct_ingest_temporary_output_directory_path,
+    gcsfs_direct_ingest_storage_directory_path_for_region,
 )
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import (
@@ -83,12 +84,17 @@ class GcsfsDirectIngestController(
     def __init__(
         self,
         ingest_bucket_path: GcsfsBucketPath,
-        storage_directory_path: GcsfsDirectoryPath,
     ):
         super().__init__(DirectIngestInstance.for_ingest_bucket(ingest_bucket_path))
         self.fs = DirectIngestGCSFileSystem(GcsfsFactory.build())
         self.ingest_bucket_path = ingest_bucket_path
-        self.storage_directory_path = storage_directory_path
+        self.storage_directory_path = (
+            gcsfs_direct_ingest_storage_directory_path_for_region(
+                region_code=self.region_code(),
+                system_level=self.system_level(),
+                ingest_instance=self.ingest_instance,
+            )
+        )
 
         self.temp_output_directory_path = (
             gcsfs_direct_ingest_temporary_output_directory_path()

@@ -36,6 +36,9 @@ from typing import List, Tuple, Optional
 from progress.bar import Bar
 
 from recidiviz.common.ingest_metadata import SystemLevel
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
+)
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     gcsfs_direct_ingest_storage_directory_path_for_region,
     GcsfsDirectIngestFileType,
@@ -62,17 +65,26 @@ class CopyFilesFromProdToStagingController:
         dry_run: bool,
     ):
         self.file_type = file_type
+
+        # TODO(#6077): Add ability to copy files from prod PRIMARY to staging SECONDARY,
+        #  or more generally, update this script to allow copying between any two ingest
+        #  instances (also could be used for copying files from staging primary to
+        #  secondary.
+        source_ingest_instance = DirectIngestInstance.PRIMARY
+        destination_ingest_instance = DirectIngestInstance.PRIMARY
         self.prod_region_storage_dir_path = (
             gcsfs_direct_ingest_storage_directory_path_for_region(
-                region_code,
-                SystemLevel.STATE,
+                region_code=region_code,
+                system_level=SystemLevel.STATE,
+                ingest_instance=source_ingest_instance,
                 project_id="recidiviz-123",
             )
         )
         self.staging_region_storage_dir_path = (
             gcsfs_direct_ingest_storage_directory_path_for_region(
-                region_code,
-                SystemLevel.STATE,
+                region_code=region_code,
+                system_level=SystemLevel.STATE,
+                ingest_instance=destination_ingest_instance,
                 project_id="recidiviz-staging",
             )
         )
