@@ -81,12 +81,8 @@ class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
     GCSFileSystem.
     """
 
-    def __init__(
-        self,
-        ingest_bucket_path: GcsfsBucketPath,
-        storage_directory_path: GcsfsDirectoryPath,
-    ):
-        super().__init__(ingest_bucket_path, storage_directory_path)
+    def __init__(self, ingest_bucket_path: GcsfsBucketPath):
+        super().__init__(ingest_bucket_path)
         self.csv_reader = GcsfsCsvReader(
             gcsfs.GCSFileSystem(
                 project=metadata.project_id(), cache_timeout=GCSFS_NO_CACHING

@@ -21,7 +21,7 @@ import os
 import re
 from typing import List, Optional, Dict, Callable, cast, Pattern, Tuple
 
-from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsBucketPath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common import ncic
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.enum_overrides import (
@@ -120,12 +120,8 @@ class UsNdController(CsvGcsfsDirectIngestController):
     def system_level(cls) -> SystemLevel:
         return SystemLevel.STATE
 
-    def __init__(
-        self,
-        ingest_bucket_path: GcsfsBucketPath,
-        storage_directory_path: GcsfsDirectoryPath,
-    ):
-        super().__init__(ingest_bucket_path, storage_directory_path)
+    def __init__(self, ingest_bucket_path: GcsfsBucketPath):
+        super().__init__(ingest_bucket_path)
 
         self.enum_overrides = generate_enum_overrides()
 

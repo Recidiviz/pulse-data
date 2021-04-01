@@ -34,7 +34,7 @@ from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    gcsfs_sftp_download_directory_path_for_region,
+    gcsfs_sftp_download_bucket_path_for_region,
 )
 from recidiviz.ingest.direct.sftp_download_delegate_factory import (
     SftpDownloadDelegateFactory,
@@ -120,7 +120,7 @@ class DownloadFilesFromSftpController:
 
         self.lower_bound_update_datetime = lower_bound_update_datetime
         self.bucket = (
-            gcsfs_sftp_download_directory_path_for_region(
+            gcsfs_sftp_download_bucket_path_for_region(
                 region, SystemLevel.STATE, project_id=self.project_id
             )
             if gcs_destination_path is None

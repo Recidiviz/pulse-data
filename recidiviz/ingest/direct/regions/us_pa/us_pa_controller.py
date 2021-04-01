@@ -21,7 +21,7 @@ import json
 import re
 from typing import List, Dict, Optional, Callable
 
-from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsBucketPath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.enum_overrides import (
     EnumOverrides,
@@ -143,12 +143,8 @@ class UsPaController(CsvGcsfsDirectIngestController):
     def system_level(cls) -> SystemLevel:
         return SystemLevel.STATE
 
-    def __init__(
-        self,
-        ingest_bucket_path: GcsfsBucketPath,
-        storage_directory_path: GcsfsDirectoryPath,
-    ):
-        super().__init__(ingest_bucket_path, storage_directory_path)
+    def __init__(self, ingest_bucket_path: GcsfsBucketPath):
+        super().__init__(ingest_bucket_path)
         self.enum_overrides = self.generate_enum_overrides()
 
         sci_incarceration_period_row_postprocessors = [

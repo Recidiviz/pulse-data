@@ -346,9 +346,6 @@ def build_gcsfs_controller_for_tests(
                                 ingest_bucket_path=GcsfsBucketPath(
                                     "recidiviz-xxx-direct-ingest-state-us-xx"
                                 ),
-                                storage_directory_path=GcsfsDirectoryPath.from_absolute_path(
-                                    "storage/path/"
-                                ),
                             )
                             controller.csv_reader = _TestSafeGcsCsvReader(fake_fs)
                             controller.raw_file_import_manager.csv_reader = (

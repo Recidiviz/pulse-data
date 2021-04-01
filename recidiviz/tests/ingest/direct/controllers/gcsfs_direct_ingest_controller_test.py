@@ -102,12 +102,8 @@ CsvGcsfsDirectIngestControllerT = TypeVar(
 class BaseTestCsvGcsfsDirectIngestController(CsvGcsfsDirectIngestController):
     """Base class for test direct ingest controllers used in this file."""
 
-    def __init__(
-        self,
-        ingest_bucket_path: GcsfsBucketPath,
-        storage_directory_path: GcsfsDirectoryPath,
-    ):
-        super().__init__(ingest_bucket_path, storage_directory_path)
+    def __init__(self, ingest_bucket_path: GcsfsBucketPath):
+        super().__init__(ingest_bucket_path)
         self.local_paths: Set[str] = set()
 
     @classmethod
