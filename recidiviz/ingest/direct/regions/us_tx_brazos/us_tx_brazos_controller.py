@@ -32,7 +32,6 @@ from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller impo
 from recidiviz.ingest.direct.direct_ingest_controller_utils import (
     update_overrides_from_maps,
 )
-from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 
 
 class UsTxBrazosController(CsvGcsfsDirectIngestController):
@@ -50,11 +49,8 @@ class UsTxBrazosController(CsvGcsfsDirectIngestController):
         self,
         ingest_bucket_path: GcsfsBucketPath,
         storage_directory_path: GcsfsDirectoryPath,
-        ingest_database_key: SQLAlchemyDatabaseKey,
     ):
-        super().__init__(
-            ingest_bucket_path, storage_directory_path, ingest_database_key
-        )
+        super().__init__(ingest_bucket_path, storage_directory_path)
         self.enum_overrides = self.generate_enum_overrides()
 
         self.row_post_processors_by_file: Dict[str, List[Callable]] = {}

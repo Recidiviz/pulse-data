@@ -28,9 +28,13 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
     GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME,
     GCSPseudoLockAlreadyExists,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ingest_metadata import (
     IngestMetadata,
     SystemLevel,
+)
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_types import (
     ContentsHandleType,
@@ -52,7 +56,9 @@ from recidiviz.persistence.database.bq_refresh.bq_refresh_utils import (
 from recidiviz.persistence.database.schema_utils import (
     SchemaType,
 )
-from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.persistence.database.sqlalchemy_database_key import (
+    SQLAlchemyDatabaseKey,
+)
 from recidiviz.utils import regions, trace
 from recidiviz.utils.regions import Region
 
@@ -60,11 +66,11 @@ from recidiviz.utils.regions import Region
 class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandleType]):
     """Parses and persists individual-level info from direct ingest partners."""
 
-    def __init__(self, ingest_database_key: SQLAlchemyDatabaseKey) -> None:
+    def __init__(self, ingest_instance: DirectIngestInstance) -> None:
         """Initialize the controller."""
         self.cloud_task_manager = DirectIngestCloudTaskManagerImpl()
         self.lock_manager = GCSPseudoLockManager()
-        self.ingest_database_key = ingest_database_key
+        self.ingest_instance = ingest_instance
 
     @property
     def region(self) -> Region:
@@ -79,6 +85,17 @@ class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandl
     @abc.abstractmethod
     def system_level(cls) -> SystemLevel:
         pass
+
+    @property
+    def ingest_database_key(self) -> SQLAlchemyDatabaseKey:
+        schema_type = self.system_level().schema_type()
+        if schema_type == SchemaType.STATE:
+            return SQLAlchemyDatabaseKey.for_state_code(
+                StateCode(self.region_code().upper()),
+                self.ingest_instance.database_version(self.system_level()),
+            )
+
+        return SQLAlchemyDatabaseKey.for_schema(schema_type)
 
     # ============== #
     # JOB SCHEDULING #

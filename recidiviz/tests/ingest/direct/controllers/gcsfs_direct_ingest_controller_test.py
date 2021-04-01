@@ -106,11 +106,8 @@ class BaseTestCsvGcsfsDirectIngestController(CsvGcsfsDirectIngestController):
         self,
         ingest_bucket_path: GcsfsBucketPath,
         storage_directory_path: GcsfsDirectoryPath,
-        ingest_database_key: SQLAlchemyDatabaseKey,
     ):
-        super().__init__(
-            ingest_bucket_path, storage_directory_path, ingest_database_key
-        )
+        super().__init__(ingest_bucket_path, storage_directory_path)
         self.local_paths: Set[str] = set()
 
     @classmethod

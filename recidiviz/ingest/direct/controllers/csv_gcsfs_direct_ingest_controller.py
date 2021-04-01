@@ -52,7 +52,6 @@ from recidiviz.ingest.direct.controllers.gcsfs_csv_reader_delegates import (
 )
 from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
 from recidiviz.ingest.extractor.csv_data_extractor import CsvDataExtractor
-from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.utils import metadata
 
 
@@ -86,11 +85,8 @@ class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
         self,
         ingest_bucket_path: GcsfsBucketPath,
         storage_directory_path: GcsfsDirectoryPath,
-        ingest_database_key: SQLAlchemyDatabaseKey,
     ):
-        super().__init__(
-            ingest_bucket_path, storage_directory_path, ingest_database_key
-        )
+        super().__init__(ingest_bucket_path, storage_directory_path)
         self.csv_reader = GcsfsCsvReader(
             gcsfs.GCSFileSystem(
                 project=metadata.project_id(), cache_timeout=GCSFS_NO_CACHING

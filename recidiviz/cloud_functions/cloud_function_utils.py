@@ -20,8 +20,7 @@
 Mostly copied from:
 https://cloud.google.com/iap/docs/authentication-howto#iap_make_request-python
 """
-import re
-from typing import List, Match, Optional
+from typing import List
 import urllib.parse
 
 import requests
@@ -50,9 +49,6 @@ GCP_PROJECT_ID_KEY = "GCP_PROJECT"
 
 _IAM_SCOPE = "https://www.googleapis.com/auth/iam"
 _OAUTH_TOKEN_URI = "https://www.googleapis.com/oauth2/v4/token"
-_STATE_DIRECT_INGEST_BUCKET_REGEX = re.compile(
-    r"(recidiviz-staging|recidiviz-123)-direct-ingest-state-" r"([a-z]+-[a-z]+)$"
-)
 
 # Value to be passed to the GCSFileSystem cache_timeout to indicate that we
 # should not cache.
@@ -178,15 +174,6 @@ def get_google_open_id_connect_token(
         request, _OAUTH_TOKEN_URI, body
     )
     return token_response["id_token"]
-
-
-def get_state_region_code_from_direct_ingest_bucket(bucket) -> Optional[str]:
-    match_obj: Optional[Match] = re.match(_STATE_DIRECT_INGEST_BUCKET_REGEX, bucket)
-    if match_obj is None:
-        return None
-
-    region_code_match = match_obj.groups()[1]  # Object at index 0 is project_id
-    return region_code_match.replace("-", "_")
 
 
 def get_dataflow_template_bucket(project_id: str) -> str:

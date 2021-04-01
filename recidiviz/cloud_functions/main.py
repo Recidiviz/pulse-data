@@ -26,11 +26,13 @@ from flask import Request
 # require that imports are declared relative to the cloud functions package itself. In general, we should avoid shipping
 # complex code in cloud functions. The function itself should call an API endpoint that can live in an external package
 # with proper import resolution.
+from direct_ingest_bucket_name_utils import (  # type: ignore[import]
+    get_region_code_from_direct_ingest_bucket,
+)
 from cloud_function_utils import (  # type: ignore[import]
     IAP_CLIENT_ID,
     GCP_PROJECT_ID_KEY,
     make_iap_request,
-    get_state_region_code_from_direct_ingest_bucket,
     get_dataflow_template_bucket,
     trigger_dataflow_job_from_template,
     build_query_param_string,
@@ -159,7 +161,7 @@ def _handle_state_direct_ingest_file(data, start_ingest: bool) -> None:
 
     bucket = data["bucket"]
     relative_file_path = data["name"]
-    region_code = get_state_region_code_from_direct_ingest_bucket(bucket)
+    region_code = get_region_code_from_direct_ingest_bucket(bucket)
     if not region_code:
         logging.error("Cannot parse region code from bucket %s, returning.", bucket)
         return

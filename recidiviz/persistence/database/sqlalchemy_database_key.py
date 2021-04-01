@@ -46,7 +46,7 @@ class SQLAlchemyStateDatabaseVersion(Enum):
 
     # TODO(#6226): Once we have cut all traffic over to single-database traffic,
     #   delete the LEGACY type entirely.
-    # The single, multi-state 'postgres' DB within the state CloudSQL instance for a
+    # The single, multi-region 'postgres' DB within the state CloudSQL instance for a
     # given project.
     LEGACY = "postgres"
 

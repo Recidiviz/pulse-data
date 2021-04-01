@@ -49,7 +49,7 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
         self.task_client_patcher.stop()
 
     def test_build_gcsfs_ingest_controller_all_regions(self) -> None:
-        with local_project_id_override("project"):
+        with local_project_id_override("recidiviz-456"):
             for region_code in get_existing_region_dir_names():
                 region = get_region(region_code, is_direct_ingest=True)
                 controller = DirectIngestControllerFactory.build(region)
