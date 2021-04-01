@@ -73,7 +73,7 @@ CONTROL_PACKAGE_NAME = direct_ingest_control.__name__
 TODAY = datetime.datetime.today()
 
 
-@patch("recidiviz.utils.metadata.project_id", Mock(return_value="test-project"))
+@patch("recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-project"))
 @patch("recidiviz.utils.metadata.project_number", Mock(return_value="123456789"))
 class TestDirectIngestControl(unittest.TestCase):
     """Tests for requests to the Direct Ingest API."""

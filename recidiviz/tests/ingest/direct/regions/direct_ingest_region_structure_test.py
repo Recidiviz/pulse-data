@@ -163,7 +163,7 @@ class DirectIngestRegionDirStructureBase:
                 is_direct_ingest=True,
                 region_module_override=self.region_module_override,
             )
-            with local_project_id_override("project"):
+            with local_project_id_override("recidiviz-456"):
                 controller_class = DirectIngestControllerFactory.get_controller_class(
                     region
                 )
@@ -177,7 +177,7 @@ class DirectIngestRegionDirStructureBase:
                 is_direct_ingest=True,
                 region_module_override=self.region_module_override,
             )
-            with local_project_id_override("project"):
+            with local_project_id_override("recidiviz-456"):
                 controller = DirectIngestControllerFactory.build(region)
                 self.test.assertIsNotNone(controller)
                 self.test.assertIsInstance(controller, GcsfsDirectIngestController)
