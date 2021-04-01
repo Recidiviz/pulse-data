@@ -24,7 +24,7 @@ COMMIT_HASH=$(git rev-parse HEAD) || exit_on_fail
 script_prompt "Will create tag and deploy version [$NEW_VERSION] at commit [${COMMIT_HASH:0:7}] which is the \
 tip of branch [master]. Continue?"
 
-${BASH_SOURCE_DIR}/base_deploy_to_staging.sh -v ${NEW_VERSION} -c ${COMMIT_HASH} -p || exit_on_fail
+${BASH_SOURCE_DIR}/base_deploy_to_staging.sh -v ${NEW_VERSION} -c ${COMMIT_HASH} -b master -p || exit_on_fail
 
 echo "Deploy succeeded - creating local tag ${NEW_VERSION}"
 verify_hash $COMMIT_HASH

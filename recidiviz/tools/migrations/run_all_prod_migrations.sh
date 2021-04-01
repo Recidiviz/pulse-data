@@ -4,7 +4,6 @@ BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
 source ${BASH_SOURCE_DIR}/../script_base.sh
 
 echo 'Running prod migrations against all databases.'
-script_prompt 'Are you running this script from prod-data-client?'
 
 run_cmd python -m recidiviz.tools.migrations.run_migrations_to_head --database JAILS --project-id recidiviz-123 --ssl-cert-path ~/prod_data_certs/
 run_cmd python -m recidiviz.tools.migrations.run_migrations_to_head --database STATE --project-id recidiviz-123 --ssl-cert-path ~/prod_state_data_certs/
