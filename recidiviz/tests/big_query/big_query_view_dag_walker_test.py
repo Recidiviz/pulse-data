@@ -362,6 +362,7 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
             ("census_views", "charge_class_severity_ranks"),
             ("analyst_data", "admission_start_reason_dedup_priority"),
             ("analyst_data", "release_termination_reason_dedup_priority"),
+            ("analyst_data", "violation_type_dedup_priority"),
             # Generate data using pure date functions
             ("reference_views", "covid_report_weeks"),
             ("population_projection_data", "simulation_run_dates"),
