@@ -25,6 +25,7 @@ from unittest.mock import patch
 from google.cloud import bigquery
 
 from recidiviz.big_query import view_update_manager
+from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
 from recidiviz.big_query.big_query_view import BigQueryView, SimpleBigQueryViewBuilder
 from recidiviz.big_query.view_update_manager import (
     BigQueryViewNamespace,
@@ -34,7 +35,6 @@ from recidiviz.big_query.view_update_manager import (
 from recidiviz.ingest.direct.views.normalized_direct_ingest_big_query_view_types import (
     NormalizedDirectIngestPreProcessedIngestViewBuilder,
 )
-from recidiviz.ingest.views.metadata_helpers import BigQueryTableChecker
 
 _PROJECT_ID = "fake-recidiviz-project"
 _DATASET_NAME = "my_views_dataset"

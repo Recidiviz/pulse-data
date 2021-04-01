@@ -17,6 +17,7 @@
 """Collector and Builder for the DirectIngestRawDataTableLatestView class"""
 from typing import List, Optional, Dict, Callable
 
+from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
@@ -29,7 +30,6 @@ from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager i
 from recidiviz.ingest.direct.direct_ingest_region_utils import (
     get_existing_region_dir_names,
 )
-from recidiviz.ingest.views.metadata_helpers import BigQueryTableChecker
 
 
 class DirectIngestRawDataTableLatestViewBuilder(
