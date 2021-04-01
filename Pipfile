@@ -14,6 +14,7 @@ mypy = "*"
 coveralls = "*"
 # This should always be pinned to the latest version officially supported by Dataflow: https://cloud.google.com/dataflow/docs/support/sdk-version-support-status#python
 apache-beam = {extras = ["gcp", "test"],version = "<=2.27.0"}
+fakeredis = "*"
 freezegun = "*"
 ipdb = "*"
 nose = "*"
@@ -123,6 +124,7 @@ pysftp = "*"
 analytics-python = "*"
 # TODO(#5967): Unpin when astroid's version numbers are fixed
 astroid = "2.5.0"
+redis = "*"
 
 [requires]
 python_version = "3.7"
