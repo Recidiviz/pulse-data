@@ -2370,21 +2370,10 @@ class MetricByMonthViewTest(BaseViewTest):
 
         # Act
         dimensions = ["dimensions_string", "start_of_month"]
-        parole_population = metric_by_month.CalculatedMetricByMonth(
-            system=schema.System.CORRECTIONS,
-            metric=schema.MetricType.ADMISSIONS,
-            filtered_dimensions=[manual_upload.AdmissionType.NEW_COMMITMENT],
-            aggregated_dimensions={
-                "state_code": metric_by_month.Aggregation(
-                    dimension=manual_upload.State, comprehensive=False
-                )
-            },
-            output_name="ADMISSIONS",
-        )
         results = self.query_view(
             metric_by_month.CompareToPriorYearViewBuilder(
                 dataset_id="fake-dataset",
-                metric_to_calculate=parole_population,
+                metric_name="ADMISSIONS",
                 input_view=SimpleBigQueryViewBuilder(
                     dataset_id="justice_counts",
                     view_id="metric_by_month",

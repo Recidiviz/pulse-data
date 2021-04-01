@@ -278,7 +278,7 @@ SELECT * EXCEPT(ordinal)
 FROM (
 SELECT
     base_data.*,
-    compared_data.start_of_month as compare_start_of_month, compared_data.value as compare_value,
+    compared_data.start_of_month as compare_start_of_month, compared_data.{value_column} as compare_{value_column},
     ROW_NUMBER() OVER (
     PARTITION BY base_data.dimensions_string, base_data.start_of_month, base_data.time_window_end
     -- Orders by recency of the compared data
@@ -301,21 +301,23 @@ class CompareToPriorYearViewBuilder(SimpleBigQueryViewBuilder):
         self,
         *,
         dataset_id: str,
-        metric_to_calculate: "CalculatedMetricByMonth",
+        metric_name: str,
         input_view: BigQueryViewBuilder,
+        value_column: str = "value",
     ):
 
         super().__init__(
             dataset_id=dataset_id,
-            view_id=f"{metric_to_calculate.view_prefix}_compared",
+            view_id=f"{view_prefix_for_metric_name(metric_name)}_compared",
             view_query_template=COMPARISON_VIEW_TEMPLATE,
             # Query Format Arguments
-            description=f"{metric_to_calculate.output_name} comparison -- {input_view.view_id} compared to a year prior",
+            description=f"{metric_name} comparison -- {input_view.view_id} compared to a year prior",
             base_dataset=dataset_config.JUSTICE_COUNTS_BASE_DATASET,
             input_dataset=input_view.dataset_id,
             input_table=input_view.view_id,
             compare_dataset=input_view.dataset_id,
             compare_table=input_view.view_id,
+            value_column=value_column,
         )
 
 
@@ -356,34 +358,34 @@ class DimensionsToColumnsViewBuilder(SimpleBigQueryViewBuilder):
         self,
         *,
         dataset_id: str,
-        metric_to_calculate: "CalculatedMetricByMonth",
+        metric_name: str,
+        aggregations: Dict[str, "Aggregation"],
         input_view: BigQueryViewBuilder,
     ):
         aggregated_dimensions_array_columns_to_single_value_columns_clause = ", ".join(
             [
                 f"unnested_dimensions.{column_name}_array[ORDINAL(1)] as {column_name}"
-                for column_name in metric_to_calculate.aggregated_dimensions
+                for column_name in aggregations
             ]
         )
         aggregated_dimensions_array_split_to_columns_clause = ", ".join(
             [
                 f"ARRAY(SELECT dimension_value FROM UNNEST(dimensions) "
                 f"WHERE dimension = '{aggregation.dimension.dimension_identifier()}') as {column_name}_array"
-                for column_name, aggregation in metric_to_calculate.aggregated_dimensions.items()
+                for column_name, aggregation in aggregations.items()
             ]
         )
 
         aggregated_dimensions_array_columns = ", ".join(
-            f"{column_name}_array"
-            for column_name in metric_to_calculate.aggregated_dimensions
+            f"{column_name}_array" for column_name in aggregations
         )
 
         super().__init__(
             dataset_id=dataset_id,
-            view_id=f"{metric_to_calculate.view_prefix}_with_dimensions",
+            view_id=f"{view_prefix_for_metric_name(metric_name)}_with_dimensions",
             view_query_template=DIMENSIONS_TO_COLUMNS_TEMPLATE,
             # Query Format Arguments
-            description=f"{metric_to_calculate.output_name} with dimensions",
+            description=f"{metric_name} with dimensions",
             base_dataset=dataset_config.JUSTICE_COUNTS_BASE_DATASET,
             input_dataset=input_view.dataset_id,
             input_table=input_view.view_id,
@@ -414,6 +416,10 @@ class Aggregation:
     comprehensive: bool = attr.ib()
 
 
+def view_prefix_for_metric_name(metric_name: str) -> str:
+    return metric_name.lower()
+
+
 @attr.s(frozen=True)
 class CalculatedMetricByMonth:
     """Represents a metric and describes how to calculate it"""
@@ -431,7 +437,7 @@ class CalculatedMetricByMonth:
 
     @property
     def view_prefix(self) -> str:
-        return self.output_name.lower()
+        return view_prefix_for_metric_name(self.output_name)
 
     @property
     def _comprehensive_aggregations(self) -> List[Type[manual_upload.Dimension]]:

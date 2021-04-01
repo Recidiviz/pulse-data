@@ -54,6 +54,7 @@ from recidiviz.case_triage.views.view_config import (
     VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as CASE_TRIAGE_VIEW_BUILDERS,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
 from recidiviz.ingest.direct.views.view_config import (
     VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as DIRECT_INGEST_VIEW_BUILDERS,
 )
@@ -113,6 +114,7 @@ OTHER_SOURCE_TABLE_DATASETS = {
     COVID_DASHBOARD_REFERENCE_DATASET,
     DATAFLOW_METRICS_DATASET,
     EXTERNAL_ACCURACY_DATASET,
+    EXTERNAL_REFERENCE_DATASET,
     OPERATIONS_BASE_DATASET,
     POPULATION_PROJECTION_OUTPUT_DATASET,
     STATE_BASE_DATASET,
