@@ -249,7 +249,7 @@ class CloudSqlToGcsExportTest(unittest.TestCase):
         mock_export = self.mock_client.instances.return_value.export
         mock_export_request = mock_export.return_value
         mock_export_request.execute.side_effect = googleapiclient.errors.HttpError(
-            "", content=b""
+            self.http_error_response, content=b""
         )
 
         with self.assertLogs(level="ERROR"):
