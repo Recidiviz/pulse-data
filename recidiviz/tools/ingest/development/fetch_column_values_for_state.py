@@ -24,7 +24,7 @@ then populates the yaml config with any new values.
 After running the script, be sure to either fill in or delete any blank descriptions.
 
 Example Usage:
-    python -m recidiviz.tools.fetch_column_values_for_state --state-code US_ND --project-id recidiviz-staging
+    python -m recidiviz.tools.ingest.development.fetch_column_values_for_state --state-code US_ND --project-id recidiviz-staging
 """
 import argparse
 import logging
@@ -43,7 +43,9 @@ from recidiviz.ingest.direct.query_utils import (
     get_region_raw_file_config,
 )
 from recidiviz.tests.ingest.direct.direct_ingest_util import PLACEHOLDER_TO_DO_STRING
-from recidiviz.tools.raw_data_config_writer import RawDataConfigWriter
+from recidiviz.tools.ingest.development.raw_data_config_writer import (
+    RawDataConfigWriter,
+)
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
 

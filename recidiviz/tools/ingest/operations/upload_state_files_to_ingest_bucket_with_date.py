@@ -21,7 +21,7 @@ upload manually due to an upload script failure.
 
 Example usage (run from `pipenv shell`):
 
-python -m recidiviz.tools.upload_state_files_to_ingest_bucket_with_date \
+python -m recidiviz.tools.ingest.operations.upload_state_files_to_ingest_bucket_with_date \
     ~/Downloads/MyHistoricalDump/ --date 2019-08-12 \
     --project-id recidiviz-staging --region us_nd --dry-run True
 """
