@@ -18,7 +18,7 @@
 """A script which will be called using a pre-commit githook to generate portions of a State Ingest Specification.
 
 Can be run on-demand via:
-    $ pipenv run python -m recidiviz.tools.docs.documentation_generator
+    $ pipenv run python -m recidiviz.tools.docs.region_documentation_generator
 """
 
 import logging
@@ -38,6 +38,7 @@ from recidiviz.ingest.direct.direct_ingest_documentation_generator import (
     DirectIngestDocumentationGenerator,
     STATE_RAW_DATA_FILE_HEADER_PATH,
 )
+from recidiviz.tools.docs.summary_file_generator import update_summary_file
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -121,38 +122,6 @@ def _create_ingest_catalog_summary() -> List[str]:
     return ingest_catalog_summary
 
 
-def update_summary_file() -> None:
-    """Updates the docs/SUMMARY.md file to ensure the contents are up-to-date."""
-    ingest_catalog_summary = _create_ingest_catalog_summary()
-
-    summary_path = "docs/SUMMARY.md"
-    with open(summary_path, "r") as summary_file:
-        summary_contents = summary_file.readlines()
-
-    remove_from = next(
-        i
-        for i, line in enumerate(summary_contents)
-        if "## State Ingest Catalog" in line
-    )
-    remove_up_until = (
-        next(
-            i
-            for i, line in enumerate(
-                summary_contents[remove_from + 1 : len(summary_contents)]
-            )
-            if line.startswith("#")
-        )
-        + remove_from
-    )
-
-    updated_summary = summary_contents[:remove_from]
-    updated_summary.extend(ingest_catalog_summary)
-    updated_summary.extend(summary_contents[remove_up_until : len(summary_contents)])
-
-    with open(summary_path, "w") as summary_file:
-        summary_file.write("".join(updated_summary))
-
-
 def get_touched_raw_data_regions(touched_files: Optional[List[str]]) -> Set[str]:
     """Returns the touched regions' codes.
 
@@ -205,7 +174,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             )
             modified |= generate_raw_data_documentation_for_region(region_code)
         if modified:
-            update_summary_file()
+            update_summary_file(
+                _create_ingest_catalog_summary(), "## State Ingest Catalog"
+            )
         return 1 if modified else 0
 
 
