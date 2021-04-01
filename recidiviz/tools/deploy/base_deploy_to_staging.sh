@@ -109,8 +109,10 @@ fi
 
 if [[ ! -z ${PROMOTE} ]]; then
     echo "Running migrations for all staging instances on prod-data-client. You may be asked to provide an ssh passphrase."
-    run_cmd gcloud compute ssh --ssh-flag="-t" prod-data-client --command "cd pulse-data && git fetch && git checkout $BRANCH_NAME \
+    # The remote migration execution script doesn't play nice with run_cmd
+    gcloud compute ssh --ssh-flag="-t" prod-data-client --command "cd pulse-data && git fetch && git checkout $BRANCH_NAME \
         && git pull && pipenv sync --dev && pipenv run ./recidiviz/tools/migrations/run_all_staging_migrations.sh"
+    exit_on_fail
 fi
 
 if [[ ! -z ${PROMOTE} || ! -z ${DEBUG_BUILD_NAME} ]]; then
