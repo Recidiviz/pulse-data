@@ -71,7 +71,6 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseType,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.common.str_field_utils import (
     safe_parse_days_from_duration_pieces,
     sorted_list_from_str,
@@ -163,10 +162,6 @@ class UsIdController(CsvGcsfsDirectIngestController):
     @classmethod
     def region_code(cls) -> str:
         return StateCode.US_ID.value.lower()
-
-    @classmethod
-    def system_level(cls) -> SystemLevel:
-        return SystemLevel.STATE
 
     def __init__(self, ingest_bucket_path: GcsfsBucketPath):
         super().__init__(ingest_bucket_path)

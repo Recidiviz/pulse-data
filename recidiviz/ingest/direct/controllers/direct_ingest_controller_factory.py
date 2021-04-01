@@ -18,6 +18,7 @@
 import importlib
 from typing import Type
 
+from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
     DirectIngestInstance,
 )
@@ -42,15 +43,15 @@ class DirectIngestControllerFactory:
             An instance of the region's direct ingest controller class (e.g.,
              UsNdController)
         """
-        controller_class = cls.get_controller_class(region)
         # TODO(#6077): Allow controllers to be instantiated with specific DB-specific
         #  state (e.g. database name, queue name etc).
         ingest_bucket_path = gcsfs_direct_ingest_bucket_for_region(
             region_code=region.region_code,
-            system_level=controller_class.system_level(),
+            system_level=SystemLevel.for_region(region),
             ingest_instance=DirectIngestInstance.PRIMARY,
         )
 
+        controller_class = cls.get_controller_class(region)
         controller = controller_class(ingest_bucket_path=ingest_bucket_path)
         if not isinstance(controller, GcsfsDirectIngestController):
             raise ValueError(f"Unexpected controller class type [{type(controller)}]")

@@ -26,7 +26,6 @@ from recidiviz.common.constants.enum_overrides import (
     EnumIgnorePredicate,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import (
     CsvGcsfsDirectIngestController,
 )
@@ -41,10 +40,6 @@ class UsTnController(CsvGcsfsDirectIngestController):
     @classmethod
     def region_code(cls) -> str:
         return StateCode.US_TN.value.lower()
-
-    @classmethod
-    def system_level(cls) -> SystemLevel:
-        return SystemLevel.STATE
 
     def __init__(self, ingest_bucket_path: GcsfsBucketPath):
         super().__init__(ingest_bucket_path)
