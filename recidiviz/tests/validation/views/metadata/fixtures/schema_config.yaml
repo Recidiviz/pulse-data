@@ -1,0 +1,18 @@
+# Configuration describing a fake dataset schema
+
+dataset: fixture_schema
+tables:
+  - name: incarceration_population_by_facility
+    columns:
+      - region_code
+      - year
+      - month
+      - date_of_stay
+      - facility
+      - population_count
+  - name: incarceration_population_person_level
+    columns:
+      - region_code
+      - person_external_id
+      - date_of_stay
+      - facility

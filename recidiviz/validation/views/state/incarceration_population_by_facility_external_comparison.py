@@ -36,11 +36,11 @@ INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
     /*{description}*/
     WITH external_validation_dates AS (
         -- Only compare states and months for which we have external validation data
-        SELECT DISTINCT state_code, date_of_stay FROM
+        SELECT DISTINCT region_code, date_of_stay FROM
         `{project_id}.{external_accuracy_dataset}.incarceration_population_by_facility`
     ), internal_incarceration_population AS (
         SELECT
-            state_code, date_of_stay,
+            state_code as region_code, date_of_stay,
             IFNULL(facility, 'EXTERNAL_UNKNOWN') as facility,
             COUNT(DISTINCT(person_id)) as internal_population_count
         FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_materialized`
@@ -50,11 +50,11 @@ INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
           external_validation_dates      
         LEFT JOIN
           internal_incarceration_population        
-        USING(state_code, date_of_stay)
+        USING(region_code, date_of_stay)
     ),
     comparison AS (
         SELECT
-          state_code as region_code,
+          region_code,
           date_of_stay,
           facility,
           IFNULL(population_count, 0) as external_population_count,
@@ -63,7 +63,7 @@ INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
           `{project_id}.{external_accuracy_dataset}.incarceration_population_by_facility`
         FULL OUTER JOIN
           relevant_internal_incarceration_population
-        USING (state_code, date_of_stay, facility)
+        USING (region_code, date_of_stay, facility)
     )
     SELECT *
     FROM comparison
