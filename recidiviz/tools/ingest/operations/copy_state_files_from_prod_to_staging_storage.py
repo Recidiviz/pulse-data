@@ -22,7 +22,7 @@ When run in dry-run mode (the default), will only log copies, but will not execu
 
 Example usage (run from `pipenv shell`):
 
-python -m recidiviz.tools.copy_state_files_from_prod_to_staging_storage --file-type raw \
+python -m recidiviz.tools.ingest.operations.copy_state_files_from_prod_to_staging_storage --file-type raw \
     --region us_nd --start-date-bound 2019-08-12 --end-date-bound 2019-08-17 --dry-run True
 """
 import argparse

@@ -25,7 +25,7 @@ This script is only useful for bootstrapping raw file column config for pre-exis
 Thus it probably only needs to be used a few times.
 
 Example Usage:
-    python -m recidiviz.tools.backport_raw_config_columns --state-code US_ND --project-id recidiviz-staging
+    python -m recidiviz.tools.ingest.development.backport_raw_config_columns --state-code US_ND --project-id recidiviz-staging
 """
 import argparse
 import logging

@@ -15,7 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 #
-"""Tool to create skeleton ingest config yamls from raw data dumps.
+"""Tool to create skeleton ingest raw file config yamls from raw data dumps.
 
 Usage:
     python -m recidiviz.tools.create_ingest_config_skeleton --state [us_xx] \
@@ -23,7 +23,7 @@ Usage:
     [--allow-overwrite] [--initialize-state]
 
 Example:
-    python -m recidiviz.tools.create_ingest_config_skeleton --state-code us_xx \
+    python -m recidiviz.tools.ingest.development.create_ingest_config_skeleton --state-code us_xx \
     --delimiter '|' --path Xxandland/db/historical/
 """
 import argparse
@@ -35,15 +35,13 @@ from typing import List
 from pandas import read_csv
 
 from recidiviz.common.constants import states
+from recidiviz.ingest.direct import regions
 from recidiviz.tests.ingest.direct.direct_ingest_util import PLACEHOLDER_TO_DO_STRING
 
 
 def make_config_directory(state_code: str) -> str:
     return os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        "ingest",
-        "direct",
-        "regions",
+        os.path.dirname(regions.__file__),
         state_code,
         "raw_data",
     )

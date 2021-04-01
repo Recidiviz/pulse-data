@@ -27,7 +27,7 @@ When run in dry-run mode (the default), will log the move of each file, but will
 
 Example usage (run from `pipenv shell`):
 
-python -m recidiviz.tools.move_storage_files_to_deprecated --file-type raw --region us_nd --start-date-bound \
+python -m recidiviz.tools.ingest.operations.move_storage_files_to_deprecated --file-type raw --region us_nd --start-date-bound \
 2019-08-12 --end-date-bound 2019-08-17 --project-id recidiviz-staging --file-filter "docstars" --dry-run True
 
 
