@@ -30,9 +30,6 @@ fi
 echo "Beginning deploy of version [$GIT_VERSION_TAG] to production. Last deployed version: [$LAST_DEPLOYED_GIT_VERSION_TAG]."
 script_prompt "Do you want to continue?"
 
-script_prompt "Have you run any new migrations added since the last release for all prod DBs (jails, state, operations)\
- or were there no new migrations to run?"
-
 echo "Commits since last deploy:"
 run_cmd git log --oneline tags/${LAST_DEPLOYED_GIT_VERSION_TAG}..tags/${GIT_VERSION_TAG}
 
@@ -53,6 +50,10 @@ then
     echo "Attempting to reuse existing branch $GIT_VERSION_TAG"
     run_cmd git checkout ${GIT_VERSION_TAG}
 fi
+
+echo "Running migrations on prod-data-client. You may have to enter the passphrase for your ssh key to continue."
+run_cmd gcloud compute ssh --ssh-flag="-t" prod-data-client --command "cd pulse-data && git fetch && git checkout $LAST_DEPLOYED_GIT_VERSION_TAG \
+    && pipenv sync --dev && pipenv run ./recidiviz/tools/migrations/run_all_prod_migrations.sh"
 
 # Use rev-list to get the hash of the commit that the tag points to, rev-parse parse
 # returns the hash of the tag itself.
