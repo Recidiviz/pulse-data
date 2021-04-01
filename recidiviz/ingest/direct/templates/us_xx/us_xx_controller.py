@@ -25,7 +25,6 @@ from recidiviz.common.constants.enum_overrides import (
     EnumMapper,
     EnumIgnorePredicate,
 )
-from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import (
     CsvGcsfsDirectIngestController,
 )
@@ -40,10 +39,6 @@ class UsXxController(CsvGcsfsDirectIngestController):
     @classmethod
     def region_code(cls) -> str:
         return "us_xx"
-
-    @classmethod
-    def system_level(cls) -> SystemLevel:
-        return SystemLevel.STATE
 
     def __init__(self, ingest_bucket_path: GcsfsBucketPath):
         super().__init__(ingest_bucket_path)

@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests that each regions direct ingest directory is set up properly."""
 import abc
+import importlib
 import os
 import re
 import unittest
@@ -26,6 +27,7 @@ import yaml
 from mock import patch
 from parameterized import parameterized
 
+from recidiviz.common.constants import states
 from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct import templates
 from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import (
@@ -344,9 +346,15 @@ class DirectIngestRegionDirStructure(
 class DirectIngestRegionTemplateDirStructure(
     DirectIngestRegionDirStructureBase, unittest.TestCase
 ):
+    def setUp(self) -> None:
+        super().setUp()
+
+        # Ensures StateCode.US_XX is properly loaded
+        importlib.reload(states)
+
     @property
     def region_dir_names(self) -> List[str]:
-        return ["us_xx"]
+        return [StateCode.US_XX.value.lower()]
 
     @property
     def region_dir_paths(self) -> List[str]:

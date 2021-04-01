@@ -91,7 +91,7 @@ class GcsfsDirectIngestController(
         self.storage_directory_path = (
             gcsfs_direct_ingest_storage_directory_path_for_region(
                 region_code=self.region_code(),
-                system_level=self.system_level(),
+                system_level=self.system_level,
                 ingest_instance=self.ingest_instance,
             )
         )
