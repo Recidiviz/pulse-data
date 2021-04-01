@@ -202,7 +202,7 @@ class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
             file_post_processors,
             ancestor_chain_overrides_callback,
             primary_key_override_callback,
-            self.system_level(),
+            self.system_level,
             should_set_with_empty_values,
         )
 

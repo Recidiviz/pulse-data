@@ -33,7 +33,8 @@ def fake_region(
     scraper: Optional[BaseScraper] = None,
     queue: Optional[Dict[str, Any]] = None,
     shared_queue: Optional[str] = None,
-    region_module: Optional[ModuleType] = None
+    region_module: Optional[ModuleType] = None,
+    is_direct_ingest: bool = True,
 ) -> Region:
     """Fake Region Object"""
     region = create_autospec(Region)
@@ -43,6 +44,7 @@ def fake_region(
     region.jurisdiction_id = jurisdiction_id
     region.region_module = region_module
     region.get_scraper.return_value = scraper
+    region.is_direct_ingest = is_direct_ingest
 
     def fake_is_launched_in_env():
         return Region.is_ingest_launched_in_env(region)

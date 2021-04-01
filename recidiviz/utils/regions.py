@@ -107,7 +107,7 @@ class Region:
     names_file: Optional[str] = attr.ib(default=None)
     should_proxy: Optional[bool] = attr.ib(default=False)
     is_stoppable: Optional[bool] = attr.ib(default=False)
-    is_direct_ingest: Optional[bool] = attr.ib(default=False)
+    is_direct_ingest: bool = attr.ib(default=False)
     stripe: Optional[str] = attr.ib(default="0")
     facility_id: Optional[str] = attr.ib(default=None)
 

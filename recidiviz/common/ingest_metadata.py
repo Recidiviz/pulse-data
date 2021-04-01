@@ -22,10 +22,12 @@ from typing import Optional
 import attr
 
 from recidiviz.common.constants.enum_overrides import EnumOverrides
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema_utils import (
     SchemaType,
 )
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.utils.regions import Region
 
 
 @enum.unique
@@ -40,6 +42,22 @@ class SystemLevel(enum.Enum):
             return SchemaType.JAILS
 
         raise ValueError(f"Unsupported SystemLevel type: {self}")
+
+    @classmethod
+    def for_region(cls, region: Region) -> "SystemLevel":
+        if region.is_direct_ingest is None:
+            raise ValueError(
+                "Region flag is_direct_ingest is None, expected boolean value."
+            )
+        if not region.is_direct_ingest:
+            # There are some scrapers that scrape state jails websites (e.g.
+            # recidiviz/ingest/scrape/regions/us_pa/us_pa_scraper.py) which we always
+            # write to the Vera county jails database.
+            return SystemLevel.COUNTY
+
+        if StateCode.is_state_code(region.region_code.upper()):
+            return SystemLevel.STATE
+        return SystemLevel.COUNTY
 
 
 @attr.s(frozen=True, kw_only=True)

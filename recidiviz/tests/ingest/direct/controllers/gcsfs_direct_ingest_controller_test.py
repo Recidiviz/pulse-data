@@ -33,7 +33,6 @@ from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsDirectoryPath,
     GcsfsBucketPath,
 )
-from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.common.serialization import (
     attr_to_json_dict,
     datetime_to_serializable,
@@ -140,10 +139,6 @@ class StateTestGcsfsDirectIngestController(BaseTestCsvGcsfsDirectIngestControlle
         )
 
     @classmethod
-    def system_level(cls) -> SystemLevel:
-        return SystemLevel.STATE
-
-    @classmethod
     def get_file_tag_rank_list(cls) -> List[str]:
         return ["tagA", "tagB", "tagC"]
 
@@ -192,10 +187,6 @@ class CountyTestGcsfsDirectIngestController(BaseTestCsvGcsfsDirectIngestControll
             environment="production",
             region_module=fake_regions_module,
         )
-
-    @classmethod
-    def system_level(cls) -> SystemLevel:
-        return SystemLevel.COUNTY
 
     @classmethod
     def get_file_tag_rank_list(cls) -> List[str]:

@@ -81,18 +81,17 @@ class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandl
     def region_code(cls) -> str:
         pass
 
-    @classmethod
-    @abc.abstractmethod
-    def system_level(cls) -> SystemLevel:
-        pass
+    @property
+    def system_level(self) -> SystemLevel:
+        return SystemLevel.for_region(self.region)
 
     @property
     def ingest_database_key(self) -> SQLAlchemyDatabaseKey:
-        schema_type = self.system_level().schema_type()
+        schema_type = self.system_level.schema_type()
         if schema_type == SchemaType.STATE:
             return SQLAlchemyDatabaseKey.for_state_code(
                 StateCode(self.region_code().upper()),
-                self.ingest_instance.database_version(self.system_level()),
+                self.ingest_instance.database_version(self.system_level),
             )
 
         return SQLAlchemyDatabaseKey.for_schema(schema_type)
@@ -150,7 +149,7 @@ class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandl
             return
 
         if self.lock_manager.is_locked(
-            postgres_to_bq_lock_name_for_schema(self.system_level().schema_type())
+            postgres_to_bq_lock_name_for_schema(self.system_level.schema_type())
         ) or self.lock_manager.is_locked(
             postgres_to_bq_lock_name_for_schema(SchemaType.OPERATIONS)
         ):
@@ -231,7 +230,7 @@ class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandl
         check_is_region_launched_in_env(self.region)
 
         if self.lock_manager.is_locked(
-            postgres_to_bq_lock_name_for_schema(self.system_level().schema_type())
+            postgres_to_bq_lock_name_for_schema(self.system_level.schema_type())
         ) or self.lock_manager.is_locked(
             postgres_to_bq_lock_name_for_schema(SchemaType.OPERATIONS)
         ):
@@ -357,7 +356,7 @@ class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandl
             jurisdiction_id=self.region.jurisdiction_id,
             ingest_time=args.ingest_time,
             enum_overrides=self.get_enum_overrides(),
-            system_level=self.system_level(),
+            system_level=self.system_level,
             database_key=self.ingest_database_key,
         )
 

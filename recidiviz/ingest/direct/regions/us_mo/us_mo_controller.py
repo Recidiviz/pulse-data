@@ -62,7 +62,6 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import munge_date_string
-from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.common.str_field_utils import (
     parse_days_from_duration_pieces,
     parse_yyyymmdd_date,
@@ -434,10 +433,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
     @classmethod
     def region_code(cls) -> str:
         return StateCode.US_MO.value.lower()
-
-    @classmethod
-    def system_level(cls) -> SystemLevel:
-        return SystemLevel.STATE
 
     def __init__(self, ingest_bucket_path: GcsfsBucketPath):
         super().__init__(ingest_bucket_path)
