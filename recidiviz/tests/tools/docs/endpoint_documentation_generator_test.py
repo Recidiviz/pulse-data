@@ -37,8 +37,9 @@ SPECIFICATION_TEMPLATE = os.path.join(
 @attr.s
 class EndpointTestCase:
     endpoint: str = attr.ib()
-    expected_branch: str = attr.ib()
-    expected_leaf: str = attr.ib()
+    expected_relative_dir: str = attr.ib()
+    expected_file_name: str = attr.ib()
+    expected_top_level_prefix: str = attr.ib()
     expected_markdown_path: str = attr.ib()
     expected_documentation: str = attr.ib()
     expected_table_of_contents: str = attr.ib()
@@ -54,78 +55,84 @@ class EndpointDocumentationGeneratorTest(unittest.TestCase):
     TEST_CASES = [
         EndpointTestCase(
             endpoint="/single/",
-            expected_branch="",
-            expected_leaf="single",
-            expected_markdown_path=f"{DOCS_DIRECTORY}/single.md",
+            expected_relative_dir="single",
+            expected_file_name="_root_",
+            expected_top_level_prefix="single",
+            expected_markdown_path=f"{DOCS_DIRECTORY}/single/_root_.md",
             expected_documentation="""# /single/
 
 - _Methods_: GET, HEAD, OPTIONS
 - _Path Parameters_: """,
-            expected_table_of_contents="""- [/single/](endpoints/single.md)
+            expected_table_of_contents="""  - [/single/](endpoints/single/_root_.md)
 """,
         ),
         EndpointTestCase(
             endpoint="/single/<path:path>",
-            expected_branch="single",
-            expected_leaf="path",
+            expected_relative_dir="single",
+            expected_file_name="path",
+            expected_top_level_prefix="single",
             expected_path_parameters=["<path:path>"],
             expected_markdown_path=f"{DOCS_DIRECTORY}/single/path.md",
             expected_documentation="""# /single/&lt;path:path&gt;
 
 - _Methods_: GET, HEAD, OPTIONS
 - _Path Parameters_: &lt;path:path&gt;""",
-            expected_table_of_contents="""- [/single/&lt;path:path&gt;](endpoints/single/path.md)
+            expected_table_of_contents="""  - [/single/&lt;path:path&gt;](endpoints/single/path.md)
 """,
         ),
         EndpointTestCase(
             endpoint="/nested/path_with_param/<path:path>",
-            expected_branch="nested/path_with_param",
-            expected_leaf="path",
+            expected_relative_dir="nested/path_with_param",
+            expected_file_name="path",
+            expected_top_level_prefix="nested",
             expected_path_parameters=["<path:path>"],
             expected_markdown_path=f"{DOCS_DIRECTORY}/nested/path_with_param/path.md",
             expected_documentation="""# /nested/path_with_param/&lt;path:path&gt;
 
 - _Methods_: GET, HEAD, OPTIONS
 - _Path Parameters_: &lt;path:path&gt;""",
-            expected_table_of_contents="""- [/nested/path_with_param/&lt;path:path&gt;](endpoints/nested/path_with_param/path.md)
+            expected_table_of_contents="""  - [/nested/path_with_param/&lt;path:path&gt;](endpoints/nested/path_with_param/path.md)
 """,
         ),
         EndpointTestCase(
             endpoint="/very/nested/path",
-            expected_branch="very/nested",
-            expected_leaf="path",
+            expected_relative_dir="very/nested",
+            expected_file_name="path",
+            expected_top_level_prefix="very",
             expected_markdown_path=f"{DOCS_DIRECTORY}/very/nested/path.md",
             expected_documentation="""# /very/nested/path
 
 - _Methods_: GET, HEAD, OPTIONS
 - _Path Parameters_: """,
-            expected_table_of_contents="""- [/very/nested/path](endpoints/very/nested/path.md)
+            expected_table_of_contents="""  - [/very/nested/path](endpoints/very/nested/path.md)
 """,
         ),
         EndpointTestCase(
             endpoint="/very/nested/path_with_param/<path>",
-            expected_branch="very/nested/path_with_param",
-            expected_leaf="path",
+            expected_relative_dir="very/nested/path_with_param",
+            expected_file_name="path",
+            expected_top_level_prefix="very",
             expected_path_parameters=["<path>"],
             expected_markdown_path=f"{DOCS_DIRECTORY}/very/nested/path_with_param/path.md",
             expected_documentation="""# /very/nested/path_with_param/&lt;path&gt;
 
 - _Methods_: GET, HEAD, OPTIONS
 - _Path Parameters_: &lt;path&gt;""",
-            expected_table_of_contents="""- [/very/nested/path_with_param/&lt;path&gt;](endpoints/very/nested/path_with_param/path.md)
+            expected_table_of_contents="""  - [/very/nested/path_with_param/&lt;path&gt;](endpoints/very/nested/path_with_param/path.md)
 """,
         ),
         EndpointTestCase(
             endpoint="/very/nested/<param:filled>/path/<schema>",
-            expected_branch="very/nested/param/path",
-            expected_leaf="schema",
+            expected_relative_dir="very/nested/param/path",
+            expected_file_name="schema",
+            expected_top_level_prefix="very",
             expected_path_parameters=["<param:filled>", "<schema>"],
             expected_markdown_path=f"{DOCS_DIRECTORY}/very/nested/param/path/schema.md",
             expected_documentation="""# /very/nested/&lt;param:filled&gt;/path/&lt;schema&gt;
 
 - _Methods_: GET, HEAD, OPTIONS
 - _Path Parameters_: &lt;param:filled&gt;, &lt;schema&gt;""",
-            expected_table_of_contents="""- [/very/nested/&lt;param:filled&gt;/path/&lt;schema&gt;](endpoints/very/nested/param/path/schema.md)
+            expected_table_of_contents="""  - [/very/nested/&lt;param:filled&gt;/path/&lt;schema&gt;](endpoints/very/nested/param/path/schema.md)
 """,
         ),
     ]
@@ -138,10 +145,12 @@ class EndpointDocumentationGeneratorTest(unittest.TestCase):
                 testcase.expected_path_parameters,
             )
             self.assertEqual(
-                generator.get_leaf_url(testcase.endpoint), testcase.expected_leaf
+                generator.get_endpoint_docs_file_name(testcase.endpoint),
+                testcase.expected_file_name,
             )
             self.assertEqual(
-                generator.get_branch_of_url(testcase.endpoint), testcase.expected_branch
+                generator.get_endpoint_docs_relative_dir(testcase.endpoint),
+                testcase.expected_relative_dir,
             )
             self.assertEqual(
                 generator.generate_documentation_markdown_for_endpoint(
@@ -158,9 +167,6 @@ class EndpointDocumentationGeneratorTest(unittest.TestCase):
             )
             self.assertEqual(
                 generator.generate_markdown_table_of_contents_for_endpoint(
-                    markdown_path=generator.generate_markdown_path_for_endpoint(
-                        docs_directory=DOCS_DIRECTORY, endpoint=testcase.endpoint
-                    ),
                     docs_directory=DOCS_DIRECTORY,
                     endpoint=testcase.endpoint,
                 ),

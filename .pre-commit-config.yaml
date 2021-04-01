@@ -10,9 +10,17 @@ repos:
         language_version: python3
   - repo: local
     hooks:
-      - id: generate_docs
-        name: generate_docs
-        entry: pipenv run python -m recidiviz.tools.docs.documentation_generator
+      - id: generate_docs_for_region
+        name: generate_docs_for_region
+        entry: pipenv run python -m recidiviz.tools.docs.region_documentation_generator
         language: system
         files: ^recidiviz/ingest/direct/regions/
+        require_serial: true
+      - id: generate_docs_for_endpoint
+        name: generate_docs_for_endpoint
+        entry: pipenv run python -m recidiviz.tools.docs.endpoint_documentation_generator
+        language: system
+        files: ^recidiviz/
+        exclude: >
+          (?x)(^recidiviz/tests/|^recidiviz/tools/|^recidiviz/ingest/direct/regions/)$
         require_serial: true
