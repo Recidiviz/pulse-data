@@ -248,12 +248,13 @@ def view_chain_for_metric(
     )
     comparison_view_builder = metric_by_month.CompareToPriorYearViewBuilder(
         dataset_id=dataset_config.JUSTICE_COUNTS_CORRECTIONS_DATASET,
-        metric_to_calculate=metric,
+        metric_name=metric.output_name,
         input_view=calculate_view_builder,
     )
     dimensions_to_columns_view_builder = metric_by_month.DimensionsToColumnsViewBuilder(
         dataset_id=dataset_config.JUSTICE_COUNTS_CORRECTIONS_DATASET,
-        metric_to_calculate=metric,
+        metric_name=metric.output_name,
+        aggregations=metric.aggregated_dimensions,
         input_view=comparison_view_builder,
     )
     output_view_builder = CorrectionsOutputViewBuilder(

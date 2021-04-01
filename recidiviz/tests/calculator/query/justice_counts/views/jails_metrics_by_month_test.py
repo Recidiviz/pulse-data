@@ -122,24 +122,19 @@ class JailsOutputViewTest(BaseViewTest):
 
         # Act
         dimensions = ["state_code", "county_code", "metric", "year", "month"]
-        jail_population_metric = metric_by_month.CalculatedMetricByMonth(
-            system=schema.System.CORRECTIONS,
-            metric=schema.MetricType.POPULATION,
-            filtered_dimensions=[manual_upload.PopulationType.JAIL],
-            aggregated_dimensions={
-                "state_code": metric_by_month.Aggregation(
-                    dimension=manual_upload.State, comprehensive=False
-                ),
-                "county_code": metric_by_month.Aggregation(
-                    dimension=manual_upload.County, comprehensive=False
-                ),
-            },
-            output_name="POP",
-        )
         results = self.query_view(
             jails_metrics_by_month.JailOutputViewBuilder(
                 dataset_id="fake-dataset",
-                metric_to_calculate=jail_population_metric,
+                metric_name="POP",
+                aggregations={
+                    "state_code": metric_by_month.Aggregation(
+                        dimension=manual_upload.State, comprehensive=False
+                    ),
+                    "county_code": metric_by_month.Aggregation(
+                        dimension=manual_upload.County, comprehensive=False
+                    ),
+                },
+                value_column="value",
                 input_view=SimpleBigQueryViewBuilder(
                     dataset_id="justice_counts",
                     view_id="metric_by_month",
@@ -262,7 +257,7 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                         "INSTANT",
                         ["global/location/state", "metric/population/type"],
                         ["US_XX", "JAIL"],
-                        ["global/location/county"],
+                        ["global/location/county", "global/location/county-fips"],
                     ],
                     [
                         2,
@@ -271,7 +266,11 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                         "INSTANT",
                         ["metric/population/type"],
                         ["JAIL"],
-                        ["global/location/state", "global/location/county"],
+                        [
+                            "global/location/state",
+                            "global/location/county",
+                            "global/location/county-fips",
+                        ],
                     ],
                 ],
                 columns=[
@@ -314,14 +313,14 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
             mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Cell.__table__),
             mock_data=pd.DataFrame(
                 [
-                    [1, 1, ["US_XX_ALPHA"], 3000],
-                    [2, 1, ["US_XX_BETA"], 1000],
-                    [3, 2, ["US_XX_ALPHA"], 4000],
-                    [4, 2, ["US_XX_BETA"], 1500],
-                    [5, 3, ["US_YY", "US_YY_ALPHA"], 10000],
-                    [6, 3, ["US_ZZ", "US_ZZ_ALPHA"], 20000],
-                    [7, 4, ["US_YY", "US_YY_ALPHA"], 12000],
-                    [8, 4, ["US_ZZ", "US_ZZ_ALPHA"], 22000],
+                    [1, 1, ["US_XX_ALPHA", "00001"], 3000],
+                    [2, 1, ["US_XX_BETA", "00002"], 1000],
+                    [3, 2, ["US_XX_ALPHA", "00001"], 4000],
+                    [4, 2, ["US_XX_BETA", "00002"], 1500],
+                    [5, 3, ["US_YY", "US_YY_ALPHA", "01001"], 10000],
+                    [6, 3, ["US_ZZ", "US_ZZ_ALPHA", "02001"], 20000],
+                    [7, 4, ["US_YY", "US_YY_ALPHA", "01001"], 12000],
+                    [8, 4, ["US_ZZ", "US_ZZ_ALPHA", "02001"], 22000],
                 ],
                 columns=[
                     "id",
@@ -331,27 +330,35 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                 ],
             ),
         )
+        self.create_mock_bq_table(
+            dataset_id="external_reference",
+            table_id="county_resident_populations",
+            mock_schema=MockTableSchema(
+                data_types={
+                    "fips": sqltypes.String(255),
+                    "year": sqltypes.Integer,
+                    "population": sqltypes.Integer,
+                }
+            ),
+            mock_data=pd.DataFrame(
+                [
+                    ["00001", 2010, 600_000],
+                    ["00001", 2020, 800_000],
+                    ["00002", 2010, 300_000],
+                    ["00002", 2020, 500_000],
+                    ["01001", 2010, 1_000_000],
+                    ["01001", 2020, 1_200_000],
+                    ["02001", 2010, 2_000_000],
+                    ["02001", 2020, 2_200_000],
+                ],
+                columns=["fips", "year", "population"],
+            ),
+        )
 
         # Act
         dimensions = ["state_code", "county_code", "metric", "year", "month"]
-        jail_population_metric = metric_by_month.CalculatedMetricByMonth(
-            system=schema.System.CORRECTIONS,
-            metric=schema.MetricType.POPULATION,
-            filtered_dimensions=[manual_upload.PopulationType.JAIL],
-            aggregated_dimensions={
-                "state_code": metric_by_month.Aggregation(
-                    dimension=manual_upload.State, comprehensive=False
-                ),
-                "county_code": metric_by_month.Aggregation(
-                    dimension=manual_upload.County, comprehensive=False
-                ),
-            },
-            output_name="POP",
-        )
         results = self.query_view_chain(
-            jails_metrics_by_month.view_chain_for_metric(
-                metric=jail_population_metric,
-            ),
+            jails_metrics_by_month.JailsMetricsByMonthBigQueryViewCollector().collect_view_builders(),
             data_types={"year": int, "month": int, "value": int},
             dimensions=dimensions,
         )
@@ -359,21 +366,165 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
         # Assert
         expected = pd.DataFrame(
             [
-                ["US_XX", "US_XX_ALPHA", "POP", 2020, 11, _npd("2020-11-30"), 3000]
+                [
+                    "US_XX",
+                    "US_XX_ALPHA",
+                    "INCARCERATION_RATE_JAIL",
+                    2020,
+                    11,
+                    _npd("2020-11-30"),
+                    375,
+                ]
                 + [None] * 6,
-                ["US_XX", "US_XX_ALPHA", "POP", 2020, 12, _npd("2020-12-31"), 4000]
+                [
+                    "US_XX",
+                    "US_XX_ALPHA",
+                    "INCARCERATION_RATE_JAIL",
+                    2020,
+                    12,
+                    _npd("2020-12-31"),
+                    500,
+                ]
                 + [None] * 6,
-                ["US_XX", "US_XX_BETA", "POP", 2020, 11, _npd("2020-11-30"), 1000]
+                [
+                    "US_XX",
+                    "US_XX_ALPHA",
+                    "POPULATION_JAIL",
+                    2020,
+                    11,
+                    _npd("2020-11-30"),
+                    3000,
+                ]
                 + [None] * 6,
-                ["US_XX", "US_XX_BETA", "POP", 2020, 12, _npd("2020-12-31"), 1500]
+                [
+                    "US_XX",
+                    "US_XX_ALPHA",
+                    "POPULATION_JAIL",
+                    2020,
+                    12,
+                    _npd("2020-12-31"),
+                    4000,
+                ]
                 + [None] * 6,
-                ["US_YY", "US_YY_ALPHA", "POP", 2020, 11, _npd("2020-11-30"), 10000]
+                [
+                    "US_XX",
+                    "US_XX_BETA",
+                    "INCARCERATION_RATE_JAIL",
+                    2020,
+                    11,
+                    _npd("2020-11-30"),
+                    200,
+                ]
                 + [None] * 6,
-                ["US_YY", "US_YY_ALPHA", "POP", 2020, 12, _npd("2020-12-31"), 12000]
+                [
+                    "US_XX",
+                    "US_XX_BETA",
+                    "INCARCERATION_RATE_JAIL",
+                    2020,
+                    12,
+                    _npd("2020-12-31"),
+                    300,
+                ]
                 + [None] * 6,
-                ["US_ZZ", "US_ZZ_ALPHA", "POP", 2020, 11, _npd("2020-11-30"), 20000]
+                [
+                    "US_XX",
+                    "US_XX_BETA",
+                    "POPULATION_JAIL",
+                    2020,
+                    11,
+                    _npd("2020-11-30"),
+                    1000,
+                ]
                 + [None] * 6,
-                ["US_ZZ", "US_ZZ_ALPHA", "POP", 2020, 12, _npd("2020-12-31"), 22000]
+                [
+                    "US_XX",
+                    "US_XX_BETA",
+                    "POPULATION_JAIL",
+                    2020,
+                    12,
+                    _npd("2020-12-31"),
+                    1500,
+                ]
+                + [None] * 6,
+                [
+                    "US_YY",
+                    "US_YY_ALPHA",
+                    "INCARCERATION_RATE_JAIL",
+                    2020,
+                    11,
+                    _npd("2020-11-30"),
+                    833,
+                ]
+                + [None] * 6,
+                [
+                    "US_YY",
+                    "US_YY_ALPHA",
+                    "INCARCERATION_RATE_JAIL",
+                    2020,
+                    12,
+                    _npd("2020-12-31"),
+                    1000,
+                ]
+                + [None] * 6,
+                [
+                    "US_YY",
+                    "US_YY_ALPHA",
+                    "POPULATION_JAIL",
+                    2020,
+                    11,
+                    _npd("2020-11-30"),
+                    10000,
+                ]
+                + [None] * 6,
+                [
+                    "US_YY",
+                    "US_YY_ALPHA",
+                    "POPULATION_JAIL",
+                    2020,
+                    12,
+                    _npd("2020-12-31"),
+                    12000,
+                ]
+                + [None] * 6,
+                [
+                    "US_ZZ",
+                    "US_ZZ_ALPHA",
+                    "INCARCERATION_RATE_JAIL",
+                    2020,
+                    11,
+                    _npd("2020-11-30"),
+                    909,
+                ]
+                + [None] * 6,
+                [
+                    "US_ZZ",
+                    "US_ZZ_ALPHA",
+                    "INCARCERATION_RATE_JAIL",
+                    2020,
+                    12,
+                    _npd("2020-12-31"),
+                    1000,
+                ]
+                + [None] * 6,
+                [
+                    "US_ZZ",
+                    "US_ZZ_ALPHA",
+                    "POPULATION_JAIL",
+                    2020,
+                    11,
+                    _npd("2020-11-30"),
+                    20000,
+                ]
+                + [None] * 6,
+                [
+                    "US_ZZ",
+                    "US_ZZ_ALPHA",
+                    "POPULATION_JAIL",
+                    2020,
+                    12,
+                    _npd("2020-12-31"),
+                    22000,
+                ]
                 + [None] * 6,
             ],
             columns=[
