@@ -59,7 +59,7 @@ COMMIT_HASH=$(git rev-parse HEAD) || exit_on_fail
 script_prompt "Will create tag and deploy version [$RELEASE_VERSION_TAG] at commit [${COMMIT_HASH:0:7}] which is \
 the tip of branch [$RELEASE_CANDIDATE_BASE_BRANCH]. Continue?"
 
-${BASH_SOURCE_DIR}/base_deploy_to_staging.sh -v ${RELEASE_VERSION_TAG} -c ${COMMIT_HASH} ${STAGING_PUSH_PROMOTE_FLAG} || exit_on_fail
+${BASH_SOURCE_DIR}/base_deploy_to_staging.sh -v ${RELEASE_VERSION_TAG} -c ${COMMIT_HASH} -b ${RELEASE_CANDIDATE_BASE_BRANCH} ${STAGING_PUSH_PROMOTE_FLAG} || exit_on_fail
 
 echo "Deploy succeeded - creating local tag [${RELEASE_VERSION_TAG}]"
 verify_hash $COMMIT_HASH

@@ -11,6 +11,7 @@ source ${BASH_SOURCE_DIR}/deploy_helpers.sh
 
 VERSION_TAG=''
 COMMIT_HASH=''
+BRANCH_NAME=''
 DEBUG_BUILD_NAME=''
 PROMOTE=''
 NO_PROMOTE=''
@@ -20,6 +21,7 @@ function print_usage {
     echo_error "usage: $0 -v VERSION -c COMMIT_SHA [-p -n -d DEBUG_BUILD_NAME]"
     echo_error "  -v: Version tag to deploy (e.g. v1.2.0)"
     echo_error "  -c: Full SHA of the commit that is to be deployed."
+    echo_error "  -b: Name of the branch from which we're deploying. (required if promoting)"
     echo_error "  -p: Indicates that we should promote traffic to the newly deployed version. Can not be used with -n."
     echo_error "  -n: Indicates that we should not promote traffic to the newly deployed version. Can not be used with -p."
     echo_error "  -d: Name to append to the version for a debug local deploy (e.g. anna-test1)."
@@ -30,6 +32,7 @@ while getopts "v:c:pnd:" flag; do
   case "${flag}" in
     v) VERSION_TAG="$OPTARG" ;;
     c) COMMIT_HASH="$OPTARG" ;;
+    b) BRANCH_NAME="$OPTARG" ;;
     p) PROMOTE_FLAGS='--promote' PROMOTE='true';;
     n) PROMOTE_FLAGS='--no-promote' NO_PROMOTE='true';;
     d) DEBUG_BUILD_NAME="$OPTARG" ;;
@@ -45,7 +48,13 @@ if [[ -z ${VERSION_TAG} ]]; then
 fi
 
 if [[ -z ${COMMIT_HASH} ]]; then
-    echo_error "Missing/empty commit sha argumnet"
+    echo_error "Missing/empty commit sha argument"
+    print_usage
+    run_cmd exit 1
+fi
+
+if [[ -z ${BRANCH_NAME} && ! -z ${PROMOTE} ]]; then
+    echo_error "Missing/empty commit branch name while promoting"
     print_usage
     run_cmd exit 1
 fi
@@ -96,6 +105,12 @@ if [[ ! -z ${PROMOTE} ]]; then
     verify_hash $COMMIT_HASH
     run_cmd docker tag recidiviz-image $IMAGE_BASE:latest
     run_cmd docker push $IMAGE_BASE:latest
+fi
+
+if [[ ! -z ${PROMOTE} ]]; then
+    echo "Running migrations for all staging instances on prod-data-client. You may be asked to provide an ssh passphrase."
+    run_cmd gcloud compute ssh --ssh-flag="-t" prod-data-client --command "cd pulse-data && git fetch && git checkout $BRANCH_NAME \
+        && git pull && pipenv sync --dev && pipenv run ./recidiviz/tools/migrations/run_all_staging_migrations.sh"
 fi
 
 if [[ ! -z ${PROMOTE} || ! -z ${DEBUG_BUILD_NAME} ]]; then
