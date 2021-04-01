@@ -45,6 +45,7 @@ from recidiviz.calculator.query.state.views.public_dashboard.public_dashboard_vi
 from recidiviz.case_triage.views.view_config import CASE_TRIAGE_EXPORTED_VIEW_BUILDERS
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.ingest.views.view_config import INGEST_METADATA_BUILDERS
+from recidiviz.validation.views.view_config import VALIDATION_METADATA_BUILDERS
 
 
 @attr.s(frozen=True)
@@ -134,6 +135,7 @@ JUSTICE_COUNTS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-justice-counts-data"
 PO_REPORT_OUTPUT_DIRECTORY_URI = "gs://{project_id}-report-data/po_monthly_report"
 PUBLIC_DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-public-dashboard-data"
 INGEST_METADATA_OUTPUT_DIRECTORY_URI = "gs://{project_id}-ingest-metadata"
+VALIDATION_METADATA_OUTPUT_DIRECTORY_URI = "gs://{project_id}-validation-metadata"
 
 # The configurations for exporting BigQuery views from various datasets to GCS buckets
 VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = (
@@ -170,6 +172,14 @@ VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = (
             state_code_filter=None,
             export_name="INGEST_METADATA",
             bq_view_namespace=BigQueryViewNamespace.INGEST_METADATA,
+        ),
+        # Validation metadata views for admin panel
+        ExportViewCollectionConfig(
+            view_builders_to_export=VALIDATION_METADATA_BUILDERS,
+            output_directory_uri_template=VALIDATION_METADATA_OUTPUT_DIRECTORY_URI,
+            state_code_filter=None,
+            export_name="VALIDATION_METADATA",
+            bq_view_namespace=BigQueryViewNamespace.VALIDATION_METADATA,
         ),
         # Justice Counts views for frontend
         ExportViewCollectionConfig(
@@ -227,5 +237,6 @@ VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = (
 )
 
 NAMESPACES_REQUIRING_FULL_UPDATE: List[BigQueryViewNamespace] = [
-    BigQueryViewNamespace.INGEST_METADATA
+    BigQueryViewNamespace.INGEST_METADATA,
+    BigQueryViewNamespace.VALIDATION_METADATA,
 ]
