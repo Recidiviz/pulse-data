@@ -169,6 +169,17 @@ class BigQueryView(bigquery.TableReference):
         """The table_id for a table that contains the result of the view_query if this view were to be materialized."""
         return self.view_id + MATERIALIZED_SUFFIX if self._should_materialize else None
 
+    @property
+    def table_id_for_query(self) -> str:
+        """The id to use when querying from this view.
+
+        Will return the materialized view id when available, otherwise the plain view id"""
+        return (
+            self.materialized_view_table_id
+            if self.materialized_view_table_id is not None
+            else self.view_id
+        )
+
     def __repr__(self) -> str:
         return (
             f"{self.__class__.__name__}("

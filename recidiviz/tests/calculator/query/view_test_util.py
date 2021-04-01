@@ -30,7 +30,7 @@ from sqlalchemy.engine import create_engine, Engine
 from sqlalchemy.orm.session import close_all_sessions
 from sqlalchemy.sql import sqltypes
 
-from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.persistence.database.session import Session
 from recidiviz.tools.postgres import local_postgres_helpers
 
@@ -240,13 +240,13 @@ class BaseViewTest(unittest.TestCase):
         return self.query_view(view_builders[-1], data_types, dimensions)
 
     def create_view(self, view_builder: BigQueryViewBuilder) -> None:
-        view = view_builder.build()
+        view: BigQueryView = view_builder.build()
 
-        self.mock_bq_tables.add((view.dataset_id, view.table_id))
+        self.mock_bq_tables.add((view.dataset_id, view.table_id_for_query))
 
         query = (
-            f"CREATE TABLE `{view.project}.{view.dataset_id}.{view.table_id}` AS "
-            f"({view.view_query})"
+            f"CREATE TABLE `{view.project}.{view.dataset_id}.{view.table_id_for_query}` "
+            f"AS ({view.view_query})"
         )
         query = self._rewrite_sql(query)
         self._execute_statement(query)
