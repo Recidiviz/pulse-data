@@ -28,7 +28,7 @@ function print_usage {
     run_cmd exit 1
 }
 
-while getopts "v:c:pnd:" flag; do
+while getopts "b:v:c:pnd:" flag; do
   case "${flag}" in
     v) VERSION_TAG="$OPTARG" ;;
     c) COMMIT_HASH="$OPTARG" ;;
