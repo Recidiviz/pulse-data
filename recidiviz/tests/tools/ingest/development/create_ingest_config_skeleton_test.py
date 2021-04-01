@@ -23,7 +23,7 @@ import unittest
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
     DirectIngestRegionRawFileConfig,
 )
-from recidiviz.tools.create_ingest_config_skeleton import (
+from recidiviz.tools.ingest.development.create_ingest_config_skeleton import (
     create_ingest_config_skeleton,
     make_config_directory,
 )

@@ -18,7 +18,7 @@
 DB.
 
 Usage:
-    python -m recidiviz.tools.generate_clear_state_db_sql --state-code US_MO
+    python -m recidiviz.tools.ingest.operations.generate_clear_state_db_sql --state-code US_MO
 """
 
 import argparse

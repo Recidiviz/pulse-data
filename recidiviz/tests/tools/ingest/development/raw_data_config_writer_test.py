@@ -25,7 +25,9 @@ from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager i
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
-from recidiviz.tools.raw_data_config_writer import RawDataConfigWriter
+from recidiviz.tools.ingest.development.raw_data_config_writer import (
+    RawDataConfigWriter,
+)
 
 
 class RawDataConfigWriterTest(unittest.TestCase):

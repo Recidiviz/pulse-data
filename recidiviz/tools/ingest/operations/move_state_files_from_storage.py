@@ -28,7 +28,7 @@ Steps:
 
 Example usage (run from `pipenv shell`):
 
-python -m recidiviz.tools.move_state_files_from_storage \
+python -m recidiviz.tools.ingest.operations.move_state_files_from_storage \
     --project-id recidiviz-staging --region us_nd \
     --file-type-to-move raw \
     --start-date-bound 2019-08-12  --end-date-bound 2019-08-13 --dry-run True \
