@@ -25,6 +25,9 @@ from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
+)
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_file_path,
     SPLIT_FILE_SUFFIX,
@@ -62,7 +65,6 @@ from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_ma
 from recidiviz.ingest.direct.direct_ingest_controller_utils import (
     check_is_region_launched_in_env,
 )
-from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.operations.entities import (
     DirectIngestIngestFileMetadata,
 )
@@ -82,9 +84,8 @@ class GcsfsDirectIngestController(
         self,
         ingest_bucket_path: GcsfsBucketPath,
         storage_directory_path: GcsfsDirectoryPath,
-        ingest_database_key: SQLAlchemyDatabaseKey,
     ):
-        super().__init__(ingest_database_key)
+        super().__init__(DirectIngestInstance.for_ingest_bucket(ingest_bucket_path))
         self.fs = DirectIngestGCSFileSystem(GcsfsFactory.build())
         self.ingest_bucket_path = ingest_bucket_path
         self.storage_directory_path = storage_directory_path

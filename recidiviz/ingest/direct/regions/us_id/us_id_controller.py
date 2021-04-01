@@ -153,7 +153,6 @@ from recidiviz.ingest.models.ingest_info import (
     StateSupervisionCaseTypeEntry,
 )
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
-from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.utils.environment import in_gcp_production
 from recidiviz.utils.params import str_to_bool
 
@@ -173,11 +172,8 @@ class UsIdController(CsvGcsfsDirectIngestController):
         self,
         ingest_bucket_path: GcsfsBucketPath,
         storage_directory_path: GcsfsDirectoryPath,
-        ingest_database_key: SQLAlchemyDatabaseKey,
     ):
-        super().__init__(
-            ingest_bucket_path, storage_directory_path, ingest_database_key
-        )
+        super().__init__(ingest_bucket_path, storage_directory_path)
         self.enum_overrides = self.generate_enum_overrides()
         early_discharge_deleted_rows_processors = [
             gen_label_single_external_id_hook(US_ID_DOC),

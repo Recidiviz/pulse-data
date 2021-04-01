@@ -147,7 +147,6 @@ from recidiviz.ingest.models.ingest_info import (
     StateSupervisionCaseTypeEntry,
 )
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
-from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 
 
 class UsMoController(CsvGcsfsDirectIngestController):
@@ -444,11 +443,8 @@ class UsMoController(CsvGcsfsDirectIngestController):
         self,
         ingest_bucket_path: GcsfsBucketPath,
         storage_directory_path: GcsfsDirectoryPath,
-        ingest_database_key: SQLAlchemyDatabaseKey,
     ):
-        super().__init__(
-            ingest_bucket_path, storage_directory_path, ingest_database_key
-        )
+        super().__init__(ingest_bucket_path, storage_directory_path)
 
         self.enum_overrides = self.generate_enum_overrides()
         self.row_pre_processors_by_file: Dict[str, List[Callable]] = {}

@@ -69,9 +69,6 @@ from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsBucketPath,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_csv_reader import GcsfsCsvReader
-from recidiviz.persistence.database.sqlalchemy_database_key import (
-    SQLAlchemyDatabaseKey,
-)
 from recidiviz.persistence.entity.operations.entities import DirectIngestFileMetadata
 from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
 from recidiviz.tests.ingest.direct.fake_direct_ingest_big_query_client import (
@@ -347,14 +344,10 @@ def build_gcsfs_controller_for_tests(
                         ):
                             controller = controller_cls(
                                 ingest_bucket_path=GcsfsBucketPath(
-                                    "ingest-bucket-name"
+                                    "recidiviz-xxx-direct-ingest-state-us-xx"
                                 ),
                                 storage_directory_path=GcsfsDirectoryPath.from_absolute_path(
                                     "storage/path/"
-                                ),
-                                # TODO(#6077): Write tests that use differentiated DB
-                                ingest_database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
-                                    controller_cls.system_level().schema_type()
                                 ),
                             )
                             controller.csv_reader = _TestSafeGcsCsvReader(fake_fs)
