@@ -25,6 +25,7 @@ import unittest
 from typing import Dict
 from unittest.mock import patch
 
+from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
 from recidiviz.big_query.big_query_view import BigQueryView, MATERIALIZED_SUFFIX
 from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagWalker,
@@ -38,7 +39,6 @@ from recidiviz.big_query.view_update_manager import (
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
     DirectIngestRegionRawFileConfig,
 )
-from recidiviz.ingest.views.metadata_helpers import BigQueryTableChecker
 
 LATEST_VIEW_DATASET_REGEX = re.compile(r"(us_[a-z]{2})_raw_data_up_to_date_views")
 MOCK_VIEW_PROCESS_TIME_SECONDS = 0.01

@@ -14,22 +14,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for the BigQueryColumnChecker class."""
+"""Tests for the BigQueryTableChecker class."""
 from unittest import TestCase, mock
 
 from google.cloud import bigquery
 
-from recidiviz.ingest.views.metadata_helpers import (
-    BigQueryTableChecker,
-)
+from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
 
 
-class TestBigQueryColumnChecker(TestCase):
-    """Tests for BigQueryColumnChecker."""
+class TestBigQueryTableChecker(TestCase):
+    """Tests for BigQueryTableChecker."""
 
     def setUp(self) -> None:
         self.client_patcher = mock.patch(
-            "recidiviz.ingest.views.metadata_helpers.BigQueryClientImpl"
+            "recidiviz.big_query.big_query_table_checker.BigQueryClientImpl"
         )
         self.client_fn = self.client_patcher.start()
 
