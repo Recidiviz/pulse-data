@@ -193,7 +193,7 @@ class CheckAssertionsTest(unittest.TestCase):
         expected_failures: List[Tuple[FrozenSet[str], FrozenSet[str]]] = [
             (
                 frozenset(["recidiviz/admin_panel/routes.py"]),
-                frozenset(["docs/endpoints/admin.md", "docs/endpoints/admin"]),
+                frozenset(["docs/endpoints/admin"]),
             ),
             (
                 frozenset(["recidiviz/ingest/aggregate/single_count.py"]),

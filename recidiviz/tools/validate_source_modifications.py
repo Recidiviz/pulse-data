@@ -109,13 +109,11 @@ def _get_modified_endpoints() -> List[RequiredModificationSets]:
     for rule in temp_app.url_map.iter_rules():
         file_for_endpoint = _get_file_for_endpoint_rule(rule)
         if file_for_endpoint:
-            endpoint_markdown = doc_generator.generate_markdown_path_for_endpoint(
-                ENDPOINT_DOCS_DIRECTORY, rule.rule
-            )
-            if len(endpoint_markdown.split("/")) > 1:
-                endpoint_files_to_markdown_paths[file_for_endpoint].append(
-                    endpoint_markdown
+            endpoint_files_to_markdown_paths[file_for_endpoint].append(
+                doc_generator.generate_markdown_path_for_endpoint(
+                    ENDPOINT_DOCS_DIRECTORY, rule.rule
                 )
+            )
 
     required_modification_sets = []
     for (

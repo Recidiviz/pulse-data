@@ -86,6 +86,7 @@ class ValidationTableColumnCounterBigQueryViewCollector(
                     SimpleBigQueryViewBuilder(
                         dataset_id=METADATA_DATASET,
                         view_id=f"validation_metadata__{table_name}__{col}",
+                        description=f"Validation metadata for {table_name}",
                         view_query_template=COLUMN_COUNTER_STATE_QUERY_TEMPLATE,
                         validation_dataset=self.schema_config.dataset,
                         table_name=table_name,
