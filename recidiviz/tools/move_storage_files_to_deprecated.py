@@ -46,6 +46,9 @@ from datetime import date
 from progress.bar import Bar
 
 from recidiviz.common.ingest_metadata import SystemLevel
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
+)
 
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     gcsfs_direct_ingest_storage_directory_path_for_region,
@@ -85,11 +88,15 @@ class MoveFilesToDeprecatedController:
         self.dry_run = dry_run
         self.file_filter = file_filter
         self.project_id = project_id
+
+        # TODO(#6077): Add ability to deprecate files for any instance
+        ingest_instance = DirectIngestInstance.PRIMARY
         self.region_storage_dir_path_for_file_type = (
             gcsfs_direct_ingest_storage_directory_path_for_region(
-                region_code,
-                SystemLevel.STATE,
-                self.file_type,
+                region_code=region_code,
+                system_level=SystemLevel.STATE,
+                ingest_instance=ingest_instance,
+                file_type=self.file_type,
                 project_id=self.project_id,
             )
         )

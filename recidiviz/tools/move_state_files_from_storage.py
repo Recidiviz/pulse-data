@@ -52,6 +52,9 @@ from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_file_path_from_normalized_path,
 )
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
+)
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     gcsfs_direct_ingest_storage_directory_path_for_region,
     gcsfs_direct_ingest_bucket_for_region,
@@ -114,13 +117,19 @@ class MoveFilesFromStorageController:
         self.dry_run = dry_run
         self.file_filter = file_filter
 
+        # TODO(#6077): Add ability to copy files from any instance's storage
+        ingest_instance = DirectIngestInstance.PRIMARY
         self.storage_bucket = gcsfs_direct_ingest_storage_directory_path_for_region(
-            region,
-            SystemLevel.STATE,
+            region_code=region,
+            system_level=SystemLevel.STATE,
+            ingest_instance=ingest_instance,
             project_id=self.project_id,
         )
         self.ingest_bucket = gcsfs_direct_ingest_bucket_for_region(
-            region, SystemLevel.STATE, project_id=self.project_id
+            region_code=region,
+            system_level=SystemLevel.STATE,
+            ingest_instance=ingest_instance,
+            project_id=self.project_id,
         )
 
         self.mutex = threading.Lock()
