@@ -1,0 +1,45 @@
+# Configuration describing the schema for our external validation tables.
+
+dataset: validation_external_accuracy_tables
+tables:
+  - name: incarceration_population_by_facility
+    columns:
+      - region_code
+      - year
+      - month
+      - date_of_stay
+      - facility
+      - population_count
+  - name: incarceration_population_person_level
+    columns:
+      - region_code
+      - person_external_id
+      - date_of_stay
+      - facility
+  - name: population_projection_monthly_population
+    columns:
+      - region_code
+      - compartment
+      - year
+      - month
+      - total_population
+  - name: recidivism_person_level
+    columns:
+      - region_code
+      - release_cohort
+      - follow_up_period
+      - person_external_id
+      - recidivated
+  - name: supervision_population_person_level
+    columns:
+      - region_code
+      - person_external_id
+      - date_of_supervision
+      - district
+      - supervising_officer
+      - supervision_level
+  - name: supervision_termination_person_level
+    columns:
+      - region_code
+      - person_external_id
+      - termination_date
