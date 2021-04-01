@@ -26,13 +26,13 @@ max dates in their ranges. Enums have already been split accordingly.
 """
 from typing import List
 
+from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.ingest.views.dataset_config import VIEWS_DATASET
 from recidiviz.ingest.views.metadata_helpers import (
     METADATA_EXCLUDED_PROPERTIES,
     METADATA_TABLES_WITH_CUSTOM_COUNTERS,
-    BigQueryTableChecker,
     get_non_enum_property_names,
     get_state_tables,
 )

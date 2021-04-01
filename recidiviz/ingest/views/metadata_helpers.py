@@ -16,11 +16,10 @@
 # =============================================================================
 """A set of helper functions for computing metadata on ingested tables."""
 
-from typing import List, Tuple, Type, Optional, Callable
+from typing import List, Tuple, Type
 
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
-from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema_utils import (
     get_non_history_state_database_entities,
@@ -48,48 +47,3 @@ def get_non_enum_property_names(entity: DeclarativeMeta) -> List[str]:
 
 def get_state_tables() -> List[Tuple[Type[DatabaseEntity], str]]:
     return [(e, e.get_entity_name()) for e in get_non_history_state_database_entities()]
-
-
-class BigQueryTableChecker:
-    """Class that fetches the BQ schema for a given Table/View and exposes functionality for checking if a column
-    exists in the table."""
-
-    def __init__(self, dataset_id: str, table_id: str) -> None:
-        self.dataset_id = dataset_id
-        self.table_id = table_id
-        self._columns: Optional[List[str]] = None
-
-    @property
-    def columns(self) -> List[str]:
-        if self._columns is None:
-            bq_client = BigQueryClientImpl()
-            t = bq_client.get_table(
-                bq_client.dataset_ref_for_id(self.dataset_id), self.table_id
-            )
-            self._columns = [col.name for col in t.schema]
-
-        return self._columns
-
-    def _table_has_column(self, col_name: str) -> bool:
-        return col_name in self.columns
-
-    def get_has_column_predicate(self, col: str) -> Callable[[], bool]:
-        """Returns a predicate that can be called to check that this table has a given column. The predicate function,
-        when called, will lazily load table columns from BigQuery if they have not been loaded already."""
-
-        def has_column() -> bool:
-            return self._table_has_column(col)
-
-        return has_column
-
-    def _table_exists(self) -> bool:
-        bq_client = BigQueryClientImpl()
-        return bq_client.table_exists(
-            bq_client.dataset_ref_for_id(self.dataset_id), self.table_id
-        )
-
-    def get_table_exists_predicate(self) -> Callable[[], bool]:
-        def table_exists() -> bool:
-            return self._table_exists()
-
-        return table_exists
