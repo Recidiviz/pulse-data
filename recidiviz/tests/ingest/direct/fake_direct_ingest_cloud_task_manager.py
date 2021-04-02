@@ -19,6 +19,7 @@
 import abc
 from typing import Optional
 
+from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
@@ -72,12 +73,15 @@ class FakeDirectIngestCloudTaskManager(DirectIngestCloudTaskManager):
 
     @abc.abstractmethod
     def create_direct_ingest_scheduler_queue_task(
-        self, region: Region, just_finished_job: bool, delay_sec: int
+        self,
+        region: Region,
+        ingest_bucket: GcsfsBucketPath,
+        just_finished_job: bool,
     ) -> None:
         pass
 
     @abc.abstractmethod
     def create_direct_ingest_handle_new_files_task(
-        self, region: Region, can_start_ingest: bool
+        self, region: Region, ingest_bucket: GcsfsBucketPath, can_start_ingest: bool
     ) -> None:
         pass

@@ -22,7 +22,6 @@ from unittest import TestCase
 import mock
 from freezegun import freeze_time
 from google.cloud import tasks_v2
-from google.protobuf import timestamp_pb2
 from mock import patch, MagicMock
 
 from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
@@ -36,7 +35,7 @@ from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import (
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_file_path,
 )
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsBucketPath
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     DirectIngestCloudTaskManagerImpl,
     _build_task_id,
@@ -139,11 +138,6 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock
     ) -> None:
         # Arrange
-        delay_sec = 5
-        now_utc_timestamp = int(datetime.datetime.now().timestamp())
-
-        time_proto = timestamp_pb2.Timestamp(seconds=(now_utc_timestamp + delay_sec))
-
         body_encoded = json.dumps({}).encode()
         uuid = "random-uuid"
         mock_uuid.uuid4.return_value = uuid
@@ -154,11 +148,10 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         )
         task = tasks_v2.types.task_pb2.Task(
             name=task_name,
-            schedule_time=time_proto,
             app_engine_http_request={
                 "http_method": "POST",
                 "relative_uri": f"/direct/scheduler?region={_REGION.region_code}&"
-                f"just_finished_job=False",
+                f"bucket=some-bucket&just_finished_job=False",
                 "body": body_encoded,
             },
         )
@@ -168,7 +161,9 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
 
         # Act
         DirectIngestCloudTaskManagerImpl().create_direct_ingest_scheduler_queue_task(
-            _REGION, False, delay_sec
+            region=_REGION,
+            ingest_bucket=GcsfsBucketPath("some-bucket"),
+            just_finished_job=False,
         )
 
         # Assert

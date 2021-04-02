@@ -193,7 +193,9 @@ class BaseDirectIngestController(Ingestor):
     def kick_scheduler(self, just_finished_job: bool) -> None:
         logging.info("Creating cloud task to schedule next job.")
         self.cloud_task_manager.create_direct_ingest_scheduler_queue_task(
-            region=self.region, just_finished_job=just_finished_job, delay_sec=0
+            region=self.region,
+            ingest_bucket=self.ingest_bucket_path,
+            just_finished_job=just_finished_job,
         )
 
     def schedule_next_ingest_job(self, just_finished_job: bool) -> None:
@@ -700,7 +702,9 @@ class BaseDirectIngestController(Ingestor):
 
         logging.info("Creating cloud task to schedule next job.")
         self.cloud_task_manager.create_direct_ingest_handle_new_files_task(
-            region=self.region, can_start_ingest=start_ingest
+            region=self.region,
+            ingest_bucket=self.ingest_bucket_path,
+            can_start_ingest=start_ingest,
         )
 
     def _register_all_new_paths_in_metadata(self, paths: List[GcsfsFilePath]) -> None:
@@ -846,7 +850,9 @@ class BaseDirectIngestController(Ingestor):
         ):
             logging.info("Creating cloud task to schedule next job.")
             self.cloud_task_manager.create_direct_ingest_handle_new_files_task(
-                region=self.region, can_start_ingest=True
+                region=self.region,
+                ingest_bucket=self.ingest_bucket_path,
+                can_start_ingest=True,
             )
 
     def _should_split_file(self, path: GcsfsFilePath) -> bool:

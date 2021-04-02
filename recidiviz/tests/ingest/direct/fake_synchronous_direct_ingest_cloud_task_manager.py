@@ -19,6 +19,7 @@ synchronously, when prompted."""
 
 from typing import List, Tuple, Union
 
+from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsIngestViewExportArgs,
     GcsfsRawDataBQImportArgs,
@@ -46,7 +47,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         super().__init__()
         self.process_job_tasks: List[Tuple[str, GcsfsIngestArgs]] = []
         self.num_finished_process_job_tasks = 0
-        self.scheduler_tasks: List[Tuple[str, bool]] = []
+        self.scheduler_tasks: List[Tuple[str, GcsfsBucketPath, bool]] = []
         self.num_finished_scheduler_tasks = 0
         self.bq_import_export_tasks: List[
             Tuple[str, Union[GcsfsRawDataBQImportArgs, GcsfsIngestViewExportArgs]]
@@ -93,7 +94,10 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         self.process_job_tasks.append((f"projects/path/to/{task_id}", ingest_args))
 
     def create_direct_ingest_scheduler_queue_task(
-        self, region: Region, just_finished_job: bool, delay_sec: int
+        self,
+        region: Region,
+        ingest_bucket: GcsfsBucketPath,
+        just_finished_job: bool,
     ) -> None:
         """Queues *but does not run* a scheduler task."""
         if not self.controller:
@@ -101,17 +105,21 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
 
         task_id = _build_task_id(self.controller.region.region_code, None)
         self.scheduler_tasks.append(
-            (f"projects/path/to/{task_id}-schedule", just_finished_job)
+            (f"projects/path/to/{task_id}-schedule", ingest_bucket, just_finished_job)
         )
 
     def create_direct_ingest_handle_new_files_task(
-        self, region: Region, can_start_ingest: bool
+        self, region: Region, ingest_bucket: GcsfsBucketPath, can_start_ingest: bool
     ) -> None:
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
         task_id = _build_task_id(self.controller.region.region_code, None)
         self.scheduler_tasks.append(
-            (f"projects/path/to/{task_id}-handle_new_files", can_start_ingest)
+            (
+                f"projects/path/to/{task_id}-handle_new_files",
+                ingest_bucket,
+                can_start_ingest,
+            )
         )
 
     def create_direct_ingest_raw_data_import_task(
@@ -175,10 +183,17 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         task_id = task[0]
 
         with monitoring.push_region_tag(self.controller.region.region_code):
+            ingest_bucket_path = task[1]
+            if not self.controller.ingest_bucket_path == ingest_bucket_path:
+                raise ValueError(
+                    f"Task request [{task_id}] for ingest bucket [{ingest_bucket_path}]"
+                    f"that does not match registered controller ingest bucket"
+                    f"[{self.controller.ingest_bucket_path}]."
+                )
             if task_id.endswith("schedule"):
-                self.controller.schedule_next_ingest_job(just_finished_job=task[1])
+                self.controller.schedule_next_ingest_job(just_finished_job=task[2])
             elif task_id.endswith("handle_new_files"):
-                self.controller.handle_new_files(can_start_ingest=task[1])
+                self.controller.handle_new_files(can_start_ingest=task[2])
             else:
                 raise ValueError(f"Unexpected task id [{task_id}]")
         self.num_finished_scheduler_tasks += 1
