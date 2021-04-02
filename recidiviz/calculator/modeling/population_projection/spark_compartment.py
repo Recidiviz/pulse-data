@@ -25,14 +25,9 @@ import pandas as pd
 class SparkCompartment(ABC):
     """Encapsulate all the logic for one compartment within the simulation"""
 
-    def __init__(
-        self, outflows_data: pd.DataFrame, starting_ts: int, policy_ts: int, tag: str
-    ):
+    def __init__(self, outflows_data: pd.DataFrame, starting_ts: int, tag: str):
         # the first ts of the projection
         self.ts_start = starting_ts
-
-        # the ts the policies are implemented
-        self.policy_ts = policy_ts
 
         # the current ts of the simulation
         self.current_ts = starting_ts

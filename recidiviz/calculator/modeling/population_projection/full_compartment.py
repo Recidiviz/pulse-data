@@ -26,6 +26,9 @@ from recidiviz.calculator.modeling.population_projection.spark_compartment impor
 )
 from recidiviz.calculator.modeling.population_projection.simulations.compartment_transitions import (
     CompartmentTransitions,
+)
+
+from recidiviz.calculator.modeling.population_projection.simulations.transition_table import (
     SIG_FIGS,
 )
 
@@ -36,24 +39,23 @@ class FullCompartment(SparkCompartment):
     def __init__(
         self,
         outflow_data: pd.DataFrame,
-        transition_tables: CompartmentTransitions,
+        compartment_transitions: CompartmentTransitions,
         starting_ts: int,
-        policy_ts: int,
         tag: str,
     ):
 
-        super().__init__(outflow_data, starting_ts, policy_ts, tag)
+        super().__init__(outflow_data, starting_ts, tag)
 
         # store all population cohorts with their population counts per ts
         self.cohorts: CohortTable = CohortTable(
-            starting_ts, transition_tables.max_sentence
+            starting_ts, compartment_transitions.max_sentence
         )
 
         # separate incoming cohorts that should be processed after .step_forward()
         self.incoming_cohorts: float = 0
 
         # transition tables object from compartment out
-        self.transition_tables = transition_tables
+        self.compartment_transitions = compartment_transitions
 
         # Series containing compartment population at the end of each ts in the simulation
         self.end_ts_populations = pd.Series(dtype=float)
@@ -69,8 +71,8 @@ class FullCompartment(SparkCompartment):
     def _generate_outflow_dict(self):
         """step forward all cohorts one time step and generate outflow dict"""
 
-        per_ts_transitions = self.transition_tables.get_per_ts_transition_table(
-            self.current_ts, self.policy_ts
+        per_ts_transitions = self.compartment_transitions.get_per_ts_transition_table(
+            self.current_ts
         )
 
         latest_ts_pop = self.cohorts.get_latest_population()
@@ -98,7 +100,9 @@ class FullCompartment(SparkCompartment):
             )
 
         # broadcast latest cohort populations onto transition table
-        latest_ts_pop_short = per_ts_transitions.mul(latest_ts_pop_short, axis=0)
+        latest_ts_pop_short = per_ts_transitions.mul(
+            latest_ts_pop_short, axis=0
+        ).dropna(how="all")
 
         latest_ts_pop = latest_ts_pop_long.append(latest_ts_pop_short.remaining)
 
@@ -136,10 +140,7 @@ class FullCompartment(SparkCompartment):
         self.outflows[self.current_ts] = pd.Series(outflow_dict, dtype=float)
 
         # if historical data available, use that instead
-        if (
-            self.current_ts in self.outflows_data.columns
-            and self.current_ts < self.policy_ts
-        ):
+        if self.current_ts in self.outflows_data.columns:
             model_outflow = pd.Series(outflow_dict, dtype=float)
             outflow_dict = self.outflows_data[self.current_ts].to_dict()
             self.error[self.current_ts] = (
@@ -149,10 +150,8 @@ class FullCompartment(SparkCompartment):
             )
 
         # if prior to historical data, interpolate from earliest ts of data
-        elif (
-            not self.outflows_data.empty
-            and self.current_ts < min(self.outflows_data.columns)
-            and self.current_ts < self.policy_ts
+        elif not self.outflows_data.empty and self.current_ts < min(
+            self.outflows_data.columns
         ):
             # TODO(#5431): replace outflows during initialization with better backward projection
             outflow_dict = self.outflows_data[min(self.outflows_data.columns)].to_dict()
@@ -189,7 +188,6 @@ class FullCompartment(SparkCompartment):
 
         if (
             total_populations[total_populations["time_step"] == self.current_ts].empty
-            or self.current_ts > self.policy_ts
             or current_population == 0
         ):
             return self.current_ts, None

@@ -251,7 +251,7 @@ class Initializer:
         """converts a number of time steps relative to reference date into absolute dates"""
         return time_steps.apply(lambda x: np.round(x * time_step + reference_year, 8))
 
-    def _convert_to_absolute_year(self, time_steps: pd.Series) -> float:
+    def _convert_to_absolute_year(self, time_steps: pd.Series) -> pd.Series:
         """versison of convert_to_absolute_year for use inside class"""
         return self.convert_to_absolute_year(
             self.time_step, self.reference_year, time_steps

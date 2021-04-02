@@ -17,6 +17,9 @@
 """Encapsulate the population data per cohort and time step"""
 
 import pandas as pd
+from recidiviz.calculator.modeling.population_projection.simulations.transition_table import (
+    SIG_FIGS,
+)
 
 
 class CohortTable:
@@ -42,7 +45,7 @@ class CohortTable:
     def append_ts_end_count(self, cohort_sizes: pd.Series, projection_ts: int) -> None:
         """Append the cohort sizes for the end of the projection ts"""
         latest_population = self.get_latest_population()
-        if (round(cohort_sizes, 8) > round(latest_population, 8)).any():
+        if (round(cohort_sizes, SIG_FIGS) > round(latest_population, SIG_FIGS)).any():
             raise ValueError(
                 "Cannot append cohort data that is larger than the latest population\n"
                 f"Latest population: {latest_population[cohort_sizes > latest_population]}\n"
