@@ -34,7 +34,6 @@ from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_types import (
     CloudTaskArgs,
-    IngestArgs,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsIngestArgs,
@@ -103,7 +102,7 @@ class SftpCloudTaskQueueInfo(CloudTaskQueueInfo):
 
 @attr.s
 class ProcessIngestJobCloudTaskQueueInfo(CloudTaskQueueInfo):
-    def is_task_queued(self, region: Region, ingest_args: IngestArgs) -> bool:
+    def is_task_queued(self, region: Region, ingest_args: GcsfsIngestArgs) -> bool:
         """Returns true if the ingest_args correspond to a task currently in
         the queue.
         """
@@ -175,13 +174,13 @@ class DirectIngestCloudTaskManager:
 
     @abc.abstractmethod
     def create_direct_ingest_process_job_task(
-        self, region: Region, ingest_args: IngestArgs
+        self, region: Region, ingest_args: GcsfsIngestArgs
     ) -> None:
         """Queues a direct ingest process job task. All direct ingest data
         processing should happen through this endpoint.
         Args:
             region: `Region` direct ingest region.
-            ingest_args: `IngestArgs` args for the current direct ingest task.
+            ingest_args: `GcsfsIngestArgs` args for the current direct ingest task.
         """
 
     @abc.abstractmethod
@@ -230,8 +229,6 @@ class DirectIngestCloudTaskManager:
         if "cloud_task_args" in json_data and "args_type" in json_data:
             args_type = json_data["args_type"]
             cloud_task_args_dict = json_data["cloud_task_args"]
-            if args_type == IngestArgs.__name__:
-                return IngestArgs.from_serializable(cloud_task_args_dict)
             if args_type == GcsfsIngestArgs.__name__:
                 return GcsfsIngestArgs.from_serializable(cloud_task_args_dict)
             if args_type == GcsfsRawDataBQImportArgs.__name__:
@@ -321,7 +318,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         )
 
     def create_direct_ingest_process_job_task(
-        self, region: Region, ingest_args: IngestArgs
+        self, region: Region, ingest_args: GcsfsIngestArgs
     ) -> None:
         task_id = _build_task_id(
             region.region_code, ingest_args.task_id_tag(), prefix_only=False

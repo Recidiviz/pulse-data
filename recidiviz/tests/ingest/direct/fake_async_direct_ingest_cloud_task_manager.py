@@ -20,14 +20,10 @@ import logging
 from queue import Queue, Empty
 from threading import Thread, Lock, Condition
 from typing import Callable, List, Tuple, Optional, Any
-
-from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgsType
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import (
-    GcsfsDirectIngestController,
-)
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsRawDataBQImportArgs,
     GcsfsIngestViewExportArgs,
+    GcsfsIngestArgs,
 )
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     ProcessIngestJobCloudTaskQueueInfo,
@@ -200,7 +196,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
         self.sftp_queue = SingleThreadTaskQueue(name="sftp")
 
     def create_direct_ingest_process_job_task(
-        self, region: Region, ingest_args: IngestArgsType
+        self, region: Region, ingest_args: GcsfsIngestArgs
     ) -> None:
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
@@ -235,9 +231,6 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
 
-        if not isinstance(self.controller, GcsfsDirectIngestController):
-            raise ValueError(f"Unexpected controller type {type(self.controller)}")
-
         self.scheduler_queue.add_task(
             f"{region.region_code}-handle_new_files",
             with_monitoring(region.region_code, self.controller.handle_new_files),
@@ -250,9 +243,6 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
 
-        if not isinstance(self.controller, GcsfsDirectIngestController):
-            raise ValueError(f"Unexpected controller type {type(self.controller)}")
-
         self.bq_import_export_queue.add_task(
             f"{region.region_code}-raw_data_import-{data_import_args.task_id_tag()}",
             with_monitoring(region.region_code, self.controller.do_raw_data_import),
@@ -264,9 +254,6 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
     ) -> None:
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
-
-        if not isinstance(self.controller, GcsfsDirectIngestController):
-            raise ValueError(f"Unexpected controller type {type(self.controller)}")
 
         self.bq_import_export_queue.add_task(
             f"{region.region_code}-ingest_view_export-{ingest_view_export_args.task_id_tag()}",

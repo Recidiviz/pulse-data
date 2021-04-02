@@ -54,8 +54,8 @@ from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager i
 from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import (
     DirectIngestPreProcessedIngestViewCollector,
 )
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import (
-    GcsfsDirectIngestController,
+from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
+    BaseDirectIngestController,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     filename_parts_from_path,
@@ -105,7 +105,7 @@ class _TestSafeGcsCsvReader(GcsfsCsvReader):
 
 
 class DirectIngestFakeGCSFileSystemDelegate(FakeGCSFileSystemDelegate):
-    def __init__(self, controller: GcsfsDirectIngestController, can_start_ingest: bool):
+    def __init__(self, controller: BaseDirectIngestController, can_start_ingest: bool):
         self.controller = controller
         self.can_start_ingest = can_start_ingest
 
@@ -295,7 +295,7 @@ def build_gcsfs_controller_for_tests(
     run_async: bool,
     can_start_ingest: bool = True,
     regions_module: ModuleType = fake_regions_module,
-) -> GcsfsDirectIngestController:
+) -> BaseDirectIngestController:
     """Builds an instance of |controller_cls| for use in tests with several internal classes mocked properly. """
     fake_fs = FakeGCSFileSystem()
 
@@ -313,14 +313,14 @@ def build_gcsfs_controller_for_tests(
         f"{BaseDirectIngestController.__module__}.DirectIngestCloudTaskManagerImpl"
     ) as mock_task_factory_cls:
         with patch(
-            f"{GcsfsDirectIngestController.__module__}.BigQueryClientImpl"
+            f"{BaseDirectIngestController.__module__}.BigQueryClientImpl"
         ) as mock_big_query_client_cls:
             with patch(
-                f"{GcsfsDirectIngestController.__module__}.DirectIngestRawFileImportManager",
+                f"{BaseDirectIngestController.__module__}.DirectIngestRawFileImportManager",
                 FakeDirectIngestRawFileImportManager,
             ):
                 with patch(
-                    f"{GcsfsDirectIngestController.__module__}.DirectIngestPreProcessedIngestViewCollector",
+                    f"{BaseDirectIngestController.__module__}.DirectIngestPreProcessedIngestViewCollector",
                     view_collector_cls,
                 ):
                     task_manager = (
@@ -362,7 +362,7 @@ def build_gcsfs_controller_for_tests(
 
 
 def ingest_args_for_fixture_file(
-    controller: GcsfsDirectIngestController,
+    controller: BaseDirectIngestController,
     filename: str,
     should_normalize: bool = True,
 ) -> GcsfsIngestArgs:
@@ -381,7 +381,7 @@ def ingest_args_for_fixture_file(
 
 
 def path_for_fixture_file(
-    controller: GcsfsDirectIngestController,
+    controller: BaseDirectIngestController,
     filename: str,
     should_normalize: bool,
     file_type: Optional[GcsfsDirectIngestFileType],
@@ -426,7 +426,7 @@ def path_for_fixture_file_in_test_gcs_directory(
 
 def add_paths_with_tags_and_process(
     test_case: unittest.TestCase,
-    controller: GcsfsDirectIngestController,
+    controller: BaseDirectIngestController,
     file_tags: List[str],
     pre_normalized_file_type: Optional[GcsfsDirectIngestFileType] = None,
     unexpected_tags: List[str] = None,
@@ -440,7 +440,7 @@ def add_paths_with_tags_and_process(
 
 
 def add_paths_with_tags(
-    controller: GcsfsDirectIngestController,
+    controller: BaseDirectIngestController,
     file_tags: List[str],
     pre_normalized_file_type: Optional[GcsfsDirectIngestFileType] = None,
 ) -> None:
@@ -469,7 +469,7 @@ def add_paths_with_tags(
 
 def process_task_queues(
     test_case: unittest.TestCase,
-    controller: GcsfsDirectIngestController,
+    controller: BaseDirectIngestController,
     file_tags: List[str],
     unexpected_tags: List[str] = None,
 ) -> None:
@@ -482,7 +482,7 @@ def process_task_queues(
 
 def check_all_paths_processed(
     test_case: unittest.TestCase,
-    controller: GcsfsDirectIngestController,
+    controller: BaseDirectIngestController,
     file_tags: List[str],
     unexpected_tags: List[str],
 ) -> None:
@@ -523,7 +523,7 @@ def check_all_paths_processed(
     )
 
 
-def run_task_queues_to_empty(controller: GcsfsDirectIngestController) -> None:
+def run_task_queues_to_empty(controller: BaseDirectIngestController) -> None:
     if isinstance(controller.cloud_task_manager, FakeAsyncDirectIngestCloudTaskManager):
         controller.cloud_task_manager.wait_for_all_tasks_to_run()
     elif isinstance(

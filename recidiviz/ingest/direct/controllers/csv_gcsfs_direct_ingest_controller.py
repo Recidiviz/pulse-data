@@ -29,8 +29,8 @@ from recidiviz import IngestInfo
 from recidiviz.cloud_functions.cloud_function_utils import GCSFS_NO_CACHING
 
 from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import (
-    GcsfsDirectIngestController,
+from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
+    BaseDirectIngestController,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
@@ -76,7 +76,7 @@ class DirectIngestFileSplittingGcsfsCsvReaderDelegate(SplittingGcsfsCsvReaderDel
         )
 
 
-class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
+class CsvGcsfsDirectIngestController(BaseDirectIngestController):
     """Direct ingest controller for regions that read CSV files from the
     GCSFileSystem.
     """

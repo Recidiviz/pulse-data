@@ -42,7 +42,6 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     _build_task_id,
     ProcessIngestJobCloudTaskQueueInfo,
 )
-from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgs
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsIngestArgs,
     GcsfsDirectIngestFileType,
@@ -75,18 +74,15 @@ class TestCloudTaskQueueInfo(TestCase):
         file_path = to_normalized_unprocessed_file_path(
             "bucket/file_path.csv", GcsfsDirectIngestFileType.INGEST_VIEW
         )
-        args = IngestArgs(ingest_time=datetime.datetime.now())
         gcsfs_args = GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
             file_path=GcsfsFilePath.from_absolute_path(file_path),
         )
 
         # Act
-        basic_args_queued = info.is_task_queued(_REGION, args)
         gcsfs_args_queued = info.is_task_queued(_REGION, gcsfs_args)
 
         # Assert
-        self.assertFalse(basic_args_queued)
         self.assertFalse(gcsfs_args_queued)
 
         self.assertFalse(info.is_task_queued(_REGION, gcsfs_args))
@@ -190,10 +186,18 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock
     ) -> None:
         # Arrange
-        ingest_args = IngestArgs(datetime.datetime(year=2019, month=7, day=20))
+        ingest_args = GcsfsIngestArgs(
+            datetime.datetime(year=2019, month=7, day=20),
+            file_path=GcsfsFilePath.from_absolute_path(
+                to_normalized_unprocessed_file_path(
+                    "bucket/ingest_view_name.csv",
+                    file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
+                )
+            ),
+        )
         body = {
             "cloud_task_args": ingest_args.to_serializable(),
-            "args_type": "IngestArgs",
+            "args_type": "GcsfsIngestArgs",
         }
         body_encoded = json.dumps(body).encode()
         uuid = "random-uuid"

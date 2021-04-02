@@ -22,7 +22,9 @@ from typing import Optional
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
-from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgs
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
+    GcsfsIngestArgs,
+)
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     DirectIngestCloudTaskManager,
     ProcessIngestJobCloudTaskQueueInfo,
@@ -64,7 +66,7 @@ class FakeDirectIngestCloudTaskManager(DirectIngestCloudTaskManager):
 
     @abc.abstractmethod
     def create_direct_ingest_process_job_task(
-        self, region: Region, ingest_args: IngestArgs
+        self, region: Region, ingest_args: GcsfsIngestArgs
     ) -> None:
         pass
 

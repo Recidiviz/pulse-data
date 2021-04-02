@@ -44,13 +44,11 @@ from recidiviz.ingest.direct.controllers.direct_ingest_raw_update_cloud_task_man
 from recidiviz.ingest.direct.controllers.download_files_from_sftp import (
     DownloadFilesFromSftpController,
 )
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import (
-    GcsfsDirectIngestController,
-)
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsRawDataBQImportArgs,
     GcsfsIngestViewExportArgs,
     GcsfsDirectIngestFileType,
+    GcsfsIngestArgs,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsPath
 from recidiviz.ingest.direct.controllers.upload_state_files_to_ingest_bucket_with_date import (
@@ -64,7 +62,6 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_types import (
-    IngestArgs,
     CloudTaskArgs,
 )
 from recidiviz.ingest.direct.direct_ingest_controller_utils import (
@@ -163,11 +160,6 @@ def handle_direct_ingest_file() -> Tuple[str, HTTPStatus]:
 
     with monitoring.push_region_tag(region_code):
         controller = controller_for_region_code(region_code, allow_unlaunched=True)
-        if not isinstance(controller, GcsfsDirectIngestController):
-            raise DirectIngestError(
-                msg=f"Unexpected controller type [{type(controller)}].",
-                error_type=DirectIngestErrorType.INPUT_ERROR,
-            )
 
         path = GcsfsPath.from_bucket_and_blob_name(
             bucket_name=bucket, blob_name=relative_file_path
@@ -206,12 +198,6 @@ def handle_new_files() -> Tuple[str, HTTPStatus]:
                 return str(e), HTTPStatus.BAD_REQUEST
             raise e
 
-        if not isinstance(controller, GcsfsDirectIngestController):
-            raise DirectIngestError(
-                msg=f"Unexpected controller type [{type(controller)}].",
-                error_type=DirectIngestErrorType.INPUT_ERROR,
-            )
-
         controller.handle_new_files(can_start_ingest=can_start_ingest)
     return "", HTTPStatus.OK
 
@@ -238,14 +224,6 @@ def ensure_all_file_paths_normalized() -> Tuple[str, HTTPStatus]:
                 )
             except DirectIngestError as e:
                 raise e
-            if not isinstance(controller, BaseDirectIngestController):
-                raise DirectIngestError(
-                    msg=f"Unexpected controller type [{type(controller)}].",
-                    error_type=DirectIngestErrorType.INPUT_ERROR,
-                )
-
-            if not isinstance(controller, GcsfsDirectIngestController):
-                continue
 
             can_start_ingest = controller.region.is_ingest_launched_in_env()
             controller.cloud_task_manager.create_direct_ingest_handle_new_files_task(
@@ -274,7 +252,7 @@ def raw_data_import() -> Tuple[str, HTTPStatus]:
 
         if not data_import_args:
             raise DirectIngestError(
-                msg="raw_data_import was called with no IngestArgs.",
+                msg="raw_data_import was called with no GcsfsIngestArgs.",
                 error_type=DirectIngestErrorType.INPUT_ERROR,
             )
 
@@ -293,12 +271,6 @@ def raw_data_import() -> Tuple[str, HTTPStatus]:
                 if e.is_bad_request():
                     return str(e), HTTPStatus.BAD_REQUEST
                 raise e
-
-            if not isinstance(controller, GcsfsDirectIngestController):
-                raise DirectIngestError(
-                    msg=f"Unexpected controller type [{type(controller)}].",
-                    error_type=DirectIngestErrorType.INPUT_ERROR,
-                )
 
             controller.do_raw_data_import(data_import_args)
     return "", HTTPStatus.OK
@@ -374,7 +346,7 @@ def ingest_view_export() -> Tuple[str, HTTPStatus]:
 
         if not ingest_view_export_args:
             raise DirectIngestError(
-                msg="raw_data_import was called with no IngestArgs.",
+                msg="raw_data_import was called with no GcsfsIngestArgs.",
                 error_type=DirectIngestErrorType.INPUT_ERROR,
             )
 
@@ -392,12 +364,6 @@ def ingest_view_export() -> Tuple[str, HTTPStatus]:
                 if e.is_bad_request():
                     return str(e), HTTPStatus.BAD_REQUEST
                 raise e
-
-            if not isinstance(controller, GcsfsDirectIngestController):
-                raise DirectIngestError(
-                    msg=f"Unexpected controller type [{type(controller)}].",
-                    error_type=DirectIngestErrorType.INPUT_ERROR,
-                )
 
             controller.do_ingest_view_export(ingest_view_export_args)
     return "", HTTPStatus.OK
@@ -421,11 +387,11 @@ def process_job() -> Tuple[str, HTTPStatus]:
 
         if not ingest_args:
             raise DirectIngestError(
-                msg="process_job was called with no IngestArgs.",
+                msg="process_job was called with no GcsfsIngestArgs.",
                 error_type=DirectIngestErrorType.INPUT_ERROR,
             )
 
-        if not isinstance(ingest_args, IngestArgs):
+        if not isinstance(ingest_args, GcsfsIngestArgs):
             raise DirectIngestError(
                 msg=f"process_job was called with incorrect args type [{type(ingest_args)}].",
                 error_type=DirectIngestErrorType.INPUT_ERROR,
@@ -486,14 +452,6 @@ def kick_all_schedulers() -> None:
                 )
             except DirectIngestError as e:
                 raise e
-            if not isinstance(controller, BaseDirectIngestController):
-                raise DirectIngestError(
-                    msg=f"Unexpected controller type [{type(controller)}].",
-                    error_type=DirectIngestErrorType.INPUT_ERROR,
-                )
-
-            if not isinstance(controller, GcsfsDirectIngestController):
-                continue
 
             controller.kick_scheduler(just_finished_job=False)
 
