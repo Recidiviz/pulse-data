@@ -20,22 +20,24 @@ import { Link, useHistory, useParams } from "react-router-dom";
 
 import MetadataTable from "./MetadataTable";
 
-import * as IngestMetadata from "../navigation/IngestMetadata";
+import MetadataDataset from "../models/MetadataDatasets";
+import * as DatasetMetadata from "../navigation/DatasetMetadata";
 import { fetchColumnObjectCountsByValue } from "../AdminPanelAPI";
 import useFetchedData from "../hooks";
 
 interface MatchParams {
   column: string;
   table: string;
+  dataset: MetadataDataset;
 }
 
 const ColumnView = (): JSX.Element => {
-  const { column, table } = useParams<MatchParams>();
+  const { column, table, dataset: metadataDataset } = useParams<MatchParams>();
   const history = useHistory();
 
   const fetchValues = React.useCallback(async () => {
-    return fetchColumnObjectCountsByValue(table, column);
-  }, [table, column]);
+    return fetchColumnObjectCountsByValue(metadataDataset, table, column);
+  }, [table, column, metadataDataset]);
   const { loading, data } = useFetchedData<MetadataAPIResult>(fetchValues);
 
   if (loading) {
@@ -46,24 +48,41 @@ const ColumnView = (): JSX.Element => {
     );
   }
 
+  const topBreadCrumbLabel = DatasetMetadata.getBreadCrumbLabel(
+    metadataDataset
+  );
+  const topBreadCrumbRoute = DatasetMetadata.routeForMetadataDataset(
+    metadataDataset
+  );
+  const secondBreadCrumbRoute = DatasetMetadata.routeForMetadataTable(
+    metadataDataset,
+    table
+  );
+
   return (
     <>
       <Breadcrumb>
         <Breadcrumb.Item>
-          <Link to={IngestMetadata.STATE_METADATA_ROUTE}>state</Link>
+          <Link to={topBreadCrumbRoute}>{topBreadCrumbLabel}</Link>
         </Breadcrumb.Item>
         <Breadcrumb.Item>
-          <Link to={IngestMetadata.routeForTable(table)}>{table}</Link>
+          <Link to={secondBreadCrumbRoute}>{table}</Link>
         </Breadcrumb.Item>
         <Breadcrumb.Item>{column}</Breadcrumb.Item>
       </Breadcrumb>
       <PageHeader
         title="Column Breakdown"
         onBack={() => {
-          history.push(IngestMetadata.routeForTable(table));
+          history.push(
+            DatasetMetadata.routeForMetadataTable(metadataDataset, table)
+          );
         }}
       />
-      <MetadataTable data={data} initialColumnTitle="Value" />
+      <MetadataTable
+        data={data}
+        initialColumnTitle="Value"
+        metadataDataset={metadataDataset}
+      />
     </>
   );
 };

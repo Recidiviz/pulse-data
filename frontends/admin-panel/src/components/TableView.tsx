@@ -20,21 +20,23 @@ import { Link, useHistory, useParams } from "react-router-dom";
 
 import MetadataTable from "./MetadataTable";
 
-import * as IngestMetadata from "../navigation/IngestMetadata";
+import MetadataDataset from "../models/MetadataDatasets";
+import * as DatasetMetadata from "../navigation/DatasetMetadata";
 import { fetchTableNonNullCountsByColumn } from "../AdminPanelAPI";
 import useFetchedData from "../hooks";
 
 interface MatchParams {
   table: string;
+  dataset: MetadataDataset;
 }
 
 const TableView = (): JSX.Element => {
-  const { table } = useParams<MatchParams>();
+  const { table, dataset: metadataDataset } = useParams<MatchParams>();
   const history = useHistory();
 
   const fetchValues = React.useCallback(async (): Promise<Response> => {
-    return fetchTableNonNullCountsByColumn(table);
-  }, [table]);
+    return fetchTableNonNullCountsByColumn(metadataDataset, table);
+  }, [table, metadataDataset]);
   const { loading, data } = useFetchedData<MetadataAPIResult>(fetchValues);
 
   if (loading) {
@@ -45,25 +47,33 @@ const TableView = (): JSX.Element => {
     );
   }
 
+  const topBreadCrumbLabel = DatasetMetadata.getBreadCrumbLabel(
+    metadataDataset
+  );
+  const topBreadCrumbRoute = DatasetMetadata.routeForMetadataDataset(
+    metadataDataset
+  );
+
   return (
     <>
       <Breadcrumb>
         <Breadcrumb.Item>
-          <Link to={IngestMetadata.STATE_METADATA_ROUTE}>state</Link>
+          <Link to={topBreadCrumbRoute}>{topBreadCrumbLabel}</Link>
         </Breadcrumb.Item>
         <Breadcrumb.Item>{table}</Breadcrumb.Item>
       </Breadcrumb>
       <PageHeader
         title="Table View"
         onBack={() => {
-          history.push(IngestMetadata.STATE_METADATA_ROUTE);
+          history.push(topBreadCrumbRoute);
         }}
       />
       <MetadataTable
         data={data}
+        metadataDataset={metadataDataset}
         initialColumnTitle="Column"
         initialColumnLink={(name: string) =>
-          IngestMetadata.routeForColumn(table, name)
+          DatasetMetadata.routeForMetadataColumn(metadataDataset, table, name)
         }
       />
     </>

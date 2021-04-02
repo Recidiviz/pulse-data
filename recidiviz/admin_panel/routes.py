@@ -30,10 +30,11 @@ from recidiviz.admin_panel.cloud_sql_export_to_gcs import (
     export_from_cloud_sql_to_gcs_csv,
 )
 from recidiviz.admin_panel.gcs_import_to_cloud_sql import import_gcs_csv_to_cloud_sql
-from recidiviz.admin_panel.ingest_metadata_store import (
-    IngestMetadataCountsStore,
-    IngestMetadataResult,
+from recidiviz.admin_panel.dataset_metadata_store import (
+    DatasetMetadataCountsStore,
+    DatasetMetadataResult,
 )
+from recidiviz.admin_panel.ingest_metadata_store import IngestDataFreshnessStore
 from recidiviz.case_triage.views.view_config import CASE_TRIAGE_EXPORTED_VIEW_BUILDERS
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
@@ -58,20 +59,48 @@ from recidiviz.utils.environment import (
 )
 from recidiviz.utils.timer import RepeatedTimer
 
+
+_INGEST_METADATA_NICKNAME = "ingest"
+_INGEST_METADATA_PREFIX = "ingest_state_metadata"
+_VALIDATION_METADATA_NICKNAME = "validation"
+_VALIDATION_METADATA_PREFIX = "validation_metadata"
+
+
 logging.getLogger().setLevel(logging.INFO)
+
 if not in_ci():
+    override_project_id: Optional[str] = None
     if in_development():
-        ingest_metadata_store = IngestMetadataCountsStore(
-            override_project_id=GCP_PROJECT_STAGING
-        )
-    else:
-        ingest_metadata_store = IngestMetadataCountsStore()
+        override_project_id = GCP_PROJECT_STAGING
+
+    ingest_metadata_store = DatasetMetadataCountsStore(
+        _INGEST_METADATA_NICKNAME,
+        _INGEST_METADATA_PREFIX,
+        override_project_id=override_project_id,
+    )
+    validation_metadata_store = DatasetMetadataCountsStore(
+        _VALIDATION_METADATA_NICKNAME,
+        _VALIDATION_METADATA_PREFIX,
+        override_project_id=override_project_id,
+    )
+    ingest_data_freshness_store = IngestDataFreshnessStore(
+        override_project_id=override_project_id
+    )
+
+    all_stores = [
+        ingest_metadata_store,
+        validation_metadata_store,
+        ingest_data_freshness_store,
+    ]
+
+    store_refresh_timers = [
+        RepeatedTimer(15 * 60, store.recalculate_store, run_immediately=True)
+        for store in all_stores
+    ]
 
     if not in_test():
-        store_refresh = RepeatedTimer(
-            15 * 60, ingest_metadata_store.recalculate_store, run_immediately=True
-        )
-        store_refresh.start()
+        for timer in store_refresh_timers:
+            timer.start()
 
 static_folder = os.path.abspath(
     os.path.join(
@@ -79,11 +108,12 @@ static_folder = os.path.abspath(
         "../../frontends/admin-panel/build/",
     )
 )
+
 admin_panel = Blueprint("admin_panel", __name__, static_folder=static_folder)
 
 
-def jsonify_ingest_metadata_result(
-    result: IngestMetadataResult,
+def jsonify_dataset_metadata_result(
+    result: DatasetMetadataResult,
 ) -> Tuple[str, HTTPStatus]:
     results_dict: Dict[str, Dict[str, Dict[str, int]]] = {}
     for name, state_map in result.items():
@@ -93,45 +123,64 @@ def jsonify_ingest_metadata_result(
     return jsonify(results_dict), HTTPStatus.OK
 
 
-# State dataset column counts
+def _get_metadata_store(metadata_dataset: str) -> DatasetMetadataCountsStore:
+    if metadata_dataset == "ingest_metadata":
+        return ingest_metadata_store
+    if metadata_dataset == "validation_metadata":
+        return validation_metadata_store
+    raise ValueError(
+        f"Unknown metadata dataset [{metadata_dataset}], must be 'ingest_metadata' or 'validation_metadata' "
+    )
+
+
+# Dataset column counts
 @admin_panel.route(
-    "/api/ingest_metadata/fetch_column_object_counts_by_value", methods=["POST"]
+    "/api/<metadata_dataset>/fetch_column_object_counts_by_value", methods=["POST"]
 )
 @requires_gae_auth
-def fetch_column_object_counts_by_value() -> Tuple[str, HTTPStatus]:
+def fetch_column_object_counts_by_value(
+    metadata_dataset: str,
+) -> Tuple[str, HTTPStatus]:
     table = request.json["table"]
     column = request.json["column"]
-    return jsonify_ingest_metadata_result(
-        ingest_metadata_store.fetch_column_object_counts_by_value(table, column)
+    metadata_store = _get_metadata_store(metadata_dataset)
+
+    return jsonify_dataset_metadata_result(
+        metadata_store.fetch_column_object_counts_by_value(table, column)
     )
 
 
 @admin_panel.route(
-    "/api/ingest_metadata/fetch_table_nonnull_counts_by_column", methods=["POST"]
+    "/api/<metadata_dataset>/fetch_table_nonnull_counts_by_column", methods=["POST"]
 )
 @requires_gae_auth
-def fetch_table_nonnull_counts_by_column() -> Tuple[str, HTTPStatus]:
+def fetch_table_nonnull_counts_by_column(
+    metadata_dataset: str,
+) -> Tuple[str, HTTPStatus]:
     table = request.json["table"]
-    return jsonify_ingest_metadata_result(
-        ingest_metadata_store.fetch_table_nonnull_counts_by_column(table)
+    metadata_store = _get_metadata_store(metadata_dataset)
+
+    return jsonify_dataset_metadata_result(
+        metadata_store.fetch_table_nonnull_counts_by_column(table)
     )
 
 
 @admin_panel.route(
-    "/api/ingest_metadata/fetch_object_counts_by_table", methods=["POST"]
+    "/api/<metadata_dataset>/fetch_object_counts_by_table", methods=["POST"]
 )
 @requires_gae_auth
-def fetch_object_counts_by_table() -> Tuple[str, int]:
-    return jsonify_ingest_metadata_result(
-        ingest_metadata_store.fetch_object_counts_by_table()
+def fetch_object_counts_by_table(metadata_dataset: str) -> Tuple[str, int]:
+    metadata_store = _get_metadata_store(metadata_dataset)
+    return jsonify_dataset_metadata_result(
+        metadata_store.fetch_object_counts_by_table()
     )
 
 
 # Data freshness
 @admin_panel.route("/api/ingest_metadata/data_freshness", methods=["POST"])
 @requires_gae_auth
-def fetch_data_freshness() -> Tuple[str, HTTPStatus]:
-    return jsonify(ingest_metadata_store.data_freshness_results), HTTPStatus.OK
+def fetch_ingest_data_freshness() -> Tuple[str, HTTPStatus]:
+    return jsonify(ingest_data_freshness_store.data_freshness_results), HTTPStatus.OK
 
 
 # GCS CSV -> Cloud SQL Import

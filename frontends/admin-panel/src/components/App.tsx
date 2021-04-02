@@ -26,8 +26,10 @@ import DataFreshnessView from "./DataFreshnessView";
 import ActionsView from "./ActionsView";
 import TableView from "./TableView";
 
+import MetadataDataset from "../models/MetadataDatasets";
+
 import * as CaseTriage from "../navigation/CaseTriage";
-import * as IngestMetadata from "../navigation/IngestMetadata";
+import * as DatasetMetadata from "../navigation/DatasetMetadata";
 import * as IngestOperations from "../navigation/IngestOperations";
 
 import "../style/App.css";
@@ -44,14 +46,37 @@ const App = (): JSX.Element => {
         </Typography.Title>
         <Menu mode="inline" selectedKeys={selectedMenuKeys(location.pathname)}>
           <Menu.ItemGroup title="Ingest Metadata">
-            <Menu.Item key={IngestMetadata.STATE_METADATA_ROUTE}>
-              <Link to={IngestMetadata.STATE_METADATA_ROUTE}>
+            <Menu.Item
+              key={DatasetMetadata.routeForMetadataDataset(
+                MetadataDataset.INGEST
+              )}
+            >
+              <Link
+                to={DatasetMetadata.routeForMetadataDataset(
+                  MetadataDataset.INGEST
+                )}
+              >
                 State Dataset
               </Link>
             </Menu.Item>
-            <Menu.Item key={IngestMetadata.DATA_FRESHNESS_ROUTE}>
-              <Link to={IngestMetadata.DATA_FRESHNESS_ROUTE}>
+            <Menu.Item key={DatasetMetadata.DATA_FRESHNESS_ROUTE}>
+              <Link to={DatasetMetadata.DATA_FRESHNESS_ROUTE}>
                 Data Freshness
+              </Link>
+            </Menu.Item>
+          </Menu.ItemGroup>
+          <Menu.ItemGroup title="Validation Metadata">
+            <Menu.Item
+              key={DatasetMetadata.routeForMetadataDataset(
+                MetadataDataset.VALIDATION
+              )}
+            >
+              <Link
+                to={DatasetMetadata.routeForMetadataDataset(
+                  MetadataDataset.VALIDATION
+                )}
+              >
+                External Accuracy Dataset
               </Link>
             </Menu.Item>
           </Menu.ItemGroup>
@@ -79,20 +104,19 @@ const App = (): JSX.Element => {
       <div className="main-content">
         <Switch>
           <Route
-            path={IngestMetadata.COLUMN_ROUTE_TEMPLATE}
+            path={DatasetMetadata.METADATA_COLUMN_ROUTE_TEMPLATE}
             component={ColumnView}
           />
           <Route
-            path={IngestMetadata.DB_ROUTE_TEMPLATE}
+            path={DatasetMetadata.METADATA_TABLE_ROUTE_TEMPLATE}
             component={TableView}
           />
           <Route
-            exact
-            path={IngestMetadata.STATE_METADATA_ROUTE}
+            path={DatasetMetadata.METADATA_DATASET_ROUTE_TEMPLATE}
             component={DatasetView}
           />
           <Route
-            path={IngestMetadata.DATA_FRESHNESS_ROUTE}
+            path={DatasetMetadata.DATA_FRESHNESS_ROUTE}
             component={DataFreshnessView}
           />
           <Route
@@ -108,7 +132,10 @@ const App = (): JSX.Element => {
             path={CaseTriage.CLOUD_SQL_TO_GCS_CSV_ROUTE}
             component={CloudSQLExportView}
           />
-          <Redirect from="/" to={IngestMetadata.STATE_METADATA_ROUTE} />
+          <Redirect
+            from="/"
+            to={DatasetMetadata.routeForMetadataDataset(MetadataDataset.INGEST)}
+          />
         </Switch>
       </div>
     </Layout>
@@ -116,11 +143,24 @@ const App = (): JSX.Element => {
 };
 
 function selectedMenuKeys(pathname: string): string[] {
-  if (pathname.startsWith(IngestMetadata.STATE_METADATA_ROUTE)) {
-    return [IngestMetadata.STATE_METADATA_ROUTE];
+  if (
+    pathname.startsWith(
+      DatasetMetadata.routeForMetadataDataset(MetadataDataset.INGEST)
+    )
+  ) {
+    return [DatasetMetadata.routeForMetadataDataset(MetadataDataset.INGEST)];
   }
-  if (pathname.startsWith(IngestMetadata.DATA_FRESHNESS_ROUTE)) {
-    return [IngestMetadata.DATA_FRESHNESS_ROUTE];
+  if (
+    pathname.startsWith(
+      DatasetMetadata.routeForMetadataDataset(MetadataDataset.VALIDATION)
+    )
+  ) {
+    return [
+      DatasetMetadata.routeForMetadataDataset(MetadataDataset.VALIDATION),
+    ];
+  }
+  if (pathname.startsWith(DatasetMetadata.DATA_FRESHNESS_ROUTE)) {
+    return [DatasetMetadata.DATA_FRESHNESS_ROUTE];
   }
   if (pathname.startsWith(IngestOperations.INGEST_ACTIONS_ROUTE)) {
     return [IngestOperations.INGEST_ACTIONS_ROUTE];
