@@ -36,6 +36,10 @@ from recidiviz.admin_panel.ingest_metadata_store import (
 )
 from recidiviz.case_triage.views.view_config import CASE_TRIAGE_EXPORTED_VIEW_BUILDERS
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.direct_ingest_region_utils import (
+    get_existing_region_dir_names,
+)
 from recidiviz.metrics.export.export_config import (
     CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI,
 )
@@ -229,6 +233,18 @@ def run_gcs_import() -> Tuple[str, HTTPStatus]:
         logging.info("View (%s) successfully imported", view_id)
 
     return "", HTTPStatus.OK
+
+
+# Ingest Operations Actions
+@admin_panel.route("/api/ingest_operations/fetch_ingest_region_codes", methods=["POST"])
+@requires_gae_auth
+def fetch_ingest_region_codes() -> Tuple[str, HTTPStatus]:
+    ingest_region_codes = [
+        region_code
+        for region_code in get_existing_region_dir_names()
+        if StateCode.is_state_code(region_code)
+    ]
+    return jsonify(ingest_region_codes), HTTPStatus.OK
 
 
 # Frontend configuration
