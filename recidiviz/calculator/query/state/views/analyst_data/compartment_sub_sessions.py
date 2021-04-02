@@ -41,8 +41,8 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = """
     
     Create a field that identifies the compartment_level_1 (incarceration vs supervision) and compartment_level_2, which 
     for incarceration can  be 'GENERAL','PAROLE_BOARD_HOLD' or 'TREATMENT_IN_PRISON', and for supervision can be 
-    'PAROLE', 'PROBATION', or 'DUAL'.Records that are not in one of these compartments are left null and populated later
-    in the query.
+    'PAROLE', 'PROBATION', 'DUAL' or - in the case of ID - 'INFORMAL_PROBATION'. Records that are not in one of these
+    compartments are left null and populated later in the query.
     
     The field "metric_source" is pulled from dataflow metric as to distinguish the population metric data sources. This 
     is done because SUPERVISION can come from either SUPERVISION_POPULATION and SUPERVISION_OUT_OF_STATE_POPULATION.
@@ -78,7 +78,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = """
         created_on,       
         state_code,
         'SUPERVISION' as compartment_level_1,
-        CASE WHEN supervision_type in ('PAROLE', 'PROBATION','DUAL') THEN supervision_type END AS compartment_level_2,
+        supervision_type as compartment_level_2,
         CONCAT(COALESCE(level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN'),'|', COALESCE(level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN')) AS compartment_location,
         supervision_level AS correctional_level,
         supervising_officer_external_id,
@@ -95,7 +95,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = """
         created_on,       
         state_code,
         'SUPERVISION' as compartment_level_1,
-        CASE WHEN supervision_type in ('PAROLE', 'PROBATION','DUAL') THEN supervision_type END AS compartment_level_2,
+        supervision_type as compartment_level_2,
         CONCAT(COALESCE(level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN'),'|', COALESCE(level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN')) AS compartment_location,
         supervision_level AS correctional_level,
         supervising_officer_external_id,
@@ -200,44 +200,10 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = """
     WHERE rn = 1
     )
     ,
-    filled_missing_pop_types_cte AS
-    /*
-    There are cases where a person will have a continuous set of days in supervision where part of the time is classified
-    as parole or probation and part of the time is classified as unknown. Here the general assumption is made that if a
-    a person has a continuous set of days within the same data source (incarceration or supervision), any unknown
-    compartment values are forward-filled and back-filled. Unknown compartments that are 'islands' (not continuous with 
-    any other compartment from the same data source, are set to "OTHER"). This is done to avoid artificially creating 
-    new sessions when they are really part of the preceding or following session.
-    */
-    (
-    SELECT  
-        person_id,
-        date,
-        state_code,
-        metric_source,
-        compartment_level_1,
-        COALESCE(
-            LAST_VALUE(compartment_level_2 IGNORE NULLS) OVER(PARTITION BY person_id, compartment_level_1, group_continuous_dates ORDER BY date ASC), 
-            FIRST_VALUE(compartment_level_2 IGNORE NULLS) OVER(PARTITION BY person_id, compartment_level_1, group_continuous_dates ORDER BY date ASC),
-            'OTHER') AS compartment_level_2,
-        compartment_location
-    FROM 
-        (
-        SELECT
-          *,
-        /*
-        Identify groups of continuous dates that are used for the forward and backward fill above. Within each person_id,
-        the difference between the date and a row number ordered by date will be the same for continuous date ranges.
-        */
-            DATE_SUB(DATE, INTERVAL ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY date ASC) DAY) AS group_continuous_dates
-        FROM dedup_step_3_cte
-        )
-    )
-    ,
     sessionized_cte AS 
     /*
     Aggregate across distinct sub-sessions (continuous dates within metric_source, compartment, location, and person_id)
-    and get the range of dates that define the session.
+    and get the range of dates that define the session
     */
     (
     SELECT
@@ -259,7 +225,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = """
         SELECT *,
             DATE_SUB(DATE, INTERVAL ROW_NUMBER() OVER(PARTITION BY person_id, metric_source, compartment_level_1, compartment_level_2, compartment_location
                 ORDER BY date ASC) DAY) AS group_continuous_dates_in_compartment
-        FROM filled_missing_pop_types_cte
+        FROM dedup_step_3_cte
         )
     GROUP BY 1,2,3,4,5,6,7
     ORDER BY MIN(DATE) ASC
