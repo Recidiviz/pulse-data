@@ -39,18 +39,18 @@ from recidiviz.ingest.direct.controllers.direct_ingest_raw_data_table_latest_vie
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_update_cloud_task_manager import (
     DirectIngestRawUpdateCloudTaskManager,
 )
-from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgs
 from recidiviz.ingest.direct.controllers.download_files_from_sftp import (
     DownloadFilesFromSftpController,
     SftpAuth,
 )
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import (
-    GcsfsDirectIngestController,
+from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
+    BaseDirectIngestController,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsRawDataBQImportArgs,
     GcsfsDirectIngestFileType,
     GcsfsIngestViewExportArgs,
+    GcsfsIngestArgs,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.controllers.upload_state_files_to_ingest_bucket_with_date import (
@@ -107,7 +107,7 @@ class TestDirectIngestControl(unittest.TestCase):
     ) -> None:
         """Tests that the start operation chains together the correct calls."""
 
-        mock_controller = create_autospec(GcsfsDirectIngestController)
+        mock_controller = create_autospec(BaseDirectIngestController)
         self.mock_controller_factory.build.return_value = mock_controller
         mock_region.return_value = fake_region(environment="production")
         mock_environment.return_value = "production"
@@ -133,7 +133,7 @@ class TestDirectIngestControl(unittest.TestCase):
     ) -> None:
         """Tests that the start operation chains together the correct calls."""
         mock_environment.return_value = "production"
-        mock_controller = create_autospec(GcsfsDirectIngestController)
+        mock_controller = create_autospec(BaseDirectIngestController)
         self.mock_controller_factory.build.return_value = mock_controller
 
         region = "us_nd"
@@ -164,7 +164,7 @@ class TestDirectIngestControl(unittest.TestCase):
     ) -> None:
         """Tests that the start operation chains together the correct calls."""
         mock_environment.return_value = "staging"
-        mock_controller = create_autospec(GcsfsDirectIngestController)
+        mock_controller = create_autospec(BaseDirectIngestController)
         self.mock_controller_factory.build.return_value = mock_controller
         mock_region.return_value = fake_region(environment="production")
 
@@ -211,7 +211,7 @@ class TestDirectIngestControl(unittest.TestCase):
         region_code = "us_nd"
 
         mock_environment.return_value = "production"
-        mock_controller = create_autospec(GcsfsDirectIngestController)
+        mock_controller = create_autospec(BaseDirectIngestController)
         self.mock_controller_factory.build.return_value = mock_controller
         mock_region.return_value = fake_region(
             region_code=region_code, environment="staging"
@@ -243,19 +243,26 @@ class TestDirectIngestControl(unittest.TestCase):
         region_code = "us_nd"
 
         mock_environment.return_value = "staging"
-        mock_controller = create_autospec(GcsfsDirectIngestController)
+        mock_controller = create_autospec(BaseDirectIngestController)
         self.mock_controller_factory.build.return_value = mock_controller
         mock_region.return_value = fake_region(
             region_code=region_code, environment="staging"
         )
-
-        ingest_args = IngestArgs(datetime.datetime(year=2019, month=7, day=20))
+        ingest_args = GcsfsIngestArgs(
+            datetime.datetime(year=2019, month=7, day=20),
+            file_path=GcsfsFilePath.from_absolute_path(
+                to_normalized_unprocessed_file_path(
+                    "bucket/ingest_view_name.csv",
+                    file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
+                )
+            ),
+        )
         request_args = {
             "region": region_code,
         }
         body = {
             "cloud_task_args": ingest_args.to_serializable(),
-            "args_type": "IngestArgs",
+            "args_type": "GcsfsIngestArgs",
         }
         body_encoded = json.dumps(body).encode()
 
@@ -286,19 +293,27 @@ class TestDirectIngestControl(unittest.TestCase):
         region_code = "us_ca"
 
         mock_environment.return_value = "production"
-        mock_controller = create_autospec(GcsfsDirectIngestController)
+        mock_controller = create_autospec(BaseDirectIngestController)
         self.mock_controller_factory.build.return_value = mock_controller
         mock_region.return_value = fake_region(
             region_code=region_code, environment="staging"
         )
 
-        ingest_args = IngestArgs(datetime.datetime(year=2019, month=7, day=20))
+        ingest_args = GcsfsIngestArgs(
+            datetime.datetime(year=2019, month=7, day=20),
+            file_path=GcsfsFilePath.from_absolute_path(
+                to_normalized_unprocessed_file_path(
+                    "bucket/ingest_view_name.csv",
+                    file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
+                )
+            ),
+        )
         request_args = {
             "region": region_code,
         }
         body = {
             "cloud_task_args": ingest_args.to_serializable(),
-            "args_type": "IngestArgs",
+            "args_type": "GcsfsIngestArgs",
         }
         body_encoded = json.dumps(body).encode()
 
@@ -324,7 +339,7 @@ class TestDirectIngestControl(unittest.TestCase):
         region_code = "us_nd"
 
         mock_environment.return_value = "production"
-        mock_controller = create_autospec(GcsfsDirectIngestController)
+        mock_controller = create_autospec(BaseDirectIngestController)
         self.mock_controller_factory.build.return_value = mock_controller
         mock_region.return_value = fake_region(
             region_code=region_code, environment="production"
@@ -356,7 +371,7 @@ class TestDirectIngestControl(unittest.TestCase):
         region_code = "us_nd"
 
         mock_environment.return_value = "production"
-        mock_controller = create_autospec(GcsfsDirectIngestController)
+        mock_controller = create_autospec(BaseDirectIngestController)
         self.mock_controller_factory.build.return_value = mock_controller
         mock_region.return_value = fake_region(
             region_code=region_code, environment="production"
@@ -387,7 +402,7 @@ class TestDirectIngestControl(unittest.TestCase):
         region_code = "us_nd"
 
         mock_environment.return_value = "production"
-        mock_controller = create_autospec(GcsfsDirectIngestController)
+        mock_controller = create_autospec(BaseDirectIngestController)
         self.mock_controller_factory.build.return_value = mock_controller
         mock_region.return_value = fake_region(
             region_code=region_code, environment="staging"
@@ -424,7 +439,7 @@ class TestDirectIngestControl(unittest.TestCase):
         region_code = "us_nd"
 
         mock_environment.return_value = "production"
-        mock_controller = create_autospec(GcsfsDirectIngestController)
+        mock_controller = create_autospec(BaseDirectIngestController)
         self.mock_controller_factory.build.return_value = mock_controller
         mock_region.return_value = fake_region(
             region_code=region_code, environment="production"
@@ -450,7 +465,7 @@ class TestDirectIngestControl(unittest.TestCase):
         region_code = "us_nd"
 
         mock_environment.return_value = "staging"
-        mock_controller = create_autospec(GcsfsDirectIngestController)
+        mock_controller = create_autospec(BaseDirectIngestController)
         self.mock_controller_factory.build.return_value = mock_controller
         mock_region.return_value = fake_region(
             region_code=region_code, environment="staging"
@@ -512,7 +527,7 @@ class TestDirectIngestControl(unittest.TestCase):
         region_code = "us_nd"
 
         mock_environment.return_value = "production"
-        mock_controller = create_autospec(GcsfsDirectIngestController)
+        mock_controller = create_autospec(BaseDirectIngestController)
         self.mock_controller_factory.build.return_value = mock_controller
         mock_region.return_value = fake_region(
             region_code=region_code, environment="staging"
@@ -548,7 +563,7 @@ class TestDirectIngestControl(unittest.TestCase):
         }
 
         mock_cloud_task_manager = create_autospec(DirectIngestCloudTaskManager)
-        mock_controller = Mock(__class__=GcsfsDirectIngestController)
+        mock_controller = Mock(__class__=BaseDirectIngestController)
         mock_controller.cloud_task_manager.return_value = mock_cloud_task_manager
         self.mock_controller_factory.build.return_value = mock_controller
 
@@ -679,7 +694,7 @@ class TestDirectIngestControl(unittest.TestCase):
         region_code = "us_xx"
 
         mock_environment.return_value = "staging"
-        mock_controller = create_autospec(GcsfsDirectIngestController)
+        mock_controller = create_autospec(BaseDirectIngestController)
         self.mock_controller_factory.build.return_value = mock_controller
         mock_region.return_value = fake_region(
             region_code=region_code, environment="staging"
@@ -727,7 +742,7 @@ class TestDirectIngestControl(unittest.TestCase):
         region_code = "us_xx"
 
         mock_environment.return_value = "staging"
-        mock_controller = create_autospec(GcsfsDirectIngestController)
+        mock_controller = create_autospec(BaseDirectIngestController)
         self.mock_controller_factory.build.return_value = mock_controller
         mock_region.return_value = fake_region(
             region_code=region_code, environment="staging"
@@ -778,7 +793,7 @@ class TestDirectIngestControl(unittest.TestCase):
         mock_cloud_task_manager = create_autospec(DirectIngestCloudTaskManager)
         mock_controllers = []
         for _ in fake_supported_regions:
-            mock_controller = Mock(__class__=GcsfsDirectIngestController)
+            mock_controller = Mock(__class__=BaseDirectIngestController)
             mock_controller.cloud_task_manager.return_value = mock_cloud_task_manager
             mock_controllers.append(mock_controller)
         self.mock_controller_factory.build.side_effect = mock_controllers
@@ -819,8 +834,8 @@ class TestDirectIngestControl(unittest.TestCase):
         mock_cloud_task_manager = create_autospec(DirectIngestCloudTaskManager)
         region_to_mock_controller = {}
 
-        def mock_build_controller(region: Region) -> GcsfsDirectIngestController:
-            mock_controller = Mock(__class__=GcsfsDirectIngestController)
+        def mock_build_controller(region: Region) -> BaseDirectIngestController:
+            mock_controller = Mock(__class__=BaseDirectIngestController)
             mock_controller.cloud_task_manager.return_value = mock_cloud_task_manager
             region_to_mock_controller[region.region_code] = mock_controller
             return mock_controller

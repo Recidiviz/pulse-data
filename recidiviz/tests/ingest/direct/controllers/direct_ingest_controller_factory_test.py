@@ -22,8 +22,8 @@ from mock import patch
 from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import (
     DirectIngestControllerFactory,
 )
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import (
-    GcsfsDirectIngestController,
+from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
+    BaseDirectIngestController,
 )
 from recidiviz.ingest.direct.direct_ingest_region_utils import (
     get_existing_region_dir_names,
@@ -55,4 +55,4 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
                 controller = DirectIngestControllerFactory.build(region)
 
                 self.assertIsNotNone(controller)
-                self.assertIsInstance(controller, GcsfsDirectIngestController)
+                self.assertIsInstance(controller, BaseDirectIngestController)
