@@ -227,7 +227,9 @@ def ensure_all_file_paths_normalized() -> Tuple[str, HTTPStatus]:
 
             can_start_ingest = controller.region.is_ingest_launched_in_env()
             controller.cloud_task_manager.create_direct_ingest_handle_new_files_task(
-                controller.region, can_start_ingest=can_start_ingest
+                controller.region,
+                ingest_bucket=controller.ingest_bucket_path,
+                can_start_ingest=can_start_ingest,
             )
     return "", HTTPStatus.OK
 

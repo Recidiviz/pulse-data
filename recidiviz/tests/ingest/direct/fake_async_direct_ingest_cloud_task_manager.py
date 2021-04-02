@@ -20,6 +20,8 @@ import logging
 from queue import Queue, Empty
 from threading import Thread, Lock, Condition
 from typing import Callable, List, Tuple, Optional, Any
+
+from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsRawDataBQImportArgs,
     GcsfsIngestViewExportArgs,
@@ -211,10 +213,18 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
         )
 
     def create_direct_ingest_scheduler_queue_task(
-        self, region: Region, just_finished_job: bool, delay_sec: int
+        self,
+        region: Region,
+        ingest_bucket: GcsfsBucketPath,
+        just_finished_job: bool,
     ) -> None:
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
+        if not self.controller.ingest_bucket_path == ingest_bucket:
+            raise ValueError(
+                f"Task request for ingest bucket [{ingest_bucket}] that does not match "
+                f"registered controller ingest bucket [{self.controller.ingest_bucket_path}]."
+            )
 
         self.scheduler_queue.add_task(
             f"{region.region_code}-scheduler",
@@ -226,10 +236,15 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
         )
 
     def create_direct_ingest_handle_new_files_task(
-        self, region: Region, can_start_ingest: bool
+        self, region: Region, ingest_bucket: GcsfsBucketPath, can_start_ingest: bool
     ) -> None:
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
+        if not self.controller.ingest_bucket_path == ingest_bucket:
+            raise ValueError(
+                f"Task request for ingest bucket [{ingest_bucket}] that does not match "
+                f"registered controller ingest bucket [{self.controller.ingest_bucket_path}]."
+            )
 
         self.scheduler_queue.add_task(
             f"{region.region_code}-handle_new_files",
