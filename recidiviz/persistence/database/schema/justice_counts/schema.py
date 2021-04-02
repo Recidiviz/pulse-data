@@ -158,19 +158,22 @@ class ReportTableDefinition(JusticeCountsBase):
 
     id = Column(Integer, autoincrement=True)
 
-    system = Column(Enum(System))
-    metric_type = Column(Enum(MetricType))
-    measurement_type = Column(Enum(MeasurementType))
+    system = Column(Enum(System), nullable=False)
+    metric_type = Column(Enum(MetricType), nullable=False)
+    measurement_type = Column(Enum(MeasurementType), nullable=False)
 
     # Any dimensions where the data in the table only accounts for a subset of values for that dimension. For instance,
     # a table for the population metric may only cover data for the prison population, not those on parole or
     # probation. In that case filters would include a filter on population type.
-    filtered_dimensions = Column(ARRAY(String(255)))
+    filtered_dimensions = Column(ARRAY(String(255)), nullable=False)
     # The value for each dimension from the above array.
-    filtered_dimension_values = Column(ARRAY(String(255)))
+    filtered_dimension_values = Column(ARRAY(String(255)), nullable=False)
     # The dimensions that the metric is broken down by in the report table. Each cell in a table instance has a unique
     # combination of values for the aggregated dimensions. Dimensions are sorted deterministically within the array.
-    aggregated_dimensions = Column(ARRAY(String(255)))
+    aggregated_dimensions = Column(ARRAY(String(255)), nullable=False)
+
+    # The label of the table within the report, if provided.
+    label = Column(String(255), nullable=False)
 
     __table_args__ = tuple(
         [
@@ -181,6 +184,7 @@ class ReportTableDefinition(JusticeCountsBase):
                 filtered_dimensions,
                 filtered_dimension_values,
                 aggregated_dimensions,
+                label,
             ),
         ]
     )
@@ -209,7 +213,7 @@ class ReportTableInstance(JusticeCountsBase):
     # This field can be used to store any text that the source provides describing the methodology used to calculate
     # the data. This is stored on instances so that if it changes from report to report, we don't overwrite methodology
     # for prior instances.
-    methodology = Column(String(255))
+    methodology = Column(String)
 
     __table_args__ = tuple(
         [

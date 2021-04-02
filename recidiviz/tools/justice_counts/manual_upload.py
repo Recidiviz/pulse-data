@@ -1530,6 +1530,7 @@ class Table:
     date_range: DateRange = attr.ib()
     metric: Metric = attr.ib()
     system: schema.System = attr.ib(converter=schema.System)
+    label: Optional[str] = attr.ib()
     methodology: str = attr.ib()
 
     # These are dimensions that apply to all data points in this table
@@ -1660,6 +1661,7 @@ class Table:
         cls,
         date_range: DateRange,
         table_converter: TableConverter,
+        label: Optional[str],
         metric: Metric,
         system: str,
         methodology: str,
@@ -1671,6 +1673,7 @@ class Table:
             date_range=date_range,
             metric=metric,
             system=system,
+            label=label,
             methodology=methodology,
             dimensions=table_converter.dimension_classes_for_columns(df.columns.values),
             data_points=table_converter.table_to_data_points(df),
@@ -1685,6 +1688,7 @@ class Table:
         table_converter: TableConverter,
         metric: Metric,
         system: str,
+        label: Optional[str],
         methodology: str,
         location: Optional[Location],
         additional_filters: List[Dimension],
@@ -1698,6 +1702,7 @@ class Table:
                     table_converter=table_converter,
                     metric=metric,
                     system=system,
+                    label=label,
                     methodology=methodology,
                     location=location,
                     additional_filters=additional_filters,
@@ -2123,6 +2128,7 @@ def _parse_tables(
                 table_converter=table_converter,
                 metric=metric,
                 system=table_input.pop("system", str),
+                label=table_input.pop_optional("label", str),
                 methodology=table_input.pop("methodology", str),
                 location=location_dimension,
                 additional_filters=filter_dimensions,
@@ -2282,6 +2288,7 @@ def _convert_entities(
                 filtered_dimensions=table.filtered_dimension_names,
                 filtered_dimension_values=table.filtered_dimension_values,
                 aggregated_dimensions=table.aggregated_dimension_names,
+                label=table.label or "",
             ),
             session,
         )
@@ -2291,6 +2298,7 @@ def _convert_entities(
             report_table_definition=table_definition,
             time_window_start=table.date_range.lower_bound_inclusive_date,
             time_window_end=table.date_range.upper_bound_exclusive_date,
+            methodology=table.methodology,
         )
 
         table_instance.cells = [
