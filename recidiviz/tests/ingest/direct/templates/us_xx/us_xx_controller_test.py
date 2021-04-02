@@ -17,8 +17,8 @@
 """Unit and integration tests for US_XX direct ingest."""
 from typing import Type
 
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import (
-    GcsfsDirectIngestController,
+from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
+    BaseDirectIngestController,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests import (
@@ -36,7 +36,7 @@ class TestUsXxController(BaseDirectIngestControllerTests):
         return _REGION_CODE_UPPER.lower()
 
     @classmethod
-    def controller_cls(cls) -> Type[GcsfsDirectIngestController]:
+    def controller_cls(cls) -> Type[BaseDirectIngestController]:
         pass  # Return instance of UsXxController
 
     @classmethod

@@ -17,8 +17,8 @@
 """Unit and integration tests for US_TX_BRAZOS direct ingest."""
 from typing import Type
 
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import (
-    GcsfsDirectIngestController,
+from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
+    BaseDirectIngestController,
 )
 from recidiviz.ingest.direct.regions.us_tx_brazos.us_tx_brazos_controller import (
     UsTxBrazosController,
@@ -39,7 +39,7 @@ class TestUsTxBrazosController(BaseDirectIngestControllerTests):
         return _REGION_CODE_UPPER.lower()
 
     @classmethod
-    def controller_cls(cls) -> Type[GcsfsDirectIngestController]:
+    def controller_cls(cls) -> Type[BaseDirectIngestController]:
         return UsTxBrazosController
 
     @classmethod

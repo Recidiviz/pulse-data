@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Class with basic functionality for tests of all region-specific
-GcsfsDirectIngestControllers.
+BaseDirectIngestControllers.
 """
 
 import abc
@@ -31,8 +31,8 @@ from mock import patch
 from recidiviz import IngestInfo
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct import regions
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import (
-    GcsfsDirectIngestController,
+from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
+    BaseDirectIngestController,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
@@ -83,7 +83,7 @@ from recidiviz.utils.environment import in_ci
 @freeze_time("2019-09-27")
 class BaseDirectIngestControllerTests(unittest.TestCase):
     """Class with basic functionality for tests of all region-specific
-    GcsfsDirectIngestControllers.
+    BaseDirectIngestControllers.
     """
 
     @classmethod
@@ -93,7 +93,7 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
 
     @classmethod
     @abc.abstractmethod
-    def controller_cls(cls) -> Type[GcsfsDirectIngestController]:
+    def controller_cls(cls) -> Type[BaseDirectIngestController]:
         pass
 
     @classmethod

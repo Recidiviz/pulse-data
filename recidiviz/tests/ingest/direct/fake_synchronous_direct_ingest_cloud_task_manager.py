@@ -19,13 +19,10 @@ synchronously, when prompted."""
 
 from typing import List, Tuple, Union
 
-from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgs
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import (
-    GcsfsDirectIngestController,
-)
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsIngestViewExportArgs,
     GcsfsRawDataBQImportArgs,
+    GcsfsIngestArgs,
 )
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     _build_task_id,
@@ -47,7 +44,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
 
     def __init__(self) -> None:
         super().__init__()
-        self.process_job_tasks: List[Tuple[str, IngestArgs]] = []
+        self.process_job_tasks: List[Tuple[str, GcsfsIngestArgs]] = []
         self.num_finished_process_job_tasks = 0
         self.scheduler_tasks: List[Tuple[str, bool]] = []
         self.num_finished_scheduler_tasks = 0
@@ -84,7 +81,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         )
 
     def create_direct_ingest_process_job_task(
-        self, region: Region, ingest_args: IngestArgs
+        self, region: Region, ingest_args: GcsfsIngestArgs
     ) -> None:
         """Queues *but does not run* a process job task."""
         if not self.controller:
@@ -181,10 +178,6 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
             if task_id.endswith("schedule"):
                 self.controller.schedule_next_ingest_job(just_finished_job=task[1])
             elif task_id.endswith("handle_new_files"):
-                if not isinstance(self.controller, GcsfsDirectIngestController):
-                    raise ValueError(
-                        f"Unexpected controller type {type(self.controller)}"
-                    )
                 self.controller.handle_new_files(can_start_ingest=task[1])
             else:
                 raise ValueError(f"Unexpected task id [{task_id}]")
@@ -208,19 +201,11 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
 
         with monitoring.push_region_tag(self.controller.region.region_code):
             if task_id.endswith("raw_data_import"):
-                if not isinstance(self.controller, GcsfsDirectIngestController):
-                    raise ValueError(
-                        f"Unexpected controller type {type(self.controller)}"
-                    )
                 if not isinstance(args, GcsfsRawDataBQImportArgs):
                     raise ValueError(f"Unexpected args type {type(args)}")
 
                 self.controller.do_raw_data_import(data_import_args=args)
             elif task_id.endswith("ingest_view_export"):
-                if not isinstance(self.controller, GcsfsDirectIngestController):
-                    raise ValueError(
-                        f"Unexpected controller type {type(self.controller)}"
-                    )
                 if not isinstance(args, GcsfsIngestViewExportArgs):
                     raise ValueError(f"Unexpected args type {type(args)}")
 
@@ -229,7 +214,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
                 raise ValueError(f"Unexpected task id [{task_id}]")
         self.num_finished_bq_import_export_tasks += 1
 
-    def test_pop_finished_process_job_task(self) -> Tuple[str, IngestArgs]:
+    def test_pop_finished_process_job_task(self) -> Tuple[str, GcsfsIngestArgs]:
         """Removes most recently run process job task from the queue."""
         if self.num_finished_process_job_tasks == 0:
             raise ValueError("No finished tasks to pop.")

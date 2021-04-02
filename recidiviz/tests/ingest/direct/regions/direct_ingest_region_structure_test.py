@@ -47,8 +47,8 @@ from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration_colle
 from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import (
     DirectIngestPreProcessedIngestViewCollector,
 )
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import (
-    GcsfsDirectIngestController,
+from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
+    BaseDirectIngestController,
 )
 from recidiviz.ingest.direct.direct_ingest_region_utils import (
     get_existing_region_dir_names,
@@ -182,7 +182,7 @@ class DirectIngestRegionDirStructureBase:
             with local_project_id_override("recidiviz-456"):
                 controller = DirectIngestControllerFactory.build(region)
                 self.test.assertIsNotNone(controller)
-                self.test.assertIsInstance(controller, GcsfsDirectIngestController)
+                self.test.assertIsInstance(controller, BaseDirectIngestController)
 
     def test_raw_files_yaml_parses_all_regions(self) -> None:
         for region_code in self.region_dir_names:
@@ -195,8 +195,6 @@ class DirectIngestRegionDirStructureBase:
             controller_class = DirectIngestControllerFactory.get_controller_class(
                 region
             )
-            if not issubclass(controller_class, GcsfsDirectIngestController):
-                continue
 
             builders = DirectIngestPreProcessedIngestViewCollector(
                 region, controller_class.get_file_tag_rank_list()
@@ -242,8 +240,6 @@ class DirectIngestRegionDirStructureBase:
                     controller_class = (
                         DirectIngestControllerFactory.get_controller_class(region)
                     )
-                    if not issubclass(controller_class, GcsfsDirectIngestController):
-                        continue
 
                     builders = DirectIngestPreProcessedIngestViewCollector(
                         region, controller_class.get_file_tag_rank_list()

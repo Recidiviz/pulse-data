@@ -22,8 +22,8 @@ from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
     DirectIngestInstance,
 )
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import (
-    GcsfsDirectIngestController,
+from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
+    BaseDirectIngestController,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     gcsfs_direct_ingest_bucket_for_region,
@@ -35,8 +35,8 @@ class DirectIngestControllerFactory:
     """Factory class for building DirectIngestControllers of various types."""
 
     @classmethod
-    def build(cls, region: Region) -> GcsfsDirectIngestController:
-        """Retrieve a direct ingest GcsfsDirectIngestController for a particular
+    def build(cls, region: Region) -> BaseDirectIngestController:
+        """Retrieve a direct ingest BaseDirectIngestController for a particular
         region.
 
         Returns:
@@ -53,13 +53,13 @@ class DirectIngestControllerFactory:
 
         controller_class = cls.get_controller_class(region)
         controller = controller_class(ingest_bucket_path=ingest_bucket_path)
-        if not isinstance(controller, GcsfsDirectIngestController):
+        if not isinstance(controller, BaseDirectIngestController):
             raise ValueError(f"Unexpected controller class type [{type(controller)}]")
 
         return controller
 
     @classmethod
-    def get_controller_class(cls, region: Region) -> Type[GcsfsDirectIngestController]:
+    def get_controller_class(cls, region: Region) -> Type[BaseDirectIngestController]:
         region_code = region.region_code.lower()
         controller_module_name = (
             f"{region.region_module.__name__}.{region_code}.{region_code}_controller"
@@ -75,14 +75,14 @@ class DirectIngestControllerFactory:
                 f"Could not find controller class with name [{controller_class_name}]."
             )
 
-        if not issubclass(controller_class, GcsfsDirectIngestController):
+        if not issubclass(controller_class, BaseDirectIngestController):
             raise ValueError(f"Unexpected controller class type [{controller_class}]")
 
         return controller_class
 
     @classmethod
     def get_controller_class_name(cls, region_code: str) -> str:
-        """Returns the GcsfsDirectIngestController class name for a given
+        """Returns the BaseDirectIngestController class name for a given
         region_code.
         """
         return "".join(s.title() for s in region_code.split("_")) + "Controller"

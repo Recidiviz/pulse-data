@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for GcsfsDirectIngestController."""
+"""Tests for BaseDirectIngestController."""
 import abc
 import datetime
 import json
@@ -45,11 +45,8 @@ from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller impo
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     SPLIT_FILE_STORAGE_SUBDIR,
 )
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import (
-    GcsfsDirectIngestController,
-)
-from recidiviz.ingest.direct.controllers.direct_ingest_types import (
-    IngestArgsType,
+from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
+    BaseDirectIngestController,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsIngestArgs,
@@ -162,7 +159,7 @@ class CrashingStateTestGcsfsDirectIngestController(
     def get_file_tag_rank_list(cls) -> List[str]:
         return ["tagC"]
 
-    def _run_ingest_job(self, args: IngestArgsType) -> bool:
+    def _run_ingest_job(self, args: GcsfsIngestArgs) -> bool:
         raise Exception("insta-crash")
 
 
@@ -207,7 +204,7 @@ class CountyTestGcsfsDirectIngestController(BaseTestCsvGcsfsDirectIngestControll
     Mock(return_value=FakeDirectIngestRegionRawFileConfig("US_XX")),
 )
 class TestGcsfsDirectIngestController(unittest.TestCase):
-    """Tests for GcsfsDirectIngestController."""
+    """Tests for BaseDirectIngestController."""
 
     # Stores the location of the postgres DB for this test run
     temp_db_dir: Optional[str]
@@ -237,7 +234,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
     def validate_file_metadata(
         self,
-        controller: GcsfsDirectIngestController,
+        controller: BaseDirectIngestController,
         expected_raw_metadata_tags_with_is_processed: Optional[
             List[Tuple[str, bool]]
         ] = None,
@@ -344,7 +341,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         return controller
 
     def check_tags(
-        self, controller: GcsfsDirectIngestController, tags: List[str]
+        self, controller: BaseDirectIngestController, tags: List[str]
     ) -> None:
         self.assertIsInstance(
             controller.ingest_view_export_manager.big_query_client,
@@ -361,7 +358,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         )
 
     def get_fake_task_manager(
-        self, controller: GcsfsDirectIngestController
+        self, controller: BaseDirectIngestController
     ) -> FakeSynchronousDirectIngestCloudTaskManager:
         if not isinstance(
             controller.cloud_task_manager, FakeSynchronousDirectIngestCloudTaskManager
@@ -370,7 +367,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         return controller.cloud_task_manager
 
     def check_imported_path_count(
-        self, controller: GcsfsDirectIngestController, expected_count: int
+        self, controller: BaseDirectIngestController, expected_count: int
     ) -> None:
         if not isinstance(
             controller.raw_file_import_manager, FakeDirectIngestRawFileImportManager
@@ -384,7 +381,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
     def add_and_process_through_ingest_view_export(
         self,
-        controller: GcsfsDirectIngestController,
+        controller: BaseDirectIngestController,
         file_path: GcsfsFilePath,
         clear_scheduler_queue_after: bool = False,
     ) -> None:
@@ -940,12 +937,12 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         self.validate_file_metadata(controller)
 
     def _path_in_storage_dir(
-        self, path: GcsfsFilePath, controller: GcsfsDirectIngestController
+        self, path: GcsfsFilePath, controller: BaseDirectIngestController
     ) -> bool:
         return path.abs_path().startswith(controller.storage_directory_path.abs_path())
 
     def _path_in_split_file_storage_subdir(
-        self, path: GcsfsFilePath, controller: GcsfsDirectIngestController
+        self, path: GcsfsFilePath, controller: BaseDirectIngestController
     ) -> bool:
         if self._path_in_storage_dir(path, controller):
             directory, _ = os.path.split(path.abs_path())
@@ -1017,7 +1014,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         self.check_tags(controller, controller.get_file_tag_rank_list())
 
     @patch.object(
-        GcsfsDirectIngestController,
+        BaseDirectIngestController,
         "_split_file_if_necessary",
         Mock(side_effect=ValueError("Splitting crashed")),
     )

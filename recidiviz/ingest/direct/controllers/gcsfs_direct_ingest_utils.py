@@ -43,7 +43,6 @@ from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_types import (
     CloudTaskArgs,
-    IngestArgs,
 )
 from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
 from recidiviz.utils import metadata
@@ -62,7 +61,7 @@ _FILENAME_SUFFIX_REGEX = re.compile(r".*(_file_split(_size(\d+))?)")
 
 
 class GcsfsDirectIngestFileType(Enum):
-    """Denotes the type of a file encountered by the GcsfsDirectIngestController. Files will have their type added to
+    """Denotes the type of a file encountered by the BaseDirectIngestController. Files will have their type added to
     the normalized name and this type will be used to determine how to handle the file (import to BigQuery vs ingest
     directly to Postgres). When moved to storage, files with different file types will live in different subdirectories
     in a region's storage bucket."""
@@ -122,7 +121,8 @@ class GcsfsFilenameParts:
 
 
 @attr.s(frozen=True)
-class GcsfsIngestArgs(IngestArgs):
+class GcsfsIngestArgs(CloudTaskArgs):
+    ingest_time: datetime.datetime = attr.ib()
     file_path: GcsfsFilePath = attr.ib()
 
     def task_id_tag(self) -> str:

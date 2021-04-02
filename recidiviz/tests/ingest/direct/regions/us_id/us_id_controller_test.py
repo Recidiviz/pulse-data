@@ -73,8 +73,8 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseType,
     StateSupervisionViolationResponseDecision,
 )
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import (
-    GcsfsDirectIngestController,
+from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
+    BaseDirectIngestController,
 )
 from recidiviz.ingest.direct.regions.us_id.us_id_controller import (
     UsIdController,
@@ -123,7 +123,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         return _STATE_CODE_UPPER.lower()
 
     @classmethod
-    def controller_cls(cls) -> Type[GcsfsDirectIngestController]:
+    def controller_cls(cls) -> Type[BaseDirectIngestController]:
         return UsIdController
 
     @classmethod
