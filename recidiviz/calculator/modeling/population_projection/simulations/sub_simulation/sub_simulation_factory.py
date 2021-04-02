@@ -149,7 +149,7 @@ class SubSimulationFactory:
 
             # add to the dict compartment -> transition class with policies applied
             if compartment in transitions_per_compartment:
-                transitions_per_compartment[compartment].initialize(
+                transitions_per_compartment[compartment].initialize_transition_tables(
                     compartment_policies
                 )
 
@@ -222,7 +222,6 @@ class SubSimulationFactory:
                 simulation_compartments[compartment] = ShellCompartment(
                     outflows_data=outflows_data,
                     starting_ts=first_relevant_ts,
-                    policy_ts=user_inputs["policy_time_step"],
                     constant_admissions=user_inputs["constant_admissions"],
                     tag=compartment,
                     policy_list=shell_policies[compartment],
@@ -231,9 +230,10 @@ class SubSimulationFactory:
             else:
                 simulation_compartments[compartment] = FullCompartment(
                     outflow_data=outflows_data,
-                    transition_tables=transition_tables_by_compartment[compartment],
+                    compartment_transitions=transition_tables_by_compartment[
+                        compartment
+                    ],
                     starting_ts=first_relevant_ts,
-                    policy_ts=user_inputs["policy_time_step"],
                     tag=compartment,
                 )
 

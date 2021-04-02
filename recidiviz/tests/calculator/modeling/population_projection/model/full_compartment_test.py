@@ -58,12 +58,16 @@ class TestFullCompartment(unittest.TestCase):
         self.incarceration_transition_table = CompartmentTransitions(
             self.test_incarceration_data
         )
-        self.incarceration_transition_table.initialize(self.compartment_policies)
+        self.incarceration_transition_table.initialize_transition_tables(
+            self.compartment_policies
+        )
 
         self.release_transition_table = CompartmentTransitions(
             self.test_supervision_data
         )
-        self.release_transition_table.initialize(self.compartment_policies)
+        self.release_transition_table.initialize_transition_tables(
+            self.compartment_policies
+        )
 
         self.historical_data = pd.DataFrame(
             {
@@ -76,21 +80,20 @@ class TestFullCompartment(unittest.TestCase):
     def test_step_forward_fails_without_initialized_edges(self):
         """Tests that step_forward() needs the initialize_edges() to have been run"""
         rel_compartment = FullCompartment(
-            self.historical_data, self.release_transition_table, 2015, 2018, "release"
+            self.historical_data, self.release_transition_table, 2015, "release"
         )
         with self.assertRaises(ValueError):
             rel_compartment.step_forward()
 
     def test_all_edges_fed_to(self):
-        """Tests that all edges in self.edges are included in self.transition_tables"""
+        """Tests that all edges in self.edges are included in self.compartment_transitions"""
         rel_compartment = FullCompartment(
-            self.historical_data, self.release_transition_table, 2015, 2018, "release"
+            self.historical_data, self.release_transition_table, 2015, "release"
         )
         test_compartment = FullCompartment(
             self.historical_data,
             self.incarceration_transition_table,
             2015,
-            2018,
             "test_compartment",
         )
         compartment_list = [rel_compartment, test_compartment]

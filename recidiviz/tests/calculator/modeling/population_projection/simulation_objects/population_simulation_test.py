@@ -20,12 +20,13 @@ from copy import deepcopy
 import pandas as pd
 from pandas.testing import assert_index_equal
 
-from recidiviz.calculator.modeling.population_projection.simulations.compartment_transitions import (
-    CompartmentTransitions,
-)
+
 from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
 from recidiviz.calculator.modeling.population_projection.simulations.population_simulation.population_simulation_factory import (
     PopulationSimulationFactory,
+)
+from recidiviz.calculator.modeling.population_projection.simulations.transition_table import (
+    TransitionTable,
 )
 
 
@@ -181,9 +182,10 @@ class TestPopulationSimulation(unittest.TestCase):
         with self.assertRaises(ValueError):
             policy_list = [
                 SparkPolicy(
-                    CompartmentTransitions.test_non_retroactive_policy,
+                    TransitionTable.test_non_retroactive_policy,
                     "supervision",
                     {"crime": "NAR"},
+                    self.user_inputs["policy_time_step"],
                 )
             ]
             _ = PopulationSimulationFactory.build_population_simulation(

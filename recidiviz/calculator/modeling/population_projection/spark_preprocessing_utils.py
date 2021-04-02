@@ -27,7 +27,7 @@ import pandas as pd
 from scipy.optimize import minimize
 from scipy.stats import lognorm
 import matplotlib.pyplot as plt
-from recidiviz.calculator.modeling.population_projection.simulations.compartment_transitions import (
+from recidiviz.calculator.modeling.population_projection.utils.transitions_utils import (
     SIG_FIGS,
 )
 
