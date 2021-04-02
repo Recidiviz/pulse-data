@@ -16,17 +16,26 @@
 // =============================================================================
 import * as React from "react";
 import { Breadcrumb, PageHeader, Spin } from "antd";
+import { useParams } from "react-router-dom";
 
 import MetadataTable from "./MetadataTable";
 
-import * as IngestMetadata from "../navigation/IngestMetadata";
+import MetadataDataset from "../models/MetadataDatasets";
+import * as DatasetMetadata from "../navigation/DatasetMetadata";
 import { fetchObjectCountsByTable } from "../AdminPanelAPI";
 import useFetchedData from "../hooks";
 
+interface MatchParams {
+  dataset: MetadataDataset;
+}
+
 const DatasetView = (): JSX.Element => {
-  const { loading, data } = useFetchedData<MetadataAPIResult>(
-    fetchObjectCountsByTable
-  );
+  const { dataset: metadataDataset } = useParams<MatchParams>();
+
+  const fetchValues = React.useCallback(async (): Promise<Response> => {
+    return fetchObjectCountsByTable(metadataDataset);
+  }, [metadataDataset]);
+  const { loading, data } = useFetchedData<MetadataAPIResult>(fetchValues);
 
   if (loading) {
     return (
@@ -36,16 +45,23 @@ const DatasetView = (): JSX.Element => {
     );
   }
 
+  const topBreadCrumbLabel = DatasetMetadata.getBreadCrumbLabel(
+    metadataDataset
+  );
+
   return (
     <>
       <Breadcrumb>
-        <Breadcrumb.Item>state</Breadcrumb.Item>
+        <Breadcrumb.Item>{topBreadCrumbLabel}</Breadcrumb.Item>
       </Breadcrumb>
       <PageHeader title="Dataset View" />
       <MetadataTable
         data={data}
+        metadataDataset={metadataDataset}
         initialColumnTitle="Tables"
-        initialColumnLink={(name: string) => IngestMetadata.routeForTable(name)}
+        initialColumnLink={(name: string) =>
+          DatasetMetadata.routeForMetadataTable(metadataDataset, name)
+        }
       />
     </>
   );

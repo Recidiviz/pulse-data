@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Implements tests for the IngestMetadataCountsStore class."""
+"""Implements tests for the DatasetMetadataCountsStore class."""
 import os
 from collections import defaultdict
 from typing import Dict, List
@@ -22,21 +22,21 @@ from unittest import TestCase, mock
 
 from parameterized import parameterized
 
-from recidiviz.admin_panel.ingest_metadata_store import (
-    IngestMetadataCounts,
-    IngestMetadataCountsStore,
-    IngestMetadataResult,
+from recidiviz.admin_panel.dataset_metadata_store import (
+    DatasetMetadataCounts,
+    DatasetMetadataResult,
+    DatasetMetadataCountsStore,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 
-class TestIngestMetadataStore(TestCase):
-    """TestCase for IngestMetadataCountsStore."""
+class TestDatasetMetadataStore(TestCase):
+    """TestCase for DatasetMetadataStore."""
 
     def setUp(self) -> None:
         self.gcs_factory_patcher = mock.patch(
-            "recidiviz.admin_panel.ingest_metadata_store.GcsfsFactory.build"
+            "recidiviz.admin_panel.dataset_metadata_store.GcsfsFactory.build"
         )
 
         fake_gcs = FakeGCSFileSystem()
@@ -83,7 +83,11 @@ county_columns_to_exclude:
             fake_gcs.test_add_path(path, local_path=os.path.join(fixture_folder, f))
 
         self.gcs_factory_patcher.start().return_value = fake_gcs
-        self.store = IngestMetadataCountsStore(override_project_id="recidiviz-456")
+        self.store = DatasetMetadataCountsStore(
+            dataset_nickname="ingest",
+            metadata_file_prefix="ingest_state_metadata",
+            override_project_id="recidiviz-456",
+        )
         self.store.recalculate_store()
 
     def tearDown(self) -> None:
@@ -94,25 +98,25 @@ county_columns_to_exclude:
             self.store.fetch_object_counts_by_table(),
             {
                 "state_agent": {
-                    "US_WW": IngestMetadataCounts.from_json(
+                    "US_WW": DatasetMetadataCounts.from_json(
                         {
                             "total_count": "687179",
                             "placeholder_count": "50180",
                         }
                     ),
-                    "US_XX": IngestMetadataCounts.from_json(
+                    "US_XX": DatasetMetadataCounts.from_json(
                         {
                             "total_count": "7175527",
                             "placeholder_count": "0",
                         }
                     ),
-                    "US_YY": IngestMetadataCounts.from_json(
+                    "US_YY": DatasetMetadataCounts.from_json(
                         {
                             "total_count": "274616",
                             "placeholder_count": "179028",
                         }
                     ),
-                    "US_ZZ": IngestMetadataCounts.from_json(
+                    "US_ZZ": DatasetMetadataCounts.from_json(
                         {
                             "total_count": "888765",
                             "placeholder_count": "359273",
@@ -121,13 +125,13 @@ county_columns_to_exclude:
                 },
                 "state_bond": {},
                 "state_charge": {
-                    "US_XX": IngestMetadataCounts.from_json(
+                    "US_XX": DatasetMetadataCounts.from_json(
                         {
                             "total_count": "1656434",
                             "placeholder_count": "0",
                         }
                     ),
-                    "US_YY": IngestMetadataCounts.from_json(
+                    "US_YY": DatasetMetadataCounts.from_json(
                         {
                             "total_count": "386469",
                             "placeholder_count": "123811",
@@ -229,7 +233,7 @@ county_columns_to_exclude:
                 )
 
     def assertIngestMetadataResultsEqual(
-        self, r1: IngestMetadataResult, r2: IngestMetadataResult
+        self, r1: DatasetMetadataResult, r2: DatasetMetadataResult
     ) -> None:
         self.assertEqual(
             len(r1), len(r2), msg="The two results have differing numbers of values."

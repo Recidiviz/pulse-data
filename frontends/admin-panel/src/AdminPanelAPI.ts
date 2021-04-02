@@ -14,6 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
+
+import MetadataDataset from "./models/MetadataDatasets";
+
 const postWithURLAndBody = async (
   url: string,
   body: Record<string, unknown>
@@ -27,29 +30,33 @@ const postWithURLAndBody = async (
   });
 };
 
-// Fetch state dataset info
+// Fetch dataset metadata
 export const fetchColumnObjectCountsByValue = async (
+  metadataDataset: MetadataDataset,
   table: string,
   column: string
 ): Promise<Response> => {
   return postWithURLAndBody(
-    "/api/ingest_metadata/fetch_column_object_counts_by_value",
+    `/api/${metadataDataset}/fetch_column_object_counts_by_value`,
     { table, column }
   );
 };
 
 export const fetchTableNonNullCountsByColumn = async (
+  metadataDataset: MetadataDataset,
   table: string
 ): Promise<Response> => {
   return postWithURLAndBody(
-    "/api/ingest_metadata/fetch_table_nonnull_counts_by_column",
+    `/api/${metadataDataset}/fetch_table_nonnull_counts_by_column`,
     { table }
   );
 };
 
-export const fetchObjectCountsByTable = async (): Promise<Response> => {
+export const fetchObjectCountsByTable = async (
+  metadataDataset: MetadataDataset
+): Promise<Response> => {
   return postWithURLAndBody(
-    "/api/ingest_metadata/fetch_object_counts_by_table",
+    `/api/${metadataDataset}/fetch_object_counts_by_table`,
     {}
   );
 };

@@ -23,6 +23,10 @@ Its results are split by state.
 NB: In the future, this functionality should be separated out based on the semantics
 of the column. E.g. date counters should count non-nulls but also report min and
 max dates in their ranges.
+
+NB: In the future, we should remove the necessity of specifying placeholder counts here,
+which is necessitated by the downstream use by the Admin Panel but is irrelevant to
+validation datasets.
 """
 
 from typing import List
