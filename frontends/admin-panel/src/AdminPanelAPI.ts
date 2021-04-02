@@ -79,3 +79,11 @@ export const runCloudSQLImport = async (
     viewIds,
   });
 };
+
+// Ingest Operations Actions
+export const fetchIngestRegionCodes = async (): Promise<Response> => {
+  return postWithURLAndBody(
+    "/api/ingest_operations/fetch_ingest_region_codes",
+    {}
+  );
+};

@@ -23,10 +23,12 @@ import CloudSQLImportView from "./CloudSQLImportView";
 import ColumnView from "./ColumnView";
 import DatasetView from "./DatasetView";
 import DataFreshnessView from "./DataFreshnessView";
+import ActionsView from "./ActionsView";
 import TableView from "./TableView";
 
 import * as CaseTriage from "../navigation/CaseTriage";
 import * as IngestMetadata from "../navigation/IngestMetadata";
+import * as IngestOperations from "../navigation/IngestOperations";
 
 import "../style/App.css";
 
@@ -50,6 +52,13 @@ const App = (): JSX.Element => {
             <Menu.Item key={IngestMetadata.DATA_FRESHNESS_ROUTE}>
               <Link to={IngestMetadata.DATA_FRESHNESS_ROUTE}>
                 Data Freshness
+              </Link>
+            </Menu.Item>
+          </Menu.ItemGroup>
+          <Menu.ItemGroup title="Ingest Operations">
+            <Menu.Item key={IngestOperations.INGEST_ACTIONS_ROUTE}>
+              <Link to={IngestOperations.INGEST_ACTIONS_ROUTE}>
+                Key Actions
               </Link>
             </Menu.Item>
           </Menu.ItemGroup>
@@ -87,6 +96,11 @@ const App = (): JSX.Element => {
             component={DataFreshnessView}
           />
           <Route
+            exact
+            path={IngestOperations.INGEST_ACTIONS_ROUTE}
+            component={ActionsView}
+          />
+          <Route
             path={CaseTriage.GCS_CSV_TO_CLOUD_SQL_ROUTE}
             component={CloudSQLImportView}
           />
@@ -107,6 +121,9 @@ function selectedMenuKeys(pathname: string): string[] {
   }
   if (pathname.startsWith(IngestMetadata.DATA_FRESHNESS_ROUTE)) {
     return [IngestMetadata.DATA_FRESHNESS_ROUTE];
+  }
+  if (pathname.startsWith(IngestOperations.INGEST_ACTIONS_ROUTE)) {
+    return [IngestOperations.INGEST_ACTIONS_ROUTE];
   }
   if (pathname.startsWith(CaseTriage.GCS_CSV_TO_CLOUD_SQL_ROUTE)) {
     return [CaseTriage.GCS_CSV_TO_CLOUD_SQL_ROUTE];
