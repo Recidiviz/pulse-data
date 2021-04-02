@@ -72,11 +72,13 @@ class TestSchema(TestCase):
         act_session.add(report)
 
         table_definition = schema.ReportTableDefinition(
+            system=schema.System.CORRECTIONS,
             metric_type=schema.MetricType.POPULATION,
             measurement_type=schema.MeasurementType.INSTANT,
             filtered_dimensions=["global/state", "global/population_type"],
             filtered_dimension_values=["US_XX", "prison"],
             aggregated_dimensions=["global/gender"],
+            label="",
         )
         act_session.add(table_definition)
 

@@ -1,64 +1,67 @@
-source: 'Colorado Department of Corrections'
-report_type: 'Dashboard Measures'
-report_instance: '2020-10-05'
-publish_date: '2020-10-05'
-url: 'https://www.colorado.gov/pacific/cdoc/departmental-reports-and-statistics'
-assignee: 'Solange Knowles'
+source: "Colorado Department of Corrections"
+report_type: "Dashboard Measures"
+report_instance: "2020-10-05"
+publish_date: "2020-10-05"
+url: "https://www.colorado.gov/pacific/cdoc/departmental-reports-and-statistics"
+assignee: "Solange Knowles"
 tables:
-    - name: 'ManualData-Prison_US_CO_DashboardMeasures_Aug20'
-      date_range:
-        fixed:
-          type: 'SNAPSHOT'
-          input:
-            - '2020-08-31'
-      system: 'CORRECTIONS'
-      metric:
-        population:
-          population_type: 'PRISON'
-          measurement_type: 'INSTANT'
-      dimension_columns:
-        - column_name: 'Facility'
-          dimension_name: 'FACILITY'
-      value_column:
-        column_name: 'Population'
-      location:
-        state: 'US_CO'
-      methodology: 'Unknown'
-    - name: 'ManualData-Prison_US_CO_DashboardMeasures_Jul20'
-      date_range:
-        fixed:
-          type: 'SNAPSHOT'
-          input:
-            - '2020-07-31'
-      system: 'CORRECTIONS'
-      metric:
-        population:
-          population_type: 'PRISON'
-          measurement_type: 'INSTANT'
-      dimension_columns:
-        - column_name: 'Facility'
-          dimension_name: 'FACILITY'
-      value_column:
-        column_name: 'Population'
-      location:
-        state: 'US_CO'
-      methodology: 'Unknown'
-    - name: 'ManualData-Prison_US_CO_DashboardMeasures_Jun20'
-      date_range:
-        fixed:
-          type: 'SNAPSHOT'
-          input:
-            - '2020-06-30'
-      system: 'CORRECTIONS'
-      metric:
-        population:
-          population_type: 'PRISON'
-          measurement_type: 'INSTANT'
-      dimension_columns:
-        - column_name: 'Facility'
-          dimension_name: 'FACILITY'
-      value_column:
-        column_name: 'Population'
-      location:
-        state: 'US_CO'
-      methodology: 'Unknown'
+  - name: "ManualData-Prison_US_CO_DashboardMeasures_Aug20"
+    label: "Prison Population by Facility"
+    date_range:
+      fixed:
+        type: "SNAPSHOT"
+        input:
+          - "2020-08-31"
+    system: "CORRECTIONS"
+    metric:
+      population:
+        population_type: "PRISON"
+        measurement_type: "INSTANT"
+    dimension_columns:
+      - column_name: "Facility"
+        dimension_name: "FACILITY"
+    value_column:
+      column_name: "Population"
+    location:
+      state: "US_CO"
+    methodology: "Unknown"
+  - name: "ManualData-Prison_US_CO_DashboardMeasures_Jul20"
+    label: "Prison Population by Facility"
+    date_range:
+      fixed:
+        type: "SNAPSHOT"
+        input:
+          - "2020-07-31"
+    system: "CORRECTIONS"
+    metric:
+      population:
+        population_type: "PRISON"
+        measurement_type: "INSTANT"
+    dimension_columns:
+      - column_name: "Facility"
+        dimension_name: "FACILITY"
+    value_column:
+      column_name: "Population"
+    location:
+      state: "US_CO"
+    methodology: "Unknown"
+  - name: "ManualData-Prison_US_CO_DashboardMeasures_Jun20"
+    label: "Prison Population by Facility"
+    date_range:
+      fixed:
+        type: "SNAPSHOT"
+        input:
+          - "2020-06-30"
+    system: "CORRECTIONS"
+    metric:
+      population:
+        population_type: "PRISON"
+        measurement_type: "INSTANT"
+    dimension_columns:
+      - column_name: "Facility"
+        dimension_name: "FACILITY"
+    value_column:
+      column_name: "Population"
+    location:
+      state: "US_CO"
+    methodology: "Unknown"
