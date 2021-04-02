@@ -21,9 +21,11 @@ import os
 import uuid
 from enum import Enum
 from typing import Optional, Dict, Union
+from urllib.parse import urlencode
 
 import attr
 
+from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common.google_cloud.cloud_task_queue_manager import (
     CloudTaskQueueInfo,
     CloudTaskQueueManager,
@@ -185,7 +187,10 @@ class DirectIngestCloudTaskManager:
 
     @abc.abstractmethod
     def create_direct_ingest_scheduler_queue_task(
-        self, region: Region, just_finished_job: bool, delay_sec: int
+        self,
+        region: Region,
+        ingest_bucket: GcsfsBucketPath,
+        just_finished_job: bool,
     ) -> None:
         """Creates a scheduler task for direct ingest for a given region.
         Scheduler tasks should be short-running and queue process_job tasks if
@@ -193,16 +198,28 @@ class DirectIngestCloudTaskManager:
 
         Args:
             region: `Region` direct ingest region.
+            ingest_bucket: `GcsfsBucketPath` of the ingest bucket (e.g.
+                gs://recidiviz-staging-direct-ingest-state-us-xx) corresponding to the
+                ingest instance that work should be scheduled for.
             just_finished_job: True if this schedule is coming as a result
                 of just having finished a job.
-            delay_sec: `int` the number of seconds to wait before the next task.
         """
 
     @abc.abstractmethod
     def create_direct_ingest_handle_new_files_task(
-        self, region: Region, can_start_ingest: bool
+        self, region: Region, ingest_bucket: GcsfsBucketPath, can_start_ingest: bool
     ) -> None:
-        pass
+        """Creates a Cloud Task for for a given region that identifies and registers
+        new files that have been added to the provided ingest bucket.
+
+        Args:
+            region: `Region` direct ingest region.
+            ingest_bucket: `GcsfsBucketPath` of the ingest bucket (e.g.
+                gs://recidiviz-staging-direct-ingest-state-us-xx) to look for new files.
+            can_start_ingest: True if the controller can proceed with scheduling
+                more jobs to process the data once the files have been properly named
+                and registered.
+        """
 
     @abc.abstractmethod
     def create_direct_ingest_raw_data_import_task(
@@ -252,6 +269,8 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
     with actual GCP Cloud Task queues."""
 
     def __init__(self) -> None:
+        # TODO(#6077): Select queues based on region code / DirectIngestInstance instead
+        #  of using global queues.
         self.scheduler_cloud_task_queue_manager = CloudTaskQueueManager(
             queue_info_cls=SchedulerCloudTaskQueueInfo,
             queue_name=DIRECT_INGEST_SCHEDULER_QUEUE_V2,
@@ -323,7 +342,10 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         task_id = _build_task_id(
             region.region_code, ingest_args.task_id_tag(), prefix_only=False
         )
-        relative_uri = f"/direct/process_job?region={region.region_code}"
+        params = {
+            "region": region.region_code.lower(),
+        }
+        relative_uri = f"/direct/process_job?{urlencode(params)}"
         body = self._get_body_from_args(ingest_args)
 
         self._get_process_job_queue_manager(region).create_task(
@@ -335,34 +357,40 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
     def create_direct_ingest_scheduler_queue_task(
         self,
         region: Region,
+        ingest_bucket: GcsfsBucketPath,
         just_finished_job: bool,
-        delay_sec: int,
     ) -> None:
         task_id = _build_task_id(
             region.region_code, task_id_tag="scheduler", prefix_only=False
         )
-        relative_uri = (
-            f"/direct/scheduler?region={region.region_code}&"
-            f"just_finished_job={just_finished_job}"
-        )
+
+        params = {
+            "region": region.region_code.lower(),
+            "bucket": ingest_bucket.bucket_name,
+            "just_finished_job": just_finished_job,
+        }
+
+        relative_uri = f"/direct/scheduler?{urlencode(params)}"
 
         self.scheduler_cloud_task_queue_manager.create_task(
             task_id=task_id,
             relative_uri=relative_uri,
             body={},
-            schedule_delay_seconds=delay_sec,
         )
 
     def create_direct_ingest_handle_new_files_task(
-        self, region: Region, can_start_ingest: bool
+        self, region: Region, ingest_bucket: GcsfsBucketPath, can_start_ingest: bool
     ) -> None:
         task_id = _build_task_id(
             region.region_code, task_id_tag="handle_new_files", prefix_only=False
         )
-        relative_uri = (
-            f"/direct/handle_new_files?region={region.region_code}&"
-            f"can_start_ingest={can_start_ingest}"
-        )
+
+        params = {
+            "region": region.region_code.lower(),
+            "bucket": ingest_bucket.bucket_name,
+            "can_start_ingest": can_start_ingest,
+        }
+        relative_uri = f"/direct/handle_new_files?{urlencode(params)}"
 
         self.scheduler_cloud_task_queue_manager.create_task(
             task_id=task_id,
@@ -378,7 +406,11 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
             task_id_tag=data_import_args.task_id_tag(),
             prefix_only=False,
         )
-        relative_uri = f"/direct/raw_data_import?region={region.region_code}"
+
+        params = {
+            "region": region.region_code.lower(),
+        }
+        relative_uri = f"/direct/raw_data_import?{urlencode(params)}"
 
         body = self._get_body_from_args(data_import_args)
 
@@ -396,7 +428,10 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
             task_id_tag=ingest_view_export_args.task_id_tag(),
             prefix_only=False,
         )
-        relative_uri = f"/direct/ingest_view_export?region={region.region_code}"
+        params = {
+            "region": region.region_code.lower(),
+        }
+        relative_uri = f"/direct/ingest_view_export?{urlencode(params)}"
 
         body = self._get_body_from_args(ingest_view_export_args)
 
@@ -410,7 +445,10 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         task_id = _build_task_id(
             region.region_code, task_id_tag="handle_sftp_download", prefix_only=False
         )
-        relative_uri = f"/direct/upload_from_sftp?region={region.region_code}"
+        params = {
+            "region": region.region_code.lower(),
+        }
+        relative_uri = f"/direct/upload_from_sftp?{urlencode(params)}"
         self._get_sftp_queue_manager(region).create_task(
             task_id=task_id, relative_uri=relative_uri, body={}
         )

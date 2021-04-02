@@ -1433,7 +1433,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         # Cron job to handle unseen files triggers later
         controller.cloud_task_manager.create_direct_ingest_handle_new_files_task(
-            controller.region, can_start_ingest=True
+            controller.region, controller.ingest_bucket_path, can_start_ingest=True
         )
 
         run_task_queues_to_empty(controller)
