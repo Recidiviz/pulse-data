@@ -32,6 +32,8 @@ from werkzeug.routing import Rule
 
 from recidiviz.server import all_blueprints_with_url_prefixes
 from recidiviz.tools.docs.summary_file_generator import update_summary_file
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 ENDPOINT_DOCS_DIRECTORY = "docs/endpoints"
 ENDPOINT_CATALOG_SPECIFICATION = "docs/endpoints/endpoint_specification_template.md"
@@ -223,14 +225,15 @@ def _create_ingest_catalog_summary_for_endpoints(
 
 
 def main() -> int:
-    docs_generator = EndpointDocumentationGenerator()
-    added = generate_documentation_for_new_endpoints(docs_generator)
-    if added:
-        update_summary_file(
-            _create_ingest_catalog_summary_for_endpoints(docs_generator),
-            "## Endpoint Catalog",
-        )
-    return 1 if added else 0
+    with local_project_id_override(GCP_PROJECT_STAGING):
+        docs_generator = EndpointDocumentationGenerator()
+        added = generate_documentation_for_new_endpoints(docs_generator)
+        if added:
+            update_summary_file(
+                _create_ingest_catalog_summary_for_endpoints(docs_generator),
+                "## Endpoint Catalog",
+            )
+        return 1 if added else 0
 
 
 if __name__ == "__main__":
