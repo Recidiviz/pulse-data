@@ -227,6 +227,7 @@ class ManualUploadTest(unittest.TestCase):
         [table_definition] = session.query(schema.ReportTableDefinition).all()
         self.assertEqual(schema.System.CORRECTIONS, table_definition.system)
         self.assertEqual(schema.MetricType.POPULATION, table_definition.metric_type)
+        self.assertEqual("Prison Population by Facility", table_definition.label)
         self.assertEqual(
             ["global/location/state", "metric/population/type"],
             table_definition.filtered_dimensions,
@@ -247,6 +248,7 @@ class ManualUploadTest(unittest.TestCase):
         for table in tables:
             self.assertEqual(report, table.report)
             self.assertEqual(table_definition, table.report_table_definition)
+            self.assertEqual("Unknown", table.methodology)
         [table1, table2, table3] = tables
 
         # Look at the first table in detail
@@ -327,6 +329,7 @@ class ManualUploadTest(unittest.TestCase):
         [table_definition] = session.query(schema.ReportTableDefinition).all()
         self.assertEqual(schema.System.CORRECTIONS, table_definition.system)
         self.assertEqual(schema.MetricType.POPULATION, table_definition.metric_type)
+        self.assertEqual("Prison Population by Facility", table_definition.label)
 
         # There should only be one table
         [table] = (
@@ -336,6 +339,7 @@ class ManualUploadTest(unittest.TestCase):
         )
         self.assertEqual(report, table.report)
         self.assertEqual(table_definition, table.report_table_definition)
+        self.assertEqual("Unknown", table.methodology)
         table_sum = (
             session.query(sql.func.sum(schema.Cell.value))
             .filter(schema.Cell.report_table_instance == table)
@@ -510,6 +514,7 @@ class ManualUploadTest(unittest.TestCase):
         [table_definition] = session.query(schema.ReportTableDefinition).all()
         self.assertEqual(schema.System.CORRECTIONS, table_definition.system)
         self.assertEqual(schema.MetricType.POPULATION, table_definition.metric_type)
+        self.assertEqual("", table_definition.label)
         self.assertEqual([], table_definition.aggregated_dimensions)
 
         tables = (
@@ -530,6 +535,7 @@ class ManualUploadTest(unittest.TestCase):
         for table in tables:
             self.assertEqual(report, table.report)
             self.assertEqual(table_definition, table.report_table_definition)
+            self.assertEqual("Unknown", table.methodology)
 
         results = (
             session.query(
@@ -638,6 +644,7 @@ class ManualUploadTest(unittest.TestCase):
         [table_definition] = session.query(schema.ReportTableDefinition).all()
         self.assertEqual(schema.System.CORRECTIONS, table_definition.system)
         self.assertEqual(schema.MetricType.POPULATION, table_definition.metric_type)
+        self.assertEqual("", table_definition.label)
         self.assertEqual([], table_definition.aggregated_dimensions)
 
         tables = (
@@ -659,6 +666,7 @@ class ManualUploadTest(unittest.TestCase):
         for table in tables:
             self.assertEqual(report, table.report)
             self.assertEqual(table_definition, table.report_table_definition)
+            self.assertEqual("Unknown", table.methodology)
 
         results = (
             session.query(
@@ -1425,6 +1433,7 @@ class ManualUploadTest(unittest.TestCase):
                 date_range,
                 metric,
                 schema.System.CORRECTIONS,
+                "MSP Population by Race",
                 "Unknown",
                 manual_upload.State("US_CO"),
                 [manual_upload.Facility("MSP")],
@@ -1610,3 +1619,26 @@ class ManualUploadTest(unittest.TestCase):
             ["metric/population/type", "metric/population/type/raw"],
             table_definition2.aggregated_dimensions,
         )
+
+    def test_multipleTablesSameDimensions(self) -> None:
+        # Act
+        manual_upload.ingest(
+            self.fs,
+            test_utils.prepare_files(
+                self.fs, manifest_filepath("report_multiple_tables")
+            ),
+        )
+
+        # Assert
+        session = SessionFactory.for_database(self.database_key)
+
+        [monthly_definition, ytd_definition] = (
+            session.query(schema.ReportTableDefinition)
+            .order_by(schema.ReportTableDefinition.label)
+            .all()
+        )
+
+        self.assertEqual("Admissions Monthly", monthly_definition.label)
+        self.assertEqual("Admissions YTD", ytd_definition.label)
+
+        session.close()

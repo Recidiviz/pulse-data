@@ -1,0 +1,68 @@
+source: "Colorado Department of Corrections"
+report_type: "Dashboard Measures"
+report_instance: "2020-10-05"
+publish_date: "2020-10-05"
+url: "https://www.colorado.gov/pacific/cdoc/departmental-reports-and-statistics"
+assignee: "Solange Knowles"
+tables:
+  - file: "ytd.csv"
+    label: "Admissions YTD"
+    date_range:
+      dynamic:
+        type: "RANGE"
+        converter: "CUSTOM"
+        columns:
+          Start Date: "DATE"
+          End Date: "DATE"
+    system: "CORRECTIONS"
+    location:
+      state: "US_MS"
+    metric:
+      admissions:
+        measurement_type: "DELTA"
+    dimension_columns:
+      - column_name: "Admission Type"
+        dimension_name: "ADMISSION_TYPE"
+        mapping_overrides:
+          New Commitments: "NEW_COMMITMENT"
+          Parole Revocations: "FROM_SUPERVISION"
+          Other: "OTHER"
+      - column_name: "Admission Type"
+        dimension_name: "SUPERVISION_TYPE"
+        strict: False
+        mapping_overrides:
+          Parole Revocations: "PAROLE"
+    value_column:
+      column_name: "Value"
+    methodology: ""
+  - file: "monthly.csv"
+    label: "Admissions Monthly"
+    date_range:
+      dynamic:
+        type: "RANGE"
+        converter: "MONTH"
+        columns:
+          Month: "MONTH"
+    system: "CORRECTIONS"
+    location:
+      state: "US_MS"
+    metric:
+      admissions:
+        measurement_type: "DELTA"
+    dimension_columns:
+      - column_name: "Admission Type"
+        dimension_name: "ADMISSION_TYPE"
+        mapping_overrides:
+          New Commitments: "NEW_COMMITMENT"
+          Parole Revocations: "FROM_SUPERVISION"
+          Probation Revocations: "FROM_SUPERVISION"
+          Transfers: "OTHER"
+      - column_name: "Admission Type"
+        dimension_name: "SUPERVISION_TYPE"
+        strict: False
+        mapping_overrides:
+          Parole Revocations: "PAROLE"
+          Probation Revocations: "PROBATION"
+    value_column:
+      column_name: "Value"
+    methodology: ""
