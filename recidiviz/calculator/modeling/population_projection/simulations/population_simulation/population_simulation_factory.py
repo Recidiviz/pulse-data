@@ -31,10 +31,12 @@ from recidiviz.calculator.modeling.population_projection.simulations.population_
 from recidiviz.calculator.modeling.population_projection.simulations.sub_simulation.sub_simulation import (
     SubSimulation,
 )
-from recidiviz.calculator.modeling.population_projection.simulations.compartment_transitions import (
-    CompartmentTransitions,
-)
+
 from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
+
+from recidiviz.calculator.modeling.population_projection.simulations.transition_table import (
+    TransitionTable,
+)
 
 
 class PopulationSimulationFactory:
@@ -120,7 +122,7 @@ class PopulationSimulationFactory:
                     policy_list.append(
                         SparkPolicy(
                             policy_fn=partial(
-                                CompartmentTransitions.use_alternate_transitions_data,
+                                TransitionTable.use_alternate_transitions_data,
                                 alternate_historical_transitions=disaggregated_microsim_data[
                                     disaggregated_microsim_data.compartment == full_comp
                                 ],
@@ -128,6 +130,7 @@ class PopulationSimulationFactory:
                             ),
                             spark_compartment=full_comp,
                             sub_population=sub_group_ids_dict[sub_group_id],
+                            policy_ts=user_inputs["policy_time_step"],
                             apply_retroactive=False,
                         )
                     )

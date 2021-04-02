@@ -33,12 +33,14 @@ class TestSparkPolicy(unittest.TestCase):
                 policy_fn=TestSparkPolicy.dummy_policy_method,
                 spark_compartment="prison",
                 sub_population={"test1": "value"},
+                policy_ts=0,
                 apply_retroactive=True,
             ),
             SparkPolicy(
                 policy_fn=TestSparkPolicy.dummy_policy_method,
                 spark_compartment="jail",
                 sub_population={"test2": "value"},
+                policy_ts=1,
                 apply_retroactive=True,
             ),
         ]
@@ -55,4 +57,9 @@ class TestSparkPolicy(unittest.TestCase):
         result_list = SparkPolicy.get_compartment_policies(
             self.policy_list, spark_compartment="jail"
         )
+        self.assertEqual(expected_list, result_list)
+
+    def test_get_ts_policies(self):
+        expected_list = self.policy_list[1:]
+        result_list = SparkPolicy.get_ts_policies(self.policy_list, time_step=1)
         self.assertEqual(expected_list, result_list)

@@ -25,6 +25,10 @@ from recidiviz.calculator.modeling.population_projection.simulations.predicted_a
 from recidiviz.calculator.modeling.population_projection.spark_compartment import (
     SparkCompartment,
 )
+from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
+from recidiviz.calculator.modeling.population_projection.utils.transitions_utils import (
+    MIN_POSSIBLE_POLICY_TS,
+)
 
 
 class ShellCompartment(SparkCompartment):
@@ -34,30 +38,60 @@ class ShellCompartment(SparkCompartment):
         self,
         outflows_data: pd.DataFrame,
         starting_ts: int,
-        policy_ts: int,
         tag: str,
-        policy_list: list,
+        policy_list: List[SparkPolicy],
         constant_admissions: bool,
         projection_type: Optional[str] = None,
     ):
 
-        super().__init__(outflows_data, starting_ts, policy_ts, tag)
+        super().__init__(outflows_data, starting_ts, tag)
 
         self.policy_list = policy_list
 
-        self.outflows_data = outflows_data
-        self.after_data = outflows_data.copy()
-        for policy in policy_list:
-            policy.policy_fn(self)
+        self.admissions_predictors: Dict[int, PredictedAdmissions] = {}
 
-        self.admissions_predictors = {
-            "before": PredictedAdmissions(
-                outflows_data, constant_admissions, projection_type
-            ),
-            "after": PredictedAdmissions(
-                self.after_data, constant_admissions, projection_type
-            ),
-        }
+        self.policy_data: Dict[int, pd.DataFrame] = {}
+
+        self._initialize_admissions_predictors(constant_admissions, projection_type)
+
+    def _initialize_admissions_predictors(
+        self, constant_admissions: bool, projection_type: Optional[str]
+    ):
+        """Generate the dictionary of one admission predictor per policy time step that defines outflow behaviors"""
+        policy_time_steps = list({policy.policy_ts for policy in self.policy_list})
+
+        if (
+            len(policy_time_steps) > 0
+            and min(policy_time_steps) <= MIN_POSSIBLE_POLICY_TS
+        ):
+            raise ValueError(
+                f"Policy ts exceeds minimum allowable value ({MIN_POSSIBLE_POLICY_TS}): {min(policy_time_steps)}"
+            )
+
+        # TODO(#6727): inheritance -> composition for SparkCompartment so this reused logic is cleaned up
+
+        policy_time_steps.append(MIN_POSSIBLE_POLICY_TS)
+        policy_time_steps.sort()
+
+        self.policy_data[MIN_POSSIBLE_POLICY_TS] = self.outflows_data
+
+        # first pass transforms outflows data according to policies
+        for ts_idx in range(1, len(policy_time_steps)):
+            # start with a copy of the data from the previous policy data
+            ts_data = self.policy_data[policy_time_steps[ts_idx - 1]].copy()
+
+            for policy in SparkPolicy.get_ts_policies(
+                self.policy_list, policy_time_steps[ts_idx]
+            ):
+                ts_data = policy.policy_fn(ts_data)
+
+            self.policy_data[policy_time_steps[ts_idx]] = ts_data
+
+        # second pass creates admissions predictors from transformed outflows data
+        for ts, ts_data in self.policy_data.items():
+            self.admissions_predictors[ts] = PredictedAdmissions(
+                ts_data, constant_admissions, projection_type
+            )
 
     def initialize_edges(self, edges: List[SparkCompartment]):
         """checks all compartments this outflows to are in `self.edges`"""
@@ -80,13 +114,11 @@ class ShellCompartment(SparkCompartment):
     def step_forward(self):
         """Simulate one time step in the projection"""
         super().step_forward()
-        if self.current_ts < self.policy_ts:
-            predictor = "before"
-        else:
-            predictor = "after"
-        outflow_dict = self.admissions_predictors[predictor].get_time_step_estimate(
-            self.current_ts
-        )
+        policy_time_steps = [ts for ts in self.policy_data if ts <= self.current_ts]
+        policy_time_steps.sort()
+        outflow_dict = self.admissions_predictors[
+            policy_time_steps[-1]
+        ].get_time_step_estimate(self.current_ts)
 
         # Store the outflows
         self.outflows[self.current_ts] = pd.Series(outflow_dict, dtype=float)
@@ -94,46 +126,57 @@ class ShellCompartment(SparkCompartment):
         for edge in self.edges:
             edge.ingest_incoming_cohort(outflow_dict)
 
-    def gen_arima_output_df(self, state: str = "before"):
+    def gen_arima_output_df(self, time_step: int = MIN_POSSIBLE_POLICY_TS):
         return pd.concat(
-            {self.tag: self.admissions_predictors[state].gen_arima_output_df()},
+            {self.tag: self.admissions_predictors[time_step].gen_arima_output_df()},
             names=["compartment"],
         )
 
+    @staticmethod
     def reallocate_outflow(
-        self, reallocation_fraction: float, outflow: str, new_outflow: str = None
-    ):
+        outflows_data: pd.DataFrame,
+        reallocation_fraction: float,
+        outflow: str,
+        new_outflow: str = None,
+    ) -> pd.DataFrame:
         """
-        reallocate `reallocation_fraction` of outflows from `outflow` lto `new_outflow` (just scales down
+        reallocate `reallocation_fraction` of outflows from `outflow` to `new_outflow` (just scales down
             if no new_outflow given)
         e.g. if reallocation_fraction is 0.2 and an outflow is 100 in a given ts, it will become 80 to that outflow
             20 added to `new_outflow`
         """
 
+        after_data = outflows_data.copy()
         if new_outflow is not None:
             # generate new outflows
-            if new_outflow in self.after_data.index:
-                self.after_data.loc[new_outflow] += (
-                    self.after_data.loc[outflow] * reallocation_fraction
+            if new_outflow in after_data.index:
+                after_data.loc[new_outflow] += (
+                    after_data.loc[outflow] * reallocation_fraction
                 )
             else:
-                self.after_data.loc[new_outflow] = (
-                    self.after_data.loc[outflow] * reallocation_fraction
+                after_data.loc[new_outflow] = (
+                    after_data.loc[outflow] * reallocation_fraction
                 )
 
         # scale down old outflows
-        self.after_data.loc[outflow] *= 1 - reallocation_fraction
+        after_data.loc[outflow] *= 1 - reallocation_fraction
 
-    def use_alternate_outflows_data(self, alternate_outflows_data):
+        return after_data
+
+    @staticmethod
+    def use_alternate_outflows_data(
+        _: pd.DataFrame, alternate_outflows_data: pd.DataFrame, tag: str
+    ) -> pd.DataFrame:
         """Swap in entirely different outflows data for 'after' ARIMA fit."""
         # get counts of population from historical data aggregated by compartment, outflow, and year
         preprocessed_data = alternate_outflows_data.groupby(
             ["compartment", "outflow_to", "time_step"]
         )["total_population"].sum()
         # shadows logic in SubSimulationFactory._load_data()
-        self.after_data = (
+        after_data = (
             preprocessed_data.unstack(level=["outflow_to", "time_step"])
             .stack(level="outflow_to", dropna=False)
-            .loc[self.tag]
+            .loc[tag]
             .fillna(0)
         )
+        return after_data

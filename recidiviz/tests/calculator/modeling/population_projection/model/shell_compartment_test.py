@@ -72,7 +72,9 @@ class TestShellCompartment(unittest.TestCase):
         self.compartment_policies = []
 
         self.test_transition_table = CompartmentTransitions(self.historical_data)
-        self.test_transition_table.initialize(self.compartment_policies)
+        self.test_transition_table.initialize_transition_tables(
+            self.compartment_policies
+        )
 
         self.starting_ts = 2015
         self.policy_ts = 2018
@@ -82,7 +84,6 @@ class TestShellCompartment(unittest.TestCase):
         test_shell_compartment = ShellCompartment(
             self.test_outflow_data,
             starting_ts=self.starting_ts,
-            policy_ts=self.policy_ts,
             tag="test_shell",
             constant_admissions=True,
             policy_list=[],
@@ -91,7 +92,6 @@ class TestShellCompartment(unittest.TestCase):
             pd.DataFrame(),
             self.test_transition_table,
             starting_ts=self.starting_ts,
-            policy_ts=self.policy_ts,
             tag="test_compartment",
         )
         with self.assertRaises(ValueError):
@@ -125,16 +125,17 @@ class TestShellCompartment(unittest.TestCase):
             partial(
                 ShellCompartment.use_alternate_outflows_data,
                 alternate_outflows_data=alternate_outflow_data,
+                tag="pretrial",
             ),
             spark_compartment="pretrial",
             sub_population={"subgroup": "test"},
+            policy_ts=self.policy_ts,
             apply_retroactive=False,
         )
 
         policy_shell_compartment = ShellCompartment(
             self.test_outflow_data,
             starting_ts=self.starting_ts,
-            policy_ts=self.policy_ts,
             tag="pretrial",
             constant_admissions=True,
             policy_list=[use_alternate_outflows],
@@ -143,13 +144,16 @@ class TestShellCompartment(unittest.TestCase):
         alternate_shell_compartment = ShellCompartment(
             preprocessed_alternate_outflows,
             starting_ts=self.starting_ts,
-            policy_ts=self.policy_ts,
             tag="pretrial",
             constant_admissions=True,
             policy_list=[],
         )
 
         self.assertEqual(
-            policy_shell_compartment.admissions_predictors["after"],
-            alternate_shell_compartment.admissions_predictors["after"],
+            policy_shell_compartment.admissions_predictors[
+                max(policy_shell_compartment.admissions_predictors)
+            ],
+            alternate_shell_compartment.admissions_predictors[
+                max(alternate_shell_compartment.admissions_predictors)
+            ],
         )

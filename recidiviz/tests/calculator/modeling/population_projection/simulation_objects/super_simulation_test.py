@@ -28,8 +28,8 @@ from recidiviz.calculator.modeling.population_projection.simulations.super_simul
     SuperSimulationFactory,
 )
 from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
-from recidiviz.calculator.modeling.population_projection.simulations.compartment_transitions import (
-    CompartmentTransitions,
+from recidiviz.calculator.modeling.population_projection.simulations.transition_table import (
+    TransitionTable,
 )
 
 # pylint: disable=unused-argument
@@ -264,7 +264,7 @@ class TestSuperSimulation(unittest.TestCase):
     def test_cost_multipliers_multiplicative(self) -> None:
         # test doubling multiplier doubles costs
         policy_function = partial(
-            CompartmentTransitions.apply_reduction,
+            TransitionTable.apply_reduction,
             reduction_df=pd.DataFrame(
                 {
                     "outflow": ["RELEASE"],
@@ -284,6 +284,9 @@ class TestSuperSimulation(unittest.TestCase):
                 policy_fn=policy_function,
                 spark_compartment="PRISON",
                 sub_population={"crime_type": crime_type},
+                policy_ts=self.macrosim.initializer.get_user_inputs()[
+                    "policy_time_step"
+                ],
                 apply_retroactive=True,
             )
             for crime_type in ["NONVIOLENT", "VIOLENT"]
@@ -387,7 +390,7 @@ class TestSuperSimulation(unittest.TestCase):
                 (substitute_outputs.compartment == "PRISON")
                 & (
                     substitute_outputs.time_step
-                    > microsim.initializer.user_inputs["start_time_step"]
+                    > microsim.initializer.user_inputs["start_time_step"] + 1
                 )
                 & (
                     substitute_outputs.time_step
@@ -409,7 +412,7 @@ class TestSuperSimulation(unittest.TestCase):
                 (regular_outputs.compartment == "PRISON")
                 & (
                     regular_outputs.time_step
-                    > self.microsim.initializer.user_inputs["start_time_step"]
+                    > self.microsim.initializer.user_inputs["start_time_step"] + 1
                 )
                 & (
                     regular_outputs.time_step
