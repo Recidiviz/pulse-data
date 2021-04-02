@@ -1,8 +1,27 @@
+// Recidiviz - a data platform for criminal justice reform
+// Copyright (C) 2020 Recidiviz, Inc.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+// =============================================================================
+
 import * as React from "react";
 import { Checkbox, Empty, Table } from "antd";
 import { CheckboxChangeEvent } from "antd/es/checkbox";
 import { ColumnsType } from "antd/es/table";
 import { Link } from "react-router-dom";
+
+import MetadataDataset from "../models/MetadataDatasets";
 
 // const emptyCell = <div className="center">N/A</div>;
 
@@ -35,10 +54,16 @@ interface MetadataTableProps {
   initialColumnTitle: string;
   initialColumnLink?: (name: string) => string;
   data: MetadataAPIResult | undefined;
+  metadataDataset: MetadataDataset;
 }
 
 const MetadataTable = (props: MetadataTableProps): JSX.Element => {
-  const { data, initialColumnLink, initialColumnTitle } = props;
+  const {
+    data,
+    initialColumnLink,
+    initialColumnTitle,
+    metadataDataset,
+  } = props;
   const [nonplaceholdersOnly, setNonplaceholdersOnly] = React.useState<boolean>(
     true
   );
@@ -95,13 +120,15 @@ const MetadataTable = (props: MetadataTableProps): JSX.Element => {
 
   return (
     <>
-      <Checkbox
-        className="buffer"
-        onChange={onChange}
-        checked={nonplaceholdersOnly}
-      >
-        Non-placeholders only
-      </Checkbox>
+      {metadataDataset === MetadataDataset.INGEST && (
+        <Checkbox
+          className="buffer"
+          onChange={onChange}
+          checked={nonplaceholdersOnly}
+        >
+          Non-placeholders only
+        </Checkbox>
+      )}
       <div>
         <Table
           className="metadata-table"
