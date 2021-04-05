@@ -82,7 +82,7 @@ const ClientComponent: React.FC<ClientProps> = ({
       onClick={viewClient}
     >
       <CardHeader className="fs-exclude">
-        <MainText>{client.formalName}</MainText>
+        <MainText>{client.name}</MainText>
         <SecondaryText>
           {titleCase(client.supervisionType)},{" "}
           {titleCase(client.supervisionLevelText)}
