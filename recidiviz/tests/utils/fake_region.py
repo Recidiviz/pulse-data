@@ -46,7 +46,7 @@ def fake_region(
     region.get_scraper.return_value = scraper
     region.is_direct_ingest = is_direct_ingest
 
-    def fake_is_launched_in_env():
+    def fake_is_launched_in_env() -> bool:
         return Region.is_ingest_launched_in_env(region)
 
     region.is_ingest_launched_in_env = fake_is_launched_in_env

@@ -14,9 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
 """Serialized ThreadPoolExecutor for testing"""
 from concurrent.futures import Future, Executor
+from typing import Any, Callable
 
 
 class SerialExecutor(Executor):
@@ -27,8 +27,9 @@ class SerialExecutor(Executor):
 
     # disable pylint since we don't need to mock the keyword version
     # of the call for our purposes, just the positional one
-    def submit(self, fn, *args, **kwargs):  # pylint: disable=W0221
-        f = Future()
+    # pylint: disable=arguments-differ
+    def submit(self, fn: Callable, *args: Any, **kwargs: Any) -> Future:
+        f: Future = Future()
         try:
             f.set_result(fn(*args, **kwargs))
         except Exception as e:

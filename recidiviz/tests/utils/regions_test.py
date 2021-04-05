@@ -14,10 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
 """Tests for utils/regions.py."""
+from typing import Any, Callable, IO, List
 from unittest import TestCase
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 import pytest
 import pytz
@@ -109,7 +109,7 @@ REGION_TO_MANIFEST = {
 }
 
 
-def fake_modules(*names):
+def fake_modules(*names: str) -> List[MagicMock]:
     modules = []
     for name in names:
         fake_module = Mock()
@@ -121,13 +121,13 @@ def fake_modules(*names):
 class TestRegions(TestCase):
     """Tests for regions.py."""
 
-    def setup_method(self, _test_method):
+    def setup_method(self, _test_method: Callable) -> None:
         regions.REGIONS = {}
 
-    def teardown_method(self, _test_method):
+    def teardown_method(self, _test_method: Callable) -> None:
         regions.REGIONS = {}
 
-    def test_get_region_manifest(self):
+    def test_get_region_manifest(self) -> None:
         manifest = with_manifest(
             regions.get_region_manifest, "us_ny", scraper_regions_module
         )
@@ -143,21 +143,21 @@ class TestRegions(TestCase):
             "should_proxy": True,
         }
 
-    def test_get_region_proxy_set(self):
+    def test_get_region_proxy_set(self) -> None:
         region = with_manifest(regions.get_region, "us_ny")
         assert region.should_proxy
 
         region = with_manifest(regions.get_region, "us_in")
         assert not region.should_proxy
 
-    def test_get_region_manifest_not_found(self):
+    def test_get_region_manifest_not_found(self) -> None:
         with pytest.raises(FileNotFoundError):
             with_manifest(
                 regions.get_region_manifest, "us_az", direct_ingest_regions_module
             )
 
     @patch("pkgutil.iter_modules", return_value=fake_modules("us_ny", "us_in", "us_ca"))
-    def test_get_supported_regions(self, _mock_modules):
+    def test_get_supported_regions(self, _mock_modules: MagicMock) -> None:
         supported_regions = with_manifest(regions.get_supported_scrape_regions)
         self.assertCountEqual(
             [region.region_code for region in supported_regions],
@@ -165,12 +165,14 @@ class TestRegions(TestCase):
         )
 
     @patch("pkgutil.iter_modules", return_value=fake_modules("us_ny", "us_in", "us_ca"))
-    def test_get_supported_region_codes(self, _mock_modules):
+    def test_get_supported_region_codes(self, _mock_modules: MagicMock) -> None:
         supported_regions = with_manifest(regions.get_supported_scrape_region_codes)
         assert supported_regions == {"us_ny", "us_in", "us_ca"}
 
     @patch("pkgutil.iter_modules", return_value=fake_modules("us_ny", "us_in", "us_ca"))
-    def test_get_supported_region_codes_timezone(self, _mock_modules):
+    def test_get_supported_region_codes_timezone(
+        self, _mock_modules: MagicMock
+    ) -> None:
         supported_regions = with_manifest(
             regions.get_supported_scrape_region_codes,
             timezone=pytz.timezone("America/New_York"),
@@ -178,14 +180,16 @@ class TestRegions(TestCase):
         assert supported_regions == {"us_ny", "us_in"}
 
     @patch("pkgutil.iter_modules", return_value=fake_modules("us_ny", "us_in", "us_ca"))
-    def test_get_supported_region_codes_stripe(self, _mock_modules):
+    def test_get_supported_region_codes_stripe(self, _mock_modules: MagicMock) -> None:
         supported_regions = with_manifest(
             regions.get_supported_scrape_region_codes, stripes="1"
         )
         assert supported_regions == {"us_in", "us_ca"}
 
     @patch("pkgutil.iter_modules", return_value=fake_modules("us_ny", "us_in", "us_ca"))
-    def test_get_supported_region_codes_timezone_stripe(self, _mock_modules):
+    def test_get_supported_region_codes_timezone_stripe(
+        self, _mock_modules: MagicMock
+    ) -> None:
         supported_regions = with_manifest(
             regions.get_supported_scrape_region_codes,
             timezone=pytz.timezone("America/New_York"),
@@ -194,21 +198,21 @@ class TestRegions(TestCase):
         assert supported_regions == {"us_in"}
 
     @patch("pkgutil.iter_modules", return_value=fake_modules("us_ny", "us_in", "us_ca"))
-    def test_get_supported_region_codes_stripes(self, _mock_modules):
+    def test_get_supported_region_codes_stripes(self, _mock_modules: MagicMock) -> None:
         supported_regions = with_manifest(
             regions.get_supported_scrape_region_codes, stripes=["0", "1"]
         )
         assert supported_regions == {"us_ny", "us_in", "us_ca"}
 
     @patch("pkgutil.iter_modules", return_value=fake_modules("us_ny", "us_in", "us_ca"))
-    def test_validate_region_code_valid(self, _mock_modules):
+    def test_validate_region_code_valid(self, _mock_modules: MagicMock) -> None:
         assert with_manifest(regions.validate_region_code, "us_in")
 
     @patch("pkgutil.iter_modules", return_value=fake_modules("us_ny", "us_in", "us_ca"))
-    def test_validate_region_code_invalid(self, _mock_modules):
+    def test_validate_region_code_invalid(self, _mock_modules: MagicMock) -> None:
         assert not with_manifest(regions.validate_region_code, "us_az")
 
-    def test_get_scraper(self):
+    def test_get_scraper(self) -> None:
         mock_package = Mock()
         mock_scraper = Mock()
         mock_package.UsNyScraper.return_value = mock_scraper
@@ -221,7 +225,7 @@ class TestRegions(TestCase):
             scraper = region.get_scraper()
             assert scraper is mock_scraper
 
-    def test_get_scraper_direct_ingest(self):
+    def test_get_scraper_direct_ingest(self) -> None:
         mock_package = Mock()
         mock_direct = Mock()
         mock_package.UsMaMiddlesexController.return_value = mock_direct
@@ -237,31 +241,33 @@ class TestRegions(TestCase):
             with self.assertRaises(ValueError):
                 _ = region.get_scraper()
 
-    def test_create_queue_name(self):
+    def test_create_queue_name(self) -> None:
         region = with_manifest(regions.get_region, "us_ny")
         assert region.get_queue_name() == "us-ny-scraper-v2"
 
-    def test_shared_queue_name(self):
+    def test_shared_queue_name(self) -> None:
         region = with_manifest(regions.get_region, "us_in")
         assert region.get_queue_name() == "some-vendor-queue"
 
-    def test_set_both_queues_error(self):
+    def test_set_both_queues_error(self) -> None:
         with pytest.raises(ValueError) as e:
             with_manifest(regions.get_region, "bad_queue")
             assert "queue" in e.message
 
-    def test_invalid_region_error_bool(self):
+    def test_invalid_region_error_bool(self) -> None:
         with pytest.raises(ValueError) as e:
             with_manifest(regions.get_region, "bad_env_bool")
             assert "environment" in e.message
 
-    def test_invalid_region_error_str(self):
+    def test_invalid_region_error_str(self) -> None:
         with pytest.raises(ValueError) as e:
             with_manifest(regions.get_region, "bad_env_str")
             assert "environment" in e.message
 
     @patch("recidiviz.utils.environment.get_gcp_environment")
-    def test_is_ingest_launched_in_env_production(self, mock_environment):
+    def test_is_ingest_launched_in_env_production(
+        self, mock_environment: MagicMock
+    ) -> None:
         mock_environment.return_value = "production"
 
         region = fake_region()
@@ -278,7 +284,9 @@ class TestRegions(TestCase):
         self.assertTrue(region.is_ingest_launched_in_env())
 
     @patch("recidiviz.utils.environment.get_gcp_environment")
-    def test_test_is_ingest_launched_in_env_staging(self, mock_environment):
+    def test_test_is_ingest_launched_in_env_staging(
+        self, mock_environment: MagicMock
+    ) -> None:
         mock_environment.return_value = "staging"
 
         region = fake_region()
@@ -295,7 +303,7 @@ class TestRegions(TestCase):
         self.assertTrue(region.is_ingest_launched_in_env())
 
 
-def mock_manifest_open(filename, *args):
+def mock_manifest_open(filename: str, *args: Any) -> IO:
     if filename.endswith("manifest.yaml"):
         region = filename.split("/")[-2]
         if region in REGION_TO_MANIFEST:
@@ -306,6 +314,6 @@ def mock_manifest_open(filename, *args):
     return open(filename, *args)
 
 
-def with_manifest(func, *args, **kwargs):
+def with_manifest(func: Callable, *args: Any, **kwargs: Any) -> Any:
     with patch("recidiviz.utils.regions.open", new=mock_manifest_open):
         return func(*args, **kwargs)

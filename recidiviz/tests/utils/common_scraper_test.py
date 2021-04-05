@@ -17,6 +17,7 @@
 
 """Base test class for scrapers."""
 from datetime import datetime
+from typing import Optional
 
 import yaml
 from mock import patch
@@ -29,6 +30,7 @@ from recidiviz.common.constants.person_characteristics import (
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.ingest.models import ingest_info
 from recidiviz.ingest.scrape import constants
+from recidiviz.ingest.scrape.base_scraper import BaseScraper
 from recidiviz.ingest.scrape.task_params import Task
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -40,8 +42,8 @@ _FAKE_SCRAPER_START_TIME = datetime(year=2020, month=3, day=20)
 class CommonScraperTest(IndividualIngestTest):
     """A base class for scraper tests which does extra validations."""
 
-    def setUp(self):
-        self.scraper = None
+    def setUp(self) -> None:
+        self.scraper: Optional[BaseScraper] = None
         self.yaml = None
         self.task_client_patcher = patch("google.cloud.tasks_v2.CloudTasksClient")
         self.task_client_patcher.start()
@@ -50,15 +52,18 @@ class CommonScraperTest(IndividualIngestTest):
 
         self._init_scraper_and_yaml()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.task_client_patcher.stop()
         self.project_id_patcher.stop()
 
-    def test_scraper_not_none(self):
+    def _init_scraper_and_yaml(self) -> None:
+        """Initialize scraper and yaml. Overridden by most subclasses"""
+
+    def test_scraper_not_none(self) -> None:
         if not self.scraper:
             raise AttributeError("The scraper instance must be set")
 
-    def test_yaml_is_correct(self):
+    def test_yaml_is_correct(self) -> None:
         if self.yaml:
             with open(self.yaml, "r") as ymlfile:
                 manifest = yaml.full_load(ymlfile)
@@ -111,18 +116,19 @@ class CommonScraperTest(IndividualIngestTest):
                             "multi_key_mappings" % (attr, class_to_set)
                         )
 
-    def test_overrides_are_correct(self):
+    def test_overrides_are_correct(self) -> None:
         msg = (
             "Default override mappings are not present. Be sure your "
             "scraper's get_enum_overrides calls super() to use "
             "BaseScraper's EnumOverrides."
         )
-        overrides = self.scraper.get_enum_overrides()
-        for ethnicity_string, ethnicity_enum in ETHNICITY_MAP.items():
-            if ethnicity_enum is Ethnicity.HISPANIC:
-                self.assertEqual(
-                    overrides.parse(ethnicity_string, Race), ethnicity_enum, msg
-                )
+        if self.scraper is not None:
+            overrides = self.scraper.get_enum_overrides()
+            for ethnicity_string, ethnicity_enum in ETHNICITY_MAP.items():
+                if ethnicity_enum is Ethnicity.HISPANIC:
+                    assert (
+                        overrides.parse(ethnicity_string, Race) == ethnicity_enum
+                    ), msg
 
     def validate_and_return_get_more_tasks(self, content, task, expected_result):
         """This function runs get more tasks and runs some extra validation
