@@ -79,6 +79,59 @@ def get_status_code(period_type: PeriodType) -> str:
     raise ValueError(f"Unexpected PeriodType {period_type}")
 
 
+def query_periods_with_all_non_facility_info(period_type: PeriodType) -> str:
+    """Generates sub-query for periods_with_all_non_facility_info"""
+    if period_type == PeriodType.INCARCERATION:
+        return """
+        SELECT
+            p.docno,
+            p.incrno,
+            p.start_date,
+            p.end_date,
+            p.statuses,
+            NULL AS empl_cd,
+            NULL AS empl_sdesc,
+            NULL AS empl_ldesc,
+            NULL AS empl_title,
+            NULL AS wrkld_cat_title
+        FROM
+            periods_with_offstat_info p
+        """
+    if period_type == PeriodType.SUPERVISION:
+        return """
+        SELECT
+            p.docno,
+            p.incrno,
+            p.start_date,
+            # Choose smaller of the dates to handle po_periods that last 1 day
+            LEAST(po.end_date, w.end_date, p.end_date) AS end_date,
+            p.statuses,
+            po.empl_cd,
+            po.empl_sdesc,
+            po.empl_ldesc,
+            po.empl_title,
+            w.wrkld_cat_title
+        FROM
+            periods_with_offstat_info p
+        LEFT JOIN
+            po_periods po
+        ON
+            (p.docno = po.docno
+            AND p.incrno = po.incrno
+            AND (p.start_date
+                 BETWEEN po.start_date
+                 AND IF(po.start_date = po.end_date, po.start_date, DATE_SUB(po.end_date, INTERVAL 1 DAY))))
+        LEFT JOIN
+            wrkld_periods w
+        ON
+            (p.docno = w.docno
+            AND (p.start_date
+                 BETWEEN w.start_date
+                 AND IF (w.start_date = w.end_date, w.start_date, DATE_SUB(w.end_date, INTERVAL 1 DAY))))
+        """
+    raise ValueError(f"Unexpected PeriodType {period_type}")
+
+
 # Idaho provides us with a table 'movements', which acts as a ledger for each person's physical movements throughout
 # the ID criminal justice system. By default, each row of this table includes a location and the date that the
 # person arrived at that location (`move_dtd`). New entries into this table are created every time a person's
@@ -502,52 +555,8 @@ ALL_PERIODS_FRAGMENT = f"""
         AND o.stat_cd = '{{period_status_code}}')
       GROUP BY a.docno, a.incrno, a.start_date, end_date
     ),
-    # Get all POs that were relevant for each of the created date periods.
-    periods_with_offstat_and_po_info AS (
-        SELECT
-            p.docno,
-            p.incrno,
-            p.start_date,
-            # Choose smaller of two dates to handle po_periods that last 1 day
-            IF(po.end_date IS NULL, p.end_date, LEAST(po.end_date, p.end_date)) AS end_date,
-            p.statuses,
-            po.empl_cd,
-            po.empl_sdesc,
-            po.empl_ldesc,
-            po.empl_title,
-        FROM
-            periods_with_offstat_info p
-        LEFT JOIN
-            po_periods po
-        ON
-            (p.docno = po.docno
-            AND p.incrno = po.incrno
-            AND (p.start_date
-                 BETWEEN po.start_date
-                 AND IF(po.start_date = po.end_date, po.start_date, DATE_SUB(po.end_date, INTERVAL 1 DAY))))
-    ),
     periods_with_all_non_facility_info AS (
-        SELECT
-            p.docno,
-            p.incrno,
-            p.start_date,
-             # Choose smaller of two dates to handle supervision_level_periods that last 1 day
-            IF(w.end_date IS NULL, p.end_date, LEAST(w.end_date, p.end_date)) AS end_date,
-            p.statuses,
-            p.empl_cd,
-            p.empl_sdesc,
-            p.empl_ldesc,
-            p.empl_title,
-            w.wrkld_cat_title
-        FROM
-            periods_with_offstat_and_po_info p
-        LEFT JOIN
-            wrkld_periods w
-        ON
-            (p.docno = w.docno
-            AND (p.start_date
-                 BETWEEN w.start_date
-                 AND IF (w.start_date = w.end_date, w.start_date, DATE_SUB(w.end_date, INTERVAL 1 DAY))))
+        {{periods_with_all_non_facility_info}}
     ),
 
     # Join date spans with status information back with the facility spans from Part 1.
@@ -627,4 +636,7 @@ def get_all_periods_query_fragment(period_type: PeriodType) -> str:
         period_split_criteria=create_period_split_criteria(period_type),
         period_status_code=get_status_code(period_type),
         important_date_union=create_important_date_union(period_type),
+        periods_with_all_non_facility_info=query_periods_with_all_non_facility_info(
+            period_type
+        ),
     )
