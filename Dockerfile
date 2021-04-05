@@ -25,7 +25,10 @@ COPY ./frontends/case-triage/public /usr/case-triage/public
 
 RUN yarn build
 
-FROM ubuntu:bionic
+FROM ubuntu:focal
+
+ENV DEBIAN_FRONTEND noninteractive
+ENV TZ America/New_York
 
 RUN apt update -y && \
     apt install -y \
@@ -41,11 +44,8 @@ ENV LC_ALL en_US.UTF-8
 ENV LC_CTYPE en_US.UTF-8
 ENV LANG en_US.UTF-8
 
-ENV TZ America/New_York
-
 # Postgres pulls in tzdata which must have these set to stay noninteractive.
 RUN ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime
-ENV DEBIAN_FRONTEND=noninteractive
 
 # Make stdout/stderr unbuffered. This prevents delay between output and cloud
 # logging collection.
@@ -60,7 +60,7 @@ ARG DEV_MODE="False"
 # As described in: https://stackoverflow.com/questions/48250338/installing-gcloud-on-travis-ci
 RUN if [ "$DEV_MODE" = "True" ]; \
     then apt-get update && apt install -y lsb-core && \
-    export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)" && \
+    echo "deb http://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
     echo "deb http://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
     curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - && \
     apt update -y && apt-get install google-cloud-sdk -y && \
