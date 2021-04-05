@@ -47,21 +47,52 @@ If you are contributing to this repository regularly for an extended period of t
 
 ##### Option 1: Local Python installation
 
-If you can install `python3.7` locally, do so. For local Python development, you will also need to install the `libpq` PostgreSQL client library and `openssl`.
+If you can install `python3.8` locally, do so. For local Python development, you will also need to install the `libpq` PostgreSQL client library and `openssl`.
 
-On a Mac with [Homebrew](https://brew.sh/), you can install `python3.7`, `libpq`, and `openssl` with:
-
-```bash
-$ brew install python3 postgresql openssl
-```
-
-On Ubuntu 18.04,`openssl` is installed by default, you can install `python3.7` and `libpq` with:
+On a Mac with [Homebrew](https://brew.sh/), you can install `python3.8` by first installing `pyenv` with:
 
 ```bash
-$ apt update -y && apt install -y python3.7-dev python3-pip libpq-dev
+brew install pyenv
+brew install xz
+mkdir ~/.pyenv
 ```
 
-You do not need to change your default python version, as `pipenv` will look for 3.7.
+Then, add the following to your `~/.zshrc` (or equivalent):
+
+```
+export PYENV_ROOT="$HOME/.pyenv"
+export PATH="$PYENV_ROOT/bin:$HOME/.local/bin:$PATH"
+if command -v pyenv 1>/dev/null 2>&1; then
+eval "$(pyenv init -)"
+fi
+```
+
+Then run:
+
+```
+pyenv install 3.8.8
+pyenv global 3.8.8
+```
+
+Verify that you have the correct version of python across contexts by opening a new terminal window and running:
+
+```
+python -V
+```
+
+Once python is installed, you can install `libpq` and `openssl` with:
+
+```bash
+$ brew install postgresql openssl
+```
+
+On Ubuntu 18.04,`openssl` is installed by default, you can install `python3.8` and `libpq` with:
+
+```bash
+$ apt update -y && apt install -y python3.8-dev python3-pip libpq-dev
+```
+
+You do not need to change your default python version, as `pipenv` will look for 3.8.
 
 Upgrade your `pip` to the latest version:
 
@@ -161,7 +192,7 @@ $ apt update -y && apt install -y jq
 
 ##### Option 2: Docker container
 
-If you can't install `python3.7` locally, you can use Docker instead.
+If you can't install `python3.8` locally, you can use Docker instead.
 
 Follow these instructions to install Docker on Linux:
 
