@@ -32,7 +32,7 @@ from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.county import entities
-from recidiviz.tests.persistence.database.database_test_utils import TestIngestMetadata
+from recidiviz.tests.persistence.database.database_test_utils import FakeIngestMetadata
 from recidiviz.tests.utils import fakes
 
 _REGION = "region"
@@ -42,7 +42,7 @@ _FULL_NAME = "full_name"
 _EXTERNAL_ID = "external_id"
 _BIRTHDATE = datetime.date(year=2012, month=1, day=2)
 _FACILITY = "facility"
-_DEFAULT_METADATA = TestIngestMetadata.for_county(region="default_region")
+_DEFAULT_METADATA = FakeIngestMetadata.for_county(region="default_region")
 
 DATE_SCRAPED = datetime.date(year=2019, month=1, day=1)
 
