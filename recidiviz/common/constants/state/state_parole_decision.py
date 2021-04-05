@@ -17,6 +17,7 @@
 
 """Constants related to a StateParoleDecision."""
 from enum import unique
+from typing import Dict
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
@@ -30,7 +31,7 @@ class StateParoleDecisionOutcome(EntityEnum, metaclass=EntityEnumMeta):
     PAROLE_GRANTED = state_enum_strings.state_parole_decision_parole_granted
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "StateParoleDecisionOutcome"]:
         return _STATE_PAROLE_DECISION_OUTCOME_MAP
 
 

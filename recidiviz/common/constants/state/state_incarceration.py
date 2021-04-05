@@ -33,7 +33,7 @@ class StateIncarcerationType(EntityEnum, metaclass=EntityEnumMeta):
     STATE_PRISON = state_enum_strings.state_incarceration_type_state_prison
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "StateIncarcerationType"]:
         return _STATE_INCARCERATION_TYPE_MAP
 
 

@@ -17,6 +17,7 @@
 
 """Constants related to a StateCharge entity in the state schema."""
 from enum import unique
+from typing import Dict, Optional
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
@@ -33,7 +34,7 @@ class StateChargeClassificationType(EntityEnum, metaclass=EntityEnumMeta):
     OTHER = state_enum_strings.state_charge_classification_type_other
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, Optional["StateChargeClassificationType"]]:
         return _STATE_CHARGE_CLASSIFICATION_TYPE_MAP
 
 

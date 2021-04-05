@@ -17,7 +17,7 @@
 
 """Constants related to a StateIncarcerationPeriod."""
 from enum import unique
-from typing import Optional
+from typing import Dict, Optional
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
@@ -32,7 +32,7 @@ class StateIncarcerationPeriodStatus(EntityEnum, metaclass=EntityEnumMeta):
     PRESENT_WITHOUT_INFO = enum_strings.present_without_info
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "StateIncarcerationPeriodStatus"]:
         return _STATE_INCARCERATION_PERIOD_STATUS_MAP
 
 
@@ -43,7 +43,7 @@ class StateIncarcerationFacilitySecurityLevel(EntityEnum, metaclass=EntityEnumMe
     MINIMUM = state_enum_strings.state_incarceration_facility_security_level_minimum
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "StateIncarcerationFacilitySecurityLevel"]:
         return _STATE_INCARCERATION_FACILITY_SECURITY_LEVEL_MAP
 
 
@@ -89,7 +89,7 @@ class StateIncarcerationPeriodAdmissionReason(EntityEnum, metaclass=EntityEnumMe
     )
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "StateIncarcerationPeriodAdmissionReason"]:
         return _STATE_INCARCERATION_PERIOD_ADMISSION_REASON_MAP
 
 
@@ -137,7 +137,7 @@ class StateIncarcerationPeriodReleaseReason(EntityEnum, metaclass=EntityEnumMeta
     VACATED = state_enum_strings.state_incarceration_period_release_reason_vacated
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "StateIncarcerationPeriodReleaseReason"]:
         return _STATE_INCARCERATION_PERIOD_RELEASE_REASON_MAP
 
 
@@ -160,7 +160,7 @@ class StateSpecializedPurposeForIncarceration(EntityEnum, metaclass=EntityEnumMe
     )
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "StateSpecializedPurposeForIncarceration"]:
         return _STATE_SPECIALIZED_PURPOSE_FOR_INCARCERATION_MAP
 
 

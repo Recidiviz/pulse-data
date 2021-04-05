@@ -17,6 +17,7 @@
 
 """Constants related to a StateSupervisionContact."""
 from enum import unique
+from typing import Dict
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
@@ -34,7 +35,7 @@ class StateSupervisionContactType(EntityEnum, metaclass=EntityEnumMeta):
     VIRTUAL = state_enum_strings.state_supervision_contact_type_virtual
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "StateSupervisionContactType"]:
         return _STATE_SUPERVISION_CONTACT_TYPE_MAP
 
 
@@ -54,7 +55,7 @@ class StateSupervisionContactReason(EntityEnum, metaclass=EntityEnumMeta):
     )
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "StateSupervisionContactReason"]:
         return _STATE_SUPERVISION_CONTACT_REASON_MAP
 
 
@@ -67,7 +68,7 @@ class StateSupervisionContactStatus(EntityEnum, metaclass=EntityEnumMeta):
     COMPLETED = state_enum_strings.state_supervision_contact_status_completed
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "StateSupervisionContactStatus"]:
         return _STATE_SUPERVISION_CONTACT_STATUS_MAP
 
 
@@ -91,7 +92,7 @@ class StateSupervisionContactLocation(EntityEnum, metaclass=EntityEnumMeta):
     )
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "StateSupervisionContactLocation"]:
         return _STATE_SUPERVISION_CONTACT_LOCATION_MAP
 
 

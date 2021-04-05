@@ -16,6 +16,8 @@
 # =============================================================================
 
 """Constants related to a hold entity."""
+from typing import Dict
+
 from recidiviz.common.constants.county import (
     enum_canonical_strings as county_enum_strings,
 )
@@ -31,7 +33,7 @@ class HoldStatus(EntityEnum, metaclass=EntityEnumMeta):
     REMOVED_WITHOUT_INFO = enum_strings.removed_without_info
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "HoldStatus"]:
         return _HOLD_STATUS_MAP
 
 

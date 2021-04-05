@@ -16,6 +16,7 @@
 # =============================================================================
 
 """Constants related to a Charge entity in the county schema."""
+from typing import Dict, Optional
 
 from recidiviz.common.constants import enum_canonical_strings as enum_strings
 from recidiviz.common.constants.county import (
@@ -38,7 +39,7 @@ class ChargeClass(EntityEnum, metaclass=EntityEnumMeta):
     )
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, Optional["ChargeClass"]]:
         return _CHARGE_CLASS_MAP
 
 
@@ -50,7 +51,7 @@ class ChargeDegree(EntityEnum, metaclass=EntityEnumMeta):
     FOURTH = county_enum_strings.degree_fourth
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "ChargeDegree"]:
         return _CHARGE_DEGREE_MAP
 
 

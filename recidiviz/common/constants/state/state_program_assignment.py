@@ -17,6 +17,7 @@
 
 """Constants related to a StateProgramAssignment."""
 from enum import unique
+from typing import Dict
 
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
 from recidiviz.common.constants import enum_canonical_strings
@@ -38,7 +39,7 @@ class StateProgramAssignmentParticipationStatus(EntityEnum, metaclass=EntityEnum
     REFUSED = state_enum_strings.state_program_assignment_participation_status_refused
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "StateProgramAssignmentParticipationStatus"]:
         return _STATE_PROGRAM_ASSIGNMENT_PARTICIPATION_STATUS_MAP
 
 
@@ -71,7 +72,7 @@ class StateProgramAssignmentDischargeReason(EntityEnum, metaclass=EntityEnumMeta
     )
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "StateProgramAssignmentDischargeReason"]:
         return _STATE_PROGRAM_ASSIGNMENT_DISCHARGE_REASON_MAP
 
 

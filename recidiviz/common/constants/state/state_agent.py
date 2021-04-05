@@ -17,6 +17,7 @@
 
 """Constants related to a StateAgent entity."""
 from enum import unique
+from typing import Dict
 
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
 from recidiviz.common.constants import enum_canonical_strings
@@ -35,7 +36,7 @@ class StateAgentType(EntityEnum, metaclass=EntityEnumMeta):
     INTERNAL_UNKNOWN = enum_canonical_strings.internal_unknown
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "StateAgentType"]:
         return _STATE_AGENT_TYPE_MAP
 
 

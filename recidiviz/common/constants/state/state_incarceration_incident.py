@@ -17,6 +17,7 @@
 
 """Constants related to the StateIncarcerationIncident entity."""
 from enum import unique
+from typing import Dict
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
@@ -39,7 +40,7 @@ class StateIncarcerationIncidentType(EntityEnum, metaclass=EntityEnumMeta):
     VIOLENCE = state_enum_strings.state_incarceration_incident_type_violence
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "StateIncarcerationIncidentType"]:
         return _STATE_INCARCERATION_INCIDENT_OFFENSE_MAP
 
 
@@ -81,7 +82,7 @@ class StateIncarcerationIncidentOutcomeType(EntityEnum, metaclass=EntityEnumMeta
     WARNING = state_enum_strings.state_incarceration_incident_outcome_warning
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "StateIncarcerationIncidentOutcomeType"]:
         return _STATE_INCARCERATION_INCIDENT_OUTCOME_MAP
 
 
