@@ -30,7 +30,7 @@ class MetadataTest(unittest.TestCase):
     def tearDown(self) -> None:
         metadata.allow_local_metadata_call = False
 
-    def test_local_project_id_override(self):
+    def test_local_project_id_override(self) -> None:
         original_project = metadata.project_id()
 
         with local_project_id_override("recidiviz-456"):
@@ -43,7 +43,7 @@ class MetadataTest(unittest.TestCase):
 
         self.assertEqual(original_project, metadata.project_id())
 
-    def test_local_project_id_override_throws_if_called_nested(self):
+    def test_local_project_id_override_throws_if_called_nested(self) -> None:
         original_project = metadata.project_id()
 
         with local_project_id_override("recidiviz-456"):

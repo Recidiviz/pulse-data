@@ -14,83 +14,79 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
-# pylint: disable=unused-import,wrong-import-order
-
 """Tests for utils/environment.py."""
-
-
 import sys
+from http import HTTPStatus
+from typing import Tuple
+
 import pytest
-from mock import Mock, mock_open, patch
+from mock import Mock, patch
 
 import recidiviz
 from recidiviz.utils import environment
 
-from ..context import utils
-
 
 @patch("os.getenv")
-def test_in_prod_false(mock_os):
+def test_in_prod_false(mock_os: Mock) -> None:
     mock_os.return_value = "not production"
     assert not environment.in_gcp()
 
 
 @patch("os.getenv")
-def test_in_prod_true(mock_os):
+def test_in_prod_true(mock_os: Mock) -> None:
     mock_os.return_value = "production"
     assert environment.in_gcp()
 
 
-def test_local_only_is_local():
+def test_local_only_is_local() -> None:
     track = "Emerald Rush"
 
     @environment.local_only
-    def get():
-        return (track, 200)
+    def get() -> Tuple[str, HTTPStatus]:
+        return (track, HTTPStatus.OK)
 
     response = get()
-    assert response == (track, 200)
+    assert response == (track, HTTPStatus.OK)
 
 
 @patch("os.getenv")
-def test_local_only_is_prod(mock_os):
+def test_local_only_is_prod(mock_os: Mock) -> None:
     track = "Emerald Rush"
     mock_os.return_value = "production"
 
     @environment.local_only
-    def get():
-        return (track, 200)
+    def get() -> Tuple[str, HTTPStatus]:
+        return (track, HTTPStatus.OK)
 
     with pytest.raises(RuntimeError) as e:
         _ = get()
     assert str(e.value) == "Not available, see service logs."
 
 
-def test_test_in_test():
+def test_test_in_test() -> None:
     assert environment.in_test()
 
 
-def test_test_in_ci():
+def test_test_in_ci() -> None:
     """This test will fail when run locally."""
     assert environment.in_ci()
 
 
-def test_test_only_is_test():
+def test_test_only_is_test() -> None:
     track = "Emerald Rush"
 
     @environment.test_only
-    def get():
+    def get() -> str:
         return track
 
     assert get() == track
 
 
-def test_test_only_not_test():
+def test_test_only_not_test() -> None:
     track = "Emerald Rush"
 
     @environment.test_only
-    def get():
+    def get() -> str:
         return track
 
     with patch.dict("recidiviz.__dict__"), patch.object(sys, "modules", dict()):

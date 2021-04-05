@@ -17,7 +17,7 @@
 """Tests for Auth0 authorization."""
 import json
 import unittest
-from typing import Tuple
+from typing import Any, Dict, Optional, Tuple
 from unittest.mock import Mock
 
 import jwt
@@ -50,7 +50,7 @@ def generate_keypair() -> Tuple[bytes, bytes]:
     return (private_key, public_key)
 
 
-def get_public_jwk(public_key, key_id):
+def get_public_jwk(public_key: bytes, key_id: str) -> Dict[str, Any]:
     key = json.loads(
         RSAAlgorithm.to_jwk(RSAAlgorithm(RSAAlgorithm.SHA256).prepare_key(public_key))
     )
@@ -101,13 +101,13 @@ class Auth0ModuleTest(unittest.TestCase):
 
         @self.test_app.route("/protected_route")
         @authorization_decorator
-        def _index():
+        def _index() -> str:
             return jsonify({"status": "OK"})
 
     def tearDown(self) -> None:
         self.urlopen_patcher.stop()
 
-    def build_jwt(self, claims) -> str:
+    def build_jwt(self, claims: Dict[str, Any]) -> str:
         return jwt.encode(
             claims,
             self.private_key.decode("utf-8"),
@@ -115,7 +115,7 @@ class Auth0ModuleTest(unittest.TestCase):
             headers={"kid": self.public_jwk["kid"]},
         )
 
-    def subject(self, headers=None) -> Response:
+    def subject(self, headers: Optional[Dict[str, str]] = None) -> Response:
         return self.test_client.get("/protected_route", headers=headers)
 
     def test_jwt_authorization_header(self) -> None:

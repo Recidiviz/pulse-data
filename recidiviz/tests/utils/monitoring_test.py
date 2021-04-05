@@ -65,7 +65,7 @@ def test_measurements_with_region_decorator(mock_mmap):
     )
 
 
-def test_tags_multiple_threads():
+def test_tags_multiple_threads() -> None:
     results = {}
 
     @monitoring.with_region_tag
@@ -89,7 +89,7 @@ def test_tags_multiple_threads():
     }
 
 
-def test_measurements_with_push_tags(mock_mmap):
+def test_measurements_with_push_tags(mock_mmap) -> None:
     tags = {"alice": "foo"}
 
     # inside of pushed tag
@@ -112,7 +112,7 @@ def test_measurements_with_push_tags(mock_mmap):
     )
 
 
-def test_measurements_with_push_tags_and_exception(mock_mmap):
+def test_measurements_with_push_tags_and_exception(mock_mmap) -> None:
     tags = {"alice": "foo"}
 
     # inside of pushed tag
@@ -137,7 +137,7 @@ def test_measurements_with_push_tags_and_exception(mock_mmap):
     )
 
 
-def assert_recorded_tags(mock_mmap, expected_tag_calls):
+def assert_recorded_tags(mock_mmap, expected_tag_calls) -> None:
     calls = mock_mmap.record.call_args_list
     assert len(calls) == len(expected_tag_calls)
     for call, expected_tags in zip(calls, expected_tag_calls):
