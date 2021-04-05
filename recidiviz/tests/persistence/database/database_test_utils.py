@@ -50,7 +50,7 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 
 
 @attr.s
-class TestIngestMetadata(IngestMetadata):
+class FakeIngestMetadata(IngestMetadata):
     @classmethod
     def for_state(
         cls,
