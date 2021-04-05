@@ -29,12 +29,12 @@ FROM ubuntu:bionic
 
 RUN apt update -y && \
     apt install -y \
-        locales \
-        git \
-        libxml2-dev libxslt1-dev \
-        python3.7-dev python3-pip \
-        default-jre \
-        libpq-dev
+    locales \
+    git \
+    libxml2-dev libxslt1-dev \
+    python3.8-dev python3-pip \
+    default-jre \
+    libpq-dev
 
 RUN locale-gen en_US.UTF-8
 ENV LC_ALL en_US.UTF-8
@@ -60,12 +60,12 @@ ARG DEV_MODE="False"
 # As described in: https://stackoverflow.com/questions/48250338/installing-gcloud-on-travis-ci
 RUN if [ "$DEV_MODE" = "True" ]; \
     then apt-get update && apt install -y lsb-core && \
-         export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)" && \
-         echo "deb http://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
-         curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - && \
-         apt update -y && apt-get install google-cloud-sdk -y && \
-         apt install google-cloud-sdk-datastore-emulator -y && \
-         apt install google-cloud-sdk-pubsub-emulator -y; \
+    export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)" && \
+    echo "deb http://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
+    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - && \
+    apt update -y && apt-get install google-cloud-sdk -y && \
+    apt install google-cloud-sdk-datastore-emulator -y && \
+    apt install google-cloud-sdk-pubsub-emulator -y; \
     fi
 
 # Install postgres to be used by tests that need to write to a database from multiple threads.

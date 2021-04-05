@@ -18,7 +18,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-python@v2
         with:
-          python-version: "3.7.9"
+          python-version: "3.8.8"
       - name: Install pipenv
         run: pip install pipenv
       - name: Pipenv caching
@@ -26,11 +26,10 @@ jobs:
         id: pipenv-caching
         with:
           path: ~/.local/share/virtualenvs/
-          key: pipenv-cache-v1-${{ hashFiles('**/Pipfile.lock') }}
+          key: pipenv-cache-v2-${{ hashFiles('**/Pipfile.lock') }}
           restore-keys: |
-            pipenv-cache-v1-${{ hashFiles('**/Pipfile.lock') }}
-            pipenv-cache-v1-
-            pipenv-cache-
+            pipenv-cache-v2-${{ hashFiles('**/Pipfile.lock') }}
+            pipenv-cache-v2-
       - name: Sync pipenv
         if: steps.pipenv-caching.outputs.cache-hit != 'true'
         run: pipenv sync --dev
@@ -108,7 +107,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
         with:
-          python-version: "3.7.9"
+          python-version: "3.8.8"
       - name: Install pipenv
         run: pip install pipenv
       - name: Pipenv caching
@@ -116,11 +115,10 @@ jobs:
         id: pipenv-caching
         with:
           path: ~/.local/share/virtualenvs/
-          key: pipenv-cache-v1-${{ hashFiles('**/Pipfile.lock') }}
+          key: pipenv-cache-v2-${{ hashFiles('**/Pipfile.lock') }}
           restore-keys: |
-            pipenv-cache-v1-${{ hashFiles('**/Pipfile.lock') }}
-            pipenv-cache-v1-
-            pipenv-cache-
+            pipenv-cache-v2-${{ hashFiles('**/Pipfile.lock') }}
+            pipenv-cache-v2-
       - name: Sync pipenv
         if: steps.pipenv-caching.outputs.cache-hit != 'true'
         run: pipenv sync --dev
@@ -139,7 +137,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
         with:
-          python-version: "3.7.9"
+          python-version: "3.8.8"
       - name: Install pipenv
         run: pip install pipenv
       - name: Pipenv caching
@@ -147,11 +145,10 @@ jobs:
         id: pipenv-caching
         with:
           path: ~/.local/share/virtualenvs/
-          key: pipenv-cache-v1-${{ hashFiles('**/Pipfile.lock') }}
+          key: pipenv-cache-v2-${{ hashFiles('**/Pipfile.lock') }}
           restore-keys: |
-            pipenv-cache-v1-${{ hashFiles('**/Pipfile.lock') }}
-            pipenv-cache-v1-
-            pipenv-cache-
+            pipenv-cache-v2-${{ hashFiles('**/Pipfile.lock') }}
+            pipenv-cache-v2-
       - name: Sync pipenv
         if: steps.pipenv-caching.outputs.cache-hit != 'true'
         run: pipenv sync --dev
@@ -192,7 +189,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
         with:
-          python-version: "3.7.9"
+          python-version: "3.8.8"
       - name: Install pipenv
         run: pip install pipenv
       - name: Pipenv caching
@@ -200,11 +197,10 @@ jobs:
         id: pipenv-caching
         with:
           path: ~/.local/share/virtualenvs/
-          key: pipenv-cache-v1-${{ hashFiles('**/Pipfile.lock') }}
+          key: pipenv-cache-v2-${{ hashFiles('**/Pipfile.lock') }}
           restore-keys: |
-            pipenv-cache-v1-${{ hashFiles('**/Pipfile.lock') }}
-            pipenv-cache-v1-
-            pipenv-cache-
+            pipenv-cache-v2-${{ hashFiles('**/Pipfile.lock') }}
+            pipenv-cache-v2-
       - name: Sync pipenv
         if: steps.pipenv-caching.outputs.cache-hit != 'true'
         run: pipenv sync --dev

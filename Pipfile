@@ -20,7 +20,6 @@ ipdb = "*"
 nose = "*"
 pytest-alembic = "*"
 pipenv = "*"
-typing-extensions = "*"
 pygit2 = "*"
 parameterized = "*"
 google-api-python-client = "*"
@@ -127,4 +126,4 @@ astroid = "2.5.0"
 redis = "*"
 
 [requires]
-python_version = "3.7"
+python_version = "3.8"
