@@ -71,7 +71,7 @@ class IngestDataFreshnessStore(AdminPanelStore):
             latest_upper_bounds.append(
                 {
                     "state": struct["state_code"],
-                    "date": struct["processed_date"],
+                    "date": struct.get("processed_date"),
                     "ingestPaused": struct["state_code"] in regions_paused,
                 }
             )
