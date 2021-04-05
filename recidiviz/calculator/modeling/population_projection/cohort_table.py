@@ -17,7 +17,7 @@
 """Encapsulate the population data per cohort and time step"""
 
 import pandas as pd
-from recidiviz.calculator.modeling.population_projection.simulations.transition_table import (
+from recidiviz.calculator.modeling.population_projection.utils.transitions_utils import (
     SIG_FIGS,
 )
 
@@ -25,17 +25,16 @@ from recidiviz.calculator.modeling.population_projection.simulations.transition_
 class CohortTable:
     """Store population counts for one cohort of people that enter one category in the same year"""
 
-    def __init__(self, starting_ts: int, transition_table_max_length: int):
-        self.cohort_df = pd.DataFrame(
-            dtype=float,
-            index=range(starting_ts - transition_table_max_length, starting_ts),
-        )
+    def __init__(self):
+        self.cohort_df = pd.DataFrame(dtype=float)
 
         self.retired_cohort_df = pd.DataFrame()
 
     def get_latest_population(self) -> pd.Series:
         if self.cohort_df.empty:
-            return pd.Series({start_ts: 0 for start_ts in self.cohort_df.index})
+            return pd.Series(
+                {start_ts: 0 for start_ts in self.cohort_df.index}, dtype=float
+            )
 
         return self.cohort_df.iloc[:, -1]
 

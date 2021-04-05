@@ -18,7 +18,6 @@
 
 
 from typing import Dict, List
-import numpy as np
 import pandas as pd
 
 from recidiviz.calculator.modeling.population_projection.simulations.transition_table import (
@@ -38,8 +37,6 @@ class CompartmentTransitions:
     def __init__(self, historical_outflows: pd.DataFrame) -> None:
 
         self._check_inputs_valid(historical_outflows)
-
-        self.max_sentence: int = 0
 
         self.outflows = historical_outflows["outflow_to"].unique()
 
@@ -88,12 +85,8 @@ class CompartmentTransitions:
 
     def initialize_transition_tables(self, policy_list: List[SparkPolicy]) -> None:
         """Populate the 'before' transition table and initializes the max_sentence from historical data """
-        self.max_sentence = int(
-            np.ceil(self.historical_outflows.compartment_duration.max())
-        )
-
         self.transition_tables[MIN_POSSIBLE_POLICY_TS] = TransitionTable(
-            MIN_POSSIBLE_POLICY_TS, [], self.max_sentence
+            MIN_POSSIBLE_POLICY_TS, []
         )
         self.transition_tables[MIN_POSSIBLE_POLICY_TS].generate_transition_table(
             TransitionTableType.AFTER, self.historical_outflows
@@ -112,12 +105,11 @@ class CompartmentTransitions:
         policy_time_steps.append(MIN_POSSIBLE_POLICY_TS)
         policy_time_steps.sort()
 
-        for ts in range(1, len(policy_time_steps)):
-            self.transition_tables[policy_time_steps[ts]] = TransitionTable(
-                policy_time_steps[ts],
-                SparkPolicy.get_ts_policies(policy_list, policy_time_steps[ts]),
-                self.max_sentence,
-                self.transition_tables[policy_time_steps[ts - 1]].get_table(
+        for ts_idx in range(1, len(policy_time_steps)):
+            self.transition_tables[policy_time_steps[ts_idx]] = TransitionTable(
+                policy_time_steps[ts_idx],
+                SparkPolicy.get_ts_policies(policy_list, policy_time_steps[ts_idx]),
+                self.transition_tables[policy_time_steps[ts_idx - 1]].get_table(
                     TransitionTableType.AFTER
                 ),
             )

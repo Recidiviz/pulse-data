@@ -21,10 +21,10 @@ import pandas as pd
 from pandas.testing import assert_index_equal
 
 
-from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
 from recidiviz.calculator.modeling.population_projection.simulations.population_simulation.population_simulation_factory import (
     PopulationSimulationFactory,
 )
+from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
 from recidiviz.calculator.modeling.population_projection.simulations.transition_table import (
     TransitionTable,
 )
@@ -178,29 +178,31 @@ class TestPopulationSimulation(unittest.TestCase):
                     True,
                 )
 
-    def test_microsim_requires_empty_policy_list(self) -> None:
-        with self.assertRaises(ValueError):
-            policy_list = [
-                SparkPolicy(
-                    TransitionTable.test_non_retroactive_policy,
-                    "supervision",
-                    {"crime": "NAR"},
-                    self.user_inputs["policy_time_step"],
-                )
-            ]
-            _ = PopulationSimulationFactory.build_population_simulation(
-                self.test_outflows_data,
-                self.test_transitions_data,
-                self.test_total_population_data,
-                self.simulation_architecture,
-                ["crime"],
-                self.user_inputs,
-                policy_list,
-                -5,
-                self.test_outflows_data,
-                True,
-                False,
+    def test_microsimulation_can_initialize_with_policy_list(self) -> None:
+        """Run a policy scenario with a microsimulation to make sure it doesn't break along the way."""
+        policy_list = [
+            SparkPolicy(
+                TransitionTable.test_non_retroactive_policy,
+                "supervision",
+                {"crime": "NAR"},
+                self.user_inputs["policy_time_step"],
             )
+        ]
+        policy_sim = PopulationSimulationFactory.build_population_simulation(
+            self.test_outflows_data,
+            self.test_transitions_data,
+            self.test_total_population_data,
+            self.simulation_architecture,
+            ["crime"],
+            self.user_inputs,
+            policy_list,
+            -5,
+            self.test_transitions_data,
+            True,
+            False,
+        )
+
+        policy_sim.simulate_policies()
 
     def test_baseline_with_backcast_projection_on(self) -> None:
         """Assert that the simulation results has negative time steps when the back-cast is enabled"""

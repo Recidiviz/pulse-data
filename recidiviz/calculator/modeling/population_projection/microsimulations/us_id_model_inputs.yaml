@@ -1,7 +1,7 @@
 ---
 user_inputs:
   start_year: 2021.0
-  projection_years: 5.0
+  projection_years: 10.0
   run_date: '2021-01-01'
 
 compartments_architecture:
