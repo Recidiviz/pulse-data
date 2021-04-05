@@ -17,6 +17,7 @@
 
 """Constants related to a state Sentence."""
 from enum import unique
+from typing import Dict
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
@@ -41,7 +42,7 @@ class StateSentenceStatus(EntityEnum, metaclass=EntityEnumMeta):
     VACATED = state_enum_strings.state_sentence_status_vacated
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "StateSentenceStatus"]:
         return _STATE_SENTENCE_STATUS_MAP
 
 

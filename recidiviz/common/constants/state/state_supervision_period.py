@@ -47,7 +47,7 @@ class StateSupervisionPeriodSupervisionType(EntityEnum, metaclass=EntityEnumMeta
     PROBATION = state_enum_strings.state_supervision_period_supervision_type_probation
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, StateSupervisionPeriodSupervisionType]:
         return _STATE_SUPERVISION_PERIOD_SUPERVISION_TYPE_MAP
 
 
@@ -85,7 +85,7 @@ class StateSupervisionPeriodAdmissionReason(EntityEnum, metaclass=EntityEnumMeta
     )
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "StateSupervisionPeriodAdmissionReason"]:
         return _STATE_SUPERVISION_ADMISSION_TYPE_MAP
 
 
@@ -99,7 +99,7 @@ class StateSupervisionPeriodStatus(EntityEnum, metaclass=EntityEnumMeta):
     )
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "StateSupervisionPeriodStatus"]:
         return _STATE_SUPERVISION_STATUS_MAP
 
 
@@ -134,7 +134,7 @@ class StateSupervisionLevel(EntityEnum, metaclass=EntityEnumMeta):
     )
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "StateSupervisionLevel"]:
         return _STATE_SUPERVISION_LEVEL_MAP
 
 
@@ -185,7 +185,7 @@ class StateSupervisionPeriodTerminationReason(EntityEnum, metaclass=EntityEnumMe
     )
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "StateSupervisionPeriodTerminationReason"]:
         return _STATE_SUPERVISION_PERIOD_TERMINATION_REASON_MAP
 
 

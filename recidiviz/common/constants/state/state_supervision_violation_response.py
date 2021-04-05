@@ -17,6 +17,7 @@
 
 """Constants related to a StateSupervisionViolationResponse."""
 from enum import unique
+from typing import Dict
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
@@ -34,7 +35,7 @@ class StateSupervisionViolationResponseType(EntityEnum, metaclass=EntityEnumMeta
     )
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "StateSupervisionViolationResponseType"]:
         return _STATE_SUPERVISION_VIOLATION_RESPONSE_TYPE_MAP
 
 
@@ -89,7 +90,7 @@ class StateSupervisionViolationResponseDecision(EntityEnum, metaclass=EntityEnum
     )
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "StateSupervisionViolationResponseDecision"]:
         return _STATE_SUPERVISION_VIOLATION_RESPONSE_DECISION_MAP
 
 
@@ -111,7 +112,9 @@ class StateSupervisionViolationResponseRevocationType(
     )
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[
+        str, "StateSupervisionViolationResponseRevocationType"
+    ]:
         return _STATE_SUPERVISION_VIOLATION_RESPONSE_REVOCATION_TYPE_MAP
 
 
@@ -132,7 +135,9 @@ class StateSupervisionViolationResponseDecidingBodyType(
     )
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[
+        str, "StateSupervisionViolationResponseDecidingBodyType"
+    ]:
         return _STATE_SUPERVISION_VIOLATION_RESPONSE_DECIDING_BODY_TYPE_MAP
 
 

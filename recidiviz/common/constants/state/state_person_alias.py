@@ -17,6 +17,7 @@
 
 """Constants related to a StatePersonAlias entity."""
 from enum import unique
+from typing import Dict
 
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
@@ -31,7 +32,7 @@ class StatePersonAliasType(EntityEnum, metaclass=EntityEnumMeta):
     NICKNAME = state_enum_strings.state_person_alias_alias_type_nickname
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "StatePersonAliasType"]:
         return _ALIAS_TYPE_MAP
 
 
