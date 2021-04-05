@@ -28,7 +28,7 @@ def print_visible_header_label(label_text: str) -> None:
     print(f"\n{label_text}")
 
 
-def in_docker():
+def in_docker() -> bool:
     """ Returns: True if running in a Docker container, else False """
     if not os.path.exists("/proc/1/cgroup"):
         return False

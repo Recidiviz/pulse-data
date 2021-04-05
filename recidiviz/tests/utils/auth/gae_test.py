@@ -14,19 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
-# pylint: disable=unused-import,wrong-import-order
-
 """Tests for utils/gae.py."""
+from typing import Callable, Tuple
 
-
-import pytest
-from flask import Flask, request
+from flask import Flask
 from mock import Mock, patch
 
 from recidiviz.utils.auth import gae
-
-from recidiviz.tests.context import utils
 
 BEST_ALBUM = "Music Has The Right To Children"
 APP_ID = "recidiviz-auth-test"
@@ -36,27 +30,27 @@ dummy_app = Flask(__name__)
 
 @dummy_app.route("/")
 @gae.requires_gae_auth
-def boards_of_canada_holder():
+def boards_of_canada_holder() -> Tuple[str, int]:
     return (BEST_ALBUM, 200)
 
 
 class TestAuthenticateRequest:
     """Tests for the @requires_gae_auth decorator."""
 
-    def setup_method(self, _test_method):
+    def setup_method(self, _test_method: Callable) -> None:
         dummy_app.config["TESTING"] = True
         self.client = dummy_app.test_client()
 
     @patch("recidiviz.utils.metadata.project_id", Mock(return_value="test-project"))
     @patch("recidiviz.utils.metadata.project_number", Mock(return_value="123456789"))
-    def test_authenticate_request_different_app_id(self):
+    def test_authenticate_request_different_app_id(self) -> None:
         response = self.client.get("/", headers={"X-Appengine-Inbound-Appid": "blah"})
         assert response.status_code == 401
         assert response.get_data().decode() == "Failed: Unauthorized external request."
 
     @patch("recidiviz.utils.metadata.project_id", Mock(return_value="test-project"))
     @patch("recidiviz.utils.metadata.project_number", Mock(return_value="123456789"))
-    def test_authenticate_request_same_app_id(self):
+    def test_authenticate_request_same_app_id(self) -> None:
         response = self.client.get(
             "/", headers={"X-Appengine-Inbound-Appid": "test-project"}
         )
@@ -65,14 +59,14 @@ class TestAuthenticateRequest:
 
     @patch("recidiviz.utils.metadata.project_id", Mock(return_value="test-project"))
     @patch("recidiviz.utils.metadata.project_number", Mock(return_value="123456789"))
-    def test_authenticate_request_is_cron(self):
+    def test_authenticate_request_is_cron(self) -> None:
         response = self.client.get("/", headers={"X-Appengine-Cron": "True"})
         assert response.status_code == 200
         assert response.get_data().decode() == BEST_ALBUM
 
     @patch("recidiviz.utils.metadata.project_id", Mock(return_value="test-project"))
     @patch("recidiviz.utils.metadata.project_number", Mock(return_value="123456789"))
-    def test_authenticate_request_is_task(self):
+    def test_authenticate_request_is_task(self) -> None:
         response = self.client.get("/", headers={"X-Appengine-QueueName": "us_ny"})
         assert response.status_code == 200
         assert response.get_data().decode() == BEST_ALBUM
@@ -80,7 +74,7 @@ class TestAuthenticateRequest:
     @patch("recidiviz.utils.metadata.project_id", Mock(return_value="test-project"))
     @patch("recidiviz.utils.metadata.project_number", Mock(return_value="123456789"))
     @patch("recidiviz.utils.validate_jwt.validate_iap_jwt_from_app_engine")
-    def test_authenticate_request_from_iap(self, mock_jwt):
+    def test_authenticate_request_from_iap(self, mock_jwt: Mock) -> None:
         mock_jwt.return_value = ("user", "email", None)
 
         response = self.client.get("/", headers={"x-goog-iap-jwt-assertion": "0"})
@@ -90,7 +84,7 @@ class TestAuthenticateRequest:
     @patch("recidiviz.utils.metadata.project_id", Mock(return_value="test-project"))
     @patch("recidiviz.utils.metadata.project_number", Mock(return_value="123456789"))
     @patch("recidiviz.utils.validate_jwt.validate_iap_jwt_from_app_engine")
-    def test_authenticate_request_from_iap_invalid(self, mock_jwt):
+    def test_authenticate_request_from_iap_invalid(self, mock_jwt: Mock) -> None:
         mock_jwt.return_value = (None, None, "INVALID TOKEN")
 
         response = self.client.get("/", headers={"x-goog-iap-jwt-assertion": "0"})
@@ -99,7 +93,7 @@ class TestAuthenticateRequest:
 
     @patch("recidiviz.utils.metadata.project_id", Mock(return_value="test-project"))
     @patch("recidiviz.utils.metadata.project_number", Mock(return_value="123456789"))
-    def test_authenticate_request_unauthorized(self):
+    def test_authenticate_request_unauthorized(self) -> None:
         response = self.client.get("/")
         assert response.status_code == 401
         assert response.get_data().decode() == "Failed: Unauthorized external request."

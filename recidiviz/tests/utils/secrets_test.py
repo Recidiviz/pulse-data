@@ -18,7 +18,8 @@
 # pylint: disable=unused-import,wrong-import-order
 
 """Tests for utils/secrets.py."""
-from unittest.mock import patch
+from typing import Callable
+from unittest.mock import patch, MagicMock
 
 from google.cloud import exceptions
 from google.cloud.secretmanager_v1beta1.proto import service_pb2
@@ -31,18 +32,18 @@ from recidiviz.utils import secrets
 class TestSecrets:
     """Tests for the secrets module."""
 
-    def teardown_method(self, _test_method):
+    def teardown_method(self, _test_method: Callable) -> None:
         secrets.clear_sm()
         secrets.CACHED_SECRETS.clear()
 
-    def test_get_in_cache(self):
+    def test_get_in_cache(self) -> None:
         write_to_local("top_track", "An Eagle In Your Mind")
 
         actual = secrets.get_secret("top_track")
         assert actual == "An Eagle In Your Mind"
 
     @patch("recidiviz.utils.metadata.project_id")
-    def test_get_not_in_cache(self, mock_project_id):
+    def test_get_not_in_cache(self, mock_project_id: MagicMock) -> None:
         mock_project_id.return_value = "test-project"
         payload = SecretPayload(data=bytes("Olson".encode("UTF-8")))
 
@@ -59,7 +60,7 @@ class TestSecrets:
             assert actual == "Olson"
 
     @patch("recidiviz.utils.metadata.project_id")
-    def test_get_not_in_cache_not_found(self, mock_project_id):
+    def test_get_not_in_cache_not_found(self, mock_project_id: MagicMock) -> None:
         mock_project_id.return_value = "test-project"
 
         mock_client = Mock()
@@ -75,7 +76,7 @@ class TestSecrets:
             assert actual is None
 
     @patch("recidiviz.utils.metadata.project_id")
-    def test_get_not_in_cache_error(self, mock_project_id):
+    def test_get_not_in_cache_error(self, mock_project_id: MagicMock) -> None:
         mock_project_id.return_value = "test-project"
 
         mock_client = Mock()
@@ -91,7 +92,7 @@ class TestSecrets:
             assert actual is None
 
     @patch("recidiviz.utils.metadata.project_id")
-    def test_get_not_in_cache_bad_payload(self, mock_project_id):
+    def test_get_not_in_cache_bad_payload(self, mock_project_id: MagicMock) -> None:
         mock_project_id.return_value = "test-project"
 
         mock_client = Mock()
@@ -107,5 +108,5 @@ class TestSecrets:
             assert actual is None
 
 
-def write_to_local(name, value):
+def write_to_local(name: str, value: str) -> None:
     secrets.CACHED_SECRETS[name] = value

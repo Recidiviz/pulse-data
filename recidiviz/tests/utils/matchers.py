@@ -17,25 +17,9 @@
 
 """Matchers for convenient unit testing."""
 import collections
-import json
+from typing import Any
 
 import callee
-
-
-class DeserializedJson(callee.Matcher):
-    """An argument Matcher which can match serialized json against a
-    deserialized object for comparison by deserializing the json.
-
-    This is useful here because we pass around serialized json as strings that
-    could have its fields in any order within the string, and we want to match
-    it against the actual object that the json represents.
-    """
-
-    def __init__(self, comparison_object):
-        self.comparison = comparison_object
-
-    def match(self, value):
-        return json.loads(value) == self.comparison
 
 
 class UnorderedCollection(callee.Matcher):
@@ -46,8 +30,8 @@ class UnorderedCollection(callee.Matcher):
     assert that the collection consists of the correct elements.
     """
 
-    def __init__(self, comparison_collection):
+    def __init__(self, comparison_collection: Any):
         self.comparison = comparison_collection
 
-    def match(self, value):
+    def match(self, value: Any) -> bool:
         return collections.Counter(value) == collections.Counter(self.comparison)
