@@ -27,9 +27,9 @@ from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
     state_incarceration_sentence,
 )
-from recidiviz.tests.persistence.database.database_test_utils import TestIngestMetadata
+from recidiviz.tests.persistence.database.database_test_utils import FakeIngestMetadata
 
-METADATA = TestIngestMetadata.for_state(region="us_nd")
+METADATA = FakeIngestMetadata.for_state(region="us_nd")
 
 
 class StateIncarcerationSentenceConverterTest(unittest.TestCase):

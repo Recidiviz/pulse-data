@@ -83,7 +83,7 @@ from recidiviz.persistence.persistence import (
     ENTITY_MATCHING_THRESHOLD,
     DATABASE_INVARIANT_THRESHOLD,
 )
-from recidiviz.tests.persistence.database.database_test_utils import TestIngestMetadata
+from recidiviz.tests.persistence.database.database_test_utils import FakeIngestMetadata
 from recidiviz.tests.utils import fakes
 from recidiviz.tools.postgres import local_postgres_helpers
 
@@ -124,7 +124,7 @@ FULL_NAME_1 = "TEST_FULL_NAME_1"
 FULL_NAME_2 = "TEST_FULL_NAME_2"
 FULL_NAME_3 = "TEST_FULL_NAME_3"
 JURISDICTION_ID = "12345678"
-DEFAULT_METADATA = TestIngestMetadata.for_county(
+DEFAULT_METADATA = FakeIngestMetadata.for_county(
     region="region_code",
     jurisdiction_id="12345678",
     ingest_time=datetime(year=1000, month=1, day=1),
@@ -463,7 +463,7 @@ class TestPersistence(TestCase):
     # TODO(#4135): Rewrite this test to directly test __eq__ between the two People
     def test_readPersonAndAllRelationships(self):
         # Arrange
-        metadata = TestIngestMetadata.for_county(
+        metadata = FakeIngestMetadata.for_county(
             region=REGION_1,
             jurisdiction_id=JURISDICTION_ID,
             ingest_time=SCRAPER_START_DATETIME,
@@ -552,7 +552,7 @@ class TestPersistence(TestCase):
     def test_write_preexisting_person(self):
         # Arrange
         most_recent_scrape_time = SCRAPER_START_DATETIME + timedelta(days=1)
-        metadata = TestIngestMetadata.for_county(
+        metadata = FakeIngestMetadata.for_county(
             region=REGION_1,
             jurisdiction_id=JURISDICTION_ID,
             ingest_time=most_recent_scrape_time,
@@ -617,7 +617,7 @@ class TestPersistence(TestCase):
     def test_write_preexisting_person_duplicate_charges(self):
         # Arrange
         most_recent_scrape_time = SCRAPER_START_DATETIME + timedelta(days=1)
-        metadata = TestIngestMetadata.for_county(
+        metadata = FakeIngestMetadata.for_county(
             region=REGION_1,
             jurisdiction_id=JURISDICTION_ID,
             ingest_time=most_recent_scrape_time,
@@ -704,7 +704,7 @@ class TestPersistence(TestCase):
     def test_write_noPeople(self):
         # Arrange
         most_recent_scrape_time = SCRAPER_START_DATETIME + timedelta(days=1)
-        metadata = TestIngestMetadata.for_county(
+        metadata = FakeIngestMetadata.for_county(
             region=REGION_1,
             jurisdiction_id=JURISDICTION_ID,
             ingest_time=most_recent_scrape_time,
@@ -835,7 +835,7 @@ class TestPersistence(TestCase):
     def test_write_different_arrest(self):
         # Arrange
         most_recent_scrape_time = SCRAPER_START_DATETIME + timedelta(days=1)
-        metadata = TestIngestMetadata.for_county(
+        metadata = FakeIngestMetadata.for_county(
             region=REGION_1,
             jurisdiction_id=JURISDICTION_ID,
             ingest_time=most_recent_scrape_time,
@@ -911,7 +911,7 @@ class TestPersistence(TestCase):
     def test_write_new_empty_arrest(self):
         # Arrange
         most_recent_scrape_time = SCRAPER_START_DATETIME + timedelta(days=1)
-        metadata = TestIngestMetadata.for_county(
+        metadata = FakeIngestMetadata.for_county(
             region=REGION_1,
             jurisdiction_id=JURISDICTION_ID,
             ingest_time=most_recent_scrape_time,

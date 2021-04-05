@@ -23,9 +23,9 @@ from recidiviz.common.constants.state.state_fine import StateFineStatus
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import state_fine
-from recidiviz.tests.persistence.database.database_test_utils import TestIngestMetadata
+from recidiviz.tests.persistence.database.database_test_utils import FakeIngestMetadata
 
-_EMPTY_METADATA = TestIngestMetadata.for_state("us_nd")
+_EMPTY_METADATA = FakeIngestMetadata.for_state("us_nd")
 
 
 class StateFineConverterTest(unittest.TestCase):
