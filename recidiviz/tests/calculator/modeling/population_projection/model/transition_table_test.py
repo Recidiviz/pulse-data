@@ -45,9 +45,7 @@ class TestTransitionTable(unittest.TestCase):
                 "compartment": ["test_compartment"] * 5,
             }
         )
-        self.prev_table = TransitionTable(
-            -9999, [], int(self.test_data.compartment_duration.max())
-        )
+        self.prev_table = TransitionTable(-9999, [])
         self.prev_table.generate_transition_table(
             TransitionTableType.AFTER, self.test_data
         )
@@ -59,9 +57,7 @@ class TestInitialization(TestTransitionTable):
     def test_normalize_transitions_requires_non_normalized_before_table(self):
         """Tests that transitory transitions table rejects a pre-normalized 'previous' table"""
         # uses its own prev_table because we don't want to normalize the general-use one
-        prev_table = TransitionTable(
-            -9999, [], int(self.test_data.compartment_duration.max())
-        )
+        prev_table = TransitionTable(-9999, [])
         prev_table.generate_transition_table(TransitionTableType.AFTER, self.test_data)
         prev_table.normalize_transitions()
 
@@ -69,7 +65,6 @@ class TestInitialization(TestTransitionTable):
             TransitionTable(
                 0,
                 [],
-                int(self.test_data.compartment_duration.max()),
                 prev_table.get_table(TransitionTableType.AFTER),
             )
 
@@ -94,13 +89,11 @@ class TestInitialization(TestTransitionTable):
         transition_table_default = TransitionTable(
             5,
             compartment_policies,
-            int(self.test_data.compartment_duration.max()),
             self.prev_table.get_table(TransitionTableType.AFTER),
         )
         transition_table_shuffled = TransitionTable(
             5,
             compartment_policies,
-            int(self.test_data.compartment_duration.max()),
             self.prev_table.get_table(TransitionTableType.AFTER).sample(frac=1, axis=1),
         )
 
@@ -125,7 +118,6 @@ class TestPolicyFunctions(TestTransitionTable):
             TransitionTable(
                 5,
                 compartment_policies,
-                int(self.test_data.compartment_duration.max()),
                 self.prev_table.get_table(TransitionTableType.AFTER),
             )
 
@@ -133,7 +125,6 @@ class TestPolicyFunctions(TestTransitionTable):
         transition_table = TransitionTable(
             5,
             [],
-            int(self.test_data.compartment_duration.max()),
             self.prev_table.get_table(TransitionTableType.AFTER),
         )
         original_before_table = transition_table.transition_dfs[
@@ -173,13 +164,10 @@ class TestPolicyFunctions(TestTransitionTable):
         transition_table = TransitionTable(
             5,
             [policy_function],
-            int(self.test_data.compartment_duration.max()),
             self.prev_table.get_table(TransitionTableType.AFTER),
         )
 
-        alternate_prev_table = TransitionTable(
-            -9999, [], int(alternate_data.compartment_duration.max())
-        )
+        alternate_prev_table = TransitionTable(-9999, [])
         alternate_prev_table.generate_transition_table(
             TransitionTableType.AFTER, alternate_data
         )
@@ -187,7 +175,6 @@ class TestPolicyFunctions(TestTransitionTable):
         alternate_data_table = TransitionTable(
             5,
             [],
-            int(alternate_data.compartment_duration.max()),
             alternate_prev_table.get_table(TransitionTableType.AFTER),
         )
 
@@ -223,14 +210,12 @@ class TestPolicyFunctions(TestTransitionTable):
         transition_table = TransitionTable(
             5,
             compartment_policies,
-            int(self.test_data.compartment_duration.max()),
             self.prev_table.get_table(TransitionTableType.AFTER),
         )
 
         baseline_transitions = TransitionTable(
             5,
             [],
-            int(self.test_data.compartment_duration.max()),
             self.prev_table.get_table(TransitionTableType.AFTER),
         )
 
@@ -292,7 +277,6 @@ class TestPolicyFunctions(TestTransitionTable):
         transition_table = TransitionTable(
             5,
             compartment_policies,
-            int(self.test_data.compartment_duration.max()),
             self.prev_table.get_table(TransitionTableType.AFTER),
         )
 
@@ -326,7 +310,6 @@ class TestPolicyFunctions(TestTransitionTable):
         transition_table = TransitionTable(
             5,
             compartment_policy,
-            int(self.test_data.compartment_duration.max()),
             self.prev_table.get_table(TransitionTableType.AFTER),
         )
 
@@ -373,7 +356,6 @@ class TestPolicyFunctions(TestTransitionTable):
         transition_table = TransitionTable(
             5,
             compartment_policies,
-            int(self.test_data.compartment_duration.max()),
             self.prev_table.get_table(TransitionTableType.AFTER),
         )
 
@@ -388,7 +370,6 @@ class TestPolicyFunctions(TestTransitionTable):
         transition_table = TransitionTable(
             5,
             [],
-            int(self.test_data.compartment_duration.max()),
             self.prev_table.get_table(TransitionTableType.AFTER),
         )
         expected_df_columns = transition_table.transition_dfs[state].columns
@@ -431,14 +412,12 @@ class TestPolicyFunctions(TestTransitionTable):
         transition_table = TransitionTable(
             5,
             compartment_policies,
-            int(self.test_data.compartment_duration.max()),
             self.prev_table.get_table(TransitionTableType.AFTER),
         )
 
         baseline_transitions = TransitionTable(
             5,
             [],
-            int(self.test_data.compartment_duration.max()),
             self.prev_table.get_table(TransitionTableType.AFTER),
         )
 

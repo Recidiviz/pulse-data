@@ -34,7 +34,6 @@ class TransitionTable:
         self,
         policy_ts: int,
         policy_list: List[SparkPolicy],
-        max_sentence: int,
         previous_table: Optional[pd.DataFrame] = None,
     ):
         """
@@ -46,7 +45,12 @@ class TransitionTable:
         self.previous_table = previous_table
         self.policy_ts = policy_ts
         self.policy_list = policy_list
-        self.max_sentence = max_sentence
+
+        if previous_table is not None:
+            self.max_sentence = int(np.ceil(previous_table.index.max()))
+        else:
+            self.max_sentence = 0
+
         self.transition_dfs: Dict[TransitionTableType, pd.DataFrame] = {
             TransitionTableType.BEFORE: pd.DataFrame(),
             TransitionTableType.AFTER: pd.DataFrame(),
@@ -235,10 +239,7 @@ class TransitionTable:
             [sentence_length, historical_outflows.outflow_to]
         )
 
-        if sentence_length.max() > self.max_sentence:
-            raise ValueError(
-                "Trying to generate transition table with compartment_duration data longer than max sentence"
-            )
+        self.max_sentence = max(self.max_sentence, int(sentence_length.max()))
 
         self.transition_dfs[state] = (
             grouped_outflows["total_population"]
@@ -310,22 +311,24 @@ class TransitionTable:
         self, state: TransitionTableType
     ) -> None:
         """Raise an exception if the underlying transition table has been normalized before applying a policy"""
-        if "remaining" in self.transition_dfs[state]:
+        self._check_table_exists(state)
+        if state == TransitionTableType.PREVIOUS:
+            table = self.previous_table
+        else:
+            table = self.transition_dfs[state]
+        if (table is None) or "remaining" in table:
             raise ValueError(
                 "Policy method cannot be applied after the transition table is normalized"
             )
 
     def _check_table_exists(self, state: TransitionTableType) -> None:
-        broken = False
-
+        """Make sure table is not null"""
         if state == TransitionTableType.PREVIOUS:
-            if self.previous_table is None:
-                broken = True
+            table = self.previous_table
         else:
-            if self.transition_dfs[state] is None:
-                broken = True
+            table = self.transition_dfs[state]
 
-        if broken:
+        if table is None:
             raise ValueError(
                 f"Cannot normalize {state} table for first TransitionTable of CompartmentTransitions object"
             )

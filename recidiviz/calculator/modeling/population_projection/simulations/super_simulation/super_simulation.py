@@ -120,30 +120,44 @@ class SuperSimulation:
         )
         self.validator.reset(self.simulator.get_population_simulations())
 
-    def upload_simulation_results_to_bq(
+    def upload_baseline_simulation_results_to_bq(
+        self,
+        simulation_tag: Optional[str] = None,
+    ) -> Dict[str, pd.DataFrame]:
+        output_data = self.validator.get_output_data_for_upload()
+        _, data_inputs, _, time_step, reference_year = self._get_simulation_inputs()
+        excluded_pop_data = self.initializer.get_excluded_pop_data()
+
+        return self.exporter.upload_baseline_simulation_results_to_bq(
+            "recidiviz-staging",
+            simulation_tag,
+            output_data,
+            excluded_pop_data,
+            data_inputs["total_population_data"],
+            time_step,
+            reference_year,
+        )
+
+    def upload_policy_simulation_results_to_bq(
         self,
         simulation_tag: Optional[str] = None,
         cost_multipliers: Optional[pd.DataFrame] = None,
     ) -> Optional[Dict[str, pd.DataFrame]]:
         output_data = self.validator.get_output_data_for_upload()
         sub_group_ids_dict = self.simulator.get_sub_group_ids_dict()
-        _, data_inputs, _, time_step, reference_year = self._get_simulation_inputs()
-        excluded_pop_data = self.initializer.get_excluded_pop_data()
+        data_inputs = self.initializer.get_data_inputs()
+        time_step = self.initializer.get_time_step()
         disaggregation_axes = data_inputs["disaggregation_axes"]
 
-        testing_data = self.exporter.upload_simulation_results_to_bq(
+        return self.exporter.upload_policy_simulation_results_to_bq(
             "recidiviz-staging",
             simulation_tag,
             output_data,
-            excluded_pop_data,
-            data_inputs["total_population_data"],
             cost_multipliers if cost_multipliers is not None else pd.DataFrame(),
             sub_group_ids_dict,
             time_step,
-            reference_year,
             disaggregation_axes,
         )
-        return testing_data
 
     def get_arima_output_df(self, simulation_title: str) -> pd.DataFrame:
         return self.validator.gen_arima_output_df(simulation_title)

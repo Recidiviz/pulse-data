@@ -18,8 +18,7 @@
 from typing import Dict, Any, List, Tuple, Optional
 import pandas as pd
 from recidiviz.calculator.modeling.population_projection.utils import (
-    ignite_bq_utils,
-    spark_bq_utils,
+    bq_utils,
 )
 from recidiviz.calculator.modeling.population_projection.simulations.super_simulation.initializer import (
     Initializer,
@@ -36,51 +35,58 @@ class Exporter:
         self.compartment_costs = compartment_costs
         self.simulation_tag = simulation_tag
 
-    def upload_simulation_results_to_bq(
+    def upload_baseline_simulation_results_to_bq(
         self,
         project_id: str,
         simulation_tag: Optional[str],
         output_data: Dict[str, pd.DataFrame],
         excluded_pop: pd.DataFrame,
         total_pop: pd.DataFrame,
+        time_step: float,
+        reference_year: float,
+    ) -> Dict[str, pd.DataFrame]:
+        """Format then upload baseline simulation results to Big Query."""
+        required_keys = ["baseline_middle", "baseline_min", "baseline_max"]
+        missing_keys = [key for key in required_keys if key not in output_data.keys()]
+        if len(missing_keys) != 0:
+            raise ValueError(
+                f"Baseline output data is missing the required columns {missing_keys}"
+            )
+
+        join_cols = ["time_step", "compartment", "simulation_group"]
+        formatted_data = (
+            output_data["baseline_middle"]
+            .merge(output_data["baseline_min"], on=join_cols, suffixes=["", "_min"])
+            .merge(output_data["baseline_max"], on=join_cols, suffixes=["", "_max"])
+        )
+
+        formatted_data["year"] = Initializer.convert_to_absolute_year(
+            time_step, reference_year, formatted_data["time_step"]
+        )
+        formatted_data = formatted_data.drop("time_step", axis=1)
+        if not excluded_pop.empty:
+            formatted_data = self._prep_for_upload(
+                formatted_data, excluded_pop, total_pop
+            )
+        bq_utils.upload_baseline_simulation_results(
+            project_id,
+            formatted_data,
+            simulation_tag if simulation_tag else self.simulation_tag,
+        )
+        return {"baseline_output_data": formatted_data}
+
+    def upload_policy_simulation_results_to_bq(
+        self,
+        project_id: str,
+        simulation_tag: Optional[str],
+        output_data: Dict[str, pd.DataFrame],
         cost_multipliers: pd.DataFrame,
         sub_group_ids_dict: Dict[str, Dict[str, Any]],
         time_step: float,
-        reference_year: float,
         disaggregation_axes: List[str],
-    ) -> Optional[Dict[str, pd.DataFrame]]:
-        """Format then upload simulation results to Big Query."""
-        # TODO(#5607): split this method into a baseline version and a policy version
-        if self.microsim:
-            required_keys = ["baseline_middle", "baseline_min", "baseline_max"]
-            missing_keys = [
-                key for key in required_keys if key not in output_data.keys()
-            ]
-            if len(missing_keys) != 0:
-                raise ValueError(
-                    f"Microsim output data is missing the required columns {missing_keys}"
-                )
-
-            join_cols = ["time_step", "compartment", "simulation_group"]
-            microsim_data = (
-                output_data["baseline_middle"]
-                .merge(output_data["baseline_min"], on=join_cols, suffixes=["", "_min"])
-                .merge(output_data["baseline_max"], on=join_cols, suffixes=["", "_max"])
-            )
-
-            microsim_data["year"] = Initializer.convert_to_absolute_year(
-                time_step, reference_year, microsim_data["time_step"]
-            )
-            microsim_data = microsim_data.drop("time_step", axis=1)
-            if not excluded_pop.empty:
-                microsim_data = self._prep_for_upload(
-                    microsim_data, excluded_pop, total_pop
-                )
-            ignite_bq_utils.upload_ignite_results(
-                project_id, microsim_data, self.simulation_tag
-            )
-            return {"microsim_data": microsim_data}
-
+    ) -> Dict[str, pd.DataFrame]:
+        """Format then upload policy simulation results to Big Query."""
+        # TODO(#6633): incorporate excluded populations into policy simulation upload for microsimulations
         (
             spending_diff,
             compartment_life_years_diff,
@@ -100,7 +106,7 @@ class Exporter:
             .reset_index()
         )
         aggregate_output_data.index = aggregate_output_data.year
-        spark_bq_utils.upload_spark_results(
+        bq_utils.upload_policy_simulation_results(
             project_id,
             simulation_tag if simulation_tag else self.simulation_tag,
             spending_diff,
