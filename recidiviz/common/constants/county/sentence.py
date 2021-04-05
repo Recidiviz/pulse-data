@@ -16,6 +16,7 @@
 # =============================================================================
 
 """Constants related to a sentence entity."""
+from typing import Dict
 
 from recidiviz.common.constants.county import (
     enum_canonical_strings as county_enum_strings,
@@ -32,7 +33,7 @@ class SentenceStatus(EntityEnum, metaclass=EntityEnumMeta):
     REMOVED_WITHOUT_INFO = enum_strings.removed_without_info
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "SentenceStatus"]:
         return _SENTENCE_STATUS_MAP
 
 

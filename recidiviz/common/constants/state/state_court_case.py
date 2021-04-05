@@ -30,7 +30,7 @@ class StateCourtType(EntityEnum, metaclass=EntityEnumMeta):
     # TODO(#1697): Add values here
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "StateCourtType"]:
         return _STATE_COURT_TYPE_MAP
 
 
@@ -42,7 +42,7 @@ class StateCourtCaseStatus(EntityEnum, metaclass=EntityEnumMeta):
     # TODO(#1697): Add values here
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "StateCourtCaseStatus"]:
         return _STATE_COURT_CASE_STATUS_MAP
 
 

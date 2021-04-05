@@ -16,6 +16,7 @@
 # =============================================================================
 
 """Constants related to a booking entity."""
+from typing import Dict, List, Optional
 
 from recidiviz.common.constants.county import (
     enum_canonical_strings as county_enum_strings,
@@ -35,7 +36,7 @@ class AdmissionReason(EntityEnum, metaclass=EntityEnumMeta):
     TRANSFER = county_enum_strings.admission_reason_transfer
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "AdmissionReason"]:
         return _ADMISSION_REASON_MAP
 
 
@@ -49,7 +50,7 @@ class Classification(EntityEnum, metaclass=EntityEnumMeta):
     WORK_RELEASE = county_enum_strings.classification_work_release
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "Classification"]:
         return _CLASSIFICATION_MAP
 
 
@@ -63,11 +64,11 @@ class CustodyStatus(EntityEnum, metaclass=EntityEnumMeta):
     REMOVED_WITHOUT_INFO = enum_strings.removed_without_info
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "CustodyStatus"]:
         return _CUSTODY_STATUS_MAP
 
     @staticmethod
-    def get_released_statuses():
+    def get_released_statuses() -> List["CustodyStatus"]:
         return [
             CustodyStatus.RELEASED,
             CustodyStatus.INFERRED_RELEASE,
@@ -75,7 +76,7 @@ class CustodyStatus(EntityEnum, metaclass=EntityEnumMeta):
         ]
 
     @staticmethod
-    def get_raw_released_statuses():
+    def get_raw_released_statuses() -> List[str]:
         return [cs.value for cs in CustodyStatus.get_released_statuses()]
 
 
@@ -93,7 +94,7 @@ class ReleaseReason(EntityEnum, metaclass=EntityEnumMeta):
     TRANSFER = county_enum_strings.release_reason_transfer
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, Optional["ReleaseReason"]]:
         return _RELEASE_REASON_MAP
 
 

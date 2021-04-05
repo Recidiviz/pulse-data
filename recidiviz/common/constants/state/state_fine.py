@@ -32,7 +32,7 @@ class StateFineStatus(EntityEnum, metaclass=EntityEnumMeta):
     UNPAID = state_enum_strings.state_fine_status_unpaid
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "StateFineStatus"]:
         return _STATE_FINE_STATUS_MAP
 
 

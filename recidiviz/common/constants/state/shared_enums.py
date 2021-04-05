@@ -17,6 +17,7 @@
 
 """Constants shared across a few different entities."""
 from enum import unique
+from typing import Dict
 
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.state import (
@@ -34,7 +35,7 @@ class StateActingBodyType(EntityEnum, metaclass=EntityEnumMeta):
     SENTENCED_PERSON = state_enum_strings.state_acting_body_type_sentenced_person
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "StateActingBodyType"]:
         return _STATE_ACTING_BODY_TYPE_MAP
 
 
@@ -61,7 +62,7 @@ class StateCustodialAuthority(EntityEnum, metaclass=EntityEnumMeta):
     STATE_PRISON = state_enum_strings.state_custodial_authority_state_prison
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "StateCustodialAuthority"]:
         return _STATE_CUSTODIAL_AUTHORITY_MAP
 
 

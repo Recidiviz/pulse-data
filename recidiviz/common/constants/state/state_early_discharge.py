@@ -17,6 +17,7 @@
 
 """Constants related to a StateEarlyDischarge."""
 from enum import unique
+from typing import Dict
 
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
@@ -33,7 +34,7 @@ class StateEarlyDischargeDecision(EntityEnum, metaclass=EntityEnumMeta):
     )
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "StateEarlyDischargeDecision"]:
         return _STATE_EARLY_DISCHARGE_DECISION_MAP
 
 
@@ -44,7 +45,7 @@ class StateEarlyDischargeDecisionStatus(EntityEnum, metaclass=EntityEnumMeta):
     INVALID = state_enum_strings.state_early_discharge_decision_status_invalid
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "StateEarlyDischargeDecisionStatus"]:
         return _STATE_EARLY_DISCHARGE_DECISION_STATUS_MAP
 
 

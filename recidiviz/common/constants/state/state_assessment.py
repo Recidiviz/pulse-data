@@ -17,6 +17,7 @@
 
 """Constants related to an assessment entity."""
 from enum import unique
+from typing import Dict
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
@@ -37,7 +38,7 @@ class StateAssessmentClass(EntityEnum, metaclass=EntityEnumMeta):
     SUBSTANCE_ABUSE = state_enum_strings.state_assessment_class_substance_abuse
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "StateAssessmentClass"]:
         return _STATE_ASSESSMENT_CLASS_MAP
 
 
@@ -80,7 +81,7 @@ class StateAssessmentType(EntityEnum, metaclass=EntityEnumMeta):
     TCU_DRUG_SCREEN = state_enum_strings.state_assessment_type_tcu_drug_screen
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "StateAssessmentType"]:
         return _STATE_ASSESSMENT_TYPE_MAP
 
 
@@ -96,7 +97,7 @@ class StateAssessmentLevel(EntityEnum, metaclass=EntityEnumMeta):
     VERY_HIGH = state_enum_strings.state_assessment_level_very_high
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "StateAssessmentLevel"]:
         return _STATE_ASSESSMENT_LEVEL_TYPE_MAP
 
 

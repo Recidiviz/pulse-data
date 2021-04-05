@@ -17,6 +17,7 @@
 
 """Shared constants related to supervision."""
 from enum import unique
+from typing import Dict
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
@@ -35,7 +36,7 @@ class StateSupervisionType(EntityEnum, metaclass=EntityEnumMeta):
     PROBATION = state_enum_strings.state_supervision_type_probation
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "StateSupervisionType"]:
         return _SUPERVISION_TYPE_MAP
 
 
