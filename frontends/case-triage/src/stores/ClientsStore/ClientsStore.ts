@@ -150,6 +150,14 @@ class ClientsStore {
               return 1;
             }
 
+            // If the sorting dates are the same, sort by external id so the sort is stable.
+            if (self.personExternalId < other.personExternalId) {
+              return -1;
+            }
+            if (self.personExternalId > other.personExternalId) {
+              return 1;
+            }
+
             // We both have scheduled contacts on the same day
             return 0;
           }
@@ -175,6 +183,15 @@ class ClientsStore {
             ) {
               return -1;
             }
+
+            // If the sorting dates are the same, sort by external id so the sort is stable.
+            if (self.personExternalId < other.personExternalId) {
+              return -1;
+            }
+            if (self.personExternalId > other.personExternalId) {
+              return 1;
+            }
+
             return 0;
           });
       });
