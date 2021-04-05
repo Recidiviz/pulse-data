@@ -25,41 +25,8 @@ import pandas_gbq
 from recidiviz.utils.yaml_dict import YAMLDict
 from recidiviz.calculator.modeling.population_projection.utils.bq_utils import (
     store_simulation_results,
-    add_simulation_date_column,
 )
 
-# Constants for the Spark Output data
-SPARK_OUTPUT_DATASET = "population_projection_output_data"
-
-COST_AVOIDANCE_TABLE_NAME = "cost_avoidance_estimate_raw"
-COST_AVOIDANCE_NON_CUMULATIVE_TABLE_NAME = "cost_avoidance_non_cumulative_estimate_raw"
-COST_AVOIDANCE_SCHEMA = [
-    {"name": "simulation_tag", "type": "STRING", "mode": "REQUIRED"},
-    {"name": "simulation_date", "type": "DATE", "mode": "REQUIRED"},
-    {"name": "compartment", "type": "STRING", "mode": "REQUIRED"},
-    {"name": "total_cost", "type": "FLOAT", "mode": "REQUIRED"},
-    {"name": "date_created", "type": "TIMESTAMP", "mode": "REQUIRED"},
-]
-
-
-LIFE_YEARS_TABLE_NAME = "life_years_estimate_raw"
-LIFE_YEARS_SCHEMA = [
-    {"name": "simulation_tag", "type": "STRING", "mode": "REQUIRED"},
-    {"name": "simulation_date", "type": "DATE", "mode": "REQUIRED"},
-    {"name": "compartment", "type": "STRING", "mode": "REQUIRED"},
-    {"name": "life_years", "type": "FLOAT", "mode": "REQUIRED"},
-    {"name": "date_created", "type": "TIMESTAMP", "mode": "REQUIRED"},
-]
-
-POPULATION_TABLE_NAME = "population_estimate_raw"
-POPULATION_SCHEMA = [
-    {"name": "simulation_tag", "type": "STRING", "mode": "REQUIRED"},
-    {"name": "simulation_date", "type": "DATE", "mode": "REQUIRED"},
-    {"name": "scenario", "type": "STRING", "mode": "REQUIRED"},
-    {"name": "compartment", "type": "STRING", "mode": "REQUIRED"},
-    {"name": "population", "type": "FLOAT", "mode": "REQUIRED"},
-    {"name": "date_created", "type": "TIMESTAMP", "mode": "REQUIRED"},
-]
 
 # Constants for the Spark input data
 SPARK_INPUT_PROJECT_ID = "recidiviz-staging"
@@ -266,109 +233,6 @@ def upload_spark_model_inputs(
             params["schema"],
             params["data_df"],
         )
-
-
-def upload_spark_results(
-    project_id: str,
-    simulation_tag: str,
-    cost_avoidance_df: pd.DataFrame,
-    life_years_df: pd.DataFrame,
-    population_change_df: pd.DataFrame,
-    cost_avoidance_non_cumulative_df: pd.DataFrame,
-) -> None:
-    """Reformat the simulation results to match the table schema and upload them to BigQuery"""
-
-    # Set the upload timestamp for all tables
-    upload_time = datetime.datetime.now()
-
-    cost_avoidance_table = format_spark_results(
-        cost_avoidance_df,
-        "total_cost",
-        simulation_tag=simulation_tag,
-        upload_time=upload_time,
-    )
-    store_simulation_results(
-        project_id,
-        SPARK_OUTPUT_DATASET,
-        COST_AVOIDANCE_TABLE_NAME,
-        COST_AVOIDANCE_SCHEMA,
-        cost_avoidance_table,
-    )
-
-    cost_avoidance_non_cumulative_table = format_spark_results(
-        cost_avoidance_non_cumulative_df,
-        "total_cost",
-        simulation_tag=simulation_tag,
-        upload_time=upload_time,
-    )
-    store_simulation_results(
-        project_id,
-        SPARK_OUTPUT_DATASET,
-        COST_AVOIDANCE_NON_CUMULATIVE_TABLE_NAME,
-        COST_AVOIDANCE_SCHEMA,
-        cost_avoidance_non_cumulative_table,
-    )
-
-    life_years_table = format_spark_results(
-        life_years_df,
-        "life_years",
-        simulation_tag=simulation_tag,
-        upload_time=upload_time,
-    )
-    store_simulation_results(
-        project_id,
-        SPARK_OUTPUT_DATASET,
-        LIFE_YEARS_TABLE_NAME,
-        LIFE_YEARS_SCHEMA,
-        life_years_table,
-    )
-
-    population_table = format_spark_results(
-        population_change_df,
-        "population",
-        simulation_tag=simulation_tag,
-        upload_time=upload_time,
-    )
-    store_simulation_results(
-        project_id,
-        SPARK_OUTPUT_DATASET,
-        POPULATION_TABLE_NAME,
-        POPULATION_SCHEMA,
-        population_table,
-    )
-
-
-def format_spark_results(
-    df: pd.DataFrame,
-    value_name: str,
-    simulation_tag: str,
-    upload_time: datetime.datetime,
-) -> pd.DataFrame:
-    """Change the format of the results to match the table schema with 1 row per compartment, year, and month
-    `df` the pandas DataFrame to update
-    `value_name` the column name to use for the values in the original results table
-    `simulation_tag` the simulation name string to use for the results (typically the state and policy name)
-    `upload_time` the timestamp to use for the `date_created` column in the BQ table
-    """
-
-    # If the table has 1 row per compartment and 1 column per scenario, then transform to 1 row per compartment/scenario
-    if "compartment" in df.columns:
-        df = df.melt(
-            id_vars=["year", "compartment"], var_name="scenario", value_name=value_name
-        )
-    # Otherwise, if the table has 1 column per compartment, transform to 1 row per compartment
-    else:
-        df = df.reset_index().melt(
-            id_vars="year", var_name="compartment", value_name=value_name
-        )
-
-    # Convert the fractional year column into the integer year and month columns
-    df = add_simulation_date_column(df)
-
-    # Add metadata columns to the output table
-    df["simulation_tag"] = simulation_tag
-    df["date_created"] = upload_time
-    return df
 
 
 def load_spark_table_from_big_query(

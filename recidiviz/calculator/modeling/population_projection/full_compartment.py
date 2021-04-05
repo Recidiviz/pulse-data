@@ -47,9 +47,7 @@ class FullCompartment(SparkCompartment):
         super().__init__(outflow_data, starting_ts, tag)
 
         # store all population cohorts with their population counts per ts
-        self.cohorts: CohortTable = CohortTable(
-            starting_ts, compartment_transitions.max_sentence
-        )
+        self.cohorts: CohortTable = CohortTable()
 
         # separate incoming cohorts that should be processed after .step_forward()
         self.incoming_cohorts: float = 0

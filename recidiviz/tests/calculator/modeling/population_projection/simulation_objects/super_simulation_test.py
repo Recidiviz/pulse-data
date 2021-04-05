@@ -171,7 +171,7 @@ def mock_load_table_from_big_query_macro(
     ]
 
 
-def mock_upload_spark_results(
+def mock_upload_policy_results(
     project_id: str,
     simulation_tag: str,
     cost_avoidance_df: pd.DataFrame,
@@ -258,8 +258,8 @@ class TestSuperSimulation(unittest.TestCase):
         )
 
     @patch(
-        "recidiviz.calculator.modeling.population_projection.utils.spark_bq_utils.upload_spark_results",
-        mock_upload_spark_results,
+        "recidiviz.calculator.modeling.population_projection.utils.bq_utils.upload_policy_simulation_results",
+        mock_upload_policy_results,
     )
     def test_cost_multipliers_multiplicative(self) -> None:
         # test doubling multiplier doubles costs
@@ -293,13 +293,13 @@ class TestSuperSimulation(unittest.TestCase):
         ]
         self.macrosim.simulate_policy(policy_list, "PRISON")
 
-        outputs = self.macrosim.upload_simulation_results_to_bq("test")
+        outputs = self.macrosim.upload_policy_simulation_results_to_bq("test")
         assert outputs
         spending_diff, spending_diff_non_cumulative = (
             outputs["spending_diff"],
             outputs["spending_diff_non_cumulative"],
         )
-        outputs_scaled = self.macrosim.upload_simulation_results_to_bq(
+        outputs_scaled = self.macrosim.upload_policy_simulation_results_to_bq(
             "test", cost_multipliers
         )
         assert outputs_scaled
@@ -320,7 +320,7 @@ class TestSuperSimulation(unittest.TestCase):
         partial_cost_multipliers_triple = pd.DataFrame(
             {"crime_type": ["NONVIOLENT"], "multiplier": [3]}
         )
-        outputs_doubled = self.macrosim.upload_simulation_results_to_bq(
+        outputs_doubled = self.macrosim.upload_policy_simulation_results_to_bq(
             "test", partial_cost_multipliers_double
         )
         assert outputs_doubled
@@ -329,7 +329,7 @@ class TestSuperSimulation(unittest.TestCase):
             outputs_doubled["spending_diff_non_cumulative"],
         )
 
-        outputs_tripled = self.macrosim.upload_simulation_results_to_bq(
+        outputs_tripled = self.macrosim.upload_policy_simulation_results_to_bq(
             "test", partial_cost_multipliers_triple
         )
         assert outputs_tripled
@@ -455,7 +455,7 @@ class TestSuperSimulation(unittest.TestCase):
             self.assertTrue((initial_error == 0).all())
 
     @patch(
-        "recidiviz.calculator.modeling.population_projection.utils.ignite_bq_utils.store_simulation_results"
+        "recidiviz.calculator.modeling.population_projection.utils.bq_utils.upload_baseline_simulation_results"
     )
     def test_microsim_upload(self, mock_store_simulation_results: MagicMock) -> None:
         simulations = {
@@ -463,9 +463,7 @@ class TestSuperSimulation(unittest.TestCase):
             "with_excluded_pop": self.microsim_excluded_pop,
         }
         for simulation_name, sim in simulations.items():
-            sim.upload_simulation_results_to_bq(
-                simulation_tag="baseline", cost_multipliers=pd.DataFrame()
-            )
+            sim.upload_baseline_simulation_results_to_bq(simulation_tag="baseline")
             self.assertTrue(
                 mock_store_simulation_results.called,
                 f"Simulation '{simulation_name} did not call `store_simulation_results`",

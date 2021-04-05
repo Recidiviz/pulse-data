@@ -98,13 +98,8 @@ class PopulationSimulationFactory:
             transitions_data, disaggregation_axes
         )
         if should_initialize_compartment_populations:
-            if len(policy_list) != 0:
-                raise ValueError(
-                    "Cannot initialize with remaining sentences if given policy inputs"
-                    f"given policies: {policy_list}"
-                )
 
-            # populate "policy list" to switch from remaining sentences data to transitions data
+            # add to `policy_list to switch from remaining sentences data to transitions data
             for sub_group_id, group_attributes in sub_group_ids_dict.items():
                 disaggregated_microsim_data = microsim_data[
                     (

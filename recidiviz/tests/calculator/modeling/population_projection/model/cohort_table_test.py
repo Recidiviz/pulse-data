@@ -27,23 +27,24 @@ class TestCohortTable(unittest.TestCase):
 
     def test_monotonic_decreasing_size(self):
         """Tests that cohort size can only decrease over time"""
-        cohort = CohortTable(starting_ts=2000, transition_table_max_length=100)
+        cohort = CohortTable()
+        cohort.append_ts_end_count(cohort.get_latest_population(), 2000)
+        cohort.append_cohort(1, 2000)
+
         with self.assertRaises(ValueError):
             cohort.append_ts_end_count(
-                cohort_sizes=pd.Series({i: 1 for i in range(1900, 2000)}),
+                cohort_sizes=pd.Series({2000: 2}),
                 projection_ts=2001,
             )
 
     def test_duplicate_year_data_rejected(self):
         """Tests that yearly data added to cohort must be in a new year"""
-        cohort = CohortTable(starting_ts=2000, transition_table_max_length=100)
-        cohort.append_ts_end_count(
-            cohort_sizes=pd.Series({i: 0 for i in range(1900, 2000)}),
-            projection_ts=2000,
-        )
+        cohort = CohortTable()
+        cohort.append_ts_end_count(cohort.get_latest_population(), 2000)
+        cohort.append_cohort(1, 2000)
         with self.assertRaises(ValueError):
             cohort.append_ts_end_count(
-                cohort_sizes=pd.Series({i: 0 for i in range(1900, 2000)}),
+                cohort_sizes=pd.Series({2000: 0.5}),
                 projection_ts=2000,
             )
 
@@ -52,12 +53,17 @@ class TestCohortTable(unittest.TestCase):
 
         start_time = 2000
         cohort_size_list = [-10, -20, -30, -40, -50]
-        cohort = CohortTable(starting_ts=2000, transition_table_max_length=1)
-        for time_index, cohort_size in enumerate(cohort_size_list):
+        cohort = CohortTable()
+        cohort.append_ts_end_count(cohort.get_latest_population(), start_time)
+        cohort.append_cohort(cohort_size_list[0], start_time)
+
+        for time_index, cohort_size in enumerate(cohort_size_list[1:]):
             cohort.append_ts_end_count(
-                cohort_sizes=pd.Series({1999: cohort_size}),
-                projection_ts=start_time + time_index,
+                cohort_sizes=pd.Series({start_time: cohort_size}),
+                projection_ts=start_time + time_index + 1,
             )
 
         for index, cohort_size in enumerate(cohort_size_list):
-            self.assertEqual(cohort_size, cohort.get_cohort_timeline(1999).iloc[index])
+            self.assertEqual(
+                cohort_size, cohort.get_cohort_timeline(start_time).iloc[index]
+            )
