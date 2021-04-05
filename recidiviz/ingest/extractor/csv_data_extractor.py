@@ -23,7 +23,7 @@ import collections.abc
 import csv
 import logging
 from collections import defaultdict, OrderedDict
-from typing import Dict, Set, List, Callable, Optional, Iterable, Union
+from typing import Any, Dict, Set, List, Callable, Optional, Iterable, Union
 
 import more_itertools
 
@@ -40,17 +40,17 @@ class IngestFieldCoordinates:
     and the value of that field. This is used to locate objects that we want to
     update, create, or attach objects to."""
 
-    def __init__(self, class_name, field_name, field_value):
+    def __init__(self, class_name: str, field_name: str, field_value: str):
         self.class_name = class_name
         self.field_name = field_name
         self.field_value = field_value
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if other is None:
             return False
         return self.__dict__ == other.__dict__
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             f"IngestFieldCoordinates[class_name: {self.class_name}, "
             f"field_name: {self.field_name}, "
@@ -74,7 +74,7 @@ class CsvDataExtractor(DataExtractor):
         primary_key_override_callback=None,
         system_level=SystemLevel.COUNTY,
         set_with_empty_value=False,
-    ):
+    ) -> None:
         """
         Args:
             key_mapping_file: the path to the yaml file with key mappings
@@ -158,7 +158,9 @@ class CsvDataExtractor(DataExtractor):
         self._run_file_post_hooks(ingest_info)
         return ingest_info.prune()
 
-    def _extract(self, content: Union[str, Iterable[str]], ingest_info: IngestInfo):
+    def _extract(
+        self, content: Union[str, Iterable[str]], ingest_info: IngestInfo
+    ) -> None:
         """Converts entries in |content| and adds data to |ingest_info|."""
         if isinstance(content, str):
             rows = csv.DictReader(content.splitlines())
@@ -170,7 +172,7 @@ class CsvDataExtractor(DataExtractor):
 
         self._extract_rows(rows, ingest_info)
 
-    def _extract_rows(self, rows: Iterable[OrderedDict], ingest_info: IngestInfo):
+    def _extract_rows(self, rows: csv.DictReader, ingest_info: IngestInfo) -> None:
         """Converts entries in |rows| and adds data to |ingest_info|."""
 
         if self.ingest_object_cache is None:
@@ -236,7 +238,7 @@ class CsvDataExtractor(DataExtractor):
         primary_coordinates: IngestFieldCoordinates,
         child_class_to_set: str,
         column_ancestor_chain: Dict[str, str],
-    ):
+    ) -> None:
         """
         The ancestor chain for a column starts with just id values for
         ancestors of the primary object in this row. This function adds id
@@ -273,13 +275,13 @@ class CsvDataExtractor(DataExtractor):
                 child_coordinates.class_name
             ] = child_coordinates.field_value
 
-    def _clear_dummy_id(self, obj: IngestObject):
+    def _clear_dummy_id(self, obj: IngestObject) -> None:
         id_field_name = f"{obj.class_name()}_id"
         id_value = getattr(obj, id_field_name)
         if id_value and id_value.startswith(_DUMMY_KEY_PREFIX):
             obj.__setattr__(id_field_name, None)
 
-    def _run_file_post_hooks(self, ingest_info: IngestInfo):
+    def _run_file_post_hooks(self, ingest_info: IngestInfo) -> None:
         for post_hook in self.file_post_hooks:
             post_hook(ingest_info, self.ingest_object_cache)
 
@@ -290,7 +292,7 @@ class CsvDataExtractor(DataExtractor):
         ingest_info: IngestInfo,
         seen_map: Dict[int, Set[str]],
         ancestor_chain: Dict[str, str] = None,
-        **create_args,
+        **create_args: Any,
     ) -> List[IngestObject]:
         """If the column key is one we want to set on the object, set it on the
         appropriate object instance."""
@@ -307,13 +309,13 @@ class CsvDataExtractor(DataExtractor):
 
         return []
 
-    def _instantiate_person(self, ingest_info: IngestInfo):
+    def _instantiate_person(self, ingest_info: IngestInfo) -> None:
         if self.system_level == SystemLevel.COUNTY:
             ingest_info.create_person()
         else:
             ingest_info.create_state_person()
 
-    def _pre_process_row(self, row: Dict[str, str]):
+    def _pre_process_row(self, row: Dict[str, str]) -> None:
         """Applies pre-processing on the data in the given row, before we
         try to extract ingested objects."""
         for hook in self.row_pre_hooks:
@@ -321,7 +323,7 @@ class CsvDataExtractor(DataExtractor):
 
     def _post_process_row(
         self, row: Dict[str, str], extracted_objects: List[IngestObject]
-    ):
+    ) -> None:
         """Applies post-processing based on the given row, for the list of
         ingest objects that were extracted during extraction of that row."""
         unique_extracted_objects: Dict[int, IngestObject] = {}
@@ -362,7 +364,7 @@ class CsvDataExtractor(DataExtractor):
         row: Dict[str, str],
         child_class_name: str,
         column_ancestor_chain: Dict[str, str],
-    ):
+    ) -> IngestFieldCoordinates:
         child_primary_key_name = f"{child_class_name}_id"
         child_primary_key_value = self._build_dummy_child_primary_key(
             row, child_class_name, column_ancestor_chain

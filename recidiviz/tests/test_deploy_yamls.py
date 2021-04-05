@@ -48,8 +48,22 @@ class TestDeployYamls(unittest.TestCase):
         yaml_dict = YAMLDict.from_path(self.path_for_build_file(".travis.yml"))
         self.assertTrue(yaml_dict.get())
 
-    def test_circleci_yaml_parses(self) -> None:
-        yaml_dict = YAMLDict.from_path(self.path_for_build_file(".circleci/config.yml"))
+    def test_gh_actions_ci_yaml_parses(self) -> None:
+        yaml_dict = YAMLDict.from_path(
+            self.path_for_build_file(".github/workflows/ci.yml")
+        )
+        self.assertTrue(yaml_dict.get())
+
+    def test_gh_actions_pipenv_lock_yaml_parses(self) -> None:
+        yaml_dict = YAMLDict.from_path(
+            self.path_for_build_file(".github/workflows/pipenv-lock.yaml")
+        )
+        self.assertTrue(yaml_dict.get())
+
+    def test_gh_actions_copybara_yaml_parses(self) -> None:
+        yaml_dict = YAMLDict.from_path(
+            self.path_for_build_file(".github/workflows/copybara.yml")
+        )
         self.assertTrue(yaml_dict.get())
 
     def test_prod_staging_same(self) -> None:
