@@ -1,0 +1,6 @@
+steps:
+- name: 'gcr.io/kaniko-project/executor:latest'
+  args:
+    # TODO(#6678): Remove TEST when confirmed that caching works
+    - --destination=us.gcr.io/$PROJECT_ID/appengine-TEST/default:latest
+    - --cache=true
