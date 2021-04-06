@@ -42,9 +42,8 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
 )
 from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import (
-    PostgresDirectIngestFileMetadataManager,
+    PostgresDirectIngestRawFileMetadataManager,
 )
-from recidiviz.persistence.database.sqlalchemy_database_key import DEFAULT_DB_NAME
 
 
 class BaseUploadStateFilesToIngestBucketController:
@@ -169,10 +168,8 @@ class UploadStateFilesToIngestBucketController(
         )
         if gcs_destination_path:
             self.gcs_destination_path = gcs_destination_path
-        self.postgres_direct_ingest_file_metadata_manager = PostgresDirectIngestFileMetadataManager(
-            region,
-            # TODO(#6077): Prepare this call site for cutover to single-state DBs
-            ingest_database_name=DEFAULT_DB_NAME,
+        self.postgres_direct_ingest_file_metadata_manager = (
+            PostgresDirectIngestRawFileMetadataManager(region)
         )
 
     def _copy_to_ingest_bucket(
@@ -182,7 +179,7 @@ class UploadStateFilesToIngestBucketController(
     ) -> None:
         """Moves a file within GCS to the appropriate bucket if it has not already been deemed
         processed by the file metadata manager."""
-        if not self.postgres_direct_ingest_file_metadata_manager.has_file_been_processed(
+        if not self.postgres_direct_ingest_file_metadata_manager.has_raw_file_been_processed(
             full_file_upload_path
         ):
             try:

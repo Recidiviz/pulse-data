@@ -304,13 +304,13 @@ class BaseDirectIngestController(Ingestor):
             # If the file path has not actually been discovered by the metadata manager yet, it likely was just added
             # and a subsequent call to handle_files will register it and trigger another call to this function so we can
             # schedule the appropriate job.
-            discovered = self.file_metadata_manager.has_file_been_discovered(
+            discovered = self.file_metadata_manager.has_raw_file_been_discovered(
                 task_args.raw_data_file_path
             )
             # If the file path has been processed, but still in the GCS bucket, it's likely due
             # to either a manual move or an accidental duplicate uploading. In either case, we
             # trust the database to have the source of truth.
-            processed = self.file_metadata_manager.has_file_been_processed(
+            processed = self.file_metadata_manager.has_raw_file_been_processed(
                 task_args.raw_data_file_path
             )
             if processed:
@@ -369,9 +369,9 @@ class BaseDirectIngestController(Ingestor):
 
         # Sort by tag order and export datetime
         tasks_to_schedule.sort(
-            key=lambda args: (
-                ingest_view_name_rank[args.ingest_view_name],
-                args.upper_bound_datetime_to_export,
+            key=lambda args_: (
+                ingest_view_name_rank[args_.ingest_view_name],
+                args_.upper_bound_datetime_to_export,
             )
         )
 
@@ -391,7 +391,9 @@ class BaseDirectIngestController(Ingestor):
         if not args:
             return None
 
-        discovered = self.file_metadata_manager.has_file_been_discovered(args.file_path)
+        discovered = self.file_metadata_manager.has_ingest_view_file_been_discovered(
+            args.file_path
+        )
 
         if not discovered:
             # If the file path has not actually been discovered by the controller yet, it likely was just added and a
@@ -607,7 +609,7 @@ class BaseDirectIngestController(Ingestor):
         """
         self.fs.mv_path_to_processed_path(args.file_path)
 
-        self.file_metadata_manager.mark_file_as_processed(args.file_path)
+        self.file_metadata_manager.mark_ingest_view_file_as_processed(args.file_path)
 
         parts = filename_parts_from_path(args.file_path)
         self._move_processed_files_to_storage_as_necessary(
@@ -717,8 +719,17 @@ class BaseDirectIngestController(Ingestor):
 
     def _register_all_new_paths_in_metadata(self, paths: List[GcsfsFilePath]) -> None:
         for path in paths:
-            if not self.file_metadata_manager.has_file_been_discovered(path):
-                self.file_metadata_manager.mark_file_as_discovered(path)
+            parts = filename_parts_from_path(path)
+            if parts.file_type == GcsfsDirectIngestFileType.RAW_DATA:
+                if not self.file_metadata_manager.has_raw_file_been_discovered(path):
+                    self.file_metadata_manager.mark_raw_file_as_discovered(path)
+            elif parts.file_type == GcsfsDirectIngestFileType.INGEST_VIEW:
+                if not self.file_metadata_manager.has_ingest_view_file_been_discovered(
+                    path
+                ):
+                    self.file_metadata_manager.mark_ingest_view_file_as_discovered(path)
+            else:
+                raise ValueError(f"Unexpected file type [{parts.file_type}]")
 
     @trace.span
     def handle_new_files(self, can_start_ingest: bool) -> None:
@@ -846,7 +857,7 @@ class BaseDirectIngestController(Ingestor):
             self.kick_scheduler(just_finished_job=True)
             return
 
-        file_metadata = self.file_metadata_manager.get_file_metadata(
+        file_metadata = self.file_metadata_manager.get_raw_file_metadata(
             data_import_args.raw_data_file_path
         )
 
@@ -865,7 +876,7 @@ class BaseDirectIngestController(Ingestor):
         processed_path = self.fs.mv_path_to_processed_path(
             data_import_args.raw_data_file_path
         )
-        self.file_metadata_manager.mark_file_as_processed(
+        self.file_metadata_manager.mark_raw_file_as_processed(
             path=data_import_args.raw_data_file_path
         )
 
@@ -936,7 +947,9 @@ class BaseDirectIngestController(Ingestor):
 
         logging.info("Proceeding to file splitting for path [%s].", path.abs_path())
 
-        original_metadata = self.file_metadata_manager.get_file_metadata(path)
+        original_metadata = self.file_metadata_manager.get_ingest_view_file_metadata(
+            path
+        )
 
         output_dir = GcsfsDirectoryPath.from_file_path(path)
 
@@ -982,7 +995,7 @@ class BaseDirectIngestController(Ingestor):
             )
             self.file_metadata_manager.mark_ingest_view_exported(ingest_file_metadata)
 
-        self.file_metadata_manager.mark_file_as_processed(path)
+        self.file_metadata_manager.mark_ingest_view_file_as_processed(path)
 
         logging.info(
             "Done splitting file [%s] into [%s] paths, moving it to storage.",

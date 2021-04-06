@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for DirectIngestRawFileImportManager."""
+import datetime
 import unittest
 from typing import List, Any
 from unittest import mock
@@ -43,7 +44,9 @@ from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsDirectoryPath,
     GcsfsBucketPath,
 )
-from recidiviz.persistence.entity.operations.entities import DirectIngestFileMetadata
+from recidiviz.persistence.entity.operations.entities import (
+    DirectIngestRawFileMetadata,
+)
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest.direct.fake_regions.us_xx.raw_data.migrations import (
     migrations_tagC,
@@ -270,13 +273,16 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
 
     def _metadata_for_unprocessed_file_path(
         self, path: GcsfsFilePath
-    ) -> DirectIngestFileMetadata:
+    ) -> DirectIngestRawFileMetadata:
         parts = filename_parts_from_path(path)
-        return DirectIngestFileMetadata(
+        return DirectIngestRawFileMetadata(
             region_code=self.test_region.region_code,
             file_tag=parts.file_tag,
             file_id=123,
             processed_time=None,
+            normalized_file_name=path.file_name,
+            discovery_time=datetime.datetime.now(),
+            datetimes_contained_upper_bound_inclusive=parts.utc_upload_datetime,
         )
 
     def _check_no_temp_files_remain(self) -> None:
@@ -328,7 +334,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             self.import_manager.import_raw_file_to_big_query(
-                file_path, create_autospec(DirectIngestFileMetadata)
+                file_path, create_autospec(DirectIngestRawFileMetadata)
             )
 
     def test_import_bq_file_with_ingest_view_file(self) -> None:
@@ -341,7 +347,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             self.import_manager.import_raw_file_to_big_query(
-                file_path, create_autospec(DirectIngestFileMetadata)
+                file_path, create_autospec(DirectIngestRawFileMetadata)
             )
 
     def test_import_bq_file_with_raw_file(self) -> None:

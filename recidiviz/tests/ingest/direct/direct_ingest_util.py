@@ -69,7 +69,7 @@ from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsBucketPath,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_csv_reader import GcsfsCsvReader
-from recidiviz.persistence.entity.operations.entities import DirectIngestFileMetadata
+from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
 from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
 from recidiviz.tests.ingest.direct.fake_direct_ingest_big_query_client import (
     FakeDirectIngestBigQueryClient,
@@ -212,7 +212,7 @@ class FakeDirectIngestRawFileImportManager(DirectIngestRawFileImportManager):
         self.imported_paths: List[GcsfsFilePath] = []
 
     def import_raw_file_to_big_query(
-        self, path: GcsfsFilePath, file_metadata: DirectIngestFileMetadata
+        self, path: GcsfsFilePath, file_metadata: DirectIngestRawFileMetadata
     ) -> None:
         self.imported_paths.append(path)
 

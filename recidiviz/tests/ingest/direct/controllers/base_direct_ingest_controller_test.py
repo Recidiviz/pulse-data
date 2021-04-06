@@ -270,7 +270,9 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
             raw_file_metadata_list = [
                 # pylint:disable=protected-access
-                file_metadata_manager._raw_file_schema_metadata_as_entity(metadata)
+                file_metadata_manager.raw_file_manager._raw_file_schema_metadata_as_entity(
+                    metadata
+                )
                 for metadata in raw_file_results
             ]
 
@@ -280,7 +282,9 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
             ingest_file_metadata_list = [
                 # pylint:disable=protected-access
-                file_metadata_manager._ingest_file_schema_metadata_as_entity(metadata)
+                file_metadata_manager.ingest_file_manager._ingest_file_schema_metadata_as_entity(
+                    metadata
+                )
                 for metadata in ingest_file_results
             ]
 
@@ -1697,8 +1701,8 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             region_code=controller.region_code(),
             has_fixture=True,
         )
-        controller.file_metadata_manager.mark_file_as_discovered(path_to_fixture)
-        controller.file_metadata_manager.mark_file_as_processed(path_to_fixture)
+        controller.file_metadata_manager.mark_raw_file_as_discovered(path_to_fixture)
+        controller.file_metadata_manager.mark_raw_file_as_processed(path_to_fixture)
 
         controller.schedule_next_ingest_job(just_finished_job=True)
         for task_name in controller.cloud_task_manager.get_bq_import_export_queue_info(
