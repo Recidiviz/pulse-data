@@ -24,9 +24,9 @@ import pytest
 from flask import Flask
 from mock import Mock, patch
 
-from recidiviz.ingest.models.ingest_info import IngestInfo
+from recidiviz.ingest.models import ingest_info, serialization
 from recidiviz.ingest.models.scrape_key import ScrapeKey
-from recidiviz.ingest.scrape import constants, infer_release, ingest_utils, scrape_phase
+from recidiviz.ingest.scrape import constants, infer_release, scrape_phase
 from recidiviz.ingest.scrape.task_params import Task
 from recidiviz.persistence import batch_persistence, datastore_ingest_info
 from recidiviz.persistence.datastore_ingest_info import BatchIngestInfoData
@@ -83,7 +83,7 @@ class TestBatchPersistence(TestCase):
 
         scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
 
-        ii = IngestInfo()
+        ii = ingest_info.IngestInfo()
         ii.create_person(full_name=TEST_NAME).create_booking(booking_id=TEST_ID)
 
         t = Task(
@@ -109,10 +109,10 @@ class TestBatchPersistence(TestCase):
         mock_session = mock_session_return.return_value = create_mock_session()
         scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
 
-        ii = IngestInfo()
+        ii = ingest_info.IngestInfo()
         ii.create_person(full_name=TEST_NAME).create_booking(booking_id=TEST_ID)
 
-        ii2 = IngestInfo()
+        ii2 = ingest_info.IngestInfo()
         ii2.create_person(full_name=TEST_NAME2).create_booking(booking_id=TEST_ID)
 
         t = Task(
@@ -177,7 +177,7 @@ class TestBatchPersistence(TestCase):
         mock_session = mock_session_return.return_value = create_mock_session()
         scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
 
-        ii = IngestInfo()
+        ii = ingest_info.IngestInfo()
         ii.create_person(person_id=TEST_ID, full_name=TEST_NAME).create_booking(
             booking_id=TEST_ID
         )
@@ -190,7 +190,7 @@ class TestBatchPersistence(TestCase):
 
         batch_persistence.write(ii, scrape_key, t)
 
-        expected_proto = ingest_utils.convert_ingest_info_to_proto(ii)
+        expected_proto = serialization.convert_ingest_info_to_proto(ii)
 
         batch_persistence.persist_to_database(
             scrape_key.region_code, mock_session.start
@@ -214,11 +214,11 @@ class TestBatchPersistence(TestCase):
         mock_session = mock_session_return.return_value = create_mock_session()
         scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
 
-        ii = IngestInfo()
+        ii = ingest_info.IngestInfo()
         ii.create_person(person_id=TEST_ID, full_name=TEST_NAME).create_booking(
             booking_id=TEST_ID
         )
-        ii2 = IngestInfo()
+        ii2 = ingest_info.IngestInfo()
         ii2.create_person(person_id=TEST_ID, full_name=TEST_NAME).create_booking(
             booking_id=TEST_ID
         )
@@ -237,7 +237,7 @@ class TestBatchPersistence(TestCase):
         batch_persistence.write(ii, scrape_key, t)
         batch_persistence.write(ii2, scrape_key, t2)
 
-        expected_proto = ingest_utils.convert_ingest_info_to_proto(ii)
+        expected_proto = serialization.convert_ingest_info_to_proto(ii)
         batch_persistence.persist_to_database(
             scrape_key.region_code, mock_session.start
         )
@@ -260,7 +260,7 @@ class TestBatchPersistence(TestCase):
         mock_session = mock_session_return.return_value = create_mock_session()
         scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
 
-        ii = IngestInfo()
+        ii = ingest_info.IngestInfo()
         ii.create_person(person_id=TEST_ID, full_name=TEST_NAME).create_booking(
             booking_id=TEST_ID
         )
@@ -307,7 +307,7 @@ class TestBatchPersistence(TestCase):
         scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
         mock_write.return_value = True
 
-        ii = IngestInfo()
+        ii = ingest_info.IngestInfo()
         ii.create_person(person_id=TEST_ID, full_name=TEST_NAME).create_booking(
             booking_id=TEST_ID
         )
@@ -329,7 +329,7 @@ class TestBatchPersistence(TestCase):
         batch_persistence.write(ii, scrape_key, t)
         batch_persistence.write_error(TEST_ERROR, TEST_TRACE, t2, scrape_key)
 
-        expected_proto = ingest_utils.convert_ingest_info_to_proto(ii)
+        expected_proto = serialization.convert_ingest_info_to_proto(ii)
 
         self.assertTrue(
             batch_persistence.persist_to_database(
@@ -354,12 +354,12 @@ class TestBatchPersistence(TestCase):
         scrape_key1 = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
         scrape_key2 = ScrapeKey(REGIONS[1], constants.ScrapeType.BACKGROUND)
 
-        ii = IngestInfo()
+        ii = ingest_info.IngestInfo()
         ii.create_person(person_id=TEST_ID, full_name=TEST_NAME).create_booking(
             booking_id=TEST_ID
         )
 
-        ii2 = IngestInfo()
+        ii2 = ingest_info.IngestInfo()
         ii2.create_person(person_id=TEST_ID, full_name=TEST_NAME2).create_booking(
             booking_id=TEST_ID
         )
@@ -379,7 +379,7 @@ class TestBatchPersistence(TestCase):
         mock_session_1 = mock_session_return.return_value = create_mock_session()
 
         batch_persistence.write(ii, scrape_key1, t)
-        expected_proto = ingest_utils.convert_ingest_info_to_proto(ii)
+        expected_proto = serialization.convert_ingest_info_to_proto(ii)
         batch_persistence.persist_to_database(
             scrape_key1.region_code, mock_session_1.start
         )
@@ -401,7 +401,7 @@ class TestBatchPersistence(TestCase):
         )
         self.assertEqual(len(ingest_infos_2), 1)
 
-        expected_proto = ingest_utils.convert_ingest_info_to_proto(ii2)
+        expected_proto = serialization.convert_ingest_info_to_proto(ii2)
         batch_persistence.persist_to_database(
             scrape_key2.region_code, mock_session_2.start
         )
@@ -423,12 +423,12 @@ class TestBatchPersistence(TestCase):
         scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
 
         # Arrange
-        ii = IngestInfo()
+        ii = ingest_info.IngestInfo()
         ii.create_person(person_id=TEST_ID, full_name=TEST_NAME).create_booking(
             booking_id=TEST_ID
         )
 
-        ii_2 = IngestInfo()
+        ii_2 = ingest_info.IngestInfo()
         ii.create_person(person_id=TEST_ID2, full_name=TEST_NAME2)
 
         ii_1_dup = copy.deepcopy(ii)
@@ -450,8 +450,8 @@ class TestBatchPersistence(TestCase):
             scrape_key.region_code, mock_session.start
         )
 
-        expected_ii = IngestInfo(people=ii.people + ii_2.people)
-        expected_proto = ingest_utils.convert_ingest_info_to_proto(expected_ii)
+        expected_ii = ingest_info.IngestInfo(people=ii.people + ii_2.people)
+        expected_proto = serialization.convert_ingest_info_to_proto(expected_ii)
         result_proto = mock_write.call_args[0][0]
         self.assertEqual(result_proto, expected_proto)
 

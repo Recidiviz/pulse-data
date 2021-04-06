@@ -22,14 +22,14 @@ from unittest import TestCase
 import flask
 from mock import patch, Mock
 
-from recidiviz import IngestInfo
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
+from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.ingest.models.scrape_key import ScrapeKey
+from recidiviz.ingest.models.serialization import convert_ingest_info_to_proto
 from recidiviz.ingest.scrape import constants
 from recidiviz.ingest.scrape.base_scraper import BaseScraper
 from recidiviz.ingest.scrape.errors import ScraperGetMoreTasksError, ScraperFetchError
-from recidiviz.ingest.scrape.ingest_utils import convert_ingest_info_to_proto
 from recidiviz.ingest.scrape.task_params import QueueRequest, Task, ScrapedData
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey

@@ -38,8 +38,8 @@ class SQLAlchemyEngineManagerTest(TestCase):
         return_value=[StateCode.US_PA, StateCode.US_HI],
     )
     @patch("sqlalchemy.create_engine")
-    @patch("recidiviz.environment.in_gcp_production")
-    @patch("recidiviz.environment.in_gcp")
+    @patch("recidiviz.utils.environment.in_gcp_production")
+    @patch("recidiviz.utils.environment.in_gcp")
     @patch("recidiviz.utils.secrets.get_secret")
     def testInitEngines_usesCorrectIsolationLevels(
         self,
@@ -145,8 +145,8 @@ class SQLAlchemyEngineManagerTest(TestCase):
         return_value=[StateCode.US_PA, StateCode.US_HI],
     )
     @patch("sqlalchemy.create_engine")
-    @patch("recidiviz.environment.in_gcp_staging")
-    @patch("recidiviz.environment.in_gcp")
+    @patch("recidiviz.utils.environment.in_gcp_staging")
+    @patch("recidiviz.utils.environment.in_gcp")
     @patch("recidiviz.utils.secrets.get_secret")
     def testInitEngines_usesCorrectIsolationLevelsInStaging(
         self,

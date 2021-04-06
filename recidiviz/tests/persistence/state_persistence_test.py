@@ -148,7 +148,7 @@ class _PatchedStateEntityMatcher(StateEntityMatcher):
 
 
 @pytest.mark.uses_db
-@patch("recidiviz.environment.in_gcp", Mock(return_value=True))
+@patch("recidiviz.utils.environment.in_gcp", Mock(return_value=True))
 @patch("recidiviz.utils.metadata.project_id", Mock(return_value=FAKE_PROJECT_ID))
 @patch.dict("os.environ", {"PERSIST_LOCALLY": "false"})
 class TestStatePersistence(TestCase):

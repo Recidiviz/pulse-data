@@ -21,6 +21,7 @@ from typing import Optional, Type, Dict, Any
 import attr
 import cattr
 
+from recidiviz.common import serialization
 from recidiviz.utils.types import ClsT
 
 
@@ -31,8 +32,10 @@ class CloudTaskArgs:
         """Tag to add to the name of an associated cloud task."""
 
     def to_serializable(self) -> Dict[str, Any]:
-        return cattr.unstructure(self)
+        converter = serialization.with_datetime_hooks(cattr.Converter())
+        return converter.unstructure(self)
 
     @classmethod
     def from_serializable(cls: Type[ClsT], serializable: Dict[str, Any]) -> ClsT:
-        return cattr.structure(serializable, cls)
+        converter = serialization.with_datetime_hooks(cattr.Converter())
+        return converter.structure(serializable, cls)
