@@ -41,11 +41,22 @@ from recidiviz.tests.ingest.fixtures import as_filepath
 # Float between [0, 1] which sets the required fuzzy matching certainty
 _FUZZY_MATCH_CUTOFF = 0.75
 
-_FIPS = pd.read_csv(as_filepath("fips.csv", subdir="data_sets"), dtype={"fips": str})
+_FIPS: pd.DataFrame = None
 
 _SANITIZED_COUNTIES = None
 
 _FIPS_MAPPING = None
+
+
+def _get_FIPS() -> pd.DataFrame:
+    global _FIPS
+
+    if _FIPS is None:
+        _FIPS = pd.read_csv(
+            as_filepath("fips.csv", subdir="data_sets"), dtype={"fips": str}
+        )
+
+    return _FIPS
 
 
 def add_column_to_df(
@@ -69,7 +80,7 @@ def get_fips_for(state: us.states) -> pd.DataFrame:
     """Get the [county_name, fips] df, filtering for the given |state|."""
 
     # Copy _FIPS to allow mutating the view created after filtering by state
-    fips = _FIPS.copy()
+    fips = _get_FIPS().copy()
 
     fips = fips[fips.state_code == int(state.fips)]
     if fips.empty:
@@ -114,7 +125,7 @@ def _get_fip_mappings() -> Dict[str, Tuple[str, str]]:
                 standardize_raw_state(row["state_abbrev"]),
                 sanitize_county_name(row["county_name"]).upper(),
             )
-            for _, row in _FIPS.iterrows()
+            for _, row in _get_FIPS().iterrows()
         }
     return _FIPS_MAPPING
 
@@ -147,7 +158,8 @@ def _get_valid_counties() -> Set[str]:
     global _SANITIZED_COUNTIES
     if _SANITIZED_COUNTIES is None:
         _SANITIZED_COUNTIES = {
-            sanitize_county_name(row["county_name"]) for _, row in _FIPS.iterrows()
+            sanitize_county_name(row["county_name"])
+            for _, row in _get_FIPS().iterrows()
         }
 
     return _SANITIZED_COUNTIES

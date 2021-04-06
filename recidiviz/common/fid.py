@@ -28,12 +28,23 @@ import pandas as pd
 from recidiviz.tests.ingest.fixtures import as_filepath
 
 
-_FID = pd.read_csv(as_filepath("fid.csv", subdir="data_sets"), dtype={"vera_jid": str})
+_FID: pd.DataFrame = None
+
+
+def _get_FID() -> pd.DataFrame:
+    global _FID
+
+    if _FID is None:
+        _FID = pd.read_csv(
+            as_filepath("fid.csv", subdir="data_sets"), dtype={"vera_jid": str}
+        )
+
+    return _FID
 
 
 def fid_exists(fid: str) -> bool:
     """Returns T/F depending on if FID exists in fid.csv"""
-    return fid in _FID["facility_uid"].to_list()
+    return fid in _get_FID()["facility_uid"].to_list()
 
 
 def validate_fid(fid: str) -> str:
