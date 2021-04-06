@@ -17,6 +17,7 @@
 """A class that handles writing metadata about each direct ingest file to disk."""
 import abc
 import datetime
+from abc import ABC
 from typing import Optional, List
 
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
@@ -24,14 +25,52 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.persistence.entity.operations.entities import (
-    DirectIngestFileMetadata,
     DirectIngestIngestFileMetadata,
     DirectIngestRawFileMetadata,
 )
 
 
-class DirectIngestFileMetadataManager:
-    """An abstract interface for a class that handles writing metadata about each direct ingest file to disk."""
+class DirectIngestRawFileMetadataManager:
+    """An abstract interface for a class that handles writing metadata about ingest view
+    direct ingest files to disk.
+    """
+
+    @abc.abstractmethod
+    def has_raw_file_been_discovered(self, path: GcsfsFilePath) -> bool:
+        """Checks whether the file at this path has already been marked as discovered."""
+
+    @abc.abstractmethod
+    def mark_raw_file_as_discovered(self, path: GcsfsFilePath) -> None:
+        """Writes a new row to the appropriate metadata table for a new, unprocessed raw file, or updates the existing
+        metadata row for this path with the appropriate file discovery time."""
+
+    @abc.abstractmethod
+    def get_raw_file_metadata(self, path: GcsfsFilePath) -> DirectIngestRawFileMetadata:
+        """Returns metadata information for the provided path. If the file has not yet been registered in the
+        appropriate metadata table, this function will generate a file_id to return with the metadata.
+        """
+
+    @abc.abstractmethod
+    def has_raw_file_been_processed(self, path: GcsfsFilePath) -> bool:
+        """Checks whether the file at this path has already been marked as processed."""
+
+    @abc.abstractmethod
+    def mark_raw_file_as_processed(self, path: GcsfsFilePath) -> None:
+        """Marks the file represented by the |metadata| as processed in the appropriate metadata table."""
+
+    @abc.abstractmethod
+    def get_metadata_for_raw_files_discovered_after_datetime(
+        self,
+        raw_file_tag: str,
+        discovery_time_lower_bound_exclusive: Optional[datetime.datetime],
+    ) -> List[DirectIngestRawFileMetadata]:
+        """Returns metadata for all raw files with a given tag that have been updated after the provided date."""
+
+
+class DirectIngestIngestFileMetadataManager:
+    """An abstract interface for a class that handles writing metadata about raw data
+    direct ingest files to disk.
+    """
 
     @abc.abstractmethod
     def register_ingest_file_export_job(
@@ -39,6 +78,7 @@ class DirectIngestFileMetadataManager:
     ) -> DirectIngestIngestFileMetadata:
         """Writes a new row to the ingest view metadata table with the expected path once the export job completes."""
 
+    @abc.abstractmethod
     def register_ingest_file_split(
         self,
         original_file_metadata: DirectIngestIngestFileMetadata,
@@ -48,32 +88,34 @@ class DirectIngestFileMetadataManager:
         ingest view files."""
 
     @abc.abstractmethod
-    def has_file_been_discovered(self, path: GcsfsFilePath) -> bool:
+    def has_ingest_view_file_been_discovered(self, path: GcsfsFilePath) -> bool:
         """Checks whether the file at this path has already been marked as discovered."""
 
     @abc.abstractmethod
-    def mark_file_as_discovered(self, path: GcsfsFilePath) -> None:
+    def mark_ingest_view_file_as_discovered(self, path: GcsfsFilePath) -> None:
         """Writes a new row to the appropriate metadata table for a new, unprocessed raw file, or updates the existing
         metadata row for this path with the appropriate file discovery time."""
 
     @abc.abstractmethod
-    def get_file_metadata(self, path: GcsfsFilePath) -> DirectIngestFileMetadata:
+    def get_ingest_view_file_metadata(
+        self, path: GcsfsFilePath
+    ) -> DirectIngestIngestFileMetadata:
         """Returns metadata information for the provided path. If the file has not yet been registered in the
         appropriate metadata table, this function will generate a file_id to return with the metadata.
         """
 
     @abc.abstractmethod
-    def has_file_been_processed(self, path: GcsfsFilePath) -> bool:
+    def has_ingest_view_file_been_processed(self, path: GcsfsFilePath) -> bool:
         """Checks whether the file at this path has already been marked as processed."""
 
     @abc.abstractmethod
-    def mark_file_as_processed(self, path: GcsfsFilePath) -> None:
+    def mark_ingest_view_file_as_processed(self, path: GcsfsFilePath) -> None:
         """Marks the file represented by the |metadata| as processed in the appropriate metadata table."""
 
     @abc.abstractmethod
     def get_ingest_view_metadata_for_export_job(
         self, ingest_view_job_args: GcsfsIngestViewExportArgs
-    ) -> Optional[DirectIngestIngestFileMetadata]:
+    ) -> DirectIngestIngestFileMetadata:
         """Returns the ingest file metadata row corresponding to the export job with the provided args. Throws if such a
         row does not exist.
         """
@@ -110,10 +152,10 @@ class DirectIngestFileMetadataManager:
     ) -> List[DirectIngestIngestFileMetadata]:
         """Returns metadata for all ingest files have not yet been exported."""
 
-    @abc.abstractmethod
-    def get_metadata_for_raw_files_discovered_after_datetime(
-        self,
-        raw_file_tag: str,
-        discovery_time_lower_bound_exclusive: Optional[datetime.datetime],
-    ) -> List[DirectIngestRawFileMetadata]:
-        """Returns metadata for all raw files with a given tag that have been updated after the provided date."""
+
+class DirectIngestFileMetadataManager(
+    DirectIngestRawFileMetadataManager, DirectIngestIngestFileMetadataManager, ABC
+):
+    """An abstract interface for a class that handles writing metadata about each direct
+    ingest file to disk.
+    """

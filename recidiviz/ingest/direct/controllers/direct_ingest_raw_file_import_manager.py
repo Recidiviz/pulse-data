@@ -60,7 +60,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_csv_reader_delegates import (
     ReadOneGcsfsCsvReaderDelegate,
     SplittingGcsfsCsvReaderDelegate,
 )
-from recidiviz.persistence.entity.operations.entities import DirectIngestFileMetadata
+from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
 from recidiviz.utils import metadata
 from recidiviz.utils.regions import Region
 from recidiviz.utils.yaml_dict import YAMLDict
@@ -435,7 +435,7 @@ class DirectIngestRawFileImportManager:
         return f"{region_code.lower()}_raw_data"
 
     def import_raw_file_to_big_query(
-        self, path: GcsfsFilePath, file_metadata: DirectIngestFileMetadata
+        self, path: GcsfsFilePath, file_metadata: DirectIngestRawFileMetadata
     ) -> None:
         """Import a raw data file at the given path to the appropriate raw data table in BigQuery."""
         parts = filename_parts_from_path(path)
@@ -469,7 +469,7 @@ class DirectIngestRawFileImportManager:
         logging.info("Completed BigQuery import of [%s]", path.abs_path())
 
     def _upload_contents_to_temp_gcs_paths(
-        self, path: GcsfsFilePath, file_metadata: DirectIngestFileMetadata
+        self, path: GcsfsFilePath, file_metadata: DirectIngestRawFileMetadata
     ) -> List[Tuple[GcsfsFilePath, List[str]]]:
         """Uploads the contents of the file at the provided path to one or more GCS files, with whitespace stripped and
         additional metadata columns added.
@@ -692,7 +692,7 @@ class DirectIngestRawDataSplittingGcsfsCsvReaderDelegate(
         self,
         path: GcsfsFilePath,
         fs: DirectIngestGCSFileSystem,
-        file_metadata: DirectIngestFileMetadata,
+        file_metadata: DirectIngestRawFileMetadata,
         temp_output_directory_path: GcsfsDirectoryPath,
     ):
 
@@ -719,7 +719,7 @@ class DirectIngestRawDataSplittingGcsfsCsvReaderDelegate(
     @staticmethod
     def _augment_raw_data_with_metadata_columns(
         path: GcsfsFilePath,
-        file_metadata: DirectIngestFileMetadata,
+        file_metadata: DirectIngestRawFileMetadata,
         raw_data_df: pd.DataFrame,
     ) -> pd.DataFrame:
         """Add file_id and update_datetime columns to all rows in the dataframe."""
