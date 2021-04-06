@@ -1,0 +1,8 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args: ['-c', 'docker pull us.gcr.io/$PROJECT_ID/appengine/default:latest || exit 0']
+- name: 'gcr.io/cloud-builders/docker'
+  # TODO(#6678): Remove test when confirmed that caching works and pick caching strategy
+  args: ['build', '-t', 'us.gcr.io/$PROJECT_ID/appengine-test/default:latest', '--cache-from', 'us.gcr.io/$PROJECT_ID/appengine/default:latest', '.']
+images: ['us.gcr.io/$PROJECT_ID/appengine-test/default:latest']
