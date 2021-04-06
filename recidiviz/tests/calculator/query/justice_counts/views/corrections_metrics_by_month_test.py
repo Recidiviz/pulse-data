@@ -30,7 +30,7 @@ from recidiviz.calculator.query.justice_counts.views import (
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.tests.calculator.query.justice_counts.views.metric_by_month_test import (
     METRIC_BY_MONTH_SCHEMA,
-    TestState,
+    FakeState,
     row,
 )
 from recidiviz.tests.calculator.query.view_test_util import (
@@ -121,17 +121,17 @@ class CorrectionsOutputViewTest(BaseViewTest):
             mock_schema=self.INPUT_SCHEMA,
             mock_data=pd.DataFrame(
                 [
-                    row(1, "2020-11-30", (TestState("US_XX"),), ["A", "B", "A"], 3000)
+                    row(1, "2020-11-30", (FakeState("US_XX"),), ["A", "B", "A"], 3000)
                     + (None, None, "US_XX"),
-                    row(1, "2020-12-31", (TestState("US_XX"),), ["B", "B", "C"], 4000)
+                    row(1, "2020-12-31", (FakeState("US_XX"),), ["B", "B", "C"], 4000)
                     + (None, None, "US_XX"),
-                    row(2, "2020-11-30", (TestState("US_YY"),), ["A", "B", "A"], 1000)
+                    row(2, "2020-11-30", (FakeState("US_YY"),), ["A", "B", "A"], 1000)
                     + (None, None, "US_YY"),
-                    row(2, "2020-12-31", (TestState("US_YY"),), ["B", "B", "C"], 1020)
+                    row(2, "2020-12-31", (FakeState("US_YY"),), ["B", "B", "C"], 1020)
                     + (None, None, "US_YY"),
-                    row(3, "2020-11-30", (TestState("US_ZZ"),), ["A", "B", "A"], 400)
+                    row(3, "2020-11-30", (FakeState("US_ZZ"),), ["A", "B", "A"], 400)
                     + (None, None, "US_ZZ"),
-                    row(3, "2020-12-31", (TestState("US_ZZ"),), ["C", "C", "B"], 500)
+                    row(3, "2020-12-31", (FakeState("US_ZZ"),), ["C", "C", "B"], 500)
                     + (None, None, "US_ZZ"),
                 ],
                 columns=self.INPUT_SCHEMA.data_types.keys(),
@@ -312,11 +312,11 @@ class CorrectionsOutputViewTest(BaseViewTest):
             mock_schema=self.INPUT_SCHEMA,
             mock_data=pd.DataFrame(
                 [
-                    row(1, "2022-01-01", (TestState("US_XX"),), [], 3)
+                    row(1, "2022-01-01", (FakeState("US_XX"),), [], 3)
                     + (_npd("2021-01-01"), 0, "US_XX"),
-                    row(1, "2021-01-01", (TestState("US_XX"),), [], 0)
+                    row(1, "2021-01-01", (FakeState("US_XX"),), [], 0)
                     + (_npd("2020-01-01"), 2, "US_XX"),
-                    row(1, "2020-01-01", (TestState("US_XX"),), [], 2)
+                    row(1, "2020-01-01", (FakeState("US_XX"),), [], 2)
                     + (None, None, "US_XX"),
                 ],
                 columns=self.INPUT_SCHEMA.data_types.keys(),

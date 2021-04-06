@@ -30,7 +30,7 @@ from recidiviz.calculator.query.justice_counts.views import (
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.tests.calculator.query.justice_counts.views.metric_by_month_test import (
     METRIC_BY_MONTH_SCHEMA,
-    TestState,
+    FakeState,
     row,
 )
 from recidiviz.tests.calculator.query.view_test_util import (
@@ -70,7 +70,7 @@ class JailsOutputViewTest(BaseViewTest):
                     row(
                         1,
                         "2020-11-30",
-                        (TestState("US_XX"), manual_upload.County("US_XX_ALPHA")),
+                        (FakeState("US_XX"), manual_upload.County("US_XX_ALPHA")),
                         [],
                         3000,
                     )
@@ -78,7 +78,7 @@ class JailsOutputViewTest(BaseViewTest):
                     row(
                         1,
                         "2020-11-30",
-                        (TestState("US_XX"), manual_upload.County("US_XX_BETA")),
+                        (FakeState("US_XX"), manual_upload.County("US_XX_BETA")),
                         [],
                         1000,
                     )
@@ -86,7 +86,7 @@ class JailsOutputViewTest(BaseViewTest):
                     row(
                         1,
                         "2020-12-31",
-                        (TestState("US_XX"), manual_upload.County("US_XX_ALPHA")),
+                        (FakeState("US_XX"), manual_upload.County("US_XX_ALPHA")),
                         [],
                         4000,
                     )
@@ -94,7 +94,7 @@ class JailsOutputViewTest(BaseViewTest):
                     row(
                         1,
                         "2020-12-31",
-                        (TestState("US_XX"), manual_upload.County("US_XX_BETA")),
+                        (FakeState("US_XX"), manual_upload.County("US_XX_BETA")),
                         [],
                         1500,
                     )
@@ -102,7 +102,7 @@ class JailsOutputViewTest(BaseViewTest):
                     row(
                         1,
                         "2020-11-30",
-                        (TestState("US_YY"),),
+                        (FakeState("US_YY"),),
                         ["US_YY_ALPHA", "US_YY_BETA"],
                         12000,
                     )
@@ -110,7 +110,7 @@ class JailsOutputViewTest(BaseViewTest):
                     row(
                         1,
                         "2020-12-31",
-                        (TestState("US_YY"),),
+                        (FakeState("US_YY"),),
                         ["US_YY_ALPHA", "US_YY_BETA"],
                         13000,
                     )
