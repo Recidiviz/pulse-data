@@ -56,7 +56,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsIngestArgs,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsPath
-from recidiviz.ingest.direct.controllers.upload_state_files_to_ingest_bucket_with_date import (
+from recidiviz.ingest.direct.controllers.base_upload_state_files_to_ingest_bucket_controller import (
     UploadStateFilesToIngestBucketController,
 )
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
