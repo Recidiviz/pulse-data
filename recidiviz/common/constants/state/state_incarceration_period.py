@@ -158,6 +158,9 @@ class StateSpecializedPurposeForIncarceration(EntityEnum, metaclass=EntityEnumMe
     TREATMENT_IN_PRISON = (
         state_enum_strings.state_specialized_purpose_for_incarceration_treatment_in_prison
     )
+    TEMPORARY_CUSTODY = (
+        state_enum_strings.state_specialized_purpose_for_incarceration_temporary_custody
+    )
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateSpecializedPurposeForIncarceration"]:
@@ -371,4 +374,5 @@ _STATE_SPECIALIZED_PURPOSE_FOR_INCARCERATION_MAP = {
     "PAROLE BOARD HOLD": StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
     "SHOCK INCARCERATION": StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
     "TREATMENT IN PRISON": StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+    "TEMPORARY CUSTODY": StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
 }
