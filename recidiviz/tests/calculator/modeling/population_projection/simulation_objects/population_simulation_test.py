@@ -17,6 +17,8 @@
 """Test the PopulationSimulation object"""
 import unittest
 from copy import deepcopy
+from unittest.mock import patch
+
 import pandas as pd
 from pandas.testing import assert_index_equal
 
@@ -260,7 +262,7 @@ class TestPopulationSimulation(unittest.TestCase):
         ] = None
         non_disaggregated_total_population_data.crime = None
 
-        with self.assertWarns(Warning):
+        with patch("logging.Logger.warning") as mock:
             _ = PopulationSimulationFactory.build_population_simulation(
                 self.test_outflows_data,
                 self.test_transitions_data,
@@ -274,8 +276,13 @@ class TestPopulationSimulation(unittest.TestCase):
                 False,
                 True,
             )
+            mock.assert_called_once()
+            self.assertEqual(
+                mock.mock_calls[0].args[0],
+                "Some total population data left unused: %s",
+            )
 
-        with self.assertWarns(Warning):
+        with patch("logging.Logger.warning") as mock:
             _ = PopulationSimulationFactory.build_population_simulation(
                 self.test_outflows_data,
                 non_disaggregated_transitions_data,
@@ -289,8 +296,13 @@ class TestPopulationSimulation(unittest.TestCase):
                 False,
                 True,
             )
+            mock.assert_called_once()
+            self.assertEqual(
+                mock.mock_calls[0].args[0],
+                "Some transitions data left unused: %s",
+            )
 
-        with self.assertWarns(Warning):
+        with patch("logging.Logger.warning") as mock:
             _ = PopulationSimulationFactory.build_population_simulation(
                 non_disaggregated_outflows_data,
                 self.test_transitions_data,
@@ -303,4 +315,9 @@ class TestPopulationSimulation(unittest.TestCase):
                 pd.DataFrame(),
                 False,
                 True,
+            )
+            mock.assert_called_once()
+            self.assertEqual(
+                mock.mock_calls[0].args[0],
+                "Some outflows data left unused: %s",
             )

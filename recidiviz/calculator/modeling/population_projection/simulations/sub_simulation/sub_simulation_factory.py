@@ -15,9 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Composition object for SubSimulation to initialize compartments for a macro-simulation and scale populations."""
-
+import logging
 from typing import Dict, List, Any, Tuple
-from warnings import warn
 import pandas as pd
 
 from recidiviz.calculator.modeling.population_projection.spark_compartment import (
@@ -134,9 +133,9 @@ class SubSimulationFactory:
                 transitions_per_compartment[compartment] = transition_class
 
         if len(unused_transitions_data) > 0:
-            warn(
-                f"Some transitions data not fed to a compartment: {unused_transitions_data}",
-                Warning,
+            logging.warning(
+                "Some transitions data not fed to a compartment: %s",
+                unused_transitions_data,
             )
 
         # Create a transition object for each compartment and year with policies applied and store shell policies

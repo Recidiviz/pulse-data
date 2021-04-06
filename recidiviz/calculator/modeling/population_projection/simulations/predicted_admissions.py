@@ -15,9 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """outflow calculating object for ShellCompartments"""
+import logging
 from enum import Enum, auto
 from typing import Optional, Dict, Tuple
-from warnings import warn
 
 from statsmodels.tsa.arima_model import ARIMA, ARIMAResults
 from numpy.linalg.linalg import LinAlgError
@@ -207,7 +207,7 @@ class PredictedAdmissions:
                     (outflow_compartment, PredictionDirectionType.BACKWARD)
                 ] = model_backcast.fit(disp=False)
             except LinAlgError:
-                warn("singular matrix encountered fitting ARIMA model")
+                logging.warning("singular matrix encountered fitting ARIMA model")
                 model_forecast = ARIMA(
                     row.values + np.random.normal(0, 0.001, len(row.values)),
                     order=ORDER,

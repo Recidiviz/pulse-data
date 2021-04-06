@@ -12,9 +12,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """SuperSimulation composed object for initializing simulations."""
+import logging
 from typing import Dict, Any, List
 from datetime import datetime
-from warnings import warn
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
@@ -140,9 +140,9 @@ class Simulator:
             display_results = pd.DataFrame(index=simulation_results.year.unique())
             for comp in display_compartments:
                 if comp not in simulation_results.compartment.unique():
-                    warn(
-                        f"Display compartment not in simulation architecture: {comp}",
-                        Warning,
+                    logging.warning(
+                        "Display compartment not in simulation architecture: %s",
+                        comp,
                     )
                 else:
                     relevant_results = simulation_results[
