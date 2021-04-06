@@ -41,7 +41,19 @@ from recidiviz.tests.ingest.fixtures import as_filepath
 # Float between [0, 1] which sets the required fuzzy matching certainty
 _FUZZY_MATCH_CUTOFF = 0.75
 
-_JID = pd.read_csv(as_filepath("jid.csv", subdir="data_sets"), dtype={"fips": str})
+
+_JID: pd.DataFrame = None
+
+
+def _get_JID() -> pd.DataFrame:
+    global _JID
+
+    if _JID is None:
+        _JID = pd.read_csv(
+            as_filepath("jid.csv", subdir="data_sets"), dtype={"fips": str}
+        )
+
+    return _JID
 
 
 def get(county_name: str, state: us.states) -> str:
@@ -76,7 +88,8 @@ def _to_county_fips(county_name: str, state: us.states) -> int:
 def _to_jurisdiction_id(county_fips: int) -> str:
     """Lookup jurisdiction_id by manifest_agency_name, filtering within the
     given county_fips"""
-    jids_matching_county_fips = _JID.loc[_JID["fips"] == county_fips]
+    jid = _get_JID()
+    jids_matching_county_fips = jid.loc[jid["fips"] == county_fips]
 
     # Some jurisdictions in jid.csv have no listed names.
     jids_matching_county_fips = jids_matching_county_fips.dropna(subset=["name"])

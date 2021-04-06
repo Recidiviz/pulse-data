@@ -48,31 +48,35 @@ class NcicCode(DefaultableAttr):
     is_violent: bool = attr.ib()
 
 
-def _initialize_codes() -> Dict[str, NcicCode]:
-    ncic_codes = {}
-    with open(_NCIC_FILEPATH, "r") as file:
-        reader = csv.DictReader(file)
-        for row in reader:
-            code = row["ncic_code"]
-            ncic_codes[code] = NcicCode(
-                ncic_code=code,
-                description=row["description"].upper(),
-                is_violent=row["is_violent"] == "Y",
-            )
-
-    return ncic_codes
-
-
 _NCIC_FILEPATH: str = as_filepath("ncic.csv", subdir="data_sets")
-_NCIC: Dict[str, NcicCode] = _initialize_codes()
+_NCIC: Dict[str, NcicCode] = {}
+
+
+def _get_NCIC() -> Dict[str, NcicCode]:
+    global _NCIC
+
+    if not _NCIC:
+        with open(_NCIC_FILEPATH, "r") as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                code = row["ncic_code"]
+                _NCIC[code] = NcicCode(
+                    ncic_code=code,
+                    description=row["description"].upper(),
+                    is_violent=row["is_violent"] == "Y",
+                )
+
+    return _NCIC
 
 
 def get_all_codes() -> List[NcicCode]:
-    return list(_NCIC.values())
+    ncic = _get_NCIC()
+    return list(ncic.values())
 
 
 def get(ncic_code: str) -> Optional[NcicCode]:
-    return _NCIC.get(ncic_code, None)
+    ncic = _get_NCIC()
+    return ncic.get(ncic_code, None)
 
 
 def get_description(ncic_code: str) -> Optional[str]:
