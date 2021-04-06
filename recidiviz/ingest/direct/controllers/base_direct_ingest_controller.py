@@ -22,7 +22,6 @@ import datetime
 import logging
 from typing import Optional, List
 
-from recidiviz import IngestInfo
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
@@ -81,7 +80,7 @@ from recidiviz.ingest.direct.direct_ingest_controller_utils import (
 )
 from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
 from recidiviz.ingest.ingestor import Ingestor
-from recidiviz.ingest.scrape import ingest_utils
+from recidiviz.ingest.models import ingest_info, serialization
 from recidiviz.persistence import persistence
 from recidiviz.persistence.database.bq_refresh.bq_refresh_utils import (
     postgres_to_bq_lock_name_for_schema,
@@ -521,8 +520,8 @@ class BaseDirectIngestController(Ingestor):
         Runs the full ingest process for this controller for files with
         non-empty contents.
         """
-        ingest_info = self._parse(args, contents_handle)
-        if not ingest_info:
+        ii = self._parse(args, contents_handle)
+        if not ii:
             raise DirectIngestError(
                 error_type=DirectIngestErrorType.PARSE_ERROR,
                 msg="No IngestInfo after parse.",
@@ -532,7 +531,7 @@ class BaseDirectIngestController(Ingestor):
             "Successfully parsed data for ingest run [%s]", self._job_tag(args)
         )
 
-        ingest_info_proto = ingest_utils.convert_ingest_info_to_proto(ingest_info)
+        ingest_info_proto = serialization.convert_ingest_info_to_proto(ii)
 
         logging.info(
             "Successfully converted ingest_info to proto for ingest " "run [%s]",
@@ -600,7 +599,7 @@ class BaseDirectIngestController(Ingestor):
     @abc.abstractmethod
     def _parse(
         self, args: GcsfsIngestArgs, contents_handle: GcsfsFileContentsHandle
-    ) -> IngestInfo:
+    ) -> ingest_info.IngestInfo:
         """Parses ingest view file contents into an IngestInfo object. """
 
     def _do_cleanup(self, args: GcsfsIngestArgs) -> None:

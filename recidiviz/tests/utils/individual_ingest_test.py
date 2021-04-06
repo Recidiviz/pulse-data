@@ -17,9 +17,9 @@
 
 """Base class for tests that ingest individual people."""
 from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.ingest.models import serialization
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.ingest.models.ingest_info_diff import diff_ingest_infos
-from recidiviz.ingest.scrape import ingest_utils
 from recidiviz.persistence.entity_validator import entity_validator
 from recidiviz.persistence.ingest_info_converter import ingest_info_converter
 from recidiviz.persistence.ingest_info_validator.ingest_info_validator import validate
@@ -57,7 +57,7 @@ class IndividualIngestTest:
         # Attempt to convert the ingest_info to the ingest info proto,
         # validate the proto, and finally attempt to convert the proto into
         # our entitiy/ objects (which includes parsing strings into types)
-        ingest_info_proto = ingest_utils.convert_ingest_info_to_proto(ingest_info)
+        ingest_info_proto = serialization.convert_ingest_info_to_proto(ingest_info)
         validate(ingest_info_proto)
         res = ingest_info_converter.convert_to_persistence_entities(
             ingest_info_proto, metadata

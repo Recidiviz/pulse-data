@@ -25,10 +25,10 @@ from flask import Blueprint, request, url_for
 from opencensus.stats import aggregation, measure, view
 
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
-from recidiviz.ingest.models import ingest_info_pb2
+from recidiviz.ingest.models import ingest_info_pb2, serialization
 from recidiviz.ingest.models.ingest_info import IngestInfo, Person
 from recidiviz.ingest.models.scrape_key import ScrapeKey
-from recidiviz.ingest.scrape import ingest_utils, scrape_phase, sessions
+from recidiviz.ingest.scrape import scrape_phase, sessions
 from recidiviz.ingest.scrape.constants import ScrapeType
 from recidiviz.ingest.scrape.scraper_cloud_task_manager import ScraperCloudTaskManager
 from recidiviz.ingest.scrape.task_params import Task
@@ -112,7 +112,7 @@ def _get_proto_from_batch_ingest_info_data_list(
                 failed_tasks[task_hash] = batch_ingest_info_datum
 
     deduped_ingest_info = _dedup_people(ingest_infos)
-    base_proto = ingest_utils.convert_ingest_info_to_proto(deduped_ingest_info)
+    base_proto = serialization.convert_ingest_info_to_proto(deduped_ingest_info)
     ingest_info_validator.validate(base_proto)
     logging.info("Generated proto for [%s] people", len(base_proto.people))
     return base_proto, failed_tasks
