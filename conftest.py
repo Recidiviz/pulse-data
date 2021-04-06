@@ -27,8 +27,6 @@ import pytest
 import yaml
 
 import recidiviz
-from recidiviz.ingest.scrape import sessions
-from recidiviz.utils import pubsub_helper
 
 
 EMULATOR_STARTUP_TIMEOUT = 30
@@ -89,6 +87,11 @@ def pytest_runtest_teardown(item: pytest.Item) -> None:
 # TODO(#263): return the datastore client from this fixture
 @pytest.fixture(scope="session")
 def emulator(request) -> None:
+    # Lazy imports here to avoid slow top-level import when running pytest for any tests
+    # pylint: disable=import-outside-toplevel
+    from recidiviz.utils import pubsub_helper
+    from recidiviz.ingest.scrape import sessions
+
     datastore_emulator, pubsub_emulator = _start_emulators()
 
     # These environment variables can only be set while these tests are
