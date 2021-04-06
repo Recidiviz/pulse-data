@@ -29,6 +29,7 @@ import {
   CaseCardFeedback,
   CaseCardFooter,
   CaseCardHeading,
+  ClientNameRow,
   CloseButton,
 } from "./CaseCard.styles";
 import { HEADING_HEIGHT_MAGIC_NUMBER } from "../ClientList";
@@ -107,17 +108,17 @@ const CaseCard: React.FC<CaseCardProps> = ({ client }: CaseCardProps) => {
       }}
     >
       <CaseCardHeading className="fs-exclude">
-        <H3 as="div">{client.name}</H3>
-
+        <ClientNameRow>
+          <H3 as="div">{client.name}</H3>
+          <CloseButton onClick={() => clientsStore.view()}>
+            <Icon kind={IconSVG.Close} />
+          </CloseButton>
+        </ClientNameRow>
         <Caption>
           {titleCase(client.supervisionType)},{" "}
           {titleCase(client.supervisionLevelText)},{" "}
           {titleCase(client.personExternalId)}
         </Caption>
-
-        <CloseButton onClick={() => clientsStore.view()}>
-          <Icon kind={IconSVG.Close} />
-        </CloseButton>
       </CaseCardHeading>
       <NeedsEmployment
         client={client}
