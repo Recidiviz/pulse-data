@@ -241,7 +241,7 @@ cron:
       job_age_limit: 9h
 
   - description: "[Direct ingest] Check for unnormalized files in all regions"
-    url: /direct/ensure_all_file_paths_normalized
+    url: /direct/ensure_all_raw_file_paths_normalized
     schedule: every day 4:00
     timezone: America/Los_Angeles
     retry_parameters:

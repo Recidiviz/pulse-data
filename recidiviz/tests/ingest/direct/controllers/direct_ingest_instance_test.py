@@ -76,8 +76,17 @@ class TestDirectIngestInstance(unittest.TestCase):
             DirectIngestInstance.for_ingest_bucket(ingest_bucket_path),
         )
 
-        # TODO(#6077): Add test for mapping secondary bucket to ingest instance once
-        #  that is supported.
+        ingest_bucket_path = gcsfs_direct_ingest_bucket_for_region(
+            region_code="us_xx",
+            system_level=SystemLevel.STATE,
+            ingest_instance=DirectIngestInstance.SECONDARY,
+            project_id="recidiviz-456",
+        )
+
+        self.assertEqual(
+            DirectIngestInstance.SECONDARY,
+            DirectIngestInstance.for_ingest_bucket(ingest_bucket_path),
+        )
 
     def test_from_county_ingest_bucket(self) -> None:
         ingest_bucket_path = gcsfs_direct_ingest_bucket_for_region(

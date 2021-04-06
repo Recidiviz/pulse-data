@@ -28,10 +28,16 @@ from mock import patch
 from parameterized import parameterized
 
 from recidiviz.common.constants import states
+from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
+from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct import templates
+from recidiviz.ingest.direct.controllers import direct_ingest_controller_factory
 from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import (
     DirectIngestControllerFactory,
+)
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
     DirectIngestRegionRawFileConfig,
@@ -50,6 +56,9 @@ from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import (
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
+    gcsfs_direct_ingest_bucket_for_region,
+)
 from recidiviz.ingest.direct.direct_ingest_region_utils import (
     get_existing_region_dir_names,
     get_existing_region_dir_paths,
@@ -57,7 +66,7 @@ from recidiviz.ingest.direct.direct_ingest_region_utils import (
 from recidiviz.tools import deploy
 from recidiviz.utils.environment import GCPEnvironment
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.utils.regions import get_region
+from recidiviz.utils.regions import get_region, Region
 
 _REGION_REGEX = re.compile(r"us_[a-z]{2}(_[a-z]+)?")
 
@@ -172,7 +181,16 @@ class DirectIngestRegionDirStructureBase:
                 self.test.assertIsNotNone(controller_class)
                 self.test.assertEqual(region_code, controller_class.region_code())
 
-    def test_region_controller_builds(self) -> None:
+    def primary_ingest_bucket_for_region(self, region: Region) -> GcsfsBucketPath:
+        return gcsfs_direct_ingest_bucket_for_region(
+            region_code=region.region_code,
+            system_level=SystemLevel.for_region(region),
+            ingest_instance=DirectIngestInstance.PRIMARY,
+        )
+
+    def test_region_controller_builds(
+        self,
+    ) -> None:
         for region_code in self.region_dir_names:
             region = get_region(
                 region_code,
@@ -180,7 +198,10 @@ class DirectIngestRegionDirStructureBase:
                 region_module_override=self.region_module_override,
             )
             with local_project_id_override("recidiviz-456"):
-                controller = DirectIngestControllerFactory.build(region)
+                controller = DirectIngestControllerFactory.build(
+                    ingest_bucket_path=self.primary_ingest_bucket_for_region(region),
+                    allow_unlaunched=True,
+                )
                 self.test.assertIsNotNone(controller)
                 self.test.assertIsInstance(controller, BaseDirectIngestController)
 
@@ -342,11 +363,22 @@ class DirectIngestRegionDirStructure(
 class DirectIngestRegionTemplateDirStructure(
     DirectIngestRegionDirStructureBase, unittest.TestCase
 ):
+    """Tests properties of recidiviz/ingest/direct/templates."""
+
     def setUp(self) -> None:
         super().setUp()
 
         # Ensures StateCode.US_XX is properly loaded
         importlib.reload(states)
+        self.supported_regions_patcher = patch(
+            f"{direct_ingest_controller_factory.__name__}.get_supported_direct_ingest_region_codes"
+        )
+        self.mock_supported_regions = self.supported_regions_patcher.start()
+        self.mock_supported_regions.return_value = self.region_dir_names
+
+    def tearDown(self) -> None:
+        super().tearDown()
+        self.supported_regions_patcher.stop()
 
     @property
     def region_dir_names(self) -> List[str]:

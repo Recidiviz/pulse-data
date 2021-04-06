@@ -84,7 +84,7 @@ class MoveFilesFromStorageController:
         r"^(processed_|unprocessed_|un)?(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}:\d{6}(raw|ingest_view)?.*)"
     )
 
-    # TODO(#6077): We will need to update this to pause all region direct ingest queues
+    # TODO(#6742): We will need to update this to pause all region direct ingest queues
     QUEUES_TO_PAUSE = {
         DIRECT_INGEST_SCHEDULER_QUEUE_V2,
         DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2,

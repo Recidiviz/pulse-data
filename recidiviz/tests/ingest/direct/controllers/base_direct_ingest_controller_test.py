@@ -1467,7 +1467,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                 "The can_start_ingest flag should only be used for regions where ingest is not yet"
                 " launched in a particular environment. If we want to be able to selectively pause"
                 " ingest processing for a state, we will first have to build a config that is"
-                " respected by both the /ensure_all_file_paths_normalized endpoint and any cloud"
+                " respected by both the /ensure_all_raw_file_paths_normalized endpoint and any cloud"
                 " functions that trigger ingest.",
             )
 
