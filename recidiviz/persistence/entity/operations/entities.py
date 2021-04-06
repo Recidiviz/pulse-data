@@ -54,6 +54,15 @@ class DirectIngestFileMetadata(OperationsEntity, BuildableAttr, DefaultableAttr)
 
     processed_time: Optional[datetime.datetime] = attr.ib()
 
+
+@attr.s(eq=False)
+class DirectIngestRawFileMetadata(DirectIngestFileMetadata):
+    """Metadata about a raw file imported directly from a particular region."""
+
+    discovery_time: datetime.datetime = attr.ib()
+    normalized_file_name: str = attr.ib()
+    datetimes_contained_upper_bound_inclusive: datetime.datetime = attr.ib()
+
     @property
     def is_code_table(self) -> bool:
         """Whether or not this file is a code table.
@@ -63,15 +72,6 @@ class DirectIngestFileMetadata(OperationsEntity, BuildableAttr, DefaultableAttr)
         """
         # TODO(#5935): Fuller support that isn't just based on table prefix.
         return self.file_tag.startswith("RECIDIVIZ_REFERENCE")
-
-
-@attr.s(eq=False)
-class DirectIngestRawFileMetadata(DirectIngestFileMetadata):
-    """Metadata about a raw file imported directly from a particular region."""
-
-    discovery_time: datetime.datetime = attr.ib()
-    normalized_file_name: str = attr.ib()
-    datetimes_contained_upper_bound_inclusive: datetime.datetime = attr.ib()
 
 
 @attr.s(eq=False)

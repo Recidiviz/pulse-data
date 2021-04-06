@@ -109,14 +109,16 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
         )
 
         with self.assertRaises(ValueError):
-            self.metadata_manager.mark_file_as_discovered(raw_processed_path)
+            self.metadata_manager.mark_raw_file_as_discovered(raw_processed_path)
 
         ingest_view_processed_path = self._make_processed_path(
             "bucket/file_tag.csv", GcsfsDirectIngestFileType.INGEST_VIEW
         )
 
         with self.assertRaises(ValueError):
-            self.metadata_manager.mark_file_as_discovered(ingest_view_processed_path)
+            self.metadata_manager.mark_ingest_view_file_as_discovered(
+                ingest_view_processed_path
+            )
 
     def test_get_raw_file_metadata_when_not_yet_registered(self) -> None:
         # Arrange
@@ -126,7 +128,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
 
         # Act
         with self.assertRaises(ValueError):
-            self.metadata_manager.get_file_metadata(raw_unprocessed_path)
+            self.metadata_manager.get_raw_file_metadata(raw_unprocessed_path)
 
     @freeze_time("2015-01-02T03:04:06")
     def test_get_raw_file_metadata(self) -> None:
@@ -136,9 +138,9 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
         )
 
         # Act
-        self.metadata_manager.mark_file_as_discovered(raw_unprocessed_path)
-        metadata = self.metadata_manager.get_file_metadata(raw_unprocessed_path)
-        metadata_secondary = self.metadata_manager_secondary.get_file_metadata(
+        self.metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path)
+        metadata = self.metadata_manager.get_raw_file_metadata(raw_unprocessed_path)
+        metadata_secondary = self.metadata_manager_secondary.get_raw_file_metadata(
             raw_unprocessed_path
         )
 
@@ -171,11 +173,13 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
             "bucket/file_tag.csv", GcsfsDirectIngestFileType.RAW_DATA
         )
 
-        self.metadata_manager_other_region.mark_file_as_discovered(raw_unprocessed_path)
+        self.metadata_manager_other_region.mark_raw_file_as_discovered(
+            raw_unprocessed_path
+        )
 
         # Act
-        self.metadata_manager.mark_file_as_discovered(raw_unprocessed_path)
-        metadata = self.metadata_manager.get_file_metadata(raw_unprocessed_path)
+        self.metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path)
+        metadata = self.metadata_manager.get_raw_file_metadata(raw_unprocessed_path)
 
         # Assert
         expected_metadata = DirectIngestRawFileMetadata.new_with_defaults(
@@ -202,11 +206,11 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
         )
 
         # Act
-        self.metadata_manager.mark_file_as_discovered(raw_unprocessed_path)
-        self.metadata_manager.mark_file_as_processed(raw_unprocessed_path)
+        self.metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path)
+        self.metadata_manager.mark_raw_file_as_processed(raw_unprocessed_path)
 
         # Assert
-        metadata = self.metadata_manager.get_file_metadata(raw_unprocessed_path)
+        metadata = self.metadata_manager.get_raw_file_metadata(raw_unprocessed_path)
 
         self.assertEqual(
             datetime.datetime(2015, 1, 2, 3, 5, 6, 7), metadata.processed_time
@@ -227,8 +231,8 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
                 GcsfsDirectIngestFileType.RAW_DATA,
                 dt=datetime.datetime.utcnow(),
             )
-            self.metadata_manager.mark_file_as_discovered(raw_unprocessed_path_1)
-            self.metadata_manager_other_region.mark_file_as_discovered(
+            self.metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path_1)
+            self.metadata_manager_other_region.mark_raw_file_as_discovered(
                 raw_unprocessed_path_1
             )
 
@@ -238,7 +242,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
                 GcsfsDirectIngestFileType.RAW_DATA,
                 dt=datetime.datetime.utcnow(),
             )
-            self.metadata_manager.mark_file_as_discovered(raw_unprocessed_path_2)
+            self.metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path_2)
 
         with freeze_time("2015-01-02T03:07:07"):
             raw_unprocessed_path_3 = self._make_unprocessed_path(
@@ -246,7 +250,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
                 GcsfsDirectIngestFileType.RAW_DATA,
                 dt=datetime.datetime.utcnow(),
             )
-            self.metadata_manager.mark_file_as_discovered(raw_unprocessed_path_3)
+            self.metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path_3)
 
         expected_list = [
             DirectIngestRawFileMetadata.new_with_defaults(
@@ -483,7 +487,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
             export_time=None,
             discovery_time=None,
             processed_time=None,
-            ingest_database_name=metadata_manager.ingest_database_name,
+            ingest_database_name=metadata_manager.ingest_file_manager.ingest_database_name,
         )
 
         self.assertEqual(expected_metadata, ingest_file_metadata)
@@ -494,18 +498,24 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
             )
         expected_metadata.normalized_file_name = ingest_view_unprocessed_path.file_name
 
-        metadata = metadata_manager.get_file_metadata(ingest_view_unprocessed_path)
+        metadata = metadata_manager.get_ingest_view_file_metadata(
+            ingest_view_unprocessed_path
+        )
         self.assertEqual(expected_metadata, metadata)
 
         # ... export actually performed in here
         if discovery_before_export_recorded:
             with freeze_time("2015-01-02T03:06:07"):
-                metadata_manager.mark_file_as_discovered(ingest_view_unprocessed_path)
+                metadata_manager.mark_ingest_view_file_as_discovered(
+                    ingest_view_unprocessed_path
+                )
 
             expected_metadata.discovery_time = datetime.datetime(2015, 1, 2, 3, 6, 7)
             expected_metadata.export_time = datetime.datetime(2015, 1, 2, 3, 6, 7)
 
-            metadata = metadata_manager.get_file_metadata(ingest_view_unprocessed_path)
+            metadata = metadata_manager.get_ingest_view_file_metadata(
+                ingest_view_unprocessed_path
+            )
             self.assertEqual(expected_metadata, metadata)
 
         with freeze_time("2015-01-02T03:06:08"):
@@ -513,22 +523,30 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
 
         expected_metadata.export_time = datetime.datetime(2015, 1, 2, 3, 6, 8)
 
-        metadata = metadata_manager.get_file_metadata(ingest_view_unprocessed_path)
+        metadata = metadata_manager.get_ingest_view_file_metadata(
+            ingest_view_unprocessed_path
+        )
         self.assertEqual(expected_metadata, metadata)
 
         if not discovery_before_export_recorded:
             with freeze_time("2015-01-02T03:07:07"):
-                metadata_manager.mark_file_as_discovered(ingest_view_unprocessed_path)
+                metadata_manager.mark_ingest_view_file_as_discovered(
+                    ingest_view_unprocessed_path
+                )
 
             expected_metadata.discovery_time = datetime.datetime(2015, 1, 2, 3, 7, 7)
-            metadata = metadata_manager.get_file_metadata(ingest_view_unprocessed_path)
+            metadata = metadata_manager.get_ingest_view_file_metadata(
+                ingest_view_unprocessed_path
+            )
             self.assertEqual(expected_metadata, metadata)
 
         split_file_paths_and_metadata: List[
             Tuple[GcsfsFilePath, DirectIngestIngestFileMetadata]
         ] = []
         if split_file:
-            metadata = metadata_manager.get_file_metadata(ingest_view_unprocessed_path)
+            metadata = metadata_manager.get_ingest_view_file_metadata(
+                ingest_view_unprocessed_path
+            )
             if not isinstance(metadata, DirectIngestIngestFileMetadata):
                 self.fail(f"Unexpected metadata type {type(metadata)}")
 
@@ -543,7 +561,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
                     discovery_before_export_recorded,
                 )
 
-                split_file_metadata = metadata_manager.get_file_metadata(
+                split_file_metadata = metadata_manager.get_ingest_view_file_metadata(
                     split_file_path
                 )
 
@@ -557,22 +575,26 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
                 )
 
         with freeze_time("2015-01-02T03:08:08"):
-            metadata_manager.mark_file_as_processed(ingest_view_unprocessed_path)
+            metadata_manager.mark_ingest_view_file_as_processed(
+                ingest_view_unprocessed_path
+            )
 
         expected_metadata.processed_time = datetime.datetime(2015, 1, 2, 3, 8, 8)
 
-        metadata = metadata_manager.get_file_metadata(ingest_view_unprocessed_path)
+        metadata = metadata_manager.get_ingest_view_file_metadata(
+            ingest_view_unprocessed_path
+        )
 
         self.assertEqual(expected_metadata, metadata)
 
         for split_file_path, split_file_metadata in split_file_paths_and_metadata:
             expected_metadata = split_file_metadata
             with freeze_time("2015-01-02T03:09:09"):
-                metadata_manager.mark_file_as_processed(split_file_path)
+                metadata_manager.mark_ingest_view_file_as_processed(split_file_path)
 
             expected_metadata.processed_time = datetime.datetime(2015, 1, 2, 3, 9, 9)
 
-            metadata = metadata_manager.get_file_metadata(split_file_path)
+            metadata = metadata_manager.get_ingest_view_file_metadata(split_file_path)
 
             self.assertEqual(expected_metadata, metadata)
 
@@ -606,18 +628,18 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
             )
 
         self.assertEqual(expected_metadata, split_file_metadata)
-        metadata = metadata_manager.get_file_metadata(split_file_path)
+        metadata = metadata_manager.get_ingest_view_file_metadata(split_file_path)
         self.assertEqual(expected_metadata, metadata)
 
         # ... export actually performed in here
         if discovery_before_export_recorded:
             with freeze_time("2015-01-02T03:06:07"):
-                metadata_manager.mark_file_as_discovered(split_file_path)
+                metadata_manager.mark_ingest_view_file_as_discovered(split_file_path)
 
             expected_metadata.discovery_time = datetime.datetime(2015, 1, 2, 3, 6, 7)
             expected_metadata.export_time = datetime.datetime(2015, 1, 2, 3, 6, 7)
 
-            metadata = metadata_manager.get_file_metadata(split_file_path)
+            metadata = metadata_manager.get_ingest_view_file_metadata(split_file_path)
             self.assertEqual(expected_metadata, metadata)
 
         with freeze_time("2015-01-02T03:06:08"):
@@ -625,15 +647,15 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
 
         expected_metadata.export_time = datetime.datetime(2015, 1, 2, 3, 6, 8)
 
-        metadata = metadata_manager.get_file_metadata(split_file_path)
+        metadata = metadata_manager.get_ingest_view_file_metadata(split_file_path)
         self.assertEqual(expected_metadata, metadata)
 
         if not discovery_before_export_recorded:
             with freeze_time("2015-01-02T03:07:07"):
-                metadata_manager.mark_file_as_discovered(split_file_path)
+                metadata_manager.mark_ingest_view_file_as_discovered(split_file_path)
 
             expected_metadata.discovery_time = datetime.datetime(2015, 1, 2, 3, 7, 7)
-            metadata = metadata_manager.get_file_metadata(split_file_path)
+            metadata = metadata_manager.get_ingest_view_file_metadata(split_file_path)
             self.assertEqual(expected_metadata, metadata)
 
     def test_ingest_then_split_progression(self) -> None:
@@ -798,7 +820,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
                 datetimes_contained_upper_bound_inclusive=datetime.datetime(
                     2015, 1, 2, 3, 3, 3, 3
                 ),
-                ingest_database_name=self.metadata_manager.ingest_database_name,
+                ingest_database_name=self.metadata_manager.ingest_file_manager.ingest_database_name,
             )
         ]
 

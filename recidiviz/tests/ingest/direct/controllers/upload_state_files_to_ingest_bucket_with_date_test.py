@@ -21,7 +21,7 @@ from unittest.mock import patch, Mock
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
 from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import (
-    PostgresDirectIngestFileMetadataManager,
+    PostgresDirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.controllers.upload_state_files_to_ingest_bucket_with_date import (
     UploadStateFilesToIngestBucketController,
@@ -34,8 +34,8 @@ TODAY = datetime.datetime.today()
 
 @patch("recidiviz.ingest.direct.direct_ingest_control.GcsfsFactory.build")
 @patch.object(
-    PostgresDirectIngestFileMetadataManager,
-    "has_file_been_processed",
+    PostgresDirectIngestRawFileMetadataManager,
+    "has_raw_file_been_processed",
     lambda _, path: "skipped" in path.abs_path(),
 )
 class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
