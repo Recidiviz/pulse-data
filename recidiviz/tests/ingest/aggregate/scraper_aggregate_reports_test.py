@@ -31,10 +31,7 @@ from recidiviz.ingest.aggregate import scrape_aggregate_reports
 from recidiviz.ingest.aggregate.regions.ca import ca_aggregate_site_scraper
 from recidiviz.ingest.aggregate.regions.ny import ny_aggregate_site_scraper
 from recidiviz.ingest.aggregate.regions.tx import tx_aggregate_site_scraper
-from recidiviz.tests.ingest import fixtures
 from recidiviz.utils import metadata
-
-REPORTS_HTML = fixtures.as_string("aggregate/regions/tx", "reports.html")
 
 APP_ID = "recidiviz-scraper-aggregate-report-test"
 

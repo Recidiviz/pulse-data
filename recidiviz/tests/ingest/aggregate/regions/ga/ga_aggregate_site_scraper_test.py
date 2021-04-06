@@ -22,18 +22,22 @@ import requests
 from recidiviz.ingest.aggregate.regions.ga import ga_aggregate_site_scraper
 from recidiviz.tests.ingest import fixtures
 
-REPORTS_LANDING_HTML = fixtures.as_string(
-    "aggregate/regions/ga", "reports_landing.html"
-)
-REPORTS_YEAR_2015 = fixtures.as_string("aggregate/regions/ga", "reports_year_2015.html")
-REPORTS_YEAR_2019 = fixtures.as_string("aggregate/regions/ga", "reports_year_2019.html")
-
 
 class TestGaAggregateSiteScraper(TestCase):
     """Test that ga_aggregate_site_scraper correctly scrapes urls."""
 
     @patch.object(requests, "get")
     def testGetAllUrls(self, mockget):
+        REPORTS_LANDING_HTML = fixtures.as_string(
+            "aggregate/regions/ga", "reports_landing.html"
+        )
+        REPORTS_YEAR_2015 = fixtures.as_string(
+            "aggregate/regions/ga", "reports_year_2015.html"
+        )
+        REPORTS_YEAR_2019 = fixtures.as_string(
+            "aggregate/regions/ga", "reports_year_2019.html"
+        )
+
         def _MockGet(url):
             response = Mock()
             if "node/5617" in url:
