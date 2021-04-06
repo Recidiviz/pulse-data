@@ -16,7 +16,7 @@
 # =============================================================================
 """SparkCompartment that tracks cohorts internally to determine population size and outflows"""
 
-from typing import Dict
+from typing import Dict, Tuple, Optional
 import pandas as pd
 import numpy as np
 
@@ -24,11 +24,11 @@ from recidiviz.calculator.modeling.population_projection.cohort_table import Coh
 from recidiviz.calculator.modeling.population_projection.spark_compartment import (
     SparkCompartment,
 )
-from recidiviz.calculator.modeling.population_projection.simulations.compartment_transitions import (
+from recidiviz.calculator.modeling.population_projection.compartment_transitions import (
     CompartmentTransitions,
 )
 
-from recidiviz.calculator.modeling.population_projection.simulations.transition_table import (
+from recidiviz.calculator.modeling.population_projection.transition_table import (
     SIG_FIGS,
 )
 
@@ -42,7 +42,7 @@ class FullCompartment(SparkCompartment):
         compartment_transitions: CompartmentTransitions,
         starting_ts: int,
         tag: str,
-    ):
+    ) -> None:
 
         super().__init__(outflow_data, starting_ts, tag)
 
@@ -66,7 +66,7 @@ class FullCompartment(SparkCompartment):
         self.ingest_incoming_cohort({self.tag: total_population})
         self.prepare_for_next_step()
 
-    def _generate_outflow_dict(self):
+    def _generate_outflow_dict(self) -> Dict[str, float]:
         """step forward all cohorts one time step and generate outflow dict"""
 
         per_ts_transitions = self.compartment_transitions.get_per_ts_transition_table(
@@ -116,7 +116,7 @@ class FullCompartment(SparkCompartment):
         }
         return outflow_dict
 
-    def ingest_incoming_cohort(self, influx: Dict[str, float]):
+    def ingest_incoming_cohort(self, influx: Dict[str, float]) -> None:
         """Ingest the population coming from one compartment into another by the end of the `current_ts`
 
         influx: dictionary of cohort type (str) to number of people revoked for the ts (int)
@@ -124,14 +124,16 @@ class FullCompartment(SparkCompartment):
         if self.tag in influx.keys() and influx[self.tag] != 0:
             self.incoming_cohorts += influx[self.tag]
 
-    def ingest_cross_simulation_cohorts(self, cross_simulation_flows: pd.DataFrame):
+    def ingest_cross_simulation_cohorts(
+        self, cross_simulation_flows: pd.DataFrame
+    ) -> None:
         self.cohorts.ingest_cross_simulation_cohorts(
             cross_simulation_flows[cross_simulation_flows.compartment == self.tag].drop(
                 "compartment", axis=1
             )
         )
 
-    def step_forward(self):
+    def step_forward(self) -> None:
         """Simulate one time step in the projection"""
         super().step_forward()
         outflow_dict = self._generate_outflow_dict()
@@ -161,7 +163,7 @@ class FullCompartment(SparkCompartment):
         for edge in self.edges:
             edge.ingest_incoming_cohort(outflow_dict)
 
-    def prepare_for_next_step(self):
+    def prepare_for_next_step(self) -> None:
         """Clean up any data structures and move the time step 1 unit forward"""
         # move the incoming cohort into the cohorts list
         self.cohorts.append_cohort(self.incoming_cohorts, self.current_ts)
@@ -178,7 +180,9 @@ class FullCompartment(SparkCompartment):
 
         super().prepare_for_next_step()
 
-    def scale_cohorts(self, total_populations: pd.DataFrame):
+    def scale_cohorts(
+        self, total_populations: pd.DataFrame
+    ) -> Tuple[int, Optional[float]]:
 
         # TODO(#5428): when this logic is moved to PopulationSimulation it should stop scaling after start_ts
         #  not policy_ts
@@ -207,12 +211,12 @@ class FullCompartment(SparkCompartment):
             )
         return self.current_ts, scale_factor
 
-    def get_per_ts_population(self):
+    def get_per_ts_population(self) -> pd.Series:
         """Return the per_ts projected population as a pd.Series of counts per EOTS"""
         return self.end_ts_populations
 
-    def get_current_population(self):
+    def get_current_population(self) -> pd.Series:
         return self.cohorts.get_latest_population().sum()
 
-    def get_cohort_df(self):
+    def get_cohort_df(self) -> pd.DataFrame:
         return self.cohorts.pop_cohorts()

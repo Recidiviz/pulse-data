@@ -19,7 +19,7 @@
 from typing import Dict, List, Optional
 import pandas as pd
 
-from recidiviz.calculator.modeling.population_projection.simulations.predicted_admissions import (
+from recidiviz.calculator.modeling.population_projection.predicted_admissions import (
     PredictedAdmissions,
 )
 from recidiviz.calculator.modeling.population_projection.spark_compartment import (
@@ -42,7 +42,7 @@ class ShellCompartment(SparkCompartment):
         policy_list: List[SparkPolicy],
         constant_admissions: bool,
         projection_type: Optional[str] = None,
-    ):
+    ) -> None:
 
         super().__init__(outflows_data, starting_ts, tag)
 
@@ -56,7 +56,7 @@ class ShellCompartment(SparkCompartment):
 
     def _initialize_admissions_predictors(
         self, constant_admissions: bool, projection_type: Optional[str]
-    ):
+    ) -> None:
         """Generate the dictionary of one admission predictor per policy time step that defines outflow behaviors"""
         policy_time_steps = list({policy.policy_ts for policy in self.policy_list})
 
@@ -93,7 +93,7 @@ class ShellCompartment(SparkCompartment):
                 ts_data, constant_admissions, projection_type
             )
 
-    def initialize_edges(self, edges: List[SparkCompartment]):
+    def initialize_edges(self, edges: List[SparkCompartment]) -> None:
         """checks all compartments this outflows to are in `self.edges`"""
         edge_tags = [i.tag for i in edges]
         if not set(self.outflows_data.index).issubset(edge_tags):
@@ -103,7 +103,7 @@ class ShellCompartment(SparkCompartment):
             )
         super().initialize_edges(edges)
 
-    def ingest_incoming_cohort(self, influx: Dict[str, float]):
+    def ingest_incoming_cohort(self, influx: Dict[str, float]) -> None:
         """Ingest the population coming from one compartment into another by the end of the `current ts`
 
         influx: dictionary of cohort type (str) to number of people revoked for the time period (float)
@@ -111,7 +111,7 @@ class ShellCompartment(SparkCompartment):
         if self.tag in influx:
             raise ValueError(f"Shell compartment {self.tag} cannot ingest cohorts")
 
-    def step_forward(self):
+    def step_forward(self) -> None:
         """Simulate one time step in the projection"""
         super().step_forward()
         policy_time_steps = [ts for ts in self.policy_data if ts <= self.current_ts]
@@ -126,7 +126,9 @@ class ShellCompartment(SparkCompartment):
         for edge in self.edges:
             edge.ingest_incoming_cohort(outflow_dict)
 
-    def gen_arima_output_df(self, time_step: int = MIN_POSSIBLE_POLICY_TS):
+    def gen_arima_output_df(
+        self, time_step: int = MIN_POSSIBLE_POLICY_TS
+    ) -> pd.DataFrame:
         return pd.concat(
             {self.tag: self.admissions_predictors[time_step].gen_arima_output_df()},
             names=["compartment"],

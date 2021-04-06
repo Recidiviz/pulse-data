@@ -16,6 +16,7 @@
 # =============================================================================
 from statsmodels.tsa.arima_model import ARIMA
 from sklearn.metrics import mean_squared_error
+from typing import Tuple, Optional, Any
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -27,12 +28,12 @@ import seaborn as sns
 class AdmissionsForecasting(object):
     def __init__(
         self,
-        input_series,
-        output_start_end,
-        training_start_end=None,
-        max_forecast=0.75,
-        min_forecast=0.75,
-    ):
+        input_series: pd.Series,
+        output_start_end: list,
+        training_start_end: Optional[list] = None,
+        max_forecast: float = 0.75,
+        min_forecast: float = 0.75,
+    ) -> None:
         self.input_series = input_series
         self.years = [x for x in range(output_start_end[0], output_start_end[1] + 1)]
 
@@ -66,7 +67,9 @@ class AdmissionsForecasting(object):
 
         # if not self.training_years: self.training_years = self.years
 
-    def return_model_results(self, pred_type, order=None):
+    def return_model_results(
+        self, pred_type: str, order: Optional[tuple] = None
+    ) -> pd.DataFrame:
         # needs to be subsetted for the years we are using to train
         input_series = self.input_series.loc[self.training_years]
         if pred_type == "forecast":
@@ -91,7 +94,9 @@ class AdmissionsForecasting(object):
         results["stderr"] = stderr
         return results
 
-    def gen_forecasted_data(self, method="arima", order=None):
+    def gen_forecasted_data(
+        self, method: str = "arima", order: Optional[Tuple] = None
+    ) -> pd.DataFrame:
 
         if method == "constant":
             back_years = [x for x in self.years if x < min(self.training_years)]
@@ -145,13 +150,12 @@ class AdmissionsForecasting(object):
 
     def gen_plots(
         self,
-        method="arima",
-        order=None,
-        display_bounds=True,
-        display_validation_data=True,
-        title=None,
-        display_cutoff=True,
-    ):
+        method: str = "arima",
+        order: Optional[Tuple] = None,
+        display_bounds: bool = True,
+        title: Optional[str] = None,
+        display_cutoff: Optional[bool] = True,
+    ) -> None:
         sns.set()
         to_vis = self.gen_forecasted_data(method, order=order)
         fig, ax = plt.subplots(figsize=(8, 6))
@@ -222,7 +226,7 @@ class AdmissionsForecasting(object):
         # return to_vis
 
 
-def error_metrics(model_results):
+def error_metrics(model_results: Any) -> Tuple[float, float]:
     test_set = model_results[
         model_results.actuals.notnull() & model_results.preds.notnull()
     ]
@@ -239,7 +243,7 @@ def error_metrics(model_results):
     # return test_set
 
 
-def nj_data():
+def nj_data() -> pd.DataFrame:
     # NJ Historical counts of adult offenders in the prison system at the beginning of the year
     # 5595 admissions 2018
     historical_offender_counts = pd.DataFrame(
@@ -320,7 +324,7 @@ def nj_data():
     return nj_df
 
 
-def nd_data(time_agg="year"):
+def nd_data(time_agg: str = "year") -> pd.DataFrame:
     ignored_subgroups = [
         "TRANSFER",
         "TRANSFERRED_FROM_OUT_OF_STATE",
@@ -382,7 +386,7 @@ def nd_data(time_agg="year"):
     return nd_df
 
 
-def va_data():
+def va_data() -> pd.DataFrame:
     historical_admissions = pd.read_csv(
         "/Users/agaidus/recidiviz-research/spark/sentencing_policy_impact_v1/VA_data/processed_va_historical_sentences_v2.csv"
     )
@@ -419,7 +423,7 @@ def va_data():
     return jail_prison_admissions
 
 
-def get_tuning_results(z):
+def get_tuning_results(z: "AdmissionsForecasting") -> pd.DataFrame:
     p_values = range(1, 10)
     d_values = range(0, 3)
     q_values = range(0, 3)
