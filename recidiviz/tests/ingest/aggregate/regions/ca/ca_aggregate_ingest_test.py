@@ -16,12 +16,14 @@
 # =============================================================================
 """Tests for ca_aggregate_ingest.py."""
 import datetime
+from typing import Dict
 from unittest import TestCase
 
 import pandas as pd
 from more_itertools import one
 from pandas.testing import assert_frame_equal
 from sqlalchemy import func
+from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.common.constants.aggregate import enum_canonical_strings as enum_strings
 from recidiviz.ingest.aggregate.regions.ca import ca_aggregate_ingest
@@ -34,10 +36,19 @@ from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.utils import fakes
 
 # Cache the parsed result between tests since it's expensive to compute
-PARSED_RESULT = ca_aggregate_ingest.parse("", fixtures.as_filepath("QueryResult.xls"))
-PARSED_RESULT_2 = ca_aggregate_ingest.parse(
-    "", fixtures.as_filepath("california_california2018")
-)
+
+_PARSED_RESULT: Dict[DeclarativeMeta, pd.DataFrame] = {}
+
+
+def _parsed_result() -> Dict[DeclarativeMeta, pd.DataFrame]:
+    global _PARSED_RESULT
+
+    if not _PARSED_RESULT:
+        _PARSED_RESULT = ca_aggregate_ingest.parse(
+            "", fixtures.as_filepath("QueryResult.xls")
+        )
+
+    return _PARSED_RESULT
 
 
 class TestCaAggregateIngest(TestCase):
@@ -51,7 +62,7 @@ class TestCaAggregateIngest(TestCase):
         fakes.teardown_in_memory_sqlite_databases()
 
     def testParse_ParsesHeadAndTail(self):
-        result = PARSED_RESULT[CaFacilityAggregate]
+        result = _parsed_result()[CaFacilityAggregate]
 
         # Assert Head
         expected_head = pd.DataFrame(
@@ -97,7 +108,9 @@ class TestCaAggregateIngest(TestCase):
         assert_frame_equal(result.tail(n=2), expected_tail)
 
     def testParse_ParsesHeadAndTail2(self):
-        result = PARSED_RESULT_2[CaFacilityAggregate]
+        result = ca_aggregate_ingest.parse(
+            "", fixtures.as_filepath("california_california2018")
+        )[CaFacilityAggregate]
 
         # Assert Head
         expected_head = pd.DataFrame(
@@ -144,7 +157,8 @@ class TestCaAggregateIngest(TestCase):
 
     def testWrite_CalculatesSum(self):
         # Act
-        for table, df in PARSED_RESULT.items():
+        parsed_result = _parsed_result()
+        for table, df in parsed_result.items():
             dao.write_df(table, df)
 
         # Assert

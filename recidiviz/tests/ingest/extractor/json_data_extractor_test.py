@@ -22,12 +22,6 @@ from recidiviz.ingest.extractor.json_data_extractor import JsonDataExtractor
 from recidiviz.ingest.models.ingest_info import Booking, Charge, IngestInfo
 from recidiviz.tests.ingest import fixtures
 
-_JT_PERSON = fixtures.as_dict("extractor", "jailtracker_person.json")
-_JT_BOOKING = fixtures.as_dict("extractor", "jailtracker_booking.json")
-_PERSON_WITH_CHARGES = fixtures.as_dict("extractor", "person_with_charges.json")
-_PERSON_WITH_HOLDS = fixtures.as_dict("extractor", "person_with_holds.json")
-_SKIP_EMPTY = fixtures.as_dict("extractor", "skip_empty.json")
-
 
 class DataExtractorJsonTest(unittest.TestCase):
     """Tests for extracting data from JSON."""
@@ -41,7 +35,9 @@ class DataExtractorJsonTest(unittest.TestCase):
         expected_result.create_person(
             person_id="012345", birthdate="12/12/0001", age="2018", race="WHITE"
         )
-        result = extractor.extract_and_populate_data(_JT_PERSON)
+        result = extractor.extract_and_populate_data(
+            fixtures.as_dict("extractor", "jailtracker_person.json")
+        )
 
         self.assertEqual(result, expected_result)
 
@@ -60,7 +56,9 @@ class DataExtractorJsonTest(unittest.TestCase):
             booking_id="123099", admission_date="1/1/2002", release_date="1/1/2002"
         )
 
-        result = extractor.extract_and_populate_data(_JT_BOOKING)
+        result = extractor.extract_and_populate_data(
+            fixtures.as_dict("extractor", "jailtracker_booking.json")
+        )
 
         self.assertEqual(result, expected_result)
 
@@ -83,7 +81,9 @@ class DataExtractorJsonTest(unittest.TestCase):
         )
         booking_2.create_charge(charge_id="42309", name="charge name 3")
 
-        result = extractor.extract_and_populate_data(_PERSON_WITH_CHARGES)
+        result = extractor.extract_and_populate_data(
+            fixtures.as_dict("extractor", "person_with_charges.json")
+        )
         self.assertEqual(result, expected_result)
 
     def test_person_with_holds(self):
@@ -105,7 +105,9 @@ class DataExtractorJsonTest(unittest.TestCase):
         )
         booking_2.create_hold(hold_id="42309", jurisdiction_name="jurisdiction name 3")
 
-        result = extractor.extract_and_populate_data(_PERSON_WITH_HOLDS)
+        result = extractor.extract_and_populate_data(
+            fixtures.as_dict("extractor", "person_with_holds.json")
+        )
         self.assertEqual(result, expected_result)
 
     def test_skip_empty(self):
@@ -143,5 +145,7 @@ class DataExtractorJsonTest(unittest.TestCase):
             ],
         )
 
-        result = extractor.extract_and_populate_data(_SKIP_EMPTY)
+        result = extractor.extract_and_populate_data(
+            fixtures.as_dict("extractor", "skip_empty.json")
+        )
         self.assertEqual(result, expected)
