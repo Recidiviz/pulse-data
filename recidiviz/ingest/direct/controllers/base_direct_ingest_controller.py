@@ -203,6 +203,14 @@ class BaseDirectIngestController(Ingestor):
         process and commit the contents to Postgres."""
         check_is_region_launched_in_env(self.region)
 
+        if self.ingest_instance == DirectIngestInstance.SECONDARY:
+            # TODO(#6226): Remove this check once we are ready to launch ingest out of
+            #  secondary buckets.
+            logging.info(
+                "Ingest out of [%s] not yet supported.", self.ingest_bucket_path.uri()
+            )
+            return
+
         if self._schedule_any_pre_ingest_tasks():
             logging.info("Found pre-ingest tasks to schedule - returning.")
             return
@@ -725,9 +733,17 @@ class BaseDirectIngestController(Ingestor):
             raise ValueError(
                 "The can_start_ingest flag should only be used for regions where ingest is not yet launched in a "
                 "particular environment. If we want to be able to selectively pause ingest processing for a state, we "
-                "will first have to build a config that is respected by both the /ensure_all_file_paths_normalized "
+                "will first have to build a config that is respected by both the /ensure_all_raw_file_paths_normalized "
                 "endpoint and any cloud functions that trigger ingest."
             )
+
+        if self.ingest_instance == DirectIngestInstance.SECONDARY:
+            # TODO(#6226): Remove this check once we are ready to launch ingest out of
+            #  secondary buckets.
+            logging.info(
+                "Ingest out of [%s] not yet supported.", self.ingest_bucket_path.uri()
+            )
+            return
 
         unnormalized_paths = self.fs.get_unnormalized_file_paths(
             self.ingest_bucket_path
@@ -764,6 +780,17 @@ class BaseDirectIngestController(Ingestor):
             self.ingest_bucket_path,
             file_type_filter=GcsfsDirectIngestFileType.RAW_DATA,
         )
+        if (
+            unprocessed_raw_paths
+            and self.ingest_instance == DirectIngestInstance.SECONDARY
+        ):
+            raise ValueError(
+                f"Raw data import not supported from SECONDARY ingest bucket "
+                f"[{self.ingest_bucket_path}], but found {len(unprocessed_raw_paths)} "
+                f"raw files. All raw files should be removed from this bucket and "
+                f"uploaded to the primary ingest bucket, if appropriate."
+            )
+
         self._register_all_new_paths_in_metadata(unprocessed_raw_paths)
 
         self._register_all_new_paths_in_metadata(unprocessed_ingest_view_paths)
@@ -801,6 +828,14 @@ class BaseDirectIngestController(Ingestor):
         storage on completion.
         """
         check_is_region_launched_in_env(self.region)
+
+        if self.ingest_instance == DirectIngestInstance.SECONDARY:
+            raise ValueError(
+                f"Raw data import not supported from SECONDARY ingest bucket "
+                f"[{self.ingest_bucket_path}]. Raw data task for "
+                f"[{data_import_args.raw_data_file_path}] should never have been "
+                f"scheduled."
+            )
 
         if not self.fs.exists(data_import_args.raw_data_file_path):
             logging.warning(

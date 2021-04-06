@@ -29,11 +29,15 @@ from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockAlreadyExists
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
+from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import (
     DirectIngestControllerFactory,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
+)
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_data_table_latest_view_updater import (
     DirectIngestRawDataTableLatestViewUpdater,
@@ -48,6 +52,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsRawDataBQImportArgs,
     GcsfsIngestViewExportArgs,
     GcsfsDirectIngestFileType,
+    gcsfs_direct_ingest_bucket_for_region,
     GcsfsIngestArgs,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsPath
@@ -58,14 +63,8 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     DirectIngestCloudTaskManager,
     DirectIngestCloudTaskManagerImpl,
 )
-from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
-    BaseDirectIngestController,
-)
 from recidiviz.ingest.direct.controllers.direct_ingest_types import (
     CloudTaskArgs,
-)
-from recidiviz.ingest.direct.direct_ingest_controller_utils import (
-    check_is_region_launched_in_env,
 )
 from recidiviz.ingest.direct.direct_ingest_region_utils import (
     get_existing_region_dir_names,
@@ -78,7 +77,6 @@ from recidiviz.utils.params import get_str_param_value, get_bool_param_value
 from recidiviz.utils.regions import (
     Region,
     get_supported_direct_ingest_region_codes,
-    get_region,
 )
 
 m_sftp_attempts = measure.MeasureInt(
@@ -159,7 +157,15 @@ def handle_direct_ingest_file() -> Tuple[str, HTTPStatus]:
         return f"Bad parameters [{request.args}]", HTTPStatus.BAD_REQUEST
 
     with monitoring.push_region_tag(region_code):
-        controller = controller_for_region_code(region_code, allow_unlaunched=True)
+        try:
+            controller = DirectIngestControllerFactory.build(
+                ingest_bucket_path=GcsfsBucketPath(bucket_name=bucket),
+                allow_unlaunched=True,
+            )
+        except DirectIngestError as e:
+            if e.is_bad_request():
+                return str(e), HTTPStatus.BAD_REQUEST
+            raise e
 
         path = GcsfsPath.from_bucket_and_blob_name(
             bucket_name=bucket, blob_name=relative_file_path
@@ -186,13 +192,17 @@ def handle_new_files() -> Tuple[str, HTTPStatus]:
     can_start_ingest = get_bool_param_value(
         "can_start_ingest", request.values, default=False
     )
+    bucket = get_str_param_value("bucket", request.values)
 
-    if not region_code or can_start_ingest is None:
+    if not region_code or can_start_ingest is None or not bucket:
         return f"Bad parameters [{request.values}]", HTTPStatus.BAD_REQUEST
 
     with monitoring.push_region_tag(region_code):
         try:
-            controller = controller_for_region_code(region_code, allow_unlaunched=True)
+            controller = DirectIngestControllerFactory.build(
+                ingest_bucket_path=GcsfsBucketPath(bucket_name=bucket),
+                allow_unlaunched=True,
+            )
         except DirectIngestError as e:
             if e.is_bad_request():
                 return str(e), HTTPStatus.BAD_REQUEST
@@ -203,14 +213,18 @@ def handle_new_files() -> Tuple[str, HTTPStatus]:
 
 
 @direct_ingest_control.route(
-    "/ensure_all_file_paths_normalized", methods=["GET", "POST"]
+    "/ensure_all_raw_file_paths_normalized", methods=["GET", "POST"]
 )
 @requires_gae_auth
-def ensure_all_file_paths_normalized() -> Tuple[str, HTTPStatus]:
-    """Ensures that all file paths in the ingest buckets for all direct ingest states have properly normalized
-    file names, to ensure that repeat uploads of files into those buckets don't fail or overwrite data."""
+def ensure_all_raw_file_paths_normalized() -> Tuple[str, HTTPStatus]:
+    """Ensures that all files in the ingest buckets for all direct ingest states have
+    properly normalized  file names, to ensure that repeat uploads of files into those
+    buckets don't fail or overwrite data. This provides a layer of protection against
+    cloud function failures.
+    """
     logging.info(
-        "Received request for direct ingest ensure_all_file_paths_normalized: " "%s",
+        "Received request for direct ingest ensure_all_raw_file_paths_normalized: "
+        "%s",
         request.values,
     )
 
@@ -218,11 +232,23 @@ def ensure_all_file_paths_normalized() -> Tuple[str, HTTPStatus]:
     for region_code in supported_regions:
         logging.info("Ensuring paths normalized for region [%s]", region_code)
         with monitoring.push_region_tag(region_code):
+            ingest_bucket = gcsfs_direct_ingest_bucket_for_region(
+                region_code=region_code,
+                system_level=SystemLevel.for_region(
+                    _region_for_region_code(region_code)
+                ),
+                # The only type of file that wouldn't be normalized is a raw file, which
+                # should only ever be in the PRIMARY bucket.
+                ingest_instance=DirectIngestInstance.PRIMARY,
+            )
             try:
-                controller = controller_for_region_code(
-                    region_code, allow_unlaunched=True
+                controller = DirectIngestControllerFactory.build(
+                    ingest_bucket_path=ingest_bucket,
+                    allow_unlaunched=True,
                 )
             except DirectIngestError as e:
+                if e.is_bad_request():
+                    return str(e), HTTPStatus.BAD_REQUEST
                 raise e
 
             can_start_ingest = controller.region.is_ingest_launched_in_env()
@@ -254,7 +280,7 @@ def raw_data_import() -> Tuple[str, HTTPStatus]:
 
         if not data_import_args:
             raise DirectIngestError(
-                msg="raw_data_import was called with no GcsfsIngestArgs.",
+                msg="raw_data_import was called with no GcsfsRawDataBQImportArgs.",
                 error_type=DirectIngestErrorType.INPUT_ERROR,
             )
 
@@ -268,7 +294,10 @@ def raw_data_import() -> Tuple[str, HTTPStatus]:
             {TagKey.RAW_DATA_IMPORT_TAG: data_import_args.task_id_tag()}
         ):
             try:
-                controller = controller_for_region_code(region_code)
+                controller = DirectIngestControllerFactory.build(
+                    ingest_bucket_path=data_import_args.raw_data_file_path.bucket_path,
+                    allow_unlaunched=False,
+                )
             except DirectIngestError as e:
                 if e.is_bad_request():
                     return str(e), HTTPStatus.BAD_REQUEST
@@ -290,7 +319,7 @@ def create_raw_data_latest_view_update_tasks() -> Tuple[str, HTTPStatus]:
 
     for region_code in get_existing_region_dir_names():
         with monitoring.push_region_tag(region_code):
-            region = get_region(region_code, is_direct_ingest=True)
+            region = _region_for_region_code(region_code)
             if region.is_ingest_launched_in_env():
                 logging.info(
                     "Creating raw data latest view update task for region [%s]",
@@ -348,7 +377,7 @@ def ingest_view_export() -> Tuple[str, HTTPStatus]:
 
         if not ingest_view_export_args:
             raise DirectIngestError(
-                msg="raw_data_import was called with no GcsfsIngestArgs.",
+                msg="raw_data_import was called with no GcsfsIngestViewExportArgs.",
                 error_type=DirectIngestErrorType.INPUT_ERROR,
             )
 
@@ -361,7 +390,12 @@ def ingest_view_export() -> Tuple[str, HTTPStatus]:
             {TagKey.INGEST_VIEW_EXPORT_TAG: ingest_view_export_args.task_id_tag()}
         ):
             try:
-                controller = controller_for_region_code(region_code)
+                controller = DirectIngestControllerFactory.build(
+                    ingest_bucket_path=GcsfsBucketPath(
+                        ingest_view_export_args.output_bucket_name
+                    ),
+                    allow_unlaunched=False,
+                )
             except DirectIngestError as e:
                 if e.is_bad_request():
                     return str(e), HTTPStatus.BAD_REQUEST
@@ -403,7 +437,10 @@ def process_job() -> Tuple[str, HTTPStatus]:
             return "Could not parse ingest args", HTTPStatus.BAD_REQUEST
         with monitoring.push_tags({TagKey.INGEST_TASK_TAG: ingest_args.task_id_tag()}):
             try:
-                controller = controller_for_region_code(region_code)
+                controller = DirectIngestControllerFactory.build(
+                    ingest_bucket_path=ingest_args.file_path.bucket_path,
+                    allow_unlaunched=False,
+                )
             except DirectIngestError as e:
                 if e.is_bad_request():
                     return str(e), HTTPStatus.BAD_REQUEST
@@ -425,12 +462,17 @@ def scheduler() -> Tuple[str, HTTPStatus]:
         "just_finished_job", request.values, default=False
     )
 
-    if not region_code or just_finished_job is None:
+    # The bucket name for ingest instance to schedule work out of
+    bucket = get_str_param_value("bucket", request.args)
+
+    if not region_code or just_finished_job is None or not bucket:
         return f"Bad parameters [{request.values}]", HTTPStatus.BAD_REQUEST
 
     with monitoring.push_region_tag(region_code):
         try:
-            controller = controller_for_region_code(region_code)
+            controller = DirectIngestControllerFactory.build(
+                ingest_bucket_path=GcsfsBucketPath(bucket), allow_unlaunched=False
+            )
         except DirectIngestError as e:
             if e.is_bad_request():
                 return str(e), HTTPStatus.BAD_REQUEST
@@ -445,17 +487,21 @@ def kick_all_schedulers() -> None:
     supported_regions = get_supported_direct_ingest_region_codes()
     for region_code in supported_regions:
         with monitoring.push_region_tag(region_code):
-            region = region_for_region_code(region_code=region_code)
+            region = _region_for_region_code(region_code=region_code)
             if not region.is_ingest_launched_in_env():
                 continue
-            try:
-                controller = controller_for_region_code(
-                    region_code, allow_unlaunched=False
+            for ingest_instance in DirectIngestInstance:
+                ingest_bucket = gcsfs_direct_ingest_bucket_for_region(
+                    region_code=region_code,
+                    system_level=SystemLevel.for_region(region),
+                    ingest_instance=ingest_instance,
                 )
-            except DirectIngestError as e:
-                raise e
+                controller = DirectIngestControllerFactory.build(
+                    ingest_bucket_path=ingest_bucket,
+                    allow_unlaunched=False,
+                )
 
-            controller.kick_scheduler(just_finished_job=False)
+                controller.kick_scheduler(just_finished_job=False)
 
 
 @direct_ingest_control.route("/upload_from_sftp", methods=["GET", "POST"])
@@ -559,7 +605,7 @@ def handle_sftp_files() -> Tuple[str, HTTPStatus]:
 
     with monitoring.push_region_tag(region_code):
         try:
-            region = regions.get_region(region_code, is_direct_ingest=True)
+            region = _region_for_region_code(region_code)
             direct_ingest_cloud_task_manager = DirectIngestCloudTaskManagerImpl()
             direct_ingest_cloud_task_manager.create_direct_ingest_sftp_download_task(
                 region
@@ -573,35 +619,9 @@ def handle_sftp_files() -> Tuple[str, HTTPStatus]:
     return "", HTTPStatus.OK
 
 
-def controller_for_region_code(
-    region_code: str, allow_unlaunched: bool = False
-) -> BaseDirectIngestController:
-    """Returns an instance of the region's controller, if one exists."""
-    if region_code not in get_supported_direct_ingest_region_codes():
-        raise DirectIngestError(
-            msg=f"Unsupported direct ingest region [{region_code}] in project [{metadata.project_id()}]",
-            error_type=DirectIngestErrorType.INPUT_ERROR,
-        )
-
-    region = region_for_region_code(region_code=region_code)
-
-    if not allow_unlaunched and not region.is_ingest_launched_in_env():
-        check_is_region_launched_in_env(region)
-
-    controller = DirectIngestControllerFactory.build(region)
-
-    if not isinstance(controller, BaseDirectIngestController):
-        raise DirectIngestError(
-            msg=f"Controller for direct ingest region [{region_code}] has unexpected type [{type(controller)}]",
-            error_type=DirectIngestErrorType.INPUT_ERROR,
-        )
-
-    return controller
-
-
-def region_for_region_code(region_code: str, is_direct_ingest: bool = True) -> Region:
+def _region_for_region_code(region_code: str) -> Region:
     try:
-        return regions.get_region(region_code, is_direct_ingest=is_direct_ingest)
+        return regions.get_region(region_code.lower(), is_direct_ingest=True)
     except FileNotFoundError as e:
         raise DirectIngestError(
             msg=f"Region [{region_code}] has no registered manifest",

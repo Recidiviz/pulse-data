@@ -74,10 +74,5 @@ class DirectIngestInstance(Enum):
         if is_primary_ingest_bucket(ingest_bucket.bucket_name):
             return cls.PRIMARY
         if is_secondary_ingest_bucket(ingest_bucket.bucket_name):
-            # TODO(#6226): Switch this to DirectIngestInstance.SECONDARY once we are
-            #  ready to start doing ingest out of secondary buckets.
-            raise NotImplementedError(
-                f"Ingest out of secondary bucket [{ingest_bucket.bucket_name}]"
-                f" not yet supported."
-            )
+            return cls.SECONDARY
         raise ValueError(f"Unexpected ingest bucket [{ingest_bucket.bucket_name}]")

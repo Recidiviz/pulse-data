@@ -19,19 +19,28 @@
 import datetime
 import json
 import unittest
+from collections import defaultdict
 from http import HTTPStatus
 from typing import Any
 from unittest import mock
 
 from pysftp import CnOpts
 from flask import Flask
-from mock import patch, create_autospec, Mock
+from mock import patch, create_autospec, Mock, call
 
+from recidiviz.cloud_functions.direct_ingest_bucket_name_utils import (
+    get_region_code_from_direct_ingest_bucket,
+    is_primary_ingest_bucket,
+)
+from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct import direct_ingest_control
 from recidiviz.ingest.direct.base_sftp_download_delegate import BaseSftpDownloadDelegate
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_file_path,
     DirectIngestGCSFileSystem,
+)
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_data_table_latest_view_updater import (
     DirectIngestRawDataTableLatestViewUpdater,
@@ -51,8 +60,9 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
     GcsfsIngestViewExportArgs,
     GcsfsIngestArgs,
+    gcsfs_direct_ingest_bucket_for_region,
 )
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsBucketPath
 from recidiviz.ingest.direct.controllers.upload_state_files_to_ingest_bucket_with_date import (
     UploadStateFilesToIngestBucketController,
 )
@@ -64,6 +74,7 @@ from recidiviz.ingest.direct.direct_ingest_control import kick_all_schedulers
 from recidiviz.ingest.direct.direct_ingest_region_utils import (
     get_existing_region_dir_names,
 )
+from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.utils.fake_region import fake_region
 from recidiviz.utils.metadata import local_project_id_override
@@ -73,7 +84,6 @@ CONTROL_PACKAGE_NAME = direct_ingest_control.__name__
 TODAY = datetime.datetime.today()
 
 
-@patch("recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-project"))
 @patch("recidiviz.utils.metadata.project_number", Mock(return_value="123456789"))
 class TestDirectIngestControl(unittest.TestCase):
     """Tests for requests to the Direct Ingest API."""
@@ -84,6 +94,8 @@ class TestDirectIngestControl(unittest.TestCase):
         app.config["TESTING"] = True
         self.client = app.test_client()
 
+        self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
+        self.project_id_patcher.start().return_value = "recidiviz-project"
         self.bq_client_patcher = patch("google.cloud.bigquery.Client")
         self.storage_client_patcher = patch("google.cloud.storage.Client")
         self.bq_client_patcher.start()
@@ -94,7 +106,15 @@ class TestDirectIngestControl(unittest.TestCase):
         )
         self.mock_controller_factory = self.controller_factory_patcher.start()
 
+        self.region_code = "us_nd"
+        self.primary_bucket = gcsfs_direct_ingest_bucket_for_region(
+            region_code=self.region_code,
+            system_level=SystemLevel.STATE,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+        )
+
     def tearDown(self) -> None:
+        self.project_id_patcher.stop()
         self.bq_client_patcher.stop()
         self.storage_client_patcher.stop()
         if self.controller_factory_patcher:
@@ -112,141 +132,70 @@ class TestDirectIngestControl(unittest.TestCase):
         mock_region.return_value = fake_region(environment="production")
         mock_environment.return_value = "production"
 
-        region = "us_nd"
-        request_args = {"region": region}
+        request_args = {
+            "region": self.region_code,
+            "bucket": self.primary_bucket.bucket_name,
+        }
         headers = {"X-Appengine-Cron": "test-cron"}
         response = self.client.get(
             "/scheduler", query_string=request_args, headers=headers
         )
         self.assertEqual(200, response.status_code)
 
-        mock_region.assert_called_with("us_nd", is_direct_ingest=True)
+        self.mock_controller_factory.build.assert_called_with(
+            ingest_bucket_path=self.primary_bucket, allow_unlaunched=False
+        )
         mock_controller.schedule_next_ingest_job.assert_called_with(
             just_finished_job=False
         )
-        self.assertEqual(200, response.status_code)
 
-    @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.utils.regions.get_region")
-    def test_schedule_diff_environment_in_production(
-        self, mock_region: mock.MagicMock, mock_environment: mock.MagicMock
+    def test_schedule_build_controller_throws_input_error(
+        self, mock_region: mock.MagicMock
     ) -> None:
-        """Tests that the start operation chains together the correct calls."""
-        mock_environment.return_value = "production"
         mock_controller = create_autospec(BaseDirectIngestController)
-        self.mock_controller_factory.build.return_value = mock_controller
 
-        region = "us_nd"
-
-        mock_region.return_value = fake_region(
-            environment="staging", region_code=region
+        self.mock_controller_factory.build.side_effect = DirectIngestError(
+            msg="Test bad input error",
+            error_type=DirectIngestErrorType.INPUT_ERROR,
         )
 
-        request_args = {"region": region}
+        mock_region.return_value = fake_region(
+            environment="staging", region_code=self.region_code
+        )
+
+        request_args = {
+            "region": self.region_code,
+            "bucket": self.primary_bucket.bucket_name,
+        }
         headers = {"X-Appengine-Cron": "test-cron"}
         response = self.client.get(
             "/scheduler", query_string=request_args, headers=headers
         )
 
+        self.mock_controller_factory.build.assert_called_with(
+            ingest_bucket_path=self.primary_bucket, allow_unlaunched=False
+        )
+
+        self.assertEqual(400, response.status_code)
+        self.assertEqual(
+            response.get_data().decode(),
+            "Test bad input error",
+        )
         mock_controller.schedule_next_ingest_job.assert_not_called()
-        self.assertEqual(400, response.status_code)
-        self.assertEqual(
-            response.get_data().decode(),
-            "Bad environment [production] for region [us_nd].",
-        )
-
-        mock_region.assert_called_with("us_nd", is_direct_ingest=True)
 
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.utils.regions.get_region")
-    def test_start_diff_environment_in_staging(
-        self, mock_region: mock.MagicMock, mock_environment: mock.MagicMock
-    ) -> None:
-        """Tests that the start operation chains together the correct calls."""
-        mock_environment.return_value = "staging"
-        mock_controller = create_autospec(BaseDirectIngestController)
-        self.mock_controller_factory.build.return_value = mock_controller
-        mock_region.return_value = fake_region(environment="production")
-
-        region = "us_nd"
-        request_args = {"region": region, "just_finished_job": "True"}
-        headers = {"X-Appengine-Cron": "test-cron"}
-        response = self.client.get(
-            "/scheduler", query_string=request_args, headers=headers
-        )
-        self.assertEqual(200, response.status_code)
-
-        mock_region.assert_called_with("us_nd", is_direct_ingest=True)
-        mock_controller.schedule_next_ingest_job.assert_called_with(
-            just_finished_job=True
-        )
-
-    @patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
-    def test_schedule_unsupported_region(self, mock_supported: mock.MagicMock) -> None:
-        mock_supported.return_value = ["us_ny", "us_pa"]
-
-        request_args = {"region": "us_ca", "just_finished_job": "False"}
-        headers = {"X-Appengine-Cron": "test-cron"}
-        response = self.client.get(
-            "/scheduler", query_string=request_args, headers=headers
-        )
-        self.assertEqual(400, response.status_code)
-        self.assertTrue(
-            response.get_data()
-            .decode()
-            .startswith("Unsupported direct ingest region [us_ca]")
-        )
-
-    @patch("recidiviz.utils.environment.get_gcp_environment")
-    @patch("recidiviz.utils.regions.get_region")
-    @patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
-    def test_schedule_unlaunched_region(
-        self,
-        mock_supported: mock.MagicMock,
-        mock_region: mock.MagicMock,
-        mock_environment: mock.MagicMock,
-    ) -> None:
-        mock_supported.return_value = ["us_nd", "us_pa"]
-
-        region_code = "us_nd"
-
-        mock_environment.return_value = "production"
-        mock_controller = create_autospec(BaseDirectIngestController)
-        self.mock_controller_factory.build.return_value = mock_controller
-        mock_region.return_value = fake_region(
-            region_code=region_code, environment="staging"
-        )
-
-        request_args = {"region": "us_nd", "just_finished_job": "False"}
-        headers = {"X-Appengine-Cron": "test-cron"}
-
-        response = self.client.get(
-            "/scheduler", query_string=request_args, headers=headers
-        )
-        self.assertEqual(400, response.status_code)
-        self.assertEqual(
-            response.get_data().decode(),
-            "Bad environment [production] for region [us_nd].",
-        )
-
-    @patch("recidiviz.utils.environment.get_gcp_environment")
-    @patch("recidiviz.utils.regions.get_region")
-    @patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
     def test_process_job(
         self,
-        mock_supported: mock.MagicMock,
         mock_region: mock.MagicMock,
         mock_environment: mock.MagicMock,
     ) -> None:
-        mock_supported.return_value = ["us_nd", "us_pa"]
-
-        region_code = "us_nd"
-
         mock_environment.return_value = "staging"
         mock_controller = create_autospec(BaseDirectIngestController)
         self.mock_controller_factory.build.return_value = mock_controller
         mock_region.return_value = fake_region(
-            region_code=region_code, environment="staging"
+            region_code=self.region_code, environment="staging"
         )
         ingest_args = GcsfsIngestArgs(
             datetime.datetime(year=2019, month=7, day=20),
@@ -258,7 +207,7 @@ class TestDirectIngestControl(unittest.TestCase):
             ),
         )
         request_args = {
-            "region": region_code,
+            "region": self.region_code,
         }
         body = {
             "cloud_task_args": ingest_args.to_serializable(),
@@ -280,23 +229,14 @@ class TestDirectIngestControl(unittest.TestCase):
         )
 
     @patch("recidiviz.utils.environment.get_gcp_environment")
-    @patch("recidiviz.utils.regions.get_region")
-    @patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
     def test_process_job_unlaunched_region(
         self,
-        mock_supported: mock.MagicMock,
-        mock_region: mock.MagicMock,
         mock_environment: mock.MagicMock,
     ) -> None:
-        mock_supported.return_value = ["us_ca", "us_pa"]
-
-        region_code = "us_ca"
-
         mock_environment.return_value = "production"
-        mock_controller = create_autospec(BaseDirectIngestController)
-        self.mock_controller_factory.build.return_value = mock_controller
-        mock_region.return_value = fake_region(
-            region_code=region_code, environment="staging"
+        self.mock_controller_factory.build.side_effect = DirectIngestError(
+            msg="Test bad input error",
+            error_type=DirectIngestErrorType.INPUT_ERROR,
         )
 
         ingest_args = GcsfsIngestArgs(
@@ -309,7 +249,7 @@ class TestDirectIngestControl(unittest.TestCase):
             ),
         )
         request_args = {
-            "region": region_code,
+            "region": self.region_code,
         }
         body = {
             "cloud_task_args": ingest_args.to_serializable(),
@@ -328,7 +268,7 @@ class TestDirectIngestControl(unittest.TestCase):
         self.assertEqual(400, response.status_code)
         self.assertEqual(
             response.get_data().decode(),
-            "Bad environment [production] for region [us_ca].",
+            "Test bad input error",
         )
 
     @patch("recidiviz.utils.environment.get_gcp_environment")
@@ -336,19 +276,19 @@ class TestDirectIngestControl(unittest.TestCase):
     def test_handle_file_no_start_ingest(
         self, mock_region: mock.MagicMock, mock_environment: mock.MagicMock
     ) -> None:
-        region_code = "us_nd"
-
         mock_environment.return_value = "production"
         mock_controller = create_autospec(BaseDirectIngestController)
         self.mock_controller_factory.build.return_value = mock_controller
         mock_region.return_value = fake_region(
-            region_code=region_code, environment="production"
+            region_code=self.region_code, environment="production"
         )
 
-        path = GcsfsFilePath.from_absolute_path("bucket-us-nd/Elite_Offenders.csv")
+        path = GcsfsFilePath.from_directory_and_file_name(
+            self.primary_bucket, "Elite_Offenders.csv"
+        )
 
         request_args = {
-            "region": region_code,
+            "region": self.region_code,
             "bucket": path.bucket_name,
             "relative_file_path": path.blob_name,
             "start_ingest": "false",
@@ -368,18 +308,19 @@ class TestDirectIngestControl(unittest.TestCase):
     def test_handle_file_start_ingest(
         self, mock_region: mock.MagicMock, mock_environment: mock.MagicMock
     ) -> None:
-        region_code = "us_nd"
-
         mock_environment.return_value = "production"
         mock_controller = create_autospec(BaseDirectIngestController)
         self.mock_controller_factory.build.return_value = mock_controller
         mock_region.return_value = fake_region(
-            region_code=region_code, environment="production"
+            region_code=self.region_code, environment="production"
         )
-        path = GcsfsFilePath.from_absolute_path("bucket-us-nd/elite_offenders.csv")
+
+        path = GcsfsFilePath.from_directory_and_file_name(
+            self.primary_bucket, "elite_offenders.csv"
+        )
 
         request_args = {
-            "region": region_code,
+            "region": self.region_code,
             "bucket": path.bucket_name,
             "relative_file_path": path.blob_name,
             "start_ingest": "True",
@@ -399,19 +340,19 @@ class TestDirectIngestControl(unittest.TestCase):
     def test_handle_file_start_ingest_unsupported_region(
         self, mock_region: mock.MagicMock, mock_environment: mock.MagicMock
     ) -> None:
-        region_code = "us_nd"
-
         mock_environment.return_value = "production"
         mock_controller = create_autospec(BaseDirectIngestController)
         self.mock_controller_factory.build.return_value = mock_controller
         mock_region.return_value = fake_region(
-            region_code=region_code, environment="staging"
+            region_code=self.region_code, environment="staging"
         )
 
-        path = GcsfsFilePath.from_absolute_path("bucket-us-nd/elite_offenders.csv")
+        path = GcsfsFilePath.from_directory_and_file_name(
+            self.primary_bucket, "elite_offenders.csv"
+        )
 
         request_args = {
-            "region": region_code,
+            "region": self.region_code,
             "bucket": path.bucket_name,
             "relative_file_path": path.blob_name,
             "start_ingest": "False",
@@ -422,7 +363,6 @@ class TestDirectIngestControl(unittest.TestCase):
             "/handle_direct_ingest_file", query_string=request_args, headers=headers
         )
 
-        mock_region.assert_called_with("us_nd", is_direct_ingest=True)
         mock_controller.handle_file.assert_called_with(path, False)
 
         # Even though the region isn't supported, we don't crash - the
@@ -436,16 +376,15 @@ class TestDirectIngestControl(unittest.TestCase):
     def test_handle_files_start_ingest(
         self, mock_region: mock.MagicMock, mock_environment: mock.MagicMock
     ) -> None:
-        region_code = "us_nd"
-
         mock_environment.return_value = "production"
         mock_controller = create_autospec(BaseDirectIngestController)
         self.mock_controller_factory.build.return_value = mock_controller
         mock_region.return_value = fake_region(
-            region_code=region_code, environment="production"
+            region_code=self.region_code, environment="production"
         )
         request_args = {
-            "region": region_code,
+            "region": self.region_code,
+            "bucket": self.primary_bucket.bucket_name,
             "can_start_ingest": "True",
         }
         headers = {"X-Appengine-Cron": "test-cron"}
@@ -453,25 +392,26 @@ class TestDirectIngestControl(unittest.TestCase):
             "/handle_new_files", query_string=request_args, headers=headers
         )
 
-        mock_controller.handle_new_files.assert_called_with(True)
-
         self.assertEqual(200, response.status_code)
+        self.mock_controller_factory.build.assert_called_with(
+            ingest_bucket_path=self.primary_bucket, allow_unlaunched=True
+        )
+        mock_controller.handle_new_files.assert_called_with(True)
 
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.utils.regions.get_region")
     def test_handle_files_no_start_ingest(
         self, mock_region: mock.MagicMock, mock_environment: mock.MagicMock
     ) -> None:
-        region_code = "us_nd"
-
         mock_environment.return_value = "staging"
         mock_controller = create_autospec(BaseDirectIngestController)
         self.mock_controller_factory.build.return_value = mock_controller
         mock_region.return_value = fake_region(
-            region_code=region_code, environment="staging"
+            region_code=self.region_code, environment="staging"
         )
         request_args = {
-            "region": region_code,
+            "region": self.region_code,
+            "bucket": self.primary_bucket.bucket_name,
             "can_start_ingest": "False",
         }
         headers = {"X-Appengine-Cron": "test-cron"}
@@ -479,9 +419,11 @@ class TestDirectIngestControl(unittest.TestCase):
             "/handle_new_files", query_string=request_args, headers=headers
         )
 
-        mock_controller.handle_new_files.assert_called_with(False)
-
         self.assertEqual(200, response.status_code)
+        self.mock_controller_factory.build.assert_called_with(
+            ingest_bucket_path=self.primary_bucket, allow_unlaunched=True
+        )
+        mock_controller.handle_new_files.assert_called_with(False)
 
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.ingest.direct.direct_ingest_control.GcsfsFactory.build")
@@ -524,16 +466,15 @@ class TestDirectIngestControl(unittest.TestCase):
     ) -> None:
         """Tests that handle_new_files will run and rename files in unlaunched locations, but will not schedule a job to
         process any files."""
-        region_code = "us_nd"
-
         mock_environment.return_value = "production"
         mock_controller = create_autospec(BaseDirectIngestController)
         self.mock_controller_factory.build.return_value = mock_controller
         mock_region.return_value = fake_region(
-            region_code=region_code, environment="staging"
+            region_code=self.region_code, environment="staging"
         )
         request_args = {
-            "region": region_code,
+            "region": self.region_code,
+            "bucket": self.primary_bucket.bucket_name,
             "can_start_ingest": "False",
         }
         headers = {"X-Appengine-Cron": "test-cron"}
@@ -541,31 +482,58 @@ class TestDirectIngestControl(unittest.TestCase):
             "/handle_new_files", query_string=request_args, headers=headers
         )
 
+        self.assertEqual(200, response.status_code)
+        self.mock_controller_factory.build.assert_called_with(
+            ingest_bucket_path=self.primary_bucket, allow_unlaunched=True
+        )
         mock_controller.schedule_next_ingest_job.assert_not_called()
         mock_controller.run_ingest_job_and_kick_scheduler_on_completion.assert_not_called()
         mock_controller.handle_new_files.assert_called_with(False)
 
-        self.assertEqual(200, response.status_code)
-
     @patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.utils.regions.get_region")
-    def test_ensure_all_file_paths_normalized(
+    def test_ensure_all_raw_file_paths_normalized(
         self,
         mock_get_region: mock.MagicMock,
         mock_environment: mock.MagicMock,
         mock_supported_region_codes: mock.MagicMock,
     ) -> None:
+        mock_environment.return_value = "production"
 
         fake_supported_regions = {
             "us_mo": fake_region(region_code="us_mo", environment="staging"),
-            "us_nd": fake_region(region_code="us_nd", environment="production"),
+            self.region_code: fake_region(
+                region_code=self.region_code, environment="production"
+            ),
         }
 
         mock_cloud_task_manager = create_autospec(DirectIngestCloudTaskManager)
-        mock_controller = Mock(__class__=BaseDirectIngestController)
-        mock_controller.cloud_task_manager.return_value = mock_cloud_task_manager
-        self.mock_controller_factory.build.return_value = mock_controller
+        mock_controllers_by_region_code = {}
+
+        def mock_build_controller(
+            ingest_bucket_path: GcsfsBucketPath,
+            allow_unlaunched: bool,
+        ) -> BaseDirectIngestController:
+            self.assertTrue(allow_unlaunched)
+            self.assertTrue(is_primary_ingest_bucket(ingest_bucket_path.bucket_name))
+
+            mock_controller = Mock(__class__=BaseDirectIngestController)
+            mock_controller.cloud_task_manager = mock_cloud_task_manager
+            mock_controller.ingest_bucket_path = ingest_bucket_path
+            region_code = get_region_code_from_direct_ingest_bucket(
+                ingest_bucket_path.bucket_name
+            )
+            if not region_code:
+                raise ValueError(
+                    f"Unable to parse region_code from bucket "
+                    f"[{ingest_bucket_path.bucket_name}]"
+                )
+            mock_controller.region = fake_supported_regions[region_code.lower()]
+            mock_controllers_by_region_code[region_code] = mock_controller
+            return mock_controller
+
+        self.mock_controller_factory.build.side_effect = mock_build_controller
 
         def fake_get_region(region_code: str, is_direct_ingest: bool) -> Region:
             if not is_direct_ingest:
@@ -577,20 +545,36 @@ class TestDirectIngestControl(unittest.TestCase):
 
         mock_supported_region_codes.return_value = fake_supported_regions.keys()
 
-        mock_environment.return_value = "staging"
-
         headers = {"X-Appengine-Cron": "test-cron"}
         response = self.client.get(
-            "/ensure_all_file_paths_normalized", query_string={}, headers=headers
+            "/ensure_all_raw_file_paths_normalized", query_string={}, headers=headers
         )
 
         self.assertEqual(200, response.status_code)
+        mock_cloud_task_manager.create_direct_ingest_handle_new_files_task.assert_has_calls(
+            [
+                call(
+                    fake_supported_regions["us_mo"],
+                    ingest_bucket=mock_controllers_by_region_code[
+                        "us_mo"
+                    ].ingest_bucket_path,
+                    can_start_ingest=False,
+                ),
+                call(
+                    fake_supported_regions[self.region_code],
+                    ingest_bucket=mock_controllers_by_region_code[
+                        self.region_code
+                    ].ingest_bucket_path,
+                    can_start_ingest=True,
+                ),
+            ]
+        )
 
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch(
         "recidiviz.ingest.direct.controllers.base_direct_ingest_controller.DirectIngestCloudTaskManagerImpl"
     )
-    def test_ensure_all_file_paths_normalized_actual_regions(
+    def test_ensure_all_raw_file_paths_normalized_actual_regions(
         self, mock_cloud_task_manager: mock.MagicMock, mock_environment: mock.MagicMock
     ) -> None:
         # We want to use real controllers for this test so we stop and clear the patcher
@@ -604,26 +588,25 @@ class TestDirectIngestControl(unittest.TestCase):
 
             headers = {"X-Appengine-Cron": "test-cron"}
             response = self.client.get(
-                "/ensure_all_file_paths_normalized", query_string={}, headers=headers
+                "/ensure_all_raw_file_paths_normalized",
+                query_string={},
+                headers=headers,
             )
 
             self.assertEqual(200, response.status_code)
 
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.utils.regions.get_region")
-    @patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
     @patch(
         "recidiviz.ingest.direct.direct_ingest_control.DirectIngestRawDataTableLatestViewUpdater"
     )
     def test_update_raw_data_latest_views_for_state(
         self,
         mock_updater_fn: mock.MagicMock,
-        mock_supported: mock.MagicMock,
         mock_region: mock.MagicMock,
         mock_environment: mock.MagicMock,
     ) -> None:
         with local_project_id_override("recidiviz-staging"):
-            mock_supported.return_value = ["us_xx"]
             mock_updater = create_autospec(DirectIngestRawDataTableLatestViewUpdater)
             mock_updater_fn.return_value = mock_updater
 
@@ -682,14 +665,11 @@ class TestDirectIngestControl(unittest.TestCase):
 
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.utils.regions.get_region")
-    @patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
     def test_raw_data_import(
         self,
-        mock_supported: mock.MagicMock,
         mock_region: mock.MagicMock,
         mock_environment: mock.MagicMock,
     ) -> None:
-        mock_supported.return_value = ["us_xx"]
 
         region_code = "us_xx"
 
@@ -730,14 +710,11 @@ class TestDirectIngestControl(unittest.TestCase):
 
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.utils.regions.get_region")
-    @patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
     def test_ingest_view_export(
         self,
-        mock_supported: mock.MagicMock,
         mock_region: mock.MagicMock,
         mock_environment: mock.MagicMock,
     ) -> None:
-        mock_supported.return_value = ["us_xx"]
 
         region_code = "us_xx"
 
@@ -787,16 +764,30 @@ class TestDirectIngestControl(unittest.TestCase):
 
         fake_supported_regions = {
             "us_mo": fake_region(region_code="us_mo", environment="staging"),
-            "us_nd": fake_region(region_code="us_nd", environment="production"),
+            self.region_code: fake_region(
+                region_code=self.region_code, environment="production"
+            ),
         }
 
         mock_cloud_task_manager = create_autospec(DirectIngestCloudTaskManager)
-        mock_controllers = []
-        for _ in fake_supported_regions:
+        region_to_mock_controller = defaultdict(list)
+
+        def mock_build_controller(
+            ingest_bucket_path: GcsfsBucketPath,
+            allow_unlaunched: bool,
+        ) -> BaseDirectIngestController:
+            self.assertFalse(allow_unlaunched)
+            region_code_ = get_region_code_from_direct_ingest_bucket(
+                ingest_bucket_path.bucket_name
+            )
+            if region_code_ is None:
+                raise ValueError("Expected nonnull region code")
             mock_controller = Mock(__class__=BaseDirectIngestController)
             mock_controller.cloud_task_manager.return_value = mock_cloud_task_manager
-            mock_controllers.append(mock_controller)
-        self.mock_controller_factory.build.side_effect = mock_controllers
+            region_to_mock_controller[region_code_.lower()].append(mock_controller)
+            return mock_controller
+
+        self.mock_controller_factory.build.side_effect = mock_build_controller
 
         def fake_get_region(region_code: str, is_direct_ingest: bool) -> Region:
             if not is_direct_ingest:
@@ -813,8 +804,10 @@ class TestDirectIngestControl(unittest.TestCase):
         kick_all_schedulers()
 
         mock_supported_region_codes.assert_called()
-        for mock_controller in mock_controllers:
-            mock_controller.kick_scheduler.assert_called_once()
+        for _region_code, controllers in region_to_mock_controller.items():
+            self.assertEqual(len(controllers), len(DirectIngestInstance))
+            for mock_controller in controllers:
+                mock_controller.kick_scheduler.assert_called_once()
 
     @patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
     @patch("recidiviz.utils.environment.get_gcp_environment")
@@ -828,16 +821,27 @@ class TestDirectIngestControl(unittest.TestCase):
 
         fake_supported_regions = {
             "us_mo": fake_region(region_code="us_mo", environment="staging"),
-            "us_nd": fake_region(region_code="us_nd", environment="production"),
+            self.region_code: fake_region(
+                region_code=self.region_code, environment="production"
+            ),
         }
 
         mock_cloud_task_manager = create_autospec(DirectIngestCloudTaskManager)
         region_to_mock_controller = {}
 
-        def mock_build_controller(region: Region) -> BaseDirectIngestController:
+        def mock_build_controller(
+            ingest_bucket_path: GcsfsBucketPath,
+            allow_unlaunched: bool,
+        ) -> BaseDirectIngestController:
+            self.assertFalse(allow_unlaunched)
+            region_code_ = get_region_code_from_direct_ingest_bucket(
+                ingest_bucket_path.bucket_name
+            )
+            if region_code_ is None:
+                raise ValueError("Expected nonnull region code")
             mock_controller = Mock(__class__=BaseDirectIngestController)
             mock_controller.cloud_task_manager.return_value = mock_cloud_task_manager
-            region_to_mock_controller[region.region_code] = mock_controller
+            region_to_mock_controller[region_code_.lower()] = mock_controller
             return mock_controller
 
         self.mock_controller_factory.build = mock_build_controller

@@ -17,42 +17,168 @@
 """Tests for the DirectIngestControllerFactory."""
 import unittest
 
-from mock import patch
+from mock import patch, Mock
 
+from recidiviz.common.ingest_metadata import SystemLevel
+from recidiviz.ingest.direct import templates
+from recidiviz.ingest.direct.controllers import direct_ingest_controller_factory
 from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import (
     DirectIngestControllerFactory,
 )
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
+)
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
+    gcsfs_direct_ingest_bucket_for_region,
+)
 from recidiviz.ingest.direct.direct_ingest_region_utils import (
     get_existing_region_dir_names,
 )
-from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.ingest.direct.errors import DirectIngestError
+from recidiviz.tests.utils.fake_region import fake_region
 from recidiviz.utils.regions import get_region
+
+CONTROLLER_FACTORY_PACKAGE_NAME = direct_ingest_controller_factory.__name__
 
 
 class TestDirectIngestControllerFactory(unittest.TestCase):
     """Tests for the DirectIngestControllerFactory."""
 
     def setUp(self) -> None:
+        self.project_id_patcher = patch(
+            "recidiviz.utils.metadata.project_id", return_value="recidiviz-456"
+        )
         self.bq_client_patcher = patch("google.cloud.bigquery.Client")
         self.storage_client_patcher = patch("google.cloud.storage.Client")
         self.task_client_patcher = patch("google.cloud.tasks_v2.CloudTasksClient")
+        self.project_id_patcher.start()
         self.bq_client_patcher.start()
         self.storage_client_patcher.start()
         self.task_client_patcher.start()
 
     def tearDown(self) -> None:
+        self.project_id_patcher.stop()
         self.bq_client_patcher.stop()
         self.storage_client_patcher.stop()
         self.task_client_patcher.stop()
 
     def test_build_gcsfs_ingest_controller_all_regions(self) -> None:
-        with local_project_id_override("recidiviz-456"):
-            for region_code in get_existing_region_dir_names():
-                region = get_region(region_code, is_direct_ingest=True)
-                controller = DirectIngestControllerFactory.build(region)
+        for region_code in get_existing_region_dir_names():
+            region = get_region(region_code, is_direct_ingest=True)
+            for ingest_instance in DirectIngestInstance:
+                ingest_bucket_path = gcsfs_direct_ingest_bucket_for_region(
+                    region_code=region_code,
+                    system_level=SystemLevel.for_region(region),
+                    ingest_instance=ingest_instance,
+                )
+                controller = DirectIngestControllerFactory.build(
+                    ingest_bucket_path=ingest_bucket_path, allow_unlaunched=False
+                )
 
                 self.assertIsNotNone(controller)
                 self.assertIsInstance(controller, BaseDirectIngestController)
+                self.assertEqual(ingest_bucket_path, controller.ingest_bucket_path)
+
+    def test_build_gcsfs_ingest_controller_all_regions_do_not_allow_launched(
+        self,
+    ) -> None:
+        for region_code in get_existing_region_dir_names():
+            region = get_region(region_code, is_direct_ingest=True)
+            for ingest_instance in DirectIngestInstance:
+                ingest_bucket_path = gcsfs_direct_ingest_bucket_for_region(
+                    region_code=region_code,
+                    system_level=SystemLevel.for_region(region),
+                    ingest_instance=ingest_instance,
+                )
+                controller = DirectIngestControllerFactory.build(
+                    ingest_bucket_path=ingest_bucket_path, allow_unlaunched=True
+                )
+
+                # Should still succeed for all controllers in the test environment
+                self.assertIsNotNone(controller)
+                self.assertIsInstance(controller, BaseDirectIngestController)
+                self.assertEqual(ingest_bucket_path, controller.ingest_bucket_path)
+
+    @patch(
+        "recidiviz.utils.environment.get_gcp_environment",
+        Mock(return_value="production"),
+    )
+    @patch(
+        f"{CONTROLLER_FACTORY_PACKAGE_NAME}.get_supported_direct_ingest_region_codes",
+        Mock(return_value=["us_xx"]),
+    )
+    def test_build_throws_in_prod_region_only_launched_in_staging(
+        self,
+    ) -> None:
+        mock_region = fake_region(
+            region_code="us_xx",
+            environment="staging",
+            is_direct_ingest=True,
+            region_module=templates,
+        )
+        with patch(
+            "recidiviz.utils.regions.get_region",
+            Mock(return_value=mock_region),
+        ):
+            ingest_bucket_path = gcsfs_direct_ingest_bucket_for_region(
+                region_code=mock_region.region_code,
+                system_level=SystemLevel.for_region(mock_region),
+                ingest_instance=DirectIngestInstance.PRIMARY,
+            )
+            with self.assertRaises(DirectIngestError) as e:
+                _ = DirectIngestControllerFactory.build(
+                    ingest_bucket_path=ingest_bucket_path, allow_unlaunched=False
+                )
+            self.assertEqual(
+                str(e.exception),
+                "Bad environment [production] for region [us_xx].",
+            )
+
+    @patch(
+        "recidiviz.utils.environment.get_gcp_environment",
+        Mock(return_value="staging"),
+    )
+    @patch(
+        f"{CONTROLLER_FACTORY_PACKAGE_NAME}.get_supported_direct_ingest_region_codes",
+        Mock(return_value=["us_xx"]),
+    )
+    def test_build_succeeds_in_staging_region_launched_in_prod(self) -> None:
+        mock_region = fake_region(
+            region_code="us_xx",
+            environment="production",
+            is_direct_ingest=True,
+            region_module=templates,
+        )
+        with patch(
+            "recidiviz.utils.regions.get_region",
+            Mock(return_value=mock_region),
+        ):
+            ingest_bucket_path = gcsfs_direct_ingest_bucket_for_region(
+                region_code=mock_region.region_code,
+                system_level=SystemLevel.for_region(mock_region),
+                ingest_instance=DirectIngestInstance.PRIMARY,
+            )
+            controller = DirectIngestControllerFactory.build(
+                ingest_bucket_path=ingest_bucket_path, allow_unlaunched=False
+            )
+            self.assertIsNotNone(controller)
+            self.assertIsInstance(controller, BaseDirectIngestController)
+            self.assertEqual(ingest_bucket_path, controller.ingest_bucket_path)
+
+    def test_build_for_unsupported_region_throws(self) -> None:
+        ingest_bucket_path = gcsfs_direct_ingest_bucket_for_region(
+            region_code="us_xx",
+            system_level=SystemLevel.STATE,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+        )
+        with self.assertRaises(DirectIngestError) as e:
+            _ = DirectIngestControllerFactory.build(
+                ingest_bucket_path=ingest_bucket_path, allow_unlaunched=False
+            )
+        self.assertEqual(
+            str(e.exception),
+            "Unsupported direct ingest region [us_xx] in project [recidiviz-456]",
+        )
