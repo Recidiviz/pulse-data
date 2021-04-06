@@ -1,0 +1,21 @@
+---
+user_inputs:
+  start_year: 2019.0
+  projection_years: 10.0
+
+compartments_architecture:
+    PRETRIAL: shell
+    RELEASE: full
+    PRISON: full
+
+time_step: 1.0
+
+disaggregation_axes:
+  - crime_type
+
+data_inputs:
+  big_query_simulation_tag: test_data
+
+per_year_costs:
+    RELEASE: 0.0
+    PRISON: 1000.0

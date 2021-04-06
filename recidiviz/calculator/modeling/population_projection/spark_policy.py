@@ -29,7 +29,7 @@ class SparkPolicy:
         sub_population: Dict[str, str],
         policy_ts: int,
         apply_retroactive: bool = False,
-    ):
+    ) -> None:
         """
         Create an object to store the policy metadata including the area where the policy should be applied
 
@@ -49,7 +49,7 @@ class SparkPolicy:
     @staticmethod
     def _get_applicable_policies(
         policy_list: List, population_type: str, population_key: Any
-    ):
+    ) -> List["SparkPolicy"]:
         """Return a list of SparkPolicy objects relevant to the specific sub population or compartment.
 
         `policy_list` List of SparkPolicy objects
@@ -65,20 +65,26 @@ class SparkPolicy:
         return policy_subset
 
     @staticmethod
-    def get_compartment_policies(policy_list: List, spark_compartment: str):
+    def get_compartment_policies(
+        policy_list: List, spark_compartment: str
+    ) -> List["SparkPolicy"]:
         """Return a list of SparkPolicy objects for the specific compartment."""
         return SparkPolicy._get_applicable_policies(
             policy_list, "spark_compartment", spark_compartment
         )
 
     @staticmethod
-    def get_sub_population_policies(policy_list: List, sub_population: Dict[str, str]):
+    def get_sub_population_policies(
+        policy_list: List, sub_population: Dict[str, str]
+    ) -> List["SparkPolicy"]:
         """Return a list of SparkPolicy objects for the specific sub_population."""
         return SparkPolicy._get_applicable_policies(
             policy_list, "sub_population", sub_population
         )
 
     @staticmethod
-    def get_ts_policies(policy_list: List["SparkPolicy"], time_step: int):
+    def get_ts_policies(
+        policy_list: List["SparkPolicy"], time_step: int
+    ) -> List["SparkPolicy"]:
         """Return a list of SParkPolicy objects for the specific time step."""
         return SparkPolicy._get_applicable_policies(policy_list, "policy_ts", time_step)

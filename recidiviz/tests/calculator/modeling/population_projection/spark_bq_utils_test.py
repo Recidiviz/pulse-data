@@ -29,7 +29,7 @@ from recidiviz.calculator.modeling.population_projection.utils.spark_bq_utils im
 
 def get_inputs_path(file_name: str) -> str:
     return os.path.join(
-        os.path.dirname(__file__), "simulation_objects/test_configurations", file_name
+        os.path.dirname(__file__), "super_simulation/test_configurations", file_name
     )
 
 

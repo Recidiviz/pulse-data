@@ -1,5 +1,5 @@
 user_inputs:
-    policy_year: 2017.0
+#    policy_year: 2017.0
     start_year: 2017.0
     projection_years: 10.0
 

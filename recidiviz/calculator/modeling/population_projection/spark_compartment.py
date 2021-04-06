@@ -17,7 +17,7 @@
 """Object representing a location in the justice system"""
 
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional
+from typing import Dict, List
 from copy import deepcopy
 import pandas as pd
 
@@ -25,7 +25,7 @@ import pandas as pd
 class SparkCompartment(ABC):
     """Encapsulate all the logic for one compartment within the simulation"""
 
-    def __init__(self, outflows_data: pd.DataFrame, starting_ts: int, tag: str):
+    def __init__(self, outflows_data: pd.DataFrame, starting_ts: int, tag: str) -> None:
         # the first ts of the projection
         self.ts_start = starting_ts
 
@@ -36,7 +36,7 @@ class SparkCompartment(ABC):
         self.outflows_data = outflows_data
 
         # SparkCompartments this compartment feeds to
-        self.edges: Optional[List[SparkCompartment]] = None
+        self.edges: List[SparkCompartment] = []
 
         # key used for this compartment in outflow dicts
         self.tag = tag
@@ -47,30 +47,30 @@ class SparkCompartment(ABC):
         )
         self.outflows = pd.DataFrame(index=outflows_data.index)
 
-    def initialize_edges(self, edges: List):
+    def initialize_edges(self, edges: List) -> None:
         self.edges = edges
 
     @abstractmethod
-    def step_forward(self):
+    def step_forward(self) -> None:
         """Simulate one time step in the projection"""
-        if self.edges is None:
+        if len(self.edges) == 0:
             raise ValueError(
                 f"Compartment {self.tag} needs initialized edges before running the simulation"
             )
 
     @abstractmethod
-    def ingest_incoming_cohort(self, influx: Dict[str, float]):
+    def ingest_incoming_cohort(self, influx: Dict[str, float]) -> None:
         """Ingest the population coming from one compartment into another by the end of the `current_ts`
 
         influx: dictionary of cohort type (str) to number of people revoked for the time period (int)
         """
 
-    def prepare_for_next_step(self):
+    def prepare_for_next_step(self) -> None:
         """Clean up any data structures and move the time step 1 unit forward"""
         # increase the `current_ts` by 1 to simulate the population at the beginning of the next ts
         self.current_ts += 1
 
-    def get_error(self, unit="abs"):
+    def get_error(self, unit: str = "abs") -> pd.DataFrame:
         if unit == "abs":
             return self.error.sort_index(axis=1).transpose()
         if unit == "mse":

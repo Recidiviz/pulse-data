@@ -25,10 +25,8 @@ from recidiviz.calculator.modeling.population_projection.utils.transitions_utils
 class CohortTable:
     """Store population counts for one cohort of people that enter one category in the same year"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.cohort_df = pd.DataFrame(dtype=float)
-
-        self.retired_cohort_df = pd.DataFrame()
 
     def get_latest_population(self) -> pd.Series:
         if self.cohort_df.empty:
@@ -77,12 +75,14 @@ class CohortTable:
     def get_cohort_timeline(self, cohort_start_year: int) -> pd.DataFrame:
         return self.cohort_df.loc[cohort_start_year]
 
-    def pop_cohorts(self):
+    def pop_cohorts(self) -> pd.DataFrame:
         """pop cohort_df for cross-simulation flow"""
         cohort_df = self.cohort_df
         self.cohort_df = pd.DataFrame()
         return cohort_df
 
-    def ingest_cross_simulation_cohorts(self, cross_simulation_flows: pd.DataFrame):
+    def ingest_cross_simulation_cohorts(
+        self, cross_simulation_flows: pd.DataFrame
+    ) -> None:
         """ingest new cohort_df from cross-simulation flow"""
         self.cohort_df = cross_simulation_flows
