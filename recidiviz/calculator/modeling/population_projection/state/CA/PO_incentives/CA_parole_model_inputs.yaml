@@ -1,6 +1,6 @@
 ---
 user_inputs:
-  policy_year: 2020.0
+#  policy_year: 2020.0
   start_year: 2018.0
   projection_years: 13.0
 

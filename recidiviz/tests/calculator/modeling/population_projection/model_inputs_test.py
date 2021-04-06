@@ -26,7 +26,7 @@ import pandas
 
 
 from recidiviz.calculator.modeling import population_projection
-from recidiviz.calculator.modeling.population_projection.simulations.super_simulation.super_simulation_factory import (
+from recidiviz.calculator.modeling.population_projection.super_simulation.super_simulation_factory import (
     SuperSimulationFactory,
 )
 
