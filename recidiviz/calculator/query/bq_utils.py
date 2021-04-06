@@ -16,6 +16,7 @@
 # =============================================================================
 
 """Helper functions for building BQ views."""
+# pylint: disable=line-too-long
 
 
 def unnest_column(input_column_name: str, output_column_name: str) -> str:
@@ -86,3 +87,7 @@ def most_severe_violation_type_subtype_grouping() -> str:
                 WHEN most_severe_violation_type IS NULL THEN 'NO_VIOLATIONS'
                 ELSE most_severe_violation_type
             END AS violation_type"""
+
+
+def clean_up_supervising_officer_external_id() -> str:
+    return """REPLACE(REPLACE(REPLACE(REPLACE(supervising_officer_external_id, ' - ', ' '), '-', ' '), ':', ''), ' ', '_')"""
