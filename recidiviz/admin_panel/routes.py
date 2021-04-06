@@ -52,10 +52,9 @@ from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import (
     GCP_PROJECT_STAGING,
     in_development,
-    in_ci,
+    in_gcp,
     in_gcp_staging,
     in_gcp_production,
-    in_test,
 )
 from recidiviz.utils.timer import RepeatedTimer
 
@@ -68,7 +67,7 @@ _VALIDATION_METADATA_PREFIX = "validation_metadata"
 
 logging.getLogger().setLevel(logging.INFO)
 
-if not in_ci():
+if in_gcp() or in_development():
     override_project_id: Optional[str] = None
     if in_development():
         override_project_id = GCP_PROJECT_STAGING
@@ -98,9 +97,8 @@ if not in_ci():
         for store in all_stores
     ]
 
-    if not in_test():
-        for timer in store_refresh_timers:
-            timer.start()
+    for timer in store_refresh_timers:
+        timer.start()
 
 static_folder = os.path.abspath(
     os.path.join(
