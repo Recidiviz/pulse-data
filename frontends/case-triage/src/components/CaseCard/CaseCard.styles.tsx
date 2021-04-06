@@ -72,11 +72,13 @@ export const CheckboxButtonContainer = styled.div`
   margin-top: ${spacing.sm};
 `;
 
+export const ClientNameRow = styled.div`
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+`;
+
 export const CloseButton = styled(Button).attrs({ kind: "link" })`
-  position: absolute;
-  top: 50%;
-  right: ${spacing.lg};
-  transform: translateY(-50%);
   height: 16px;
   width: 16px;
 `;
