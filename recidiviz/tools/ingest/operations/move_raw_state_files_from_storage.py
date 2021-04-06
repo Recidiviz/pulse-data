@@ -28,9 +28,8 @@ Steps:
 
 Example usage (run from `pipenv shell`):
 
-python -m recidiviz.tools.ingest.operations.move_state_files_from_storage \
+python -m recidiviz.tools.ingest.operations.move_raw_state_files_from_storage \
     --project-id recidiviz-staging --region us_nd \
-    --file-type-to-move raw \
     --start-date-bound 2019-08-12  --end-date-bound 2019-08-13 --dry-run True \
     [--file_filter "docstars_offendercases|elite_offender"]
 """
@@ -103,7 +102,6 @@ class MoveFilesFromStorageController:
         self,
         project_id: str,
         region: str,
-        file_type_to_move: GcsfsDirectIngestFileType,
         start_date_bound: Optional[str],
         end_date_bound: Optional[str],
         dry_run: bool,
@@ -112,24 +110,23 @@ class MoveFilesFromStorageController:
 
         self.project_id = project_id
         self.region = region
-        self.file_type_to_move = file_type_to_move
         self.start_date_bound = start_date_bound
         self.end_date_bound = end_date_bound
         self.dry_run = dry_run
         self.file_filter = file_filter
 
-        # TODO(#6077): Add ability to copy files from any instance's storage
-        ingest_instance = DirectIngestInstance.PRIMARY
         self.storage_bucket = gcsfs_direct_ingest_storage_directory_path_for_region(
             region_code=region,
             system_level=SystemLevel.STATE,
-            ingest_instance=ingest_instance,
+            # Raw files are only ever stored in the PRIMARY storage bucket
+            ingest_instance=DirectIngestInstance.PRIMARY,
             project_id=self.project_id,
         )
         self.ingest_bucket = gcsfs_direct_ingest_bucket_for_region(
             region_code=region,
             system_level=SystemLevel.STATE,
-            ingest_instance=ingest_instance,
+            # Raw files are only ever processed in the PRIMARY ingest bucket
+            ingest_instance=DirectIngestInstance.PRIMARY,
             project_id=self.project_id,
         )
 
@@ -219,7 +216,7 @@ class MoveFilesFromStorageController:
     def get_date_subdir_paths(self) -> List[str]:
         return gsutil_get_storage_subdirs_containing_file_types(
             storage_bucket_path=self.storage_bucket.abs_path(),
-            file_type=self.file_type_to_move,
+            file_type=GcsfsDirectIngestFileType.RAW_DATA,
             upper_bound_date=self.end_date_bound,
             lower_bound_date=self.start_date_bound,
         )
@@ -337,7 +334,7 @@ class MoveFilesFromStorageController:
         """
 
         path_as_unprocessed = to_normalized_unprocessed_file_path_from_normalized_path(
-            original_file_path, file_type_override=self.file_type_to_move
+            original_file_path
         )
 
         _, file_name = os.path.split(path_as_unprocessed)
@@ -375,13 +372,6 @@ def main() -> None:
     parser.add_argument("--region", required=True, help="E.g. 'us_nd'")
 
     parser.add_argument(
-        "--file-type-to-move",
-        required=True,
-        choices=[file_type.value for file_type in GcsfsDirectIngestFileType],
-        help="Defines what type of files to move out of storage.",
-    )
-
-    parser.add_argument(
         "--start-date-bound",
         help="The lower bound date to start from, inclusive. For partial replays of ingested files. "
         "E.g. 2019-09-23.",
@@ -412,7 +402,6 @@ def main() -> None:
     MoveFilesFromStorageController(
         project_id=args.project_id,
         region=args.region,
-        file_type_to_move=GcsfsDirectIngestFileType(args.file_type_to_move),
         start_date_bound=args.start_date_bound,
         end_date_bound=args.end_date_bound,
         dry_run=args.dry_run,
