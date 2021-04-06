@@ -18,6 +18,7 @@
 
 import unittest
 from typing import List
+from unittest.mock import patch
 
 import pandas as pd
 from recidiviz.calculator.modeling.population_projection.simulations.sub_simulation.sub_simulation_factory import (
@@ -122,7 +123,7 @@ class TestSubSimulation(unittest.TestCase):
                 True,
             )
 
-        with self.assertWarns(Warning):
+        with patch("logging.Logger.warning") as mock:
             _ = SubSimulationFactory.build_sub_simulation(
                 self.test_outflow_data,
                 typo_transitions,
@@ -133,4 +134,9 @@ class TestSubSimulation(unittest.TestCase):
                 0,
                 True,
                 True,
+            )
+            mock.assert_called_once()
+            self.assertEqual(
+                mock.mock_calls[0].args[0],
+                "Some transitions data not fed to a compartment: %s",
             )
