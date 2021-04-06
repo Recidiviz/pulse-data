@@ -88,6 +88,7 @@ def _parse_table(_: str, filename: str, report_date: datetime.date) -> pd.DataFr
             filename,
             multiple_tables=True,
             pages=page_num,
+            pandas_options={"header": None},
         )
         df = df[-1]
         df = df.dropna(axis="columns", thresh=5)
