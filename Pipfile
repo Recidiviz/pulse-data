@@ -13,11 +13,10 @@ pytest-cov = "*"
 mypy = "*"
 coveralls = "*"
 # This should always be pinned to the latest version officially supported by Dataflow: https://cloud.google.com/dataflow/docs/support/sdk-version-support-status#python
-apache-beam = {extras = ["gcp", "test"],version = "<=2.27.0"}
+apache-beam = {extras = ["gcp", "test"],version = "<=2.28.0"}
 fakeredis = "*"
 freezegun = "*"
 ipdb = "*"
-nose = "*"
 pytest-alembic = "*"
 pipenv = "*"
 pygit2 = "*"
