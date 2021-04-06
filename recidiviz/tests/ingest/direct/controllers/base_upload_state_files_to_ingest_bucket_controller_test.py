@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for upload_state_files_to_ingest_bucket_with_date.py"""
+"""Tests for base_upload_state_files_to_ingest_bucket_controller.py"""
 import datetime
 import unittest
 from unittest.mock import patch, Mock
@@ -23,7 +23,7 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
 from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestRawFileMetadataManager,
 )
-from recidiviz.ingest.direct.controllers.upload_state_files_to_ingest_bucket_with_date import (
+from recidiviz.ingest.direct.controllers.base_upload_state_files_to_ingest_bucket_controller import (
     UploadStateFilesToIngestBucketController,
 )
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem

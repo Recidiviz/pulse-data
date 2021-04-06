@@ -73,8 +73,10 @@ class MoveFilesToDeprecatedController:
 
     def __init__(
         self,
+        *,
         file_type: GcsfsDirectIngestFileType,
         region_code: str,
+        ingest_instance: DirectIngestInstance,
         start_date_bound: Optional[str],
         end_date_bound: Optional[str],
         dry_run: bool,
@@ -89,8 +91,15 @@ class MoveFilesToDeprecatedController:
         self.file_filter = file_filter
         self.project_id = project_id
 
-        # TODO(#6077): Add ability to deprecate files for any instance
-        ingest_instance = DirectIngestInstance.PRIMARY
+        if (
+            self.file_type == GcsfsDirectIngestFileType.RAW_DATA
+            and ingest_instance != DirectIngestInstance.PRIMARY
+        ):
+            raise ValueError(
+                f"Raw files are only ever handled in the PRIMARY ingest instance. "
+                f"Instead, found ingest_instance [{ingest_instance}]."
+            )
+
         self.region_storage_dir_path_for_file_type = (
             gcsfs_direct_ingest_storage_directory_path_for_region(
                 region_code=region_code,
@@ -111,6 +120,27 @@ class MoveFilesToDeprecatedController:
 
     def run(self) -> None:
         """Main function that will execute the move to deprecated."""
+
+        if self.file_type == GcsfsDirectIngestFileType.RAW_DATA:
+            i = input(
+                "You have chosen to deprecate RAW_DATA type files. It is relatively "
+                "that this should happen - generally only if we have received bad data "
+                "from the state. \n Are you sure you want to proceed? [y/n]: "
+            )
+
+            if i.upper() != "Y":
+                logging.info("Responded with [%s]. Exiting.", i)
+                return
+
+            i = input(
+                f"Have you already deleted data for these files out of the relevant "
+                f"BigQuery raw data tables in the "
+                f"`{self.project_id}.{self.region_code.lower()}_raw_data` "
+                f"dataset? [y/n]: "
+            )
+            if i.upper() != "Y":
+                logging.info("Responded with [%s]. Exiting.", i)
+                return
 
         # TODO(#3666): Update this script to make updates to our Operations db and BigQuery (if necessary).
         #  For now we print these messages to check if appropriate data has been deleted from operations db.
@@ -139,6 +169,7 @@ class MoveFilesToDeprecatedController:
                 )
 
                 if i.upper() != "Y":
+                    logging.info("Responded with [%s]. Exiting.", i)
                     return
 
             elif self.file_type == GcsfsDirectIngestFileType.INGEST_VIEW:
@@ -149,6 +180,7 @@ class MoveFilesToDeprecatedController:
                 )
 
                 if i.upper() != "Y":
+                    logging.info("Responded with [%s]. Exiting.", i)
                     return
 
         destination_dir_path = os.path.join(
@@ -173,6 +205,7 @@ class MoveFilesToDeprecatedController:
             )
 
             if i.upper() != "Y":
+                logging.info("Responded with [%s]. Exiting.", i)
                 return
 
         files_to_move = self._get_files_to_move()
@@ -186,6 +219,7 @@ class MoveFilesToDeprecatedController:
             )
 
             if i.upper() != "Y":
+                logging.info("Responded with [%s]. Exiting.", i)
                 return
 
         self._execute_move(files_to_move)
@@ -282,6 +316,13 @@ def main() -> None:
     parser.add_argument("--region", required=True, help="E.g. 'us_nd'")
 
     parser.add_argument(
+        "--ingest-instance",
+        required=True,
+        choices=[instance.value for instance in DirectIngestInstance],
+        help="Defines which ingest instance we should be deprecating files for.",
+    )
+
+    parser.add_argument(
         "--dry-run",
         default=True,
         type=str_to_bool,
@@ -317,6 +358,7 @@ def main() -> None:
     MoveFilesToDeprecatedController(
         file_type=GcsfsDirectIngestFileType(args.file_type),
         region_code=args.region,
+        ingest_instance=DirectIngestInstance(args.ingest_instance),
         start_date_bound=args.start_date_bound,
         end_date_bound=args.end_date_bound,
         project_id=args.project_id,
