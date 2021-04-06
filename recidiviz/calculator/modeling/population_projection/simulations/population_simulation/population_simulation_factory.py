@@ -15,10 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Composition object for PopulationSimulation."""
-
+import logging
 from typing import Dict, List, Any
 from time import time
-from warnings import warn
 from functools import partial
 import pandas as pd
 
@@ -258,15 +257,15 @@ class PopulationSimulationFactory:
             )
 
         if len(unused_transitions_data) > 0:
-            warn(
-                f"Some transitions data left unused: {unused_transitions_data}", Warning
+            logging.warning(
+                "Some transitions data left unused: %s", unused_transitions_data
             )
         if len(unused_outflows_data) > 0:
-            warn(f"Some outflows data left unused: {unused_outflows_data}", Warning)
+            logging.warning("Some outflows data left unused: %s", unused_outflows_data)
         if len(unused_total_population_data) > 0:
-            warn(
-                f"Some total population data left unused: {unused_total_population_data}",
-                Warning,
+            logging.warning(
+                "Some total population data left unused: %s",
+                unused_total_population_data,
             )
 
         return sub_simulations

@@ -15,8 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """SuperSimulation composed object for initializing simulations."""
+import logging
 from datetime import datetime
-from warnings import warn
 from typing import Dict, Any, Union, List, Tuple, Optional
 import numpy as np
 import pandas as pd
@@ -188,9 +188,11 @@ class Initializer:
             > missing_event_threshold
         ]
         if not sparse_disaggregations.empty:
-            warn(
-                f"Outflows data is missing for more than {missing_event_threshold * 100}% for some disaggregations:\n"
-                f"{100 * sparse_disaggregations / len(outflows_data.columns)}"
+            logging.warning(
+                "Outflows data is missing for more than %s%% for some disaggregations:"
+                "\n%s%%",
+                100 * missing_event_threshold,
+                100 * sparse_disaggregations / len(outflows_data.columns),
             )
 
         # Fill the total population with 0 and remove the multiindex for the population simulation
