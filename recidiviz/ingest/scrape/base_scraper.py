@@ -48,9 +48,10 @@ from lxml.etree import XMLSyntaxError  # pylint:disable=no-name-in-module
 
 from recidiviz.common.common_utils import get_trace_id_from_flask
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
+from recidiviz.ingest.models import serialization
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.ingest.models.scrape_key import ScrapeKey
-from recidiviz.ingest.scrape import constants, ingest_utils, sessions
+from recidiviz.ingest.scrape import constants, sessions
 from recidiviz.ingest.scrape.errors import (
     ScraperFetchError,
     ScraperGetMoreTasksError,
@@ -328,7 +329,7 @@ class BaseScraper(Scraper):
                             self.region.region_code,
                         )
                         persistence.write(
-                            ingest_utils.convert_ingest_info_to_proto(
+                            serialization.convert_ingest_info_to_proto(
                                 scraped_data.ingest_info
                             ),
                             metadata,

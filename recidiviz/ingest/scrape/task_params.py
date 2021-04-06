@@ -23,6 +23,7 @@ from typing import Any, Dict, List, Optional
 import attr
 import cattr
 
+from recidiviz.ingest.models import serialization
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.ingest.models.single_count import SingleCount
 from recidiviz.ingest.scrape import constants
@@ -93,7 +94,13 @@ class Task:
         return attr.evolve(next_task, **kwds)
 
     def to_serializable(self) -> Any:
-        return cattr.unstructure(self)
+        converter = serialization.with_ingest_hooks(cattr.Converter())
+        return converter.unstructure(self)
+
+    @classmethod
+    def from_serializable(cls, serializable: Any) -> "Task":
+        converter = serialization.with_ingest_hooks(cattr.Converter())
+        return converter.structure(serializable, cls)
 
 
 @attr.s(frozen=True)
@@ -119,8 +126,10 @@ class QueueRequest:
     ingest_info: Optional[IngestInfo] = attr.ib(default=None)
 
     def to_serializable(self) -> Any:
-        return cattr.unstructure(self)
+        converter = serialization.with_ingest_hooks(cattr.Converter())
+        return converter.unstructure(self)
 
     @classmethod
     def from_serializable(cls, serializable: Any) -> "QueueRequest":
-        return cattr.structure(serializable, cls)
+        converter = serialization.with_ingest_hooks(cattr.Converter())
+        return converter.structure(serializable, cls)

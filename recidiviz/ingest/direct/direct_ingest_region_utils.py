@@ -17,10 +17,11 @@
 """Shared util functions dealing with direct ingest of regions."""
 import os
 from typing import List
-import recidiviz
+
+from recidiviz.ingest.direct import regions
 from recidiviz.common.constants.states import StateCode
 
-_REGIONS_DIR = os.path.dirname(recidiviz.ingest.direct.regions.__file__)
+_REGIONS_DIR = os.path.dirname(regions.__file__)
 
 
 def get_existing_region_dir_paths() -> List[str]:

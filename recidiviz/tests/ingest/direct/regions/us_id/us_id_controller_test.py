@@ -20,7 +20,6 @@ from typing import Type
 
 import attr
 
-from recidiviz import IngestInfo
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import (
     Gender,
@@ -84,6 +83,7 @@ from recidiviz.ingest.direct.regions.us_id.us_id_constants import (
     VIOLATION_REPORT_CONSTANTS_INCLUDING_COMMA,
 )
 from recidiviz.ingest.models.ingest_info import (
+    IngestInfo,
     StatePerson,
     StatePersonExternalId,
     StatePersonRace,

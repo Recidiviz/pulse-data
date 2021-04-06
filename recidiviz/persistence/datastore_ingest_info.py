@@ -24,6 +24,7 @@ import cattr
 from google.cloud import datastore
 
 from recidiviz.common.common_utils import get_trace_id_from_flask
+from recidiviz.ingest.models import serialization
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.common.common_utils import retry_grpc
 from recidiviz.utils import environment
@@ -114,11 +115,13 @@ class BatchIngestInfoData:
     trace_id: Optional[str] = attr.ib(default=None)
 
     def to_serializable(self) -> str:
-        return cattr.unstructure(self)
+        converter = serialization.with_ingest_hooks(cattr.Converter())
+        return converter.unstructure(self)
 
     @classmethod
     def from_serializable(cls: Type[ClsT], serializable: str) -> ClsT:
-        return cattr.structure(serializable, cls)
+        converter = serialization.with_ingest_hooks(cattr.Converter())
+        return converter.structure(serializable, cls)
 
 
 _DatastoreIngestInfoType = TypeVar(

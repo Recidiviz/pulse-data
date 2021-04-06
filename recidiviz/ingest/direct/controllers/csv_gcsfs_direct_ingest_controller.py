@@ -25,7 +25,6 @@ from typing import List, Optional, Callable, Any
 import gcsfs
 import pandas as pd
 
-from recidiviz import IngestInfo
 from recidiviz.cloud_functions.cloud_function_utils import GCSFS_NO_CACHING
 
 from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
@@ -52,6 +51,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_csv_reader_delegates import (
 )
 from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
 from recidiviz.ingest.extractor.csv_data_extractor import CsvDataExtractor
+from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.utils import metadata
 
 

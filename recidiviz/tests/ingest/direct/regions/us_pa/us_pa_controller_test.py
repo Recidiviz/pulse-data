@@ -20,7 +20,6 @@ import datetime
 import json
 from typing import Type
 
-from recidiviz import IngestInfo
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import (
     Gender,
@@ -74,6 +73,7 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
 )
 from recidiviz.ingest.direct.regions.us_pa.us_pa_controller import UsPaController
 from recidiviz.ingest.models.ingest_info import (
+    IngestInfo,
     StatePerson,
     StatePersonExternalId,
     StatePersonRace,

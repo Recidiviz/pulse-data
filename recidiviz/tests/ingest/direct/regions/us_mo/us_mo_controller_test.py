@@ -19,7 +19,6 @@
 import datetime
 from typing import Type, cast, List
 
-from recidiviz import IngestInfo
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import Gender, Race, Ethnicity
 from recidiviz.common.constants.state.external_id_types import US_MO_DOC
@@ -60,6 +59,7 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
 )
 from recidiviz.ingest.direct.regions.us_mo.us_mo_controller import UsMoController
 from recidiviz.ingest.models.ingest_info import (
+    IngestInfo,
     StatePerson,
     StatePersonExternalId,
     StatePersonRace,
