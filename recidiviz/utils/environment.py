@@ -172,7 +172,7 @@ def test_only(func: Callable) -> Callable:
 
 
 def in_development() -> bool:
-    return not in_gcp() and not in_test()
+    return os.environ.get("IS_DEV") == "true"
 
 
 class ServiceType(Enum):
