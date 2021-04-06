@@ -269,7 +269,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
     with actual GCP Cloud Task queues."""
 
     def __init__(self) -> None:
-        # TODO(#6077): Select queues based on region code / DirectIngestInstance instead
+        # TODO(#6742): Select queues based on region code / DirectIngestInstance instead
         #  of using global queues.
         self.scheduler_cloud_task_queue_manager = CloudTaskQueueManager(
             queue_info_cls=SchedulerCloudTaskQueueInfo,
