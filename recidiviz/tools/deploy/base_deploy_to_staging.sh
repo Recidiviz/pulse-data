@@ -127,6 +127,7 @@ else
 
     echo "Found remote build, proceeding to use image ${REMOTE_BUILD_URL} for the release, tagging to ${IMAGE_URL}"
     run_cmd gcloud -q container images add-tag ${REMOTE_BUILD_URL} ${IMAGE_URL}
+fi
 
 if [[ ! -z ${PROMOTE} ]]; then
     # Update latest tag to reflect staging as well
