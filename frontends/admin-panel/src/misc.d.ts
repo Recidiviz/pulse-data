@@ -40,3 +40,11 @@ interface DataFreshnessResult {
   date: string;
   ingestPaused: boolean;
 }
+
+// PO Feedback responses
+interface POFeedbackResponse {
+  officerExternalId: string;
+  personExternalId: string;
+  otherText: string;
+  timestamp: string;
+}

@@ -20,6 +20,7 @@ import { Link, Redirect, Route, Switch, useLocation } from "react-router-dom";
 
 import CloudSQLExportView from "./CloudSQLExportView";
 import CloudSQLImportView from "./CloudSQLImportView";
+import POFeedbackView from "./POFeedbackView";
 import ColumnView from "./ColumnView";
 import DatasetView from "./DatasetView";
 import DataFreshnessView from "./DataFreshnessView";
@@ -98,6 +99,9 @@ const App = (): JSX.Element => {
                 Cloud SQL &rarr; GCS
               </Link>
             </Menu.Item>
+            <Menu.Item key={CaseTriage.PO_FEEDBACK_ROUTE}>
+              <Link to={CaseTriage.PO_FEEDBACK_ROUTE}>PO Feedback</Link>
+            </Menu.Item>
           </Menu.ItemGroup>
         </Menu>
       </Layout.Sider>
@@ -131,6 +135,10 @@ const App = (): JSX.Element => {
           <Route
             path={CaseTriage.CLOUD_SQL_TO_GCS_CSV_ROUTE}
             component={CloudSQLExportView}
+          />
+          <Route
+            path={CaseTriage.PO_FEEDBACK_ROUTE}
+            component={POFeedbackView}
           />
           <Redirect
             from="/"
@@ -170,6 +178,9 @@ function selectedMenuKeys(pathname: string): string[] {
   }
   if (pathname.startsWith(CaseTriage.CLOUD_SQL_TO_GCS_CSV_ROUTE)) {
     return [CaseTriage.CLOUD_SQL_TO_GCS_CSV_ROUTE];
+  }
+  if (pathname.startsWith(CaseTriage.PO_FEEDBACK_ROUTE)) {
+    return [CaseTriage.PO_FEEDBACK_ROUTE];
   }
   return [];
 }

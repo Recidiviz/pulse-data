@@ -187,12 +187,12 @@ class CheckAssertionsTest(unittest.TestCase):
 
     def test_endpoint_docs_unhappy(self) -> None:
         modified_files = [
-            "recidiviz/admin_panel/routes.py",
+            "recidiviz/admin_panel/all_routes.py",
             "recidiviz/ingest/aggregate/single_count.py",
         ]
         expected_failures: List[Tuple[FrozenSet[str], FrozenSet[str]]] = [
             (
-                frozenset(["recidiviz/admin_panel/routes.py"]),
+                frozenset(["recidiviz/admin_panel/all_routes.py"]),
                 frozenset(["docs/endpoints/admin"]),
             ),
             (

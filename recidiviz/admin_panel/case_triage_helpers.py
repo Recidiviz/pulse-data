@@ -16,7 +16,7 @@
 # =============================================================================
 """Implements useful helper functions for Case Triage."""
 import os
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
@@ -24,15 +24,20 @@ from recidiviz.persistence.database.schema_utils import get_case_triage_table_cl
 from recidiviz.utils import metadata
 
 
-def get_importable_csvs() -> Dict[str, GcsfsFilePath]:
+def get_importable_csvs(
+    override_project_id: Optional[str] = None,
+) -> Dict[str, GcsfsFilePath]:
     """Returns a map from view ids to GcsfsFilePaths where the views have
     been exported to CSVs."""
     gcsfs = GcsfsFactory.build()
+    project_id = (
+        metadata.project_id() if not override_project_id else override_project_id
+    )
 
     files_in_import_folder = [
         f
         for f in gcsfs.ls_with_blob_prefix(
-            bucket_name=f"{metadata.project_id()}-case-triage-data",
+            bucket_name=f"{project_id}-case-triage-data",
             blob_prefix="to_import",
         )
         if isinstance(f, GcsfsFilePath)
