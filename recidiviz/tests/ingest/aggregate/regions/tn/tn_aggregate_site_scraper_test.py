@@ -27,7 +27,7 @@ class TestTnAggregateSiteScraper(TestCase):
     """Test that tn_aggregate_site_scraper correctly scrapes urls."""
 
     @patch.object(requests, "get")
-    def testGetAllUrls(self, mockget):
+    def testGetAllUrls(self, mockget: Mock) -> None:
         mockresponse = Mock()
         mockget.return_value = mockresponse
         mockresponse.text = fixtures.as_string("aggregate/regions/tn", "reports.html")

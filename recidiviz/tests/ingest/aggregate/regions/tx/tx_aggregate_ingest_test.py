@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests for tx_aggregate_ingest.py."""
 import datetime
+from typing import Dict
 from unittest import TestCase
 
 import pandas as pd
@@ -23,6 +24,7 @@ import pytest
 from more_itertools import one
 from pandas.testing import assert_frame_equal
 from sqlalchemy import func
+from sqlalchemy.orm import DeclarativeMeta
 
 from recidiviz.common.constants.aggregate import enum_canonical_strings as enum_strings
 from recidiviz.ingest.aggregate.regions.tx import tx_aggregate_ingest
@@ -38,50 +40,38 @@ DATE_SCRAPED_AFTER_1996 = datetime.date(year=2017, month=12, day=1)
 DATE_SCRAPED_1996 = datetime.date(year=1996, month=6, day=1)
 DATE_SCRAPED_BEFORE_1996 = datetime.date(year=1994, month=3, day=1)
 DATE_SCRAPED_CONCAT = datetime.date(year=2003, month=10, day=1)
-# Cache the parsed pdf between tests since it's expensive to compute
-@pytest.fixture(scope="class")
-def parsed_pdf_after_1996(request):
-    request.cls.parsed_pdf_after_1996 = tx_aggregate_ingest.parse(
-        "", fixtures.as_filepath("Abbreviated Pop Rpt Dec 2017.pdf")
-    )
 
 
-# Cache the parsed pdf between tests since it's expensive to compute
-@pytest.fixture(scope="class")
-def parsed_pdf_1996(request):
-    request.cls.parsed_pdf_1996 = tx_aggregate_ingest.parse(
-        "", fixtures.as_filepath("texas_url_abbreviated pop rpt June 1996.pdf")
-    )
-
-
-# Cache the parsed pdf between tests since it's expensive to compute
-@pytest.fixture(scope="class")
-def parsed_pdf_before_1996(request):
-    request.cls.parsed_pdf_before_1996 = tx_aggregate_ingest.parse(
-        "", fixtures.as_filepath("abbreviated pop rpt march 1994.pdf")
-    )
-
-
-@pytest.fixture(scope="class")
-def parsed_pdf_concat(request):
-    request.cls.parsed_pdf_concat = tx_aggregate_ingest.parse(
-        "",
-        fixtures.as_filepath(
-            "docs_abbreviatedpopreports_abbreviated pop rpt oct 2003.pdf"
-        ),
-    )
-
-
-@pytest.mark.usefixtures("parsed_pdf_after_1996")
-@pytest.mark.usefixtures("parsed_pdf_before_1996")
-@pytest.mark.usefixtures("parsed_pdf_1996")
-@pytest.mark.usefixtures("parsed_pdf_concat")
 @pytest.mark.skip(
     "TODO(#4865): This test fails on master for some, possibly due to underlying Java issues related to "
     "Apache Beam and Tabula."
 )
 class TestTxAggregateIngest(TestCase):
     """Test that tx_aggregate_ingest correctly parses the TX PDF."""
+
+    parsed_pdf_before_1996: Dict[DeclarativeMeta, pd.DataFrame] = {}
+    parsed_pdf_1996: Dict[DeclarativeMeta, pd.DataFrame] = {}
+    parsed_pdf_after_1996: Dict[DeclarativeMeta, pd.DataFrame] = {}
+    parsed_pdf_concat: Dict[DeclarativeMeta, pd.DataFrame] = {}
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        # Cache the parsed pdf between tests since it's expensive to compute
+        cls.parsed_pdf_before_1996 = tx_aggregate_ingest.parse(
+            "", fixtures.as_filepath("abbreviated pop rpt march 1994.pdf")
+        )
+        cls.parsed_pdf_1996 = tx_aggregate_ingest.parse(
+            "", fixtures.as_filepath("texas_url_abbreviated pop rpt June 1996.pdf")
+        )
+        cls.parsed_pdf_after_1996 = tx_aggregate_ingest.parse(
+            "", fixtures.as_filepath("Abbreviated Pop Rpt Dec 2017.pdf")
+        )
+        cls.parsed_pdf_concat = tx_aggregate_ingest.parse(
+            "",
+            fixtures.as_filepath(
+                "docs_abbreviatedpopreports_abbreviated pop rpt oct 2003.pdf"
+            ),
+        )
 
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS)
@@ -90,7 +80,10 @@ class TestTxAggregateIngest(TestCase):
     def tearDown(self) -> None:
         fakes.teardown_in_memory_sqlite_databases()
 
-    def testParse_ParsesHeadAndTail_After_1996(self):
+    def testParse_ParsesHeadAndTail_After_1996(self) -> None:
+        if not self.parsed_pdf_after_1996:
+            raise ValueError("Unexpectedly empty parsed_pdf_after_1996")
+
         result = self.parsed_pdf_after_1996[TxCountyAggregate]
 
         # Assert Head
@@ -152,7 +145,9 @@ class TestTxAggregateIngest(TestCase):
         )
         assert_frame_equal(result.tail(n=3), expected_tail)
 
-    def testWrite_CalculatesSum_After_1996(self):
+    def testWrite_CalculatesSum_After_1996(self) -> None:
+        if not self.parsed_pdf_after_1996:
+            raise ValueError("Unexpectedly empty parsed_pdf_after_1996")
         for table, df in self.parsed_pdf_after_1996.items():
             dao.write_df(table, df)
 
@@ -165,7 +160,9 @@ class TestTxAggregateIngest(TestCase):
         expected_sum_available_beds = 20315
         self.assertEqual(result, expected_sum_available_beds)
 
-    def testParse_ParsesHeadAndTail_Concat(self):
+    def testParse_ParsesHeadAndTail_Concat(self) -> None:
+        if not self.parsed_pdf_concat:
+            raise ValueError("Unexpectedly empty parsed_pdf_concat")
         result = self.parsed_pdf_concat[TxCountyAggregate]
 
         # Assert Head
@@ -227,7 +224,9 @@ class TestTxAggregateIngest(TestCase):
         )
         assert_frame_equal(result.tail(n=2), expected_tail)
 
-    def testWrite_CalculatesSum_Concat(self):
+    def testWrite_CalculatesSum_Concat(self) -> None:
+        if not self.parsed_pdf_concat:
+            raise ValueError("Unexpectedly empty parsed_pdf_concat")
         for table, df in self.parsed_pdf_concat.items():
             dao.write_df(table, df)
 
@@ -240,7 +239,9 @@ class TestTxAggregateIngest(TestCase):
         expected_sum_available_beds = 7044
         self.assertEqual(result, expected_sum_available_beds)
 
-    def testParse_ParsesHeadAndTail_1996(self):
+    def testParse_ParsesHeadAndTail_1996(self) -> None:
+        if not self.parsed_pdf_1996:
+            raise ValueError("Unexpectedly empty parsed_pdf_1996")
         result = self.parsed_pdf_1996[TxCountyAggregate]
 
         # Assert Head
@@ -296,7 +297,9 @@ class TestTxAggregateIngest(TestCase):
         )
         assert_frame_equal(result.tail(n=2), expected_tail)
 
-    def testWrite_CalculatesSum_1996(self):
+    def testWrite_CalculatesSum_1996(self) -> None:
+        if not self.parsed_pdf_1996:
+            raise ValueError("Unexpectedly empty parsed_pdf_1996")
         for table, df in self.parsed_pdf_1996.items():
             dao.write_df(table, df)
 
@@ -309,7 +312,9 @@ class TestTxAggregateIngest(TestCase):
         expected_pretrial_felons = 14140
         self.assertEqual(result, expected_pretrial_felons)
 
-    def testParse_ParsesHeadAndTail_before_1996(self):
+    def testParse_ParsesHeadAndTail_before_1996(self) -> None:
+        if not self.parsed_pdf_before_1996:
+            raise ValueError("Unexpectedly empty parsed_pdf_before_1996")
         result = self.parsed_pdf_before_1996[TxCountyAggregate]
 
         # Assert Head
@@ -363,7 +368,9 @@ class TestTxAggregateIngest(TestCase):
         )
         assert_frame_equal(result.tail(n=2), expected_tail)
 
-    def testWrite_CalculatesSum_before_1996(self):
+    def testWrite_CalculatesSum_before_1996(self) -> None:
+        if not self.parsed_pdf_before_1996:
+            raise ValueError("Unexpectedly empty parsed_pdf_before_1996")
 
         for table, df in self.parsed_pdf_before_1996.items():
             dao.write_df(table, df)

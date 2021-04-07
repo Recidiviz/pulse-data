@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests for fl_aggregate_ingest.py."""
 import datetime
+from typing import Dict
 from unittest import TestCase
 
 import numpy as np
@@ -24,6 +25,7 @@ import pytest
 from more_itertools import one
 from pandas.testing import assert_frame_equal
 from sqlalchemy import func
+from sqlalchemy.orm import DeclarativeMeta
 
 from recidiviz.common.constants.aggregate import enum_canonical_strings as enum_strings
 from recidiviz.ingest.aggregate.regions.fl import fl_aggregate_ingest
@@ -41,24 +43,26 @@ from recidiviz.tests.utils import fakes
 DATE_SCRAPED = datetime.date(year=2018, month=1, day=31)
 DATE_SCRAPED_2 = datetime.date(year=2019, month=6, day=30)
 
-# Cache the parsed pdf between tests since it's expensive to compute
-@pytest.fixture(scope="class")
-def parsed_pdf(request):
-    request.cls.parsed_pdf = fl_aggregate_ingest.parse(
-        "", fixtures.as_filepath("jails-2018-01.pdf")
-    )
-    request.cls.parsed_pdf_2 = fl_aggregate_ingest.parse(
-        "", fixtures.as_filepath("florida__pub_jails_2019_2019_06 june fcdf.pdf")
-    )
 
-
-@pytest.mark.usefixtures("parsed_pdf")
 @pytest.mark.skip(
     "TODO(#4865): This test fails on master for some, possibly due to underlying Java issues related to "
     "Apache Beam and Tabula."
 )
 class TestFlAggregateIngest(TestCase):
     """Test that fl_aggregate_ingest correctly parses the FL PDF."""
+
+    parsed_pdf: Dict[DeclarativeMeta, pd.DataFrame] = {}
+    parsed_pdf_2: Dict[DeclarativeMeta, pd.DataFrame] = {}
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        # Cache the parsed pdf between tests since it's expensive to compute
+        cls.parsed_pdf = fl_aggregate_ingest.parse(
+            "", fixtures.as_filepath("jails-2018-01.pdf")
+        )
+        cls.parsed_pdf_2 = fl_aggregate_ingest.parse(
+            "", fixtures.as_filepath("florida__pub_jails_2019_2019_06 june fcdf.pdf")
+        )
 
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS)
@@ -69,11 +73,17 @@ class TestFlAggregateIngest(TestCase):
 
     # ==================== TABLE 1 TESTS ====================
 
-    def testParseAlternateDateFormat(self):
+    def testParseAlternateDateFormat(self) -> None:
+        if not self.parsed_pdf_2:
+            raise ValueError("Unexpectedly empty parsed_pdf_2")
+
         result = self.parsed_pdf_2[FlCountyAggregate]
         self.assertEqual(result.iloc[0]["report_date"], DATE_SCRAPED_2)
 
-    def testParseCountyAdp_parsesHeadAndTail(self):
+    def testParseCountyAdp_parsesHeadAndTail(self) -> None:
+        if not self.parsed_pdf:
+            raise ValueError("Unexpectedly empty parsed_pdf")
+
         result = self.parsed_pdf[FlCountyAggregate]
 
         # Assert Head
@@ -107,7 +117,10 @@ class TestFlAggregateIngest(TestCase):
         )
         assert_frame_equal(result.tail(), expected_tail)
 
-    def testParseCountyAdp_parsesDateReported(self):
+    def testParseCountyAdp_parsesDateReported(self) -> None:
+        if not self.parsed_pdf:
+            raise ValueError("Unexpectedly empty parsed_pdf")
+
         result = self.parsed_pdf[FlCountyAggregate]
 
         # Specifically verify Row 43 since it has 'Date Reported' set
@@ -128,7 +141,10 @@ class TestFlAggregateIngest(TestCase):
         result_row_43 = result.iloc[43:44]
         assert_frame_equal(result_row_43, expected_row_43)
 
-    def testWrite_CorrectlyReadsHernandoCounty(self):
+    def testWrite_CorrectlyReadsHernandoCounty(self) -> None:
+        if not self.parsed_pdf:
+            raise ValueError("Unexpectedly empty parsed_pdf")
+
         # Act
         for table, df in self.parsed_pdf.items():
             dao.write_df(table, df)
@@ -149,7 +165,10 @@ class TestFlAggregateIngest(TestCase):
             hernando_row.date_reported, datetime.date(year=2017, month=9, day=1)
         )
 
-    def testWrite_CalculatesCountyPopulationSum(self):
+    def testWrite_CalculatesCountyPopulationSum(self) -> None:
+        if not self.parsed_pdf:
+            raise ValueError("Unexpectedly empty parsed_pdf")
+
         # Act
         for table, df in self.parsed_pdf.items():
             dao.write_df(table, df)
@@ -165,7 +184,10 @@ class TestFlAggregateIngest(TestCase):
 
     # ==================== TABLE 2 TESTS ====================
 
-    def testParseFacilityAggregates_parsesHeadAndTail(self):
+    def testParseFacilityAggregates_parsesHeadAndTail(self) -> None:
+        if not self.parsed_pdf:
+            raise ValueError("Unexpectedly empty parsed_pdf")
+
         result = self.parsed_pdf[FlFacilityAggregate]
 
         # Assert Head
@@ -211,7 +233,10 @@ class TestFlAggregateIngest(TestCase):
         )
         assert_frame_equal(result.tail(), expected_tail)
 
-    def testParseFacilityAdp_parsesMissingDataAsNone(self):
+    def testParseFacilityAdp_parsesMissingDataAsNone(self) -> None:
+        if not self.parsed_pdf:
+            raise ValueError("Unexpectedly empty parsed_pdf")
+
         result = self.parsed_pdf[FlFacilityAggregate]
 
         # Specifically verify Row 43 since it has 'Date Reported' set
@@ -232,7 +257,10 @@ class TestFlAggregateIngest(TestCase):
         result_row_40 = result.iloc[40:41]
         assert_frame_equal(result_row_40, expected_row_40)
 
-    def testWrite_CalculatesFacilityAdpSum(self):
+    def testWrite_CalculatesFacilityAdpSum(self) -> None:
+        if not self.parsed_pdf:
+            raise ValueError("Unexpectedly empty parsed_pdf")
+
         # Act
         for table, df in self.parsed_pdf.items():
             dao.write_df(table, df)

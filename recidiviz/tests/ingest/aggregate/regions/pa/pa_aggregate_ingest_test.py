@@ -67,7 +67,7 @@ class TestPaAggregateIngest(TestCase):
     def tearDown(self) -> None:
         fakes.teardown_in_memory_sqlite_databases()
 
-    def testParse_Table1_ParsesHeadAndTail(self):
+    def testParse_Table1_ParsesHeadAndTail(self) -> None:
         result = _parsed_result()[PaFacilityPopAggregate]
 
         # Assert Head
@@ -109,7 +109,7 @@ class TestPaAggregateIngest(TestCase):
         )
         assert_frame_equal(result.tail(n=2), expected_tail)
 
-    def testParse_Table2_ParsesHeadAndTail(self):
+    def testParse_Table2_ParsesHeadAndTail(self) -> None:
         result = _parsed_result()[PaCountyPreSentencedAggregate]
 
         # Assert Head
@@ -145,7 +145,7 @@ class TestPaAggregateIngest(TestCase):
         )
         assert_frame_equal(result.tail(n=2), expected_tail)
 
-    def testWrite_Table1_CalculatesSums(self):
+    def testWrite_Table1_CalculatesSums(self) -> None:
         # Act
         for table, df in _parsed_result().items():
             dao.write_df(table, df)
@@ -160,7 +160,7 @@ class TestPaAggregateIngest(TestCase):
         expected_housed_elsewhere_adp = 1564.0257
         self.assertEqual(result, expected_housed_elsewhere_adp)
 
-    def testWrite_Table2_CalculateSum(self):
+    def testWrite_Table2_CalculateSum(self) -> None:
         # Act
         for table, df in _parsed_result().items():
             dao.write_df(table, df)

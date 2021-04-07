@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for tx_aggregate_ingest.py."""
+from typing import Any
 from unittest import TestCase
 import builtins
 import datetime
@@ -53,7 +54,7 @@ TEST_CONTENT = "test_content"
 TEST_ENV = "recidiviz-test"
 
 
-def _MockGet(url, **_):
+def _MockGet(url: str, **_: Any) -> Mock:
     ret = Mock()
     if url in (EXISTING_TEST_URL, EXISTING_TEST_URL2, EXISTING_TEST_URL_CA):
         ret.status_code = 200
@@ -68,8 +69,7 @@ def _MockGet(url, **_):
 class TestScraperAggregateReports(TestCase):
     """Test that tx_aggregate_site_scraper correctly scrapes urls."""
 
-    # noinspection PyAttributeOutsideInit
-    def setup_method(self, _test_method):
+    def setUp(self) -> None:
         self.client = app.test_client()
         self.historical_bucket = scrape_aggregate_reports.HISTORICAL_BUCKET.format(
             TEST_ENV
@@ -80,7 +80,9 @@ class TestScraperAggregateReports(TestCase):
     @patch.object(requests, "get")
     @patch.object(builtins, "open")
     @patch.object(tx_aggregate_site_scraper, "get_urls_to_download")
-    def testExistsNoUpload(self, mock_get_all_tx, mock_open, mock_get, mock_fs):
+    def testExistsNoUpload(
+        self, mock_get_all_tx: Mock, mock_open: Mock, mock_get: Mock, mock_fs: Mock
+    ) -> None:
         # Make the info call return an older modified time than the server time.
         mock_fs_return = Mock()
         mock_fs.return_value = mock_fs_return
@@ -103,7 +105,9 @@ class TestScraperAggregateReports(TestCase):
     @patch.object(requests, "get")
     @patch.object(builtins, "open")
     @patch.object(ny_aggregate_site_scraper, "get_urls_to_download")
-    def testExistsIsNyUpload(self, mock_get_all_tx, mock_open, mock_get, mock_fs):
+    def testExistsIsNyUpload(
+        self, mock_get_all_tx: Mock, mock_open: Mock, mock_get: Mock, mock_fs: Mock
+    ) -> None:
         upload_bucket = os.path.join(self.upload_bucket, "new_york", EXISTING_PDF_NAME)
         temploc = os.path.join(tempfile.gettempdir(), EXISTING_PDF_NAME)
         # Make the info call return an older modified time than the server time.
@@ -127,7 +131,9 @@ class TestScraperAggregateReports(TestCase):
     @patch.object(requests, "get")
     @patch.object(builtins, "open")
     @patch.object(tx_aggregate_site_scraper, "get_urls_to_download")
-    def testNoExistsUpload200(self, mock_get_all_tx, mock_open, mock_get, mock_fs):
+    def testNoExistsUpload200(
+        self, mock_get_all_tx: Mock, mock_open: Mock, mock_get: Mock, mock_fs: Mock
+    ) -> None:
         upload_bucket = os.path.join(self.upload_bucket, "texas", EXISTING_PDF_NAME)
         temploc = os.path.join(tempfile.gettempdir(), EXISTING_PDF_NAME)
         # Make the info call return an older modified time than the server time.
@@ -153,7 +159,9 @@ class TestScraperAggregateReports(TestCase):
     @patch.object(requests, "post")
     @patch.object(builtins, "open")
     @patch.object(ca_aggregate_site_scraper, "get_urls_to_download")
-    def testCaNoExistsUpload200(self, mock_get_all_ca, mock_open, mock_post, mock_fs):
+    def testCaNoExistsUpload200(
+        self, mock_get_all_ca: Mock, mock_open: Mock, mock_post: Mock, mock_fs: Mock
+    ) -> None:
         upload_bucket = os.path.join(self.upload_bucket, "california", EXISTING_CA_NAME)
         temploc = os.path.join(tempfile.gettempdir(), EXISTING_CA_NAME)
         # Make the info call return an older modified time than the server time.
@@ -181,7 +189,9 @@ class TestScraperAggregateReports(TestCase):
     @patch.object(requests, "get")
     @patch.object(builtins, "open")
     @patch.object(tx_aggregate_site_scraper, "get_urls_to_download")
-    def testMultipleUrlsAll200(self, mock_get_all_tx, mock_open, mock_get, mock_fs):
+    def testMultipleUrlsAll200(
+        self, mock_get_all_tx: Mock, mock_open: Mock, mock_get: Mock, mock_fs: Mock
+    ) -> None:
         upload_bucket1 = os.path.join(self.upload_bucket, "texas", EXISTING_PDF_NAME)
         upload_bucket2 = os.path.join(self.upload_bucket, "texas", EXISTING_PDF_NAME2)
         temploc1 = os.path.join(tempfile.gettempdir(), EXISTING_PDF_NAME)
@@ -219,8 +229,8 @@ class TestScraperAggregateReports(TestCase):
     @patch.object(builtins, "open")
     @patch.object(tx_aggregate_site_scraper, "get_urls_to_download")
     def testMultipleUrlsOne200OneNoExists(
-        self, mock_get_all_tx, mock_open, mock_get, mock_fs
-    ):
+        self, mock_get_all_tx: Mock, mock_open: Mock, mock_get: Mock, mock_fs: Mock
+    ) -> None:
         historical_path1 = os.path.join(
             self.historical_bucket, "texas", EXISTING_PDF_NAME
         )
@@ -228,7 +238,7 @@ class TestScraperAggregateReports(TestCase):
             self.historical_bucket, "texas", EXISTING_PDF_NAME2
         )
 
-        def _exists_return(path):
+        def _exists_return(path: str) -> bool:
             ret_bool = False
             if path == historical_path1:
                 ret_bool = True

@@ -16,13 +16,14 @@
 # =============================================================================
 """Tests for ny_aggregate_ingest.py."""
 import datetime
+from typing import Dict
 from unittest import TestCase
 
 import pandas as pd
-import pytest
 from more_itertools import one
 from pandas.testing import assert_frame_equal
 from sqlalchemy import func
+from sqlalchemy.orm import DeclarativeMeta
 
 from recidiviz.common.constants.aggregate import enum_canonical_strings as enum_strings
 from recidiviz.ingest.aggregate.regions.ny import ny_aggregate_ingest
@@ -35,20 +36,21 @@ from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.utils import fakes
 
 
-# Cache the parsed pdf between tests since it's expensive to compute
-@pytest.fixture(scope="class")
-def parsed_pdf(request):
-    request.cls.parsed_pdf = ny_aggregate_ingest.parse(
-        "", fixtures.as_filepath("jail_population.pdf")
-    )
-    request.cls.parsed_pdf_3_pages = ny_aggregate_ingest.parse(
-        "", fixtures.as_filepath("jail_population_2019.pdf")
-    )
-
-
-@pytest.mark.usefixtures("parsed_pdf")
 class TestNyAggregateIngest(TestCase):
     """Test that ny_aggregate_ingest correctly parses the NY PDF."""
+
+    parsed_pdf: Dict[DeclarativeMeta, pd.DataFrame] = {}
+    parsed_pdf_3_pages: Dict[DeclarativeMeta, pd.DataFrame] = {}
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        # Cache the parsed pdf between tests since it's expensive to compute
+        cls.parsed_pdf = ny_aggregate_ingest.parse(
+            "", fixtures.as_filepath("jail_population.pdf")
+        )
+        cls.parsed_pdf_3_pages = ny_aggregate_ingest.parse(
+            "", fixtures.as_filepath("jail_population_2019.pdf")
+        )
 
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS)
@@ -57,7 +59,10 @@ class TestNyAggregateIngest(TestCase):
     def tearDown(self) -> None:
         fakes.teardown_in_memory_sqlite_databases()
 
-    def testParse_ParsesHeadAndTail(self):
+    def testParse_ParsesHeadAndTail(self) -> None:
+        if not self.parsed_pdf:
+            raise ValueError("Unexpectedly empty parsed_pdf")
+
         result = self.parsed_pdf[NyFacilityAggregate]
 
         # Assert Head
@@ -121,7 +126,10 @@ class TestNyAggregateIngest(TestCase):
         )
         assert_frame_equal(result.tail(n=3), expected_tail, check_names=False)
 
-    def testParseThreeTablesPerPage_ParsesHeadAndTail(self):
+    def testParseThreeTablesPerPage_ParsesHeadAndTail(self) -> None:
+        if not self.parsed_pdf_3_pages:
+            raise ValueError("Unexpectedly empty parsed_pdf_3_pages")
+
         result = self.parsed_pdf_3_pages[NyFacilityAggregate]
 
         # Assert Head
@@ -185,7 +193,10 @@ class TestNyAggregateIngest(TestCase):
         )
         assert_frame_equal(result.tail(n=3), expected_tail, check_names=False)
 
-    def testWrite_CalculatesSum(self):
+    def testWrite_CalculatesSum(self) -> None:
+        if not self.parsed_pdf:
+            raise ValueError("Unexpectedly empty parsed_pdf")
+
         # Act
         for table, df in self.parsed_pdf.items():
             dao.write_df(table, df)
