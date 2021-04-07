@@ -1,0 +1,196 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2021 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+"""Defines routes for the Case Triage API endpoints in the admin panel."""
+import logging
+import os
+from http import HTTPStatus
+from typing import Optional, Tuple
+
+from flask import Blueprint, jsonify, request
+
+from recidiviz.admin_panel.case_triage_helpers import (
+    columns_for_case_triage_view,
+    get_importable_csvs,
+)
+from recidiviz.admin_panel.cloud_sql_export_to_gcs import (
+    export_from_cloud_sql_to_gcs_csv,
+)
+from recidiviz.admin_panel.gcs_import_to_cloud_sql import import_gcs_csv_to_cloud_sql
+from recidiviz.case_triage.views.view_config import CASE_TRIAGE_EXPORTED_VIEW_BUILDERS
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.persistence.database.schema.case_triage.schema import (
+    CaseUpdate,
+)
+from recidiviz.metrics.export.export_config import (
+    CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI,
+)
+from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import (
+    SQLAlchemyDatabaseKey,
+)
+from recidiviz.utils import metadata
+from recidiviz.utils.auth.gae import requires_gae_auth
+from recidiviz.utils.environment import (
+    GCP_PROJECT_STAGING,
+    in_development,
+)
+
+
+def add_case_triage_routes(bp: Blueprint) -> None:
+    """Adds the relevant Case Triage API routes to an input Blueprint."""
+
+    # Fetch ETL View Ids for GCS -> Cloud SQL Import
+    def fetch_etl_view_ids() -> Tuple[str, HTTPStatus]:
+        override_project_id: Optional[str] = None
+        if in_development():
+            override_project_id = GCP_PROJECT_STAGING
+        return (
+            jsonify(
+                [
+                    builder.view_id
+                    for builder in CASE_TRIAGE_EXPORTED_VIEW_BUILDERS
+                    if builder.view_id != "etl_officers"
+                    # TODO(#6202): Until we get more consistent rosters, pushing `etl_officers`
+                    # may lead to inconsistincies (as we had to manually add 1-2 trusted testers
+                    # who were not on our rosters).
+                ]
+                + list(
+                    get_importable_csvs(override_project_id=override_project_id).keys()
+                )
+            ),
+            HTTPStatus.OK,
+        )
+
+    bp.route("/api/case_triage/fetch_etl_view_ids", methods=["POST"])(
+        requires_gae_auth(fetch_etl_view_ids)
+    )
+
+    # Generate Case Updates export from Cloud SQL -> GCS
+    def generate_case_updates_export() -> Tuple[str, HTTPStatus]:
+        export_from_cloud_sql_to_gcs_csv(
+            "case_updates",
+            GcsfsFilePath.from_absolute_path(
+                os.path.join(
+                    CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI.format(
+                        project_id=metadata.project_id()
+                    ),
+                    "exported",
+                    "case_updates.csv",
+                )
+            ),
+            [col.name for col in CaseUpdate.__table__.columns],
+        )
+
+        return "", HTTPStatus.OK
+
+    bp.route("/api/case_triage/generate_case_updates_export", methods=["POST"])(
+        requires_gae_auth(generate_case_updates_export)
+    )
+
+    # Run GCS -> Cloud SQL Import
+    def run_gcs_import() -> Tuple[str, HTTPStatus]:
+        """Executes an import of data from Google Cloud Storage into Cloud SQL,
+        based on the query parameters in the request."""
+        if "viewIds" not in request.json:
+            return "`viewIds` must be present in arugment list", HTTPStatus.BAD_REQUEST
+
+        known_view_builders = {
+            builder.view_id: builder
+            for builder in CASE_TRIAGE_EXPORTED_VIEW_BUILDERS
+            if builder.view_id != "etl_officers"
+            # TODO(#6202): Until we get more consistent rosters, pushing `etl_officers`
+            # may lead to inconsistincies (as we had to manually add 1-2 trusted testers
+            # who were not on our rosters).
+        }
+        importable_csvs = get_importable_csvs()
+
+        for view_id in request.json["viewIds"]:
+            if view_id in importable_csvs:
+                # CSVs put in to_import override ones from known view builders
+                csv_path = importable_csvs[view_id]
+                try:
+                    columns = columns_for_case_triage_view(view_id)
+                except ValueError:
+                    logging.warning(
+                        "View_id (%s) found in to_import/ folder but does not have corresponding columns",
+                        view_id,
+                    )
+                    continue
+            elif view_id in known_view_builders:
+                csv_path = GcsfsFilePath.from_absolute_path(
+                    os.path.join(
+                        CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI.format(
+                            project_id=metadata.project_id()
+                        ),
+                        f"{view_id}.csv",
+                    )
+                )
+                columns = known_view_builders[view_id].columns
+            else:
+                logging.warning(
+                    "Unexpected view_id (%s) found in call to run_gcs_import", view_id
+                )
+                continue
+
+            # NOTE: We are currently taking advantage of the fact that the destination table name
+            # matches the view id of the corresponding builder here. This invariant isn't enforced
+            # in code (yet), but the aim is to preserve this invariant for as long as possible.
+            import_gcs_csv_to_cloud_sql(
+                view_id,
+                csv_path,
+                columns,
+            )
+            logging.info("View (%s) successfully imported", view_id)
+
+        return "", HTTPStatus.OK
+
+    bp.route("/api/case_triage/run_gcs_import", methods=["POST"])(
+        requires_gae_auth(run_gcs_import)
+    )
+
+    def fetch_po_user_feedback() -> Tuple[str, HTTPStatus]:
+        session = SessionFactory.for_database(
+            SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
+        )
+        results = (
+            session.query(CaseUpdate)
+            .filter(CaseUpdate.update_metadata["otherText"].isnot(None))
+            .all()
+        )
+
+        return (
+            jsonify(
+                [
+                    {
+                        "personExternalId": res.person_external_id,
+                        "officerExternalId": res.officer_external_id,
+                        "otherText": res.update_metadata["otherText"],
+                        "timestamp": max(
+                            action["action_ts"]
+                            for action in res.update_metadata["actions"]
+                        ),
+                    }
+                    for res in results
+                ]
+            ),
+            HTTPStatus.OK,
+        )
+
+    bp.route("/api/case_triage/get_po_feedback", methods=["POST"])(
+        requires_gae_auth(fetch_po_user_feedback)
+    )
