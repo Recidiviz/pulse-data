@@ -221,7 +221,7 @@ VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = (
             export_name="UP",
             bq_view_namespace=BigQueryViewNamespace.STATE,
         )
-        for state_code in ["US_ID"]
+        for state_code in ["US_ID", "US_ND"]
     ]
     + [
         # Public Dashboard views for all relevant states
