@@ -22,7 +22,7 @@ import logging
 from typing import List, Tuple
 
 import zope.event.classhandler
-from flask import Flask, Blueprint
+from flask import Flask, Blueprint, request
 from gevent import events
 from opencensus.common.transports.async_ import AsyncTransport
 from opencensus.ext.flask.flask_middleware import FlaskMiddleware
@@ -177,4 +177,11 @@ def blocked_condition_handler(event: events.EventLoopBlocked) -> None:
         event.blocking_time,
         str(event.greenlet),
         "\n".join(event.info),
+    )
+
+
+@app.before_request
+def log_request_entry() -> None:
+    logging.getLogger(structured_logging.BEFORE_REQUEST_LOG).info(
+        "%s %s", request.method, request.full_path
     )
