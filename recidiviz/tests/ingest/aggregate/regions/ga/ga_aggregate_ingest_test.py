@@ -16,13 +16,14 @@
 # =============================================================================
 """Tests for ga_aggregate_ingest.py."""
 import datetime
+from typing import Dict
 from unittest import TestCase
 
 import pandas as pd
-import pytest
 from more_itertools import one
 from pandas.testing import assert_frame_equal
 from sqlalchemy import func
+from sqlalchemy.orm import DeclarativeMeta
 
 from recidiviz.common.constants.aggregate import enum_canonical_strings as enum_strings
 from recidiviz.ingest.aggregate.regions.ga import ga_aggregate_ingest
@@ -38,20 +39,21 @@ DATE_SCRAPED = datetime.date(year=2018, month=6, day=7)
 DATE_SCRAPED_PDF_EXTRA_ROWS = datetime.date(year=2016, month=7, day=7)
 
 
-# Cache the parsed pdf between tests since it's expensive to compute
-@pytest.fixture(scope="class")
-def parsed_pdf(request):
-    request.cls.parsed_pdf = ga_aggregate_ingest.parse(
-        "", fixtures.as_filepath("jailreport_june18.pdf")
-    )
-    request.cls.parsed_pdf_with_extra_rows = ga_aggregate_ingest.parse(
-        "", fixtures.as_filepath("jul16_jail_report.pdf")
-    )
-
-
-@pytest.mark.usefixtures("parsed_pdf")
 class TestGaAggregateIngest(TestCase):
     """Test that ga_aggregate_ingest correctly parses the GA PDF."""
+
+    parsed_pdf: Dict[DeclarativeMeta, pd.DataFrame] = {}
+    parsed_pdf_with_extra_rows: Dict[DeclarativeMeta, pd.DataFrame] = {}
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        # Cache the parsed pdf between tests since it's expensive to compute
+        cls.parsed_pdf = ga_aggregate_ingest.parse(
+            "", fixtures.as_filepath("jailreport_june18.pdf")
+        )
+        cls.parsed_pdf_with_extra_rows = ga_aggregate_ingest.parse(
+            "", fixtures.as_filepath("jul16_jail_report.pdf")
+        )
 
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS)
@@ -60,7 +62,10 @@ class TestGaAggregateIngest(TestCase):
     def tearDown(self) -> None:
         fakes.teardown_in_memory_sqlite_databases()
 
-    def testParse_ParsesHeadAndTail(self):
+    def testParse_ParsesHeadAndTail(self) -> None:
+        if not self.parsed_pdf:
+            raise ValueError("Unexpectedly empty parsed_pdf")
+
         result = self.parsed_pdf[GaCountyAggregate]
 
         # Assert Head
@@ -100,7 +105,10 @@ class TestGaAggregateIngest(TestCase):
         )
         assert_frame_equal(result.tail(n=3), expected_tail)
 
-    def testParseReportWithExtraRows_ParsesHeadAndTail(self):
+    def testParseReportWithExtraRows_ParsesHeadAndTail(self) -> None:
+        if not self.parsed_pdf_with_extra_rows:
+            raise ValueError("Unexpectedly empty parsed_pdf_with_extra_rows")
+
         result = self.parsed_pdf_with_extra_rows[GaCountyAggregate]
 
         # Assert Head
@@ -140,7 +148,10 @@ class TestGaAggregateIngest(TestCase):
         )
         assert_frame_equal(result.tail(n=3), expected_tail)
 
-    def testWrite_CalculatesSum(self):
+    def testWrite_CalculatesSum(self) -> None:
+        if not self.parsed_pdf:
+            raise ValueError("Unexpectedly empty parsed_pdf")
+
         # Act
         for table, df in self.parsed_pdf.items():
             dao.write_df(table, df)

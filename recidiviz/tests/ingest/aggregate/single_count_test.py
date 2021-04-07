@@ -54,7 +54,7 @@ class TestSingleCountIngest(TestCase):
     def tearDown(self) -> None:
         fakes.teardown_in_memory_sqlite_databases()
 
-    def testWrite_SingleCountToday(self):
+    def testWrite_SingleCountToday(self) -> None:
         params = {
             "jid": "01001001",
             "count": 311,
@@ -75,7 +75,7 @@ class TestSingleCountIngest(TestCase):
         self.assertEqual(result.count, params["count"])
         self.assertEqual(result.date, datetime.date.today())
 
-    def testWrite_SingleCountGenderToday(self):
+    def testWrite_SingleCountGenderToday(self) -> None:
         params = {
             "jid": "01001001",
             "count": 311,
@@ -98,7 +98,7 @@ class TestSingleCountIngest(TestCase):
         self.assertEqual(result.date, datetime.date.today())
         self.assertEqual(result.gender, params["gender"])
 
-    def testWrite_SingleCountEthnicityToday(self):
+    def testWrite_SingleCountEthnicityToday(self) -> None:
         params = {
             "jid": "01001001",
             "count": 311,
@@ -121,7 +121,7 @@ class TestSingleCountIngest(TestCase):
         self.assertEqual(result.date, datetime.date.today())
         self.assertEqual(result.ethnicity, params["ethnicity"])
 
-    def testWrite_SingleCountRaceToday(self):
+    def testWrite_SingleCountRaceToday(self) -> None:
         params = {
             "jid": "01001001",
             "count": 311,
@@ -144,7 +144,7 @@ class TestSingleCountIngest(TestCase):
         self.assertEqual(result.date, datetime.date.today())
         self.assertEqual(result.race, params["race"])
 
-    def testWrite_SingleCountWithDate(self):
+    def testWrite_SingleCountWithDate(self) -> None:
         params = {
             "jid": "01001001",
             "count": 311,
@@ -164,9 +164,13 @@ class TestSingleCountIngest(TestCase):
         result = one(query.all())
 
         self.assertEqual(result.count, params["count"])
-        self.assertEqual(result.date, str_field_utils.parse_date(params["date"]))
 
-    def testWrite_SingleCountWithDateAndAllDemographics(self):
+        date_str = params["date"]
+        if not isinstance(date_str, str):
+            raise ValueError(f"Unexpected type for date_str: [{type(date_str)}]")
+        self.assertEqual(result.date, str_field_utils.parse_date(date_str))
+
+    def testWrite_SingleCountWithDateAndAllDemographics(self) -> None:
         params = {
             "jid": "01001001",
             "ethnicity": Ethnicity.HISPANIC.value,
@@ -189,7 +193,10 @@ class TestSingleCountIngest(TestCase):
         result = one(query.all())
 
         self.assertEqual(result.count, params["count"])
-        self.assertEqual(result.date, str_field_utils.parse_date(params["date"]))
+        date_str = params["date"]
+        if not isinstance(date_str, str):
+            raise ValueError(f"Unexpected type for date_str: [{type(date_str)}]")
+        self.assertEqual(result.date, str_field_utils.parse_date(date_str))
         self.assertEqual(result.ethnicity, params["ethnicity"])
         self.assertEqual(result.gender, params["gender"])
         self.assertEqual(result.race, params["race"])

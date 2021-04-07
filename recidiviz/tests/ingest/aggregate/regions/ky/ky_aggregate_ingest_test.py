@@ -16,13 +16,14 @@
 # =============================================================================
 """Tests for ky_aggregate_ingest.py."""
 import datetime
+from typing import Dict
 from unittest import TestCase
 
 import pandas as pd
-import pytest
 from more_itertools import one
 from pandas.testing import assert_frame_equal
 from sqlalchemy import func
+from sqlalchemy.orm import DeclarativeMeta
 
 from recidiviz.common.constants.aggregate import enum_canonical_strings as enum_strings
 from recidiviz.ingest.aggregate.regions.ky import ky_aggregate_ingest
@@ -38,23 +39,26 @@ DATE_SCRAPED = datetime.date(year=2018, month=12, day=20)
 DATE_SCRAPED_2 = datetime.date(year=2018, month=8, day=23)
 DATE_SCRAPED_3 = datetime.date(year=2019, month=8, day=22)
 
-# Cache the parsed pdf between tests since it's expensive to compute
-@pytest.fixture(scope="class")
-def parsed_pdf(request):
-    request.cls.parsed_pdf = ky_aggregate_ingest.parse(
-        "", fixtures.as_filepath("12-20-18.pdf")
-    )
-    request.cls.parsed_pdf_2 = ky_aggregate_ingest.parse(
-        "", fixtures.as_filepath("08-23-18.pdf")
-    )
-    request.cls.parsed_pdf_3 = ky_aggregate_ingest.parse(
-        "", fixtures.as_filepath("08-22-19.pdf")
-    )
 
-
-@pytest.mark.usefixtures("parsed_pdf")
 class TestKyAggregateIngest(TestCase):
     """Test that ky_aggregate_ingest correctly parses the KY PDF."""
+
+    parsed_pdf: Dict[DeclarativeMeta, pd.DataFrame] = {}
+    parsed_pdf_2: Dict[DeclarativeMeta, pd.DataFrame] = {}
+    parsed_pdf_3: Dict[DeclarativeMeta, pd.DataFrame] = {}
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        # Cache the parsed pdf between tests since it's expensive to compute
+        cls.parsed_pdf = ky_aggregate_ingest.parse(
+            "", fixtures.as_filepath("12-20-18.pdf")
+        )
+        cls.parsed_pdf_2 = ky_aggregate_ingest.parse(
+            "", fixtures.as_filepath("08-23-18.pdf")
+        )
+        cls.parsed_pdf_3 = ky_aggregate_ingest.parse(
+            "", fixtures.as_filepath("08-22-19.pdf")
+        )
 
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS)
@@ -63,7 +67,10 @@ class TestKyAggregateIngest(TestCase):
     def tearDown(self) -> None:
         fakes.teardown_in_memory_sqlite_databases()
 
-    def testParse_ParsesHeadAndTail(self):
+    def testParse_ParsesHeadAndTail(self) -> None:
+        if not self.parsed_pdf:
+            raise ValueError("Unexpectedly empty parsed_pdf")
+
         result = self.parsed_pdf[KyFacilityAggregate]
 
         # Assert Head
@@ -123,7 +130,10 @@ class TestKyAggregateIngest(TestCase):
         )
         assert_frame_equal(result.tail(n=2), expected_tail, check_names=False)
 
-    def testParse2_ParsesHeadAndTail(self):
+    def testParse2_ParsesHeadAndTail(self) -> None:
+        if not self.parsed_pdf_2:
+            raise ValueError("Unexpectedly empty parsed_pdf_2")
+
         result = self.parsed_pdf_2[KyFacilityAggregate]
 
         # Assert Head
@@ -183,7 +193,10 @@ class TestKyAggregateIngest(TestCase):
         )
         assert_frame_equal(result.tail(n=2), expected_tail, check_names=False)
 
-    def testParse3_ParsesHeadAndTail(self):
+    def testParse3_ParsesHeadAndTail(self) -> None:
+        if not self.parsed_pdf_3:
+            raise ValueError("Unexpectedly empty parsed_pdf_3")
+
         result = self.parsed_pdf_3[KyFacilityAggregate]
 
         # Assert Head
@@ -243,7 +256,10 @@ class TestKyAggregateIngest(TestCase):
         )
         assert_frame_equal(result.tail(n=2), expected_tail, check_names=False)
 
-    def testWrite_CalculatesSum(self):
+    def testWrite_CalculatesSum(self) -> None:
+        if not self.parsed_pdf:
+            raise ValueError("Unexpectedly empty parsed_pdf")
+
         # Act
         for table, df in self.parsed_pdf.items():
             dao.write_df(table, df)

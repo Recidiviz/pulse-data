@@ -61,7 +61,7 @@ class TestCaAggregateIngest(TestCase):
     def tearDown(self) -> None:
         fakes.teardown_in_memory_sqlite_databases()
 
-    def testParse_ParsesHeadAndTail(self):
+    def testParse_ParsesHeadAndTail(self) -> None:
         result = _parsed_result()[CaFacilityAggregate]
 
         # Assert Head
@@ -107,7 +107,7 @@ class TestCaAggregateIngest(TestCase):
         )
         assert_frame_equal(result.tail(n=2), expected_tail)
 
-    def testParse_ParsesHeadAndTail2(self):
+    def testParse_ParsesHeadAndTail2(self) -> None:
         result = ca_aggregate_ingest.parse(
             "", fixtures.as_filepath("california_california2018")
         )[CaFacilityAggregate]
@@ -155,7 +155,7 @@ class TestCaAggregateIngest(TestCase):
         )
         assert_frame_equal(result.tail(n=2), expected_tail)
 
-    def testWrite_CalculatesSum(self):
+    def testWrite_CalculatesSum(self) -> None:
         # Act
         parsed_result = _parsed_result()
         for table, df in parsed_result.items():

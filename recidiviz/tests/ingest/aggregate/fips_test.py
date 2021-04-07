@@ -32,7 +32,7 @@ _JO_DAVIESS_COUNTY_FIPS = "17085"  # "Jo Daviess County"
 class TestFips(TestCase):
     """Tests for fips manipulation."""
 
-    def testValidCountyNames_SanitizesFieldsAndFuzzyJoinsFips(self):
+    def testValidCountyNames_SanitizesFieldsAndFuzzyJoinsFips(self) -> None:
         # Arrange
         subject = pd.DataFrame(
             {
@@ -61,7 +61,7 @@ class TestFips(TestCase):
 
         assert_frame_equal(result, expected_result)
 
-    def testCountyNotInState_RaisesFipsMergingError(self):
+    def testCountyNotInState_RaisesFipsMergingError(self) -> None:
         # Arrange
         subject = pd.DataFrame({"county": ["Jo Daviess County"]})
 
@@ -70,7 +70,7 @@ class TestFips(TestCase):
             incorrect_state = us.states.FL
             fips.add_column_to_df(subject, subject.county, incorrect_state)
 
-    def testStateWithNoFipsMappings_RaisesFipsMergingError(self):
+    def testStateWithNoFipsMappings_RaisesFipsMergingError(self) -> None:
         # Arrange
         class FakeState:
             fips = "123456789"  # Non-existing state fips maps to no county fips

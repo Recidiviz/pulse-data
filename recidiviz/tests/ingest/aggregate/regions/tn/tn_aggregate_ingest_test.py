@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests for tn_aggregate_ingest.py."""
 import datetime
+from typing import Dict
 from unittest import TestCase
 
 import pandas as pd
@@ -23,6 +24,7 @@ import pytest
 from more_itertools import one
 from pandas.testing import assert_frame_equal
 from sqlalchemy import func
+from sqlalchemy.orm import DeclarativeMeta
 
 from recidiviz.common.constants.aggregate import enum_canonical_strings as enum_strings
 from recidiviz.ingest.aggregate.regions.tn import tn_aggregate_ingest
@@ -40,27 +42,30 @@ from recidiviz.tests.utils import fakes
 _REPORT_DATE = datetime.date(year=2019, month=1, day=31)
 _NEWER_REPORT_DATE = datetime.date(year=2020, month=3, day=31)
 
-# Cache the parsed pdfs between tests since it's expensive to compute
-@pytest.fixture(scope="class")
-def parsed_pdf(request):
-    request.cls.parsed_pdf = tn_aggregate_ingest.parse(
-        "", fixtures.as_filepath("_jailjanuary2019.pdf")
-    )
-    request.cls.parsed_female_pdf = tn_aggregate_ingest.parse(
-        "", fixtures.as_filepath("_jailfemalejanuary2019.pdf")
-    )
-    request.cls.parsed_newer_pdf = tn_aggregate_ingest.parse(
-        "", fixtures.as_filepath("_jailmarch2020.pdf")
-    )
 
-
-@pytest.mark.usefixtures("parsed_pdf")
 @pytest.mark.skip(
     "TODO(#4865): This test fails on master for some, possibly due to underlying Java issues related to "
     "Apache Beam and Tabula."
 )
 class TestTnAggregateIngest(TestCase):
     """Test that tn_aggregate_ingest correctly parses the TN PDF."""
+
+    parsed_pdf: Dict[DeclarativeMeta, pd.DataFrame] = {}
+    parsed_female_pdf: Dict[DeclarativeMeta, pd.DataFrame] = {}
+    parsed_newer_pdf: Dict[DeclarativeMeta, pd.DataFrame] = {}
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        # Cache the parsed pdfs between tests since it's expensive to compute
+        cls.parsed_pdf = tn_aggregate_ingest.parse(
+            "", fixtures.as_filepath("_jailjanuary2019.pdf")
+        )
+        cls.parsed_female_pdf = tn_aggregate_ingest.parse(
+            "", fixtures.as_filepath("_jailfemalejanuary2019.pdf")
+        )
+        cls.parsed_newer_pdf = tn_aggregate_ingest.parse(
+            "", fixtures.as_filepath("_jailmarch2020.pdf")
+        )
 
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS)
@@ -69,7 +74,10 @@ class TestTnAggregateIngest(TestCase):
     def tearDown(self) -> None:
         fakes.teardown_in_memory_sqlite_databases()
 
-    def testParse_ParsesHeadAndTail(self):
+    def testParse_ParsesHeadAndTail(self) -> None:
+        if not self.parsed_pdf:
+            raise ValueError("Unexpectedly empty parsed_pdf")
+
         result = self.parsed_pdf[TnFacilityAggregate]
 
         # Assert Head
@@ -115,7 +123,10 @@ class TestTnAggregateIngest(TestCase):
         )
         assert_frame_equal(result.tail(n=2), expected_tail, check_names=False)
 
-    def testWrite_CalculatesSum(self):
+    def testWrite_CalculatesSum(self) -> None:
+        if not self.parsed_pdf:
+            raise ValueError("Unexpectedly empty parsed_pdf")
+
         # Act
         for table, df in self.parsed_pdf.items():
             dao.write_df(table, df)
@@ -129,7 +140,10 @@ class TestTnAggregateIngest(TestCase):
         expected_sum_total_jail_population = 30814
         self.assertEqual(result, expected_sum_total_jail_population)
 
-    def testParse_ParsesFemaleHeadAndTail(self):
+    def testParse_ParsesFemaleHeadAndTail(self) -> None:
+        if self.parsed_female_pdf is None:
+            raise ValueError("Unexpectedly empty parsed_female_pdf")
+
         result = self.parsed_female_pdf[TnFacilityFemaleAggregate]
 
         # Assert Head
@@ -175,7 +189,10 @@ class TestTnAggregateIngest(TestCase):
         )
         assert_frame_equal(result.tail(n=2), expected_tail, check_names=False)
 
-    def testWrite_CalculatesFemaleSum(self):
+    def testWrite_CalculatesFemaleSum(self) -> None:
+        if self.parsed_female_pdf is None:
+            raise ValueError("Unexpectedly empty parsed_female_pdf")
+
         # Act
         for table, df in self.parsed_female_pdf.items():
             dao.write_df(table, df)
@@ -189,7 +206,10 @@ class TestTnAggregateIngest(TestCase):
         expected_sum_female_jail_population = 5987
         self.assertEqual(result, expected_sum_female_jail_population)
 
-    def testParse_ParsesNewerHeadAndTail(self):
+    def testParse_ParsesNewerHeadAndTail(self) -> None:
+        if self.parsed_newer_pdf is None:
+            raise ValueError("Unexpectedly empty parsed_newer_pdf")
+
         result = self.parsed_newer_pdf[TnFacilityAggregate]
 
         # Assert Head
