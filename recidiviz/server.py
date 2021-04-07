@@ -30,7 +30,7 @@ from opencensus.ext.stackdriver import trace_exporter as stackdriver_trace
 from opencensus.trace import config_integration, file_exporter, samplers
 from opencensus.trace.propagation import google_cloud_format
 
-from recidiviz.admin_panel.routes import admin_panel
+from recidiviz.admin_panel.all_routes import admin_panel
 from recidiviz.backup.backup_manager import backup_manager_blueprint
 from recidiviz.calculator.calculation_data_storage_manager import (
     calculation_data_storage_manager_blueprint,

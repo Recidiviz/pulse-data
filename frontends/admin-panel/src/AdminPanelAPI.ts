@@ -87,6 +87,11 @@ export const runCloudSQLImport = async (
   });
 };
 
+// PO Feedback
+export const getPOFeedback = async (): Promise<Response> => {
+  return postWithURLAndBody("/api/case_triage/get_po_feedback", {});
+};
+
 // Ingest Operations Actions
 export const fetchIngestRegionCodes = async (): Promise<Response> => {
   return postWithURLAndBody(
