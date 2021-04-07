@@ -252,17 +252,17 @@ class TestRegions(TestCase):
     def test_set_both_queues_error(self) -> None:
         with pytest.raises(ValueError) as e:
             with_manifest(regions.get_region, "bad_queue")
-            assert "queue" in e.message
+            assert "queue" in str(e)
 
     def test_invalid_region_error_bool(self) -> None:
         with pytest.raises(ValueError) as e:
             with_manifest(regions.get_region, "bad_env_bool")
-            assert "environment" in e.message
+            assert "environment" in str(e)
 
     def test_invalid_region_error_str(self) -> None:
         with pytest.raises(ValueError) as e:
             with_manifest(regions.get_region, "bad_env_str")
-            assert "environment" in e.message
+            assert "environment" in str(e)
 
     @patch("recidiviz.utils.environment.get_gcp_environment")
     def test_is_ingest_launched_in_env_production(
