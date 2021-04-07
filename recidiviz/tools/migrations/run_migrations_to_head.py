@@ -40,6 +40,7 @@ python -m recidiviz.tools.migrations.run_migrations_to_head \
 import argparse
 import logging
 import sys
+from typing import Optional
 
 import alembic.config
 
@@ -94,11 +95,27 @@ def create_parser() -> argparse.ArgumentParser:
         help="The path to the folder where the certs live. "
         "This argument is required if running against live databases.",
     )
+    parser.add_argument(
+        "--skip-db-name-check",
+        action="store_true",
+        help="DO NOT SET unless you know what you're doing. "
+        "If set, this skips the check to see whether you're running against the intended database.",
+    )
+    parser.add_argument(
+        "--confirm-hash",
+        type=str,
+        help="If included, skips the manual git branch confirmation and verifies that the hash is as expected.",
+    )
     return parser
 
 
 def main(
-    schema_type: SchemaType, repo_root: str, ssl_cert_path: str, dry_run: bool
+    schema_type: SchemaType,
+    repo_root: str,
+    ssl_cert_path: str,
+    dry_run: bool,
+    skip_db_name_check: bool,
+    confirm_hash: Optional[str],
 ) -> None:
     """
     Invokes the main code path for running migrations.
@@ -125,8 +142,9 @@ def main(
     if is_prod:
         logging.info("RUNNING AGAINST PRODUCTION\n")
 
-    confirm_correct_db_instance(schema_type)
-    confirm_correct_git_branch(repo_root, is_prod=is_prod)
+    if not skip_db_name_check:
+        confirm_correct_db_instance(schema_type)
+    confirm_correct_git_branch(repo_root, is_prod=is_prod, confirm_hash=confirm_hash)
 
     if dry_run:
         db_keys = [SQLAlchemyDatabaseKey.canonical_for_schema(schema_type)]
@@ -177,4 +195,11 @@ if __name__ == "__main__":
 
     args = create_parser().parse_args()
     with local_project_id_override(args.project_id):
-        main(args.database, args.repo_root, args.ssl_cert_path, args.dry_run)
+        main(
+            args.database,
+            args.repo_root,
+            args.ssl_cert_path,
+            args.dry_run,
+            args.skip_db_name_check,
+            args.confirm_hash,
+        )
