@@ -1,8 +1,8 @@
 steps:
 - name: 'gcr.io/kaniko-project/executor:latest'
   args:
-    # TODO(#6678): Remove test when confirmed that caching works and pick caching strategy
-    - --destination=us.gcr.io/$PROJECT_ID/appengine-test/kaniko:latest
+    # TODO(#6678): Remove when terraform is fully deployed properly
+    - --destination=us.gcr.io/$PROJECT_ID/appengine/default:$TAG_NAME
     - --cache=true
 options:
   machineType: 'N1_HIGHCPU_32'
