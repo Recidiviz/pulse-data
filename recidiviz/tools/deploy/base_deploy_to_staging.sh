@@ -106,13 +106,13 @@ if [[ ! -z ${DEBUG_BUILD_NAME} ]]; then
 else
     echo "Looking for remote build for commit ${COMMIT_HASH} on branch ${BRANCH_NAME}"
     verify_hash $COMMIT_HASH
-    FOUND_REMOTE_BUILD = false
-    NUM_WAITING = 0
+    FOUND_REMOTE_BUILD=false
+    NUM_WAITING=0
     
     while [!${FOUND_REMOTE_BUILD} && $NUM_WAITING -le 10]
     do
         existing_tags = $(gcloud container images list-tags --filter="tags:${COMMIT_HASH}" --format=json ${REMOTE_BUILD_DESTINATION})
-        FOUND_REMOTE_BUILD = [[ "$existing_tags" != "[]" ]]
+        FOUND_REMOTE_BUILD=[[ "$existing_tags" != "[]" ]]
         if [[ !${FOUND_REMOTE_BUILD} ]]; then
             echo "Remote build for commit ${COMMIT_HASH} not found, retrying in 30s"
             NUM_WAITING=$(( $NUM_WAITING + 1 ))
