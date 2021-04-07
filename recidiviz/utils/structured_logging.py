@@ -84,6 +84,7 @@ class ContextualLogRecord(logging.LogRecord):
 # conservative.
 _MAX_BYTES = 80 * 1024  # 80 KiB
 _SUFFIX = "...truncated"
+BEFORE_REQUEST_LOG = "before_request_log"
 
 
 def _truncate_if_needed(text: str) -> str:
@@ -116,6 +117,12 @@ _GCE_DOMAIN = "compute.googleapis.com"
 
 
 class StructuredAppEngineHandler(handlers.AppEngineHandler):
+    def __init__(self, client: Client, name: Optional[str] = None) -> None:
+        if name:
+            super().__init__(client, name=name)
+        else:
+            super().__init__(client)
+
     def emit(self, record: logging.LogRecord) -> None:
         """Overrides the emit method for AppEngineHandler.
 
@@ -158,6 +165,11 @@ def setup() -> None:
         client = Client()
         structured_handler = StructuredAppEngineHandler(client)
         handlers.setup_logging(structured_handler, log_level=logging.INFO)
+
+        before_request_handler = StructuredAppEngineHandler(
+            client, name=BEFORE_REQUEST_LOG
+        )
+        logging.getLogger(BEFORE_REQUEST_LOG).addHandler(before_request_handler)
 
         # Streams unstructured logs to stdout - these logs will still show up
         # under the appengine.googleapis.com/stdout Stackdriver logs bucket,
