@@ -75,11 +75,6 @@ echo "Performing pre-deploy verification"
 verify_hash $COMMIT_HASH
 run_cmd verify_can_deploy recidiviz-staging
 
-echo "Building docker image"
-verify_hash $COMMIT_HASH
-export DOCKER_BUILDKIT=1
-run_cmd docker build -t recidiviz-image .
-
 if [[ ! -z ${DEBUG_BUILD_NAME} ]]; then
     DOCKER_IMAGE_TAG=${VERSION_TAG}-${DEBUG_BUILD_NAME}
     GAE_VERSION=$(echo $VERSION_TAG | tr '.' '-')-${DEBUG_BUILD_NAME}
@@ -91,20 +86,53 @@ fi
 IMAGE_BASE=us.gcr.io/recidiviz-staging/appengine/default
 IMAGE_URL=$IMAGE_BASE:${DOCKER_IMAGE_TAG} || exit_on_fail
 
-echo "Tagging image url [$IMAGE_URL] as recidiviz-image"
-verify_hash $COMMIT_HASH
-run_cmd docker tag recidiviz-image ${IMAGE_URL}
+REMOTE_BUILD_BASE=us.gcr.io/recidiviz-staging/appengine/build
+REMOTE_BUILD_URL=$REMOTE_BUILD_BASE:${COMMIT_HASH}
 
-echo "Pushing image url [$IMAGE_URL]"
-verify_hash $COMMIT_HASH
-run_cmd docker push ${IMAGE_URL}
+if [[ ! -z ${DEBUG_BUILD_NAME} ]]; then
+    # Local debug build, we'll use docker on our local machine
+    echo "Building docker image"
+    verify_hash $COMMIT_HASH
+    export DOCKER_BUILDKIT=1
+    run_cmd docker build -t recidiviz-image .
+
+    echo "Tagging image url [$IMAGE_URL] as recidiviz-image"
+    verify_hash $COMMIT_HASH
+    run_cmd docker tag recidiviz-image ${IMAGE_URL}
+
+    echo "Pushing image url [$IMAGE_URL]"
+    verify_hash $COMMIT_HASH
+    run_cmd docker push ${IMAGE_URL}
+else
+    echo "Looking for remote build for commit ${COMMIT_HASH} on branch ${BRANCH_NAME}"
+    verify_hash $COMMIT_HASH
+    FOUND_REMOTE_BUILD = false
+    NUM_WAITING = 0
+    
+    while [!${FOUND_REMOTE_BUILD} && $NUM_WAITING -le 10]
+    do
+        existing_tags = $(gcloud container images list-tags --filter="tags:${COMMIT_HASH}" --format=json ${REMOTE_BUILD_DESTINATION})
+        FOUND_REMOTE_BUILD = [[ "$existing_tags" != "[]" ]]
+        if [[ !${FOUND_REMOTE_BUILD} ]]; then
+            echo "Remote build for commit ${COMMIT_HASH} not found, retrying in 30s"
+            NUM_WAITING=$(( $NUM_WAITING + 1 ))
+            sleep 30s
+        fi
+    done
+
+    if [[ !${FOUND_REMOTE_BUILD} ]]; then
+        echo "Unable to find remote build for ${COMMIT_HASH} within the timeout - you might need to manually trigger it in Cloud Build. Exiting..."
+        exit_on_fail
+    fi
+
+    echo "Found remote build, proceeding to use image ${REMOTE_BUILD_URL} for the release, tagging to ${IMAGE_URL}"
+    run_cmd gcloud -q container images add-tag ${REMOTE_BUILD_URL} ${IMAGE_URL}
 
 if [[ ! -z ${PROMOTE} ]]; then
     # Update latest tag to reflect staging as well
     echo "Updating :latest tag on remote docker image."
     verify_hash $COMMIT_HASH
-    run_cmd docker tag recidiviz-image $IMAGE_BASE:latest
-    run_cmd docker push $IMAGE_BASE:latest
+    run_cmd gcloud -q container images add-tag ${IMAGE_URL} $IMAGE_BASE:latest
 fi
 
 if [[ ! -z ${PROMOTE} ]]; then

@@ -35,7 +35,6 @@ resource "google_cloudbuild_trigger" "staging_release_build_trigger" {
     options {
       machine_type = "N1_HIGHCPU_32"
     }
-    tags = ["$COMMIT_SHA", "$BRANCH_NAME"]
     timeout = "3600s"
   }
 }
