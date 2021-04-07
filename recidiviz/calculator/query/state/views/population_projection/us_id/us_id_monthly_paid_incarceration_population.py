@@ -40,9 +40,13 @@ US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_QUERY_TEMPLATE = """
             state_code,
             person_id,
             CONCAT(fac_cd, lu_cd) AS faclu_code,
+            COALESCE(ofndr_loc.assgn_rsn_cd, 'INTERNAL_UNKNOWN') AS assgn_rsn_cd,
             CAST(SUBSTR(move_dtd, 1, 10) AS DATE) AS movement_start_date,
         # TODO(#5142): use the paid logic from a more ingested source
         FROM `{project_id}.us_id_raw_data_up_to_date_views.movement_latest` move
+        LEFT JOIN `{project_id}.us_id_raw_data_up_to_date_views.ofndr_loc_hist_latest` ofndr_loc
+            ON move.docno = ofndr_loc.ofndr_num
+            AND SUBSTR(move.move_dtd, 1, 10) = SUBSTR(ofndr_loc.assgn_dt, 1, 10)
         LEFT JOIN `{project_id}.{state_base_dataset}.state_person_external_id` pei
           ON move.docno = pei.external_id
           AND state_code = 'US_ID'
@@ -54,6 +58,7 @@ US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_QUERY_TEMPLATE = """
             person_id,
             -- Collapse all the rows with the same date
             ARRAY_AGG(faclu_code) AS faclu_list,
+            ARRAY_AGG(assgn_rsn_cd) AS assgn_rsn_list,
             movement_start_date,
             -- Pull the move date from the following row as the period end date
             LEAD(movement_start_date)
@@ -67,10 +72,14 @@ US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_QUERY_TEMPLATE = """
             state_code, person_id,
             movement_start_date,
             movement_end_date,
-            -- If any of the movement rows have one of these codes then the incarceration period is not paid by the IDOC
-            NOT LOGICAL_OR(faclu IN ('RTSX', 'RTUT', 'CJVS', 'CJCT')) AS pay_flag
+            -- If any of the rows have one of these codes then the movement period is not paid by the IDOC
+            NOT LOGICAL_OR(faclu IN ('RTSX', 'RTUT', 'CJVS', 'CJCT')
+                           OR assgn_rsn_cd IN ('7', '16', '18', '43', '81')
+                           OR (faclu = 'RTAN' AND assgn_rsn_cd = '56')
+            ) AS pay_flag,
         FROM movement_sessions,
-        UNNEST(faclu_list) AS faclu
+        UNNEST(faclu_list) AS faclu,
+        UNNEST(assgn_rsn_list) AS assgn_rsn_cd
         GROUP BY state_code, person_id, movement_start_date, movement_end_date
     ),
     paid_status_on_compartment_sessions AS (
