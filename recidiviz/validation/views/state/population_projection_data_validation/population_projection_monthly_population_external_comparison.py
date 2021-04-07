@@ -49,12 +49,14 @@ WITH external_data AS (
 ),
 internal_metrics AS (
     SELECT
-        simulation_tag AS region_code,
+        state_code AS region_code,
         compartment,
         year,
         month,
         SUM(total_population) AS total_population
     FROM `{project_id}.{population_projection_dataset}.microsim_projection`
+    WHERE simulation_group != 'ALL'
+        AND legal_status != 'ALL'
     GROUP BY region_code, year, month, compartment
 ),
 internal_metrics_for_valid_regions_and_dates AS (
