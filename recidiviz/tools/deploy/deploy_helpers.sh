@@ -85,15 +85,11 @@ function calculation_pipeline_changes_since_last_deploy {
 function pre_deploy_configure_infrastructure {
     PROJECT=$1
     DOCKER_IMAGE_TAG=$2
-    DEBUG_BUILD_NAME=$3
-    COMMIT_HASH=$4
+    COMMIT_HASH=$3
 
-    if [[ -z ${DEBUG_BUILD_NAME} ]]; then
-        verify_hash $COMMIT_HASH
-        deploy_terraform_infrastructure ${PROJECT} ${COMMIT_HASH} ${DOCKER_IMAGE_TAG} || exit_on_fail
-    else
-        echo "Skipping terraform changes for debug build."
-    fi
+    echo "Deploying terraform"
+    verify_hash $COMMIT_HASH
+    deploy_terraform_infrastructure ${PROJECT} ${COMMIT_HASH} ${DOCKER_IMAGE_TAG} || exit_on_fail
 
     echo "Deploying cron.yaml"
     verify_hash $COMMIT_HASH
@@ -103,33 +99,25 @@ function pre_deploy_configure_infrastructure {
     verify_hash $COMMIT_HASH
     run_cmd pipenv run python -m recidiviz.tools.initialize_google_cloud_task_queues --project_id ${PROJECT} --google_auth_token $(gcloud auth print-access-token)
 
-    if [[ -z ${DEBUG_BUILD_NAME} ]]; then
-        # If it's not a debug build (i.e. local to staging), we update the Dataflow metric table schemas and update all BigQuery views.
-        echo "Updating the BigQuery Dataflow metric table schemas to match the metric classes"
-        verify_hash $COMMIT_HASH
-        run_cmd pipenv run python -m recidiviz.calculator.dataflow_metric_table_manager --project_id ${PROJECT}
+    # Update the Dataflow metric table schemas and update all BigQuery views.
+    echo "Updating the BigQuery Dataflow metric table schemas to match the metric classes"
+    verify_hash $COMMIT_HASH
+    run_cmd pipenv run python -m recidiviz.calculator.dataflow_metric_table_manager --project_id ${PROJECT}
 
-        echo "Updating all BigQuery views"
+    echo "Updating all BigQuery views"
+    verify_hash $COMMIT_HASH
+    run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_views --project_id ${PROJECT}
+
+    # Deploy pipeline templates.
+    if [[ ${PROJECT} == 'recidiviz-staging' ]]; then
+        echo "Deploying stage-only calculation pipelines to templates in ${PROJECT}."
         verify_hash $COMMIT_HASH
-        run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_views --project_id ${PROJECT}
-    else
-        echo "Skipping BigQuery table and view updates for debug build."
+        run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_pipeline_templates --project_id ${PROJECT} --templates_to_deploy staging
     fi
 
-    if [[ -z ${DEBUG_BUILD_NAME} ]]; then
-        # If it's not a debug build (i.e. local to staging), we deploy pipeline templates.
-        if [[ ${PROJECT} == 'recidiviz-staging' ]]; then
-            echo "Deploying stage-only calculation pipelines to templates in ${PROJECT}."
-            verify_hash $COMMIT_HASH
-            run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_pipeline_templates --project_id ${PROJECT} --templates_to_deploy staging
-        fi
-
-        echo "Deploying prod-ready calculation pipelines to templates in ${PROJECT}."
-        verify_hash $COMMIT_HASH
-        run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_pipeline_templates --project_id ${PROJECT} --templates_to_deploy production
-    else
-        echo "Skipping pipeline template deploy for debug build."
-    fi
+    echo "Deploying prod-ready calculation pipelines to templates in ${PROJECT}."
+    verify_hash $COMMIT_HASH
+    run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_pipeline_templates --project_id ${PROJECT} --templates_to_deploy production
 }
 
 function check_running_in_pipenv_shell {

@@ -115,11 +115,11 @@ if [[ ! -z ${PROMOTE} ]]; then
     exit_on_fail
 fi
 
-if [[ ! -z ${PROMOTE} || ! -z ${DEBUG_BUILD_NAME} ]]; then
+if [[ ! -z ${PROMOTE} ]]; then
     verify_hash $COMMIT_HASH
-    pre_deploy_configure_infrastructure 'recidiviz-staging' "${DOCKER_IMAGE_TAG}" "${DEBUG_BUILD_NAME}" "$COMMIT_HASH"
+    pre_deploy_configure_infrastructure 'recidiviz-staging' "${DOCKER_IMAGE_TAG}" "$COMMIT_HASH"
 else
-    echo "Skipping configuration and pipeline deploy steps for no promote release build."
+    echo "Skipping configuration and pipeline deploy steps for debug or no promote release build."
 fi
 
 # TODO(#3928): Migrate deploy of app engine services to terraform.
