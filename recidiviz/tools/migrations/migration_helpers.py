@@ -19,6 +19,7 @@ Helper functions for confirming user input when running migrations.
 """
 import logging
 import sys
+from typing import Optional
 
 from pygit2.repository import Repository
 
@@ -47,7 +48,9 @@ def confirm_correct_db_instance(database: SchemaType) -> None:
     prompt_for_confirmation(f"Running migrations on {dbname}.", dbname)
 
 
-def confirm_correct_git_branch(repo_root: str, is_prod: bool = False) -> None:
+def confirm_correct_git_branch(
+    repo_root: str, is_prod: bool = False, confirm_hash: Optional[str] = None
+) -> None:
     try:
         repo = Repository(repo_root)
     except Exception as e:
@@ -62,6 +65,15 @@ def confirm_correct_git_branch(repo_root: str, is_prod: bool = False) -> None:
             current_branch,
         )
         sys.exit(1)
+
+    if confirm_hash is not None:
+        if confirm_hash != str(repo.head.target):
+            logging.warning(
+                "Hash does not match current branch.\nConfirmation aborting."
+            )
+            sys.exit(1)
+        else:
+            return
 
     prompt_for_confirmation(
         f"This script will execute migrations based on the contents of the current branch ({current_branch}).",
