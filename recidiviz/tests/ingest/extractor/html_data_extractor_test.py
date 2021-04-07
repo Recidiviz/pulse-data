@@ -29,7 +29,7 @@ from recidiviz.tests.ingest import fixtures
 class HtmlDataExtractorTest(unittest.TestCase):
     """Tests for extracting data from HTML."""
 
-    def extract(self, html_filename, yaml_filename):
+    def extract(self, html_filename: str, yaml_filename: str) -> IngestInfo:
         yaml_path = os.path.join(
             os.path.dirname(__file__), "../testdata/data_extractor/yaml", yaml_filename
         )
@@ -39,7 +39,7 @@ class HtmlDataExtractorTest(unittest.TestCase):
         )
         return extractor.extract_and_populate_data(contents)
 
-    def test_good_table(self):
+    def test_good_table(self) -> None:
         """Tests a well modelled table."""
         expected_info = IngestInfo()
         person = expected_info.create_person()
@@ -48,7 +48,7 @@ class HtmlDataExtractorTest(unittest.TestCase):
         info = self.extract("good_table.html", "good_table.yaml")
         self.assertEqual(expected_info, info)
 
-    def test_good_table_with_link(self):
+    def test_good_table_with_link(self) -> None:
         """Tests a well modelled table with a link."""
         expected_info = IngestInfo()
         person = expected_info.create_person()
@@ -57,7 +57,7 @@ class HtmlDataExtractorTest(unittest.TestCase):
         info = self.extract("good_table_links.html", "good_table.yaml")
         self.assertEqual(expected_info, info)
 
-    def test_nested_good_table(self):
+    def test_nested_good_table(self) -> None:
         """Tests a well modelled nested table."""
         expected_info = IngestInfo()
 
@@ -88,7 +88,7 @@ class HtmlDataExtractorTest(unittest.TestCase):
         info = self.extract("nested_good_table.html", "nested_good_table.yaml")
         self.assertEqual(expected_info, info)
 
-    def test_bad_table(self):
+    def test_bad_table(self) -> None:
         """Tests a table with an unusual cell layout."""
         expected_info = IngestInfo()
         person = expected_info.create_person()
@@ -125,7 +125,7 @@ class HtmlDataExtractorTest(unittest.TestCase):
         info.people[0].bookings[0].charges.pop()
         self.assertEqual(expected_info, info)
 
-    def test_multiple_people_with_maybe_charges(self):
+    def test_multiple_people_with_maybe_charges(self) -> None:
         """Tests for a page with many people, each with possibly a set of
         charges"""
         expected_info = IngestInfo()
@@ -199,17 +199,17 @@ class HtmlDataExtractorTest(unittest.TestCase):
         )
         self.assertEqual(expected_info, info)
 
-    def test_bad_object(self):
+    def test_bad_object(self) -> None:
         """Tests a yaml file with a db object that doesn't exist."""
         with self.assertRaises(KeyError):
             self.extract("good_table.html", "bad_object.yaml")
 
-    def test_bad_attr(self):
+    def test_bad_attr(self) -> None:
         """Tests a yaml file with a db attribute that doesn't exist."""
         with self.assertRaises(AttributeError):
             self.extract("good_table.html", "bad_attr.yaml")
 
-    def test_partial_table(self):
+    def test_partial_table(self) -> None:
         """Tests a page with a table as well as unstructured data."""
         expected_info = IngestInfo()
         person = expected_info.create_person()
@@ -227,7 +227,7 @@ class HtmlDataExtractorTest(unittest.TestCase):
         info = self.extract("partial_table.html", "partial_table.yaml")
         self.assertEqual(expected_info, info)
 
-    def test_labeled_fields(self):
+    def test_labeled_fields(self) -> None:
         """Tests a page with field values in <span>s labeled by <label>s."""
         expected_info = IngestInfo()
         person = expected_info.create_person()
@@ -246,7 +246,7 @@ class HtmlDataExtractorTest(unittest.TestCase):
         info = self.extract("labeled_fields.html", "labeled_fields.yaml")
         self.assertEqual(expected_info, info)
 
-    def test_bad_labels(self):
+    def test_bad_labels(self) -> None:
         """Tests a page with field values in <span>s labeled by nested
         <label>s."""
         expected_info = IngestInfo()
@@ -267,7 +267,7 @@ class HtmlDataExtractorTest(unittest.TestCase):
         info = self.extract("bad_labels.html", "bad_labels.yaml")
         self.assertEqual(expected_info, info)
 
-    def test_text_label(self):
+    def test_text_label(self) -> None:
         """Tests a page with a key/value pair in plain text."""
         expected_info = IngestInfo()
         person = expected_info.create_person()
@@ -299,7 +299,7 @@ class HtmlDataExtractorTest(unittest.TestCase):
         info = self.extract("text_label.html", "text_label.yaml")
         self.assertEqual(expected_info, info)
 
-    def test_th_rows(self):
+    def test_th_rows(self) -> None:
         """Tests a yaml file with <th> keys in rows."""
         expected_info = IngestInfo()
         person = expected_info.create_person()
@@ -309,7 +309,7 @@ class HtmlDataExtractorTest(unittest.TestCase):
         info = self.extract("th_rows.html", "th_rows.yaml")
         self.assertEqual(expected_info, info)
 
-    def test_content_is_not_modified(self):
+    def test_content_is_not_modified(self) -> None:
         """Tests that the HtmlDataExtractor does not mutate |content|."""
         key_mapping_file = "../testdata/data_extractor/yaml/text_label.yaml"
         key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
@@ -325,7 +325,7 @@ class HtmlDataExtractorTest(unittest.TestCase):
         self.assertEqual(expected_info, info)
         self.assertFalse(html_contents.cssselect("td"))
 
-    def test_cell_ordering(self):
+    def test_cell_ordering(self) -> None:
         """Tests that the HtmlDataExtractor handles 'th' and 'td' cells in the
         correct order."""
         expected_info = IngestInfo()
@@ -336,7 +336,7 @@ class HtmlDataExtractorTest(unittest.TestCase):
         info = self.extract("mixed_cells.html", "good_table.yaml")
         self.assertEqual(expected_info.people[0], info.people[0])
 
-    def test_no_multi_key_parent(self):
+    def test_no_multi_key_parent(self) -> None:
         """Tests that parent classes are created properly when a field is
         scraped whose parent is a multi-key class that has not been scraped. In
         this example, charges are multi-key classes, but a bond is scraped from
@@ -351,7 +351,7 @@ class HtmlDataExtractorTest(unittest.TestCase):
         info = self.extract("no_charges.html", "charge_multi_key.yaml")
         self.assertEqual(expected_info, info)
 
-    def test_one_to_many(self):
+    def test_one_to_many(self) -> None:
         key_mapping_file = "../testdata/data_extractor/yaml/one_to_many.yaml"
         key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
         extractor = HtmlDataExtractor(key_mapping_file)
@@ -364,7 +364,7 @@ class HtmlDataExtractorTest(unittest.TestCase):
         info = extractor.extract_and_populate_data(html_contents)
         self.assertEqual(expected_info, info)
 
-    def test_child_first(self):
+    def test_child_first(self) -> None:
         """Tests that in multi_key mappings (columns in a table), parent
         objects are created where needed."""
         expected_info = IngestInfo()
@@ -374,7 +374,7 @@ class HtmlDataExtractorTest(unittest.TestCase):
         info = self.extract("child_first.html", "child_first.yaml")
         self.assertEqual(expected_info, info)
 
-    def test_single_page_roster(self):
+    def test_single_page_roster(self) -> None:
         """Tests that bookings are not treated as multi-key classes,
         i.e. we assume that a person has at most one booking if they are
         listed in columns."""
@@ -388,7 +388,7 @@ class HtmlDataExtractorTest(unittest.TestCase):
         info = self.extract("single_page_roster.html", "single_page_roster.yaml")
         self.assertEqual(expected_info, info)
 
-    def test_bond_multi_key(self):
+    def test_bond_multi_key(self) -> None:
         expected_info = IngestInfo()
         booking = expected_info.create_person().create_booking()
         booking.create_charge().create_bond(bond_id="1", amount="10")
@@ -398,7 +398,7 @@ class HtmlDataExtractorTest(unittest.TestCase):
         info = self.extract("bonds.html", "bonds.yaml")
         self.assertEqual(expected_info, info)
 
-    def test_three_levels_multi_key(self):
+    def test_three_levels_multi_key(self) -> None:
         expected_info = IngestInfo()
         p = expected_info.create_person()
         b1 = p.create_booking(admission_date="01/01/2011", release_date="02/02/2012")
