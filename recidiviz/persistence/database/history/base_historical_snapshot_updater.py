@@ -22,12 +22,11 @@ See BaseHistoricalSnapshotUpdater for further documentation.
 """
 
 import abc
-from datetime import datetime
 import logging
+from datetime import datetime
 from collections import defaultdict
-
 from types import ModuleType
-from typing import List, Generic, Type, Set, Callable, Optional, Dict
+from typing import Any, List, Generic, Type, Set, Callable, Optional, Dict
 
 import attr
 
@@ -168,7 +167,7 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
         logging.info("All historical snapshots written")
 
     def _fetch_most_recent_snapshots_for_all_entities(
-        self, session: Session, root_entities: List[DatabaseEntity], schema
+        self, session: Session, root_entities: List[DatabaseEntity], schema: ModuleType
     ) -> List[DatabaseEntity]:
         """Returns a list containing the most recent snapshot for each entity in
         all graphs reachable from |root_entities|, if one exists.
@@ -321,7 +320,7 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
         session: Session,
         context: "_SnapshotContext",
         snapshot_time: datetime,
-        schema,
+        schema: ModuleType,
     ) -> None:
         """Writes snapshots for any new entities, including any required manual
         adjustments based on provided start and end times
@@ -439,7 +438,7 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
             keys_by_type[type_name].add(key)
 
     def _execute_action_for_all_entities(
-        self, start_schema_objects: List[DatabaseEntity], action: Callable, *args
+        self, start_schema_objects: List[DatabaseEntity], action: Callable, *args: Any
     ) -> None:
         """For every entity in every graph reachable from
         |start_schema_objects|, invokes |action|, passing the entity and
@@ -591,15 +590,18 @@ class _SnapshotContext:
 class _SnapshotContextRegistry:
     """Container for all snapshot contexts for all entities"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Nested map:
         # (master entity type name string) -> ((primary key) -> (context))
-        self.snapshot_contexts = {}
+        self.snapshot_contexts: Dict[str, Dict[int, _SnapshotContext]] = {}
 
     def snapshot_context(self, entity: DatabaseEntity) -> _SnapshotContext:
         """Returns (_SnapshotContext) for |entity|"""
         context_map = self.snapshot_contexts[type(entity).__name__]
-        return context_map[entity.get_primary_key()]
+        primary_key = entity.get_primary_key()
+        if primary_key is None:
+            raise ValueError("primary key should not be None")
+        return context_map[primary_key]
 
     def all_contexts(self) -> List[_SnapshotContext]:
         """Returns all (_SnapshotContext) objects present in registry"""
@@ -623,12 +625,14 @@ class _SnapshotContextRegistry:
                 "Entity already registered with type {type} and primary key "
                 "{primary_key}".format(type=type_name, primary_key=entity_id)
             )
+        if entity_id is None:
+            raise ValueError("primary key should not be None")
 
         self.snapshot_contexts[type_name][entity_id] = _SnapshotContext(
             schema_object=schema_object
         )
 
-    def add_snapshot(self, snapshot: DatabaseEntity, schema) -> None:
+    def add_snapshot(self, snapshot: DatabaseEntity, schema: ModuleType) -> None:
         """Registers |snapshot| to the appropriate (_SnapshotContext) of the
         master entity corresponding to |snapshot|
 
