@@ -26,7 +26,7 @@ from recidiviz.tests.ingest import fixtures
 class DataExtractorJsonTest(unittest.TestCase):
     """Tests for extracting data from JSON."""
 
-    def test_jailtracker_person(self):
+    def test_jailtracker_person(self) -> None:
         key_mapping_file = "fixtures/jailtracker_person.yaml"
         key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
         extractor = JsonDataExtractor(key_mapping_file)
@@ -41,7 +41,7 @@ class DataExtractorJsonTest(unittest.TestCase):
 
         self.assertEqual(result, expected_result)
 
-    def test_jailtracker_booking(self):
+    def test_jailtracker_booking(self) -> None:
         key_mapping_file = "fixtures/jailtracker_booking.yaml"
         key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
 
@@ -62,7 +62,7 @@ class DataExtractorJsonTest(unittest.TestCase):
 
         self.assertEqual(result, expected_result)
 
-    def test_person_with_charges(self):
+    def test_person_with_charges(self) -> None:
         key_mapping_file = "fixtures/person_with_charges.yaml"
         key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
         extractor = JsonDataExtractor(key_mapping_file)
@@ -86,7 +86,7 @@ class DataExtractorJsonTest(unittest.TestCase):
         )
         self.assertEqual(result, expected_result)
 
-    def test_person_with_holds(self):
+    def test_person_with_holds(self) -> None:
         key_mapping_file = "fixtures/person_with_holds.yaml"
         key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
         extractor = JsonDataExtractor(key_mapping_file)
@@ -110,7 +110,7 @@ class DataExtractorJsonTest(unittest.TestCase):
         )
         self.assertEqual(result, expected_result)
 
-    def test_skip_empty(self):
+    def test_skip_empty(self) -> None:
         key_mapping_file = os.path.join(
             os.path.dirname(__file__), "fixtures/skip_empty.yaml"
         )

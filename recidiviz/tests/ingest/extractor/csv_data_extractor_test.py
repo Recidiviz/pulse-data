@@ -19,7 +19,7 @@
 import csv
 import os
 import unittest
-from typing import Callable
+from typing import Callable, Dict
 
 from recidiviz.ingest.extractor.csv_data_extractor import (
     CsvDataExtractor,
@@ -32,7 +32,7 @@ from recidiviz.tests.ingest import fixtures
 class CsvDataExtractorTest(unittest.TestCase):
     """Tests for extracting data from CSV."""
 
-    def test_ancestor_chain(self):
+    def test_ancestor_chain(self) -> None:
         extractor = _instantiate_extractor("standard_child_file_csv.yaml")
         rows = _get_content_as_csv("standard_child_file.csv")
         first_row = next(iter(rows))
@@ -41,7 +41,7 @@ class CsvDataExtractorTest(unittest.TestCase):
         expected_chain = {"state_person": "52163"}
         self.assertEqual(expected_chain, ancestor_chain)
 
-    def test_ancestor_chain_multiple_keys(self):
+    def test_ancestor_chain_multiple_keys(self) -> None:
         extractor = _instantiate_extractor("multiple_ancestors.yaml")
         rows = _get_content_as_csv("multiple_ancestors.csv")
         first_row = next(iter(rows))
@@ -50,7 +50,7 @@ class CsvDataExtractorTest(unittest.TestCase):
         expected_chain = {"state_person": "52163", "state_sentence_group": "12345"}
         self.assertEqual(expected_chain, ancestor_chain)
 
-    def test_ancestor_chain_no_ancestor_key(self):
+    def test_ancestor_chain_no_ancestor_key(self) -> None:
         extractor = _instantiate_extractor("no_ancestor_key_csv.yaml")
         rows = _get_content_as_csv("standard_child_file.csv")
         first_row = next(iter(rows))
@@ -58,7 +58,7 @@ class CsvDataExtractorTest(unittest.TestCase):
         coordinates = extractor._ancestor_chain(first_row)
         self.assertFalse(coordinates)
 
-    def test_get_creation_args_no_override(self):
+    def test_get_creation_args_no_override(self) -> None:
         extractor = _instantiate_extractor("standard_child_file_csv.yaml")
         rows = _get_content_as_csv("standard_child_file.csv")
         first_row = next(iter(rows))
@@ -67,8 +67,8 @@ class CsvDataExtractorTest(unittest.TestCase):
         expected_args = {"sentence_group_id": "113377"}
         self.assertEqual(expected_args, args)
 
-    def test_get_creation_args_with_override(self):
-        def _override(_row):
+    def test_get_creation_args_with_override(self) -> None:
+        def _override(_row: Dict[str, str]) -> IngestFieldCoordinates:
             return IngestFieldCoordinates(
                 "sentence_group", "sentence_group_id", "abcdef"
             )
@@ -83,7 +83,7 @@ class CsvDataExtractorTest(unittest.TestCase):
         expected_args = {"sentence_group_id": "abcdef"}
         self.assertEqual(expected_args, args)
 
-    def test_get_creation_args_not_for_current_field(self):
+    def test_get_creation_args_not_for_current_field(self) -> None:
         extractor = _instantiate_extractor("multiple_entity_types_in_row_csv.yaml")
         rows = _get_content_as_csv("multiple_entity_types_in_row.csv")
         first_row = next(iter(rows))
@@ -91,8 +91,8 @@ class CsvDataExtractorTest(unittest.TestCase):
         args = extractor._get_creation_args(first_row, "PAROLE_DATE", {})
         self.assertEqual(args, {"incarceration_sentence_id": "CSV_EXTRACTOR_DUMMY_KEY"})
 
-    def test_get_creation_args_override_but_not_for_current_field(self):
-        def _override(_row):
+    def test_get_creation_args_override_but_not_for_current_field(self) -> None:
+        def _override(_row: Dict[str, str]) -> IngestFieldCoordinates:
             return IngestFieldCoordinates(
                 "sentence_group", "sentence_group_id", "abcdef"
             )
@@ -106,7 +106,7 @@ class CsvDataExtractorTest(unittest.TestCase):
         args = extractor._get_creation_args(first_row, "PAROLE_DATE", {})
         self.assertEqual(args, {"incarceration_sentence_id": "CSV_EXTRACTOR_DUMMY_KEY"})
 
-    def test_get_creation_args_no_override_or_mapping(self):
+    def test_get_creation_args_no_override_or_mapping(self) -> None:
         extractor = _instantiate_extractor("no_primary_keys_csv.yaml")
         rows = _get_content_as_csv("no_primary_keys.csv")
         first_row = next(iter(rows))
@@ -114,7 +114,7 @@ class CsvDataExtractorTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             extractor._get_creation_args(first_row, "LAST_NAME", {})
 
-    def test_get_creation_args_not_a_valid_lookup_key(self):
+    def test_get_creation_args_not_a_valid_lookup_key(self) -> None:
         extractor = _instantiate_extractor("standard_child_file_csv.yaml")
         rows = _get_content_as_csv("standard_child_file.csv")
         first_row = next(iter(rows))
@@ -122,7 +122,7 @@ class CsvDataExtractorTest(unittest.TestCase):
         args = extractor._get_creation_args(first_row, "AGY_LOC_ID", {})
         self.assertFalse(args)
 
-    def test_primary_coordinates(self):
+    def test_primary_coordinates(self) -> None:
         extractor = _instantiate_extractor("standard_child_file_csv.yaml")
         rows = _get_content_as_csv("standard_child_file.csv")
         first_row = next(iter(rows))
@@ -133,12 +133,12 @@ class CsvDataExtractorTest(unittest.TestCase):
         )
         self.assertEqual(expected_key, key)
 
-    def test_primary_coordinates_override(self):
+    def test_primary_coordinates_override(self) -> None:
         coordinates = IngestFieldCoordinates(
             "sentence_group", "sentence_group_id", "abcdef"
         )
 
-        def _override(_row):
+        def _override(_row: Dict[str, str]) -> IngestFieldCoordinates:
             return coordinates
 
         extractor = _instantiate_extractor(
@@ -151,7 +151,7 @@ class CsvDataExtractorTest(unittest.TestCase):
         expected_key = coordinates
         self.assertEqual(expected_key, key)
 
-    def test_primary_coordinates_no_override_or_mapping(self):
+    def test_primary_coordinates_no_override_or_mapping(self) -> None:
         extractor = _instantiate_extractor("no_primary_keys_csv.yaml")
         rows = _get_content_as_csv("no_primary_keys.csv")
         first_row = next(iter(rows))
@@ -159,7 +159,7 @@ class CsvDataExtractorTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             extractor._primary_coordinates(first_row)
 
-    def test_parse_file_headers_only(self):
+    def test_parse_file_headers_only(self) -> None:
         """Tests that we don't crash on a CSV with only a header row and return
         an empty IngestInfoObject.
         """
@@ -172,7 +172,7 @@ class CsvDataExtractorTest(unittest.TestCase):
         self.assertIsNotNone(ingest_info)
         self.assertFalse(ingest_info)
 
-    def test_parse_file_headers_only_iterator_input(self):
+    def test_parse_file_headers_only_iterator_input(self) -> None:
         extractor = _instantiate_extractor("header_cols_only_csv.yaml")
         content = fixtures.as_string(
             "testdata/data_extractor/csv", "header_cols_only.csv"
@@ -182,7 +182,7 @@ class CsvDataExtractorTest(unittest.TestCase):
         self.assertIsNotNone(ingest_info)
         self.assertFalse(ingest_info)
 
-    def test_parse_file_empty(self):
+    def test_parse_file_empty(self) -> None:
         """Tests that we don't crash on a completely empty CSV and return an
         empty IngestInfoObject"""
         extractor = _instantiate_extractor("header_cols_only_csv.yaml")
