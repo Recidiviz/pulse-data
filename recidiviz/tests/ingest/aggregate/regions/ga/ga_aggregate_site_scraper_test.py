@@ -27,7 +27,7 @@ class TestGaAggregateSiteScraper(TestCase):
     """Test that ga_aggregate_site_scraper correctly scrapes urls."""
 
     @patch.object(requests, "get")
-    def testGetAllUrls(self, mockget):
+    def testGetAllUrls(self, mockget: Mock) -> None:
         REPORTS_LANDING_HTML = fixtures.as_string(
             "aggregate/regions/ga", "reports_landing.html"
         )
@@ -38,7 +38,7 @@ class TestGaAggregateSiteScraper(TestCase):
             "aggregate/regions/ga", "reports_year_2019.html"
         )
 
-        def _MockGet(url):
+        def _MockGet(url: str) -> Mock:
             response = Mock()
             if "node/5617" in url:
                 response.text = REPORTS_YEAR_2019

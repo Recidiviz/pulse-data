@@ -27,7 +27,7 @@ from recidiviz.ingest.aggregate import aggregate_ingest_utils
 class TestAggregateIngestUtils(TestCase):
     """Tests for aggregate_ingest_utils."""
 
-    def testRenameWithoutRegex(self):
+    def testRenameWithoutRegex(self) -> None:
         # Arrange
         subject = pd.DataFrame(
             {
@@ -57,7 +57,7 @@ class TestAggregateIngestUtils(TestCase):
 
         assert_frame_equal(result, expected_result)
 
-    def testRenameWithRegex(self):
+    def testRenameWithRegex(self) -> None:
         # Arrange
         subject = pd.DataFrame(
             {
@@ -89,25 +89,25 @@ class TestAggregateIngestUtils(TestCase):
 
         assert_frame_equal(result, expected_result)
 
-    def test_subtractMonth(self):
+    def test_subtractMonth(self) -> None:
         result = aggregate_ingest_utils.subtract_month(
             datetime.date(year=2019, month=3, day=15)
         )
         assert result == datetime.date(year=2019, month=2, day=15)
 
-    def test_subtractMonth_truncatesDay(self):
+    def test_subtractMonth_truncatesDay(self) -> None:
         result = aggregate_ingest_utils.subtract_month(
             datetime.date(year=2019, month=3, day=29)
         )
         assert result == datetime.date(year=2019, month=2, day=28)
 
-    def test_subtractMonth_priorYear(self):
+    def test_subtractMonth_priorYear(self) -> None:
         result = aggregate_ingest_utils.subtract_month(
             datetime.date(year=2019, month=1, day=29)
         )
         assert result == datetime.date(year=2018, month=12, day=29)
 
-    def test_subtractMonth_firstDay(self):
+    def test_subtractMonth_firstDay(self) -> None:
         result = aggregate_ingest_utils.subtract_month(
             datetime.date(year=2019, month=3, day=1)
         )

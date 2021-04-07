@@ -16,14 +16,15 @@
 # =============================================================================
 """Tests for hi_aggregate_ingest.py."""
 import datetime
+from typing import Dict
 from unittest import TestCase
 
 import pandas as pd
-import pytest
 from more_itertools import one
 from numpy import NaN
 from pandas.testing import assert_frame_equal
 from sqlalchemy import func
+from sqlalchemy.orm import DeclarativeMeta
 
 from recidiviz.common.constants.aggregate import enum_canonical_strings as enum_strings
 from recidiviz.ingest.aggregate.regions.hi import hi_aggregate_ingest
@@ -39,20 +40,21 @@ DATE_SCRAPED = datetime.date(year=2018, month=11, day=30)
 DATE_SCRAPED_2 = datetime.date(year=2017, month=9, day=30)
 
 
-# Cache the parsed pdf between tests since it's expensive to compute
-@pytest.fixture(scope="class")
-def parsed_pdf(request):
-    request.cls.parsed_pdf = hi_aggregate_ingest.parse(
-        "", fixtures.as_filepath("Pop-Reports-EOM-2018-11-30.pdf")
-    )
-    request.cls.parsed_pdf_2 = hi_aggregate_ingest.parse(
-        "", fixtures.as_filepath("pop-reports-eom-2017-09-30-17.pdf")
-    )
-
-
-@pytest.mark.usefixtures("parsed_pdf")
 class TestHiAggregateIngest(TestCase):
     """Test that hi_aggregate_ingest correctly parses the HI PDF."""
+
+    parsed_pdf: Dict[DeclarativeMeta, pd.DataFrame] = {}
+    parsed_pdf_2: Dict[DeclarativeMeta, pd.DataFrame] = {}
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        # Cache the parsed pdf between tests since it's expensive to compute
+        cls.parsed_pdf = hi_aggregate_ingest.parse(
+            "", fixtures.as_filepath("Pop-Reports-EOM-2018-11-30.pdf")
+        )
+        cls.parsed_pdf_2 = hi_aggregate_ingest.parse(
+            "", fixtures.as_filepath("pop-reports-eom-2017-09-30-17.pdf")
+        )
 
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS)
@@ -61,7 +63,10 @@ class TestHiAggregateIngest(TestCase):
     def tearDown(self) -> None:
         fakes.teardown_in_memory_sqlite_databases()
 
-    def testParse_ParsesHeadAndTail(self):
+    def testParse_ParsesHeadAndTail(self) -> None:
+        if not self.parsed_pdf:
+            raise ValueError("Unexpectedly empty parsed_pdf")
+
         result = self.parsed_pdf[HiFacilityAggregate]
 
         # Assert Head
@@ -137,7 +142,10 @@ class TestHiAggregateIngest(TestCase):
         )
         assert_frame_equal(result.tail(n=2), expected_tail, check_names=False)
 
-    def testParseNewTableOrder_ParsesHeadAndTail(self):
+    def testParseNewTableOrder_ParsesHeadAndTail(self) -> None:
+        if not self.parsed_pdf_2:
+            raise ValueError("Unexpectedly empty parsed_pdf_2")
+
         result = self.parsed_pdf_2[HiFacilityAggregate]
 
         # Assert Head
@@ -213,7 +221,10 @@ class TestHiAggregateIngest(TestCase):
         )
         assert_frame_equal(result.tail(n=2), expected_tail, check_names=False)
 
-    def testWrite_CalculatesSum(self):
+    def testWrite_CalculatesSum(self) -> None:
+        if not self.parsed_pdf:
+            raise ValueError("Unexpectedly empty parsed_pdf")
+
         # Act
         for table, df in self.parsed_pdf.items():
             dao.write_df(table, df)
