@@ -143,6 +143,8 @@ secrets.yaml # keep in case any developers still have them
 
 # Typescript
 **/node_modules
+.yalc
+yalc.lock
 
 # Stackdriver Traces
 traces

@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { rem } from "polished";
-import styled, { keyframes } from "styled-components/macro";
+import styled from "styled-components/macro";
 import { palette, spacing } from "@recidiviz/case-triage-components";
 
 const StateStyles = {
