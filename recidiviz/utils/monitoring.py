@@ -16,30 +16,33 @@
 # =============================================================================
 
 """Creates monitoring client for measuring and recording stats."""
+from contextvars import ContextVar
 from contextlib import contextmanager
 from functools import wraps
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Callable, Optional, List
+
 
 from opencensus.ext.stackdriver import stats_exporter as stackdriver
-from opencensus.stats import stats as stats_module
+from opencensus.stats import stats as stats_module, view as view_module
 from opencensus.tags import TagContext, TagMap
 
 
-def stats():
+# pylint: disable=protected-access
+def stats() -> stats_module._Stats:
     return stats_module.stats
 
 
-def register_stackdriver_exporter():
+def register_stackdriver_exporter() -> None:
     exporter = stackdriver.new_stats_exporter()
     stats().view_manager.register_exporter(exporter)
 
 
-def register_views(views):
+def register_views(views: List[view_module.View]) -> None:
     for view in views:
         stats().view_manager.register_view(view)
 
 
-def set_context_tags(tags: Dict[str, Any]):
+def set_context_tags(tags: Dict[str, Any]) -> ContextVar:
     tag_map = TagMap(TagContext.get())
 
     for key, value in tags.items():
@@ -58,7 +61,7 @@ def context_tags() -> TagMap:
 
 
 @contextmanager
-def push_tags(tags: Dict[str, Any]):
+def push_tags(tags: Dict[str, Any]) -> TagContext.contextvar:
     token = set_context_tags(tags)
     try:
         yield
@@ -66,13 +69,13 @@ def push_tags(tags: Dict[str, Any]):
         TagContext.contextvar.reset(token)
 
 
-def push_region_tag(region_code: str):
+def push_region_tag(region_code: str) -> TagContext.contextvar:
     return push_tags({TagKey.REGION: region_code})
 
 
-def with_region_tag(func):
+def with_region_tag(func: Callable) -> Callable:
     @wraps(func)
-    def set_region_tag(region_code, *args, **kwargs):
+    def set_region_tag(region_code: str, *args: Any, **kwargs: Any) -> Any:
         with push_region_tag(region_code):
             return func(region_code, *args, **kwargs)
 
@@ -80,14 +83,15 @@ def with_region_tag(func):
 
 
 @contextmanager
-def measurements(tags=None):
+def measurements(tags: Optional[Dict[str, Any]] = None) -> TagContext.contextvar:
     mmap = stats().stats_recorder.new_measurement_map()
     try:
         yield mmap
     finally:
         tag_map = context_tags()
-        for key, value in tags.items():
-            tag_map.insert(key, str(value))
+        if tags:
+            for key, value in tags.items():
+                tag_map.insert(key, str(value))
         mmap.record(tag_map)
 
 
