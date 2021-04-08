@@ -23,7 +23,7 @@ from typing import Dict
 from google.cloud import tasks_v2
 from google.cloud.tasks_v2.proto import queue_pb2
 from google.protobuf import duration_pb2
-from mock import create_autospec, patch
+from mock import create_autospec, patch, Mock
 
 from recidiviz.common.google_cloud import google_cloud_task_queue_config
 from recidiviz.tests.utils.fake_region import fake_region
@@ -34,13 +34,13 @@ class TestGoogleCloudTasksQueueConfig(unittest.TestCase):
     """Tests for google_cloud_task_queue_config.py."""
 
     @staticmethod
-    def create_mock_cloud_tasks_client():
+    def create_mock_cloud_tasks_client() -> tasks_v2.CloudTasksClient:
         mock_client = create_autospec(tasks_v2.CloudTasksClient)
         mock_client.queue_path.side_effect = tasks_v2.CloudTasksClient.queue_path
 
         return mock_client
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.mock_client_patcher = patch(
             "google.cloud.tasks_v2.CloudTasksClient",
             return_value=self.create_mock_cloud_tasks_client(),
@@ -49,7 +49,7 @@ class TestGoogleCloudTasksQueueConfig(unittest.TestCase):
         self.mock_client_cls = self.mock_client_patcher.start()
         self.mock_client = self.mock_client_cls()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.mock_client_patcher.stop()
 
     def get_updated_queues(self) -> Dict[str, queue_pb2.Queue]:
@@ -64,15 +64,16 @@ class TestGoogleCloudTasksQueueConfig(unittest.TestCase):
         return queues_updated_by_id
 
     @patch("recidiviz.utils.regions.get_supported_regions")
-    def test_initialize_queues(self, mock_regions):
+    def test_initialize_queues(self, mock_regions: Mock) -> None:
         # Arrange
         region_xx = fake_region(
             region_code="us_xx",
             queue={"rate_limits": {"max_dispatches_per_second": 0.3}},
+            get_queue_name=lambda: "us_xx_queue",
         )
-        region_xx.get_queue_name.return_value = "us_xx_queue"
-        region_yy = fake_region(region_code="us_yy")
-        region_yy.get_queue_name.return_value = "us_yy_queue"
+        region_yy = fake_region(
+            region_code="us_yy", get_queue_name=lambda: "us_yy_queue"
+        )
         mock_regions.return_value = [region_xx, region_yy]
 
         # Act

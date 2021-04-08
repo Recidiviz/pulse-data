@@ -27,7 +27,7 @@ from recidiviz.common.constants.person_characteristics import Race, Ethnicity
 class EnumOverridesTest(unittest.TestCase):
     """Tests for EnumOverrides class."""
 
-    def test_add(self):
+    def test_add(self) -> None:
         overrides_builder = EnumOverrides.Builder()
         overrides_builder.add("A", Race.ASIAN)
         overrides_builder.add("A", ChargeDegree.FIRST)
@@ -38,14 +38,14 @@ class EnumOverridesTest(unittest.TestCase):
         self.assertEqual(overrides.parse("A", Race), Race.ASIAN)
         self.assertEqual(overrides.parse("A", ChargeDegree), ChargeDegree.FIRST)
 
-    def test_add_fromDifferentEnum(self):
+    def test_add_fromDifferentEnum(self) -> None:
         overrides_builder = EnumOverrides.Builder()
 
         overrides = overrides_builder.build()
 
         self.assertIsNone(overrides.parse("LATINO", Ethnicity))
 
-    def test_add_mapper(self):
+    def test_add_mapper(self) -> None:
         is_pending = lambda s: BondStatus.PENDING if s.startswith("PENDING") else None
 
         overrides_builder = EnumOverrides.Builder()
@@ -60,7 +60,7 @@ class EnumOverridesTest(unittest.TestCase):
             BondStatus.PENDING,
         )
 
-    def test_ignore(self):
+    def test_ignore(self) -> None:
         overrides_builder = EnumOverrides.Builder()
         overrides_builder.ignore("A", ChargeClass)
 
@@ -69,7 +69,7 @@ class EnumOverridesTest(unittest.TestCase):
         self.assertTrue(overrides.should_ignore("A", ChargeClass))
         self.assertFalse(overrides.should_ignore("A", BondType))
 
-    def test_ignoreWithPredicate(self):
+    def test_ignoreWithPredicate(self) -> None:
         overrides_builder = EnumOverrides.Builder()
         overrides_builder.ignore_with_predicate(
             lambda s: s.startswith("NO"), ChargeClass

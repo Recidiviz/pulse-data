@@ -31,9 +31,9 @@ _NOW = datetime.datetime(2000, 1, 1)
 class TestCommonConstantsPersonCharacteristics(TestCase):
     """Test person constants."""
 
-    def test_parseGenderEnum(self):
+    def test_parseGenderEnum(self) -> None:
         assert Gender.parse("Male", EnumOverrides.empty()) == Gender.MALE
 
-    def test_parseBadGenderEnum(self):
+    def test_parseBadGenderEnum(self) -> None:
         with pytest.raises(EnumParsingError):
             Gender.parse("ABD", EnumOverrides.empty())

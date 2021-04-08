@@ -16,7 +16,7 @@
 # =============================================================================
 """Helpers for creating fake regions for use in tests."""
 from types import ModuleType
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Callable
 
 from mock import create_autospec
 
@@ -35,6 +35,7 @@ def fake_region(
     shared_queue: Optional[str] = None,
     region_module: Optional[ModuleType] = None,
     is_direct_ingest: bool = True,
+    get_queue_name: Optional[Callable[[], str]] = None
 ) -> Region:
     """Fake Region Object"""
     region = create_autospec(Region)
@@ -53,6 +54,10 @@ def fake_region(
 
     region.queue = queue
     region.shared_queue = shared_queue
+
+    if get_queue_name:
+        region.get_queue_name = get_queue_name
+
     return region
 
 
