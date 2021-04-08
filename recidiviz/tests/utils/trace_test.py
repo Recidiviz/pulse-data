@@ -20,6 +20,7 @@ from typing import List
 import unittest
 
 from mock import ANY, Mock, call, patch
+from opencensus.trace import span_context
 from parameterized import parameterized
 import pytest
 
@@ -165,4 +166,4 @@ class TestCompositeSampler(unittest.TestCase):
         mock_request.path = test_input
 
         # Act / Assert
-        self.assertEqual(composite.should_sample(None), expected)
+        self.assertEqual(composite.should_sample(span_context.SpanContext()), expected)
