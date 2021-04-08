@@ -38,7 +38,7 @@ from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 class TestPrepareSupervisionPeriodsForCalculations(unittest.TestCase):
     """Tests the prepare_supervision_periods_for_calculations function."""
 
-    def test_prepare_supervision_periods_for_calculations(self):
+    def test_prepare_supervision_periods_for_calculations(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_ND",
             start_date=date(2006, 1, 1),
@@ -54,7 +54,9 @@ class TestPrepareSupervisionPeriodsForCalculations(unittest.TestCase):
         self.assertEqual([supervision_period], updated_periods)
 
     @freeze_time("2000-01-01")
-    def test_prepare_supervision_periods_for_calculations_drop_future_dates(self):
+    def test_prepare_supervision_periods_for_calculations_drop_future_dates(
+        self,
+    ) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_ND",
             start_date=date(2006, 1, 1),
@@ -72,7 +74,7 @@ class TestPrepareSupervisionPeriodsForCalculations(unittest.TestCase):
     @freeze_time("2000-01-01")
     def test_prepare_supervision_periods_for_calculations_unset_future_release_dates(
         self,
-    ):
+    ) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
             state_code="US_ND",
@@ -97,7 +99,7 @@ class TestPrepareSupervisionPeriodsForCalculations(unittest.TestCase):
 
         self.assertEqual([updated_period], updated_periods)
 
-    def test_prepare_supervision_periods_for_calculations_placeholder(self):
+    def test_prepare_supervision_periods_for_calculations_placeholder(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             state_code="US_XX",
@@ -110,7 +112,9 @@ class TestPrepareSupervisionPeriodsForCalculations(unittest.TestCase):
         )
         self.assertEqual([], updated_periods)
 
-    def test_prepare_supervision_periods_for_calculations_usID_drop_federal(self):
+    def test_prepare_supervision_periods_for_calculations_usID_drop_federal(
+        self,
+    ) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
             start_date=date(2006, 1, 1),
@@ -127,7 +131,9 @@ class TestPrepareSupervisionPeriodsForCalculations(unittest.TestCase):
 
         self.assertEqual([], updated_periods)
 
-    def test_prepare_supervision_periods_for_calculations_usID_drop_other_country(self):
+    def test_prepare_supervision_periods_for_calculations_usID_drop_other_country(
+        self,
+    ) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
             start_date=date(2006, 1, 1),
@@ -143,3 +149,105 @@ class TestPrepareSupervisionPeriodsForCalculations(unittest.TestCase):
         )
 
         self.assertEqual([], updated_periods)
+
+    def test_prepare_supervision_periods_for_calculations_drop_open_sp_after_death(
+        self,
+    ) -> None:
+        """Tests if the open supervision periods after a period ending in death are dropped"""
+        supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_ID",
+            start_date=date(2000, 12, 29),
+            termination_date=date(2001, 1, 1),
+            termination_reason=StateSupervisionPeriodTerminationReason.DEATH,
+            status=StateSupervisionPeriodStatus.TERMINATED,
+        )
+
+        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_ID",
+            start_date=date(2001, 1, 5),
+            admission_reason=StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION,
+            termination_date=date(2001, 1, 6),
+            termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_OUT_OF_STATE,
+            status=StateSupervisionPeriodStatus.TERMINATED,
+        )
+
+        supervision_period_3 = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_ID",
+            start_date=date(2001, 1, 6),
+            status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
+        )
+
+        updated_periods = prepare_supervision_periods_for_calculations(
+            [supervision_period_1, supervision_period_2, supervision_period_3],
+            drop_federal_and_other_country_supervision_periods=True,
+        )
+
+        self.assertEqual([supervision_period_1], updated_periods)
+
+    def test_prepare_supervision_periods_for_calculations_close_open_sp_before_death(
+        self,
+    ) -> None:
+        """Tests if the open supervision period with a start date within the time range of the
+        period ending in death is closed and updated to be TERMINATED"""
+        supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_ID",
+            start_date=date(2001, 1, 1),
+            termination_date=date(2001, 1, 30),
+            termination_reason=StateSupervisionPeriodTerminationReason.DEATH,
+            status=StateSupervisionPeriodStatus.TERMINATED,
+        )
+
+        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_ID",
+            start_date=date(2001, 1, 15),
+            status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
+        )
+
+        updated_periods = prepare_supervision_periods_for_calculations(
+            [supervision_period_1, supervision_period_2],
+            drop_federal_and_other_country_supervision_periods=True,
+        )
+
+        updated_period_2 = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_ID",
+            start_date=date(2001, 1, 15),
+            admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
+            termination_date=date(2001, 1, 30),
+            termination_reason=StateSupervisionPeriodTerminationReason.DEATH,
+            status=StateSupervisionPeriodStatus.TERMINATED,
+        )
+
+        self.assertEqual([supervision_period_1, updated_period_2], updated_periods)
+
+    def test_prepare_supervision_periods_for_calculations_drop_open_sp_out_of_range_before_death(
+        self,
+    ) -> None:
+        """Tests if the open supervision period with a start date outside the time range of the
+        period ending in death is dropped"""
+        supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_ID",
+            start_date=date(1999, 1, 15),
+            status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
+        )
+
+        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_ID",
+            start_date=date(1999, 1, 15),
+            termination_date=date(2001, 1, 1),
+            status=StateSupervisionPeriodStatus.TERMINATED,
+        )
+
+        supervision_period_3 = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_ID",
+            start_date=date(2001, 1, 1),
+            termination_date=date(2001, 1, 30),
+            termination_reason=StateSupervisionPeriodTerminationReason.DEATH,
+            status=StateSupervisionPeriodStatus.TERMINATED,
+        )
+
+        updated_periods = prepare_supervision_periods_for_calculations(
+            [supervision_period_1, supervision_period_2, supervision_period_3],
+            drop_federal_and_other_country_supervision_periods=True,
+        )
+
+        self.assertEqual([supervision_period_2, supervision_period_3], updated_periods)

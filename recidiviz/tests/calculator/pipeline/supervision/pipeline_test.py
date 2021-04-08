@@ -2243,6 +2243,412 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         test_pipeline.run()
 
+    def testClassifySupervisionTimeBuckets_withPeriodsStartingAfterDeath(self):
+        """Tests the ClassifySupervisionTimeBuckets DoFn when the person has supervision
+        periods after their death."""
+        fake_person_id = 12345
+
+        fake_person = StatePerson.new_with_defaults(
+            state_code="US_XX",
+            person_id=fake_person_id,
+            gender=Gender.MALE,
+            birthdate=date(1970, 1, 1),
+            residency_status=ResidencyStatus.PERMANENT,
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            external_id="ip1",
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            state_code="US_XX",
+            admission_date=date(2008, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_date=date(2010, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+        )
+
+        # This probation supervision period ended in a death
+        supervision_period_with_death = (
+            entities.StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=1111,
+                state_code="US_XX",
+                county_code="124",
+                admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+                start_date=date(2017, 1, 3),
+                termination_date=date(2017, 1, 4),
+                termination_reason=StateSupervisionPeriodTerminationReason.DEATH,
+                supervision_type=StateSupervisionType.PROBATION,
+                person=fake_person,
+                status=StateSupervisionPeriodStatus.TERMINATED,
+            )
+        )
+
+        closed_post_mortem_supervision_period = entities.StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=1112,
+            state_code="US_XX",
+            county_code="124",
+            admission_reason=StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION,
+            start_date=date(2017, 1, 5),
+            termination_date=date(2017, 1, 6),
+            termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
+            supervision_type=StateSupervisionType.PROBATION,
+            person=fake_person,
+            status=StateSupervisionPeriodStatus.TERMINATED,
+        )
+
+        open_post_mortem_supervision_period = entities.StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=1113,
+            state_code="US_XX",
+            county_code="124",
+            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+            start_date=date(2017, 1, 6),
+            supervision_type=StateSupervisionType.PROBATION,
+            person=fake_person,
+            status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
+        )
+
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            supervision_sentence_id=1122,
+            external_id="ss-1122",
+            state_code="US_XX",
+            supervision_type=StateSupervisionType.PROBATION,
+            start_date=date(2008, 11, 20),
+            projected_completion_date=date(2017, 12, 31),
+            supervision_periods=[
+                supervision_period_with_death,
+                closed_post_mortem_supervision_period,
+                open_post_mortem_supervision_period,
+            ],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=123,
+            external_id="is-123",
+            state_code="US_XX",
+            start_date=date(2008, 11, 20),
+            incarceration_periods=[incarceration_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        supervision_period_to_agent_data = [
+            {
+                "state_code": "US_XX",
+                "agent_id": 1010,
+                "person_id": fake_person_id,
+                "agent_external_id": "OFFICER0009",
+                "supervision_period_id": supervision_period_with_death.supervision_period_id,
+            },
+            {
+                "state_code": "US_XX",
+                "agent_id": 1010,
+                "person_id": fake_person_id,
+                "agent_external_id": "OFFICER0009",
+                "supervision_period_id": closed_post_mortem_supervision_period.supervision_period_id,
+            },
+            {
+                "state_code": "US_XX",
+                "agent_id": 1010,
+                "person_id": fake_person_id,
+                "agent_external_id": "OFFICER0009",
+                "supervision_period_id": open_post_mortem_supervision_period.supervision_period_id,
+            },
+        ]
+
+        supervision_period_judicial_district_association_data = [
+            {
+                "state_code": "US_XX",
+                "person_id": fake_person_id,
+                "supervision_period_id": supervision_period_with_death.supervision_period_id,
+                "judicial_district_code": "XXX",
+            },
+            {
+                "state_code": "US_XX",
+                "person_id": fake_person_id,
+                "supervision_period_id": closed_post_mortem_supervision_period.supervision_period_id,
+                "judicial_district_code": "XXX",
+            },
+            {
+                "state_code": "US_XX",
+                "person_id": fake_person_id,
+                "supervision_period_id": open_post_mortem_supervision_period.supervision_period_id,
+                "judicial_district_code": "XXX",
+            },
+        ]
+
+        person_entities = self.load_person_entities_dict(
+            person=fake_person,
+            supervision_periods=[
+                supervision_period_with_death,
+                closed_post_mortem_supervision_period,
+                open_post_mortem_supervision_period,
+            ],
+            incarceration_periods=[incarceration_period],
+            incarceration_sentences=[incarceration_sentence],
+            supervision_sentences=[supervision_sentence],
+            supervision_period_judicial_district_association=supervision_period_judicial_district_association_data,
+            supervision_period_to_agent_association=supervision_period_to_agent_data,
+        )
+
+        expected_buckets: List[
+            SupervisionTimeBucket
+        ] = identifier_test.expected_non_revocation_return_time_buckets(
+            supervision_period_with_death,
+            StateSupervisionPeriodSupervisionType.PROBATION,
+            supervising_officer_external_id="OFFICER0009",
+            judicial_district_code="XXX",
+            projected_supervision_completion_date=supervision_sentence.projected_completion_date,
+        )
+
+        expected_buckets.append(
+            SupervisionTerminationBucket(
+                state_code=supervision_period_with_death.state_code,
+                year=supervision_period_with_death.termination_date.year,
+                month=supervision_period_with_death.termination_date.month,
+                event_date=supervision_period_with_death.termination_date,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                case_type=StateSupervisionCaseType.GENERAL,
+                termination_reason=supervision_period_with_death.termination_reason,
+                supervising_officer_external_id="OFFICER0009",
+                judicial_district_code="XXX",
+                supervision_level=supervision_period_with_death.supervision_level,
+                supervision_level_raw_text=supervision_period_with_death.supervision_level_raw_text,
+            )
+        )
+
+        expected_buckets.append(
+            identifier_test.create_start_bucket_from_period(
+                supervision_period_with_death,
+                supervising_officer_external_id="OFFICER0009",
+                judicial_district_code="XXX",
+            )
+        )
+
+        correct_output = [(fake_person.person_id, (fake_person, expected_buckets))]
+
+        test_pipeline = TestPipeline()
+
+        output = (
+            test_pipeline
+            | beam.Create([(fake_person_id, person_entities)])
+            | "Identify Supervision Time Buckets"
+            >> beam.ParDo(pipeline.ClassifySupervisionTimeBuckets())
+        )
+
+        assert_that(output, equal_to(correct_output))
+
+        test_pipeline.run()
+
+    def testClassifySupervisionTimeBuckets_withOpenPeriodStartDateCapturedByPeriodEndingInDeath(
+        self,
+    ):
+        """Tests the ClassifySupervisionTimeBuckets DoFn when the person has open period
+        within the range of the period ending in their death."""
+        fake_person_id = 12345
+
+        fake_person = StatePerson.new_with_defaults(
+            state_code="US_XX",
+            person_id=fake_person_id,
+            gender=Gender.MALE,
+            birthdate=date(1970, 1, 1),
+            residency_status=ResidencyStatus.PERMANENT,
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            external_id="ip1",
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            state_code="US_XX",
+            admission_date=date(2008, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_date=date(2010, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+        )
+
+        # This probation supervision period has start date within the range of the period ending in death
+        open_supervision_period = entities.StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=1113,
+            state_code="US_XX",
+            county_code="124",
+            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+            start_date=date(2017, 1, 4),
+            supervision_type=StateSupervisionType.PROBATION,
+            person=fake_person,
+            status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
+        )
+
+        # This probation supervision period ended in a death
+        supervision_period_with_death = (
+            entities.StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=1111,
+                state_code="US_XX",
+                county_code="124",
+                admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+                start_date=date(2017, 1, 3),
+                termination_date=date(2017, 1, 5),
+                termination_reason=StateSupervisionPeriodTerminationReason.DEATH,
+                supervision_type=StateSupervisionType.PROBATION,
+                person=fake_person,
+                status=StateSupervisionPeriodStatus.TERMINATED,
+            )
+        )
+
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            supervision_sentence_id=1122,
+            external_id="ss-1122",
+            state_code="US_XX",
+            supervision_type=StateSupervisionType.PROBATION,
+            start_date=date(2017, 1, 1),
+            projected_completion_date=date(2017, 1, 31),
+            supervision_periods=[
+                supervision_period_with_death,
+                open_supervision_period,
+            ],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=123,
+            external_id="is-123",
+            state_code="US_XX",
+            start_date=date(2008, 11, 20),
+            incarceration_periods=[incarceration_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        supervision_period_to_agent_data = [
+            {
+                "state_code": "US_XX",
+                "agent_id": 1010,
+                "person_id": fake_person_id,
+                "agent_external_id": "OFFICER0009",
+                "supervision_period_id": supervision_period_with_death.supervision_period_id,
+            },
+            {
+                "state_code": "US_XX",
+                "agent_id": 1010,
+                "person_id": fake_person_id,
+                "agent_external_id": "OFFICER0009",
+                "supervision_period_id": open_supervision_period.supervision_period_id,
+            },
+        ]
+
+        supervision_period_judicial_district_association_data = [
+            {
+                "state_code": "US_XX",
+                "person_id": fake_person_id,
+                "supervision_period_id": supervision_period_with_death.supervision_period_id,
+                "judicial_district_code": "XXX",
+            },
+            {
+                "state_code": "US_XX",
+                "person_id": fake_person_id,
+                "supervision_period_id": open_supervision_period.supervision_period_id,
+                "judicial_district_code": "XXX",
+            },
+        ]
+
+        person_entities = self.load_person_entities_dict(
+            person=fake_person,
+            supervision_periods=[
+                supervision_period_with_death,
+                open_supervision_period,
+            ],
+            incarceration_periods=[incarceration_period],
+            incarceration_sentences=[incarceration_sentence],
+            supervision_sentences=[supervision_sentence],
+            supervision_period_judicial_district_association=supervision_period_judicial_district_association_data,
+            supervision_period_to_agent_association=supervision_period_to_agent_data,
+        )
+
+        expected_buckets: List[
+            SupervisionTimeBucket
+        ] = identifier_test.expected_non_revocation_return_time_buckets(
+            supervision_period_with_death,
+            StateSupervisionPeriodSupervisionType.PROBATION,
+            supervising_officer_external_id="OFFICER0009",
+            judicial_district_code="XXX",
+            projected_supervision_completion_date=supervision_sentence.projected_completion_date,
+        )
+
+        expected_buckets.append(
+            SupervisionTerminationBucket(
+                state_code=supervision_period_with_death.state_code,
+                year=supervision_period_with_death.termination_date.year,
+                month=supervision_period_with_death.termination_date.month,
+                event_date=supervision_period_with_death.termination_date,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                case_type=StateSupervisionCaseType.GENERAL,
+                termination_reason=supervision_period_with_death.termination_reason,
+                supervising_officer_external_id="OFFICER0009",
+                judicial_district_code="XXX",
+                supervision_level=supervision_period_with_death.supervision_level,
+                supervision_level_raw_text=supervision_period_with_death.supervision_level_raw_text,
+            )
+        )
+
+        expected_buckets.append(
+            identifier_test.create_start_bucket_from_period(
+                supervision_period_with_death,
+                supervising_officer_external_id="OFFICER0009",
+                judicial_district_code="XXX",
+            )
+        )
+
+        expected_buckets.extend(
+            identifier_test.expected_non_revocation_return_time_buckets(
+                attr.evolve(
+                    open_supervision_period,
+                    termination_date=supervision_period_with_death.termination_date,
+                ),
+                StateSupervisionPeriodSupervisionType.PROBATION,
+                supervising_officer_external_id="OFFICER0009",
+                judicial_district_code="XXX",
+                projected_supervision_completion_date=supervision_sentence.projected_completion_date,
+            )
+        )
+
+        expected_buckets.append(
+            SupervisionTerminationBucket(
+                state_code=supervision_period_with_death.state_code,
+                year=supervision_period_with_death.termination_date.year,
+                month=supervision_period_with_death.termination_date.month,
+                event_date=supervision_period_with_death.termination_date,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                case_type=StateSupervisionCaseType.GENERAL,
+                termination_reason=supervision_period_with_death.termination_reason,
+                supervising_officer_external_id="OFFICER0009",
+                judicial_district_code="XXX",
+                supervision_level=supervision_period_with_death.supervision_level,
+                supervision_level_raw_text=supervision_period_with_death.supervision_level_raw_text,
+            )
+        )
+
+        expected_buckets.append(
+            identifier_test.create_start_bucket_from_period(
+                open_supervision_period,
+                supervising_officer_external_id="OFFICER0009",
+                judicial_district_code="XXX",
+            )
+        )
+
+        correct_output = [(fake_person.person_id, (fake_person, expected_buckets))]
+
+        test_pipeline = TestPipeline()
+
+        output = (
+            test_pipeline
+            | beam.Create([(fake_person_id, person_entities)])
+            | "Identify Supervision Time Buckets"
+            >> beam.ParDo(pipeline.ClassifySupervisionTimeBuckets())
+        )
+
+        assert_that(output, equal_to(correct_output))
+
+        test_pipeline.run()
+
     def testClassifySupervisionTimeBuckets_NoIncarcerationPeriods(self):
         """Tests the ClassifySupervisionTimeBuckets DoFn when the person has no
         incarceration periods."""
