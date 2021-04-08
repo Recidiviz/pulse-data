@@ -101,7 +101,7 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
 
     def test_person_external_id_to_include(self):
         person = StatePerson.new_with_defaults(
-            state_code="US_XX",
+            state_code="US_MO",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=Gender.FEMALE,
@@ -131,7 +131,7 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
         )
 
         person_external_id = StatePersonExternalId.new_with_defaults(
-            external_id="SID10928", id_type="US_ND_SID", state_code="US_ND"
+            external_id="SID10928", id_type="US_XX_SID", state_code="US_XX"
         )
 
         person.external_ids = [person_external_id]
