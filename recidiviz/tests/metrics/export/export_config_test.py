@@ -33,7 +33,7 @@ from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 class TestExportViewCollectionConfig(unittest.TestCase):
     """Tests the functionality of the ExportViewCollectionConfig class."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.mock_project_id = "fake-recidiviz-project"
         self.mock_dataset_id = "base_dataset"
         self.mock_dataset = bigquery.dataset.DatasetReference(
@@ -51,15 +51,15 @@ class TestExportViewCollectionConfig(unittest.TestCase):
             view_id="test_view",
             description="test_view description",
             view_query_template="SELECT NULL LIMIT 0",
-            dimensions=[],
+            dimensions=(),
         )
 
         self.views_for_dataset = [self.mock_view_builder]
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.metadata_patcher.stop()
 
-    def test_matches_filter(self):
+    def test_matches_filter(self) -> None:
         """Tests matches_filter function to ensure that state codes and export names correctly match"""
         state_dataset_export_config = ExportViewCollectionConfig(
             view_builders_to_export=self.views_for_dataset,
@@ -80,7 +80,7 @@ class TestExportViewCollectionConfig(unittest.TestCase):
         self.assertTrue(dataset_export_config.matches_filter("VALID_EXPORT_NAME"))
         self.assertFalse(dataset_export_config.matches_filter("INVALID_EXPORT_NAME"))
 
-    def test_matches_filter_case_insensitive(self):
+    def test_matches_filter_case_insensitive(self) -> None:
         """Tests matches_filter function with different cases to ensure state codes and export names correctly match"""
         state_dataset_export_config = ExportViewCollectionConfig(
             view_builders_to_export=self.views_for_dataset,
@@ -100,7 +100,7 @@ class TestExportViewCollectionConfig(unittest.TestCase):
         )
         self.assertTrue(dataset_export_config.matches_filter("valid_export_name"))
 
-    def test_metric_export_state_agnostic(self):
+    def test_metric_export_state_agnostic(self) -> None:
         """Tests the export_configs_for_views_to_export function on the ExportViewCollectionConfig class when the
         export is state-agnostic."""
         state_agnostic_dataset_export_config = ExportViewCollectionConfig(
@@ -138,7 +138,7 @@ class TestExportViewCollectionConfig(unittest.TestCase):
 
         self.assertEqual(expected_view_export_configs, view_configs_to_export)
 
-    def test_metric_export_state_specific(self):
+    def test_metric_export_state_specific(self) -> None:
         """Tests the export_configs_for_views_to_export function on the ExportViewCollectionConfig class when the
         export is state-specific."""
         specific_state_dataset_export_config = ExportViewCollectionConfig(
@@ -174,7 +174,7 @@ class TestExportViewCollectionConfig(unittest.TestCase):
 
         self.assertEqual(expected_view_export_configs, view_configs_to_export)
 
-    def test_metric_export_lantern_dashboard(self):
+    def test_metric_export_lantern_dashboard(self) -> None:
         """Tests the export_configs_for_views_to_export function on the ExportViewCollectionConfig class when the
         export is state-agnostic."""
         lantern_dashboard_dataset_export_config = ExportViewCollectionConfig(
@@ -212,7 +212,7 @@ class TestExportViewCollectionConfig(unittest.TestCase):
 
         self.assertEqual(expected_view_export_configs, view_configs_to_export)
 
-    def test_metric_export_lantern_dashboard_with_state(self):
+    def test_metric_export_lantern_dashboard_with_state(self) -> None:
         """Tests the export_configs_for_views_to_export function on the ExportViewCollectionConfig class when the
         export is state-specific."""
         lantern_dashboard_with_state_dataset_export_config = ExportViewCollectionConfig(
