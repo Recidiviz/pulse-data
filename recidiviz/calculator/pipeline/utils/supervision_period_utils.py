@@ -28,6 +28,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodStatus,
     StateSupervisionPeriodAdmissionReason as AdmissionReason,
     StateSupervisionPeriodTerminationReason as TerminationReason,
+    StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.entity_utils import is_placeholder
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
@@ -49,6 +50,14 @@ def prepare_supervision_periods_for_calculations(
         )
 
     supervision_periods = _infer_missing_dates_and_statuses(supervision_periods)
+
+    supervision_periods_terminating_with_death: List[
+        StateSupervisionPeriod
+    ] = _supervision_periods_ending_in_death(supervision_periods)
+    if supervision_periods_terminating_with_death:
+        supervision_periods = _drop_and_close_open_supervision_periods_for_deceased(
+            supervision_periods, supervision_periods_terminating_with_death[-1]
+        )
 
     return supervision_periods
 
@@ -189,3 +198,79 @@ def _supervision_periods_overlapping_with_date(
     ]
 
     return overlapping_periods
+
+
+def _supervision_periods_ending_in_death(
+    supervision_periods: List[StateSupervisionPeriod],
+) -> List[StateSupervisionPeriod]:
+    """Returns the supervision periods that have termination_reason == DEATH"""
+    return [
+        sp
+        for sp in supervision_periods
+        if sp.termination_reason == StateSupervisionPeriodTerminationReason.DEATH
+    ]
+
+
+def _drop_and_close_open_supervision_periods_for_deceased(
+    supervision_periods: List[StateSupervisionPeriod],
+    period_ending_in_death: StateSupervisionPeriod,
+) -> List[StateSupervisionPeriod]:
+    """Updates supervision periods for people who are deceased by
+    - Dropping open supervision periods that start after the period_ending_in_death.termination_date
+    - Dropping open supervision periods whose start dates are outside of the date range of the
+      period_ending_in_death but are covered by an adjacent period
+    - Closing any open supervision period that start within the date range of the period_ending_in_death
+      and uses the termination information of the period_ending_in_death"""
+
+    updated_periods: List[StateSupervisionPeriod] = []
+    date_of_death = period_ending_in_death.termination_date
+
+    for index, sp in enumerate(supervision_periods):
+        previous_sp = supervision_periods[index - 1] if index > 0 else None
+        next_sp = (
+            supervision_periods[index + 1]
+            if index < len(supervision_periods) - 1
+            else None
+        )
+
+        if not period_ending_in_death.start_date or not date_of_death:
+            raise ValueError(
+                f"Period ending in death cannot have unset dates: {period_ending_in_death}"
+            )
+
+        if not sp.start_date:
+            raise ValueError(f"Period cannot have unset dates: {sp}")
+
+        if sp.start_date >= date_of_death:
+            # Drop open supervision periods that start after the person's death
+            continue
+
+        if sp.termination_date is None:
+            if period_ending_in_death.duration.contains_day(sp.start_date):
+                # The open supervision period has a start_date that is captured by the
+                # period that ends in the person's death, so we close this period with
+                # the termination information from the period ending in death
+                sp.termination_date = date_of_death
+                sp.termination_reason = StateSupervisionPeriodTerminationReason.DEATH
+                sp.termination_reason_raw_text = (
+                    period_ending_in_death.termination_reason_raw_text
+                )
+                sp.status = StateSupervisionPeriodStatus.TERMINATED
+
+            else:
+                # Drop open supervision periods that are started prior to the duration of
+                # the period ending in death
+                if (
+                    previous_sp and previous_sp.duration.contains_day(sp.start_date)
+                ) or (next_sp and next_sp.duration.contains_day(sp.start_date)):
+                    # Supervision period start date is captured by adjacent supervision period
+                    continue
+
+                raise ValueError(
+                    f"There is an open supervision period with supervision_period_id {sp.supervision_period_id}"
+                    "that is not captured by the periods it is adjacent to",
+                )
+
+        updated_periods.append(sp)
+
+    return updated_periods
