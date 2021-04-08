@@ -17,6 +17,7 @@
 
 """Data Access Object (DAO) with logic for accessing state-level information
 from a SQL Database."""
+import datetime
 from collections import defaultdict
 import logging
 from typing import Dict, List, Type, Iterable
@@ -109,7 +110,7 @@ def read_placeholder_persons(
 
 # TODO(#1907): Rename to read_persons.
 def read_people(
-    session: Session, full_name=None, birthdate=None
+    session: Session, full_name: str = None, birthdate: datetime.date = None
 ) -> List[schema.StatePerson]:
     """Read all people matching the optional surname and birthdate. If neither
     the surname or birthdate are provided, then read all people."""
