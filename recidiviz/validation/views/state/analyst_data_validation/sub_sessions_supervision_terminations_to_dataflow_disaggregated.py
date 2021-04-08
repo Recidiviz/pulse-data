@@ -47,6 +47,7 @@ SUB_SESSIONS_SUPERVISION_TERMINATIONS_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE =
         * EXCEPT(end_date),
         DATE_SUB(end_date, INTERVAL 1 DAY) AS end_date
     FROM `{project_id}.{analyst_dataset}.compartment_session_end_reasons_materialized`
+    WHERE end_reason NOT IN ('TRANSFER_WITHIN_STATE', 'INTERNAL_UNKNOWN', 'EXTERNAL_UNKNOWN')
     )
     SELECT
         person_id,
@@ -60,11 +61,11 @@ SUB_SESSIONS_SUPERVISION_TERMINATIONS_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE =
         COALESCE(sessions.last_sub_session_in_session, 0) AS session_end,
         CASE WHEN dataflow.end_reason IS NOT NULL AND sessions.person_id IS NOT NULL THEN 1 ELSE 0 END AS sub_session_with_end_reason,
         CASE WHEN dataflow.end_reason IS NOT NULL AND last_sub_session_in_session = 1 THEN 1 ELSE 0 END AS session_with_end_reason,
-        CASE WHEN dataflow.end_reason IN ('EXPIRATION','DISCHARGE','REVOCATION','RETURN_TO_INCARCERATION')
+        CASE WHEN dataflow.end_reason IS NOT NULL
             THEN 1 ELSE 0 END AS dataflow_termination,
-        CASE WHEN dataflow.end_reason IN ('EXPIRATION','DISCHARGE','REVOCATION','RETURN_TO_INCARCERATION')
+        CASE WHEN dataflow.end_reason IS NOT NULL
             AND sessions.person_id IS NOT NULL THEN 1 ELSE 0 END AS sub_session_termination,
-        CASE WHEN dataflow.end_reason IN ('EXPIRATION','DISCHARGE','REVOCATION','RETURN_TO_INCARCERATION')
+        CASE WHEN dataflow.end_reason IS NOT NULL
             AND sessions.last_sub_session_in_session = 1 THEN 1 ELSE 0 END AS session_termination,
     FROM `{project_id}.{analyst_dataset}.compartment_sub_sessions_materialized` sessions
     FULL OUTER JOIN dataflow_session_ends dataflow

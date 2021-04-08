@@ -54,16 +54,20 @@ SUB_SESSIONS_SUPERVISION_STARTS_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
         COALESCE(sessions.first_sub_session_in_session, 0) AS session_start,
         CASE when dataflow.start_reason IS NOT NULL AND sessions.person_id IS NOT NULL THEN 1 ELSE 0 END AS sub_session_with_start_reason,
         CASE when dataflow.start_reason IS NOT NULL AND first_sub_session_in_session = 1 THEN 1 ELSE 0 END AS session_with_start_reason,
-        CASE WHEN dataflow.start_reason IN ('CONDITIONAL_RELEASE','COURT_SENTENCE')
+        CASE WHEN dataflow.start_reason IS NOT NULL 
             THEN 1 ELSE 0 END AS dataflow_supervision_start,
-        CASE WHEN dataflow.start_reason IN ('CONDITIONAL_RELEASE','COURT_SENTENCE') 
+        CASE WHEN dataflow.start_reason IS NOT NULL
             AND sessions.person_id IS NOT NULL 
             THEN 1 ELSE 0 END AS sub_session_supervision_start,
-        CASE WHEN dataflow.start_reason IN ('CONDITIONAL_RELEASE','COURT_SENTENCE') 
+        CASE WHEN dataflow.start_reason IS NOT NULL
             AND sessions.first_sub_session_in_session = 1 
             THEN 1 ELSE 0 END AS session_supervision_start,
     FROM `{project_id}.{analyst_dataset}.compartment_sub_sessions_materialized` sessions
-    FULL OUTER JOIN `{project_id}.{analyst_dataset}.compartment_session_start_reasons_materialized` dataflow
+    FULL OUTER JOIN (
+        SELECT * 
+        FROM `{project_id}.{analyst_dataset}.compartment_session_start_reasons_materialized` 
+        WHERE start_reason NOT IN ('TRANSFER_WITHIN_STATE', 'INTERNAL_UNKNOWN', 'EXTERNAL_UNKNOWN')
+    ) dataflow
         USING(person_id, start_date, state_code, compartment_level_1)
     WHERE compartment_level_1 ='SUPERVISION'
         AND EXTRACT(YEAR FROM start_date) > EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 20 YEAR))
