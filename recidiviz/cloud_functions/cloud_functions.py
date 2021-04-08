@@ -22,7 +22,7 @@ import tempfile
 from http import HTTPStatus
 from typing import Tuple
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request
 import gcsfs
 
 from recidiviz.calculator.pipeline.utils.calculate_cloud_task_manager import (
@@ -98,21 +98,18 @@ def state_aggregate() -> Tuple[str, HTTPStatus]:
     fs.get(path, tmpdir_path)
     logging.info("Successfully downloaded file from gcs: %s", path)
 
-    try:
-        result = parser(os.path.join(bucket, state), tmpdir_path)
-        logging.info("Successfully parsed the report")
-        for table, df in result.items():
-            dao.write_df(table, df)
+    result = parser(os.path.join(bucket, state), tmpdir_path)
+    logging.info("Successfully parsed the report")
+    for table, df in result.items():
+        dao.write_df(table, df)
 
-        # If we are successful, we want to move the file out of the cloud
-        # function triggered directory, and into the historical path.
-        historical_path = os.path.join(
-            HISTORICAL_BUCKET.format(project_id), state, filename
-        )
-        fs.mv(path, historical_path)
-        return "", HTTPStatus.OK
-    except Exception as e:
-        return jsonify(str(e)), HTTPStatus.INTERNAL_SERVER_ERROR
+    # If we are successful, we want to move the file out of the cloud
+    # function triggered directory, and into the historical path.
+    historical_path = os.path.join(
+        HISTORICAL_BUCKET.format(project_id), state, filename
+    )
+    fs.mv(path, historical_path)
+    return "", HTTPStatus.OK
 
 
 @cloud_functions_blueprint.route("/dataflow_monitor")
