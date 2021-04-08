@@ -39,7 +39,7 @@ from recidiviz.persistence.entity.entity_utils import SchemaEdgeDirectionChecker
 class _CountySchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType, DstBaseType]):
     """County-specific implementation of BaseSchemaEntityConverter"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(SchemaEdgeDirectionChecker.county_direction_checker())
 
     def _get_schema_module(self) -> ModuleType:
@@ -53,7 +53,7 @@ class _CountySchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType, DstBas
         # for this field is finalized.
         return entity_cls == entities.Sentence and field == "related_sentences"
 
-    def _populate_indirect_back_edges(self, _):
+    def _populate_indirect_back_edges(self, _: DstBaseType) -> None:
         return
 
 

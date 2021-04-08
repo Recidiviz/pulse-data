@@ -41,7 +41,7 @@ class _OperationsSchemaEntityConverter(
 ):
     """County-specific implementation of BaseSchemaEntityConverter"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(SchemaEdgeDirectionChecker.county_direction_checker())
 
     def _get_schema_module(self) -> ModuleType:
@@ -53,7 +53,7 @@ class _OperationsSchemaEntityConverter(
     def _should_skip_field(self, entity_cls: Type, field: FieldNameType) -> bool:
         return False
 
-    def _populate_indirect_back_edges(self, _):
+    def _populate_indirect_back_edges(self, _: DstBaseType) -> None:
         return
 
 
