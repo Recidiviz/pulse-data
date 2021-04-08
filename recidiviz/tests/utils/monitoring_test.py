@@ -69,7 +69,7 @@ def test_tags_multiple_threads() -> None:
     results = {}
 
     @monitoring.with_region_tag
-    def inner(region_code):
+    def inner(region_code: str):
         results[region_code] = monitoring.context_tags()
 
     threads = [
