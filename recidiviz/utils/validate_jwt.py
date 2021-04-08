@@ -23,11 +23,19 @@ For applications running in the App Engine standard environment, use
 App Engine's Users API instead.
 """
 # [START iap_validate_jwt]
+from typing import Optional, Tuple, Dict, Any
 import jwt
 import requests
 
+# Used to cache the Identity-Aware Proxy public keys.  This code only
+# refetches the file when a JWT is signed with a key not present in
+# this cache.
+_key_cache: Dict[str, Any] = {}
 
-def validate_iap_jwt_from_app_engine(iap_jwt, cloud_project_number, cloud_project_id):
+
+def validate_iap_jwt_from_app_engine(
+    iap_jwt: str, cloud_project_number: str, cloud_project_id: str
+) -> Tuple[Optional[str], Optional[str], str]:
     """Validate a JWT passed to your App Engine app by Identity-Aware Proxy.
 
     Args:
@@ -47,8 +55,8 @@ def validate_iap_jwt_from_app_engine(iap_jwt, cloud_project_number, cloud_projec
 
 
 def validate_iap_jwt_from_compute_engine(
-    iap_jwt, cloud_project_number, backend_service_id
-):
+    iap_jwt: str, cloud_project_number: str, backend_service_id: str
+) -> Tuple[Optional[str], Optional[str], str]:
     """Validate an IAP JWT for your (Compute|Container) Engine service.
 
     Args:
@@ -70,7 +78,9 @@ def validate_iap_jwt_from_compute_engine(
     return _validate_iap_jwt(iap_jwt, expected_audience)
 
 
-def _validate_iap_jwt(iap_jwt, expected_audience):
+def _validate_iap_jwt(
+    iap_jwt: str, expected_audience: str
+) -> Tuple[Optional[str], Optional[str], str]:
     try:
         key_id = jwt.get_unverified_header(iap_jwt).get("kid")
         if not key_id:
@@ -87,12 +97,12 @@ def _validate_iap_jwt(iap_jwt, expected_audience):
         return (None, None, "**ERROR: JWT validation error {}**".format(e))
 
 
-def get_iap_key(key_id):
+def get_iap_key(key_id: str) -> str:
     """Retrieves a public key from the list published by Identity-Aware Proxy,
     re-fetching the key file if necessary.
     """
-    key_cache = get_iap_key.key_cache
-    key = key_cache.get(key_id)
+    global _key_cache
+    key = _key_cache.get(key_id)
     if not key:
         # Re-fetch the key file.
         resp = requests.get("https://www.gstatic.com/iap/verify/public_key")
@@ -102,16 +112,11 @@ def get_iap_key(key_id):
                     resp.status_code, resp.headers, resp.text
                 )
             )
-        key_cache = resp.json()
-        get_iap_key.key_cache = key_cache
-        key = key_cache.get(key_id)
+        _key_cache = resp.json()
+        key = _key_cache.get(key_id)
         if not key:
             raise Exception("Key {!r} not found".format(key_id))
     return key
 
 
-# Used to cache the Identity-Aware Proxy public keys.  This code only
-# refetches the file when a JWT is signed with a key not present in
-# this cache.
-get_iap_key.key_cache = {}  # type: ignore
 # [END iap_validate_jwt]
