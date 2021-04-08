@@ -27,7 +27,7 @@ from gevent import events
 from opencensus.common.transports.async_ import AsyncTransport
 from opencensus.ext.flask.flask_middleware import FlaskMiddleware
 from opencensus.ext.stackdriver import trace_exporter as stackdriver_trace
-from opencensus.trace import config_integration, file_exporter, samplers
+from opencensus.trace import config_integration, file_exporter, samplers, base_exporter
 from opencensus.trace.propagation import google_cloud_format
 
 from recidiviz.admin_panel.all_routes import admin_panel
@@ -109,10 +109,10 @@ else:
 # Export traces and metrics to stackdriver if running in GCP
 if environment.in_gcp():
     monitoring.register_stackdriver_exporter()
-    trace_exporter = stackdriver_trace.StackdriverExporter(
+    trace_exporter: base_exporter.Exporter = stackdriver_trace.StackdriverExporter(
         project_id=metadata.project_id(), transport=AsyncTransport
     )
-    trace_sampler = trace.CompositeSampler(
+    trace_sampler: samplers.Sampler = trace.CompositeSampler(
         {
             "/direct/process_job": samplers.AlwaysOnSampler(),
             # There are a lot of scraper requests, so they can use the default rate of 1 in 10k.
