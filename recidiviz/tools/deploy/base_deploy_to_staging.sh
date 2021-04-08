@@ -111,7 +111,7 @@ else
     
     while ! ${FOUND_REMOTE_BUILD} && ((timeout > 0))
     do
-        existing_tags = $(gcloud container images list-tags --filter="tags:${COMMIT_HASH}" --format=json ${REMOTE_BUILD_BASE})
+        existing_tags=$(gcloud container images list-tags --filter="tags:${COMMIT_HASH}" --format=json ${REMOTE_BUILD_BASE})
         FOUND_REMOTE_BUILD=[[ "$existing_tags" != "[]" ]]
         if [[ !${FOUND_REMOTE_BUILD} ]]; then
             echo "Remote build for commit ${COMMIT_HASH} not found, retrying in 30s"
