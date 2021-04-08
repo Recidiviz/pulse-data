@@ -19,6 +19,7 @@
 from base64 import b64decode
 import logging
 import os
+from typing import Any, Dict, TypeVar
 
 from flask import Request
 
@@ -37,6 +38,11 @@ from cloud_function_utils import (  # type: ignore[import]
     trigger_dataflow_job_from_template,
     build_query_param_string,
 )
+
+
+# A stand-in type for google.cloud.functions.Context for which no apparent type is available
+ContextType = TypeVar("ContextType", bound=Any)
+
 
 _STATE_AGGREGATE_CLOUD_FUNCTION_URL = (
     "http://{}.appspot.com/cloud_function/state_aggregate?bucket={}&state={}"
@@ -67,7 +73,7 @@ _APP_ENGINE_PO_MONTHLY_REPORT_DELIVER_EMAILS_URL = (
 )
 
 
-def parse_state_aggregate(data, _) -> None:
+def parse_state_aggregate(data: Dict[str, Any], _: ContextType) -> None:
     """This function is triggered when a file is dropped into the state
     aggregate bucket and makes a request to parse and write the data to the
     aggregate table database.
@@ -94,7 +100,7 @@ def parse_state_aggregate(data, _) -> None:
     logging.info("The response status is %s", response.status_code)
 
 
-def normalize_raw_file_path(data) -> None:
+def normalize_raw_file_path(data: Dict[str, Any]) -> None:
     """Cloud functions can be configured to trigger this function on any bucket that is being used as a test bed for
     automatic uploads. This will just rename the incoming files to have a normalized path with a timestamp so
     subsequent uploads do not have naming conflicts."""
@@ -120,7 +126,7 @@ def normalize_raw_file_path(data) -> None:
     logging.info("The response status is %s", response.status_code)
 
 
-def handle_state_direct_ingest_file(data, _) -> None:
+def handle_state_direct_ingest_file(data: Dict[str, Any], _: ContextType) -> None:
     """This function is triggered when a file is dropped into any of the state
     direct ingest buckets and makes a request to parse and write the data to
     the database.
@@ -133,7 +139,9 @@ def handle_state_direct_ingest_file(data, _) -> None:
     _handle_state_direct_ingest_file(data, start_ingest=True)
 
 
-def handle_state_direct_ingest_file_rename_only(data, _) -> None:
+def handle_state_direct_ingest_file_rename_only(
+    data: Dict[str, Any], _: ContextType
+) -> None:
     """Cloud functions can be configured to trigger this function instead of
     handle_state_direct_ingest_file when a region has turned on nightly/weekly
     automatic data transfer before we are ready to schedule and process ingest
@@ -149,7 +157,7 @@ def handle_state_direct_ingest_file_rename_only(data, _) -> None:
     _handle_state_direct_ingest_file(data, start_ingest=False)
 
 
-def _handle_state_direct_ingest_file(data, start_ingest: bool) -> None:
+def _handle_state_direct_ingest_file(data: Dict[str, Any], start_ingest: bool) -> None:
     """Calls direct ingest cloud function when a new file is dropped into a
     bucket."""
     project_id = os.environ.get(GCP_PROJECT_ID_KEY)
@@ -178,7 +186,7 @@ def _handle_state_direct_ingest_file(data, start_ingest: bool) -> None:
     logging.info("The response status is %s", response.status_code)
 
 
-def export_metric_view_data(event, _context) -> None:
+def export_metric_view_data(event: Dict[str, Any], _context: ContextType) -> None:
     """This function is triggered by a Pub/Sub event to begin the export of data contained in BigQuery metric views to
     files in cloud storage buckets.
     """
@@ -208,7 +216,9 @@ def export_metric_view_data(event, _context) -> None:
     logging.info("The response status is %s", response.status_code)
 
 
-def trigger_daily_calculation_pipeline_dag(data, _context) -> None:
+def trigger_daily_calculation_pipeline_dag(
+    data: Dict[str, Any], _context: ContextType
+) -> None:
     """This function is triggered by a Pub/Sub event, triggers an Airflow DAG where all
     the daily calculation pipelines run simultaneously.
     """
@@ -237,7 +247,9 @@ def trigger_daily_calculation_pipeline_dag(data, _context) -> None:
     logging.info("The monitoring Airflow response is %s", monitor_response)
 
 
-def start_and_monitor_calculation_pipeline(_event, _context) -> None:
+def start_and_monitor_calculation_pipeline(
+    _event: Dict[str, Any], _context: ContextType
+) -> None:
     """This function, which is triggered by a Pub/Sub event, can kick off any single Dataflow pipeline template.
 
     On successful triggering of the job, this function makes a call to the app
