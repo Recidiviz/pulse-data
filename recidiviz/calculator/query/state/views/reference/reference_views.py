@@ -79,8 +79,6 @@ from recidiviz.ingest.direct.views.normalized_direct_ingest_big_query_view_types
     NormalizedDirectIngestPreProcessedIngestViewBuilder,
 )
 
-# NOTE: These views must be listed in order of dependency. For example, if reference view Y depends on reference view X,
-# then view X should appear in the list before view Y.
 REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     EVENT_BASED_REVOCATIONS_FOR_MATRIX_VIEW_BUILDER,
     AUGMENTED_AGENT_INFO_VIEW_BUILDER,
@@ -101,6 +99,8 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,
     SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_BUILDER,
     # TODO(#6314): Remove this view builder
+    # Note: This view is loaded into the us_pa_ingest_views dataset, NOT the reference_views
+    # dataset
     NormalizedDirectIngestPreProcessedIngestViewBuilder(
         region="us_pa",
         ingest_view_name="us_pa_supervision_period_TEMP",
