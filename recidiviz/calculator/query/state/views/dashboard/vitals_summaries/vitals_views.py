@@ -20,7 +20,13 @@ from typing import List
 from recidiviz.calculator.query.state.views.dashboard.vitals_summaries.vitals_summaries import (
     VITALS_SUMMARIES_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.dashboard.vitals_summaries.vitals_time_series import (
+    VITALS_TIME_SERIES_VIEW_BUILDER,
+)
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 
 
-VITALS_VIEW_BUILDERS: List[MetricBigQueryViewBuilder] = [VITALS_SUMMARIES_VIEW_BUILDER]
+VITALS_VIEW_BUILDERS: List[MetricBigQueryViewBuilder] = [
+    VITALS_SUMMARIES_VIEW_BUILDER,
+    VITALS_TIME_SERIES_VIEW_BUILDER,
+]
