@@ -55,6 +55,9 @@ from recidiviz.case_triage.views.view_config import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
+from recidiviz.ingest.direct.views.normalized_direct_ingest_big_query_view_types import (
+    NormalizedDirectIngestPreProcessedIngestViewBuilder,
+)
 from recidiviz.ingest.direct.views.view_config import (
     VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as DIRECT_INGEST_VIEW_BUILDERS,
 )
@@ -253,6 +256,18 @@ def _build_views_to_update(
             raise ValueError(
                 f"Found view [{view_builder.view_id}] in source-table-only dataset [{view_builder.dataset_id}]"
             )
+
+        # TODO(#6314): Remove this check once we have deleted the hack us_pa_supervision_period_TEMP view
+        if (
+            isinstance(
+                view_builder, NormalizedDirectIngestPreProcessedIngestViewBuilder
+            )
+            and view_builder.ingest_view_name == "us_pa_supervision_period_TEMP"
+            and dataset_overrides
+        ):
+            # Don't update the us_pa_supervision_period_TEMP view when loading sandbox
+            # views with dataset_overrides
+            continue
 
         try:
             view = view_builder.build(dataset_overrides=dataset_overrides)
