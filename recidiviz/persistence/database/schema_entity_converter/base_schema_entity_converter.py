@@ -62,7 +62,7 @@ class _Direction(Enum):
     ENTITY_TO_SCHEMA = 2
 
     @staticmethod
-    def for_cls(src_cls: Type):
+    def for_cls(src_cls: Type) -> "_Direction":
         if issubclass(src_cls, Entity):
             return _Direction.ENTITY_TO_SCHEMA
 
@@ -112,7 +112,7 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
         pass
 
     @abc.abstractmethod
-    def _populate_indirect_back_edges(self, dst: DstBaseType):
+    def _populate_indirect_back_edges(self, dst: DstBaseType) -> None:
         """Populates all back edges in the provided |dst| which point to
         objects which are not parents (direct back edge). Direct back edges
         are populated by_pouplate_direct_back_edge"""
@@ -138,7 +138,7 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
         to_id = self._id_from_src_object(to_src_obj)
         self._back_edges[from_id][field].append(to_id)
 
-    def _check_back_edges_empty(self):
+    def _check_back_edges_empty(self) -> None:
         """
         Raises an assertion if there are any back edges that have yet to be
         filled in.
@@ -309,7 +309,7 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
 
         return next_dst_objects, not_found_next_src_ids
 
-    def _populate_direct_back_edges(self):
+    def _populate_direct_back_edges(self) -> None:
         """Fills direct parent back edges that have been identified during
         conversion for any objects that have been properly created. Back edges
         which point to entities which are not direct parents (but some more
@@ -361,7 +361,7 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
 
         self._back_edges = not_found_back_edges
 
-    def _check_is_valid_module(self, obj: Union[SrcBaseType, DstBaseType]):
+    def _check_is_valid_module(self, obj: Union[SrcBaseType, DstBaseType]) -> None:
         if obj.__module__ not in [
             self._get_schema_module().__name__,
             self._get_entities_module().__name__,
@@ -380,9 +380,11 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
         return getattr(self._get_schema_module(), src.__class__.__name__)
 
     @staticmethod
-    def _convert_enum(src, field, attribute):
+    def _convert_enum(src: SrcBaseType, field: str, attribute: attr.Attribute) -> Enum:
         if isinstance(src, DatabaseEntity):
             enum_cls = get_enum_cls(attribute)
+            if enum_cls is None:
+                raise ValueError(f"Could not retrieve enum class for {attribute}")
             return enum_cls(getattr(src, field))
 
         return getattr(src, field).value

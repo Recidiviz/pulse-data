@@ -44,7 +44,7 @@ StatePersonType = TypeVar("StatePersonType", entities.StatePerson, schema.StateP
 class _StateSchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType, DstBaseType]):
     """State-specific implementation of BaseSchemaEntityConverter"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(SchemaEdgeDirectionChecker.state_direction_checker())
 
     def _get_schema_module(self) -> ModuleType:
@@ -70,11 +70,11 @@ class _StateSchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType, DstBase
             return True
         return False
 
-    def _populate_indirect_back_edges(self, dst: DstBaseType):
+    def _populate_indirect_back_edges(self, dst: DstBaseType) -> None:
         if isinstance(dst, (StatePerson, schema.StatePerson)):
             self._add_person_to_dst(dst, dst)
 
-    def _add_person_to_dst(self, person: StatePersonType, dst: DstBaseType):
+    def _add_person_to_dst(self, person: StatePersonType, dst: DstBaseType) -> None:
         self._set_person_on_dst(person, dst)
         entity_cls: Type[Entity] = self._get_entity_class(dst)
 
@@ -92,10 +92,12 @@ class _StateSchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType, DstBase
             if issubclass(type(v), Entity) or issubclass(type(v), DatabaseEntity):
                 self._set_person_on_child(person, v)
 
-    def _set_person_on_child(self, person: StatePersonType, next_dst: DstBaseType):
+    def _set_person_on_child(
+        self, person: StatePersonType, next_dst: DstBaseType
+    ) -> None:
         self._add_person_to_dst(person, next_dst)
 
-    def _set_person_on_dst(self, person: StatePersonType, dst: DstBaseType):
+    def _set_person_on_dst(self, person: StatePersonType, dst: DstBaseType) -> None:
         if hasattr(dst, "person"):
             setattr(dst, "person", person)
 
