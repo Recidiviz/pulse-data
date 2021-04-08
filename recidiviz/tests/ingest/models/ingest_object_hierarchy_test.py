@@ -18,6 +18,7 @@
 """Tests for ingest_object_hierarchy"""
 
 import unittest
+from typing import Sequence
 
 from recidiviz.ingest.models.ingest_object_hierarchy import get_ancestor_class_sequence
 
@@ -29,7 +30,7 @@ class FieldsDontMatchError(Exception):
 class TestIngestObjectHierarchy(unittest.TestCase):
     """Tests for ingest_object_hierarchy."""
 
-    def test_get_sequence_for_class_persons(self):
+    def test_get_sequence_for_class_persons(self) -> None:
         actual = get_ancestor_class_sequence("person")
         expected = ()
         self.assertEqual(expected, actual)
@@ -38,16 +39,16 @@ class TestIngestObjectHierarchy(unittest.TestCase):
         expected = ()
         self.assertEqual(expected, actual)
 
-    def test_get_sequence_for_class_single_parent(self):
+    def test_get_sequence_for_class_single_parent(self) -> None:
         actual = get_ancestor_class_sequence("bond")
-        expected = ("person", "booking", "charge")
+        expected: Sequence[str] = ("person", "booking", "charge")
         self.assertEqual(expected, actual)
 
         actual = get_ancestor_class_sequence("state_supervision_sentence")
         expected = ("state_person", "state_sentence_group")
         self.assertEqual(expected, actual)
 
-    def test_get_sequence_for_class_multiple_parents_enforced(self):
+    def test_get_sequence_for_class_multiple_parents_enforced(self) -> None:
         actual = get_ancestor_class_sequence(
             "state_supervision_period",
             enforced_ancestor_choices={
@@ -62,21 +63,21 @@ class TestIngestObjectHierarchy(unittest.TestCase):
         )
         self.assertEqual(expected, actual)
 
-    def test_get_sequence_for_class_multiple_parents_enforced_bad_key(self):
+    def test_get_sequence_for_class_multiple_parents_enforced_bad_key(self) -> None:
         with self.assertRaises(ValueError):
             get_ancestor_class_sequence(
                 "state_supervision_period",
                 enforced_ancestor_choices={"nonsense": "whatever"},
             )
 
-    def test_get_sequence_for_class_multiple_parents_enforced_bad_choice(self):
+    def test_get_sequence_for_class_multiple_parents_enforced_bad_choice(self) -> None:
         with self.assertRaises(ValueError):
             get_ancestor_class_sequence(
                 "state_supervision_period",
                 enforced_ancestor_choices={"state_sentence": "bogus"},
             )
 
-    def test_get_sequence_for_class_multiple_parents_enforced_over_chain(self):
+    def test_get_sequence_for_class_multiple_parents_enforced_over_chain(self) -> None:
         actual = get_ancestor_class_sequence(
             "state_supervision_period",
             ancestor_chain={"state_person": "12345"},
@@ -90,7 +91,7 @@ class TestIngestObjectHierarchy(unittest.TestCase):
         )
         self.assertEqual(expected, actual)
 
-    def test_get_sequence_for_class_multiple_parents_chain(self):
+    def test_get_sequence_for_class_multiple_parents_chain(self) -> None:
         actual = get_ancestor_class_sequence(
             "state_incarceration_period",
             ancestor_chain={
@@ -106,7 +107,7 @@ class TestIngestObjectHierarchy(unittest.TestCase):
         )
         self.assertEqual(expected, actual)
 
-    def test_get_sequence_for_class_multiple_parents_further_downstream(self):
+    def test_get_sequence_for_class_multiple_parents_further_downstream(self) -> None:
         actual = get_ancestor_class_sequence(
             "state_supervision_violation_response",
             enforced_ancestor_choices={"state_sentence": "state_supervision_sentence"},
