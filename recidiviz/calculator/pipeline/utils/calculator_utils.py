@@ -36,6 +36,7 @@ from recidiviz.common.constants.state.external_id_types import (
     US_PA_CONTROL,
     US_PA_PBPP,
     US_ND_ELITE,
+    US_ND_SID,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
@@ -58,6 +59,7 @@ PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE = {
         "US_ID": US_ID_DOC,
         "US_MO": US_MO_DOC,
         "US_PA": US_PA_PBPP,
+        "US_ND": US_ND_SID,
     },
 }
 
