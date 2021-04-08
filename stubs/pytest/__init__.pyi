@@ -30,6 +30,7 @@ from typing import (
     overload,
 )
 
+from .approx import ApproxBase
 from .mark import MarkGenerator
 
 mark: MarkGenerator
@@ -82,6 +83,7 @@ def raises(
     *args: Any,
     **kwargs: Any,
 ) -> ExceptionInfo[E]: ...
+def approx(expected: float) -> ApproxBase: ...
 
 class Config: ...
 
