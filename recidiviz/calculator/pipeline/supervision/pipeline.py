@@ -20,7 +20,7 @@ for details on how to launch a local run.
 import argparse
 import datetime
 import logging
-from typing import Dict, Any, List, Tuple, Set, Optional, cast
+from typing import Dict, Any, List, Tuple, Set, Optional, cast, Iterable, Generator
 
 import apache_beam as beam
 from apache_beam.options.pipeline_options import (
@@ -91,6 +91,7 @@ from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses im
 )
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.utils import environment
 
 # Cached job_id value
@@ -150,7 +151,7 @@ class GetSupervisionMetrics(beam.PTransform):
             else:
                 self._metric_inclusions[metric_option] = False
 
-    def expand(self, input_or_inputs):
+    def expand(self, input_or_inputs: List[Any]) -> List[SupervisionMetric]:
         # Produce SupervisionMetrics
         supervision_metrics = (
             input_or_inputs
@@ -176,7 +177,13 @@ class ClassifySupervisionTimeBuckets(beam.DoFn):
     """Classifies time on supervision according to multiple types of measurement."""
 
     # pylint: disable=arguments-differ
-    def process(self, element):
+    def process(
+        self, element: Tuple[int, Dict[str, Iterable[Any]]]
+    ) -> Generator[
+        Tuple[Optional[int], Tuple[StatePerson, List[SupervisionTimeBucket]]],
+        None,
+        None,
+    ]:
         """Identifies various events related to supervision relevant to calculations."""
         _, person_entities = element
 
@@ -195,7 +202,7 @@ class ClassifySupervisionTimeBuckets(beam.DoFn):
         else:
             yield person.person_id, (person, supervision_time_buckets)
 
-    def to_runner_api_parameter(self, _) -> None:
+    def to_runner_api_parameter(self, unused_context: Any) -> None:
         pass  # Passing unused abstract method.
 
 
@@ -213,12 +220,12 @@ class ProduceSupervisionMetrics(beam.DoFn):
     # pylint: disable=arguments-differ
     def process(
         self,
-        element,
-        calculation_end_month,
-        calculation_month_count,
-        metric_inclusions,
-        pipeline_options,
-    ):
+        element: Tuple[StatePerson, List[SupervisionTimeBucket], PersonMetadata],
+        calculation_end_month: Optional[str],
+        calculation_month_count: int,
+        metric_inclusions: Dict[SupervisionMetricType, bool],
+        pipeline_options: Dict[str, str],
+    ) -> Generator[SupervisionMetric, None, None]:
         """Produces various SupervisionMetrics.
 
         Sends the metric_producer the StatePerson entity and their corresponding SupervisionTimeBuckets for mapping all
@@ -258,7 +265,7 @@ class ProduceSupervisionMetrics(beam.DoFn):
         for metric in metrics:
             yield metric
 
-    def to_runner_api_parameter(self, _):
+    def to_runner_api_parameter(self, unused_context: Any) -> None:
         pass  # Passing unused abstract method.
 
 

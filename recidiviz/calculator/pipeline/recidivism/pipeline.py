@@ -23,7 +23,7 @@ from __future__ import absolute_import
 import argparse
 import logging
 
-from typing import Any, Dict, List, Tuple, Set, Optional, Iterable
+from typing import Any, Dict, List, Tuple, Set, Optional, Iterable, Generator
 import datetime
 
 from apache_beam.pvalue import AsList
@@ -76,6 +76,7 @@ from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_o
 )
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.database.schema.state import schema
+from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.utils import environment
 
 # Cached job_id value
@@ -90,7 +91,7 @@ def job_id(pipeline_options: Dict[str, str]) -> str:
 
 
 @environment.test_only
-def clear_job_id():
+def clear_job_id() -> None:
     global _job_id
     _job_id = None
 
@@ -103,7 +104,7 @@ class ExtractPersonReleaseEventsMetadata(beam.DoFn):
     # pylint: disable=arguments-differ
     def process(
         self, element: Tuple[int, Dict[str, Iterable[Any]]]
-    ) -> Iterable[Tuple[entities.StatePerson, Dict[int, ReleaseEvent], PersonMetadata]]:
+    ) -> Iterable[Tuple[entities.StatePerson, List[ReleaseEvent], PersonMetadata]]:
         """Extracts the StatePerson, dict of release years and ReleaseEvents, and PersonMetadata for use in the
         calculator step of the pipeline.
 
@@ -121,7 +122,7 @@ class ExtractPersonReleaseEventsMetadata(beam.DoFn):
 
             yield person, events, person_metadata
 
-    def to_runner_api_parameter(self, _):
+    def to_runner_api_parameter(self, unused_context: Any) -> None:
         pass  # Passing unused abstract method.
 
 
@@ -145,7 +146,9 @@ class GetRecidivismMetrics(beam.PTransform):
             else:
                 self.metric_inclusions[metric_option] = False
 
-    def expand(self, input_or_inputs):
+    def expand(
+        self, input_or_inputs: List[Any]
+    ) -> List[ReincarcerationRecidivismMetric]:
         # Produce ReincarcerationRecidivismMetrics
         metrics = (
             input_or_inputs
@@ -169,7 +172,13 @@ class ClassifyReleaseEvents(beam.DoFn):
     """Classifies releases as either recidivism or non-recidivism events."""
 
     # pylint: disable=arguments-differ
-    def process(self, element):
+    def process(
+        self, element: Tuple[int, Dict[str, Iterable[Any]]]
+    ) -> Generator[
+        Tuple[Optional[int], Tuple[StatePerson, Dict[int, List[ReleaseEvent]]]],
+        None,
+        None,
+    ]:
         """Identifies instances of recidivism and non-recidivism.
 
         Sends the identifier the StateIncarcerationPeriods for a given
@@ -202,7 +211,7 @@ class ClassifyReleaseEvents(beam.DoFn):
         else:
             yield person.person_id, (person, release_events_by_cohort_year)
 
-    def to_runner_api_parameter(self, _):
+    def to_runner_api_parameter(self, unused_context: Any) -> None:
         pass  # Passing unused abstract method.
 
 
@@ -216,7 +225,12 @@ class ProduceRecidivismMetrics(beam.DoFn):
     """Produces recidivism metrics."""
 
     # pylint: disable=arguments-differ
-    def process(self, element, metric_inclusions, pipeline_options):
+    def process(
+        self,
+        element: Tuple[StatePerson, Dict[int, List[ReleaseEvent]], PersonMetadata],
+        metric_inclusions: Dict[ReincarcerationRecidivismMetricType, bool],
+        pipeline_options: Dict[str, str],
+    ) -> Generator[ReincarcerationRecidivismMetric, None, None]:
         """Produces various ReincarcerationRecidivismMetrics.
 
         Sends the calculator the StatePerson entity and their corresponding ReleaseEvents
@@ -244,7 +258,7 @@ class ProduceRecidivismMetrics(beam.DoFn):
         for metric in metrics:
             yield metric
 
-    def to_runner_api_parameter(self, _):
+    def to_runner_api_parameter(self, unused_context: Any) -> None:
         pass  # Passing unused abstract method.
 
 
@@ -280,7 +294,7 @@ def run(
     metric_types: List[str],
     state_code: str,
     person_filter_ids: Optional[List[int]],
-):
+) -> None:
     """Runs the recidivism calculation pipeline."""
 
     # Workaround to load SQLAlchemy objects at start of pipeline. This is
