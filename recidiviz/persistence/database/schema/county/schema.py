@@ -31,6 +31,8 @@ the historical table (which does not). Because the key is shared between the
 master and historical tables, this allows an indirect guarantee of referential
 integrity to the historical tables as well.
 """
+from typing import Any
+
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
@@ -174,7 +176,7 @@ class _PersonSharedColumns:
     """A mixin which defines all columns common to Person and PersonHistory"""
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls, *_: Any, **__: Any) -> "_PersonSharedColumns":
         if cls is _PersonSharedColumns:
             raise Exception("_PersonSharedColumns cannot be instantiated")
         return super().__new__(cls)
@@ -197,7 +199,7 @@ class _PersonSharedColumns:
     jurisdiction_id = Column(String(8), nullable=False)
 
     @validates("jurisdiction_id")
-    def validate_jurisdiction_id(self, _, jurisdiction_id: str) -> str:
+    def validate_jurisdiction_id(self, _: Any, jurisdiction_id: str) -> str:
         if len(jurisdiction_id) != 8:
             raise ValueError(
                 "Jurisdiction ID invalid length: {} characters, should be "
@@ -248,7 +250,7 @@ class _BookingSharedColumns:
     """A mixin which defines all columns common to Booking and BookingHistory"""
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls, *_: Any, **__: Any) -> "_BookingSharedColumns":
         if cls is _BookingSharedColumns:
             raise Exception("_BookingSharedColumns cannot be instantiated")
         return super().__new__(cls)
@@ -279,11 +281,11 @@ class _BookingSharedColumns:
     classification_raw_text = Column(String(255))
 
     @declared_attr
-    def person_id(self):
+    def person_id(self) -> Column:
         return Column(Integer, ForeignKey("person.person_id"), nullable=False)
 
     @validates("facility_id")
-    def validate_facility_id(self, _, facility_id: str) -> str:
+    def validate_facility_id(self, _: Any, facility_id: str) -> str:
         if facility_id and len(facility_id) != 16:
             raise ValueError(
                 "Facility ID invalid length: {} characters, should be "
@@ -334,7 +336,7 @@ class _HoldSharedColumns:
     """A mixin which defines all columns common to Hold and HoldHistory"""
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls, *_: Any, **__: Any) -> "_HoldSharedColumns":
         if cls is _HoldSharedColumns:
             raise Exception("_HoldSharedColumns cannot be instantiated")
         return super().__new__(cls)
@@ -345,7 +347,7 @@ class _HoldSharedColumns:
     status_raw_text = Column(String(255))
 
     @declared_attr
-    def booking_id(self):
+    def booking_id(self) -> Column:
         return Column(Integer, ForeignKey("booking.booking_id"), nullable=False)
 
 
@@ -373,7 +375,7 @@ class _ArrestSharedColumns:
     """A mixin which defines all columns common to Arrest and ArrestHistory"""
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls, *_: Any, **__: Any) -> "_ArrestSharedColumns":
         if cls is _ArrestSharedColumns:
             raise Exception("_ArrestSharedColumns cannot be instantiated")
         return super().__new__(cls)
@@ -386,7 +388,7 @@ class _ArrestSharedColumns:
     officer_id = Column(String(255))
 
     @declared_attr
-    def booking_id(self):
+    def booking_id(self) -> Column:
         return Column(Integer, ForeignKey("booking.booking_id"), nullable=False)
 
 
@@ -416,7 +418,7 @@ class _BondSharedColumns:
     """A mixin which defines all columns common to Bond and BondHistory"""
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls, *_: Any, **__: Any) -> "_BondSharedColumns":
         if cls is _BondSharedColumns:
             raise Exception("_BondSharedColumns cannot be instantiated")
         return super().__new__(cls)
@@ -435,7 +437,7 @@ class _BondSharedColumns:
     # bonds. It does not have a corresponding SQLAlchemy relationship, to avoid
     # redundant relationships.
     @declared_attr
-    def booking_id(self):
+    def booking_id(self) -> Column:
         return Column(
             Integer,
             # Because this key does not correspond to a SQLAlchemy
@@ -473,7 +475,7 @@ class _SentenceSharedColumns:
     """
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls, *_: Any, **__: Any) -> "_SentenceSharedColumns":
         if cls is _SentenceSharedColumns:
             raise Exception("_SentenceSharedColumns cannot be instantiated")
         return super().__new__(cls)
@@ -500,7 +502,7 @@ class _SentenceSharedColumns:
     # sentences. It does not have a corresponding SQLAlchemy relationship, to
     # avoid redundant relationships.
     @declared_attr
-    def booking_id(self):
+    def booking_id(self) -> Column:
         return Column(
             Integer,
             # Because this key does not correspond to a SQLAlchemy
@@ -547,7 +549,7 @@ class _SentenceRelationshipSharedColumns:
     """
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls, *_: Any, **__: Any) -> "_SentenceRelationshipSharedColumns":
         if cls is _SentenceRelationshipSharedColumns:
             raise Exception("_SentenceRelationshipSharedColumns cannot be instantiated")
         return super().__new__(cls)
@@ -569,11 +571,11 @@ class _SentenceRelationshipSharedColumns:
     # sentences.)
 
     @declared_attr
-    def sentence_a_id(self):
+    def sentence_a_id(self) -> Column:
         return Column(Integer, ForeignKey("sentence.sentence_id"), nullable=False)
 
     @declared_attr
-    def sentence_b_id(self):
+    def sentence_b_id(self) -> Column:
         return Column(Integer, ForeignKey("sentence.sentence_id"), nullable=False)
 
 
@@ -619,7 +621,7 @@ class _ChargeSharedColumns:
     """A mixin which defines all columns common to Charge and ChargeHistory"""
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls, *_: Any, **__: Any) -> "_ChargeSharedColumns":
         if cls is _ChargeSharedColumns:
             raise Exception("_ChargeSharedColumns cannot be instantiated")
         return super().__new__(cls)
@@ -646,15 +648,15 @@ class _ChargeSharedColumns:
     charge_notes = Column(Text)
 
     @declared_attr
-    def booking_id(self):
+    def booking_id(self) -> Column:
         return Column(Integer, ForeignKey("booking.booking_id"), nullable=False)
 
     @declared_attr
-    def bond_id(self):
+    def bond_id(self) -> Column:
         return Column(Integer, ForeignKey("bond.bond_id"))
 
     @declared_attr
-    def sentence_id(self):
+    def sentence_id(self) -> Column:
         return Column(Integer, ForeignKey("sentence.sentence_id"))
 
 
