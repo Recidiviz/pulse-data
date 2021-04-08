@@ -35,6 +35,9 @@ from recidiviz.validation.validation_config import (
 )
 
 # pylint: disable=line-too-long
+from recidiviz.validation.views.justice_counts.incarceration_population_by_state_by_date_justice_counts_comparison import (
+    INCARCERATION_POPULATION_BY_STATE_BY_DATE_JUSTICE_COUNTS_COMPARISON_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.active_program_participation_by_region_internal_consistency import (
     ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
@@ -604,6 +607,15 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "internal_total_population",
             ],
             max_allowed_error=0.02,
+        ),
+        SamenessDataValidationCheck(
+            view=INCARCERATION_POPULATION_BY_STATE_BY_DATE_JUSTICE_COUNTS_COMPARISON_VIEW_BUILDER.build(),
+            sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+            comparison_columns=[
+                "justice_counts_total_population",
+                "internal_total_population",
+            ],
+            max_allowed_error=0.03,
         ),
     ]
 
