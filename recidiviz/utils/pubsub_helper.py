@@ -23,6 +23,7 @@
 #   more time depending on e.g. # results for query 'John Doe'.
 import logging
 import time
+from typing import Callable, TypeVar
 
 from google.api_core import exceptions  # pylint: disable=no-name-in-module
 from google.cloud import pubsub
@@ -46,7 +47,7 @@ def get_publisher() -> pubsub.PublisherClient:
 
 
 @environment.test_only
-def clear_publisher():
+def clear_publisher() -> None:
     global _publisher
     _publisher = None
 
@@ -59,12 +60,12 @@ def get_subscriber() -> pubsub.SubscriberClient:
 
 
 @environment.test_only
-def clear_subscriber():
+def clear_subscriber() -> None:
     global _subscriber
     _subscriber = None
 
 
-def get_topic_path(scrape_key, pubsub_type):
+def get_topic_path(scrape_key: ScrapeKey, pubsub_type: str) -> str:
     return get_publisher().topic_path(
         metadata.project_id(),
         "v1.{}.{}-{}".format(
@@ -73,7 +74,7 @@ def get_topic_path(scrape_key, pubsub_type):
     )
 
 
-def get_subscription_path(scrape_key, pubsub_type):
+def get_subscription_path(scrape_key: ScrapeKey, pubsub_type: str) -> str:
     return get_subscriber().subscription_path(
         metadata.project_id(),
         "v1.{}.{}-{}".format(
@@ -82,7 +83,7 @@ def get_subscription_path(scrape_key, pubsub_type):
     )
 
 
-def create_topic_and_subscription(scrape_key, pubsub_type):
+def create_topic_and_subscription(scrape_key: ScrapeKey, pubsub_type: str) -> None:
     topic_path = get_topic_path(scrape_key, pubsub_type)
     try:
         logging.info("Creating pubsub topic: '%s'", topic_path)
@@ -107,7 +108,12 @@ def create_topic_and_subscription(scrape_key, pubsub_type):
         logging.info("Subscription already exists")
 
 
-def retry_with_create(scrape_key, fn, pubsub_type):
+ReturnType = TypeVar("ReturnType")
+
+
+def retry_with_create(
+    scrape_key: ScrapeKey, fn: Callable[..., ReturnType], pubsub_type: str
+) -> ReturnType:
     try:
         result = retry_grpc(NUM_GRPC_RETRIES, fn)
     except exceptions.NotFound:
@@ -116,7 +122,7 @@ def retry_with_create(scrape_key, fn, pubsub_type):
     return result
 
 
-def purge(scrape_key: ScrapeKey, pubsub_type: str):
+def purge(scrape_key: ScrapeKey, pubsub_type: str) -> None:
     # TODO(#342): Use subscriber().seek(subscription_path, time=timestamp)
     # once available on the emulator.
     try:
@@ -129,7 +135,7 @@ def purge(scrape_key: ScrapeKey, pubsub_type: str):
     create_topic_and_subscription(scrape_key, pubsub_type=pubsub_type)
 
 
-def publish_message_to_topic(message: str, topic: str):
+def publish_message_to_topic(message: str, topic: str) -> None:
     logging.info("Publishing message: '%s' to topic: %s", message, topic)
     publisher = get_publisher()
     topic_path = publisher.topic_path(metadata.project_id(), topic)
