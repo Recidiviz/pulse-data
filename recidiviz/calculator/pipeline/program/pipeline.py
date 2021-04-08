@@ -20,7 +20,7 @@ for details on how to launch a local run.
 import argparse
 import datetime
 import logging
-from typing import Dict, Any, List, Tuple, Set, Optional, cast
+from typing import Dict, Any, List, Tuple, Set, Optional, cast, Generator, Iterable
 
 import apache_beam as beam
 from apache_beam.options.pipeline_options import SetupOptions, PipelineOptions
@@ -65,6 +65,7 @@ from recidiviz.calculator.query.state.views.reference.supervision_period_to_agen
 )
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.utils import environment
 
 # Cached job_id value
@@ -79,7 +80,7 @@ def job_id(pipeline_options: Dict[str, str]) -> str:
 
 
 @environment.test_only
-def clear_job_id():
+def clear_job_id() -> None:
     global _job_id
     _job_id = None
 
@@ -124,7 +125,7 @@ class GetProgramMetrics(beam.PTransform):
             else:
                 self._metric_inclusions[metric_option] = False
 
-    def expand(self, input_or_inputs):
+    def expand(self, input_or_inputs: List[Any]) -> List[ProgramMetric]:
         # Produce ProgramMetrics from a StatePerson and their ProgramEvents
         program_metrics = input_or_inputs | "Produce ProgramMetrics" >> beam.ParDo(
             ProduceProgramMetrics(),
@@ -145,7 +146,11 @@ class ClassifyProgramAssignments(beam.DoFn):
     """Classifies program assignments as program events, such as referrals to a program."""
 
     # pylint: disable=arguments-differ
-    def process(self, element):
+    def process(
+        self, element: Tuple[int, Dict[str, Iterable[Any]]]
+    ) -> Generator[
+        Tuple[Optional[int], Tuple[StatePerson, List[ProgramEvent]]], None, None
+    ]:
         """Identifies instances of referrals to a program."""
         _, person_entities = element
 
@@ -163,7 +168,7 @@ class ClassifyProgramAssignments(beam.DoFn):
         else:
             yield person.person_id, (person, program_events)
 
-    def to_runner_api_parameter(self, _):
+    def to_runner_api_parameter(self, unused_context: Any) -> None:
         pass  # Passing unused abstract method.
 
 
@@ -181,12 +186,12 @@ class ProduceProgramMetrics(beam.DoFn):
     # pylint: disable=arguments-differ
     def process(
         self,
-        element,
-        calculation_end_month,
-        calculation_month_count,
-        metric_inclusions,
-        pipeline_options,
-    ):
+        element: Tuple[StatePerson, List[ProgramEvent], PersonMetadata],
+        calculation_end_month: Optional[str],
+        calculation_month_count: int,
+        metric_inclusions: Dict[ProgramMetricType, bool],
+        pipeline_options: Dict[str, str],
+    ) -> Generator[ProgramMetric, None, None]:
         """Produces various ProgramMetrics.
 
         Sends the metric producer the StatePerson entity and their corresponding ProgramEvents for mapping all program
@@ -224,7 +229,7 @@ class ProduceProgramMetrics(beam.DoFn):
         for metric in metrics:
             yield metric
 
-    def to_runner_api_parameter(self, _):
+    def to_runner_api_parameter(self, unused_context: Any) -> None:
         pass  # Passing unused abstract method.
 
 
@@ -265,7 +270,7 @@ def run(
     state_code: str,
     calculation_end_month: Optional[str],
     person_filter_ids: Optional[List[int]],
-):
+) -> None:
     """Runs the program calculation pipeline."""
 
     # Workaround to load SQLAlchemy objects at start of pipeline. This is necessary because the BuildRootEntity
