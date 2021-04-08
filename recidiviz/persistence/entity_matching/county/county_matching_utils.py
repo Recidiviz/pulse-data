@@ -313,7 +313,7 @@ def get_next_available_match(
     db_entities: Sequence[Entity],
     db_entities_matched_by_id: Dict[int, Any],
     matcher: Callable,
-):
+) -> Optional[Entity]:
     """
     Finds all |db_entities| that match the provided |ingested_entity| based on
     the |matcher| function, and returns the first of these matches that has not
@@ -327,7 +327,7 @@ def get_next_available_match(
     return None
 
 
-def close_multiple_open_bookings(bookings: List[entities.Booking]):
+def close_multiple_open_bookings(bookings: List[entities.Booking]) -> None:
     """
     Assigns all open |bookings| a release date which is the next booking's
     admission date by modifying bookings in place.
@@ -341,5 +341,5 @@ def close_multiple_open_bookings(bookings: List[entities.Booking]):
             b1.custody_status = CustodyStatus.REMOVED_WITHOUT_INFO
 
 
-def generate_id_from_obj(obj) -> str:
+def generate_id_from_obj(obj: Entity) -> str:
     return str(id(obj)) + "_ENTITY_MATCHING_GENERATED"

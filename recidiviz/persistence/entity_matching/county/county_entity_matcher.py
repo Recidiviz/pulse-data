@@ -181,7 +181,7 @@ def match_bookings(
     db_person: entities.Person,
     ingested_person: entities.Person,
     orphaned_entities: List[Entity]
-):
+) -> None:
     """
     Attempts to match all bookings on the |ingested_person| with bookings on
     the |db_person|. For any ingested booking, if a matching booking exists on
@@ -243,7 +243,9 @@ def match_bookings(
             ingested_person.bookings.append(db_booking)
 
 
-def match_arrest(*, db_booking: entities.Booking, ingested_booking: entities.Booking):
+def match_arrest(
+    *, db_booking: entities.Booking, ingested_booking: entities.Booking
+) -> None:
     """
     Matches the arrest from the |db_booking| to the arrest on the
     |ingested_booking| if both exist. If there is a match, the primary key is
@@ -261,7 +263,9 @@ def match_arrest(*, db_booking: entities.Booking, ingested_booking: entities.Boo
     ingested_booking.arrest.arrest_id = db_booking.arrest.arrest_id
 
 
-def match_holds(*, db_booking: entities.Booking, ingested_booking: entities.Booking):
+def match_holds(
+    *, db_booking: entities.Booking, ingested_booking: entities.Booking
+) -> None:
     """
     Attempts to match all holds on the |ingested_booking| with holds on
     the |db_booking|. For any ingested hold, if a matching hold exists on
@@ -297,7 +301,9 @@ def match_holds(*, db_booking: entities.Booking, ingested_booking: entities.Book
     ingested_booking.holds.extend(dropped_holds)
 
 
-def match_charges(*, db_booking: entities.Booking, ingested_booking: entities.Booking):
+def match_charges(
+    *, db_booking: entities.Booking, ingested_booking: entities.Booking
+) -> None:
     """
     Attempts to match all charges on the |ingested_booking| with charges on
     the |db_booking|. For any ingested charge, if a matching charge exists on
@@ -347,7 +353,7 @@ def match_charges(*, db_booking: entities.Booking, ingested_booking: entities.Bo
     )
 
     for ingested_charge in ing_charges_sorted_by_child_count:
-        db_charge: entities.Charge = get_next_available_match(
+        db_charge = get_next_available_match(
             ingested_charge,
             db_booking.charges,
             matched_charges_by_db_id,
@@ -361,6 +367,8 @@ def match_charges(*, db_booking: entities.Booking, ingested_booking: entities.Bo
                 matched_charges_by_db_id,
                 is_charge_match,
             )
+
+        db_charge = cast(entities.Charge, db_charge)
 
         if db_charge:
             logging.debug(
@@ -382,7 +390,7 @@ def match_bonds(
     db_booking: entities.Booking,
     ingested_booking: entities.Booking,
     orphaned_entities: List[Entity]
-):
+) -> None:
     """
     Attempts to match all bonds found on the |ingested_booking| with bonds on
     the |db_booking|. For any ingested bond, if a matching bond exists on
@@ -401,7 +409,7 @@ def match_sentences(
     db_booking: entities.Booking,
     ingested_booking: entities.Booking,
     orphaned_entities: List[Entity]
-):
+) -> None:
     """
     Attempts to match all sentences found on the |ingested_booking| with
     sentences on the |db_booking|. For any ingested sentence, if a matching
@@ -422,7 +430,7 @@ def _match_from_charges(
     ingested_booking: entities.Booking,
     name: str,
     orphaned_entities: List[Entity]
-):
+) -> None:
     """Helper function that, within a booking, matches objects that are children
     of the booking's charges. |name| should be 'bond' or 'sentence'.
 
@@ -434,7 +442,9 @@ def _match_from_charges(
         ingested_booking.charges, name
     )
 
-    def _is_match_with_relationships(*, db_entity, ingested_entity):
+    def _is_match_with_relationships(
+        *, db_entity: Entity, ingested_entity: Entity
+    ) -> bool:
         ing_entity_id = generate_id_from_obj(ingested_entity)
         db_entity_id = db_entity.get_id()
         matcher = getattr(county_matching_utils, "is_{}_match".format(name))
@@ -501,25 +511,25 @@ def _charge_relationship_count(charge: entities.Charge) -> int:
     return sum([bool(charge.bond), bool(charge.sentence)])
 
 
-def _drop_hold(hold: entities.Hold):
+def _drop_hold(hold: entities.Hold) -> None:
     if hold.status != HoldStatus.INFERRED_DROPPED:
         logging.debug("Dropping hold with id %s", hold.hold_id)
         hold.status = HoldStatus.INFERRED_DROPPED
 
 
-def _drop_charge(charge: entities.Charge):
+def _drop_charge(charge: entities.Charge) -> None:
     if charge.status != ChargeStatus.INFERRED_DROPPED:
         logging.debug("Dropping charge with id %s", charge.charge_id)
         charge.status = ChargeStatus.INFERRED_DROPPED
 
 
-def _drop_sentence(sentence: entities.Sentence):
+def _drop_sentence(sentence: entities.Sentence) -> None:
     if sentence.status != SentenceStatus.REMOVED_WITHOUT_INFO:
         logging.debug("Removing sentence with id %s", sentence.sentence_id)
         sentence.status = SentenceStatus.REMOVED_WITHOUT_INFO
 
 
-def _drop_bond(bond: entities.Bond):
+def _drop_bond(bond: entities.Bond) -> None:
     if bond.status != BondStatus.REMOVED_WITHOUT_INFO:
         logging.debug("Removing bond with id %s", bond.bond_id)
         bond.status = BondStatus.REMOVED_WITHOUT_INFO
