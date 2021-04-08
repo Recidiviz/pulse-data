@@ -237,7 +237,7 @@ class PlaceInCompactMatrixTest(unittest.TestCase):
                 _DIMENSION_MANIFEST,
             )
 
-            self.assertIn("month: 5", e.message)
+        self.assertIn("month: 5", str(e.value))
 
 
 class AddToManifestTest(unittest.TestCase):

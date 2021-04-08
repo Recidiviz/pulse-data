@@ -18,9 +18,12 @@
 """Tests for ingest_info"""
 
 import unittest
+from typing import List, Optional, Type
+
+from google.protobuf.message import Message
 
 from recidiviz.ingest.models import ingest_info
-from recidiviz.ingest.models.ingest_info import IngestInfo
+from recidiviz.ingest.models.ingest_info import IngestInfo, IngestObject
 from recidiviz.ingest.models.ingest_info_pb2 import (
     Person,
     Booking,
@@ -58,8 +61,12 @@ class FieldsDontMatchError(Exception):
 class TestIngestInfo(unittest.TestCase):
     """Tests for ingest_info"""
 
-    def test_proto_fields_match(self):
-        def _verify_fields(proto, ingest_info_source, ignore=None):
+    def test_proto_fields_match(self) -> None:
+        def _verify_fields(
+            proto: Type[Message],
+            ingest_info_source: IngestObject,
+            ignore: Optional[List[str]] = None,
+        ) -> None:
             ignore = ignore or []
             proto_fields = [field.name for field in proto.DESCRIPTOR.fields]
             source_fields = vars(ingest_info_source)
@@ -282,21 +289,21 @@ class TestIngestInfo(unittest.TestCase):
             program_assignment_fields_ignore,
         )
 
-    def test_bool_falsy(self):
+    def test_bool_falsy(self) -> None:
         ii = IngestInfo()
         person = ii.create_person()
         person.create_booking().create_arrest()
         person.create_booking()
         self.assertFalse(ii)
 
-    def test_bool_truthy(self):
+    def test_bool_truthy(self) -> None:
         ii = IngestInfo()
         person = ii.create_person()
         person.create_booking().create_arrest(arrest_date="1/2/3")
         person.create_booking()
         self.assertTrue(ii)
 
-    def test_prune(self):
+    def test_prune(self) -> None:
         ii = IngestInfo(
             people=[
                 ingest_info.Person(),
@@ -346,7 +353,7 @@ class TestIngestInfo(unittest.TestCase):
         )
         self.assertEqual(ii.prune(), expected)
 
-    def test_sort(self):
+    def test_sort(self) -> None:
         b1 = ingest_info.Booking(admission_date="1")
         b2 = ingest_info.Booking(admission_date="2")
 
