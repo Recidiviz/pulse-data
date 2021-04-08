@@ -17,9 +17,10 @@
 
 """Base test class for scrapers."""
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 import yaml
+from lxml import html
 from mock import patch
 
 from recidiviz.common.constants.person_characteristics import (
@@ -29,14 +30,16 @@ from recidiviz.common.constants.person_characteristics import (
 )
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.ingest.models import ingest_info
+from recidiviz.ingest.models.ingest_info import IngestInfo
+from recidiviz.ingest.models.single_count import SingleCount
 from recidiviz.ingest.scrape import constants
 from recidiviz.ingest.scrape.base_scraper import BaseScraper
-from recidiviz.ingest.scrape.task_params import Task
+from recidiviz.ingest.scrape.task_params import Task, ScrapedData
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.utils.individual_ingest_test import IndividualIngestTest
 
-_FAKE_SCRAPER_START_TIME = datetime(year=2020, month=3, day=20)
+_FAKE_SCRAPER_START_TIME: datetime = datetime(year=2020, month=3, day=20)
 
 
 class CommonScraperTest(IndividualIngestTest):
@@ -130,7 +133,12 @@ class CommonScraperTest(IndividualIngestTest):
                         overrides.parse(ethnicity_string, Race) == ethnicity_enum
                     ), msg
 
-    def validate_and_return_get_more_tasks(self, content, task, expected_result):
+    def validate_and_return_get_more_tasks(
+        self,
+        content: Optional[html.HtmlElement],
+        task: Task,
+        expected_result: List[Task],
+    ) -> List[Task]:
         """This function runs get more tasks and runs some extra validation
         on the output.
 
@@ -143,19 +151,21 @@ class CommonScraperTest(IndividualIngestTest):
             The result from get_more_tasks in case the user needs to do any
             extra validations on the output.
         """
-        result = self.scraper.get_more_tasks(content, task)
+        result: List[Task]
+        if self.scraper:
+            result = self.scraper.get_more_tasks(content, task)
         assert result == expected_result
         return result
 
     def validate_and_return_populate_data(
         self,
-        content,
-        expected_ingest_info=None,
-        expected_single_counts=None,
-        expected_persist=True,
-        task=None,
-        info=None,
-    ):
+        content: Optional[html.HtmlElement],
+        expected_ingest_info: Optional[IngestInfo] = None,
+        expected_single_counts: Optional[List[SingleCount]] = None,
+        expected_persist: bool = True,
+        task: Optional[Task] = None,
+        info: Optional[IngestInfo] = None,
+    ) -> ScrapedData:
         """This function runs populate_data and runs some extra validation
         on the output.
 
@@ -175,35 +185,48 @@ class CommonScraperTest(IndividualIngestTest):
             The result from populate_data in case the user needs to do any
             extra validations on the output.
         """
-        info = info or ingest_info.IngestInfo()
-        task = task or Task(task_type=constants.TaskType.SCRAPE_DATA, endpoint="")
-
-        scrape_data = self.scraper.populate_data(content, task, info)
-
-        print("FINAL")
-        print(scrape_data.ingest_info)
-        print("EXPECTED")
-        print(expected_ingest_info)
-
-        if expected_ingest_info is None and expected_single_counts is None:
-            if scrape_data:
-                self.assertFalse(scrape_data.persist)
-            else:
-                self.assertIsNone(scrape_data)
-
-        self.assertCountEqual(scrape_data.single_counts, expected_single_counts or [])
-
-        metadata = IngestMetadata(
-            region=self.scraper.region.region_code,
-            jurisdiction_id=self.scraper.region.jurisdiction_id,
-            ingest_time=_FAKE_SCRAPER_START_TIME,
-            enum_overrides=self.scraper.get_enum_overrides(),
-            system_level=SystemLevel.COUNTY,
-            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS),
+        info_to_ingest: IngestInfo = info or ingest_info.IngestInfo()
+        task_to_process: Task = task or Task(
+            task_type=constants.TaskType.SCRAPE_DATA, endpoint=""
         )
 
-        self.validate_ingest(scrape_data.ingest_info, expected_ingest_info, metadata)
+        if self.scraper:
+            scrape_data = self.scraper.populate_data(
+                content, task_to_process, info_to_ingest
+            )
 
-        assert scrape_data.persist == expected_persist
+            print("FINAL")
+            print(scrape_data.ingest_info)
+            print("EXPECTED")
+            print(expected_ingest_info)
 
-        return scrape_data
+            if expected_ingest_info is None and expected_single_counts is None:
+                if scrape_data:
+                    assert scrape_data.persist is False
+                else:
+                    assert scrape_data is None
+
+            if expected_single_counts and scrape_data.single_counts:
+                assert len(scrape_data.single_counts) == len(expected_single_counts)
+                diff = set(expected_single_counts) ^ set(scrape_data.single_counts)
+                assert not diff
+
+            metadata: IngestMetadata = IngestMetadata(
+                region=self.scraper.region.region_code,
+                jurisdiction_id=self.scraper.region.jurisdiction_id,
+                ingest_time=_FAKE_SCRAPER_START_TIME,
+                enum_overrides=self.scraper.get_enum_overrides(),
+                system_level=SystemLevel.COUNTY,
+                database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS),
+            )
+
+            if scrape_data.ingest_info and expected_ingest_info:
+                self.validate_ingest(
+                    scrape_data.ingest_info, expected_ingest_info, metadata
+                )
+
+            assert scrape_data.persist == expected_persist
+
+        if scrape_data:
+            return scrape_data
+        raise ValueError("Scrape data was not provided ingest info")
