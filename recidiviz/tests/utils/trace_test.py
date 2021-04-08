@@ -33,7 +33,7 @@ def some_method(arg1: int, arg2: List[str]) -> List[str]:
 
 class SomeClass:
     @trace.span
-    def recursive(self, depth: int):
+    def recursive(self, depth: int) -> None:
         if depth:
             self.recursive(depth - 1)
 
@@ -42,7 +42,7 @@ class TestSpan(unittest.TestCase):
     """Tests trace span functionality"""
 
     @patch("opencensus.trace.execution_context.get_opencensus_tracer")
-    def test_call_createsSpan(self, mock_get_tracer):
+    def test_call_createsSpan(self, mock_get_tracer: Mock) -> None:
         # Arrange
         mock_tracer = mock_get_tracer.return_value
         mock_span = mock_tracer.span.return_value.__enter__.return_value
@@ -63,7 +63,9 @@ class TestSpan(unittest.TestCase):
 
     @patch("recidiviz.utils.monitoring.measurements")
     @patch("time.perf_counter")
-    def test_call_recordsTime(self, mock_time, mock_measurements_method):
+    def test_call_recordsTime(
+        self, mock_time: Mock, mock_measurements_method: Mock
+    ) -> None:
         # Arrange
         mock_time.side_effect = [2.1, 2.25]
         mock_measurements = mock_measurements_method.return_value.__enter__.return_value
@@ -86,7 +88,7 @@ class TestSpan(unittest.TestCase):
         )
 
     @patch("recidiviz.utils.monitoring.measurements")
-    def test_recursive_countsDepth(self, mock_measurements_method):
+    def test_recursive_countsDepth(self, mock_measurements_method: Mock) -> None:
         # Act
         SomeClass().recursive(3)
 
@@ -143,8 +145,8 @@ class TestCompositeSampler(unittest.TestCase):
     )
     @patch("recidiviz.utils.trace.request")
     def test_compositeSampler_picksCorrect(
-        self, _name, test_input, expected, mock_request
-    ):
+        self, _name: str, test_input: str, expected: int, mock_request: Mock
+    ) -> None:
         # Arrange
         mock_1 = Mock()
         mock_1.should_sample.return_value = 1
