@@ -51,7 +51,6 @@ COMPARTMENT_SESSION_END_REASONS_QUERY_TEMPLATE = """
     LEFT JOIN `{project_id}.{analyst_dataset}.release_termination_reason_dedup_priority` AS d
         ON d.end_reason = m.release_reason
         AND d.metric_source = m.metric_type
-    WHERE end_reason IS NOT NULL
     UNION ALL  
     SELECT 
         person_id,
@@ -65,7 +64,6 @@ COMPARTMENT_SESSION_END_REASONS_QUERY_TEMPLATE = """
     LEFT JOIN `{project_id}.{analyst_dataset}.release_termination_reason_dedup_priority` AS d
         ON  d.end_reason = m.termination_reason
         AND d.metric_source = m.metric_type
-    WHERE end_reason IS NOT NULL
     )
     SELECT 
         * EXCEPT (rn)
