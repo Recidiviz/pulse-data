@@ -1191,6 +1191,72 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
             validated_incarceration_periods,
         )
 
+    def test_prepare_incarceration_periods_for_calculations_drop_periods_for_deceased(
+        self,
+    ):
+        state_code = "US_XX"
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id="1",
+            state_code=state_code,
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.RETURN_FROM_SUPERVISION,
+            release_date=date(2009, 12, 4),
+            release_reason=ReleaseReason.DEATH,
+        )
+
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2222,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id="1",
+            state_code=state_code,
+            admission_date=date(2009, 12, 4),
+            admission_reason=AdmissionReason.PAROLE_REVOCATION,
+            release_date=date(2009, 12, 5),
+            release_reason=ReleaseReason.TRANSFER,
+        )
+
+        incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2222,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            external_id="1",
+            state_code=state_code,
+            admission_date=date(2009, 12, 6),
+            admission_reason=AdmissionReason.TRANSFER,
+        )
+
+        incarceration_periods = [
+            incarceration_period_1,
+            incarceration_period_2,
+            incarceration_period_3,
+        ]
+
+        ip_pre_processing_config = IncarcerationPreProcessingConfig(
+            drop_temporary_custody_periods=drop_temporary_custody_periods(state_code),
+            drop_non_state_prison_incarceration_type_periods=drop_non_state_prison_incarceration_type_periods(
+                state_code
+            ),
+            collapse_transfers=True,
+            collapse_temporary_custody_periods_with_revocation=False,
+            collapse_transfers_with_different_pfi=True,
+            overwrite_facility_information_in_transfers=True,
+        )
+
+        validated_incarceration_periods = (
+            prepare_incarceration_periods_for_calculations(
+                incarceration_periods, ip_pre_processing_config
+            )
+        )
+
+        self.assertEqual(
+            [incarceration_period_1],
+            validated_incarceration_periods,
+        )
+
     def test_sort_incarceration_periods(self):
         state_code = "US_XX"
         initial_incarceration_period = StateIncarcerationPeriod.new_with_defaults(

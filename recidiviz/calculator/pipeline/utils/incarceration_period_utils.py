@@ -349,15 +349,31 @@ def _infer_missing_dates_and_statuses(
     """
     sort_periods_by_set_dates_and_statuses(incarceration_periods, _is_active_period)
 
+    period_ending_in_death: Optional[StateIncarcerationPeriod] = None
     updated_periods: List[StateIncarcerationPeriod] = []
 
     for index, ip in enumerate(incarceration_periods):
+        if ip.release_reason == StateIncarcerationPeriodReleaseReason.DEATH:
+            period_ending_in_death = ip
+
         previous_ip = incarceration_periods[index - 1] if index > 0 else None
         next_ip = (
             incarceration_periods[index + 1]
             if index < len(incarceration_periods) - 1
             else None
         )
+
+        if (
+            period_ending_in_death
+            and ip.admission_date
+            and period_ending_in_death.release_date
+            and period_ending_in_death.release_date <= ip.admission_date
+        ):
+            logging.info(
+                "Dropping incarceration period with with an admission_date after a release due to death: [%s]",
+                ip,
+            )
+            continue
 
         if ip.release_date is None:
             if next_ip:

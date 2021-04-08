@@ -740,6 +740,171 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
 
         test_pipeline.run()
 
+    def testClassifyIncarcerationEventsWithPeriodsAfterDeath(self):
+        """Tests the ClassifyIncarcerationEvents DoFn for when a person has periods
+        that occur after a period ending in their death."""
+        fake_person_id = 12345
+
+        fake_person = StatePerson.new_with_defaults(
+            state_code="US_XX",
+            person_id=fake_person_id,
+            gender=Gender.MALE,
+            birthdate=date(1970, 1, 1),
+            residency_status=ResidencyStatus.PERMANENT,
+        )
+
+        incarceration_period_with_death = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code="US_XX",
+            facility="PRISON XX",
+            admission_date=date(2010, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            release_date=date(2010, 11, 21),
+            release_reason=StateIncarcerationPeriodReleaseReason.DEATH,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+        )
+
+        post_mortem_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code="US_XX",
+            facility="PRISON XX",
+            admission_date=date(2010, 11, 22),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            release_date=date(2010, 11, 23),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+        )
+
+        post_mortem_incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code="US_XX",
+            facility="PRISON XX",
+            admission_date=date(2010, 11, 24),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+        )
+
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            state_code="US_XX",
+            incarceration_sentence_id=123,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            incarceration_periods=[
+                incarceration_period_with_death,
+                post_mortem_incarceration_period_1,
+                post_mortem_incarceration_period_2,
+            ],
+            start_date=date(2009, 2, 9),
+            charges=[
+                StateCharge.new_with_defaults(
+                    state_code="US_XX",
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
+                    ncic_code="5699",
+                    statute="30A123",
+                    offense_date=date(2009, 1, 9),
+                )
+            ],
+        )
+
+        sentence_group = StateSentenceGroup.new_with_defaults(
+            state_code="US_XX",
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            sentence_group_id=123,
+            incarceration_sentences=[incarceration_sentence],
+        )
+
+        incarceration_sentence.sentence_group = sentence_group
+
+        incarceration_period_with_death.incarceration_sentences = [
+            incarceration_sentence
+        ]
+        post_mortem_incarceration_period_1.incarceration_sentences = [
+            incarceration_sentence
+        ]
+        post_mortem_incarceration_period_2.incarceration_sentences = [
+            incarceration_sentence
+        ]
+
+        fake_person_id_to_county_query_result = {
+            "person_id": fake_person_id,
+            "county_of_residence": _COUNTY_OF_RESIDENCE,
+        }
+
+        fake_incarceration_period_judicial_district_association_result = {
+            "person_id": fake_person_id,
+            "incarceration_period_id": 123,
+            "judicial_district_code": "NW",
+        }
+
+        incarceration_events = [
+            IncarcerationStayEvent(
+                admission_reason=incarceration_period_with_death.admission_reason,
+                admission_reason_raw_text=incarceration_period_with_death.admission_reason_raw_text,
+                supervision_type_at_admission=StateSupervisionPeriodSupervisionType.PROBATION,
+                state_code=incarceration_period_with_death.state_code,
+                event_date=incarceration_period_with_death.admission_date,
+                facility=incarceration_period_with_death.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                most_serious_offense_ncic_code="5699",
+                most_serious_offense_statute="30A123",
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+            ),
+            IncarcerationAdmissionEvent(
+                state_code=incarceration_period_with_death.state_code,
+                event_date=incarceration_period_with_death.admission_date,
+                facility=incarceration_period_with_death.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                admission_reason=incarceration_period_with_death.admission_reason,
+                admission_reason_raw_text=incarceration_period_with_death.admission_reason_raw_text,
+                supervision_type_at_admission=StateSupervisionPeriodSupervisionType.PROBATION,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+            ),
+            IncarcerationReleaseEvent(
+                state_code=incarceration_period_with_death.state_code,
+                event_date=incarceration_period_with_death.release_date,
+                facility=incarceration_period_with_death.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                release_reason=incarceration_period_with_death.release_reason,
+                admission_reason=incarceration_period_with_death.admission_reason,
+                total_days_incarcerated=(
+                    incarceration_period_with_death.release_date
+                    - incarceration_period_with_death.admission_date
+                ).days,
+                purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+            ),
+        ]
+
+        correct_output = [(fake_person_id, (fake_person, incarceration_events))]
+
+        test_pipeline = TestPipeline()
+
+        person_entities = {
+            "person": [fake_person],
+            "sentence_groups": [sentence_group],
+            "incarceration_period_judicial_district_association": [
+                fake_incarceration_period_judicial_district_association_result
+            ],
+            "persons_to_recent_county_of_residence": [
+                fake_person_id_to_county_query_result
+            ],
+        }
+
+        output = (
+            test_pipeline
+            | beam.Create([(fake_person_id, person_entities)])
+            | "Identify Incarceration Events"
+            >> beam.ParDo(pipeline.ClassifyIncarcerationEvents())
+        )
+
+        assert_that(output, equal_to(correct_output))
+
+        test_pipeline.run()
+
 
 class TestProduceIncarcerationMetrics(unittest.TestCase):
     """Tests the ProduceIncarcerationMetrics DoFn
