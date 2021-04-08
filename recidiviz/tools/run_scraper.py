@@ -41,6 +41,7 @@ from typing import Set, cast
 
 from recidiviz.ingest.scrape import constants, scraper as scraper_module
 from recidiviz.ingest.scrape.ingest_utils import validate_regions
+from recidiviz.ingest.scrape.scraper import Scraper
 from recidiviz.ingest.scrape.task_params import QueueRequest
 from recidiviz.persistence.database.base_schema import JailsBase
 from recidiviz.tests.utils.fakes import use_in_memory_sqlite_database
@@ -48,7 +49,11 @@ from recidiviz.utils import regions
 
 
 # This function acts as a bound method to the scraper instance.
-def add_task(queue, _self, task_name, request) -> None:
+
+
+def add_task(
+    queue: deque, _self: Scraper, task_name: str, request: QueueRequest
+) -> None:
     """Overwritten version of `add_task` which adds the task to an in-memory
     queue.
     """
@@ -62,7 +67,9 @@ def add_task(queue, _self, task_name, request) -> None:
     queue.append((task_name, request))
 
 
-def start_scrape(queue, self, scrape_type):
+def start_scrape(
+    queue: deque, self: Scraper, scrape_type: constants.ScrapeType
+) -> None:
     add_task(
         queue,
         self,
@@ -75,7 +82,7 @@ def start_scrape(queue, self, scrape_type):
     )
 
 
-def run_scraper(args) -> None:
+def run_scraper(args: argparse.Namespace) -> None:
     use_in_memory_sqlite_database(JailsBase)
 
     region_codes = validate_regions(args.region.split(","))
@@ -103,7 +110,7 @@ def run_scraper(args) -> None:
         )
 
 
-def run_scraper_for_region(region, args) -> None:
+def run_scraper_for_region(region: regions.Region, args: argparse.Namespace) -> None:
     """Runs the scraper for the given region
 
     Creates and manages an in-memory FIFO queue to replicate production.
@@ -209,7 +216,7 @@ def _create_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _configure_logging(level) -> None:
+def _configure_logging(level: str) -> None:
     root = logging.getLogger()
     root.setLevel(level)
 
