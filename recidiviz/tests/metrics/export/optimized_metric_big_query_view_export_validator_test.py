@@ -82,7 +82,7 @@ class ValidateTest(unittest.TestCase):
     def tearDown(self) -> None:
         self.metadata_patcher.stop()
 
-    def test_validate_success(self):
+    def test_validate_success(self) -> None:
         mock_fs = create_autospec(DirectIngestGCSFileSystem)
 
         mock_fs.get_metadata.return_value = {"total_data_points": "5"}
@@ -99,7 +99,7 @@ class ValidateTest(unittest.TestCase):
             ]
         )
 
-    def test_validate_failure(self):
+    def test_validate_failure(self) -> None:
         mock_fs = create_autospec(DirectIngestGCSFileSystem)
 
         mock_fs.get_metadata.side_effect = [
@@ -119,7 +119,7 @@ class ValidateTest(unittest.TestCase):
             ]
         )
 
-    def test_validate_not_integer(self):
+    def test_validate_not_integer(self) -> None:
         mock_fs = create_autospec(DirectIngestGCSFileSystem)
 
         mock_fs.get_metadata.return_value = {"total_data_points": "HELLO WORLD"}
@@ -132,7 +132,7 @@ class ValidateTest(unittest.TestCase):
         # We failed before validating the second path
         mock_fs.assert_has_calls([call.get_metadata(self.staging_paths[0])])
 
-    def test_validate_no_metadata(self):
+    def test_validate_no_metadata(self) -> None:
         mock_fs = create_autospec(DirectIngestGCSFileSystem)
 
         mock_fs.get_metadata.return_value = None

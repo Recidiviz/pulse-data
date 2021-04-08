@@ -18,7 +18,7 @@
 """Tests for optimized_metric_big_query_view_exporter.py."""
 
 import unittest
-from typing import Dict, Set, List, Callable
+from typing import Dict, Set, List, Callable, Any
 
 from google.cloud import bigquery
 
@@ -141,10 +141,10 @@ class PlaceInCompactMatrixTest(unittest.TestCase):
     """Tests for place_in_compact_matrix"""
 
     @staticmethod
-    def _create_new_data_values():
+    def _create_new_data_values() -> List[List[int]]:
         return [[], [], [], [], []]
 
-    def test_place_happy_path_single_value(self):
+    def test_place_happy_path_single_value(self) -> None:
         fresh_data_values = self._create_new_data_values()
         optimized_metric_big_query_view_exporter.place_in_compact_matrix(
             _DATA_POINTS[3],
@@ -162,7 +162,7 @@ class PlaceInCompactMatrixTest(unittest.TestCase):
         )
         self.assertEqual([[1, 1], [0, 1], [1, 1], [0, 0], [41, 38]], fresh_data_values)
 
-    def test_place_each_data_point_single_value(self):
+    def test_place_each_data_point_single_value(self) -> None:
         fresh_data_values = self._create_new_data_values()
         for data_point in _DATA_POINTS:
             optimized_metric_big_query_view_exporter.place_in_compact_matrix(
@@ -174,8 +174,12 @@ class PlaceInCompactMatrixTest(unittest.TestCase):
 
         self.assertEqual(_DATA_VALUES, fresh_data_values)
 
-    def test_place_each_data_point_multi_value(self):
-        multi_data_points = [{**dp, "total_population": 100} for dp in _DATA_POINTS]
+    def test_place_each_data_point_multi_value(self) -> None:
+        multi_data_points: List[Dict[str, Any]] = []
+        for dp in _DATA_POINTS:
+            data_point: Dict[str, Any] = {"total_population": 100}
+            multi_data_points.append({**dp, **data_point})
+
         multi_value_keys = ["total_population", "total_revocations"]
 
         expected = [
@@ -199,7 +203,7 @@ class PlaceInCompactMatrixTest(unittest.TestCase):
 
         self.assertEqual(expected, fresh_data_values)
 
-    def test_place_value_not_in_dataset(self):
+    def test_place_value_not_in_dataset(self) -> None:
         fresh_data_values = self._create_new_data_values()
         new_data_point = {
             "district": "6",
@@ -216,7 +220,7 @@ class PlaceInCompactMatrixTest(unittest.TestCase):
         )
         self.assertEqual([[2], [0], [1], [0], [0]], fresh_data_values)
 
-    def test_place_dimensions_not_in_dataset(self):
+    def test_place_dimensions_not_in_dataset(self) -> None:
         fresh_data_values = self._create_new_data_values()
         with pytest.raises(KeyError) as e:
             new_data_point = {
@@ -239,7 +243,7 @@ class PlaceInCompactMatrixTest(unittest.TestCase):
 class AddToManifestTest(unittest.TestCase):
     """Tests for add_to_dimension_manifest"""
 
-    def test_add_all_new_dimensions(self):
+    def test_add_all_new_dimensions(self) -> None:
         data_point = _DATA_POINTS[2]
         fresh_manifest: Dict[str, Set[str]] = {
             "district": set(),
@@ -262,7 +266,7 @@ class AddToManifestTest(unittest.TestCase):
         )
         self.assertEqual(expected, updated_manifest)
 
-    def test_add_to_existing_dimensions(self):
+    def test_add_to_existing_dimensions(self) -> None:
         data_point = _DATA_POINTS[2]
         existing_manifest: Dict[str, Set[str]] = {
             "district": {"4"},
@@ -285,7 +289,7 @@ class AddToManifestTest(unittest.TestCase):
         )
         self.assertEqual(expected, updated_manifest)
 
-    def test_add_data_point_with_empty_values(self):
+    def test_add_data_point_with_empty_values(self) -> None:
         data_point = {
             "district": None,
             "month": None,
@@ -315,8 +319,8 @@ class AddToManifestTest(unittest.TestCase):
         self.assertEqual(expected, updated_manifest)
 
     @staticmethod
-    def test_add_empty_data_point():
-        data_point = {}
+    def test_add_empty_data_point() -> None:
+        data_point: Dict[str, Any] = {}
         existing_manifest: Dict[str, Set[str]] = {
             "district": {"4"},
             "month": {"11"},
@@ -333,7 +337,7 @@ class AddToManifestTest(unittest.TestCase):
 class TransformManifestTest(unittest.TestCase):
     """Tests for transform_dimension_manifest"""
 
-    def test_transform_happy_path(self):
+    def test_transform_happy_path(self) -> None:
         dimensions_as_dictionary = {
             "district": {"6", "5", "4"},
             "year": {"2020"},
@@ -346,7 +350,7 @@ class TransformManifestTest(unittest.TestCase):
         )
         self.assertEqual(_DIMENSION_MANIFEST, dimension_manifest)
 
-    def test_transform_with_other_types(self):
+    def test_transform_with_other_types(self) -> None:
         dimensions_as_dictionary = {
             "district": {"6", "5", "4"},
             "year": {"2020"},
@@ -359,7 +363,7 @@ class TransformManifestTest(unittest.TestCase):
         )
         self.assertEqual(_DIMENSION_MANIFEST, dimension_manifest)
 
-    def test_transform_with_nones(self):
+    def test_transform_with_nones(self) -> None:
         dimensions_as_dictionary = {
             "district": {"all", "6", "5", "4"},
             "year": {"2020"},
@@ -379,7 +383,7 @@ class TransformManifestTest(unittest.TestCase):
         )
         self.assertEqual(expected, dimension_manifest)
 
-    def test_transform_empty(self):
+    def test_transform_empty(self) -> None:
         dimension_manifest = optimized_metric_big_query_view_exporter.transform_manifest_to_order_enforced_form(
             {}
         )
@@ -389,7 +393,7 @@ class TransformManifestTest(unittest.TestCase):
 class GetRowValuesTest(unittest.TestCase):
     """Tests for get_row_values"""
 
-    def test_transform_happy_path_single_value(self):
+    def test_transform_happy_path_single_value(self) -> None:
         data_point = _DATA_POINTS[1]
         value_keys = ["total_revocations"]
 
@@ -401,8 +405,8 @@ class GetRowValuesTest(unittest.TestCase):
             ),
         )
 
-    def test_transform_happy_path_multi_value(self):
-        data_point = {**_DATA_POINTS[1], "total_population": 752}
+    def test_transform_happy_path_multi_value(self) -> None:
+        data_point: Dict[str, Any] = {**_DATA_POINTS[1], "total_population": 752}
         value_keys = ["total_population", "total_revocations"]
 
         expected = [752, 68]
@@ -413,9 +417,9 @@ class GetRowValuesTest(unittest.TestCase):
             ),
         )
 
-    def test_transform_no_value_keys(self):
+    def test_transform_no_value_keys(self) -> None:
         data_point = _DATA_POINTS[1]
-        value_keys = []
+        value_keys: List[str] = []
 
         self.assertEqual(
             [],
@@ -433,10 +437,10 @@ class ConvertQueryResultsTest(unittest.TestCase):
         self.mock_project_id_fn = self.metadata_patcher.start()
         self.mock_project_id_fn.return_value = "project-id"
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.metadata_patcher.stop()
 
-    def test_convert_happy_path(self):
+    def test_convert_happy_path(self) -> None:
         mock_bq_client = create_autospec(BigQueryClient)
 
         mock_dataset_ref = create_autospec(bigquery.DatasetReference)
@@ -528,7 +532,7 @@ class TestInitializeDimensionManifest(unittest.TestCase):
     """Tests the _initialize_dimension_manifest function."""
 
     # pylint: disable=protected-access
-    def test_initialize_dimension_manifest(self):
+    def test_initialize_dimension_manifest(self) -> None:
         for export_config in VIEW_COLLECTION_EXPORT_CONFIGS:
             for view_builder in export_config.view_builders_to_export:
                 if isinstance(view_builder, MetricBigQueryViewBuilder):
