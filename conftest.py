@@ -164,7 +164,9 @@ def _write_emulator_environs() -> Dict[str, Optional[str]]:
     env_dict = {}
     for emulator_env_path in _get_emulator_env_paths():
         env_file = open(emulator_env_path, "r")
-        env_dict.update(yaml.full_load(env_file))
+        env_file_contents = yaml.full_load(env_file)
+        if env_file_contents:
+            env_dict.update(env_file_contents)
         env_file.close()
 
     old_environs = {key: os.environ.get(key) for key in env_dict}
