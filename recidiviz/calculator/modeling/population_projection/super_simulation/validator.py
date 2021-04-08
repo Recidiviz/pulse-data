@@ -22,8 +22,8 @@ import pandas as pd
 from recidiviz.calculator.modeling.population_projection.population_simulation.population_simulation import (
     PopulationSimulation,
 )
-from recidiviz.calculator.modeling.population_projection.super_simulation.initializer import (
-    Initializer,
+from recidiviz.calculator.modeling.population_projection.super_simulation.time_converter import (
+    TimeConverter,
 )
 from recidiviz.calculator.modeling.population_projection.predicted_admissions import (
     ProjectionType,
@@ -33,8 +33,9 @@ from recidiviz.calculator.modeling.population_projection.predicted_admissions im
 class Validator:
     """Manage validations and analyses on SuperSimulation outputs."""
 
-    def __init__(self, microsim: bool) -> None:
+    def __init__(self, microsim: bool, time_converter: TimeConverter) -> None:
         self.microsim = microsim
+        self.time_converter = time_converter
         self.output_data: Dict[str, pd.DataFrame] = dict()
         self.pop_simulations: Dict[str, PopulationSimulation] = dict()
 
@@ -50,7 +51,7 @@ class Validator:
         self.pop_simulations = pop_simulations
 
     def calculate_baseline_transition_error(
-        self, validation_pairs: Dict[str, str], time_step: float, reference_year: float
+        self, validation_pairs: Dict[str, str]
     ) -> pd.DataFrame:
         """Calculates baseline transition error."""
         self.output_data["baseline_transition_error"] = pd.DataFrame(
@@ -74,10 +75,8 @@ class Validator:
 
         self.output_data[
             "baseline_transition_error"
-        ].year = Initializer.convert_to_absolute_year(
-            time_step,
-            reference_year,
-            self.output_data["baseline_transition_error"].year,
+        ].year = self.time_converter.convert_time_steps_to_year(
+            self.output_data["baseline_transition_error"].year
         )
 
         self.output_data["baseline_population_error"] = self.pop_simulations[
@@ -93,8 +92,6 @@ class Validator:
         simulation_title: str,
         fig_size: Tuple[int, int],
         by_simulation_group: bool,
-        time_step: float,
-        reference_year: float,
     ) -> List[plt.subplot]:
         """
         Generates admissions forecast plots broken up by compartment and outflow.
@@ -114,8 +111,8 @@ class Validator:
         for i, df_to_plot in dfs_to_plot:
             _, ax = plt.subplots(figsize=fig_size)
             sub_plot = df_to_plot.reset_index()
-            sub_plot.index = Initializer.convert_to_absolute_year(
-                time_step, reference_year, pd.Series(sub_plot["time_step"])
+            sub_plot.index = self.time_converter.convert_time_steps_to_year(
+                pd.Series(sub_plot["time_step"])
             )
             sub_plot["actuals"].plot(
                 ax=ax, color="tab:cyan", marker="o", label="Actuals"
@@ -159,26 +156,22 @@ class Validator:
 
         return outflows.fillna(0)
 
-    def gen_total_population_error(
-        self, simulation_tag: str, time_step: float, reference_year: float
-    ) -> pd.DataFrame:
+    def gen_total_population_error(self, simulation_tag: str) -> pd.DataFrame:
         # Convert the index from relative time steps to floating point years
         error_results = self.pop_simulations[
             simulation_tag
         ].gen_total_population_error()
-        error_results.index = Initializer.convert_to_absolute_year(
-            time_step, reference_year, pd.Series(error_results.index)
+        error_results.index = self.time_converter.convert_time_steps_to_year(
+            pd.Series(error_results.index)
         )
         return error_results
 
-    def gen_full_error_output(
-        self, simulation_tag: str, time_step: float, reference_year: float
-    ) -> pd.DataFrame:
+    def gen_full_error_output(self, simulation_tag: str) -> pd.DataFrame:
         error_results = self.pop_simulations[simulation_tag].gen_full_error()
         # Convert the index from relative time steps to floating point years
         error_results.index = error_results.index.set_levels(
-            Initializer.convert_to_absolute_year(
-                time_step, reference_year, pd.Series(error_results.index.levels[1])
+            self.time_converter.convert_time_steps_to_year(
+                pd.Series(error_results.index.levels[1])
             ),
             level=1,
         )

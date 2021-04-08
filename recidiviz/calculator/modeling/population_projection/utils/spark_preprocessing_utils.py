@@ -39,6 +39,7 @@ def transitions_uniform(
     prob: float,
     round_digits: int = SIG_FIGS,
     max_periods: int = 119,
+    disagg_type: str = "crime_type",
     disagg_label: str = "x",
 ) -> pd.DataFrame:
     """
@@ -121,7 +122,7 @@ def transitions_uniform(
         {
             "compartment": c_from,
             "outflow_to": c_to,
-            "crime_type": disagg_label,
+            disagg_type: disagg_label,
             "compartment_duration": months,
             "total_population": [prob_u] * len(months),
         },

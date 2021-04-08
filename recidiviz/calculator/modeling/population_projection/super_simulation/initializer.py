@@ -17,12 +17,15 @@
 """SuperSimulation composed object for initializing simulations."""
 import logging
 from datetime import datetime
-from typing import Dict, Any, Union, List, Tuple, Optional
+from typing import Dict, Any, List, Tuple, Optional
 import numpy as np
 import pandas as pd
 from recidiviz.calculator.modeling.population_projection.utils import (
     ignite_bq_utils,
     spark_bq_utils,
+)
+from recidiviz.calculator.modeling.population_projection.super_simulation.time_converter import (
+    TimeConverter,
 )
 
 
@@ -31,16 +34,14 @@ class Initializer:
 
     def __init__(
         self,
-        reference_year: float,
-        time_step: float,
+        time_converter: TimeConverter,
         yaml_user_inputs: Dict[str, Any],
         data_inputs_params: Dict[str, Any],
         compartments_architecture: Dict[str, str],
         disaggregation_axes: List[str],
         microsim: bool,
     ) -> None:
-        self.reference_year = reference_year
-        self.time_step = time_step
+        self.time_converter = time_converter
         self.microsim = microsim
         self.data_dict: Dict[str, Any] = dict()
 
@@ -49,7 +50,9 @@ class Initializer:
             data_inputs_params, compartments_architecture, disaggregation_axes
         )
 
-    def get_first_relevant_ts(self, first_relevant_ts_override: Optional[int]) -> int:
+    def get_first_relevant_ts(
+        self, first_relevant_ts_override: Optional[int] = None
+    ) -> int:
         """calculate ts to start model initialization at."""
 
         if first_relevant_ts_override is not None:
@@ -127,12 +130,6 @@ class Initializer:
     def get_user_inputs(self) -> Dict[str, Any]:
         return self.user_inputs
 
-    def get_time_step(self) -> float:
-        return self.time_step
-
-    def get_reference_year(self) -> float:
-        return self.reference_year
-
     def get_max_sentence(self) -> int:
         return self.user_inputs["start_time_step"] - self.get_first_relevant_ts(None)
 
@@ -163,7 +160,7 @@ class Initializer:
             data_input_dict[start_date] = self.get_data_inputs(start_date)
             first_relevant_ts_dict[
                 start_date
-            ] = self._convert_to_relative_date_from_timestamp(start_date)
+            ] = self.time_converter.convert_timestamp_to_time_step(start_date)
         return data_input_dict, first_relevant_ts_dict
 
     def _fully_connect_outflows(self, outflows_data: pd.DataFrame) -> pd.DataFrame:
@@ -205,19 +202,21 @@ class Initializer:
     def _set_user_inputs(self, yaml_user_inputs: Dict[str, Any]) -> None:
         """Populate the simulation user inputs"""
         self.user_inputs = dict()
-        self.user_inputs["start_time_step"] = self._convert_to_relative_date(
+        self.user_inputs[
+            "start_time_step"
+        ] = self.time_converter.convert_year_to_time_step(
             yaml_user_inputs["start_year"]
         )
-        self.user_inputs["projection_time_steps"] = (
-            yaml_user_inputs["projection_years"] / self.time_step
-        )
+        self.user_inputs[
+            "projection_time_steps"
+        ] = self.time_converter.get_num_time_steps(yaml_user_inputs["projection_years"])
         if not np.isclose(
             self.user_inputs["projection_time_steps"],
             round(self.user_inputs["projection_time_steps"]),
         ):
             raise ValueError(
                 f"Projection years {yaml_user_inputs['projection_years']} input cannot be evenly divided "
-                f"by time step {self.time_step}"
+                f"by time step {self.time_converter.get_time_step()}"
             )
         self.user_inputs["projection_time_steps"] = round(
             self.user_inputs["projection_time_steps"]
@@ -232,26 +231,6 @@ class Initializer:
             self.user_inputs["run_date"] = yaml_user_inputs["run_date"]
         else:
             self.user_inputs["speed_run"] = yaml_user_inputs.get("speed_run", False)
-
-    def _convert_to_relative_date(self, years: Union[float, int]) -> int:
-        """converts units of years to units of time steps"""
-        ts = (years - self.reference_year) / self.time_step
-        if not np.isclose(ts, round(ts)):
-            raise ValueError(f"Cannot convert years {years} to integers {ts}")
-        return round(ts)
-
-    @staticmethod
-    def convert_to_absolute_year(
-        time_step: float, reference_year: float, time_steps: pd.Series
-    ) -> pd.Series:
-        """converts a number of time steps relative to reference date into absolute dates"""
-        return time_steps.apply(lambda x: np.round(x * time_step + reference_year, 8))
-
-    def _convert_to_absolute_year(self, time_steps: pd.Series) -> pd.Series:
-        """versison of convert_to_absolute_year for use inside class"""
-        return self.convert_to_absolute_year(
-            self.time_step, self.reference_year, time_steps
-        )
 
     def _initialize_data(
         self,
@@ -295,7 +274,7 @@ class Initializer:
             if "time_step" in table_data.columns:
                 # Convert the time_step from a timestamp to a relative int value
                 table_data["time_step"] = table_data["time_step"].apply(
-                    self._convert_to_relative_date_from_timestamp
+                    self.time_converter.convert_timestamp_to_time_step
                 )
 
             print(f"{table_key} for {table_name} returned {len(table_data)} results")
@@ -311,23 +290,6 @@ class Initializer:
         ] = ignite_bq_utils.add_remaining_sentence_rows(
             self.data_dict["remaining_sentence_data"]
         )
-
-    def _convert_to_relative_date_from_timestamp(self, timestamp: datetime) -> int:
-        """Converts units of years to units of time steps"""
-        if not self.microsim:
-            raise ValueError(
-                "Trying to use microsim method _convert_to_relative_date_from_timestamp() in macrosim"
-            )
-        reference_date_year = np.floor(self.reference_year)
-        reference_date_month = 12 * (self.reference_year % 1) + 1
-        ts = (
-            12 * (timestamp.year - reference_date_year)
-            + timestamp.month
-            - reference_date_month
-        )
-        if not np.isclose(ts, round(ts)):
-            raise ValueError(f"Cannot convert date {timestamp} to integer {ts}")
-        return round(ts)
 
     def _initialize_data_macro(self, data_inputs_params: Dict[str, Any]) -> None:
         """Helper function for _initialize_data()"""

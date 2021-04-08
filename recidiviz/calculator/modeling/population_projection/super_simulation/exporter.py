@@ -20,8 +20,8 @@ import pandas as pd
 from recidiviz.calculator.modeling.population_projection.utils import (
     bq_utils,
 )
-from recidiviz.calculator.modeling.population_projection.super_simulation.initializer import (
-    Initializer,
+from recidiviz.calculator.modeling.population_projection.super_simulation.time_converter import (
+    TimeConverter,
 )
 
 
@@ -29,11 +29,16 @@ class Exporter:
     """Manage model exports from SuperSimulation."""
 
     def __init__(
-        self, microsim: bool, compartment_costs: Dict[str, float], simulation_tag: str
+        self,
+        microsim: bool,
+        compartment_costs: Dict[str, float],
+        simulation_tag: str,
+        time_converter: TimeConverter,
     ):
         self.microsim = microsim
         self.compartment_costs = compartment_costs
         self.simulation_tag = simulation_tag
+        self.time_converter = time_converter
 
     def upload_baseline_simulation_results_to_bq(
         self,
@@ -42,8 +47,6 @@ class Exporter:
         output_data: Dict[str, pd.DataFrame],
         excluded_pop: pd.DataFrame,
         total_pop: pd.DataFrame,
-        time_step: float,
-        reference_year: float,
     ) -> Dict[str, pd.DataFrame]:
         """Format then upload baseline simulation results to Big Query."""
         required_keys = ["baseline_middle", "baseline_min", "baseline_max"]
@@ -60,8 +63,8 @@ class Exporter:
             .merge(output_data["baseline_max"], on=join_cols, suffixes=["", "_max"])
         )
 
-        formatted_data["year"] = Initializer.convert_to_absolute_year(
-            time_step, reference_year, formatted_data["time_step"]
+        formatted_data["year"] = self.time_converter.convert_time_steps_to_year(
+            formatted_data["time_step"]
         )
         formatted_data = formatted_data.drop("time_step", axis=1)
         if not excluded_pop.empty:
@@ -82,7 +85,6 @@ class Exporter:
         output_data: Dict[str, pd.DataFrame],
         cost_multipliers: pd.DataFrame,
         sub_group_ids_dict: Dict[str, Dict[str, Any]],
-        time_step: float,
         disaggregation_axes: List[str],
     ) -> Dict[str, pd.DataFrame]:
         """Format then upload policy simulation results to Big Query."""
@@ -94,7 +96,6 @@ class Exporter:
         ) = self._get_output_metrics(
             output_data["policy_simulation"],
             sub_group_ids_dict,
-            time_step,
             disaggregation_axes,
             cost_multipliers,
         )
@@ -183,7 +184,6 @@ class Exporter:
         self,
         formatted_simulation_results: pd.DataFrame,
         sub_group_ids_dict: Dict[str, Dict[str, Any]],
-        time_step: float,
         disaggregation_axes: List[str],
         cost_multipliers: pd.DataFrame,
     ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -218,10 +218,10 @@ class Exporter:
                 ] = (
                     compartment_data["control_total_population"]
                     - compartment_data["policy_total_population"]
-                ) * time_step
+                ) * self.time_converter.get_time_step()
 
             subgroup_spending_diff_non_cumulative = (
-                subgroup_life_years_diff.copy() / time_step
+                subgroup_life_years_diff.copy() / self.time_converter.get_time_step()
             )
             subgroup_life_years_diff = subgroup_life_years_diff.cumsum()
             subgroup_spending_diff = subgroup_life_years_diff.copy()
