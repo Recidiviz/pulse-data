@@ -19,6 +19,7 @@
 
 import unittest
 from unittest import mock
+from unittest.mock import Mock
 
 from google.cloud import bigquery
 
@@ -125,7 +126,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         "recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter"
     )
     def test_export_dashboard_data_to_cloud_storage(
-        self, mock_view_exporter, mock_view_update_manager_rematerialize
+        self, mock_view_exporter: Mock, mock_view_update_manager_rematerialize: Mock
     ) -> None:
         """Tests the table is created from the view and then extracted."""
         view_export_manager.export_view_data_to_cloud_storage(
@@ -189,7 +190,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         "recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter"
     )
     def test_raise_exception_no_export_matched(
-        self, mock_view_exporter, mock_view_update_manager_rematerialize
+        self, mock_view_exporter: Mock, mock_view_update_manager_rematerialize: Mock
     ) -> None:
         # pylint: disable=unused-argument
         """Tests the table is created from the view and then extracted."""
@@ -214,7 +215,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         "recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter"
     )
     def test_export_dashboard_data_to_cloud_storage_state_agnostic(
-        self, mock_view_exporter, mock_view_update_manager_rematerialize
+        self, mock_view_exporter: Mock, mock_view_update_manager_rematerialize: Mock
     ) -> None:
         """Tests the table is created from the view and then extracted, where the export is not state-specific."""
         state_agnostic_dataset_export_configs = [
@@ -291,7 +292,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         "recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter"
     )
     def test_export_dashboard_data_to_cloud_storage_value_error(
-        self, mock_view_exporter, mock_view_update_manager_rematerialize
+        self, mock_view_exporter: Mock, mock_view_update_manager_rematerialize: Mock
     ) -> None:
         """Tests the table is created from the view and then extracted."""
 
@@ -311,7 +312,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         "recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter"
     )
     def test_export_dashboard_data_to_cloud_storage_validation_error(
-        self, mock_view_exporter, mock_view_update_manager_rematerialize
+        self, mock_view_exporter: Mock, mock_view_update_manager_rematerialize: Mock
     ) -> None:
         """Tests the table is created from the view and then extracted."""
 
@@ -339,10 +340,10 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
     )
     def test_export_dashboard_data_to_cloud_storage_update_all_views(
         self,
-        mock_view_exporter,
-        mock_view_update_manager_deploy,
-        mock_view_update_manager_rematerialize,
-        mock_view_builders_by_namespace,
+        mock_view_exporter: Mock,
+        mock_view_update_manager_deploy: Mock,
+        mock_view_update_manager_rematerialize: Mock,
+        mock_view_builders_by_namespace: Mock,
     ) -> None:
         """Tests that all views in the namespace are updated before the export when the export name is in
         export_config.NAMESPACES_REQUIRING_FULL_UPDATE."""
@@ -375,9 +376,9 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
     )
     def test_export_dashboard_data_to_cloud_storage_update_materialized_views_only(
         self,
-        mock_view_exporter,
-        mock_view_update_manager_rematerialize,
-        mock_view_builders_by_namespace,
+        mock_view_exporter: Mock,
+        mock_view_update_manager_rematerialize: Mock,
+        mock_view_builders_by_namespace: Mock,
     ) -> None:
         """Tests that only materialized views in the namespace are updated before the export when the export name is not
         in export_config.NAMESPACES_REQUIRING_FULL_UPDATE."""
