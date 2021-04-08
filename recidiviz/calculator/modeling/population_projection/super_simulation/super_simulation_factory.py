@@ -29,6 +29,9 @@ from recidiviz.calculator.modeling.population_projection.super_simulation.valida
 from recidiviz.calculator.modeling.population_projection.super_simulation.exporter import (
     Exporter,
 )
+from recidiviz.calculator.modeling.population_projection.super_simulation.time_converter import (
+    TimeConverter,
+)
 from recidiviz.calculator.modeling.population_projection.super_simulation.super_simulation import (
     SuperSimulation,
 )
@@ -60,9 +63,11 @@ class SuperSimulationFactory:
                 f'Unrecognized data input: {model_params["data_inputs_raw"].keys()}'
             )
 
+        time_converter = TimeConverter(
+            model_params["reference_year"], model_params["time_step"]
+        )
         initializer = Initializer(
-            model_params["reference_year"],
-            model_params["time_step"],
+            time_converter,
             model_params["user_inputs_raw"],
             model_params["data_inputs_raw"],
             model_params["compartments_architecture"],
@@ -70,9 +75,11 @@ class SuperSimulationFactory:
             microsim,
         )
 
-        simulator = Simulator(microsim)
-        validator = Validator(microsim)
-        exporter = Exporter(microsim, model_params["compartment_costs"], simulation_tag)
+        simulator = Simulator(microsim, time_converter)
+        validator = Validator(microsim, time_converter)
+        exporter = Exporter(
+            microsim, model_params["compartment_costs"], simulation_tag, time_converter
+        )
 
         return SuperSimulation(initializer, simulator, validator, exporter)
 

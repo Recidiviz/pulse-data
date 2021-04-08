@@ -16,7 +16,7 @@
 # =============================================================================
 """Highest level simulation object -- runs various comparative scenarios"""
 
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 from datetime import datetime
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -60,40 +60,28 @@ class SuperSimulation:
         `simulation_title` is the desired simulation tag for this baseline
         `first_relevant_ts` is the ts at which to start initialization
         """
-        (
-            first_relevant_ts,
-            data_inputs,
-            user_inputs,
-            time_step,
-            reference_year,
-        ) = self._get_simulation_inputs(first_relevant_ts)
+        first_relevant_ts = self.initializer.get_first_relevant_ts(first_relevant_ts)
+        data_inputs = self.initializer.get_data_inputs()
+        user_inputs = self.initializer.get_user_inputs()
 
         self.simulator.simulate_baseline(
             user_inputs,
             data_inputs,
             display_compartments,
             first_relevant_ts,
-            time_step,
-            reference_year,
         )
         self.validator.reset(self.simulator.get_population_simulations())
 
     def simulate_policy(
         self, policy_list: List[SparkPolicy], output_compartment: str
     ) -> pd.DataFrame:
-        (
-            first_relevant_ts,
-            data_inputs,
-            user_inputs,
-            time_step,
-            reference_year,
-        ) = self._get_simulation_inputs()
+        first_relevant_ts = self.initializer.get_first_relevant_ts()
+        data_inputs = self.initializer.get_data_inputs()
+        user_inputs = self.initializer.get_user_inputs()
 
         simulation_output = self.simulator.simulate_policy(
             user_inputs,
             data_inputs,
-            time_step,
-            reference_year,
             first_relevant_ts,
             policy_list,
             output_compartment,
@@ -125,7 +113,7 @@ class SuperSimulation:
         simulation_tag: Optional[str] = None,
     ) -> Dict[str, pd.DataFrame]:
         output_data = self.validator.get_output_data_for_upload()
-        _, data_inputs, _, time_step, reference_year = self._get_simulation_inputs()
+        data_inputs = self.initializer.get_data_inputs()
         excluded_pop_data = self.initializer.get_excluded_pop_data()
 
         return self.exporter.upload_baseline_simulation_results_to_bq(
@@ -134,8 +122,6 @@ class SuperSimulation:
             output_data,
             excluded_pop_data,
             data_inputs["total_population_data"],
-            time_step,
-            reference_year,
         )
 
     def upload_policy_simulation_results_to_bq(
@@ -146,7 +132,6 @@ class SuperSimulation:
         output_data = self.validator.get_output_data_for_upload()
         sub_group_ids_dict = self.simulator.get_sub_group_ids_dict()
         data_inputs = self.initializer.get_data_inputs()
-        time_step = self.initializer.get_time_step()
         disaggregation_axes = data_inputs["disaggregation_axes"]
 
         return self.exporter.upload_policy_simulation_results_to_bq(
@@ -155,7 +140,6 @@ class SuperSimulation:
             output_data,
             cost_multipliers if cost_multipliers is not None else pd.DataFrame(),
             sub_group_ids_dict,
-            time_step,
             disaggregation_axes,
         )
 
@@ -168,10 +152,8 @@ class SuperSimulation:
         fig_size: Tuple[int, int] = (8, 6),
         by_simulation_group: bool = False,
     ) -> List[plt.subplot]:
-        time_step = self.initializer.get_time_step()
-        reference_year = self.initializer.get_reference_year()
         return self.validator.gen_arima_output_plots(
-            simulation_title, fig_size, by_simulation_group, time_step, reference_year
+            simulation_title, fig_size, by_simulation_group
         )
 
     def get_outflows_error(self, simulation_title: str) -> pd.DataFrame:
@@ -179,27 +161,15 @@ class SuperSimulation:
         return self.validator.calculate_outflows_error(simulation_title, outflows_data)
 
     def get_total_population_error(self, simulation_tag: str) -> pd.DataFrame:
-        time_step = self.initializer.get_time_step()
-        reference_year = self.initializer.get_reference_year()
-        return self.validator.gen_total_population_error(
-            simulation_tag, time_step, reference_year
-        )
+        return self.validator.gen_total_population_error(simulation_tag)
 
     def get_full_error_output(self, simulation_tag: str) -> pd.DataFrame:
-        time_step = self.initializer.get_time_step()
-        reference_year = self.initializer.get_reference_year()
-        return self.validator.gen_full_error_output(
-            simulation_tag, time_step, reference_year
-        )
+        return self.validator.gen_full_error_output(simulation_tag)
 
     def calculate_baseline_transition_error(
         self, validation_pairs: Dict[str, str]
     ) -> pd.DataFrame:
-        time_step = self.initializer.get_time_step()
-        reference_year = self.initializer.get_reference_year()
-        return self.validator.calculate_baseline_transition_error(
-            validation_pairs, time_step, reference_year
-        )
+        return self.validator.calculate_baseline_transition_error(validation_pairs)
 
     def calculate_cohort_hydration_error(
         self,
@@ -235,13 +205,3 @@ class SuperSimulation:
             step_size * max_sentence,
             unit,
         )
-
-    def _get_simulation_inputs(
-        self, first_relevant_ts: Optional[int] = None
-    ) -> Tuple[int, Dict[str, Any], Dict[str, Any], float, float]:
-        first_relevant_ts = self.initializer.get_first_relevant_ts(first_relevant_ts)
-        data_inputs = self.initializer.get_data_inputs()
-        user_inputs = self.initializer.get_user_inputs()
-        time_step = self.initializer.get_time_step()
-        reference_year = self.initializer.get_reference_year()
-        return first_relevant_ts, data_inputs, user_inputs, time_step, reference_year

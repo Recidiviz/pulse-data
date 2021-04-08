@@ -28,17 +28,18 @@ from recidiviz.calculator.modeling.population_projection.predicted_admissions im
     ProjectionType,
 )
 from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
-from recidiviz.calculator.modeling.population_projection.super_simulation.initializer import (
-    Initializer,
+from recidiviz.calculator.modeling.population_projection.super_simulation.time_converter import (
+    TimeConverter,
 )
 
 
 class Simulator:
     """Runs simulations for SuperSimulation."""
 
-    def __init__(self, microsim: bool) -> None:
+    def __init__(self, microsim: bool, time_converter: TimeConverter) -> None:
         self.pop_simulations: Dict[str, PopulationSimulation] = dict()
         self.microsim = microsim
+        self.time_converter = time_converter
 
     def get_population_simulations(self) -> Dict[str, PopulationSimulation]:
         if not self.pop_simulations:
@@ -49,8 +50,6 @@ class Simulator:
         self,
         user_inputs: Dict[str, Any],
         data_inputs: Dict[str, Any],
-        time_step: float,
-        reference_year: float,
         first_relevant_ts: int,
         policy_list: List[SparkPolicy],
         output_compartment: str,
@@ -86,12 +85,8 @@ class Simulator:
             i: results[i][results[i]["time_step"] >= user_inputs["start_time_step"]]
             for i in results
         }
-        self._graph_results(
-            user_inputs, time_step, reference_year, results, output_compartment
-        )
-        return self._format_simulation_results(
-            user_inputs, time_step, reference_year, collapse_compartments=False
-        )
+        self._graph_results(user_inputs, results, output_compartment)
+        return self._format_simulation_results(user_inputs, collapse_compartments=False)
 
     def simulate_baseline(
         self,
@@ -99,8 +94,6 @@ class Simulator:
         data_inputs: Dict[str, Any],
         display_compartments: List[str],
         first_relevant_ts: int,
-        time_step: float,
-        reference_year: float,
         reset: bool = True,
     ) -> None:
         """
@@ -135,7 +128,7 @@ class Simulator:
 
         if display_compartments:
             simulation_results = self._format_simulation_results(
-                user_inputs, time_step, reference_year, collapse_compartments=True
+                user_inputs, collapse_compartments=True
             )
             display_results = pd.DataFrame(index=simulation_results.year.unique())
             for comp in display_compartments:
@@ -210,13 +203,11 @@ class Simulator:
     def _graph_results(
         self,
         user_inputs: Dict[str, Any],
-        time_step: float,
-        reference_year: float,
         simulations: Dict[str, pd.DataFrame],
         output_compartment: str,
     ) -> None:
         simulation_results = self._format_simulation_results(
-            user_inputs, time_step, reference_year, collapse_compartments=True
+            user_inputs, collapse_compartments=True
         )
 
         simulation_results[
@@ -236,8 +227,6 @@ class Simulator:
     def _format_simulation_results(
         self,
         user_inputs: Dict[str, Any],
-        time_step: float,
-        reference_year: float,
         collapse_compartments: bool = False,
     ) -> pd.DataFrame:
         """Re-format PopulationSimulation results so each simulation is a column"""
@@ -252,9 +241,7 @@ class Simulator:
                 },
                 axis=1,
             )
-            results.year = Initializer.convert_to_absolute_year(
-                time_step, reference_year, results.year
-            )
+            results.year = self.time_converter.convert_time_steps_to_year(results.year)
 
             if simulation_results.empty:
                 simulation_results = results
