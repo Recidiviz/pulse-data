@@ -20,7 +20,7 @@
 Mostly copied from:
 https://cloud.google.com/iap/docs/authentication-howto#iap_make_request-python
 """
-from typing import List
+from typing import List, Dict, Any
 import urllib.parse
 
 import requests
@@ -29,6 +29,7 @@ import google.auth
 import google.auth.app_engine
 import google.auth.compute_engine.credentials
 import google.auth.iam
+from google.auth.transport import Response
 from google.auth.transport.requests import Request
 import google.oauth2.credentials
 import google.oauth2.service_account
@@ -57,7 +58,9 @@ GCSFS_NO_CACHING = -1
 # pylint: disable=protected-access
 
 
-def make_iap_request(url: str, client_id: str, method="GET", **kwargs):
+def make_iap_request(
+    url: str, client_id: str, method: str = "GET", **kwargs: Dict[str, Any]
+) -> requests.Response:
     """Makes a request to an application protected by Identity-Aware Proxy.
 
     Args:
@@ -131,7 +134,7 @@ def make_iap_request(url: str, client_id: str, method="GET", **kwargs):
 
 def trigger_dataflow_job_from_template(
     project_id: str, bucket: str, template: str, job_name: str, location: str
-):
+) -> Response:
     """Trigger the Dataflow job at the given template location and execute it
     with the given `job_name`."""
     credentials = GoogleCredentials.get_application_default()
@@ -159,7 +162,7 @@ def trigger_dataflow_job_from_template(
 
 def get_google_open_id_connect_token(
     service_account_credentials: google.oauth2.credentials.Credentials,
-):
+) -> str:
     """Get an OpenID Connect token issued by Google for the service account."""
 
     service_account_jwt = (
