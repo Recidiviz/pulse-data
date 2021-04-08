@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { useEffect, useState } from "react";
 import * as React from "react";
 import { Icon, IconSVG, palette } from "@recidiviz/case-triage-components";
 import { ClientMarkedInProgress } from "../../stores/ClientsStore/ClientsStore";
@@ -32,7 +31,7 @@ interface Props {
 
 const ClientMarkedInProgressOverlay = ({
   clientMarkedInProgress: { client, wasPositiveAction },
-}: Props) => {
+}: Props): JSX.Element => {
   const { caseUpdatesStore } = useRootStore();
 
   return (

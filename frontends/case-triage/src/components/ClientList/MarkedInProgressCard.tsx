@@ -24,7 +24,9 @@ interface MarkedInProgressCardProps {
   client: DecoratedClient;
 }
 
-const MarkedInProgressCard = ({ client }: MarkedInProgressCardProps) => {
+const MarkedInProgressCard = ({
+  client,
+}: MarkedInProgressCardProps): JSX.Element => {
   const { clientsStore } = useRootStore();
 
   return (
