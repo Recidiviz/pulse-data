@@ -32,7 +32,7 @@ the historical table (which does not). Because the key is shared between the
 master and historical tables, this allows an indirect guarantee of referential
 integrity to the historical tables as well.
 """
-from typing import TypeVar
+from typing import TypeVar, Any
 
 from sqlalchemy import (
     Boolean,
@@ -745,13 +745,13 @@ class _ReferencesStatePersonSharedColumns:
     individual StatePerson"""
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls, *_: Any, **__: Any) -> "_ReferencesStatePersonSharedColumns":
         if cls is _ReferencesStatePersonSharedColumns:
             raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)
+        return super().__new__(cls)  # type: ignore
 
     @declared_attr
-    def person_id(self):
+    def person_id(self) -> Column:
         return Column(
             Integer,
             ForeignKey("state_person.person_id", deferrable=True, initially="DEFERRED"),
@@ -765,13 +765,15 @@ class _ReferencesStateSentenceGroupSharedColumns:
     individual StateSentenceGroup"""
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(
+        cls, *_: Any, **__: Any
+    ) -> "_ReferencesStateSentenceGroupSharedColumns":
         if cls is _ReferencesStateSentenceGroupSharedColumns:
             raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)
+        return super().__new__(cls)  # type: ignore
 
     @declared_attr
-    def sentence_group_id(self):
+    def sentence_group_id(self) -> Column:
         return Column(
             Integer,
             ForeignKey(
@@ -792,10 +794,10 @@ class _StatePersonExternalIdSharedColumns(_ReferencesStatePersonSharedColumns):
     StatePersonExternalIdHistory"""
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls, *_: Any, **__: Any) -> "_StatePersonExternalIdSharedColumns":
         if cls is _StatePersonExternalIdSharedColumns:
             raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)
+        return super().__new__(cls)  # type: ignore
 
     external_id = Column(String(255), nullable=False, index=True)
     state_code = Column(String(255), nullable=False, index=True)
@@ -848,10 +850,10 @@ class _StatePersonAliasSharedColumns(_ReferencesStatePersonSharedColumns):
     """
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls, *_: Any, **__: Any) -> "_StatePersonAliasSharedColumns":
         if cls is _StatePersonAliasSharedColumns:
             raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)
+        return super().__new__(cls)  # type: ignore
 
     state_code = Column(String(255), nullable=False, index=True)
     full_name = Column(String(255))
@@ -894,10 +896,10 @@ class _StatePersonRaceSharedColumns(_ReferencesStatePersonSharedColumns):
     StatePersonRaceHistory"""
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls, *_: Any, **__: Any) -> "_StatePersonRaceSharedColumns":
         if cls is _StatePersonRaceSharedColumns:
             raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)
+        return super().__new__(cls)  # type: ignore
 
     state_code = Column(String(255), nullable=False, index=True)
     race = Column(race)
@@ -939,10 +941,10 @@ class _StatePersonEthnicitySharedColumns(_ReferencesStatePersonSharedColumns):
     StatePersonEthnicityHistory"""
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls, *_: Any, **__: Any) -> "_StatePersonEthnicitySharedColumns":
         if cls is _StatePersonEthnicitySharedColumns:
             raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)
+        return super().__new__(cls)  # type: ignore
 
     state_code = Column(String(255), nullable=False, index=True)
     ethnicity = Column(ethnicity)
@@ -984,10 +986,10 @@ class _StatePersonSharedColumns:
     StatePersonHistory"""
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls, *_: Any, **__: Any) -> "_StatePersonSharedColumns":
         if cls is _StatePersonSharedColumns:
             raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)
+        return super().__new__(cls)  # type: ignore
 
     state_code = Column(String(255), nullable=False, index=True)
 
@@ -1004,7 +1006,7 @@ class _StatePersonSharedColumns:
     residency_status = Column(residency_status)
 
     @declared_attr
-    def supervising_officer_id(self):
+    def supervising_officer_id(self) -> Column:
         return Column(
             Integer, ForeignKey("state_agent.agent_id"), index=True, nullable=True
         )
@@ -1059,10 +1061,10 @@ class _StateBondSharedColumns(_ReferencesStatePersonSharedColumns):
     StateBond"""
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls, *_: Any, **__: Any) -> "_StateBondSharedColumns":
         if cls is _StateBondSharedColumns:
             raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)
+        return super().__new__(cls)  # type: ignore
 
     external_id = Column(String(255), index=True)
     status = Column(bond_status, nullable=False)
@@ -1117,10 +1119,10 @@ class _StateCourtCaseSharedColumns(_ReferencesStatePersonSharedColumns):
     """
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls, *_: Any, **__: Any) -> "_StateCourtCaseSharedColumns":
         if cls is _StateCourtCaseSharedColumns:
             raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)
+        return super().__new__(cls)  # type: ignore
 
     external_id = Column(String(255), index=True)
     status = Column(state_court_case_status)
@@ -1135,7 +1137,7 @@ class _StateCourtCaseSharedColumns(_ReferencesStatePersonSharedColumns):
     court_fee_dollars = Column(Integer)
 
     @declared_attr
-    def judge_id(self):
+    def judge_id(self) -> Column:
         return Column(
             Integer, ForeignKey("state_agent.agent_id"), index=True, nullable=True
         )
@@ -1188,10 +1190,10 @@ class _StateChargeSharedColumns(_ReferencesStatePersonSharedColumns):
     StateChargeHistory"""
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls, *_: Any, **__: Any) -> "_StateChargeSharedColumns":
         if cls is _StateChargeSharedColumns:
             raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)
+        return super().__new__(cls)  # type: ignore
 
     external_id = Column(String(255), index=True)
     status = Column(charge_status, nullable=False)
@@ -1215,11 +1217,11 @@ class _StateChargeSharedColumns(_ReferencesStatePersonSharedColumns):
     is_controlling = Column(Boolean)
 
     @declared_attr
-    def court_case_id(self):
+    def court_case_id(self) -> Column:
         return Column(Integer, ForeignKey("state_court_case.court_case_id"), index=True)
 
     @declared_attr
-    def bond_id(self):
+    def bond_id(self) -> Column:
         return Column(Integer, ForeignKey("state_bond.bond_id"), index=True)
 
 
@@ -1271,10 +1273,10 @@ class _StateAssessmentSharedColumns(_ReferencesStatePersonSharedColumns):
     StateAssessmentHistory"""
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls, *_: Any, **__: Any) -> "_StateAssessmentSharedColumns":
         if cls is _StateAssessmentSharedColumns:
             raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)
+        return super().__new__(cls)  # type: ignore
 
     external_id = Column(String(255), index=True)
     assessment_class = Column(state_assessment_class)
@@ -1289,7 +1291,7 @@ class _StateAssessmentSharedColumns(_ReferencesStatePersonSharedColumns):
     assessment_metadata = Column(Text)
 
     @declared_attr
-    def incarceration_period_id(self):
+    def incarceration_period_id(self) -> Column:
         return Column(
             Integer,
             ForeignKey("state_incarceration_period.incarceration_period_id"),
@@ -1298,7 +1300,7 @@ class _StateAssessmentSharedColumns(_ReferencesStatePersonSharedColumns):
         )
 
     @declared_attr
-    def supervision_period_id(self):
+    def supervision_period_id(self) -> Column:
         return Column(
             Integer,
             ForeignKey("state_supervision_period.supervision_period_id"),
@@ -1307,7 +1309,7 @@ class _StateAssessmentSharedColumns(_ReferencesStatePersonSharedColumns):
         )
 
     @declared_attr
-    def conducting_agent_id(self):
+    def conducting_agent_id(self) -> Column:
         return Column(
             Integer, ForeignKey("state_agent.agent_id"), index=True, nullable=True
         )
@@ -1350,10 +1352,10 @@ class _StateSentenceGroupSharedColumns(_ReferencesStatePersonSharedColumns):
     StateSentenceGroupHistory"""
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls, *_: Any, **__: Any) -> "_StateSentenceGroupSharedColumns":
         if cls is _StateSentenceGroupSharedColumns:
             raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)
+        return super().__new__(cls)  # type: ignore
 
     external_id = Column(String(255), index=True)
     status = Column(state_sentence_status, nullable=False)
@@ -1420,10 +1422,10 @@ class _StateSupervisionSentenceSharedColumns(
     StateSupervisionSentenceHistory"""
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls, *_: Any, **__: Any) -> "_StateSupervisionSentenceSharedColumns":
         if cls is _StateSupervisionSentenceSharedColumns:
             raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)
+        return super().__new__(cls)  # type: ignore
 
     external_id = Column(String(255), index=True)
     status = Column(state_sentence_status, nullable=False)
@@ -1501,10 +1503,10 @@ class _StateIncarcerationSentenceSharedColumns(
     """
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls, *_: Any, **__: Any) -> "_StateIncarcerationSentenceSharedColumns":
         if cls is _StateIncarcerationSentenceSharedColumns:
             raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)
+        return super().__new__(cls)  # type: ignore
 
     external_id = Column(String(255), index=True)
     status = Column(state_sentence_status, nullable=False)
@@ -1601,10 +1603,10 @@ class _StateFineSharedColumns(
     """
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls, *_: Any, **__: Any) -> "_StateFineSharedColumns":
         if cls is _StateFineSharedColumns:
             raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)
+        return super().__new__(cls)  # type: ignore
 
     external_id = Column(String(255), index=True)
     status = Column(state_fine_status, nullable=False)
@@ -1662,10 +1664,10 @@ class _StateIncarcerationPeriodSharedColumns(_ReferencesStatePersonSharedColumns
     """
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls, *_: Any, **__: Any) -> "_StateIncarcerationPeriodSharedColumns":
         if cls is _StateIncarcerationPeriodSharedColumns:
             raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)
+        return super().__new__(cls)  # type: ignore
 
     external_id = Column(String(255), index=True)
     status = Column(state_incarceration_period_status, nullable=False)
@@ -1694,7 +1696,7 @@ class _StateIncarcerationPeriodSharedColumns(_ReferencesStatePersonSharedColumns
     custodial_authority_raw_text = Column(String(255))
 
     @declared_attr
-    def source_supervision_violation_response_id(self):
+    def source_supervision_violation_response_id(self) -> Column:
         return Column(
             Integer,
             ForeignKey(
@@ -1771,10 +1773,10 @@ class _StateSupervisionPeriodSharedColumns(_ReferencesStatePersonSharedColumns):
     """
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls, *_: Any, **__: Any) -> "_StateSupervisionPeriodSharedColumns":
         if cls is _StateSupervisionPeriodSharedColumns:
             raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)
+        return super().__new__(cls)  # type: ignore
 
     external_id = Column(String(255), index=True)
     status = Column(state_supervision_period_status, nullable=False)
@@ -1804,7 +1806,7 @@ class _StateSupervisionPeriodSharedColumns(_ReferencesStatePersonSharedColumns):
     custodial_authority_raw_text = Column(String(255))
 
     @declared_attr
-    def supervising_officer_id(self):
+    def supervising_officer_id(self) -> Column:
         return Column(
             Integer, ForeignKey("state_agent.agent_id"), index=True, nullable=True
         )
@@ -1880,17 +1882,19 @@ class _StateSupervisionCaseTypeEntrySharedColumns(_ReferencesStatePersonSharedCo
     """
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(
+        cls, *_: Any, **__: Any
+    ) -> "_StateSupervisionCaseTypeEntrySharedColumns":
         if cls is _StateSupervisionCaseTypeEntrySharedColumns:
             raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)
+        return super().__new__(cls)  # type: ignore
 
     case_type = Column(state_supervision_case_type)
     case_type_raw_text = Column(String(255))
     state_code = Column(String(255), nullable=False, index=True)
 
     @declared_attr
-    def supervision_period_id(self):
+    def supervision_period_id(self) -> Column:
         return Column(
             Integer,
             ForeignKey("state_supervision_period.supervision_period_id"),
@@ -1953,10 +1957,10 @@ class _StateIncarcerationIncidentSharedColumns(_ReferencesStatePersonSharedColum
     """
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls, *_: Any, **__: Any) -> "_StateIncarcerationIncidentSharedColumns":
         if cls is _StateIncarcerationIncidentSharedColumns:
             raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)
+        return super().__new__(cls)  # type: ignore
 
     external_id = Column(String(255), index=True)
     incident_type = Column(state_incarceration_incident_type)
@@ -1968,7 +1972,7 @@ class _StateIncarcerationIncidentSharedColumns(_ReferencesStatePersonSharedColum
     incident_details = Column(Text)
 
     @declared_attr
-    def incarceration_period_id(self):
+    def incarceration_period_id(self) -> Column:
         return Column(
             Integer,
             ForeignKey("state_incarceration_period.incarceration_period_id"),
@@ -1977,7 +1981,7 @@ class _StateIncarcerationIncidentSharedColumns(_ReferencesStatePersonSharedColum
         )
 
     @declared_attr
-    def responding_officer_id(self):
+    def responding_officer_id(self) -> Column:
         return Column(
             Integer, ForeignKey("state_agent.agent_id"), index=True, nullable=True
         )
@@ -2040,10 +2044,12 @@ class _StateIncarcerationIncidentOutcomeSharedColumns(
     """
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(
+        cls, *_: Any, **__: Any
+    ) -> "_StateIncarcerationIncidentOutcomeSharedColumns":
         if cls is _StateIncarcerationIncidentOutcomeSharedColumns:
             raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)
+        return super().__new__(cls)  # type: ignore
 
     external_id = Column(String(255), index=True)
     outcome_type = Column(state_incarceration_incident_outcome_type)
@@ -2056,7 +2062,7 @@ class _StateIncarcerationIncidentOutcomeSharedColumns(
     punishment_length_days = Column(Integer)
 
     @declared_attr
-    def incarceration_incident_id(self):
+    def incarceration_incident_id(self) -> Column:
         return Column(
             Integer,
             ForeignKey("state_incarceration_incident.incarceration_incident_id"),
@@ -2118,10 +2124,10 @@ class _StateParoleDecisionSharedColumns(_ReferencesStatePersonSharedColumns):
     """
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls, *_: Any, **__: Any) -> "_StateParoleDecisionSharedColumns":
         if cls is _StateParoleDecisionSharedColumns:
             raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)
+        return super().__new__(cls)  # type: ignore
 
     external_id = Column(String(255), index=True)
 
@@ -2135,7 +2141,7 @@ class _StateParoleDecisionSharedColumns(_ReferencesStatePersonSharedColumns):
     corrective_action = Column(String(255))
 
     @declared_attr
-    def incarceration_period_id(self):
+    def incarceration_period_id(self) -> Column:
         return Column(
             Integer,
             ForeignKey("state_incarceration_period.incarceration_period_id"),
@@ -2198,17 +2204,19 @@ class _StateSupervisionViolationTypeEntrySharedColumns(
     """
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(
+        cls, *_: Any, **__: Any
+    ) -> "_StateSupervisionViolationTypeEntrySharedColumns":
         if cls is _StateSupervisionViolationTypeEntrySharedColumns:
             raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)
+        return super().__new__(cls)  # type: ignore
 
     state_code = Column(String(255), nullable=False, index=True)
     violation_type = Column(state_supervision_violation_type)
     violation_type_raw_text = Column(String(255))
 
     @declared_attr
-    def supervision_violation_id(self):
+    def supervision_violation_id(self) -> Column:
         return Column(
             Integer,
             ForeignKey("state_supervision_violation." "supervision_violation_id"),
@@ -2267,16 +2275,18 @@ class _StateSupervisionViolatedConditionEntrySharedColumns(
     """
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(
+        cls, *_: Any, **__: Any
+    ) -> "_StateSupervisionViolatedConditionEntrySharedColumns":
         if cls is _StateSupervisionViolatedConditionEntrySharedColumns:
             raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)
+        return super().__new__(cls)  # type: ignore
 
     state_code = Column(String(255), nullable=False, index=True)
     condition = Column(String(255), nullable=False)
 
     @declared_attr
-    def supervision_violation_id(self):
+    def supervision_violation_id(self) -> Column:
         return Column(
             Integer,
             ForeignKey("state_supervision_violation." "supervision_violation_id"),
@@ -2332,10 +2342,10 @@ class _StateSupervisionViolationSharedColumns(_ReferencesStatePersonSharedColumn
     """
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls, *_: Any, **__: Any) -> "_StateSupervisionViolationSharedColumns":
         if cls is _StateSupervisionViolationSharedColumns:
             raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)
+        return super().__new__(cls)  # type: ignore
 
     external_id = Column(String(255), index=True)
     violation_type = Column(state_supervision_violation_type)
@@ -2348,7 +2358,7 @@ class _StateSupervisionViolationSharedColumns(_ReferencesStatePersonSharedColumn
 
     # TODO(#2668): Deprecated - remove this column from our schema.
     @declared_attr
-    def supervision_period_id(self):
+    def supervision_period_id(self) -> Column:
         return Column(
             Integer,
             ForeignKey("state_supervision_period.supervision_period_id"),
@@ -2423,10 +2433,12 @@ class _StateSupervisionViolationResponseDecisionEntrySharedColumns(
     """
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(
+        cls, *_: Any, **__: Any
+    ) -> "_StateSupervisionViolationResponseDecisionEntrySharedColumns":
         if cls is _StateSupervisionViolationResponseDecisionEntrySharedColumns:
             raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)
+        return super().__new__(cls)  # type: ignore
 
     state_code = Column(String(255), nullable=False, index=True)
     decision = Column(state_supervision_violation_response_decision)
@@ -2435,7 +2447,7 @@ class _StateSupervisionViolationResponseDecisionEntrySharedColumns(
     revocation_type_raw_text = Column(String(255))
 
     @declared_attr
-    def supervision_violation_response_id(self):
+    def supervision_violation_response_id(self) -> Column:
         return Column(
             Integer,
             ForeignKey(
@@ -2501,10 +2513,12 @@ class _StateSupervisionViolationResponseSharedColumns(
     """
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(
+        cls, *_: Any, **__: Any
+    ) -> "_StateSupervisionViolationResponseSharedColumns":
         if cls is _StateSupervisionViolationResponseSharedColumns:
             raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)
+        return super().__new__(cls)  # type: ignore
 
     external_id = Column(String(255), index=True)
     response_type = Column(state_supervision_violation_response_type)
@@ -2522,7 +2536,7 @@ class _StateSupervisionViolationResponseSharedColumns(
     is_draft = Column(Boolean)
 
     @declared_attr
-    def supervision_violation_id(self):
+    def supervision_violation_id(self) -> Column:
         return Column(
             Integer,
             ForeignKey("state_supervision_violation.supervision_violation_id"),
@@ -2594,10 +2608,10 @@ class _StateAgentSharedColumns:
     """
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls, *_: Any, **__: Any) -> "_StateAgentSharedColumns":
         if cls is _StateAgentSharedColumns:
             raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)
+        return super().__new__(cls)  # type: ignore
 
     external_id = Column(String(255), index=True)
     agent_type = Column(state_agent_type, nullable=False)
@@ -2637,10 +2651,10 @@ class _StateProgramAssignmentSharedColumns(_ReferencesStatePersonSharedColumns):
     """
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls, *_: Any, **__: Any) -> "_StateProgramAssignmentSharedColumns":
         if cls is _StateProgramAssignmentSharedColumns:
             raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)
+        return super().__new__(cls)  # type: ignore
 
     external_id = Column(String(255), index=True)
     state_code = Column(String(255), nullable=False, index=True)
@@ -2661,7 +2675,7 @@ class _StateProgramAssignmentSharedColumns(_ReferencesStatePersonSharedColumns):
     referral_metadata = Column(Text)
 
     @declared_attr
-    def referring_agent_id(self):
+    def referring_agent_id(self) -> Column:
         return Column(
             Integer, ForeignKey("state_agent.agent_id"), index=True, nullable=True
         )
@@ -2713,10 +2727,10 @@ class _StateEarlyDischargeSharedColumns(_ReferencesStatePersonSharedColumns):
     """
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls, *_: Any, **__: Any) -> "_StateEarlyDischargeSharedColumns":
         if cls is _StateEarlyDischargeSharedColumns:
             raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)
+        return super().__new__(cls)  # type: ignore
 
     external_id = Column(String(255), index=True)
     state_code = Column(String(255), nullable=False, index=True)
@@ -2734,7 +2748,7 @@ class _StateEarlyDischargeSharedColumns(_ReferencesStatePersonSharedColumns):
     requesting_body_type_raw_text = Column(String(255))
 
     @declared_attr
-    def supervision_sentence_id(self):
+    def supervision_sentence_id(self) -> Column:
         return Column(
             Integer,
             ForeignKey(
@@ -2747,7 +2761,7 @@ class _StateEarlyDischargeSharedColumns(_ReferencesStatePersonSharedColumns):
         )
 
     @declared_attr
-    def incarceration_sentence_id(self):
+    def incarceration_sentence_id(self) -> Column:
         return Column(
             Integer,
             ForeignKey(
@@ -2807,10 +2821,10 @@ class _StateSupervisionContactSharedColumns(_ReferencesStatePersonSharedColumns)
     """
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls, *_: Any, **__: Any) -> "_StateSupervisionContactSharedColumns":
         if cls is _StateSupervisionContactSharedColumns:
             raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)
+        return super().__new__(cls)  # type: ignore
 
     external_id = Column(String(255), index=True)
     state_code = Column(String(255), nullable=False, index=True)
@@ -2828,7 +2842,7 @@ class _StateSupervisionContactSharedColumns(_ReferencesStatePersonSharedColumns)
     verified_employment = Column(Boolean)
 
     @declared_attr
-    def contacted_agent_id(self):
+    def contacted_agent_id(self) -> Column:
         return Column(
             Integer, ForeignKey("state_agent.agent_id"), index=True, nullable=True
         )
