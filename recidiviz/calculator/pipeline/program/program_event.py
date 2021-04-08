@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Events related to programs."""
+from datetime import date
 from typing import Optional
 
 import attr
@@ -85,7 +86,7 @@ class ProgramReferralEvent(ProgramEvent, AssessmentEventMixin):
     level_2_supervision_location_external_id: Optional[str] = attr.ib(default=None)
 
     @property
-    def date_of_referral(self):
+    def date_of_referral(self) -> date:
         return self.event_date
 
 
@@ -101,7 +102,7 @@ class ProgramParticipationEvent(ProgramEvent):
     supervision_type: Optional[StateSupervisionType] = attr.ib(default=None)
 
     @property
-    def date_of_participation(self):
+    def date_of_participation(self) -> date:
         return self.event_date
 
     # Whether the date_of_participation was the first day the person participated in the program

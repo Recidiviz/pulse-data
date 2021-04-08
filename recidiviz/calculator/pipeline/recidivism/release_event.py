@@ -90,7 +90,7 @@ class ReleaseEvent(IdentifierEvent):
         return delta.years * 12 + delta.months
 
     @property
-    def stay_length_bucket(self):
+    def stay_length_bucket(self) -> Optional[str]:
         """Calculates the stay length bucket that applies to measurement.
 
         Stay length buckets (upper bound exclusive) for measurement:
@@ -155,7 +155,7 @@ class RecidivismReleaseEvent(ReleaseEvent):
     )
 
     @property
-    def days_at_liberty(self):
+    def days_at_liberty(self) -> int:
         """Returns the number of days between a release and a reincarceration."""
         release_date = self.release_date
 
@@ -178,17 +178,17 @@ class NonRecidivismReleaseEvent(ReleaseEvent):
     """Models a ReleaseEvent where the person was not later reincarcerated."""
 
     @property
-    def return_type(self):
+    def return_type(self) -> None:
         return None
 
     @property
-    def from_supervision_type(self):
+    def from_supervision_type(self) -> None:
         return None
 
     @property
-    def source_violation_type(self):
+    def source_violation_type(self) -> None:
         return None
 
     @property
-    def days_at_liberty(self):
+    def days_at_liberty(self) -> None:
         return None
