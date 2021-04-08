@@ -17,7 +17,7 @@
 
 """Base test class for scrapers."""
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, TypeVar, Generic
 
 import yaml
 from lxml import html
@@ -41,12 +41,14 @@ from recidiviz.tests.utils.individual_ingest_test import IndividualIngestTest
 
 _FAKE_SCRAPER_START_TIME: datetime = datetime(year=2020, month=3, day=20)
 
+ScraperT = TypeVar("ScraperT", bound=BaseScraper)
 
-class CommonScraperTest(IndividualIngestTest):
+
+class CommonScraperTest(Generic[ScraperT], IndividualIngestTest):
     """A base class for scraper tests which does extra validations."""
 
     def setUp(self) -> None:
-        self.scraper: Optional[BaseScraper] = None
+        self.scraper: Optional[ScraperT] = None
         self.yaml = None
         self.task_client_patcher = patch("google.cloud.tasks_v2.CloudTasksClient")
         self.task_client_patcher.start()
