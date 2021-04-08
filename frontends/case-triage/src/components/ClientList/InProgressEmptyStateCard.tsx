@@ -17,7 +17,7 @@
 import * as React from "react";
 import { ClientCard, FlexCardSection, MainText } from "./ClientList.styles";
 
-const InProgressEmptyState = () => (
+const InProgressEmptyState = (): JSX.Element => (
   <ClientCard className="client-card--in-progress">
     <FlexCardSection>
       <MainText>Items that are in progress will appear here</MainText>
