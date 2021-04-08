@@ -28,17 +28,17 @@ from recidiviz.common.ncic import NcicCode
 class NcicTest(unittest.TestCase):
     """Unit tests for NCIC functionality."""
 
-    def test_get_all_codes(self):
+    def test_get_all_codes(self) -> None:
         codes = ncic.get_all_codes()
         self.assertEqual(len(codes), 371)
 
-    def test_get_all_codes_not_modifiable(self):
+    def test_get_all_codes_not_modifiable(self) -> None:
         codes = ncic.get_all_codes()
 
         with self.assertRaises(FrozenInstanceError):
-            codes[0].description = "Bogus description change"
+            codes[0].description = "Bogus description change"  # type: ignore[misc]
 
-    def test_get(self):
+    def test_get(self) -> None:
         code = ncic.get("2312")
         self.assertEqual(
             code,
@@ -65,20 +65,20 @@ class NcicTest(unittest.TestCase):
             ),
         )
 
-    def test_get_not_found(self):
+    def test_get_not_found(self) -> None:
         self.assertIsNone(ncic.get("9999"))
 
-    def test_get_description(self):
+    def test_get_description(self) -> None:
         description = ncic.get_description("1313")
         self.assertEqual(description, "SIMPLE ASSAULT")
 
-    def test_get_description_not_found(self):
+    def test_get_description_not_found(self) -> None:
         self.assertIsNone(ncic.get_description("9999"))
 
-    def test_get_is_violent(self):
+    def test_get_is_violent(self) -> None:
         self.assertTrue(ncic.get_is_violent("1317"))
         self.assertFalse(ncic.get_is_violent("2007"))
         self.assertIsNotNone(ncic.get_is_violent("2007"))
 
-    def test_get_is_violent_not_found(self):
+    def test_get_is_violent_not_found(self) -> None:
         self.assertIsNone(ncic.get_is_violent("9999"))

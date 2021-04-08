@@ -54,23 +54,21 @@ class StateEnumsTest(unittest.TestCase):
 
         return enum_classes
 
-    def test_state_enum_default_overrides_have_correct_types(self):
+    def test_state_enum_default_overrides_have_correct_types(self) -> None:
         enum_classes = self._get_all_state_enum_classes()
         self.assertTrue(len(enum_classes) > 0)
         for entity_enum_cls in enum_classes:
-            # pylint: disable=protected-access
-            default_enum_mappings = entity_enum_cls._get_default_map()
+            default_enum_mappings = getattr(entity_enum_cls, "_get_default_map")()
 
             for enum_val in default_enum_mappings.values():
                 if enum_val is not None:
                     self.assertIsInstance(enum_val, entity_enum_cls)
 
-    def test_all_enum_values_covered_in_default_overrides(self):
+    def test_all_enum_values_covered_in_default_overrides(self) -> None:
         enum_classes = self._get_all_state_enum_classes()
         self.assertTrue(len(enum_classes) > 0)
         for entity_enum_cls in enum_classes:
-            # pylint: disable=protected-access
-            default_enum_mappings = entity_enum_cls._get_default_map()
+            default_enum_mappings = getattr(entity_enum_cls, "_get_default_map")()
 
             for entity_enum in entity_enum_cls:
                 normalized_value = normalize(entity_enum.value, remove_punctuation=True)

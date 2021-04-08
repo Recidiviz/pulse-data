@@ -28,31 +28,31 @@ from recidiviz.common.date import (
 )
 
 
-def test_mungeDateString_munges():
+def test_mungeDateString_munges() -> None:
     assert munge_date_string("1y 1m 1d") == "1year 1month 1day"
 
 
-def test_mungeDateString_doesntMunge():
+def test_mungeDateString_doesntMunge() -> None:
     assert munge_date_string("1year 1month 1day") == "1year 1month 1day"
 
 
-def test_mungeDateString_caseInsensitive():
+def test_mungeDateString_caseInsensitive() -> None:
     assert munge_date_string("1Y 1M 1D") == "1year 1month 1day"
 
 
-def test_mungeDateString_noYear():
+def test_mungeDateString_noYear() -> None:
     assert munge_date_string("10M 12D") == "10month 12day"
 
 
-def test_mungeDateString_noMonth():
+def test_mungeDateString_noMonth() -> None:
     assert munge_date_string("9Y 28D") == "9year 28day"
 
 
-def test_mungeDateString_noDay():
+def test_mungeDateString_noDay() -> None:
     assert munge_date_string("4y 3m") == "4year 3month"
 
 
-def test_mungeDateString_ZeroAm():
+def test_mungeDateString_ZeroAm() -> None:
     assert munge_date_string("Jan 1, 2018 00:00 AM") == "Jan 1, 2018 12:00 AM"
 
 
@@ -85,7 +85,7 @@ class TestDateRange(unittest.TestCase):
             upper_bound_exclusive_date=datetime.date(2019, 4, 10),
         )
 
-    def test_get_months_range_overlaps_at_all(self):
+    def test_get_months_range_overlaps_at_all(self) -> None:
         self.assertEqual([], self.negative_day_range.get_months_range_overlaps_at_all())
         self.assertEqual([], self.zero_day_range.get_months_range_overlaps_at_all())
         self.assertEqual(
@@ -99,7 +99,7 @@ class TestDateRange(unittest.TestCase):
             self.multi_month_range.get_months_range_overlaps_at_all(),
         )
 
-    def test_portion_overlapping_with_month(self):
+    def test_portion_overlapping_with_month(self) -> None:
 
         self.assertEqual(
             None, self.negative_day_range.portion_overlapping_with_month(2019, 2)
@@ -143,7 +143,7 @@ class TestDateRange(unittest.TestCase):
             self.multi_month_range.portion_overlapping_with_month(2019, 4),
         )
 
-    def test_for_year_of_date(self):
+    def test_for_year_of_date(self) -> None:
         year_range = DateRange.for_year_of_date(datetime.date(2019, 12, 4))
         self.assertEqual(
             (datetime.date(2019, 1, 1), datetime.date(2020, 1, 1)),
@@ -153,7 +153,7 @@ class TestDateRange(unittest.TestCase):
             ),
         )
 
-    def test_for_year_of_date_early_month(self):
+    def test_for_year_of_date_early_month(self) -> None:
         year_range = DateRange.for_year_of_date(datetime.date(2019, 1, 25))
         self.assertEqual(
             (datetime.date(2019, 1, 1), datetime.date(2020, 1, 1)),
@@ -167,7 +167,7 @@ class TestDateRange(unittest.TestCase):
 class TestNonNegativeDateRange(unittest.TestCase):
     """Tests for NonNegativeDateRange"""
 
-    def test_negative_raises_value_error(self):
+    def test_negative_raises_value_error(self) -> None:
         with pytest.raises(ValueError) as exception_info:
             NonNegativeDateRange(
                 lower_bound_inclusive_date=datetime.date(2019, 2, 3),
@@ -181,7 +181,7 @@ class TestNonNegativeDateRange(unittest.TestCase):
 class TestDateRangeDiff(unittest.TestCase):
     """Tests for DateRangeDiff"""
 
-    def test_non_overlapping_ranges(self):
+    def test_non_overlapping_ranges(self) -> None:
         range_1 = DateRange.for_month(2019, 2)
         range_2 = DateRange.for_month(2019, 3)
 
@@ -191,7 +191,7 @@ class TestDateRangeDiff(unittest.TestCase):
         self.assertEqual([range_1], time_range_diff.range_1_non_overlapping_parts)
         self.assertEqual([range_2], time_range_diff.range_2_non_overlapping_parts)
 
-    def test_exactly_overlapping_ranges(self):
+    def test_exactly_overlapping_ranges(self) -> None:
         range_1 = DateRange.for_month(2019, 2)
         range_2 = DateRange.for_month(2019, 2)
 
@@ -201,7 +201,7 @@ class TestDateRangeDiff(unittest.TestCase):
         self.assertEqual([], time_range_diff.range_1_non_overlapping_parts)
         self.assertEqual([], time_range_diff.range_2_non_overlapping_parts)
 
-    def test_range_fully_overlaps_other(self):
+    def test_range_fully_overlaps_other(self) -> None:
         range_1 = DateRange(datetime.date(2019, 2, 5), datetime.date(2019, 5, 2))
         range_2 = DateRange(datetime.date(2019, 3, 1), datetime.date(2019, 3, 5))
 
@@ -228,7 +228,7 @@ class TestDateRangeDiff(unittest.TestCase):
             time_range_diff.range_2_non_overlapping_parts,
         )
 
-    def test_partially_overlapping_ranges(self):
+    def test_partially_overlapping_ranges(self) -> None:
         range_1 = DateRange(datetime.date(2019, 2, 5), datetime.date(2019, 5, 2))
         range_2 = DateRange(datetime.date(2019, 3, 1), datetime.date(2019, 6, 5))
 

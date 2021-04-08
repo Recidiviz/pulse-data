@@ -25,11 +25,11 @@ from recidiviz.common.google_cloud.protobuf_builder import ProtobufBuilder
 class TestProtobufBuilder(unittest.TestCase):
     """Tests for class ProtobufBuilder."""
 
-    def test_simple_build(self):
+    def test_simple_build(self) -> None:
         duration = ProtobufBuilder(duration_pb2.Duration).build()
         self.assertEqual(type(duration), duration_pb2.Duration)
 
-    def test_compose_simple(self):
+    def test_compose_simple(self) -> None:
         duration1 = duration_pb2.Duration(seconds=1, nanos=2)
         duration2 = duration_pb2.Duration(nanos=3)
         duration = (
@@ -50,7 +50,7 @@ class TestProtobufBuilder(unittest.TestCase):
 
         self.assertEqual(duration, duration_pb2.Duration(seconds=1, nanos=2))
 
-    def test_update_args(self):
+    def test_update_args(self) -> None:
         duration = (
             ProtobufBuilder(duration_pb2.Duration)
             .update_args(
@@ -75,7 +75,7 @@ class TestProtobufBuilder(unittest.TestCase):
 
         self.assertEqual(duration, duration_pb2.Duration(seconds=1, nanos=2))
 
-    def test_build_multiple_ways(self):
+    def test_build_multiple_ways(self) -> None:
         duration1 = duration_pb2.Duration(seconds=1, nanos=2)
         duration = (
             ProtobufBuilder(duration_pb2.Duration)
@@ -100,7 +100,7 @@ class TestProtobufBuilder(unittest.TestCase):
 
         self.assertEqual(duration, duration_pb2.Duration(seconds=1, nanos=2))
 
-    def test_multilevel_compose(self):
+    def test_multilevel_compose(self) -> None:
         base_queue = queue_pb2.Queue(
             rate_limits=queue_pb2.RateLimits(
                 max_dispatches_per_second=100,
@@ -142,12 +142,12 @@ class TestProtobufBuilder(unittest.TestCase):
 
         self.assertEqual(queue, expected_queue)
 
-    def test_bad_type_raises_error(self):
+    def test_bad_type_raises_error(self) -> None:
         duration_builder = ProtobufBuilder(duration_pb2.Duration)
         with self.assertRaises(TypeError):
             duration_builder.compose(queue_pb2.Queue())
 
-    def test_bad_arg_raises_error(self):
+    def test_bad_arg_raises_error(self) -> None:
         duration_builder = ProtobufBuilder(duration_pb2.Duration)
         with self.assertRaises(ValueError):
             duration_builder.update_args(name="this-field-does-not-exist")
