@@ -109,7 +109,7 @@ else
     FOUND_REMOTE_BUILD=false
     ((timeout=300)) # 5 minute timeout
     
-    while ! ${FOUND_REMOTE_BUILD} && ((timeout > 0))
+    while [[ "${FOUND_REMOTE_BUILD}" == "false" ]] && ((timeout > 0))
     do
         existing_tags=$(gcloud container images list-tags --filter="tags:${COMMIT_HASH}" --format=json ${REMOTE_BUILD_BASE})
         if [[ "$existing_tags" != "[]" ]]; then
@@ -117,14 +117,14 @@ else
         else
             FOUND_REMOTE_BUILD=false
         fi
-        if ! ${FOUND_REMOTE_BUILD}; then
+        if [[ "${FOUND_REMOTE_BUILD}" == "false" ]]; then
             echo "Remote build for commit ${COMMIT_HASH} not found, retrying in 30s"
             sleep 30s
             ((timeout -= 30))
         fi
     done
 
-    if [[ !${FOUND_REMOTE_BUILD} ]]; then
+    if [[ "${FOUND_REMOTE_BUILD}" == "false" ]]; then
         echo "Unable to find remote build for ${COMMIT_HASH} within the timeout - you might need to manually trigger it in Cloud Build (https://console.cloud.google.com/cloud-build/triggers?project=recidiviz-staging). Exiting..."
         run_cmd exit 1
     fi
