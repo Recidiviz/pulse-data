@@ -17,7 +17,7 @@
 """Tests for BuildableAttr base class."""
 
 import unittest
-from typing import Optional
+from typing import Optional, Dict
 
 from recidiviz.common.constants.entity_enum import EntityEnum, EnumParsingError
 from recidiviz.common.constants.enum_overrides import EnumOverrides
@@ -29,7 +29,7 @@ class FakeEntityEnum(EntityEnum):
     PASSION_FRUIT = "PASSION FRUIT"
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, "FakeEntityEnum"]:
         return {
             "BANANA": FakeEntityEnum.BANANA,
             "STRAWBERRY": FakeEntityEnum.STRAWBERRY,
@@ -40,58 +40,58 @@ class FakeEntityEnum(EntityEnum):
 class EntityEnumTest(unittest.TestCase):
     """Tests for EntityEnum class."""
 
-    def testParse_InvalidString_throwsEnumParsingError(self):
+    def testParse_InvalidString_throwsEnumParsingError(self) -> None:
         with self.assertRaises(EnumParsingError):
             FakeEntityEnum.parse("invalid", EnumOverrides.empty())
 
-    def testParse_NoOverrides_UsesDefaultMap(self):
+    def testParse_NoOverrides_UsesDefaultMap(self) -> None:
         self.assertEqual(
             FakeEntityEnum.parse("banana", EnumOverrides.empty()), FakeEntityEnum.BANANA
         )
 
-    def testParse_WithNoneOverride_IgnoresDefaultMap(self):
+    def testParse_WithNoneOverride_IgnoresDefaultMap(self) -> None:
         overrides_builder = EnumOverrides.Builder()
         overrides_builder.ignore("BANANA", FakeEntityEnum)
         overrides = overrides_builder.build()
         self.assertEqual(FakeEntityEnum.parse("banana", overrides), None)
 
-    def testParse_WithOverrides_UsesOverrides(self):
+    def testParse_WithOverrides_UsesOverrides(self) -> None:
         overrides_builder = EnumOverrides.Builder()
         overrides_builder.add("BAN", FakeEntityEnum.BANANA)
         overrides = overrides_builder.build()
         self.assertEqual(FakeEntityEnum.parse("ban", overrides), FakeEntityEnum.BANANA)
 
-    def testParse_WithPunctuation(self):
+    def testParse_WithPunctuation(self) -> None:
         self.assertEqual(
             FakeEntityEnum.parse('"PASSION"-FRUIT.', EnumOverrides.empty()),
             FakeEntityEnum.PASSION_FRUIT,
         )
 
-    def testCanParse_Invalid(self):
+    def testCanParse_Invalid(self) -> None:
         self.assertFalse(FakeEntityEnum.can_parse("invalid", EnumOverrides.empty()))
 
-    def testCanParse_Valid(self):
+    def testCanParse_Valid(self) -> None:
         self.assertTrue(FakeEntityEnum.can_parse("banana", EnumOverrides.empty()))
 
-    def testCanParse_WithNoneOverride(self):
+    def testCanParse_WithNoneOverride(self) -> None:
         overrides_builder = EnumOverrides.Builder()
         overrides_builder.ignore("BANANA", FakeEntityEnum)
         overrides = overrides_builder.build()
         self.assertTrue(FakeEntityEnum.can_parse("banana", overrides))
 
-    def testCanParse_WithOverrides(self):
+    def testCanParse_WithOverrides(self) -> None:
         overrides_builder = EnumOverrides.Builder()
         overrides_builder.ignore("BAN", FakeEntityEnum)
         overrides = overrides_builder.build()
         self.assertTrue(FakeEntityEnum.can_parse("ban", overrides))
 
-    def testParseFromCanonicalString_Valid(self):
+    def testParseFromCanonicalString_Valid(self) -> None:
         self.assertEqual(
             FakeEntityEnum.parse_from_canonical_string(FakeEntityEnum.BANANA.value),
             FakeEntityEnum.BANANA,
         )
 
-    def testParseFromCanonicalString_Valid_ValueDifferent(self):
+    def testParseFromCanonicalString_Valid_ValueDifferent(self) -> None:
         self.assertEqual(
             FakeEntityEnum.parse_from_canonical_string(
                 FakeEntityEnum.PASSION_FRUIT.value
@@ -99,18 +99,18 @@ class EntityEnumTest(unittest.TestCase):
             FakeEntityEnum.PASSION_FRUIT,
         )
 
-    def testParseFromCanonicalString_None(self):
+    def testParseFromCanonicalString_None(self) -> None:
         self.assertEqual(FakeEntityEnum.parse_from_canonical_string(None), None)
 
-    def testParseFromCanonicalString_Invalid(self):
+    def testParseFromCanonicalString_Invalid(self) -> None:
         with self.assertRaises(EnumParsingError):
             FakeEntityEnum.parse_from_canonical_string("invalid")
 
-    def testParseFromCanonicalString_Lowercase(self):
+    def testParseFromCanonicalString_Lowercase(self) -> None:
         with self.assertRaises(EnumParsingError):
             FakeEntityEnum.parse_from_canonical_string("strawberry")
 
-    def testMapperErrorsCaughtAndThrownAsEntityMatchingError(self):
+    def testMapperErrorsCaughtAndThrownAsEntityMatchingError(self) -> None:
         def very_bad_mapper_that_asserts(_raw_text: str) -> Optional[FakeEntityEnum]:
             raise ValueError("Something bad happened!")
 

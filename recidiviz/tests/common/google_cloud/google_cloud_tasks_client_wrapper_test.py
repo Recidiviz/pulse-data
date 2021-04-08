@@ -40,7 +40,7 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
     QUEUE_NAME_2 = "queue-name-2"
 
     @staticmethod
-    def create_mock_cloud_tasks_client():
+    def create_mock_cloud_tasks_client() -> tasks_v2.CloudTasksClient:
         mock_client = create_autospec(tasks_v2.CloudTasksClient)
         mock_client.queue_path.side_effect = tasks_v2.CloudTasksClient.queue_path
 
@@ -48,7 +48,7 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
 
         return mock_client
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.mock_client_patcher = patch(
             "google.cloud.tasks_v2.CloudTasksClient",
             return_value=self.create_mock_cloud_tasks_client(),
@@ -65,10 +65,10 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
             ):
                 self.client_wrapper = GoogleCloudTasksClientWrapper()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.mock_client_patcher.stop()
 
-    def test_format_queue_path(self):
+    def test_format_queue_path(self) -> None:
         queue_path = self.client_wrapper.format_queue_path(self.QUEUE_NAME)
         self.assertEqual(
             queue_path, "projects/my-project-id/locations/us-east1/queues/queue-name"
@@ -79,7 +79,7 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
             queue_path, "projects/my-project-id/locations/us-east1/queues/queue-name-2"
         )
 
-    def test_format_task_path(self):
+    def test_format_task_path(self) -> None:
         task_path = self.client_wrapper.format_task_path(
             self.QUEUE_NAME, "task-name-1234"
         )
@@ -98,7 +98,7 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
             "tasks/task-name-3456",
         )
 
-    def test_initialize_cloud_task_queue(self):
+    def test_initialize_cloud_task_queue(self) -> None:
         # Arrange
         queue = queue_pb2.Queue(name=self.client_wrapper.format_queue_path("queue1"))
 
@@ -112,7 +112,7 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
     def _tasks_to_ids(tasks: List[tasks_v2.types.task_pb2.Task]) -> Set[str]:
         return {task_id for _, task_id in {os.path.split(task.name) for task in tasks}}
 
-    def test_list_tasks_with_prefix(self):
+    def test_list_tasks_with_prefix(self) -> None:
         all_tasks = [
             tasks_v2.types.task_pb2.Task(
                 name=self.client_wrapper.format_task_path(
@@ -182,7 +182,7 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
 
         self.assertFalse(tasks)
 
-    def test_create_task_no_schedule_delay(self):
+    def test_create_task_no_schedule_delay(self) -> None:
         self.client_wrapper.create_task(
             task_id="us_mo-file_name_1-123456",
             queue_name=self.QUEUE_NAME,
@@ -204,7 +204,7 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
         )
 
     @freeze_time("2019-04-14")
-    def test_create_task_schedule_delay(self):
+    def test_create_task_schedule_delay(self) -> None:
         now_timestamp_sec = int(datetime.datetime.utcnow().timestamp())
 
         self.client_wrapper.create_task(
@@ -229,12 +229,12 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
             ),
         )
 
-    def test_delete_task(self):
+    def test_delete_task(self) -> None:
         self.client_wrapper.delete_task(tasks_v2.types.task_pb2.Task(name="task_name"))
 
         self.mock_client.delete_task.assert_called_with(name="task_name")
 
-    def test_delete_task_not_found(self):
+    def test_delete_task_not_found(self) -> None:
         self.mock_client.delete_task.side_effect = exceptions.NotFound(
             message="message"
         )

@@ -22,7 +22,7 @@ from datetime import datetime
 import json
 import logging
 from enum import Enum
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 
 from google.cloud import tasks_v2, exceptions
 from google.cloud.tasks_v2.types import queue_pb2, task_pb2
@@ -115,7 +115,7 @@ class GoogleCloudTasksClientWrapper:
         task_id: str,
         queue_name: str,
         relative_uri: str,
-        body: Optional[Dict[str, str]] = None,
+        body: Optional[Dict[str, Any]] = None,
         schedule_delay_seconds: int = 0,
         http_method: HttpMethod = HttpMethod.POST
     ) -> None:

@@ -17,7 +17,7 @@
 """Tests for BuildableAttr base class."""
 
 from enum import Enum
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Tuple, Any
 from datetime import date
 import unittest
 import attr
@@ -35,16 +35,16 @@ from recidiviz.common.attr_mixins import (
 
 @attr.s
 class FakeBuildableAttr(BuildableAttr):
-    required_field = attr.ib()
-    field_with_default = attr.ib(factory=list)
+    required_field: str = attr.ib()
+    field_with_default: List[str] = attr.ib(factory=list)
 
 
 @attr.s
 class FakeDefaultableAttr(DefaultableAttr):
-    field = attr.ib()
-    field_another = attr.ib()
-    field_with_default = attr.ib(default=1)
-    factory_field = attr.ib(factory=list)
+    field: str = attr.ib()
+    field_another: Optional[int] = attr.ib()
+    field_with_default: int = attr.ib(default=1)
+    factory_field: List[int] = attr.ib(factory=list)
 
 
 class FakeEnum(Enum):
@@ -60,8 +60,8 @@ class InvalidFakeEnum(Enum):
 
 @attr.s
 class FakeBuildableAttrDeluxe(BuildableAttr):
-    required_field = attr.ib()
-    another_required_field = attr.ib()
+    required_field: str = attr.ib()
+    another_required_field: str = attr.ib()
     enum_nonnull_field: FakeEnum = attr.ib()
     enum_field: Optional[FakeEnum] = attr.ib(default=None)
     date_field: Optional[date] = attr.ib(default=None)
@@ -72,7 +72,7 @@ class FakeBuildableAttrDeluxe(BuildableAttr):
 class BuildableAttrTests(unittest.TestCase):
     """Tests for BuildableAttr base class."""
 
-    def testBuild_WithRequiredFields_BuildsAttr(self):
+    def testBuild_WithRequiredFields_BuildsAttr(self) -> None:
         # Arrange
         subject = FakeBuildableAttr.builder()
         subject.required_field = "TEST"
@@ -87,7 +87,7 @@ class BuildableAttrTests(unittest.TestCase):
 
         self.assertEqual(result, expected_result)
 
-    def testBuild_MissingRequiredField_RaisesException(self):
+    def testBuild_MissingRequiredField_RaisesException(self) -> None:
         # Arrange
         subject = FakeBuildableAttr.builder()
 
@@ -95,7 +95,7 @@ class BuildableAttrTests(unittest.TestCase):
         with self.assertRaises(BuilderException):
             subject.build()
 
-    def testBuild_ExtraField_RaisesException(self):
+    def testBuild_ExtraField_RaisesException(self) -> None:
         # Arrange
         subject = FakeBuildableAttr.builder()
         subject.required_field = "TEST"
@@ -105,11 +105,11 @@ class BuildableAttrTests(unittest.TestCase):
         with self.assertRaises(BuilderException):
             subject.build()
 
-    def testInstantiateAbstractBuildableAttr_RaisesException(self):
+    def testInstantiateAbstractBuildableAttr_RaisesException(self) -> None:
         with self.assertRaises(Exception):
             BuildableAttr()
 
-    def testNewWithDefaults(self):
+    def testNewWithDefaults(self) -> None:
         # Arrange
         subject = FakeDefaultableAttr.new_with_defaults(field="field")
 
@@ -120,11 +120,11 @@ class BuildableAttrTests(unittest.TestCase):
 
         self.assertEqual(subject, expected_result)
 
-    def testInstantiateDefaultableAttr_RaisesException(self):
+    def testInstantiateDefaultableAttr_RaisesException(self) -> None:
         with self.assertRaises(Exception):
             DefaultableAttr()
 
-    def testBuildFromDictionary(self):
+    def testBuildFromDictionary(self) -> None:
         # Construct dictionary representation
         subject_dict = {
             "required_field": "value",
@@ -146,7 +146,7 @@ class BuildableAttrTests(unittest.TestCase):
 
         self.assertEqual(subject, expected_result)
 
-    def testBuildFromDictionary_Enum(self):
+    def testBuildFromDictionary_Enum(self) -> None:
         # Construct dictionary representation
         subject_dict = {
             "required_field": "value",
@@ -166,7 +166,7 @@ class BuildableAttrTests(unittest.TestCase):
 
         self.assertEqual(subject, expected_result)
 
-    def testBuildFromDictionary_MissingRequiredArgs(self):
+    def testBuildFromDictionary_MissingRequiredArgs(self) -> None:
         with self.assertRaises(Exception):
             # Construct dictionary representation
             subject_dict = {"required_field": "value"}
@@ -174,7 +174,7 @@ class BuildableAttrTests(unittest.TestCase):
             # Build from dictionary
             _ = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)
 
-    def testBuildFromDictionary_MissingNonnullEnum(self):
+    def testBuildFromDictionary_MissingNonnullEnum(self) -> None:
         with self.assertRaises(Exception):
             # Construct dictionary representation
             subject_dict = {
@@ -185,11 +185,11 @@ class BuildableAttrTests(unittest.TestCase):
             # Build from dictionary
             _ = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)
 
-    def testBuildFromDictionary_EmptyDict(self):
+    def testBuildFromDictionary_EmptyDict(self) -> None:
         with self.assertRaises(ValueError):
             _ = FakeBuildableAttr.build_from_dictionary({})
 
-    def testBuildFromDictionary_ExtraArguments(self):
+    def testBuildFromDictionary_ExtraArguments(self) -> None:
         # Construct dictionary representation
         subject_dict = {
             "required_field": "value",
@@ -210,7 +210,7 @@ class BuildableAttrTests(unittest.TestCase):
 
         self.assertEqual(subject, expected_result)
 
-    def testBuildFromDictionary_WrongEnum(self):
+    def testBuildFromDictionary_WrongEnum(self) -> None:
         with self.assertRaises(ValueError):
             # Construct dictionary representation
             subject_dict = {
@@ -222,7 +222,7 @@ class BuildableAttrTests(unittest.TestCase):
             # Build from dictionary
             _ = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)
 
-    def testBuildFromDictionary_WrongEnumSameValue(self):
+    def testBuildFromDictionary_WrongEnumSameValue(self) -> None:
         with self.assertRaises(ValueError):
             # Construct dictionary representation
             subject_dict = {
@@ -234,7 +234,7 @@ class BuildableAttrTests(unittest.TestCase):
             # Build from dictionary
             _ = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)
 
-    def testBuildFromDictionary_ListInDict(self):
+    def testBuildFromDictionary_ListInDict(self) -> None:
         # Construct dictionary representation
         subject_dict = {
             "required_field": "value",
@@ -255,7 +255,7 @@ class BuildableAttrTests(unittest.TestCase):
 
         self.assertEqual(subject, expected_result)
 
-    def testBuildFromDictionary_InvalidForwardRefInDict(self):
+    def testBuildFromDictionary_InvalidForwardRefInDict(self) -> None:
         with self.assertRaises(ValueError):
 
             # Construct dictionary representation
@@ -268,7 +268,7 @@ class BuildableAttrTests(unittest.TestCase):
             # Build from dictionary
             _ = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)
 
-    def testBuildFromDictionary_WithDate(self):
+    def testBuildFromDictionary_WithDate(self) -> None:
         # Construct dictionary representation
         subject_dict = {
             "required_field": "value",
@@ -290,7 +290,7 @@ class BuildableAttrTests(unittest.TestCase):
 
         self.assertEqual(subject, expected_result)
 
-    def testBuildFromDictionary_WithEmptyDate(self):
+    def testBuildFromDictionary_WithEmptyDate(self) -> None:
         # Construct dictionary representation
         subject_dict = {
             "required_field": "value",
@@ -312,7 +312,7 @@ class BuildableAttrTests(unittest.TestCase):
 
         self.assertEqual(subject, expected_result)
 
-    def testBuildFromDictionary_WithInvalidDateFormat(self):
+    def testBuildFromDictionary_WithInvalidDateFormat(self) -> None:
         with self.assertRaises(ValueError):
 
             # Construct dictionary representation
@@ -326,7 +326,7 @@ class BuildableAttrTests(unittest.TestCase):
             # Build from dictionary
             _ = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)
 
-    def testBuildFromDictionary_WithInvalidDateString(self):
+    def testBuildFromDictionary_WithInvalidDateString(self) -> None:
         with self.assertRaises(ValueError):
 
             # Construct dictionary representation
@@ -344,7 +344,7 @@ class BuildableAttrTests(unittest.TestCase):
 class CachedClassStructureReferenceTests(unittest.TestCase):
     """Tests the functionality of the cached _class_structure_reference."""
 
-    def testCachedClassStructureReference(self):
+    def testCachedClassStructureReference(self) -> None:
         """Tests that the cached _class_structure_reference contains the attr field
         ref for the FakeBuildableAttrDeluxe class after the build_from_dictionary
         function was called on the class."""
@@ -381,7 +381,7 @@ class CachedClassStructureReferenceTests(unittest.TestCase):
             cached_class_structure_reference.get(FakeBuildableAttrDeluxe)
         )
 
-    def testAttributeFieldTypeReferenceForClass(self):
+    def testAttributeFieldTypeReferenceForClass(self) -> None:
         """Tests that the _attribute_field_type_reference_for_class function returns
         the expected mapping from Attribute to BuildableAttrFieldType."""
         # Clear the _class_structure_reference cache
@@ -389,7 +389,9 @@ class CachedClassStructureReferenceTests(unittest.TestCase):
 
         attributes = attr.fields_dict(FakeBuildableAttrDeluxe).values()
 
-        expected_attr_field_type_ref: Dict[attr.Attribute, BuildableAttrFieldType] = {}
+        expected_attr_field_type_ref: Dict[
+            attr.Attribute, Tuple[BuildableAttrFieldType, Optional[Any]]
+        ] = {}
         for attribute in attributes:
             if "enum" in attribute.name:
                 enum_cls = FakeEnum

@@ -47,30 +47,30 @@ _DATE_7 = datetime.date(year=2019, month=7, day=1)
 class CommonUtilsTest(unittest.TestCase):
     """Tests for common_utils.py."""
 
-    def test_create_generated_id(self):
+    def test_create_generated_id(self) -> None:
         generated_id = create_generated_id()
         self.assertTrue(generated_id.endswith("_GENERATE"))
 
-    def test_is_generated_id(self):
+    def test_is_generated_id(self) -> None:
         id_str = "id_str_GENERATE"
         self.assertTrue(is_generated_id(id_str))
 
-    def test_is_not_generated_id(self):
+    def test_is_not_generated_id(self) -> None:
         id_str = "id_str"
         self.assertFalse(is_generated_id(id_str))
 
-    def test_create_synthetic_id(self):
+    def test_create_synthetic_id(self) -> None:
         id_str = "id_str"
         id_type = "id_type"
         self.assertEqual(
             "id_type:id_str", create_synthetic_id(external_id=id_str, id_type=id_type)
         )
 
-    def test_get_external_id(self):
+    def test_get_external_id(self) -> None:
         synthetic_id = "id_type:11:111"
         self.assertEqual("11:111", get_external_id(synthetic_id=synthetic_id))
 
-    def test_retry_grpc_no_raise(self):
+    def test_retry_grpc_no_raise(self) -> None:
         fn = MagicMock()
         # Two GOAWAY errors, 1 DEADLINE_EXCEEDED, then works
         fn.side_effect = [GO_AWAY_ERROR] * 2 + [DEADLINE_EXCEEDED_ERROR] + [3]
@@ -80,7 +80,7 @@ class CommonUtilsTest(unittest.TestCase):
         self.assertEqual(result, 3)
         fn.assert_has_calls([call(1, b=2)] * 3)
 
-    def test_retry_grpc_raises(self):
+    def test_retry_grpc_raises(self) -> None:
         fn = MagicMock()
         # Always a GOAWAY error
         fn.side_effect = GO_AWAY_ERROR
@@ -90,7 +90,7 @@ class CommonUtilsTest(unittest.TestCase):
 
         fn.assert_has_calls([call(1, b=2)] * 4)
 
-    def test_retry_grpc_raises_no_goaway(self):
+    def test_retry_grpc_raises_no_goaway(self) -> None:
         fn = MagicMock()
         # Always a different error
         fn.side_effect = OTHER_ERROR
@@ -100,7 +100,7 @@ class CommonUtilsTest(unittest.TestCase):
 
         fn.assert_has_calls([call(1, b=2)])
 
-    def test_retry_grpc_raises_deadline_exceeded(self):
+    def test_retry_grpc_raises_deadline_exceeded(self) -> None:
         fn = MagicMock()
         # Always a DEADLINE_EXCEEDED error
         fn.side_effect = DEADLINE_EXCEEDED_ERROR
@@ -110,7 +110,7 @@ class CommonUtilsTest(unittest.TestCase):
 
         fn.assert_has_calls([call(1, b=2)] * 4)
 
-    def test_dateIntersectsWithSpan(self):
+    def test_dateIntersectsWithSpan(self) -> None:
         self.assertFalse(
             date_intersects_with_span(
                 point_in_time=_DATE_1, start_date=_DATE_2, end_date=_DATE_4
@@ -137,7 +137,7 @@ class CommonUtilsTest(unittest.TestCase):
             )
         )
 
-    def test_dateSpansOverlapExclusive(self):
+    def test_dateSpansOverlapExclusive(self) -> None:
         # Spans intersect partially
         self.assertTrue(
             date_spans_overlap_exclusive(
@@ -182,7 +182,7 @@ class CommonUtilsTest(unittest.TestCase):
             )
         )
 
-    def test_dateSpansOverlapInclusive(self):
+    def test_dateSpansOverlapInclusive(self) -> None:
         # Spans intersect partially
         self.assertTrue(
             date_spans_overlap_inclusive(
