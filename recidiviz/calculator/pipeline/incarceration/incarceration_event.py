@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Events related to incarceration."""
+from datetime import date
 from typing import Optional
 
 import attr
@@ -82,7 +83,7 @@ class IncarcerationStayEvent(IncarcerationEvent):
     ] = attr.ib(default=None)
 
     @property
-    def date_of_stay(self):
+    def date_of_stay(self) -> date:
         return self.event_date
 
 
@@ -110,7 +111,7 @@ class IncarcerationAdmissionEvent(IncarcerationEvent):
     ] = attr.ib(default=None)
 
     @property
-    def admission_date(self):
+    def admission_date(self) -> date:
         return self.event_date
 
 
@@ -145,5 +146,5 @@ class IncarcerationReleaseEvent(IncarcerationEvent):
     total_days_incarcerated: Optional[int] = attr.ib(default=None)
 
     @property
-    def release_date(self):
+    def release_date(self) -> date:
         return self.event_date

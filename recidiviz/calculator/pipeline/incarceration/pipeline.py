@@ -23,7 +23,7 @@ from __future__ import absolute_import
 import argparse
 import logging
 
-from typing import Any, Dict, List, Tuple, Set, Optional, cast
+from typing import Any, Dict, List, Tuple, Set, Optional, cast, Generator, Iterable
 import datetime
 
 from apache_beam.pvalue import AsList
@@ -86,6 +86,7 @@ from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses im
 )
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.utils import environment
 
 # Cached job_id value
@@ -100,7 +101,7 @@ def job_id(pipeline_options: Dict[str, str]) -> str:
 
 
 @environment.test_only
-def clear_job_id():
+def clear_job_id() -> None:
     global _job_id
     _job_id = None
 
@@ -145,7 +146,7 @@ class GetIncarcerationMetrics(beam.PTransform):
             else:
                 self._metric_inclusions[metric_option] = False
 
-    def expand(self, input_or_inputs):
+    def expand(self, input_or_inputs: List[Any]) -> List[IncarcerationMetric]:
         # Produce IncarcerationMetrics
         incarceration_metrics = (
             input_or_inputs
@@ -171,7 +172,11 @@ class ClassifyIncarcerationEvents(beam.DoFn):
     """Classifies incarceration periods as admission and release events."""
 
     # pylint: disable=arguments-differ
-    def process(self, element):
+    def process(
+        self, element: Tuple[int, Dict[str, Iterable[Any]]]
+    ) -> Generator[
+        Tuple[Optional[int], Tuple[StatePerson, List[IncarcerationEvent]]], None, None
+    ]:
         """Identifies instances of admission and release from incarceration."""
         _, person_entities = element
 
@@ -189,7 +194,7 @@ class ClassifyIncarcerationEvents(beam.DoFn):
         else:
             yield person.person_id, (person, incarceration_events)
 
-    def to_runner_api_parameter(self, _):
+    def to_runner_api_parameter(self, unused_context: Any) -> None:
         pass  # Passing unused abstract method.
 
 
@@ -207,12 +212,12 @@ class ProduceIncarcerationMetrics(beam.DoFn):
     # pylint: disable=arguments-differ
     def process(
         self,
-        element,
-        calculation_end_month,
-        calculation_month_count,
-        metric_inclusions,
-        pipeline_options,
-    ):
+        element: Tuple[StatePerson, List[IncarcerationEvent], PersonMetadata],
+        calculation_end_month: Optional[str],
+        calculation_month_count: int,
+        metric_inclusions: Dict[IncarcerationMetricType, bool],
+        pipeline_options: Dict[str, str],
+    ) -> Generator[IncarcerationMetric, None, None]:
         """Produces various incarceration metrics.
 
         Sends the metric producer the StatePerson entity and their corresponding IncarcerationEvents for mapping all
@@ -250,7 +255,7 @@ class ProduceIncarcerationMetrics(beam.DoFn):
         for metric in metrics:
             yield metric
 
-    def to_runner_api_parameter(self, _):
+    def to_runner_api_parameter(self, unused_context: Any) -> None:
         pass  # Passing unused abstract method.
 
 
@@ -291,7 +296,7 @@ def run(
     state_code: str,
     calculation_end_month: Optional[str],
     person_filter_ids: Optional[List[int]],
-):
+) -> None:
     """Runs the incarceration calculation pipeline."""
 
     # Workaround to load SQLAlchemy objects at start of pipeline. This is necessary because the BuildRootEntity
