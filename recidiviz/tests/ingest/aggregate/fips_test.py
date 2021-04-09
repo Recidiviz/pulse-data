@@ -71,12 +71,17 @@ class TestFips(TestCase):
             fips.add_column_to_df(subject, subject.county, incorrect_state)
 
     def testStateWithNoFipsMappings_RaisesFipsMergingError(self) -> None:
-        # Arrange
-        class FakeState:
-            fips = "123456789"  # Non-existing state fips maps to no county fips
+        # Create fake state
+        fake_state = us.states.State(
+            **{
+                "abbr": "FS",
+                "fips": "123456789",  # Non-existing state fips maps to no county fips
+                "name": "Fake State",
+            }
+        )
 
         subject = pd.DataFrame({"county": ["Jo Daviess County"]})
 
         # Act/Assert
         with self.assertRaises(FipsMergingError):
-            fips.add_column_to_df(subject, subject.county, FakeState)
+            fips.add_column_to_df(subject, subject.county, fake_state)
