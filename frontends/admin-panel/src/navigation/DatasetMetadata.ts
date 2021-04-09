@@ -18,6 +18,7 @@
 import MetadataDataset from "../models/MetadataDatasets";
 
 export const DATA_FRESHNESS_ROUTE = "/admin/ingest_metadata/data_freshness";
+export const DATA_DISCOVERY_ROUTE = "/admin/ingest_metadata/data_discovery";
 
 export const METADATA_DATASET_ROUTE_TEMPLATE = "/admin/:dataset/dataset";
 export const METADATA_TABLE_ROUTE_TEMPLATE = "/admin/:dataset/dataset/:table";
