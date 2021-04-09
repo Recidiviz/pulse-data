@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Config classes for exporting metric views to Google Cloud Storage."""
-from typing import Optional, Sequence, List
+from typing import Optional, Sequence, List, Dict
 
 import attr
 
@@ -86,7 +86,9 @@ class ExportViewCollectionConfig:
         return False
 
     def export_configs_for_views_to_export(
-        self, project_id: str
+        self,
+        project_id: str,
+        dataset_overrides: Optional[Dict[str, str]] = None,
     ) -> Sequence[ExportBigQueryViewConfig]:
         """Builds a list of ExportBigQueryViewConfig that define how all views in
         view_builders_to_export should be exported to Google Cloud Storage."""
@@ -107,7 +109,7 @@ class ExportViewCollectionConfig:
 
         configs = []
         for vb in self.view_builders_to_export:
-            view = vb.build()
+            view = vb.build(dataset_overrides=dataset_overrides)
             optional_args = {}
             if self.export_output_formats is not None:
                 optional_args["export_output_formats"] = self.export_output_formats

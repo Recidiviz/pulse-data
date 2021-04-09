@@ -27,7 +27,7 @@ This can be run on-demand whenever locally with the following command:
 import argparse
 import logging
 import sys
-from typing import List, Tuple, Dict, Optional
+from typing import List, Tuple, Optional
 
 from recidiviz.big_query.view_update_manager import (
     VIEW_BUILDERS_BY_NAMESPACE,
@@ -35,47 +35,14 @@ from recidiviz.big_query.view_update_manager import (
     rematerialize_views_for_namespace,
 )
 from recidiviz.calculator.query.state.dataset_config import (
-    DATAFLOW_METRICS_DATASET,
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
+)
+from recidiviz.tools.utils.dataset_overrides_for_all_view_datasets import (
+    dataset_overrides_for_all_view_datasets,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
-
-
-def _dataset_overrides_for_all_view_datasets(
-    view_dataset_override_prefix: str, dataflow_dataset_override: Optional[str] = None
-) -> Dict[str, str]:
-    """Returns a dictionary mapping dataset_ids to the dataset name they should be replaced with for all view datasets
-    in view_datasets. If a |dataflow_dataset_override| is provided, will override the DATAFLOW_METRICS_DATASET with
-    the provided value."""
-    dataset_overrides = {}
-    for view_builders in VIEW_BUILDERS_BY_NAMESPACE.values():
-        for builder in view_builders:
-            dataset_id = builder.dataset_id
-
-            if (
-                dataset_id == DATAFLOW_METRICS_MATERIALIZED_DATASET
-                and dataflow_dataset_override is None
-            ):
-                # Only override the DATAFLOW_METRICS_MATERIALIZED_DATASET if the DATAFLOW_METRICS_DATASET will also
-                # be overridden
-                continue
-
-            dataset_overrides[dataset_id] = (
-                view_dataset_override_prefix + "_" + dataset_id
-            )
-
-    if dataflow_dataset_override:
-        logging.info(
-            "Overriding [%s] dataset with [%s].",
-            DATAFLOW_METRICS_DATASET,
-            dataflow_dataset_override,
-        )
-
-        dataset_overrides[DATAFLOW_METRICS_DATASET] = dataflow_dataset_override
-
-    return dataset_overrides
 
 
 def load_views_to_sandbox(
@@ -84,7 +51,7 @@ def load_views_to_sandbox(
     refresh_materialized_tables_only: bool = False,
 ) -> None:
     """Loads all views into sandbox datasets prefixed with the sandbox_dataset_prefix."""
-    sandbox_dataset_overrides = _dataset_overrides_for_all_view_datasets(
+    sandbox_dataset_overrides = dataset_overrides_for_all_view_datasets(
         view_dataset_override_prefix=sandbox_dataset_prefix,
         dataflow_dataset_override=dataflow_dataset_override,
     )
