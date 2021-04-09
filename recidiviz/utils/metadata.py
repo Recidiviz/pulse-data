@@ -18,7 +18,7 @@
 """Utility methods for fetching app engine related metadata."""
 import logging
 import os
-from typing import Dict
+from typing import Dict, Optional, Any
 
 import requests
 
@@ -34,7 +34,7 @@ _metadata_cache: Dict[str, str] = {}
 allow_local_metadata_call = False
 
 
-def _get_metadata(url: str):
+def _get_metadata(url: str) -> Optional[str]:
     if url in _metadata_cache:
         return _metadata_cache[url]
 
@@ -54,7 +54,7 @@ def _get_metadata(url: str):
         return None
 
 
-def project_number():
+def project_number() -> Optional[str]:
     """Gets the numeric_project_id (project number) for this instance from the
     Compute Engine metadata server.
     """
@@ -84,10 +84,10 @@ class local_project_id_override:
 
     def __init__(self, project_id_override: str):
         self.project_id_override = project_id_override
-        self.original_project_id = None
+        self.original_project_id: Optional[str] = None
 
     @environment.local_only
-    def __enter__(self):
+    def __enter__(self) -> None:
         global _override_set
         if _override_set:
             raise ValueError(f"Project id override already set to {project_id()}")
@@ -97,7 +97,7 @@ class local_project_id_override:
             self.original_project_id = _metadata_cache[_PROJECT_ID_URL]
         _metadata_cache[_PROJECT_ID_URL] = self.project_id_override
 
-    def __exit__(self, _type, _value, _traceback):
+    def __exit__(self, _type: Any, _value: Any, _traceback: Any) -> None:
         del _metadata_cache[_PROJECT_ID_URL]
         if self.original_project_id:
             _metadata_cache[_PROJECT_ID_URL] = self.original_project_id
@@ -106,7 +106,8 @@ class local_project_id_override:
         _override_set = False
 
 
-def project_id():
+# mypy: ignore-errors
+def project_id() -> str:
     """Gets the project_id for this instance from the Compute Engine metadata
     server. If the metadata server is unavailable, it assumes that the
     application is running locally and falls back to the GOOGLE_CLOUD_PROJECT
@@ -115,17 +116,17 @@ def project_id():
     return _get_metadata(_PROJECT_ID_URL) or os.getenv("GOOGLE_CLOUD_PROJECT")
 
 
-def instance_id():
+def instance_id() -> Optional[str]:
     """Returns the numerical ID of the current GCP instance."""
     return _get_metadata("instance/id")
 
 
-def instance_name():
+def instance_name() -> Optional[str]:
     """Returns the name of the current GCP instance."""
     return _get_metadata("instance/name")
 
 
-def zone():
+def zone() -> Optional[str]:
     """Returns the GCP zone of the current instance."""
     zone_string = _get_metadata("instance/zone")
     if zone_string:
@@ -135,7 +136,7 @@ def zone():
     return zone_string
 
 
-def region():
+def region() -> Optional[str]:
     """Returns the GCP region of the current instance."""
     region_string = None
     zone_string = zone()

@@ -34,7 +34,7 @@ _key_cache: Dict[str, Any] = {}
 
 
 def validate_iap_jwt_from_app_engine(
-    iap_jwt: str, cloud_project_number: str, cloud_project_id: str
+    iap_jwt: str, cloud_project_number: Optional[str], cloud_project_id: str
 ) -> Tuple[Optional[str], Optional[str], str]:
     """Validate a JWT passed to your App Engine app by Identity-Aware Proxy.
 

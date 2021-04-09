@@ -117,6 +117,10 @@ _GCE_DOMAIN = "compute.googleapis.com"
 
 
 class StructuredAppEngineHandler(handlers.AppEngineHandler):
+    """
+    Customized AppEngineHandler to allow for additional information in jsonPayload.message
+    """
+
     def __init__(self, client: Client, name: Optional[str] = None) -> None:
         if name:
             super().__init__(client, name=name)
@@ -130,13 +134,15 @@ class StructuredAppEngineHandler(handlers.AppEngineHandler):
         jsonPayload.message
         """
         labels = _labels_for_record(record)
-        labels.update(
-            {
-                "/".join([_GAE_DOMAIN, "instance_name"]): metadata.instance_name(),
-                "/".join([_GCE_DOMAIN, "resource_id"]): metadata.instance_id(),
-                "/".join([_GCE_DOMAIN, "zone"]): metadata.zone(),
-            }
-        )
+        instance_name = metadata.instance_name()
+        if instance_name:
+            labels.update({"/".join([_GAE_DOMAIN, "instance_name"]): instance_name})
+        instance_id = metadata.instance_id()
+        if instance_id:
+            labels.update({"/".join([_GCE_DOMAIN, "resource_id"]): instance_id})
+        zone = metadata.zone()
+        if zone:
+            labels.update({"/".join([_GCE_DOMAIN, "zone"]): zone})
         labels.update(self.get_gae_labels())
 
         # pylint: disable=protected-access
