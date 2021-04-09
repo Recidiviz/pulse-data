@@ -17,6 +17,7 @@
 """ Communication bus via Redis """
 import enum
 import json
+import logging
 import time
 import uuid
 from datetime import datetime, timedelta
@@ -38,6 +39,7 @@ class MessageKind(enum.Enum):
 class RedisCommunicatorMessage:
     """ Dataclass for RedisCommunicator messages """
 
+    # The cursor can be passed to `RedisCommunicator.listen()` to query for the next message
     cursor: int = attr.ib()
     data: str = attr.ib()
     kind: MessageKind = attr.ib(default=MessageKind.UPDATE)
@@ -81,24 +83,36 @@ class RedisCommunicator:
 
     def __init__(self, cache: redis.Redis, channel_uuid: UUID):
         self.cache = cache
+        self.channel_uuid = channel_uuid
         self.channel_cache_key = self.build_channel_cache_key(channel_uuid)
+        self.cursor_cache_key = self.build_cursor_cache_key(channel_uuid)
+        self.options_cache_key = self.build_options_cache_key(channel_uuid)
+        options = cache.get(self.options_cache_key)
+        if options is None:
+            raise ValueError(
+                "Cannot instantiate without options set; did you open the channel with .create()?"
+            )
 
-    @property
-    def length(self) -> int:
-        """ Returns the length of the message list. If the key does not exist, returns 0"""
-        try:
-            return self.cache.llen(self.channel_cache_key)
-        except redis.exceptions.ResponseError:
-            return 0
+        self.options = json.loads(options)
+        self.max_messages = self.options["max_messages"]
+
+    def increment_cursor(self) -> int:
+        """ Increments the cursor """
+        return self.cache.incr(self.cursor_cache_key)
 
     @property
     def latest_message(self) -> Optional[RedisCommunicatorMessage]:
         """ Returns the latest message if it exists, otherwise None """
         try:
-            return RedisCommunicatorMessage.from_json(
-                self.cache.lindex(self.channel_cache_key, -1)
-            )
-        except redis.exceptions.ResponseError:
+            # Get the message with the highest cursor
+            messages = self.cache.zrange(self.channel_cache_key, -1, -1)
+
+            if not messages:
+                return None
+
+            return RedisCommunicatorMessage.from_json(messages[0])
+        except redis.exceptions.ResponseError as e:
+            logging.exception(e)
             return None
 
     @property
@@ -109,33 +123,45 @@ class RedisCommunicator:
             and self.latest_message.kind == MessageKind.CLOSE
         )
 
-    def communicate(self, data: str, kind: MessageKind = MessageKind.UPDATE) -> None:
+    def communicate(
+        self, data: str, kind: MessageKind = MessageKind.UPDATE
+    ) -> RedisCommunicatorMessage:
         """Adds a new message to the communication channel
-        Does nothing if the the latest message contains the same data
         Communication channels expire MESSAGE_CACHE_EXPIRY_SECONDS after the last message was added
         """
         if self.closed:
             raise ValueError("Cannot communicate on a closed channel")
 
-        if self.latest_message and self.latest_message.data == data:
-            return
-
         message = RedisCommunicatorMessage(
-            cursor=self.length,
+            cursor=self.increment_cursor(),
             kind=kind,
             data=data,
         )
 
-        self.cache.rpush(self.channel_cache_key, message.to_json())
-        self.cache.expire(self.channel_cache_key, MESSAGE_CACHE_EXPIRY_SECONDS)
+        pipeline = self.cache.pipeline()
+
+        pipeline.zadd(self.channel_cache_key, {message.to_json(): message.cursor})
+        pipeline.expire(self.channel_cache_key, MESSAGE_CACHE_EXPIRY_SECONDS)
+        pipeline.expire(self.cursor_cache_key, MESSAGE_CACHE_EXPIRY_SECONDS)
+        pipeline.expire(self.options_cache_key, MESSAGE_CACHE_EXPIRY_SECONDS)
+
+        if self.max_messages is not None:
+            # Trim the sorted set to the `self.max_messages` most recent
+            pipeline.zremrangebyrank(
+                self.channel_cache_key, 0, -(self.max_messages + 1)
+            )
+
+        pipeline.execute()
+
+        return message
 
     def listen(
-        self, current_message_cursor: int, timeout: int = MESSAGE_LISTEN_TIMEOUT_SECONDS
+        self, listener_cursor: int, timeout: int = MESSAGE_LISTEN_TIMEOUT_SECONDS
     ) -> Generator[Optional[RedisCommunicatorMessage], None, None]:
         """Listens for new messages in the channel.
         Yields the latest message whenever a new message is published to the communication channel
         Args:
-            current_message_cursor int: The listener's current offset in the communication channel
+            listener_cursor int: The listener's current offset in the communication channel
         """
         timeout_time = datetime.now() + timedelta(seconds=timeout)
 
@@ -145,26 +171,45 @@ class RedisCommunicator:
                     f"Timed out waiting for messages on channel: {self.channel_cache_key}"
                 )
 
-            next_message_cursor = self.length - 1
-            if next_message_cursor > current_message_cursor:
-                yield self.latest_message
+            time.sleep(MESSAGE_LISTEN_INTERVAL)
+
+            if self.latest_message and self.latest_message.cursor > listener_cursor:
                 break
 
-            time.sleep(MESSAGE_LISTEN_INTERVAL)
+        yield self.latest_message
 
     @classmethod
     def build_channel_cache_key(cls, channel_uuid: UUID) -> str:
-        """ Builds the """
+        """ Builds the cache key for the channel """
         return f"communication-channel-{str(channel_uuid)}"
 
-    @staticmethod
-    def create(cache: redis.Redis) -> "RedisCommunicator":
+    @classmethod
+    def build_cursor_cache_key(cls, channel_uuid: UUID) -> str:
+        """ Builds the cache key for the cursor """
+        return f"communication-cursor-{str(channel_uuid)}"
+
+    @classmethod
+    def build_options_cache_key(cls, channel_uuid: UUID) -> str:
+        """ Builds the cache key for the channel options """
+        return f"communication-options-{str(channel_uuid)}"
+
+    @classmethod
+    def create(
+        cls, cache: redis.Redis, *, max_messages: Optional[int] = None
+    ) -> "RedisCommunicator":
         """ Builds a new communication channel """
         while True:
             channel_uuid = uuid.uuid4()
-            channel_cache_key = RedisCommunicator.build_channel_cache_key(channel_uuid)
+            channel_cache_key = cls.build_channel_cache_key(channel_uuid)
 
             if not cache.exists(channel_cache_key):
                 break
+
+        options_cache_key = cls.build_options_cache_key(channel_uuid)
+        cache.setex(
+            options_cache_key,
+            MESSAGE_CACHE_EXPIRY_SECONDS,
+            json.dumps({"max_messages": max_messages}),
+        )
 
         return RedisCommunicator(cache, channel_uuid)
