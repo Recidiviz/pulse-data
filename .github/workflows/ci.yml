@@ -67,6 +67,8 @@ jobs:
         run: pipenv run ./recidiviz/tools/travis/run_pylint.sh
       - name: Black
         run: pipenv run black . --check
+      - name: Validate source visibility
+        run: pipenv run python -m recidiviz.tools.validate_source_visibility
       - name: Yarn caching
         uses: actions/cache@v2
         id: yarn-caching

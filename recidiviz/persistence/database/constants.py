@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,8 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""
-Contains logic for communicating with a SQL Database.
+"""Constants for interacting with the database"""
 
-database package should not be referenced outside the persistence package!
-"""
+SQLALCHEMY_DB_NAME = "SQLALCHEMY_DB_NAME"
+SQLALCHEMY_DB_HOST = "SQLALCHEMY_DB_HOST"
+SQLALCHEMY_USE_SSL = "SQLALCHEMY_USE_SSL"
+SQLALCHEMY_DB_USER = "SQLALCHEMY_DB_USER"
+SQLALCHEMY_DB_PASSWORD = "SQLALCHEMY_DB_PASSWORD"
+SQLALCHEMY_SSL_KEY_PATH = "SQLALCHEMY_SSL_KEY_PATH"
+SQLALCHEMY_SSL_CERT_PATH = "SQLALCHEMY_SSL_CERT_PATH"

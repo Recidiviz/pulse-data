@@ -24,7 +24,7 @@ from typing import Callable, Optional, Dict
 
 from sqlalchemy.orm.session import close_all_sessions
 
-from recidiviz.persistence.database import (
+from recidiviz.persistence.database.constants import (
     SQLALCHEMY_DB_NAME,
     SQLALCHEMY_DB_HOST,
     SQLALCHEMY_USE_SSL,
