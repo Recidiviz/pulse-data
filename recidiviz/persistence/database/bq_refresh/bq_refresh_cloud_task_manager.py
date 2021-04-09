@@ -96,3 +96,23 @@ class BQRefreshCloudTaskManager:
             body=body,
             schedule_delay_seconds=60,  # 1-minute delay
         )
+
+    def create_reattempt_create_refresh_tasks_task(
+        self, schema: str, lock_id: str
+    ) -> None:
+        """Schedules a task that will reattempt to create BQ refresh tasks in 1 minute.
+
+        Args:
+            lock_id: The id of the currently held BQ refresh lock.
+            schema: Which schema the export is for
+        """
+        task_id = "{}-{}-{}".format(
+            "reenqueue_wait_task", str(datetime.datetime.utcnow().date()), uuid.uuid4()
+        )
+        body = {"lock_id": lock_id}
+        self.job_monitor_cloud_task_queue_manager.create_task(
+            task_id=task_id,
+            body=body,
+            relative_uri=f"/cloud_sql_to_bq/create_refresh_bq_tasks/{schema}",
+            schedule_delay_seconds=60,
+        )

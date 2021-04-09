@@ -30,11 +30,6 @@ from recidiviz.cloud_storage.gcs_file_system import GCSBlobDoesNotExistError
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.utils import metadata
 
-
-POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME = "EXPORT_PROCESS_RUNNING_"
-GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME = "INGEST_PROCESS_RUNNING_"
-
-
 LOCK_TIME_KEY = "lock_time"
 CONTENTS_KEY = "contents"
 EXPIRATION_IN_SECONDS_KEY = "expiration_in_seconds"
