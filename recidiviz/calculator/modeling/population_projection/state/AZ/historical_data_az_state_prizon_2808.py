@@ -27,6 +27,7 @@ TIME_STEP: year
 """
 import pandas as pd
 import numpy as np
+from typing import List
 
 historical_data_2019 = pd.read_csv(
     "recidiviz/calculator/modeling/population_projection/state/AZ/AZ_data/HB_2808/2019.csv",
@@ -75,11 +76,11 @@ is_violent_map = {
 }
 
 
-def get_field_for_crime(df, field, crime_type):
+def get_field_for_crime(df: pd.DataFrame, field: str, crime_type: str) -> pd.DataFrame:
     return df.loc[df["HB_2808"] == crime_type][field].to_list()[0]
 
 
-def get_yearly_fields_for_crime(field, crime_type):
+def get_yearly_fields_for_crime(field: str, crime_type: str) -> List[pd.DataFrame]:
     return [
         get_field_for_crime(historical_data_2017, field, crime_type),
         get_field_for_crime(historical_data_2018, field, crime_type),
