@@ -1,16 +1,22 @@
 file_tag: sbstnc_rslt
 file_description: |-
+  It appears to be the case that if no row is present for a given `tst_id`, the assumption is that it is a negative (based off an example walked through with IDOC IT).
+
   Not in use
 primary_key_cols:
   - tst_id
   - sbstnc_cd
 columns:
   - name: tst_id
+    description: |-
+      ID of the substance test
   - name: updt_usr_id
   - name: updt_dt
   - name: sbstnc_cd
   - name: use_mthd_cd
   - name: sbstnc_found_flg
+    description: |-
+      `Y` for yes. `N` for no.
   - name: sbstnc_rslt_lvl
   - name: sbstnc_std_lvl
   - name: admit_use_flg
