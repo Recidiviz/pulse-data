@@ -16,7 +16,7 @@ branch_labels = None
 depends_on = None
 
 
-def upgrade():
+def upgrade() -> None:
     op.create_table(
         "etl_clients",
         sa.Column(
@@ -46,6 +46,6 @@ def upgrade():
     )
 
 
-def downgrade():
+def downgrade() -> None:
     op.drop_constraint("uniq_etl_clients", "etl_clients")
     op.drop_table("etl_clients")
