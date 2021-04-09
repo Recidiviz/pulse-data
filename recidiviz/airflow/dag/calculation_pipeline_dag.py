@@ -72,10 +72,16 @@ def get_zone_for_region(pipeline_region: str) -> str:
     raise ValueError(f"Unexpected region: {pipeline_region}")
 
 
+# By setting catchup to False and max_active_runs to 1, we ensure that at
+# most one instance of this DAG is running at a time. Because we set catchup
+# to false, it ensures that new DAG runs aren't enqueued while the old one is
+# waiting to finish.
 with models.DAG(
     dag_id="{}_calculation_pipeline_dag".format(project_id),
     default_args=default_args,
     schedule_interval=None,
+    catchup=False,
+    max_active_runs=1,
 ) as dag:
     if config_file is None:
         raise Exception("Configuration file not specified")
