@@ -1,3 +1,4 @@
+# pylint: skip-file
 """supervision_period_absconsion_types
 
 Revision ID: 5cadacdb6849
@@ -54,7 +55,7 @@ new_termination_reason_values = [
 ]  # list of all values including new value
 
 
-def upgrade():
+def upgrade() -> None:
     op.execute(
         "ALTER TYPE state_supervision_period_admission_reason RENAME TO state_supervision_period_admission_reason_old;"
     )
@@ -109,7 +110,7 @@ def upgrade():
     op.execute("DROP TYPE state_supervision_period_termination_reason_old;")
 
 
-def downgrade():
+def downgrade() -> None:
     op.execute(
         "ALTER TYPE state_supervision_period_admission_reason RENAME TO state_supervision_period_admission_reason_old;"
     )

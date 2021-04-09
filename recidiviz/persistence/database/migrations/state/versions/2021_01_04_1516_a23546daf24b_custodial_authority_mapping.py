@@ -72,7 +72,7 @@ CUSTODIAL_AUTHORITY_VALUES = [
 ENUM_TYPE = sa.Enum(*CUSTODIAL_AUTHORITY_VALUES, name="state_custodial_authority")
 
 
-def upgrade():
+def upgrade() -> None:
     sa.Enum(*CUSTODIAL_AUTHORITY_VALUES, name="state_custodial_authority").create(
         bind=op.get_bind()
     )
@@ -100,7 +100,7 @@ def upgrade():
         )
 
 
-def downgrade():
+def downgrade() -> None:
     connection = op.get_bind()
 
     for table_id in TABLES_TO_UPDATE:

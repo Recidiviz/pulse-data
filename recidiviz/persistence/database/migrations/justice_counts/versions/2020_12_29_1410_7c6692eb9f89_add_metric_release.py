@@ -23,7 +23,7 @@ old_values = ["ADMISSIONS", "ARRESTS", "POPULATION", "REVOCATIONS", "TERMINATION
 new_values = ["ADMISSIONS", "ARRESTS", "POPULATION", "REVOCATIONS", "RELEASES"]
 
 
-def upgrade():
+def upgrade() -> None:
     op.execute("ALTER TYPE metrictype RENAME TO metrictype_old;")
     sa.Enum(*new_values, name="metrictype").create(bind=op.get_bind())
     op.alter_column(
@@ -35,7 +35,7 @@ def upgrade():
     op.execute("DROP TYPE metrictype_old;")
 
 
-def downgrade():
+def downgrade() -> None:
     op.execute("ALTER TYPE metrictype RENAME TO metrictype_old;")
     sa.Enum(*old_values, name="metrictype").create(bind=op.get_bind())
     op.alter_column(

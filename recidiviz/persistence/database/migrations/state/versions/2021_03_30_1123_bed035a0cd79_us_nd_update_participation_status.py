@@ -33,7 +33,7 @@ PROGRAM_ASSIGNMENT_TABLE_NAME = "state_program_assignment"
 PROGRAM_ASSIGNMENT_HISTORY_TABLE_NAME = "state_program_assignment_history"
 
 
-def upgrade():
+def upgrade() -> None:
     updated_participation_status = "REFUSED"
     with op.get_context().autocommit_block():
         for table_name in [
@@ -49,7 +49,7 @@ def upgrade():
             )
 
 
-def downgrade():
+def downgrade() -> None:
     updated_participation_status = "EXTERNAL_UNKNOWN"
     with op.get_context().autocommit_block():
         for table_name in [

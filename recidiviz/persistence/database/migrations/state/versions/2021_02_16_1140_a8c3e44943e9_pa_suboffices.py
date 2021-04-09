@@ -97,13 +97,13 @@ WHERE sp.supervision_period_id = old_sp.supervision_period_id;
 """
 
 
-def upgrade():
+def upgrade() -> None:
     with op.get_context().autocommit_block():
         op.execute(UPGRADE_QUERY.format(table_name="state_supervision_period"))
         op.execute(UPGRADE_QUERY.format(table_name="state_supervision_period_history"))
 
 
-def downgrade():
+def downgrade() -> None:
     with op.get_context().autocommit_block():
         op.execute(DOWNGRADE_QUERY.format(table_name="state_supervision_period"))
         op.execute(

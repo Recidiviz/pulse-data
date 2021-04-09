@@ -91,7 +91,7 @@ new_specialized_purpose_for_incarceration_values = [
 ]
 
 
-def upgrade():
+def upgrade() -> None:
     # Add new supervision period termination values
     op.execute(
         "ALTER TYPE state_supervision_period_termination_reason RENAME TO state_supervision_period_termination_reason_old;"
@@ -238,7 +238,7 @@ def upgrade():
     # ### end Alembic commands ###
 
 
-def downgrade():
+def downgrade() -> None:
     # Remove new supervision period termination values
     op.execute(
         "ALTER TYPE state_supervision_period_termination_reason RENAME TO state_supervision_period_termination_reason_old;"

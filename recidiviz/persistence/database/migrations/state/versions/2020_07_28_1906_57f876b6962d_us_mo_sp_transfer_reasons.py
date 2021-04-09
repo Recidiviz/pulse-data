@@ -46,7 +46,7 @@ DOWNGRADE_UPDATE_QUERY = (
 )
 
 
-def upgrade():
+def upgrade() -> None:
     connection = op.get_bind()
 
     admission_reason_upgrade_query = UPGRADE_UPDATE_QUERY.format(
@@ -67,7 +67,7 @@ def upgrade():
     connection.execute(termination_reason_upgrade_query)
 
 
-def downgrade():
+def downgrade() -> None:
     connection = op.get_bind()
 
     admission_reason_downgrade_query = DOWNGRADE_UPDATE_QUERY.format(

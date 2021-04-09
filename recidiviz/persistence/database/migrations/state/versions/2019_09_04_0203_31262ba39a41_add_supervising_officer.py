@@ -17,7 +17,7 @@ branch_labels = None
 depends_on = None
 
 
-def upgrade():
+def upgrade() -> None:
     op.add_column(
         "state_supervision_period",
         sa.Column("supervising_officer_id", sa.Integer(), nullable=True),
@@ -42,7 +42,7 @@ def upgrade():
     )
 
 
-def downgrade():
+def downgrade() -> None:
     op.drop_constraint(
         "state_supervision_period_history_supervising_officer_id_fkey",
         "state_supervision_period_history",

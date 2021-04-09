@@ -73,7 +73,7 @@ new_outcome_type_values = [
 ]
 
 
-def upgrade():
+def upgrade() -> None:
     # New state supervision period termination reasons
     op.execute(
         "ALTER TYPE state_supervision_period_termination_reason RENAME TO state_supervision_period_termination_reason_old;"
@@ -153,7 +153,7 @@ def upgrade():
     op.execute("DROP TYPE state_incarceration_incident_outcome_type_old;")
 
 
-def downgrade():
+def downgrade() -> None:
     # Back to old state incarceration incident outcome types
     op.execute(
         "ALTER TYPE state_incarceration_incident_outcome_type RENAME TO state_incarceration_incident_outcome_type_old;"

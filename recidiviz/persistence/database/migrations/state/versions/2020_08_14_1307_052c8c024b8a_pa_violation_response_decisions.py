@@ -54,7 +54,7 @@ new_values = [
 ]
 
 
-def upgrade():
+def upgrade() -> None:
     op.execute(
         "ALTER TYPE state_supervision_violation_response_decision RENAME TO state_supervision_violation_response_decision_old;"
     )
@@ -96,7 +96,7 @@ def upgrade():
     op.execute("DROP TYPE state_supervision_violation_response_decision_old;")
 
 
-def downgrade():
+def downgrade() -> None:
     op.execute(
         "ALTER TYPE state_supervision_violation_response_decision RENAME TO state_supervision_violation_response_decision_old;"
     )

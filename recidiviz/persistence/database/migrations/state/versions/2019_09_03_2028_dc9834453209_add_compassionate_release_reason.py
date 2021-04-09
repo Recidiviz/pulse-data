@@ -1,3 +1,4 @@
+# pylint: skip-file
 """add_compassionate_release_reason
 
 Revision ID: dc9834453209
@@ -43,7 +44,7 @@ new_values = [
 ]
 
 
-def upgrade():
+def upgrade() -> None:
     op.execute(
         "ALTER TYPE state_incarceration_period_release_reason RENAME TO state_incarceration_period_release_reason_old;"
     )
@@ -80,7 +81,7 @@ def upgrade():
     op.execute("DROP TYPE state_incarceration_period_release_reason_old;")
 
 
-def downgrade():
+def downgrade() -> None:
     op.execute(
         "ALTER TYPE state_incarceration_period_release_reason RENAME TO state_incarceration_period_release_reason_old;"
     )

@@ -1,3 +1,4 @@
+# pylint: skip-file
 """ip_admission_reason_dual
 
 Revision ID: a6fb0ed2091c
@@ -43,7 +44,7 @@ new_values = [
 ]
 
 
-def upgrade():
+def upgrade() -> None:
     op.execute(
         "ALTER TYPE state_incarceration_period_admission_reason RENAME TO state_incarceration_period_admission_reason_old;"
     )
@@ -65,7 +66,7 @@ def upgrade():
     op.execute("DROP TYPE state_incarceration_period_admission_reason_old;")
 
 
-def downgrade():
+def downgrade() -> None:
     op.execute(
         "ALTER TYPE state_incarceration_period_admission_reason RENAME TO state_incarceration_period_admission_reason_old;"
     )

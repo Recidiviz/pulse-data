@@ -1,3 +1,4 @@
+# pylint: skip-file
 """ip_transfer_out_of_state
 
 Revision ID: 0c92bf530421
@@ -76,7 +77,7 @@ new_incarceration_period_release_reason_values = [
 ]
 
 
-def upgrade():
+def upgrade() -> None:
     # Update incarceration period admission reason for state incarceration period
     op.execute(
         "ALTER TYPE state_incarceration_period_admission_reason RENAME TO state_incarceration_period_admission_reason_old;"
@@ -152,7 +153,7 @@ def upgrade():
     op.execute("DROP TYPE state_incarceration_period_release_reason_old;")
 
 
-def downgrade():
+def downgrade() -> None:
     # Downgrade incarceration period admission reason for state incarceration period
     op.execute(
         "ALTER TYPE state_incarceration_period_admission_reason RENAME TO state_incarceration_period_admission_reason_old;"
