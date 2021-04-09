@@ -204,47 +204,35 @@ def export_view_data_to_cloud_storage(
             candidate_view_builders=view_builders_for_views_to_update,
         )
 
+    trigger_export_for_configs(
+        export_configs=export_configs_for_filter,
+        override_view_exporter=override_view_exporter,
+    )
+
+
+def trigger_export_for_configs(
+    export_configs: List[ExportViewCollectionConfig],
+    dataset_overrides: Optional[Dict[str, str]] = None,
+    override_view_exporter: Optional[BigQueryViewExporter] = None,
+) -> None:
+    """Triggers the export given the export_configs."""
+
     gcsfs_client = GcsfsFactory.build()
-    if override_view_exporter is None:
-        bq_client = BigQueryClientImpl()
-
-        # Some our views intentionally export empty files (e.g. some of the ingest_metadata views)
-        # so we just check for existence
-        csv_exporter = CSVBigQueryViewExporter(
-            bq_client, ExistsBigQueryViewExportValidator(gcsfs_client)
-        )
-        json_exporter = JsonLinesBigQueryViewExporter(
-            bq_client, ExistsBigQueryViewExportValidator(gcsfs_client)
-        )
-        metric_exporter = OptimizedMetricBigQueryViewExporter(
-            bq_client, OptimizedMetricBigQueryViewExportValidator(gcsfs_client)
-        )
-
-        delegate_export_map = {
-            ExportOutputFormatType.CSV: csv_exporter,
-            ExportOutputFormatType.HEADERLESS_CSV: csv_exporter,
-            ExportOutputFormatType.JSON: json_exporter,
-            ExportOutputFormatType.METRIC: metric_exporter,
-        }
-    else:
-        delegate_export_map = {
-            ExportOutputFormatType.CSV: override_view_exporter,
-            ExportOutputFormatType.HEADERLESS_CSV: override_view_exporter,
-            ExportOutputFormatType.JSON: override_view_exporter,
-            ExportOutputFormatType.METRIC: override_view_exporter,
-        }
-
+    delegate_export_map = get_delegate_export_map(gcsfs_client, override_view_exporter)
     project_id = metadata.project_id()
 
-    for dataset_export_config in export_configs_for_filter:
-        logging.info(
-            "Starting metric export for dataset_config [%s] with filter [%s]",
-            dataset_export_config,
-            export_job_filter,
+    for dataset_export_config in export_configs:
+        export_log_message = f"Starting [{dataset_export_config.export_name}] export"
+        export_log_message += (
+            f" for state_code [{dataset_export_config.state_code_filter}]."
+            if dataset_export_config.state_code_filter
+            else "."
         )
 
+        logging.info(export_log_message)
+
         view_export_configs = dataset_export_config.export_configs_for_views_to_export(
-            project_id=project_id
+            project_id=project_id, dataset_overrides=dataset_overrides
         )
 
         # The export will error if the validations fail for the set of view_export_configs. We want to log this failure
@@ -283,6 +271,44 @@ def export_view_data_to_cloud_storage(
             ) as measurements:
                 measurements.measure_int_put(m_failed_metric_export_job, 1)
             raise e
+
+
+def get_delegate_export_map(
+    gcsfs_client: GCSFileSystem,
+    override_view_exporter: Optional[BigQueryViewExporter] = None,
+) -> Dict[ExportOutputFormatType, BigQueryViewExporter]:
+    """Builds the delegate_export_map, mapping the csv_exporter, json_exporter, and metric_exporter
+    to the correct ExportOutputFormatType.
+    """
+    if override_view_exporter is None:
+        bq_client = BigQueryClientImpl()
+
+        # Some our views intentionally export empty files (e.g. some of the ingest_metadata views)
+        # so we just check for existence
+        csv_exporter = CSVBigQueryViewExporter(
+            bq_client, ExistsBigQueryViewExportValidator(gcsfs_client)
+        )
+        json_exporter = JsonLinesBigQueryViewExporter(
+            bq_client, ExistsBigQueryViewExportValidator(gcsfs_client)
+        )
+        metric_exporter = OptimizedMetricBigQueryViewExporter(
+            bq_client, OptimizedMetricBigQueryViewExportValidator(gcsfs_client)
+        )
+
+        delegate_export_map = {
+            ExportOutputFormatType.CSV: csv_exporter,
+            ExportOutputFormatType.HEADERLESS_CSV: csv_exporter,
+            ExportOutputFormatType.JSON: json_exporter,
+            ExportOutputFormatType.METRIC: metric_exporter,
+        }
+    else:
+        delegate_export_map = {
+            ExportOutputFormatType.CSV: override_view_exporter,
+            ExportOutputFormatType.HEADERLESS_CSV: override_view_exporter,
+            ExportOutputFormatType.JSON: override_view_exporter,
+            ExportOutputFormatType.METRIC: override_view_exporter,
+        }
+    return delegate_export_map
 
 
 def export_views_with_exporters(
