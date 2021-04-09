@@ -29,6 +29,7 @@ import google.auth
 import google.auth.app_engine
 import google.auth.compute_engine.credentials
 import google.auth.iam
+from google.auth import crypt
 from google.auth.transport import Response
 from google.auth.transport.requests import Request
 import google.oauth2.credentials
@@ -88,7 +89,9 @@ def make_iap_request(
     if isinstance(
         bootstrap_credentials, google.auth.compute_engine.credentials.Credentials
     ):
-        signer = google.auth.iam.Signer(Request(), bootstrap_credentials, signer_email)
+        signer: crypt.Signer = google.auth.iam.Signer(
+            Request(), bootstrap_credentials, signer_email
+        )
     else:
         # A Signer object can sign a JWT using the service accounts key.
         signer = bootstrap_credentials.signer

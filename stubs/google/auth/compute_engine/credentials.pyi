@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,17 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Accessor for a global instance of the sqladmin client."""
+from google.auth import credentials
 
-import google
-from googleapiclient import discovery
+class Credentials(credentials.Credentials):
+    service_account_email: str
 
-_client = None
-
-
-def sqladmin_client() -> discovery.Resource:
-    global _client
-    if not _client:
-        credentials, _ = google.auth.default()  # type: ignore[attr-defined]
-        _client = discovery.build("sqladmin", "v1beta4", credentials=credentials)
-    return _client
+class IDTokenCredentials(Credentials, credentials.Signing): ...
