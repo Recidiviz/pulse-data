@@ -156,3 +156,58 @@ class TestBQRefreshCloudTaskManager(unittest.TestCase):
         mock_client.return_value.create_task.assert_called_with(
             parent=queue_path, task=task
         )
+
+    @patch(f"{CLOUD_TASK_MANAGER_PACKAGE_NAME}.uuid")
+    @patch("google.cloud.tasks_v2.CloudTasksClient")
+    @freeze_time("2019-04-13")
+    def test_reattempt_create_refresh_tasks_task(
+        self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock
+    ) -> None:
+        # Arrange
+        delay_sec = 60
+        now_utc_timestamp = int(datetime.datetime.now().timestamp())
+
+        uuid = "random-uuid"
+        mock_uuid.uuid4.return_value = uuid
+
+        schema = "fake_schema"
+        lock_id = "fake_lock_id"
+        queue_path = f"queue_path/{self.mock_project_id}/{QUEUES_REGION}"
+        task_id = "reenqueue_wait_task-2019-04-13-random-uuid"
+        task_path = f"{queue_path}/{task_id}"
+
+        body = {
+            "lock_id": lock_id,
+        }
+
+        mock_client.return_value.task_path.return_value = task_path
+        mock_client.return_value.queue_path.return_value = queue_path
+
+        # Act
+        BQRefreshCloudTaskManager().create_reattempt_create_refresh_tasks_task(
+            schema=schema, lock_id=lock_id
+        )
+
+        # Assert
+        mock_client.return_value.queue_path.assert_called_with(
+            self.mock_project_id, QUEUES_REGION, JOB_MONITOR_QUEUE_V2
+        )
+        mock_client.return_value.task_path.assert_called_with(
+            self.mock_project_id, QUEUES_REGION, JOB_MONITOR_QUEUE_V2, task_id
+        )
+
+        expected_task = tasks_v2.types.task_pb2.Task(
+            name=task_path,
+            schedule_time=timestamp_pb2.Timestamp(
+                seconds=(now_utc_timestamp + delay_sec)
+            ),
+            app_engine_http_request={
+                "http_method": "POST",
+                "relative_uri": "/cloud_sql_to_bq/create_refresh_bq_tasks/fake_schema",
+                "body": json.dumps(body).encode(),
+            },
+        )
+
+        mock_client.return_value.create_task.assert_called_with(
+            parent=queue_path, task=expected_task
+        )

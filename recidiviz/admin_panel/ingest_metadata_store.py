@@ -51,9 +51,10 @@ class IngestDataFreshnessStore(AdminPanelStore):
                 f"gs://{self.project_id}-configs/cloud_sql_to_bq_config.yaml"
             ),
         )
-        regions_paused = (
-            [] if bq_export_config is None else bq_export_config.region_codes_to_exclude
-        )
+        if bq_export_config is None:
+            raise ValueError("STATE CloudSqlToBQConfig unexpectedly None.")
+
+        regions_paused = bq_export_config.region_codes_to_exclude
 
         latest_upper_bounds_path = GcsfsFilePath.from_absolute_path(
             f"gs://{self.project_id}-ingest-metadata/ingest_metadata_latest_ingested_upper_bounds.json"

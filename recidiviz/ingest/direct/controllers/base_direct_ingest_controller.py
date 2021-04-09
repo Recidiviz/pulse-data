@@ -25,8 +25,6 @@ from typing import Optional, List
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
-    GCSPseudoLockManager,
-    GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME,
     GCSPseudoLockAlreadyExists,
 )
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
@@ -50,6 +48,9 @@ from recidiviz.ingest.direct.controllers.direct_ingest_ingest_view_export_manage
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
     DirectIngestInstance,
+)
+from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
+    DirectIngestRegionLockManager,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileImportManager,
@@ -82,7 +83,7 @@ from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorT
 from recidiviz.ingest.ingestor import Ingestor
 from recidiviz.ingest.models import ingest_info, serialization
 from recidiviz.persistence import persistence
-from recidiviz.persistence.database.bq_refresh.bq_refresh_utils import (
+from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_lock_manager import (
     postgres_to_bq_lock_name_for_schema,
 )
 from recidiviz.persistence.database.schema_utils import (
@@ -106,7 +107,13 @@ class BaseDirectIngestController(Ingestor):
     def __init__(self, ingest_bucket_path: GcsfsBucketPath) -> None:
         """Initialize the controller."""
         self.cloud_task_manager = DirectIngestCloudTaskManagerImpl()
-        self.lock_manager = GCSPseudoLockManager()
+        self.region_lock_manager = DirectIngestRegionLockManager(
+            self.region.region_code,
+            blocking_locks=[
+                postgres_to_bq_lock_name_for_schema(self.system_level.schema_type()),
+                postgres_to_bq_lock_name_for_schema(SchemaType.OPERATIONS),
+            ],
+        )
         self.ingest_instance = DirectIngestInstance.for_ingest_bucket(
             ingest_bucket_path
         )
@@ -214,7 +221,7 @@ class BaseDirectIngestController(Ingestor):
             logging.info("Found pre-ingest tasks to schedule - returning.")
             return
 
-        if self.lock_manager.is_locked(self.ingest_process_lock_for_region()):
+        if self.region_lock_manager.is_locked():
             logging.info("Direct ingest is already locked on region [%s]", self.region)
             return
 
@@ -246,11 +253,7 @@ class BaseDirectIngestController(Ingestor):
             )
             return
 
-        if self.lock_manager.is_locked(
-            postgres_to_bq_lock_name_for_schema(self.system_level.schema_type())
-        ) or self.lock_manager.is_locked(
-            postgres_to_bq_lock_name_for_schema(SchemaType.OPERATIONS)
-        ):
+        if not self.region_lock_manager.can_proceed():
             logging.info(
                 "Postgres to BigQuery export is running, cannot run ingest - returning"
             )
@@ -428,11 +431,7 @@ class BaseDirectIngestController(Ingestor):
     ) -> None:
         check_is_region_launched_in_env(self.region)
 
-        if self.lock_manager.is_locked(
-            postgres_to_bq_lock_name_for_schema(self.system_level.schema_type())
-        ) or self.lock_manager.is_locked(
-            postgres_to_bq_lock_name_for_schema(SchemaType.OPERATIONS)
-        ):
+        if not self.region_lock_manager.can_proceed():
             logging.warning(
                 "Postgres to BigQuery export is running, can not run ingest"
             )
@@ -440,8 +439,7 @@ class BaseDirectIngestController(Ingestor):
                 "Postgres to BigQuery export is running, can not run ingest"
             )
 
-        with self.lock_manager.using_lock(
-            self.ingest_process_lock_for_region(),
+        with self.region_lock_manager.using_region_lock(
             expiration_in_seconds=self.default_job_lock_timeout_in_seconds(),
         ):
             should_schedule = self._run_ingest_job(args)
@@ -557,11 +555,6 @@ class BaseDirectIngestController(Ingestor):
             enum_overrides=self.get_enum_overrides(),
             system_level=self.system_level,
             database_key=self.ingest_database_key,
-        )
-
-    def ingest_process_lock_for_region(self) -> str:
-        return (
-            GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME + self.region.region_code.upper()
         )
 
     def _job_tag(self, args: GcsfsIngestArgs) -> str:

@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for cloud_sql_to_bq_refresh_manager.py."""
+"""Tests for cloud_sql_to_bq_refresh_control.py."""
 
 from http import HTTPStatus
 import json
@@ -22,54 +22,67 @@ import unittest
 from unittest import mock
 
 import flask
-from mock import ANY, Mock
+from mock import ANY, Mock, create_autospec
 
+from recidiviz.persistence.database.bq_refresh import cloud_sql_to_bq_refresh_control
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
-    GCSPseudoLockManager,
-    POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME,
-    GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME,
     GCSPseudoLockAlreadyExists,
+)
+from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
+    DirectIngestRegionLockManager,
+)
+from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_lock_manager import (
+    CloudSqlToBQLockManager,
 )
 from recidiviz.common.google_cloud.cloud_task_queue_manager import CloudTaskQueueInfo
 from recidiviz.ingest.direct import direct_ingest_control
-from recidiviz.persistence.database.bq_refresh import cloud_sql_to_bq_refresh_manager
+from recidiviz.persistence.database.bq_refresh import cloud_sql_to_bq_refresh_runner
+from recidiviz.persistence.database.bq_refresh.bq_refresh_cloud_task_manager import (
+    BQRefreshCloudTaskManager,
+)
+from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
+    CloudSqlToBQConfig,
+)
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
-CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME = cloud_sql_to_bq_refresh_manager.__name__
-CONTROL_PACKAGE_NAME = direct_ingest_control.__name__
+REFRESH_CONTROL_PACKAGE_NAME = cloud_sql_to_bq_refresh_control.__name__
+CLOUD_SQL_BQ_EXPORT_RUNNER_PACKAGE_NAME = cloud_sql_to_bq_refresh_runner.__name__
+INGEST_CONTROL_PACKAGE_NAME = direct_ingest_control.__name__
 
 
-class CloudSqlToBQExportManagerTest(unittest.TestCase):
-    """Tests for cloud_sql_to_bq_refresh_manager.py."""
+class CloudSqlToBQExportControlTest(unittest.TestCase):
+    """Tests for cloud_sql_to_bq_refresh_control.py."""
 
     def setUp(self) -> None:
         self.bq_refresh_patcher = mock.patch(
-            f"{CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME}.bq_refresh"
+            f"{CLOUD_SQL_BQ_EXPORT_RUNNER_PACKAGE_NAME}.bq_refresh"
         )
         self.mock_bq_refresh = self.bq_refresh_patcher.start()
 
         self.client_patcher = mock.patch(
-            f"{CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME}.BigQueryClientImpl"
+            f"{REFRESH_CONTROL_PACKAGE_NAME}.BigQueryClientImpl"
         )
         self.mock_client = self.client_patcher.start().return_value
 
         self.cloud_sql_to_gcs_export_patcher = mock.patch(
-            f"{CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME}.cloud_sql_to_gcs_export"
+            f"{CLOUD_SQL_BQ_EXPORT_RUNNER_PACKAGE_NAME}.cloud_sql_to_gcs_export"
         )
         self.mock_cloud_sql_to_gcs_export = self.cloud_sql_to_gcs_export_patcher.start()
 
         self.fake_table_name = "first_table"
 
         self.export_config_patcher = mock.patch(
-            f"{CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME}.CloudSqlToBQConfig"
+            f"{CLOUD_SQL_BQ_EXPORT_RUNNER_PACKAGE_NAME}.CloudSqlToBQConfig.for_schema_type"
         )
-        self.mock_bq_refresh_config = self.export_config_patcher.start()
+        self.mock_bq_refresh_config_fn = self.export_config_patcher.start()
+        self.mock_bq_refresh_config = create_autospec(CloudSqlToBQConfig)
+        self.mock_bq_refresh_config_fn.return_value = self.mock_bq_refresh_config
 
         self.mock_app = flask.Flask(__name__)
         self.mock_app.config["TESTING"] = True
         self.mock_app.register_blueprint(
-            cloud_sql_to_bq_refresh_manager.cloud_sql_to_bq_blueprint
+            cloud_sql_to_bq_refresh_control.cloud_sql_to_bq_blueprint
         )
         self.mock_flask_client = self.mock_app.test_client()
 
@@ -79,35 +92,13 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
         self.cloud_sql_to_gcs_export_patcher.stop()
         self.export_config_patcher.stop()
 
-    def test_export_table_then_load_table_succeeds(self) -> None:
-        """Test that export_table_then_load_table passes the client, table, and config
-        to bq_refresh.refresh_bq_table_from_gcs_export_synchronous if the export succeeds.
-        """
-
-        cloud_sql_to_bq_refresh_manager.export_table_then_load_table(
-            self.mock_client, self.fake_table_name, self.mock_bq_refresh_config
-        )
-
-        self.mock_cloud_sql_to_gcs_export.export_table.assert_called_with(
-            self.fake_table_name, self.mock_bq_refresh_config
-        )
-
-        self.mock_bq_refresh.refresh_bq_table_from_gcs_export_synchronous.assert_called_with(
-            self.mock_client, self.fake_table_name, self.mock_bq_refresh_config
-        )
-
-    def test_export_table_then_load_table_export_fails(self) -> None:
-        """Test that export_table_then_load_table does not pass args to load the table
-        if export fails and raises an error.
-        """
-        self.mock_cloud_sql_to_gcs_export.export_table.return_value = False
-
-        with self.assertRaises(ValueError):
-            cloud_sql_to_bq_refresh_manager.export_table_then_load_table(
-                self.mock_client, "random-table", self.mock_bq_refresh_config
-            )
-
-        self.mock_bq_refresh.assert_not_called()
+    def assertIsOnlySchemaLocked(self, schema_type: SchemaType) -> None:
+        lock_manager = CloudSqlToBQLockManager()
+        for s in SchemaType:
+            if s == schema_type:
+                self.assertTrue(lock_manager.is_locked(schema_type))
+            else:
+                self.assertFalse(lock_manager.is_locked(s), f"Locked for {s}")
 
     @mock.patch(
         "recidiviz.utils.metadata.project_id", Mock(return_value="test-project")
@@ -115,9 +106,7 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
     @mock.patch(
         "recidiviz.utils.metadata.project_number", Mock(return_value="123456789")
     )
-    @mock.patch(
-        f"{CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME}.export_table_then_load_table"
-    )
+    @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.export_table_then_load_table")
     def test_refresh_bq_table(self, mock_export: mock.MagicMock) -> None:
         """Tests that the export is called for a given table and module when
         the /cloud_sql_to_bq/refresh_bq_table endpoint is hit."""
@@ -139,9 +128,7 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
             headers={"X-Appengine-Inbound-Appid": "test-project"},
         )
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        mock_export.assert_called_with(
-            self.mock_client, table, self.mock_bq_refresh_config
-        )
+        mock_export.assert_called_with(self.mock_client, table, SchemaType.JAILS)
 
     @mock.patch(
         "recidiviz.utils.metadata.project_id", Mock(return_value="test-project")
@@ -149,9 +136,7 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
     @mock.patch(
         "recidiviz.utils.metadata.project_number", Mock(return_value="123456789")
     )
-    @mock.patch(
-        f"{CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME}.export_table_then_load_table"
-    )
+    @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.export_table_then_load_table")
     def test_refresh_bq_table_invalid_module(self, mock_export: mock.MagicMock) -> None:
         """Tests that there is an error when the /cloud_sql_to_bq/refresh_bq_table
         endpoint is hit with an invalid module."""
@@ -170,7 +155,9 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
         mock_export.assert_not_called()
 
-    @mock.patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
+    @mock.patch(
+        f"{INGEST_CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes"
+    )
     @mock.patch(
         "recidiviz.utils.environment.get_gcp_environment", Mock(return_value="staging")
     )
@@ -185,8 +172,8 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
     @mock.patch(
         "recidiviz.utils.metadata.project_number", Mock(return_value="123456789")
     )
-    @mock.patch(f"{CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME}.pubsub_helper")
-    @mock.patch(f"{CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME}.BQRefreshCloudTaskManager")
+    @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.pubsub_helper")
+    @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.BQRefreshCloudTaskManager")
     def test_monitor_refresh_bq_tasks_requeue_unlock_no_publish(
         self,
         mock_task_manager: mock.MagicMock,
@@ -195,16 +182,16 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
     ) -> None:
         """Test that a bq monitor task does not publish topic/message
         with empty topic/message and that it unlocks export lock"""
-        lock_manager = GCSPseudoLockManager()
+        lock_manager = CloudSqlToBQLockManager()
         mock_supported_region_codes.return_value = []
 
-        schema = "schema"
+        schema = "jails"
         topic = ""
         message = ""
         route = "/monitor_refresh_bq_tasks"
         data = {"schema": schema, "topic": topic, "message": message}
 
-        lock_manager.lock(POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME + schema.upper())
+        lock_manager.acquire_lock(lock_id="any_lock_id", schema_type=SchemaType.JAILS)
 
         mock_task_manager.return_value.get_bq_queue_info.return_value = (
             CloudTaskQueueInfo(queue_name="queue_name", task_names=[])
@@ -220,13 +207,11 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK)
         mock_task_manager.return_value.create_bq_refresh_monitor_task.assert_not_called()
         mock_pubsub_helper.publish_message_to_topic.assert_not_called()
-        self.assertFalse(
-            lock_manager.is_locked(
-                POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME + schema.upper()
-            )
-        )
+        self.assertFalse(lock_manager.is_locked(SchemaType.JAILS))
 
-    @mock.patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
+    @mock.patch(
+        f"{INGEST_CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes"
+    )
     @mock.patch(
         "recidiviz.utils.environment.get_gcp_environment", Mock(return_value="staging")
     )
@@ -241,8 +226,8 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
     @mock.patch(
         "recidiviz.utils.metadata.project_number", Mock(return_value="123456789")
     )
-    @mock.patch(f"{CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME}.pubsub_helper")
-    @mock.patch(f"{CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME}.BQRefreshCloudTaskManager")
+    @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.pubsub_helper")
+    @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.BQRefreshCloudTaskManager")
     def test_monitor_refresh_bq_tasks_requeue_with_no_topic_and_message(
         self,
         mock_task_manager: mock.MagicMock,
@@ -252,16 +237,16 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
         """Test that a new bq monitor task is added to the queue when there are
         still unfinished tasks on the bq queue, without topic/message to publish."""
         queue_path = "test-queue-path"
-        lock_manager = GCSPseudoLockManager()
+        lock_manager = CloudSqlToBQLockManager()
         mock_supported_region_codes.return_value = []
 
-        schema = "schema"
+        schema = "jails"
         topic = ""
         message = ""
         route = "/monitor_refresh_bq_tasks"
         data = {"schema": schema, "topic": topic, "message": message}
 
-        lock_manager.lock(POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME + schema.upper())
+        lock_manager.acquire_lock(lock_id="any_lock_id", schema_type=SchemaType.JAILS)
 
         mock_task_manager.return_value.get_bq_queue_info.return_value = (
             CloudTaskQueueInfo(
@@ -286,13 +271,11 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
             schema, topic, message
         )
         mock_pubsub_helper.publish_message_to_topic.assert_not_called()
-        self.assertTrue(
-            lock_manager.is_locked(
-                POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME + schema.upper()
-            )
-        )
+        self.assertTrue(lock_manager.is_locked(SchemaType.JAILS))
 
-    @mock.patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
+    @mock.patch(
+        f"{INGEST_CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes"
+    )
     @mock.patch(
         "recidiviz.utils.environment.get_gcp_environment", Mock(return_value="staging")
     )
@@ -307,8 +290,8 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
     @mock.patch(
         "recidiviz.utils.metadata.project_number", Mock(return_value="123456789")
     )
-    @mock.patch(f"{CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME}.pubsub_helper")
-    @mock.patch(f"{CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME}.BQRefreshCloudTaskManager")
+    @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.pubsub_helper")
+    @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.BQRefreshCloudTaskManager")
     def test_monitor_refresh_bq_tasks_requeue_with_topic_and_message(
         self,
         mock_task_manager: mock.MagicMock,
@@ -318,16 +301,16 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
         """Test that a new bq monitor task is added to the queue when there are
         still unfinished tasks on the bq queue, with topic/message to publish."""
         queue_path = "test-queue-path"
-        lock_manager = GCSPseudoLockManager()
+        lock_manager = CloudSqlToBQLockManager()
         mock_supported_region_codes.return_value = []
 
-        schema = "schema"
+        schema = "jails"
         topic = "fake_topic"
         message = "fake_message"
         route = "/monitor_refresh_bq_tasks"
         data = {"schema": schema, "topic": topic, "message": message}
 
-        lock_manager.lock(POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME + schema.upper())
+        lock_manager.acquire_lock(lock_id="any_lock_id", schema_type=SchemaType.JAILS)
 
         mock_task_manager.return_value.get_bq_queue_info.return_value = (
             CloudTaskQueueInfo(
@@ -352,13 +335,11 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
             schema, topic, message
         )
         mock_pubsub_helper.publish_message_to_topic.assert_not_called()
-        self.assertTrue(
-            lock_manager.is_locked(
-                POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME + schema.upper()
-            )
-        )
+        self.assertTrue(lock_manager.is_locked(SchemaType.JAILS))
 
-    @mock.patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
+    @mock.patch(
+        f"{INGEST_CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes"
+    )
     @mock.patch(
         "recidiviz.utils.environment.get_gcp_environment", Mock(return_value="staging")
     )
@@ -373,8 +354,8 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
     @mock.patch(
         "recidiviz.utils.metadata.project_number", Mock(return_value="123456789")
     )
-    @mock.patch(f"{CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME}.pubsub_helper")
-    @mock.patch(f"{CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME}.BQRefreshCloudTaskManager")
+    @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.pubsub_helper")
+    @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.BQRefreshCloudTaskManager")
     def test_monitor_refresh_bq_tasks_requeue_publish(
         self,
         mock_task_manager: mock.MagicMock,
@@ -384,7 +365,7 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
         """Test that a new bq monitor task is added to the queue when there are
         still unfinished tasks on the bq queue, with topic/message to publish."""
         queue_path = "test-queue-path"
-        lock_manager = GCSPseudoLockManager()
+        lock_manager = CloudSqlToBQLockManager()
         mock_supported_region_codes.return_value = []
 
         schema = SchemaType.STATE.value
@@ -393,7 +374,7 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
         route = "/monitor_refresh_bq_tasks"
         data = {"schema": schema, "topic": topic, "message": message}
 
-        lock_manager.lock(POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME + schema.upper())
+        lock_manager.acquire_lock(lock_id="any_lock_id", schema_type=SchemaType.STATE)
 
         mock_task_manager.return_value.get_bq_queue_info.return_value = (
             CloudTaskQueueInfo(
@@ -414,11 +395,7 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
         mock_pubsub_helper.publish_message_to_topic.assert_called_with(
             message=message, topic=topic
         )
-        self.assertFalse(
-            lock_manager.is_locked(
-                POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME + schema.upper()
-            )
-        )
+        self.assertFalse(lock_manager.is_locked(SchemaType.STATE))
 
     @mock.patch(
         "recidiviz.cloud_storage.gcs_pseudo_lock_manager.GcsfsFactory.build",
@@ -430,15 +407,14 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
     @mock.patch(
         "recidiviz.utils.metadata.project_number", Mock(return_value="123456789")
     )
-    @mock.patch(f"{CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME}.BQRefreshCloudTaskManager")
-    def test_create_refresh_bq_tasks_state(self, mock_task_manager):
+    @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.BQRefreshCloudTaskManager")
+    def test_create_refresh_bq_tasks_state(
+        self, mock_task_manager: mock.MagicMock
+    ) -> None:
         # Arrange
         mock_table = Mock()
         mock_table.name = "test_table"
-        self.mock_bq_refresh_config.for_schema_type.return_value.get_tables_to_export.return_value = [
-            mock_table
-        ]
-        lock_manager = GCSPseudoLockManager()
+        self.mock_bq_refresh_config.get_tables_to_export.return_value = [mock_table]
 
         # Act
         response = self.mock_flask_client.get(
@@ -447,11 +423,8 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
         )
 
         # Assert
-        self.assertFalse(
-            lock_manager.no_active_locks_with_prefix(
-                POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME
-            )
-        )
+        self.assertIsOnlySchemaLocked(SchemaType.STATE)
+
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.mock_bq_refresh_config.for_schema_type.assert_called_with(SchemaType.STATE)
         mock_task_manager.return_value.create_refresh_bq_table_task.assert_called_with(
@@ -471,37 +444,33 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
     @mock.patch(
         "recidiviz.utils.metadata.project_number", Mock(return_value="123456789")
     )
-    @mock.patch(f"{CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME}.BQRefreshCloudTaskManager")
+    @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.BQRefreshCloudTaskManager")
     def test_create_wait_to_refresh_bq_tasks_state_ingest_locked(
-        self, mock_task_manager
-    ):
+        self, mock_task_manager_fn: mock.MagicMock
+    ) -> None:
         # Arrange
         mock_table = Mock()
         mock_table.name = "test_table"
-        self.mock_bq_refresh_config.for_schema_type.return_value.get_tables_to_export.return_value = [
-            mock_table
-        ]
-        lock_manager = GCSPseudoLockManager()
-        lock_manager.lock(GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME)
+        self.mock_bq_refresh_config.get_tables_to_export.return_value = [mock_table]
+        lock_manager = DirectIngestRegionLockManager(
+            region_code="US_XX", blocking_locks=[]
+        )
+        mock_task_manager = create_autospec(BQRefreshCloudTaskManager)
+        mock_task_manager_fn.return_value = mock_task_manager
 
         # Act
-        response = self.mock_flask_client.get(
-            "/create_refresh_bq_tasks/state",
-            headers={"X-Appengine-Inbound-Appid": "recidiviz-123"},
-        )
+        with lock_manager.using_region_lock(expiration_in_seconds=10):
+            response = self.mock_flask_client.get(
+                "/create_refresh_bq_tasks/state",
+                headers={"X-Appengine-Inbound-Appid": "recidiviz-123"},
+            )
 
         # Assert
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertFalse(
-            lock_manager.no_active_locks_with_prefix(
-                POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME
-            )
-        )
-        self.assertTrue(
-            mock_task_manager.return_value.job_monitor_cloud_task_queue_manager.create_task.called
-        )
-        mock_task_manager.return_value.create_refresh_bq_table_task.assert_not_called()
-        mock_task_manager.return_value.create_bq_refresh_monitor_task.assert_not_called()
+        self.assertIsOnlySchemaLocked(SchemaType.STATE)
+        mock_task_manager.create_reattempt_create_refresh_tasks_task.assert_called_once()
+        mock_task_manager.create_refresh_bq_table_task.assert_not_called()
+        mock_task_manager.create_bq_refresh_monitor_task.assert_not_called()
 
     @mock.patch(
         "recidiviz.cloud_storage.gcs_pseudo_lock_manager.GcsfsFactory.build",
@@ -513,18 +482,18 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
     @mock.patch(
         "recidiviz.utils.metadata.project_number", Mock(return_value="123456789")
     )
-    @mock.patch(f"{CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME}.BQRefreshCloudTaskManager")
+    @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.BQRefreshCloudTaskManager")
     def test_create_wait_to_refresh_bq_tasks_state_export_locked(
-        self, mock_task_manager
-    ):
+        self, mock_task_manager: mock.MagicMock
+    ) -> None:
         # Arrange
         mock_table = Mock()
         mock_table.name = "test_table"
         self.mock_bq_refresh_config.for_schema_type.return_value.get_tables_to_export.return_value = [
             mock_table
         ]
-        lock_manager = GCSPseudoLockManager()
-        lock_manager.lock(POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME + "STATE")
+        lock_manager = CloudSqlToBQLockManager()
+        lock_manager.acquire_lock(lock_id="any_lock_id", schema_type=SchemaType.STATE)
 
         # Act
         with self.assertRaises(GCSPseudoLockAlreadyExists):
@@ -546,8 +515,10 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
     @mock.patch(
         "recidiviz.utils.metadata.project_number", Mock(return_value="123456789")
     )
-    @mock.patch(f"{CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME}.BQRefreshCloudTaskManager")
-    def test_create_refresh_bq_tasks_justice_counts(self, mock_task_manager):
+    @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.BQRefreshCloudTaskManager")
+    def test_create_refresh_bq_tasks_justice_counts(
+        self, mock_task_manager: mock.MagicMock
+    ) -> None:
         # Arrange
         mock_table = Mock()
         mock_table.name = "test_table"
@@ -562,10 +533,6 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
         )
 
         # Assert
-        self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.mock_bq_refresh_config.for_schema_type.assert_called_with(
-            SchemaType.JUSTICE_COUNTS
-        )
-        mock_task_manager.return_value.create_refresh_bq_table_task.assert_called_with(
-            "test_table", SchemaType.JUSTICE_COUNTS
-        )
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+        self.mock_bq_refresh_config.for_schema_type.assert_not_called()
+        mock_task_manager.return_value.create_refresh_bq_table_task.assert_not_called()
