@@ -208,6 +208,34 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
 
         self.assertFalse(applicable)
 
+    def test_guidelines_applicable_for_case_diversion(self):
+        """The guidelines should not be applicable to people who are in diversion programs."""
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code=StateCode.US_ND.value,
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.DIVERSION,
+            supervision_level_raw_text="7",
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
+            supervision_period=supervision_period,
+            case_type=StateSupervisionCaseType.GENERAL,
+            start_of_supervision=supervision_period.start_date,
+            assessments=[],
+            supervision_contacts=[],
+        )
+
+        applicable = us_nd_supervision_compliance._guidelines_applicable_for_case()
+
+        self.assertFalse(applicable)
+
     def test_guidelines_applicable_for_case(self):
         """The guidelines should be applicable to people who are not in interstate compact or not classified."""
         supervision_period = StateSupervisionPeriod.new_with_defaults(

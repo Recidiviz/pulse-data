@@ -43,10 +43,12 @@ class UsNdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
 
     def _guidelines_applicable_for_case(self) -> bool:
         """Returns whether the standard state guidelines are applicable for the given supervision case. The standard
-        guidelines are not applicable for people who are not classified or who are in interstate compact."""
+        guidelines are not applicable for people who are not classified, who are in interstate compact, or in diversion
+        programs."""
         disallowed_supervision_levels: List[StateSupervisionLevel] = [
             StateSupervisionLevel.EXTERNAL_UNKNOWN,
             StateSupervisionLevel.INTERSTATE_COMPACT,
+            StateSupervisionLevel.DIVERSION,
         ]
         return (
             self.supervision_period.supervision_level
