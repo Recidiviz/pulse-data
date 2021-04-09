@@ -30,7 +30,7 @@ UPDATE_QUERY = (
 )
 
 
-def upgrade():
+def upgrade() -> None:
     connection = op.get_bind()
 
     updated_release_reason = "TRANSFERRED_OUT_OF_STATE"
@@ -42,7 +42,7 @@ def upgrade():
     )
 
 
-def downgrade():
+def downgrade() -> None:
     connection = op.get_bind()
 
     updated_release_reason = "TRANSFER"

@@ -56,7 +56,7 @@ INCARCERATION_PERIOD_TABLE_NAME = "state_incarceration_period"
 INCARCERATION_PERIOD_HISTORY_TABLE_NAME = "state_incarceration_period_history"
 
 
-def upgrade():
+def upgrade() -> None:
     connection = op.get_bind()
 
     new_transfer_out_of_state = "TRANSFER_OUT_OF_STATE"
@@ -102,7 +102,7 @@ def upgrade():
     )
 
 
-def downgrade():
+def downgrade() -> None:
     connection = op.get_bind()
 
     deprecated_transferred_out_of_state = "TRANSFERRED_OUT_OF_STATE"

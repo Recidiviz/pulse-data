@@ -25,7 +25,7 @@ alias_type_values = [
 ]
 
 
-def upgrade():
+def upgrade() -> None:
     # Create the new enum type first
     sa.Enum(*alias_type_values, name="state_person_alias_type").create(
         bind=op.get_bind()
@@ -58,7 +58,7 @@ def upgrade():
     )
 
 
-def downgrade():
+def downgrade() -> None:
     op.drop_column("state_person_alias_history", "alias_type_raw_text")
     op.drop_column("state_person_alias_history", "alias_type")
     op.drop_column("state_person_alias", "alias_type_raw_text")

@@ -36,14 +36,14 @@ TABLES_TO_UPDATE = [
 ]
 
 
-def upgrade():
+def upgrade() -> None:
     connection = op.get_bind()
     for table in TABLES_TO_UPDATE:
         update_query = UPDATE_QUERY.format(table_name=table)
         connection.execute(update_query)
 
 
-def downgrade():
+def downgrade() -> None:
     connection = op.get_bind()
     for table in TABLES_TO_UPDATE:
         downgrade_query = DOWNGRADE_QUERY.format(table_name=table)

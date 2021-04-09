@@ -35,7 +35,7 @@ UPDATE_QUERY = (
 )
 
 
-def upgrade():
+def upgrade() -> None:
     connection = op.get_bind()
 
     updated_decision_warrant = "WARRANT_ISSUED"
@@ -55,7 +55,7 @@ def upgrade():
     )
 
 
-def downgrade():
+def downgrade() -> None:
     connection = op.get_bind()
 
     deprecated_decision_value = "REVOCATION"

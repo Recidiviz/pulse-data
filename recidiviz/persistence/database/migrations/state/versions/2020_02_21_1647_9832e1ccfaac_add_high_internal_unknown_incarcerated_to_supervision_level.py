@@ -1,3 +1,4 @@
+# pylint: skip-file
 """add_high_internal_unknown_incarcerated_to_supervision_level
 
 Revision ID: 9832e1ccfaac
@@ -40,7 +41,7 @@ new_values = {
 }
 
 
-def upgrade():
+def upgrade() -> None:
     op.execute(
         "ALTER TYPE state_supervision_level RENAME TO state_supervision_level_old;"
     )
@@ -60,7 +61,7 @@ def upgrade():
     op.execute("DROP TYPE state_supervision_level_old;")
 
 
-def downgrade():
+def downgrade() -> None:
     op.execute(
         "ALTER TYPE state_supervision_level RENAME TO state_supervision_level_old;"
     )

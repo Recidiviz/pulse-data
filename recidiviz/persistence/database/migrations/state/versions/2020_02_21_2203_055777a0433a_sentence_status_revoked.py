@@ -1,3 +1,4 @@
+# pylint: skip-file
 """sentence_status_revoked
   
 Revision ID: 055777a0433a
@@ -37,7 +38,7 @@ new_values = [
 ]
 
 
-def upgrade():
+def upgrade() -> None:
     op.execute("ALTER TYPE state_sentence_status RENAME TO state_sentence_status_old;")
     sa.Enum(*new_values, name="state_sentence_status").create(bind=op.get_bind())
 
@@ -83,7 +84,7 @@ def upgrade():
     op.execute("DROP TYPE state_sentence_status_old;")
 
 
-def downgrade():
+def downgrade() -> None:
     op.execute("ALTER TYPE state_sentence_status RENAME TO state_sentence_status_old;")
     sa.Enum(*old_values, name="state_sentence_status").create(bind=op.get_bind())
 

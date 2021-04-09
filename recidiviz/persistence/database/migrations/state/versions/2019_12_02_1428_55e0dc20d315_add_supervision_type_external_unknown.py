@@ -1,3 +1,4 @@
+# pylint: skip-file
 """add_supervision_type_external_unknown
 
 Revision ID: 55e0dc20d315
@@ -37,7 +38,7 @@ new_values = [
 ]
 
 
-def upgrade():
+def upgrade() -> None:
     op.execute(
         "ALTER TYPE state_supervision_type RENAME TO state_supervision_type_old;"
     )
@@ -72,7 +73,7 @@ def upgrade():
     op.execute("DROP TYPE state_supervision_type_old;")
 
 
-def downgrade():
+def downgrade() -> None:
     op.execute(
         "ALTER TYPE state_supervision_type RENAME TO state_supervision_type_old;"
     )

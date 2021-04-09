@@ -29,7 +29,7 @@ UPDATE_QUERY = (
 )
 
 
-def upgrade():
+def upgrade() -> None:
     connection = op.get_bind()
 
     updated_admission_reason = "TRANSFERRED_FROM_OUT_OF_STATE"
@@ -41,7 +41,7 @@ def upgrade():
     )
 
 
-def downgrade():
+def downgrade() -> None:
     connection = op.get_bind()
 
     updated_admission_reason = "TRANSFER"

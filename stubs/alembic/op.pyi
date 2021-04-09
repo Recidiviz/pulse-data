@@ -17,7 +17,9 @@
 
 from typing import List, Optional, Union
 
+from alembic.runtime.migration import MigrationContext
 from sqlalchemy import Column
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.engine import Connection
 from sqlalchemy.types import TypeEngine
 from typing_extensions import Literal
@@ -35,16 +37,35 @@ def alter_column(
     column_name: str,
     type_: Optional[TypeEngine] = None,
     postgresql_using: Optional[str] = None,
+    existing_type: Optional[postgresql.ARRAY] = None,
+    nullable: Optional[bool] = False,
+    existing_nullable: Optional[bool] = False,
 ) -> None: ...
 def create_check_constraint(
     cosntraint_name: str, table_name: str, condition: str
 ) -> None: ...
+def create_foreign_key(
+    constraint_name: str,
+    source_table: str,
+    referent_table: str,
+    local_cols: List[str],
+    remote_cols: List[str],
+    ondelete: Optional[str] = None,
+) -> None: ...
 def create_index(
     index_name: str, table_name: str, columns: List[str], unique: bool = False
 ) -> None: ...
-def create_table(table_name: str, *columns: List[Column]) -> None: ...
+def create_table(
+    table_name: str,
+    *columns: List[Column],
+    postgresql_ignore_search_path: Optional[bool] = False
+) -> None: ...
 def create_unique_constraint(
-    constraint_name: str, table_name: str, columns: List[str]
+    constraint_name: str,
+    table_name: str,
+    columns: List[str],
+    deferrable: Optional[str] = None,
+    initially: Optional[str] = None,
 ) -> None: ...
 def drop_column(table_name: str, column_name: str) -> None: ...
 def drop_constraint(
@@ -55,3 +76,4 @@ def drop_table(table_name: str) -> None: ...
 def execute(sqltext: str) -> None: ...
 def f(name: str) -> str: ...
 def get_bind() -> Connection: ...
+def get_context() -> MigrationContext: ...

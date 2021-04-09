@@ -43,7 +43,7 @@ new_values = [
 ]
 
 
-def upgrade():
+def upgrade() -> None:
     op.execute(
         "ALTER TYPE state_assessment_level RENAME TO state_assessment_level_old;"
     )
@@ -63,7 +63,7 @@ def upgrade():
     op.execute("DROP TYPE state_assessment_level_old;")
 
 
-def downgrade():
+def downgrade() -> None:
     op.execute(
         "ALTER TYPE state_assessment_level RENAME TO state_assessment_level_old;"
     )

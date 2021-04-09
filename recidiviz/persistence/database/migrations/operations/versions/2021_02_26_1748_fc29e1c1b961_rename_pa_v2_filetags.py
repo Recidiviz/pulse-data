@@ -38,11 +38,11 @@ WHERE region_code = 'US_PA' AND file_tag IN (
 """
 
 
-def upgrade():
+def upgrade() -> None:
     with op.get_context().autocommit_block():
         op.execute(UPGRADE_QUERY)
 
 
-def downgrade():
+def downgrade() -> None:
     with op.get_context().autocommit_block():
         op.execute(DOWNGRADE_QUERY)

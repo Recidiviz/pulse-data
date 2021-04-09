@@ -1,3 +1,4 @@
+# pylint: skip-file
 """supervision_violation_type_escaped
 
 Revision ID: 3e56b61df4a9
@@ -22,7 +23,7 @@ old_values = ["ABSCONDED", "FELONY", "MISDEMEANOR", "MUNICIPAL", "TECHNICAL"]
 new_values = ["ABSCONDED", "ESCAPED", "FELONY", "MISDEMEANOR", "MUNICIPAL", "TECHNICAL"]
 
 
-def upgrade():
+def upgrade() -> None:
     op.execute(
         "ALTER TYPE state_supervision_violation_type RENAME TO state_supervision_violation_type_old;"
     )
@@ -44,7 +45,7 @@ def upgrade():
     op.execute("DROP TYPE state_supervision_violation_type_old;")
 
 
-def downgrade():
+def downgrade() -> None:
     op.execute(
         "ALTER TYPE state_supervision_violation_type RENAME TO state_supervision_violation_type_old;"
     )

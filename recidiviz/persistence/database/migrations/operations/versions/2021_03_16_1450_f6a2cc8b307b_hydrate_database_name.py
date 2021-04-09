@@ -29,11 +29,11 @@ WHERE ingest_database_name = 'postgres';
 """
 
 
-def upgrade():
+def upgrade() -> None:
     with op.get_context().autocommit_block():
         op.execute(UPGRADE_QUERY)
 
 
-def downgrade():
+def downgrade() -> None:
     with op.get_context().autocommit_block():
         op.execute(DOWNGRADE_QUERY)

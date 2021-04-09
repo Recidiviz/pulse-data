@@ -49,7 +49,7 @@ new_incarceration_values = [
 ]
 
 
-def upgrade():
+def upgrade() -> None:
     # Sentence status
     op.execute("ALTER TYPE state_sentence_status RENAME TO state_sentence_status_old;")
     sa.Enum(*new_status_values, name="state_sentence_status").create(bind=op.get_bind())
@@ -137,7 +137,7 @@ def upgrade():
     op.execute("DROP TYPE state_incarceration_type_old;")
 
 
-def downgrade():
+def downgrade() -> None:
     # Sentence status
     op.execute("ALTER TYPE state_sentence_status RENAME TO state_sentence_status_old;")
     sa.Enum(*old_status_values, name="state_sentence_status").create(bind=op.get_bind())

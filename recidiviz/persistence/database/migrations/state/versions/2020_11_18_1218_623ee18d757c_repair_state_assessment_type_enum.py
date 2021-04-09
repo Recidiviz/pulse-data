@@ -64,7 +64,7 @@ new_values = [
 ]
 
 
-def upgrade():
+def upgrade() -> None:
     op.execute("ALTER TYPE state_assessment_type RENAME TO state_assessment_type_old;")
     sa.Enum(*new_values, name="state_assessment_type").create(bind=op.get_bind())
     op.alter_column(
@@ -82,7 +82,7 @@ def upgrade():
     op.execute("DROP TYPE state_assessment_type_old;")
 
 
-def downgrade():
+def downgrade() -> None:
     op.execute("ALTER TYPE state_assessment_type RENAME TO state_assessment_type_old;")
     sa.Enum(*old_values, name="state_assessment_type").create(bind=op.get_bind())
     op.alter_column(

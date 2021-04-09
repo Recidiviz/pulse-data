@@ -1,3 +1,4 @@
+# pylint: skip-file
 """add_agent_type_present_without_info
 
 Revision ID: 62e8cba7e710
@@ -35,7 +36,7 @@ new_values = [
 ]
 
 
-def upgrade():
+def upgrade() -> None:
     op.execute("ALTER TYPE state_agent_type RENAME TO state_agent_type_old;")
     sa.Enum(*new_values, name="state_agent_type").create(bind=op.get_bind())
     op.alter_column(
@@ -53,7 +54,7 @@ def upgrade():
     op.execute("DROP TYPE state_agent_type_old;")
 
 
-def downgrade():
+def downgrade() -> None:
     op.execute("ALTER TYPE state_agent_type RENAME TO state_agent_type_old;")
     sa.Enum(*old_values, name="state_agent_type").create(bind=op.get_bind())
     op.alter_column(
