@@ -20,6 +20,7 @@ import { Link, Redirect, Route, Switch, useLocation } from "react-router-dom";
 
 import CloudSQLExportView from "./CloudSQLExportView";
 import CloudSQLImportView from "./CloudSQLImportView";
+import DataDiscoveryView from "./DataDiscoveryView";
 import POFeedbackView from "./POFeedbackView";
 import ColumnView from "./ColumnView";
 import DatasetView from "./DatasetView";
@@ -63,6 +64,11 @@ const App = (): JSX.Element => {
             <Menu.Item key={DatasetMetadata.DATA_FRESHNESS_ROUTE}>
               <Link to={DatasetMetadata.DATA_FRESHNESS_ROUTE}>
                 Data Freshness
+              </Link>
+            </Menu.Item>
+            <Menu.Item key={DatasetMetadata.DATA_DISCOVERY_ROUTE}>
+              <Link to={DatasetMetadata.DATA_DISCOVERY_ROUTE}>
+                Data Discovery
               </Link>
             </Menu.Item>
           </Menu.ItemGroup>
@@ -125,6 +131,11 @@ const App = (): JSX.Element => {
           />
           <Route
             exact
+            path={DatasetMetadata.DATA_DISCOVERY_ROUTE}
+            component={DataDiscoveryView}
+          />
+          <Route
+            exact
             path={IngestOperations.INGEST_ACTIONS_ROUTE}
             component={ActionsView}
           />
@@ -181,6 +192,9 @@ function selectedMenuKeys(pathname: string): string[] {
   }
   if (pathname.startsWith(CaseTriage.PO_FEEDBACK_ROUTE)) {
     return [CaseTriage.PO_FEEDBACK_ROUTE];
+  }
+  if (pathname.startsWith(DatasetMetadata.DATA_DISCOVERY_ROUTE)) {
+    return [DatasetMetadata.DATA_DISCOVERY_ROUTE];
   }
   return [];
 }

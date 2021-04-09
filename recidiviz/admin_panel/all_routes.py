@@ -172,7 +172,7 @@ def fetch_ingest_data_freshness() -> Tuple[str, HTTPStatus]:
 def fetch_ingest_region_codes() -> Tuple[str, HTTPStatus]:
     ingest_region_codes = [
         region_code
-        for region_code in get_existing_region_dir_names()
+        for region_code in sorted(get_existing_region_dir_names())
         if StateCode.is_state_code(region_code)
     ]
     return jsonify(ingest_region_codes), HTTPStatus.OK

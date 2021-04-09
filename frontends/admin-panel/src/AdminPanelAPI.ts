@@ -99,3 +99,55 @@ export const fetchIngestRegionCodes = async (): Promise<Response> => {
     {}
   );
 };
+
+// Data Discovery
+export interface Message {
+  cursor: number;
+  data: string;
+  kind: string;
+}
+
+export const fetchDiscoveryStatus = async (
+  discoveryId: string,
+  messageCursor: number
+): Promise<Response> => {
+  return postWithURLAndBody("/data_discovery/discovery_status", {
+    message_cursor: messageCursor,
+    discovery_id: discoveryId,
+  });
+};
+
+export const pollDiscoveryStatus = async (
+  discoveryId: string,
+  latestMessage: Message | null,
+  onMessageReceived: CallableFunction
+) => {
+  const response = await fetchDiscoveryStatus(
+    discoveryId,
+    latestMessage ? latestMessage.cursor : 0
+  );
+
+  if (response.status === 200) {
+    // Get and show the message
+    const receivedMessage = await response.json();
+
+    onMessageReceived(receivedMessage);
+
+    if (receivedMessage.kind === "close") {
+      return;
+    }
+  }
+
+  if (response.status === 500) {
+    onMessageReceived(null);
+    return;
+  }
+
+  await pollDiscoveryStatus(discoveryId, latestMessage, onMessageReceived);
+};
+
+export const createDiscovery = async (
+  body: Record<string, unknown>
+): Promise<Response> => {
+  return postWithURLAndBody("/data_discovery/create_discovery", body);
+};
