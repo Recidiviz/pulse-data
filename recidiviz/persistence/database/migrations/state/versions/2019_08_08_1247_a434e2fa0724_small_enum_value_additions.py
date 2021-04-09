@@ -1,3 +1,4 @@
+# pylint: skip-file
 """small-enum-value-additions
 
 Revision ID: a434e2fa0724
@@ -33,7 +34,7 @@ new_supervision_values = [
 new_court_case_values = ["EXTERNAL_UNKNOWN", "PRESENT_WITHOUT_INFO"]
 
 
-def upgrade():
+def upgrade() -> None:
     op.execute(
         "ALTER TYPE state_supervision_level RENAME TO state_supervision_level_old;"
     )
@@ -75,7 +76,7 @@ def upgrade():
     op.execute("DROP TYPE state_court_case_status_old;")
 
 
-def downgrade():
+def downgrade() -> None:
     op.execute(
         "ALTER TYPE state_supervision_level RENAME TO state_supervision_level_old;"
     )

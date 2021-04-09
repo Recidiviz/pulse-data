@@ -49,7 +49,7 @@ TABLES_TO_UPDATE = [
 ]
 
 
-def upgrade():
+def upgrade() -> None:
     connection = op.get_bind()
 
     for table_id in TABLES_TO_UPDATE:
@@ -70,6 +70,6 @@ def upgrade():
             connection.execute(UPDATE_QUERY_US_PA.format(table_id=table_id))
 
 
-def downgrade():
+def downgrade() -> None:
     for table_id in TABLES_TO_UPDATE:
         op.drop_column(table_id, "custodial_authority_raw_text")

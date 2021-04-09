@@ -1,3 +1,4 @@
+# pylint: skip-file
 """add_ncic_code
 
 Revision ID: 9cf0a4084c25
@@ -16,7 +17,7 @@ branch_labels = None
 depends_on = None
 
 
-def upgrade():
+def upgrade() -> None:
     op.add_column(
         "state_charge", sa.Column("ncic_code", sa.String(length=255), nullable=True)
     )
@@ -26,6 +27,6 @@ def upgrade():
     )
 
 
-def downgrade():
+def downgrade() -> None:
     op.drop_column("state_charge_history", "ncic_code")
     op.drop_column("state_charge", "ncic_code")

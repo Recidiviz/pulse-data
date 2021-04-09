@@ -231,7 +231,7 @@ WHERE ch.ncic_code IS NOT NULL
 """
 
 
-def upgrade():
+def upgrade() -> None:
     with op.get_context().autocommit_block():
         op.execute(US_ND_UPGRADE_BY_STATUTE_QUERY.format(table_name="state_charge"))
         op.execute(
@@ -242,6 +242,6 @@ def upgrade():
         op.execute(UPGRADE_BY_NCIC_CODE_QUERY.format(table_name="state_charge_history"))
 
 
-def downgrade():
+def downgrade() -> None:
     # There is no sensible downgrade query to run here because it's inherently lossy
     pass

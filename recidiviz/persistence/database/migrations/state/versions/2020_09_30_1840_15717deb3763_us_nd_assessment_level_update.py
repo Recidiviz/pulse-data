@@ -39,7 +39,7 @@ TABLE_NAME = "state_assessment"
 HISTORICAL_TABLE_NAME = "state_assessment_history"
 
 
-def upgrade():
+def upgrade() -> None:
     connection = op.get_bind()
 
     updated_assessment_level = "EXTERNAL_UNKNOWN"
@@ -64,7 +64,7 @@ def upgrade():
     connection.execute(update_assessment_level_historical_query)
 
 
-def downgrade():
+def downgrade() -> None:
     connection = op.get_bind()
 
     undetermined_assessment_level_raw_text = "UNDETERMINED"

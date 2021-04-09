@@ -50,7 +50,7 @@ new_values = [
 ]
 
 
-def upgrade():
+def upgrade() -> None:
     op.execute(
         "ALTER TYPE state_incarceration_incident_outcome_type RENAME TO state_incarceration_incident_outcome_type_old;"
     )
@@ -93,7 +93,7 @@ def upgrade():
     # ### end Alembic commands ###
 
 
-def downgrade():
+def downgrade() -> None:
     op.execute(
         "ALTER TYPE state_incarceration_incident_outcome_type RENAME TO state_incarceration_incident_outcome_type_old;"
     )

@@ -1,3 +1,4 @@
+# pylint: skip-file
 """add_investigation_sp_termination_reason
 
 Revision ID: de5e9f994f17
@@ -70,7 +71,7 @@ new_admission_values = [
 ]
 
 
-def upgrade():
+def upgrade() -> None:
     op.execute(
         "ALTER TYPE state_supervision_period_termination_reason RENAME TO state_supervision_period_termination_reason_old;"
     )
@@ -120,7 +121,7 @@ def upgrade():
     op.execute("DROP TYPE state_supervision_period_admission_reason_old;")
 
 
-def downgrade():
+def downgrade() -> None:
     op.execute(
         "ALTER TYPE state_supervision_period_termination_reason RENAME TO state_supervision_period_termination_reason_old;"
     )

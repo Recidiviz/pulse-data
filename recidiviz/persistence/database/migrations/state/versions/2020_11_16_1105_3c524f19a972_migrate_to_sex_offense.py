@@ -38,7 +38,7 @@ CASE_TYPE_TABLE_NAME = "state_supervision_case_type_entry"
 CASE_TYPE_HISTORY_TABLE_NAME = "state_supervision_case_type_entry_history"
 
 
-def upgrade():
+def upgrade() -> None:
     connection = op.get_bind()
 
     new_sex_offense = "SEX_OFFENSE"
@@ -62,7 +62,7 @@ def upgrade():
     )
 
 
-def downgrade():
+def downgrade() -> None:
     connection = op.get_bind()
 
     deprecated_sex_offender = "SEX_OFFENDER"

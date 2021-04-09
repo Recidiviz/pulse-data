@@ -17,7 +17,7 @@ branch_labels = None
 depends_on = None
 
 
-def upgrade():
+def upgrade() -> None:
     op.drop_constraint(
         "report_table_instance_report_id_fkey",
         "report_table_instance",
@@ -42,7 +42,7 @@ def upgrade():
     )
 
 
-def downgrade():
+def downgrade() -> None:
     op.drop_constraint(
         "report_table_instance_report_id_fkey",
         "report_table_instance",

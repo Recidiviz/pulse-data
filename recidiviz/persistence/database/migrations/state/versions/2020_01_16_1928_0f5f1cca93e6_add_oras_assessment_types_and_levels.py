@@ -1,3 +1,4 @@
+# pylint: skip-file
 """add_oras_assessment_types_and_levels
 
 Revision ID: 0f5f1cca93e6
@@ -59,7 +60,7 @@ new_level_values = [
 ]
 
 
-def upgrade():
+def upgrade() -> None:
     op.execute("ALTER TYPE state_assessment_type RENAME TO state_assessment_type_old;")
     sa.Enum(*new_type_values, name="state_assessment_type").create(bind=op.get_bind())
     op.alter_column(
@@ -95,7 +96,7 @@ def upgrade():
     op.execute("DROP TYPE state_assessment_level_old;")
 
 
-def downgrade():
+def downgrade() -> None:
     op.execute("ALTER TYPE state_assessment_type RENAME TO state_assessment_type_old;")
     sa.Enum(*old_type_values, name="state_assessment_type").create(bind=op.get_bind())
     op.alter_column(

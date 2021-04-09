@@ -62,7 +62,7 @@ DOWNGRADE_UPDATE_LEVEL_EXTRACT_SCORE_QUERY = (
 )
 
 
-def upgrade():
+def upgrade() -> None:
     connection = op.get_bind()
 
     change_55_to_54_query = UPGRADE_UPDATE_55_TO_54_QUERY.format(
@@ -78,7 +78,7 @@ def upgrade():
     connection.execute(out_of_range_query)
 
 
-def downgrade():
+def downgrade() -> None:
     connection = op.get_bind()
 
     downgrade_extract_invalid_score_query = (

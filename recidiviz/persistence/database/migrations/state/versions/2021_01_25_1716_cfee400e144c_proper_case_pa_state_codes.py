@@ -53,13 +53,13 @@ TABLE_NAMES = [
 ]
 
 
-def upgrade():
+def upgrade() -> None:
     with op.get_context().autocommit_block():
         for table_name in TABLE_NAMES:
             op.execute(UPDATE_TO_NEW_VALUE_QUERY.format(table=table_name))
             op.execute(UPDATE_TO_NEW_VALUE_QUERY.format(table=f"{table_name}_history"))
 
 
-def downgrade():
+def downgrade() -> None:
     # This migration is lossy - no way to downgrade
     pass

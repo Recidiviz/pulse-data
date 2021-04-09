@@ -1,3 +1,4 @@
+# pylint: skip-file
 """add_new_incarceration_enum_values
 
 Revision ID: 86b7d2889a0e
@@ -68,7 +69,7 @@ new_incarceration_period_release_reason_values = [
 ]
 
 
-def upgrade():
+def upgrade() -> None:
     # Update incarceration type for state incarceration period and state incarceration sentence
     op.execute(
         "ALTER TYPE state_incarceration_type RENAME TO state_incarceration_type_old;"
@@ -177,7 +178,7 @@ def upgrade():
     op.execute("DROP TYPE state_incarceration_period_release_reason_old;")
 
 
-def downgrade():
+def downgrade() -> None:
     # Downgrade incarceration type for state incarceration period and state incarceration sentence
     op.execute(
         "ALTER TYPE state_incarceration_type RENAME TO state_incarceration_type_old;"

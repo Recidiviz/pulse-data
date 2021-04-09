@@ -36,7 +36,7 @@ new_values = [
 ]
 
 
-def upgrade():
+def upgrade() -> None:
     op.execute(
         "ALTER TYPE state_supervision_contact_type RENAME TO state_supervision_contact_type_old;"
     )
@@ -58,7 +58,7 @@ def upgrade():
     op.execute("DROP TYPE state_supervision_contact_type_old;")
 
 
-def downgrade():
+def downgrade() -> None:
     op.execute(
         "ALTER TYPE state_supervision_contact_type RENAME TO state_supervision_contact_type_old;"
     )

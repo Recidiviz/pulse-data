@@ -33,7 +33,7 @@ SUPERVISION_PERIOD_TABLE_NAME = "state_supervision_period"
 SUPERVISION_PERIOD_HISTORY_TABLE_NAME = "state_supervision_period_history"
 
 
-def upgrade():
+def upgrade() -> None:
     updated_termination_reason = "DEATH"
     with op.get_context().autocommit_block():
         for table_name in [
@@ -49,7 +49,7 @@ def upgrade():
             )
 
 
-def downgrade():
+def downgrade() -> None:
     updated_termination_reason = "EXPIRATION"
     with op.get_context().autocommit_block():
         for table_name in [

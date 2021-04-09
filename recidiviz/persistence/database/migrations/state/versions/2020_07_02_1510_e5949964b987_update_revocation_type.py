@@ -42,7 +42,7 @@ SET_TO_NULL_QUERY = (
 )
 
 
-def upgrade():
+def upgrade() -> None:
     connection = op.get_bind()
 
     # Set the revocation_type and revocation_type_raw_text to NULL for all 'A' (WARRANT_ISSUED) decisions
@@ -61,7 +61,7 @@ def upgrade():
     )
 
 
-def downgrade():
+def downgrade() -> None:
     connection = op.get_bind()
 
     treatment_in_prison_value = "TREATMENT_IN_PRISON"

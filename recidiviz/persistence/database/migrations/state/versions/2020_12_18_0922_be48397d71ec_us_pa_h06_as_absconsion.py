@@ -28,7 +28,7 @@ UPDATE_TO_NEW_VALUE_QUERY = (
 )
 
 
-def upgrade():
+def upgrade() -> None:
     connection = op.get_bind()
 
     new_enum_value = "ABSCONDED"
@@ -46,7 +46,7 @@ def upgrade():
     )
 
 
-def downgrade():
+def downgrade() -> None:
     connection = op.get_bind()
 
     new_enum_value = "TECHNICAL"
