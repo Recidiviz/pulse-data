@@ -73,7 +73,7 @@ class CommonUtilsTest(unittest.TestCase):
     def test_retry_grpc_no_raise(self) -> None:
         fn = MagicMock()
         # Two GOAWAY errors, 1 DEADLINE_EXCEEDED, then works
-        fn.side_effect = [GO_AWAY_ERROR] * 2 + [DEADLINE_EXCEEDED_ERROR] + [3]
+        fn.side_effect = [GO_AWAY_ERROR] * 2 + [DEADLINE_EXCEEDED_ERROR] + [3]  # type: ignore[list-item]
 
         result = retry_grpc(3, fn, 1, b=2)
 
