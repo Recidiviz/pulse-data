@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,85 +14,33 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
-"""Export data from Cloud SQL and load it into BigQuery.
-
-Run this export locally with the following command:
-    python -m recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_manager
-        --project_id [PROJECT_ID]
-        --schema_type [STATE, JAILS, OPERATIONS]
-
-"""
-
-import uuid
+"""Endpoints and control logic for the CloudSQL -> BigQuery refresh."""
 import json
 import logging
-
-from datetime import datetime
+import uuid
 from http import HTTPStatus
-
 from typing import Tuple
 
 import flask
 from flask import request
 
-from recidiviz.big_query.big_query_client import BigQueryClientImpl, BigQueryClient
-from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
-    GCSPseudoLockManager,
-    GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME,
-    GCSPseudoLockAlreadyExists,
-)
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.ingest.direct.direct_ingest_control import kick_all_schedulers
-from recidiviz.persistence.database.bq_refresh import (
-    bq_refresh,
-    cloud_sql_to_gcs_export,
+from recidiviz.persistence.database.bq_refresh.bq_refresh_cloud_task_manager import (
+    BQRefreshCloudTaskManager,
 )
-from recidiviz.persistence.database.bq_refresh.bq_refresh_utils import (
-    postgres_to_bq_lock_name_with_suffix,
+from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_lock_manager import (
+    CloudSqlToBQLockManager,
 )
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
     CloudSqlToBQConfig,
 )
-
-from recidiviz.persistence.database.bq_refresh.bq_refresh_cloud_task_manager import (
-    BQRefreshCloudTaskManager,
+from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_runner import (
+    export_table_then_load_table,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
-from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils import pubsub_helper
-
-
-def export_table_then_load_table(
-    big_query_client: BigQueryClient,
-    table: str,
-    cloud_sql_to_bq_config: CloudSqlToBQConfig,
-) -> None:
-    """Exports a Cloud SQL table to CSV, then loads it into BigQuery.
-
-    If a table excludes some region codes, it first loads all the GCS and the excluded region's data to a temp table.
-    See for details: load_table_with_excluded_regions
-
-    Waits until the BigQuery load is completed.
-
-    Args:
-        big_query_client: A BigQueryClient.
-        table: Table to export then import. Table must be defined
-            in the metadata_base class for its corresponding SchemaType.
-        cloud_sql_to_bq_config: The config class for the given SchemaType.
-    Returns:
-        True if load succeeds, else False.
-    """
-    export_success = cloud_sql_to_gcs_export.export_table(table, cloud_sql_to_bq_config)
-
-    if not export_success:
-        raise ValueError(
-            f"Failure to export CloudSQL table to GCS, skipping BigQuery load of table [{table}]."
-        )
-
-    bq_refresh.refresh_bq_table_from_gcs_export_synchronous(
-        big_query_client, table, cloud_sql_to_bq_config
-    )
-
+from recidiviz.utils.auth.gae import requires_gae_auth
 
 cloud_sql_to_bq_blueprint = flask.Blueprint("export_manager", __name__)
 
@@ -114,20 +62,21 @@ def refresh_bq_table() -> Tuple[str, int]:
     schema_type_str = data["schema_type"]
 
     try:
-        schema_type = SchemaType(schema_type_str)
+        schema_type = SchemaType(schema_type_str.upper())
     except ValueError:
         return (f"Unknown schema type [{schema_type_str}]", HTTPStatus.BAD_REQUEST)
 
-    bq_client = BigQueryClientImpl()
-    cloud_sql_to_bq_config = CloudSqlToBQConfig.for_schema_type(schema_type)
+    if not CloudSqlToBQConfig.is_valid_schema_type(schema_type):
+        return (
+            f"Unsuppported schema type: [{schema_type}]",
+            HTTPStatus.BAD_REQUEST,
+        )
 
-    if cloud_sql_to_bq_config is None:
-        logging.info("Cloud SQL to BQ is disabled for: %s", schema_type)
-        return ("", HTTPStatus.OK)
+    bq_client = BigQueryClientImpl()
 
     logging.info("Starting BQ export task for table: %s", table_name)
 
-    export_table_then_load_table(bq_client, table_name, cloud_sql_to_bq_config)
+    export_table_then_load_table(bq_client, table_name, schema_type)
     return ("", HTTPStatus.OK)
 
 
@@ -142,6 +91,11 @@ def monitor_refresh_bq_tasks() -> Tuple[str, int]:
     schema = data["schema"]
     topic = data["topic"]
     message = data["message"]
+
+    try:
+        schema_type = SchemaType(schema.upper())
+    except ValueError:
+        return (f"Unknown schema type [{schema}]", HTTPStatus.BAD_REQUEST)
 
     task_manager = BQRefreshCloudTaskManager()
 
@@ -166,8 +120,8 @@ def monitor_refresh_bq_tasks() -> Tuple[str, int]:
         pubsub_helper.publish_message_to_topic(message=message, topic=topic)
 
     # Unlock export lock when all BQ exports complete
-    lock_manager = GCSPseudoLockManager()
-    lock_manager.unlock(postgres_to_bq_lock_name_with_suffix(schema))
+    lock_manager = CloudSqlToBQLockManager()
+    lock_manager.release_lock(schema_type)
     logging.info(
         "Done running export for %s, unlocking Postgres to BigQuery export", schema
     )
@@ -176,15 +130,6 @@ def monitor_refresh_bq_tasks() -> Tuple[str, int]:
     kick_all_schedulers()
 
     return ("", HTTPStatus.OK)
-
-
-def export_lock_timeout_for_schema_arg(_schema_arg: str) -> int:
-    """Defines the exported lock timeouts permitted based on the schema arg.
-    For the moment all lock timeouts are set to one hour in length.
-
-    Export jobs may take longer than the alotted time, but if they do so, they
-    will de facto relinquish their hold on the acquired lock."""
-    return 3600
 
 
 @cloud_sql_to_bq_blueprint.route(
@@ -196,8 +141,20 @@ def wait_for_ingest_to_create_tasks(schema_arg: str) -> Tuple[str, HTTPStatus]:
     When ingest is not running/locked, creates task to create_all_bq_refresh_tasks_for_schema.
     When ingest is running/locked, re-enqueues this task to run again in 60 seconds.
     """
+    try:
+        schema_type = SchemaType(schema_arg.upper())
+    except ValueError:
+        return (
+            f"Unexpected value for schema_arg: [{schema_arg}]",
+            HTTPStatus.BAD_REQUEST,
+        )
+    if not CloudSqlToBQConfig.is_valid_schema_type(schema_type):
+        return (
+            f"Unsuppported schema type: [{schema_type}]",
+            HTTPStatus.BAD_REQUEST,
+        )
+
     task_manager = BQRefreshCloudTaskManager()
-    lock_manager = GCSPseudoLockManager()
     json_data_text = request.get_data(as_text=True)
     try:
         json_data = json.loads(json_data_text)
@@ -209,63 +166,33 @@ def wait_for_ingest_to_create_tasks(schema_arg: str) -> Tuple[str, HTTPStatus]:
         lock_id = json_data["lock_id"]
     logging.info("Request lock id: %s", lock_id)
 
-    if not lock_manager.is_locked(postgres_to_bq_lock_name_with_suffix(schema_arg)):
-        lock_manager.lock(
-            postgres_to_bq_lock_name_with_suffix(schema_arg),
-            contents=lock_id,
-            expiration_in_seconds=export_lock_timeout_for_schema_arg(schema_arg),
-        )
-    else:
-        previous_lock_id = lock_manager.get_lock_contents(
-            postgres_to_bq_lock_name_with_suffix(schema_arg)
-        )
-        logging.info("Lock contents: %s", previous_lock_id)
-        if lock_id != previous_lock_id:
-            raise GCSPseudoLockAlreadyExists(
-                f"UUID {lock_id} does not match existing lock's UUID {previous_lock_id}"
-            )
+    lock_manager = CloudSqlToBQLockManager()
+    lock_manager.acquire_lock(schema_type=schema_type, lock_id=lock_id)
 
-    no_regions_running = lock_manager.no_active_locks_with_prefix(
-        GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME
-    )
-    if not no_regions_running:
+    if not lock_manager.can_proceed(schema_type):
         logging.info("Regions running, renqueuing this task.")
-        task_id = "{}-{}-{}".format(
-            "renqueue_wait_task", str(datetime.utcnow().date()), uuid.uuid4()
-        )
-        body = {"schema_type": schema_arg, "lock_id": lock_id}
-        task_manager.job_monitor_cloud_task_queue_manager.create_task(
-            task_id=task_id,
-            body=body,
-            relative_uri=f"/cloud_sql_to_bq/create_refresh_bq_tasks/{schema_arg}",
-            schedule_delay_seconds=60,
+        task_manager.create_reattempt_create_refresh_tasks_task(
+            lock_id=lock_id, schema=schema_arg
         )
         return "", HTTPStatus.OK
+
     logging.info("No regions running, calling create_refresh_bq_tasks")
-    create_all_bq_refresh_tasks_for_schema(schema_arg)
+    create_all_bq_refresh_tasks_for_schema(schema_type)
     return "", HTTPStatus.OK
 
 
-def create_all_bq_refresh_tasks_for_schema(schema_arg: str) -> None:
+def create_all_bq_refresh_tasks_for_schema(schema_type: SchemaType) -> None:
     """Creates an export task for each table to be exported.
 
     A task is created for each table defined in the schema.
 
     Re-creates all tasks if any task fails to be created.
     """
-    try:
-        schema_type = SchemaType(schema_arg.upper())
-    except ValueError:
-        return
-
     logging.info("Beginning BQ export for %s schema tables.", schema_type.value)
 
     task_manager = BQRefreshCloudTaskManager()
 
     cloud_sql_to_bq_config = CloudSqlToBQConfig.for_schema_type(schema_type)
-    if cloud_sql_to_bq_config is None:
-        logging.info("Cloud SQL to BQ is disabled for: %s", schema_type)
-        return
 
     for table in cloud_sql_to_bq_config.get_tables_to_export():
         task_manager.create_refresh_bq_table_task(table.name, schema_type)

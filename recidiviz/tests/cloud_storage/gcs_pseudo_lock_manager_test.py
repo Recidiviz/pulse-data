@@ -30,7 +30,6 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
     GCSPseudoLockManager,
     GCSPseudoLockAlreadyExists,
     GCSPseudoLockDoesNotExist,
-    GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME,
 )
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
@@ -258,32 +257,21 @@ class TestGCSPseudoLockManager(unittest.TestCase):
         assert actual_contents is not None
         self.assertEqual(self.CONTENTS2, actual_contents.contents)
 
-    def test_region_are_running(self) -> None:
-        """Ensures lock manager can see regions are running"""
+    def test_locks_with_prefix_exist(self) -> None:
+        """Ensures lock manager can see if locks with a prefix exist."""
+        prefix = "SOME_LOCK_PREFIX"
         lock_manager = GCSPseudoLockManager(self.PROJECT_ID)
-        lock_manager.lock(
-            GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME + self.REGION.upper()
-        )
-        self.assertFalse(
-            lock_manager.no_active_locks_with_prefix(
-                GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME
-            )
-        )
+        lock_manager.lock(prefix + "some_suffix")
+        self.assertFalse(lock_manager.no_active_locks_with_prefix(prefix))
 
-    def test_region_are_not_running(self) -> None:
+    def test_locks_with_prefix_do_not_exist(self) -> None:
         """Ensures lock manager can see regions are not running"""
+        prefix = "SOME_LOCK_PREFIX"
+        lock_name = prefix + "some_suffix"
         lock_manager = GCSPseudoLockManager(self.PROJECT_ID)
-        lock_manager.lock(
-            GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME + self.REGION.upper()
-        )
-        lock_manager.unlock(
-            GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME + self.REGION.upper()
-        )
-        self.assertTrue(
-            lock_manager.no_active_locks_with_prefix(
-                GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME
-            )
-        )
+        lock_manager.lock(lock_name)
+        lock_manager.unlock(lock_name)
+        self.assertTrue(lock_manager.no_active_locks_with_prefix(prefix))
 
     def test_get_lock_contents(self) -> None:
         """Tests that the get_lock_contents gets the correct contents from the lock"""

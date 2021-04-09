@@ -251,10 +251,28 @@ class CloudSqlToBQConfig:
         return project_id
 
     @classmethod
+    def is_valid_schema_type(cls, schema_type: SchemaType) -> bool:
+        if schema_type in (SchemaType.JAILS, SchemaType.STATE, SchemaType.OPERATIONS):
+            return True
+        if schema_type in (
+            # Justice Counts views currently rely on federated queries directly to Postgres instead of this refresh.
+            # TODO(#5081): Re-enable this once arrays are removed from the Justice Counts schema.
+            SchemaType.JUSTICE_COUNTS,
+            # Case Triage does not need to be exported to BigQuery
+            SchemaType.CASE_TRIAGE,
+        ):
+            return False
+
+        raise ValueError(f"Unexpected schema type value [{schema_type}]")
+
+    @classmethod
     def for_schema_type(
         cls, schema_type: SchemaType, yaml_path: Optional[GcsfsFilePath] = None
-    ) -> Optional["CloudSqlToBQConfig"]:
+    ) -> "CloudSqlToBQConfig":
         """Logic for instantiating a config object for a schema type."""
+        if not cls.is_valid_schema_type(schema_type):
+            raise ValueError(f"Unsupported schema_type: [{schema_type}]")
+
         gcs_fs = GcsfsFactory.build()
         if not yaml_path:
             yaml_path = GcsfsFilePath.from_absolute_path(
@@ -273,13 +291,6 @@ class CloudSqlToBQConfig:
                 dataset_id=county_dataset_config.COUNTY_BASE_DATASET,
                 columns_to_exclude=yaml_config.get("county_columns_to_exclude", {}),
             )
-        if schema_type == SchemaType.JUSTICE_COUNTS:
-            # Justice Counts views currently rely on federated queries directly to Postgres instead of this refresh.
-            # TODO(#5081): Re-enable this once arrays are removed from the Justice Counts schema.
-            return None
-        if schema_type == SchemaType.CASE_TRIAGE:
-            # Case Triage does not need to be exported to BigQuery
-            return None
         if schema_type == SchemaType.OPERATIONS:
             return CloudSqlToBQConfig(
                 metadata_base=base_schema.OperationsBase,

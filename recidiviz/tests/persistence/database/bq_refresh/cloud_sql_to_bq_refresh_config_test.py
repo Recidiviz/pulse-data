@@ -42,11 +42,10 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
 
     def setUp(self) -> None:
         self.schema_types: List[SchemaType] = list(SchemaType)
-        self.disabled_schema_types = {SchemaType.JUSTICE_COUNTS, SchemaType.CASE_TRIAGE}
         self.enabled_schema_types = [
             schema_type
             for schema_type in self.schema_types
-            if schema_type not in self.disabled_schema_types
+            if CloudSqlToBQConfig.is_valid_schema_type(schema_type)
         ]
         self.mock_project_id = "fake-recidiviz-project"
         self.environment_patcher = mock.patch(
@@ -89,10 +88,11 @@ county_columns_to_exclude:
 
     def test_for_schema_type_returns_instance(self) -> None:
         for schema_type in self.schema_types:
-            config = CloudSqlToBQConfig.for_schema_type(schema_type)
-            if schema_type in self.disabled_schema_types:
-                self.assertIsNone(config)
+            if not CloudSqlToBQConfig.is_valid_schema_type(schema_type):
+                with self.assertRaises(ValueError):
+                    _ = CloudSqlToBQConfig.for_schema_type(schema_type)
             else:
+                config = CloudSqlToBQConfig.for_schema_type(schema_type)
                 self.assertIsInstance(config, CloudSqlToBQConfig)
 
     def test_get_bq_schema_for_table(self) -> None:

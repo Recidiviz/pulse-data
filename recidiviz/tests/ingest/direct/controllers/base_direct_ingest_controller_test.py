@@ -58,8 +58,8 @@ from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_ma
     PostgresDirectIngestFileMetadataManager,
 )
 from recidiviz.ingest.direct.errors import DirectIngestError
-from recidiviz.persistence.database.bq_refresh.bq_refresh_utils import (
-    postgres_to_bq_lock_name_with_suffix,
+from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_lock_manager import (
+    postgres_to_bq_lock_name_for_schema,
 )
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.schema_utils import SchemaType
@@ -436,7 +436,9 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             StateTestGcsfsDirectIngestController,
             run_async=True,
         )
-        controller.lock_manager.lock(postgres_to_bq_lock_name_with_suffix("state"))
+        controller.region_lock_manager.lock_manager.lock(
+            postgres_to_bq_lock_name_for_schema(SchemaType.STATE)
+        )
         file_tags = list(reversed(sorted(controller.get_file_tag_rank_list())))
         add_paths_with_tags(controller, file_tags)
         run_task_queues_to_empty(controller)
@@ -455,7 +457,9 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                 ("tagC", False),
             ],
         )
-        controller.lock_manager.unlock(postgres_to_bq_lock_name_with_suffix("state"))
+        controller.region_lock_manager.lock_manager.unlock(
+            postgres_to_bq_lock_name_for_schema(SchemaType.STATE)
+        )
         controller.kick_scheduler(just_finished_job=False)
         run_task_queues_to_empty(controller)
 
@@ -482,10 +486,10 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             StateTestGcsfsDirectIngestController,
             run_async=True,
         )
-        controller.lock_manager.lock(controller.ingest_process_lock_for_region())
-        file_tags = list(reversed(sorted(controller.get_file_tag_rank_list())))
-        add_paths_with_tags(controller, file_tags)
-        run_task_queues_to_empty(controller)
+        with controller.region_lock_manager.using_region_lock(expiration_in_seconds=10):
+            file_tags = list(reversed(sorted(controller.get_file_tag_rank_list())))
+            add_paths_with_tags(controller, file_tags)
+            run_task_queues_to_empty(controller)
 
         if not isinstance(controller, BaseTestCsvGcsfsDirectIngestController):
             self.fail(
@@ -501,7 +505,8 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                 ("tagC", False),
             ],
         )
-        controller.lock_manager.unlock(controller.ingest_process_lock_for_region())
+
+        # Try again with lock no longer held
         controller.kick_scheduler(just_finished_job=False)
         run_task_queues_to_empty(controller)
 
@@ -534,7 +539,9 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             run_task_queues_to_empty(controller)
 
         # Assert that there are no leftover locks
-        self.assertTrue(controller.lock_manager.no_active_locks_with_prefix(""))
+        self.assertTrue(
+            controller.region_lock_manager.lock_manager.no_active_locks_with_prefix("")
+        )
 
     def test_county_runs_files_in_order(self) -> None:
         self.run_async_file_order_test_for_controller_cls(
