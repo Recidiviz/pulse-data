@@ -61,7 +61,6 @@ ARG DEV_MODE="False"
 RUN if [ "$DEV_MODE" = "True" ]; \
     then apt-get update && apt install -y lsb-core && \
     echo "deb http://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
-    echo "deb http://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
     curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - && \
     apt update -y && apt-get install google-cloud-sdk -y && \
     apt install google-cloud-sdk-datastore-emulator -y && \
