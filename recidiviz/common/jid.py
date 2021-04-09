@@ -56,7 +56,7 @@ def _get_JID() -> pd.DataFrame:
     return _JID
 
 
-def get(county_name: str, state: us.states) -> str:
+def get(county_name: str, state: us.states.State) -> str:
     """Return the matching jurisdiction_id if one jurisdiction_id can be
     matched to the county_name, otherwise raise a FipsMergingError."""
     county_fips = _to_county_fips(county_name, state)
@@ -72,7 +72,7 @@ def validate_jid(jid: str) -> str:
     return str(jid)
 
 
-def _to_county_fips(county_name: str, state: us.states) -> int:
+def _to_county_fips(county_name: str, state: us.states.State) -> int:
     """Lookup fips by county_name, filtering within the given state"""
     all_fips_for_state_df = get_fips_for(state)
     actual_county_name = best_match(
