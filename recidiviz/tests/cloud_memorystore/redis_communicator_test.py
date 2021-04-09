@@ -35,19 +35,43 @@ class TestRedisCommunicator(TestCase):
 
     def setUp(self) -> None:
         self.cache = fakeredis.FakeRedis()
-        self.communicator = RedisCommunicator(self.cache, uuid.uuid4())
+        self.max_messages = 3
+        self.communicator = RedisCommunicator.create(
+            self.cache, max_messages=self.max_messages
+        )
+
+    def test_communicate(self) -> None:
+        message = self.communicator.communicate("a message", kind=MessageKind.CLOSE)
+
+        self.assertEqual(
+            message,
+            RedisCommunicatorMessage(
+                cursor=1, data="a message", kind=MessageKind.CLOSE
+            ),
+        )
+
+    def test_max_messages(self) -> None:
+        for r in range(self.max_messages + 7):
+            self.communicator.communicate(str(r))
+
+        self.assertEqual(
+            self.cache.zcard(self.communicator.channel_cache_key), self.max_messages
+        )
 
     def test_length(self) -> None:
         self.communicator.communicate("first message")
         self.communicator.communicate("second message")
-        self.assertEqual(self.communicator.length, 2)
 
     def test_latest_message(self) -> None:
         self.assertEqual(self.communicator.latest_message, None)
-        self.communicator.communicate("first message")
+        message = self.communicator.communicate("first message")
+        self.assertEqual(
+            message,
+            RedisCommunicatorMessage(cursor=1, data="first message"),
+        )
         self.assertEqual(
             self.communicator.latest_message,
-            RedisCommunicatorMessage(cursor=0, data="first message"),
+            message,
         )
 
     def test_close(self) -> None:
@@ -73,10 +97,22 @@ class TestRedisCommunicator(TestCase):
 
         # Yields latest messages when it arrives
         self.assertEqual(
-            list(self.communicator.listen(0, timeout=2)),
+            list(self.communicator.listen(1, timeout=2)),
             [
-                RedisCommunicatorMessage(cursor=1, data="second message"),
+                RedisCommunicatorMessage(cursor=2, data="second message"),
             ],
+        )
+
+    def test_listen_after_closed(self) -> None:
+        first_message = self.communicator.communicate("first message")
+        second_message = self.communicator.communicate(
+            "second message", kind=MessageKind.CLOSE
+        )
+
+        # We can listen for updates on a channel even once its closed.
+        # Caller should detect the closed message and not send any further listening requests
+        self.assertEqual(
+            list(self.communicator.listen(first_message.cursor)), [second_message]
         )
 
     def test_listen_expiry(self) -> None:
@@ -106,5 +142,5 @@ class TestRedisCommunicator(TestCase):
         communicator.communicate("first message")
 
         self.assertEqual(
-            self.cache.llen(RedisCommunicator.build_channel_cache_key(new_uuid)), 1
+            self.cache.zcard(RedisCommunicator.build_channel_cache_key(new_uuid)), 1
         )
