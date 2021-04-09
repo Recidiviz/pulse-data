@@ -30,6 +30,7 @@ import numpy as np
 from recidiviz.calculator.modeling.population_projection.utils.spark_bq_utils import (
     upload_spark_model_inputs,
 )
+from typing import Any, List
 
 historical_data_2019 = pd.read_csv("AZ_data/HB_2376/2019.csv", sep=";", thousands=",")
 historical_data_2018 = pd.read_csv("AZ_data/HB_2376/2018.csv", sep=";", thousands=",")
@@ -38,11 +39,15 @@ historical_data_2017 = pd.read_csv("AZ_data/HB_2376/2017.csv", sep=";", thousand
 felony_classes = historical_data_2019.felony_class.to_list()
 
 
-def get_field_for_felony_class(df, field, felony_class_type):
+def get_field_for_felony_class(
+    df: pd.DataFrame, field: str, felony_class_type: str
+) -> pd.DataFrame:
     return df.loc[df["felony_class"] == felony_class_type][field].to_list()[0]
 
 
-def get_yearly_fields_for_felony_class(field, felony_class_type):
+def get_yearly_fields_for_felony_class(
+    field: str, felony_class_type: str
+) -> List[pd.DataFrame]:
     return [
         get_field_for_felony_class(historical_data_2017, field, felony_class_type),
         get_field_for_felony_class(historical_data_2018, field, felony_class_type),
@@ -90,8 +95,9 @@ total_population_data = pd.DataFrame(
     columns=["compartment", "total_population", "time_step", "felony_class"]
 )
 
+
 # TRANSITIONS TABLE
-def get_mean_for_felony_class(felony_class_type):
+def get_mean_for_felony_class(felony_class_type: str) -> np.typing.ArrayLike:
     return np.mean(population_data[felony_class_type]) / np.mean(
         admissions_data[felony_class_type]
     )
