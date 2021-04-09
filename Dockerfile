@@ -28,7 +28,6 @@ RUN yarn build
 FROM ubuntu:focal
 
 ENV DEBIAN_FRONTEND noninteractive
-ENV TZ America/New_York
 
 RUN apt update -y && \
     apt install -y \
@@ -69,12 +68,12 @@ RUN if [ "$DEV_MODE" = "True" ]; \
 
 # Install postgres to be used by tests that need to write to a database from multiple threads.
 RUN if [ "$DEV_MODE" = "True" ]; \
-    then apt-get update && apt install postgresql-10 -y; \
+    then apt-get update && apt install postgresql-12 -y; \
     fi
 # Add all the postgres tools installed above to the path, so that we can use pg_ctl, etc. in tests.
-# Uses variable substitution to set PATH_PREFIX to '/usr/lib/postgresql/10/bin/' in DEV_MODE and otherwise leave it
+# Uses variable substitution to set PATH_PREFIX to '/usr/lib/postgresql/12/bin/' in DEV_MODE and otherwise leave it
 # blank. Docker doesn't support setting environment variables within conditions, so we can't do this above.
-ENV PATH_PREFIX=${DEV_MODE:+/usr/lib/postgresql/10/bin/:}
+ENV PATH_PREFIX=${DEV_MODE:+/usr/lib/postgresql/12/bin/:}
 # Then prepend our path with whatever is in PATH_PREFIX.
 ENV PATH="$PATH_PREFIX$PATH"
 
