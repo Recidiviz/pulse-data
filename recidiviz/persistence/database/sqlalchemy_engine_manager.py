@@ -23,7 +23,7 @@ from opencensus.stats import aggregation, measure, view
 import sqlalchemy
 from sqlalchemy.engine import Engine
 
-from recidiviz.persistence.database import (
+from recidiviz.persistence.database.constants import (
     SQLALCHEMY_DB_NAME,
     SQLALCHEMY_DB_HOST,
     SQLALCHEMY_DB_USER,

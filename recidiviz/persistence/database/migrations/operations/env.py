@@ -22,7 +22,7 @@ from logging.config import fileConfig
 from sqlalchemy import create_engine
 
 from alembic import context
-from recidiviz.persistence.database import (
+from recidiviz.persistence.database.constants import (
     SQLALCHEMY_DB_USER,
     SQLALCHEMY_DB_PASSWORD,
     SQLALCHEMY_DB_HOST,

@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,8 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""
-Contains logic for communicating with a SQL Database.
 
-database package should not be referenced outside the persistence package!
-"""
+from typing import Any, Dict
+
+def _classify_pyc(data: bytes, name: str, exc_details: Dict[str, Any]) -> int: ...
