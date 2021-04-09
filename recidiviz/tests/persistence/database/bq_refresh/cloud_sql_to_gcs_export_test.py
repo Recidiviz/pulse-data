@@ -21,6 +21,7 @@ import collections
 import unittest
 from unittest import mock
 
+import httplib2
 import googleapiclient.errors
 
 from recidiviz.persistence.database.bq_refresh import cloud_sql_to_gcs_export
@@ -68,11 +69,8 @@ class CloudSqlToGcsExportTest(unittest.TestCase):
         Table = collections.namedtuple("Table", ["name"])
         self.tables_to_export = [Table("first_table"), Table("second_table")]
 
-        HttpErrorResponse = collections.namedtuple(
-            "HttpErrorResponse", ["status", "reason"]
-        )
-        self.http_error_response = HttpErrorResponse(
-            404, "CloudSQL operation instance does not exist."
+        self.http_error_response = httplib2.Response(
+            {"status": 404, "reason": "CloudSQL operation instance does not exist."}
         )
 
         self.mock_get_operation = (
