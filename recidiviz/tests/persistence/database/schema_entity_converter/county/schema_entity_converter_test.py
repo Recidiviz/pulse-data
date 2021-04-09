@@ -181,3 +181,5 @@ class TestCountySchemaEntityConverter(TestCase):
         self.assertEqual(
             CountySchemaToEntityConverter().convert((one(people))), _PERSON
         )
+
+        session.close()

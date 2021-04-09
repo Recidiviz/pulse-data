@@ -88,6 +88,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         self.assertEqual(len(session.query(schema.Root).all()), 0)
         self.assertEqual(len(session.query(schema.Parent).all()), 0)
         self.assertEqual(len(session.query(schema.Child).all()), 0)
+        session.close()
 
     def tearDown(self) -> None:
         fakes.teardown_in_memory_sqlite_databases()
@@ -134,6 +135,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         children = session.query(schema.Child).all()
         self.assertEqual(len(children), 1)
         self.assertEqual(len(children[0].parents), 1)
+        session.close()
 
     def test_add_behavior_2(self):
         parent = entities.Parent.new_with_defaults(
@@ -163,6 +165,7 @@ class TestBaseSchemaEntityConverter(TestCase):
 
         parents = session.query(schema.Parent).all()
         self.assertEqual(len(parents), 1)
+        session.close()
 
     def test_convert_single_node(self):
         parent = entities.Parent.new_with_defaults(
@@ -184,6 +187,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         converted_parent = _TestSchemaEntityConverter().convert(one(parents))
 
         self.assertEqual(parent, converted_parent)
+        session.close()
 
     def test_convert_single_node_no_primary_key(self):
         parent = entities.Parent.new_with_defaults(
@@ -213,6 +217,7 @@ class TestBaseSchemaEntityConverter(TestCase):
 
         self.assertEqual(parent.full_name, converted_parent.full_name)
         self.assertEqual(parent.children, converted_parent.children)
+        session.close()
 
     def _check_children(self, parent, expected_children):
         self.assertEqual(len(expected_children), len(parent.children))
@@ -250,6 +255,7 @@ class TestBaseSchemaEntityConverter(TestCase):
             self._check_children(converted_parent, child_entities)
             for converted_child in converted_parent.children:
                 self._check_parents(converted_child, parent_entities)
+        session.close()
 
     class SimpsonsFamily:
         """
@@ -369,6 +375,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         self.assertEqual(len(converted_root.parents), 1)
         self.assertEqual(converted_root.parents[0], family.homer)
         self.assertEqual(converted_root.parents[0].children, [])
+        session.close()
 
     def test_convert_rooted_graph(self):
         """
@@ -402,6 +409,7 @@ class TestBaseSchemaEntityConverter(TestCase):
             self._check_children(converted_parent, family.child_entities)
             for converted_child in converted_parent.children:
                 self._check_parents(converted_child, family.parent_entities)
+        session.close()
 
     def test_many_to_one_no_backref(self):
         family = self.SimpsonsFamily()
@@ -432,5 +440,6 @@ class TestBaseSchemaEntityConverter(TestCase):
         self.assertEqual(len(converted_root.parents[0].children), 2)
         self.assertEqual(converted_root.parents[0].children[0].favorite_toy, toy)
         self.assertEqual(converted_root.parents[0].children[1].favorite_toy, toy)
+        session.close()
 
     # TODO(#1894): Write more unit tests for bugfixes in #1816
