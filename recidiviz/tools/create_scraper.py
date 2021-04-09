@@ -184,7 +184,7 @@ def _populate_file(
         target.write(contents)
 
 
-def _get_state(state_arg: str) -> us.states:
+def _get_state(state_arg: str) -> us.states.State:
     state = us.states.lookup(state_arg)
     if state is None:
         raise ValueError("Couldn't parse state '%s'" % state_arg)
@@ -192,12 +192,14 @@ def _get_state(state_arg: str) -> us.states:
     return state
 
 
-def _gen_region_name(county_name: str, state: us.states, *, delimiter: str) -> str:
+def _gen_region_name(
+    county_name: str, state: us.states.State, *, delimiter: str
+) -> str:
     parts = ("us", state.abbr.lower()) + tuple(county_name.lower().split())
     return delimiter.join(parts)
 
 
-def _get_jurisdiction_id(county_name: str, state: us.states) -> str:
+def _get_jurisdiction_id(county_name: str, state: us.states.State) -> str:
     try:
         return "'{}'".format(jid.get(county_name, state))
     except FipsMergingError:

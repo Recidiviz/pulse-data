@@ -60,7 +60,7 @@ def _get_FIPS() -> pd.DataFrame:
 
 
 def add_column_to_df(
-    df: pd.DataFrame, county_names: pd.Series, state: us.states
+    df: pd.DataFrame, county_names: pd.Series, state: us.states.State
 ) -> pd.DataFrame:
     """Add a new fips column to |df|.
 
@@ -76,7 +76,7 @@ def add_column_to_df(
     return df
 
 
-def get_fips_for(state: us.states) -> pd.DataFrame:
+def get_fips_for(state: us.states.State) -> pd.DataFrame:
     """Get the [county_name, fips] df, filtering for the given |state|."""
 
     # Copy _FIPS to allow mutating the view created after filtering by state
