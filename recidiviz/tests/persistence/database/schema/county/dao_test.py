@@ -123,6 +123,8 @@ class TestDao(TestCase):
         # Assert
         self.assertEqual(people, [converter.convert_schema_object_to_entity(person)])
 
+        session.close()
+
     def test_readPeopleByExternalId(self):
         admission_date = datetime.datetime(2018, 6, 20)
         release_date = datetime.date(2018, 7, 20)
@@ -160,6 +162,8 @@ class TestDao(TestCase):
             converter.convert_schema_object_to_entity(person_match_external_id)
         ]
         self.assertCountEqual(people, expected_people)
+
+        session.close()
 
     def test_readPeopleWithOpenBookings(self):
         admission_date = datetime.datetime(2018, 6, 20)
@@ -215,3 +219,5 @@ class TestDao(TestCase):
             for p in [person_match_full_name]
         ]
         self.assertCountEqual(people, expected_people)
+
+        session.close()

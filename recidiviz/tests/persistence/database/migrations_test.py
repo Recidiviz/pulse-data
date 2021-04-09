@@ -33,7 +33,7 @@ from recidiviz.tools.postgres import local_postgres_helpers
 
 
 @pytest.mark.uses_db
-class MigrationsTestBase:
+class MigrationsTestBase(TestCase):
     """This is the base class for testing that migrations work.
 
     The default tests in this class match the default tests used by pytest_alembic.
@@ -41,6 +41,11 @@ class MigrationsTestBase:
     which is why we have redefined them here.
     See: https://github.com/schireson/pytest-alembic/blob/master/src/pytest_alembic/tests.py
     """
+
+    # We set __test__ to False to tell `pytest` not to collect this class for running tests
+    # (as successful runs rely on the implementation of an abstract method).
+    # In sub-classes, __test__ should be re-set to True.
+    __test__ = False
 
     def setUp(self) -> None:
         self.db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
@@ -89,7 +94,7 @@ class MigrationsTestBase:
     def schema_type(self) -> SchemaType:
         raise NotImplementedError
 
-    def test_enums_match_schema(self):
+    def test_enums_match_schema(self) -> None:
         with runner(self.default_config(), self.engine) as r:
             r.migrate_up_to("head")
 
@@ -128,17 +133,17 @@ class MigrationsTestBase:
         # Cleanup needed for this method.
         local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
 
-    def test_full_upgrade(self):
+    def test_full_upgrade(self) -> None:
         """Enforce that migrations can be run forward to completion."""
         with runner(self.default_config(), self.engine) as r:
             r.migrate_up_to("head")
 
-    def test_single_head_revision(self):
+    def test_single_head_revision(self) -> None:
         """Enforce that there is exactly one head revision."""
         with runner(self.default_config(), self.engine) as r:
             self.assertEqual(len(r.heads), 1)
 
-    def test_up_down(self):
+    def test_up_down(self) -> None:
         """Enforce that migrations can be run all the way up, back, and up again."""
         with runner(self.default_config(), self.engine) as r:
             revisions = r.history.revisions
@@ -154,14 +159,14 @@ class MigrationsTestBase:
                 except Exception:
                     self.fail(f"Migrate back up failed at revision: {rev}")
 
-    def test_migrate_matches_defs(self):
+    def test_migrate_matches_defs(self) -> None:
         """Enforces that after all migrations, database state matches known models
 
         Important note: This test will not detect changes made to enums that have failed to
         be incorporated by existing migrations. It only reliably handles table schema.
         """
 
-        def verify_is_empty(_, __, directives):
+        def verify_is_empty(_, __, directives) -> None:
             script = directives[0]
 
             migration_is_empty = script.upgrade_ops.is_empty()
@@ -180,31 +185,41 @@ class MigrationsTestBase:
             )
 
 
-class TestCaseTriageMigrations(MigrationsTestBase, TestCase):
+class TestCaseTriageMigrations(MigrationsTestBase):
+    __test__ = True
+
     @property
     def schema_type(self) -> SchemaType:
         return SchemaType.CASE_TRIAGE
 
 
-class TestJailsMigrations(MigrationsTestBase, TestCase):
+class TestJailsMigrations(MigrationsTestBase):
+    __test__ = True
+
     @property
     def schema_type(self) -> SchemaType:
         return SchemaType.JAILS
 
 
-class TestJusticeCountsMigrations(MigrationsTestBase, TestCase):
+class TestJusticeCountsMigrations(MigrationsTestBase):
+    __test__ = True
+
     @property
     def schema_type(self) -> SchemaType:
         return SchemaType.JUSTICE_COUNTS
 
 
-class TestOperationsMigrations(MigrationsTestBase, TestCase):
+class TestOperationsMigrations(MigrationsTestBase):
+    __test__ = True
+
     @property
     def schema_type(self) -> SchemaType:
         return SchemaType.OPERATIONS
 
 
-class TestStateMigrations(MigrationsTestBase, TestCase):
+class TestStateMigrations(MigrationsTestBase):
+    __test__ = True
+
     @property
     def schema_type(self) -> SchemaType:
         return SchemaType.STATE

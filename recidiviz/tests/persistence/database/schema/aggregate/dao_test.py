@@ -73,10 +73,9 @@ class TestDao(TestCase):
         dao.write_df(FlCountyAggregate, subject)
 
         # Assert
-        query = (
-            SessionFactory.for_database(self.database_key)
-            .query(FlCountyAggregate)
-            .filter(FlCountyAggregate.county_name == "Bay")
+        session = SessionFactory.for_database(self.database_key)
+        query = session.query(FlCountyAggregate).filter(
+            FlCountyAggregate.county_name == "Bay"
         )
         result = one(query.all())
 
@@ -87,6 +86,7 @@ class TestDao(TestCase):
         self.assertEqual(result.fips, "00002")
         self.assertEqual(result.report_date, DATE_SCRAPED)
         self.assertEqual(result.aggregation_window, enum_strings.monthly_granularity)
+        session.close()
 
     def testWriteDf_doesNotOverrideMatchingColumnNames(self):
         # Arrange
@@ -127,16 +127,16 @@ class TestDao(TestCase):
         dao.write_df(FlFacilityAggregate, subject)
 
         # Assert
-        query = (
-            SessionFactory.for_database(self.database_key)
-            .query(FlCountyAggregate)
-            .filter(FlCountyAggregate.county_name == "Bay")
+        session = SessionFactory.for_database(self.database_key)
+        query = session.query(FlCountyAggregate).filter(
+            FlCountyAggregate.county_name == "Bay"
         )
         result = one(query.all())
 
         fips_not_overridden_by_facility_table = "00002"
         self.assertEqual(result.county_name, "Bay")
         self.assertEqual(result.fips, fips_not_overridden_by_facility_table)
+        session.close()
 
     def testWriteDf_rowsWithSameColumnsThatMustBeUnique_onlyWritesOnce(self):
         # Arrange
@@ -158,8 +158,10 @@ class TestDao(TestCase):
         dao.write_df(FlCountyAggregate, subject)
 
         # Assert
-        query = SessionFactory.for_database(self.database_key).query(FlCountyAggregate)
+        session = SessionFactory.for_database(self.database_key)
+        query = session.query(FlCountyAggregate)
         self.assertEqual(len(query.all()), 1)
+        session.close()
 
     def testWriteDf_OverlappingData_WritesNewAndIgnoresDuplicateRows(self):
         # Arrange
@@ -200,12 +202,12 @@ class TestDao(TestCase):
         dao.write_df(FlCountyAggregate, subject)
 
         # Assert
-        query = SessionFactory.for_database(self.database_key).query(
-            func.sum(FlCountyAggregate.county_population)
-        )
+        session = SessionFactory.for_database(self.database_key)
+        query = session.query(func.sum(FlCountyAggregate.county_population))
         result = one(one(query.all()))
 
         # This sum includes intial_df + NewCounty and ignores other changes in
         # the subject (eg. county_population = 0 for 'Alachua')
         expected_sum_county_populations = 1001056402
         self.assertEqual(result, expected_sum_county_populations)
+        session.close()

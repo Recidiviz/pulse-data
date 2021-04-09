@@ -298,6 +298,8 @@ class TestStatePersistence(TestCase):
             converter.convert_schema_objects_to_entity(persons),
         )
 
+        session.close()
+
     @patch(
         "recidiviz.persistence.persistence.SYSTEM_TYPE_TO_ERROR_THRESHOLD",
         STATE_ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS,

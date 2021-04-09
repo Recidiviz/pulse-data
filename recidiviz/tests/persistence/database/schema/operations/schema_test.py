@@ -55,6 +55,7 @@ class OperationsSchemaTest(unittest.TestCase):
         result_metadata = one(session.query(schema.DirectIngestRawFileMetadata).all())
         self.assertEqual(result_metadata, raw_metadata)
         self.assertIsNotNone(result_metadata.file_id)
+        session.close()
 
     def test_raw_file_metadata_all_fields(self) -> None:
         session = SessionFactory.for_database(self.database_key)
@@ -71,6 +72,7 @@ class OperationsSchemaTest(unittest.TestCase):
         result_metadata = one(session.query(schema.DirectIngestRawFileMetadata).all())
         self.assertEqual(result_metadata, raw_metadata)
         self.assertIsNotNone(result_metadata.file_id)
+        session.close()
 
     def test_raw_file_metadata_normalized_file_name_unique_constraint(self) -> None:
         session = SessionFactory.for_database(self.database_key)
@@ -94,9 +96,11 @@ class OperationsSchemaTest(unittest.TestCase):
 
         with self.assertRaises(IntegrityError):
             session.commit()
+        session.close()
 
         session = SessionFactory.for_database(self.database_key)
         self.assertEqual([], session.query(schema.DirectIngestRawFileMetadata).all())
+        session.close()
 
     def test_raw_file_metadata_normalized_file_name_nonnull_constraint(self) -> None:
         session = SessionFactory.for_database(self.database_key)
@@ -111,9 +115,11 @@ class OperationsSchemaTest(unittest.TestCase):
 
         with self.assertRaises(IntegrityError):
             session.commit()
+        session.close()
 
         session = SessionFactory.for_database(self.database_key)
         self.assertEqual([], session.query(schema.DirectIngestRawFileMetadata).all())
+        session.close()
 
     def test_raw_file_metadata_discovery_time_name_nonnull_constraint(self) -> None:
         session = SessionFactory.for_database(self.database_key)
@@ -128,9 +134,11 @@ class OperationsSchemaTest(unittest.TestCase):
 
         with self.assertRaises(IntegrityError):
             session.commit()
+        session.close()
 
         session = SessionFactory.for_database(self.database_key)
         self.assertEqual([], session.query(schema.DirectIngestRawFileMetadata).all())
+        session.close()
 
     def test_raw_file_metadata_normalized_file_name_unique_constraint_2(self) -> None:
         session = SessionFactory.for_database(self.database_key)
@@ -144,6 +152,7 @@ class OperationsSchemaTest(unittest.TestCase):
 
         session.add(raw_metadata_1)
         session.commit()
+        session.close()
 
         session = SessionFactory.for_database(self.database_key)
         raw_metadata_2 = schema.DirectIngestRawFileMetadata(
@@ -157,11 +166,13 @@ class OperationsSchemaTest(unittest.TestCase):
 
         with self.assertRaises(IntegrityError):
             session.commit()
+        session.close()
 
         session = SessionFactory.for_database(self.database_key)
         self.assertEqual(
             1, len(session.query(schema.DirectIngestRawFileMetadata).all())
         )
+        session.close()
 
     def test_ingest_file_metadata(self) -> None:
         session = SessionFactory.for_database(self.database_key)
@@ -182,6 +193,7 @@ class OperationsSchemaTest(unittest.TestCase):
         )
         self.assertEqual(result_metadata, ingest_file_metadata)
         self.assertIsNotNone(result_metadata.file_id)
+        session.close()
 
     def test_ingest_file_metadata_split_file(self) -> None:
         session = SessionFactory.for_database(self.database_key)
@@ -203,6 +215,7 @@ class OperationsSchemaTest(unittest.TestCase):
         )
         self.assertEqual(result_metadata, ingest_file_metadata)
         self.assertIsNotNone(result_metadata.file_id)
+        session.close()
 
     def test_ingest_file_metadata_split_file_no_file_name_raises(self) -> None:
         session = SessionFactory.for_database(self.database_key)
@@ -219,6 +232,7 @@ class OperationsSchemaTest(unittest.TestCase):
         session.add(ingest_file_metadata)
         with self.assertRaises(IntegrityError):
             session.commit()
+        session.close()
 
     def test_ingest_file_metadata_export_time_without_file_name_raises(self) -> None:
         session = SessionFactory.for_database(self.database_key)
@@ -237,6 +251,7 @@ class OperationsSchemaTest(unittest.TestCase):
 
         with self.assertRaises(IntegrityError):
             session.commit()
+        session.close()
 
     def test_ingest_file_metadata_file_name_without_export_time_does_not_raise(
         self,
@@ -261,6 +276,7 @@ class OperationsSchemaTest(unittest.TestCase):
         )
         self.assertEqual(result_metadata, ingest_file_metadata)
         self.assertIsNotNone(result_metadata.file_id)
+        session.close()
 
     def test_ingest_file_discovery_time_no_export_time_raises(self) -> None:
         session = SessionFactory.for_database(self.database_key)
@@ -278,6 +294,7 @@ class OperationsSchemaTest(unittest.TestCase):
 
         with self.assertRaises(IntegrityError):
             session.commit()
+        session.close()
 
     def test_ingest_file_processed_time_no_discovery_time_raises(self) -> None:
         session = SessionFactory.for_database(self.database_key)
@@ -297,6 +314,7 @@ class OperationsSchemaTest(unittest.TestCase):
 
         with self.assertRaises(IntegrityError):
             session.commit()
+        session.close()
 
     def test_ingest_file_datetimes_contained_constraint(self) -> None:
         session = SessionFactory.for_database(self.database_key)
@@ -317,6 +335,7 @@ class OperationsSchemaTest(unittest.TestCase):
 
         with self.assertRaises(IntegrityError):
             session.commit()
+        session.close()
 
     def test_ingest_file_metadata_no_default_db(self) -> None:
         session = SessionFactory.for_database(self.database_key)
@@ -339,3 +358,4 @@ class OperationsSchemaTest(unittest.TestCase):
         self.assertIsNotNone(result_metadata.file_id)
         self.assertIsNotNone(result_metadata.ingest_database_name)
         self.assertEqual("other_database_name", result_metadata.ingest_database_name)
+        session.close()

@@ -150,6 +150,7 @@ class TestCountyEntityMatcher(TestCase):
             converter.convert_schema_objects_to_entity(out.orphaned_entities), []
         )
         self.assertEqual(out.error_count, 1)
+        session.close()
 
     def test_matchPerson_updateStatusOnOrphanedEntities(self):
         # Arrange
@@ -228,6 +229,7 @@ class TestCountyEntityMatcher(TestCase):
             [expected_orphaned_bond],
         )
         self.assertEqual(out.error_count, 0)
+        session.close()
 
     def test_matchPeople_differentBookingIds(self):
         # Arrange
@@ -316,6 +318,7 @@ class TestCountyEntityMatcher(TestCase):
             converter.convert_schema_objects_to_entity(out.orphaned_entities), []
         )
         self.assertEqual(out.error_count, 0)
+        session.close()
 
     def test_matchPeople(self):
         # Arrange
@@ -409,6 +412,7 @@ class TestCountyEntityMatcher(TestCase):
             converter.convert_schema_objects_to_entity(out.orphaned_entities), []
         )
         self.assertEqual(out.error_count, 0)
+        session.close()
 
     def test_matchPeople_twoMatchingPeople_PicksMostSimilar(self):
         # Arrange
@@ -458,6 +462,7 @@ class TestCountyEntityMatcher(TestCase):
         self.assertEqual(matched_entities.error_count, 0)
         self.assertEqual(len(matched_entities.orphaned_entities), 0)
         self.assertEqual(ingested_person, expected_person)
+        session.close()
 
     def test_matchBooking_duplicateMatch_throws(self):
         db_booking = entities.Booking.new_with_defaults(
