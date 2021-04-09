@@ -1,14 +1,26 @@
 file_tag: sbstnc_tst
 file_description: |-
+  Contains a row for every substance test requested.
+
   Not in use
 primary_key_cols:
   - tst_id
 columns:
   - name: tst_id
+    description: |-
+      ID of the substance test
   - name: ofndr_num
+    description: |-
+      Person external id
   - name: smpl_rqst_dt
+    description: |-
+      Date at which the sample was requested
   - name: smpl_rqst_tm
+    description: |-
+      Time at which the sample was requested
   - name: smpl_typ_cd
+    description: |-
+      `U` for urine. `S` for saliva.
   - name: rfsd_sbstnc_tst_dt
   - name: cllct_dt
   - name: cllct_tm
