@@ -29,6 +29,14 @@ FROM ubuntu:focal
 
 ENV DEBIAN_FRONTEND noninteractive
 
+# NOTE: It is is extremely important that we do not delete this
+# variable. One of our dependencies, dateparser, seems to require
+# that TZ is defined (to be truly anything) in order to parse dates
+# properly. If it is not defined, our date parsing will silently
+# return None in a large set of circumstances which is of course,
+# unideal.
+ENV TZ America/New_York
+
 RUN apt update -y && \
     apt install -y \
     locales \
