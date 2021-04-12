@@ -8,6 +8,9 @@ exclusions:
   - validation_name: supervision_population_person_level_external_comparison_matching_people_supervising_officer
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: PA has not provided us with person-level validation data for supervising officers
+  - validation_name: active_in_population_after_death_date
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: TODO(#6928) The pre-processing for periods ending in death is incomplete.
 max_allowed_error_overrides:
   - validation_name: supervision_population_person_level_external_comparison
     max_allowed_error_override: 0.03
