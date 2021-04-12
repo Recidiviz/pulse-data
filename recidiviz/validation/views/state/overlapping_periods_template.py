@@ -25,7 +25,7 @@ from recidiviz.persistence.entity.state.entities import (
 
 OVERLAPPING_PERIODS_TEMPLATE = """
   SELECT 
-    DISTINCT period.state_code AS region_code, period.{primary_key_field}, period.external_id
+    DISTINCT period.state_code AS region_code, period.{primary_key_field}, period.external_id, period.person_id
   FROM `{{project_id}}.{{state_dataset}}.{table_name}` period
   LEFT OUTER JOIN
   `{{project_id}}.{{state_dataset}}.{table_name}` other_period
