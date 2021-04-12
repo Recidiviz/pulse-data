@@ -35,6 +35,9 @@ from recidiviz.validation.validation_config import (
 )
 
 # pylint: disable=line-too-long
+from recidiviz.validation.views.state.active_in_population_after_death_date import (
+    ACTIVE_IN_POPULATION_AFTER_DEATH_DATE_VIEW_BUILDER,
+)
 from recidiviz.validation.views.justice_counts.incarceration_population_by_state_by_date_justice_counts_comparison import (
     INCARCERATION_POPULATION_BY_STATE_BY_DATE_JUSTICE_COUNTS_COMPARISON_VIEW_BUILDER,
 )
@@ -261,6 +264,9 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view=OVERLAPPING_SUPERVISION_PERIODS_VIEW_BUILDER.build()
+        ),
+        ExistenceDataValidationCheck(
+            view=ACTIVE_IN_POPULATION_AFTER_DEATH_DATE_VIEW_BUILDER.build()
         ),
         SamenessDataValidationCheck(
             view=CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW_BUILDER.build(),
