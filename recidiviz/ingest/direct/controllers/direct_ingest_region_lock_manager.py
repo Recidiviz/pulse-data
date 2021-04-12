@@ -24,8 +24,15 @@ from typing import List, Iterator
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
     GCSPseudoLockManager,
 )
+from recidiviz.common.constants.states import StateCode
 
-GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME = "INGEST_PROCESS_RUNNING_"
+GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX = "INGEST_PROCESS_RUNNING_"
+STATE_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX = (
+    f"{GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX}STATE_"
+)
+JAILS_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX = (
+    f"{GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX}JAILS_"
+)
 
 
 class DirectIngestRegionLockManager:
@@ -79,4 +86,8 @@ class DirectIngestRegionLockManager:
 
     @staticmethod
     def _ingest_lock_name_for_region_code(region_code: str) -> str:
-        return GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME + region_code.upper()
+        if StateCode.is_state_code(region_code):
+            return (
+                STATE_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX + region_code.upper()
+            )
+        return JAILS_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX + region_code.upper()
