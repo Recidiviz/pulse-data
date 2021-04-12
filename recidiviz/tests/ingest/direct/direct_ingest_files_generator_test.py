@@ -30,6 +30,7 @@ from recidiviz.ingest.direct.direct_ingest_files_generator import (
     DirectIngestFilesGenerator,
     REGIONS_DIR_PATH,
     DEFAULT_WORKING_DIR,
+    DOCS_DIRECTORY,
 )
 from recidiviz.ingest.direct.direct_ingest_region_utils import (
     get_existing_region_dir_names,
@@ -66,9 +67,11 @@ class DirectIngestFilesGeneratorTest(
         self.populate_test_directory()
 
         super().setUp()
-        test_region_code = "us_aa"
+        test_region_code = "us_xx"
         self.files_generator = DirectIngestFilesGenerator(
-            test_region_code, self.temp_dir
+            test_region_code,
+            curr_directory=self.temp_dir,
+            docs_directory=os.path.join(self.temp_dir, DOCS_DIRECTORY),
         )
         self.files_generator.generate_all_new_dirs_and_files()
 
@@ -100,6 +103,10 @@ class DirectIngestFilesGeneratorTest(
             os.path.join(
                 self.temp_dir, INGEST_TEST_TEMPLATES_DIR_PATH, GENERIC_REGION_CODE
             ),
+        )
+        copytree(
+            DOCS_DIRECTORY,
+            os.path.join(self.temp_dir, DOCS_DIRECTORY),
         )
 
     def tearDown(self) -> None:
