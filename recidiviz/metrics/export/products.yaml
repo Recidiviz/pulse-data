@@ -1,0 +1,70 @@
+# List of products with their required exports and statuses
+
+products:
+  - name: Admin Panel
+    exports:
+      - INGEST_METADATA
+      - VALIDATION_METADATA
+    states: []
+    environment: production
+  - name: Case Triage
+    exports:
+      - CASE_TRIAGE
+    states:
+      - state_code: US_ID
+        environment: production
+  - name: COVID Dashboard
+    exports:
+      - COVID_DASHBOARD
+    environment: production
+  - name: COVID Report
+    exports: []
+    states:
+      - state_code: US_ID
+        environment: production
+      - state_code: US_ND
+        environment: production
+  - name: Core Dashboard
+    exports:
+      - CORE
+    states:
+      - state_code: US_ND
+        environment: production
+  - name: Justice Counts
+    exports:
+      - JUSTICE_COUNTS
+    states: []
+    environment: production
+  - name: Lantern Dashboard
+    exports:
+      - LANTERN
+    states:
+      - state_code: US_MO
+        environment: production
+      - state_code: US_PA
+        environment: production
+  - name: PO Report
+    exports:
+      - PO_MONTHLY
+    states:
+      - state_code: US_ID
+        environment: production
+  - name: Public Dashboard
+    exports:
+      - PUBLIC_DASHBOARD
+    states:
+      - state_code: US_PA
+        environment: staging
+      - state_code: US_ND
+        environment: production
+  - name: Unified Product
+    exports:
+      - UP
+    states:
+      - state_code: US_ID
+        environment: staging
+  - name: Vitals Report
+    exports: []
+    states:
+      - state_code: US_ND
+        environment: production

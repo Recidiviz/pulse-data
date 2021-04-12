@@ -33,12 +33,13 @@ import sys
 from typing import List, Tuple, Optional
 
 from recidiviz.common.constants import states
-from recidiviz.metrics.export import export_config
 from recidiviz.metrics.export.export_config import (
-    ExportViewCollectionConfig,
-    VIEW_COLLECTION_EXPORT_CONFIGS,
+    VIEW_COLLECTION_EXPORT_INDEX,
 )
-from recidiviz.metrics.export.view_export_manager import trigger_export_for_configs
+from recidiviz.metrics.export.view_export_manager import (
+    trigger_export_for_configs,
+    get_configs_for_export_name,
+)
 from recidiviz.tools.utils.dataset_overrides_for_all_view_datasets import (
     dataset_overrides_for_all_view_datasets,
 )
@@ -49,7 +50,7 @@ from recidiviz.utils.metadata import local_project_id_override
 def get_protected_buckets(project_id: str) -> List[str]:
     protected_bucket_templates = {
         config.output_directory_uri_template
-        for config in VIEW_COLLECTION_EXPORT_CONFIGS
+        for config in VIEW_COLLECTION_EXPORT_INDEX.values()
     }
 
     return [
@@ -72,41 +73,25 @@ def export_metrics_from_dataset_to_gcs(
             view_dataset_override_prefix=sandbox_dataset_prefix,
         )
 
-    # find the export config given the export name and state_code filter args
-    filtered_export_config = None
-    for dataset_export_config in export_config.VIEW_COLLECTION_EXPORT_CONFIGS:
-        if not dataset_export_config.matches_filter(export_name):
-            continue
-        if not dataset_export_config.matches_filter(state_code):
-            continue
-        filtered_export_config = dataset_export_config
-
-    # handle error states
-    if not filtered_export_config:
-        raise ValueError(
-            "Export config not found. Please try a different combination of "
-            "--export_config and --state_code"
-        )
-
     if destination_bucket in get_protected_buckets(project_id):
         raise ValueError(
             f"Must specify a destination_bucket that is not a protected bucket. "
             f"Protected buckets are: {get_protected_buckets(project_id)}"
         )
 
-    # override the filtered export config output directory with the destination_bucket arg
-    custom_export_config = ExportViewCollectionConfig(
-        view_builders_to_export=filtered_export_config.view_builders_to_export,
-        output_directory_uri_template=destination_bucket,
-        state_code_filter=filtered_export_config.state_code_filter,
-        export_name=filtered_export_config.export_name,
-        bq_view_namespace=filtered_export_config.bq_view_namespace,
-        export_output_formats=filtered_export_config.export_output_formats,
+    # build the view export configs list given the export name and state_code filter
+    # args, as well as the overridden destination bucket
+    export_configs_for_filter = get_configs_for_export_name(
+        export_name=export_name,
+        project_id=project_id,
+        state_code_filter=state_code,
+        destination_override=destination_bucket,
+        dataset_overrides=sandbox_dataset_overrides,
     )
 
     trigger_export_for_configs(
-        export_configs=[custom_export_config],
-        dataset_overrides=sandbox_dataset_overrides,
+        export_configs=export_configs_for_filter,
+        state_code_filter=state_code,
     )
 
 
@@ -141,7 +126,7 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     parser.add_argument(
         "--export_name",
         dest="export_name",
-        choices=[config.export_name for config in VIEW_COLLECTION_EXPORT_CONFIGS],
+        choices=VIEW_COLLECTION_EXPORT_INDEX.keys(),
         type=str,
         required=True,
     )

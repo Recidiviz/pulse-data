@@ -1,0 +1,23 @@
+# Fixture meant to emulate calculator/metrics/export/products.yaml
+
+products:
+  - name: Test Product
+    exports:
+      - EXPORT
+      - OTHER_EXPORT
+    states:
+      - state_code: US_XX
+        environment: production
+      - state_code: US_WW
+        environment: staging
+  - name: Test State Agnostic Product
+    exports:
+      - MOCK_EXPORT_NAME
+    states: []
+    environment:
+      staging
+  - name: Test Product Without Exports
+    exports: []
+    states:
+      - state_code: US_XX
+        environment: staging

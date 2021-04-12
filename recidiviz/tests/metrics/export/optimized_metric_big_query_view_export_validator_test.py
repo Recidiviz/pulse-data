@@ -21,6 +21,7 @@ import unittest
 
 from mock import create_autospec, patch, call
 
+from recidiviz.big_query.big_query_view import BigQueryViewNamespace
 from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
@@ -40,6 +41,8 @@ class ValidateTest(unittest.TestCase):
         self.mock_project_id_fn = self.metadata_patcher.start()
         self.mock_project_id_fn.return_value = "project-id"
 
+        self.mock_bq_view_namespace = BigQueryViewNamespace.STATE
+
         metric_view_one = MetricBigQueryViewBuilder(
             dataset_id="dataset",
             view_id="view1",
@@ -49,6 +52,7 @@ class ValidateTest(unittest.TestCase):
         ).build()
 
         export_config_one_staging = ExportBigQueryViewConfig(
+            bq_view_namespace=self.mock_bq_view_namespace,
             view=metric_view_one,
             view_filter_clause="WHERE state_code = 'US_XX'",
             intermediate_table_name="intermediate_table",
@@ -66,6 +70,7 @@ class ValidateTest(unittest.TestCase):
         ).build()
 
         export_config_two_staging = ExportBigQueryViewConfig(
+            bq_view_namespace=self.mock_bq_view_namespace,
             view=metric_view_two,
             view_filter_clause="WHERE state_code = 'US_XX'",
             intermediate_table_name="intermediate_table2",

@@ -15,13 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Export data from BigQuery metric views to configurable locations."""
+import itertools
 import logging
 from http import HTTPStatus
-from typing import Dict, List, Optional, Sequence, Set, Tuple
+from typing import Dict, List, Optional, Sequence, Tuple
 
 from flask import Blueprint, request
 from opencensus.stats import measure, view as opencensus_view, aggregation
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.metrics.export import export_config
 from recidiviz.big_query import view_update_manager
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
@@ -35,13 +37,13 @@ from recidiviz.big_query.export.big_query_view_export_validator import (
     ExistsBigQueryViewExportValidator,
 )
 from recidiviz.big_query.export.export_query_config import ExportOutputFormatType
-from recidiviz.big_query.view_update_manager import BigQueryViewNamespace
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.metrics.export.export_config import (
     ExportBigQueryViewConfig,
-    ExportViewCollectionConfig,
+    ProductConfig,
+    PRODUCTS_CONFIG_PATH,
 )
 from recidiviz.metrics.export.optimized_metric_big_query_view_exporter import (
     OptimizedMetricBigQueryViewExporter,
@@ -154,6 +156,76 @@ def metric_view_data_export() -> Tuple[str, HTTPStatus]:
     return "", HTTPStatus.OK
 
 
+def get_configs_for_export_name(
+    export_name: str,
+    project_id: str,
+    state_code_filter: Optional[str] = None,
+    destination_override: Optional[str] = None,
+    dataset_overrides: Optional[Dict[str, str]] = None,
+) -> Dict[str, Sequence[ExportBigQueryViewConfig]]:
+    """Checks the export index for a matching export and if one exists, returns the
+    export name paired with a sequence of export view configs."""
+    relevant_export_collection = export_config.VIEW_COLLECTION_EXPORT_INDEX.get(
+        export_name.upper()
+    )
+    if not relevant_export_collection:
+        raise ValueError(
+            f"No export configs matching export name: [{export_name.upper()}]"
+        )
+
+    return {
+        relevant_export_collection.export_name: relevant_export_collection.export_configs_for_views_to_export(
+            project_id=project_id,
+            state_code_filter=state_code_filter,
+            destination_override=destination_override,
+            dataset_overrides=dataset_overrides,
+        )
+    }
+
+
+def get_configs_for_state(
+    state_code: Optional[str], project_id: str
+) -> Dict[str, Sequence[ExportBigQueryViewConfig]]:
+    """Collects all products relevant to this state_code and compiles a dictionary relating
+    export names to a sequence of export view configs."""
+    products = ProductConfig.product_configs_from_file(PRODUCTS_CONFIG_PATH)
+
+    if state_code is None:
+        raise ValueError("Unexpected missing state code.")
+
+    # all the products that correspond to this state
+    relevant_product_exports = [
+        product.exports
+        for product in products
+        if state_code.upper() in product.launched_states
+    ]
+
+    export_names = set(
+        itertools.chain.from_iterable(
+            # list of export names for each product
+            relevant_product_exports
+        )
+    )
+
+    state_exports = [
+        collection_config
+        for collection_config in export_config.VIEW_COLLECTION_EXPORT_INDEX.values()
+        if collection_config.export_name in export_names
+    ]
+
+    if not state_exports:
+        raise ValueError(
+            f"No matching export configs for product exports in state: [{state_code}]."
+        )
+
+    return {
+        collection_config.export_name: collection_config.export_configs_for_views_to_export(
+            project_id=project_id, state_code_filter=state_code.upper()
+        )
+        for collection_config in state_exports
+    }
+
+
 def export_view_data_to_cloud_storage(
     export_job_filter: str,
     override_view_exporter: Optional[BigQueryViewExporter] = None,
@@ -164,24 +236,28 @@ def export_view_data_to_cloud_storage(
     to using a CompositeBigQueryViewExporter with delegates of JsonLinesBigQueryViewExporter and
     OptimizedMetricBigQueryViewExporter.
     """
-    export_configs_for_filter: List[ExportViewCollectionConfig] = []
-    bq_view_namespaces_to_update: Set[BigQueryViewNamespace] = set()
-    for dataset_export_config in export_config.VIEW_COLLECTION_EXPORT_CONFIGS:
-        if not dataset_export_config.matches_filter(export_job_filter):
-            logging.info(
-                "Skipped metric export for config [%s] with filter [%s]",
-                dataset_export_config,
-                export_job_filter,
-            )
-            continue
 
-        export_configs_for_filter.append(dataset_export_config)
-        bq_view_namespaces_to_update.add(dataset_export_config.bq_view_namespace)
+    project_id = metadata.project_id()
 
-    if not export_configs_for_filter:
-        raise ValueError(
-            "Export filter did not match any export configs: ", export_job_filter
+    if StateCode.is_state_code(export_job_filter):
+        state_code_filter: Optional[str] = export_job_filter.upper()
+        export_configs_for_filter = get_configs_for_state(
+            state_code=state_code_filter,
+            project_id=project_id,
         )
+    else:
+        state_code_filter = None
+        export_configs_for_filter = get_configs_for_export_name(
+            export_name=export_job_filter, project_id=project_id
+        )
+
+    state_view_configs = list(
+        itertools.chain.from_iterable(export_configs_for_filter.values())
+    )
+
+    bq_view_namespaces_to_update = {
+        config.bq_view_namespace for config in state_view_configs
+    }
 
     for bq_view_namespace_to_update in bq_view_namespaces_to_update:
         view_builders_for_views_to_update = (
@@ -207,33 +283,27 @@ def export_view_data_to_cloud_storage(
     trigger_export_for_configs(
         export_configs=export_configs_for_filter,
         override_view_exporter=override_view_exporter,
+        state_code_filter=state_code_filter,
     )
 
 
 def trigger_export_for_configs(
-    export_configs: List[ExportViewCollectionConfig],
-    dataset_overrides: Optional[Dict[str, str]] = None,
+    export_configs: Dict[str, Sequence[ExportBigQueryViewConfig]],
+    state_code_filter: Optional[str],
     override_view_exporter: Optional[BigQueryViewExporter] = None,
 ) -> None:
     """Triggers the export given the export_configs."""
 
     gcsfs_client = GcsfsFactory.build()
     delegate_export_map = get_delegate_export_map(gcsfs_client, override_view_exporter)
-    project_id = metadata.project_id()
 
-    for dataset_export_config in export_configs:
-        export_log_message = f"Starting [{dataset_export_config.export_name}] export"
+    for export_name, view_export_configs in export_configs.items():
+        export_log_message = f"Starting [{export_name}] export"
         export_log_message += (
-            f" for state_code [{dataset_export_config.state_code_filter}]."
-            if dataset_export_config.state_code_filter
-            else "."
+            f" for state_code [{state_code_filter}]." if state_code_filter else "."
         )
 
         logging.info(export_log_message)
-
-        view_export_configs = dataset_export_config.export_configs_for_views_to_export(
-            project_id=project_id, dataset_overrides=dataset_overrides
-        )
 
         # The export will error if the validations fail for the set of view_export_configs. We want to log this failure
         # as a warning, but not block on the rest of the exports.
@@ -242,20 +312,16 @@ def trigger_export_for_configs(
                 gcsfs_client, view_export_configs, delegate_export_map
             )
         except ViewExportValidationError as e:
-            warning_message = (
-                f"Export validation failed for {dataset_export_config.export_name}"
-            )
+            warning_message = f"Export validation failed for {export_name}"
 
-            if dataset_export_config.state_code_filter is not None:
-                warning_message += (
-                    f" for state: {dataset_export_config.state_code_filter}"
-                )
+            if state_code_filter:
+                warning_message += f" for state: {state_code_filter}"
 
             logging.warning("%s\n%s", warning_message, str(e))
             with monitoring.measurements(
                 {
-                    monitoring.TagKey.METRIC_VIEW_EXPORT_NAME: dataset_export_config.export_name,
-                    monitoring.TagKey.REGION: dataset_export_config.state_code_filter,
+                    monitoring.TagKey.METRIC_VIEW_EXPORT_NAME: export_name,
+                    monitoring.TagKey.REGION: state_code_filter,
                 }
             ) as measurements:
                 measurements.measure_int_put(m_failed_metric_export_validation, 1)
@@ -265,8 +331,8 @@ def trigger_export_for_configs(
         except Exception as e:
             with monitoring.measurements(
                 {
-                    monitoring.TagKey.METRIC_VIEW_EXPORT_NAME: dataset_export_config.export_name,
-                    monitoring.TagKey.REGION: dataset_export_config.state_code_filter,
+                    monitoring.TagKey.METRIC_VIEW_EXPORT_NAME: export_name,
+                    monitoring.TagKey.REGION: state_code_filter,
                 }
             ) as measurements:
                 measurements.measure_int_put(m_failed_metric_export_job, 1)
