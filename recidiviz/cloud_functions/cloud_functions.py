@@ -25,9 +25,6 @@ from typing import Tuple
 from flask import Blueprint, request
 import gcsfs
 
-from recidiviz.calculator.pipeline.utils.calculate_cloud_task_manager import (
-    CalculateCloudTaskManager,
-)
 from recidiviz.cloud_functions.cloud_function_utils import GCSFS_NO_CACHING
 
 from recidiviz.ingest.aggregate.regions.ca import ca_aggregate_ingest
@@ -109,37 +106,4 @@ def state_aggregate() -> Tuple[str, HTTPStatus]:
         HISTORICAL_BUCKET.format(project_id), state, filename
     )
     fs.mv(path, historical_path)
-    return "", HTTPStatus.OK
-
-
-@cloud_functions_blueprint.route("/dataflow_monitor")
-@requires_gae_auth
-def dataflow_monitor() -> Tuple[str, HTTPStatus]:
-    """Calls the dataflow monitor manager to begin monitoring a Dataflow job.
-
-    Endpoint path parameters:
-        job_id: The unique id of the job to monitor
-        location: The region where the job is being run
-        topic: The Pub/Sub topic to publish a message to if the job is
-            successful
-    """
-    job_id = get_str_param_value("job_id", request.args)
-    location = get_str_param_value("location", request.args)
-    topic = get_str_param_value("topic", request.args)
-
-    if not job_id:
-        raise ValueError("Unexpected empty job_id.")
-    if not location:
-        raise ValueError("Unexpected empty location.")
-    if not topic:
-        raise ValueError("Unexpected empty topic.")
-
-    logging.info(
-        "Attempting to monitor the job with id: %s. Will " "publish to %s on success.",
-        job_id,
-        topic,
-    )
-
-    CalculateCloudTaskManager().create_dataflow_monitor_task(job_id, location, topic)
-
     return "", HTTPStatus.OK
