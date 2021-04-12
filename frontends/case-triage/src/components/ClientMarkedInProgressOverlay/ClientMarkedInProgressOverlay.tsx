@@ -44,7 +44,7 @@ const ClientMarkedInProgressOverlay = ({
         &lsquo;s case as in progress.{" "}
         <Undo onClick={() => caseUpdatesStore.undo(client)}>Undo?</Undo>
       </InProgressConfirmation>
-      <Icon kind={IconSVG.Success} fill={palette.white.main} size={32} />
+      <Icon kind={IconSVG.Success} fill={palette.white} size={32} />
     </InProgressOverlay>
   );
 };

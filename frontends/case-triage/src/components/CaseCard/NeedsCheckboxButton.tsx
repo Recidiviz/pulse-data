@@ -37,12 +37,12 @@ const BaseCheckboxButton = styled.button.attrs({
 `;
 
 const CheckedCheckboxButton = styled(BaseCheckboxButton)`
-  color: ${palette.white.main};
-  background-color: ${palette.pine.accent2};
-  border: 1px solid ${palette.pine.accent2};
+  color: ${palette.white};
+  background-color: ${palette.signal.links};
+  border: 1px solid ${palette.signal.links};
 
   &:hover {
-    background-color: ${palette.pine.accent3};
+    background-color: ${palette.signal.links};
   }
 `;
 
@@ -55,10 +55,10 @@ const UncheckedCheckboxButton = styled(
     props.disabled
       ? `
   color: ${palette.text.caption};
-  border: 1px solid ${palette.backgrounds.E3E6E6};
+  border: 1px solid ${palette.marble5};
 `
       : `
-  color: ${palette.pine.accent2};
+  color: ${palette.signal.links};
   border: 1px solid rgba(0, 108, 103, 0.3);
 
   &:hover {

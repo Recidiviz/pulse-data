@@ -31,10 +31,10 @@ const TooltipElement = styled.div<{
   display: block;
   position: fixed;
   font-size: ${rem("14px")};
-  padding: ${spacing.sm};
+  padding: ${rem(spacing.sm)};
   border-radius: 4px;
-  color: ${palette.white.main};
-  background-color: #003331;
+  color: ${palette.white};
+  background-color: ${palette.signal.tooltip};
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.3s ease-in-out;

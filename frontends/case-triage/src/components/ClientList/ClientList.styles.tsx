@@ -27,13 +27,13 @@ import {
 } from "@recidiviz/case-triage-components";
 
 export const ClientNeed = styled(Need)`
-  margin-right: ${spacing.sm};
+  margin-right: ${rem(spacing.sm)};
 `;
 
 export const ClientCard = styled(Card).attrs((props) => {
   return { className: `client-card ${props.className}` };
 })`
-  padding: ${spacing.md};
+  padding: ${rem(spacing.lg)};
   overflow: hidden;
   position: relative;
   min-height: 92px;
@@ -45,22 +45,23 @@ export const ClientCard = styled(Card).attrs((props) => {
   }
 
   &.client-card--in-progress {
-    background-color: ${palette.backgrounds.E9EBEB};
+    background-color: ${palette.marble5};
   }
 `;
 
 export const MainText = styled.span`
-  font-size: ${rem("17px")};
+  color: ${palette.pine4};
+  font-size: ${rem("16px")};
   display: block;
 
   .client-card--in-progress & {
-    color: ${palette.text.caption};
+    color: ${palette.slate70};
   }
 `;
 
 export const SecondaryText = styled.span`
-  font-size: ${rem("13px")};
-  color: ${palette.text.caption};
+  font-size: ${rem("14px")};
+  color: ${palette.slate70};
 `;
 
 export const FlexCardSection = styled(CardSection)`
@@ -75,14 +76,14 @@ export const CardHeader = styled(CardSection)`
 `;
 
 export const ClientListHeading = styled(H2)`
-  margin-top: 0;
+  margin-bottom: ${rem(spacing.lg)};
 `;
 
 export const ClientListTableHeading = styled.div`
   color: ${palette.text.caption};
   font-size: ${rem("13px")};
   padding: 8px 24px;
-  border-bottom: 1px solid ${palette.backgrounds.D2D8D8};
+  border-bottom: 1px solid ${palette.slate20};
   margin-bottom: 16px;
   display: flex;
   line-height: 1;
@@ -93,5 +94,9 @@ export const ClientListTableHeading = styled.div`
 `;
 
 export const ClientListContainer = styled.div`
-  margin-bottom: ${spacing.lg};
+  margin-bottom: ${rem(spacing.xl)};
+
+  // The ClientListContainer needs to be the ClientCard's _offsetParent_ so that we can correctly calculate the
+  // CaseCard margin-top
+  position: relative;
 `;
