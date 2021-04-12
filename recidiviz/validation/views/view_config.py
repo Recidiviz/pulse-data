@@ -28,6 +28,9 @@ from recidiviz.validation.views.metadata.column_counter import (
 from recidiviz.validation.views.metadata.validation_schema_config import (
     get_external_validation_schema,
 )
+from recidiviz.validation.views.state.active_in_population_after_death_date import (
+    ACTIVE_IN_POPULATION_AFTER_DEATH_DATE_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.active_program_participation_by_region_internal_consistency import (
     ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
@@ -223,6 +226,7 @@ from recidiviz.validation.views.state.analyst_data_validation.reincarcerations_f
 )
 
 VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = [
+    ACTIVE_IN_POPULATION_AFTER_DEATH_DATE_VIEW_BUILDER,
     ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_INTERNAL_CONSISTENCY_VIEW_BUILDER,
     CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW_BUILDER,
     FTR_REFERRALS_COMPARISON_VIEW_BUILDER,

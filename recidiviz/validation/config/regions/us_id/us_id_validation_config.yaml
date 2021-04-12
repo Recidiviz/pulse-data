@@ -16,6 +16,9 @@ exclusions:
   - validation_name: revocation_matrix_comparison_revocation_cell_vs_month
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: Revocation matrix not used for ID
+  - validation_name: active_in_population_after_death_date
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: TODO(#6928) The pre-processing for periods ending in death is incomplete.
 max_allowed_error_overrides:
   - validation_name: county_jail_population_person_level_external_comparison
     max_allowed_error_override: 0.18
