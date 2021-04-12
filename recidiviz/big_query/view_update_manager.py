@@ -16,7 +16,6 @@
 # =============================================================================
 """Provides utilities for updating views within a live BigQuery instance."""
 import logging
-from enum import Enum
 from typing import Dict, List, Sequence, Optional
 
 from google.cloud import exceptions
@@ -27,6 +26,7 @@ from recidiviz.big_query.big_query_view import (
     BigQueryView,
     BigQueryViewBuilder,
     BigQueryViewBuilderShouldNotBuildError,
+    BigQueryViewNamespace,
 )
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.calculator.query.county.dataset_config import COUNTY_BASE_DATASET
@@ -86,17 +86,6 @@ failed_view_updates_view = opencensus_view.View(
 )
 
 monitoring.register_views([failed_view_updates_view])
-
-
-class BigQueryViewNamespace(Enum):
-    COUNTY = "county"
-    JUSTICE_COUNTS = "justice_counts"
-    STATE = "state"
-    VALIDATION = "validation"
-    CASE_TRIAGE = "case_triage"
-    INGEST_METADATA = "ingest_metadata"
-    DIRECT_INGEST = "direct_ingest"
-    VALIDATION_METADATA = "validation_metadata"
 
 
 VIEW_BUILDERS_BY_NAMESPACE: Dict[

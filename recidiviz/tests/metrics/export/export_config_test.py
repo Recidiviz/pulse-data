@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests the classes in the metric_export_config file."""
+import importlib
 import unittest
 from unittest import mock
 
@@ -23,11 +24,51 @@ from google.cloud import bigquery
 from recidiviz.big_query.export.export_query_config import ExportOutputFormatType
 from recidiviz.big_query.view_update_manager import BigQueryViewNamespace
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
+from recidiviz.common.constants import states
 from recidiviz.metrics.export.export_config import (
     ExportBigQueryViewConfig,
     ExportViewCollectionConfig,
+    _VIEW_COLLECTION_EXPORT_CONFIGS,
+    VIEW_COLLECTION_EXPORT_INDEX,
+    ProductConfig,
+    ProductStateConfig,
 )
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
+from recidiviz.tests.ingest import fixtures
+
+
+class TestProductConfig(unittest.TestCase):
+    """Tests the functionality of the ProductConfig class."""
+
+    def test_product_configs_from_file(self) -> None:
+        product_configs = ProductConfig.product_configs_from_file(
+            fixtures.as_filepath("fixture_products.yaml")
+        )
+        expected_product_configs = [
+            ProductConfig(
+                name="Test Product",
+                exports=["EXPORT", "OTHER_EXPORT"],
+                states=[
+                    ProductStateConfig(state_code="US_XX", environment="production"),
+                    ProductStateConfig(state_code="US_WW", environment="staging"),
+                ],
+                environment=None,
+            ),
+            ProductConfig(
+                name="Test State Agnostic Product",
+                exports=["MOCK_EXPORT_NAME"],
+                states=[],
+                environment="staging",
+            ),
+            ProductConfig(
+                name="Test Product Without Exports",
+                exports=[],
+                states=[ProductStateConfig(state_code="US_XX", environment="staging")],
+                environment=None,
+            ),
+        ]
+
+        self.assertEqual(expected_product_configs, product_configs)
 
 
 class TestExportViewCollectionConfig(unittest.TestCase):
@@ -56,49 +97,17 @@ class TestExportViewCollectionConfig(unittest.TestCase):
 
         self.views_for_dataset = [self.mock_view_builder]
 
+        # Ensures StateCode.US_XX is properly loaded
+        importlib.reload(states)
+
     def tearDown(self) -> None:
         self.metadata_patcher.stop()
 
-    def test_matches_filter(self) -> None:
-        """Tests matches_filter function to ensure that state codes and export names correctly match"""
-        state_dataset_export_config = ExportViewCollectionConfig(
-            view_builders_to_export=self.views_for_dataset,
-            output_directory_uri_template="gs://{project_id}-bucket",
-            state_code_filter="US_XX",
-            export_name="EXPORT",
-            bq_view_namespace=self.mock_big_query_view_namespace,
+    def test_unique_export_names(self) -> None:
+        self.assertEqual(
+            len(_VIEW_COLLECTION_EXPORT_CONFIGS),
+            len(VIEW_COLLECTION_EXPORT_INDEX.keys()),
         )
-        self.assertTrue(state_dataset_export_config.matches_filter("US_XX"))
-
-        dataset_export_config = ExportViewCollectionConfig(
-            view_builders_to_export=self.views_for_dataset,
-            output_directory_uri_template="gs://{project_id}-bucket",
-            state_code_filter=None,
-            export_name="VALID_EXPORT_NAME",
-            bq_view_namespace=self.mock_big_query_view_namespace,
-        )
-        self.assertTrue(dataset_export_config.matches_filter("VALID_EXPORT_NAME"))
-        self.assertFalse(dataset_export_config.matches_filter("INVALID_EXPORT_NAME"))
-
-    def test_matches_filter_case_insensitive(self) -> None:
-        """Tests matches_filter function with different cases to ensure state codes and export names correctly match"""
-        state_dataset_export_config = ExportViewCollectionConfig(
-            view_builders_to_export=self.views_for_dataset,
-            output_directory_uri_template="gs://{project_id}-bucket",
-            state_code_filter="US_XX",
-            export_name="OTHER_EXPORT",
-            bq_view_namespace=self.mock_big_query_view_namespace,
-        )
-        self.assertTrue(state_dataset_export_config.matches_filter("US_xx"))
-
-        dataset_export_config = ExportViewCollectionConfig(
-            view_builders_to_export=self.views_for_dataset,
-            output_directory_uri_template="gs://{project_id}-bucket",
-            state_code_filter=None,
-            export_name="VALID_EXPORT_NAME",
-            bq_view_namespace=self.mock_big_query_view_namespace,
-        )
-        self.assertTrue(dataset_export_config.matches_filter("valid_export_name"))
 
     def test_metric_export_state_agnostic(self) -> None:
         """Tests the export_configs_for_views_to_export function on the ExportViewCollectionConfig class when the
@@ -106,14 +115,13 @@ class TestExportViewCollectionConfig(unittest.TestCase):
         state_agnostic_dataset_export_config = ExportViewCollectionConfig(
             view_builders_to_export=self.views_for_dataset,
             output_directory_uri_template="gs://{project_id}-bucket-without-state-codes",
-            state_code_filter=None,
             export_name="ALL_STATE_TEST_PRODUCT",
             bq_view_namespace=self.mock_big_query_view_namespace,
         )
 
         view_configs_to_export = (
             state_agnostic_dataset_export_config.export_configs_for_views_to_export(
-                project_id=self.mock_project_id
+                project_id=self.mock_project_id,
             )
         )
 
@@ -121,6 +129,7 @@ class TestExportViewCollectionConfig(unittest.TestCase):
 
         expected_view_export_configs = [
             ExportBigQueryViewConfig(
+                bq_view_namespace=self.mock_big_query_view_namespace,
                 view=expected_view,
                 view_filter_clause=None,
                 intermediate_table_name=f"{expected_view.view_id}_table",
@@ -144,14 +153,16 @@ class TestExportViewCollectionConfig(unittest.TestCase):
         specific_state_dataset_export_config = ExportViewCollectionConfig(
             view_builders_to_export=self.views_for_dataset,
             output_directory_uri_template="gs://{project_id}-bucket",
-            state_code_filter="US_XX",
-            export_name="TEST_REPORT",
+            export_name="STATE_SPECIFIC_PRODUCT_EXPORT",
             bq_view_namespace=self.mock_big_query_view_namespace,
         )
 
+        mock_export_job_filter = "US_XX"
+
         view_configs_to_export = (
             specific_state_dataset_export_config.export_configs_for_views_to_export(
-                project_id=self.mock_project_id
+                project_id=self.mock_project_id,
+                state_code_filter=mock_export_job_filter,
             )
         )
 
@@ -159,6 +170,7 @@ class TestExportViewCollectionConfig(unittest.TestCase):
 
         expected_view_export_configs = [
             ExportBigQueryViewConfig(
+                bq_view_namespace=self.mock_big_query_view_namespace,
                 view=expected_view,
                 view_filter_clause=" WHERE state_code = 'US_XX'",
                 intermediate_table_name=f"{expected_view.view_id}_table_US_XX",
@@ -180,14 +192,13 @@ class TestExportViewCollectionConfig(unittest.TestCase):
         lantern_dashboard_dataset_export_config = ExportViewCollectionConfig(
             view_builders_to_export=self.views_for_dataset,
             output_directory_uri_template="gs://{project_id}-bucket-without-state-codes",
-            state_code_filter=None,
             export_name="TEST_EXPORT",
             bq_view_namespace=self.mock_big_query_view_namespace,
         )
 
         view_configs_to_export = (
             lantern_dashboard_dataset_export_config.export_configs_for_views_to_export(
-                project_id=self.mock_project_id
+                project_id=self.mock_project_id,
             )
         )
 
@@ -195,6 +206,7 @@ class TestExportViewCollectionConfig(unittest.TestCase):
 
         expected_view_export_configs = [
             ExportBigQueryViewConfig(
+                bq_view_namespace=self.mock_big_query_view_namespace,
                 view=expected_view,
                 view_filter_clause=None,
                 intermediate_table_name=f"{expected_view.view_id}_table",
@@ -218,19 +230,21 @@ class TestExportViewCollectionConfig(unittest.TestCase):
         lantern_dashboard_with_state_dataset_export_config = ExportViewCollectionConfig(
             view_builders_to_export=self.views_for_dataset,
             output_directory_uri_template="gs://{project_id}-bucket",
-            state_code_filter="US_XX",
             export_name="TEST_EXPORT",
             bq_view_namespace=self.mock_big_query_view_namespace,
         )
 
+        mock_export_job_filter = "US_XX"
+
         view_configs_to_export = lantern_dashboard_with_state_dataset_export_config.export_configs_for_views_to_export(
-            project_id=self.mock_project_id
+            project_id=self.mock_project_id, state_code_filter=mock_export_job_filter
         )
 
         expected_view = self.mock_view_builder.build()
 
         expected_view_export_configs = [
             ExportBigQueryViewConfig(
+                bq_view_namespace=self.mock_big_query_view_namespace,
                 view=expected_view,
                 view_filter_clause=" WHERE state_code = 'US_XX'",
                 intermediate_table_name=f"{expected_view.view_id}_table_US_XX",

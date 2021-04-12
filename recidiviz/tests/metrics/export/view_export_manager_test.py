@@ -35,8 +35,13 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.metrics.export import view_export_manager
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.tests.ingest import fixtures
 
 
+@mock.patch(
+    f"{view_export_manager.__name__}.PRODUCTS_CONFIG_PATH",
+    fixtures.as_filepath("fixture_products.yaml"),
+)
 class ViewCollectionExportManagerTest(unittest.TestCase):
     """Tests for view_export_manager.py."""
 
@@ -73,7 +78,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             dimensions=tuple(),
         )
 
-        self.view_buidlers_for_dataset = [
+        self.view_builders_for_dataset = [
             self.mock_view_builder,
             self.mock_metric_view_builder,
         ]
@@ -82,24 +87,35 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             "dataset_id": "gs://{project_id}-dataset-location/subdirectory",
         }
 
-        self.views_to_update = {self.mock_dataset_id: self.view_buidlers_for_dataset}
+        self.views_to_update = {self.mock_dataset_id: self.view_builders_for_dataset}
 
         self.mock_export_name = "MOCK_EXPORT_NAME"
         self.mock_big_query_view_namespace = BigQueryViewNamespace.STATE
 
-        self.metric_dataset_export_configs = [
-            ExportViewCollectionConfig(
-                view_builders_to_export=self.view_buidlers_for_dataset,
+        self.metric_dataset_export_configs_index = {
+            "EXPORT": ExportViewCollectionConfig(
+                view_builders_to_export=[self.mock_view_builder],
                 output_directory_uri_template="gs://{project_id}-dataset-location/subdirectory",
-                state_code_filter=self.mock_state_code,
+                export_name="EXPORT",
+                bq_view_namespace=self.mock_big_query_view_namespace,
+            ),
+            "OTHER_EXPORT": ExportViewCollectionConfig(
+                view_builders_to_export=[self.mock_metric_view_builder],
+                output_directory_uri_template="gs://{project_id}-dataset-location/subdirectory",
+                export_name="OTHER_EXPORT",
+                bq_view_namespace=self.mock_big_query_view_namespace,
+            ),
+            self.mock_export_name: ExportViewCollectionConfig(
+                view_builders_to_export=self.view_builders_for_dataset,
+                output_directory_uri_template="gs://{project_id}-dataset-location/subdirectory",
                 export_name=self.mock_export_name,
                 bq_view_namespace=self.mock_big_query_view_namespace,
-            )
-        ]
+            ),
+        }
 
         export_config_values = {
             "OUTPUT_DIRECTORY_URI_TEMPLATE_FOR_DATASET_EXPORT": self.output_uri_template_for_dataset,
-            "VIEW_COLLECTION_EXPORT_CONFIGS": self.metric_dataset_export_configs,
+            "VIEW_COLLECTION_EXPORT_INDEX": self.metric_dataset_export_configs_index,
         }
 
         self.export_config_patcher = mock.patch(  # type: ignore[call-overload]
@@ -119,6 +135,122 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         self.metadata_patcher.stop()
         self.gcs_factory_patcher.stop()
 
+    @mock.patch("recidiviz.utils.environment.get_gcp_environment")
+    def test_get_configs_for_state(self, mock_environment: mock.MagicMock) -> None:
+        """Tests get_configs_for_state function to ensure that state codes correctly match"""
+
+        mock_environment.return_value = "production"
+        export_configs_for_filter = view_export_manager.get_configs_for_state(
+            state_code="US_XX", project_id=self.mock_project_id
+        )
+        view = self.mock_view_builder.build()
+        metric_view = self.mock_metric_view_builder.build()
+
+        expected_view_config_list_1 = [
+            ExportBigQueryViewConfig(
+                bq_view_namespace=self.mock_big_query_view_namespace,
+                view=view,
+                view_filter_clause=" WHERE state_code = 'US_XX'",
+                intermediate_table_name=f"{view.view_id}_table_US_XX",
+                output_directory=GcsfsDirectoryPath.from_absolute_path(
+                    "gs://{project_id}-dataset-location/subdirectory/{state_code}".format(
+                        project_id=self.mock_project_id,
+                        state_code="US_XX",
+                    )
+                ),
+                export_output_formats=[ExportOutputFormatType.JSON],
+            )
+        ]
+
+        expected_view_config_list_2 = [
+            ExportBigQueryViewConfig(
+                bq_view_namespace=self.mock_big_query_view_namespace,
+                view=metric_view,
+                view_filter_clause=" WHERE state_code = 'US_XX'",
+                intermediate_table_name=f"{view.view_id}_table_US_XX",
+                output_directory=GcsfsDirectoryPath.from_absolute_path(
+                    "gs://{project_id}-dataset-location/subdirectory/{state_code}".format(
+                        project_id=self.mock_project_id,
+                        state_code="US_XX",
+                    )
+                ),
+                export_output_formats=[
+                    ExportOutputFormatType.JSON,
+                    ExportOutputFormatType.METRIC,
+                ],
+            )
+        ]
+
+        expected_export_configs_for_filter = {
+            "EXPORT": expected_view_config_list_1,
+            "OTHER_EXPORT": expected_view_config_list_2,
+        }
+
+        self.assertEqual(expected_export_configs_for_filter, export_configs_for_filter)
+
+        # Test for case insensitivity
+
+        export_configs_for_filter = view_export_manager.get_configs_for_state(
+            state_code="US_xx", project_id=self.mock_project_id
+        )
+        self.assertEqual(expected_export_configs_for_filter, export_configs_for_filter)
+
+    @mock.patch("recidiviz.utils.environment.get_gcp_environment")
+    def test_get_configs_for_export_name(
+        self, mock_environment: mock.MagicMock
+    ) -> None:
+        """Tests get_configs_for_export_name function to ensure that export names correctly match"""
+
+        mock_environment.return_value = "production"
+        export_configs_for_filter = view_export_manager.get_configs_for_export_name(
+            export_name="MOCK_EXPORT_NAME", project_id=self.mock_project_id
+        )
+        view = self.mock_view_builder.build()
+        metric_view = self.mock_metric_view_builder.build()
+
+        expected_view_config_list = [
+            ExportBigQueryViewConfig(
+                bq_view_namespace=self.mock_big_query_view_namespace,
+                view=view,
+                view_filter_clause=None,
+                intermediate_table_name=f"{view.view_id}_table",
+                output_directory=GcsfsDirectoryPath.from_absolute_path(
+                    "gs://{project_id}-dataset-location/subdirectory/".format(
+                        project_id=self.mock_project_id,
+                    )
+                ),
+                export_output_formats=[ExportOutputFormatType.JSON],
+            ),
+            ExportBigQueryViewConfig(
+                bq_view_namespace=self.mock_big_query_view_namespace,
+                view=metric_view,
+                view_filter_clause=None,
+                intermediate_table_name=f"{view.view_id}_table",
+                output_directory=GcsfsDirectoryPath.from_absolute_path(
+                    "gs://{project_id}-dataset-location/subdirectory/".format(
+                        project_id=self.mock_project_id,
+                    )
+                ),
+                export_output_formats=[
+                    ExportOutputFormatType.JSON,
+                    ExportOutputFormatType.METRIC,
+                ],
+            ),
+        ]
+
+        expected_export_configs_for_filter = {
+            self.mock_export_name: expected_view_config_list,
+        }
+
+        self.assertEqual(expected_export_configs_for_filter, export_configs_for_filter)
+
+        # Test for case insensitivity
+
+        export_configs_for_filter = view_export_manager.get_configs_for_export_name(
+            export_name="mock_export_name", project_id=self.mock_project_id
+        )
+        self.assertEqual(expected_export_configs_for_filter, export_configs_for_filter)
+
     @mock.patch(
         "recidiviz.big_query.view_update_manager.rematerialize_views_for_namespace"
     )
@@ -136,8 +268,9 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         view = self.mock_view_builder.build()
         metric_view = self.mock_metric_view_builder.build()
 
-        view_export_configs = [
+        expected_view_config_list_1 = [
             ExportBigQueryViewConfig(
+                bq_view_namespace=self.mock_big_query_view_namespace,
                 view=view,
                 view_filter_clause=" WHERE state_code = 'US_XX'",
                 intermediate_table_name=f"{view.view_id}_table_US_XX",
@@ -148,8 +281,12 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                     )
                 ),
                 export_output_formats=[ExportOutputFormatType.JSON],
-            ),
+            )
+        ]
+
+        expected_view_config_list_2 = [
             ExportBigQueryViewConfig(
+                bq_view_namespace=self.mock_big_query_view_namespace,
                 view=metric_view,
                 view_filter_clause=" WHERE state_code = 'US_XX'",
                 intermediate_table_name=f"{view.view_id}_table_US_XX",
@@ -163,22 +300,35 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                     ExportOutputFormatType.JSON,
                     ExportOutputFormatType.METRIC,
                 ],
-            ),
+            )
         ]
 
         mock_view_update_manager_rematerialize.assert_called()
         mock_view_exporter.export_and_validate.assert_has_calls(
             [
                 mock.call([]),  # CSV export
-                mock.call(
-                    [view_export_configs[1].pointed_to_staging_subdirectory()]
-                ),  # JSON export
+                mock.call([]),
+                mock.call([]),
+                mock.call([]),
+                mock.call([]),
                 mock.call(
                     [
                         conf.pointed_to_staging_subdirectory()
-                        for conf in view_export_configs
+                        for conf in expected_view_config_list_1
                     ]
-                ),  # METRIC export
+                ),  # JSON export 1 ("EXPORT")
+                mock.call(
+                    [
+                        conf.pointed_to_staging_subdirectory()
+                        for conf in expected_view_config_list_2
+                    ]
+                ),  # JSON export 2 ("OTHER_EXPORT")
+                mock.call(
+                    [
+                        conf.pointed_to_staging_subdirectory()
+                        for conf in expected_view_config_list_2
+                    ]
+                ),  # METRIC export ("OTHER_EXPORT")
             ],
             any_order=True,
         )
@@ -218,17 +368,16 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         self, mock_view_exporter: Mock, mock_view_update_manager_rematerialize: Mock
     ) -> None:
         """Tests the table is created from the view and then extracted, where the export is not state-specific."""
-        state_agnostic_dataset_export_configs = [
-            ExportViewCollectionConfig(
-                view_builders_to_export=self.view_buidlers_for_dataset,
+        state_agnostic_dataset_export_configs = {
+            self.mock_export_name: ExportViewCollectionConfig(
+                view_builders_to_export=self.view_builders_for_dataset,
                 output_directory_uri_template="gs://{project_id}-bucket-without-state-codes",
-                state_code_filter=None,
                 export_name=self.mock_export_name,
                 bq_view_namespace=self.mock_big_query_view_namespace,
             ),
-        ]
+        }
 
-        self.mock_export_config.VIEW_COLLECTION_EXPORT_CONFIGS = (
+        self.mock_export_config.VIEW_COLLECTION_EXPORT_INDEX = (
             state_agnostic_dataset_export_configs
         )
 
@@ -242,6 +391,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
 
         view_export_configs = [
             ExportBigQueryViewConfig(
+                bq_view_namespace=self.mock_big_query_view_namespace,
                 view=view,
                 view_filter_clause=None,
                 intermediate_table_name=f"{view.view_id}_table",
@@ -253,6 +403,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 export_output_formats=[ExportOutputFormatType.JSON],
             ),
             ExportBigQueryViewConfig(
+                bq_view_namespace=self.mock_big_query_view_namespace,
                 view=metric_view,
                 view_filter_clause=None,
                 intermediate_table_name=f"{view.view_id}_table",
@@ -352,7 +503,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         ]
 
         mock_view_builders_by_namespace.return_value = {
-            self.mock_big_query_view_namespace: self.view_buidlers_for_dataset
+            self.mock_big_query_view_namespace: self.view_builders_for_dataset
         }
 
         view_export_manager.export_view_data_to_cloud_storage(
@@ -385,7 +536,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         self.mock_export_config.NAMESPACES_REQUIRING_FULL_UPDATE = ["OTHER_NAMESPACE"]
 
         mock_view_builders_by_namespace.return_value = {
-            self.mock_big_query_view_namespace: self.view_buidlers_for_dataset
+            self.mock_big_query_view_namespace: self.view_builders_for_dataset
         }
 
         view_export_manager.export_view_data_to_cloud_storage(
