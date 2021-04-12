@@ -25,6 +25,8 @@ import tempfile
 import uuid
 from typing import List, Optional, Union, Callable, Dict, TypeVar, Generic
 
+import pytz
+
 from recidiviz.cloud_storage.content_types import (
     FileContentsHandle,
     FileContentsRowType,
@@ -103,7 +105,7 @@ def _to_normalized_file_name(
     dt: Optional[datetime.datetime] = None,
 ) -> str:
     if not dt:
-        dt = datetime.datetime.utcnow()
+        dt = datetime.datetime.now(tz=pytz.UTC)
 
     utc_iso_timestamp_str = dt.strftime("%Y-%m-%dT%H:%M:%S:%f")
     file_name, extension = file_name.split(".")
@@ -148,7 +150,7 @@ def to_normalized_unprocessed_file_path(
     dt: Optional[datetime.datetime] = None,
 ) -> str:
     if not dt:
-        dt = datetime.datetime.utcnow()
+        dt = datetime.datetime.now(tz=pytz.UTC)
     directory, file_name = os.path.split(original_file_path)
     updated_relative_path = to_normalized_unprocessed_file_name(
         file_name=file_name, file_type=file_type, dt=dt

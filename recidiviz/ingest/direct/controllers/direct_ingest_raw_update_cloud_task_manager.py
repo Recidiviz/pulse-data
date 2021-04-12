@@ -20,6 +20,8 @@
 import datetime
 import uuid
 
+import pytz
+
 from recidiviz.common.google_cloud.cloud_task_queue_manager import (
     CloudTaskQueueManager,
     CloudTaskQueueInfo,
@@ -46,7 +48,7 @@ class DirectIngestRawUpdateCloudTaskManager:
         )
 
         task_id = "{}-update_raw_data_latest_views-{}-{}".format(
-            region_code, str(datetime.datetime.utcnow().date()), uuid.uuid4()
+            region_code, str(datetime.datetime.now(tz=pytz.UTC).date()), uuid.uuid4()
         )
 
         self.cloud_task_queue_manager.create_task(

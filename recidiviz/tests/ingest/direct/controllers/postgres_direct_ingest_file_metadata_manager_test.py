@@ -20,6 +20,7 @@ import unittest
 from sqlite3 import IntegrityError
 from typing import Type, List, Tuple
 
+import pytz
 from freezegun import freeze_time
 from mock import patch
 from more_itertools import one
@@ -229,7 +230,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
             raw_unprocessed_path_1 = self._make_unprocessed_path(
                 "bucket/file_tag.csv",
                 GcsfsDirectIngestFileType.RAW_DATA,
-                dt=datetime.datetime.utcnow(),
+                dt=datetime.datetime.now(tz=pytz.UTC),
             )
             self.metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path_1)
             self.metadata_manager_other_region.mark_raw_file_as_discovered(
@@ -240,7 +241,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
             raw_unprocessed_path_2 = self._make_unprocessed_path(
                 "bucket/other_tag.csv",
                 GcsfsDirectIngestFileType.RAW_DATA,
-                dt=datetime.datetime.utcnow(),
+                dt=datetime.datetime.now(tz=pytz.UTC),
             )
             self.metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path_2)
 
@@ -248,7 +249,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
             raw_unprocessed_path_3 = self._make_unprocessed_path(
                 "bucket/file_tag.csv",
                 GcsfsDirectIngestFileType.RAW_DATA,
-                dt=datetime.datetime.utcnow(),
+                dt=datetime.datetime.now(tz=pytz.UTC),
             )
             self.metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path_3)
 
@@ -843,7 +844,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
             path = self._make_unprocessed_path(
                 "bucket/file_tag.csv",
                 file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
-                dt=datetime.datetime.utcnow(),
+                dt=datetime.datetime.now(tz=pytz.UTC),
             )
             metadata = self.metadata_manager.get_ingest_view_metadata_for_export_job(
                 args
@@ -881,7 +882,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
             path = self._make_unprocessed_path(
                 "bucket/file_tag.csv",
                 file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
-                dt=datetime.datetime.utcnow(),
+                dt=datetime.datetime.now(tz=pytz.UTC),
             )
             metadata = self.metadata_manager.get_ingest_view_metadata_for_export_job(
                 args

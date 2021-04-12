@@ -18,12 +18,13 @@
 tasks_v2.CloudTasksClient.
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import logging
 from enum import Enum
 from typing import List, Dict, Optional, Any
 
+import pytz
 from google.cloud import tasks_v2, exceptions
 from google.cloud.tasks_v2.types import queue_pb2, task_pb2
 from google.protobuf import timestamp_pb2
@@ -135,10 +136,10 @@ class GoogleCloudTasksClientWrapper:
 
         schedule_timestamp = None
         if schedule_delay_seconds > 0:
-            schedule_time_sec = (
-                int(datetime.utcnow().timestamp()) + schedule_delay_seconds
+            schedule_timestamp = timestamp_pb2.Timestamp()
+            schedule_timestamp.FromDatetime(
+                datetime.now(tz=pytz.UTC) + timedelta(seconds=schedule_delay_seconds)
             )
-            schedule_timestamp = timestamp_pb2.Timestamp(seconds=schedule_time_sec)
 
         task_builder = ProtobufBuilder(task_pb2.Task).update_args(
             name=task_name,

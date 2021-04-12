@@ -25,6 +25,7 @@ import unittest
 from typing import List, Type, Optional, cast
 
 import pytest
+import pytz
 from freezegun import freeze_time
 from mock import patch
 
@@ -247,7 +248,7 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
             )
 
         if self.controller.region.is_ingest_launched_in_env():
-            now = datetime.datetime.utcnow()
+            now = datetime.datetime.now(tz=pytz.UTC)
             yesterday = now - datetime.timedelta(days=1)
             ingest_file_export_job_args = GcsfsIngestViewExportArgs(
                 ingest_view_name=os.path.splitext(filename)[0],

@@ -21,6 +21,8 @@ exports.
 import datetime
 import uuid
 
+import pytz
+
 from recidiviz.common.google_cloud.cloud_task_queue_manager import (
     CloudTaskQueueInfo,
     CloudTaskQueueManager,
@@ -63,7 +65,7 @@ class BQRefreshCloudTaskManager:
         task_id = "{}-{}-{}-{}".format(
             table_name,
             schema_type.value,
-            str(datetime.datetime.utcnow().date()),
+            str(datetime.datetime.now(tz=pytz.UTC).date()),
             uuid.uuid4(),
         )
 
@@ -87,7 +89,7 @@ class BQRefreshCloudTaskManager:
         task_topic = topic.replace(".", "-")
         body = {"schema": schema, "topic": topic, "message": message}
         task_id = "{}-{}-{}".format(
-            task_topic, str(datetime.datetime.utcnow().date()), uuid.uuid4()
+            task_topic, str(datetime.datetime.now(tz=pytz.UTC).date()), uuid.uuid4()
         )
 
         self.job_monitor_cloud_task_queue_manager.create_task(
@@ -107,7 +109,9 @@ class BQRefreshCloudTaskManager:
             schema: Which schema the export is for
         """
         task_id = "{}-{}-{}".format(
-            "reenqueue_wait_task", str(datetime.datetime.utcnow().date()), uuid.uuid4()
+            "reenqueue_wait_task",
+            str(datetime.datetime.now(tz=pytz.UTC).date()),
+            uuid.uuid4(),
         )
         body = {"lock_id": lock_id}
         self.job_monitor_cloud_task_queue_manager.create_task(
