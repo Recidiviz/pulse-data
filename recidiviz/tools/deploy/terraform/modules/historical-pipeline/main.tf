@@ -32,11 +32,10 @@ resource "google_cloudfunctions_function" "trigger_historical_pipeline" {
   }
 
 
-  entry_point = "start_and_monitor_calculation_pipeline"
+  entry_point = "start_calculation_pipeline"
   environment_variables = {
     "TEMPLATE_NAME"                    = local.template_name
     "JOB_NAME"                         = local.template_name
-    "ON_DATAFLOW_JOB_COMPLETION_TOPIC" = "v1.do.nothing"
     "REGION"                           = var.region
   }
 
