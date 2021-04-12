@@ -21,6 +21,8 @@ for a given region, given the desired file ordering.
 import datetime
 from typing import List, Dict, Optional, Set
 
+import pytz
+
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsIngestArgs,
     filename_parts_from_path,
@@ -67,7 +69,7 @@ class GcsfsDirectIngestJobPrioritizer:
             return None
 
         return GcsfsIngestArgs(
-            ingest_time=datetime.datetime.utcnow(), file_path=next_file_path
+            ingest_time=datetime.datetime.now(tz=pytz.UTC), file_path=next_file_path
         )
 
     def are_next_args_expected(self, next_args: GcsfsIngestArgs) -> bool:

@@ -24,6 +24,7 @@ from collections import defaultdict
 from typing import List, Optional, Set, Tuple, Type, TypeVar
 
 import pytest
+import pytz
 from freezegun import freeze_time
 from mock import patch, Mock
 
@@ -1185,7 +1186,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                 f"type [{type(controller.fs.gcs_file_system)}]"
             )
 
-        current_date_datetime = datetime.datetime.utcnow()
+        current_date_datetime = datetime.datetime.now(tz=pytz.UTC)
         prev_date_datetime = current_date_datetime - datetime.timedelta(days=1)
 
         with freeze_time(prev_date_datetime.isoformat()):

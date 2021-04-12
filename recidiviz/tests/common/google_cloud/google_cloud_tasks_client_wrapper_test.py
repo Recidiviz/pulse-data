@@ -20,6 +20,7 @@ import os
 import unittest
 from typing import List, Set
 
+import pytz
 from freezegun import freeze_time
 from google.cloud import tasks_v2, exceptions
 from google.cloud.tasks_v2.proto import queue_pb2
@@ -205,7 +206,7 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
 
     @freeze_time("2019-04-14")
     def test_create_task_schedule_delay(self) -> None:
-        now_timestamp_sec = int(datetime.datetime.utcnow().timestamp())
+        now_timestamp_sec = int(datetime.datetime.now(tz=pytz.UTC).timestamp())
 
         self.client_wrapper.create_task(
             task_id="us_mo-file_name_1-123456",

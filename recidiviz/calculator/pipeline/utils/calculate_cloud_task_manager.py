@@ -19,6 +19,8 @@
 import datetime
 import uuid
 
+import pytz
+
 from recidiviz.common.google_cloud.cloud_task_queue_manager import (
     CloudTaskQueueManager,
     CloudTaskQueueInfo,
@@ -54,7 +56,7 @@ class CalculateCloudTaskManager:
             "topic": topic,
         }
         task_id = "{}-{}-{}".format(
-            job_id, str(datetime.datetime.utcnow().date()), uuid.uuid4()
+            job_id, str(datetime.datetime.now(tz=pytz.UTC).date()), uuid.uuid4()
         )
 
         self.job_monitor_cloud_task_queue_manager.create_task(

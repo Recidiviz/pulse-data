@@ -19,6 +19,8 @@
 import datetime
 import uuid
 
+import pytz
+
 from recidiviz.common.google_cloud.cloud_task_queue_manager import (
     CloudTaskQueueManager,
     CloudTaskQueueInfo,
@@ -46,7 +48,9 @@ class ViewExportCloudTaskManager:
         uri = f"/export/metric_view_data?export_job_filter={export_job_filter}"
 
         task_id = "view_export-{}-{}-{}".format(
-            export_job_filter, str(datetime.datetime.utcnow().date()), uuid.uuid4()
+            export_job_filter,
+            str(datetime.datetime.now(tz=pytz.UTC).date()),
+            uuid.uuid4(),
         )
 
         self.cloud_task_queue_manager.create_task(

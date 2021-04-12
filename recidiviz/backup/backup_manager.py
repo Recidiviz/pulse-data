@@ -23,6 +23,7 @@ import time
 from typing import Tuple
 
 import flask
+import pytz
 
 from recidiviz.persistence.database.sqladmin_client import sqladmin_client
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
@@ -104,7 +105,7 @@ def update_long_term_backups_for_cloudsql_instance(
     # sorting by date
     manual_backup_runs.sort(key=lambda backup_run: backup_run["startTime"])
 
-    six_months_ago_datetime = datetime.datetime.utcnow() - datetime.timedelta(
+    six_months_ago_datetime = datetime.datetime.now(tz=pytz.UTC) - datetime.timedelta(
         days=_MAX_BACKUP_AGE_DAYS
     )
     six_months_ago_date_str = six_months_ago_datetime.date().isoformat()

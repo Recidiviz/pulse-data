@@ -22,6 +22,7 @@ import datetime
 import json
 
 import pytest
+import pytz
 from flask import Flask
 from mock import Mock, create_autospec, patch
 
@@ -32,7 +33,7 @@ from recidiviz.utils.regions import Region
 PATH = "/work/us_ca"
 FAKE_QUEUE_PARAMS = QueueRequest(
     scrape_type=constants.ScrapeType.BACKGROUND,
-    scraper_start_time=datetime.datetime.utcnow(),
+    scraper_start_time=datetime.datetime.now(tz=pytz.UTC),
     next_task=Task(
         task_type=constants.TaskType.INITIAL,
         endpoint="some.endpoint",
