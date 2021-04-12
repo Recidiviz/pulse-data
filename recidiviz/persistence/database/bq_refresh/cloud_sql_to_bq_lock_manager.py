@@ -23,7 +23,9 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
     GCSPseudoLockDoesNotExist,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
-    GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME,
+    GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX,
+    STATE_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX,
+    JAILS_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 
@@ -87,10 +89,20 @@ class CloudSqlToBQLockManager:
         ):
             return True
 
-        no_regions_running = self.lock_manager.no_active_locks_with_prefix(
-            GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME
+        if schema_type == SchemaType.STATE:
+            blocking_lock_prefix = STATE_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX
+        elif schema_type == SchemaType.JAILS:
+            blocking_lock_prefix = JAILS_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX
+        elif schema_type == SchemaType.OPERATIONS:
+            # The operations export yields for all types of ingest
+            blocking_lock_prefix = GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX
+        else:
+            raise ValueError(f"Unexpected schema type [{schema_type}]")
+
+        no_blocking_locks = self.lock_manager.no_active_locks_with_prefix(
+            blocking_lock_prefix
         )
-        return no_regions_running
+        return no_blocking_locks
 
     def release_lock(self, schema_type: SchemaType) -> None:
         """Releases the CloudSQL -> BQ refresh lock for a given schema."""

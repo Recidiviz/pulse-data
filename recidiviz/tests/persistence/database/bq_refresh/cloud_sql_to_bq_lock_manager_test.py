@@ -51,8 +51,11 @@ class CloudSqlToBQLockManagerTest(unittest.TestCase):
         ):
             self.lock_manager = CloudSqlToBQLockManager()
             self.lock_bucket = self.lock_manager.lock_manager.bucket_name
-            self.ingest_lock_manager = DirectIngestRegionLockManager(
+            self.state_ingest_lock_manager = DirectIngestRegionLockManager(
                 region_code=StateCode.US_XX.value, blocking_locks=[]
+            )
+            self.county_ingest_lock_manager = DirectIngestRegionLockManager(
+                region_code="US_XX_YYYYY", blocking_locks=[]
             )
 
     def tearDown(self) -> None:
@@ -102,16 +105,39 @@ class CloudSqlToBQLockManagerTest(unittest.TestCase):
                 lock_id="lock2", schema_type=SchemaType.STATE
             )
 
-    def test_acquire_cannot_proceed(self) -> None:
-        with self.ingest_lock_manager.using_region_lock(expiration_in_seconds=10):
+    def test_acquire_state_cannot_proceed(self) -> None:
+        with self.state_ingest_lock_manager.using_region_lock(expiration_in_seconds=10):
             for schema_type in SchemaType:
                 self.lock_manager.acquire_lock(lock_id="lock1", schema_type=schema_type)
             self.assertFalse(self.lock_manager.can_proceed(SchemaType.STATE))
-            self.assertFalse(self.lock_manager.can_proceed(SchemaType.JAILS))
             self.assertFalse(self.lock_manager.can_proceed(SchemaType.OPERATIONS))
+            # State ingest does not block JAILS export
+            self.assertTrue(self.lock_manager.can_proceed(SchemaType.JAILS))
             self.assertTrue(self.lock_manager.can_proceed(SchemaType.CASE_TRIAGE))
 
+        # Acquiring the same state export lock again does not crash
         self.lock_manager.acquire_lock(lock_id="lock1", schema_type=SchemaType.STATE)
+
+        # Now that the ingest lock has been released, all export jobs can proceed
+        for schema_type in SchemaType:
+            self.assertTrue(self.lock_manager.can_proceed(schema_type))
+
+    def test_acquire_county_cannot_proceed(self) -> None:
+        with self.county_ingest_lock_manager.using_region_lock(
+            expiration_in_seconds=10
+        ):
+            for schema_type in SchemaType:
+                self.lock_manager.acquire_lock(lock_id="lock1", schema_type=schema_type)
+            self.assertFalse(self.lock_manager.can_proceed(SchemaType.JAILS))
+            self.assertFalse(self.lock_manager.can_proceed(SchemaType.OPERATIONS))
+            # County ingest does not block STATE export
+            self.assertTrue(self.lock_manager.can_proceed(SchemaType.STATE))
+            self.assertTrue(self.lock_manager.can_proceed(SchemaType.CASE_TRIAGE))
+
+        # Acquiring the same jails export lock again does not crash
+        self.lock_manager.acquire_lock(lock_id="lock1", schema_type=SchemaType.JAILS)
+
+        # Now that the ingest lock has been released, all export jobs can proceed
         for schema_type in SchemaType:
             self.assertTrue(self.lock_manager.can_proceed(schema_type))
 
