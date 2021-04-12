@@ -32,6 +32,7 @@ from recidiviz.metrics.export.export_config import (
     VIEW_COLLECTION_EXPORT_INDEX,
     ProductConfig,
     ProductStateConfig,
+    PRODUCTS_CONFIG_PATH,
 )
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.tests.ingest import fixtures
@@ -69,6 +70,9 @@ class TestProductConfig(unittest.TestCase):
         ]
 
         self.assertEqual(expected_product_configs, product_configs)
+
+    def test_product_configs_from_product_config_file(self) -> None:
+        _product_configs = ProductConfig.product_configs_from_file(PRODUCTS_CONFIG_PATH)
 
 
 class TestExportViewCollectionConfig(unittest.TestCase):
