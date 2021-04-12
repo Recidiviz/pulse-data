@@ -16,6 +16,7 @@ products:
   - name: COVID Dashboard
     exports:
       - COVID_DASHBOARD
+    states: []
     environment: production
   - name: COVID Report
     exports: []
