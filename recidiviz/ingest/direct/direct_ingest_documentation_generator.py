@@ -64,7 +64,7 @@ class DirectIngestDocumentationGenerator:
 
         if StateCode.is_state_code(region_code):
             state_code = StateCode(region_code.upper())
-            state_name = state_code.get_state()
+            state_name = state_code.get_state().name
 
             file_header = STATE_RAW_DATA_FILE_HEADER_TEMPLATE.format(
                 state_name=state_name, state_code_lower=state_code.value.lower()
