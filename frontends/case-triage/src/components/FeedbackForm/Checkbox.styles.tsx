@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================import styled from "styled-components/macro";
 import styled from "styled-components/macro";
+import { rem } from "polished";
 import {
   Icon,
   IconSVG,
@@ -28,7 +29,7 @@ interface CheckboxProps {
 
 export const CheckedIcon = styled(Icon).attrs({
   kind: IconSVG.Check,
-  fill: palette.white.main,
+  fill: palette.white,
   height: 10,
   width: 10,
 })`
@@ -41,16 +42,16 @@ export const CheckedIcon = styled(Icon).attrs({
 export const Checkbox = styled.div<CheckboxProps>`
   display: inline-block;
   margin: 0;
-  margin-right: ${spacing.sm};
+  margin-right: ${rem(spacing.sm)};
   height: 16px;
   width: 16px;
-  border: 1px solid ${palette.tints["5"]};
+  border: 1px solid ${palette.signal.links};
   border-radius: 4px;
   vertical-align: middle;
   position: relative;
   ${(props) =>
     props.checked
-      ? `background: ${palette.pine.main}; border-color: ${palette.pine.main};`
+      ? `background: ${palette.signal.links}; border-color: ${palette.signal.links};`
       : null}
 
   ${CheckedIcon} {

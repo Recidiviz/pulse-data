@@ -28,7 +28,7 @@ const LoaderContainer = styled.div`
 
 const Loading = (): ReactElement => (
   <LoaderContainer>
-    <BounceLoader size={90} color={palette.logo.red} />
+    <BounceLoader size={90} color={palette.signal.error} />
   </LoaderContainer>
 );
 

@@ -20,13 +20,12 @@ import { rem } from "polished";
 import { palette } from "@recidiviz/case-triage-components";
 
 export const BaseDueDate = styled.span`
-  font-size: ${rem("17px")};
-  color: ${palette.text.links};
+  color: ${palette.signal.links};
 `;
 
 export const PastDueDate = styled(BaseDueDate)`
-  color: ${palette.logo.red};
+  color: ${palette.signal.error};
 `;
 export const TodayDueDate = styled(BaseDueDate)`
-  color: ${palette.logo.blue};
+  color: ${palette.signal.notification};
 `;

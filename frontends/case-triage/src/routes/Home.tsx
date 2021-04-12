@@ -17,8 +17,10 @@
 import { RouteComponentProps } from "@reach/router";
 import React, { ReactElement } from "react";
 import styled from "styled-components/macro";
+import { rem } from "polished";
 import { observer } from "mobx-react-lite";
 
+import { spacing } from "@recidiviz/case-triage-components";
 import AuthWall from "../components/AuthWall";
 import CaseCard from "../components/CaseCard";
 import ClientList from "../components/ClientList";
@@ -27,6 +29,7 @@ import { useRootStore } from "../stores";
 const Container = styled.div`
   display: flex;
   justify-content: space-between;
+  padding: 0 ${rem(spacing.xl)};
 `;
 
 const Left = styled.div`
@@ -34,6 +37,7 @@ const Left = styled.div`
 `;
 
 const Right = styled.div`
+  padding-left: ${rem(spacing.xl)};
   width: 555px;
 `;
 

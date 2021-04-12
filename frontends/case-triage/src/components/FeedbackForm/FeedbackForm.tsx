@@ -41,8 +41,8 @@ interface FeedbackFormProps {
 }
 
 const Input = styled.textarea`
-  background: ${palette.backgrounds.F2F4F4};
-  border: 1px solid ${palette.backgrounds.D2D8D8};
+  background: ${palette.marble3};
+  border: 1px solid ${palette.slate20};
   border-radius: 4px;
   color: ${palette.text.normal};
   font-size: ${rem("16px")};
@@ -59,22 +59,22 @@ const Input = styled.textarea`
 
 const Description = styled.div`
   font-size: ${rem("17px")};
-  margin: ${spacing.lg} 0;
+  margin: ${rem(spacing.xl)} 0;
 `;
 
 const ReasonsContainer = styled.div`
-  margin-top: ${spacing.lg};
-  margin-bottom: ${spacing.md};
+  margin-top: ${rem(spacing.xl)};
+  margin-bottom: ${rem(spacing.lg)};
 `;
 
 const Reason = styled.span`
-  margin-bottom: ${spacing.sm};
+  margin-bottom: ${rem(spacing.sm)};
   font-size: ${rem("16px")};
   color: ${palette.text.links};
 `;
 
 const SubmitContainer = styled.div`
-  margin-top: ${spacing.lg};
+  margin-top: ${rem(spacing.xl)};
   text-align: center;
 `;
 
@@ -84,7 +84,7 @@ const SubmitButton = styled.button`
   justify-content: center;
   align-items: center;
   padding: 16px 32px;
-  background: ${palette.pine.accent2};
+  background: ${palette.signal.links};
   border: none;
   color: white;
 
@@ -106,7 +106,7 @@ const SubmitButton = styled.button`
 `;
 
 const CheckboxComponent = styled(Checkbox)`
-  margin-bottom: ${spacing.sm};
+  margin-bottom: ${rem(spacing.sm)};
 `;
 
 const CancelButton = styled(Button).attrs({

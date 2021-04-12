@@ -29,9 +29,6 @@ import InProgressEmptyState from "./InProgressEmptyStateCard";
 
 import { trackScrolledToInProgress } from "../../analytics";
 
-// Update this if the <ClientListHeading/> height changes
-export const HEADING_HEIGHT_MAGIC_NUMBER = 128;
-
 const ClientList = () => {
   const [inProgressVisible, setInProgressVisible] = React.useState(false);
   const { clientsStore, policyStore } = useRootStore();

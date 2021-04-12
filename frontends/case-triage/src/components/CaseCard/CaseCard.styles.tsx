@@ -24,7 +24,7 @@ import {
 import { rem } from "polished";
 
 export const CaseCardSection = styled(CardSection)`
-  padding: ${spacing.lg};
+  padding: ${rem(spacing.xl)};
 `;
 
 export const CaseCardHeading = styled(CaseCardSection)`
@@ -46,7 +46,7 @@ export const CaseCardHeading = styled(CaseCardSection)`
 export const CaseCardInfo = styled.div`
   flex: 1;
   font-size: ${rem("15px")};
-  margin-left: ${spacing.md};
+  margin-left: ${rem(spacing.lg)};
 `;
 
 export const CaseCardBody = styled(CaseCardSection)`
@@ -60,8 +60,8 @@ export const CaseCardFooter = styled(CaseCardSection)`
 `;
 
 export const Caption = styled.span`
-  color: ${palette.text.caption};
-  font-size: ${rem("13px")};
+  color: ${palette.slate80};
+  font-size: ${rem("14px")};
 `;
 
 export const CaseCardFeedback = styled.div`
@@ -69,7 +69,7 @@ export const CaseCardFeedback = styled.div`
 `;
 
 export const CheckboxButtonContainer = styled.div`
-  margin-top: ${spacing.sm};
+  margin-top: ${rem(spacing.sm)};
 `;
 
 export const ClientNameRow = styled.div`
