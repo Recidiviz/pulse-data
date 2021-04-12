@@ -20,6 +20,8 @@ Postgres table.
 import datetime
 from typing import Optional, List
 
+import pytz
+
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.controllers.direct_ingest_file_metadata_manager import (
     DirectIngestFileMetadataManager,
@@ -92,7 +94,7 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
                     region_code=self.region_code,
                     file_tag=parts.file_tag,
                     normalized_file_name=path.file_name,
-                    discovery_time=datetime.datetime.utcnow(),
+                    discovery_time=datetime.datetime.now(tz=pytz.UTC),
                     processed_time=None,
                     datetimes_contained_upper_bound_inclusive=parts.utc_upload_datetime,
                 )
@@ -150,7 +152,7 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
                 session, self.region_code, path
             )
 
-            metadata.processed_time = datetime.datetime.utcnow()
+            metadata.processed_time = datetime.datetime.now(tz=pytz.UTC)
             session.commit()
         except Exception as e:
             session.rollback()
@@ -230,7 +232,7 @@ class PostgresDirectIngestIngestFileMetadataManager(
                 file_tag=ingest_view_job_args.ingest_view_name,
                 is_invalidated=False,
                 is_file_split=False,
-                job_creation_time=datetime.datetime.utcnow(),
+                job_creation_time=datetime.datetime.now(tz=pytz.UTC),
                 datetimes_contained_lower_bound_exclusive=ingest_view_job_args.upper_bound_datetime_prev,
                 datetimes_contained_upper_bound_inclusive=ingest_view_job_args.upper_bound_datetime_to_export,
                 ingest_database_name=self.ingest_database_name,
@@ -261,7 +263,7 @@ class PostgresDirectIngestIngestFileMetadataManager(
                 file_tag=original_file_metadata.file_tag,
                 is_invalidated=False,
                 is_file_split=True,
-                job_creation_time=datetime.datetime.utcnow(),
+                job_creation_time=datetime.datetime.now(tz=pytz.UTC),
                 normalized_file_name=path.file_name,
                 datetimes_contained_lower_bound_exclusive=original_file_metadata.datetimes_contained_lower_bound_exclusive,
                 datetimes_contained_upper_bound_inclusive=original_file_metadata.datetimes_contained_upper_bound_inclusive,
@@ -309,7 +311,7 @@ class PostgresDirectIngestIngestFileMetadataManager(
                 path,
                 ingest_database_name=self.ingest_database_name,
             )
-            dt = datetime.datetime.utcnow()
+            dt = datetime.datetime.now(tz=pytz.UTC)
             if not metadata.export_time:
                 metadata.export_time = dt
             metadata.discovery_time = dt
@@ -369,7 +371,7 @@ class PostgresDirectIngestIngestFileMetadataManager(
                 ingest_database_name=self.ingest_database_name,
             )
 
-            metadata.processed_time = datetime.datetime.utcnow()
+            metadata.processed_time = datetime.datetime.now(tz=pytz.UTC)
             session.commit()
         except Exception as e:
             session.rollback()
@@ -448,7 +450,7 @@ class PostgresDirectIngestIngestFileMetadataManager(
                 file_id=metadata_entity.file_id,
                 ingest_database_name=metadata_entity.ingest_database_name,
             )
-            metadata.export_time = datetime.datetime.utcnow()
+            metadata.export_time = datetime.datetime.now(tz=pytz.UTC)
             session.commit()
         except Exception as e:
             session.rollback()

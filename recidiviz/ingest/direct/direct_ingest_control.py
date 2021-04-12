@@ -23,8 +23,10 @@ import logging
 from http import HTTPStatus
 from typing import Optional, Tuple
 
+import pytz
 from flask import Blueprint, request
 from opencensus.stats import measure, view, aggregation
+
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockAlreadyExists
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
@@ -534,7 +536,7 @@ def upload_from_sftp() -> Tuple[str, HTTPStatus]:
         lower_bound_update_datetime = (
             datetime.datetime.fromisoformat(date_str)
             if date_str is not None
-            else datetime.datetime.utcnow() - datetime.timedelta(1)
+            else datetime.datetime.now(tz=pytz.UTC) - datetime.timedelta(1)
         )
         sftp_controller = DownloadFilesFromSftpController(
             project_id=metadata.project_id(),
