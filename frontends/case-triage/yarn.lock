@@ -1631,10 +1631,10 @@
     prop-types "^15.6.1"
     react-lifecycles-compat "^3.0.4"
 
-"@recidiviz/case-triage-components@0.2.3":
-  version "0.2.3"
-  resolved "https://registry.yarnpkg.com/@recidiviz/case-triage-components/-/case-triage-components-0.2.3.tgz#708e39e3b16bbbd2d4604ade9892dec705d4ff98"
-  integrity sha512-9dvpoIqVn3xGl37H0DJfHxq1T1K7XmfibXTeW42FtpFPn+5F46muCpzjsnQQmmRgt+Y+Pb7SDSXnbYuGX0cTzw==
+"@recidiviz/case-triage-components@0.4.0":
+  version "0.4.0"
+  resolved "https://registry.yarnpkg.com/@recidiviz/case-triage-components/-/case-triage-components-0.4.0.tgz#c9bd3969139ab97135e8451a1ff3614086cac48f"
+  integrity sha512-Q7E3TzZK/oM53tJE/IEVB/0eC9kcNwFHFge3CGpFwJNZW/Pgcx5RtQXex6qhJ1vzYe2nzs1itW4h/IRFf3W2uw==
   dependencies:
     "@fontsource/libre-baskerville" "^4.1.0"
     "@fontsource/libre-franklin" "^4.1.0"

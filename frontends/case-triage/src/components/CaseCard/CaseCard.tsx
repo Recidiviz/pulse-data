@@ -32,7 +32,6 @@ import {
   ClientNameRow,
   CloseButton,
 } from "./CaseCard.styles";
-import { HEADING_HEIGHT_MAGIC_NUMBER } from "../ClientList";
 import NeedsEmployment from "./NeedsEmployment";
 import NeedsFaceToFaceContact from "./NeedsFaceToFaceContact";
 import NeedsRiskAssessment from "./NeedsRiskAssessment";
@@ -103,8 +102,7 @@ const CaseCard: React.FC<CaseCardProps> = ({ client }: CaseCardProps) => {
     <Card
       stacked
       style={{
-        marginTop:
-          (clientsStore.activeClientOffset || 0) - HEADING_HEIGHT_MAGIC_NUMBER,
+        marginTop: clientsStore.activeClientOffset || 0,
       }}
     >
       <CaseCardHeading className="fs-exclude">

@@ -25,7 +25,7 @@ export const InProgressOverlay = styled.div`
   right: 0;
   top: 0;
   bottom: 0;
-  background: ${palette.pine.main};
+  background: ${palette.signal.highlight};
   align-items: center;
   padding: 0 32px;
   color: white;
@@ -51,10 +51,10 @@ export const InProgressConfirmationHeading = styled.div`
 `;
 
 export const Undo = styled(Button).attrs({ kind: "link" })`
-  color: ${palette.white.main};
+  color: ${palette.white};
   font-weight: bold;
 
   &:active {
-    color: ${palette.white.main};
+    color: ${palette.white};
   }
 `;
