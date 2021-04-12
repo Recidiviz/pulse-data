@@ -28,6 +28,17 @@ STATE_CODE_PATTERN = re.compile(r"US_[A-Z]{2}")
 TEST_STATE_CODE = "US_XX"
 TEST_STATE_CODE_DOCS = "US_WW"
 
+"""
+    US_XX serves as a generic placeholder state for any state that is to be ingested and
+    follows the current format for all newly ingested states.
+
+    US_WW is used within the certain unit tests testing documentation generation in order to test
+    an edge case with how raw file directories are set up.
+
+    NOTE: Consider using US_XX for tests unless you need to test a specific edge case that is different
+    from all other cases so far for ingest. If the latter, a corresponding folder in
+    recidiviz/tests/ingest/direct/fake_regions/ should be added.
+"""
 TEST_STATE_INFO = {
     TEST_STATE_CODE: us.states.State(
         **{

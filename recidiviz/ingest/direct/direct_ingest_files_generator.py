@@ -22,6 +22,7 @@ from shutil import rmtree, copytree, ignore_patterns
 from typing import Dict
 
 import recidiviz
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import regions as regions_module
 from recidiviz.ingest.direct import templates as ingest_templates_module
 from recidiviz.persistence.entity_matching import state as state_module
@@ -53,15 +54,22 @@ TESTS_DIR_PATH = os.path.dirname(
 TEST_FIXTURES_DIR_PATH = os.path.dirname(
     os.path.relpath(regions_test_fixtures_module.__file__, start=DEFAULT_WORKING_DIR)
 )
+DOCS_DIRECTORY = "docs"
 
 
 class DirectIngestFilesGenerator:
     """A class for generating necessary directories and files for direct ingest."""
 
-    def __init__(self, region_code: str, curr_directory: str = DEFAULT_WORKING_DIR):
+    def __init__(
+        self,
+        region_code: str,
+        curr_directory: str = DEFAULT_WORKING_DIR,
+        docs_directory: str = DOCS_DIRECTORY,
+    ):
         self.region_code: str = region_code
         self.current_year: int = datetime.today().year
         self.curr_directory: str = curr_directory
+        self.docs_directory: str = docs_directory
 
     def generate_all_new_dirs_and_files(self) -> None:
         """
@@ -85,12 +93,16 @@ class DirectIngestFilesGenerator:
         new_region_test_fixtures_dir_path = os.path.join(
             self.curr_directory, TEST_FIXTURES_DIR_PATH, self.region_code
         )
+        new_region_docs_dir_path = os.path.join(
+            self.docs_directory, "ingest", self.region_code
+        )
 
         dirs_to_create = [
             new_region_dir_path,
             new_region_persistence_dir_path,
             new_region_tests_dir_path,
             new_region_test_fixtures_dir_path,
+            new_region_docs_dir_path,
         ]
         existing_dirs = [d for d in dirs_to_create if os.path.exists(d)]
         if existing_dirs:
@@ -107,6 +119,7 @@ class DirectIngestFilesGenerator:
             os.path.dirname(
                 test_fixtures_templates_module.__file__
             ): new_region_test_fixtures_dir_path,
+            os.path.join(DOCS_DIRECTORY, "templates"): new_region_docs_dir_path,
         }
 
         try:
@@ -166,6 +179,12 @@ class DirectIngestFilesGenerator:
                         ),
                         line,
                     ).replace("_", "")
+                if re.search(r"\[STATE\]", line):
+                    line = re.sub(
+                        r"\[STATE\]",
+                        StateCode(self.region_code.upper()).get_state().name,
+                        line,
+                    )
                 if re.search("unknown", line):
                     line = line.rstrip() + f"  # {PLACEHOLDER_TO_DO_STRING}\n"
                 if re.search(r"Copyright \(C\) 2021 Recidiviz", line):
