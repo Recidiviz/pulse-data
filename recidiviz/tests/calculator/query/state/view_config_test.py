@@ -54,7 +54,9 @@ class ViewExportConfigTest(unittest.TestCase):
         """Make sure that all view_builders in the view_builders_to_export attribute of
         VIEW_COLLECTION_EXPORT_CONFIGS are of type BigQueryViewBuilder, and that running view_builder.build()
         produces a BigQueryView."""
-        for dataset_export_config in export_config.VIEW_COLLECTION_EXPORT_CONFIGS:
+        for (
+            dataset_export_config
+        ) in export_config.VIEW_COLLECTION_EXPORT_INDEX.values():
             for view_builder in dataset_export_config.view_builders_to_export:
                 self.assertIsInstance(view_builder, BigQueryViewBuilder)
 

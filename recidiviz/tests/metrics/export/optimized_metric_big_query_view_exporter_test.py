@@ -26,8 +26,9 @@ import pytest
 from mock import call, create_autospec, patch
 
 from recidiviz.big_query.big_query_client import BigQueryClient
+from recidiviz.big_query.big_query_view import BigQueryViewNamespace
 from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig
-from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_CONFIGS
+from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
 from recidiviz.metrics.export.optimized_metric_big_query_view_export_validator import (
     OptimizedMetricBigQueryViewExportValidator,
 )
@@ -485,6 +486,7 @@ class ConvertQueryResultsTest(unittest.TestCase):
         )
 
         export_config = ExportBigQueryViewConfig(
+            bq_view_namespace=BigQueryViewNamespace.STATE,
             view=MetricBigQueryViewBuilder(
                 dataset_id="test_dataset",
                 view_id="test_view",
@@ -533,7 +535,7 @@ class TestInitializeDimensionManifest(unittest.TestCase):
 
     # pylint: disable=protected-access
     def test_initialize_dimension_manifest(self) -> None:
-        for export_config in VIEW_COLLECTION_EXPORT_CONFIGS:
+        for export_config in VIEW_COLLECTION_EXPORT_INDEX.values():
             for view_builder in export_config.view_builders_to_export:
                 if isinstance(view_builder, MetricBigQueryViewBuilder):
                     dimension_manifest = optimized_metric_big_query_view_exporter._initialize_dimension_manifest(

@@ -20,7 +20,10 @@ import unittest
 import mock
 
 from recidiviz.big_query.big_query_client import BigQueryClient
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view import (
+    SimpleBigQueryViewBuilder,
+    BigQueryViewNamespace,
+)
 from recidiviz.big_query.export.big_query_view_export_validator import (
     BigQueryViewExportValidator,
 )
@@ -48,6 +51,8 @@ class BigQueryViewExporterTest(unittest.TestCase):
         self.mock_project_id_fn = self.metadata_patcher.start()
         self.mock_project_id_fn.return_value = self.mock_project_id
 
+        self.mock_bq_view_namespace = BigQueryViewNamespace.STATE
+
         self.view_builder = SimpleBigQueryViewBuilder(
             dataset_id="test_dataset",
             view_id="test_view",
@@ -62,6 +67,7 @@ class BigQueryViewExporterTest(unittest.TestCase):
         )
         self.view_export_configs = [
             ExportBigQueryViewConfig(
+                bq_view_namespace=self.mock_bq_view_namespace,
                 view=self.view_builder.build(),
                 view_filter_clause=" WHERE state_code = 'US_XX'",
                 intermediate_table_name=f"{self.view_builder.view_id}_table_US_XX",
@@ -77,6 +83,7 @@ class BigQueryViewExporterTest(unittest.TestCase):
                 ],
             ),
             ExportBigQueryViewConfig(
+                bq_view_namespace=self.mock_bq_view_namespace,
                 view=self.second_view_builder.build(),
                 view_filter_clause=" WHERE state_code = 'US_XX'",
                 intermediate_table_name=f"{self.second_view_builder.view_id}_table_US_XX",
@@ -112,6 +119,7 @@ class BigQueryViewExporterTest(unittest.TestCase):
         exporter = CSVBigQueryViewExporter(self.mock_bq_client, self.mock_validator)
         view_export_configs = [
             ExportBigQueryViewConfig(
+                bq_view_namespace=self.mock_bq_view_namespace,
                 view=self.view_builder.build(),
                 view_filter_clause=" WHERE state_code = 'US_XX'",
                 intermediate_table_name=f"{self.view_builder.view_id}_table_US_XX",
@@ -127,6 +135,7 @@ class BigQueryViewExporterTest(unittest.TestCase):
                 ],
             ),
             ExportBigQueryViewConfig(
+                bq_view_namespace=self.mock_bq_view_namespace,
                 view=self.second_view_builder.build(),
                 view_filter_clause=" WHERE state_code = 'US_XX'",
                 intermediate_table_name=f"{self.second_view_builder.view_id}_table_US_XX",
@@ -163,6 +172,7 @@ class BigQueryViewExporterTest(unittest.TestCase):
         )
         view_export_configs = [
             ExportBigQueryViewConfig(
+                bq_view_namespace=self.mock_bq_view_namespace,
                 view=self.view_builder.build(),
                 view_filter_clause=" WHERE state_code = 'US_XX'",
                 intermediate_table_name=f"{self.view_builder.view_id}_table_US_XX",
@@ -178,6 +188,7 @@ class BigQueryViewExporterTest(unittest.TestCase):
                 ],
             ),
             ExportBigQueryViewConfig(
+                bq_view_namespace=self.mock_bq_view_namespace,
                 view=self.second_view_builder.build(),
                 view_filter_clause=" WHERE state_code = 'US_XX'",
                 intermediate_table_name=f"{self.second_view_builder.view_id}_table_US_XX",
