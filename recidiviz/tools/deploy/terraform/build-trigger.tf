@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 resource "google_cloudbuild_trigger" "staging_release_build_trigger" {
-  provider    = "google-beta"
+  provider    = google-beta
   description = "Builds a remote Docker image for staging on every push to master."
   count       = var.project_id == "recidiviz-staging" ? 1 : 0
 
