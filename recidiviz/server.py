@@ -35,9 +35,6 @@ from recidiviz.backup.backup_manager import backup_manager_blueprint
 from recidiviz.calculator.calculation_data_storage_manager import (
     calculation_data_storage_manager_blueprint,
 )
-from recidiviz.calculator.pipeline.utils.dataflow_monitor_manager import (
-    dataflow_monitor_blueprint,
-)
 from recidiviz.cloud_functions.cloud_functions import cloud_functions_blueprint
 from recidiviz.ingest.aggregate.scrape_aggregate_reports import (
     scrape_aggregate_reports_blueprint,
@@ -84,7 +81,6 @@ default_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
     (calculation_data_storage_manager_blueprint, "/calculation_data_storage_manager"),
     (cloud_functions_blueprint, "/cloud_function"),
     (cloud_sql_to_bq_blueprint, "/cloud_sql_to_bq"),
-    (dataflow_monitor_blueprint, "/dataflow_monitor"),
     (direct_ingest_control, "/direct"),
     (export_blueprint, "/export"),
     (justice_counts_control, "/justice_counts"),

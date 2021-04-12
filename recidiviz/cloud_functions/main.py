@@ -61,10 +61,6 @@ _DIRECT_INGEST_NORMALIZE_RAW_PATH_URL = (
 _METRIC_VIEW_EXPORT_CLOUD_FUNCTION_URL = (
     "http://{}.appspot.com/export/create_metric_view_data_export_task"
 )
-_DATAFLOW_MONITOR_URL = (
-    "http://{}.appspot.com/cloud_function/dataflow_monitor?job_id={}"
-    "&location={}&topic={}"
-)
 _APP_ENGINE_PO_MONTHLY_REPORT_GENERATE_EMAILS_URL = (
     "https://{}.appspot.com/reporting/start_new_batch{}"
 )
@@ -247,18 +243,12 @@ def trigger_daily_calculation_pipeline_dag(
     logging.info("The monitoring Airflow response is %s", monitor_response)
 
 
-def start_and_monitor_calculation_pipeline(
-    _event: Dict[str, Any], _context: ContextType
-) -> None:
-    """This function, which is triggered by a Pub/Sub event, can kick off any single Dataflow pipeline template.
-
-    On successful triggering of the job, this function makes a call to the app
-    to begin monitoring the progress of the job.
-    """
+def start_calculation_pipeline(_event: Dict[str, Any], _context: ContextType) -> None:
+    """This function, which is triggered by a Pub/Sub event, can kick off any single Dataflow pipeline template."""
     project_id = os.environ.get(GCP_PROJECT_ID_KEY)
     if not project_id:
         logging.error(
-            "No project id set for call to run a calculation" " pipeline, returning."
+            "No project_id set for call to run a calculation pipeline, returning."
         )
         return
 
@@ -274,13 +264,6 @@ def start_and_monitor_calculation_pipeline(
         logging.error("No job_name set, returning.")
         return
 
-    on_dataflow_job_completion_topic = os.environ.get(
-        "ON_DATAFLOW_JOB_COMPLETION_TOPIC"
-    )
-    if not on_dataflow_job_completion_topic:
-        logging.error("No on-completion topic set, returning.")
-        return
-
     region = os.environ.get("REGION")
     if not region:
         logging.error("No region set, returning.")
@@ -291,20 +274,6 @@ def start_and_monitor_calculation_pipeline(
     )
 
     logging.info("The response to triggering the Dataflow job is: %s", response)
-
-    job_id = response["id"]
-    location = response["location"]
-    on_dataflow_job_completion_topic = on_dataflow_job_completion_topic.replace(
-        ".", "-"
-    )
-
-    # Monitor the successfully triggered Dataflow job
-    url = _DATAFLOW_MONITOR_URL.format(
-        project_id, job_id, location, on_dataflow_job_completion_topic
-    )
-
-    monitor_response = make_iap_request(url, IAP_CLIENT_ID[project_id])
-    logging.info("The monitoring Dataflow response is %s", monitor_response)
 
 
 def handle_start_new_batch_email_reporting(request: Request) -> None:
