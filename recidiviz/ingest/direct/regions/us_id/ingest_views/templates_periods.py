@@ -104,7 +104,9 @@ def query_periods_with_all_non_facility_info(period_type: PeriodType) -> str:
             p.incrno,
             p.start_date,
             # Choose smaller of the dates to handle po_periods that last 1 day
-            LEAST(po.end_date, w.end_date, p.end_date) AS end_date,
+            LEAST(COALESCE(po.end_date, '9999-12-31'),
+                  COALESCE(w.end_date, '9999-12-31'),
+                  COALESCE(p.end_date, '9999-12-31')) AS end_date,
             p.statuses,
             po.empl_cd,
             po.empl_sdesc,
@@ -120,14 +122,22 @@ def query_periods_with_all_non_facility_info(period_type: PeriodType) -> str:
             AND p.incrno = po.incrno
             AND (p.start_date
                  BETWEEN po.start_date
-                 AND IF(po.start_date = po.end_date, po.start_date, DATE_SUB(po.end_date, INTERVAL 1 DAY))))
+                 AND DATE_SUB(po.end_date, INTERVAL 1 DAY)))
         LEFT JOIN
             wrkld_periods w
         ON
             (p.docno = w.docno
             AND (p.start_date
                  BETWEEN w.start_date
-                 AND IF (w.start_date = w.end_date, w.start_date, DATE_SUB(w.end_date, INTERVAL 1 DAY))))
+                 AND DATE_SUB(w.end_date, INTERVAL 1 DAY)))
+        WHERE
+            # We're filtering out zero-day periods here since data associated with
+            # zero-day periods in a PO/supervision context are usually only transiently
+            # applicable. Removing them leads to cleaner period outputs without deeply
+            # affecting the correctness of our system (since we aren't tasked with
+            # maintaining a perfect ledger).
+            po.start_date != po.end_date
+            AND w.start_date != w.end_date
         """
     raise ValueError(f"Unexpected PeriodType {period_type}")
 
@@ -173,24 +183,9 @@ FACILITY_PERIOD_FRAGMENT = """
           lvgunit.lu_ldesc,
           m.move_srl,
           SAFE_CAST(m.move_dtd AS DATE) AS move_dtd,
-          LAG(m.fac_cd) 
-            OVER (PARTITION BY 
-              m.docno,
-              m.incrno
-              ORDER BY m.move_dtd)
-            AS previous_fac_cd,
-          LAG(loc.loc_cd) 
-            OVER (PARTITION BY 
-              m.docno,
-              m.incrno
-              ORDER BY m.move_dtd)
-          AS previous_loc_cd,
-          LAG(lvgunit.lu_cd) 
-            OVER (PARTITION BY 
-              m.docno,
-              m.incrno
-              ORDER BY m.move_dtd)
-          AS previous_lu_cd
+          LAG(m.fac_cd) OVER w AS previous_fac_cd,
+          LAG(loc.loc_cd) OVER w AS previous_loc_cd,
+          LAG(lvgunit.lu_cd) OVER w AS previous_lu_cd
         FROM 
           movement_with_awol_periods m
         LEFT JOIN 
@@ -202,6 +197,7 @@ FACILITY_PERIOD_FRAGMENT = """
         LEFT JOIN 
            {{lvgunit}} lvgunit
         USING (fac_cd, lu_cd)
+        WINDOW w AS (PARTITION BY m.docno, m.incrno ORDER BY m.move_dtd, m.move_srl)
     ),
     # This query here only keeps rows from `facilities_with_datetime` that represent a movement of a person between
     # facilities and locations (but not a movement within a single facility/location). If we ever need to track
@@ -226,7 +222,7 @@ FACILITY_PERIOD_FRAGMENT = """
         move_dtd AS start_date,
         COALESCE(
           LEAD(move_dtd)
-            OVER (PARTITION BY docno, incrno ORDER BY move_dtd),
+            OVER (PARTITION BY docno, incrno ORDER BY move_dtd, move_srl),
           CAST('9999-12-31' AS DATE)) AS end_date,
         fac_cd,
         fac_typ,
@@ -234,7 +230,8 @@ FACILITY_PERIOD_FRAGMENT = """
         loc_cd,
         loc_ldesc,
         lu_cd,
-        lu_ldesc
+        lu_ldesc,
+        move_srl
       FROM collapsed_facilities
     )
 """
@@ -267,13 +264,11 @@ PO_PERIODS_FRAGMENT = """
     ),
     casemgr_movements_with_next_empl AS (
       SELECT *,
-      LAG(empl_cd) OVER(
-        PARTITION BY docno ORDER BY case_dtd ASC, move_dtd ASC, move_srl ASC) AS prev_empl_cd,
-      LAG(empl_sdesc) OVER(
-        PARTITION BY docno ORDER BY case_dtd ASC, move_dtd ASC, move_srl ASC) AS prev_empl_sdesc,
-      LAG(move_typ) OVER(
-        PARTITION BY docno ORDER BY case_dtd ASC, move_dtd ASC, move_srl ASC) AS prev_move_typ,
+      LAG(empl_cd) OVER w AS prev_empl_cd,
+      LAG(empl_sdesc) OVER w AS prev_empl_sdesc,
+      LAG(move_typ) OVER w AS prev_move_typ,
       FROM casemgr_movements
+      WINDOW w AS (PARTITION BY docno ORDER BY case_dtd ASC, move_dtd ASC, move_srl ASC)
     ),
     # Only keep periods where the person transitioned POs or transitioned between supervision, prison, or history.
     filtered_casemgr AS (
@@ -307,16 +302,6 @@ PO_PERIODS_FRAGMENT = """
        FROM all_casemgr_periods
        WHERE move_typ = 'P'      # Assignments while someone is on supervision. 
     )
-"""
-
-OFFSTAT_STATUS_FRAGMENT_TEMPLATE = """
-      SELECT
-        *
-      FROM
-        offstat_with_dates
-      WHERE 
-        stat_cd = '{stat_cd}'
-        AND stat_strt_typ = '{strt_typ}'
 """
 
 PERIOD_TO_DATES_FRAGMENT_TEMPLATE = """
@@ -376,22 +361,6 @@ FILTERED_DATES_BY_FACILITY_DATES = """
             SELECT MAX(important_date) 
             FROM facility_dates 
             WHERE important_date != CAST('9999-12-31' AS DATE))
-"""
-
-FACILITY_PERIOD_TO_STATUS_INFO_FRAGMENT_TEMPLATE = """
-      SELECT 
-        p.*, 
-        (s.docno IS NOT NULL) AS {status_name}
-      FROM
-        {facility_periods} p
-      LEFT JOIN
-        {status_periods} s
-      ON
-        (p.docno = s.docno
-        AND p.incrno = s.incrno
-        AND (p.start_date
-             BETWEEN s.start_date
-             AND IF (s.start_date = s.end_date, s.start_date, DATE_SUB(s.end_date, INTERVAL 1 DAY))))
 """
 
 
@@ -477,7 +446,7 @@ ALL_PERIODS_FRAGMENT = f"""
             start_date,
             end_date,
             LEAD(start_date)
-                OVER (PARTITION BY docno ORDER BY start_date, end_date) AS next_start_date
+                OVER (PARTITION BY docno ORDER BY start_date, end_date, ofndr_wrkld_id) AS next_start_date
         FROM wrkld_with_default_end_dates
     ),
     wrkld_periods AS (
@@ -529,30 +498,47 @@ ALL_PERIODS_FRAGMENT = f"""
         important_date AS start_date,
         LEAD(important_date, 1, CAST('9999-12-31' AS DATE)) 
           OVER (PARTITION BY docno, incrno ORDER BY important_date) AS end_date
-      FROM 
+      FROM
         all_dates
     ),
 
     # Get all statuses that were relevant for each of the created date periods.
+    # This view both attaches the relevant status info to periods, but also is
+    # responsible for restricting the set of allowed periods to those that line
+    # up with known supervision or incarceration periods.
     periods_with_offstat_info AS (
       SELECT 
         a.docno,
         a.incrno,
         a.start_date,
         # Choose smaller of two dates to handle offstat_periods that last 1 day
-        IF(o.end_date IS NULL, a.end_date, LEAST(a.end_date, o.end_date)) AS end_date,
-        STRING_AGG(o.stat_strt_typ ORDER BY o.stat_strt_typ) AS statuses
+        IF(o1.docno IS NOT NULL,
+          IF(o1.end_date IS NULL, a.end_date, LEAST(a.end_date, o1.end_date)),
+          IF(o2.end_date IS NULL, a.end_date, LEAST(a.end_date, o2.end_date))) AS end_date,
+        STRING_AGG(
+          IF(o1.docno IS NOT NULL, o1.stat_strt_typ, o2.stat_strt_typ)
+          ORDER BY IF(o1.docno IS NOT NULL, o1.stat_strt_typ, o2.stat_strt_typ)
+        ) AS statuses
       FROM 
         all_periods a
       LEFT JOIN
-        offstat_periods o
+        offstat_periods o1
       ON
-        (a.docno = o.docno
-        AND a.incrno = o.incrno
+        (a.docno = o1.docno
+        AND a.incrno = o1.incrno
+        AND a.start_date = o1.start_date
+        AND a.end_date = o1.end_date
+        AND o1.stat_cd = '{{period_status_code}}')
+      LEFT JOIN
+        offstat_periods o2
+      ON
+        (o1.docno IS NULL
+        AND a.docno = o2.docno
+        AND a.incrno = o2.incrno
         AND (a.start_date
-             BETWEEN o.start_date
-             AND IF (o.start_date = o.end_date, o.start_date, DATE_SUB(o.end_date, INTERVAL 1 DAY)))
-        AND o.stat_cd = '{{period_status_code}}')
+             BETWEEN o2.start_date
+             AND IF (o2.start_date = o2.end_date, o2.start_date, DATE_SUB(o2.end_date, INTERVAL 1 DAY)))
+        AND o2.stat_cd = '{{period_status_code}}')
       GROUP BY a.docno, a.incrno, a.start_date, end_date
     ),
     periods_with_all_non_facility_info AS (
@@ -574,6 +560,7 @@ ALL_PERIODS_FRAGMENT = f"""
         f.loc_ldesc,
         f.lu_cd,
         f.lu_ldesc,
+        f.move_srl,
         p.statuses,
         p.wrkld_cat_title,
         p.empl_cd,
@@ -600,12 +587,9 @@ ALL_PERIODS_FRAGMENT = f"""
           incrno,
           start_date,
           end_date,
-          LAG(fac_typ)
-            OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS prev_fac_typ,
-          LAG(fac_cd)
-            OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS prev_fac_cd,
-          LAG(loc_ldesc)
-            OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS prev_loc_ldesc,
+          LAG(fac_typ) OVER w AS prev_fac_typ,
+          LAG(fac_cd) OVER w AS prev_fac_cd,
+          LAG(loc_ldesc) OVER w AS prev_loc_ldesc,
           fac_cd,
           fac_typ,
           fac_ldesc,
@@ -613,20 +597,19 @@ ALL_PERIODS_FRAGMENT = f"""
           loc_ldesc,
           lu_cd,
           lu_ldesc,
+          move_srl,
           statuses,
           wrkld_cat_title,
           empl_cd,
           empl_sdesc,
           empl_ldesc,
           empl_title,
-          LEAD(fac_typ)
-            OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS next_fac_typ,
-          LEAD(fac_cd)
-            OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS next_fac_cd,
-          LEAD(loc_ldesc)
-            OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS next_loc_ldesc,
+          LEAD(fac_typ) OVER w AS next_fac_typ,
+          LEAD(fac_cd) OVER w AS next_fac_cd,
+          LEAD(loc_ldesc) OVER w AS next_loc_ldesc,
         FROM 
           periods_with_all_info
+        WINDOW w AS (PARTITION BY docno, incrno ORDER BY start_date, end_date, move_srl)
     )
 """
 

@@ -33,9 +33,9 @@ WITH
 
 SELECT
   # Living unit codes are not yet needed, so ignore them here. If
-  * EXCEPT(lu_cd, lu_ldesc, wrkld_cat_title, empl_cd, empl_sdesc, empl_ldesc, empl_title, prev_loc_ldesc),
+  * EXCEPT(lu_cd, lu_ldesc, wrkld_cat_title, empl_cd, empl_sdesc, empl_ldesc, empl_title, prev_loc_ldesc, move_srl),
   ROW_NUMBER() 
-    OVER (PARTITION BY docno ORDER BY start_date, end_date) AS period_id
+    OVER (PARTITION BY docno ORDER BY start_date, end_date, move_srl) AS period_id
 FROM
   periods_with_previous_and_next_info
 WHERE 
