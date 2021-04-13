@@ -22,6 +22,7 @@ from functools import partial
 from typing import Optional, List, Tuple
 
 import pysftp
+import pytz
 from pysftp import CnOpts
 from paramiko import SFTPAttributes, SSHException
 from paramiko.hostkeys import HostKeyEntry
@@ -134,6 +135,8 @@ class DownloadFilesFromSftpController:
         if self.lower_bound_update_datetime is None:
             return True
         update_time = datetime.datetime.fromtimestamp(sftp_attr.st_mtime)
+        if self.lower_bound_update_datetime.tzinfo:
+            update_time = update_time.astimezone(pytz.UTC)
         return update_time >= self.lower_bound_update_datetime
 
     def _fetch(
@@ -183,7 +186,9 @@ class DownloadFilesFromSftpController:
             root = self.delegate.root_directory(remote_dirs)
             dirs_with_attributes = connection.listdir_attr(root)
             paths_post_timestamp = {
-                sftp_attr.filename: datetime.datetime.fromtimestamp(sftp_attr.st_mtime)
+                sftp_attr.filename: datetime.datetime.fromtimestamp(
+                    sftp_attr.st_mtime
+                ).astimezone(pytz.UTC)
                 for sftp_attr in dirs_with_attributes
                 if self._is_after_update_bound(sftp_attr)
             }
