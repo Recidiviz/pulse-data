@@ -24,6 +24,12 @@ variable "region" {
   default = "us-central1"
 }
 
+# The region our app engine app resides
+variable "app_engine_region" {
+  type    = string
+  default = "us-east1"
+}
+
 # To the extent possible, we keep all direct-ingest buckets in us-east1.
 # See #5253 for more context.
 variable "direct_ingest_region" {
