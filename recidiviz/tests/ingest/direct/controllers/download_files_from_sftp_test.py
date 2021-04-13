@@ -26,6 +26,7 @@ from typing import List, Callable
 from mock import patch, Mock, MagicMock
 
 import pysftp
+import pytz
 from pysftp import CnOpts
 from paramiko import SFTPAttributes, HostKeys, RSAKey
 
@@ -150,7 +151,7 @@ def mock_walktree(
             fcallback(item)
 
 
-class TestSftpDownloadDelegate(BaseSftpDownloadDelegate):
+class _TestSftpDownloadDelegate(BaseSftpDownloadDelegate):
     def root_directory(self, _: List[str]) -> str:
         return "."
 
@@ -255,7 +256,7 @@ class TestSftpAuth(unittest.TestCase):
 
 
 @patch.object(
-    SftpDownloadDelegateFactory, "build", return_value=TestSftpDownloadDelegate()
+    SftpDownloadDelegateFactory, "build", return_value=_TestSftpDownloadDelegate()
 )
 @patch.object(
     SftpAuth,
@@ -301,8 +302,8 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
 
         files_with_timestamps = controller.get_paths_to_download()
         expected = [
-            ("testToday/file1.txt", TODAY),
-            ("testToday/subdir1/file1.txt", TODAY),
+            ("testToday/file1.txt", TODAY.astimezone(pytz.UTC)),
+            ("testToday/subdir1/file1.txt", TODAY.astimezone(pytz.UTC)),
         ]
         self.assertListEqual(files_with_timestamps, expected)
 
@@ -345,7 +346,55 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
                         "testToday",
                         item,
                     ),
-                    TODAY,
+                    TODAY.astimezone(pytz.UTC),
+                )
+                for item in INNER_FILE_TREE
+                if ".txt" in item
+            ],
+        )
+        self.assertEqual(len(mock_fs.files), len(items))
+
+    @patch.object(
+        target=pysftp,
+        attribute="Connection",
+        autospec=True,
+        return_value=Mock(
+            spec=pysftp.Connection,
+            __enter__=lambda self: self,
+            __exit__=lambda *args: None,
+            listdir=mock_listdir,
+            listdir_attr=mock_listdir_attr,
+            isdir=mock_isdir,
+            walktree=mock_walktree,
+        ),
+    )
+    def test_do_fetch_succeeds_with_timezone(
+        self,
+        _mock_connection: Mock,
+        mock_fs_factory: Mock,
+        _mock_auth: Mock,
+        _mock_download: Mock,
+    ) -> None:
+        mock_fs = FakeGCSFileSystem()
+        mock_fs_factory.return_value = mock_fs
+
+        lower_bound_with_tz = self.lower_bound_date.astimezone(pytz.UTC)
+        controller = DownloadFilesFromSftpController(
+            self.project_id, self.region, lower_bound_with_tz
+        )
+
+        items, _ = controller.do_fetch()
+        self.assertListEqual(
+            items,
+            [
+                (
+                    os.path.join(
+                        "recidiviz-456-direct-ingest-state-us-xx-sftp",
+                        RAW_INGEST_DIRECTORY,
+                        "testToday",
+                        item,
+                    ),
+                    TODAY.astimezone(pytz.UTC),
                 )
                 for item in INNER_FILE_TREE
                 if ".txt" in item
@@ -418,7 +467,7 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
                                     "testToday",
                                     item,
                                 ),
-                                TODAY,
+                                TODAY.astimezone(pytz.UTC),
                             ),
                             (
                                 os.path.join(
@@ -427,7 +476,7 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
                                     "testTwoDaysAgo",
                                     item,
                                 ),
-                                TWO_DAYS_AGO,
+                                TWO_DAYS_AGO.astimezone(pytz.UTC),
                             ),
                         ]
                         for item in INNER_FILE_TREE
@@ -475,7 +524,7 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
                         "testToday",
                         "file1.txt",
                     ),
-                    TODAY,
+                    TODAY.astimezone(pytz.UTC),
                 )
             ],
         )
