@@ -196,7 +196,7 @@ class GCSFileSystemImpl(GCSFileSystem):
 
     @retry.Retry(predicate=retry_predicate)
     def exists(self, path: Union[GcsfsBucketPath, GcsfsFilePath]) -> bool:
-        bucket = self.storage_client.get_bucket(path.bucket_name)
+        bucket = self.storage_client.bucket(path.bucket_name)
         if isinstance(path, GcsfsBucketPath):
             return bucket.exists(self.storage_client)
 
@@ -210,7 +210,7 @@ class GCSFileSystemImpl(GCSFileSystem):
 
     def _get_blob(self, path: GcsfsFilePath) -> storage.Blob:
         try:
-            bucket = self.storage_client.get_bucket(path.bucket_name)
+            bucket = self.storage_client.bucket(path.bucket_name)
             blob = bucket.get_blob(path.blob_name)
         except NotFound as error:
             logging.warning(
@@ -250,10 +250,10 @@ class GCSFileSystemImpl(GCSFileSystem):
 
     @retry.Retry(predicate=retry_predicate)
     def copy(self, src_path: GcsfsFilePath, dst_path: GcsfsPath) -> None:
-        src_bucket = self.storage_client.get_bucket(src_path.bucket_name)
+        src_bucket = self.storage_client.bucket(src_path.bucket_name)
         src_blob = self._get_blob(src_path)
 
-        dst_bucket = self.storage_client.get_bucket(dst_path.bucket_name)
+        dst_bucket = self.storage_client.bucket(dst_path.bucket_name)
 
         if isinstance(dst_path, GcsfsFilePath):
             dst_blob_name = dst_path.blob_name
@@ -312,7 +312,7 @@ class GCSFileSystemImpl(GCSFileSystem):
     def upload_from_string(
         self, path: GcsfsFilePath, contents: str, content_type: str
     ) -> None:
-        bucket = self.storage_client.get_bucket(path.bucket_name)
+        bucket = self.storage_client.bucket(path.bucket_name)
         bucket.blob(path.blob_name).upload_from_string(
             contents, content_type=content_type
         )
@@ -324,7 +324,7 @@ class GCSFileSystemImpl(GCSFileSystem):
         contents_handle: FileContentsHandle[FileContentsRowType, IoType],
         content_type: str,
     ) -> None:
-        bucket = self.storage_client.get_bucket(path.bucket_name)
+        bucket = self.storage_client.bucket(path.bucket_name)
         bucket.blob(path.blob_name).upload_from_file(
             contents_handle.open(), content_type=content_type
         )
