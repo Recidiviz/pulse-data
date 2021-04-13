@@ -25,7 +25,7 @@ from flask import Flask, Response, g, jsonify, session
 
 from recidiviz.case_triage.api_routes import create_api_blueprint
 from recidiviz.case_triage.authorization import AuthorizationStore
-from recidiviz.case_triage.case_updates.interface import CaseUpdatesInterface
+from recidiviz.case_triage.case_updates.serializers import serialize_last_version_info
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
 from recidiviz.case_triage.impersonate_users import (
     IMPERSONATED_EMAIL_KEY,
@@ -87,6 +87,7 @@ class TestCaseTriageAPIRoutes(TestCase):
         database_key.declarative_meta.metadata.create_all(engine)
 
         # Add seed data
+        now = datetime.now()
         self.officer_1 = generate_fake_officer("officer_id_1")
         self.officer_2 = generate_fake_officer("officer_id_2")
         self.client_1 = generate_fake_client(
@@ -98,27 +99,39 @@ class TestCaseTriageAPIRoutes(TestCase):
             supervising_officer_id=self.officer_1.external_id,
             last_assessment_date=date(2021, 2, 2),
         )
+        self.client_3 = generate_fake_client(
+            client_id="client_3",
+            supervising_officer_id=self.officer_1.external_id,
+        )
         self.case_update_1 = CaseUpdate(
             person_external_id=self.client_1.person_external_id,
             officer_external_id=self.client_1.supervising_officer_external_id,
             state_code=self.client_1.state_code,
-            update_metadata={
-                "actions": CaseUpdatesInterface.serialize_actions(
-                    self.client_1,
-                    [CaseUpdateActionType.COMPLETED_ASSESSMENT],
-                ),
-            },
+            action_type=CaseUpdateActionType.COMPLETED_ASSESSMENT.value,
+            action_ts=now,
+            last_version=serialize_last_version_info(
+                CaseUpdateActionType.COMPLETED_ASSESSMENT, self.client_1
+            ).to_json(),
         )
         self.case_update_2 = CaseUpdate(
             person_external_id=self.client_2.person_external_id,
             officer_external_id=self.client_2.supervising_officer_external_id,
             state_code=self.client_2.state_code,
-            update_metadata={
-                "actions": CaseUpdatesInterface.serialize_actions(
-                    self.client_2,
-                    [CaseUpdateActionType.COMPLETED_ASSESSMENT],
-                ),
-            },
+            action_type=CaseUpdateActionType.COMPLETED_ASSESSMENT.value,
+            action_ts=now,
+            last_version=serialize_last_version_info(
+                CaseUpdateActionType.COMPLETED_ASSESSMENT, self.client_2
+            ).to_json(),
+        )
+        self.case_update_3 = CaseUpdate(
+            person_external_id=self.client_1.person_external_id,
+            officer_external_id=self.client_1.supervising_officer_external_id,
+            state_code=self.client_1.state_code,
+            action_type=CaseUpdateActionType.OTHER_DISMISSAL.value,
+            action_ts=now,
+            last_version=serialize_last_version_info(
+                CaseUpdateActionType.OTHER_DISMISSAL, self.client_1
+            ).to_json(),
         )
         self.client_2.most_recent_assessment_date = date(2022, 2, 2)
 
@@ -140,8 +153,10 @@ class TestCaseTriageAPIRoutes(TestCase):
         sess.add(self.officer_1)
         sess.add(self.client_1)
         sess.add(self.client_2)
+        sess.add(self.client_3)
         sess.add(self.case_update_1)
         sess.add(self.case_update_2)
+        sess.add(self.case_update_3)
         sess.add(self.opportunity_1)
         sess.add(self.deferral_1)
         sess.add(self.opportunity_2)
@@ -177,13 +192,22 @@ class TestCaseTriageAPIRoutes(TestCase):
             self.assertEqual(response.status_code, HTTPStatus.OK)
 
             client_json = response.get_json()["clients"]
-            self.assertEqual(len(client_json), 2)
+            self.assertEqual(len(client_json), 3)
 
-            self.assertEqual(
-                client_json[0]["inProgressActions"],
-                [CaseUpdateActionType.COMPLETED_ASSESSMENT.value],
+            client_1_response = None
+            for data in client_json:
+                if data["personExternalId"] == self.client_1.person_external_id:
+                    client_1_response = data
+                    break
+            assert client_1_response is not None
+
+            self.assertCountEqual(
+                client_1_response["inProgressActions"],
+                [
+                    CaseUpdateActionType.COMPLETED_ASSESSMENT.value,
+                    CaseUpdateActionType.OTHER_DISMISSAL.value,
+                ],
             )
-            self.assertTrue("inProgressActions" not in client_json[1])
 
     def test_no_opportunities(self) -> None:
         with self.test_app.test_request_context():
@@ -293,10 +317,17 @@ class TestCaseTriageAPIRoutes(TestCase):
             self.assertEqual(response.status_code, HTTPStatus.OK)
 
             client_json = response.get_json()["clients"]
-            self.assertEqual(len(client_json), 2)
+            self.assertEqual(len(client_json), 3)
+
+            client_2_response = None
+            for data in client_json:
+                if data["personExternalId"] == self.client_2.person_external_id:
+                    client_2_response = data
+                    break
+            assert client_2_response is not None
 
             self.assertEqual(
-                client_json[1]["inProgressActions"],
+                client_2_response["inProgressActions"],
                 [CaseUpdateActionType.OTHER_DISMISSAL.value],
             )
 
