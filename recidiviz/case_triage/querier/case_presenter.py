@@ -36,7 +36,10 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_com
 from recidiviz.case_triage.case_updates.progress_checker import (
     check_case_update_action_progress,
 )
-from recidiviz.case_triage.case_updates.types import CaseUpdateAction
+from recidiviz.case_triage.case_updates.types import (
+    CaseUpdateActionType,
+    LastVersionData,
+)
 from recidiviz.common.constants.person_characteristics import Gender
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_period import (
@@ -51,9 +54,9 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
 class CasePresenter:
     """Implements the case presenter abstraction."""
 
-    def __init__(self, etl_client: ETLClient, case_update: Optional[CaseUpdate]):
+    def __init__(self, etl_client: ETLClient, case_updates: Optional[List[CaseUpdate]]):
         self.etl_client = etl_client
-        self.case_update = case_update
+        self.case_updates = case_updates
 
     def to_json(self) -> Dict[str, Any]:
         """Converts QueriedClient to json representation for frontend."""
@@ -86,7 +89,7 @@ class CasePresenter:
         in_progress_actions = self.in_progress_officer_actions()
         if in_progress_actions:
             base_dict["inProgressActions"] = [
-                action.action_type.value for action in in_progress_actions
+                action.action_type for action in in_progress_actions
             ]
             base_dict["inProgressSubmissionDate"] = str(
                 max(action.action_ts for action in in_progress_actions)
@@ -121,25 +124,28 @@ class CasePresenter:
 
         return _json_map_dates_to_strings(base_dict)
 
-    def in_progress_officer_actions(self) -> List[CaseUpdateAction]:
-        """Calculates the list of CaseUpdateActionTypes that are still applicable for the client."""
-        if not self.case_update:
+    def in_progress_officer_actions(self) -> List[CaseUpdate]:
+        """Calculates the list of CaseUpdates that are still applicable for the client."""
+        if not self.case_updates:
             return []
 
-        action_info: List[Dict[str, Any]] = self.case_update.update_metadata["actions"]
-        in_progress_actions: List[CaseUpdateAction] = []
-        for action_metadata in action_info:
+        in_progress_actions: List[CaseUpdate] = []
+        for update in self.case_updates:
             try:
-                case_update_action = CaseUpdateAction.from_json(action_metadata)
+                action_type = CaseUpdateActionType(update.action_type)
             except ValueError:
                 logging.warning(
-                    "Unknown CaseUpdateAction found in update_metadata %s",
-                    action_metadata,
+                    "Unknown CaseUpdateActionType found: %s",
+                    update.action_type,
                 )
                 continue
 
-            if check_case_update_action_progress(self.etl_client, case_update_action):
-                in_progress_actions.append(case_update_action)
+            if check_case_update_action_progress(
+                action_type,
+                self.etl_client,
+                LastVersionData.from_json(update.last_version),
+            ):
+                in_progress_actions.append(update)
 
         return in_progress_actions
 

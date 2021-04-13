@@ -16,6 +16,7 @@
 # =============================================================================
 """Implements the Querier abstraction that is responsible for considering multiple
 data sources and coalescing answers for downstream consumers."""
+from collections import defaultdict
 from typing import List
 
 import sqlalchemy.orm.exc
@@ -44,29 +45,30 @@ class CaseTriageQuerier:
         session: Session, client: ETLClient, officer: ETLOfficer
     ) -> CasePresenter:
         try:
-            case_update = (
+            case_updates = (
                 session.query(CaseUpdate)
                 .filter_by(
                     person_external_id=client.person_external_id,
                     officer_external_id=officer.external_id,
                     state_code=client.state_code,
                 )
-                .one()
+                .all()
             )
         except sqlalchemy.orm.exc.NoResultFound:
-            case_update = None
-        return CasePresenter(client, case_update)
+            case_updates = None
+        return CasePresenter(client, case_updates)
 
     @staticmethod
     def clients_for_officer(
         session: Session, officer: ETLOfficer
     ) -> List[CasePresenter]:
-        client_info = (
+        """Outputs the list of clients for a given officer in CasePresenter form."""
+        client_based_pairs = (
             session.query(ETLClient, CaseUpdate)
             .outerjoin(
                 CaseUpdate,
-                (ETLClient.person_external_id == CaseUpdate.person_external_id)
-                & (ETLClient.state_code == CaseUpdate.state_code)
+                (ETLClient.state_code == CaseUpdate.state_code)
+                & (ETLClient.person_external_id == CaseUpdate.person_external_id)
                 & (
                     ETLClient.supervising_officer_external_id
                     == CaseUpdate.officer_external_id
@@ -78,7 +80,23 @@ class CaseTriageQuerier:
             )
             .all()
         )
-        return [CasePresenter(info[0], info[1]) for info in client_info]
+
+        ids_to_clients = {}
+        client_ids_to_case_updates = defaultdict(list)
+        for client, case_update in client_based_pairs:
+            ids_to_clients[client.person_external_id] = client
+            if case_update:
+                client_ids_to_case_updates[client.person_external_id].append(
+                    case_update
+                )
+
+        presented_clients: List[CasePresenter] = []
+        for client_id, client in ids_to_clients.items():
+            presented_clients.append(
+                CasePresenter(client, client_ids_to_case_updates[client_id])
+            )
+
+        return presented_clients
 
     @staticmethod
     def etl_client_with_id_and_state_code(

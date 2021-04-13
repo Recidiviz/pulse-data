@@ -19,6 +19,7 @@
 for Case Triage related entities.
 
 """
+import uuid
 from datetime import datetime
 
 from sqlalchemy import (
@@ -31,7 +32,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.sql import func
 
 from recidiviz.persistence.database.base_schema import CaseTriageBase
@@ -91,20 +92,8 @@ class ETLOpportunity(CaseTriageBase):
     opportunity_metadata = Column(JSONB, nullable=False)
 
 
-class CaseUpdate(CaseTriageBase):
-    """Represents an update to a parole officer's case based on actions that an officer
-    indicates they have taken on behalf of a client. We only store one active row per
-    officer/client pair.
-
-    Each row represents the most recent set of actions taken by a PO to move the client
-    from an "active" to "in-progress" state. It does _not_ store or encode a historical log
-    of all actions ever taken.
-
-    We decided to structure it this way because these CaseUpdates are meant to provide a filter
-    on the accuracy of the data surrounding clients that we receive through our ETL pipeline.
-    The ETL-derived data should always be eventually accurate and this is meant to help
-    correct that information when our pipeline is behind reality.
-    """
+class Deprecated__CaseUpdate(CaseTriageBase):
+    """This type is deprecated, and CaseUpdateAction should be used instead."""
 
     __tablename__ = "case_updates"
 
@@ -120,6 +109,46 @@ class CaseUpdate(CaseTriageBase):
     # some other format when we know better what we need, but for the moment we will
     # enforce schema decisions and/or migrations largely in code.
     update_metadata = Column(JSONB, nullable=False)
+
+
+class CaseUpdate(CaseTriageBase):
+    """Represents an update to a parole officer's case based on actions that an officer
+    indicates they have taken on behalf of a client. We store one active row per
+    officer/client/action-type triple.
+
+    Each row represents the most recent set of actions taken by a PO to move the client
+    from an "active" to "in-progress" state. It does _not_ store or encode a historical log
+    of all actions ever taken.
+
+    We decided to structure it this way because these CaseUpdateActions are meant to provide
+    a filter on the accuracy of the data surrounding clients that we receive through our ETL
+    pipeline. The ETL-derived data should always be eventually accurate and this is meant to
+    help correct that information when our pipeline is behind reality.
+    """
+
+    __tablename__ = "case_update_actions"
+    __table_args__ = (
+        UniqueConstraint(
+            "state_code",
+            "person_external_id",
+            "officer_external_id",
+            "action_type",
+            name="unique_person_officer_action_triple",
+        ),
+    )
+
+    update_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    person_external_id = Column(String(255), nullable=False, index=True)
+    officer_external_id = Column(String(255), nullable=False, index=True)
+    state_code = Column(String(255), nullable=False, index=True)
+    action_type = Column(String(255), nullable=False, index=True)
+
+    action_ts = Column(DateTime, nullable=False, server_default=func.now())
+    # Contains a dictionary of metadata of the last known version where this action
+    # applied. The specific keys and value types are determined based on `action_type`
+    last_version = Column(JSONB, nullable=False)
+    comment = Column(Text)
 
 
 class OpportunityDeferral(CaseTriageBase):

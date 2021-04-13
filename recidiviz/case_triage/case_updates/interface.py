@@ -16,13 +16,14 @@
 # =============================================================================
 """Implements interface for querying case_updates."""
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
+from sqlalchemy import delete
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
-from recidiviz.case_triage.case_updates.serializers import serialize_case_update_action
+from recidiviz.case_triage.case_updates.serializers import serialize_last_version_info
 from recidiviz.persistence.database.schema.case_triage.schema import (
     CaseUpdate,
     ETLClient,
@@ -46,42 +47,26 @@ class CaseUpdatesInterface:
         Because the underlying table does not have foreign key constraints, independent
         validation must be provided before calling this method.
         """
-        update_metadata: Dict[str, Any] = {
-            "actions": CaseUpdatesInterface.serialize_actions(client, actions)
-        }
-        if other_text:
-            update_metadata["otherText"] = other_text
 
-        insert_statement = (
-            insert(CaseUpdate)
-            .values(
+        # First, we delete all old actions before uploading en masse the list of new ones
+        delete_statement = delete(CaseUpdate).where(
+            (CaseUpdate.person_external_id == client.person_external_id)
+            & (CaseUpdate.officer_external_id == officer.external_id)
+            & (CaseUpdate.state_code == officer.state_code)
+        )
+        session.execute(delete_statement)
+
+        now = datetime.now()
+        for action_type in actions:
+            last_version = serialize_last_version_info(action_type, client).to_json()
+            insert_statement = insert(CaseUpdate).values(
                 person_external_id=client.person_external_id,
                 officer_external_id=officer.external_id,
                 state_code=officer.state_code,
-                update_metadata=update_metadata,
+                action_type=action_type.value,
+                action_ts=now,
+                last_version=last_version,
+                comment=other_text,
             )
-            .on_conflict_do_update(
-                index_elements=[
-                    "person_external_id",
-                    "officer_external_id",
-                    "state_code",
-                ],
-                set_={
-                    "update_metadata": update_metadata,
-                },
-            )
-        )
-        session.execute(insert_statement)
+            session.execute(insert_statement)
         session.commit()
-
-    @staticmethod
-    def serialize_actions(
-        client: ETLClient, actions: List[CaseUpdateActionType]
-    ) -> List[Dict[str, Any]]:
-        """Serializes a list of actions for a client into the necessary metadata needed to eventually
-        retrieve it."""
-        now = datetime.now()
-        return [
-            serialize_case_update_action(action, client, now).to_json()
-            for action in actions
-        ]

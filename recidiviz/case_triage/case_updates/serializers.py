@@ -15,64 +15,39 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements common serializers for different CaseUpdate subtypes."""
-from datetime import datetime
 from typing import Callable, Dict
 
 from recidiviz.case_triage.case_updates.types import (
-    CaseUpdateAction,
     CaseUpdateActionType,
+    LastVersionData,
 )
 from recidiviz.persistence.database.schema.case_triage.schema import ETLClient
 
 
-def _default_user_initiated_action_serializer(
-    action: CaseUpdateActionType, _client: ETLClient, action_ts: datetime
-) -> CaseUpdateAction:
-    return CaseUpdateAction(
-        action_type=action,
-        action_ts=action_ts,
-        last_recorded_date=None,
-        last_supervision_level=None,
-    )
+def _default_user_initiated_action_serializer(_client: ETLClient) -> LastVersionData:
+    return LastVersionData()
 
 
-def _completed_assessment_serializer(
-    action: CaseUpdateActionType, client: ETLClient, action_ts: datetime
-) -> CaseUpdateAction:
-    base = _default_user_initiated_action_serializer(action, client, action_ts)
-    if client.most_recent_assessment_date is not None:
-        base.last_recorded_date = client.most_recent_assessment_date
-    return base
+def _completed_assessment_serializer(client: ETLClient) -> LastVersionData:
+    return LastVersionData(last_recorded_date=client.most_recent_assessment_date)
 
 
-def _discharge_initiated_serializer(
-    action: CaseUpdateActionType, client: ETLClient, action_ts: datetime
-) -> CaseUpdateAction:
-    base = _default_user_initiated_action_serializer(action, client, action_ts)
+def _discharge_initiated_serializer(_client: ETLClient) -> LastVersionData:
     # TODO(#5721): Figure out what additional metadata is needed
-    return base
+    return LastVersionData()
 
 
-def _downgrade_initiated_serializer(
-    action: CaseUpdateActionType, client: ETLClient, action_ts: datetime
-) -> CaseUpdateAction:
-    base = _default_user_initiated_action_serializer(action, client, action_ts)
-    base.last_supervision_level = client.supervision_level
-    return base
+def _downgrade_initiated_serializer(client: ETLClient) -> LastVersionData:
+    return LastVersionData(last_supervision_level=client.supervision_level)
 
 
-def _scheduled_face_to_face_serializer(
-    action: CaseUpdateActionType, client: ETLClient, action_ts: datetime
-) -> CaseUpdateAction:
-    base = _default_user_initiated_action_serializer(action, client, action_ts)
-    if client.most_recent_face_to_face_date is not None:
-        base.last_recorded_date = client.most_recent_face_to_face_date
-    return base
+def _scheduled_face_to_face_serializer(client: ETLClient) -> LastVersionData:
+    return LastVersionData(last_recorded_date=client.most_recent_face_to_face_date)
 
 
 _USER_INITIATED_ACTION_TO_SERIALIZER: Dict[
     CaseUpdateActionType,
-    Callable[[CaseUpdateActionType, ETLClient, datetime], CaseUpdateAction],
+    Callable[[ETLClient], LastVersionData],
 ] = {
     CaseUpdateActionType.COMPLETED_ASSESSMENT: _completed_assessment_serializer,
     CaseUpdateActionType.DISCHARGE_INITIATED: _discharge_initiated_serializer,
@@ -86,8 +61,8 @@ _USER_INITIATED_ACTION_TO_SERIALIZER: Dict[
 }
 
 
-def serialize_case_update_action(
-    action: CaseUpdateActionType, client: ETLClient, action_ts: datetime
-) -> CaseUpdateAction:
+def serialize_last_version_info(
+    action: CaseUpdateActionType, client: ETLClient
+) -> LastVersionData:
     serializer = _USER_INITIATED_ACTION_TO_SERIALIZER[action]
-    return serializer(action, client, action_ts)
+    return serializer(client)
