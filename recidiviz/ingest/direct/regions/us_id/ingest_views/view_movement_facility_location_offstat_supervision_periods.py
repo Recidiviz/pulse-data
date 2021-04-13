@@ -26,18 +26,18 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = f"""
-WITH 
+WITH
 {get_all_periods_query_fragment(period_type=PeriodType.SUPERVISION)}
 
 # Filter to just supervision periods
 
-SELECT 
+SELECT
   *,
-  ROW_NUMBER() 
-    OVER (PARTITION BY docno ORDER BY start_date, end_date) AS period_id
-FROM 
+  ROW_NUMBER()
+    OVER (PARTITION BY docno ORDER BY start_date, end_date, move_srl) AS period_id
+FROM
   periods_with_previous_and_next_info
-WHERE 
+WHERE
   fac_typ = 'P'                             # Facility type probation/parole
   OR (fac_typ = 'F' AND prev_fac_typ = 'P') # Fugitive, but escaped from supervision
 """

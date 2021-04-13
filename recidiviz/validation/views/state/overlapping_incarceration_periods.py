@@ -21,7 +21,6 @@ Note: for some states it may be expected that incarceration periods overlap. In 
 to the `exclusions` section of that state's validation config.
 """
 
-# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
@@ -34,7 +33,7 @@ from recidiviz.validation.views.state.overlapping_periods_template import (
 
 OVERLAPPING_INCARCERATION_PERIODS_VIEW_NAME = "overlapping_incarceration_periods"
 
-OVERLAPPING_INCARCERATION_PERIODS_DESCRIPTION = """ Incarceration periods with another incarceration 
+OVERLAPPING_INCARCERATION_PERIODS_DESCRIPTION = """ Incarceration periods with another incarceration
 period with overlapping dates """
 
 OVERLAPPING_INCARCERATION_PERIODS_QUERY_TEMPLATE = f"""
