@@ -15,9 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines the types needed for modeling CaseUpdates."""
-from datetime import date, datetime
+from datetime import date
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Dict, Optional
 
 import attr
 import dateutil.parser
@@ -37,61 +37,39 @@ class CaseUpdateActionType(Enum):
 
 
 class CaseUpdateMetadataKeys:
-    ACTION = "action"
-    ACTION_TIMESTAMP = "action_ts"
     LAST_RECORDED_DATE = "last_recorded_date"
     LAST_SUPERVISION_LEVEL = "last_supervision_level"
 
 
-@attr.s(auto_attribs=True)
-class CaseUpdateAction:
-    """Implements wrapper for actions stored in a CaseUpdate."""
+@attr.s
+class LastVersionData:
+    last_recorded_date: Optional[date] = attr.ib(default=None)
+    last_supervision_level: Optional[str] = attr.ib(default=None)
 
-    action_type: CaseUpdateActionType
-    action_ts: datetime
-
-    last_recorded_date: Optional[date]
-    last_supervision_level: Optional[str]
+    def to_json(self) -> Dict[str, str]:
+        base = {}
+        if self.last_recorded_date is not None:
+            base[
+                CaseUpdateMetadataKeys.LAST_RECORDED_DATE
+            ] = self.last_recorded_date.isoformat()
+        if self.last_supervision_level is not None:
+            base[
+                CaseUpdateMetadataKeys.LAST_SUPERVISION_LEVEL
+            ] = self.last_supervision_level
+        return base
 
     @staticmethod
-    def from_json(action_dict: Dict[str, Any]) -> "CaseUpdateAction":
-        action_type = CaseUpdateActionType(action_dict[CaseUpdateMetadataKeys.ACTION])
-        action_ts = dateutil.parser.parse(
-            action_dict[CaseUpdateMetadataKeys.ACTION_TIMESTAMP]
+    def from_json(json_dict: Dict[str, str]) -> "LastVersionData":
+        last_recorded_date = None
+        if CaseUpdateMetadataKeys.LAST_RECORDED_DATE in json_dict:
+            last_recorded_date = dateutil.parser.parse(
+                json_dict[CaseUpdateMetadataKeys.LAST_RECORDED_DATE]
+            ).date()
+        last_supervision_level = json_dict.get(
+            CaseUpdateMetadataKeys.LAST_SUPERVISION_LEVEL
         )
 
-        last_recorded_date = None
-        if CaseUpdateMetadataKeys.LAST_RECORDED_DATE in action_dict:
-            last_recorded_date = dateutil.parser.parse(
-                action_dict[CaseUpdateMetadataKeys.LAST_RECORDED_DATE]
-            ).date()
-
-        last_supervision_level = None
-        if CaseUpdateMetadataKeys.LAST_SUPERVISION_LEVEL in action_dict:
-            last_supervision_level = action_dict[
-                CaseUpdateMetadataKeys.LAST_SUPERVISION_LEVEL
-            ]
-
-        return CaseUpdateAction(
-            action_type=action_type,
-            action_ts=action_ts,
+        return LastVersionData(
             last_recorded_date=last_recorded_date,
             last_supervision_level=last_supervision_level,
         )
-
-    def to_json(self) -> Dict[str, str]:
-        base_json = {
-            CaseUpdateMetadataKeys.ACTION: self.action_type.value,
-            CaseUpdateMetadataKeys.ACTION_TIMESTAMP: str(self.action_ts),
-        }
-
-        if self.last_recorded_date is not None:
-            base_json[CaseUpdateMetadataKeys.LAST_RECORDED_DATE] = str(
-                self.last_recorded_date
-            )
-        if self.last_supervision_level is not None:
-            base_json[
-                CaseUpdateMetadataKeys.LAST_SUPERVISION_LEVEL
-            ] = self.last_supervision_level
-
-        return base_json

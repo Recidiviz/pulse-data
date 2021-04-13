@@ -209,7 +209,8 @@ def create_api_blueprint(
 
         if segment_client:
             old_action_types = [
-                action.action_type for action in old_case.in_progress_officer_actions()
+                CaseUpdateActionType(action.action_type)
+                for action in old_case.in_progress_officer_actions()
             ]
             segment_client.track_person_case_updated(
                 g.current_user,
