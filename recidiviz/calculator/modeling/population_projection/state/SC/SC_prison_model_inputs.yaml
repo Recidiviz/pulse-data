@@ -1,0 +1,27 @@
+---
+user_inputs:
+#  policy_year: 2022.0
+  start_year: 2020.0
+  projection_years: 14.0
+  speed_run: true
+
+compartments_architecture:
+    pre-trial: shell
+    prison: full
+    parole: full
+    release: full
+
+reference_date: 2012.0
+
+time_step: .083333333333333333333333333333
+
+disaggregation_axes:
+  - crime_type
+
+data_inputs:
+  big_query_simulation_tag: SC_prison
+
+per_year_costs:
+  prison: 25836.0
+  parole: 0.0
+  release: 0.0

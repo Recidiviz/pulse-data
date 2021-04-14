@@ -1,0 +1,29 @@
+---
+user_inputs:
+  start_year: 2019.0
+  projection_years: 12.0
+  speed_run: true
+
+compartments_architecture:
+  prerelease: shell
+  release: full
+  prison_new_crime: full
+  prison_tech_rev: full
+  full_release: full
+
+
+reference_date: 2019.0
+
+time_step: .0833333333
+
+disaggregation_axes: 
+- age
+
+data_inputs:
+  big_query_simulation_tag: wv_prison_p1
+
+per_year_costs:
+  release: 0.0
+  prison_new_crime: 25900.0 
+  prison_tech_rev: 25900.0
+  full_release: 0.0
