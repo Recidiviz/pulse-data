@@ -15,20 +15,50 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import * as React from "react";
-import { PageHeader, Select, Spin } from "antd";
+import {
+  Alert,
+  Button,
+  Col,
+  Divider,
+  PageHeader,
+  Row,
+  Select,
+  Spin,
+} from "antd";
 import { fetchIngestRegionCodes } from "../AdminPanelAPI";
 import useFetchedData from "../hooks";
+import IngestActionConfirmationForm from "./IngestActionConfirmationForm";
+import IngestActions from "../constants/ingestActions";
 
 const ActionsView = (): JSX.Element => {
+  const env = window.RUNTIME_GCP_ENVIRONMENT || "unknown env";
+  const actionsData = [
+    IngestActions.StartIngestRun,
+    IngestActions.PauseIngestQueues,
+    IngestActions.ResumeIngestQueues,
+  ];
+
   const { loading, data } = useFetchedData<string[]>(fetchIngestRegionCodes);
   const [regionCode, setRegionCode] = React.useState<string | undefined>(
     undefined
   );
-  const title = regionCode
-    ? `Key Actions for ${regionCode.toUpperCase()}`
-    : "Key Actions";
+  const [isModalVisible, setIsModalVisible] = React.useState(false);
+  const [ingestAction, setIngestAction] = React.useState<
+    IngestActions | undefined
+  >(undefined);
 
-  const handleChange = (value: string) => {
+  const showModal = () => {
+    setIsModalVisible(true);
+  };
+
+  const onIngestActionConfirmation = (
+    regionCodeForIngestAction: string,
+    ingestActionToExecute: IngestActions | undefined
+  ) => {
+    setIsModalVisible(false);
+  };
+
+  const handleRegionChange = (value: string) => {
     setRegionCode(value);
   };
 
@@ -43,12 +73,13 @@ const ActionsView = (): JSX.Element => {
   return (
     <>
       <PageHeader
-        title={title}
+        title="Ingest Operations"
+        subTitle={regionCode ? `${regionCode}, ${env}` : "Select a region"}
         extra={[
           <Select
             style={{ width: 200 }}
             placeholder="Select a region"
-            onChange={handleChange}
+            onChange={handleRegionChange}
           >
             {data?.sort().map((code: string) => {
               return (
@@ -59,6 +90,44 @@ const ActionsView = (): JSX.Element => {
             })}
           </Select>,
         ]}
+      />
+      {regionCode ? null : (
+        <Alert
+          message="A region must be selected to view the below information"
+          type="warning"
+          showIcon
+        />
+      )}
+      <Divider orientation="left">Key Actions</Divider>
+
+      <div className="site-card-wrapper">
+        <Row gutter={16}>
+          {actionsData.map((action) => {
+            return (
+              <Col span={8}>
+                <Button
+                  onClick={() => {
+                    setIngestAction(action);
+                    showModal();
+                  }}
+                  disabled={!regionCode}
+                  block
+                >
+                  {action}
+                </Button>
+              </Col>
+            );
+          })}
+        </Row>
+      </div>
+      <IngestActionConfirmationForm
+        visible={isModalVisible}
+        onConfirm={onIngestActionConfirmation}
+        onCancel={() => {
+          setIsModalVisible(false);
+        }}
+        ingestAction={ingestAction}
+        regionCode={regionCode}
       />
     </>
   );
