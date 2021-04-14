@@ -1,0 +1,39 @@
+---
+user_inputs:
+  start_year: 2020.0
+  projection_years: 11.0
+  speed_run: false
+
+compartments_architecture:
+    pre-trial: shell
+    prison: full
+    prison_parole_rev_tech: full
+    prison_parole_rev_new: full
+    prison_parole_rev_new_two: full
+    prison_parole_rev_new_three: full
+    parole: full
+    parole_two: full
+    parole_three: full
+    release_full: full
+
+
+reference_date: 2021.0
+
+time_step: .0833333333
+
+disaggregation_axes: 
+- crime_type
+
+data_inputs:
+  big_query_simulation_tag: va_prison_p1
+
+per_year_costs:
+  prison: 7707.0
+  prison_parole_rev_tech: 7707.0
+  prison_parole_rev_new: 7707.0
+  prison_parole_rev_new_two: 7707.0
+  prison_parole_rev_new_three: 7707.0
+  parole: 1377.0
+  parole_two: 1377.0
+  parole_three: 1377.0
+  release_full: 0.0

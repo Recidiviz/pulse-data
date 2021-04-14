@@ -1,0 +1,26 @@
+---
+user_inputs:
+  start_year: 2021.166666667
+  projection_years: 10.0
+  speed_run: true
+
+compartments_architecture:
+    pre-trial: shell
+    prison: full
+    release: full
+    release_full: full
+
+reference_date: 2000.0
+
+time_step: .083333333333
+
+disaggregation_axes:
+  - crime_type
+
+data_inputs:
+  big_query_simulation_tag: NY_mms
+
+per_year_costs:
+  prison: 25962.45
+  release: 0.0
+  release_full: 0.0
