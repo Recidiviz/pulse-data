@@ -271,12 +271,12 @@ def get_all_validations() -> List[DataValidationCheck]:
         SamenessDataValidationCheck(
             view=CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW_BUILDER.build(),
             validation_name_suffix="absconsions",
-            comparison_columns=["absconsions_by_month", "absconsions_by_officer"],
+            comparison_columns=["absconsions_by_month", "absconsions_from_po_report"],
         ),
         SamenessDataValidationCheck(
             view=CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW_BUILDER.build(),
             validation_name_suffix="discharges",
-            comparison_columns=["discharges_by_month", "discharges_by_officer"],
+            comparison_columns=["discharges_by_month", "discharges_from_po_report"],
             max_allowed_error=0.02,
         ),
         SamenessDataValidationCheck(
