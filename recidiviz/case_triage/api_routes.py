@@ -18,14 +18,20 @@
 import json
 import os
 from datetime import datetime
+from functools import wraps
 from http import HTTPStatus
-from typing import Optional
+from typing import Optional, Callable, List, Any, Dict
 
-from flask import Blueprint, current_app, g, jsonify, request
+from flask import Blueprint, current_app, g, jsonify, Response
 from flask_sqlalchemy_session import current_session
 from flask_wtf.csrf import generate_csrf
 
 from recidiviz.case_triage.analytics import CaseTriageSegmentClient
+from recidiviz.case_triage.api_schemas import (
+    load_api_schema,
+    CaseUpdateSchema,
+    PolicyRequirementsSchema,
+)
 from recidiviz.case_triage.case_updates.interface import CaseUpdatesInterface
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
 from recidiviz.case_triage.exceptions import CaseTriageBadRequestException
@@ -42,13 +48,28 @@ def _is_non_officer_user() -> bool:
     return getattr(g, "current_user", None) is None
 
 
+def require_current_user(route: Callable) -> Callable:
+    @wraps(route)
+    def decorated(*args: List[Any], **kwargs: Dict[str, Any]) -> Any:
+        if not getattr(g, "current_user", None):
+            raise CaseTriageBadRequestException(
+                code="not_allowed",
+                description="A user must be associated with this  request",
+            )
+
+        return route(*args, **kwargs)
+
+    return decorated
+
+
 def create_api_blueprint(
     segment_client: Optional[CaseTriageSegmentClient] = None,
 ) -> Blueprint:
     """Creates Blueprint object that is parameterized with a SegmentClient."""
     api = Blueprint("api", __name__)
 
-    def get_clients() -> str:
+    @api.route("/clients")
+    def _get_clients() -> str:
         if _is_non_officer_user() and g.can_see_demo_data:
             fixture_path = os.path.abspath(
                 os.path.join(
@@ -72,9 +93,8 @@ def create_api_blueprint(
             }
         )
 
-    api.route("/clients")(get_clients)
-
-    def get_opportunities() -> str:
+    @api.route("/opportunities")
+    def _get_opportunities() -> str:
         if _is_non_officer_user():
             return jsonify([])
 
@@ -89,9 +109,8 @@ def create_api_blueprint(
             ]
         )
 
-    api.route("/opportunities")(get_opportunities)
-
-    def get_bootstrap() -> str:
+    @api.route("/bootstrap")
+    def _get_bootstrap() -> str:
         return jsonify(
             {
                 "csrf": generate_csrf(current_app.secret_key),
@@ -99,100 +118,42 @@ def create_api_blueprint(
             }
         )
 
-    api.route("/bootstrap")(get_bootstrap)
-
-    def get_policy_requirements_for_state() -> str:
+    @api.route("/policy_requirements_for_state", methods=["POST"])
+    def _get_policy_requirements_for_state() -> str:
         """Returns policy requirements for a given state. Expects input in the form:
         {
             state: str,
         }
         """
-        if not request.json:
-            raise CaseTriageBadRequestException(
-                code="missing_body",
-                description="A json body must be provided for the request",
-            )
-        if "state" not in request.json:
-            raise CaseTriageBadRequestException(
-                code="missing_arg",
-                description="`state` keyword is missing from request",
-            )
-        state = request.json["state"]
+        data = load_api_schema(PolicyRequirementsSchema)
 
-        # NOTE: This will have to be further abstracted and generalized once we understand
-        # the requirements for additional states.
-        if state != "US_ID":
-            raise CaseTriageBadRequestException(
-                code="invalid_arg",
-                description=f"Invalid state ({state}) provided",
-            )
+        return jsonify(policy_requirements_for_state(data["state"]).to_json())
 
-        return jsonify(policy_requirements_for_state(state).to_json())
+    @require_current_user
+    @api.route("/record_client_action", methods=["POST"])
+    def _record_client_action() -> Response:
+        """ Records individual clients actions. Expects JSON body of CaseUpdateSchema """
+        data = load_api_schema(CaseUpdateSchema)
 
-    api.route("/policy_requirements_for_state", methods=["POST"])(
-        get_policy_requirements_for_state
-    )
+        person_external_id = data["person_external_id"]
 
-    def post_record_client_action() -> str:
-        """Records individual clients actions. Expects JSON body of the form:
-        {
-            personExternalId: str,
-            actions: List[str],
-            otherText: Optional[str],
-        }
-        `actions` must be non-empty and only contain approved actions
-        """
-        if not getattr(g, "current_user", None):
-            raise CaseTriageBadRequestException(
-                code="not_allowed",
-                description="A user must be associated with the record-action request",
-            )
-        if not request.json:
-            raise CaseTriageBadRequestException(
-                code="missing_body",
-                description="A json body must be provided for the request",
-            )
-        if "personExternalId" not in request.json:
-            raise CaseTriageBadRequestException(
-                code="missing_arg",
-                description="`personExternalId` keyword is missing from request",
-            )
-        if "actions" not in request.json:
-            raise CaseTriageBadRequestException(
-                code="missing_arg",
-                description="`actions` keyword is missing from request",
-            )
-
-        person_external_id = request.json["personExternalId"]
-        actions = request.json["actions"]
-        other_text = request.json.get("otherText")
-
-        if not isinstance(actions, list):
-            raise CaseTriageBadRequestException(
-                code="improper_type",
-                description="`actions` must be a list of CaseUpdateActionTypes",
-            )
-
-        try:
-            user_initiated_actions = [CaseUpdateActionType(a) for a in actions]
-        except ValueError as e:
-            raise CaseTriageBadRequestException(
-                code="improper_type",
-                description="`actions` must be a list of CaseUpdateActionTypes",
-            ) from e
-
-        state_code = g.current_user.state_code
         try:
             client = CaseTriageQuerier.etl_client_with_id_and_state_code(
                 current_session,
                 person_external_id,
-                state_code,
+                g.current_user.state_code,
             )
         except PersonDoesNotExistError as e:
             raise CaseTriageBadRequestException(
-                code="invalid_arg",
-                description=f"`personExternalId` does not correspond to a known person: {person_external_id}",
+                code="bad_request",
+                description={
+                    "personExternalId": ["does not correspond to a known person"]
+                },
             ) from e
+
+        actions = data["actions"]
+        user_initiated_actions = [CaseUpdateActionType(a) for a in actions]
+        other_text = data.get("other_text", None)
 
         old_case = CaseTriageQuerier.case_for_client_and_officer(
             current_session,
@@ -225,7 +186,5 @@ def create_api_blueprint(
                 "status_code": HTTPStatus.OK,
             }
         )
-
-    api.route("/record_client_action", methods=["POST"])(post_record_client_action)
 
     return api

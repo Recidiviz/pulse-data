@@ -16,6 +16,7 @@
 # =============================================================================
 """Contains the list of custom exceptions used by Case Triage."""
 from http import HTTPStatus
+from typing import Union, Dict, List
 
 from recidiviz.utils.flask_exception import FlaskException
 
@@ -30,7 +31,7 @@ class CaseTriageAuthorizationError(FlaskException):
 class CaseTriageBadRequestException(FlaskException):
     """Exception for when the incoming request is improper in some way."""
 
-    def __init__(self, code: str, description: str) -> None:
+    def __init__(self, code: str, description: Union[str, List, Dict]) -> None:
         super().__init__(code, description, HTTPStatus.BAD_REQUEST)
 
 
