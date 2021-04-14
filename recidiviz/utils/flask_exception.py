@@ -16,12 +16,18 @@
 # =============================================================================
 """Implements common interface for exceptions served by Flask frontend."""
 from http import HTTPStatus
+from typing import Union, List, Any, Dict
 
 
 class FlaskException(Exception):
     """Implements common interface for exceptions served by Flask frontend."""
 
-    def __init__(self, code: str, description: str, status_code: HTTPStatus) -> None:
+    def __init__(
+        self,
+        code: str,
+        description: Union[str, List[Any], Dict[Any, Any]],
+        status_code: HTTPStatus,
+    ) -> None:
         self.code = code
         self.description = description
         self.status_code = status_code

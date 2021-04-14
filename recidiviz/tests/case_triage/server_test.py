@@ -27,6 +27,7 @@ from recidiviz.case_triage.api_routes import create_api_blueprint
 from recidiviz.case_triage.authorization import AuthorizationStore
 from recidiviz.case_triage.case_updates.serializers import serialize_last_version_info
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
+from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.case_triage.impersonate_users import (
     IMPERSONATED_EMAIL_KEY,
     ImpersonateUser,
@@ -61,20 +62,11 @@ class TestCaseTriageAPIRoutes(TestCase):
 
     def setUp(self) -> None:
         self.test_app = Flask(__name__)
+        register_error_handlers(self.test_app)
         api = create_api_blueprint()
         self.test_app.register_blueprint(api)
-        self.test_client = self.test_app.test_client()
 
-        @self.test_app.errorhandler(FlaskException)
-        def _handle_auth_error(ex: FlaskException) -> Response:
-            response = jsonify(
-                {
-                    "code": ex.code,
-                    "description": ex.description,
-                }
-            )
-            response.status_code = ex.status_code
-            return response
+        self.test_client = self.test_app.test_client()
 
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
         self.overridden_env_vars = (
@@ -241,7 +233,7 @@ class TestCaseTriageAPIRoutes(TestCase):
             # No body
             response = self.test_client.post("/record_client_action")
             self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
-            self.assertEqual(response.get_json()["code"], "missing_body")
+            self.assertEqual(response.get_json()["code"], "bad_request")
 
             # Missing `personExternalId`
             response = self.test_client.post(
@@ -252,9 +244,9 @@ class TestCaseTriageAPIRoutes(TestCase):
                 },
             )
             self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
-            self.assertEqual(response.get_json()["code"], "missing_arg")
+            self.assertEqual(response.get_json()["code"], "bad_request")
 
-            # Missing `actions`
+            # Missing `actionType`
             response = self.test_client.post(
                 "/record_client_action",
                 json={
@@ -263,18 +255,26 @@ class TestCaseTriageAPIRoutes(TestCase):
                 },
             )
             self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
-            self.assertEqual(response.get_json()["code"], "missing_arg")
+            self.assertEqual(response.get_json()["code"], "bad_request")
+            self.assertEqual(
+                "Missing data for required field.",
+                response.get_json()["description"]["actions"][0],
+            )
 
             # `actions` is not a list
             response = self.test_client.post(
                 "/record_client_action",
                 json={
                     "personExternalId": self.client_1.person_external_id,
-                    "actions": CaseUpdateActionType.OTHER_DISMISSAL.value,
+                    "actions": False,
                 },
             )
             self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
-            self.assertEqual(response.get_json()["code"], "improper_type")
+            self.assertEqual(response.get_json()["code"], "bad_request")
+            self.assertEqual(
+                "Not a valid list.",
+                response.get_json()["description"]["actions"][0],
+            )
 
             # `actions` not a list of CaseUpdateActionTypes
             response = self.test_client.post(
@@ -285,7 +285,11 @@ class TestCaseTriageAPIRoutes(TestCase):
                 },
             )
             self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
-            self.assertEqual(response.get_json()["code"], "improper_type")
+            self.assertEqual(response.get_json()["code"], "bad_request")
+            self.assertIn(
+                "Must be one of: ",
+                response.get_json()["description"]["actions"]["0"][0],
+            )
 
             # `personExternalId` doesn't map to a real person
             response = self.test_client.post(
@@ -296,7 +300,11 @@ class TestCaseTriageAPIRoutes(TestCase):
                 },
             )
             self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
-            self.assertEqual(response.get_json()["code"], "invalid_arg")
+            self.assertEqual(response.get_json()["code"], "bad_request")
+            self.assertIn(
+                "does not correspond to a known person",
+                response.get_json()["description"]["personExternalId"],
+            )
 
     def test_record_client_action_success(self) -> None:
         with self.test_app.test_request_context():
@@ -308,6 +316,7 @@ class TestCaseTriageAPIRoutes(TestCase):
                 json={
                     "personExternalId": self.client_2.person_external_id,
                     "actions": [CaseUpdateActionType.OTHER_DISMISSAL.value],
+                    "otherText": "Notes",
                 },
             )
             self.assertEqual(response.status_code, HTTPStatus.OK)
