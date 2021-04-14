@@ -34,7 +34,7 @@ def generate_time_series_query(metric_name: str, table_name: str) -> str:
     FROM `{{project_id}}.{{vitals_report_dataset}}.{table_name}`
     WHERE supervising_officer_external_id = 'ALL'
       AND district_id <> "UNKNOWN"
-      AND date_of_supervision >= DATE_SUB(CURRENT_DATE(), INTERVAL 5 WEEK) -- Need to go an additional 7 days back for the avg
+      AND date_of_supervision >= DATE_SUB(CURRENT_DATE(), INTERVAL 372 DAY) -- Need to go an additional 7 days back for the avg
     """
 
 
@@ -58,27 +58,17 @@ VITALS_TIME_SERIES_TEMPLATE = f"""
       80 as value,
       80 as avg_7d
     FROM risk_assessment
-  ), ftr_enrollment AS (
-    SELECT
-      * EXCEPT (metric, value, avg_7d),
-      "FTR_ENROLLMENT" as metric,
-      # TODO(#6702): update once FTR enrollment vitals have a 28 day lookback window.
-      95 as value,
-      95 as avg_7d
-    FROM risk_assessment
   ), summary AS (
     SELECT
       date,
       entity_id,
       "OVERALL" as metric,
-      ROUND((discharge.value + risk_assessment.value + contact.value + ftr_enrollment.value)/4) as value,
-      ROUND((discharge.avg_7d + risk_assessment.avg_7d + contact.avg_7d + ftr_enrollment.avg_7d)/4) as avg_7d
+      ROUND((discharge.value + risk_assessment.value + contact.value)/3) as value,
+      ROUND((discharge.avg_7d + risk_assessment.avg_7d + contact.avg_7d)/3) as avg_7d
     FROM discharge
       JOIN risk_assessment 
       USING (date, entity_id)
       JOIN contact
-      USING (date, entity_id)
-      JOIN ftr_enrollment 
       USING (date, entity_id)
     ORDER BY entity_id, date
   )
@@ -92,8 +82,6 @@ VITALS_TIME_SERIES_TEMPLATE = f"""
     SELECT * FROM risk_assessment WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 4 WEEK)
     UNION ALL
     SELECT * FROM contact WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 4 WEEK)
-    UNION ALL
-    SELECT * FROM ftr_enrollment WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 4 WEEK)
     UNION ALL
     SELECT * FROM summary WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 4 WEEK)
   )
