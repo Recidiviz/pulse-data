@@ -28,12 +28,15 @@ from recidiviz.persistence.database.schema_utils import SchemaType
 
 
 def import_gcs_csv_to_cloud_sql(
-    destination_table: str, gcs_uri: GcsfsFilePath, columns: List[str]
+    schema_type: SchemaType,
+    destination_table: str,
+    gcs_uri: GcsfsFilePath,
+    columns: List[str],
 ) -> None:
     """Implements the import of GCS CSV to Cloud SQL by creating a temporary table, uploading the
     results to the temporary table, and then swapping the contents of the table."""
     engine = SQLAlchemyEngineManager.get_engine_for_database(
-        SQLAlchemyDatabaseKey(schema_type=SchemaType.CASE_TRIAGE)
+        SQLAlchemyDatabaseKey.for_schema(schema_type=schema_type)
     )
     if engine is None:
         raise RuntimeError("Could not create postgres sqlalchemy engine")
@@ -56,7 +59,7 @@ def import_gcs_csv_to_cloud_sql(
         logging.info("Starting import using columns: %s", columns)
         cloud_sql_client = CloudSQLClientImpl()
         instance_name = SQLAlchemyEngineManager.get_stripped_cloudsql_instance_id(
-            SchemaType.CASE_TRIAGE
+            schema_type=schema_type
         )
         if instance_name is None:
             raise ValueError("Could not find instance name.")
