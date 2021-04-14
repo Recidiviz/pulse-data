@@ -42,7 +42,7 @@ SUPERVISION_POPULATION_DUE_FOR_RELEASE_BY_PO_BY_DAY_QUERY_TEMPLATE = """
         FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`,
         UNNEST ([level_1_supervision_location_external_id, 'ALL']) AS level_1_supervision_location_external_id,
         UNNEST ([supervising_officer_external_id, 'ALL']) AS supervising_officer_external_id
-        WHERE date_of_supervision > DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 365 DAY)
+        WHERE date_of_supervision > DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 372 DAY)
             AND projected_end_date IS NOT NULL
             AND state_code = "US_ND"
         GROUP BY state_code, date_of_supervision, supervising_officer_external_id, level_1_supervision_location_external_id
