@@ -62,7 +62,7 @@ daily_pipelines:
     job_name: us-pa-supervision-calculations-36
     state_code: US_PA
     calculation_month_count: 36
-    metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION SUPERVISION_TERMINATION
+    metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION SUPERVISION_SUCCESS SUPERVISION_TERMINATION
     region: us-west1
 
 historical_pipelines:
