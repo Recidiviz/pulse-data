@@ -169,11 +169,7 @@ def add_case_triage_routes(bp: Blueprint) -> None:
         session = SessionFactory.for_database(
             SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
         )
-        results = (
-            session.query(CaseUpdate)
-            .filter(CaseUpdate.update_metadata["otherText"].isnot(None))
-            .all()
-        )
+        results = session.query(CaseUpdate).filter(CaseUpdate.comment.isnot(None)).all()
 
         return (
             jsonify(
