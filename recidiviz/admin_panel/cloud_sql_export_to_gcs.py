@@ -26,11 +26,14 @@ from recidiviz.persistence.database.schema_utils import SchemaType
 
 
 def export_from_cloud_sql_to_gcs_csv(
-    table_name: str, gcs_uri: GcsfsFilePath, columns: List[str]
+    schema_type: SchemaType,
+    table_name: str,
+    gcs_uri: GcsfsFilePath,
+    columns: List[str],
 ) -> None:
     cloud_sql_client = CloudSQLClientImpl()
     instance_name = SQLAlchemyEngineManager.get_stripped_cloudsql_instance_id(
-        SchemaType.CASE_TRIAGE
+        schema_type
     )
     if instance_name is None:
         raise ValueError("Could not find instance name.")

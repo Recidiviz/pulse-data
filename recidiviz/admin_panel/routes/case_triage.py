@@ -83,6 +83,7 @@ def add_case_triage_routes(bp: Blueprint) -> None:
     # Generate Case Updates export from Cloud SQL -> GCS
     def generate_case_updates_export() -> Tuple[str, HTTPStatus]:
         export_from_cloud_sql_to_gcs_csv(
+            SchemaType.CASE_TRIAGE,
             "case_updates",
             GcsfsFilePath.from_absolute_path(
                 os.path.join(
@@ -151,6 +152,7 @@ def add_case_triage_routes(bp: Blueprint) -> None:
             # matches the view id of the corresponding builder here. This invariant isn't enforced
             # in code (yet), but the aim is to preserve this invariant for as long as possible.
             import_gcs_csv_to_cloud_sql(
+                SchemaType.CASE_TRIAGE,
                 view_id,
                 csv_path,
                 columns,
