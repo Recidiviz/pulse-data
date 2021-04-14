@@ -22,22 +22,16 @@ import ReactDOM from "react-dom";
 import * as Sentry from "@sentry/react";
 import { Integrations } from "@sentry/tracing";
 import styled from "styled-components/macro";
-import { Link, Router } from "@reach/router";
+import { Router } from "@reach/router";
 import ReactModal from "react-modal";
 
-import {
-  Assets,
-  GlobalStyle,
-  Header,
-  spacing,
-} from "@recidiviz/case-triage-components";
+import { GlobalStyle } from "@recidiviz/case-triage-components";
 
 import Home from "./routes/Home";
 import Verify from "./routes/Verify";
 
 import { trackScrolledToBottom } from "./analytics";
 import StoreProvider from "./stores";
-import UserSection from "./components/UserSection";
 
 if (process.env.NODE_ENV !== "development") {
   Sentry.init({
@@ -65,28 +59,19 @@ window.onscroll = function () {
   }
 };
 
-const Container = styled.div`
+const RoutingContainer = styled(Router)`
   margin: 0 auto;
   max-width: 1288px;
+  height: 100%;
 `;
 
 ReactDOM.render(
   <StoreProvider>
     <GlobalStyle />
-    <Header
-      left={
-        <Link to="/">
-          <img src={Assets.LOGO} alt="Recidiviz - Case Triage" />
-        </Link>
-      }
-      right={<UserSection />}
-    />
-    <Container>
-      <Router>
-        <Verify path="verify" />
-        <Home path="/" />
-      </Router>
-    </Container>
+    <RoutingContainer>
+      <Verify path="verify" />
+      <Home path="/" />
+    </RoutingContainer>
   </StoreProvider>,
   document.getElementById("root"),
   () => {

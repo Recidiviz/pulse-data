@@ -17,12 +17,15 @@
 /**
  * Verifies authorization before rendering its children.
  */
+import { Link } from "@reach/router";
 import * as React from "react";
 import { ReactElement, useEffect } from "react";
 import { when } from "mobx";
 import { observer } from "mobx-react-lite";
+import { Assets, Header } from "@recidiviz/case-triage-components";
 import { useRootStore } from "../../stores";
 import Loading from "../Loading";
+import UserSection from "../UserSection";
 
 const AuthWall: React.FC = ({ children }): ReactElement | null => {
   const { userStore } = useRootStore();
@@ -42,7 +45,19 @@ const AuthWall: React.FC = ({ children }): ReactElement | null => {
   }
 
   if (userStore.isLoading) {
-    return <Loading />;
+    return (
+      <>
+        <Header
+          left={
+            <Link to="/">
+              <img src={Assets.LOGO} alt="Recidiviz - Case Triage" />
+            </Link>
+          }
+          right={<UserSection />}
+        />
+        <Loading />
+      </>
+    );
   }
 
   if (userStore.isAuthorized) {
