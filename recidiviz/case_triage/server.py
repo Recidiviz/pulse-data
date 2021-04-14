@@ -17,12 +17,11 @@
 """Backend entry point for Case Triage API server."""
 import json
 import os
-from http import HTTPStatus
 from typing import Dict
 
-from flask import Flask, Response, g, jsonify, send_from_directory, session
+from flask import Flask, Response, g, send_from_directory, session
 from flask_sqlalchemy_session import current_session
-from flask_wtf.csrf import CSRFError, CSRFProtect
+from flask_wtf.csrf import CSRFProtect
 from sqlalchemy.orm.exc import NoResultFound
 
 from recidiviz.case_triage.analytics import (
@@ -31,7 +30,10 @@ from recidiviz.case_triage.analytics import (
 )
 from recidiviz.case_triage.api_routes import create_api_blueprint
 from recidiviz.case_triage.authorization import AuthorizationStore
-from recidiviz.case_triage.exceptions import CaseTriageAuthorizationError
+from recidiviz.case_triage.error_handlers import register_error_handlers
+from recidiviz.case_triage.exceptions import (
+    CaseTriageAuthorizationError,
+)
 from recidiviz.case_triage.impersonate_users import (
     IMPERSONATED_EMAIL_KEY,
     ImpersonateUser,
@@ -39,11 +41,11 @@ from recidiviz.case_triage.impersonate_users import (
 from recidiviz.case_triage.querier.querier import CaseTriageQuerier
 from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
 from recidiviz.case_triage.util import get_local_secret
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
-from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils.auth.auth0 import (
     Auth0Config,
@@ -51,7 +53,6 @@ from recidiviz.utils.auth.auth0 import (
     build_auth0_authorization_decorator,
 )
 from recidiviz.utils.environment import in_development, in_test
-from recidiviz.utils.flask_exception import FlaskException
 from recidiviz.utils.timer import RepeatedTimer
 
 # Flask setup
@@ -65,6 +66,7 @@ static_folder = os.path.abspath(
 app = Flask(__name__, static_folder=static_folder)
 app.secret_key = get_local_secret("case_triage_secret_key")
 CSRFProtect(app)
+register_error_handlers(app)
 
 if in_development():
     db_url = local_postgres_helpers.postgres_db_url_from_env_vars()
@@ -172,29 +174,6 @@ app.add_url_rule(
         authorization_store=authorization_store,
     ),
 )
-
-
-@app.errorhandler(CSRFError)
-def handle_csrf_error(_: CSRFError) -> Response:
-    return handle_auth_error(
-        FlaskException(
-            code="invalid_csrf_token",
-            description="The provided X-CSRF-Token header could not be validated",
-            status_code=HTTPStatus.BAD_REQUEST,
-        )
-    )
-
-
-@app.errorhandler(FlaskException)
-def handle_auth_error(ex: FlaskException) -> Response:
-    response = jsonify(
-        {
-            "code": ex.code,
-            "description": ex.description,
-        }
-    )
-    response.status_code = ex.status_code
-    return response
 
 
 @app.route("/auth0_public_config.js")
