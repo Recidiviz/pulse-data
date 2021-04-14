@@ -75,6 +75,18 @@ class TestDeployYamls(unittest.TestCase):
             prod_cloud_sql_instances,
         )
 
+        vpc_connector_diff = diff["values_changed"].pop(
+            "root['vpc_access_connector']['name']"
+        )
+        staging_vpc_connector = vpc_connector_diff["old_value"]
+        production_vpc_connector = vpc_connector_diff["new_value"]
+        self.assertEqual(
+            staging_vpc_connector.replace(
+                "recidiviz-staging", "recidiviz-123"
+            ),  # Staging becomes production
+            production_vpc_connector,
+        )
+
         # There should be no other values changed between the two
         self.assertFalse(diff.pop("values_changed"))
         # Aside from the few values changed, there should be no other changes
