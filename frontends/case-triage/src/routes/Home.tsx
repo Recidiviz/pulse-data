@@ -14,16 +14,17 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { RouteComponentProps } from "@reach/router";
+import { Link, RouteComponentProps } from "@reach/router";
 import React, { ReactElement } from "react";
 import styled from "styled-components/macro";
 import { rem } from "polished";
 import { observer } from "mobx-react-lite";
 
-import { spacing } from "@recidiviz/case-triage-components";
+import { Assets, Header, spacing } from "@recidiviz/case-triage-components";
 import AuthWall from "../components/AuthWall";
 import CaseCard from "../components/CaseCard";
 import ClientList from "../components/ClientList";
+import UserSection from "../components/UserSection";
 import { useRootStore } from "../stores";
 
 const Container = styled.div`
@@ -50,6 +51,14 @@ const Home = (props: RouteComponentProps): ReactElement => {
 
   return (
     <AuthWall>
+      <Header
+        left={
+          <Link to="/">
+            <img src={Assets.LOGO} alt="Recidiviz - Case Triage" />
+          </Link>
+        }
+        right={<UserSection />}
+      />
       <Container>
         <Left>
           <ClientList />
