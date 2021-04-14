@@ -41,7 +41,7 @@ WITH overdue_lsir AS (
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_case_compliance_metrics_materialized` compliance,
     UNNEST ([compliance.level_1_supervision_location_external_id, 'ALL']) AS level_1_supervision_location_external_id,
     UNNEST ([supervising_officer_external_id, 'ALL']) AS supervising_officer_external_id
-    WHERE date_of_supervision > DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 90 DAY)
+    WHERE date_of_supervision > DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 365 DAY)
     # TODO(#6614): Generalize to be state agnostic.
     AND state_code = "US_ND"
     GROUP BY state_code, date_of_supervision, supervising_officer_external_id, level_1_supervision_location_external_id

@@ -197,15 +197,13 @@ VITALS_SUMMARIES_QUERY_TEMPLATE = """
         entity_id,
         entity_name,
         parent_entity_id,
-        ROUND((most_recent_timely_discharge + most_recent_timely_risk_assessment + 95 + 80) / 4, 0) as overall,
+        ROUND((most_recent_timely_discharge + most_recent_timely_risk_assessment + 80) / 3, 0) as overall,
         ROUND(most_recent_timely_discharge, 0) as timely_discharge,
         ROUND(most_recent_timely_risk_assessment, 0) as timely_risk_assessment,
-        # TODO(#6702): update once FTR enrollment vitals have a 28 day lookback window.
-        95 as timely_ftr_enrollment,
         # TODO(#6703): update once contact vitals are completed.
         80 as timely_contact,
-        ROUND((most_recent_timely_discharge + most_recent_timely_risk_assessment + 95 + 80) / 4 - (timely_discharge_7_days_before + timely_risk_assessment_7_days_before  + 95 + 80) / 4, 0) as overall_7d,
-        ROUND((most_recent_timely_discharge + most_recent_timely_risk_assessment + 95 + 80) / 4 - (timely_discharge_28_days_before + timely_risk_assessment_28_days_before + 95 + 80) / 4, 0) as overall_28d
+        ROUND((most_recent_timely_discharge + most_recent_timely_risk_assessment + 80) / 3 - (timely_discharge_7_days_before + timely_risk_assessment_7_days_before  + 80) / 3, 0) as overall_7d,
+        ROUND((most_recent_timely_discharge + most_recent_timely_risk_assessment + 80) / 3 - (timely_discharge_28_days_before + timely_risk_assessment_28_days_before + 80) / 3, 0) as overall_28d
     FROM all_output
     WHERE entity_id is not null
     AND entity_id != 'UNKNOWN'
