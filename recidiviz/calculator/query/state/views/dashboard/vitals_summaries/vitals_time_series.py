@@ -41,7 +41,7 @@ def generate_time_series_query(metric_name: str, table_name: str) -> str:
 VITALS_TIME_SERIES_VIEW_NAME = "vitals_time_series"
 
 VITALS_TIME_SERIES_DESCRIPTION = """
-    Historical record of vitals metrics over the last 28 days
+    Historical record of vitals metrics over the last 365 days
  """
 
 VITALS_TIME_SERIES_TEMPLATE = f"""
