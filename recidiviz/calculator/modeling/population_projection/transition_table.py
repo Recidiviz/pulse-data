@@ -613,26 +613,37 @@ class TransitionTable:
     def abolish_mandatory_minimum(
         self,
         historical_outflows: pd.DataFrame,
-        current_mm: float,
         outflow: str,
+        current_mm: Optional[float] = None,
+        affected_fraction: Optional[float] = None,
         retroactive: bool = False,
     ) -> None:
         """
         Reduce compartment durations as associated with a mandatory minimum reduction/removal. Our methodology for
             this involves scaling down the entire distribution additively by the product of distribution std dev and
             fraction of population sentenced at the mandatory minimum.
+        affected_fraction is an optional input to restrict the shift (total magnitude preserved) to a subset of the
+            distribution. Note that you must pass exactly one of current_mm, affected_fraction
         """
-        mm_sentenced_group = historical_outflows[
-            historical_outflows.compartment_duration == current_mm
-        ]
-        # Do not modify the transition table if there are no sentences at the mandatory minimum
-        if len(mm_sentenced_group) == 0:
-            return
+        if current_mm is not None:
+            mm_sentenced_group = historical_outflows[
+                historical_outflows.compartment_duration == current_mm
+            ]
 
-        affected_ratio = (
-            mm_sentenced_group["total_population"].sum()
-            / historical_outflows["total_population"].sum()
-        )
+            # Do not modify the transition table if there are no sentences at the mandatory minimum
+            if len(mm_sentenced_group) == 0:
+                return
+
+            affected_ratio = (
+                mm_sentenced_group["total_population"].sum()
+                / historical_outflows["total_population"].sum()
+            )
+
+            if affected_fraction is not None:
+                raise ValueError("Cannot set both current_mm and affected_fraction")
+
+        elif affected_fraction is not None:
+            affected_ratio = affected_fraction
 
         # calculate standard deviation
         average_duration = np.average(
