@@ -16,30 +16,66 @@
 // =============================================================================
 import { navigate, RouteComponentProps } from "@reach/router";
 import React, { ReactElement } from "react";
-import { Button, H1, H4 } from "@recidiviz/case-triage-components";
+import styled from "styled-components/macro";
+import { rem } from "polished";
+import {
+  Assets,
+  Button,
+  Link,
+  fonts,
+  spacing,
+} from "@recidiviz/case-triage-components";
+
+const VerifyHeader = styled.h1`
+  font-family: ${fonts.heading};
+  font-weight: normal;
+  font-style: normal;
+  font-size: ${rem(34)};
+
+  margin: ${rem(spacing.xl)} 0;
+`;
+
+const VerifyText = styled.p`
+  font-family: ${fonts.body};
+  font-size: ${rem(19)};
+  line-height: ${rem(32)};
+`;
+
+const HomeButton = styled(Button)`
+  margin: ${rem(spacing.xl)} 0;
+`;
 
 const Verify = (props: RouteComponentProps): ReactElement => {
   return (
-    <div>
-      <H1>Almost there!</H1>
-      <H4>Please Verify Your Email</H4>
-      <p>
-        If you have just signed up for an account, please check your inbox for
-        an email asking you to verify your email address. After you click the
-        verification button or link in that email, you can reach the home page
-        below.
-      </p>
-      <p>
-        If you have reached this page by mistake, please try to log in again. If
-        you are still having trouble, please reach out to{" "}
-        <a href="mailto:web-support@recidiviz.org?subject=Trouble logging into Case Triage">
-          Recidiviz Support
-        </a>
-        .
-      </p>
-      <Button kind="primary" onClick={() => navigate("/")}>
-        Back to Home
-      </Button>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        height: "100%",
+      }}
+    >
+      <div style={{ width: 700 }}>
+        <img src={Assets.LOGO} alt="Recidiviz - Case Triage" />
+        <VerifyHeader>Please verify your email.</VerifyHeader>
+        <VerifyText>
+          If you have just signed up for an account, please check your inbox for
+          an email asking you to verify your email address. After you click the
+          verification button or link in that email, you can reach the home page
+          below.
+        </VerifyText>
+        <VerifyText>
+          If you have reached this page by mistake, please try to log in again.
+          If you are still having trouble, please reach out to{" "}
+          <Link href="mailto:web-support@recidiviz.org?subject=Trouble logging into Case Triage">
+            Recidiviz Support
+          </Link>
+          .
+        </VerifyText>
+        <HomeButton kind="secondary" onClick={() => navigate("/")}>
+          Back to Home
+        </HomeButton>
+      </div>
     </div>
   );
 };
