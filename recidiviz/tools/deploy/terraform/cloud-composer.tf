@@ -16,7 +16,7 @@
 # =============================================================================
 
 locals {
-  recidiviz_root = dirname(dirname(dirname(path.module)))
+  recidiviz_root      = dirname(dirname(dirname(path.module)))
   temporary_directory = "${dirname(local.recidiviz_root)}/.tfout"
   # Transforms the dag_gcs_prefix output variable from composer into just the gcs bucket name. Output docs:
   # https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/composer_environment#config.0.dag_gcs_prefix
@@ -31,7 +31,7 @@ resource "google_composer_environment" "default" {
 
     node_config {
       zone         = var.zone
-      machine_type = "n1-standard-2"
+      machine_type = "n1-standard-4"
     }
 
     software_config {
@@ -41,13 +41,13 @@ resource "google_composer_environment" "default" {
         "api-auth_backend"          = "airflow.api.auth.backend.default"
         "webserver-web_server_name" = "orchestration"
       }
-      env_variables            = {
-        "CONFIG_FILE"    = "/home/airflow/gcs/dags/production_calculation_pipeline_templates.yaml"
+      env_variables = {
+        "CONFIG_FILE" = "/home/airflow/gcs/dags/production_calculation_pipeline_templates.yaml"
         # TODO(#4900): I think we get 'GCP_PROJECT' by default, so we can probably clean this up.
         "GCP_PROJECT_ID" = var.project_id
       }
-      image_version            = "composer-1.13.0-airflow-1.10.12"
-      python_version           = "3"
+      image_version  = "composer-1.13.0-airflow-1.10.12"
+      python_version = "3"
     }
   }
 
