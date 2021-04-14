@@ -40,6 +40,7 @@ class CloudSQLClient:
         instance_name: str,
         table_name: str,
         gcs_uri: GcsfsFilePath,
+        columns: List[str],
     ) -> Optional[str]:
         """Triggers a Cloud SQL Export operation and returns the associated operation id or None if unsuccessful."""
 
