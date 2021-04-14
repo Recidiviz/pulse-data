@@ -100,6 +100,15 @@ export const fetchIngestRegionCodes = async (): Promise<Response> => {
   );
 };
 
+// Ingest Operations Actions
+export const fetchRegionCodeFiles = async (
+  regionCode: string
+): Promise<Response> => {
+  return postWithURLAndBody("/data_discovery/files", {
+    region_code: regionCode,
+  });
+};
+
 // Data Discovery
 export interface Message {
   cursor: number;
@@ -121,7 +130,7 @@ export const pollDiscoveryStatus = async (
   discoveryId: string,
   latestMessage: Message | null,
   onMessageReceived: CallableFunction
-) => {
+): Promise<void> => {
   const response = await fetchDiscoveryStatus(
     discoveryId,
     latestMessage ? latestMessage.cursor : 0
@@ -136,14 +145,13 @@ export const pollDiscoveryStatus = async (
     if (receivedMessage.kind === "close") {
       return;
     }
+
+    await pollDiscoveryStatus(discoveryId, receivedMessage, onMessageReceived);
   }
 
   if (response.status === 500) {
     onMessageReceived(null);
-    return;
   }
-
-  await pollDiscoveryStatus(discoveryId, latestMessage, onMessageReceived);
 };
 
 export const createDiscovery = async (

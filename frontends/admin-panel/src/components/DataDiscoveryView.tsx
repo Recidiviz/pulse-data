@@ -15,35 +15,19 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import * as React from "react";
-import {
-  Alert,
-  Badge,
-  Button,
-  Card,
-  Col,
-  Form,
-  DatePicker,
-  Row,
-  Select,
-  Space,
-} from "antd";
-import { SearchOutlined } from "@ant-design/icons";
-import moment from "moment";
+import { Alert, Badge, Button, Card, Form, Space, Steps } from "antd";
+import { LoadingOutlined, SearchOutlined } from "@ant-design/icons";
+import { FormInstance } from "antd/es/form";
 import {
   createDiscovery,
-  fetchIngestRegionCodes,
   Message,
   pollDiscoveryStatus,
 } from "../AdminPanelAPI";
-import useFetchedData from "../hooks";
+import DataDiscoverySelectStateView from "./DataDiscovery/DataDiscoverySelectStateView";
+import DataDiscoveryFiltersView from "./DataDiscovery/DataDiscoveryFiltersView";
+import DataDiscoverySelectFilesView from "./DataDiscovery/DataDiscoverySelectFilesView";
 
-interface FormValues {
-  // eslint-disable-next-line camelcase
-  region_code: string;
-  dates: moment.Moment[];
-  columns: string[];
-  values: string[];
-}
+const { Step } = Steps;
 
 interface ReportCardProps {
   message: Message;
@@ -53,7 +37,7 @@ const ReportCard: React.FC<ReportCardProps> = ({
   message,
 }: ReportCardProps) => {
   return (
-    <Card title="Report">
+    <>
       {message && message.kind !== "close" ? (
         <Badge status="processing" text={message.data} />
       ) : (
@@ -64,47 +48,33 @@ const ReportCard: React.FC<ReportCardProps> = ({
           }}
         />
       )}
-    </Card>
+    </>
   );
 };
+interface FormContextType {
+  form: FormInstance;
+}
 
-const DirectionsCard: React.FC = () => (
-  <Card title="How to use this tool" type="inner">
-    <p>
-      The Data Discovery tool is useful for investigating instance-specific
-      ingest data quality issues.
-    </p>
-    <ol>
-      <li>Identify a relevant time range to search</li>
-      <li>
-        Input a set of columns / values to filter for
-        <br />
-        Returns rows matching any permutation of <strong>column = value</strong>
-      </li>
-    </ol>
-  </Card>
-);
+export type { FormContextType };
+export const FormContext = React.createContext({} as FormContextType);
 
 const Component: React.FC = () => {
   const [message, setMessage] = React.useState<Message | null>();
-  const { loading, data: regionCodes } = useFetchedData<string[]>(
-    fetchIngestRegionCodes
-  );
+  const [form] = Form.useForm();
 
-  const submit = React.useCallback(async (values: FormValues) => {
-    const body = { ...values };
+  const submit = React.useCallback(async () => {
+    const body = { ...form.getFieldsValue(true) };
     setMessage({ cursor: -1, data: "Creating search task", kind: "open" });
-
     const [start, end] = body.dates;
+    delete body.dates;
 
     try {
       const response = await createDiscovery({
-        region_code: body.region_code,
-        columns: body.columns,
-        values: body.values,
+        ...body,
         start_date: start.format("Y-MM-DD"),
         end_date: end.format("Y-MM-DD"),
       });
+
       const { id } = await response.json();
 
       await pollDiscoveryStatus(id, null, (receivedMessage: Message) => {
@@ -114,9 +84,47 @@ const Component: React.FC = () => {
       setMessage(null);
       throw e;
     }
-  }, []);
+  }, [form]);
 
   const isLoading = !!message && message.kind !== "close";
+
+  const [current, setCurrent] = React.useState(0);
+
+  const next = () => {
+    setCurrent(current + 1);
+  };
+
+  const prev = () => {
+    setCurrent(current - 1);
+  };
+
+  const steps = [
+    {
+      title: "Choose State",
+      description: "Select the state you want to search ingest data for",
+      content: <div />,
+    },
+    {
+      title: "Choose Files",
+      description: "Select raw data files / ingest views you'd like to search",
+      content: (
+        <DataDiscoverySelectFilesView
+          regionCode={form.getFieldValue("region_code")}
+        />
+      ),
+    },
+    {
+      title: "Filter Conditions",
+      description: "Define your filters",
+      content: <DataDiscoveryFiltersView />,
+    },
+    {
+      title: "View Result",
+      description: "Report",
+      content: message ? <ReportCard message={message} /> : null,
+      icon: message && message.kind !== "close" ? <LoadingOutlined /> : null,
+    },
+  ];
 
   return (
     <>
@@ -126,76 +134,61 @@ const Component: React.FC = () => {
         description="The Data discovery tool is not yet available, it will be soon, though!"
       />
       <br />
-      <Row gutter={18}>
-        <Col span={12}>
-          <Card title="Data Discovery">
-            <Form onFinish={submit} layout="vertical">
-              <Form.Item
-                label="State"
-                name="region_code"
-                rules={[{ required: true }]}
-              >
-                <Select>
-                  {!loading && regionCodes
-                    ? regionCodes.map((code) => (
-                        <Select.Option key={code} value={code}>
-                          {code.toUpperCase()}
-                        </Select.Option>
-                      ))
-                    : null}
-                </Select>
-              </Form.Item>
-              <Form.Item
-                label="Date Range"
-                help="This specifies the date range of when the ingest files were received / processed"
-                name="dates"
-                rules={[{ required: true }]}
-              >
-                <DatePicker.RangePicker
-                  disabledDate={(current) =>
-                    current && current > moment().endOf("day")
-                  }
-                />
-              </Form.Item>
-              <Form.Item
-                name="columns"
-                label="Columns"
-                help="Specifies the columns of raw data files / ingest views to search for"
-                rules={[{ required: true }]}
-              >
-                <Select mode="tags" />
-              </Form.Item>
+      <FormContext.Provider value={{ form }}>
+        <Card title="Data Discovery" className="data-discovery__card">
+          <Form onFinish={submit} layout="vertical" form={form}>
+            <Space direction="vertical" size={16}>
+              <Steps current={current} style={{ width: "100%" }}>
+                {steps.map((item) => (
+                  <Step key={item.title} title={item.title} icon={item.icon} />
+                ))}
+              </Steps>
 
-              <Form.Item
-                name="values"
-                label="Values"
-                rules={[{ required: true }]}
+              <Card
+                title={steps[current].description || ""}
+                type="inner"
+                key={steps[current].title}
               >
-                <Select mode="tags" />
-              </Form.Item>
+                {steps[current].content}
+              </Card>
 
-              <Form.Item>
-                <Button
-                  type="primary"
-                  htmlType="submit"
-                  icon={<SearchOutlined />}
-                  loading={isLoading}
-                  disabled
-                >
-                  Search
-                </Button>
-              </Form.Item>
-            </Form>
-          </Card>
-        </Col>
-        <Col span={12}>
-          <DirectionsCard />
-        </Col>
-      </Row>
-
-      <Space size={18}>
-        {message ? <ReportCard message={message} /> : null}
-      </Space>
+              <Space>
+                {current < steps.length - 2 && (
+                  <Button
+                    type="primary"
+                    onClick={() => next()}
+                    size="large"
+                    disabled
+                  >
+                    Next
+                  </Button>
+                )}
+                {current === steps.length - 2 && (
+                  <Button
+                    type="primary"
+                    htmlType="submit"
+                    onClick={async () => {
+                      await form.validateFields();
+                      await form.submit();
+                      next();
+                    }}
+                    icon={<SearchOutlined />}
+                    loading={isLoading}
+                    size="large"
+                  >
+                    Search
+                  </Button>
+                )}
+                {current > 0 && (
+                  <Button onClick={() => prev()} size="large">
+                    Previous
+                  </Button>
+                )}
+              </Space>
+            </Space>
+          </Form>
+        </Card>
+      </FormContext.Provider>
     </>
   );
 };

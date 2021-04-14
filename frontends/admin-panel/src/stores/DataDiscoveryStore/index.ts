@@ -1,5 +1,5 @@
 // Recidiviz - a data platform for criminal justice reform
-// Copyright (C) 2020 Recidiviz, Inc.
+// Copyright (C) 2021 Recidiviz, Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,20 +14,4 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import * as React from "react";
-import * as ReactDOM from "react-dom";
-import { BrowserRouter } from "react-router-dom";
-
-import App from "./components/App";
-
-import "./style/index.css";
-import StoreProvider from "./stores";
-
-ReactDOM.render(
-  <BrowserRouter>
-    <StoreProvider>
-      <App />
-    </StoreProvider>
-  </BrowserRouter>,
-  document.getElementById("root")
-);
+export { default } from "./DataDiscoveryStore";
