@@ -156,7 +156,9 @@ def handle_direct_ingest_file() -> Tuple[str, HTTPStatus]:
     start_ingest = get_bool_param_value("start_ingest", request.args, default=False)
 
     if not region_code or not bucket or not relative_file_path or start_ingest is None:
-        return f"Bad parameters [{request.args}]", HTTPStatus.BAD_REQUEST
+        response = f"Bad parameters [{request.args}]"
+        logging.error(response)
+        return response, HTTPStatus.BAD_REQUEST
 
     with monitoring.push_region_tag(region_code):
         try:
@@ -166,6 +168,7 @@ def handle_direct_ingest_file() -> Tuple[str, HTTPStatus]:
             )
         except DirectIngestError as e:
             if e.is_bad_request():
+                logging.error(str(e))
                 return str(e), HTTPStatus.BAD_REQUEST
             raise e
 
@@ -197,7 +200,9 @@ def handle_new_files() -> Tuple[str, HTTPStatus]:
     bucket = get_str_param_value("bucket", request.values)
 
     if not region_code or can_start_ingest is None or not bucket:
-        return f"Bad parameters [{request.values}]", HTTPStatus.BAD_REQUEST
+        response = f"Bad parameters [{request.values}]"
+        logging.error(response)
+        return response, HTTPStatus.BAD_REQUEST
 
     with monitoring.push_region_tag(region_code):
         try:
@@ -207,6 +212,7 @@ def handle_new_files() -> Tuple[str, HTTPStatus]:
             )
         except DirectIngestError as e:
             if e.is_bad_request():
+                logging.error(str(e))
                 return str(e), HTTPStatus.BAD_REQUEST
             raise e
 
@@ -250,6 +256,7 @@ def ensure_all_raw_file_paths_normalized() -> Tuple[str, HTTPStatus]:
                 )
             except DirectIngestError as e:
                 if e.is_bad_request():
+                    logging.error(str(e))
                     return str(e), HTTPStatus.BAD_REQUEST
                 raise e
 
@@ -274,7 +281,9 @@ def raw_data_import() -> Tuple[str, HTTPStatus]:
     region_code = get_str_param_value("region", request.values)
 
     if not region_code:
-        return f"Bad parameters [{request.values}]", HTTPStatus.BAD_REQUEST
+        response = f"Bad parameters [{request.values}]"
+        logging.error(response)
+        return response, HTTPStatus.BAD_REQUEST
 
     with monitoring.push_region_tag(region_code):
         json_data = request.get_data(as_text=True)
@@ -302,6 +311,7 @@ def raw_data_import() -> Tuple[str, HTTPStatus]:
                 )
             except DirectIngestError as e:
                 if e.is_bad_request():
+                    logging.error(str(e))
                     return str(e), HTTPStatus.BAD_REQUEST
                 raise e
 
@@ -348,7 +358,9 @@ def update_raw_data_latest_views_for_state() -> Tuple[str, HTTPStatus]:
     region_code = get_str_param_value("region", request.values)
 
     if not region_code:
-        return f"Bad parameters [{request.values}]", HTTPStatus.BAD_REQUEST
+        response = f"Bad parameters [{request.values}]"
+        logging.error(response)
+        return response, HTTPStatus.BAD_REQUEST
 
     with monitoring.push_region_tag(region_code):
         bq_client = BigQueryClientImpl(project_id=metadata.project_id())
@@ -371,7 +383,9 @@ def ingest_view_export() -> Tuple[str, HTTPStatus]:
     region_code = get_str_param_value("region", request.values)
 
     if not region_code:
-        return f"Bad parameters [{request.values}]", HTTPStatus.BAD_REQUEST
+        response = f"Bad parameters [{request.values}]"
+        logging.error(response)
+        return response, HTTPStatus.BAD_REQUEST
 
     with monitoring.push_region_tag(region_code):
         json_data = request.get_data(as_text=True)
@@ -400,6 +414,7 @@ def ingest_view_export() -> Tuple[str, HTTPStatus]:
                 )
             except DirectIngestError as e:
                 if e.is_bad_request():
+                    logging.error(str(e))
                     return str(e), HTTPStatus.BAD_REQUEST
                 raise e
 
@@ -417,7 +432,9 @@ def process_job() -> Tuple[str, HTTPStatus]:
     region_code = get_str_param_value("region", request.values)
 
     if not region_code:
-        return f"Bad parameters [{request.values}]", HTTPStatus.BAD_REQUEST
+        response = f"Bad parameters [{request.values}]"
+        logging.error(response)
+        return response, HTTPStatus.BAD_REQUEST
 
     with monitoring.push_region_tag(region_code):
         json_data = request.get_data(as_text=True)
@@ -436,7 +453,9 @@ def process_job() -> Tuple[str, HTTPStatus]:
             )
 
         if not ingest_args:
-            return "Could not parse ingest args", HTTPStatus.BAD_REQUEST
+            response = "Could not parse ingest args"
+            logging.error(response)
+            return response, HTTPStatus.BAD_REQUEST
         with monitoring.push_tags({TagKey.INGEST_TASK_TAG: ingest_args.task_id_tag()}):
             try:
                 controller = DirectIngestControllerFactory.build(
@@ -445,12 +464,14 @@ def process_job() -> Tuple[str, HTTPStatus]:
                 )
             except DirectIngestError as e:
                 if e.is_bad_request():
+                    logging.error(str(e))
                     return str(e), HTTPStatus.BAD_REQUEST
                 raise e
 
             try:
                 controller.run_ingest_job_and_kick_scheduler_on_completion(ingest_args)
             except GCSPseudoLockAlreadyExists as e:
+                logging.warning(str(e))
                 return str(e), HTTPStatus.CONFLICT
     return "", HTTPStatus.OK
 
@@ -468,7 +489,9 @@ def scheduler() -> Tuple[str, HTTPStatus]:
     bucket = get_str_param_value("bucket", request.args)
 
     if not region_code or just_finished_job is None or not bucket:
-        return f"Bad parameters [{request.values}]", HTTPStatus.BAD_REQUEST
+        response = f"Bad parameters [{request.values}]"
+        logging.error(response)
+        return response, HTTPStatus.BAD_REQUEST
 
     with monitoring.push_region_tag(region_code):
         try:
@@ -477,6 +500,7 @@ def scheduler() -> Tuple[str, HTTPStatus]:
             )
         except DirectIngestError as e:
             if e.is_bad_request():
+                logging.error(str(e))
                 return str(e), HTTPStatus.BAD_REQUEST
             raise e
 
@@ -530,7 +554,9 @@ def upload_from_sftp() -> Tuple[str, HTTPStatus]:
     gcs_destination_path = GcsfsBucketPath(bucket_str) if bucket_str else None
 
     if not region_code:
-        return f"Bad parameters [{request.values}]", HTTPStatus.BAD_REQUEST
+        response = f"Bad parameters [{request.values}]"
+        logging.error(response)
+        return response, HTTPStatus.BAD_REQUEST
 
     with monitoring.push_region_tag(region_code):
         lower_bound_update_datetime = (
@@ -603,7 +629,9 @@ def handle_sftp_files() -> Tuple[str, HTTPStatus]:
     region_code = get_str_param_value("region", request.values)
 
     if not region_code:
-        return f"Bad parameters [{request.values}]", HTTPStatus.BAD_REQUEST
+        response = f"Bad parameters [{request.values}]"
+        logging.error(response)
+        return response, HTTPStatus.BAD_REQUEST
 
     with monitoring.push_region_tag(region_code):
         try:
