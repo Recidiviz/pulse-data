@@ -1,6 +1,6 @@
 /*
 Recidiviz - a data platform for criminal justice reform
-Copyright (C) 2020 Recidiviz, Inc.
+Copyright (C) 2021 Recidiviz, Inc.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -16,41 +16,19 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 =============================================================================
 */
-@import "~antd/dist/antd.css";
-@import "DataDiscovery.css";
-
-.main-content {
-  padding-top: 2vw;
-  padding-bottom: 1em;
-
-  height: 100%;
-  min-width: 80%;
-  margin: auto;
-
-  padding-left: 30px;
-  padding-right: 30px;
-
-  overflow-y: scroll;
+.data-discovery-filters__condition-group {
+    background: #fafafa;
+    padding: 16px;
 }
 
-.buffer {
-  padding-top: 16px;
-  padding-bottom: 16px;
+.data-discovery-filters__condition-group .ant-divider {
+    font-size: 0.9em;
 }
 
-.ant-layout-sider-children {
-  background-color: #ffffff;
+.data-discovery__card .ant-space {
+    width: 100%;
 }
 
-.ant-table-tbody > tr.metadata-table-row > td.ant-table-cell {
-  padding: 0px;
-}
-
-tr.metadata-table-row > td.ant-table-cell > div {
-  padding: 16px;
-}
-
-.success {
-  color: #ffffff;
-  background-color: #389e0d;
+.data-discovery-filters__condition .ant-select {
+    width: 100%;
 }
