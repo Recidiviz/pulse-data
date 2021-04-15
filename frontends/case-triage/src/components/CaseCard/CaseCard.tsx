@@ -24,6 +24,7 @@ import {
   IconSVG,
   Modal,
 } from "@recidiviz/case-triage-components";
+import { autorun } from "mobx";
 import {
   Caption,
   CaseCardFeedback,
@@ -76,12 +77,19 @@ const CaseCard: React.FC<CaseCardProps> = ({ client }: CaseCardProps) => {
   const [helpedWithEmployment, setHelpedWithEmployment] = useState(false);
   const [completedAssessment, setCompletedAssessment] = useState(false);
   const [scheduledFaceToFace, setScheduledFaceToFace] = useState(false);
+  const [marginTop, setMarginTop] = useState(clientsStore.activeClientOffset);
 
   React.useEffect(() => {
     setHelpedWithEmployment(false);
     setCompletedAssessment(false);
     setScheduledFaceToFace(false);
   }, [client]);
+
+  React.useEffect(() =>
+    autorun(() => {
+      setMarginTop(clientsStore.activeClientOffset);
+    })
+  );
 
   const actionsTaken = () => {
     const actions = [];
@@ -99,12 +107,7 @@ const CaseCard: React.FC<CaseCardProps> = ({ client }: CaseCardProps) => {
   };
 
   return (
-    <Card
-      stacked
-      style={{
-        marginTop: clientsStore.activeClientOffset || 0,
-      }}
-    >
+    <Card stacked style={{ marginTop }}>
       <CaseCardHeading className="fs-exclude">
         <ClientNameRow>
           <H3 as="div">{client.name}</H3>

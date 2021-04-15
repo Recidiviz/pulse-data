@@ -73,7 +73,13 @@ const ClientComponent: React.FC<ClientProps> = ({
     ) {
       viewClient();
     }
-  }, [cardRef, clientsStore, client.personExternalId, viewClient]);
+  }, [
+    cardRef,
+    clientsStore.clientPendingView,
+    clientsStore.clientSearchString,
+    client.personExternalId,
+    viewClient,
+  ]);
 
   return (
     <ClientCard
