@@ -74,3 +74,11 @@ export const trackScrolledToBottom = (): void => {
 export const trackScrolledToInProgress = (): void => {
   track("frontend.scrolled_to_in_progress_section");
 };
+
+export const trackSearchBarEnterPressed = (searchTerm: string): void => {
+  track("frontend.search_bar_enter_pressed", { searchTerm });
+};
+
+export const trackSearchBarFocused = (): void => {
+  track("frontend.search_bar_focused");
+};

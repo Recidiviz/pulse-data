@@ -15,7 +15,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-/* eslint-disable import/prefer-default-export */
 export const titleCase = (str: string): string => {
   // Step 1. Lowercase the string
   // Step 2. Split the string into an array of strings
@@ -28,4 +27,11 @@ export const titleCase = (str: string): string => {
   }
   // Step 4. Return the output
   return split.join(" "); // ["I'm", "A", "Little", "Tea", "Pot"].join(' ') => "I'm A Little Tea Pot"
+};
+
+export const caseInsensitiveIncludes = (
+  containingString: string,
+  substring: string
+): boolean => {
+  return containingString.toLowerCase().includes(substring.toLowerCase());
 };

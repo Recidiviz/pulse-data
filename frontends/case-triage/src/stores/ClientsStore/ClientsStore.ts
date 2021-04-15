@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { autorun, makeAutoObservable, remove, runInAction, set } from "mobx";
+import { parse } from "query-string";
 import PolicyStore from "../PolicyStore";
 import UserStore from "../UserStore";
 import {
@@ -27,6 +28,7 @@ import {
 import API from "../API";
 import { trackPersonSelected } from "../../analytics";
 import { CaseUpdateActionType } from "../CaseUpdatesStore";
+import { caseInsensitiveIncludes } from "../../utils";
 
 interface ClientsStoreProps {
   api: API;
@@ -47,13 +49,19 @@ class ClientsStore {
 
   activeClient?: DecoratedClient;
 
-  activeClientOffset?: number;
+  activeClientOffset: number;
+
+  clientSearchString: string;
 
   clientPendingView: DecoratedClient | null;
+
+  unfilteredClients: DecoratedClient[];
 
   clients: DecoratedClient[];
 
   // All clients who are in progress
+  unfilteredInProgressClients: DecoratedClient[];
+
   inProgressClients: DecoratedClient[];
 
   // Clients who have been marked in-progress during this session
@@ -73,13 +81,21 @@ class ClientsStore {
     this.api = api;
     this.userStore = userStore;
 
+    this.unfilteredClients = [];
     this.clients = [];
+    this.unfilteredInProgressClients = [];
     this.inProgressClients = [];
+    this.activeClientOffset = 0;
     this.clientPendingView = null;
     this.clientsMarkedInProgress = {};
     this.userStore = userStore;
     this.policyStore = policyStore;
     this.isLoading = false;
+
+    const searchParam = parse(window.location.search).search;
+    this.clientSearchString = Array.isArray(searchParam)
+      ? searchParam[0]
+      : searchParam || "";
 
     autorun(() => {
       if (!this.userStore.isAuthorized) {
@@ -131,7 +147,7 @@ class ClientsStore {
           )
           .concat(transitionedInProgressClients);
 
-        this.clients = upNextClients.sort(
+        this.unfilteredClients = upNextClients.sort(
           (self: DecoratedClient, other: DecoratedClient) => {
             // No upcoming contact recommended. Shift myself to the right
             if (!self.nextFaceToFaceDate) {
@@ -168,7 +184,7 @@ class ClientsStore {
               ({ client }) => client
             )
           : [];
-        this.inProgressClients = decoratedClients
+        this.unfilteredInProgressClients = decoratedClients
           .filter((client: DecoratedClient) => client.inProgressSubmissionDate)
           .concat(demoInProgressClients)
           .sort((self: DecoratedClient, other: DecoratedClient) => {
@@ -194,6 +210,8 @@ class ClientsStore {
 
             return 0;
           });
+
+        this.filterClients(this.clientSearchString);
       });
     } catch (error) {
       runInAction(() => {
@@ -201,6 +219,38 @@ class ClientsStore {
         this.error = error;
       });
     }
+  }
+
+  filterClients(searchString: string): void {
+    runInAction(() => {
+      this.clientSearchString = searchString;
+
+      // Set query params
+      const queryParams = new URLSearchParams(window.location.search);
+      if (queryParams.get("search") !== this.clientSearchString) {
+        if (this.clientSearchString !== "") {
+          queryParams.set("search", this.clientSearchString);
+          window.history.replaceState(null, "", `?${queryParams.toString()}`);
+        } else {
+          window.history.replaceState(null, "", window.location.pathname);
+        }
+      }
+
+      this.clients = this.unfilteredClients.filter((client) =>
+        this.isVisible(client)
+      );
+      this.inProgressClients = this.unfilteredInProgressClients.filter(
+        (client) => this.isVisible(client)
+      );
+
+      if (this.activeClient) {
+        this.clientPendingView = this.activeClient;
+      }
+    });
+  }
+
+  isVisible({ name }: DecoratedClient): boolean {
+    return caseInsensitiveIncludes(name, this.clientSearchString);
   }
 
   markAsInProgress(
@@ -243,14 +293,16 @@ class ClientsStore {
   }
 
   view(client: DecoratedClient | undefined = undefined, offset = 0): void {
-    this.activeClient =
-      this.clientPendingView === null ? client : this.clientPendingView;
-    this.activeClientOffset = offset;
-    this.clientPendingView = null;
-
-    if (client) {
+    if (this.clientPendingView === null && client) {
       trackPersonSelected(client);
     }
+
+    this.activeClient =
+      this.clientPendingView !== null && !client
+        ? this.clientPendingView
+        : client;
+    this.activeClientOffset = offset;
+    this.clientPendingView = null;
   }
 }
 
