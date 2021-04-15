@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Exposes API endpoints invoked by Cloud Functions."""
+"""Exposes APIs for parsing and persisting aggregate reports."""
 import logging
 import os
 import tempfile
@@ -41,7 +41,7 @@ from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.params import get_str_param_value
 
-cloud_functions_blueprint = Blueprint("cloud_functions", __name__)
+aggregate_parse_blueprint = Blueprint("aggregate_parse", __name__)
 
 
 class StateAggregateError(Exception):
@@ -51,7 +51,7 @@ class StateAggregateError(Exception):
 HISTORICAL_BUCKET = "{}-processed-state-aggregates"
 
 
-@cloud_functions_blueprint.route("/state_aggregate")
+@aggregate_parse_blueprint.route("/persist_file")
 @requires_gae_auth
 def state_aggregate() -> Tuple[str, HTTPStatus]:
     """Calls state aggregates"""
