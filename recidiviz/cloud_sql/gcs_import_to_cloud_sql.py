@@ -32,6 +32,7 @@ def import_gcs_csv_to_cloud_sql(
     destination_table: str,
     gcs_uri: GcsfsFilePath,
     columns: List[str],
+    seconds_to_wait: int = 60,
 ) -> None:
     """Implements the import of GCS CSV to Cloud SQL by creating a temporary table, uploading the
     results to the temporary table, and then swapping the contents of the table."""
@@ -75,7 +76,8 @@ def import_gcs_csv_to_cloud_sql(
             )
 
         operation_succeeded = cloud_sql_client.wait_until_operation_completed(
-            operation_id
+            operation_id=operation_id,
+            seconds_to_wait=seconds_to_wait,
         )
 
         if not operation_succeeded:

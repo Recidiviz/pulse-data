@@ -36,6 +36,7 @@ from recidiviz.calculator.calculation_data_storage_manager import (
     calculation_data_storage_manager_blueprint,
 )
 from recidiviz.cloud_functions.cloud_functions import cloud_functions_blueprint
+from recidiviz.case_triage.ops_routes import case_triage_ops_blueprint
 from recidiviz.ingest.aggregate.scrape_aggregate_reports import (
     scrape_aggregate_reports_blueprint,
 )
@@ -79,6 +80,7 @@ default_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
     (admin_panel, "/admin"),
     (backup_manager_blueprint, "/backup_manager"),
     (calculation_data_storage_manager_blueprint, "/calculation_data_storage_manager"),
+    (case_triage_ops_blueprint, "/case_triage_ops"),
     (cloud_functions_blueprint, "/cloud_function"),
     (cloud_sql_to_bq_blueprint, "/cloud_sql_to_bq"),
     (direct_ingest_control, "/direct"),
