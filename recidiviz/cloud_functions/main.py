@@ -45,8 +45,7 @@ ContextType = TypeVar("ContextType", bound=Any)
 
 
 _STATE_AGGREGATE_CLOUD_FUNCTION_URL = (
-    "http://{}.appspot.com/cloud_function/state_aggregate?bucket={}&state={}"
-    "&filename={}"
+    "http://{}.appspot.com/aggregate/persist_file?bucket={}&state={}&filename={}"
 )
 _DIRECT_INGEST_CLOUD_FUNCTION_URL = (
     "http://{}.appspot.com/direct/handle_direct_ingest_file?region={}"
