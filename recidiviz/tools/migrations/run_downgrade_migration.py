@@ -108,7 +108,7 @@ def main(
 
     prompt_for_confirmation("This script will run a DOWNGRADE migration.", "DOWNGRADE")
     confirm_correct_db_instance(schema_type)
-    confirm_correct_git_branch(repo_root, is_prod=is_prod)
+    confirm_correct_git_branch(repo_root)
 
     db_keys = [
         key for key in SQLAlchemyDatabaseKey.all() if key.schema_type == schema_type
