@@ -1,0 +1,96 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2021 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+"""A script for displaying the dependency tree of a given BigQuery view, including parent tables.
+
+Prints this directly to stdout.
+
+python -m recidiviz.tools.display_bq_dag_for_view --project_id recidiviz-staging --dataset_id po_report_views --view_id po_monthly_report_data
+"""
+import argparse
+import logging
+from typing import List
+
+from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
+from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.big_query.view_update_manager import (
+    VIEW_BUILDERS_BY_NAMESPACE,
+    _build_views_to_update,
+)
+from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
+from recidiviz.utils.metadata import local_project_id_override
+
+VIEWS_TO_SKIP = [
+    ("dataflow_metrics_materialized", "most_recent_job_id_by_metric_and_state_code")
+]
+
+
+def build_dag_walker(dataset_id: str, view_id: str) -> BigQueryViewDagWalker:
+    view_builders_for_dag: List[BigQueryViewBuilder] = []
+    is_valid_view = False
+    for _, builders in VIEW_BUILDERS_BY_NAMESPACE.items():
+        view_builders_for_dag.extend(builders)
+        for builder in builders:
+            if (
+                not is_valid_view
+                and builder.dataset_id == dataset_id
+                and builder.view_id == view_id
+            ):
+                is_valid_view = True
+    if not is_valid_view:
+        raise ValueError(f"invalid view {dataset_id}.{view_id}")
+    return BigQueryViewDagWalker(
+        _build_views_to_update(view_builders_for_dag, dataset_overrides=None)
+    )
+
+
+def print_dfs_tree(dataset_id: str, view_id: str) -> None:
+    dag_walker = build_dag_walker(dataset_id, view_id)
+    stack = [((dataset_id, view_id), 0)]
+    while len(stack) > 0:
+        dag_key, tabs = stack.pop()
+        d_id, v_id = dag_key
+        print(("|" if tabs else "") + ("__" * tabs) + f"{d_id}.{v_id}")
+        value = dag_walker.nodes_by_key.get(dag_key)
+        if value:
+            for parent_key in value.parent_keys:
+                if not parent_key in VIEWS_TO_SKIP:
+                    stack.append((parent_key, tabs + 1))
+    print("\n")
+
+
+if __name__ == "__main__":
+    logging.getLogger().setLevel(logging.INFO)
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "--project_id",
+        required=True,
+        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
+        help="The project_id where the existing view lives",
+    )
+    parser.add_argument(
+        "--dataset_id",
+        required=True,
+        help="The name of the dataset containing the view (e.g. po_report_views)",
+    )
+    parser.add_argument(
+        "--view_id", required=True, help="The name of the view (po_monthly_report_data)"
+    )
+    args = parser.parse_args()
+
+    with local_project_id_override(args.project_id):
+        print_dfs_tree(args.dataset_id, args.view_id)
