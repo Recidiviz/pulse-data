@@ -35,8 +35,8 @@ from recidiviz.backup.backup_manager import backup_manager_blueprint
 from recidiviz.calculator.calculation_data_storage_manager import (
     calculation_data_storage_manager_blueprint,
 )
-from recidiviz.cloud_functions.cloud_functions import cloud_functions_blueprint
 from recidiviz.case_triage.ops_routes import case_triage_ops_blueprint
+from recidiviz.ingest.aggregate.parse import aggregate_parse_blueprint
 from recidiviz.ingest.aggregate.scrape_aggregate_reports import (
     scrape_aggregate_reports_blueprint,
 )
@@ -69,6 +69,7 @@ service_type = environment.get_service_type()
 
 scraper_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
     (batch_blueprint, "/batch"),
+    (aggregate_parse_blueprint, "/aggregate"),
     (infer_release_blueprint, "/infer_release"),
     (scraper_control, "/scraper"),
     (scraper_status, "/scraper"),
@@ -81,7 +82,6 @@ default_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
     (backup_manager_blueprint, "/backup_manager"),
     (calculation_data_storage_manager_blueprint, "/calculation_data_storage_manager"),
     (case_triage_ops_blueprint, "/case_triage_ops"),
-    (cloud_functions_blueprint, "/cloud_function"),
     (cloud_sql_to_bq_blueprint, "/cloud_sql_to_bq"),
     (direct_ingest_control, "/direct"),
     (export_blueprint, "/export"),
