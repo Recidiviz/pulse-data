@@ -19,7 +19,8 @@
 
 This reads the raw files in BigQuery for the given state if the existing config for that file
 has at least one column with a known_values entry (can be empty, i.e. `known_values: []`),
-then populates the yaml config with any new values.
+then populates the yaml config with any values for those enum columns, while maintaining
+existing documentation.
 
 After running the script, be sure to either fill in or delete any blank descriptions.
 
@@ -59,7 +60,7 @@ def get_known_values(
 ) -> RawTableColumnInfo:
     """Creates a list of possible enum values for a column in a given table"""
     # Only fetch known values for enum columns
-    if column.is_enum:
+    if not column.is_enum:
         return column
 
     raw_data_dataset = f"{region_code.lower()}_raw_data"
