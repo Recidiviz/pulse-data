@@ -16,10 +16,11 @@
 # =============================================================================
 
 """Contains the API for automated data validation."""
+import logging
+import re
 from concurrent import futures
 from http import HTTPStatus
-import logging
-from typing import List, Dict, Any, Optional, Tuple
+from typing import Any, Dict, List, Optional, Pattern, Tuple
 
 from opencensus.stats import aggregation, measure, view
 
@@ -28,8 +29,6 @@ from flask import Blueprint
 from recidiviz.big_query import view_update_manager
 from recidiviz.utils import monitoring, structured_logging
 from recidiviz.utils.auth.gae import requires_gae_auth
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
-from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.checks.check_resolver import checker_for_validation
 
 from recidiviz.validation.configured_validations import (
@@ -92,9 +91,16 @@ def handle_validation_request() -> Tuple[str, HTTPStatus]:
 
 
 def execute_validation(
-    rematerialize_views: bool, region_code_filter: Optional[str] = None
+    rematerialize_views: bool,
+    region_code_filter: Optional[str] = None,
+    validation_name_filter: Optional[Pattern] = None,
 ) -> List[DataValidationJobResult]:
-    """Executes all validation checks. If |region_code_filter| is supplied, limits validations to just that region."""
+    """Executes all validation checks.
+
+    If |region_code_filter| is supplied, limits validations to just that region.
+    If |validation_name_filter| is supplied, only performs validations on those
+    that have a regex match.
+    """
     if rematerialize_views:
         logging.info(
             'Received query param "should_update_views" = true, updating validation dataset and views... '
@@ -102,7 +108,10 @@ def execute_validation(
         view_update_manager.rematerialize_views()
 
     # Fetch collection of validation jobs to perform
-    validation_jobs = _fetch_validation_jobs_to_perform(region_code_filter)
+    validation_jobs = _fetch_validation_jobs_to_perform(
+        region_code_filter=region_code_filter,
+        validation_name_filter=validation_name_filter,
+    )
     logging.info("Performing a total of %s validation jobs...", len(validation_jobs))
 
     # Perform all validations and track failures
@@ -157,6 +166,7 @@ def _run_job(job: DataValidationJob) -> DataValidationJobResult:
 
 def _fetch_validation_jobs_to_perform(
     region_code_filter: Optional[str] = None,
+    validation_name_filter: Optional[Pattern] = None,
 ) -> List[DataValidationJob]:
     validation_checks = get_all_validations()
     region_configs = get_validation_region_configs()
@@ -165,6 +175,10 @@ def _fetch_validation_jobs_to_perform(
     validation_jobs: List[DataValidationJob] = []
     for check in validation_checks:
         if check.validation_name in global_config.disabled:
+            continue
+        if validation_name_filter is not None and not re.search(
+            validation_name_filter, check.validation_name
+        ):
             continue
 
         for region_code, region_config in region_configs.items():
@@ -208,12 +222,3 @@ def _emit_failures(
 def _readable_response(failed_validations: List[DataValidationJobResult]) -> str:
     readable_output = "\n".join([f.__str__() for f in failed_validations])
     return f"Failed validations:\n{readable_output}"
-
-
-if __name__ == "__main__":
-    # This will run validations for all regions against data in the given project, regardless of whether the region is
-    # officially launched in that environment.
-    project_id = GCP_PROJECT_STAGING
-    logging.getLogger().setLevel(logging.INFO)
-    with local_project_id_override(project_id):
-        execute_validation(rematerialize_views=True, region_code_filter=None)
