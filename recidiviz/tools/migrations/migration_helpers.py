@@ -49,7 +49,7 @@ def confirm_correct_db_instance(database: SchemaType) -> None:
 
 
 def confirm_correct_git_branch(
-    repo_root: str, is_prod: bool = False, confirm_hash: Optional[str] = None
+    repo_root: str, confirm_hash: Optional[str] = None
 ) -> None:
     try:
         repo = Repository(repo_root)
@@ -58,13 +58,6 @@ def confirm_correct_git_branch(
         sys.exit(1)
 
     current_branch = repo.head.shorthand
-
-    if is_prod and not current_branch.startswith("releases/"):
-        logging.error(
-            "Migrations run against production must be from a release branch. The current branch is %s.",
-            current_branch,
-        )
-        sys.exit(1)
 
     if confirm_hash is not None:
         if confirm_hash != str(repo.head.target):

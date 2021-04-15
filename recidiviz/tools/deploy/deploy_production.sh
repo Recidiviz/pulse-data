@@ -55,7 +55,9 @@ COMMIT_HASH=$(git rev-parse HEAD) || exit_on_fail
 
 echo "Running migrations on prod-data-client. You may have to enter the passphrase for your ssh key to continue."
 # The remote migration execution script doesn't play nice with run_cmd
-gcloud compute ssh --ssh-flag="-t" prod-data-client --command "cd pulse-data && git fetch && git checkout $LAST_DEPLOYED_GIT_VERSION_TAG \
+gcloud compute ssh --ssh-flag="-t" prod-data-client --command "cd pulse-data \
+    && git fetch --all --tags --prune --prune-tags \
+    && git checkout $COMMIT_HASH \
     && pipenv run ./recidiviz/tools/migrations/run_all_prod_migrations.sh $COMMIT_HASH"
 exit_on_fail
 

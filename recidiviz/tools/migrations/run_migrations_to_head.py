@@ -144,7 +144,7 @@ def main(
 
     if not skip_db_name_check:
         confirm_correct_db_instance(schema_type)
-    confirm_correct_git_branch(repo_root, is_prod=is_prod, confirm_hash=confirm_hash)
+    confirm_correct_git_branch(repo_root, confirm_hash=confirm_hash)
 
     if dry_run:
         db_keys = [SQLAlchemyDatabaseKey.canonical_for_schema(schema_type)]
