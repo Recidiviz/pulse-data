@@ -39,3 +39,7 @@ output "database_user_password" {
 output "instance_name" {
   value = google_sql_database_instance.data.name
 }
+
+output "region" {
+  value = var.region
+}

@@ -15,6 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
+# The a string key for the database instance, e.g. "state" or "justice_counts".
+variable "instance_key" {
+  type = string
+}
+
 # The base name for our database-related secrets per `recidiviz.persistence.database.sqlalchemy_engine_manager`
 variable "base_secret_name" {
   type = string
@@ -93,6 +98,10 @@ locals {
 
   # Retrieve the last element in the resource identifier
   stripped_cloudsql_instance_id = element(local.split_cloudsql_instance_id, length(local.split_cloudsql_instance_id) - 1)
+
+  database_friendly_name = title(replace(var.instance_key, "_"," "))
+
+  bq_connection_friendly_name = var.instance_key == "state" ? "LEGACY ${local.database_friendly_name}" : local.database_friendly_name
 }
 
 
@@ -198,4 +207,25 @@ resource "google_secret_manager_secret" "secret_server_cert" {
 resource "google_secret_manager_secret_version" "secret_version_server_cert" {
   secret      = google_secret_manager_secret.secret_server_cert.name
   secret_data = google_sql_database_instance.data.server_ca_cert[0].cert
+}
+
+# Provides a BQ connection to the default 'postgres' database in
+# this instance.
+resource "google_bigquery_connection" "default_db_bq_connection" {
+  provider = google-beta
+
+  connection_id = "${var.instance_key}_cloudsql"
+  friendly_name = "${local.bq_connection_friendly_name} Cloud SQL Postgres"
+  location      = var.instance_key == "justice_counts" ? "us" : var.region
+  description   = "Connection to the ${local.bq_connection_friendly_name} Cloud SQL database"
+
+  cloud_sql {
+    instance_id = data.google_secret_manager_secret_version.cloudsql_instance_id.secret_data
+    database    = "postgres"
+    type        = "POSTGRES"
+    credential {
+      username = google_sql_user.postgres.name
+      password = google_sql_user.postgres.password
+    }
+  }
 }

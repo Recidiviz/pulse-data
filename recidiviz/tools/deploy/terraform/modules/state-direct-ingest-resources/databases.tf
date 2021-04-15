@@ -17,10 +17,29 @@
 
 resource "google_sql_database" "state_primary" {
   name     = "${lower(var.state_code)}_primary"
-  instance = var.db_instance_name
+  instance = var.cloudsql_instance_name
 }
 
 resource "google_sql_database" "state_secondary" {
   name     = "${lower(var.state_code)}_secondary"
-  instance = var.db_instance_name
+  instance = var.cloudsql_instance_name
+}
+
+resource "google_bigquery_connection" "state_primary_bq_connection" {
+  provider = google-beta
+
+  connection_id = "state_${lower(var.state_code)}_primary_cloudsql"
+  friendly_name = "${var.state_code} State Cloud SQL Postgres"
+  location      = var.cloudsql_instance_region
+  description   = "Connection to the ${var.state_code} State Cloud SQL database"
+
+  cloud_sql {
+    instance_id = var.cloudsql_instance_id
+    database    = google_sql_database.state_primary.name
+    type        = "POSTGRES"
+    credential {
+      username = var.cloudsql_instance_user_name
+      password = var.cloudsql_instance_user_password
+    }
+  }
 }
