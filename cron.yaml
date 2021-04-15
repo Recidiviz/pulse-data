@@ -275,3 +275,11 @@ cron:
       min_backoff_seconds: 30
       max_doublings: 5
       job_age_limit: 9h
+
+  - description: "[Case Triage] Run Cloud SQL import"
+    url: /case_triage_ops/run_standard_cron_gcs_imports
+    schedule: every 4 hours
+    retry_parameters:
+      min_backoff_seconds: 60
+      max_doublings: 5
+      job_age_limit: 3h

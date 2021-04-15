@@ -26,11 +26,11 @@ from recidiviz.admin_panel.case_triage_helpers import (
     columns_for_case_triage_view,
     get_importable_csvs,
 )
-from recidiviz.admin_panel.cloud_sql_export_to_gcs import (
+from recidiviz.case_triage.views.view_config import CASE_TRIAGE_EXPORTED_VIEW_BUILDERS
+from recidiviz.cloud_sql.cloud_sql_export_to_gcs import (
     export_from_cloud_sql_to_gcs_csv,
 )
-from recidiviz.admin_panel.gcs_import_to_cloud_sql import import_gcs_csv_to_cloud_sql
-from recidiviz.case_triage.views.view_config import CASE_TRIAGE_EXPORTED_VIEW_BUILDERS
+from recidiviz.cloud_sql.gcs_import_to_cloud_sql import import_gcs_csv_to_cloud_sql
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.persistence.database.schema.case_triage.schema import (
     CaseUpdate,
@@ -55,7 +55,9 @@ def add_case_triage_routes(bp: Blueprint) -> None:
     """Adds the relevant Case Triage API routes to an input Blueprint."""
 
     # Fetch ETL View Ids for GCS -> Cloud SQL Import
-    def fetch_etl_view_ids() -> Tuple[str, HTTPStatus]:
+    @bp.route("/api/case_triage/fetch_etl_view_ids", methods=["POST"])
+    @requires_gae_auth
+    def _fetch_etl_view_ids() -> Tuple[str, HTTPStatus]:
         override_project_id: Optional[str] = None
         if in_development():
             override_project_id = GCP_PROJECT_STAGING
@@ -66,7 +68,7 @@ def add_case_triage_routes(bp: Blueprint) -> None:
                     for builder in CASE_TRIAGE_EXPORTED_VIEW_BUILDERS
                     if builder.view_id != "etl_officers"
                     # TODO(#6202): Until we get more consistent rosters, pushing `etl_officers`
-                    # may lead to inconsistincies (as we had to manually add 1-2 trusted testers
+                    # may lead to inconsistencies (as we had to manually add 1-2 trusted testers
                     # who were not on our rosters).
                 ]
                 + list(
@@ -76,12 +78,10 @@ def add_case_triage_routes(bp: Blueprint) -> None:
             HTTPStatus.OK,
         )
 
-    bp.route("/api/case_triage/fetch_etl_view_ids", methods=["POST"])(
-        requires_gae_auth(fetch_etl_view_ids)
-    )
-
     # Generate Case Updates export from Cloud SQL -> GCS
-    def generate_case_updates_export() -> Tuple[str, HTTPStatus]:
+    @bp.route("/api/case_triage/generate_case_updates_export", methods=["POST"])
+    @requires_gae_auth
+    def _generate_case_updates_export() -> Tuple[str, HTTPStatus]:
         export_from_cloud_sql_to_gcs_csv(
             SchemaType.CASE_TRIAGE,
             "case_updates",
@@ -99,12 +99,10 @@ def add_case_triage_routes(bp: Blueprint) -> None:
 
         return "", HTTPStatus.OK
 
-    bp.route("/api/case_triage/generate_case_updates_export", methods=["POST"])(
-        requires_gae_auth(generate_case_updates_export)
-    )
-
     # Run GCS -> Cloud SQL Import
-    def run_gcs_import() -> Tuple[str, HTTPStatus]:
+    @bp.route("/api/case_triage/run_gcs_import", methods=["POST"])
+    @requires_gae_auth
+    def _run_gcs_import() -> Tuple[str, HTTPStatus]:
         """Executes an import of data from Google Cloud Storage into Cloud SQL,
         based on the query parameters in the request."""
         if "viewIds" not in request.json:
@@ -115,7 +113,7 @@ def add_case_triage_routes(bp: Blueprint) -> None:
             for builder in CASE_TRIAGE_EXPORTED_VIEW_BUILDERS
             if builder.view_id != "etl_officers"
             # TODO(#6202): Until we get more consistent rosters, pushing `etl_officers`
-            # may lead to inconsistincies (as we had to manually add 1-2 trusted testers
+            # may lead to inconsistencies (as we had to manually add 1-2 trusted testers
             # who were not on our rosters).
         }
         importable_csvs = get_importable_csvs()
@@ -161,11 +159,9 @@ def add_case_triage_routes(bp: Blueprint) -> None:
 
         return "", HTTPStatus.OK
 
-    bp.route("/api/case_triage/run_gcs_import", methods=["POST"])(
-        requires_gae_auth(run_gcs_import)
-    )
-
-    def fetch_po_user_feedback() -> Tuple[str, HTTPStatus]:
+    @bp.route("/api/case_triage/get_po_feedback", methods=["POST"])
+    @requires_gae_auth
+    def _fetch_po_user_feedback() -> Tuple[str, HTTPStatus]:
         session = SessionFactory.for_database(
             SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
         )
@@ -188,7 +184,3 @@ def add_case_triage_routes(bp: Blueprint) -> None:
             ),
             HTTPStatus.OK,
         )
-
-    bp.route("/api/case_triage/get_po_feedback", methods=["POST"])(
-        requires_gae_auth(fetch_po_user_feedback)
-    )
