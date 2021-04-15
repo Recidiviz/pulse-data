@@ -20,12 +20,21 @@ import styled from "styled-components/macro";
 import { rem } from "polished";
 import { observer } from "mobx-react-lite";
 
-import { Assets, Header, spacing } from "@recidiviz/case-triage-components";
+import {
+  Assets,
+  Header,
+  Search,
+  spacing,
+} from "@recidiviz/case-triage-components";
 import AuthWall from "../components/AuthWall";
 import CaseCard from "../components/CaseCard";
 import ClientList from "../components/ClientList";
 import UserSection from "../components/UserSection";
 import { useRootStore } from "../stores";
+import {
+  trackSearchBarEnterPressed,
+  trackSearchBarFocused,
+} from "../analytics";
 
 const Container = styled.div`
   display: flex;
@@ -45,9 +54,11 @@ const Right = styled.div`
 const Home = (props: RouteComponentProps): ReactElement => {
   const { clientsStore } = useRootStore();
 
-  const ClientCard = clientsStore.activeClient ? (
-    <CaseCard client={clientsStore.activeClient} />
-  ) : null;
+  const ClientCard =
+    clientsStore.activeClient &&
+    clientsStore.isVisible(clientsStore.activeClient) ? (
+      <CaseCard client={clientsStore.activeClient} />
+    ) : null;
 
   return (
     <AuthWall>
@@ -56,6 +67,20 @@ const Home = (props: RouteComponentProps): ReactElement => {
           <Link to="/">
             <img src={Assets.LOGO} alt="Recidiviz - Case Triage" />
           </Link>
+        }
+        center={
+          <Search
+            inputClassName="fs-exclude"
+            placeholder="Search"
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+              clientsStore.filterClients(e.target.value);
+            }}
+            onPressEnter={(e: React.KeyboardEvent<HTMLInputElement>) => {
+              trackSearchBarEnterPressed((e.target as HTMLInputElement).value);
+            }}
+            onFocus={trackSearchBarFocused}
+            value={clientsStore.clientSearchString}
+          />
         }
         right={<UserSection />}
       />
