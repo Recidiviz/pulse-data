@@ -33,6 +33,7 @@ keys_to_ignore:
   - prev_loc_ldesc          # Previous location name - handled manually in controller
   - next_loc_ldesc          # Next location name - handled manually in controller
 
+  - move_srl                # Unused - serial id for the associated movement
   - empl_cd                 # Unused - Employee code
   - empl_title              # Unused - Supervising officer role
   - loc_ldesc               # Unused - Location name
