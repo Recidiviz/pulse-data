@@ -21,22 +21,3 @@ resource "google_project_service" "bigquery_connection_api" {
   disable_dependent_services = true
   disable_on_destroy         = true
 }
-
-resource "google_bigquery_connection" "justice_counts_connection" {
-  provider = google-beta
-
-  connection_id = "justice_counts_cloudsql"
-  friendly_name = "Justice Counts Cloud SQL Postgres"
-  location      = "us"
-  description   = "Connection to the Justice Counts Cloud SQL database"
-
-  cloud_sql {
-    instance_id = module.justice_counts_database.cloudsql_instance_id
-    database    = module.justice_counts_database.default_database_name
-    type        = "POSTGRES"
-    credential {
-      username = module.justice_counts_database.database_user_name
-      password = module.justice_counts_database.database_user_password
-    }
-  }
-}
