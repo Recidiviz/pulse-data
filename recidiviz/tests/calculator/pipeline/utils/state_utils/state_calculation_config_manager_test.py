@@ -32,6 +32,7 @@ from recidiviz.calculator.pipeline.utils.state_utils import (
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_supervising_officer_and_location_info_from_supervision_period,
     sorted_violation_responses_in_window,
+    state_specific_specialized_purpose_for_incarceration_override,
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
@@ -937,4 +938,86 @@ class TestSortedViolationResponsesInWindow(unittest.TestCase):
                 )
             ],
             responses_in_window,
+        )
+
+
+class TestStateSpecificSpecializedPurposeForIncarcerationOverride(unittest.TestCase):
+    """Tests the state_specific_specialized_purpose_for_incarceration_override."""
+
+    def test_state_specific_specialized_purpose_for_incarceration_override_us_mo_set_to_parole_board_hold(
+        self,
+    ):
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            external_id="ip1",
+            state_code="US_MO",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2017, 5, 17),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            release_date=date(2019, 5, 29),
+            release_reason=ReleaseReason.SENTENCE_SERVED,
+            specialized_purpose_for_incarceration=None,
+        )
+
+        specialized_purpose_for_incarceration: StateSpecializedPurposeForIncarceration = state_specific_specialized_purpose_for_incarceration_override(
+            incarceration_period,
+            incarceration_period.admission_reason,
+        )
+
+        self.assertEqual(
+            specialized_purpose_for_incarceration,
+            StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+        )
+
+    def test_state_specific_specialized_purpose_for_incarceration_override_us_mo_do_not_set_to_parole_board_hold(
+        self,
+    ):
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            external_id="ip1",
+            state_code="US_MO",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2017, 5, 17),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            release_date=date(2019, 5, 29),
+            release_reason=ReleaseReason.SENTENCE_SERVED,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+        )
+
+        specialized_purpose_for_incarceration: StateSpecializedPurposeForIncarceration = state_specific_specialized_purpose_for_incarceration_override(
+            incarceration_period,
+            incarceration_period.admission_reason,
+        )
+
+        self.assertEqual(
+            specialized_purpose_for_incarceration,
+            StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+        )
+
+    def test_state_specific_specialized_purpose_for_incarceration_override_state_not_applicable(
+        self,
+    ):
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            external_id="ip1",
+            state_code="US_XX",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2017, 5, 17),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            release_date=date(2019, 5, 29),
+            release_reason=ReleaseReason.SENTENCE_SERVED,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        specialized_purpose_for_incarceration: StateSpecializedPurposeForIncarceration = state_specific_specialized_purpose_for_incarceration_override(
+            incarceration_period,
+            incarceration_period.admission_reason,
+        )
+
+        self.assertEqual(
+            specialized_purpose_for_incarceration,
+            StateSpecializedPurposeForIncarceration.GENERAL,
         )
