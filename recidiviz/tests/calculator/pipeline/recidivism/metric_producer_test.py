@@ -33,9 +33,6 @@ from recidiviz.calculator.pipeline.recidivism.release_event import (
     RecidivismReleaseEvent,
     NonRecidivismReleaseEvent,
 )
-from recidiviz.calculator.pipeline.recidivism.release_event import (
-    ReincarcerationReturnType,
-)
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
@@ -78,7 +75,6 @@ class TestReincarcerations(unittest.TestCase):
             _COUNTY_OF_RESIDENCE,
             reincarceration_date,
             "Sing Sing",
-            ReincarcerationReturnType.NEW_ADMISSION,
         )
         second_event = NonRecidivismReleaseEvent(
             "CA",
@@ -108,7 +104,6 @@ class TestReincarcerations(unittest.TestCase):
             _COUNTY_OF_RESIDENCE,
             reincarceration_date,
             "Sing Sing",
-            ReincarcerationReturnType.NEW_ADMISSION,
         )
         second_event = RecidivismReleaseEvent(
             "CA",
@@ -118,7 +113,6 @@ class TestReincarcerations(unittest.TestCase):
             _COUNTY_OF_RESIDENCE,
             reincarceration_date,
             "Sing Sing",
-            ReincarcerationReturnType.NEW_ADMISSION,
         )
         release_events = {2018: [first_event], 2022: [second_event]}
 
@@ -155,8 +149,6 @@ class TestReincarcerationsInWindow(unittest.TestCase):
                 original_admission_date=date(2000, 1, 1),
                 release_date=date(2001, 1, 1),
                 reincarceration_date=return_date,
-                return_type=ReincarcerationReturnType.NEW_ADMISSION,
-                from_supervision_type=None,
             )
             for return_date in return_dates
         }
@@ -184,8 +176,6 @@ class TestReincarcerationsInWindow(unittest.TestCase):
                 original_admission_date=date(2000, 1, 1),
                 release_date=date(2001, 1, 1),
                 reincarceration_date=return_date,
-                return_type=ReincarcerationReturnType.NEW_ADMISSION,
-                from_supervision_type=None,
             )
             for return_date in return_dates
         }
@@ -214,8 +204,6 @@ class TestReincarcerationsInWindow(unittest.TestCase):
                 original_admission_date=date(2000, 1, 1),
                 release_date=date(2001, 1, 1),
                 reincarceration_date=return_date,
-                return_type=ReincarcerationReturnType.NEW_ADMISSION,
-                from_supervision_type=None,
             )
             for return_date in return_dates
         }
@@ -383,7 +371,6 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     _COUNTY_OF_RESIDENCE,
                     date(2014, 5, 12),
                     "Upstate",
-                    ReincarcerationReturnType.NEW_ADMISSION,
                 )
             ]
         }
@@ -444,7 +431,6 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     _COUNTY_OF_RESIDENCE,
                     date(1910, 8, 12),
                     "Upstate",
-                    ReincarcerationReturnType.NEW_ADMISSION,
                 )
             ],
             1912: [
@@ -456,7 +442,6 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     _COUNTY_OF_RESIDENCE,
                     date(1914, 7, 15),
                     "Sing Sing",
-                    ReincarcerationReturnType.NEW_ADMISSION,
                 )
             ],
         }
@@ -531,7 +516,6 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     _COUNTY_OF_RESIDENCE,
                     date(1910, 1, 12),
                     "Upstate",
-                    return_type=ReincarcerationReturnType.NEW_ADMISSION,
                 ),
                 RecidivismReleaseEvent(
                     "US_XX",
@@ -541,9 +525,6 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     _COUNTY_OF_RESIDENCE,
                     date(1910, 10, 15),
                     "Sing Sing",
-                    return_type=ReincarcerationReturnType.REVOCATION,
-                    from_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                    source_violation_type=StateSupervisionViolationType.FELONY,
                 ),
             ],
         }
@@ -569,47 +550,12 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
         expected_count = 20 + 1 + 10 + 1
 
-        expected_return_type_counts = {
-            ReincarcerationReturnType.NEW_ADMISSION: 11,
-            ReincarcerationReturnType.REVOCATION: 21,
-        }
-
-        expected_from_supervision_type_counts = {
-            StateSupervisionPeriodSupervisionType.PAROLE: 21,
-            None: 11,
-        }
-
-        expected_source_violation_type_counts = {
-            StateSupervisionViolationType.FELONY: 21,
-            None: 11,
-        }
-
         # Multiplied by 2 to include the county of residence field
         assert len(metrics) == expected_count
-
-        return_type_counts: Dict[ReincarcerationReturnType, int] = defaultdict(int)
-        from_supervision_type_counts: Dict[
-            StateSupervisionPeriodSupervisionType, int
-        ] = defaultdict(int)
-        source_violation_type_counts: Dict[
-            StateSupervisionViolationType, int
-        ] = defaultdict(int)
 
         for metric in metrics:
             if isinstance(metric, ReincarcerationRecidivismRateMetric):
                 self.assertTrue(metric.did_recidivate)
-
-            return_type_counts[metric.return_type] += 1
-            from_supervision_type_counts[metric.from_supervision_type] += 1
-            source_violation_type_counts[metric.source_violation_type] += 1
-
-        self.assertEqual(expected_return_type_counts, return_type_counts)
-        self.assertEqual(
-            expected_from_supervision_type_counts, from_supervision_type_counts
-        )
-        self.assertEqual(
-            expected_source_violation_type_counts, source_violation_type_counts
-        )
 
     def test_produce_recidivism_metrics_multiple_releases_in_year(self):
         """Tests the produce_recidivism_metrics function where there are multiple releases in the same year."""
@@ -639,7 +585,6 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     _COUNTY_OF_RESIDENCE,
                     date(1908, 5, 12),
                     "Upstate",
-                    ReincarcerationReturnType.NEW_ADMISSION,
                 ),
                 NonRecidivismReleaseEvent(
                     "US_XX",
@@ -709,7 +654,6 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     _COUNTY_OF_RESIDENCE,
                     date(1913, 8, 12),
                     "Upstate",
-                    ReincarcerationReturnType.NEW_ADMISSION,
                 )
             ],
             1912: [
@@ -721,7 +665,6 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     _COUNTY_OF_RESIDENCE,
                     date(1913, 8, 12),
                     "Upstate",
-                    ReincarcerationReturnType.NEW_ADMISSION,
                 )
             ],
         }
@@ -788,7 +731,6 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     _COUNTY_OF_RESIDENCE,
                     date(2009, 9, 19),
                     "Upstate",
-                    ReincarcerationReturnType.NEW_ADMISSION,
                 )
             ]
         }
@@ -902,7 +844,6 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     _COUNTY_OF_RESIDENCE,
                     date(2008, 10, 12),
                     "Upstate",
-                    ReincarcerationReturnType.NEW_ADMISSION,
                 )
             ]
         }
@@ -968,7 +909,6 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     _COUNTY_OF_RESIDENCE,
                     date(2014, 5, 12),
                     "Upstate",
-                    ReincarcerationReturnType.NEW_ADMISSION,
                 )
             ]
         }
@@ -1034,7 +974,6 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     _COUNTY_OF_RESIDENCE,
                     date(2014, 5, 12),
                     "Upstate",
-                    ReincarcerationReturnType.NEW_ADMISSION,
                 )
             ]
         }
@@ -1104,7 +1043,6 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     _COUNTY_OF_RESIDENCE,
                     date(2014, 5, 12),
                     "Upstate",
-                    ReincarcerationReturnType.NEW_ADMISSION,
                 )
             ]
         }
@@ -1167,8 +1105,6 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     _COUNTY_OF_RESIDENCE,
                     date(2014, 5, 12),
                     "Upstate",
-                    ReincarcerationReturnType.REVOCATION,
-                    from_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 )
             ]
         }
@@ -1230,8 +1166,6 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     _COUNTY_OF_RESIDENCE,
                     date(2014, 5, 12),
                     "Upstate",
-                    ReincarcerationReturnType.REVOCATION,
-                    from_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 )
             ]
         }
@@ -1295,9 +1229,6 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     _COUNTY_OF_RESIDENCE,
                     date(2014, 5, 12),
                     "Upstate",
-                    ReincarcerationReturnType.REVOCATION,
-                    from_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                    source_violation_type=StateSupervisionViolationType.TECHNICAL,
                 )
             ]
         }
@@ -1358,7 +1289,6 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     _COUNTY_OF_RESIDENCE,
                     date(2014, 5, 12),
                     "Upstate",
-                    ReincarcerationReturnType.NEW_ADMISSION,
                 )
             ]
         }
@@ -1453,7 +1383,6 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     _COUNTY_OF_RESIDENCE,
                     date(1914, 3, 12),
                     "Upstate",
-                    ReincarcerationReturnType.NEW_ADMISSION,
                 )
             ],
             1914: [
@@ -1465,7 +1394,6 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     _COUNTY_OF_RESIDENCE,
                     date(1914, 9, 1),
                     "Upstate",
-                    ReincarcerationReturnType.NEW_ADMISSION,
                 )
             ],
         }
@@ -1539,7 +1467,6 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     _COUNTY_OF_RESIDENCE,
                     date(1914, 3, 12),
                     "Upstate",
-                    ReincarcerationReturnType.NEW_ADMISSION,
                 )
             ],
             1914: [
@@ -1551,7 +1478,6 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     _COUNTY_OF_RESIDENCE,
                     date(1914, 3, 30),
                     "Upstate",
-                    ReincarcerationReturnType.NEW_ADMISSION,
                 )
             ],
         }

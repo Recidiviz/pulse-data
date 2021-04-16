@@ -52,10 +52,6 @@ from recidiviz.calculator.pipeline.utils.beam_utils import (
     ImportTableAsKVTuples,
     ImportTable,
 )
-from recidiviz.calculator.pipeline.utils.entity_hydration_utils import (
-    SetViolationResponseOnIncarcerationPeriod,
-    SetViolationOnViolationsResponse,
-)
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     get_job_id,
     person_and_kwargs_for_identifier,
@@ -339,74 +335,9 @@ def run(
             dataset=input_dataset,
             root_entity_class=entities.StateIncarcerationPeriod,
             unifying_id_field=entities.StatePerson.get_class_id_name(),
-            build_related_entities=True,
+            build_related_entities=False,
             unifying_id_field_filter_set=person_id_filter_set,
             state_code=state_code,
-        )
-
-        # Get StateSupervisionViolations
-        supervision_violations = p | "Load SupervisionViolations" >> BuildRootEntity(
-            dataset=input_dataset,
-            root_entity_class=entities.StateSupervisionViolation,
-            unifying_id_field=entities.StatePerson.get_class_id_name(),
-            build_related_entities=True,
-            unifying_id_field_filter_set=person_id_filter_set,
-            state_code=state_code,
-        )
-
-        # TODO(#2769): Don't bring this in as a root entity
-        # Get StateSupervisionViolationResponses
-        supervision_violation_responses = (
-            p
-            | "Load SupervisionViolationResponses"
-            >> BuildRootEntity(
-                dataset=input_dataset,
-                root_entity_class=entities.StateSupervisionViolationResponse,
-                unifying_id_field=entities.StatePerson.get_class_id_name(),
-                build_related_entities=True,
-                unifying_id_field_filter_set=person_id_filter_set,
-                state_code=state_code,
-            )
-        )
-
-        # Group StateSupervisionViolationResponses and
-        # StateSupervisionViolations by person_id
-        supervision_violations_and_responses = (
-            {
-                "violations": supervision_violations,
-                "violation_responses": supervision_violation_responses,
-            }
-            | "Group StateSupervisionViolationResponses to "
-            "StateSupervisionViolations" >> beam.CoGroupByKey()
-        )
-
-        # Set the fully hydrated StateSupervisionViolation entities on
-        # the corresponding StateSupervisionViolationResponses
-        violation_responses_with_hydrated_violations = (
-            supervision_violations_and_responses
-            | "Set hydrated StateSupervisionViolations on "
-            "the StateSupervisionViolationResponses"
-            >> beam.ParDo(SetViolationOnViolationsResponse())
-        )
-
-        # Group StateIncarcerationPeriods and StateSupervisionViolationResponses
-        # by person_id
-        incarceration_periods_and_violation_responses = (
-            {
-                "incarceration_periods": incarceration_periods,
-                "violation_responses": violation_responses_with_hydrated_violations,
-            }
-            | "Group StateIncarcerationPeriods to "
-            "StateSupervisionViolationResponses" >> beam.CoGroupByKey()
-        )
-
-        # Set the fully hydrated StateSupervisionViolationResponse entities on
-        # the corresponding StateIncarcerationPeriods
-        incarceration_periods_with_source_violations = (
-            incarceration_periods_and_violation_responses
-            | "Set hydrated StateSupervisionViolationResponses on "
-            "the StateIncarcerationPeriods"
-            >> beam.ParDo(SetViolationResponseOnIncarcerationPeriod())
         )
 
         # Bring in the table that associates people and their county of residence
@@ -425,7 +356,7 @@ def run(
         # Group each StatePerson with their StateIncarcerationPeriods
         person_entities = {
             "person": persons,
-            "incarceration_periods": incarceration_periods_with_source_violations,
+            "incarceration_periods": incarceration_periods,
             "persons_to_recent_county_of_residence": person_id_to_county_kv,
         } | "Group StatePerson to StateIncarcerationPeriods" >> beam.CoGroupByKey()
 

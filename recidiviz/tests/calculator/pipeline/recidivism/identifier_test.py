@@ -28,11 +28,8 @@ from recidiviz.calculator.pipeline.recidivism import identifier
 from recidiviz.calculator.pipeline.recidivism.release_event import (
     RecidivismReleaseEvent,
     NonRecidivismReleaseEvent,
-    ReincarcerationReturnType,
 )
-from recidiviz.calculator.pipeline.recidivism.metrics import (
-    StateSupervisionPeriodSupervisionType,
-)
+
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodStatus,
@@ -135,8 +132,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                     reincarceration_date=revocation_incarceration_period.admission_date,
                     reincarceration_facility=None,
                     county_of_residence=_COUNTY_OF_RESIDENCE,
-                    from_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                    return_type=ReincarcerationReturnType.REVOCATION,
                 )
             ],
             release_events_by_cohort[2010],
@@ -202,8 +197,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                     reincarceration_date=temporary_custody_reincarceration.admission_date,
                     reincarceration_facility=None,
                     county_of_residence=_COUNTY_OF_RESIDENCE,
-                    from_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                    return_type=ReincarcerationReturnType.REVOCATION,
                 )
             ],
             release_events_by_cohort[2010],
@@ -266,7 +259,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                     reincarceration_date=first_reincarceration_period.admission_date,
                     reincarceration_facility=None,
                     county_of_residence=_COUNTY_OF_RESIDENCE,
-                    return_type=ReincarcerationReturnType.NEW_ADMISSION,
                 )
             ],
             release_events_by_cohort[2010],
@@ -282,7 +274,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                     reincarceration_date=subsequent_reincarceration_period.admission_date,
                     reincarceration_facility=None,
                     county_of_residence=_COUNTY_OF_RESIDENCE,
-                    return_type=ReincarcerationReturnType.NEW_ADMISSION,
                 )
             ],
             release_events_by_cohort[2014],
@@ -578,8 +569,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 reincarceration_date=first_reincarceration_period.admission_date,
                 reincarceration_facility=None,
-                return_type=ReincarcerationReturnType.REVOCATION,
-                from_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             )
         ]
 
@@ -641,8 +630,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 reincarceration_date=first_reincarceration_period.admission_date,
                 reincarceration_facility=None,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
-                return_type=ReincarcerationReturnType.REVOCATION,
-                from_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             )
         ]
 
@@ -704,7 +691,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 reincarceration_date=first_reincarceration_period.admission_date,
                 reincarceration_facility=None,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
-                return_type=ReincarcerationReturnType.NEW_ADMISSION,
             )
         ]
 
@@ -766,8 +752,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 reincarceration_date=first_reincarceration_period.admission_date,
                 reincarceration_facility=None,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
-                return_type=ReincarcerationReturnType.REVOCATION,
-                from_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             )
         ]
 
@@ -892,21 +876,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         assert len(release_events_by_cohort) == 0
 
 
-_RETURN_TYPES_BY_STANDARD_ADMISSION: Dict[
-    AdmissionReason, ReincarcerationReturnType
-] = {
-    AdmissionReason.EXTERNAL_UNKNOWN: ReincarcerationReturnType.NEW_ADMISSION,
-    AdmissionReason.INTERNAL_UNKNOWN: ReincarcerationReturnType.NEW_ADMISSION,
-    AdmissionReason.NEW_ADMISSION: ReincarcerationReturnType.NEW_ADMISSION,
-    AdmissionReason.ADMITTED_FROM_SUPERVISION: ReincarcerationReturnType.REVOCATION,
-    AdmissionReason.PAROLE_REVOCATION: ReincarcerationReturnType.REVOCATION,
-    AdmissionReason.PROBATION_REVOCATION: ReincarcerationReturnType.REVOCATION,
-    AdmissionReason.DUAL_REVOCATION: ReincarcerationReturnType.REVOCATION,
-    AdmissionReason.SANCTION_ADMISSION: ReincarcerationReturnType.REVOCATION,
-    AdmissionReason.TRANSFER: ReincarcerationReturnType.NEW_ADMISSION,
-}
-
-
 _SHOULD_BE_FILTERED_OUT_IN_VALIDATION_ADMISSION: List[AdmissionReason] = [
     AdmissionReason.ADMITTED_IN_ERROR,
     AdmissionReason.RETURN_FROM_ESCAPE,
@@ -1012,120 +981,6 @@ class TestShouldIncludeInReleaseCohort(unittest.TestCase):
             identifier.should_include_in_release_cohort(
                 status, release_date, release_reason, None
             )
-
-
-class TestGetReturnType(unittest.TestCase):
-    """Tests the get_return_type function."""
-
-    def test_get_return_type(self):
-        """Tests the get_return_type function for all possible admission
-        reasons."""
-
-        for admission_reason in AdmissionReason:
-            if admission_reason in (
-                AdmissionReason.RETURN_FROM_ESCAPE,
-                AdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
-            ):
-                with pytest.raises(ValueError) as e:
-                    _ = identifier.get_return_type(admission_reason)
-                    assert str(e) == (
-                        f"should_include_in_release_cohort is not"
-                        f" effectively filtering. "
-                        f"Found unexpected admission_reason of:"
-                        f" {admission_reason}"
-                    )
-            elif admission_reason in _SHOULD_BE_FILTERED_OUT_IN_VALIDATION_ADMISSION:
-                with pytest.raises(ValueError) as e:
-                    _ = identifier.get_return_type(admission_reason)
-                    assert str(e) == (
-                        "validate_sort_and_collapse_"
-                        "incarceration_periods is "
-                        "not effectively filtering."
-                        " Found unexpected admission_reason"
-                        f" of: {admission_reason}"
-                    )
-            else:
-                return_type = identifier.get_return_type(admission_reason)
-                if admission_reason in (
-                    AdmissionReason.ADMITTED_IN_ERROR,
-                    AdmissionReason.EXTERNAL_UNKNOWN,
-                    AdmissionReason.INTERNAL_UNKNOWN,
-                    AdmissionReason.NEW_ADMISSION,
-                    AdmissionReason.TRANSFER,
-                    AdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE,
-                ):
-                    assert return_type == ReincarcerationReturnType.NEW_ADMISSION
-                elif admission_reason in (
-                    AdmissionReason.ADMITTED_FROM_SUPERVISION,
-                    AdmissionReason.PAROLE_REVOCATION,
-                    AdmissionReason.PROBATION_REVOCATION,
-                    AdmissionReason.DUAL_REVOCATION,
-                    AdmissionReason.SANCTION_ADMISSION,
-                ):
-                    assert return_type == ReincarcerationReturnType.REVOCATION
-                else:
-                    # StateIncarcerationPeriodAdmissionReason enum type not
-                    # handled in get_return_type
-                    self.fail()
-
-    def test_get_return_type_valid_combinations(self):
-        """Tests the get_return_type function for all possible admission reasons."""
-        for admission_reason in AdmissionReason:
-            if admission_reason in _SHOULD_BE_FILTERED_OUT_IN_VALIDATION_ADMISSION:
-                with pytest.raises(ValueError):
-                    _ = identifier.get_return_type(admission_reason)
-            else:
-                return_type = identifier.get_return_type(admission_reason)
-                self.assertEqual(
-                    _RETURN_TYPES_BY_STANDARD_ADMISSION.get(admission_reason),
-                    return_type,
-                )
-
-    def test_get_return_type_invalid(self):
-        """Tests the get_return_type function with an invalid admission reason."""
-        with pytest.raises(ValueError):
-            _ = identifier.get_return_type("INVALID")
-
-
-class TestGetFromSupervisionType(unittest.TestCase):
-    """Tests the get_from_supervision_type function."""
-
-    def test_get_from_supervision_type(self):
-        """Tests the get_from_supervision_type function for all possible
-        admission reasons."""
-        for admission_reason in AdmissionReason:
-            if admission_reason in _SHOULD_BE_FILTERED_OUT_IN_VALIDATION_ADMISSION:
-                with pytest.raises(ValueError):
-                    _ = identifier.get_from_supervision_type(admission_reason)
-            else:
-                from_supervision_type = identifier.get_from_supervision_type(
-                    admission_reason
-                )
-                if admission_reason in [
-                    AdmissionReason.EXTERNAL_UNKNOWN,
-                    AdmissionReason.INTERNAL_UNKNOWN,
-                    AdmissionReason.NEW_ADMISSION,
-                    AdmissionReason.TRANSFER,
-                ]:
-                    assert not from_supervision_type
-                elif admission_reason in [
-                    AdmissionReason.ADMITTED_FROM_SUPERVISION,
-                    AdmissionReason.PAROLE_REVOCATION,
-                    AdmissionReason.PROBATION_REVOCATION,
-                    AdmissionReason.DUAL_REVOCATION,
-                ]:
-                    assert from_supervision_type
-
-    def test_get_from_supervision_type_invalid(self):
-        """Tests the get_from_supervision_type function for an invalid
-        admission reason."""
-        with pytest.raises(ValueError) as e:
-
-            _ = identifier.get_from_supervision_type("INVALID")
-
-        assert str(e.value) == (
-            "Enum case not handled for StateIncarcerationPeriodAdmissionReason of type: INVALID."
-        )
 
 
 class TestFindValidReincarcerationPeriod(unittest.TestCase):

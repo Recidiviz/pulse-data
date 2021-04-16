@@ -320,15 +320,8 @@ def reincarceration_rate_metrics_for_release_event(
         elif isinstance(release_event, RecidivismReleaseEvent):
             additional_attributes["did_recidivate"] = True
 
-            for reincarceration in reincarceration_admissions:
+            for _ in reincarceration_admissions:
                 additional_attributes_copy = additional_attributes.copy()
-                additional_attributes_copy["return_type"] = reincarceration.return_type
-                additional_attributes_copy[
-                    "from_supervision_type"
-                ] = reincarceration.from_supervision_type
-                additional_attributes_copy[
-                    "source_violation_type"
-                ] = reincarceration.source_violation_type
 
                 metric = build_metric(
                     pipeline="recidivism",
