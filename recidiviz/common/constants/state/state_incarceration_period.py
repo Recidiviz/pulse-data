@@ -54,6 +54,11 @@ class StateIncarcerationPeriodAdmissionReason(EntityEnum, metaclass=EntityEnumMe
     ADMITTED_IN_ERROR = (
         state_enum_strings.state_incarceration_period_admission_reason_admitted_in_error
     )
+    # This is an ingest-only enum, and should only be used as a placeholder if we are unable
+    # to determine whether this is a sanction, revocation, or temporary custody admission.
+    ADMITTED_FROM_SUPERVISION = (
+        state_enum_strings.state_incarceration_period_admission_reason_admitted_from_supervision
+    )
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     INTERNAL_UNKNOWN = enum_strings.internal_unknown
     NEW_ADMISSION = (
@@ -73,9 +78,6 @@ class StateIncarcerationPeriodAdmissionReason(EntityEnum, metaclass=EntityEnumMe
     )
     RETURN_FROM_ESCAPE = (
         state_enum_strings.state_incarceration_period_admission_reason_return_from_escape
-    )
-    RETURN_FROM_SUPERVISION = (
-        state_enum_strings.state_incarceration_period_admission_reason_return_from_supervision
     )
     SANCTION_ADMISSION = (
         state_enum_strings.state_incarceration_period_admission_reason_sanction_admission
@@ -181,7 +183,7 @@ def is_revocation_admission(
         StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
         StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
         # This is sometimes, but not always, a revocation admission. Handled by state-specific revocation logic.
-        StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
+        StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
         StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
     ]
     non_revocation_types = [
@@ -219,7 +221,7 @@ def is_official_admission(
         StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
         StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
         StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
-        StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
+        StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
         StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
         StateIncarcerationPeriodAdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE,
     ]
@@ -311,6 +313,7 @@ _STATE_INCARCERATION_PERIOD_STATUS_MAP = {
 
 _STATE_INCARCERATION_PERIOD_ADMISSION_REASON_MAP = {
     "ADMITTED IN ERROR": StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,
+    "ADMITTED FROM SUPERVISION": StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
     "DUAL REVOCATION": StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
     "ERROR": StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,
     "EXTERNAL UNKNOWN": StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN,
@@ -320,7 +323,6 @@ _STATE_INCARCERATION_PERIOD_ADMISSION_REASON_MAP = {
     "PROBATION REVOCATION": StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
     "RETURN FROM ESCAPE": StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
     "RETURN FROM ERRONEOUS RELEASE": StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
-    "RETURN FROM SUPERVISION": StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
     "COURT": StateIncarcerationPeriodAdmissionReason.TRANSFER,
     "HOSPITAL": StateIncarcerationPeriodAdmissionReason.TRANSFER,
     "MEDICAL": StateIncarcerationPeriodAdmissionReason.TRANSFER,

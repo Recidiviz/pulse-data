@@ -55,7 +55,7 @@ def get_pre_incarceration_supervision_type_from_incarceration_period(
         AdmissionReason.ADMITTED_IN_ERROR,
         AdmissionReason.EXTERNAL_UNKNOWN,
         AdmissionReason.INTERNAL_UNKNOWN,
-        AdmissionReason.RETURN_FROM_SUPERVISION,
+        AdmissionReason.ADMITTED_FROM_SUPERVISION,
         AdmissionReason.NEW_ADMISSION,
         AdmissionReason.TRANSFER,
         AdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE,

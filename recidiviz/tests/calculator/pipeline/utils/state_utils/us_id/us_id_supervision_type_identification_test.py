@@ -61,7 +61,7 @@ class UsIdGetPreIncarcerationSupervisionTypeTest(unittest.TestCase):
     def test_usId_getPreIncarcerationSupervisionType(self):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
             external_id="ip1",
             state_code="US_ID",
             admission_date=date(2019, 9, 13),
@@ -99,7 +99,7 @@ class UsIdGetPreIncarcerationSupervisionTypeTest(unittest.TestCase):
     def test_usId_getPreIncarcerationSupervisionType_ignoreOutOfDatePeriods_After(self):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
             external_id="ip1",
             state_code="US_ID",
             admission_date=date(2019, 9, 13),
@@ -136,7 +136,7 @@ class UsIdGetPreIncarcerationSupervisionTypeTest(unittest.TestCase):
     ):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
             external_id="ip1",
             state_code="US_ID",
             admission_date=date(2019, 9, 13),
@@ -177,7 +177,7 @@ class UsIdGetPostIncarcerationSupervisionTypeTest(unittest.TestCase):
     def test_usId_getPostIncarcerationSupervisionType(self):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
             external_id="ip1",
             state_code="US_ID",
             admission_date=date(2019, 9, 13),
@@ -216,7 +216,7 @@ class UsIdGetPostIncarcerationSupervisionTypeTest(unittest.TestCase):
     ):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
             external_id="ip1",
             state_code="US_ID",
             admission_date=date(2019, 9, 13),
@@ -255,7 +255,7 @@ class UsIdGetPostIncarcerationSupervisionTypeTest(unittest.TestCase):
     ):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
             external_id="ip1",
             state_code="US_ID",
             admission_date=date(2019, 9, 13),
@@ -294,7 +294,7 @@ class UsIdGetPostIncarcerationSupervisionTypeTest(unittest.TestCase):
     def test_usId_getPostIncarcerationSupervisionType_NotConditionalRelease(self):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
             external_id="ip1",
             state_code="US_ID",
             admission_date=date(2019, 9, 13),

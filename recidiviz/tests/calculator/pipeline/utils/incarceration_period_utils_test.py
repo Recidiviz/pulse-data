@@ -1133,7 +1133,7 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
             external_id="1",
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.RETURN_FROM_SUPERVISION,
+            admission_reason=AdmissionReason.ADMITTED_FROM_SUPERVISION,
             release_date=date(2009, 12, 4),
             release_reason=ReleaseReason.TRANSFER,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
@@ -1202,7 +1202,7 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
             external_id="1",
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.RETURN_FROM_SUPERVISION,
+            admission_reason=AdmissionReason.ADMITTED_FROM_SUPERVISION,
             release_date=date(2009, 12, 4),
             release_reason=ReleaseReason.DEATH,
         )

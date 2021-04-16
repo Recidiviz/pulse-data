@@ -898,7 +898,7 @@ _RETURN_TYPES_BY_STANDARD_ADMISSION: Dict[
     AdmissionReason.EXTERNAL_UNKNOWN: ReincarcerationReturnType.NEW_ADMISSION,
     AdmissionReason.INTERNAL_UNKNOWN: ReincarcerationReturnType.NEW_ADMISSION,
     AdmissionReason.NEW_ADMISSION: ReincarcerationReturnType.NEW_ADMISSION,
-    AdmissionReason.RETURN_FROM_SUPERVISION: ReincarcerationReturnType.REVOCATION,
+    AdmissionReason.ADMITTED_FROM_SUPERVISION: ReincarcerationReturnType.REVOCATION,
     AdmissionReason.PAROLE_REVOCATION: ReincarcerationReturnType.REVOCATION,
     AdmissionReason.PROBATION_REVOCATION: ReincarcerationReturnType.REVOCATION,
     AdmissionReason.DUAL_REVOCATION: ReincarcerationReturnType.REVOCATION,
@@ -1056,7 +1056,7 @@ class TestGetReturnType(unittest.TestCase):
                 ):
                     assert return_type == ReincarcerationReturnType.NEW_ADMISSION
                 elif admission_reason in (
-                    AdmissionReason.RETURN_FROM_SUPERVISION,
+                    AdmissionReason.ADMITTED_FROM_SUPERVISION,
                     AdmissionReason.PAROLE_REVOCATION,
                     AdmissionReason.PROBATION_REVOCATION,
                     AdmissionReason.DUAL_REVOCATION,
@@ -1109,7 +1109,7 @@ class TestGetFromSupervisionType(unittest.TestCase):
                 ]:
                     assert not from_supervision_type
                 elif admission_reason in [
-                    AdmissionReason.RETURN_FROM_SUPERVISION,
+                    AdmissionReason.ADMITTED_FROM_SUPERVISION,
                     AdmissionReason.PAROLE_REVOCATION,
                     AdmissionReason.PROBATION_REVOCATION,
                     AdmissionReason.DUAL_REVOCATION,

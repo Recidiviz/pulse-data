@@ -100,7 +100,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=date(2017, 5, 17),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
             release_date=date(2019, 5, 29),
             release_reason=ReleaseReason.SENTENCE_SERVED,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
@@ -131,7 +131,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=date(2017, 5, 17),
-            admission_reason=AdmissionReason.RETURN_FROM_SUPERVISION,
+            admission_reason=AdmissionReason.ADMITTED_FROM_SUPERVISION,
             release_date=date(2019, 5, 29),
             release_reason=ReleaseReason.SENTENCE_SERVED,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
@@ -170,7 +170,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=date(2017, 5, 17),
-            admission_reason=AdmissionReason.RETURN_FROM_SUPERVISION,
+            admission_reason=AdmissionReason.ADMITTED_FROM_SUPERVISION,
             release_date=date(2017, 5, 29),
             release_reason=ReleaseReason.TRANSFER,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
@@ -229,7 +229,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=supervision_termination_date
             + relativedelta(months=SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT + 1),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 

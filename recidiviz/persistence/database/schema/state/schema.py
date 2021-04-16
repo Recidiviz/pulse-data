@@ -233,6 +233,7 @@ state_incarceration_facility_security_level = Enum(
 
 state_incarceration_period_admission_reason = Enum(
     state_enum_strings.state_incarceration_period_admission_reason_admitted_in_error,
+    state_enum_strings.state_incarceration_period_admission_reason_admitted_from_supervision,
     enum_strings.external_unknown,
     enum_strings.internal_unknown,
     state_enum_strings.state_incarceration_period_admission_reason_new_admission,
@@ -242,7 +243,6 @@ state_incarceration_period_admission_reason = Enum(
     state_enum_strings.state_incarceration_period_admission_reason_sanction_admission,
     state_enum_strings.state_incarceration_period_admission_reason_return_from_erroneous_release,
     state_enum_strings.state_incarceration_period_admission_reason_return_from_escape,
-    state_enum_strings.state_incarceration_period_admission_reason_return_from_supervision,
     state_enum_strings.state_incarceration_period_admission_reason_temporary_custody,
     state_enum_strings.state_incarceration_period_admission_reason_transfer,
     state_enum_strings.state_incarceration_period_admission_reason_transferred_from_out_of_state,
