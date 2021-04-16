@@ -6,11 +6,11 @@ Revises: 0f5f1cca93e6
 Create Date: 2020-01-17 16:57:32.794050
 
 """
+from typing import Any
+
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.engine import Connection
-
-from recidiviz.ingest.models.ingest_info_pb2 import Sentence
 
 # revision identifiers, used by Alembic.
 revision = "035c280cf168"
@@ -38,7 +38,7 @@ _state_incarceration_sentence_history_helper_table = sa.Table(
 
 
 def get_primary_key_equality_clause(
-    sentence: Sentence, sentence_table: sa.Table, primary_key_name: str
+    sentence: Any, sentence_table: sa.Table, primary_key_name: str
 ) -> bool:
     return getattr(sentence_table.c, primary_key_name) == getattr(
         sentence, primary_key_name
