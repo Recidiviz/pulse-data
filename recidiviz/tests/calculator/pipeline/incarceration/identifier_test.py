@@ -960,6 +960,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                     county_of_residence=_COUNTY_OF_RESIDENCE,
                     most_serious_offense_ncic_code="0901",
                     most_serious_offense_statute="9999",
+                    specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
                 ),
                 IncarcerationStayEvent(
                     admission_reason=revocation_period.admission_reason,
@@ -990,6 +991,138 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                     admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
                     total_days_incarcerated=(
                         revocation_period.release_date
+                        - temp_custody_period.admission_date
+                    ).days,
+                ),
+            ],
+            incarceration_events,
+        )
+
+    def testFindIncarcerationEvents_usMo_tempCustody(self):
+        """Tests that when there is only a temporary custody period."""
+        temp_custody_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            external_id="1",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code="US_MO",
+            facility="PRISON",
+            admission_date=date(2008, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            admission_reason_raw_text="Temporary Custody",
+            release_date=date(2008, 11, 21),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        incarceration_sentence = (
+            FakeUsMoIncarcerationSentence.fake_sentence_from_sentence(
+                StateIncarcerationSentence.new_with_defaults(
+                    state_code="US_MO",
+                    incarceration_sentence_id=123,
+                    status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                    incarceration_periods=[temp_custody_period],
+                    supervision_periods=[],
+                    start_date=date(2008, 1, 1),
+                    charges=[
+                        StateCharge.new_with_defaults(
+                            state_code="US_MO",
+                            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+                            offense_date=date(2007, 12, 11),
+                            ncic_code="0901",
+                            statute="9999",
+                        )
+                    ],
+                ),
+                supervision_type_spans=[
+                    SupervisionTypeSpan(
+                        start_date=temp_custody_period.admission_date,
+                        end_date=temp_custody_period.release_date,
+                        supervision_type=StateSupervisionType.PROBATION,
+                    ),
+                    SupervisionTypeSpan(
+                        start_date=temp_custody_period.release_date,
+                        end_date=None,
+                        supervision_type=None,
+                    ),
+                ],
+            )
+        )
+
+        supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
+            StateSupervisionSentence.new_with_defaults(
+                state_code="US_MO",
+                supervision_sentence_id=123,
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                incarceration_periods=[temp_custody_period],
+                supervision_periods=[],
+                start_date=date(2008, 1, 1),
+            ),
+            supervision_type_spans=[
+                SupervisionTypeSpan(
+                    start_date=temp_custody_period.admission_date,
+                    end_date=temp_custody_period.release_date,
+                    supervision_type=StateSupervisionType.PROBATION,
+                ),
+                SupervisionTypeSpan(
+                    start_date=temp_custody_period.release_date,
+                    end_date=None,
+                    supervision_type=None,
+                ),
+            ],
+        )
+
+        sentence_group = StateSentenceGroup.new_with_defaults(
+            state_code="US_MO",
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            supervision_sentences=[supervision_sentence],
+            incarceration_sentences=[incarceration_sentence],
+        )
+
+        incarceration_sentence.sentence_group = sentence_group
+
+        sentence_groups = [sentence_group]
+
+        incarceration_events = identifier.find_incarceration_events(
+            sentence_groups,
+            _DEFAULT_INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION,
+            _COUNTY_OF_RESIDENCE_ROWS,
+        )
+
+        self.maxDiff = None
+        self.assertCountEqual(
+            [
+                IncarcerationStayEvent(
+                    admission_reason=temp_custody_period.admission_reason,
+                    admission_reason_raw_text=temp_custody_period.admission_reason_raw_text,
+                    supervision_type_at_admission=None,
+                    state_code=temp_custody_period.state_code,
+                    event_date=temp_custody_period.admission_date,
+                    facility=temp_custody_period.facility,
+                    county_of_residence=_COUNTY_OF_RESIDENCE,
+                    most_serious_offense_ncic_code="0901",
+                    most_serious_offense_statute="9999",
+                    specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+                ),
+                IncarcerationAdmissionEvent(
+                    state_code=temp_custody_period.state_code,
+                    event_date=temp_custody_period.admission_date,
+                    facility=temp_custody_period.facility,
+                    county_of_residence=_COUNTY_OF_RESIDENCE,
+                    admission_reason=temp_custody_period.admission_reason,
+                    admission_reason_raw_text=temp_custody_period.admission_reason_raw_text,
+                    supervision_type_at_admission=None,
+                    specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+                ),
+                IncarcerationReleaseEvent(
+                    state_code=temp_custody_period.state_code,
+                    event_date=temp_custody_period.release_date,
+                    facility=temp_custody_period.facility,
+                    county_of_residence=_COUNTY_OF_RESIDENCE,
+                    release_reason=temp_custody_period.release_reason,
+                    admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+                    purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+                    total_days_incarcerated=(
+                        temp_custody_period.release_date
                         - temp_custody_period.admission_date
                     ).days,
                 ),
