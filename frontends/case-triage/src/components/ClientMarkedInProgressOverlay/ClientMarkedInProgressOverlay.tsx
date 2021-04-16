@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import * as React from "react";
-import { Icon, IconSVG, palette } from "@recidiviz/case-triage-components";
+import { Icon, IconSVG, palette } from "@recidiviz/design-system";
 import { ClientMarkedInProgress } from "../../stores/ClientsStore/ClientsStore";
 import {
   InProgressOverlay,

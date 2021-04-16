@@ -15,13 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import styled from "styled-components/macro";
-import {
-  Button,
-  fonts,
-  H3,
-  palette,
-  spacing,
-} from "@recidiviz/case-triage-components";
+import { Button, fonts, H3, palette, spacing } from "@recidiviz/design-system";
 import { rem } from "polished";
 import * as React from "react";
 import * as Yup from "yup";

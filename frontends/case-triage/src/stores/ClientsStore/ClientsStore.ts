@@ -193,12 +193,14 @@ class ClientsStore {
           .concat(demoInProgressClients)
           .sort((self: DecoratedClient, other: DecoratedClient) => {
             if (
+              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
               self.inProgressSubmissionDate! > other.inProgressSubmissionDate!
             ) {
               return 1;
             }
 
             if (
+              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
               self.inProgressSubmissionDate! < other.inProgressSubmissionDate!
             ) {
               return -1;
