@@ -15,62 +15,18 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import * as React from "react";
-import styled from "styled-components/macro";
-import { rem } from "polished";
 import { observer } from "mobx-react-lite";
-import { Button, palette } from "@recidiviz/case-triage-components";
 import { User } from "@auth0/auth0-spa-js";
 import { useRootStore } from "../../stores";
-
-const UserFlex = styled.div`
-  display: flex;
-  align-items: center;
-`;
-
-const headerStyleBase = `
-  font-weight: 500;
-
-  display: flex;
-  align-items: center;
-  text-align: right;
-  font-size: ${rem("15px")};
-  letter-spacing: -0.01em;
-  font-feature-settings: "ss04" on;
-
-  color: ${palette.text.normal};
-`;
-
-const UserName = styled.span`
-  ${headerStyleBase}
-
-  margin: 0 16px;
-`;
-
-const FAQLink = styled.a`
-  ${headerStyleBase}
-
-  text-decoration: none;
-  &:hover {
-    text-decoration: underline;
-  }
-`;
-
-const UserAvatar = styled.span`
-  background: ${palette.signal.notification};
-  border-radius: 50%;
-  color: white;
-  display: inline-block;
-  font-size: ${rem("11px")};
-  line-height: 32px;
-  height: 32px;
-  text-align: center;
-  text-transform: uppercase;
-  width: 32px;
-`;
-
-const LoginButtonDiv = styled(Button)`
-  margin: 0 16px;
-`;
+import {
+  DropdownContainer,
+  DropdownLink,
+  DropdownLinkButton,
+  LoginButtonDiv,
+  UserAvatar,
+  UserFlex,
+  UserName,
+} from "./UserSection.styles";
 
 const LoginButton: React.FC = () => {
   const { userStore } = useRootStore();
@@ -94,11 +50,40 @@ interface UserProps {
   user: User;
 }
 
-const renderUser = ({ user }: UserProps) => {
+const UserComponent = ({ user }: UserProps): JSX.Element => {
+  const { userStore } = useRootStore();
+  const [dropdownOpen, setDropdownOpen] = React.useState(false);
+
+  const toggleDropdown = React.useCallback(() => {
+    setDropdownOpen(!dropdownOpen);
+  }, [dropdownOpen]);
+
   return (
     <>
-      <UserName>{user.name}</UserName>
-      <UserAvatar>{user.name && user.name[0]}</UserAvatar>
+      <UserName onClick={toggleDropdown}>{user.name}</UserName>
+      <UserAvatar onClick={toggleDropdown}>
+        {user.name && user.name[0]}
+      </UserAvatar>
+      {dropdownOpen ? (
+        <DropdownContainer>
+          <DropdownLink
+            href="https://docs.google.com/document/d/1iqpKkbsnVpl4bTqSICH4UmwPQ65pOjpIH79L47EquaU/edit?usp=sharing"
+            target="_blank"
+          >
+            FAQ
+          </DropdownLink>
+          <DropdownLinkButton
+            kind="link"
+            onClick={() => {
+              if (userStore.logout) {
+                userStore.logout({ returnTo: window.location.origin });
+              }
+            }}
+          >
+            Sign out of Recidiviz
+          </DropdownLinkButton>
+        </DropdownContainer>
+      ) : null}
     </>
   );
 };
@@ -113,14 +98,8 @@ const UserSection = () => {
 
   return (
     <UserFlex className="fs-exclude">
-      <FAQLink
-        href="https://docs.google.com/document/d/1iqpKkbsnVpl4bTqSICH4UmwPQ65pOjpIH79L47EquaU/edit?usp=sharing"
-        target="_blank"
-      >
-        FAQ
-      </FAQLink>
       <LoginButton />
-      {isAuthorized && user ? renderUser({ user }) : null}
+      {isAuthorized && user ? <UserComponent user={user} /> : null}
     </UserFlex>
   );
 };
