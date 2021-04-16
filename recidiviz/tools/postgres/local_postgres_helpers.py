@@ -206,6 +206,9 @@ def start_on_disk_postgresql_database() -> str:
 
     # Create a user and database within postgres.
     # These will fail if they already exist, ignore that failure and continue.
+    # TODO(#7018): Right now we just enforce that this is a superuser in test, but we
+    # should actually make sure that the set of permissions line up with what we have
+    # in production.
     _run_command(
         f"createuser --superuser {TEST_POSTGRES_USER_NAME}",
         as_user=password_record,
