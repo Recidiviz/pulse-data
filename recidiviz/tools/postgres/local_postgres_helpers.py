@@ -207,7 +207,7 @@ def start_on_disk_postgresql_database() -> str:
     # Create a user and database within postgres.
     # These will fail if they already exist, ignore that failure and continue.
     _run_command(
-        f"createuser {TEST_POSTGRES_USER_NAME}",
+        f"createuser --superuser {TEST_POSTGRES_USER_NAME}",
         as_user=password_record,
         assert_success=False,
     )
