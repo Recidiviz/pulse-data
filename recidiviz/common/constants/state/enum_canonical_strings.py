@@ -141,6 +141,7 @@ state_incarceration_period_admission_reason_return_from_escape = "RETURN_FROM_ES
 state_incarceration_period_admission_reason_return_from_supervision = (
     "RETURN_FROM_SUPERVISION"
 )
+state_incarceration_period_admission_reason_sanction_admission = "SANCTION_ADMISSION"
 state_incarceration_period_admission_reason_status_change = "STATUS_CHANGE"
 state_incarceration_period_admission_reason_temporary_custody = "TEMPORARY_CUSTODY"
 state_incarceration_period_admission_reason_transfer = "TRANSFER"

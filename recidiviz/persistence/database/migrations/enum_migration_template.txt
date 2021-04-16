@@ -4,7 +4,7 @@ old_values = # list of all values excluding new value
 # With new value
 new_values = # list of all values including new value
 
-def upgrade():
+def upgrade() -> None:
     op.execute('ALTER TYPE {type} RENAME TO {type}_old;')
     sa.Enum(*new_values, name='{type}').create(bind=op.get_bind())
     op.alter_column('{master_table}', column_name='{column}',
@@ -16,7 +16,7 @@ def upgrade():
     op.execute('DROP TYPE {type}_old;')
 
 
-def downgrade():
+def downgrade() -> None:
     op.execute('ALTER TYPE {type} RENAME TO {type}_old;')
     sa.Enum(*old_values, name='{type}').create(bind=op.get_bind())
     op.alter_column('{master_table}', column_name='{column}',

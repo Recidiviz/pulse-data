@@ -61,6 +61,7 @@ def get_pre_incarceration_supervision_type_from_incarceration_period(
         AdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE,
         AdmissionReason.RETURN_FROM_ESCAPE,
         AdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
+        AdmissionReason.SANCTION_ADMISSION,
         AdmissionReason.STATUS_CHANGE,
     ]:
         return None
