@@ -18,29 +18,12 @@
 """Releases that either lead to recidivism or non-recidivism for calculation."""
 import logging
 from datetime import date
-from enum import Enum
 from typing import Optional
 
 import attr
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
-from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodSupervisionType,
-)
-from recidiviz.common.constants.state.state_supervision_violation import (
-    StateSupervisionViolationType,
-)
-
-
-class ReincarcerationReturnType(Enum):
-    # The person returned to incarceration on a new admission after being free.
-    NEW_ADMISSION = "NEW_ADMISSION"
-
-    # The person returned to incarceration because their supervision was
-    # revoked. Note this covers all reasons for revocation, including new
-    # crimes that may have factored into the revocation decision.
-    REVOCATION = "REVOCATION"
 
 
 @attr.s
@@ -138,22 +121,6 @@ class RecidivismReleaseEvent(ReleaseEvent):
     # incarceration after the release.
     reincarceration_facility: Optional[str] = attr.ib(default=None)
 
-    # ReincarcerationReturnType enum for the type of return to
-    # incarceration this recidivism event describes.
-    return_type: ReincarcerationReturnType = attr.ib(default=None)
-
-    # StateSupervisionPeriodSupervisionType enum for the type of
-    # supervision the person was on before they returned to incarceration.
-    from_supervision_type: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(
-        default=None
-    )
-
-    # StateSupervisionViolationType enum for the type of violation that
-    # eventually caused the revocation of supervision
-    source_violation_type: Optional[StateSupervisionViolationType] = attr.ib(
-        default=None
-    )
-
     @property
     def days_at_liberty(self) -> int:
         """Returns the number of days between a release and a reincarceration."""
@@ -176,18 +143,6 @@ class RecidivismReleaseEvent(ReleaseEvent):
 @attr.s
 class NonRecidivismReleaseEvent(ReleaseEvent):
     """Models a ReleaseEvent where the person was not later reincarcerated."""
-
-    @property
-    def return_type(self) -> None:
-        return None
-
-    @property
-    def from_supervision_type(self) -> None:
-        return None
-
-    @property
-    def source_violation_type(self) -> None:
-        return None
 
     @property
     def days_at_liberty(self) -> None:

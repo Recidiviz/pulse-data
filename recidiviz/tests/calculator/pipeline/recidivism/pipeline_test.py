@@ -44,7 +44,6 @@ from recidiviz.calculator.pipeline.recidivism.metrics import (
 )
 from recidiviz.calculator.pipeline.utils.beam_utils import RecidivizMetricWritableDict
 from recidiviz.calculator.pipeline.recidivism.release_event import (
-    ReincarcerationReturnType,
     RecidivismReleaseEvent,
     NonRecidivismReleaseEvent,
 )
@@ -185,32 +184,6 @@ class TestRecidivismPipeline(unittest.TestCase):
             normalized_database_base_dict(subsequent_reincarceration),
         ]
 
-        supervision_violation_response = (
-            database_test_utils.generate_test_supervision_violation_response(
-                fake_person_id
-            )
-        )
-
-        state_agent = database_test_utils.generate_test_assessment_agent()
-
-        supervision_violation_response.decision_agents = [state_agent]
-
-        supervision_violation = database_test_utils.generate_test_supervision_violation(
-            fake_person_id, [supervision_violation_response]
-        )
-
-        supervision_violation_response.supervision_violation_id = (
-            supervision_violation.supervision_violation_id
-        )
-
-        supervision_violation_response_data = [
-            normalized_database_base_dict(supervision_violation_response)
-        ]
-
-        supervision_violation_data = [
-            normalized_database_base_dict(supervision_violation)
-        ]
-
         fake_person_id_to_county_query_result = [
             {
                 "state_code": "US_XX",
@@ -233,8 +206,6 @@ class TestRecidivismPipeline(unittest.TestCase):
             schema.StatePersonRace.__tablename__: races_data,
             schema.StatePersonEthnicity.__tablename__: ethnicity_data,
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
-            schema.StateSupervisionViolationResponse.__tablename__: supervision_violation_response_data,
-            schema.StateSupervisionViolation.__tablename__: supervision_violation_data,
             schema.StateAssessment.__tablename__: [],
             schema.StatePersonExternalId.__tablename__: [],
             schema.StatePersonAlias.__tablename__: [],
@@ -243,9 +214,6 @@ class TestRecidivismPipeline(unittest.TestCase):
             schema.StateFine.__tablename__: [],
             schema.StateIncarcerationIncident.__tablename__: [],
             schema.StateParoleDecision.__tablename__: [],
-            schema.StateSupervisionViolationTypeEntry.__tablename__: [],
-            schema.StateSupervisionViolatedConditionEntry.__tablename__: [],
-            schema.StateSupervisionViolationResponseDecisionEntry.__tablename__: [],
             schema.state_incarceration_period_program_assignment_association_table.name: [],
             "persons_to_recent_county_of_residence": fake_person_id_to_county_query_result,
             "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
@@ -588,7 +556,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             county_of_residence=_COUNTY_OF_RESIDENCE,
             reincarceration_date=first_reincarceration.admission_date,
             reincarceration_facility=None,
-            return_type=ReincarcerationReturnType.NEW_ADMISSION,
         )
 
         second_recidivism_release_event = RecidivismReleaseEvent(
@@ -599,7 +566,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             county_of_residence=_COUNTY_OF_RESIDENCE,
             reincarceration_date=subsequent_reincarceration.admission_date,
             reincarceration_facility=None,
-            return_type=ReincarcerationReturnType.NEW_ADMISSION,
         )
 
         correct_output = [
@@ -820,7 +786,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             county_of_residence=_COUNTY_OF_RESIDENCE,
             reincarceration_date=first_reincarceration.admission_date,
             reincarceration_facility=None,
-            return_type=ReincarcerationReturnType.NEW_ADMISSION,
         )
 
         second_recidivism_release_event = RecidivismReleaseEvent(
@@ -831,7 +796,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             county_of_residence=_COUNTY_OF_RESIDENCE,
             reincarceration_date=subsequent_reincarceration.admission_date,
             reincarceration_facility=None,
-            return_type=ReincarcerationReturnType.NEW_ADMISSION,
         )
 
         correct_output = [
@@ -934,7 +898,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             county_of_residence=_COUNTY_OF_RESIDENCE,
             reincarceration_date=first_reincarceration.admission_date,
             reincarceration_facility=None,
-            return_type=ReincarcerationReturnType.NEW_ADMISSION,
         )
 
         second_recidivism_release_event = RecidivismReleaseEvent(
@@ -945,7 +908,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             county_of_residence=_COUNTY_OF_RESIDENCE,
             reincarceration_date=subsequent_reincarceration.admission_date,
             reincarceration_facility=None,
-            return_type=ReincarcerationReturnType.NEW_ADMISSION,
         )
 
         correct_output = [
@@ -1007,7 +969,6 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
             reincarceration_date=date(2011, 4, 5),
             reincarceration_facility=None,
             county_of_residence=_COUNTY_OF_RESIDENCE,
-            return_type=ReincarcerationReturnType.NEW_ADMISSION,
         )
 
         second_recidivism_release_event = RecidivismReleaseEvent(
@@ -1018,7 +979,6 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
             reincarceration_date=date(2017, 1, 4),
             reincarceration_facility=None,
             county_of_residence=_COUNTY_OF_RESIDENCE,
-            return_type=ReincarcerationReturnType.NEW_ADMISSION,
         )
 
         person_release_events = [

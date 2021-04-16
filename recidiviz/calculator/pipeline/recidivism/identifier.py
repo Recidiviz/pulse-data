@@ -29,7 +29,6 @@ from typing import Dict, List, Optional, Any
 from collections import defaultdict
 
 from recidiviz.calculator.pipeline.recidivism.release_event import (
-    ReincarcerationReturnType,
     ReleaseEvent,
     RecidivismReleaseEvent,
     NonRecidivismReleaseEvent,
@@ -42,12 +41,8 @@ from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
     drop_temporary_custody_periods,
     IncarcerationPreProcessingConfig,
 )
-from recidiviz.calculator.pipeline.utils.violation_utils import (
-    identify_most_severe_violation_type_and_subtype,
-)
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodStatus,
-    is_revocation_admission,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason as AdmissionReason,
@@ -55,17 +50,9 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason as ReleaseReason,
 )
-from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodSupervisionType,
-)
-from recidiviz.common.constants.state.state_supervision_violation import (
-    StateSupervisionViolationType,
-)
 from recidiviz.common.date import DateRange, DateRangeDiff
-from recidiviz.persistence.entity.entity_utils import get_single_state_code
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
-    StateSupervisionViolationResponse,
 )
 
 
@@ -101,8 +88,6 @@ def find_release_events_by_cohort_year(
 
     if not incarceration_periods:
         return release_events
-
-    state_code = get_single_state_code(incarceration_periods)
 
     county_of_residence = extract_county_of_residence_from_rows(
         persons_to_recent_county_of_residence
@@ -171,13 +156,6 @@ def find_release_events_by_cohort_year(
                         reincarceration_period.admission_reason
                     )
 
-                    if is_revocation_admission(reincarceration_admission_reason):
-                        source_supervision_violation_response = (
-                            reincarceration_period.source_supervision_violation_response
-                        )
-                    else:
-                        source_supervision_violation_response = None
-
                     # These fields have been validated already
                     if not reincarceration_date or not reincarceration_admission_reason:
                         raise ValueError(
@@ -193,8 +171,6 @@ def find_release_events_by_cohort_year(
                         county_of_residence=county_of_residence,
                         reincarceration_date=reincarceration_date,
                         reincarceration_facility=reincarceration_facility,
-                        reincarceration_admission_reason=reincarceration_admission_reason,
-                        source_supervision_violation_response=source_supervision_violation_response,
                     )
 
         if event:
@@ -324,8 +300,6 @@ def for_intermediate_incarceration_period(
     county_of_residence: Optional[str],
     reincarceration_date: date,
     reincarceration_facility: Optional[str],
-    reincarceration_admission_reason: AdmissionReason,
-    source_supervision_violation_response: Optional[StateSupervisionViolationResponse],
 ) -> Optional[ReleaseEvent]:
     """Returns the ReleaseEvent relevant to an intermediate
     StateIncarcerationPeriod.
@@ -345,21 +319,10 @@ def for_intermediate_incarceration_period(
             (prior to incarceration).
         reincarceration_facility: facility in which the subsequent
             StateIncarcerationPeriod started
-        reincarceration_admission_reason: reason they were admitted to the
-            subsequent StateIncarcerationPeriod
-        source_supervision_violation_response: the response to a supervision
-            violation that resulted in the reincarceration
 
     Returns:
         A ReleaseEvent.
     """
-    return_type = get_return_type(reincarceration_admission_reason)
-    from_supervision_type = get_from_supervision_type(reincarceration_admission_reason)
-    source_violation_type = get_source_violation_type(
-        source_supervision_violation_response
-    )
-
-    # This is a new admission recidivism event. Return it.
     return RecidivismReleaseEvent(
         state_code=state_code,
         original_admission_date=admission_date,
@@ -368,9 +331,6 @@ def for_intermediate_incarceration_period(
         county_of_residence=county_of_residence,
         reincarceration_date=reincarceration_date,
         reincarceration_facility=reincarceration_facility,
-        return_type=return_type,
-        from_supervision_type=from_supervision_type,
-        source_violation_type=source_violation_type,
     )
 
 
@@ -464,104 +424,3 @@ def should_include_in_release_cohort(
         "StateIncarcerationPeriodReleaseReason of type:"
         f" {release_reason}."
     )
-
-
-def get_return_type(
-    reincarceration_admission_reason: AdmissionReason,
-) -> ReincarcerationReturnType:
-    """Returns the return type for the reincarceration admission reason."""
-    if reincarceration_admission_reason == AdmissionReason.EXTERNAL_UNKNOWN:
-        return ReincarcerationReturnType.NEW_ADMISSION
-    if reincarceration_admission_reason == AdmissionReason.INTERNAL_UNKNOWN:
-        return ReincarcerationReturnType.NEW_ADMISSION
-    if reincarceration_admission_reason == AdmissionReason.NEW_ADMISSION:
-        return ReincarcerationReturnType.NEW_ADMISSION
-    if is_revocation_admission(reincarceration_admission_reason):
-        return ReincarcerationReturnType.REVOCATION
-    if reincarceration_admission_reason == AdmissionReason.TRANSFER:
-        # This should be a rare case, but we are considering this a type of new admission recidivism because this person
-        # became reincarcerated at some point after being released, and this is the most likely return type in most
-        # cases in the absence of further information.
-        return ReincarcerationReturnType.NEW_ADMISSION
-    if reincarceration_admission_reason in (
-        AdmissionReason.ADMITTED_IN_ERROR,
-        AdmissionReason.RETURN_FROM_ESCAPE,
-        AdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
-        AdmissionReason.TEMPORARY_CUSTODY,
-        AdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE,
-        AdmissionReason.STATUS_CHANGE,
-    ):
-        # This should never happen. Should have been filtered by find_valid_reincarceration_period function.
-        raise ValueError(
-            f"find_valid_reincarceration_period is not excluding invalid returns. Found unexpected "
-            f"admission_reason of: {reincarceration_admission_reason}"
-        )
-
-    raise ValueError(
-        f"Enum case not handled for StateIncarcerationPeriodAdmissionReason of type:"
-        f" {reincarceration_admission_reason}."
-    )
-
-
-def get_from_supervision_type(
-    reincarceration_admission_reason: AdmissionReason,
-) -> Optional[StateSupervisionPeriodSupervisionType]:
-    """If the person returned from supervision, returns the type."""
-
-    if reincarceration_admission_reason in [
-        AdmissionReason.EXTERNAL_UNKNOWN,
-        AdmissionReason.INTERNAL_UNKNOWN,
-        AdmissionReason.NEW_ADMISSION,
-        AdmissionReason.TRANSFER,
-    ]:
-        return None
-    if reincarceration_admission_reason in (
-        AdmissionReason.ADMITTED_FROM_SUPERVISION,
-        AdmissionReason.SANCTION_ADMISSION,
-    ):
-        return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
-    if reincarceration_admission_reason == AdmissionReason.PAROLE_REVOCATION:
-        return StateSupervisionPeriodSupervisionType.PAROLE
-    if reincarceration_admission_reason == AdmissionReason.DUAL_REVOCATION:
-        return StateSupervisionPeriodSupervisionType.DUAL
-    if reincarceration_admission_reason == AdmissionReason.PROBATION_REVOCATION:
-        return StateSupervisionPeriodSupervisionType.PROBATION
-    if reincarceration_admission_reason in (
-        AdmissionReason.ADMITTED_IN_ERROR,
-        AdmissionReason.RETURN_FROM_ESCAPE,
-        AdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
-        AdmissionReason.TEMPORARY_CUSTODY,
-        AdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE,
-    ):
-        # This should never happen. Should have been filtered by find_valid_reincarceration_period function.
-        raise ValueError(
-            f"find_valid_reincarceration_period is not excluding invalid returns. Found unexpected "
-            f"admission_reason of: {reincarceration_admission_reason}"
-        )
-
-    raise ValueError(
-        "Enum case not handled for StateIncarcerationPeriodAdmissionReason of type:"
-        f" {reincarceration_admission_reason}."
-    )
-
-
-def get_source_violation_type(
-    source_supervision_violation_response: Optional[StateSupervisionViolationResponse],
-) -> Optional[StateSupervisionViolationType]:
-    """Returns, where applicable, the type of violation that caused the period of incarceration.
-
-    If the person returned from supervision, and we know the supervision violation response that caused the return, then
-    this returns the type of violation that prompted this revocation.
-    """
-
-    if source_supervision_violation_response:
-        supervision_violation = (
-            source_supervision_violation_response.supervision_violation
-        )
-        if supervision_violation:
-            violation_type, _ = identify_most_severe_violation_type_and_subtype(
-                [supervision_violation]
-            )
-            return violation_type
-
-    return None
