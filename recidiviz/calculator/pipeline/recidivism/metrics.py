@@ -22,19 +22,10 @@ from typing import Optional
 
 import attr
 
-from recidiviz.calculator.pipeline.recidivism.release_event import (
-    ReincarcerationReturnType,
-)
 from recidiviz.calculator.pipeline.utils.metric_utils import (
     RecidivizMetric,
     PersonLevelMetric,
     RecidivizMetricType,
-)
-from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodSupervisionType,
-)
-from recidiviz.common.constants.state.state_supervision_violation import (
-    StateSupervisionViolationType,
 )
 
 
@@ -70,17 +61,6 @@ class ReincarcerationRecidivismMetric(RecidivizMetric, PersonLevelMetric):
 
     # County of residence
     county_of_residence: Optional[str] = attr.ib(default=None)
-
-    # ReincarcerationReturnType enum indicating whether the persons returned to incarceration because of a revocation
-    # of supervision or because of a new admission
-    return_type: ReincarcerationReturnType = attr.ib(default=None)
-
-    # StateSupervisionPeriodSupervisionType enum for the type of supervision the persons were on before they
-    # returned to incarceration.
-    from_supervision_type: StateSupervisionPeriodSupervisionType = attr.ib(default=None)
-
-    # StateSupervisionViolationType enum for the type of violation that eventually caused the revocation of supervision
-    source_violation_type: StateSupervisionViolationType = attr.ib(default=None)
 
 
 @attr.s
