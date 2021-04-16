@@ -79,7 +79,7 @@ def us_id_revoked_supervision_period_if_revocation_occurred(
 
     if (
         incarceration_period.admission_reason
-        == StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION
+        == StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION
     ):
         if incarceration_period.specialized_purpose_for_incarceration in (
             PurposeForIncarceration.TREATMENT_IN_PRISON,
@@ -179,7 +179,7 @@ def us_id_is_revocation_admission(
 
     if (
         incarceration_period.admission_reason
-        == StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION
+        == StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION
     ):
         return purpose_for_incarceration in (
             PurposeForIncarceration.TREATMENT_IN_PRISON,

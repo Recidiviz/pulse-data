@@ -60,7 +60,7 @@ INCARCERATION_PERIOD_ADMISSION_REASON_TO_MOVEMENT_CODE_MAPPINGS: Dict[
         # SCI CODES
         "AE",  # Escape
     ],
-    StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION: [
+    StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION: [
         # SCI CODES
         # TODO(#3312): Ask what the difference between these two is - APV is much more common
         "APD",  # Parole Detainee

@@ -127,6 +127,9 @@ state_incarceration_facility_security_level_medium = "MEDIUM"
 state_incarceration_facility_security_level_minimum = "MINIMUM"
 
 state_incarceration_period_admission_reason_admitted_in_error = "ADMITTED_IN_ERROR"
+state_incarceration_period_admission_reason_admitted_from_supervision = (
+    "ADMITTED_FROM_SUPERVISION"
+)
 state_incarceration_period_admission_reason_new_admission = "NEW_ADMISSION"
 state_incarceration_period_admission_reason_parole_revocation = "PAROLE_REVOCATION"
 state_incarceration_period_admission_reason_probation_revocation = (
@@ -138,9 +141,6 @@ state_incarceration_period_admission_reason_return_from_erroneous_release = (
     "RETURN_FROM_ERRONEOUS_RELEASE"
 )
 state_incarceration_period_admission_reason_return_from_escape = "RETURN_FROM_ESCAPE"
-state_incarceration_period_admission_reason_return_from_supervision = (
-    "RETURN_FROM_SUPERVISION"
-)
 state_incarceration_period_admission_reason_sanction_admission = "SANCTION_ADMISSION"
 state_incarceration_period_admission_reason_status_change = "STATUS_CHANGE"
 state_incarceration_period_admission_reason_temporary_custody = "TEMPORARY_CUSTODY"

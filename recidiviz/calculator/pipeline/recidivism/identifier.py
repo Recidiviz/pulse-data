@@ -271,7 +271,7 @@ def find_valid_reincarceration_period(
             AdmissionReason.PROBATION_REVOCATION,
             AdmissionReason.DUAL_REVOCATION,
             AdmissionReason.SANCTION_ADMISSION,
-            AdmissionReason.RETURN_FROM_SUPERVISION,
+            AdmissionReason.ADMITTED_FROM_SUPERVISION,
             # This should be a rare case, but we are considering this a valid reincarceration admission
             # because this person became reincarcerated at some point after being released.
             AdmissionReason.TRANSFER,
@@ -516,7 +516,7 @@ def get_from_supervision_type(
     ]:
         return None
     if reincarceration_admission_reason in (
-        AdmissionReason.RETURN_FROM_SUPERVISION,
+        AdmissionReason.ADMITTED_FROM_SUPERVISION,
         AdmissionReason.SANCTION_ADMISSION,
     ):
         return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN

@@ -127,7 +127,7 @@ def incarceration_admission_reason_mapper(
     if (
         label == SUPERVISION_FACILITY_TYPE
     ):  # Coming from probation/parole within the state
-        return StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION
+        return StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION
     # TODO(#3506): Clarify when OTHER_FACILITY_TYPE is used.
     if label in (
         INCARCERATION_FACILITY_TYPE,
