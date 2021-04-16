@@ -902,6 +902,7 @@ _RETURN_TYPES_BY_STANDARD_ADMISSION: Dict[
     AdmissionReason.PAROLE_REVOCATION: ReincarcerationReturnType.REVOCATION,
     AdmissionReason.PROBATION_REVOCATION: ReincarcerationReturnType.REVOCATION,
     AdmissionReason.DUAL_REVOCATION: ReincarcerationReturnType.REVOCATION,
+    AdmissionReason.SANCTION_ADMISSION: ReincarcerationReturnType.REVOCATION,
     AdmissionReason.TRANSFER: ReincarcerationReturnType.NEW_ADMISSION,
 }
 
@@ -1059,6 +1060,7 @@ class TestGetReturnType(unittest.TestCase):
                     AdmissionReason.PAROLE_REVOCATION,
                     AdmissionReason.PROBATION_REVOCATION,
                     AdmissionReason.DUAL_REVOCATION,
+                    AdmissionReason.SANCTION_ADMISSION,
                 ):
                     assert return_type == ReincarcerationReturnType.REVOCATION
                 else:

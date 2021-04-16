@@ -77,6 +77,9 @@ class StateIncarcerationPeriodAdmissionReason(EntityEnum, metaclass=EntityEnumMe
     RETURN_FROM_SUPERVISION = (
         state_enum_strings.state_incarceration_period_admission_reason_return_from_supervision
     )
+    SANCTION_ADMISSION = (
+        state_enum_strings.state_incarceration_period_admission_reason_sanction_admission
+    )
     STATUS_CHANGE = (
         state_enum_strings.state_incarceration_period_admission_reason_status_change
     )
@@ -179,6 +182,7 @@ def is_revocation_admission(
         StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
         # This is sometimes, but not always, a revocation admission. Handled by state-specific revocation logic.
         StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
+        StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
     ]
     non_revocation_types = [
         StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,
@@ -324,6 +328,7 @@ _STATE_INCARCERATION_PERIOD_ADMISSION_REASON_MAP = {
     "TEMPORARY CUSTODY": StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
     "TRANSFER": StateIncarcerationPeriodAdmissionReason.TRANSFER,
     "TRANSFERRED FROM OUT OF STATE": StateIncarcerationPeriodAdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE,
+    "SANCTION ADMISSION": StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
     "STATUS CHANGE": StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
 }
 
