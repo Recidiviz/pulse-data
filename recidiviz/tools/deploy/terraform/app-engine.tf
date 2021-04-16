@@ -19,6 +19,11 @@ resource "google_app_engine_application_url_dispatch_rules" "request_routes" {
   # Scrapers
   dispatch_rules {
     domain  = "*"
+    path    = "/aggregate/*"
+    service = "scrapers"
+  }
+  dispatch_rules {
+    domain  = "*"
     path    = "/batch/*"
     service = "scrapers"
   }
