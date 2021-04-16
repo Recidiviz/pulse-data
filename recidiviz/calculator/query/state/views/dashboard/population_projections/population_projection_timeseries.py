@@ -35,7 +35,6 @@ POPULATION_PROJECTION_TIMESERIES_QUERY_TEMPLATE = """
         simulation_group as gender,
         ABS((year - 2021) * 12 + (month - 1)) as offset,
       FROM `{project_id}.{population_projection_dataset}.microsim_projection`
-      WHERE state_code = 'US_ID'
     )
     
     SELECT
