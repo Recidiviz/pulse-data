@@ -362,7 +362,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             state_code="US_ID",
             facility="PRISON3",
             admission_date=date(2018, 11, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
             release_date=date(2018, 11, 21),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
@@ -1975,7 +1975,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
             state_code="US_ID",
             facility="PRISON3",
             admission_date=date(2010, 1, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
             release_date=date(2010, 3, 1),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )

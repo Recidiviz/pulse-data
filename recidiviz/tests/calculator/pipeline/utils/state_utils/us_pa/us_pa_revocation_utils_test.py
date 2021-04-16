@@ -128,7 +128,7 @@ class TestIsRevocationAdmission(unittest.TestCase):
     def test_us_pa_is_revocation_admission_not_revocation(self):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             state_code=STATE_CODE,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
             status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
@@ -170,7 +170,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
     ):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             state_code=STATE_CODE,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
             admission_date=date(2020, 1, 1),
             status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
