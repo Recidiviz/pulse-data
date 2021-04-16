@@ -24,7 +24,7 @@ import {
   Need,
   palette,
   spacing,
-} from "@recidiviz/case-triage-components";
+} from "@recidiviz/design-system";
 
 export const ClientNeed = styled(Need)`
   margin-right: ${rem(spacing.sm)};

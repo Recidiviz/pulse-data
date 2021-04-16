@@ -16,7 +16,7 @@
 // =============================================================================
 import styled from "styled-components/macro";
 import { rem } from "polished";
-import { Button, palette } from "@recidiviz/case-triage-components";
+import { Button, palette } from "@recidiviz/design-system";
 
 export const InProgressOverlay = styled.div`
   display: flex;
