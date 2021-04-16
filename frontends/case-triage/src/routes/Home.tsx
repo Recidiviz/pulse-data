@@ -20,12 +20,7 @@ import styled from "styled-components/macro";
 import { rem } from "polished";
 import { observer } from "mobx-react-lite";
 
-import {
-  Assets,
-  Header,
-  Search,
-  spacing,
-} from "@recidiviz/case-triage-components";
+import { Assets, Header, Search, spacing } from "@recidiviz/design-system";
 import AuthWall from "../components/AuthWall";
 import CaseCard from "../components/CaseCard";
 import ClientList from "../components/ClientList";

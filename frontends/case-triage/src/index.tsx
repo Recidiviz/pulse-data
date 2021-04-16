@@ -25,7 +25,7 @@ import styled from "styled-components/macro";
 import { Router } from "@reach/router";
 import ReactModal from "react-modal";
 
-import { GlobalStyle } from "@recidiviz/case-triage-components";
+import { GlobalStyle } from "@recidiviz/design-system";
 
 import Home from "./routes/Home";
 import Verify from "./routes/Verify";

@@ -16,12 +16,7 @@
 // =============================================================================
 import styled from "styled-components/macro";
 import { rem } from "polished";
-import {
-  Button,
-  fonts,
-  palette,
-  spacing,
-} from "@recidiviz/case-triage-components";
+import { Button, fonts, palette, spacing } from "@recidiviz/design-system";
 
 export const UserFlex = styled.div`
   display: flex;

@@ -22,7 +22,7 @@ import * as React from "react";
 import { ReactElement, useEffect } from "react";
 import { when } from "mobx";
 import { observer } from "mobx-react-lite";
-import { Assets, Header } from "@recidiviz/case-triage-components";
+import { Assets, Header } from "@recidiviz/design-system";
 import { useRootStore } from "../../stores";
 import Loading from "../Loading";
 import UserSection from "../UserSection";

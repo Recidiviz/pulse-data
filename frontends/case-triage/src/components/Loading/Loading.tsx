@@ -18,7 +18,7 @@ import * as React from "react";
 import BounceLoader from "react-spinners/BounceLoader";
 import styled from "styled-components/macro";
 
-import { palette } from "@recidiviz/case-triage-components";
+import { palette } from "@recidiviz/design-system";
 import { ReactElement } from "react";
 
 const LoaderContainer = styled.div`

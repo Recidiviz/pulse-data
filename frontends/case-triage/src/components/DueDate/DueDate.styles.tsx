@@ -16,8 +16,7 @@
 // =============================================================================
 
 import styled from "styled-components/macro";
-import { rem } from "polished";
-import { palette } from "@recidiviz/case-triage-components";
+import { palette } from "@recidiviz/design-system";
 
 export const BaseDueDate = styled.span`
   color: ${palette.signal.links};

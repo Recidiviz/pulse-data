@@ -20,7 +20,7 @@ import {
   CardSection,
   palette,
   spacing,
-} from "@recidiviz/case-triage-components";
+} from "@recidiviz/design-system";
 import { rem } from "polished";
 
 export const CaseCardSection = styled(CardSection)`

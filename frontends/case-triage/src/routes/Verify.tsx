@@ -18,13 +18,7 @@ import { navigate, RouteComponentProps } from "@reach/router";
 import React, { ReactElement } from "react";
 import styled from "styled-components/macro";
 import { rem } from "polished";
-import {
-  Assets,
-  Button,
-  Link,
-  fonts,
-  spacing,
-} from "@recidiviz/case-triage-components";
+import { Assets, Button, Link, fonts, spacing } from "@recidiviz/design-system";
 
 const VerifyHeader = styled.h1`
   font-family: ${fonts.heading};

@@ -16,7 +16,7 @@
 // =============================================================================
 import { rem } from "polished";
 import styled from "styled-components/macro";
-import { palette, spacing } from "@recidiviz/case-triage-components";
+import { palette, spacing } from "@recidiviz/design-system";
 
 const StateStyles = {
   entering: `opacity: 1;`,

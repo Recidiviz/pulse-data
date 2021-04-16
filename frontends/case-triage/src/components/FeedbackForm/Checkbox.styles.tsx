@@ -16,12 +16,7 @@
 // =============================================================================import styled from "styled-components/macro";
 import styled from "styled-components/macro";
 import { rem } from "polished";
-import {
-  Icon,
-  IconSVG,
-  palette,
-  spacing,
-} from "@recidiviz/case-triage-components";
+import { Icon, IconSVG, palette, spacing } from "@recidiviz/design-system";
 
 interface CheckboxProps {
   checked?: boolean;

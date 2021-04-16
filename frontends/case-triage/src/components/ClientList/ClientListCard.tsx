@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import * as React from "react";
-import { IconSVG, NeedState } from "@recidiviz/case-triage-components";
+import { IconSVG, NeedState } from "@recidiviz/design-system";
 import { DecoratedClient } from "../../stores/ClientsStore";
 import { useRootStore } from "../../stores";
 import {

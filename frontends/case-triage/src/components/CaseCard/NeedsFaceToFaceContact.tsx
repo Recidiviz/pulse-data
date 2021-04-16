@@ -20,7 +20,7 @@ import {
   Need,
   NeedState,
   palette,
-} from "@recidiviz/case-triage-components";
+} from "@recidiviz/design-system";
 import * as React from "react";
 import {
   Caption,

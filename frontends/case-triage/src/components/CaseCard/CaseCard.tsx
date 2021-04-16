@@ -23,7 +23,7 @@ import {
   Icon,
   IconSVG,
   Modal,
-} from "@recidiviz/case-triage-components";
+} from "@recidiviz/design-system";
 import { autorun } from "mobx";
 import {
   Caption,
