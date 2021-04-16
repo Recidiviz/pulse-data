@@ -47,6 +47,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     should_collapse_transfers_different_purposes_for_incarceration,
     drop_temporary_custody_periods,
     drop_non_state_prison_incarceration_type_periods,
+    state_specific_specialized_purpose_for_incarceration_override,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodStatus,
@@ -366,6 +367,12 @@ def find_incarceration_stays(
             most_serious_charge.statute if most_serious_charge else None
         )
 
+        specialized_purpose_of_incarceration: Optional[
+            StateSpecializedPurposeForIncarceration
+        ] = state_specific_specialized_purpose_for_incarceration_override(
+            incarceration_period, original_admission_reason
+        )
+
         incarceration_stay_events.append(
             IncarcerationStayEvent(
                 state_code=incarceration_period.state_code,
@@ -378,7 +385,7 @@ def find_incarceration_stays(
                 admission_reason_raw_text=original_admission_reason_raw_text,
                 supervision_type_at_admission=supervision_type_at_admission,
                 judicial_district_code=judicial_district_code,
-                specialized_purpose_for_incarceration=incarceration_period.specialized_purpose_for_incarceration,
+                specialized_purpose_for_incarceration=specialized_purpose_of_incarceration,
             )
         )
 
@@ -561,9 +568,6 @@ def admission_event_for_period(
     ] = get_pre_incarceration_supervision_type(
         incarceration_sentences, supervision_sentences, incarceration_period
     )
-    specialized_purpose_for_incarceration: Optional[
-        StateSpecializedPurposeForIncarceration
-    ] = incarceration_period.specialized_purpose_for_incarceration
 
     ip_index: int = incarceration_period_index.incarceration_periods.index(
         incarceration_period
@@ -582,6 +586,13 @@ def admission_event_for_period(
             admission_reason,
             supervision_type_at_admission,
             preceding_incarceration_period,
+        )
+
+        specialized_purpose_for_incarceration: Optional[
+            StateSpecializedPurposeForIncarceration
+        ] = state_specific_specialized_purpose_for_incarceration_override(
+            incarceration_period,
+            admission_reason,
         )
         return IncarcerationAdmissionEvent(
             state_code=incarceration_period.state_code,
@@ -609,10 +620,6 @@ def release_event_for_period(
     release_reason: Optional[
         StateIncarcerationPeriodReleaseReason
     ] = incarceration_period.release_reason
-    purpose_for_incarceration: Optional[
-        StateSpecializedPurposeForIncarceration
-    ] = incarceration_period.specialized_purpose_for_incarceration
-
     supervision_type_at_admission: Optional[
         StateSupervisionPeriodSupervisionType
     ] = get_pre_incarceration_supervision_type(
@@ -678,6 +685,11 @@ def release_event_for_period(
                 )
                 total_days_incarcerated = 0
 
+        purpose_for_incarceration: Optional[
+            StateSpecializedPurposeForIncarceration
+        ] = state_specific_specialized_purpose_for_incarceration_override(
+            incarceration_period, admission_reason
+        )
         return IncarcerationReleaseEvent(
             state_code=incarceration_period.state_code,
             event_date=release_date,
