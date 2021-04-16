@@ -97,13 +97,17 @@ class ClientsStore {
       ? searchParam[0]
       : searchParam || "";
 
-    autorun(() => {
+    const checkAuthAndFetchClients = () => {
       if (!this.userStore.isAuthorized) {
         return;
       }
 
       this.fetchClientsList();
-    });
+    };
+
+    autorun(checkAuthAndFetchClients);
+    // Re-fetch once an hour for long-lived sessions.
+    setInterval(checkAuthAndFetchClients, 3600 * 1000);
   }
 
   async fetchClientsList(): Promise<void> {
