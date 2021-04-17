@@ -18,10 +18,7 @@
 
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state import (
-    dataset_config,
-    state_specific_query_strings,
-)
+from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -40,35 +37,36 @@ SUPERVISION_POPULATION_DUE_FOR_RELEASE_BY_PO_BY_DAY_QUERY_TEMPLATE = """
             state_code,
             date_of_supervision,
             IFNULL(supervising_officer_external_id, 'UNKNOWN') as supervising_officer_external_id,
-            level_1_supervision_location_external_id,
-            level_2_supervision_location_external_id,
+            IFNULL(level_1_supervision_location_external_id, 'UNKNOWN') as level_1_supervision_location_external_id,
             COUNT (DISTINCT(IF(projected_end_date < date_of_supervision, person_id, NULL))) as due_for_release_count,
         FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`,
         UNNEST ([level_1_supervision_location_external_id, 'ALL']) AS level_1_supervision_location_external_id,
-        UNNEST ([level_2_supervision_location_external_id, 'ALL']) AS level_2_supervision_location_external_id,
         UNNEST ([supervising_officer_external_id, 'ALL']) AS supervising_officer_external_id
         WHERE date_of_supervision > DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 372 DAY)
             AND projected_end_date IS NOT NULL
-        GROUP BY state_code, date_of_supervision, supervising_officer_external_id, level_1_supervision_location_external_id, level_2_supervision_location_external_id
+            AND state_code = "US_ND"
+        GROUP BY state_code, date_of_supervision, supervising_officer_external_id, level_1_supervision_location_external_id
     )
     
     SELECT 
         due_for_release.state_code,
         due_for_release.date_of_supervision,
         due_for_release.supervising_officer_external_id,
-        {vitals_state_specific_district_id},
-        {vitals_state_specific_district_name},
+        due_for_release.level_1_supervision_location_external_id as district_id,
+        locations.level_1_supervision_location_name as district_name,
         due_for_release_count,
         sup_pop.people_under_supervision AS total_under_supervision,
         SAFE_DIVIDE((sup_pop.people_under_supervision - due_for_release_count), sup_pop.people_under_supervision) * 100 AS timely_discharge,
-    FROM due_for_release LEFT JOIN `{project_id}.{reference_views_dataset}.supervision_location_ids_to_names` locations
+    FROM due_for_release
+    LEFT JOIN `{project_id}.{reference_views_dataset}.supervision_location_ids_to_names` locations
         ON due_for_release.state_code = locations.state_code
-        AND {vitals_state_specific_join_with_supervision_location_ids}
+            AND due_for_release.level_1_supervision_location_external_id = locations.level_1_supervision_location_external_id
     LEFT JOIN `{project_id}.{vitals_views_dataset}.supervision_population_by_po_by_day_materialized` sup_pop
         on sup_pop.state_code = due_for_release.state_code
         AND sup_pop.date_of_supervision = due_for_release.date_of_supervision
         AND sup_pop.supervising_officer_external_id = due_for_release.supervising_officer_external_id
-        AND {vitals_state_specific_join_with_supervision_population}
+        AND sup_pop.supervising_district_external_id = due_for_release.level_1_supervision_location_external_id
+    
     """
 
 SUPERVISION_POPULATION_DUE_FOR_RELEASE_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -79,18 +77,6 @@ SUPERVISION_POPULATION_DUE_FOR_RELEASE_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQuer
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     vitals_views_dataset=dataset_config.VITALS_REPORT_DATASET,
-    vitals_state_specific_district_id=state_specific_query_strings.vitals_state_specific_district_id(
-        "due_for_release"
-    ),
-    vitals_state_specific_district_name=state_specific_query_strings.vitals_state_specific_district_name(
-        "due_for_release"
-    ),
-    vitals_state_specific_join_with_supervision_location_ids=state_specific_query_strings.vitals_state_specific_join_with_supervision_location_ids(
-        "due_for_release"
-    ),
-    vitals_state_specific_join_with_supervision_population=state_specific_query_strings.vitals_state_specific_join_with_supervision_population(
-        "due_for_release"
-    ),
 )
 
 if __name__ == "__main__":

@@ -16,20 +16,6 @@
 # =============================================================================
 """Functions that return state-specific logic used in BigQuery queries."""
 
-from typing import List
-
-# The states in the vitals reports that will be grouping by level 1 supervision locations.
-VITALS_LEVEL_1_SUPERVISION_LOCATION_STATES: List[str] = ['"US_ND"', '"US_PA"']
-VITALS_LEVEL_1_SUPERVISION_LOCATION_OPTIONS: str = (
-    f"({', '.join(VITALS_LEVEL_1_SUPERVISION_LOCATION_STATES)})"
-)
-
-# The states in the vitals reports that will be grouping by level 2 supervision locations.
-VITALS_LEVEL_2_SUPERVISION_LOCATION_STATES: List[str] = ['"US_MO"', '"US_ID"']
-VITALS_LEVEL_2_SUPERVISION_LOCATION_OPTIONS: str = (
-    f"({', '.join(VITALS_LEVEL_2_SUPERVISION_LOCATION_STATES)})"
-)
-
 
 def state_supervision_specific_district_groupings(
     district_column: str, judicial_district_column: str
@@ -204,48 +190,3 @@ def state_specific_admission_type() -> str:
                   END
              ELSE revocation_type
         END AS admission_type"""
-
-
-def vitals_state_specific_district_id(table: str) -> str:
-    """State-specific logic for pulling in the right district ID for vitals."""
-    return f"""CASE
-            WHEN {table}.state_code IN {VITALS_LEVEL_1_SUPERVISION_LOCATION_OPTIONS}
-                THEN IFNULL({table}.level_1_supervision_location_external_id, "UNKNOWN")
-            WHEN {table}.state_code IN {VITALS_LEVEL_2_SUPERVISION_LOCATION_OPTIONS}
-                THEN IFNULL({table}.level_2_supervision_location_external_id, "UNKNOWN")
-        END as district_id"""
-
-
-def vitals_state_specific_district_name(table: str) -> str:
-    """State-specific logic for pulling in the right district name for vitals."""
-    return f"""CASE
-            WHEN {table}.state_code IN {VITALS_LEVEL_1_SUPERVISION_LOCATION_OPTIONS}
-                THEN locations.level_1_supervision_location_name
-            WHEN {table}.state_code = "US_ID"
-                # We want the district name for US_ID to be the district id.
-                THEN {table}.level_2_supervision_location_external_id
-            WHEN {table}.state_code = "US_MO"
-                THEN locations.level_2_supervision_location_name
-        END as district_name"""
-
-
-def vitals_state_specific_join_with_supervision_location_ids(left_table: str) -> str:
-    """State-specific logic joining with supervision location table for vitals."""
-    return f"""CASE
-            WHEN {left_table}.state_code IN {VITALS_LEVEL_1_SUPERVISION_LOCATION_OPTIONS}
-                THEN {left_table}.level_1_supervision_location_external_id = 
-                    locations.level_1_supervision_location_external_id
-            WHEN {left_table}.state_code IN {VITALS_LEVEL_2_SUPERVISION_LOCATION_OPTIONS}
-                THEN {left_table}.level_2_supervision_location_external_id =
-                        locations.level_2_supervision_location_external_id
-            END"""
-
-
-def vitals_state_specific_join_with_supervision_population(right_table: str) -> str:
-    """State-specific logic joining with supervision population table for vitals."""
-    return f"""CASE
-            WHEN {right_table}.state_code IN {VITALS_LEVEL_1_SUPERVISION_LOCATION_OPTIONS}
-                THEN sup_pop.supervising_district_external_id = {right_table}.level_1_supervision_location_external_id
-            WHEN {right_table}.state_code IN {VITALS_LEVEL_2_SUPERVISION_LOCATION_OPTIONS}
-                THEN sup_pop.supervising_district_external_id = {right_table}.level_2_supervision_location_external_id
-        END"""
