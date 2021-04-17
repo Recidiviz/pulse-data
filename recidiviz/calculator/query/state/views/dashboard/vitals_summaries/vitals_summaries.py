@@ -39,6 +39,7 @@ VITALS_SUMMARIES_QUERY_TEMPLATE = """
       FROM
         `{project_id}.{materialized_metrics_dataset}.most_recent_daily_job_id_by_metric_and_state_code_materialized`
       WHERE metric_type = "SUPERVISION_POPULATION"
+      AND state_code = "US_ND"
     ), 
     timely_discharge_po AS (
         SELECT
@@ -206,8 +207,6 @@ VITALS_SUMMARIES_QUERY_TEMPLATE = """
     FROM all_output
     WHERE entity_id is not null
     AND entity_id != 'UNKNOWN'
-    AND timely_risk_assessment != 0
-    AND timely_discharge != 0
     ORDER BY most_recent_date_of_supervision DESC
 """
 
