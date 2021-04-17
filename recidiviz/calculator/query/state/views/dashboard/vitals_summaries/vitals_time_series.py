@@ -26,7 +26,6 @@ from recidiviz.utils.metadata import local_project_id_override
 def generate_time_series_query(metric_name: str, table_name: str) -> str:
     return f"""
     SELECT
-      state_code,
       date_of_supervision as date,
       IF(district_id = "ALL", "STATE_DOC", REPLACE(district_name, ' ', '_')) as entity_id,
       "{metric_name.upper()}" as metric,
@@ -53,9 +52,7 @@ VITALS_TIME_SERIES_TEMPLATE = f"""
     {generate_time_series_query("risk_assessment", "overdue_lsir_by_po_by_day")}
   ), contact AS (
     SELECT
-      state_code,
-      date,
-      entity_id,
+      * EXCEPT (metric, value, avg_7d),
       "CONTACT" as metric,
       # TODO(#6703): update once contact vitals are completed.
       80 as value,
@@ -63,7 +60,6 @@ VITALS_TIME_SERIES_TEMPLATE = f"""
     FROM risk_assessment
   ), summary AS (
     SELECT
-      state_code,
       date,
       entity_id,
       "OVERALL" as metric,
@@ -71,14 +67,15 @@ VITALS_TIME_SERIES_TEMPLATE = f"""
       ROUND((discharge.avg_7d + risk_assessment.avg_7d + contact.avg_7d)/3) as avg_7d
     FROM discharge
       JOIN risk_assessment 
-      USING (state_code, date, entity_id)
+      USING (date, entity_id)
       JOIN contact
-      USING (state_code, date, entity_id)
+      USING (date, entity_id)
     ORDER BY entity_id, date
   )
 
   SELECT
-   *
+   *,
+   "US_ND" as state_code
   FROM (
     SELECT * FROM discharge WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 4 WEEK)
     UNION ALL
@@ -88,7 +85,6 @@ VITALS_TIME_SERIES_TEMPLATE = f"""
     UNION ALL
     SELECT * FROM summary WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 4 WEEK)
   )
-  WHERE value != 0
   ORDER BY entity_id, date, metric
 """
 
