@@ -56,7 +56,7 @@ INGEST_TEST_TEMPLATES_DIR_PATH = os.path.dirname(
 )
 
 
-@unittest.skipIf(os.environ.get("TRAVIS"), "docs/ does not exist in Travis")
+@unittest.skipIf(os.environ.get("TRAVIS") == "true", "docs/ does not exist in Travis")
 class DirectIngestFilesGeneratorTest(
     DirectIngestRegionDirStructureBase, unittest.TestCase
 ):
