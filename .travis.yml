@@ -30,7 +30,7 @@ install:
 before_script:
   # Run our docker application so we can `exec` our tests against it. Network set to 'host' to allow us to connect to
   # the Travis postgres server from inside the docker container.
-  - echo "$DOCKER_PASSWORD" | docker login -u="$DOCKER_USERNAME" --password-stdin && docker run --env CI='true' --name recidiviz -d -t recidiviz-image
+  - echo "$DOCKER_PASSWORD" | docker login -u="$DOCKER_USERNAME" --password-stdin && docker run --env CI='true' --env TRAVIS='true' --name recidiviz -d -t recidiviz-image
 
 script:
   # Order test commands with fastest first to ensure we fail fast
