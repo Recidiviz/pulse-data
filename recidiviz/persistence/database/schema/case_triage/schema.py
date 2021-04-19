@@ -72,6 +72,7 @@ class ETLClient(CaseTriageBase):
     most_recent_assessment_date = Column(Date)
     assessment_score = Column(Integer)
     most_recent_face_to_face_date = Column(Date)
+    most_recent_home_visit_date = Column(Date)
 
     @staticmethod
     def from_json(json_client: Dict[str, Any]) -> "ETLClient":
