@@ -83,13 +83,43 @@ class TestDemoUser(TestCase):
             cls.temp_db_dir
         )
 
+    def set_as_demo_user(self) -> None:
+        g.current_user = None
+        g.email = "demo_user@recidiviz.org"
+        g.can_see_demo_data = True
+
     def test_get_clients(self) -> None:
         with self.test_app.test_request_context():
-            g.current_user = None
-            g.can_see_demo_data = True
+            self.set_as_demo_user()
 
             response = self.test_client.get("/clients")
             self.assertEqual(response.status_code, HTTPStatus.OK)
 
-            client_json = response.get_json()["clients"]
+            client_json = response.get_json()
             self.assertEqual(len(client_json), len(self.demo_data))
+
+    def test_record_client_action(self) -> None:
+        with self.test_app.test_request_context():
+            self.set_as_demo_user()
+
+            client_to_modify = self.test_client.get("/clients").get_json()[0]
+            self.assertTrue("inProgressActions" not in client_to_modify)
+
+            response = self.test_client.post(
+                "/record_client_action",
+                json={
+                    "personExternalId": client_to_modify["personExternalId"],
+                    "actions": ["FILED_REVOCATION_OR_VIOLATION"],
+                    "otherText": "",
+                },
+            )
+            self.assertEqual(response.status_code, HTTPStatus.OK)
+
+            clients = self.test_client.get("/clients").get_json()
+            for client in clients:
+                if client["personExternalId"] == client_to_modify["personExternalId"]:
+                    client_to_modify = client
+                    break
+            self.assertCountEqual(
+                client_to_modify["inProgressActions"], ["FILED_REVOCATION_OR_VIOLATION"]
+            )

@@ -20,8 +20,10 @@ for Case Triage related entities.
 
 """
 import uuid
-from datetime import datetime
+from datetime import date, datetime
+from typing import Any, Dict, Optional
 
+import dateutil.parser
 from sqlalchemy import (
     Column,
     Boolean,
@@ -36,6 +38,12 @@ from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.sql import func
 
 from recidiviz.persistence.database.base_schema import CaseTriageBase
+
+
+def _get_json_field_as_date(json_data: Dict[str, Any], field: str) -> Optional[date]:
+    if not (date_field := json_data.get(field)):
+        return None
+    return dateutil.parser.parse(date_field).date()
 
 
 class ETLClient(CaseTriageBase):
@@ -64,6 +72,41 @@ class ETLClient(CaseTriageBase):
     most_recent_assessment_date = Column(Date)
     assessment_score = Column(Integer)
     most_recent_face_to_face_date = Column(Date)
+
+    @staticmethod
+    def from_json(json_client: Dict[str, Any]) -> "ETLClient":
+        return ETLClient(
+            person_external_id=json_client["person_external_id"],
+            state_code=json_client["state_code"],
+            supervising_officer_external_id=json_client[
+                "supervising_officer_external_id"
+            ],
+            full_name=json_client.get("full_name"),
+            gender=json_client.get("gender"),
+            current_address=json_client.get("current_address"),
+            birthdate=_get_json_field_as_date(json_client, "birthdate"),
+            birthdate_inferred_from_age=json_client.get("birthdate_inferred_from_age"),
+            supervision_start_date=_get_json_field_as_date(
+                json_client, "supervision_start_date"
+            ),
+            projected_end_date=_get_json_field_as_date(
+                json_client, "projected_end_date"
+            ),
+            supervision_type=json_client["supervision_type"],
+            case_type=json_client["case_type"],
+            supervision_level=json_client["supervision_level"],
+            employer=json_client.get("employer"),
+            last_known_date_of_employment=_get_json_field_as_date(
+                json_client, "last_known_date_of_employment"
+            ),
+            most_recent_assessment_date=_get_json_field_as_date(
+                json_client, "most_recent_assessment_date"
+            ),
+            assessment_score=json_client.get("assessment_score"),
+            most_recent_face_to_face_date=_get_json_field_as_date(
+                json_client, "most_recent_face_to_face_date"
+            ),
+        )
 
 
 class ETLOfficer(CaseTriageBase):

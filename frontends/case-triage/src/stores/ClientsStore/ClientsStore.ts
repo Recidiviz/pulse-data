@@ -114,10 +114,7 @@ class ClientsStore {
     this.isLoading = true;
 
     try {
-      const { clients, isDemoData } = await this.api.get<{
-        clients: Client[];
-        isDemoData: boolean;
-      }>("/api/clients");
+      const clients = await this.api.get<Client[]>("/api/clients");
 
       runInAction(() => {
         this.isLoading = false;
@@ -128,16 +125,14 @@ class ClientsStore {
 
         // This contains the list of clients who have transitioned from being
         // up next to in-progress and are no longer in the list served by the API.
-        // For demo mode users, the list of clients served by the API never changes,
-        // so technically no users have been filtered out.
         //
         // We use this to represent users in the up next list who should have a transition
         // overlay.
-        const transitionedInProgressClients = isDemoData
-          ? []
-          : Object.values(this.clientsMarkedInProgress)
-              .filter(({ listSubsection }) => listSubsection === "ACTIVE")
-              .map(({ client }) => client);
+        const transitionedInProgressClients = Object.values(
+          this.clientsMarkedInProgress
+        )
+          .filter(({ listSubsection }) => listSubsection === "ACTIVE")
+          .map(({ client }) => client);
 
         const upNextClients = decoratedClients
           .filter((client) => !client.inProgressActions?.length)
@@ -183,14 +178,8 @@ class ClientsStore {
           }
         );
 
-        const demoInProgressClients = isDemoData
-          ? Object.values(this.clientsMarkedInProgress).map(
-              ({ client }) => client
-            )
-          : [];
         this.unfilteredInProgressClients = decoratedClients
           .filter((client: DecoratedClient) => client.inProgressSubmissionDate)
-          .concat(demoInProgressClients)
           .sort((self: DecoratedClient, other: DecoratedClient) => {
             if (
               // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

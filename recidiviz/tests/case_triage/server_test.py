@@ -174,7 +174,7 @@ class TestCaseTriageAPIRoutes(TestCase):
             self.assertEqual(response.status_code, HTTPStatus.OK)
 
             client_json = response.get_json()
-            self.assertEqual(client_json, {"clients": [], "isDemoData": False})
+            self.assertEqual(client_json, [])
 
     def test_get_clients(self) -> None:
         with self.test_app.test_request_context():
@@ -183,7 +183,7 @@ class TestCaseTriageAPIRoutes(TestCase):
             response = self.test_client.get("/clients")
             self.assertEqual(response.status_code, HTTPStatus.OK)
 
-            client_json = response.get_json()["clients"]
+            client_json = response.get_json()
             self.assertEqual(len(client_json), 3)
 
             client_1_response = None
@@ -325,7 +325,7 @@ class TestCaseTriageAPIRoutes(TestCase):
             response = self.test_client.get("/clients")
             self.assertEqual(response.status_code, HTTPStatus.OK)
 
-            client_json = response.get_json()["clients"]
+            client_json = response.get_json()
             self.assertEqual(len(client_json), 3)
 
             client_2_response = None
