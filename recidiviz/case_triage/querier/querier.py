@@ -22,6 +22,10 @@ from typing import List
 import sqlalchemy.orm.exc
 from sqlalchemy.orm import Session
 
+from recidiviz.case_triage.demo_helpers import (
+    fake_officer_id_for_demo_user,
+    get_fixture_clients,
+)
 from recidiviz.case_triage.querier.case_presenter import CasePresenter
 from recidiviz.case_triage.querier.opportunity_presenter import OpportunityPresenter
 from recidiviz.persistence.database.schema.case_triage.schema import (
@@ -150,3 +154,41 @@ class CaseTriageQuerier:
             .all()
         )
         return [OpportunityPresenter(info[0], info[1]) for info in opportunity_info]
+
+
+class DemoCaseTriageQuerier:
+    """Implements some querying abstractions for use by demo users."""
+
+    @staticmethod
+    def clients_for_demo_user(
+        session: Session, user_email_address: str
+    ) -> List[CasePresenter]:
+        case_udpates = (
+            session.query(CaseUpdate)
+            .filter(
+                CaseUpdate.officer_external_id
+                == fake_officer_id_for_demo_user(user_email_address)
+            )
+            .all()
+        )
+        client_ids_to_case_updates = defaultdict(list)
+        for case_update in case_udpates:
+            client_ids_to_case_updates[case_update.person_external_id].append(
+                case_update
+            )
+
+        clients = get_fixture_clients()
+        return [
+            CasePresenter(client, client_ids_to_case_updates[client.person_external_id])
+            for client in clients
+        ]
+
+    @staticmethod
+    def etl_client_with_id(person_external_id: str) -> ETLClient:
+        clients = get_fixture_clients()
+
+        for client in clients:
+            if client.person_external_id == person_external_id:
+                return client
+
+        raise PersonDoesNotExistError(f"could not find id: {person_external_id}")

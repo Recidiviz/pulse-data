@@ -29,9 +29,6 @@ from typing import Any, Dict, List, Optional
 
 import dateutil.parser
 
-from recidiviz.case_triage.querier.case_presenter import CasePresenter
-from recidiviz.persistence.database.schema.case_triage.schema import ETLClient
-
 
 def parse_nullable_date(date_str: str) -> Optional[date]:
     if not date_str:
@@ -40,27 +37,26 @@ def parse_nullable_date(date_str: str) -> Optional[date]:
 
 
 def csv_row_to_etl_client_json(row: List[str]) -> Dict[str, Any]:
-    client = ETLClient(
-        person_external_id=row[1],
-        state_code=row[9],
-        supervising_officer_external_id=row[0],
-        full_name=row[2],
-        gender=row[13],
-        current_address=row[3],
-        birthdate=parse_nullable_date(row[4]),
-        birthdate_inferred_from_age=bool(row[5]),
-        supervision_start_date=parse_nullable_date(row[14]),
-        projected_end_date=parse_nullable_date(row[16]),
-        supervision_type=row[6],
-        case_type=row[7],
-        supervision_level=row[8],
-        employer=row[10],
-        last_known_date_of_employment=parse_nullable_date(row[17]),
-        most_recent_assessment_date=parse_nullable_date(row[11]),
-        assessment_score=int(row[15]),
-        most_recent_face_to_face_date=parse_nullable_date(row[12]),
-    )
-    return CasePresenter(client, None).to_json()
+    return {
+        "person_external_id": row[1],
+        "state_code": row[9],
+        "supervising_officer_external_id": row[0],
+        "full_name": row[2],
+        "gender": row[13],
+        "current_address": row[3],
+        "birthdate": parse_nullable_date(row[4]),
+        "birthdate_inferred_from_age": bool(row[5]),
+        "supervision_start_date": parse_nullable_date(row[14]),
+        "projected_end_date": parse_nullable_date(row[16]),
+        "supervision_type": row[6],
+        "case_type": row[7],
+        "supervision_level": row[8],
+        "employer": row[10],
+        "last_known_date_of_employment": parse_nullable_date(row[17]),
+        "most_recent_assessment_date": parse_nullable_date(row[11]),
+        "assessment_score": int(row[15]),
+        "most_recent_face_to_face_date": parse_nullable_date(row[12]),
+    }
 
 
 def generate_json_fixtures_from_csv() -> None:
