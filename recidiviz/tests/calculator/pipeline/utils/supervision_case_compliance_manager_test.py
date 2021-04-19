@@ -47,6 +47,7 @@ from recidiviz.common.constants.state.state_case_type import StateSupervisionCas
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactType,
     StateSupervisionContactStatus,
+    StateSupervisionContactLocation,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
@@ -583,6 +584,480 @@ class TestCaseCompliance(unittest.TestCase):
                 face_to_face_frequency_sufficient=None,
             ),
             compliance,
+        )
+
+    def test_us_id_get_case_compliance_on_date_no_home_visits_no_contacts(self) -> None:
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code=StateCode.US_ID.value,
+            custodial_authority_raw_text="US_ID_DOC",
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text="MODERATE",
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        case_type = StateSupervisionCaseType.GENERAL
+
+        compliance_evaluation_date = date(2018, 4, 30)
+        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+            supervision_period=supervision_period,
+            case_type=case_type,
+            start_of_supervision=date(2018, 3, 5),
+            assessments=[],
+            supervision_contacts=[],
+        )
+        compliance = us_id_supervision_compliance.get_case_compliance_on_date(
+            compliance_evaluation_date
+        )
+
+        self.assertEqual(
+            SupervisionCaseCompliance(
+                date_of_evaluation=compliance_evaluation_date,
+                assessment_count=0,
+                most_recent_assessment_date=None,
+                num_days_assessment_overdue=11,
+                face_to_face_count=0,
+                most_recent_face_to_face_date=None,
+                face_to_face_frequency_sufficient=False,
+                most_recent_home_visit_date=None,
+            ),
+            compliance,
+        )
+
+    def test_us_id_get_case_compliance_on_date_no_home_visits_some_contacts(
+        self,
+    ) -> None:
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code=StateCode.US_ID.value,
+            custodial_authority_raw_text="US_ID_DOC",
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text="MODERATE",
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        case_type = StateSupervisionCaseType.GENERAL
+
+        supervision_contacts = [
+            StateSupervisionContact.new_with_defaults(
+                state_code=StateCode.US_ID.value,
+                contact_date=date(2018, 3, 6),
+                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                status=StateSupervisionContactStatus.COMPLETED,
+                location=StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT,
+            ),
+            StateSupervisionContact.new_with_defaults(
+                state_code=StateCode.US_ID.value,
+                contact_date=date(2018, 4, 30),
+                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                status=StateSupervisionContactStatus.COMPLETED,
+                location=StateSupervisionContactLocation.SUPERVISION_OFFICE,
+            ),
+        ]
+
+        compliance_evaluation_date = date(2018, 4, 30)
+        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+            supervision_period=supervision_period,
+            case_type=case_type,
+            start_of_supervision=date(2018, 3, 5),
+            assessments=[],
+            supervision_contacts=supervision_contacts,
+        )
+        compliance = us_id_supervision_compliance.get_case_compliance_on_date(
+            compliance_evaluation_date
+        )
+
+        self.assertEqual(
+            SupervisionCaseCompliance(
+                date_of_evaluation=compliance_evaluation_date,
+                assessment_count=0,
+                most_recent_assessment_date=None,
+                num_days_assessment_overdue=11,
+                face_to_face_count=1,
+                most_recent_face_to_face_date=date(2018, 4, 30),
+                face_to_face_frequency_sufficient=True,
+                most_recent_home_visit_date=None,
+            ),
+            compliance,
+        )
+
+    def test_us_id_get_case_compliance_on_date_some_home_visits(self) -> None:
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code=StateCode.US_ID.value,
+            custodial_authority_raw_text="US_ID_DOC",
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text="MODERATE",
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        case_type = StateSupervisionCaseType.GENERAL
+
+        supervision_contacts = [
+            StateSupervisionContact.new_with_defaults(
+                state_code=StateCode.US_ID.value,
+                contact_date=date(2018, 3, 6),
+                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                status=StateSupervisionContactStatus.COMPLETED,
+                location=StateSupervisionContactLocation.RESIDENCE,
+            ),
+            StateSupervisionContact.new_with_defaults(
+                state_code=StateCode.US_ID.value,
+                contact_date=date(2018, 4, 30),
+                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                status=StateSupervisionContactStatus.COMPLETED,
+                location=StateSupervisionContactLocation.RESIDENCE,
+            ),
+        ]
+
+        compliance_evaluation_date = date(2018, 4, 30)
+        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+            supervision_period=supervision_period,
+            case_type=case_type,
+            start_of_supervision=date(2018, 3, 5),
+            assessments=[],
+            supervision_contacts=supervision_contacts,
+        )
+        compliance = us_id_supervision_compliance.get_case_compliance_on_date(
+            compliance_evaluation_date
+        )
+
+        self.assertEqual(
+            SupervisionCaseCompliance(
+                date_of_evaluation=compliance_evaluation_date,
+                assessment_count=0,
+                most_recent_assessment_date=None,
+                num_days_assessment_overdue=11,
+                face_to_face_count=1,
+                most_recent_face_to_face_date=date(2018, 4, 30),
+                face_to_face_frequency_sufficient=True,
+                most_recent_home_visit_date=date(2018, 4, 30),
+            ),
+            compliance,
+        )
+
+    def test_us_id_get_case_compliance_on_date_one_home_visits_other_ftf(self) -> None:
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code=StateCode.US_ID.value,
+            custodial_authority_raw_text="US_ID_DOC",
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text="MODERATE",
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        case_type = StateSupervisionCaseType.GENERAL
+
+        supervision_contacts = [
+            StateSupervisionContact.new_with_defaults(
+                state_code=StateCode.US_ID.value,
+                contact_date=date(2018, 3, 6),
+                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                status=StateSupervisionContactStatus.COMPLETED,
+                location=StateSupervisionContactLocation.RESIDENCE,
+            ),
+            StateSupervisionContact.new_with_defaults(
+                state_code=StateCode.US_ID.value,
+                contact_date=date(2018, 4, 30),
+                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                status=StateSupervisionContactStatus.COMPLETED,
+                location=StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT,
+            ),
+        ]
+
+        compliance_evaluation_date = date(2018, 4, 30)
+        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+            supervision_period=supervision_period,
+            case_type=case_type,
+            start_of_supervision=date(2018, 3, 5),
+            assessments=[],
+            supervision_contacts=supervision_contacts,
+        )
+        compliance = us_id_supervision_compliance.get_case_compliance_on_date(
+            compliance_evaluation_date
+        )
+
+        self.assertEqual(
+            SupervisionCaseCompliance(
+                date_of_evaluation=compliance_evaluation_date,
+                assessment_count=0,
+                most_recent_assessment_date=None,
+                num_days_assessment_overdue=11,
+                face_to_face_count=1,
+                most_recent_face_to_face_date=date(2018, 4, 30),
+                face_to_face_frequency_sufficient=True,
+                most_recent_home_visit_date=date(2018, 3, 6),
+            ),
+            compliance,
+        )
+
+    def test_us_id_get_case_compliance_on_date_multiple_visits_multiple_periods_home_visits(
+        self,
+    ) -> None:
+        supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code=StateCode.US_ID.value,
+            custodial_authority_raw_text="US_ID_DOC",
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text="MODERATE",
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code=StateCode.US_ID.value,
+            custodial_authority_raw_text="US_ID_DOC",
+            start_date=date(2019, 3, 5),
+            termination_date=date(2019, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text="MODERATE",
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        case_type = StateSupervisionCaseType.GENERAL
+
+        supervision_contacts_1 = [
+            StateSupervisionContact.new_with_defaults(
+                state_code=StateCode.US_ID.value,
+                contact_date=date(2018, 3, 6),
+                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                status=StateSupervisionContactStatus.COMPLETED,
+                location=StateSupervisionContactLocation.RESIDENCE,
+            ),
+            StateSupervisionContact.new_with_defaults(
+                state_code=StateCode.US_ID.value,
+                contact_date=date(2018, 4, 30),
+                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                status=StateSupervisionContactStatus.COMPLETED,
+                location=StateSupervisionContactLocation.RESIDENCE,
+            ),
+        ]
+
+        supervision_contacts_2 = [
+            StateSupervisionContact.new_with_defaults(
+                state_code=StateCode.US_ID.value,
+                contact_date=date(2019, 3, 6),
+                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                status=StateSupervisionContactStatus.COMPLETED,
+                location=StateSupervisionContactLocation.RESIDENCE,
+            ),
+            StateSupervisionContact.new_with_defaults(
+                state_code=StateCode.US_ID.value,
+                contact_date=date(2019, 4, 30),
+                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                status=StateSupervisionContactStatus.COMPLETED,
+                location=StateSupervisionContactLocation.RESIDENCE,
+            ),
+        ]
+
+        compliance_evaluation_date_1 = date(2018, 4, 30)
+        compliance_evaluation_date_2 = date(2019, 4, 30)
+
+        us_id_supervision_compliance_1 = UsIdSupervisionCaseCompliance(
+            supervision_period=supervision_period_1,
+            case_type=case_type,
+            start_of_supervision=date(2018, 3, 5),
+            assessments=[],
+            supervision_contacts=supervision_contacts_1,
+        )
+        compliance_1 = us_id_supervision_compliance_1.get_case_compliance_on_date(
+            compliance_evaluation_date_1
+        )
+
+        us_id_supervision_compliance_2 = UsIdSupervisionCaseCompliance(
+            supervision_period=supervision_period_2,
+            case_type=case_type,
+            start_of_supervision=date(2019, 3, 5),
+            assessments=[],
+            supervision_contacts=supervision_contacts_2,
+        )
+        compliance_2 = us_id_supervision_compliance_2.get_case_compliance_on_date(
+            compliance_evaluation_date_2
+        )
+
+        self.assertEqual(
+            SupervisionCaseCompliance(
+                date_of_evaluation=compliance_evaluation_date_1,
+                assessment_count=0,
+                most_recent_assessment_date=None,
+                num_days_assessment_overdue=11,
+                face_to_face_count=1,
+                most_recent_face_to_face_date=date(2018, 4, 30),
+                face_to_face_frequency_sufficient=True,
+                most_recent_home_visit_date=date(2018, 4, 30),
+            ),
+            compliance_1,
+        )
+
+        self.assertEqual(
+            SupervisionCaseCompliance(
+                date_of_evaluation=compliance_evaluation_date_2,
+                assessment_count=0,
+                most_recent_assessment_date=None,
+                num_days_assessment_overdue=11,
+                face_to_face_count=1,
+                most_recent_face_to_face_date=date(2019, 4, 30),
+                face_to_face_frequency_sufficient=True,
+                most_recent_home_visit_date=date(2019, 4, 30),
+            ),
+            compliance_2,
+        )
+
+    def test_us_id_get_case_compliance_on_date_home_visit_in_diff_period(self) -> None:
+        """Tests when there are two periods and a home visit assigned to each period,
+        but each home visit date is outside the bounds of each supervision periods dates
+        causing the most_recent_home_visit to be None"""
+        supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code=StateCode.US_ID.value,
+            custodial_authority_raw_text="US_ID_DOC",
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text="MODERATE",
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code=StateCode.US_ID.value,
+            custodial_authority_raw_text="US_ID_DOC",
+            start_date=date(2019, 3, 5),
+            termination_date=date(2019, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text="MODERATE",
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        case_type = StateSupervisionCaseType.GENERAL
+
+        supervision_contacts_1 = [
+            StateSupervisionContact.new_with_defaults(
+                state_code=StateCode.US_ID.value,
+                contact_date=date(2019, 3, 6),
+                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                status=StateSupervisionContactStatus.COMPLETED,
+                location=StateSupervisionContactLocation.RESIDENCE,
+            ),
+            StateSupervisionContact.new_with_defaults(
+                state_code=StateCode.US_ID.value,
+                contact_date=date(2019, 4, 30),
+                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                status=StateSupervisionContactStatus.COMPLETED,
+                location=StateSupervisionContactLocation.RESIDENCE,
+            ),
+        ]
+
+        supervision_contacts_2 = [
+            StateSupervisionContact.new_with_defaults(
+                state_code=StateCode.US_ID.value,
+                contact_date=date(2018, 3, 6),
+                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                status=StateSupervisionContactStatus.COMPLETED,
+                location=StateSupervisionContactLocation.RESIDENCE,
+            ),
+            StateSupervisionContact.new_with_defaults(
+                state_code=StateCode.US_ID.value,
+                contact_date=date(2018, 4, 30),
+                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                status=StateSupervisionContactStatus.COMPLETED,
+                location=StateSupervisionContactLocation.RESIDENCE,
+            ),
+        ]
+
+        compliance_evaluation_date_1 = date(2018, 4, 30)
+        compliance_evaluation_date_2 = date(2019, 4, 30)
+
+        us_id_supervision_compliance_1 = UsIdSupervisionCaseCompliance(
+            supervision_period=supervision_period_1,
+            case_type=case_type,
+            start_of_supervision=date(2018, 3, 5),
+            assessments=[],
+            supervision_contacts=supervision_contacts_1,
+        )
+        compliance_1 = us_id_supervision_compliance_1.get_case_compliance_on_date(
+            compliance_evaluation_date_1
+        )
+
+        us_id_supervision_compliance_2 = UsIdSupervisionCaseCompliance(
+            supervision_period=supervision_period_2,
+            case_type=case_type,
+            start_of_supervision=date(2019, 3, 5),
+            assessments=[],
+            supervision_contacts=supervision_contacts_2,
+        )
+        compliance_2 = us_id_supervision_compliance_2.get_case_compliance_on_date(
+            compliance_evaluation_date_2
+        )
+
+        self.assertEqual(
+            SupervisionCaseCompliance(
+                date_of_evaluation=compliance_evaluation_date_1,
+                assessment_count=0,
+                most_recent_assessment_date=None,
+                num_days_assessment_overdue=11,
+                face_to_face_count=0,
+                most_recent_face_to_face_date=None,
+                face_to_face_frequency_sufficient=False,
+                most_recent_home_visit_date=None,
+            ),
+            compliance_1,
+        )
+
+        self.assertEqual(
+            SupervisionCaseCompliance(
+                date_of_evaluation=compliance_evaluation_date_2,
+                assessment_count=0,
+                most_recent_assessment_date=None,
+                num_days_assessment_overdue=11,
+                face_to_face_count=0,
+                most_recent_face_to_face_date=None,
+                face_to_face_frequency_sufficient=False,
+                most_recent_home_visit_date=None,
+            ),
+            compliance_2,
         )
 
 

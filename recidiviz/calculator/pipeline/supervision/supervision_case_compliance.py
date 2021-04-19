@@ -52,3 +52,6 @@ class SupervisionCaseCompliance(BuildableAttr):
     # Whether or not the supervision officer has had face-to-face contact with the person on supervision recently
     # enough to satisfy compliance measures. Should be unset if we do not know the compliance standards for this person.
     face_to_face_frequency_sufficient: Optional[bool] = attr.ib(default=None)
+
+    # The date that the last home visit contact happened. If no meetings have yet happened, this is None.
+    most_recent_home_visit_date: Optional[date] = attr.ib(default=None)

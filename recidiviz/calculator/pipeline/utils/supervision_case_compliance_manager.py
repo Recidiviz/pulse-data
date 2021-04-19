@@ -34,6 +34,7 @@ from recidiviz.common.constants.state.state_case_type import StateSupervisionCas
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactType,
     StateSupervisionContactStatus,
+    StateSupervisionContactLocation,
 )
 from recidiviz.persistence.entity.state.entities import (
     StateSupervisionPeriod,
@@ -124,6 +125,9 @@ class StateSupervisionCaseComplianceManager:
                 compliance_evaluation_date
             ),
             face_to_face_frequency_sufficient=face_to_face_frequency_sufficient,
+            most_recent_home_visit_date=self._most_recent_home_visit_contact(
+                compliance_evaluation_date
+            ),
         )
 
     def _num_days_assessment_overdue(
@@ -238,6 +242,40 @@ class StateSupervisionCaseComplianceManager:
         ]
 
         return len(assessments_on_compliance_date)
+
+    def _most_recent_home_visit_contact(
+        self, compliance_evaluation_date: date
+    ) -> Optional[date]:
+        """Gets the most recent home visit contact date. If there is not any, it returns None."""
+        applicable_contacts = self._get_applicable_home_visit_contacts_between_dates(
+            self.start_of_supervision, compliance_evaluation_date
+        )
+        contact_dates = [
+            contact.contact_date
+            for contact in applicable_contacts
+            if contact.contact_date is not None
+        ]
+        if not contact_dates:
+            return None
+
+        return max(contact_dates)
+
+    def _get_applicable_home_visit_contacts_between_dates(
+        self, lower_bound_inclusive: date, upper_bound_inclusive: date
+    ) -> List[StateSupervisionContact]:
+        """Returns the completed contacts that can be counted as face-to-face contacts and occurred between the
+        lower_bound_inclusive date and the upper_bound_inclusive date.
+        """
+        return [
+            contact
+            for contact in self.supervision_contacts
+            # These are the types of contacts that can satisfy the face-to-face contact requirement
+            if contact.location == StateSupervisionContactLocation.RESIDENCE
+            # Contact must be marked as completed
+            and contact.status == StateSupervisionContactStatus.COMPLETED
+            and contact.contact_date is not None
+            and lower_bound_inclusive <= contact.contact_date <= upper_bound_inclusive
+        ]
 
     @abc.abstractmethod
     def _guidelines_applicable_for_case(self) -> bool:
