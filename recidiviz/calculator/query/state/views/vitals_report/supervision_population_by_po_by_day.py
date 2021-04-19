@@ -38,8 +38,6 @@ SUPERVISION_POPULATION_BY_PO_BY_DAY_QUERY_TEMPLATE = """
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`,
     UNNEST ([supervising_district_external_id, 'ALL']) AS supervising_district_external_id,
     UNNEST ([supervising_officer_external_id, 'ALL']) AS supervising_officer_external_id
-    # TODO(#6614): Generalize to be state agnostic.
-    WHERE state_code = "US_ND"
     GROUP BY state_code, date_of_supervision, supervising_district_external_id, supervising_officer_external_id
     """
 

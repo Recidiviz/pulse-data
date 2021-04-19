@@ -39,7 +39,6 @@ VITALS_SUMMARIES_QUERY_TEMPLATE = """
       FROM
         `{project_id}.{materialized_metrics_dataset}.most_recent_daily_job_id_by_metric_and_state_code_materialized`
       WHERE metric_type = "SUPERVISION_POPULATION"
-      AND state_code = "US_ND"
     ), 
     timely_discharge_po AS (
         SELECT
@@ -198,8 +197,8 @@ VITALS_SUMMARIES_QUERY_TEMPLATE = """
         entity_name,
         parent_entity_id,
         ROUND((most_recent_timely_discharge + most_recent_timely_risk_assessment + 80) / 3, 0) as overall,
-        ROUND(most_recent_timely_discharge, 0) as timely_discharge,
-        ROUND(most_recent_timely_risk_assessment, 0) as timely_risk_assessment,
+        ROUND(most_recent_timely_discharge) as timely_discharge,
+        ROUND(most_recent_timely_risk_assessment) as timely_risk_assessment,
         # TODO(#6703): update once contact vitals are completed.
         80 as timely_contact,
         ROUND((most_recent_timely_discharge + most_recent_timely_risk_assessment + 80) / 3 - (timely_discharge_7_days_before + timely_risk_assessment_7_days_before  + 80) / 3, 0) as overall_7d,
@@ -207,6 +206,8 @@ VITALS_SUMMARIES_QUERY_TEMPLATE = """
     FROM all_output
     WHERE entity_id is not null
     AND entity_id != 'UNKNOWN'
+    AND ROUND(most_recent_timely_discharge) != 0
+    AND ROUND(most_recent_timely_risk_assessment) != 0
     ORDER BY most_recent_date_of_supervision DESC
 """
 
