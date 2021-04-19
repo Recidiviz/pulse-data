@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Client, subsectionForClient } from "./stores/ClientsStore/Client";
+import { Client } from "./stores/ClientsStore/Client";
 import { CaseUpdateActionType } from "./stores/CaseUpdatesStore/CaseUpdates";
 
 export const identify = (
@@ -53,7 +53,6 @@ export const trackPersonCaseUpdated = (
 ): void => {
   const prevActions = previousActionsTaken || [];
   track("frontend.person_case_updated", {
-    subsection: subsectionForClient(client),
     personExternalId: client.personExternalId,
     previousActionSet: prevActions,
     newActionSet: [...prevActions, ...addedActions],
@@ -62,17 +61,12 @@ export const trackPersonCaseUpdated = (
 
 export const trackPersonSelected = (client: Client): void => {
   track("frontend.person_selected", {
-    subsection: subsectionForClient(client),
     personExternalId: client.personExternalId,
   });
 };
 
 export const trackScrolledToBottom = (): void => {
   track("frontend.scrolled_to_bottom");
-};
-
-export const trackScrolledToInProgress = (): void => {
-  track("frontend.scrolled_to_in_progress_section");
 };
 
 export const trackSearchBarEnterPressed = (searchTerm: string): void => {

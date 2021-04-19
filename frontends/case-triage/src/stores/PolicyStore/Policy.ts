@@ -45,6 +45,7 @@ export type SupervisionLevelNames = Record<SupervisionLevel, string>;
 
 export interface Policy {
   assessmentScoreCutoffs: AssessmentScoreCutoffs;
+  omsName: string;
   supervisionContactFrequencies: SupervisionContactFrequencies;
   supervisionLevelNames: SupervisionLevelNames;
 }

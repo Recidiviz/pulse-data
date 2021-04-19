@@ -34,7 +34,6 @@ export const ClientCard = styled(Card).attrs((props) => {
   return { className: `client-card ${props.className}` };
 })`
   padding: ${rem(spacing.lg)};
-  overflow: hidden;
   position: relative;
   min-height: 92px;
 
@@ -99,4 +98,15 @@ export const ClientListContainer = styled.div`
   // The ClientListContainer needs to be the ClientCard's _offsetParent_ so that we can correctly calculate the
   // CaseCard margin-top
   position: relative;
+`;
+
+export const InProgressIndicator = styled.div`
+  position: absolute;
+  width: ${rem(8)};
+  height: ${rem(8)};
+  top: 42px;
+  left: -32px;
+
+  border-radius: 999px;
+  background-color: ${palette.slate60};
 `;

@@ -16,7 +16,6 @@
 // =============================================================================
 import { observer } from "mobx-react-lite";
 import * as React from "react";
-import VisibilitySensor from "react-visibility-sensor";
 import { useRootStore } from "../../stores";
 import {
   ClientListContainer,
@@ -24,94 +23,36 @@ import {
   ClientListTableHeading,
 } from "./ClientList.styles";
 import ClientListCard from "./ClientListCard";
-import MarkedInProgressCard from "./MarkedInProgressCard";
-import InProgressEmptyState from "./InProgressEmptyStateCard";
-
-import { trackScrolledToInProgress } from "../../analytics";
+import EmptyStateCard from "./EmptyStateCard";
 
 const ClientList = () => {
-  const [inProgressVisible, setInProgressVisible] = React.useState(false);
-  const { clientsStore, policyStore } = useRootStore();
+  const { clientsStore } = useRootStore();
 
   let clients;
-  if (clientsStore.clients) {
-    clients = clientsStore.clients.map((client) => {
-      const markedInProgress =
-        clientsStore.clientsMarkedInProgress[client.personExternalId];
-
-      if (markedInProgress?.listSubsection === "ACTIVE") {
-        return (
-          <MarkedInProgressCard client={client} key={client.personExternalId} />
-        );
-      }
-
-      return (
-        <ClientListCard
-          client={client}
-          isInProgress={false}
-          key={client.personExternalId}
-        />
-      );
-    });
-  }
-
-  let inProgressClients;
-  if (clientsStore.inProgressClients.length) {
-    inProgressClients = clientsStore.inProgressClients.map((client) => {
-      const markedInProgress =
-        clientsStore.clientsMarkedInProgress[client.personExternalId];
-
-      if (markedInProgress?.listSubsection === "IN_PROGRESS") {
-        return (
-          <MarkedInProgressCard client={client} key={client.personExternalId} />
-        );
-      }
-      return (
-        <ClientListCard
-          client={client}
-          isInProgress
-          key={client.personExternalId}
-        />
-      );
-    });
+  if (clientsStore.clients.length > 0) {
+    clients = clientsStore.clients.map((client) => (
+      <ClientListCard
+        client={client}
+        isInProgress={client.inProgressSubmissionDate !== null}
+        key={client.personExternalId}
+      />
+    ));
   } else {
-    inProgressClients = <InProgressEmptyState />;
+    clients = <EmptyStateCard />;
   }
 
   return (
     <ClientListContainer>
-      <ClientListHeading>Up Next</ClientListHeading>
+      <ClientListHeading>Caseload</ClientListHeading>
       <ClientListTableHeading>
         <span>Client</span>
         <span>Needs Met</span>
         <span>Recommended Contact</span>
       </ClientListTableHeading>
 
-      {clientsStore.isLoading &&
-      clientsStore.clients.length === 0 &&
-      policyStore.isLoading
+      {clientsStore.isLoading && clientsStore.clients.length === 0
         ? `Loading... ${clientsStore.error || ""}`
         : clients}
-
-      <br />
-
-      <VisibilitySensor
-        partialVisibility
-        onChange={(isNowVisible) => {
-          if (!inProgressVisible && isNowVisible) {
-            trackScrolledToInProgress();
-          }
-          setInProgressVisible(isNowVisible);
-        }}
-      >
-        <span>
-          <ClientListHeading>In Progress</ClientListHeading>
-          <ClientListTableHeading />
-          {clientsStore.isLoading || policyStore.isLoading
-            ? `Loading... ${clientsStore.error || ""}`
-            : inProgressClients}
-        </span>
-      </VisibilitySensor>
     </ClientListContainer>
   );
 };
