@@ -164,6 +164,9 @@ state_incarceration_period_release_reason_released_from_temporary_custody = (
     "RELEASED_FROM_TEMPORARY_CUSTODY"
 )
 state_incarceration_period_release_reason_released_in_error = "RELEASED_IN_ERROR"
+state_incarceration_period_release_reason_released_to_supervision = (
+    "RELEASED_TO_SUPERVISION"
+)
 state_incarceration_period_release_reason_sentence_served = "SENTENCE_SERVED"
 state_incarceration_period_release_reason_status_change = "STATUS_CHANGE"
 state_incarceration_period_release_reason_transfer = "TRANSFER"

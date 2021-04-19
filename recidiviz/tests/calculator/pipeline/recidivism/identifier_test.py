@@ -899,6 +899,7 @@ RELEASE_REASON_INCLUSION: Dict[ReleaseReason, bool] = {
     ReleaseReason.PARDONED: True,
     ReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION: True,
     ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY: False,
+    ReleaseReason.RELEASED_TO_SUPERVISION: True,
     ReleaseReason.RELEASED_IN_ERROR: False,
     ReleaseReason.SENTENCE_SERVED: True,
     ReleaseReason.TRANSFER: False,
