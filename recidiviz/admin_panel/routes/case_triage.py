@@ -173,11 +173,8 @@ def add_case_triage_routes(bp: Blueprint) -> None:
                     {
                         "personExternalId": res.person_external_id,
                         "officerExternalId": res.officer_external_id,
-                        "otherText": res.update_metadata["otherText"],
-                        "timestamp": max(
-                            action["action_ts"]
-                            for action in res.update_metadata["actions"]
-                        ),
+                        "otherText": res.comment,
+                        "timestamp": str(res.action_ts),
                     }
                     for res in results
                 ]
