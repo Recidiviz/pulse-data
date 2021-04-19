@@ -27,12 +27,4 @@ export enum CaseUpdateActionType {
   OTHER_DISMISSAL = "OTHER_DISMISSAL",
 }
 
-export const POSITIVE_CASE_UPDATE_ACTIONS = [
-  CaseUpdateActionType.COMPLETED_ASSESSMENT,
-  CaseUpdateActionType.DISCHARGE_INITIATED,
-  CaseUpdateActionType.DOWNGRADE_INITIATED,
-  CaseUpdateActionType.FOUND_EMPLOYMENT,
-  CaseUpdateActionType.SCHEDULED_FACE_TO_FACE,
-];
-
 export default CaseUpdateActionType;

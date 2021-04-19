@@ -34,7 +34,9 @@ import {
 const Container = styled.div`
   display: flex;
   justify-content: space-between;
+  max-width: 1288px;
   padding: 0 ${rem(spacing.xl)};
+  margin: 0 auto;
 `;
 
 const Left = styled.div`

@@ -44,6 +44,9 @@ class PolicyRequirements:
     # Mapping from state supervision level -> how they are named by the state
     supervision_level_names: Dict[StateSupervisionLevel, str]
 
+    # Name of OMS used by the state
+    oms_name: str
+
     def to_json(self) -> Dict[str, Any]:
         supervision_contact_dict = {
             case_type.value: {level.value: period for level, period in sub_dict.items()}
@@ -63,6 +66,7 @@ class PolicyRequirements:
 
         return {
             "assessmentScoreCutoffs": assessment_score_cutoff_dict,
+            "omsName": self.oms_name,
             "supervisionContactFrequencies": supervision_contact_dict,
             "supervisionLevelNames": supervision_level_names,
         }
