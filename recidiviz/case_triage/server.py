@@ -147,6 +147,7 @@ def fetch_user_info() -> None:
     set, then they can make requests as if they were the impersonated user.
     """
     email = session["user_info"]["email"].lower()
+    g.email = email
     g.segment_user_id = segment_user_id_for_email(email)
     g.can_impersonate = authorization_store.can_impersonate_others(email)
     g.can_see_demo_data = authorization_store.can_see_demo_data(email)

@@ -24,11 +24,51 @@ from sqlalchemy.orm import Session
 
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
 from recidiviz.case_triage.case_updates.serializers import serialize_last_version_info
+from recidiviz.case_triage.demo_helpers import (
+    fake_officer_id_for_demo_user,
+)
 from recidiviz.persistence.database.schema.case_triage.schema import (
     CaseUpdate,
     ETLClient,
     ETLOfficer,
 )
+
+
+def _update_case_for_person(
+    session: Session,
+    officer_id: str,
+    client: ETLClient,
+    actions: List[CaseUpdateActionType],
+    other_text: Optional[str] = None,
+) -> None:
+    """This method updates the case_updates table with the newly provided actions.
+
+    This private method can be used liberally without regards for foreign key constraints,
+    as it creates a series of CaseUpdate objects (one for each action) associated with the
+    given officer_id and client. If other_text is provided, it's stored on the comment field.
+    """
+    # First, we delete all old actions before uploading en masse the list of new ones
+    delete_statement = delete(CaseUpdate).where(
+        (CaseUpdate.person_external_id == client.person_external_id)
+        & (CaseUpdate.officer_external_id == officer_id)
+        & (CaseUpdate.state_code == client.state_code)
+    )
+    session.execute(delete_statement)
+
+    now = datetime.now()
+    for action_type in actions:
+        last_version = serialize_last_version_info(action_type, client).to_json()
+        insert_statement = insert(CaseUpdate).values(
+            person_external_id=client.person_external_id,
+            officer_external_id=officer_id,
+            state_code=client.state_code,
+            action_type=action_type.value,
+            action_ts=now,
+            last_version=last_version,
+            comment=other_text,
+        )
+        session.execute(insert_statement)
+    session.commit()
 
 
 class CaseUpdatesInterface:
@@ -47,26 +87,35 @@ class CaseUpdatesInterface:
         Because the underlying table does not have foreign key constraints, independent
         validation must be provided before calling this method.
         """
-
-        # First, we delete all old actions before uploading en masse the list of new ones
-        delete_statement = delete(CaseUpdate).where(
-            (CaseUpdate.person_external_id == client.person_external_id)
-            & (CaseUpdate.officer_external_id == officer.external_id)
-            & (CaseUpdate.state_code == officer.state_code)
+        _update_case_for_person(
+            session,
+            officer.external_id,
+            client,
+            actions,
+            other_text,
         )
-        session.execute(delete_statement)
 
-        now = datetime.now()
-        for action_type in actions:
-            last_version = serialize_last_version_info(action_type, client).to_json()
-            insert_statement = insert(CaseUpdate).values(
-                person_external_id=client.person_external_id,
-                officer_external_id=officer.external_id,
-                state_code=officer.state_code,
-                action_type=action_type.value,
-                action_ts=now,
-                last_version=last_version,
-                comment=other_text,
-            )
-            session.execute(insert_statement)
-        session.commit()
+
+class DemoCaseUpdatesInterface:
+    """Implements interface for updating demo users."""
+
+    @staticmethod
+    def update_case_for_person(
+        session: Session,
+        user_email: str,
+        client: ETLClient,
+        actions: List[CaseUpdateActionType],
+        other_text: Optional[str] = None,
+    ) -> None:
+        """This method updates the case_updates table for demo users.
+
+        No checking is provided to ensure that the provided officer ids or person ids map
+        back to anything.
+        """
+        _update_case_for_person(
+            session,
+            fake_officer_id_for_demo_user(user_email),
+            client,
+            actions,
+            other_text,
+        )
