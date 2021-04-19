@@ -414,6 +414,7 @@ def should_include_in_release_cohort(
         ReleaseReason.CONDITIONAL_RELEASE,
         ReleaseReason.PARDONED,
         ReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION,
+        ReleaseReason.RELEASED_TO_SUPERVISION,
         ReleaseReason.SENTENCE_SERVED,
         ReleaseReason.VACATED,
     ):
