@@ -106,8 +106,8 @@ class StateIncarcerationPeriodReleaseReason(EntityEnum, metaclass=EntityEnumMeta
     COMPASSIONATE = (
         state_enum_strings.state_incarceration_period_release_reason_compassionate
     )
-    # This release type corresponds to any release into some sort of
-    # supervision.
+    # This release type corresponds to a release through the process of being granted
+    # parole by the parole board
     CONDITIONAL_RELEASE = (
         state_enum_strings.state_incarceration_period_release_reason_conditional_release
     )
@@ -128,6 +128,12 @@ class StateIncarcerationPeriodReleaseReason(EntityEnum, metaclass=EntityEnumMeta
     )
     RELEASED_IN_ERROR = (
         state_enum_strings.state_incarceration_period_release_reason_released_in_error
+    )
+    # This release type corresponds to any release onto some sort of supervision that
+    # doesn't qualify as a CONDITIONAL_RELEASE (also used if we cannot determine what
+    # type of release to supervision a release is)
+    RELEASED_TO_SUPERVISION = (
+        state_enum_strings.state_incarceration_period_release_reason_released_to_supervision
     )
     SENTENCE_SERVED = (
         state_enum_strings.state_incarceration_period_release_reason_sentence_served
@@ -265,6 +271,7 @@ def is_official_release(
         StateIncarcerationPeriodReleaseReason.EXECUTION,
         StateIncarcerationPeriodReleaseReason.PARDONED,
         StateIncarcerationPeriodReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION,
+        StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION,
         # Someone may be released from temporary custody and immediately admitted to full custody. This is considered
         # an official release because it is an end to the period of temporary custody.
         StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
@@ -357,9 +364,9 @@ _STATE_INCARCERATION_PERIOD_RELEASE_REASON_MAP = {
     "RELEASE TO PAROLE": StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
     "RELEASED FROM ERRONEOUS ADMISSION": StateIncarcerationPeriodReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION,
     "RELEASED FROM TEMPORARY CUSTODY": StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-    "RELEASE TO PROBATION": StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
     "ERROR": StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR,
     "RELEASED IN ERROR": StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR,
+    "RELEASED TO SUPERVISION": StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION,
     "RELEASED": StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
     "SERVED": StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
     "TIME EARNED": StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,

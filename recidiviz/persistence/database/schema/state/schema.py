@@ -264,6 +264,7 @@ state_incarceration_period_release_reason = Enum(
     state_enum_strings.state_incarceration_period_release_reason_released_from_erroneous_admission,
     state_enum_strings.state_incarceration_period_release_reason_released_from_temporary_custody,
     state_enum_strings.state_incarceration_period_release_reason_released_in_error,
+    state_enum_strings.state_incarceration_period_release_reason_released_to_supervision,
     state_enum_strings.state_incarceration_period_release_reason_sentence_served,
     state_enum_strings.state_incarceration_period_release_reason_transfer,
     state_enum_strings.state_incarceration_period_release_reason_transfer_out_of_state,
