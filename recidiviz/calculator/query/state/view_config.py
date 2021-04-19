@@ -25,9 +25,6 @@ from recidiviz.calculator.query.state.views.covid_dashboard.covid_dashboard_view
 from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.dataflow_metrics_materialized_views import (
     DATAFLOW_METRICS_MATERIALIZED_VIEW_BUILDERS,
 )
-from recidiviz.calculator.query.state.views.covid_report.covid_report_views import (
-    COVID_REPORT_VIEW_BUILDERS,
-)
 from recidiviz.calculator.query.state.views.dashboard.dashboard_views import (
     DASHBOARD_VIEW_BUILDERS,
 )
@@ -57,7 +54,6 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = list(
             DATAFLOW_METRICS_MATERIALIZED_VIEW_BUILDERS,
             REFERENCE_VIEW_BUILDERS,
             COVID_DASHBOARD_VIEW_BUILDERS,
-            COVID_REPORT_VIEW_BUILDERS,
             DASHBOARD_VIEW_BUILDERS,
             PO_REPORT_VIEW_BUILDERS,
             PUBLIC_DASHBOARD_VIEW_BUILDERS,
