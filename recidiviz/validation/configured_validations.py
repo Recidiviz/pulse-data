@@ -75,13 +75,6 @@ from recidiviz.validation.views.state.incarceration_population_by_facility_by_de
 from recidiviz.validation.views.state.incarceration_population_by_facility_external_comparison import (
     INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.incarceration_population_by_facility_internal_comparison import (
-    INCARCERATION_POPULATION_BY_FACILITY_INTERNAL_COMPARISON_VIEW_BUILDER,
-)
-
-from recidiviz.validation.views.state.incarceration_population_by_month_internal_comparison import (
-    INCARCERATION_POPULATION_BY_MONTH_INTERNAL_COMPARISON_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.incarceration_population_by_prioritized_race_and_ethnicity_by_period_internal_consistency import (
     INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
@@ -392,20 +385,6 @@ def get_all_validations() -> List[DataValidationCheck]:
             comparison_columns=[
                 "dashboard_projected_completion",
                 "public_dashboard_projected_completion",
-            ],
-        ),
-        SamenessDataValidationCheck(
-            view=INCARCERATION_POPULATION_BY_FACILITY_INTERNAL_COMPARISON_VIEW_BUILDER.build(),
-            comparison_columns=[
-                "covid_report_facility_population",
-                "public_dashboard_facility_population",
-            ],
-        ),
-        SamenessDataValidationCheck(
-            view=INCARCERATION_POPULATION_BY_MONTH_INTERNAL_COMPARISON_VIEW_BUILDER.build(),
-            comparison_columns=[
-                "covid_report_population",
-                "public_dashboard_population",
             ],
         ),
         SamenessDataValidationCheck(
