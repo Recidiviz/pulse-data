@@ -52,7 +52,7 @@ MICROSIM_PROJECTION_QUERY_TEMPLATE = """
         AND ((compartment_level_1 = 'SUPERVISION' AND metric_source = 'SUPERVISION_POPULATION')
             OR (compartment_level_1 = 'INCARCERATION' AND state_code = 'US_ND')
         )
-        AND compartment_level_2 != 'OTHER'
+        AND compartment_level_2 NOT IN ('INTERNAL_UNKNOWN', 'INFORMAL_PROBATION')
       GROUP BY state_code, date, compartment, legal_status, simulation_group
     ),
     historical_incarceration_population_output AS (
@@ -86,20 +86,18 @@ MICROSIM_PROJECTION_QUERY_TEMPLATE = """
       simulation_date,
       EXTRACT(YEAR FROM simulation_date) AS year,
       EXTRACT(MONTH FROM simulation_date) AS month,
+      -- Split the compartment and legal status into separate columns
       SPLIT(compartment, ' ')[OFFSET(0)] AS compartment,
-      legal_status,
+      SPLIT(compartment, ' ')[OFFSET(2)] AS legal_status,
       simulation_group,
-      SUM(total_population) AS total_population,
-      SUM(total_population_min) AS total_population_min,
-      SUM(total_population_max) AS total_population_max,
+      total_population,
+      total_population_min,
+      total_population_max,
     FROM `{project_id}.{population_projection_output_dataset}.microsim_projection_raw`
     INNER JOIN most_recent_results
-    USING (simulation_tag, date_created),
-    UNNEST(['ALL', simulation_group]) AS simulation_group,
-    UNNEST(['ALL', IF(SPLIT(compartment, ' ')[OFFSET(2)] = 'RE-INCARCERATION', 'GENERAL', SPLIT(compartment, ' ')[OFFSET(2)])]) AS legal_status
+    USING (simulation_tag, date_created)
     WHERE compartment NOT LIKE 'RELEASE%'
       AND simulation_date > DATE_TRUNC(DATE_SUB(CURRENT_DATE, INTERVAL 1 MONTH), MONTH)
-    GROUP BY state_code, date_created, simulation_date, year, month, compartment, legal_status, simulation_group
 
     UNION ALL
 

@@ -89,7 +89,7 @@ FROM
   external_data
 FULL OUTER JOIN
   internal_metrics_for_valid_regions_and_dates internal_data
-USING(region_code, date_of_stay, person_external_id, facility, legal_status)
+USING(region_code, date_of_stay, person_external_id)
 {filter_clause}
 ORDER BY region_code, date_of_stay, person_external_id
 """

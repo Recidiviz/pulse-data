@@ -101,7 +101,7 @@ US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_QUERY_TEMPLATE = """
             pay_flag
         FROM `{project_id}.{population_projection_dataset}.simulation_run_dates` AS report_month
         INNER JOIN `{project_id}.{analyst_dataset}.compartment_sub_sessions_materialized` sessions
-            ON report_month.run_date BETWEEN sessions.start_date AND COALESCE(DATE_ADD(sessions.end_date, INTERVAL 1 DAY), '9999-01-01')
+            ON report_month.run_date BETWEEN sessions.start_date AND COALESCE(sessions.end_date, '9999-01-01')
         -- Drop incarceration locations that should not be counted (mostly out of state incarcerations)
         INNER JOIN `{project_id}.{static_reference_dataset}.population_projection_facilities` facilities
             ON sessions.compartment_location = facilities.facility
