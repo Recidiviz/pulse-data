@@ -67,6 +67,7 @@ def us_id_policy_requirements() -> PolicyRequirements:
     """Returns set of policy requirements for Idaho."""
     return PolicyRequirements(
         assessment_score_cutoffs=US_ID_ASSESSMENT_SCORE_RANGE,
+        oms_name="CIS",
         supervision_contact_frequencies=SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS,
         supervision_level_names=US_ID_SUPERVISION_LEVEL_NAMES,
     )

@@ -15,16 +15,12 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { makeAutoObservable } from "mobx";
-import {
-  CaseUpdateActionType,
-  POSITIVE_CASE_UPDATE_ACTIONS,
-} from "./CaseUpdates";
+import { CaseUpdateActionType } from "./CaseUpdates";
 import ClientsStore, { DecoratedClient } from "../ClientsStore";
 import UserStore from "../UserStore";
 
 import API from "../API";
 import { trackPersonCaseUpdated } from "../../analytics";
-import { subsectionForClient } from "../ClientsStore/Client";
 
 interface CaseUpdatesStoreProps {
   api: API;
@@ -73,50 +69,9 @@ class CaseUpdatesStore {
     trackPersonCaseUpdated(client, client.inProgressActions, actions);
 
     this.clientsStore.view();
-    const wasPositiveAction = actions.some((action) =>
-      POSITIVE_CASE_UPDATE_ACTIONS.includes(action)
-    );
-    const listSubsection = subsectionForClient(client);
-    this.clientsStore.markAsInProgress(
-      client,
-      inProgressActions,
-      listSubsection,
-      wasPositiveAction
-    );
     this.clientsStore.fetchClientsList();
 
     this.isLoading = false;
-  }
-
-  async undo(client: DecoratedClient): Promise<void> {
-    /*
-      Given a client, who was recently marked as in-progress, revert their CaseUpdate to its previous state
-      To do so, we feed the `ClientsStore.clientsMarkedInProgress` dictionary entry, which contains the previous
-      representation of the client, back into the `record_client_action` API.
-     */
-    if (!this.clientsStore.clientsMarkedInProgress[client.personExternalId]) {
-      return;
-    }
-
-    this.isLoading = true;
-
-    const {
-      client: { personExternalId, previousInProgressActions = [] },
-    } = this.clientsStore.clientsMarkedInProgress[client.personExternalId];
-
-    try {
-      await this.api.post("/api/record_client_action", {
-        personExternalId,
-        actions: previousInProgressActions,
-        otherText: "",
-      });
-
-      this.clientsStore.undoMarkAsInProgress(client);
-      this.clientsStore.fetchClientsList();
-      this.isLoading = false;
-    } catch (error) {
-      this.isLoading = false;
-    }
   }
 }
 

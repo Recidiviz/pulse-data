@@ -15,30 +15,14 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import * as React from "react";
-import { DecoratedClient } from "../../stores/ClientsStore";
-import { useRootStore } from "../../stores";
-import { ClientCard } from "./ClientList.styles";
-import ClientMarkedInProgressOverlay from "../ClientMarkedInProgressOverlay";
+import { ClientCard, FlexCardSection, MainText } from "./ClientList.styles";
 
-interface MarkedInProgressCardProps {
-  client: DecoratedClient;
-}
+const EmptyStateCard = (): JSX.Element => (
+  <ClientCard className="client-card--in-progress">
+    <FlexCardSection>
+      <MainText>No clients can be found who match the search text.</MainText>
+    </FlexCardSection>
+  </ClientCard>
+);
 
-const MarkedInProgressCard = ({
-  client,
-}: MarkedInProgressCardProps): JSX.Element => {
-  const { clientsStore } = useRootStore();
-
-  return (
-    <ClientCard>
-      <ClientMarkedInProgressOverlay
-        clientMarkedInProgress={
-          clientsStore.clientsMarkedInProgress[client.personExternalId]
-        }
-        key={client.personExternalId}
-      />
-    </ClientCard>
-  );
-};
-
-export default MarkedInProgressCard;
+export default EmptyStateCard;

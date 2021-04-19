@@ -114,14 +114,4 @@ const decorateClient = (
   };
 };
 
-export type ClientListSubsection =
-  | "ACTIVE"
-  | "IN_PROGRESS"
-  | "TOP_OPPORTUNITIES";
-
-export const subsectionForClient = (client: Client): ClientListSubsection => {
-  // TODO(#5808): when top opportunities is available, update subsection calculation.
-  return client.inProgressActions?.length ? "IN_PROGRESS" : "ACTIVE";
-};
-
 export { decorateClient };

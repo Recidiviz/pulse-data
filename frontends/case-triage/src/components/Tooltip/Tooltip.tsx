@@ -20,7 +20,7 @@ import TooltipElement, { TooltipState } from "./Tooltip.styles";
 
 interface TooltipProps {
   children: React.ReactChild | React.ReactChild[];
-  title: string;
+  title: React.ReactNode;
 }
 
 const Tooltip: React.FC<TooltipProps> = ({ children, title }: TooltipProps) => {

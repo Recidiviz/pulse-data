@@ -23,6 +23,7 @@ import {
   ClientCard,
   ClientNeed,
   FlexCardSection,
+  InProgressIndicator,
   MainText,
   SecondaryText,
 } from "./ClientList.styles";
@@ -36,14 +37,9 @@ interface ClientProps {
 }
 
 const getNeedsMetState = (
-  isInProgress: boolean,
   needsMet: DecoratedClient["needsMet"],
   need: keyof DecoratedClient["needsMet"]
 ): NeedState => {
-  if (isInProgress) {
-    return needsMet[need] ? NeedState.DISABLED_MET : NeedState.DISABLED;
-  }
-
   return needsMet[need] ? NeedState.MET : NeedState.NOT_MET;
 };
 
@@ -51,7 +47,7 @@ const ClientComponent: React.FC<ClientProps> = ({
   client,
   isInProgress,
 }: ClientProps) => {
-  const { clientsStore } = useRootStore();
+  const { clientsStore, policyStore } = useRootStore();
   const cardRef = React.useRef<HTMLDivElement>(null);
 
   const viewClient = React.useCallback(() => {
@@ -81,12 +77,11 @@ const ClientComponent: React.FC<ClientProps> = ({
     viewClient,
   ]);
 
+  const numInProgressActions = client.inProgressActions?.length;
+  const omsName = policyStore.policies?.omsName || "OMS";
+
   return (
-    <ClientCard
-      className={isInProgress ? "client-card--in-progress" : ""}
-      ref={cardRef}
-      onClick={viewClient}
-    >
+    <ClientCard ref={cardRef} onClick={viewClient}>
       <CardHeader className="fs-exclude">
         <MainText>{client.name}</MainText>
         <SecondaryText>
@@ -98,41 +93,38 @@ const ClientComponent: React.FC<ClientProps> = ({
         <Tooltip title="Employment">
           <ClientNeed
             kind={IconSVG.NeedsEmployment}
-            state={getNeedsMetState(
-              isInProgress,
-              client.needsMet,
-              "employment"
-            )}
+            state={getNeedsMetState(client.needsMet, "employment")}
           />
         </Tooltip>
         <Tooltip title="Risk Assessment">
           <ClientNeed
             kind={IconSVG.NeedsRiskAssessment}
-            state={getNeedsMetState(
-              isInProgress,
-              client.needsMet,
-              "assessment"
-            )}
+            state={getNeedsMetState(client.needsMet, "assessment")}
           />
         </Tooltip>
         <Tooltip title="Face to Face Contact">
           <ClientNeed
             kind={IconSVG.NeedsContact}
-            state={getNeedsMetState(
-              isInProgress,
-              client.needsMet,
-              "faceToFaceContact"
-            )}
+            state={getNeedsMetState(client.needsMet, "faceToFaceContact")}
           />
         </Tooltip>
       </FlexCardSection>
       <FlexCardSection>
-        {isInProgress ? (
-          <MainText>In progress</MainText>
-        ) : (
-          <DueDate date={client.nextFaceToFaceDate} />
-        )}
+        <DueDate date={client.nextFaceToFaceDate} />
       </FlexCardSection>
+      {isInProgress ? (
+        <Tooltip
+          title={
+            <>
+              <strong>{numInProgressActions}</strong> Task
+              {numInProgressActions !== 1 ? "s" : ""} being confirmed with{" "}
+              {omsName}
+            </>
+          }
+        >
+          <InProgressIndicator />
+        </Tooltip>
+      ) : null}
     </ClientCard>
   );
 };
