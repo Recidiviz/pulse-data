@@ -216,6 +216,13 @@ from recidiviz.validation.views.state.analyst_data_validation.reincarcerations_f
 from recidiviz.validation.views.state.analyst_data_validation.reincarcerations_from_sessions_to_dataflow import (
     REINCARCERATIONS_FROM_SESSIONS_TO_DATAFLOW_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.analyst_data_validation.revocation_sessions_to_dataflow_disaggregated import (
+    REVOCATION_SESSIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.analyst_data_validation.revocation_sessions_to_dataflow import (
+    REVOCATION_SESSIONS_TO_DATAFLOW_VIEW_BUILDER,
+)
+
 
 VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = [
     ACTIVE_IN_POPULATION_AFTER_DEATH_DATE_VIEW_BUILDER,
@@ -280,6 +287,8 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = [
     REINCARCERATIONS_FROM_DATAFLOW_TO_DATAFLOW_VIEW_BUILDER,
     REINCARCERATIONS_FROM_SESSIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
     REINCARCERATIONS_FROM_SESSIONS_TO_DATAFLOW_VIEW_BUILDER,
+    REVOCATION_SESSIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
+    REVOCATION_SESSIONS_TO_DATAFLOW_VIEW_BUILDER,
 ] + POPULATION_PROJECTION_DATA_VALIDATION_VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE
 
 
