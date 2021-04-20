@@ -110,5 +110,9 @@ ADD . /app
 COPY --from=admin-panel-build /usr/admin-panel/build /app/frontends/admin-panel/build
 COPY --from=case-triage-build /usr/case-triage/build /app/frontends/case-triage/build
 
+# Add the current commit SHA as an env variable
+ARG CURRENT_GIT_SHA=""
+ENV CURRENT_GIT_SHA=${CURRENT_GIT_SHA}}
+
 EXPOSE 8080
 CMD pipenv run gunicorn -c gunicorn.conf.py --log-file=- -b :8080 recidiviz.server:app

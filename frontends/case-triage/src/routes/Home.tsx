@@ -17,10 +17,17 @@
 import { Link, RouteComponentProps } from "@reach/router";
 import React, { ReactElement } from "react";
 import styled from "styled-components/macro";
+import {
+  Assets,
+  Button,
+  Header,
+  Modal,
+  Search,
+  spacing,
+} from "@recidiviz/design-system";
 import { rem } from "polished";
 import { observer } from "mobx-react-lite";
 
-import { Assets, Header, Search, spacing } from "@recidiviz/design-system";
 import AuthWall from "../components/AuthWall";
 import CaseCard from "../components/CaseCard";
 import ClientList from "../components/ClientList";
@@ -48,8 +55,12 @@ const Right = styled.div`
   width: 555px;
 `;
 
+const ReloadButton = styled(Button)`
+  margin: ${rem(spacing.lg)} auto 0 auto;
+`;
+
 const Home = (props: RouteComponentProps): ReactElement => {
-  const { clientsStore } = useRootStore();
+  const { clientsStore, userStore } = useRootStore();
 
   const ClientCard =
     clientsStore.activeClient &&
@@ -87,6 +98,19 @@ const Home = (props: RouteComponentProps): ReactElement => {
         </Left>
         <Right>{ClientCard}</Right>
       </Container>
+      <Modal
+        isOpen={userStore.shouldReload}
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        appElement={document.getElementById("root")!}
+      >
+        <div>
+          Please reload the page. A new update is available, and the app may not
+          continue to work correctly without refreshing.
+        </div>
+        <ReloadButton onClick={() => window.location.reload()}>
+          Reload
+        </ReloadButton>
+      </Modal>
     </AuthWall>
   );
 };
