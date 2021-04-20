@@ -45,11 +45,12 @@ WITH supervision_start_dates AS (
     state_code,
     supervision_type
 ),
-latest_face_to_face AS (
+latest_contacts AS (
   SELECT
     person_id,
     state_code,
-    MAX(most_recent_face_to_face_date) AS most_recent_face_to_face_date
+    MAX(most_recent_face_to_face_date) AS most_recent_face_to_face_date,
+    MAX(most_recent_home_visit_date) AS most_recent_home_visit_date
   FROM
     `{project_id}.{dataflow_metrics_materialized_dataset}.most_recent_supervision_case_compliance_metrics_materialized`
   WHERE
@@ -125,7 +126,7 @@ LEFT JOIN
   `{project_id}.{case_triage_dataset}.latest_assessments`
 USING (person_id, state_code)
 LEFT JOIN
-  latest_face_to_face
+  latest_contacts
 USING (person_id, state_code)
 LEFT JOIN
   supervision_start_dates
@@ -198,6 +199,7 @@ CLIENT_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "most_recent_assessment_date",
         "assessment_score",
         "most_recent_face_to_face_date",
+        "most_recent_home_visit_date",
         # TODO(#5943): supervising_officer_external_id must be at the end of
         # this list because of the way that we have to derive this result from
         # the ofndr_agnt table for Idaho.
