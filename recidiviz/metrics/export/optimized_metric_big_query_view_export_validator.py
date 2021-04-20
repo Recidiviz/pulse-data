@@ -28,7 +28,7 @@ class OptimizedMetricBigQueryViewExportValidator(BigQueryViewExportValidator):
     """View exporter which checks the metadata for the object at the given path and ensures that there is a
     total_data_points key with an integer value greater than 0."""
 
-    def validate(self, path: GcsfsFilePath) -> bool:
+    def validate(self, path: GcsfsFilePath, allow_empty: bool) -> bool:
         metadata = self.fs.get_metadata(path)
         if not metadata:
             return False
@@ -40,6 +40,6 @@ class OptimizedMetricBigQueryViewExportValidator(BigQueryViewExportValidator):
 
         try:
             total_data_points = int(data_points)
-            return total_data_points > 0
+            return total_data_points > 0 or allow_empty
         except ValueError:
             return False

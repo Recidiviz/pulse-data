@@ -107,6 +107,10 @@ class ExportBigQueryViewConfig(Generic[BigQueryViewType]):
     # The filter clause that should be used to filter the view
     view_filter_clause: Optional[str] = attr.ib(default=None)
 
+    # If set to True then empty files are considered valid. If False then some
+    # validators may choose to mark empty files as invalid.
+    allow_empty: bool = attr.ib(default=False)
+
     @export_output_formats.default
     def _default_export_output_formats(self) -> List[ExportOutputFormatType]:
         if isinstance(self.view, MetricBigQueryView):

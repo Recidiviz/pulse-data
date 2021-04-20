@@ -94,7 +94,7 @@ class ValidateTest(unittest.TestCase):
 
         validator = OptimizedMetricBigQueryViewExportValidator(mock_fs)
         for path in self.staging_paths:
-            result = validator.validate(path)
+            result = validator.validate(path, allow_empty=False)
             self.assertTrue(result)
 
         mock_fs.assert_has_calls(
@@ -114,8 +114,8 @@ class ValidateTest(unittest.TestCase):
 
         validator = OptimizedMetricBigQueryViewExportValidator(mock_fs)
 
-        self.assertTrue(validator.validate(self.staging_paths[0]))
-        self.assertFalse(validator.validate(self.staging_paths[1]))
+        self.assertTrue(validator.validate(self.staging_paths[0], allow_empty=False))
+        self.assertFalse(validator.validate(self.staging_paths[1], allow_empty=False))
 
         mock_fs.assert_has_calls(
             [
@@ -131,7 +131,7 @@ class ValidateTest(unittest.TestCase):
 
         validator = OptimizedMetricBigQueryViewExportValidator(mock_fs)
         for path in self.staging_paths:
-            result = validator.validate(path)
+            result = validator.validate(path, allow_empty=False)
             self.assertFalse(result)
 
         # We failed before validating the second path
@@ -144,8 +144,23 @@ class ValidateTest(unittest.TestCase):
 
         validator = OptimizedMetricBigQueryViewExportValidator(mock_fs)
         for path in self.staging_paths:
-            result = validator.validate(path)
+            result = validator.validate(path, allow_empty=False)
             self.assertFalse(result)
 
         # We failed before validating the second path
         mock_fs.assert_has_calls([call.get_metadata(self.staging_paths[0])])
+
+    def test_validate_allow_empty(self) -> None:
+        mock_fs = create_autospec(DirectIngestGCSFileSystem)
+
+        mock_fs.get_metadata.side_effect = [
+            {"total_data_points": "5"},
+            {"total_data_points": "0"},
+        ]
+
+        validator = OptimizedMetricBigQueryViewExportValidator(mock_fs)
+
+        self.assertTrue(validator.validate(self.staging_paths[0], allow_empty=True))
+        self.assertTrue(validator.validate(self.staging_paths[0], allow_empty=True))
+
+        mock_fs.assert_has_calls([call.get_metadata(self.staging_paths[0])] * 2)
