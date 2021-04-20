@@ -51,18 +51,20 @@ class FakeState(manual_upload.State):
 
 def row(
     source_and_report_id: int,
+    publish_date_str: str,
     start_date_str: str,
     dimensions: Tuple[manual_upload.Dimension, ...],
     raw_source_categories: List[str],
     value: int,
     end_date_str: Optional[str] = None,
-) -> Tuple[int, str, List[int], _npd, _npd, _npd, str, str, List[str], int]:
+) -> Tuple[int, str, List[int], object, _npd, _npd, _npd, str, str, List[str], int]:
     """Builds an expected output row for MetricByMonth.
 
     Makes a few assumptions that helps keep our tests from being even more verbose:
     - Source and Report id match (one report for each source)
     - If end date is not provided, defaults to the first day of the following month
     """
+    publish_date = datetime.date.fromisoformat(publish_date_str)
     start_date = datetime.date.fromisoformat(start_date_str)
     end_date = (
         datetime.date.fromisoformat(end_date_str)
@@ -83,6 +85,7 @@ def row(
         source_and_report_id,
         "_",
         [source_and_report_id],
+        publish_date,
         _npd(
             date.first_day_of_month(end_date - datetime.timedelta(days=1)).isoformat()
         ),
@@ -103,6 +106,7 @@ METRIC_BY_MONTH_SCHEMA = MockTableSchema(
         "source_id": sqltypes.Integer(),
         "report_type": sqltypes.String(255),
         "report_ids": sqltypes.ARRAY(sqltypes.Integer),
+        "publish_date": sqltypes.Date(),
         "start_of_month": sqltypes.Date(),
         "time_window_start": sqltypes.Date(),
         "time_window_end": sqltypes.Date(),
@@ -304,12 +308,12 @@ class MetricByMonthViewTest(BaseViewTest):
         # Assert
         expected = pd.DataFrame(
             [
-                row(1, "2020-11-30", (FakeState("US_XX"),), [], 3000),
-                row(1, "2020-12-31", (FakeState("US_XX"),), [], 4000),
-                row(2, "2020-11-30", (FakeState("US_YY"),), [], 1000),
-                row(2, "2020-12-31", (FakeState("US_YY"),), [], 1020),
-                row(3, "2020-11-30", (FakeState("US_ZZ"),), [], 400),
-                row(3, "2020-12-31", (FakeState("US_ZZ"),), [], 500),
+                row(1, "2021-01-01", "2020-11-30", (FakeState("US_XX"),), [], 3000),
+                row(1, "2021-01-01", "2020-12-31", (FakeState("US_XX"),), [], 4000),
+                row(2, "2021-01-02", "2020-11-30", (FakeState("US_YY"),), [], 1000),
+                row(2, "2021-01-02", "2020-12-31", (FakeState("US_YY"),), [], 1020),
+                row(3, "2021-01-02", "2020-11-30", (FakeState("US_ZZ"),), [], 400),
+                row(3, "2021-01-02", "2020-12-31", (FakeState("US_ZZ"),), [], 500),
             ],
             columns=METRIC_BY_MONTH_SCHEMA.data_types.keys(),
         )
@@ -550,12 +554,40 @@ class MetricByMonthViewTest(BaseViewTest):
         # Assert
         expected = pd.DataFrame(
             [
-                row(1, "2020-11-30", (FakeState("US_AA"),), ["Parole"], 3000),
-                row(1, "2020-12-31", (FakeState("US_AA"),), ["Parole"], 4000),
-                row(2, "2020-11-30", (FakeState("US_XX"),), ["Parole"], 5000),
-                row(2, "2020-12-31", (FakeState("US_XX"),), ["Parole"], 5001),
-                row(3, "2020-11-30", (FakeState("US_YY"),), [], 400),
-                row(3, "2020-12-31", (FakeState("US_YY"),), [], 500),
+                row(
+                    1,
+                    "2021-01-01",
+                    "2020-11-30",
+                    (FakeState("US_AA"),),
+                    ["Parole"],
+                    3000,
+                ),
+                row(
+                    1,
+                    "2021-01-01",
+                    "2020-12-31",
+                    (FakeState("US_AA"),),
+                    ["Parole"],
+                    4000,
+                ),
+                row(
+                    2,
+                    "2021-01-02",
+                    "2020-11-30",
+                    (FakeState("US_XX"),),
+                    ["Parole"],
+                    5000,
+                ),
+                row(
+                    2,
+                    "2021-01-02",
+                    "2020-12-31",
+                    (FakeState("US_XX"),),
+                    ["Parole"],
+                    5001,
+                ),
+                row(3, "2021-01-02", "2020-11-30", (FakeState("US_YY"),), [], 400),
+                row(3, "2021-01-02", "2020-12-31", (FakeState("US_YY"),), [], 500),
             ],
             columns=METRIC_BY_MONTH_SCHEMA.data_types.keys(),
         )
@@ -849,6 +881,7 @@ class MetricByMonthViewTest(BaseViewTest):
             [
                 row(
                     4,
+                    "2021-01-02",
                     "2020-11-30",
                     (FakeState("US_XA"), manual_upload.Gender("FEMALE")),
                     ["Female", "Offsite", "Female", "Onsite"],
@@ -856,6 +889,7 @@ class MetricByMonthViewTest(BaseViewTest):
                 ),
                 row(
                     4,
+                    "2021-01-02",
                     "2020-12-31",
                     (FakeState("US_XA"), manual_upload.Gender("FEMALE")),
                     ["Female", "Offsite", "Female", "Onsite"],
@@ -863,6 +897,7 @@ class MetricByMonthViewTest(BaseViewTest):
                 ),
                 row(
                     5,
+                    "2021-01-02",
                     "2020-11-30",
                     (FakeState("US_XB"), manual_upload.Gender("FEMALE")),
                     ["Female"],
@@ -870,6 +905,7 @@ class MetricByMonthViewTest(BaseViewTest):
                 ),
                 row(
                     5,
+                    "2021-01-02",
                     "2020-12-31",
                     (FakeState("US_XB"), manual_upload.Gender("FEMALE")),
                     ["Female"],
@@ -877,6 +913,7 @@ class MetricByMonthViewTest(BaseViewTest):
                 ),
                 row(
                     5,
+                    "2021-01-02",
                     "2020-11-30",
                     (FakeState("US_XC"), manual_upload.Gender("FEMALE")),
                     ["Female"],
@@ -884,6 +921,7 @@ class MetricByMonthViewTest(BaseViewTest):
                 ),
                 row(
                     5,
+                    "2021-01-02",
                     "2020-12-31",
                     (FakeState("US_XC"), manual_upload.Gender("FEMALE")),
                     ["Female"],
@@ -891,6 +929,7 @@ class MetricByMonthViewTest(BaseViewTest):
                 ),
                 row(
                     1,
+                    "2021-01-01",
                     "2020-11-30",
                     (FakeState("US_XX"), manual_upload.Gender("FEMALE")),
                     ["Female"],
@@ -898,6 +937,7 @@ class MetricByMonthViewTest(BaseViewTest):
                 ),
                 row(
                     1,
+                    "2021-01-01",
                     "2020-12-31",
                     (FakeState("US_XX"), manual_upload.Gender("FEMALE")),
                     ["Female"],
@@ -905,6 +945,7 @@ class MetricByMonthViewTest(BaseViewTest):
                 ),
                 row(
                     4,
+                    "2021-01-02",
                     "2020-11-30",
                     (FakeState("US_XA"), manual_upload.Gender("MALE")),
                     ["Male", "Offsite", "Male", "Onsite"],
@@ -912,6 +953,7 @@ class MetricByMonthViewTest(BaseViewTest):
                 ),
                 row(
                     4,
+                    "2021-01-02",
                     "2020-12-31",
                     (FakeState("US_XA"), manual_upload.Gender("MALE")),
                     ["Male", "Offsite", "Male", "Onsite"],
@@ -919,6 +961,7 @@ class MetricByMonthViewTest(BaseViewTest):
                 ),
                 row(
                     5,
+                    "2021-01-02",
                     "2020-11-30",
                     (FakeState("US_XB"), manual_upload.Gender("MALE")),
                     ["Male"],
@@ -926,6 +969,7 @@ class MetricByMonthViewTest(BaseViewTest):
                 ),
                 row(
                     5,
+                    "2021-01-02",
                     "2020-12-31",
                     (FakeState("US_XB"), manual_upload.Gender("MALE")),
                     ["Male"],
@@ -933,6 +977,7 @@ class MetricByMonthViewTest(BaseViewTest):
                 ),
                 row(
                     5,
+                    "2021-01-02",
                     "2020-11-30",
                     (FakeState("US_XC"), manual_upload.Gender("MALE")),
                     ["Male"],
@@ -940,6 +985,7 @@ class MetricByMonthViewTest(BaseViewTest):
                 ),
                 row(
                     5,
+                    "2021-01-02",
                     "2020-12-31",
                     (FakeState("US_XC"), manual_upload.Gender("MALE")),
                     ["Male"],
@@ -947,6 +993,7 @@ class MetricByMonthViewTest(BaseViewTest):
                 ),
                 row(
                     1,
+                    "2021-01-01",
                     "2020-11-30",
                     (FakeState("US_XX"), manual_upload.Gender("MALE")),
                     ["Male"],
@@ -954,6 +1001,7 @@ class MetricByMonthViewTest(BaseViewTest):
                 ),
                 row(
                     1,
+                    "2021-01-01",
                     "2020-12-31",
                     (FakeState("US_XX"), manual_upload.Gender("MALE")),
                     ["Male"],
@@ -1121,8 +1169,8 @@ class MetricByMonthViewTest(BaseViewTest):
         # Assert
         expected = pd.DataFrame(
             [
-                row(2, "2020-11-30", (FakeState("US_XX"),), [], 1000),
-                row(2, "2020-12-31", (FakeState("US_XX"),), [], 1010),
+                row(2, "2021-01-02", "2020-11-30", (FakeState("US_XX"),), [], 1000),
+                row(2, "2021-01-02", "2020-12-31", (FakeState("US_XX"),), [], 1010),
             ],
             columns=METRIC_BY_MONTH_SCHEMA.data_types.keys(),
         )
@@ -1282,8 +1330,8 @@ class MetricByMonthViewTest(BaseViewTest):
         # Assert
         expected = pd.DataFrame(
             [
-                row(1, "2020-11-30", (FakeState("US_XX"),), [], 1000),
-                row(1, "2020-12-31", (FakeState("US_XX"),), [], 2000),
+                row(1, "2021-01-01", "2020-11-30", (FakeState("US_XX"),), [], 1000),
+                row(1, "2021-01-01", "2020-12-31", (FakeState("US_XX"),), [], 2000),
             ],
             columns=METRIC_BY_MONTH_SCHEMA.data_types.keys(),
         )
@@ -1427,6 +1475,7 @@ class MetricByMonthViewTest(BaseViewTest):
             [
                 row(
                     1,
+                    "2021-01-01",
                     "2020-11-30",
                     (FakeState("US_XX"), manual_upload.Race("")),
                     [],
@@ -1434,6 +1483,7 @@ class MetricByMonthViewTest(BaseViewTest):
                 ),
                 row(
                     1,
+                    "2021-01-01",
                     "2020-11-30",
                     (FakeState("US_XX"), manual_upload.Race("BLACK")),
                     [],
@@ -1441,6 +1491,7 @@ class MetricByMonthViewTest(BaseViewTest):
                 ),
                 row(
                     1,
+                    "2021-01-01",
                     "2020-11-30",
                     (FakeState("US_XX"), manual_upload.Race("WHITE")),
                     [],
@@ -1619,8 +1670,8 @@ class MetricByMonthViewTest(BaseViewTest):
         # Assert
         expected = pd.DataFrame(
             [
-                row(1, "2020-11-01", (FakeState("US_XX"),), [], 3),
-                row(1, "2021-02-01", (FakeState("US_XX"),), [], 384),
+                row(1, "2021-01-02", "2020-11-01", (FakeState("US_XX"),), [], 3),
+                row(1, "2021-01-02", "2021-02-01", (FakeState("US_XX"),), [], 384),
             ],
             columns=METRIC_BY_MONTH_SCHEMA.data_types.keys(),
         )
@@ -1927,6 +1978,7 @@ class MetricByMonthViewTest(BaseViewTest):
             [
                 row(
                     1,
+                    "2021-01-01",
                     "2020-11-15",
                     (FakeState("US_XX"),),
                     [],
@@ -1935,6 +1987,7 @@ class MetricByMonthViewTest(BaseViewTest):
                 ),
                 row(
                     1,
+                    "2021-01-01",
                     "2020-12-20",
                     (FakeState("US_XX"),),
                     [],
@@ -1943,6 +1996,7 @@ class MetricByMonthViewTest(BaseViewTest):
                 ),
                 row(
                     1,
+                    "2021-01-01",
                     "2020-12-27",
                     (FakeState("US_XX"),),
                     [],
@@ -1951,6 +2005,7 @@ class MetricByMonthViewTest(BaseViewTest):
                 ),
                 row(
                     1,
+                    "2021-01-01",
                     "2021-02-07",
                     (FakeState("US_XX"),),
                     [],
@@ -2108,6 +2163,7 @@ class MetricByMonthViewTest(BaseViewTest):
             [
                 row(
                     1,
+                    "2021-01-01",
                     "2019-01-01",
                     (FakeState("US_XX"),),
                     [],
@@ -2116,6 +2172,7 @@ class MetricByMonthViewTest(BaseViewTest):
                 ),
                 row(
                     1,
+                    "2021-01-01",
                     "2020-01-01",
                     (FakeState("US_XX"),),
                     [],
@@ -2124,6 +2181,7 @@ class MetricByMonthViewTest(BaseViewTest):
                 ),
                 row(
                     1,
+                    "2021-01-01",
                     "2020-04-01",
                     (FakeState("US_XX"),),
                     [],
@@ -2132,6 +2190,7 @@ class MetricByMonthViewTest(BaseViewTest):
                 ),
                 row(
                     1,
+                    "2021-01-01",
                     "2020-07-01",
                     (FakeState("US_XX"),),
                     [],
@@ -2140,6 +2199,7 @@ class MetricByMonthViewTest(BaseViewTest):
                 ),
                 row(
                     1,
+                    "2021-01-01",
                     "2020-10-01",
                     (FakeState("US_XX"),),
                     [],
@@ -2290,6 +2350,7 @@ class MetricByMonthViewTest(BaseViewTest):
             [
                 row(
                     1,
+                    "2021-01-01",
                     "2020-01-01",
                     (FakeState("US_XX"),),
                     ["B", "D"],
@@ -2297,6 +2358,7 @@ class MetricByMonthViewTest(BaseViewTest):
                 ),
                 row(
                     1,
+                    "2021-01-01",
                     "2021-01-01",
                     (FakeState("US_XX"),),
                     ["A", "B"],
@@ -2314,6 +2376,7 @@ class MetricByMonthViewTest(BaseViewTest):
         # Start of 2022-01
         row_2022 = row(
             1,
+            "2021-01-01",
             "2022-01-01",
             (FakeState("US_XX"),),
             [],
@@ -2324,16 +2387,18 @@ class MetricByMonthViewTest(BaseViewTest):
         row_2021 = row(
             1,
             "2021-01-01",
+            "2021-01-01",
             (FakeState("US_XX"),),
             [],
             2,
             end_date_str="2021-01-02",
         )
         # End of 2020-01
-        row_2020 = row(1, "2020-01-31", (FakeState("US_XX"),), [], 2)
+        row_2020 = row(1, "2021-01-01", "2020-01-31", (FakeState("US_XX"),), [], 2)
         # Start of 2019-02 -- not quite a year prior
         row_2019 = row(
             1,
+            "2021-01-01",
             "2019-02-01",
             (FakeState("US_XX"),),
             [],
@@ -2343,6 +2408,7 @@ class MetricByMonthViewTest(BaseViewTest):
         # Start of 2018-02 -- exactly a year prior
         row_2018 = row(
             1,
+            "2021-01-01",
             "2018-02-01",
             (FakeState("US_XX"),),
             [],
@@ -2352,6 +2418,7 @@ class MetricByMonthViewTest(BaseViewTest):
         # Start of 2017-03 -- still not quite
         row_2017 = row(
             1,
+            "2021-01-01",
             "2017-03-01",
             (FakeState("US_XX"),),
             [],

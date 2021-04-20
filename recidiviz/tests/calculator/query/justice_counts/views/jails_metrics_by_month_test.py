@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests Jails metrics functionality."""
+import datetime
+
 from mock import Mock, patch
 
 import numpy as np
@@ -69,6 +71,7 @@ class JailsOutputViewTest(BaseViewTest):
                 [
                     row(
                         1,
+                        "2021-01-01",
                         "2020-11-30",
                         (FakeState("US_XX"), manual_upload.County("US_XX_ALPHA")),
                         [],
@@ -77,6 +80,7 @@ class JailsOutputViewTest(BaseViewTest):
                     + (None, None, "US_XX", "US_XX_ALPHA", None, None),
                     row(
                         1,
+                        "2021-01-01",
                         "2020-11-30",
                         (FakeState("US_XX"), manual_upload.County("US_XX_BETA")),
                         [],
@@ -85,6 +89,7 @@ class JailsOutputViewTest(BaseViewTest):
                     + (None, None, "US_XX", "US_XX_BETA", None, None),
                     row(
                         1,
+                        "2021-01-01",
                         "2020-12-31",
                         (FakeState("US_XX"), manual_upload.County("US_XX_ALPHA")),
                         [],
@@ -93,6 +98,7 @@ class JailsOutputViewTest(BaseViewTest):
                     + (None, None, "US_XX", "US_XX_ALPHA", None, None),
                     row(
                         1,
+                        "2021-01-01",
                         "2020-12-31",
                         (FakeState("US_XX"), manual_upload.County("US_XX_BETA")),
                         [],
@@ -101,6 +107,7 @@ class JailsOutputViewTest(BaseViewTest):
                     + (None, None, "US_XX", "US_XX_BETA", None, None),
                     row(
                         1,
+                        "2021-01-01",
                         "2020-11-30",
                         (FakeState("US_YY"),),
                         ["US_YY_ALPHA", "US_YY_BETA"],
@@ -109,6 +116,7 @@ class JailsOutputViewTest(BaseViewTest):
                     + (None, None, "US_YY", "", 0.12, 0.5),
                     row(
                         1,
+                        "2021-01-01",
                         "2020-12-31",
                         (FakeState("US_YY"),),
                         ["US_YY_ALPHA", "US_YY_BETA"],
@@ -150,19 +158,25 @@ class JailsOutputViewTest(BaseViewTest):
         expected = pd.DataFrame(
             [
                 ["US_XX", "US_XX_ALPHA", "POP", 2020, 11, _npd("2020-11-30"), 3000]
-                + [None] * 6,
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-01")],
                 ["US_XX", "US_XX_ALPHA", "POP", 2020, 12, _npd("2020-12-31"), 4000]
-                + [None] * 6,
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-01")],
                 ["US_XX", "US_XX_BETA", "POP", 2020, 11, _npd("2020-11-30"), 1000]
-                + [None] * 6,
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-01")],
                 ["US_XX", "US_XX_BETA", "POP", 2020, 12, _npd("2020-12-31"), 1500]
-                + [None] * 6,
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-01")],
                 ["US_YY", "", "POP", 2020, 11, _npd("2020-11-30"), 12000]
                 + [None] * 4
-                + [0.12, 0.5],
+                + [0.12, 0.5]
+                + [datetime.date.fromisoformat("2021-01-01")],
                 ["US_YY", "", "POP", 2020, 12, _npd("2020-12-31"), 13000]
                 + [None] * 4
-                + [0.12, 0.5],
+                + [0.12, 0.5]
+                + [datetime.date.fromisoformat("2021-01-01")],
             ],
             columns=[
                 "state_code",
@@ -178,6 +192,7 @@ class JailsOutputViewTest(BaseViewTest):
                 "percentage_change",
                 "percentage_covered_county",
                 "percentage_covered_population",
+                "date_published",
             ],
         )
         expected = expected.set_index(dimensions)
@@ -375,7 +390,8 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     _npd("2020-11-30"),
                     375,
                 ]
-                + [None] * 6,
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-01")],
                 [
                     "US_XX",
                     "US_XX_ALPHA",
@@ -385,7 +401,8 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     _npd("2020-12-31"),
                     500,
                 ]
-                + [None] * 6,
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-01")],
                 [
                     "US_XX",
                     "US_XX_ALPHA",
@@ -395,7 +412,8 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     _npd("2020-11-30"),
                     3000,
                 ]
-                + [None] * 6,
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-01")],
                 [
                     "US_XX",
                     "US_XX_ALPHA",
@@ -405,7 +423,8 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     _npd("2020-12-31"),
                     4000,
                 ]
-                + [None] * 6,
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-01")],
                 [
                     "US_XX",
                     "US_XX_BETA",
@@ -415,7 +434,8 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     _npd("2020-11-30"),
                     200,
                 ]
-                + [None] * 6,
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-01")],
                 [
                     "US_XX",
                     "US_XX_BETA",
@@ -425,7 +445,8 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     _npd("2020-12-31"),
                     300,
                 ]
-                + [None] * 6,
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-01")],
                 [
                     "US_XX",
                     "US_XX_BETA",
@@ -435,7 +456,8 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     _npd("2020-11-30"),
                     1000,
                 ]
-                + [None] * 6,
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-01")],
                 [
                     "US_XX",
                     "US_XX_BETA",
@@ -445,7 +467,8 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     _npd("2020-12-31"),
                     1500,
                 ]
-                + [None] * 6,
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-01")],
                 [
                     "US_YY",
                     "US_YY_ALPHA",
@@ -455,7 +478,8 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     _npd("2020-11-30"),
                     833,
                 ]
-                + [None] * 6,
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-02")],
                 [
                     "US_YY",
                     "US_YY_ALPHA",
@@ -465,7 +489,8 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     _npd("2020-12-31"),
                     1000,
                 ]
-                + [None] * 6,
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-02")],
                 [
                     "US_YY",
                     "US_YY_ALPHA",
@@ -475,7 +500,8 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     _npd("2020-11-30"),
                     10000,
                 ]
-                + [None] * 6,
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-02")],
                 [
                     "US_YY",
                     "US_YY_ALPHA",
@@ -485,7 +511,8 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     _npd("2020-12-31"),
                     12000,
                 ]
-                + [None] * 6,
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-02")],
                 [
                     "US_ZZ",
                     "US_ZZ_ALPHA",
@@ -495,7 +522,8 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     _npd("2020-11-30"),
                     909,
                 ]
-                + [None] * 6,
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-02")],
                 [
                     "US_ZZ",
                     "US_ZZ_ALPHA",
@@ -505,7 +533,8 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     _npd("2020-12-31"),
                     1000,
                 ]
-                + [None] * 6,
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-02")],
                 [
                     "US_ZZ",
                     "US_ZZ_ALPHA",
@@ -515,7 +544,8 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     _npd("2020-11-30"),
                     20000,
                 ]
-                + [None] * 6,
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-02")],
                 [
                     "US_ZZ",
                     "US_ZZ_ALPHA",
@@ -525,7 +555,8 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     _npd("2020-12-31"),
                     22000,
                 ]
-                + [None] * 6,
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-02")],
             ],
             columns=[
                 "state_code",
@@ -541,6 +572,7 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                 "percentage_change",
                 "percentage_covered_county",
                 "percentage_covered_population",
+                "date_published",
             ],
         )
         expected = expected.set_index(dimensions)
