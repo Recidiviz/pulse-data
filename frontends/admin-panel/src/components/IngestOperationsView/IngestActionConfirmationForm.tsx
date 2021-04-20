@@ -16,17 +16,14 @@
 // =============================================================================
 import * as React from "react";
 import { Form, Input, Modal } from "antd";
-import IngestActions from "../constants/ingestActions";
+import { actionNames, IngestActions } from "./constants";
 
 interface IngestActionConfirmationFormProps {
   visible: boolean;
-  onConfirm: (
-    regionCode: string,
-    ingestAction: IngestActions | undefined
-  ) => void;
+  onConfirm: (ingestAction: IngestActions) => void;
   onCancel: () => void;
-  ingestAction: IngestActions | undefined;
-  regionCode: string | undefined;
+  ingestAction: IngestActions;
+  regionCode: string;
 }
 
 const IngestActionConfirmationForm: React.FC<IngestActionConfirmationFormProps> = ({
@@ -37,14 +34,15 @@ const IngestActionConfirmationForm: React.FC<IngestActionConfirmationFormProps> 
   regionCode,
 }) => {
   const [form] = Form.useForm();
-  const action = ingestAction ? ingestAction?.split(" ")[0].toUpperCase() : "";
+  const actionName = actionNames[ingestAction];
   const confirmationRegEx = regionCode
-    ? regionCode.toUpperCase().concat("_", action)
-    : "";
+    .toUpperCase()
+    .concat("_", ingestAction.toUpperCase());
+
   return (
     <Modal
       visible={visible}
-      title={ingestAction}
+      title={actionName || ""}
       okText="Ok"
       cancelText="Cancel"
       onCancel={onCancel}
@@ -53,7 +51,7 @@ const IngestActionConfirmationForm: React.FC<IngestActionConfirmationFormProps> 
           .validateFields()
           .then((values) => {
             form.resetFields();
-            onConfirm(values.region_code, ingestAction);
+            onConfirm(ingestAction);
           })
           .catch((info) => {
             form.resetFields();
@@ -61,8 +59,8 @@ const IngestActionConfirmationForm: React.FC<IngestActionConfirmationFormProps> 
       }}
     >
       <p>
-        Are you sure you want to <b>{ingestAction?.toLowerCase()}</b> for{" "}
-        <b>{regionCode?.toUpperCase()}</b>?
+        Are you sure you want to <b>{actionName?.toLowerCase()}</b> for{" "}
+        <b>{regionCode.toUpperCase()}</b>?
       </p>
       <p>
         Type <b>{confirmationRegEx}</b> below to confirm.
