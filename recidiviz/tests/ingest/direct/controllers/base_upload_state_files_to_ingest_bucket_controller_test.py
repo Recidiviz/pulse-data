@@ -20,6 +20,7 @@ import unittest
 from unittest.mock import patch, Mock
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
+from recidiviz.common.results import MultiRequestResult
 from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestRawFileMetadataManager,
 )
@@ -67,9 +68,9 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
         expected_result = [
             "recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.txt"
         ]
-        uploaded_files, unable_to_upload_files = controller.do_upload()
-        self.assertEqual(uploaded_files, expected_result)
-        self.assertEqual(len(unable_to_upload_files), 0)
+        result: MultiRequestResult[str, str] = controller.do_upload()
+        self.assertEqual(result.successes, expected_result)
+        self.assertEqual(len(result.failures), 0)
         self.assertEqual(len(controller.skipped_files), 0)
 
     def test_do_upload_graceful_failures(
@@ -98,13 +99,13 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
             project_id="recidiviz-456",
             region="us_xx",
         )
-        uploaded_files, unable_to_upload_files = controller.do_upload()
+        result: MultiRequestResult[str, str] = controller.do_upload()
         self.assertEqual(
-            uploaded_files,
+            result.successes,
             ["recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.txt"],
         )
         self.assertEqual(
-            unable_to_upload_files,
+            result.failures,
             ["recidiviz-456-direct-ingest-state-us-xx/raw_data/non_existent_file.txt"],
         )
         self.assertEqual(len(controller.skipped_files), 0)
@@ -141,9 +142,9 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
             project_id="recidiviz-456",
             region="us_xx",
         )
-        uploaded_files, _ = controller.do_upload()
+        result: MultiRequestResult[str, str] = controller.do_upload()
         self.assertListEqual(
-            uploaded_files,
+            result.successes,
             [
                 "recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.txt",
                 "recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.csv",
@@ -237,9 +238,9 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
             project_id="recidiviz-456",
             region="us_xx",
         )
-        uploaded_files, _ = controller.do_upload()
+        result: MultiRequestResult[str, str] = controller.do_upload()
         self.assertListEqual(
-            uploaded_files,
+            result.successes,
             [
                 "recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.txt",
                 "recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.csv",

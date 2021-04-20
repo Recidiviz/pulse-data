@@ -31,6 +31,7 @@ from recidiviz.cloud_storage.gcs_file_system import GcsfsSftpFileContentsHandle
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common.ingest_metadata import SystemLevel
+from recidiviz.common.results import MultiRequestResult
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
@@ -249,7 +250,7 @@ class DownloadFilesFromSftpController:
             for file_path, file_timestamp in files_to_download_with_timestamps:
                 self._fetch(connection, file_path, file_timestamp)
 
-    def do_fetch(self) -> Tuple[List[Tuple[str, datetime.datetime]], List[str]]:
+    def do_fetch(self) -> MultiRequestResult[Tuple[str, datetime.datetime], str]:
         """Attempts to open an SFTP connection and download items, returning the corresponding paths
         and the timestamp associated, and also any unable to be downloaded."""
         logging.info(
@@ -276,4 +277,6 @@ class DownloadFilesFromSftpController:
             self.download_dir.uri(),
             len(self.unable_to_download_items),
         )
-        return self.downloaded_items, self.unable_to_download_items
+        return MultiRequestResult(
+            successes=self.downloaded_items, failures=self.unable_to_download_items
+        )

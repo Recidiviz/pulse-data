@@ -89,15 +89,15 @@ class EmailGenerationTests(TestCase):
             "This email failed to generate!"
         )
 
-        failure_count, success_count = start(
+        result = start(
             state_code="US_ID",
             report_type=self.report_type,
             region_code="US_ID_D3",
             test_address="dan@recidiviz.org",
         )
 
-        self.assertEqual(failure_count, 1)
-        self.assertEqual(success_count, 0)
+        self.assertListEqual(result.failures, ["dan+letter@recidiviz.org"])
+        self.assertEqual(len(result.successes), 0)
 
         # Email generated for recipient matching US_ID_3
         self.mock_email_generation.assert_called()

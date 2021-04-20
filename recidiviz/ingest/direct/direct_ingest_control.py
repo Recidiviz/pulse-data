@@ -570,24 +570,28 @@ def upload_from_sftp() -> Tuple[str, HTTPStatus]:
             lower_bound_update_datetime=lower_bound_update_datetime,
             gcs_destination_path=gcs_destination_path,
         )
-        downloaded_items, unable_to_download_items = sftp_controller.do_fetch()
+        download_result = sftp_controller.do_fetch()
 
         with monitoring.measurements(
             {TagKey.SFTP_TASK_TYPE: "download"}
         ) as download_measurements:
             download_measurements.measure_int_put(
-                m_sftp_attempts, len(downloaded_items) + len(unable_to_download_items)
+                m_sftp_attempts,
+                len(download_result.successes) + len(download_result.failures),
             )
             download_measurements.measure_int_put(
-                m_sftp_errors, len(unable_to_download_items)
+                m_sftp_errors, len(download_result.failures)
             )
 
-        if downloaded_items:
-            (
-                uploaded_files,
-                unable_to_upload_files,
-            ) = UploadStateFilesToIngestBucketController(
-                paths_with_timestamps=downloaded_items,
+        unable_to_download_text = (
+            f"Unable to download the following files: {download_result.failures}"
+            if download_result.failures
+            else ""
+        )
+
+        if download_result.successes:
+            upload_result = UploadStateFilesToIngestBucketController(
+                paths_with_timestamps=download_result.successes,
                 project_id=metadata.project_id(),
                 region=region_code,
                 gcs_destination_path=gcs_destination_path,
@@ -597,27 +601,39 @@ def upload_from_sftp() -> Tuple[str, HTTPStatus]:
                 {TagKey.SFTP_TASK_TYPE: "upload"}
             ) as upload_measurements:
                 upload_measurements.measure_int_put(
-                    m_sftp_attempts, len(uploaded_files) + len(unable_to_upload_files)
+                    m_sftp_attempts,
+                    len(upload_result.successes) + len(upload_result.failures),
                 )
                 upload_measurements.measure_int_put(
-                    m_sftp_errors, len(unable_to_upload_files)
+                    m_sftp_errors, len(upload_result.failures)
                 )
 
             sftp_controller.clean_up()
 
-            if unable_to_download_items or unable_to_upload_files:
+            unable_to_upload_text = (
+                f"Unable to upload the following files: {upload_result.failures}"
+                if upload_result.failures
+                else ""
+            )
+            if not upload_result.successes:
                 return (
-                    f"Unable to download the following files: {unable_to_download_items}, "
-                    f"and upload the following files: {unable_to_upload_files}",
+                    f"{unable_to_download_text}"
+                    f" All files failed to upload. {unable_to_upload_text}",
+                    HTTPStatus.BAD_REQUEST,
+                )
+
+            if download_result.failures or upload_result.failures:
+                return (
+                    f"{unable_to_download_text}" f" {unable_to_upload_text}",
                     HTTPStatus.MULTI_STATUS,
                 )
-        elif unable_to_download_items:
+        elif download_result.failures:
             return (
-                f"Unable to download the following files {unable_to_download_items}",
-                HTTPStatus.MULTI_STATUS,
+                f"All files failed to download. {unable_to_download_text}",
+                HTTPStatus.BAD_REQUEST,
             )
-        elif not downloaded_items and not unable_to_download_items:
-            return f"No items to download for {region_code}", HTTPStatus.MULTI_STATUS
+        elif not download_result.successes and not download_result.failures:
+            return f"No items to download for {region_code}", HTTPStatus.BAD_REQUEST
     return "", HTTPStatus.OK
 
 
