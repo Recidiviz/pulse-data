@@ -16,6 +16,7 @@
 // =============================================================================
 
 import MetadataDataset from "./models/MetadataDatasets";
+import { QueueState } from "./components/IngestOperationsView/constants";
 
 const postWithURLAndBody = async (
   url: string,
@@ -97,6 +98,39 @@ export const fetchIngestRegionCodes = async (): Promise<Response> => {
   return postWithURLAndBody(
     "/api/ingest_operations/fetch_ingest_region_codes",
     {}
+  );
+};
+
+// Start Ingest
+export const startIngestRun = async (regionCode: string): Promise<Response> => {
+  return postWithURLAndBody(
+    `/api/ingest_operations/${regionCode}/start_ingest_run`,
+    {}
+  );
+};
+
+// Update ingest queue states
+export const updateIngestQueuesState = async (
+  regionCode: string,
+  newQueueState: QueueState
+): Promise<Response> => {
+  return postWithURLAndBody(
+    `/api/ingest_operations/${regionCode}/update_ingest_queues_state`,
+    { new_queue_state: newQueueState }
+  );
+};
+
+// Get ingest queue states
+export const getIngestQueuesState = async (
+  regionCode: string
+): Promise<Response> => {
+  return fetch(
+    `/admin/api/ingest_operations/${regionCode}/get_ingest_queue_states`,
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
   );
 };
 

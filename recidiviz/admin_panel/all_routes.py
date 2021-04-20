@@ -27,11 +27,9 @@ from recidiviz.admin_panel.dataset_metadata_store import (
     DatasetMetadataResult,
 )
 from recidiviz.admin_panel.ingest_metadata_store import IngestDataFreshnessStore
+from recidiviz.admin_panel.ingest_operations_store import IngestOperationsStore
 from recidiviz.admin_panel.routes.case_triage import add_case_triage_routes
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.direct_ingest_region_utils import (
-    get_existing_region_dir_names,
-)
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import (
     GCP_PROJECT_STAGING,
@@ -91,6 +89,10 @@ static_folder = os.path.abspath(
     )
 )
 
+ingest_operations_store = IngestOperationsStore(
+    override_project_id=(GCP_PROJECT_STAGING if in_development() else None)
+)
+
 admin_panel = Blueprint("admin_panel", __name__, static_folder=static_folder)
 add_case_triage_routes(admin_panel)
 
@@ -104,6 +106,15 @@ def jsonify_dataset_metadata_result(
         for state_code, counts in state_map.items():
             results_dict[name][state_code] = counts.to_json()
     return jsonify(results_dict), HTTPStatus.OK
+
+
+def _get_state_code_from_region_code(region_code: str) -> StateCode:
+    if not StateCode.is_state_code(region_code):
+        raise ValueError(
+            f"Unknown region_code [{region_code}] received, must be a valid state code."
+        )
+
+    return StateCode[region_code.upper()]
 
 
 def _get_metadata_store(metadata_dataset: str) -> DatasetMetadataCountsStore:
@@ -170,12 +181,44 @@ def fetch_ingest_data_freshness() -> Tuple[str, HTTPStatus]:
 @admin_panel.route("/api/ingest_operations/fetch_ingest_region_codes", methods=["POST"])
 @requires_gae_auth
 def fetch_ingest_region_codes() -> Tuple[str, HTTPStatus]:
-    ingest_region_codes = [
-        region_code
-        for region_code in sorted(get_existing_region_dir_names())
-        if StateCode.is_state_code(region_code)
+    region_codes = [
+        region_code.value
+        for region_code in ingest_operations_store.region_codes_launched_in_env
     ]
-    return jsonify(ingest_region_codes), HTTPStatus.OK
+    return jsonify(region_codes), HTTPStatus.OK
+
+
+# Start an ingest run
+@admin_panel.route(
+    "/api/ingest_operations/<region_code>/start_ingest_run", methods=["POST"]
+)
+@requires_gae_auth
+def start_ingest_run(region_code: str) -> Tuple[str, HTTPStatus]:
+    state_code = _get_state_code_from_region_code(region_code)
+    ingest_operations_store.start_ingest_run(state_code)
+    return "", HTTPStatus.OK
+
+
+# Update ingest queues
+@admin_panel.route(
+    "/api/ingest_operations/<region_code>/update_ingest_queues_state",
+    methods=["POST"],
+)
+@requires_gae_auth
+def update_ingest_queues_state(region_code: str) -> Tuple[str, HTTPStatus]:
+    state_code = _get_state_code_from_region_code(region_code)
+    new_queue_state = request.json["new_queue_state"]
+    ingest_operations_store.update_ingest_queues_state(state_code, new_queue_state)
+    return "", HTTPStatus.OK
+
+
+# Get all ingest queues and their state for given region code
+@admin_panel.route("/api/ingest_operations/<region_code>/get_ingest_queue_states")
+@requires_gae_auth
+def get_ingest_queue_states(region_code: str) -> Tuple[str, HTTPStatus]:
+    state_code = _get_state_code_from_region_code(region_code)
+    ingest_queue_states = ingest_operations_store.get_ingest_queue_states(state_code)
+    return jsonify(ingest_queue_states), HTTPStatus.OK
 
 
 # Frontend configuration

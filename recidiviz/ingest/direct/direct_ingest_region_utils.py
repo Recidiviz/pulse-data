@@ -18,8 +18,12 @@
 import os
 from typing import List
 
+import yaml
+
 from recidiviz.ingest.direct import regions
 from recidiviz.common.constants.states import StateCode
+from recidiviz.tools import deploy
+from recidiviz.utils import regions as regions_utils
 
 _REGIONS_DIR = os.path.dirname(regions.__file__)
 
@@ -43,4 +47,33 @@ def get_existing_direct_ingest_states() -> List[StateCode]:
         StateCode(region_code.upper())
         for region_code in get_existing_region_dir_names()
         if StateCode.is_state_code(region_code)
+    ]
+
+
+def get_direct_ingest_states_launched_in_env() -> List[StateCode]:
+    """Returns list of states that have direct ingest launched in the environment"""
+    return [
+        state_code
+        for state_code in get_existing_direct_ingest_states()
+        if regions_utils.get_region(
+            state_code.value.lower(), is_direct_ingest=True
+        ).is_ingest_launched_in_env()
+    ]
+
+
+def get_direct_ingest_states_with_sftp_queue() -> List[StateCode]:
+    """Returns list of states that have a direct ingest sftp queue, which only exists if a state code
+    is in the sftp_state_alpha_codes terraform list."""
+    yaml_path = os.path.join(
+        os.path.dirname(deploy.__file__),
+        "terraform",
+        "sftp_state_alpha_codes.yaml",
+    )
+    with open(yaml_path, "r") as ymlfile:
+        sftp_state_alpha_codes: List[str] = yaml.full_load(ymlfile)
+
+    return [
+        StateCode[state_code]
+        for state_code in sftp_state_alpha_codes
+        if StateCode.is_state_code(state_code)
     ]
