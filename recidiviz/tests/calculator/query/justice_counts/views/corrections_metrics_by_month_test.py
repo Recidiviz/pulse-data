@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests Corrections metrics functionality."""
-
+import datetime
 from mock import Mock, patch
 import numpy as np
 import pandas as pd
@@ -121,17 +121,59 @@ class CorrectionsOutputViewTest(BaseViewTest):
             mock_schema=self.INPUT_SCHEMA,
             mock_data=pd.DataFrame(
                 [
-                    row(1, "2020-11-30", (FakeState("US_XX"),), ["A", "B", "A"], 3000)
+                    row(
+                        1,
+                        "2021-01-01",
+                        "2020-11-30",
+                        (FakeState("US_XX"),),
+                        ["A", "B", "A"],
+                        3000,
+                    )
                     + (None, None, "US_XX"),
-                    row(1, "2020-12-31", (FakeState("US_XX"),), ["B", "B", "C"], 4000)
+                    row(
+                        1,
+                        "2021-01-01",
+                        "2020-12-31",
+                        (FakeState("US_XX"),),
+                        ["B", "B", "C"],
+                        4000,
+                    )
                     + (None, None, "US_XX"),
-                    row(2, "2020-11-30", (FakeState("US_YY"),), ["A", "B", "A"], 1000)
+                    row(
+                        2,
+                        "2021-01-01",
+                        "2020-11-30",
+                        (FakeState("US_YY"),),
+                        ["A", "B", "A"],
+                        1000,
+                    )
                     + (None, None, "US_YY"),
-                    row(2, "2020-12-31", (FakeState("US_YY"),), ["B", "B", "C"], 1020)
+                    row(
+                        2,
+                        "2021-01-01",
+                        "2020-12-31",
+                        (FakeState("US_YY"),),
+                        ["B", "B", "C"],
+                        1020,
+                    )
                     + (None, None, "US_YY"),
-                    row(3, "2020-11-30", (FakeState("US_ZZ"),), ["A", "B", "A"], 400)
+                    row(
+                        3,
+                        "2021-01-01",
+                        "2020-11-30",
+                        (FakeState("US_ZZ"),),
+                        ["A", "B", "A"],
+                        400,
+                    )
                     + (None, None, "US_ZZ"),
-                    row(3, "2020-12-31", (FakeState("US_ZZ"),), ["C", "C", "B"], 500)
+                    row(
+                        3,
+                        "2021-01-01",
+                        "2020-12-31",
+                        (FakeState("US_ZZ"),),
+                        ["C", "C", "B"],
+                        500,
+                    )
                     + (None, None, "US_ZZ"),
                 ],
                 columns=self.INPUT_SCHEMA.data_types.keys(),
@@ -178,6 +220,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                     "XX",
                     "xx.gov",
                     "_",
+                    datetime.date.fromisoformat("2021-01-01"),
                     ["A", "B"],
                     3000,
                 ]
@@ -191,6 +234,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                     "XX",
                     "xx.gov",
                     "_",
+                    datetime.date.fromisoformat("2021-01-01"),
                     ["B", "C"],
                     4000,
                 ]
@@ -204,6 +248,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                     "YY",
                     "yy.gov",
                     "_",
+                    datetime.date.fromisoformat("2021-01-02"),
                     ["A", "B"],
                     1000,
                 ]
@@ -217,6 +262,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                     "YY",
                     "yy.gov",
                     "_",
+                    datetime.date.fromisoformat("2021-01-02"),
                     ["B", "C"],
                     1020,
                 ]
@@ -230,6 +276,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                     "ZZ",
                     "zz.gov",
                     "_",
+                    datetime.date.fromisoformat("2021-01-02"),
                     ["A", "B"],
                     400,
                 ]
@@ -243,6 +290,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                     "ZZ",
                     "zz.gov",
                     "_",
+                    datetime.date.fromisoformat("2021-01-02"),
                     ["B", "C"],
                     500,
                 ]
@@ -257,6 +305,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                 "source_name",
                 "source_url",
                 "report_name",
+                "date_published",
                 "raw_source_categories",
                 "value",
                 "compared_to_year",
@@ -312,11 +361,11 @@ class CorrectionsOutputViewTest(BaseViewTest):
             mock_schema=self.INPUT_SCHEMA,
             mock_data=pd.DataFrame(
                 [
-                    row(1, "2022-01-01", (FakeState("US_XX"),), [], 3)
+                    row(1, "2021-01-01", "2022-01-01", (FakeState("US_XX"),), [], 3)
                     + (_npd("2021-01-01"), 0, "US_XX"),
-                    row(1, "2021-01-01", (FakeState("US_XX"),), [], 0)
+                    row(1, "2021-01-01", "2021-01-01", (FakeState("US_XX"),), [], 0)
                     + (_npd("2020-01-01"), 2, "US_XX"),
-                    row(1, "2020-01-01", (FakeState("US_XX"),), [], 2)
+                    row(1, "2021-01-01", "2020-01-01", (FakeState("US_XX"),), [], 2)
                     + (None, None, "US_XX"),
                 ],
                 columns=self.INPUT_SCHEMA.data_types.keys(),
@@ -363,6 +412,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                     "XX",
                     "xx.gov",
                     "_",
+                    datetime.date.fromisoformat("2021-01-01"),
                     [],
                     2,
                     None,
@@ -379,6 +429,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                     "XX",
                     "xx.gov",
                     "_",
+                    datetime.date.fromisoformat("2021-01-01"),
                     [],
                     0,
                     2020,
@@ -396,6 +447,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                     "XX",
                     "xx.gov",
                     "_",
+                    datetime.date.fromisoformat("2021-01-01"),
                     [],
                     3,
                     2021,
@@ -413,6 +465,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                 "source_name",
                 "source_url",
                 "report_name",
+                "date_published",
                 "raw_source_categories",
                 "value",
                 "compared_to_year",
@@ -620,6 +673,7 @@ class CorrectionsMetricsByMonthIntegrationTest(BaseViewTest):
                     "XX",
                     "xx.gov",
                     "_",
+                    datetime.date.fromisoformat("2021-01-01"),
                     [],
                     3000,
                 ]
@@ -633,6 +687,7 @@ class CorrectionsMetricsByMonthIntegrationTest(BaseViewTest):
                     "XX",
                     "xx.gov",
                     "_",
+                    datetime.date.fromisoformat("2021-01-01"),
                     [],
                     4000,
                 ]
@@ -646,6 +701,7 @@ class CorrectionsMetricsByMonthIntegrationTest(BaseViewTest):
                     "YY",
                     "yy.gov",
                     "_",
+                    datetime.date.fromisoformat("2021-01-02"),
                     [],
                     1000,
                 ]
@@ -659,6 +715,7 @@ class CorrectionsMetricsByMonthIntegrationTest(BaseViewTest):
                     "YY",
                     "yy.gov",
                     "_",
+                    datetime.date.fromisoformat("2021-01-02"),
                     [],
                     1020,
                 ]
@@ -672,6 +729,7 @@ class CorrectionsMetricsByMonthIntegrationTest(BaseViewTest):
                     "ZZ",
                     "zz.gov",
                     "_",
+                    datetime.date.fromisoformat("2021-01-02"),
                     [],
                     400,
                 ]
@@ -685,6 +743,7 @@ class CorrectionsMetricsByMonthIntegrationTest(BaseViewTest):
                     "ZZ",
                     "zz.gov",
                     "_",
+                    datetime.date.fromisoformat("2021-01-02"),
                     [],
                     500,
                 ]
@@ -699,6 +758,7 @@ class CorrectionsMetricsByMonthIntegrationTest(BaseViewTest):
                 "source_name",
                 "source_url",
                 "report_name",
+                "date_published",
                 "raw_source_categories",
                 "value",
                 "compared_to_year",
