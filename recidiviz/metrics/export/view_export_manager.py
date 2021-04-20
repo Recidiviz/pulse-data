@@ -23,6 +23,7 @@ from typing import Dict, List, Optional, Sequence, Tuple
 from flask import Blueprint, request
 from opencensus.stats import measure, view as opencensus_view, aggregation
 
+import recidiviz.view_registry.deployed_views
 from recidiviz.common.constants.states import StateCode
 from recidiviz.metrics.export import export_config
 from recidiviz.big_query import view_update_manager
@@ -57,6 +58,7 @@ from recidiviz.metrics.export.view_export_cloud_task_manager import (
 from recidiviz.utils import metadata, monitoring
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.params import get_str_param_value
+from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 
 m_failed_metric_export_validation = measure.MeasureInt(
     "bigquery/metric_view_export_manager/metric_view_export_validation_failure",
@@ -261,7 +263,9 @@ def export_view_data_to_cloud_storage(
 
     for bq_view_namespace_to_update in bq_view_namespaces_to_update:
         view_builders_for_views_to_update = (
-            view_update_manager.VIEW_BUILDERS_BY_NAMESPACE[bq_view_namespace_to_update]
+            recidiviz.view_registry.deployed_views.DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE[
+                bq_view_namespace_to_update
+            ]
         )
 
         # TODO(#5125): Once view update is consistently trivial, always update all views in namespace
@@ -270,13 +274,16 @@ def export_view_data_to_cloud_storage(
             in export_config.NAMESPACES_REQUIRING_FULL_UPDATE
         ):
             view_update_manager.create_dataset_and_deploy_views_for_view_builders(
-                bq_view_namespace_to_update, view_builders_for_views_to_update
+                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+                bq_view_namespace=bq_view_namespace_to_update,
+                view_builders_to_update=view_builders_for_views_to_update,
             )
 
         # The view deploy will only have rematerialized views that had been updated since the last deploy, this call
         # will ensure that all materialized tables get refreshed.
         view_update_manager.rematerialize_views_for_namespace(
             bq_view_namespace=bq_view_namespace_to_update,
+            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
             candidate_view_builders=view_builders_for_views_to_update,
         )
 

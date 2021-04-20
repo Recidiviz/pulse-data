@@ -22,7 +22,7 @@ from unittest import mock
 from google.cloud import bigquery
 
 from recidiviz.big_query.export.export_query_config import ExportOutputFormatType
-from recidiviz.big_query.view_update_manager import BigQueryViewNamespace
+from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.common.constants import states
 from recidiviz.metrics.export.export_config import (

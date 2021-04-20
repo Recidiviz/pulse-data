@@ -25,11 +25,12 @@ import sys
 from typing import List, Tuple
 
 from recidiviz.big_query.view_update_manager import (
-    VIEW_BUILDERS_BY_NAMESPACE,
     create_dataset_and_deploy_views_for_view_builders,
 )
+from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 
 
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
@@ -52,8 +53,10 @@ if __name__ == "__main__":
     known_args, _ = parse_arguments(sys.argv)
 
     with local_project_id_override(known_args.project_id):
-        for namespace, builders in VIEW_BUILDERS_BY_NAMESPACE.items():
+        for namespace, builders in DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE.items():
             # TODO(#5785): Clarify use case of BigQueryViewNamespace filter (see ticket for more)
             create_dataset_and_deploy_views_for_view_builders(
-                bq_view_namespace=namespace, view_builders_to_update=builders
+                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+                bq_view_namespace=namespace,
+                view_builders_to_update=builders,
             )

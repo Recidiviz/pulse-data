@@ -26,7 +26,7 @@ import pytest
 from mock import call, create_autospec, patch
 
 from recidiviz.big_query.big_query_client import BigQueryClient
-from recidiviz.big_query.big_query_view import BigQueryViewNamespace
+from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig
 from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
 from recidiviz.metrics.export.optimized_metric_big_query_view_export_validator import (

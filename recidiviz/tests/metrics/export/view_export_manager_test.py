@@ -29,7 +29,8 @@ from recidiviz.big_query.export.export_query_config import (
     ExportBigQueryViewConfig,
     ExportOutputFormatType,
 )
-from recidiviz.big_query.view_update_manager import BigQueryViewNamespace
+from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
+from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 from recidiviz.metrics.export.export_config import ExportViewCollectionConfig
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
@@ -478,7 +479,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         mock_view_update_manager_rematerialize.assert_called_once()
 
     @mock.patch(
-        "recidiviz.metrics.export.view_export_manager.view_update_manager.VIEW_BUILDERS_BY_NAMESPACE"
+        "recidiviz.view_registry.deployed_views.DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE"
     )
     @mock.patch(
         "recidiviz.big_query.view_update_manager.rematerialize_views_for_namespace"
@@ -511,13 +512,16 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         )
 
         mock_view_update_manager_deploy.assert_called_with(
-            self.mock_big_query_view_namespace,
-            mock_view_builders_by_namespace[self.mock_big_query_view_namespace],
+            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+            bq_view_namespace=self.mock_big_query_view_namespace,
+            view_builders_to_update=mock_view_builders_by_namespace[
+                self.mock_big_query_view_namespace
+            ],
         )
         mock_view_update_manager_rematerialize.assert_called_once()
 
     @mock.patch(
-        "recidiviz.metrics.export.view_export_manager.view_update_manager.VIEW_BUILDERS_BY_NAMESPACE"
+        "recidiviz.view_registry.deployed_views.DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE"
     )
     @mock.patch(
         "recidiviz.big_query.view_update_manager.rematerialize_views_for_namespace"
@@ -544,6 +548,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         )
 
         mock_view_update_manager_rematerialize.assert_called_with(
+            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
             bq_view_namespace=self.mock_big_query_view_namespace,
             candidate_view_builders=mock_view_builders_by_namespace[
                 self.mock_big_query_view_namespace
