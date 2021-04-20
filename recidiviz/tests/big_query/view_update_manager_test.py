@@ -27,13 +27,15 @@ from google.cloud import bigquery
 from recidiviz.big_query import view_update_manager
 from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
 from recidiviz.big_query.big_query_view import BigQueryView, SimpleBigQueryViewBuilder
-from recidiviz.big_query.view_update_manager import (
-    BigQueryViewNamespace,
-    VIEW_BUILDERS_BY_NAMESPACE,
-    VIEW_SOURCE_TABLE_DATASETS,
+from recidiviz.view_registry.deployed_views import (
+    DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE,
 )
+from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 from recidiviz.ingest.direct.views.normalized_direct_ingest_big_query_view_types import (
     NormalizedDirectIngestPreProcessedIngestViewBuilder,
+)
+from recidiviz.view_registry.datasets import (
+    VIEW_SOURCE_TABLE_DATASETS,
 )
 
 _PROJECT_ID = "fake-recidiviz-project"
@@ -85,7 +87,9 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.dataset_ref_for_id.return_value = dataset
 
         view_update_manager.create_dataset_and_deploy_views_for_view_builders(
-            BigQueryViewNamespace.VALIDATION, mock_view_builders
+            bq_view_namespace=BigQueryViewNamespace.VALIDATION,
+            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+            view_builders_to_update=mock_view_builders,
         )
 
         self.mock_client.dataset_ref_for_id.assert_called_with(_DATASET_NAME)
@@ -123,8 +127,9 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.dataset_ref_for_id.return_value = dataset
 
         view_update_manager.rematerialize_views_for_namespace(
-            BigQueryViewNamespace.VALIDATION,
-            mock_view_builders,
+            bq_view_namespace=BigQueryViewNamespace.VALIDATION,
+            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+            candidate_view_builders=mock_view_builders,
         )
 
         self.mock_client.materialize_view_to_table.assert_has_calls(
@@ -191,8 +196,9 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.create_or_update_view.side_effect = mock_create_or_update
 
         view_update_manager.create_dataset_and_deploy_views_for_view_builders(
-            BigQueryViewNamespace.VALIDATION,
-            mock_view_builders,
+            bq_view_namespace=BigQueryViewNamespace.VALIDATION,
+            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+            view_builders_to_update=mock_view_builders,
         )
 
         self.mock_client.dataset_ref_for_id.assert_called_with(_DATASET_NAME)
@@ -277,8 +283,9 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.create_or_update_view.side_effect = mock_create_or_update
 
         view_update_manager.create_dataset_and_deploy_views_for_view_builders(
-            BigQueryViewNamespace.VALIDATION,
-            mock_view_builders,
+            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+            bq_view_namespace=BigQueryViewNamespace.VALIDATION,
+            view_builders_to_update=mock_view_builders,
         )
 
         self.mock_client.dataset_ref_for_id.assert_called_with(_DATASET_NAME)
@@ -338,8 +345,9 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.dataset_ref_for_id.side_effect = get_dataset_ref
 
         view_update_manager.create_dataset_and_deploy_views_for_view_builders(
-            BigQueryViewNamespace.VALIDATION,
-            mock_view_builders,
+            bq_view_namespace=BigQueryViewNamespace.VALIDATION,
+            view_builders_to_update=mock_view_builders,
+            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
         )
 
         self.mock_client.dataset_ref_for_id.assert_has_calls(
@@ -396,7 +404,10 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.dataset_ref_for_id.return_value = dataset
 
         view_update_manager.create_dataset_and_deploy_views_for_view_builders(
-            BigQueryViewNamespace.VALIDATION, mock_view_builders, dataset_overrides
+            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+            bq_view_namespace=BigQueryViewNamespace.VALIDATION,
+            view_builders_to_update=mock_view_builders,
+            dataset_overrides=dataset_overrides,
         )
 
         self.mock_client.dataset_ref_for_id.assert_called_with(temp_dataset_id)
@@ -452,7 +463,7 @@ class ViewManagerTest(unittest.TestCase):
             mock_table_has_column.return_value = True
             mock_table_exists.return_value = True
             all_views = []
-            for view_builder_list in VIEW_BUILDERS_BY_NAMESPACE.values():
+            for view_builder_list in DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE.values():
                 for view_builder in view_builder_list:
                     all_views.append(view_builder.build())
 
@@ -463,7 +474,7 @@ class ViewManagerTest(unittest.TestCase):
             expected_keys.add(dag_key)
 
     def test_no_views_in_source_data_datasets(self) -> None:
-        for view_builder_list in VIEW_BUILDERS_BY_NAMESPACE.values():
+        for view_builder_list in DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE.values():
             for view_builder in view_builder_list:
                 # TODO(#6314): Remove this check once we delete the us_pa_supervision_period_TEMP view
                 if isinstance(

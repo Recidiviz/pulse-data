@@ -21,7 +21,7 @@ import unittest
 
 from mock import create_autospec, patch, call
 
-from recidiviz.big_query.big_query_view import BigQueryViewNamespace
+from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (

@@ -27,21 +27,21 @@ from typing import List
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.view_update_manager import (
-    VIEW_BUILDERS_BY_NAMESPACE,
     _build_views_to_update,
+)
+from recidiviz.view_registry.deployed_views import (
+    DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE,
+    NOISY_DEPENDENCY_VIEW_BUILDERS,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
 from recidiviz.utils.metadata import local_project_id_override
-
-VIEWS_TO_SKIP = [
-    ("dataflow_metrics_materialized", "most_recent_job_id_by_metric_and_state_code")
-]
+from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 
 
 def build_dag_walker(dataset_id: str, view_id: str) -> BigQueryViewDagWalker:
     view_builders_for_dag: List[BigQueryViewBuilder] = []
     is_valid_view = False
-    for _, builders in VIEW_BUILDERS_BY_NAMESPACE.items():
+    for _, builders in DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE.items():
         view_builders_for_dag.extend(builders)
         for builder in builders:
             if (
@@ -53,13 +53,23 @@ def build_dag_walker(dataset_id: str, view_id: str) -> BigQueryViewDagWalker:
     if not is_valid_view:
         raise ValueError(f"invalid view {dataset_id}.{view_id}")
     return BigQueryViewDagWalker(
-        _build_views_to_update(view_builders_for_dag, dataset_overrides=None)
+        _build_views_to_update(
+            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+            candidate_view_builders=view_builders_for_dag,
+            dataset_overrides=None,
+        )
     )
 
 
 def print_dfs_tree(dataset_id: str, view_id: str) -> None:
     dag_walker = build_dag_walker(dataset_id, view_id)
     stack = [((dataset_id, view_id), 0)]
+
+    # TODO(#7049): refactor most_recent_job_id_by_metric_and_state_code dependencies
+    noisy_dependency_keys = [
+        (builder.dataset_id, builder.view_id)
+        for builder in NOISY_DEPENDENCY_VIEW_BUILDERS
+    ]
     while len(stack) > 0:
         dag_key, tabs = stack.pop()
         d_id, v_id = dag_key
@@ -67,7 +77,7 @@ def print_dfs_tree(dataset_id: str, view_id: str) -> None:
         value = dag_walker.nodes_by_key.get(dag_key)
         if value:
             for parent_key in value.parent_keys:
-                if not parent_key in VIEWS_TO_SKIP:
+                if not parent_key in noisy_dependency_keys:
                     stack.append((parent_key, tabs + 1))
     print("\n")
 

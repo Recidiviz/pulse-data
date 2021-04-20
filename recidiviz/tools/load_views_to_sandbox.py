@@ -30,10 +30,10 @@ import sys
 from typing import List, Tuple, Optional
 
 from recidiviz.big_query.view_update_manager import (
-    VIEW_BUILDERS_BY_NAMESPACE,
     create_dataset_and_deploy_views_for_view_builders,
     rematerialize_views_for_namespace,
 )
+from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
@@ -43,6 +43,7 @@ from recidiviz.tools.utils.dataset_overrides_for_all_view_datasets import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
+from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 
 
 def load_views_to_sandbox(
@@ -56,7 +57,7 @@ def load_views_to_sandbox(
         dataflow_dataset_override=dataflow_dataset_override,
     )
 
-    for namespace, builders in VIEW_BUILDERS_BY_NAMESPACE.items():
+    for namespace, builders in DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE.items():
         builders_to_update = [
             builder
             for builder in builders
@@ -68,6 +69,7 @@ def load_views_to_sandbox(
         if refresh_materialized_tables_only:
             rematerialize_views_for_namespace(
                 bq_view_namespace=namespace,
+                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
                 candidate_view_builders=builders_to_update,
                 dataset_overrides=sandbox_dataset_overrides,
                 # If a given view hasn't been loaded to the sandbox, skip it
@@ -76,6 +78,7 @@ def load_views_to_sandbox(
         else:
             create_dataset_and_deploy_views_for_view_builders(
                 bq_view_namespace=namespace,
+                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
                 view_builders_to_update=builders_to_update,
                 dataset_overrides=sandbox_dataset_overrides,
             )

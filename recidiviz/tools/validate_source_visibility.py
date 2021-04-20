@@ -224,6 +224,7 @@ def main() -> int:
                 "recidiviz.tools.justice_counts.manual_upload",
                 "recidiviz.utils",
                 "recidiviz.validation",
+                "recidiviz.view_registry",
             }
         ),
     )

@@ -23,7 +23,8 @@ from typing import List, TypeVar, Generic, Optional
 import attr
 from google.cloud import bigquery
 
-from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewNamespace
+from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryView
 

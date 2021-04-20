@@ -32,13 +32,12 @@ from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagNode,
     DagKey,
 )
-from recidiviz.big_query.view_update_manager import (
-    VIEW_BUILDERS_BY_NAMESPACE,
-    VIEW_SOURCE_TABLE_DATASETS,
-)
+from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
     DirectIngestRegionRawFileConfig,
 )
+from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
+
 
 LATEST_VIEW_DATASET_REGEX = re.compile(r"(us_[a-z]{2})_raw_data_up_to_date_views")
 MOCK_VIEW_PROCESS_TIME_SECONDS = 0.01
@@ -60,7 +59,7 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
             mock_table_exists.return_value = True
 
             self.all_views = []
-            for view_builder_list in VIEW_BUILDERS_BY_NAMESPACE.values():
+            for view_builder_list in DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE.values():
                 for view_builder in view_builder_list:
                     self.all_views.append(view_builder.build())
 
@@ -355,6 +354,142 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
             USING (col)""",
         )
         _ = BigQueryViewDagWalker([view_1, view_2, view_3])
+
+    def test_find_full_parentage(self) -> None:
+        view_1 = BigQueryView(
+            dataset_id="dataset_1",
+            view_id="table_1",
+            description="table_1 description",
+            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+        )
+        view_2 = BigQueryView(
+            dataset_id="dataset_2",
+            view_id="table_2",
+            description="table_2 description",
+            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
+        )
+        view_3 = BigQueryView(
+            dataset_id="dataset_3",
+            view_id="table_3",
+            description="table_3 description",
+            view_query_template="""
+            SELECT * FROM `{project_id}.dataset_1.table_1`
+            JOIN `{project_id}.dataset_2.table_2`
+            USING (col)""",
+        )
+        view_4 = BigQueryView(
+            dataset_id="dataset_4",
+            view_id="table_4",
+            description="table_4 description",
+            view_query_template="""
+            SELECT * FROM `{project_id}.dataset_3.table_3`""",
+        )
+        view_5 = BigQueryView(
+            dataset_id="dataset_5",
+            view_id="table_5",
+            description="table_5 description",
+            view_query_template="""
+            SELECT * FROM `{project_id}.dataset_3.table_3`""",
+        )
+        dag_walker = BigQueryViewDagWalker([view_1, view_2, view_3, view_4, view_5])
+
+        # root node start
+        start_node = dag_walker.nodes_by_key[("dataset_1", "table_1")]
+        parentage_set = dag_walker.find_full_parentage(
+            curr_node=start_node,
+            view_source_table_datasets={"source_dataset"},
+        )
+        self.assertEqual({("source_dataset", "source_table")}, parentage_set)
+
+        # start in middle
+        start_node = dag_walker.nodes_by_key[("dataset_3", "table_3")]
+        parentage_set = dag_walker.find_full_parentage(
+            curr_node=start_node,
+            view_source_table_datasets={"source_dataset"},
+        )
+        expected_parent_nodes = {
+            ("source_dataset", "source_table"),
+            ("source_dataset", "source_table_2"),
+            ("dataset_1", "table_1"),
+            ("dataset_2", "table_2"),
+        }
+        self.assertEqual(expected_parent_nodes, parentage_set)
+
+        # single start node
+        start_node = dag_walker.nodes_by_key[("dataset_4", "table_4")]
+        parentage_set = dag_walker.find_full_parentage(
+            curr_node=start_node,
+            view_source_table_datasets={"source_dataset"},
+        )
+        expected_parent_nodes = {
+            ("source_dataset", "source_table"),
+            ("source_dataset", "source_table_2"),
+            ("dataset_1", "table_1"),
+            ("dataset_2", "table_2"),
+            ("dataset_3", "table_3"),
+        }
+        self.assertEqual(expected_parent_nodes, parentage_set)
+
+        # multiple start nodes
+        start_nodes = [start_node, dag_walker.nodes_by_key[("dataset_5", "table_5")]]
+
+        parentage_set = set()
+        for node in start_nodes:
+            parentage_set = parentage_set.union(
+                dag_walker.find_full_parentage(
+                    curr_node=node,
+                    view_source_table_datasets={"source_dataset"},
+                )
+            )
+
+        self.assertEqual(expected_parent_nodes, parentage_set)
+
+    def test_find_full_parentage_complex_dependencies(self) -> None:
+        view_1 = BigQueryView(
+            dataset_id="dataset_1",
+            view_id="table_1",
+            description="table_1 description",
+            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+        )
+        view_2 = BigQueryView(
+            dataset_id="dataset_2",
+            view_id="table_2",
+            description="table_2 description",
+            view_query_template="SELECT * FROM `{project_id}.dataset_1.table_1`",
+        )
+        view_3 = BigQueryView(
+            dataset_id="dataset_3",
+            view_id="table_3",
+            description="table_3 description",
+            view_query_template="""
+                           SELECT * FROM `{project_id}.dataset_1.table_1`
+                           JOIN `{project_id}.dataset_2.table_2`
+                           USING (col)""",
+        )
+        view_4 = BigQueryView(
+            dataset_id="dataset_4",
+            view_id="table_4",
+            description="table_4 description",
+            view_query_template="""
+                           SELECT * FROM `{project_id}.dataset_2.table_2`
+                           JOIN `{project_id}.dataset_3.table_3`
+                           USING (col)""",
+        )
+
+        dag_walker = BigQueryViewDagWalker([view_1, view_2, view_3, view_4])
+        start_node = dag_walker.nodes_by_key[("dataset_4", "table_4")]
+
+        parentage_set = dag_walker.find_full_parentage(
+            curr_node=start_node,
+            view_source_table_datasets={"source_dataset"},
+        )
+        expected_parent_nodes = {
+            ("source_dataset", "source_table"),
+            ("dataset_1", "table_1"),
+            ("dataset_2", "table_2"),
+            ("dataset_3", "table_3"),
+        }
+        self.assertEqual(expected_parent_nodes, parentage_set)
 
     def assertIsValidEmptyParentsView(self, node: BigQueryViewDagNode) -> None:
         known_empty_parent_view_keys = {

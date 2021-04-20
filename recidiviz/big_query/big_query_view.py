@@ -16,7 +16,6 @@
 # =============================================================================
 """An implementation of bigquery.TableReference with extra functionality related to views."""
 import abc
-from enum import Enum
 from typing import Any, Callable, Generic, Optional, Dict, TypeVar
 
 from google.cloud import bigquery
@@ -26,17 +25,6 @@ from recidiviz.utils.environment import GCP_PROJECTS
 
 PROJECT_ID_KEY = "project_id"
 MATERIALIZED_SUFFIX = "_materialized"
-
-
-class BigQueryViewNamespace(Enum):
-    COUNTY = "county"
-    JUSTICE_COUNTS = "justice_counts"
-    STATE = "state"
-    VALIDATION = "validation"
-    CASE_TRIAGE = "case_triage"
-    INGEST_METADATA = "ingest_metadata"
-    DIRECT_INGEST = "direct_ingest"
-    VALIDATION_METADATA = "validation_metadata"
 
 
 class BigQueryView(bigquery.TableReference):

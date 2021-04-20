@@ -77,10 +77,7 @@ from google.cloud.bigquery import QueryJob
 from more_itertools import peekable
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.big_query.view_update_manager import (
-    VIEW_BUILDERS_BY_NAMESPACE,
-    TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
-)
+from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE
 from recidiviz.calculator.query.state.views.dashboard.supervision.us_nd.average_change_lsir_score_by_month import (
     AVERAGE_CHANGE_LSIR_SCORE_MONTH_VIEW_BUILDER,
 )
@@ -94,6 +91,9 @@ from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.tools.load_views_to_sandbox import load_views_to_sandbox
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.big_query.view_update_manager import (
+    TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
+)
 
 OUTPUT_COMPARISON_TEMPLATE = """
     WITH base_output AS (
@@ -180,7 +180,7 @@ def compare_metric_view_output_to_sandbox(
     query_jobs: List[Tuple[QueryJob, str]] = []
     skipped_views: List[str] = []
 
-    for view_builders in VIEW_BUILDERS_BY_NAMESPACE.values():
+    for view_builders in DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE.values():
         for view_builder in view_builders:
             # Only compare output of metric views
             if not isinstance(view_builder, MetricBigQueryViewBuilder):

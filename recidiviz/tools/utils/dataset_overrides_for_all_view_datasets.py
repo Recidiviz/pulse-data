@@ -21,7 +21,7 @@ the provided value.
 from typing import Dict, Optional
 import logging
 
-from recidiviz.big_query.view_update_manager import VIEW_BUILDERS_BY_NAMESPACE
+from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
     DATAFLOW_METRICS_DATASET,
@@ -32,7 +32,7 @@ def dataset_overrides_for_all_view_datasets(
     view_dataset_override_prefix: str, dataflow_dataset_override: Optional[str] = None
 ) -> Dict[str, str]:
     dataset_overrides = {}
-    for view_builders in VIEW_BUILDERS_BY_NAMESPACE.values():
+    for view_builders in DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE.values():
         for builder in view_builders:
             dataset_id = builder.dataset_id
 

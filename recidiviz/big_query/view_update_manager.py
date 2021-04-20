@@ -16,7 +16,7 @@
 # =============================================================================
 """Provides utilities for updating views within a live BigQuery instance."""
 import logging
-from typing import Dict, List, Sequence, Optional
+from typing import Dict, List, Sequence, Optional, Set
 
 from google.cloud import exceptions
 from opencensus.stats import measure, view as opencensus_view, aggregation
@@ -26,50 +26,13 @@ from recidiviz.big_query.big_query_view import (
     BigQueryView,
     BigQueryViewBuilder,
     BigQueryViewBuilderShouldNotBuildError,
-    BigQueryViewNamespace,
 )
+from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
-from recidiviz.calculator.query.county.dataset_config import COUNTY_BASE_DATASET
-from recidiviz.calculator.query.county.view_config import (
-    VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as COUNTY_VIEW_BUILDERS,
-)
-from recidiviz.calculator.query.county.views.vera.vera_view_constants import (
-    VERA_DATASET,
-)
-from recidiviz.calculator.query.justice_counts.view_config import (
-    VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as JUSTICE_COUNTS_VIEW_BUILDERS,
-)
-from recidiviz.calculator.query.operations.dataset_config import OPERATIONS_BASE_DATASET
-from recidiviz.calculator.query.state.dataset_config import (
-    STATE_BASE_DATASET,
-    STATIC_REFERENCE_TABLES_DATASET,
-    DATAFLOW_METRICS_DATASET,
-    COVID_DASHBOARD_REFERENCE_DATASET,
-    POPULATION_PROJECTION_OUTPUT_DATASET,
-)
-from recidiviz.calculator.query.state.view_config import (
-    VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as STATE_VIEW_BUILDERS,
-)
-from recidiviz.case_triage.views.view_config import (
-    VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as CASE_TRIAGE_VIEW_BUILDERS,
-)
-from recidiviz.common.constants.states import StateCode
-from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
 from recidiviz.ingest.direct.views.normalized_direct_ingest_big_query_view_types import (
     NormalizedDirectIngestPreProcessedIngestViewBuilder,
 )
-from recidiviz.ingest.direct.views.view_config import (
-    VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as DIRECT_INGEST_VIEW_BUILDERS,
-)
-from recidiviz.ingest.views.view_config import (
-    VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as INGEST_METADATA_VIEW_BUILDERS,
-)
 from recidiviz.utils import monitoring
-from recidiviz.validation.views.dataset_config import EXTERNAL_ACCURACY_DATASET
-from recidiviz.validation.views.view_config import (
-    VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as VALIDATION_VIEW_BUILDERS,
-    METADATA_VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as VALIDATION_METADATA_VIEW_BUILDERS,
-)
 
 m_failed_view_update = measure.MeasureInt(
     "bigquery/view_update_manager/view_update_all_failure",
@@ -87,50 +50,24 @@ failed_view_updates_view = opencensus_view.View(
 
 monitoring.register_views([failed_view_updates_view])
 
-
-VIEW_BUILDERS_BY_NAMESPACE: Dict[
-    BigQueryViewNamespace, Sequence[BigQueryViewBuilder]
-] = {
-    BigQueryViewNamespace.COUNTY: COUNTY_VIEW_BUILDERS,
-    BigQueryViewNamespace.JUSTICE_COUNTS: JUSTICE_COUNTS_VIEW_BUILDERS,
-    BigQueryViewNamespace.DIRECT_INGEST: DIRECT_INGEST_VIEW_BUILDERS,
-    BigQueryViewNamespace.STATE: STATE_VIEW_BUILDERS,
-    BigQueryViewNamespace.VALIDATION: VALIDATION_VIEW_BUILDERS,
-    BigQueryViewNamespace.CASE_TRIAGE: CASE_TRIAGE_VIEW_BUILDERS,
-    BigQueryViewNamespace.INGEST_METADATA: INGEST_METADATA_VIEW_BUILDERS,
-    BigQueryViewNamespace.VALIDATION_METADATA: VALIDATION_METADATA_VIEW_BUILDERS,
-}
-
-RAW_TABLE_DATASETS = {
-    f"{state_code.value.lower()}_raw_data" for state_code in StateCode
-}
-OTHER_SOURCE_TABLE_DATASETS = {
-    COUNTY_BASE_DATASET,
-    COVID_DASHBOARD_REFERENCE_DATASET,
-    DATAFLOW_METRICS_DATASET,
-    EXTERNAL_ACCURACY_DATASET,
-    EXTERNAL_REFERENCE_DATASET,
-    OPERATIONS_BASE_DATASET,
-    POPULATION_PROJECTION_OUTPUT_DATASET,
-    STATE_BASE_DATASET,
-    STATIC_REFERENCE_TABLES_DATASET,
-    VERA_DATASET,
-}
-
-# These datasets should only contain tables that provide the source data for our view graph.
-VIEW_SOURCE_TABLE_DATASETS = OTHER_SOURCE_TABLE_DATASETS | RAW_TABLE_DATASETS
-
 # When creating temporary datasets with prefixed names, set the default table expiration to 24 hours
 TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS = 24 * 60 * 60 * 1000
 
 
-def rematerialize_views(dataset_overrides: Optional[Dict[str, str]] = None) -> None:
+def rematerialize_views(
+    view_builders_by_namespace: Dict[
+        BigQueryViewNamespace, Sequence[BigQueryViewBuilder]
+    ],
+    view_source_table_datasets: Set[str],
+    dataset_overrides: Optional[Dict[str, str]] = None,
+) -> None:
     """For all registered views, re-materializes any materialized views. This should be called only when we want to
     refresh the data in the materialized view, not when we want to update the underlying query of the view.
     """
-    for namespace, builders in VIEW_BUILDERS_BY_NAMESPACE.items():
+    for namespace, builders in view_builders_by_namespace.items():
         rematerialize_views_for_namespace(
             bq_view_namespace=namespace,
+            view_source_table_datasets=view_source_table_datasets,
             candidate_view_builders=builders,
             dataset_overrides=dataset_overrides,
         )
@@ -139,6 +76,7 @@ def rematerialize_views(dataset_overrides: Optional[Dict[str, str]] = None) -> N
 def rematerialize_views_for_namespace(
     # TODO(#5785): Clarify use case of BigQueryViewNamespace filter (see ticket for more)
     bq_view_namespace: BigQueryViewNamespace,
+    view_source_table_datasets: Set[str],
     candidate_view_builders: Sequence[BigQueryViewBuilder],
     dataset_overrides: Optional[Dict[str, str]] = None,
     skip_missing_views: bool = False,
@@ -155,6 +93,7 @@ def rematerialize_views_for_namespace(
 
     try:
         views_to_update = _build_views_to_update(
+            view_source_table_datasets=view_source_table_datasets,
             candidate_view_builders=candidate_view_builders,
             dataset_overrides=dataset_overrides,
         )
@@ -200,6 +139,7 @@ def rematerialize_views_for_namespace(
 def create_dataset_and_deploy_views_for_view_builders(
     # TODO(#5785): Clarify use case of BigQueryViewNamespace filter (see ticket for more)
     bq_view_namespace: BigQueryViewNamespace,
+    view_source_table_datasets: Set[str],
     view_builders_to_update: Sequence[BigQueryViewBuilder],
     dataset_overrides: Optional[Dict[str, str]] = None,
 ) -> None:
@@ -218,6 +158,7 @@ def create_dataset_and_deploy_views_for_view_builders(
         )
     try:
         views_to_update = _build_views_to_update(
+            view_source_table_datasets=view_source_table_datasets,
             candidate_view_builders=view_builders_to_update,
             dataset_overrides=dataset_overrides,
         )
@@ -234,6 +175,7 @@ def create_dataset_and_deploy_views_for_view_builders(
 
 
 def _build_views_to_update(
+    view_source_table_datasets: Set[str],
     candidate_view_builders: Sequence[BigQueryViewBuilder],
     dataset_overrides: Optional[Dict[str, str]],
 ) -> List[BigQueryView]:
@@ -241,7 +183,7 @@ def _build_views_to_update(
 
     views_to_update = []
     for view_builder in candidate_view_builders:
-        if view_builder.dataset_id in VIEW_SOURCE_TABLE_DATASETS:
+        if view_builder.dataset_id in view_source_table_datasets:
             raise ValueError(
                 f"Found view [{view_builder.view_id}] in source-table-only dataset [{view_builder.dataset_id}]"
             )
