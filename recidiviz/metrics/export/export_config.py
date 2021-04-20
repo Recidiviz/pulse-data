@@ -154,6 +154,10 @@ class ExportViewCollectionConfig:
         default=None
     )
 
+    # If set to True then empty files are considered valid. If False then some
+    # validators may choose to mark empty files as invalid.
+    allow_empty: bool = attr.ib(default=False)
+
     def export_configs_for_views_to_export(
         self,
         project_id: str,
@@ -196,6 +200,7 @@ class ExportViewCollectionConfig:
                     output_directory=GcsfsDirectoryPath.from_absolute_path(
                         output_directory
                     ),
+                    allow_empty=self.allow_empty,
                     **optional_args,
                 )
             )
@@ -277,6 +282,9 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         output_directory_uri_template=PUBLIC_DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="PUBLIC_DASHBOARD",
         bq_view_namespace=BigQueryViewNamespace.STATE,
+        # Not all views have data for every state, so it is okay if some of the files
+        # are empty.
+        allow_empty=True,
     ),
     # Unified Product views
     ExportViewCollectionConfig(

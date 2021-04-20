@@ -105,11 +105,11 @@ class BigQueryViewExporterTest(unittest.TestCase):
 
     def test_csv_export_format(self) -> None:
         exporter = CSVBigQueryViewExporter(self.mock_bq_client, self.mock_validator)
-        export_file_destinations = exporter.export(self.view_export_configs)
+        export_config_and_paths = exporter.export(self.view_export_configs)
 
-        self.assertEqual(len(export_file_destinations), len(self.view_export_configs))
+        self.assertEqual(len(export_config_and_paths), len(self.view_export_configs))
 
-        for gcs_path in export_file_destinations:
+        for _export_config, gcs_path in export_config_and_paths:
             self.assertTrue(
                 gcs_path.file_name.endswith(".csv"),
                 msg=f"GCS output file {gcs_path.abs_path()} is not a CSV as expected.",
@@ -156,11 +156,11 @@ class BigQueryViewExporterTest(unittest.TestCase):
         exporter = JsonLinesBigQueryViewExporter(
             self.mock_bq_client, self.mock_validator
         )
-        export_file_destinations = exporter.export(self.view_export_configs)
+        export_config_and_paths = exporter.export(self.view_export_configs)
 
-        self.assertEqual(len(export_file_destinations), len(self.view_export_configs))
+        self.assertEqual(len(export_config_and_paths), len(self.view_export_configs))
 
-        for gcs_path in export_file_destinations:
+        for _export_config, gcs_path in export_config_and_paths:
             self.assertTrue(
                 gcs_path.file_name.endswith(".json"),
                 msg=f"GCS output file {gcs_path.abs_path()} is not a .json file as expected.",
