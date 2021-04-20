@@ -25,6 +25,7 @@ from unittest.mock import patch, MagicMock
 import flask
 from flask import Flask
 
+from recidiviz.common.results import MultiRequestResult
 from recidiviz.reporting.reporting_endpoint import reporting_endpoint_blueprint
 
 FIXTURE_FILE = "po_monthly_report_data_fixture.json"
@@ -50,6 +51,9 @@ class ReportingEndpointTests(TestCase):
         with self.app.test_request_context():
             self.start_new_batch_url = flask.url_for(
                 "reporting_endpoint_blueprint.start_new_batch"
+            )
+            self.deliver_emails_for_batch_url = flask.url_for(
+                "reporting_endpoint_blueprint.deliver_emails_for_batch"
             )
             self.state_code = "US_ID"
 
@@ -99,7 +103,9 @@ class ReportingEndpointTests(TestCase):
     ) -> None:
         with self.app.test_request_context():
             mock_generate.return_value = "test_batch_id"
-            mock_start.return_value = [0, 1]
+            mock_start.return_value = MultiRequestResult[str, str](
+                successes=["dev@recidiviz.org"], failures=[]
+            )
 
             response = self.client.get(
                 self.start_new_batch_url,
@@ -135,7 +141,9 @@ class ReportingEndpointTests(TestCase):
     ) -> None:
         with self.app.test_request_context():
             mock_generate.return_value = "test_batch_id"
-            mock_start.return_value = [0, 1]
+            mock_start.return_value = MultiRequestResult[str, str](
+                successes=["letter@kenny.ca"], failures=[]
+            )
 
             response = self.client.get(
                 self.start_new_batch_url,
@@ -168,7 +176,9 @@ class ReportingEndpointTests(TestCase):
     ) -> None:
         with self.app.test_request_context():
             mock_generate.return_value = "test_batch_id"
-            mock_start.return_value = [0, 1]
+            mock_start.return_value = MultiRequestResult[str, str](
+                successes=["dev@recidiviz.org"], failures=[]
+            )
             response = self.client.get(
                 self.start_new_batch_url,
                 query_string={
@@ -188,7 +198,10 @@ class ReportingEndpointTests(TestCase):
             self.assertIn("Successfully generated 1 email(s)", str(response.data))
             self.assertNotIn("Failed to generate", str(response.data))
 
-            mock_start.return_value = [2, 1]
+            mock_start.return_value = MultiRequestResult[str, str](
+                successes=["dev@recidiviz.org"],
+                failures=["other@recidiviz.org", "letter@kenny.ca"],
+            )
 
             response = self.client.get(
                 self.start_new_batch_url,
@@ -202,9 +215,66 @@ class ReportingEndpointTests(TestCase):
                 headers=self.headers,
             )
 
-            self.assertEqual(HTTPStatus.OK, response.status_code)
+            self.assertEqual(HTTPStatus.MULTI_STATUS, response.status_code)
             self.assertIn(
                 f"New batch started for {self.state_code}", str(response.data)
             )
             self.assertIn("Successfully generated 1 email(s)", str(response.data))
             self.assertIn("Failed to generate 2 email(s)", str(response.data))
+
+            mock_start.return_value = MultiRequestResult[str, str](
+                successes=[],
+                failures=[
+                    "dev@recidiviz.org",
+                    "other@recidiviz.org",
+                    "letter@kenny.ca",
+                ],
+            )
+            response = self.client.get(
+                self.start_new_batch_url,
+                query_string={
+                    "state_code": self.state_code,
+                    "report_type": "po_monthly_report",
+                    "email_allowlist": json.dumps(
+                        ["dev@recidiviz.org", "other@recidiviz.org"]
+                    ),
+                },
+                headers=self.headers,
+            )
+
+            self.assertEqual(HTTPStatus.INTERNAL_SERVER_ERROR, response.status_code)
+
+    @patch("recidiviz.reporting.email_delivery.deliver")
+    def test_integration_deliver_emails_for_batch(
+        self, mock_deliver: MagicMock
+    ) -> None:
+        with self.app.test_request_context():
+            mock_deliver.return_value = MultiRequestResult[str, str](
+                successes=["dev@recidiviz.org"], failures=[]
+            )
+            response = self.client.get(
+                self.deliver_emails_for_batch_url,
+                query_string={"batch_id": "test_batch_id"},
+                headers=self.headers,
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+
+            mock_deliver.return_value = MultiRequestResult[str, str](
+                successes=["dev@recidiviz.org"], failures=["other@recidiviz.org"]
+            )
+            response = self.client.get(
+                self.deliver_emails_for_batch_url,
+                query_string={"batch_id": "test_batch_id"},
+                headers=self.headers,
+            )
+            self.assertEqual(HTTPStatus.MULTI_STATUS, response.status_code)
+
+            mock_deliver.return_value = MultiRequestResult[str, str](
+                successes=[], failures=["dev@recidiviz.org", "other@recidiviz.org"]
+            )
+            response = self.client.get(
+                self.deliver_emails_for_batch_url,
+                query_string={"batch_id": "test_batch_id"},
+                headers=self.headers,
+            )
+            self.assertEqual(HTTPStatus.INTERNAL_SERVER_ERROR, response.status_code)

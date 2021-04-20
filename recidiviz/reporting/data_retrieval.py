@@ -23,10 +23,11 @@ for use in the emails.
 
 import json
 import logging
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 import recidiviz.reporting.email_generation as email_generation
 import recidiviz.reporting.email_reporting_utils as utils
+from recidiviz.common.results import MultiRequestResult
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.reporting.context.available_context import get_report_context
@@ -66,7 +67,7 @@ def start(
     region_code: Optional[str] = None,
     email_allowlist: Optional[List[str]] = None,
     message_body: Optional[str] = None,
-) -> Tuple[int, int]:
+) -> MultiRequestResult[str, str]:
     """Begins data retrieval for a new batch of email reports.
 
     Start with collection of data from the calculation pipelines.
@@ -85,9 +86,8 @@ def start(
         recipient_emails: Optional list of email_addresses to generate for; all other recipients are skipped
         message_body: Optional override for the message body in the email.
 
-    Returns: Tuple containing:
-        - Number of failed email generations
-        - Number of successful email generations
+    Returns: A MultiRequestResult containing the email addresses for which reports were successfully generated for
+            and failed to generate for
     """
     if batch_id is None:
         batch_id = utils.generate_batch_id()
@@ -125,20 +125,21 @@ def start(
             for recipient in recipients
         ]
 
-    failure_count = 0
-    success_count = 0
+    failed_email_addresses: List[str] = []
+    succeeded_email_addresses: List[str] = []
 
     for recipient in recipients:
         try:
             report_context = get_report_context(state_code, report_type, recipient)
             email_generation.generate(report_context)
         except Exception as e:
-            failure_count += 1
+            failed_email_addresses.append(recipient.email_address)
             logging.error("Failed to generate report email for %s %s", recipient, e)
         else:
-            success_count += 1
-
-    return failure_count, success_count
+            succeeded_email_addresses.append(recipient.email_address)
+    return MultiRequestResult(
+        successes=succeeded_email_addresses, failures=failed_email_addresses
+    )
 
 
 def retrieve_data(state_code: str, report_type: str, batch_id: str) -> List[Recipient]:
