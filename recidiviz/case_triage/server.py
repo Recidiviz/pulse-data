@@ -125,6 +125,10 @@ def set_headers(response: Response) -> Response:
         ] = "max-age=63072000"  # max age of 2 years
     response.headers["Content-Security-Policy"] = "frame-ancestors 'none'"
     response.headers["X-Frame-Options"] = "DENY"
+
+    # Recidiviz-specific version header
+    response.headers["X-Recidiviz-Current-Version"] = os.getenv("CURRENT_GIT_SHA", "")
+
     return response
 
 
