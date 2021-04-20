@@ -166,7 +166,8 @@ SELECT {aggregated_dimension_columns},
        -- Note: This can return NULL in the case of divide by zero
        SAFE_DIVIDE(({value_column} - compare_{value_column}), compare_{value_column}) as percentage_change,
        percentage_covered_county as percentage_covered_county,
-       percentage_covered_population as percentage_covered_population
+       percentage_covered_population as percentage_covered_population,
+       publish_date as date_published
 FROM `{project_id}.{input_dataset}.{input_table}`
 """
 

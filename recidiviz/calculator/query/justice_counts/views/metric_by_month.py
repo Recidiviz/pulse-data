@@ -188,7 +188,7 @@ combined_periods_data as (
 -- bring in cells to do the spatial aggregation. Or we could split this off, group by non comprehensive dimensions and
 -- aggregate comprehensive dimensions, and take into account the coverage of dimension values when deciding which to
 -- use (e.g. one source reports on more race categories than another).
-SELECT source_id, report_type, report_ids, start_of_month, time_window_start, time_window_end,
+SELECT source_id, report_type, report_ids, publish_date, start_of_month, time_window_start, time_window_end,
        dimensions, dimensions_string, collapsed_dimension_values, value
 FROM (
   -- TODO(#5517): order by how much of the month it covers, then time_window_end, then publish date?
