@@ -29,6 +29,8 @@ from recidiviz.utils import structured_logging
 # increased.
 # In the future, we could increase the worker number by playing around with increasing the pool size per this post:
 # https://github.com/googleapis/python-storage/issues/253
+from recidiviz.view_registry.deployed_views import NOISY_DEPENDENCY_VIEW_BUILDERS
+
 DAG_WALKER_MAX_WORKERS = 10
 
 DagKey = Tuple[str, str]
@@ -188,3 +190,33 @@ class BigQueryViewDagWalker:
                             future_to_view[future] = child_node
                             processing.add(child_node.dag_key)
         return result
+
+    def find_full_parentage(
+        self,
+        curr_node: BigQueryViewDagNode,
+        view_source_table_datasets: Set[str],
+    ) -> Set[DagKey]:
+        """Recursive function to build a set of DagKeys containing parent/grandparent/etc
+        keys for a node"""
+        full_parentage_keys: Set[DagKey] = set()
+        for parent_node_key in curr_node.parent_keys:
+            full_parentage_keys.add(parent_node_key)
+
+            # TODO(#7049): refactor most_recent_job_id_by_metric_and_state_code dependencies
+            noisy_dependency_keys = [
+                (builder.dataset_id, builder.view_id)
+                for builder in NOISY_DEPENDENCY_VIEW_BUILDERS
+            ]
+            if parent_node_key in noisy_dependency_keys:
+                continue
+
+            dataset_id, _ = parent_node_key
+            # stop if we hit source views
+            if dataset_id in view_source_table_datasets:
+                continue
+
+            ancestor_keys = self.find_full_parentage(
+                self.nodes_by_key[parent_node_key], view_source_table_datasets
+            )
+            full_parentage_keys = full_parentage_keys.union(ancestor_keys)
+        return full_parentage_keys

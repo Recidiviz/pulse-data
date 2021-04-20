@@ -22,8 +22,8 @@ import mock
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.big_query_view import (
     SimpleBigQueryViewBuilder,
-    BigQueryViewNamespace,
 )
+from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 from recidiviz.big_query.export.big_query_view_export_validator import (
     BigQueryViewExportValidator,
 )

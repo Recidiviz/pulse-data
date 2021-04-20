@@ -26,7 +26,7 @@ from recidiviz.big_query.export.export_query_config import (
     ExportBigQueryViewConfig,
     ExportOutputFormatType,
 )
-from recidiviz.big_query.view_update_manager import BigQueryViewNamespace
+from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 from recidiviz.calculator.query.justice_counts.view_config import (
     VIEW_BUILDERS_FOR_VIEWS_TO_EXPORT as JUSTICE_COUNTS_VIEW_BUILDERS,
 )

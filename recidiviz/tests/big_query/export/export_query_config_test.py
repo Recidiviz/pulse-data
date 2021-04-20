@@ -20,8 +20,8 @@ from mock import patch
 
 from recidiviz.big_query.big_query_view import (
     SimpleBigQueryViewBuilder,
-    BigQueryViewNamespace,
 )
+from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 

@@ -40,6 +40,8 @@ from recidiviz.validation.validation_models import (
     DataValidationJob,
     DataValidationJobResult,
 )
+from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
+from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE
 
 m_failed_to_run_validations = measure.MeasureInt(
     "validation/num_fail_to_run",
@@ -105,7 +107,10 @@ def execute_validation(
         logging.info(
             'Received query param "should_update_views" = true, updating validation dataset and views... '
         )
-        view_update_manager.rematerialize_views()
+        view_update_manager.rematerialize_views(
+            view_builders_by_namespace=DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE,
+            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+        )
 
     # Fetch collection of validation jobs to perform
     validation_jobs = _fetch_validation_jobs_to_perform(

@@ -107,7 +107,6 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCT
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.yaml_dict import YAMLDict
 
-
 OUTPUT_COMPARISON_TEMPLATE = """
     WITH base_output AS (
       SELECT {columns_to_compare}

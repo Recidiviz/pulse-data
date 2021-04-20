@@ -23,7 +23,9 @@ from unittest import TestCase
 from flask import Flask
 from mock import patch, call, MagicMock
 
-from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewNamespace
+from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
+from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 from recidiviz.tests.utils.matchers import UnorderedCollection
 from recidiviz.utils.environment import GCPEnvironment
 from recidiviz.validation.checks.existence_check import ExistenceDataValidationCheck
@@ -313,41 +315,49 @@ class TestHandleRequest(TestCase):
         self.maxDiff = None
         expected_update_calls = [
             call(
+                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
                 bq_view_namespace=BigQueryViewNamespace.COUNTY,
                 candidate_view_builders=county_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
                 dataset_overrides=None,
             ),
             call(
+                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
                 bq_view_namespace=BigQueryViewNamespace.JUSTICE_COUNTS,
                 candidate_view_builders=justice_counts_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
                 dataset_overrides=None,
             ),
             call(
+                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
                 bq_view_namespace=BigQueryViewNamespace.STATE,
                 candidate_view_builders=state_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
                 dataset_overrides=None,
             ),
             call(
+                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
                 bq_view_namespace=BigQueryViewNamespace.VALIDATION,
                 candidate_view_builders=validation_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
                 dataset_overrides=None,
             ),
             call(
+                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
                 bq_view_namespace=BigQueryViewNamespace.CASE_TRIAGE,
                 candidate_view_builders=case_triage_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
                 dataset_overrides=None,
             ),
             call(
+                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
                 bq_view_namespace=BigQueryViewNamespace.INGEST_METADATA,
                 candidate_view_builders=ingest_metadata_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
                 dataset_overrides=None,
             ),
             call(
+                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
                 bq_view_namespace=BigQueryViewNamespace.VALIDATION_METADATA,
                 candidate_view_builders=validation_view_config.METADATA_VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
                 dataset_overrides=None,
             ),
             call(
+                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
                 bq_view_namespace=BigQueryViewNamespace.DIRECT_INGEST,
                 candidate_view_builders=direct_ingest_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
                 dataset_overrides=None,
