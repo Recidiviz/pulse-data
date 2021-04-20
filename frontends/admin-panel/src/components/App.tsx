@@ -25,7 +25,7 @@ import POFeedbackView from "./POFeedbackView";
 import ColumnView from "./ColumnView";
 import DatasetView from "./DatasetView";
 import DataFreshnessView from "./DataFreshnessView";
-import ActionsView from "./ActionsView";
+import IngestOperationsView from "./IngestOperationsView";
 import TableView from "./TableView";
 
 import MetadataDataset from "../models/MetadataDatasets";
@@ -90,7 +90,7 @@ const App = (): JSX.Element => {
           <Menu.ItemGroup title="Ingest Operations">
             <Menu.Item key={IngestOperations.INGEST_ACTIONS_ROUTE}>
               <Link to={IngestOperations.INGEST_ACTIONS_ROUTE}>
-                Key Actions
+                Actions & Summaries
               </Link>
             </Menu.Item>
           </Menu.ItemGroup>
@@ -137,7 +137,7 @@ const App = (): JSX.Element => {
           <Route
             exact
             path={IngestOperations.INGEST_ACTIONS_ROUTE}
-            component={ActionsView}
+            component={IngestOperationsView}
           />
           <Route
             path={CaseTriage.GCS_CSV_TO_CLOUD_SQL_ROUTE}

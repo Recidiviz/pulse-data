@@ -19,5 +19,5 @@
 locals {
   direct_ingest_state_codes = yamldecode(file("${path.module}/direct_ingest_state_codes.yaml"))
 
-  sftp_state_alpha_codes = ["US_ID"]
+  sftp_state_alpha_codes = yamldecode(file("${path.module}/sftp_state_alpha_codes.yaml"))
 }

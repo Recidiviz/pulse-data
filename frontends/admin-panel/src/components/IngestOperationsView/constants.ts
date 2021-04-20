@@ -14,9 +14,24 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-enum IngestActions {
-  StartIngestRun = "Start ingest run",
-  PauseIngestQueues = "Pause ingest queues",
-  ResumeIngestQueues = "Resume ingest queues",
+export enum IngestActions {
+  StartIngestRun = "start",
+  PauseIngestQueues = "pause",
+  ResumeIngestQueues = "resume",
 }
-export default IngestActions;
+
+export const actionNames = {
+  [IngestActions.StartIngestRun]: "Start Ingest Run",
+  [IngestActions.PauseIngestQueues]: "Pause Ingest Queues",
+  [IngestActions.ResumeIngestQueues]: "Resume Ingest Queues",
+};
+
+export enum QueueState {
+  PAUSED = "PAUSED",
+  RUNNING = "RUNNING",
+}
+
+export type QueueMetadata = {
+  name: string;
+  state: QueueState;
+};
