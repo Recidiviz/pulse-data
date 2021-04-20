@@ -87,6 +87,11 @@ class API {
       },
     });
 
+    const reportedVersion = response.headers.get("X-Recidiviz-Current-Version");
+    if (reportedVersion !== null) {
+      this.userStore.recordVersion(reportedVersion, method !== "GET");
+    }
+
     return response.json();
   }
 

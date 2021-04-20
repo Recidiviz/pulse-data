@@ -33,9 +33,15 @@ export default class UserStore {
 
   authSettings: Auth0ClientOptions;
 
+  currentVersion?: string;
+
   isAuthorized: boolean;
 
   isLoading: boolean;
+
+  shouldReload: boolean;
+
+  shouldNotHardReload: boolean;
 
   user?: User;
 
@@ -51,6 +57,8 @@ export default class UserStore {
     this.authSettings = authSettings;
     this.isAuthorized = false;
     this.isLoading = true;
+    this.shouldReload = false;
+    this.shouldNotHardReload = false;
   }
 
   async authorize(): Promise<void> {
@@ -101,5 +109,30 @@ export default class UserStore {
         audience: window.AUTH0_CONFIG.audience,
       },
     });
+  }
+
+  // Used to keep track of the current version and prompt a reload if the
+  // current version has been updated.
+  recordVersion(version: string, requireUserPromptForReload: boolean): void {
+    if (this.currentVersion === undefined) {
+      this.currentVersion = version;
+    }
+
+    if (this.currentVersion === version) {
+      return;
+    }
+
+    this.shouldReload = true;
+    if (requireUserPromptForReload) {
+      this.shouldNotHardReload = true;
+    } else if (!this.shouldNotHardReload) {
+      setTimeout(() => {
+        // If we've waited a second and we know we're out of date,
+        // we can comfortably hard reload.
+        if (!this.shouldNotHardReload) {
+          window.location.reload();
+        }
+      }, 1000);
+    }
   }
 }
