@@ -174,13 +174,9 @@ class ExportBigQueryViewConfig(Generic[BigQueryViewType]):
         bucket_name = self.output_directory.bucket_name
         relative_path = self.output_directory.relative_path
 
-        return ExportBigQueryViewConfig(
-            bq_view_namespace=self.bq_view_namespace,
-            view=self.view,
-            view_filter_clause=self.view_filter_clause,
-            intermediate_table_name=self.intermediate_table_name,
+        return attr.evolve(
+            self,
             output_directory=GcsfsDirectoryPath.from_absolute_path(
                 os.path.join(bucket_name, STAGING_DIRECTORY, relative_path)
             ),
-            export_output_formats=self.export_output_formats,
         )
