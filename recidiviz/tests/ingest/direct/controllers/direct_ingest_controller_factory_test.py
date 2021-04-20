@@ -17,8 +17,10 @@
 """Tests for the DirectIngestControllerFactory."""
 import unittest
 
+import importlib
 from mock import patch, Mock
 
+from recidiviz.common.constants import states
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct import templates
 from recidiviz.ingest.direct.controllers import direct_ingest_controller_factory
@@ -146,6 +148,7 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
         Mock(return_value=["us_xx"]),
     )
     def test_build_succeeds_in_staging_region_launched_in_prod(self) -> None:
+        importlib.reload(states)
         mock_region = fake_region(
             region_code="us_xx",
             environment="production",

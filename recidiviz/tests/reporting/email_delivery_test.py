@@ -75,10 +75,10 @@ class EmailDeliveryTest(TestCase):
         mock_load_files_from_storage.return_value = self.mock_files
         self.mock_sendgrid_client.send_message.return_value = True
         with self.assertLogs(level="INFO"):
-            [success_count, fail_count] = email_delivery.deliver(self.batch_id)
+            result = email_delivery.deliver(self.batch_id)
 
-        self.assertEqual(success_count, 1)
-        self.assertEqual(fail_count, 0)
+        self.assertEqual(len(result.successes), 1)
+        self.assertEqual(len(result.failures), 0)
 
     @patch("recidiviz.reporting.email_delivery.load_files_from_storage")
     def test_deliver_returns_fail_count(
@@ -87,10 +87,10 @@ class EmailDeliveryTest(TestCase):
         """Given a batch_id, test that the deliver returns the fail_count value when it fails"""
         mock_load_files_from_storage.return_value = self.mock_files
         self.mock_sendgrid_client.send_message.return_value = False
-        [success_count, fail_count] = email_delivery.deliver(self.batch_id)
+        result = email_delivery.deliver(self.batch_id)
 
-        self.assertEqual(success_count, 0)
-        self.assertEqual(fail_count, 1)
+        self.assertEqual(len(result.successes), 0)
+        self.assertEqual(len(result.failures), 1)
 
     @patch("recidiviz.utils.metadata.project_id", Mock(return_value="test-project"))
     @patch(
@@ -191,11 +191,9 @@ class EmailDeliveryTest(TestCase):
         """Given a batch_id and a redirect_address, test the fail count increases if redirect_address fails to send."""
         mock_load_files_from_storage.return_value = self.mock_files
         self.mock_sendgrid_client.send_message.return_value = False
-        [success_count, fail_count] = email_delivery.deliver(
-            self.batch_id, self.redirect_address
-        )
-        self.assertEqual(fail_count, 1)
-        self.assertEqual(success_count, 0)
+        result = email_delivery.deliver(self.batch_id, self.redirect_address)
+        self.assertEqual(len(result.failures), 1)
+        self.assertEqual(len(result.successes), 0)
 
     @patch("recidiviz.reporting.email_delivery.load_files_from_storage")
     def test_deliver_fails_missing_env_vars(

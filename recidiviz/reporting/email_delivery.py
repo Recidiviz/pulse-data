@@ -27,11 +27,12 @@ and conform to the following:
 """
 import re
 import logging
-from typing import Dict, Tuple, Optional, List
+from typing import Dict, Optional, List
 
-from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 import recidiviz.reporting.email_reporting_utils as utils
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.results import MultiRequestResult
 from recidiviz.reporting.context.po_monthly_report.constants import (
     DEFAULT_EMAIL_SUBJECT,
 )
@@ -43,7 +44,7 @@ def deliver(
     redirect_address: Optional[str] = None,
     cc_addresses: Optional[List[str]] = None,
     subject_override: Optional[str] = None,
-) -> Tuple[int, int]:
+) -> MultiRequestResult[str, str]:
     """Delivers emails for the given batch.
 
     Delivers emails to the email address specified in the generated email filename.
@@ -58,7 +59,7 @@ def deliver(
         subject_override: (optional) The subject line to override to.
 
     Returns:
-        A tuple with counts of successful deliveries and failures (successes, failures)
+        A MultiRequestResult containing successes and failures for the emails that were sent
 
     Raises:
         Raises errors related to external services like Google Storage but continues attempting to send subsequent
@@ -102,8 +103,8 @@ def deliver(
         logging.error(msg)
         raise IndexError(msg)
 
-    success_count = 0
-    fail_count = 0
+    succeeded_email_sends: List[str] = []
+    failed_email_sends: List[str] = []
     sendgrid = SendGridClientWrapper()
     subject = DEFAULT_EMAIL_SUBJECT if subject_override is None else subject_override
 
@@ -120,12 +121,18 @@ def deliver(
         )
 
         if sent_successfully:
-            success_count = success_count + 1
+            succeeded_email_sends.append(recipient_email_address)
         else:
-            fail_count = fail_count + 1
+            failed_email_sends.append(recipient_email_address)
 
-    logging.info("Sent %s emails. %s emails failed to send", success_count, fail_count)
-    return success_count, fail_count
+    logging.info(
+        "Sent %s emails. %s emails failed to send",
+        len(succeeded_email_sends),
+        len(failed_email_sends),
+    )
+    return MultiRequestResult(
+        successes=succeeded_email_sends, failures=failed_email_sends
+    )
 
 
 def email_from_file_name(file_name: str) -> str:

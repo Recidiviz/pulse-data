@@ -30,6 +30,7 @@ from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsBucketPath,
 )
 from recidiviz.common.ingest_metadata import SystemLevel
+from recidiviz.common.results import MultiRequestResult
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_file_path,
     DirectIngestGCSFileSystem,
@@ -114,7 +115,7 @@ class BaseUploadStateFilesToIngestBucketController:
     ) -> None:
         thread_pool.map(self._upload_file, paths_with_timestamps_to_upload)
 
-    def do_upload(self) -> Tuple[List[str], List[str]]:
+    def do_upload(self) -> MultiRequestResult[str, str]:
         """Perform upload to ingest bucket."""
         logging.info(
             "Uploading raw files to the %s ingest bucket [%s] for project [%s].",
@@ -146,7 +147,9 @@ class BaseUploadStateFilesToIngestBucketController:
             len(self.skipped_files),
         )
 
-        return self.uploaded_files, self.unable_to_upload_files
+        return MultiRequestResult(
+            successes=self.uploaded_files, failures=self.unable_to_upload_files
+        )
 
 
 class UploadStateFilesToIngestBucketController(

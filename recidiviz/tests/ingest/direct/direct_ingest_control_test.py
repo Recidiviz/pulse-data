@@ -21,7 +21,7 @@ import json
 import unittest
 from collections import defaultdict
 from http import HTTPStatus
-from typing import Any
+from typing import Any, Tuple
 from unittest import mock
 
 from pysftp import CnOpts
@@ -33,6 +33,7 @@ from recidiviz.cloud_functions.direct_ingest_bucket_name_utils import (
     is_primary_ingest_bucket,
 )
 from recidiviz.common.ingest_metadata import SystemLevel
+from recidiviz.common.results import MultiRequestResult
 from recidiviz.ingest.direct import direct_ingest_control
 from recidiviz.ingest.direct.base_sftp_download_delegate import BaseSftpDownloadDelegate
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
@@ -886,13 +887,18 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch.object(
         DownloadFilesFromSftpController,
         "do_fetch",
-        lambda _: ([("test_file1.txt", TODAY), ("test_file2.txt", TODAY)], []),
+        lambda _: MultiRequestResult[Tuple[str, datetime.datetime], str](
+            successes=[("test_file1.txt", TODAY), ("test_file2.txt", TODAY)],
+            failures=[],
+        ),
     )
     @patch.object(DownloadFilesFromSftpController, "clean_up", lambda _: None)
     @patch.object(
         UploadStateFilesToIngestBucketController,
         "do_upload",
-        lambda _: (["test_file1.txt", "test_file2.txt"], []),
+        lambda _: MultiRequestResult[str, str](
+            successes=["test_file1.txt", "test_file2.txt"], failures=[]
+        ),
     )
     def test_upload_from_sftp(
         self,
@@ -922,7 +928,7 @@ class TestDirectIngestControl(unittest.TestCase):
         response = self.client.post(
             "/upload_from_sftp", query_string=request_args, headers=headers
         )
-        self.assertEqual(200, response.status_code)
+        self.assertEqual(HTTPStatus.OK, response.status_code)
 
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch(
@@ -942,13 +948,17 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch.object(
         DownloadFilesFromSftpController,
         "do_fetch",
-        lambda _: ([("test_file1.txt", TODAY)], [("test_file2.txt")]),
+        lambda _: MultiRequestResult[Tuple[str, datetime.datetime], str](
+            successes=[("test_file1.txt", TODAY)], failures=[("test_file2.txt")]
+        ),
     )
     @patch.object(DownloadFilesFromSftpController, "clean_up", lambda _: None)
     @patch.object(
         UploadStateFilesToIngestBucketController,
         "do_upload",
-        lambda _: (["test_file1.txt"], []),
+        lambda _: MultiRequestResult[str, str](
+            successes=["test_file1.txt"], failures=[]
+        ),
     )
     def test_upload_from_sftp_handles_partial_downloads(
         self,
@@ -994,13 +1004,18 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch.object(
         DownloadFilesFromSftpController,
         "do_fetch",
-        lambda _: ([("test_file1.txt", TODAY), ("test_file2.txt", TODAY)], []),
+        lambda _: MultiRequestResult[Tuple[str, datetime.datetime], str](
+            successes=[("test_file1.txt", TODAY), ("test_file2.txt", TODAY)],
+            failures=[],
+        ),
     )
     @patch.object(DownloadFilesFromSftpController, "clean_up", lambda _: None)
     @patch.object(
         UploadStateFilesToIngestBucketController,
         "do_upload",
-        lambda _: (["test_file1.txt"], ["test_file2.txt"]),
+        lambda _: MultiRequestResult[str, str](
+            successes=["test_file1.txt"], failures=["test_file2.txt"]
+        ),
     )
     def test_upload_from_sftp_handles_partial_uploads(
         self,
@@ -1047,16 +1062,18 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch.object(
         DownloadFilesFromSftpController,
         "do_fetch",
-        lambda _: (
-            [("test_file1.txt", TODAY), ("test_file3.txt", TODAY)],
-            [("test_file2.txt")],
+        lambda _: MultiRequestResult[Tuple[str, datetime.datetime], str](
+            successes=[("test_file1.txt", TODAY), ("test_file3.txt", TODAY)],
+            failures=[("test_file2.txt")],
         ),
     )
     @patch.object(DownloadFilesFromSftpController, "clean_up", lambda _: None)
     @patch.object(
         UploadStateFilesToIngestBucketController,
         "do_upload",
-        lambda _: (["test_file1.txt"], ["test_file3.txt"]),
+        lambda _: MultiRequestResult[str, str](
+            successes=["test_file1.txt"], failures=["test_file3.txt"]
+        ),
     )
     def test_upload_from_sftp_handles_both_partial_uploads_and_downloads(
         self,
@@ -1100,7 +1117,11 @@ class TestDirectIngestControl(unittest.TestCase):
         "UploadStateFilesToIngestBucketController"
     )
     @patch.object(
-        DownloadFilesFromSftpController, "do_fetch", lambda _: ([], ["test_file1.txt"])
+        DownloadFilesFromSftpController,
+        "do_fetch",
+        lambda _: MultiRequestResult[Tuple[str, datetime.datetime], str](
+            successes=[], failures=["test_file1.txt"]
+        ),
     )
     def test_upload_from_sftp_handles_all_downloads_failing(
         self,
@@ -1135,7 +1156,7 @@ class TestDirectIngestControl(unittest.TestCase):
         )
         mock_upload_controller.do_upload().assert_not_called()
         mock_download_controller.clean_up().assert_not_called()
-        self.assertEqual(HTTPStatus.MULTI_STATUS, response.status_code)
+        self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
 
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch(
@@ -1152,7 +1173,77 @@ class TestDirectIngestControl(unittest.TestCase):
         "recidiviz.ingest.direct.controllers.base_upload_state_files_to_ingest_bucket_controller."
         "UploadStateFilesToIngestBucketController"
     )
-    @patch.object(DownloadFilesFromSftpController, "do_fetch", lambda _: ([], []))
+    @patch.object(
+        DownloadFilesFromSftpController,
+        "do_fetch",
+        lambda _: MultiRequestResult[Tuple[str, datetime.datetime], str](
+            successes=[("test_file1.txt", TODAY), ("test_file2.txt", TODAY)],
+            failures=[],
+        ),
+    )
+    @patch.object(DownloadFilesFromSftpController, "clean_up", lambda _: None)
+    @patch.object(
+        UploadStateFilesToIngestBucketController,
+        "do_upload",
+        lambda _: MultiRequestResult[str, str](
+            successes=[], failures=["test_file1.txt", "test_file2.txt"]
+        ),
+    )
+    def test_upload_from_sftp_handles_all_uploads_failing(
+        self,
+        mock_upload_controller: mock.MagicMock,
+        mock_download_controller: mock.MagicMock,
+        mock_download_delegate_factory: mock.MagicMock,
+        mock_sftp_auth: mock.MagicMock,
+        mock_environment: mock.MagicMock,
+    ) -> None:
+        region_code = "us_xx"
+        mock_environment.return_value = "staging"
+        request_args = {"region": region_code, "date": "2021-01-01"}
+        headers = {"X-Appengine-Cron": "test-cron"}
+
+        mock_download_delegate_factory.return_value = Mock(
+            spec=BaseSftpDownloadDelegate,
+            root_directory=lambda _, candidate_paths: ".",
+            filter_paths=lambda _, candidate_paths: candidate_paths,
+            post_process_downloads=lambda _, download_directory_path: None,
+        )
+        mock_sftp_auth.return_value = SftpAuth("host", "username", "password", CnOpts())
+
+        mock_download_controller.return_value = create_autospec(
+            DownloadFilesFromSftpController
+        )
+        mock_upload_controller.return_value = create_autospec(
+            UploadStateFilesToIngestBucketController
+        )
+
+        response = self.client.post(
+            "/upload_from_sftp", query_string=request_args, headers=headers
+        )
+        self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
+    @patch("recidiviz.utils.environment.get_gcp_environment")
+    @patch(
+        "recidiviz.ingest.direct.controllers.download_files_from_sftp.SftpAuth.for_region"
+    )
+    @patch(
+        "recidiviz.ingest.direct.sftp_download_delegate_factory.SftpDownloadDelegateFactory.build"
+    )
+    @patch(
+        "recidiviz.ingest.direct.controllers.download_files_from_sftp."
+        "DownloadFilesFromSftpController"
+    )
+    @patch(
+        "recidiviz.ingest.direct.controllers.base_upload_state_files_to_ingest_bucket_controller."
+        "UploadStateFilesToIngestBucketController"
+    )
+    @patch.object(
+        DownloadFilesFromSftpController,
+        "do_fetch",
+        lambda _: MultiRequestResult[Tuple[str, datetime.datetime], str](
+            successes=[], failures=[]
+        ),
+    )
     def test_upload_from_sftp_handles_missing_downloads(
         self,
         mock_upload_controller: mock.MagicMock,
@@ -1186,7 +1277,7 @@ class TestDirectIngestControl(unittest.TestCase):
         )
         mock_upload_controller.do_upload().assert_not_called()
         mock_download_controller.clean_up().assert_not_called()
-        self.assertEqual(HTTPStatus.MULTI_STATUS, response.status_code)
+        self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
 
     @patch.object(
         DirectIngestCloudTaskManagerImpl,

@@ -29,6 +29,7 @@ from flask import Blueprint, request
 
 import recidiviz.reporting.data_retrieval as data_retrieval
 import recidiviz.reporting.email_delivery as email_delivery
+from recidiviz.common.results import MultiRequestResult
 from recidiviz.reporting import email_reporting_utils
 from recidiviz.reporting.email_reporting_utils import validate_email_address
 from recidiviz.reporting.region_codes import InvalidRegionCodeException
@@ -101,7 +102,7 @@ def start_new_batch() -> Tuple[str, HTTPStatus]:
 
     try:
         batch_id = email_reporting_utils.generate_batch_id()
-        failure_count, success_count = data_retrieval.start(
+        result: MultiRequestResult[str, str] = data_retrieval.start(
             state_code=state_code,
             report_type=report_type,
             batch_id=batch_id,
@@ -113,17 +114,24 @@ def start_new_batch() -> Tuple[str, HTTPStatus]:
     except InvalidRegionCodeException:
         return "Invalid region code provided", HTTPStatus.BAD_REQUEST
     else:
+        new_batch_text = f"New batch started for {state_code} and {report_type}. Batch id = {batch_id}."
         test_address_text = (
             f"Emails generated for test address: {test_address}" if test_address else ""
         )
-        counts_text = f"Successfully generated {success_count} email(s)"
-        if failure_count:
-            counts_text += f" Failed to generate {failure_count} email(s)"
+        counts_text = f"Successfully generated {len(result.successes)} email(s)"
+        success_text = f"{new_batch_text} {test_address_text} {counts_text}"
+        if result.failures and not result.successes:
+            return (
+                f"{success_text}"
+                f" Failed to generate all emails. Retry the request again."
+            ), HTTPStatus.INTERNAL_SERVER_ERROR
+        if result.failures:
+            return (
+                f"{success_text}"
+                f" Failed to generate {len(result.failures)} email(s): {','.join(result.failures)}"
+            ), HTTPStatus.MULTI_STATUS
 
-        return (
-            f"New batch started for {state_code} and {report_type}.  Batch "
-            f"id = {batch_id}. {test_address_text} {counts_text}"
-        ), HTTPStatus.OK
+        return (f"{success_text}"), HTTPStatus.OK
 
 
 @reporting_endpoint_blueprint.route(
@@ -172,7 +180,7 @@ def deliver_emails_for_batch() -> Tuple[str, HTTPStatus]:
         logging.error(msg)
         return msg, HTTPStatus.BAD_REQUEST
 
-    success_count, failure_count = email_delivery.deliver(
+    result = email_delivery.deliver(
         batch_id,
         redirect_address=redirect_address,
         cc_addresses=cc_addresses,
@@ -185,9 +193,23 @@ def deliver_emails_for_batch() -> Tuple[str, HTTPStatus]:
     cc_addresses_text = (
         f"CC'd {','.join(email for email in cc_addresses)}." if cc_addresses else ""
     )
+    success_text = (
+        f"Sent {len(result.successes)} emails {redirect_text}. {cc_addresses_text} "
+    )
+    if result.failures and not result.successes:
+        return (
+            f"{success_text} " f"All emails failed to send",
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+
+    if result.failures:
+        return (
+            f"{success_text} "
+            f"{len(result.failures)} emails failed to send: {','.join(result.failures)}",
+            HTTPStatus.MULTI_STATUS,
+        )
 
     return (
-        f"Sent {success_count} emails {redirect_text}. {cc_addresses_text} "
-        f"{failure_count} emails failed to send",
+        f"{success_text}",
         HTTPStatus.OK,
     )

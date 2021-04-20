@@ -335,9 +335,9 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
             self.project_id, self.region, self.lower_bound_date
         )
 
-        items, _ = controller.do_fetch()
+        result = controller.do_fetch()
         self.assertListEqual(
-            items,
+            result.successes,
             [
                 (
                     os.path.join(
@@ -352,7 +352,7 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
                 if ".txt" in item
             ],
         )
-        self.assertEqual(len(mock_fs.files), len(items))
+        self.assertEqual(len(mock_fs.files), len(result.successes))
 
     @patch.object(
         target=pysftp,
@@ -383,9 +383,9 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
             self.project_id, self.region, lower_bound_with_tz
         )
 
-        items, _ = controller.do_fetch()
+        result = controller.do_fetch()
         self.assertListEqual(
-            items,
+            result.successes,
             [
                 (
                     os.path.join(
@@ -400,7 +400,7 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
                 if ".txt" in item
             ],
         )
-        self.assertEqual(len(mock_fs.files), len(items))
+        self.assertEqual(len(mock_fs.files), len(result.successes))
 
     @patch.object(
         target=pysftp,
@@ -453,9 +453,9 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
         mock_fs_factory.return_value = mock_fs
 
         controller = DownloadFilesFromSftpController(self.project_id, self.region, None)
-        items, _ = controller.do_fetch()
+        result = controller.do_fetch()
         self.assertSetEqual(
-            set(items),
+            set(result.successes),
             set(
                 itertools.chain(
                     *[
@@ -485,7 +485,7 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
                 )
             ),
         )
-        self.assertEqual(len(mock_fs.files), len(items))
+        self.assertEqual(len(mock_fs.files), len(result.successes))
 
     @patch.object(
         target=pysftp,
@@ -513,9 +513,9 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
         controller = DownloadFilesFromSftpController(
             self.project_id, self.region, self.lower_bound_date
         )
-        items, _ = controller.do_fetch()
+        result = controller.do_fetch()
         self.assertEqual(
-            items,
+            result.successes,
             [
                 (
                     os.path.join(
@@ -528,7 +528,7 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
                 )
             ],
         )
-        self.assertEqual(len(mock_fs.files), len(items))
+        self.assertEqual(len(mock_fs.files), len(result.successes))
 
     def test_clean_up_succeeds(
         self, mock_fs_factory: Mock, _mock_auth: Mock, _mock_download: Mock
