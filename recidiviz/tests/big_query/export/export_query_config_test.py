@@ -16,7 +16,8 @@
 # =============================================================================
 """Tests for our export configs."""
 import unittest
-from mock import patch
+import attr
+from mock import ANY, patch
 
 from recidiviz.big_query.big_query_view import (
     SimpleBigQueryViewBuilder,
@@ -115,3 +116,15 @@ class TestPointingAtStagingSubdirectory(unittest.TestCase):
             ),
             GcsfsFilePath.from_absolute_path("gs://gnarly/subdirectory/US_MO/foo.txt"),
         )
+
+    def test_staging_version_matches(self) -> None:
+        normal_config = attr.evolve(
+            self.config_with_path("gnarly/subdirectory/US_MO"), allow_empty=True
+        )
+        staging_config = normal_config.pointed_to_staging_subdirectory()
+
+        # Only the output directory should be different.
+        matcher = attr.evolve(normal_config, output_directory=ANY)
+
+        self.assertEqual(normal_config, matcher)
+        self.assertEqual(staging_config, matcher)
