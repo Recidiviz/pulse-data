@@ -33,16 +33,8 @@ INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_DESCRIPTION = """Most 
 
 INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
     /*{description}*/
-    SELECT
-      state_code,
-      date_of_stay,
-      facility,
-      race_or_ethnicity,
-      gender,
-      age_bucket,
-      COUNT(DISTINCT(person_id)) as total_population
-    FROM (
-      SELECT 
+    WITH facility_names AS (
+        SELECT 
         state_code,
         person_id,
         date_of_stay,
@@ -54,12 +46,33 @@ INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
         `{project_id}.{materialized_metrics_dataset}.most_recent_daily_incarceration_population_materialized`
       LEFT JOIN
         `{project_id}.{static_reference_dataset}.state_incarceration_facility_capacity`
-      USING (state_code, facility),
+      USING (state_code, facility)
+    ), unnested_dimensions AS (
+        SELECT 
+        state_code,
+        person_id,
+        date_of_stay,
+        facility, 
+        race_or_ethnicity,
+        gender,
+        age_bucket
+      FROM
+        facility_names,
         {facility_dimension},
         {unnested_race_or_ethnicity_dimension},
         {gender_dimension},
         {age_dimension}
     )
+
+    SELECT
+      state_code,
+      date_of_stay,
+      facility,
+      race_or_ethnicity,
+      gender,
+      age_bucket,
+      COUNT(DISTINCT(person_id)) as total_population
+    FROM unnested_dimensions
     WHERE (race_or_ethnicity != 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL') -- Race breakdown
       OR (race_or_ethnicity = 'ALL' AND gender != 'ALL' AND age_bucket = 'ALL') -- Gender breakdown
       OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket != 'ALL') -- Age breakdown
@@ -85,12 +98,14 @@ INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQue
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column(
-        "prioritized_race_or_ethnicity", "race_or_ethnicity"
+        "race_or_ethnicity", "race_or_ethnicity"
     ),
     gender_dimension=bq_utils.unnest_column("gender", "gender"),
     age_dimension=bq_utils.unnest_column("age_bucket", "age_bucket"),
     facility_dimension=bq_utils.unnest_column("facility", "facility"),
-    state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(),
+    state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(
+        race_or_ethnicity_column="prioritized_race_or_ethnicity"
+    ),
 )
 
 if __name__ == "__main__":
