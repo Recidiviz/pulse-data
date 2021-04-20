@@ -30,12 +30,16 @@ class BigQueryViewExportValidator:
         self.fs = fs
 
     @abc.abstractmethod
-    def validate(self, path: GcsfsFilePath) -> bool:
-        """Validates whether the exported results are valid for presentation."""
+    def validate(self, path: GcsfsFilePath, allow_empty: bool) -> bool:
+        """Validates whether the exported results are valid for presentation.
+
+        Allow empty specifies whether an empty file is still valid. Some exporters
+        (e.g. `ExistsBigQueryViewExportValidator`) will still return true for empty
+        files even if allow_empty is False, but all exporters respect it when True."""
 
 
 class ExistsBigQueryViewExportValidator(BigQueryViewExportValidator):
     """View validator which purely validates that a path exists."""
 
-    def validate(self, path: GcsfsFilePath) -> bool:
+    def validate(self, path: GcsfsFilePath, allow_empty: bool) -> bool:
         return self.fs.exists(path)
