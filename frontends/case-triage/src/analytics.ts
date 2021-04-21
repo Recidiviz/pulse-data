@@ -14,33 +14,42 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
+import { v4 as uuidv4 } from "uuid";
 import { Client } from "./stores/ClientsStore/Client";
 import { CaseUpdateActionType } from "./stores/CaseUpdatesStore/CaseUpdates";
+
+const sessionId = uuidv4();
 
 export const identify = (
   userId: string,
   metadata?: Record<string, unknown>
 ): void => {
+  const fullMetadata = metadata || {};
+  fullMetadata.sessionId = sessionId;
+
   if (process.env.NODE_ENV !== "development") {
-    window.analytics.identify(userId, metadata);
+    window.analytics.identify(userId, fullMetadata);
   } else {
     // eslint-disable-next-line
     console.log(
       `[Analytics] Identifying user id: ${userId}, with metadata: ${JSON.stringify(
-        metadata
+        fullMetadata
       )}`
     );
   }
 };
 
 const track = (eventName: string, metadata?: Record<string, unknown>): void => {
+  const fullMetadata = metadata || {};
+  fullMetadata.sessionId = sessionId;
+
   if (process.env.NODE_ENV !== "development") {
-    window.analytics.track(eventName, metadata);
+    window.analytics.track(eventName, fullMetadata);
   } else {
     // eslint-disable-next-line
     console.log(
       `[Analytics] Tracking event name: ${eventName}, with metadata: ${JSON.stringify(
-        metadata
+        fullMetadata
       )}`
     );
   }
