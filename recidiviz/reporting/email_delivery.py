@@ -44,6 +44,7 @@ def deliver(
     redirect_address: Optional[str] = None,
     cc_addresses: Optional[List[str]] = None,
     subject_override: Optional[str] = None,
+    email_allowlist: Optional[List[str]] = None,
 ) -> MultiRequestResult[str, str]:
     """Delivers emails for the given batch.
 
@@ -57,6 +58,8 @@ def deliver(
         redirect_address: (optional) An email address to which all emails will be sent
         cc_addresses: (optional) A list of email addressed to include on the cc line
         subject_override: (optional) The subject line to override to.
+        email_allowlist: (optional) A subset list of email addresses that are to receive the email. If not provided,
+        all recipients will be sent emails to.
 
     Returns:
         A MultiRequestResult containing successes and failures for the emails that were sent
@@ -102,6 +105,13 @@ def deliver(
         msg = f"No files found for batch {batch_id} in the bucket {content_bucket}"
         logging.error(msg)
         raise IndexError(msg)
+
+    if email_allowlist is not None:
+        html_files = {
+            email: content
+            for email, content in html_files.items()
+            if email in email_allowlist
+        }
 
     succeeded_email_sends: List[str] = []
     failed_email_sends: List[str] = []
