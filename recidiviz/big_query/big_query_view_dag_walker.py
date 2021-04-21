@@ -19,9 +19,11 @@ and perform actions on each of them in some order."""
 import logging
 import re
 from concurrent import futures
-from typing import Callable, Dict, List, Set, Tuple, TypeVar
+from typing import Callable, Dict, List, Set, Tuple, TypeVar, Optional
 
-from recidiviz.big_query.big_query_view import BigQueryView, MATERIALIZED_SUFFIX
+import attr
+
+from recidiviz.big_query.big_query_view import BigQueryView, BigQueryLocation
 from recidiviz.utils import structured_logging
 
 # We set this to 10 because urllib3 (used by the Google BigQuery client) has an default limit of 10 connections and
@@ -33,8 +35,36 @@ from recidiviz.view_registry.deployed_views import NOISY_DEPENDENCY_VIEW_BUILDER
 
 DAG_WALKER_MAX_WORKERS = 10
 
-DagKey = Tuple[str, str]
-ParentTable = Tuple[str, str]
+
+@attr.s(frozen=True, kw_only=True)
+class DagKey:
+    """Dataclass representing a node in the view DAG. Can represent a source data table
+    or a view, but will never refer directly to the materialized table associated with
+    a BigQueryView. A materialized table is considered part of the same abstract node
+    in the dependency graph.
+    """
+
+    view_location: BigQueryLocation = attr.ib(
+        validator=attr.validators.instance_of(BigQueryLocation)
+    )
+
+    @property
+    def dataset_id(self) -> str:
+        return self.view_location.dataset_id
+
+    @property
+    def table_id(self) -> str:
+        return self.view_location.table_id
+
+    def as_tuple(self) -> Tuple[str, str]:
+        """Transforms the key to a Tuple for display purposes."""
+        return self.dataset_id, self.table_id
+
+    @classmethod
+    def for_view(cls, view: BigQueryView) -> "DagKey":
+        return DagKey(view_location=view.location)
+
+
 ViewResultT = TypeVar("ViewResultT")
 ParentResultsT = Dict[BigQueryView, ViewResultT]
 
@@ -45,36 +75,48 @@ class BigQueryViewDagNode:
     def __init__(self, view: BigQueryView, is_root: bool = False):
         self.view = view
         self.child_node_keys: Set[DagKey] = set()
+        self.materialized_locations: Optional[Dict[BigQueryLocation, DagKey]] = None
 
         self.is_root = is_root
 
     @property
     def dag_key(self) -> DagKey:
-        return self.view.dataset_id, self.view.view_id
+        return DagKey.for_view(self.view)
 
     @property
-    def parent_tables(self) -> Set[ParentTable]:
+    def parent_tables(self) -> Set[BigQueryLocation]:
         """The set of actual tables/views referenced by this view."""
         parents = re.findall(r"`[\w-]*\.([\w-]*)\.([\w-]*)`", self.view.view_query)
-        return {(candidate[0], candidate[1]) for candidate in parents}
+        return {
+            BigQueryLocation(dataset_id=candidate[0], table_id=candidate[1])
+            for candidate in parents
+        }
 
     @property
     def parent_keys(self) -> Set[DagKey]:
         """The set of actual keys to parent DAG nodes for this view."""
+        if self.materialized_locations is None:
+            raise ValueError(
+                "Must call set_materialized_locations() before calling parent_keys()."
+            )
+
         parent_keys: Set[DagKey] = set()
 
-        for parent_dataset, parent_table_id in self.parent_tables:
-            if parent_table_id.endswith(MATERIALIZED_SUFFIX):
-                parent_keys.add(
-                    (parent_dataset, parent_table_id[: -len(MATERIALIZED_SUFFIX)])
-                )
+        for parent_table_location in self.parent_tables:
+            if parent_table_location in self.materialized_locations:
+                parent_keys.add(self.materialized_locations[parent_table_location])
             else:
-                parent_keys.add((parent_dataset, parent_table_id))
+                parent_keys.add(DagKey(view_location=parent_table_location))
 
         return parent_keys
 
     def add_child_key(self, dag_key: DagKey) -> None:
         self.child_node_keys.add(dag_key)
+
+    def set_materialized_locations(
+        self, materialized_locations: Dict[BigQueryLocation, DagKey]
+    ) -> None:
+        self.materialized_locations = materialized_locations
 
     @property
     def child_keys(self) -> Set[DagKey]:
@@ -87,14 +129,50 @@ class BigQueryViewDagWalker:
     def __init__(self, views: List[BigQueryView]):
         dag_nodes = [BigQueryViewDagNode(view) for view in views]
         self.nodes_by_key = {node.dag_key: node for node in dag_nodes}
+        self.materialized_locations = self._get_materialized_locations_map()
 
         self._prepare_dag()
         self.roots = [node for node in self.nodes_by_key.values() if node.is_root]
         self._check_for_cycles()
 
-    def _prepare_dag(self) -> None:
-        """Prepares for processing the full DAG by identifying root nodes and associating nodes with their children."""
+    def _get_materialized_locations_map(self) -> Dict[BigQueryLocation, DagKey]:
+        """For every view, if it has an associated materialized table, returns a
+        dictionary the locations of those tables to the DagKey for the original view.
+
+        If a view is not materialized, it will not have any entry in this map.
+        """
+        materialized_locations: Dict[BigQueryLocation, DagKey] = {}
         for key, node in self.nodes_by_key.items():
+            if node.view.materialized_location:
+                if node.view.materialized_location in materialized_locations:
+                    raise ValueError(
+                        f"Found materialized view location for view [{key.as_tuple()}] "
+                        f"that matches materialized_location of another view: "
+                        f"[{materialized_locations[node.view.materialized_location].as_tuple()}]. "
+                        f"Two BigQueryViews cannot share the same "
+                        f"materialized_location."
+                    )
+                materialized_location_key = DagKey(
+                    view_location=node.view.materialized_location
+                )
+                if materialized_location_key in self.nodes_by_key:
+                    raise ValueError(
+                        f"Found materialized view location for view [{key.as_tuple()}] "
+                        f"that matches the view location of another view "
+                        f"[{materialized_location_key.as_tuple()}]. The "
+                        f"materialized_location of a view cannot be the location "
+                        f"of another BigQueryView."
+                    )
+
+                materialized_locations[node.view.materialized_location] = key
+        return materialized_locations
+
+    def _prepare_dag(self) -> None:
+        """Prepares for processing the full DAG by identifying root nodes and
+        associating nodes with their children.
+        """
+        for key, node in self.nodes_by_key.items():
+            node.set_materialized_locations(self.materialized_locations)
             node.is_root = True
             for parent_key in node.parent_keys:
                 if parent_key in self.nodes_by_key:
@@ -121,10 +199,17 @@ class BigQueryViewDagWalker:
             for child_key in self.nodes_by_key[key].child_node_keys:
                 if child_key in path:
                     raise ValueError(
-                        f"Detected cycle in graph reachable from {start_key}: {path}"
+                        f"Detected cycle in graph reachable from "
+                        f"{start_key.as_tuple()}: {[k.as_tuple() for k in path]}"
                     )
 
                 paths_to_explore.append((child_key, path + [child_key]))
+
+    def view_for_key(self, dag_key: DagKey) -> BigQueryView:
+        return self.nodes_by_key[dag_key].view
+
+    def node_for_view(self, view: BigQueryView) -> BigQueryViewDagNode:
+        return self.nodes_by_key[DagKey.for_view(view)]
 
     def process_dag(
         self, view_process_fn: Callable[[BigQueryView, ParentResultsT], ViewResultT]
@@ -204,15 +289,18 @@ class BigQueryViewDagWalker:
 
             # TODO(#7049): refactor most_recent_job_id_by_metric_and_state_code dependencies
             noisy_dependency_keys = [
-                (builder.dataset_id, builder.view_id)
+                DagKey(
+                    view_location=BigQueryLocation(
+                        dataset_id=builder.dataset_id, table_id=builder.view_id
+                    )
+                )
                 for builder in NOISY_DEPENDENCY_VIEW_BUILDERS
             ]
             if parent_node_key in noisy_dependency_keys:
                 continue
 
-            dataset_id, _ = parent_node_key
             # stop if we hit source views
-            if dataset_id in view_source_table_datasets:
+            if parent_node_key.dataset_id in view_source_table_datasets:
                 continue
 
             ancestor_keys = self.find_full_parentage(
