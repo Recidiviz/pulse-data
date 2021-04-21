@@ -152,6 +152,8 @@ def deliver_emails_for_batch() -> Tuple[str, HTTPStatus]:
             Example:
             ?batch_id=123&cc_address=cc-one%40test.org&cc_address=cc_two%40test.org&cc_address=cc_three%40test.org
         subject_override: (optional) Override for subject being sent.
+        email_allowlist: (optional) A json list of emails we should deliver emails to. Emails in this list should be a subset
+        of the recipients in the batch.
 
     Returns:
         Text indicating the results of the run and an HTTP status
@@ -167,10 +169,19 @@ def deliver_emails_for_batch() -> Tuple[str, HTTPStatus]:
         subject_override = get_only_str_param_value(
             "subject_override", request.args, preserve_case=True
         )
+        raw_email_allowlist = get_only_str_param_value("email_allowlist", request.args)
 
         validate_email_address(redirect_address)
         for cc_address in cc_addresses:
             validate_email_address(cc_address)
+
+        email_allowlist: Optional[List[str]] = (
+            json.loads(raw_email_allowlist) if raw_email_allowlist else None
+        )
+
+        if email_allowlist is not None:
+            for recipient_email in email_allowlist:
+                validate_email_address(recipient_email)
     except ValueError as error:
         logging.error(error)
         return str(error), HTTPStatus.BAD_REQUEST
@@ -185,6 +196,7 @@ def deliver_emails_for_batch() -> Tuple[str, HTTPStatus]:
         redirect_address=redirect_address,
         cc_addresses=cc_addresses,
         subject_override=subject_override,
+        email_allowlist=email_allowlist,
     )
 
     redirect_text = (
