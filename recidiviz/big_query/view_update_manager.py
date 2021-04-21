@@ -108,7 +108,7 @@ def rematerialize_views_for_namespace(
         def _materialize_view(
             v: BigQueryView, _parent_results: Dict[BigQueryView, None]
         ) -> None:
-            if not v.materialized_view_table_id:
+            if not v.materialized_location:
                 logging.info(
                     "Skipping non-materialized view [%s.%s].", v.dataset_id, v.view_id
                 )
@@ -241,15 +241,16 @@ def _create_dataset_and_deploy_views(
 ) -> None:
     """Create and update the given views and their parent datasets.
 
-    For each dataset key in the given dictionary, creates the dataset if it does not exist, and creates or updates the
-    underlying views mapped to that dataset.
+    For each dataset key in the given dictionary, creates the dataset if it does not
+    exist, and creates or updates the underlying views mapped to that dataset.
 
-    If a view has a set materialized_view_table_id field, materializes the view into a table.
+    If a view has a set materialized_location field, materializes the view into a
+    table.
 
     Args:
         views_to_update: A list of view objects to be created or updated.
-        set_temp_dataset_table_expiration: If True, new datasets will be created with an expiration of
-            TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS.
+        set_temp_dataset_table_expiration: If True, new datasets will be created with an
+         expiration of TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS.
     """
 
     bq_client = BigQueryClientImpl()
@@ -301,11 +302,16 @@ def _create_or_update_view_and_materialize_if_necessary(
         # We also check for schema changes, just in case a parent view or table has added a column
         view_changed = True
 
-    if view.materialized_view_table_id:
+    if view.materialized_location:
+        materialized_view_dataset_ref = bq_client.dataset_ref_for_id(
+            view.materialized_location.dataset_id
+        )
         if (
             view_changed
             or parent_changed
-            or not bq_client.table_exists(dataset_ref, view.materialized_view_table_id)
+            or not bq_client.table_exists(
+                materialized_view_dataset_ref, view.materialized_location.table_id
+            )
         ):
             bq_client.materialize_view_to_table(view)
         else:

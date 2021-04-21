@@ -24,8 +24,8 @@ import argparse
 import logging
 from typing import List
 
-from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
-from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker, DagKey
+from recidiviz.big_query.big_query_view import BigQueryViewBuilder, BigQueryLocation
 from recidiviz.big_query.view_update_manager import (
     _build_views_to_update,
 )
@@ -63,7 +63,14 @@ def build_dag_walker(dataset_id: str, view_id: str) -> BigQueryViewDagWalker:
 
 def print_dfs_tree(dataset_id: str, view_id: str) -> None:
     dag_walker = build_dag_walker(dataset_id, view_id)
-    stack = [((dataset_id, view_id), 0)]
+    stack = [
+        (
+            DagKey(
+                view_location=BigQueryLocation(dataset_id=dataset_id, table_id=view_id)
+            ),
+            0,
+        )
+    ]
 
     # TODO(#7049): refactor most_recent_job_id_by_metric_and_state_code dependencies
     noisy_dependency_keys = [
@@ -72,12 +79,15 @@ def print_dfs_tree(dataset_id: str, view_id: str) -> None:
     ]
     while len(stack) > 0:
         dag_key, tabs = stack.pop()
-        d_id, v_id = dag_key
-        print(("|" if tabs else "") + ("__" * tabs) + f"{d_id}.{v_id}")
+        print(
+            ("|" if tabs else "")
+            + ("__" * tabs)
+            + f"{dag_key.dataset_id}.{dag_key.table_id}"
+        )
         value = dag_walker.nodes_by_key.get(dag_key)
         if value:
             for parent_key in value.parent_keys:
-                if not parent_key in noisy_dependency_keys:
+                if parent_key not in noisy_dependency_keys:
                     stack.append((parent_key, tabs + 1))
     print("\n")
 

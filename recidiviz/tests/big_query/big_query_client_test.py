@@ -23,11 +23,11 @@ from unittest import mock
 
 import pytest
 from google.cloud import bigquery, exceptions
-from google.cloud.bigquery import SchemaField
+from google.cloud.bigquery import SchemaField, QueryJobConfig
 from mock import call
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import BigQueryView, BigQueryLocation
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
 
 
@@ -368,11 +368,46 @@ class BigQueryClientImplTest(unittest.TestCase):
     def test_materialize_view_to_table(self) -> None:
         """Tests that the materialize_view_to_table function calls the function to create a table from a query."""
         self.bq_client.materialize_view_to_table(self.mock_view)
-        self.mock_client.query.assert_called()
 
-    def test_materialize_view_to_table_no_materialized_view_table_id(self) -> None:
+        expected_job_config_matcher = MaterializeTableJobConfigMatcher(
+            expected_destination="fake-recidiviz-project.dataset.test_view_materialized"
+        )
+        self.mock_client.query.assert_called_with(
+            query="SELECT * FROM `fake-recidiviz-project.dataset.test_view`",
+            location="US",
+            job_config=expected_job_config_matcher,
+        )
+
+    def test_materialize_view_to_table_destination_override(self) -> None:
+        """Tests that the materialize_view_to_table function properly calls the function
+        to create a table from a query, even when the view is configured to materialize
+        in a custom location.
+        """
+        mock_view = BigQueryView(
+            dataset_id="dataset",
+            view_id="test_view",
+            description="test_view description",
+            view_query_template="SELECT NULL LIMIT 0",
+            should_materialize=True,
+            materialized_location_override=BigQueryLocation(
+                dataset_id="custom_dataset", table_id="custom_view"
+            ),
+        )
+
+        self.bq_client.materialize_view_to_table(mock_view)
+
+        expected_job_config_matcher = MaterializeTableJobConfigMatcher(
+            expected_destination="fake-recidiviz-project.custom_dataset.custom_view"
+        )
+        self.mock_client.query.assert_called_with(
+            query="SELECT * FROM `fake-recidiviz-project.dataset.test_view`",
+            location="US",
+            job_config=expected_job_config_matcher,
+        )
+
+    def test_materialize_view_to_table_no_materialized_location(self) -> None:
         """Tests that the materialize_view_to_table function does not call the function to create a table from a
-        query if there is no set materialized_view_table_id on the view."""
+        query if there is no set materialized_location on the view."""
         invalid_view = BigQueryView(
             dataset_id="dataset",
             view_id="test_view",
@@ -815,3 +850,18 @@ class BigQueryClientImplTest(unittest.TestCase):
                 call(max_results=2, start_index=4),
             ]
         )
+
+
+class MaterializeTableJobConfigMatcher:
+    """Class for matching QueryJobConfig objects against expected job config for the
+    materialize_view_to_table() function.
+    """
+
+    def __init__(self, expected_destination: str):
+        self.expected_destination = expected_destination
+
+    def __eq__(self, other: QueryJobConfig) -> bool:
+        if other.write_disposition != bigquery.WriteDisposition.WRITE_TRUNCATE:
+            return False
+
+        return str(other.destination) == self.expected_destination

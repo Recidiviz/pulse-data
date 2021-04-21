@@ -26,7 +26,7 @@ from typing import Dict
 from unittest.mock import patch
 
 from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
-from recidiviz.big_query.big_query_view import BigQueryView, MATERIALIZED_SUFFIX
+from recidiviz.big_query.big_query_view import BigQueryView, BigQueryLocation
 from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagWalker,
     BigQueryViewDagNode,
@@ -87,14 +87,12 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
             view: BigQueryView, _parent_results: Dict[BigQueryView, DagKey]
         ) -> DagKey:
             time.sleep(MOCK_VIEW_PROCESS_TIME_SECONDS / 10)
-            return view.dataset_id, view.table_id
+            return DagKey.for_view(view)
 
         result = walker.process_dag(process_simple)
 
         expected_view_keys = set(walker.nodes_by_key)
-
-        walked_view_keys_from_view = {(v.dataset_id, v.table_id) for v in result}
-        self.assertEqual(expected_view_keys, walked_view_keys_from_view)
+        self.assertEqual(expected_view_keys, set(result.values()))
 
         walked_view_keys_from_process_results = set(result.values())
         self.assertEqual(expected_view_keys, walked_view_keys_from_process_results)
@@ -112,7 +110,7 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
             view: BigQueryView, _parent_results: Dict[BigQueryView, DagKey]
         ) -> DagKey:
             time.sleep(MOCK_VIEW_PROCESS_TIME_SECONDS)
-            return view.dataset_id, view.table_id
+            return DagKey.for_view(view)
 
         start = datetime.datetime.now()
         result = walker.process_dag(process_simple)
@@ -136,24 +134,24 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
             view: BigQueryView, parent_results: Dict[BigQueryView, None]
         ) -> None:
             with mutex:
-                node_key = (view.dataset_id, view.view_id)
-                node = walker.nodes_by_key[node_key]
+                node = walker.node_for_view(view)
                 if not node.is_root:
                     for parent_key in node.parent_keys:
                         if parent_key not in all_processed:
                             # The only parents that won't have been fully processed are source data tables
                             try:
                                 self.assertIsValidSourceDataTable(
-                                    child_view_key=node_key, source_table_key=parent_key
+                                    child_view_key=node.dag_key,
+                                    source_table_key=parent_key,
                                 )
                             except ValueError as e:
                                 raise ValueError(
                                     f"Found parent view [{parent_key}] that was not processed before "
-                                    f"child [{node_key}] started processing."
+                                    f"child [{node.dag_key}] started processing."
                                 ) from e
                         else:
                             self.assertIn(
-                                walker.nodes_by_key[parent_key].view, parent_results
+                                walker.view_for_key(parent_key), parent_results
                             )
 
             time.sleep(
@@ -162,7 +160,7 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
                 )
             )
             with mutex:
-                all_processed.add(node_key)
+                all_processed.add(node.dag_key)
 
         result = walker.process_dag(process_check_parents)
         self.assertEqual(len(self.all_views), len(result))
@@ -188,9 +186,7 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
                 max_depth_view = view
         if not max_depth_view:
             self.fail("Found no max_depth_view")
-        max_depth_node = walker.nodes_by_key[
-            (max_depth_view.dataset_id, max_depth_view.view_id)
-        ]
+        max_depth_node = walker.node_for_view(max_depth_view)
         self.assertEqual(set(), max_depth_node.child_keys)
 
     def test_dag_exception_handling(self) -> None:
@@ -212,11 +208,10 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         def process_throws_after_root(
             view: BigQueryView, _parent_results: Dict[BigQueryView, DagKey]
         ) -> DagKey:
-            node_key = (view.dataset_id, view.view_id)
-            node = walker.nodes_by_key[node_key]
+            node = walker.node_for_view(view)
             if not node.is_root:
                 raise TestDagWalkException()
-            return node_key
+            return node.dag_key
 
         with self.assertRaises(TestDagWalkException):
             _ = walker.process_dag(process_throws_after_root)
@@ -229,22 +224,21 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         def process_check_using_materialized(
             view: BigQueryView, _parent_results: Dict[BigQueryView, None]
         ) -> None:
-            node_key = (view.dataset_id, view.view_id)
-            node = walker.nodes_by_key[node_key]
-            for parent_dataset, parent_table_id in node.parent_tables:
-                if parent_table_id.endswith(MATERIALIZED_SUFFIX):
+            node = walker.node_for_view(view)
+            for parent_table_location in node.parent_tables:
+                if parent_table_location in walker.materialized_locations:
                     # We are using materialized version of a table
                     continue
-                parent_key = (parent_dataset, parent_table_id)
+                parent_key = DagKey(view_location=parent_table_location)
                 if parent_key not in walker.nodes_by_key:
                     # We assume this is a source data table (checked in other tests)
                     continue
-                parent_view: BigQueryView = walker.nodes_by_key[parent_key].view
+                parent_view: BigQueryView = walker.view_for_key(parent_key)
                 self.assertIsNone(
-                    parent_view.materialized_view_table_id,
-                    f"Found view [{node_key}] referencing un-materialized version of "
-                    f"view [{parent_key}] when materialized table "
-                    f"[{parent_view.materialized_view_table_id}] exists.",
+                    parent_view.materialized_location,
+                    f"Found view [{node.dag_key}] referencing un-materialized version "
+                    f"of view [{parent_key}] when materialized table "
+                    f"[{parent_view.materialized_location}] exists.",
                 )
 
         result = walker.process_dag(process_check_using_materialized)
@@ -394,44 +388,69 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         dag_walker = BigQueryViewDagWalker([view_1, view_2, view_3, view_4, view_5])
 
         # root node start
-        start_node = dag_walker.nodes_by_key[("dataset_1", "table_1")]
+        start_node = dag_walker.node_for_view(view_1)
         parentage_set = dag_walker.find_full_parentage(
             curr_node=start_node,
             view_source_table_datasets={"source_dataset"},
         )
-        self.assertEqual({("source_dataset", "source_table")}, parentage_set)
+        self.assertEqual(
+            {
+                DagKey(
+                    view_location=BigQueryLocation(
+                        dataset_id="source_dataset", table_id="source_table"
+                    )
+                )
+            },
+            parentage_set,
+        )
 
         # start in middle
-        start_node = dag_walker.nodes_by_key[("dataset_3", "table_3")]
+        start_node = dag_walker.node_for_view(view_3)
         parentage_set = dag_walker.find_full_parentage(
             curr_node=start_node,
             view_source_table_datasets={"source_dataset"},
         )
         expected_parent_nodes = {
-            ("source_dataset", "source_table"),
-            ("source_dataset", "source_table_2"),
-            ("dataset_1", "table_1"),
-            ("dataset_2", "table_2"),
+            DagKey(
+                view_location=BigQueryLocation(
+                    dataset_id="source_dataset", table_id="source_table"
+                )
+            ),
+            DagKey(
+                view_location=BigQueryLocation(
+                    dataset_id="source_dataset", table_id="source_table_2"
+                )
+            ),
+            DagKey.for_view(view_1),
+            DagKey.for_view(view_2),
         }
         self.assertEqual(expected_parent_nodes, parentage_set)
 
         # single start node
-        start_node = dag_walker.nodes_by_key[("dataset_4", "table_4")]
+        start_node = dag_walker.node_for_view(view_4)
         parentage_set = dag_walker.find_full_parentage(
             curr_node=start_node,
             view_source_table_datasets={"source_dataset"},
         )
         expected_parent_nodes = {
-            ("source_dataset", "source_table"),
-            ("source_dataset", "source_table_2"),
-            ("dataset_1", "table_1"),
-            ("dataset_2", "table_2"),
-            ("dataset_3", "table_3"),
+            DagKey(
+                view_location=BigQueryLocation(
+                    dataset_id="source_dataset", table_id="source_table"
+                )
+            ),
+            DagKey(
+                view_location=BigQueryLocation(
+                    dataset_id="source_dataset", table_id="source_table_2"
+                )
+            ),
+            DagKey.for_view(view_1),
+            DagKey.for_view(view_2),
+            DagKey.for_view(view_3),
         }
         self.assertEqual(expected_parent_nodes, parentage_set)
 
         # multiple start nodes
-        start_nodes = [start_node, dag_walker.nodes_by_key[("dataset_5", "table_5")]]
+        start_nodes = [start_node, dag_walker.node_for_view(view_5)]
 
         parentage_set = set()
         for node in start_nodes:
@@ -477,32 +496,203 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         )
 
         dag_walker = BigQueryViewDagWalker([view_1, view_2, view_3, view_4])
-        start_node = dag_walker.nodes_by_key[("dataset_4", "table_4")]
+        start_node = dag_walker.node_for_view(view_4)
 
         parentage_set = dag_walker.find_full_parentage(
             curr_node=start_node,
             view_source_table_datasets={"source_dataset"},
         )
         expected_parent_nodes = {
-            ("source_dataset", "source_table"),
-            ("dataset_1", "table_1"),
-            ("dataset_2", "table_2"),
-            ("dataset_3", "table_3"),
+            DagKey(
+                view_location=BigQueryLocation(
+                    dataset_id="source_dataset", table_id="source_table"
+                )
+            ),
+            DagKey.for_view(view_1),
+            DagKey.for_view(view_2),
+            DagKey.for_view(view_3),
         }
         self.assertEqual(expected_parent_nodes, parentage_set)
 
+    def test_dag_materialized_view_clobbers_other(self) -> None:
+        view_1 = BigQueryView(
+            dataset_id="dataset_1",
+            view_id="table_1",
+            description="table_1 description",
+            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+        )
+        view_2 = BigQueryView(
+            dataset_id="dataset_2",
+            view_id="table_2",
+            description="table_2 description",
+            should_materialize=True,
+            materialized_location_override=BigQueryLocation(
+                dataset_id=view_1.dataset_id, table_id=view_1.view_id
+            ),
+            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
+        )
+        with self.assertRaises(ValueError) as e:
+            _ = BigQueryViewDagWalker([view_1, view_2])
+        self.assertTrue(
+            str(e.exception).startswith(
+                "Found materialized view location for view [('dataset_2', 'table_2')] that "
+                "matches the view location of another view [('dataset_1', 'table_1')]."
+            )
+        )
+
+    def test_dag_two_views_same_materialized_location(self) -> None:
+        view_1 = BigQueryView(
+            dataset_id="dataset_1",
+            view_id="table_1",
+            description="table_1 description",
+            should_materialize=True,
+            materialized_location_override=BigQueryLocation(
+                dataset_id="other_dataset", table_id="other_table"
+            ),
+            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+        )
+        view_2 = BigQueryView(
+            dataset_id="dataset_2",
+            view_id="table_2",
+            description="table_2 description",
+            should_materialize=True,
+            materialized_location_override=BigQueryLocation(
+                dataset_id="other_dataset", table_id="other_table"
+            ),
+            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
+        )
+        with self.assertRaises(ValueError) as e:
+            _ = BigQueryViewDagWalker([view_1, view_2])
+        self.assertTrue(
+            str(e.exception).startswith(
+                "Found materialized view location for view [('dataset_2', 'table_2')] "
+                "that matches materialized_location of another view: "
+                "[('dataset_1', 'table_1')]."
+            )
+        )
+
+    def test_dag_parents_materialized(self) -> None:
+        view_1 = BigQueryView(
+            dataset_id="dataset_1",
+            view_id="table_1",
+            description="table_1 description",
+            should_materialize=True,
+            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+        )
+        view_2 = BigQueryView(
+            dataset_id="dataset_2",
+            view_id="table_2",
+            description="table_2 description",
+            should_materialize=True,
+            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
+        )
+        view_3 = BigQueryView(
+            dataset_id="dataset_3",
+            view_id="table_3",
+            description="table_3 description",
+            view_query_template="""
+                SELECT * FROM `{project_id}.dataset_1.table_1`
+                JOIN `{project_id}.dataset_2.table_2_materialized`
+                USING (col)""",
+        )
+        walker = BigQueryViewDagWalker([view_1, view_2, view_3])
+
+        def process_simple(
+            view: BigQueryView, parent_results: Dict[BigQueryView, DagKey]
+        ) -> str:
+            if view == view_3:
+                # View 3 should have two parents
+                self.assertEqual(
+                    {view_1: view_1.view_id, view_2: view_2.view_id}, parent_results
+                )
+
+            return view.view_id
+
+        result = walker.process_dag(process_simple)
+        self.assertEqual(
+            {view_1: view_1.view_id, view_2: view_2.view_id, view_3: view_3.view_id},
+            result,
+        )
+
+    def test_dag_parents_materialized_non_default(self) -> None:
+        self.maxDiff = None
+        view_1 = BigQueryView(
+            dataset_id="dataset_1",
+            view_id="table_1",
+            description="table_1 description",
+            should_materialize=True,
+            materialized_location_override=BigQueryLocation(
+                dataset_id="other_dataset_1", table_id="other_table_1"
+            ),
+            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+        )
+        view_2 = BigQueryView(
+            dataset_id="dataset_2",
+            view_id="table_2",
+            description="table_2 description",
+            should_materialize=True,
+            materialized_location_override=BigQueryLocation(
+                dataset_id="other_dataset_2", table_id="other_table_2"
+            ),
+            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
+        )
+        view_3 = BigQueryView(
+            dataset_id="dataset_3",
+            view_id="table_3",
+            description="table_3 description",
+            view_query_template="""
+                SELECT * FROM `{project_id}.dataset_1.table_1`
+                JOIN `{project_id}.other_dataset_2.other_table_2`
+                USING (col)""",
+        )
+        walker = BigQueryViewDagWalker([view_1, view_2, view_3])
+
+        def process_simple(
+            view: BigQueryView, parent_results: Dict[BigQueryView, DagKey]
+        ) -> str:
+            if view == view_3:
+                # View 3 should have two parents
+                self.assertEqual(
+                    {view_1: view_1.view_id, view_2: view_2.view_id}, parent_results
+                )
+
+            return view.view_id
+
+        result = walker.process_dag(process_simple)
+        self.assertEqual(
+            {view_1: view_1.view_id, view_2: view_2.view_id, view_3: view_3.view_id},
+            result,
+        )
+
     def assertIsValidEmptyParentsView(self, node: BigQueryViewDagNode) -> None:
-        known_empty_parent_view_keys = {
+        """Fails the test if a view that has no parents is an expected view with no
+        parents. Failures could be indicative of poorly formed view queries.
+        """
+        known_empty_parent_view_locations = {
             # These views unnest data from a static list
-            ("census_views", "charge_class_severity_ranks"),
-            ("analyst_data", "admission_start_reason_dedup_priority"),
-            ("analyst_data", "release_termination_reason_dedup_priority"),
-            ("analyst_data", "violation_type_dedup_priority"),
+            BigQueryLocation(
+                dataset_id="census_views", table_id="charge_class_severity_ranks"
+            ),
+            BigQueryLocation(
+                dataset_id="analyst_data",
+                table_id="admission_start_reason_dedup_priority",
+            ),
+            BigQueryLocation(
+                dataset_id="analyst_data",
+                table_id="release_termination_reason_dedup_priority",
+            ),
+            BigQueryLocation(
+                dataset_id="analyst_data", table_id="violation_type_dedup_priority"
+            ),
             # Generate data using pure date functions
-            ("reference_views", "covid_report_weeks"),
-            ("population_projection_data", "simulation_run_dates"),
+            BigQueryLocation(
+                dataset_id="reference_views", table_id="covid_report_weeks"
+            ),
+            BigQueryLocation(
+                dataset_id="population_projection_data", table_id="simulation_run_dates"
+            ),
         }
-        if node.dag_key in known_empty_parent_view_keys:
+        if node.dag_key.view_location in known_empty_parent_view_locations:
             return
 
         if "FROM EXTERNAL_QUERY" in node.view.view_query:
@@ -514,8 +704,7 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
     def assertIsValidSourceDataTable(
         child_view_key: DagKey, source_table_key: DagKey
     ) -> None:
-        source_table_dataset_id, _ = source_table_key
-        if source_table_dataset_id in VIEW_SOURCE_TABLE_DATASETS:
+        if source_table_key.dataset_id in VIEW_SOURCE_TABLE_DATASETS:
             return
 
         raise ValueError(
@@ -528,31 +717,31 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         child_view_key: DagKey, raw_data_view_key: DagKey
     ) -> None:
         """Asserts that the dependency (i.e. edge in the graph) that is being walked is a valid one to walk."""
-        raw_data_view_dataset_id, raw_data_view_table_id = raw_data_view_key
         up_to_date_view_match = re.match(
-            LATEST_VIEW_DATASET_REGEX, raw_data_view_dataset_id
+            LATEST_VIEW_DATASET_REGEX, raw_data_view_key.dataset_id
         )
         if not up_to_date_view_match:
             raise ValueError(
-                f"Expected dataset matching *_raw_data_up_to_date_views, found: [{raw_data_view_dataset_id}]"
+                f"Expected dataset matching *_raw_data_up_to_date_views, found: "
+                f"[{raw_data_view_key.dataset_id}]"
             )
         region_code = up_to_date_view_match.group(1)
         region_raw_file_config = DirectIngestRegionRawFileConfig(
             region_code=region_code
         )
         raw_data_latest_view_match = re.match(
-            r"([A-Za-z_\d]+)_latest", raw_data_view_table_id
+            r"([A-Za-z_\d]+)_latest", raw_data_view_key.table_id
         )
         if not raw_data_latest_view_match:
             raise ValueError(
-                f"Unexpected table_id [{raw_data_view_table_id}] for parent view [{raw_data_view_key}] "
-                f"referenced by [{child_view_key}]"
+                f"Unexpected table_id [{raw_data_view_key.table_id}] for parent view "
+                f"[{raw_data_view_key}] referenced by [{child_view_key}]"
             )
         raw_file_tag = raw_data_latest_view_match.group(1)
         if raw_file_tag not in region_raw_file_config.raw_file_configs:
             raise ValueError(
-                f"No raw file config exists for raw data view [{raw_data_view_key}] referenced by view "
-                f"[{child_view_key}]."
+                f"No raw file config exists for raw data view [{raw_data_view_key}] "
+                f"referenced by view [{child_view_key}]."
             )
 
         config = region_raw_file_config.raw_file_configs[raw_file_tag]
@@ -582,16 +771,39 @@ class TestBigQueryViewDagNode(unittest.TestCase):
             view_query_template="SELECT * FROM `{project_id}.some_dataset.some_table`",
         )
         node = BigQueryViewDagNode(view)
+        self.assertIsNone(view.materialized_location)
+        node.set_materialized_locations({})
         self.assertEqual(node.is_root, False)
-        self.assertEqual(node.dag_key, ("my_dataset", "my_view_id"))
-        self.assertEqual(node.parent_keys, {("some_dataset", "some_table")})
+        self.assertEqual(
+            node.dag_key,
+            DagKey(
+                view_location=BigQueryLocation(
+                    dataset_id="my_dataset", table_id="my_view_id"
+                )
+            ),
+        )
+        self.assertEqual(
+            node.parent_keys,
+            {
+                DagKey(
+                    view_location=BigQueryLocation(
+                        dataset_id="some_dataset", table_id="some_table"
+                    )
+                )
+            },
+        )
         self.assertEqual(node.child_keys, set())
 
         node.is_root = True
-        node.add_child_key(("other_dataset", "other_table"))
+        child_key = DagKey(
+            view_location=BigQueryLocation(
+                dataset_id="other_dataset", table_id="other_table"
+            )
+        )
+        node.add_child_key(child_key)
 
         self.assertEqual(node.is_root, True)
-        self.assertEqual(node.child_keys, {("other_dataset", "other_table")})
+        self.assertEqual(node.child_keys, {child_key})
 
     def test_parse_view_materialized_parent(self) -> None:
         view = BigQueryView(
@@ -600,21 +812,54 @@ class TestBigQueryViewDagNode(unittest.TestCase):
             description="my view description",
             view_query_template="SELECT * FROM `{project_id}.some_dataset.some_table_materialized`",
         )
+        parent_view = BigQueryView(
+            dataset_id="some_dataset",
+            view_id="some_table",
+            description="my parent view description",
+            view_query_template="SELECT * FROM UNNEST([])",
+            should_materialize=True,
+        )
         node = BigQueryViewDagNode(view)
-        self.assertEqual(node.parent_keys, {("some_dataset", "some_table")})
+        if not parent_view.materialized_location:
+            raise ValueError("Null materialized_location for view [{parent_view}]")
+        node.set_materialized_locations(
+            {parent_view.materialized_location: DagKey.for_view(parent_view)}
+        )
+        self.assertEqual(
+            node.parent_keys,
+            {
+                DagKey(
+                    view_location=BigQueryLocation(
+                        dataset_id="some_dataset", table_id="some_table"
+                    )
+                )
+            },
+        )
 
     def test_parse_view_multiple_parents(self) -> None:
         view = BigQueryView(
             dataset_id="my_dataset",
             view_id="my_view_id",
             description="my view description",
-            view_query_template="""SELECT * FROM `{project_id}.some_dataset.some_table_materialized`
+            view_query_template="""SELECT * FROM `{project_id}.some_dataset.some_table`
             LEFT OUTER JOIN `{project_id}.some_dataset.other_table`
             USING (some_col);
             """,
         )
         node = BigQueryViewDagNode(view)
+        node.set_materialized_locations({})
         self.assertEqual(
             node.parent_keys,
-            {("some_dataset", "some_table"), ("some_dataset", "other_table")},
+            {
+                DagKey(
+                    view_location=BigQueryLocation(
+                        dataset_id="some_dataset", table_id="some_table"
+                    )
+                ),
+                DagKey(
+                    view_location=BigQueryLocation(
+                        dataset_id="some_dataset", table_id="other_table"
+                    )
+                ),
+            },
         )
