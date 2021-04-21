@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements API routes for the Case Triage app."""
-from datetime import datetime
+from datetime import date, datetime
 from functools import wraps
 from http import HTTPStatus
 from typing import Optional, Callable, List, Any, Dict
@@ -35,6 +35,7 @@ from recidiviz.case_triage.case_updates.interface import (
     DemoCaseUpdatesInterface,
 )
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
+from recidiviz.case_triage.demo_helpers import DEMO_FROZEN_DATE
 from recidiviz.case_triage.exceptions import CaseTriageBadRequestException
 from recidiviz.case_triage.querier.querier import (
     CaseTriageQuerier,
@@ -72,17 +73,19 @@ def create_api_blueprint(
 
     @api.route("/clients")
     def _get_clients() -> str:
+        demo_timedelta_shift = None
         if _should_see_demo():
             clients = DemoCaseTriageQuerier.clients_for_demo_user(
                 current_session, g.email
             )
+            demo_timedelta_shift = date.today() - DEMO_FROZEN_DATE
         else:
             clients = CaseTriageQuerier.clients_for_officer(
                 current_session,
                 g.current_user,
             )
 
-        return jsonify([client.to_json() for client in clients])
+        return jsonify([client.to_json(demo_timedelta_shift) for client in clients])
 
     @api.route("/opportunities")
     def _get_opportunities() -> str:
@@ -149,8 +152,18 @@ def create_api_blueprint(
         other_text = data.get("other_text", None)
 
         if _should_see_demo():
+            demo_time = datetime(
+                year=DEMO_FROZEN_DATE.year,
+                month=DEMO_FROZEN_DATE.month,
+                day=DEMO_FROZEN_DATE.day,
+            )
             DemoCaseUpdatesInterface.update_case_for_person(
-                current_session, g.email, client, user_initiated_actions, other_text
+                session=current_session,
+                user_email=g.email,
+                client=client,
+                actions=user_initiated_actions,
+                other_text=other_text,
+                action_ts=demo_time,
             )
         else:
             old_case = CaseTriageQuerier.case_for_client_and_officer(

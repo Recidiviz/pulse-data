@@ -16,7 +16,7 @@
 # =============================================================================
 """Implements tests for the CasePresenter class."""
 import json
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from unittest.case import TestCase
 
 from freezegun import freeze_time
@@ -77,7 +77,8 @@ class TestCasePresenter(TestCase):
                         "faceToFaceContact": True,
                         "assessment": True,
                     },
-                }
+                },
+                None,
             ),
         )
 
@@ -149,7 +150,8 @@ class TestCasePresenter(TestCase):
                         "faceToFaceContact": True,
                         "assessment": True,
                     },
-                }
+                },
+                None,
             ),
         )
 
@@ -324,3 +326,15 @@ class TestCasePresenter(TestCase):
 
         case_presenter_json = CasePresenter(self.mock_client, case_updates).to_json()
         self.assertTrue("inProgressActions" not in case_presenter_json)
+
+    def test_json_mapping_offsets(self) -> None:
+        base_dict = {"field": date(2022, 2, 1)}
+
+        self.assertEqual(
+            _json_map_dates_to_strings(base_dict, timedelta(days=-1))["field"],
+            str(date(2022, 1, 31)),
+        )
+        self.assertEqual(
+            _json_map_dates_to_strings(base_dict, timedelta(days=28))["field"],
+            str(date(2022, 3, 1)),
+        )

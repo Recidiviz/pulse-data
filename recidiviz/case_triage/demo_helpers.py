@@ -17,9 +17,13 @@
 """Implements some querying abstractions for use by demo users."""
 import json
 import os
+from datetime import date
 from typing import List
 
 from recidiviz.persistence.database.schema.case_triage.schema import ETLClient
+
+
+DEMO_FROZEN_DATE = date(2021, 3, 9)
 
 
 _FIXTURE_CLIENTS: List[ETLClient] = []

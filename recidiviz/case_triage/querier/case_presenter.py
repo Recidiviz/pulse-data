@@ -58,8 +58,13 @@ class CasePresenter:
         self.etl_client = etl_client
         self.case_updates = case_updates
 
-    def to_json(self) -> Dict[str, Any]:
-        """Converts QueriedClient to json representation for frontend."""
+    def to_json(self, timedelta_shift: Optional[timedelta] = None) -> Dict[str, Any]:
+        """Converts QueriedClient to json representation for frontend.
+
+        If the `timedelta_shift` parameter is provided, this json-based representation
+        will shift its values by the given timedelta. This is primarily used in demo
+        mode.
+        """
 
         try:
             parsed_name = json.loads(self.etl_client.full_name)
@@ -122,7 +127,7 @@ class CasePresenter:
             or bool(next_assessment_date > today),
         }
 
-        return _json_map_dates_to_strings(base_dict)
+        return _json_map_dates_to_strings(base_dict, timedelta_shift)
 
     def in_progress_officer_actions(self) -> List[CaseUpdate]:
         """Calculates the list of CaseUpdates that are still applicable for the client."""
@@ -222,14 +227,19 @@ class CasePresenter:
         )
 
 
-def _json_map_dates_to_strings(json_dict: Dict[str, Any]) -> Dict[str, Any]:
+def _json_map_dates_to_strings(
+    json_dict: Dict[str, Any], timedelta_shift: Optional[timedelta]
+) -> Dict[str, Any]:
     """This function is used to pre-emptively convert dates to strings. If
     we don't do this, flask's jsonify tries to be helpful and turns our date
     into a datetime with a GMT timezone, which causes problems downstream."""
     results = {}
     for k, v in json_dict.items():
         if isinstance(v, date):
-            results[k] = str(v)
+            if timedelta_shift:
+                results[k] = str(v + timedelta_shift)
+            else:
+                results[k] = str(v)
         else:
             results[k] = v
     return results
