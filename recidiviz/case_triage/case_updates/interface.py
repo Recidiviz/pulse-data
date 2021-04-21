@@ -40,6 +40,7 @@ def _update_case_for_person(
     client: ETLClient,
     actions: List[CaseUpdateActionType],
     other_text: Optional[str] = None,
+    action_ts: Optional[datetime] = None,
 ) -> None:
     """This method updates the case_updates table with the newly provided actions.
 
@@ -55,7 +56,8 @@ def _update_case_for_person(
     )
     session.execute(delete_statement)
 
-    now = datetime.now()
+    if not action_ts:
+        action_ts = datetime.now()
     for action_type in actions:
         last_version = serialize_last_version_info(action_type, client).to_json()
         insert_statement = insert(CaseUpdate).values(
@@ -63,7 +65,7 @@ def _update_case_for_person(
             officer_external_id=officer_id,
             state_code=client.state_code,
             action_type=action_type.value,
-            action_ts=now,
+            action_ts=action_ts,
             last_version=last_version,
             comment=other_text,
         )
@@ -106,6 +108,7 @@ class DemoCaseUpdatesInterface:
         client: ETLClient,
         actions: List[CaseUpdateActionType],
         other_text: Optional[str] = None,
+        action_ts: Optional[datetime] = None,
     ) -> None:
         """This method updates the case_updates table for demo users.
 
@@ -118,4 +121,5 @@ class DemoCaseUpdatesInterface:
             client,
             actions,
             other_text,
+            action_ts,
         )
