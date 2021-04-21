@@ -27,6 +27,7 @@
     "react-dom": "^17.0.0",
     "react-modal": "^3.12.1",
     "react-spinners": "^0.10.4",
+    "uuid": "^8.3.2",
     "yup": "^0.32.9"
   },
   "scripts": {
@@ -55,6 +56,7 @@
     "@types/react-router-dom": "^5.1.6",
     "@types/segment-analytics": "^0.0.33",
     "@types/styled-components": "^5.1.7",
+    "@types/uuid": "^8.3.0",
     "@typescript-eslint/eslint-plugin": "^4.11.0",
     "@typescript-eslint/parser": "^4.11.0",
     "babel-eslint": "^10.0.0",
