@@ -57,7 +57,6 @@ const DatasetView = (): JSX.Element => {
       <PageHeader title="Dataset View" />
       <MetadataTable
         data={data}
-        metadataDataset={metadataDataset}
         initialColumnTitle="Tables"
         initialColumnLink={(name: string) =>
           DatasetMetadata.routeForMetadataTable(metadataDataset, name)
