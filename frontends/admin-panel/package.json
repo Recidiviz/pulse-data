@@ -13,7 +13,7 @@
     "react": "^16.7.0",
     "react-dom": "^16.7.0",
     "react-router-dom": "^5.2.0",
-    "react-scripts": "3.4.3"
+    "react-scripts": "4.0.3"
   },
   "scripts": {
     "dev": "react-scripts start",
@@ -40,7 +40,6 @@
     "@typescript-eslint/parser": "^4.11.0",
     "babel-eslint": "^10.0.0",
     "babel-plugin-import": "^1.11.0",
-    "eslint": "^6.6.0",
     "eslint-config-react-app": "^6.0.0",
     "eslint-import-resolver-typescript": "^2.3.0",
     "eslint-plugin-flowtype": "^5.2.0",
