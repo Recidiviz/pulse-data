@@ -51,12 +51,7 @@ class ETLClient(CaseTriageBase):
     """Represents a person derived from our ETL pipeline."""
 
     __tablename__ = "etl_clients"
-    __table_args__ = (
-        UniqueConstraint("state_code", "person_external_id"),
-        UniqueConstraint(
-            "state_code", "person_external_id", "supervising_officer_external_id"
-        ),
-    )
+    __table_args__ = (UniqueConstraint("state_code", "person_external_id"),)
     person_external_id = Column(
         String(255), nullable=False, index=True, primary_key=True
     )
