@@ -477,9 +477,9 @@ class BigQueryClient:
 
     @abc.abstractmethod
     def materialize_view_to_table(self, view: BigQueryView) -> None:
-        """Materializes the result of a view's view_query into a table. The view's materialized_view_table_id must be
-        set. The resulting table is put in the same project and dataset as the view, and it overwrites any previous
-        materialization of the view.
+        """Materializes the result of a view's view_query into a table. The view's
+        materialized_location must be set. The resulting table is put in the same
+        project as the view, and it overwrites any previous materialization of the view.
 
         Args:
             view: The BigQueryView to materialize into a table.
@@ -1119,20 +1119,24 @@ class BigQueryClientImpl(BigQueryClient):
         return self.client.query(delete_query)
 
     def materialize_view_to_table(self, view: BigQueryView) -> None:
-        if view.materialized_view_table_id is None:
+        if view.materialized_location is None:
             raise ValueError(
-                "Trying to materialize a view that does not have a set materialized_view_table_id."
+                "Trying to materialize a view that does not have a set "
+                "materialized_location."
             )
 
+        dst_dataset_id = view.materialized_location.dataset_id
+        dst_table_id = view.materialized_location.table_id
         logging.info(
-            "Materializing %s into a table with the table_id: %s",
+            "Materializing %s into a table with location: %s.%s",
             view.view_id,
-            view.materialized_view_table_id,
+            dst_dataset_id,
+            dst_table_id,
         )
 
         create_job = self.create_table_from_query_async(
-            view.dataset_id,
-            view.materialized_view_table_id,
+            dst_dataset_id,
+            dst_table_id,
             view.select_query,
             overwrite=True,
         )

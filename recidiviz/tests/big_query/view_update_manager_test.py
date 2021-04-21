@@ -68,7 +68,6 @@ class ViewManagerTest(unittest.TestCase):
             {
                 "view_id": "my_fake_view",
                 "view_query": "SELECT NULL LIMIT 0",
-                "materialized_view_table_id": "table_id",
             },
             {"view_id": "my_other_fake_view", "view_query": "SELECT NULL LIMIT 0"},
         ]
@@ -78,6 +77,7 @@ class ViewManagerTest(unittest.TestCase):
                 description=f"{view['view_id']} description",
                 view_query_template="a",
                 should_materialize=False,
+                materialized_location_override=None,
                 should_build_predicate=None,
                 **view,
             )
@@ -103,8 +103,10 @@ class ViewManagerTest(unittest.TestCase):
         )
 
     def test_rematerialize_views(self) -> None:
-        """Test that create_dataset_and_deploy_views_for_view_builders only updates views that have a set
-        materialized_view_table_id when the materialized_views_only flag is set to True."""
+        """Test that create_dataset_and_deploy_views_for_view_builders only updates
+        views that have a set materialized_location when the
+        materialized_views_only flag is set to True.
+        """
         dataset = bigquery.dataset.DatasetReference(_PROJECT_ID, _DATASET_NAME)
 
         mock_view_builders = [
@@ -313,8 +315,10 @@ class ViewManagerTest(unittest.TestCase):
     def test_create_dataset_and_deploy_views_for_view_builders_different_datasets(
         self,
     ) -> None:
-        """Test that create_dataset_and_deploy_views_for_view_builders only updates views that have a set
-        materialized_view_table_id when the materialized_views_only flag is set to True."""
+        """Test that create_dataset_and_deploy_views_for_view_builders only updates
+        views that have a set materialized_location when the
+        materialized_views_only flag is set to True.
+        """
         dataset = bigquery.dataset.DatasetReference(_PROJECT_ID, _DATASET_NAME)
         dataset_2 = bigquery.dataset.DatasetReference(_PROJECT_ID, _DATASET_NAME_2)
 
@@ -385,7 +389,6 @@ class ViewManagerTest(unittest.TestCase):
             {
                 "view_id": "my_fake_view",
                 "view_query": "SELECT NULL LIMIT 0",
-                "materialized_view_table_id": "table_id",
             },
             {"view_id": "my_other_fake_view", "view_query": "SELECT NULL LIMIT 0"},
         ]
@@ -395,6 +398,7 @@ class ViewManagerTest(unittest.TestCase):
                 view_query_template="a",
                 description=f"{view['view_id']} description",
                 should_materialize=False,
+                materialized_location_override=None,
                 should_build_predicate=None,
                 **view,
             )

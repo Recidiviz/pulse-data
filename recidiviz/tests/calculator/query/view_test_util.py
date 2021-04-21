@@ -18,7 +18,7 @@
 
 import logging
 import re
-from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple, Type
+from typing import Dict, Iterator, List, Optional, Sequence, Set, Type
 import unittest
 
 import attr
@@ -30,7 +30,11 @@ from sqlalchemy.engine import create_engine, Engine
 from sqlalchemy.orm.session import close_all_sessions
 from sqlalchemy.sql import sqltypes
 
-from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
+from recidiviz.big_query.big_query_view import (
+    BigQueryView,
+    BigQueryViewBuilder,
+    BigQueryLocation,
+)
 from recidiviz.persistence.database.session import Session
 from recidiviz.tools.postgres import local_postgres_helpers
 
@@ -151,7 +155,7 @@ class BaseViewTest(unittest.TestCase):
 
     def setUp(self) -> None:
         # Stores the list of mock tables that have been created as (dataset_id, table_id) tuples.
-        self.mock_bq_tables: Set[Tuple[str, str]] = set()
+        self.mock_bq_tables: Set[BigQueryLocation] = set()
 
         self.type_name_generator = NameGenerator("__type_")
         self.postgres_engine = create_engine(
@@ -177,9 +181,9 @@ class BaseViewTest(unittest.TestCase):
 
         if self.mock_bq_tables:
             # Execute each statement one at a time for resilience.
-            for dataset_id, table_id in self.mock_bq_tables:
+            for table_location in self.mock_bq_tables:
                 self._execute_statement(
-                    f"DROP TABLE {self._to_postgres_table_name(dataset_id, table_id)}"
+                    f"DROP TABLE {self._to_postgres_table_name(table_location)}"
                 )
             for type_name in self.type_name_generator.all_names_generated():
                 self._execute_statement(f"DROP TYPE {type_name}")
@@ -202,9 +206,10 @@ class BaseViewTest(unittest.TestCase):
         mock_schema: MockTableSchema,
         mock_data: pd.DataFrame,
     ) -> None:
-        self.mock_bq_tables.add((dataset_id, table_id))
+        location = BigQueryLocation(dataset_id=dataset_id, table_id=table_id)
+        self.mock_bq_tables.add(location)
         mock_data.to_sql(
-            name=self._to_postgres_table_name(dataset_id, table_id),
+            name=self._to_postgres_table_name(location),
             con=self.postgres_engine,
             dtype=mock_schema.data_types,
             index=False,
@@ -241,20 +246,21 @@ class BaseViewTest(unittest.TestCase):
 
     def create_view(self, view_builder: BigQueryViewBuilder) -> None:
         view: BigQueryView = view_builder.build()
-
-        self.mock_bq_tables.add((view.dataset_id, view.table_id_for_query))
+        table_location = view.table_for_query
+        self.mock_bq_tables.add(table_location)
 
         query = (
-            f"CREATE TABLE `{view.project}.{view.dataset_id}.{view.table_id_for_query}` "
+            f"CREATE TABLE "
+            f"`{view.project}.{table_location.dataset_id}.{table_location.table_id}` "
             f"AS ({view.view_query})"
         )
         query = self._rewrite_sql(query)
         self._execute_statement(query)
 
     @classmethod
-    def _to_postgres_table_name(cls, dataset_id: str, table_id: str) -> str:
+    def _to_postgres_table_name(cls, bq_location: BigQueryLocation) -> str:
         # Postgres does not support '.' in table names, so we instead join them with an underscore.
-        return "_".join([dataset_id, table_id])
+        return "_".join([bq_location.dataset_id, bq_location.table_id])
 
     def _rewrite_sql(self, query: str) -> str:
         """Modifies the SQL query, translating BQ syntax to Postgres syntax where necessary."""
@@ -351,12 +357,13 @@ class BaseViewTest(unittest.TestCase):
         for match in re.finditer(table_reference_regex, query):
             table_reference = match.group()
             dataset_id, table_id = match.groups()
-            if (dataset_id, table_id) not in self.mock_bq_tables:
+            location = BigQueryLocation(dataset_id=dataset_id, table_id=table_id)
+            if location not in self.mock_bq_tables:
                 raise KeyError(
                     f"Table {table_reference} does not exist, must be created via create_mock_bq_table."
                 )
             query = query.replace(
-                table_reference, self._to_postgres_table_name(dataset_id, table_id)
+                table_reference, self._to_postgres_table_name(location)
             )
         return query
 

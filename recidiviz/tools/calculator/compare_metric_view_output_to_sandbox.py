@@ -186,9 +186,7 @@ def compare_metric_view_output_to_sandbox(
             if not isinstance(view_builder, MetricBigQueryViewBuilder):
                 continue
 
-            base_dataset_id = view_builder.dataset_id
-
-            if dataset_id_filters and base_dataset_id not in dataset_id_filters:
+            if dataset_id_filters and view_builder.dataset_id not in dataset_id_filters:
                 continue
 
             if view_builder in VIEW_BUILDERS_WITH_KNOWN_NOT_DETERMINISTIC_OUTPUT:
@@ -202,7 +200,7 @@ def compare_metric_view_output_to_sandbox(
                 )
                 continue
 
-            sandbox_dataset_id = sandbox_dataset_prefix + "_" + base_dataset_id
+            sandbox_dataset_id = sandbox_dataset_prefix + "_" + view_builder.dataset_id
 
             if not bq_client.dataset_exists(
                 bq_client.dataset_ref_for_id(sandbox_dataset_id)
@@ -212,18 +210,22 @@ def compare_metric_view_output_to_sandbox(
                     f"{bq_client.project_id}.{sandbox_dataset_id}"
                 )
 
-            base_dataset_ref = bq_client.dataset_ref_for_id(base_dataset_id)
-            base_view_id = (
-                view_builder.build().materialized_view_table_id
-                if view_builder.should_materialize and not check_determinism
-                else view_builder.view_id
-            )
-
-            if not base_view_id:
-                raise ValueError(
-                    "Unexpected empty base_view_id. view_id or materialized_view_table_id unset"
-                    f"for {view_builder}."
+            if view_builder.should_materialize and not check_determinism:
+                view = view_builder.build()
+                if not view.materialized_location:
+                    raise ValueError(
+                        f"Unexpected empty materialized_location for "
+                        f"{view_builder}."
+                    )
+                base_dataset_id = view.materialized_location.dataset_id
+                base_view_id = view.materialized_location.table_id
+            else:
+                base_dataset_id, base_view_id = (
+                    view_builder.dataset_id,
+                    view_builder.view_id,
                 )
+
+            base_dataset_ref = bq_client.dataset_ref_for_id(base_dataset_id)
 
             if not check_determinism and not bq_client.table_exists(
                 base_dataset_ref, base_view_id
