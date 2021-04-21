@@ -22,7 +22,7 @@ from typing import Optional
 from unittest import TestCase
 
 import pytest
-from flask import Flask, g
+from flask import Flask
 
 import recidiviz.case_triage
 from recidiviz.case_triage.api_routes import create_api_blueprint
@@ -30,6 +30,9 @@ from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.tests.case_triage.api_test_helpers import (
+    CaseTriageTestHelpers,
+)
 from recidiviz.tools.postgres import local_postgres_helpers
 
 
@@ -49,8 +52,8 @@ class TestDemoUser(TestCase):
         register_error_handlers(self.test_app)
         api = create_api_blueprint()
         self.test_app.register_blueprint(api)
-
         self.test_client = self.test_app.test_client()
+        self.helpers = CaseTriageTestHelpers.from_test(self, self.test_app)
 
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
         self.overridden_env_vars = (
@@ -68,6 +71,7 @@ class TestDemoUser(TestCase):
                 "./fixtures/dummy_clients.json",
             )
         )
+
         with open(demo_fixture_path) as f:
             self.demo_data = json.load(f)
 
@@ -83,43 +87,28 @@ class TestDemoUser(TestCase):
             cls.temp_db_dir
         )
 
-    def set_as_demo_user(self) -> None:
-        g.current_user = None
-        g.email = "demo_user@recidiviz.org"
-        g.can_see_demo_data = True
-
     def test_get_clients(self) -> None:
-        with self.test_app.test_request_context():
-            self.set_as_demo_user()
+        with self.helpers.as_demo_user():
+            self.assertEqual(len(self.helpers.get_clients()), len(self.demo_data))
 
-            response = self.test_client.get("/clients")
-            self.assertEqual(response.status_code, HTTPStatus.OK)
-
-            client_json = response.get_json()
-            self.assertEqual(len(client_json), len(self.demo_data))
-
-    def test_record_client_action(self) -> None:
-        with self.test_app.test_request_context():
-            self.set_as_demo_user()
-
-            client_to_modify = self.test_client.get("/clients").get_json()[0]
-            self.assertTrue("inProgressActions" not in client_to_modify)
+    def test_create_case_updates_action(self) -> None:
+        with self.helpers.as_demo_user():
+            client_to_modify = self.helpers.get_clients()[0]
 
             response = self.test_client.post(
-                "/record_client_action",
+                "/case_updates",
                 json={
                     "personExternalId": client_to_modify["personExternalId"],
-                    "actions": ["FILED_REVOCATION_OR_VIOLATION"],
-                    "otherText": "",
+                    "actionType": "FILED_REVOCATION_OR_VIOLATION",
+                    "comment": "",
                 },
             )
             self.assertEqual(response.status_code, HTTPStatus.OK)
 
-            clients = self.test_client.get("/clients").get_json()
-            for client in clients:
-                if client["personExternalId"] == client_to_modify["personExternalId"]:
-                    client_to_modify = client
-                    break
-            self.assertCountEqual(
-                client_to_modify["inProgressActions"], ["FILED_REVOCATION_OR_VIOLATION"]
+            new_client = self.helpers.find_client_in_api_response(
+                client_to_modify["personExternalId"]
+            )
+            self.assertIn(
+                "FILED_REVOCATION_OR_VIOLATION",
+                new_client["caseUpdates"],
             )

@@ -14,11 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """ Contains Marshmallow schemas for our API """
-from typing import Dict, Type
+from functools import wraps
+from typing import Type, List, Any, Dict, Callable
 
-from flask import request
+from flask import request, g
 from marshmallow import fields, validate, Schema
 from marshmallow.fields import Field
+from marshmallow_enum import EnumField
 
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
 
@@ -38,25 +40,23 @@ class CamelCaseSchema(Schema):
 
 
 class PolicyRequirementsSchema(CamelCaseSchema):
-    """ Schema for retrieving policy requirements """
-
     state = fields.Str(validate=validate.OneOf(["US_ID"]), required=True)
 
 
 class CaseUpdateSchema(CamelCaseSchema):
-    """ Schema for submitting case updates """
-
     person_external_id = fields.Str(required=True)
-    actions = fields.List(
-        fields.Str(
-            validate=validate.OneOf(
-                [action_type.value for action_type in CaseUpdateActionType]
-            ),
-        ),
-        required=True,
-    )
-    other_text = fields.Str(default=None)
+    action_type = EnumField(CaseUpdateActionType, required=True)
+    comment = fields.Str(default=None)
 
 
-def load_api_schema(api_schema: Type[CamelCaseSchema]) -> Dict:
-    return api_schema().load(request.json)
+def requires_api_schema(api_schema: Type[Schema]) -> Callable:
+    def inner(route: Callable) -> Callable:
+        @wraps(route)
+        def decorated(*args: List[Any], **kwargs: Dict[str, Any]) -> Any:
+            g.api_data = api_schema().load(request.json)
+
+            return route(*args, **kwargs)
+
+        return decorated
+
+    return inner

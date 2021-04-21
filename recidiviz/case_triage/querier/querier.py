@@ -20,7 +20,7 @@ from collections import defaultdict
 from typing import List
 
 import sqlalchemy.orm.exc
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from recidiviz.case_triage.demo_helpers import (
     fake_officer_id_for_demo_user,
@@ -41,8 +41,31 @@ class PersonDoesNotExistError(ValueError):
     pass
 
 
+class CaseUpdateDoesNotExistError(ValueError):
+    pass
+
+
 class CaseTriageQuerier:
     """Implements Querier abstraction for Case Triage data sources."""
+
+    @staticmethod
+    def etl_client_for_officer(
+        session: Session, officer: ETLOfficer, person_external_id: str
+    ) -> ETLClient:
+        try:
+            return (
+                session.query(ETLClient)
+                .filter(
+                    ETLClient.state_code == officer.state_code,
+                    ETLClient.supervising_officer_external_id == officer.external_id,
+                    ETLClient.person_external_id == person_external_id,
+                )
+                .one()
+            )
+        except sqlalchemy.orm.exc.NoResultFound as e:
+            raise PersonDoesNotExistError(
+                f"could not find id: {person_external_id}"
+            ) from e
 
     @staticmethod
     def case_for_client_and_officer(
@@ -67,58 +90,17 @@ class CaseTriageQuerier:
         session: Session, officer: ETLOfficer
     ) -> List[CasePresenter]:
         """Outputs the list of clients for a given officer in CasePresenter form."""
-        client_based_pairs = (
-            session.query(ETLClient, CaseUpdate)
-            .outerjoin(
-                CaseUpdate,
-                (ETLClient.state_code == CaseUpdate.state_code)
-                & (ETLClient.person_external_id == CaseUpdate.person_external_id)
-                & (
-                    ETLClient.supervising_officer_external_id
-                    == CaseUpdate.officer_external_id
-                ),
-            )
+        clients = (
+            session.query(ETLClient)
             .filter(
-                ETLClient.supervising_officer_external_id == officer.external_id,
+                ETLClient.etl_officer == officer,
                 ETLClient.state_code == officer.state_code,
             )
+            .options(joinedload(ETLClient.case_updates))
             .all()
         )
 
-        ids_to_clients = {}
-        client_ids_to_case_updates = defaultdict(list)
-        for client, case_update in client_based_pairs:
-            ids_to_clients[client.person_external_id] = client
-            if case_update:
-                client_ids_to_case_updates[client.person_external_id].append(
-                    case_update
-                )
-
-        presented_clients: List[CasePresenter] = []
-        for client_id, client in ids_to_clients.items():
-            presented_clients.append(
-                CasePresenter(client, client_ids_to_case_updates[client_id])
-            )
-
-        return presented_clients
-
-    @staticmethod
-    def etl_client_with_id_and_state_code(
-        session: Session, person_external_id: str, state_code: str
-    ) -> ETLClient:
-        try:
-            return (
-                session.query(ETLClient)
-                .filter_by(
-                    person_external_id=person_external_id,
-                    state_code=state_code,
-                )
-                .one()
-            )
-        except sqlalchemy.orm.exc.NoResultFound as e:
-            raise PersonDoesNotExistError(
-                f"could not find id: {person_external_id}"
-            ) from e
+        return [CasePresenter(client, client.case_updates) for client in clients]
 
     @staticmethod
     def officer_for_email(session: Session, officer_email: str) -> ETLOfficer:
@@ -155,6 +137,29 @@ class CaseTriageQuerier:
         )
         return [OpportunityPresenter(info[0], info[1]) for info in opportunity_info]
 
+    @staticmethod
+    def delete_case_update(
+        session: Session, officer_external_id: str, update_id: str
+    ) -> CaseUpdate:
+        try:
+            case_update = (
+                session.query(CaseUpdate)
+                .filter(
+                    CaseUpdate.officer_external_id == officer_external_id,
+                    CaseUpdate.update_id == update_id,
+                )
+                .one()
+            )
+        except sqlalchemy.orm.exc.NoResultFound as e:
+            raise CaseUpdateDoesNotExistError(
+                f"Could not find update for officer: {officer_external_id} update_id: {update_id}"
+            ) from e
+
+        session.delete(case_update)
+        session.commit()
+
+        return case_update
+
 
 class DemoCaseTriageQuerier:
     """Implements some querying abstractions for use by demo users."""
@@ -163,7 +168,7 @@ class DemoCaseTriageQuerier:
     def clients_for_demo_user(
         session: Session, user_email_address: str
     ) -> List[CasePresenter]:
-        case_udpates = (
+        case_updates = (
             session.query(CaseUpdate)
             .filter(
                 CaseUpdate.officer_external_id
@@ -172,7 +177,7 @@ class DemoCaseTriageQuerier:
             .all()
         )
         client_ids_to_case_updates = defaultdict(list)
-        for case_update in case_udpates:
+        for case_update in case_updates:
             client_ids_to_case_updates[case_update.person_external_id].append(
                 case_update
             )
@@ -192,3 +197,11 @@ class DemoCaseTriageQuerier:
                 return client
 
         raise PersonDoesNotExistError(f"could not find id: {person_external_id}")
+
+    @staticmethod
+    def delete_case_update(
+        session: Session, officer_external_id: str, case_update_id: str
+    ) -> CaseUpdate:
+        return CaseTriageQuerier.delete_case_update(
+            session, officer_external_id, case_update_id
+        )

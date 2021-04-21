@@ -20,7 +20,7 @@ taken to give us a unified view of a person on supervision."""
 import json
 import logging
 from datetime import date, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional, List
 
 import numpy as np
 
@@ -33,28 +33,23 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_com
     SEX_OFFENSE_LSIR_MINIMUM_SCORE,
     SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS,
 )
-from recidiviz.case_triage.case_updates.progress_checker import (
-    check_case_update_action_progress,
-)
-from recidiviz.case_triage.case_updates.types import (
-    CaseUpdateActionType,
-    LastVersionData,
-)
+from recidiviz.case_triage.querier.case_update_presenter import CaseUpdatePresenter
+from recidiviz.case_triage.querier.utils import _json_map_dates_to_strings
 from recidiviz.common.constants.person_characteristics import Gender
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
 )
 from recidiviz.persistence.database.schema.case_triage.schema import (
-    CaseUpdate,
     ETLClient,
+    CaseUpdate,
 )
 
 
 class CasePresenter:
     """Implements the case presenter abstraction."""
 
-    def __init__(self, etl_client: ETLClient, case_updates: Optional[List[CaseUpdate]]):
+    def __init__(self, etl_client: ETLClient, case_updates: List[CaseUpdate]):
         self.etl_client = etl_client
         self.case_updates = case_updates
 
@@ -89,16 +84,13 @@ class CasePresenter:
             "mostRecentAssessmentDate": self.etl_client.most_recent_assessment_date,
             "assessmentScore": self.etl_client.assessment_score,
             "mostRecentFaceToFaceDate": self.etl_client.most_recent_face_to_face_date,
+            "caseUpdates": {
+                case_update.action_type: CaseUpdatePresenter(
+                    self.etl_client, case_update
+                ).to_json()
+                for case_update in self.case_updates
+            },
         }
-
-        in_progress_actions = self.in_progress_officer_actions()
-        if in_progress_actions:
-            base_dict["inProgressActions"] = [
-                action.action_type for action in in_progress_actions
-            ]
-            base_dict["inProgressSubmissionDate"] = str(
-                max(action.action_ts for action in in_progress_actions)
-            )
 
         # TODO(#5769): We're doing this quickly here and being intentional about the debt we're taking
         # on. This will be moved to the calculation pipeline once we've shipped the Case Triage MVP.
@@ -128,31 +120,6 @@ class CasePresenter:
         }
 
         return _json_map_dates_to_strings(base_dict, timedelta_shift)
-
-    def in_progress_officer_actions(self) -> List[CaseUpdate]:
-        """Calculates the list of CaseUpdates that are still applicable for the client."""
-        if not self.case_updates:
-            return []
-
-        in_progress_actions: List[CaseUpdate] = []
-        for update in self.case_updates:
-            try:
-                action_type = CaseUpdateActionType(update.action_type)
-            except ValueError:
-                logging.warning(
-                    "Unknown CaseUpdateActionType found: %s",
-                    update.action_type,
-                )
-                continue
-
-            if check_case_update_action_progress(
-                action_type,
-                self.etl_client,
-                LastVersionData.from_json(update.last_version),
-            ):
-                in_progress_actions.append(update)
-
-        return in_progress_actions
 
     def _next_assessment_date(self) -> Optional[date]:
         """Calculates the next assessment date for the given case.
@@ -225,21 +192,3 @@ class CasePresenter:
         return self.etl_client.most_recent_face_to_face_date + timedelta(
             days=(face_to_face_requirements[1] // face_to_face_requirements[0])
         )
-
-
-def _json_map_dates_to_strings(
-    json_dict: Dict[str, Any], timedelta_shift: Optional[timedelta]
-) -> Dict[str, Any]:
-    """This function is used to pre-emptively convert dates to strings. If
-    we don't do this, flask's jsonify tries to be helpful and turns our date
-    into a datetime with a GMT timezone, which causes problems downstream."""
-    results = {}
-    for k, v in json_dict.items():
-        if isinstance(v, date):
-            if timedelta_shift:
-                results[k] = str(v + timedelta_shift)
-            else:
-                results[k] = str(v)
-        else:
-            results[k] = v
-    return results
