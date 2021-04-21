@@ -16,39 +16,40 @@
 # =============================================================================
 """Implements tests for the CasePresenter class."""
 import json
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from unittest.case import TestCase
 
 from freezegun import freeze_time
 
-from recidiviz.case_triage.querier.case_presenter import CasePresenter
 from recidiviz.case_triage.case_updates.types import (
-    CaseUpdateMetadataKeys,
     CaseUpdateActionType,
 )
+from recidiviz.case_triage.querier.case_presenter import CasePresenter
 from recidiviz.case_triage.querier.case_presenter import _json_map_dates_to_strings
-from recidiviz.persistence.database.schema.case_triage.schema import (
-    CaseUpdate,
+from recidiviz.tests.case_triage.case_triage_helpers import (
+    generate_fake_client,
+    generate_fake_case_update,
+    generate_fake_officer,
 )
-from recidiviz.tests.case_triage.case_triage_helpers import generate_fake_client
-from recidiviz.case_triage.case_updates.serializers import serialize_last_version_info
 
 
 class TestCasePresenter(TestCase):
     """Implements tests for the CasePresenter class."""
 
     def setUp(self) -> None:
+        self.mock_officer = generate_fake_officer("officer_id_1")
         self.mock_client = generate_fake_client(
             "person_id_1",
+            supervising_officer_id=self.mock_officer.external_id,
             last_assessment_date=date(2021, 2, 1),
             last_face_to_face_date=date(2021, 1, 15),
         )
+        self.mock_client.case_updates = []
 
     @freeze_time("2020-01-01 00:00")
     def test_no_case_update(self) -> None:
-        case_presenter = CasePresenter(self.mock_client, None)
+        case_presenter = CasePresenter(self.mock_client, [])
 
-        self.assertEqual(case_presenter.in_progress_officer_actions(), [])
         self.assertEqual(
             case_presenter.to_json(),
             _json_map_dates_to_strings(
@@ -64,6 +65,7 @@ class TestCasePresenter(TestCase):
                     "projectedEndDate": self.mock_client.projected_end_date,
                     "supervisionType": self.mock_client.supervision_type,
                     "caseType": self.mock_client.case_type,
+                    "caseUpdates": {},
                     "supervisionLevel": self.mock_client.supervision_level,
                     "stateCode": self.mock_client.state_code,
                     "employer": self.mock_client.employer,
@@ -82,250 +84,23 @@ class TestCasePresenter(TestCase):
             ),
         )
 
-    @freeze_time("2020-01-01 00:00")
-    def test_dismiss_actions(self) -> None:
-        """This tests dismissed actions. No changes to the ETL data that we see will
-        affect the values we ultimately get from this."""
-        dismiss_actions = [
-            CaseUpdateActionType.INFORMATION_DOESNT_MATCH_OMS,
-            CaseUpdateActionType.NOT_ON_CASELOAD,
-            CaseUpdateActionType.FILED_REVOCATION_OR_VIOLATION,
-            CaseUpdateActionType.OTHER_DISMISSAL,
-        ]
-
-        now = datetime.now()
-
-        case_updates = [
-            CaseUpdate(
-                person_external_id=self.mock_client.person_external_id,
-                officer_external_id=self.mock_client.supervising_officer_external_id,
-                state_code=self.mock_client.state_code,
-                action_type=action_type.value,
-                action_ts=now,
-                last_version=serialize_last_version_info(
-                    action_type, self.mock_client
-                ).to_json(),
-            )
-            for action_type in dismiss_actions
-        ]
-
-        case_presenter = CasePresenter(self.mock_client, case_updates)
-
-        self.assertEqual(
+    def test_case_updates(self) -> None:
+        case_presenter = CasePresenter(
+            self.mock_client,
             [
-                CaseUpdateActionType(action.action_type)
-                for action in case_presenter.in_progress_officer_actions()
+                generate_fake_case_update(
+                    self.mock_client,
+                    self.mock_officer,
+                    action_type=CaseUpdateActionType.SCHEDULED_FACE_TO_FACE,
+                ),
             ],
-            dismiss_actions,
         )
 
-        self.maxDiff = None
-        self.assertEqual(
-            case_presenter.to_json(),
-            _json_map_dates_to_strings(
-                {
-                    "personExternalId": self.mock_client.person_external_id,
-                    "fullName": json.loads(self.mock_client.full_name),
-                    "gender": self.mock_client.gender,
-                    "supervisingOfficerExternalId": self.mock_client.supervising_officer_external_id,
-                    "currentAddress": self.mock_client.current_address,
-                    "birthdate": self.mock_client.birthdate,
-                    "birthdateInferredFromAge": self.mock_client.birthdate_inferred_from_age,
-                    "supervisionType": self.mock_client.supervision_type,
-                    "caseType": self.mock_client.case_type,
-                    "supervisionStartDate": self.mock_client.supervision_start_date,
-                    "projectedEndDate": self.mock_client.projected_end_date,
-                    "supervisionLevel": self.mock_client.supervision_level,
-                    "stateCode": self.mock_client.state_code,
-                    "employer": self.mock_client.employer,
-                    "mostRecentAssessmentDate": self.mock_client.most_recent_assessment_date,
-                    "assessmentScore": self.mock_client.assessment_score,
-                    "mostRecentFaceToFaceDate": self.mock_client.most_recent_face_to_face_date,
-                    "inProgressActions": [action.value for action in dismiss_actions],
-                    "inProgressSubmissionDate": str(datetime(2020, 1, 1, 0, 0)),
-                    "nextAssessmentDate": date(2022, 2, 1),
-                    "nextFaceToFaceDate": date(2021, 3, 1),
-                    "needsMet": {
-                        "employment": False,
-                        "faceToFaceContact": True,
-                        "assessment": True,
-                    },
-                },
-                None,
-            ),
+        case_json = case_presenter.to_json()
+        self.assertEqual(len(case_json["caseUpdates"].keys()), 1)
+        self.assertIn(
+            CaseUpdateActionType.SCHEDULED_FACE_TO_FACE.value, case_json["caseUpdates"]
         )
-
-    def test_completed_assessment_action_unresolved(self) -> None:
-        case_updates = [
-            CaseUpdate(
-                person_external_id=self.mock_client.person_external_id,
-                officer_external_id=self.mock_client.supervising_officer_external_id,
-                state_code=self.mock_client.state_code,
-                action_ts=datetime.now(),
-                action_type=CaseUpdateActionType.COMPLETED_ASSESSMENT.value,
-                last_version={
-                    CaseUpdateMetadataKeys.LAST_RECORDED_DATE: self.mock_client.most_recent_assessment_date.isoformat(),
-                },
-            )
-        ]
-
-        case_presenter_json = CasePresenter(self.mock_client, case_updates).to_json()
-        self.assertEqual(
-            case_presenter_json["inProgressActions"],
-            [CaseUpdateActionType.COMPLETED_ASSESSMENT.value],
-        )
-
-    def test_completed_assessment_action_resolved(self) -> None:
-        case_updates = [
-            CaseUpdate(
-                person_external_id=self.mock_client.person_external_id,
-                officer_external_id=self.mock_client.supervising_officer_external_id,
-                state_code=self.mock_client.state_code,
-                action_type=CaseUpdateActionType.COMPLETED_ASSESSMENT.value,
-                action_ts=datetime.now(),
-                last_version={
-                    CaseUpdateMetadataKeys.LAST_RECORDED_DATE: self.mock_client.most_recent_assessment_date.isoformat(),
-                },
-            )
-        ]
-
-        self.mock_client.most_recent_assessment_date = date(2022, 2, 1)
-
-        case_presenter_json = CasePresenter(self.mock_client, case_updates).to_json()
-        self.assertTrue("inProgressActions" not in case_presenter_json)
-
-    def test_discharge_initiated_action_unresolved(self) -> None:
-        case_updates = [
-            CaseUpdate(
-                person_external_id=self.mock_client.person_external_id,
-                officer_external_id=self.mock_client.supervising_officer_external_id,
-                state_code=self.mock_client.state_code,
-                action_type=CaseUpdateActionType.DISCHARGE_INITIATED.value,
-                action_ts=datetime.now(),
-                last_version={},
-            )
-        ]
-
-        case_presenter_json = CasePresenter(self.mock_client, case_updates).to_json()
-        self.assertEqual(
-            case_presenter_json["inProgressActions"],
-            [CaseUpdateActionType.DISCHARGE_INITIATED.value],
-        )
-
-    def test_downgrade_initiated_action_unresolved(self) -> None:
-        case_updates = [
-            CaseUpdate(
-                person_external_id=self.mock_client.person_external_id,
-                officer_external_id=self.mock_client.supervising_officer_external_id,
-                state_code=self.mock_client.state_code,
-                action_type=CaseUpdateActionType.DOWNGRADE_INITIATED.value,
-                action_ts=datetime.now(),
-                last_version={
-                    CaseUpdateMetadataKeys.LAST_SUPERVISION_LEVEL: self.mock_client.supervision_level,
-                },
-            )
-        ]
-
-        case_presenter_json = CasePresenter(self.mock_client, case_updates).to_json()
-        self.assertEqual(
-            case_presenter_json["inProgressActions"],
-            [CaseUpdateActionType.DOWNGRADE_INITIATED.value],
-        )
-
-    def test_downgrade_initiated_action_resolved(self) -> None:
-        case_updates = [
-            CaseUpdate(
-                person_external_id=self.mock_client.person_external_id,
-                officer_external_id=self.mock_client.supervising_officer_external_id,
-                state_code=self.mock_client.state_code,
-                action_type=CaseUpdateActionType.DOWNGRADE_INITIATED.value,
-                action_ts=datetime.now(),
-                last_version={
-                    CaseUpdateMetadataKeys.LAST_SUPERVISION_LEVEL: self.mock_client.supervision_level,
-                },
-            )
-        ]
-
-        self.mock_client.supervision_level = "MINIMUM"
-
-        case_presenter_json = CasePresenter(self.mock_client, case_updates).to_json()
-        self.assertTrue("inProgressActions" not in case_presenter_json)
-
-    def test_found_employment_action_unresolved(self) -> None:
-        case_updates = [
-            CaseUpdate(
-                person_external_id=self.mock_client.person_external_id,
-                officer_external_id=self.mock_client.supervising_officer_external_id,
-                state_code=self.mock_client.state_code,
-                action_type=CaseUpdateActionType.FOUND_EMPLOYMENT.value,
-                action_ts=datetime.now(),
-                last_version={},
-            )
-        ]
-
-        case_presenter_json = CasePresenter(self.mock_client, case_updates).to_json()
-        self.assertEqual(
-            case_presenter_json["inProgressActions"],
-            [CaseUpdateActionType.FOUND_EMPLOYMENT.value],
-        )
-
-    def test_found_employment_action_resolved(self) -> None:
-        case_updates = [
-            CaseUpdate(
-                person_external_id=self.mock_client.person_external_id,
-                officer_external_id=self.mock_client.supervising_officer_external_id,
-                state_code=self.mock_client.state_code,
-                action_type=CaseUpdateActionType.FOUND_EMPLOYMENT.value,
-                action_ts=datetime.now(),
-                last_version={
-                    CaseUpdateMetadataKeys.LAST_SUPERVISION_LEVEL: self.mock_client.supervision_level,
-                },
-            )
-        ]
-
-        self.mock_client.employer = "Recidiviz"
-
-        case_presenter_json = CasePresenter(self.mock_client, case_updates).to_json()
-        self.assertTrue("inProgressActions" not in case_presenter_json)
-
-    def test_scheduled_face_to_face_action_unresolved(self) -> None:
-        case_updates = [
-            CaseUpdate(
-                person_external_id=self.mock_client.person_external_id,
-                officer_external_id=self.mock_client.supervising_officer_external_id,
-                state_code=self.mock_client.state_code,
-                action_type=CaseUpdateActionType.SCHEDULED_FACE_TO_FACE.value,
-                action_ts=datetime.now(),
-                last_version={
-                    CaseUpdateMetadataKeys.LAST_RECORDED_DATE: self.mock_client.most_recent_face_to_face_date.isoformat(),
-                },
-            )
-        ]
-
-        case_presenter_json = CasePresenter(self.mock_client, case_updates).to_json()
-        self.assertEqual(
-            case_presenter_json["inProgressActions"],
-            [CaseUpdateActionType.SCHEDULED_FACE_TO_FACE.value],
-        )
-
-    def test_scheduled_face_to_face_action_resolved(self) -> None:
-        case_updates = [
-            CaseUpdate(
-                person_external_id=self.mock_client.person_external_id,
-                officer_external_id=self.mock_client.supervising_officer_external_id,
-                state_code=self.mock_client.state_code,
-                action_type=CaseUpdateActionType.SCHEDULED_FACE_TO_FACE.value,
-                action_ts=datetime.now(),
-                last_version={
-                    CaseUpdateMetadataKeys.LAST_RECORDED_DATE: self.mock_client.most_recent_face_to_face_date.isoformat(),
-                },
-            )
-        ]
-
-        self.mock_client.most_recent_face_to_face_date = date(2022, 2, 2)
-
-        case_presenter_json = CasePresenter(self.mock_client, case_updates).to_json()
-        self.assertTrue("inProgressActions" not in case_presenter_json)
 
     def test_json_mapping_offsets(self) -> None:
         base_dict = {"field": date(2022, 2, 1)}

@@ -113,19 +113,31 @@ class TestCaseTriageQuerier(TestCase):
             0,
         )
 
-    def test_etl_client_with_id_and_state_code(self) -> None:
-        client_1 = generate_fake_client("client_1")
+    def test_etl_client_for_officer(self) -> None:
+        officer_1 = generate_fake_officer("officer_1")
+        officer_2 = generate_fake_officer("officer_2")
+        client_1 = generate_fake_client(
+            "client_1", supervising_officer_id=officer_1.external_id
+        )
         session = SessionFactory.for_database(self.database_key)
+        session.add(officer_1)
+        session.add(officer_2)
         session.add(client_1)
         session.commit()
 
         read_session = SessionFactory.for_database(self.database_key)
+
+        # Client does not exist at all
         with self.assertRaises(PersonDoesNotExistError):
-            CaseTriageQuerier.etl_client_with_id_and_state_code(
-                read_session, "nonexistent", "US_XX"
+            CaseTriageQuerier.etl_client_for_officer(
+                read_session, officer_1, "nonexistent"
+            )
+
+        # Client does not exist for the officer
+        with self.assertRaises(PersonDoesNotExistError):
+            CaseTriageQuerier.etl_client_for_officer(
+                read_session, officer_2, "client_1"
             )
 
         # Should not raise an error
-        CaseTriageQuerier.etl_client_with_id_and_state_code(
-            read_session, "client_1", "US_XX"
-        )
+        CaseTriageQuerier.etl_client_for_officer(read_session, officer_1, "client_1")

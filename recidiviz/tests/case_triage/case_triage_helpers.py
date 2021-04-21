@@ -16,13 +16,15 @@
 # =============================================================================
 """Implements helper functions for use in Case Triage tests."""
 import json
-from datetime import date
-from typing import Optional
+from datetime import date, datetime
+from typing import Optional, Dict
 
+from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
 from recidiviz.persistence.database.schema.case_triage.schema import (
     ETLClient,
     ETLOfficer,
     ETLOpportunity,
+    CaseUpdate,
 )
 
 
@@ -70,4 +72,27 @@ def generate_fake_opportunity(
         state_code="US_XX",
         opportunity_type="OVERDUE_DISCHARGE",
         opportunity_metadata={},
+    )
+
+
+def generate_fake_case_update(
+    client: ETLClient,
+    officer: ETLOfficer,
+    action_type: CaseUpdateActionType,
+    action_ts: Optional[datetime] = None,
+    comment: Optional[str] = None,
+    last_version: Optional[Dict] = None,
+) -> CaseUpdate:
+    action_ts = datetime.now() if action_ts is None else action_ts
+    last_version = {} if last_version is None else last_version
+
+    return CaseUpdate(
+        state_code=client.state_code,
+        etl_client=client,
+        person_external_id=client.person_external_id,
+        officer_external_id=str(officer.external_id),
+        action_type=action_type.value,
+        action_ts=action_ts,
+        comment=comment,
+        last_version=last_version,
     )

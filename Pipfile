@@ -103,6 +103,7 @@ zope = {event = "*"}
 psutil = "*"
 psycogreen = "*"
 marshmallow = "*"
+marshmallow_enum = "*"
 cattrs = "*"
 # If the dill version changes be sure to update the pinned version in setup.py
 dill = "*"

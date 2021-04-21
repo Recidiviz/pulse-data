@@ -35,6 +35,7 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from recidiviz.persistence.database.base_schema import CaseTriageBase
@@ -50,7 +51,12 @@ class ETLClient(CaseTriageBase):
     """Represents a person derived from our ETL pipeline."""
 
     __tablename__ = "etl_clients"
-    __table_args__ = (UniqueConstraint("state_code", "person_external_id"),)
+    __table_args__ = (
+        UniqueConstraint("state_code", "person_external_id"),
+        UniqueConstraint(
+            "state_code", "person_external_id", "supervising_officer_external_id"
+        ),
+    )
     person_external_id = Column(
         String(255), nullable=False, index=True, primary_key=True
     )
@@ -73,6 +79,26 @@ class ETLClient(CaseTriageBase):
     assessment_score = Column(Integer)
     most_recent_face_to_face_date = Column(Date)
     most_recent_home_visit_date = Column(Date)
+
+    case_updates = relationship(
+        "CaseUpdate",
+        uselist=True,
+        foreign_keys=[state_code, person_external_id, supervising_officer_external_id],
+        primaryjoin="and_("
+        "   ETLClient.state_code == CaseUpdate.state_code,"
+        "   ETLClient.person_external_id == CaseUpdate.person_external_id,"
+        "   ETLClient.supervising_officer_external_id == CaseUpdate.officer_external_id,"
+        ")",
+    )
+
+    etl_officer = relationship(
+        "ETLOfficer",
+        uselist=False,
+        primaryjoin="and_("
+        "   foreign(ETLOfficer.state_code) == ETLClient.state_code,"
+        "   foreign(ETLOfficer.external_id) == ETLClient.supervising_officer_external_id,"
+        ")",
+    )
 
     @staticmethod
     def from_json(json_client: Dict[str, Any]) -> "ETLClient":
@@ -193,6 +219,16 @@ class CaseUpdate(CaseTriageBase):
     # applied. The specific keys and value types are determined based on `action_type`
     last_version = Column(JSONB, nullable=False)
     comment = Column(Text)
+
+    etl_client = relationship(
+        "ETLClient",
+        foreign_keys=[state_code, person_external_id, officer_external_id],
+        primaryjoin="and_("
+        "   ETLClient.state_code == CaseUpdate.state_code,"
+        "   ETLClient.person_external_id == CaseUpdate.person_external_id,"
+        "   ETLClient.supervising_officer_external_id == CaseUpdate.officer_external_id,"
+        ")",
+    )
 
 
 class OpportunityDeferral(CaseTriageBase):

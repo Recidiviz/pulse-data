@@ -74,34 +74,11 @@ class TestCaseUpdatesInterface(TestCase):
             commit_session,
             self.mock_officer,
             self.mock_client,
-            [CaseUpdateActionType.DISCHARGE_INITIATED],
+            CaseUpdateActionType.DISCHARGE_INITIATED,
         )
 
         read_session = SessionFactory.for_database(self.database_key)
         self.assertEqual(len(read_session.query(CaseUpdate).all()), 1)
-
-    def test_multiple_inserted_case_updates_for_person(self) -> None:
-        commit_session = SessionFactory.for_database(self.database_key)
-
-        CaseUpdatesInterface.update_case_for_person(
-            commit_session,
-            self.mock_officer,
-            self.mock_client,
-            [CaseUpdateActionType.DISCHARGE_INITIATED],
-        )
-
-        CaseUpdatesInterface.update_case_for_person(
-            commit_session,
-            self.mock_officer,
-            self.mock_client,
-            [
-                CaseUpdateActionType.DOWNGRADE_INITIATED,
-                CaseUpdateActionType.FOUND_EMPLOYMENT,
-            ],
-        )
-
-        read_session = SessionFactory.for_database(self.database_key)
-        self.assertEqual(len(read_session.query(CaseUpdate).all()), 2)
 
     def test_update_case_for_person(self) -> None:
         commit_session = SessionFactory.for_database(self.database_key)
@@ -110,7 +87,7 @@ class TestCaseUpdatesInterface(TestCase):
             commit_session,
             self.mock_officer,
             self.mock_client,
-            [CaseUpdateActionType.DISCHARGE_INITIATED],
+            CaseUpdateActionType.DOWNGRADE_INITIATED,
         )
 
         # Validate initial insert
@@ -118,9 +95,8 @@ class TestCaseUpdatesInterface(TestCase):
         self.assertEqual(len(read_session.query(CaseUpdate).all()), 1)
         case_update = read_session.query(CaseUpdate).one()
         self.assertEqual(
-            case_update.action_type, CaseUpdateActionType.DISCHARGE_INITIATED.value
+            case_update.action_type, CaseUpdateActionType.DOWNGRADE_INITIATED.value
         )
-        self.assertEqual(case_update.last_version, {})
 
         # Perform update
         commit_session = SessionFactory.for_database(self.database_key)
@@ -129,7 +105,7 @@ class TestCaseUpdatesInterface(TestCase):
             commit_session,
             self.mock_officer,
             self.mock_client,
-            [CaseUpdateActionType.DOWNGRADE_INITIATED],
+            CaseUpdateActionType.DOWNGRADE_INITIATED,
         )
 
         # Validate update as expected

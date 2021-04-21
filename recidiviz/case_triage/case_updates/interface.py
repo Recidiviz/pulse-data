@@ -16,14 +16,13 @@
 # =============================================================================
 """Implements interface for querying case_updates."""
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
 
-from sqlalchemy import delete
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
 from recidiviz.case_triage.case_updates.serializers import serialize_last_version_info
+from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
 from recidiviz.case_triage.demo_helpers import (
     fake_officer_id_for_demo_user,
 )
@@ -38,38 +37,38 @@ def _update_case_for_person(
     session: Session,
     officer_id: str,
     client: ETLClient,
-    actions: List[CaseUpdateActionType],
-    other_text: Optional[str] = None,
+    action_type: CaseUpdateActionType,
+    comment: Optional[str] = None,
     action_ts: Optional[datetime] = None,
 ) -> None:
     """This method updates the case_updates table with the newly provided actions.
-
     This private method can be used liberally without regards for foreign key constraints,
     as it creates a series of CaseUpdate objects (one for each action) associated with the
     given officer_id and client. If other_text is provided, it's stored on the comment field.
     """
-    # First, we delete all old actions before uploading en masse the list of new ones
-    delete_statement = delete(CaseUpdate).where(
-        (CaseUpdate.person_external_id == client.person_external_id)
-        & (CaseUpdate.officer_external_id == officer_id)
-        & (CaseUpdate.state_code == client.state_code)
-    )
-    session.execute(delete_statement)
-
-    if not action_ts:
-        action_ts = datetime.now()
-    for action_type in actions:
-        last_version = serialize_last_version_info(action_type, client).to_json()
-        insert_statement = insert(CaseUpdate).values(
+    action_ts = datetime.now() if action_ts is None else action_ts
+    last_version = serialize_last_version_info(action_type, client).to_json()
+    insert_statement = (
+        insert(CaseUpdate)
+        .values(
             person_external_id=client.person_external_id,
             officer_external_id=officer_id,
             state_code=client.state_code,
             action_type=action_type.value,
             action_ts=action_ts,
             last_version=last_version,
-            comment=other_text,
+            comment=comment,
         )
-        session.execute(insert_statement)
+        .on_conflict_do_update(
+            constraint="unique_person_officer_action_triple",
+            set_={
+                "last_version": last_version,
+                "action_ts": action_ts,
+                "comment": comment,
+            },
+        )
+    )
+    session.execute(insert_statement)
     session.commit()
 
 
@@ -81,8 +80,8 @@ class CaseUpdatesInterface:
         session: Session,
         officer: ETLOfficer,
         client: ETLClient,
-        actions: List[CaseUpdateActionType],
-        other_text: Optional[str] = None,
+        action: CaseUpdateActionType,
+        comment: Optional[str] = None,
     ) -> None:
         """This method updates the case_updates table with the newly provided actions.
 
@@ -93,8 +92,8 @@ class CaseUpdatesInterface:
             session,
             officer.external_id,
             client,
-            actions,
-            other_text,
+            action,
+            comment,
         )
 
 
@@ -106,8 +105,8 @@ class DemoCaseUpdatesInterface:
         session: Session,
         user_email: str,
         client: ETLClient,
-        actions: List[CaseUpdateActionType],
-        other_text: Optional[str] = None,
+        action: CaseUpdateActionType,
+        comment: Optional[str] = None,
         action_ts: Optional[datetime] = None,
     ) -> None:
         """This method updates the case_updates table for demo users.
@@ -119,7 +118,7 @@ class DemoCaseUpdatesInterface:
             session,
             fake_officer_id_for_demo_user(user_email),
             client,
-            actions,
-            other_text,
+            action,
+            comment,
             action_ts,
         )
