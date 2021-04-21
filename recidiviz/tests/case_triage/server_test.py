@@ -340,6 +340,15 @@ class TestCaseTriageAPIRoutes(TestCase):
                 [CaseUpdateActionType.OTHER_DISMISSAL.value],
             )
 
+    def test_post_state_policy(self) -> None:
+        with self.test_app.test_request_context():
+            g.current_user = self.officer_1
+
+            response = self.test_client.post(
+                "/policy_requirements_for_state", json={"state": "US_ID"}
+            )
+            self.assertEqual(response.status_code, HTTPStatus.OK)
+
 
 class TestUserImpersonation(TestCase):
     """Implements tests for user impersonation.

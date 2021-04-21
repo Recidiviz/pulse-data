@@ -31,6 +31,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
 # that we know about (as of Feb. 9, 2021) are reflected in this mapping.
 # See
 # http://forms.idoc.idaho.gov/WebLink/0/edoc/281944/Interim%20Standards%20to%20Probation%20and%20Parole%20Supervision%20Strategies.pdf
+# Home visit frequency information on pages 2, 3, and 4 updated on 4/20/2021
 US_ID_ASSESSMENT_SCORE_RANGE: Dict[
     Gender, Dict[StateSupervisionLevel, Tuple[int, Optional[int]]]
 ] = {
@@ -62,6 +63,12 @@ US_ID_SUPERVISION_LEVEL_NAMES = {
     StateSupervisionLevel.HIGH: "High",
 }
 
+US_ID_HOME_VISIT_FREQUENCY_PER_YEAR: Dict[StateSupervisionLevel, Tuple[int, int]] = {
+    StateSupervisionLevel.MINIMUM: (1, 365),
+    StateSupervisionLevel.MEDIUM: (1, 365),
+    StateSupervisionLevel.HIGH: (2, 365),
+}
+
 
 def us_id_policy_requirements() -> PolicyRequirements:
     """Returns set of policy requirements for Idaho."""
@@ -70,4 +77,5 @@ def us_id_policy_requirements() -> PolicyRequirements:
         oms_name="CIS",
         supervision_contact_frequencies=SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS,
         supervision_level_names=US_ID_SUPERVISION_LEVEL_NAMES,
+        supervision_home_visit_frequencies=US_ID_HOME_VISIT_FREQUENCY_PER_YEAR,
     )
