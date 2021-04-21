@@ -30,7 +30,7 @@ interface MetadataRecord {
 }
 
 interface MetadataCount {
-  placeholderCount: number;
+  placeholderCount?: number;
   totalCount: number;
 }
 

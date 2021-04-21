@@ -78,11 +78,7 @@ const ColumnView = (): JSX.Element => {
           );
         }}
       />
-      <MetadataTable
-        data={data}
-        initialColumnTitle="Value"
-        metadataDataset={metadataDataset}
-      />
+      <MetadataTable data={data} initialColumnTitle="Value" />
     </>
   );
 };
