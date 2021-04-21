@@ -16,9 +16,8 @@
 # =============================================================================
 """Implements API routes for the Case Triage app."""
 from datetime import date, datetime
-from functools import wraps
 from http import HTTPStatus
-from typing import Optional, Callable, List, Any, Dict
+from typing import Optional
 
 from flask import Blueprint, current_app, g, jsonify, Response
 from flask_sqlalchemy_session import current_session
@@ -26,9 +25,9 @@ from flask_wtf.csrf import generate_csrf
 
 from recidiviz.case_triage.analytics import CaseTriageSegmentClient
 from recidiviz.case_triage.api_schemas import (
-    load_api_schema,
     CaseUpdateSchema,
     PolicyRequirementsSchema,
+    requires_api_schema,
 )
 from recidiviz.case_triage.case_updates.interface import (
     CaseUpdatesInterface,
@@ -36,13 +35,18 @@ from recidiviz.case_triage.case_updates.interface import (
 )
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
 from recidiviz.case_triage.demo_helpers import DEMO_FROZEN_DATE
-from recidiviz.case_triage.exceptions import CaseTriageBadRequestException
+from recidiviz.case_triage.demo_helpers import fake_officer_id_for_demo_user
+from recidiviz.case_triage.exceptions import (
+    CaseTriageBadRequestException,
+)
 from recidiviz.case_triage.querier.querier import (
     CaseTriageQuerier,
     DemoCaseTriageQuerier,
     PersonDoesNotExistError,
+    CaseUpdateDoesNotExistError,
 )
 from recidiviz.case_triage.state_utils.requirements import policy_requirements_for_state
+from recidiviz.persistence.database.schema.case_triage.schema import ETLClient
 
 
 def _should_see_demo() -> bool:
@@ -51,18 +55,21 @@ def _should_see_demo() -> bool:
     return getattr(g, "current_user", None) is None and g.can_see_demo_data
 
 
-def require_current_user(route: Callable) -> Callable:
-    @wraps(route)
-    def decorated(*args: List[Any], **kwargs: Dict[str, Any]) -> Any:
-        if not getattr(g, "current_user", None):
-            raise CaseTriageBadRequestException(
-                code="not_allowed",
-                description="A user must be associated with this request",
+def load_client(person_external_id: str) -> ETLClient:
+    try:
+        if _should_see_demo():
+            return DemoCaseTriageQuerier.etl_client_with_id(
+                g.api_data["person_external_id"]
             )
 
-        return route(*args, **kwargs)
-
-    return decorated
+        return CaseTriageQuerier.etl_client_for_officer(
+            current_session, g.current_user, person_external_id
+        )
+    except PersonDoesNotExistError as e:
+        raise CaseTriageBadRequestException(
+            code="bad_request",
+            description={"personExternalId": ["does not correspond to a known person"]},
+        ) from e
 
 
 def create_api_blueprint(
@@ -113,43 +120,20 @@ def create_api_blueprint(
         )
 
     @api.route("/policy_requirements_for_state", methods=["POST"])
+    @requires_api_schema(PolicyRequirementsSchema)
     def _get_policy_requirements_for_state() -> str:
         """Returns policy requirements for a given state. Expects input in the form:
         {
             state: str,
         }
         """
-        data = load_api_schema(PolicyRequirementsSchema)
+        return jsonify(policy_requirements_for_state(g.api_data["state"]).to_json())
 
-        return jsonify(policy_requirements_for_state(data["state"]).to_json())
-
-    @api.route("/record_client_action", methods=["POST"])
-    def _record_client_action() -> Response:
+    @api.route("/case_updates", methods=["POST"])
+    @requires_api_schema(CaseUpdateSchema)
+    def _create_case_update() -> Response:
         """ Records individual clients actions. Expects JSON body of CaseUpdateSchema """
-        data = load_api_schema(CaseUpdateSchema)
-
-        person_external_id = data["person_external_id"]
-
-        try:
-            if _should_see_demo():
-                client = DemoCaseTriageQuerier.etl_client_with_id(person_external_id)
-            else:
-                client = CaseTriageQuerier.etl_client_with_id_and_state_code(
-                    current_session,
-                    person_external_id,
-                    g.current_user.state_code,
-                )
-        except PersonDoesNotExistError as e:
-            raise CaseTriageBadRequestException(
-                code="bad_request",
-                description={
-                    "personExternalId": ["does not correspond to a known person"]
-                },
-            ) from e
-
-        actions = data["actions"]
-        user_initiated_actions = [CaseUpdateActionType(a) for a in actions]
-        other_text = data.get("other_text", None)
+        etl_client = load_client(g.api_data["person_external_id"])
 
         if _should_see_demo():
             demo_time = datetime(
@@ -157,45 +141,57 @@ def create_api_blueprint(
                 month=DEMO_FROZEN_DATE.month,
                 day=DEMO_FROZEN_DATE.day,
             )
+
             DemoCaseUpdatesInterface.update_case_for_person(
-                session=current_session,
-                user_email=g.email,
-                client=client,
-                actions=user_initiated_actions,
-                other_text=other_text,
+                current_session,
+                g.email,
+                etl_client,
+                g.api_data["action_type"],
+                g.api_data.get("comment", None),
                 action_ts=demo_time,
             )
         else:
-            old_case = CaseTriageQuerier.case_for_client_and_officer(
-                current_session,
-                client,
-                g.current_user,
-            )
             CaseUpdatesInterface.update_case_for_person(
                 current_session,
                 g.current_user,
-                client,
-                user_initiated_actions,
-                other_text,
+                etl_client,
+                g.api_data["action_type"],
+                g.api_data.get("comment", None),
             )
 
             if segment_client:
-                old_action_types = [
-                    CaseUpdateActionType(action.action_type)
-                    for action in old_case.in_progress_officer_actions()
-                ]
-                segment_client.track_person_case_updated(
+                segment_client.track_person_action_taken(
                     g.current_user,
-                    client,
-                    old_action_types,
-                    user_initiated_actions,
+                    etl_client,
+                    g.api_data["action_type"],
                 )
 
-        return jsonify(
-            {
-                "status": "ok",
-                "status_code": HTTPStatus.OK,
-            }
-        )
+        return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
+
+    @api.route("/case_updates/<update_id>", methods=["DELETE"])
+    def _delete_case_update(update_id: str) -> Response:
+        try:
+            case_update = CaseTriageQuerier.delete_case_update(
+                current_session,
+                fake_officer_id_for_demo_user(g.email)
+                if _should_see_demo()
+                else g.current_user.external_id,
+                update_id,
+            )
+
+            etl_client = load_client(case_update.person_external_id)
+
+            if segment_client:
+                segment_client.track_person_action_removed(
+                    g.current_user,
+                    etl_client,
+                    CaseUpdateActionType(case_update.action_type),
+                )
+        except CaseUpdateDoesNotExistError as e:
+            raise CaseTriageBadRequestException(
+                "not_found", "The case update could not be found."
+            ) from e
+
+        return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
 
     return api

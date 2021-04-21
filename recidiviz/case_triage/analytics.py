@@ -17,7 +17,6 @@
 """Contains classes used to log events to Segment."""
 from base64 import b64encode
 from hashlib import sha256
-from typing import List
 
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
 from recidiviz.persistence.database.schema.case_triage.schema import (
@@ -36,20 +35,31 @@ def segment_user_id_for_email(email: str) -> str:
 class CaseTriageSegmentClient(SegmentClient):
     """A Case-Triage-specific Segment client."""
 
-    def track_person_case_updated(
+    def track_person_action_taken(
         self,
         officer: ETLOfficer,
         client: ETLClient,
-        previous_action_set: List[CaseUpdateActionType],
-        new_action_set: List[CaseUpdateActionType],
+        action: CaseUpdateActionType,
     ) -> None:
         user_id = segment_user_id_for_email(officer.email_address)
         self.track(
             user_id,
-            "backend.person_case_updated",
+            "backend.person_action_taken",
             {
                 "personExternalId": client.person_external_id,
-                "previousActionSet": [action.value for action in previous_action_set],
-                "newActionSet": [action.value for action in new_action_set],
+                "actionTaken": action.value,
+            },
+        )
+
+    def track_person_action_removed(
+        self, officer: ETLOfficer, client: ETLClient, action: CaseUpdateActionType
+    ) -> None:
+        user_id = segment_user_id_for_email(officer.email_address)
+        self.track(
+            user_id,
+            "backend.person_action_taken",
+            {
+                "personExternalId": client.person_external_id,
+                "actionRemoved": action.value,
             },
         )
