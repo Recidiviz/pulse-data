@@ -57,12 +57,12 @@ daily_pipelines:
     metric_types: INCARCERATION_ADMISSION INCARCERATION_POPULATION INCARCERATION_RELEASE
     region: us-west3
 
-  # Daily US_PA calculations for the dashboard
+  # Daily US_PA calculations for the dashboard and for PO reports
   - pipeline: supervision
     job_name: us-pa-supervision-calculations-36
     state_code: US_PA
     calculation_month_count: 36
-    metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION SUPERVISION_SUCCESS SUPERVISION_TERMINATION
+    metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION SUPERVISION_SUCCESS SUPERVISION_TERMINATION SUPERVISION_OUT_OF_STATE_POPULATION SUPERVISION_COMPLIANCE SUPERVISION_START SUPERVISION_DOWNGRADE
     region: us-west1
 
 historical_pipelines:
