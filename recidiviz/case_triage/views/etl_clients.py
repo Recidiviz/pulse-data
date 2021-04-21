@@ -20,6 +20,7 @@ from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
 from recidiviz.calculator.query.state.dataset_config import (
+    ANALYST_VIEWS_DATASET,
     CASE_TRIAGE_DATASET,
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
@@ -33,17 +34,13 @@ WITH supervision_start_dates AS (
   SELECT
     person_id,
     state_code,
-    supervision_type,
-    -- This is MAX to handle the case where a person may have had multiple periods
-    -- on supervision. We surmise that there should be no overlapping supervision
-    -- periods for a single person under a single supervision type.
-    MAX(start_date) AS supervision_start_date
+    compartment_level_2 AS supervision_type,
+    start_date AS supervision_start_date
   FROM
-    `{project_id}.{dataflow_metrics_materialized_dataset}.most_recent_supervision_start_metrics_materialized`
-  GROUP BY
-    person_id,
-    state_code,
-    supervision_type
+    `{project_id}.{analyst_views_dataset}.compartment_sessions_materialized`
+  WHERE
+    compartment_level_1 = 'SUPERVISION'
+    AND end_date IS NULL
 ),
 latest_contacts AS (
   SELECT
@@ -179,6 +176,7 @@ CLIENT_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     dataset_id=VIEWS_DATASET,
     view_id="etl_clients",
     view_query_template=CLIENT_LIST_QUERY_TEMPLATE,
+    analyst_views_dataset=ANALYST_VIEWS_DATASET,
     case_triage_dataset=CASE_TRIAGE_DATASET,
     dataflow_metrics_materialized_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     static_reference_tables_dataset=STATIC_REFERENCE_TABLES_DATASET,
