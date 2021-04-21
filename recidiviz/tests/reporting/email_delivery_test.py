@@ -208,6 +208,33 @@ class EmailDeliveryTest(TestCase):
         mock_load_files_from_storage.assert_not_called()
         self.mock_sendgrid_client.send_message.assert_not_called()
 
+    @patch("recidiviz.reporting.email_delivery.load_files_from_storage")
+    def test_deliver_correctly_with_email_allowlist(
+        self, mock_load_files_from_storage: MagicMock
+    ) -> None:
+        """Given a batch_id and an email allowlist, test that the SendGridClientWrapper send_message is only called with
+        allowlisted to address."""
+        self.mock_files.update({"non_sending@one.domain.org": "<html><body></html>"})
+        mock_load_files_from_storage.return_value = self.mock_files
+        self.mock_sendgrid_client.send_message.return_value = True
+        with self.assertLogs(level="INFO"):
+            result = email_delivery.deliver(
+                batch_id=self.batch_id, email_allowlist=[self.to_address]
+            )
+        self.mock_sendgrid_client.send_message.assert_called_with(
+            to_email=self.to_address,
+            from_email=self.mock_env_vars["FROM_EMAIL_ADDRESS"],
+            from_email_name=self.mock_env_vars["FROM_EMAIL_NAME"],
+            subject="Your monthly Recidiviz report",
+            html_content=self.mock_files[self.to_address],
+            redirect_address=None,
+            cc_addresses=None,
+            text_attachment_content=self.mock_files[self.to_address],
+        )
+        self.assertEqual(len(result.successes), 1)
+        self.assertEqual(len(result.failures), 0)
+        self.assertNotIn("non_sending@one.domain.org", result.successes)
+
     @patch("recidiviz.utils.metadata.project_id", Mock(return_value="test-project"))
     @patch("recidiviz.reporting.email_delivery.GcsfsFactory.build")
     def test_load_files_from_storage(self, mock_gcs_factory: MagicMock) -> None:
