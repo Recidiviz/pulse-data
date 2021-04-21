@@ -47,6 +47,9 @@ class PolicyRequirements:
     # Name of OMS used by the state
     oms_name: str
 
+    # Mapping from state supervision level -> home visit contact frequencies
+    supervision_home_visit_frequencies: Dict[StateSupervisionLevel, Tuple[int, int]]
+
     def to_json(self) -> Dict[str, Any]:
         supervision_contact_dict = {
             case_type.value: {level.value: period for level, period in sub_dict.items()}
@@ -64,9 +67,15 @@ class PolicyRequirements:
             level.value: text for level, text in self.supervision_level_names.items()
         }
 
+        supervision_home_visit_dict = {
+            level.value: period
+            for level, period in self.supervision_home_visit_frequencies.items()
+        }
+
         return {
             "assessmentScoreCutoffs": assessment_score_cutoff_dict,
             "omsName": self.oms_name,
             "supervisionContactFrequencies": supervision_contact_dict,
             "supervisionLevelNames": supervision_level_names,
+            "supervisionHomeVisitFrequencies": supervision_home_visit_dict,
         }
