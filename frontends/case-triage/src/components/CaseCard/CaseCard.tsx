@@ -16,17 +16,11 @@
 // =============================================================================
 import * as React from "react";
 import { useState } from "react";
-import {
-  Button,
-  Card,
-  H3,
-  Icon,
-  IconSVG,
-  Modal,
-} from "@recidiviz/design-system";
+import { Button, H3, Icon, IconSVG, Modal } from "@recidiviz/design-system";
 import { autorun } from "mobx";
 import {
   Caption,
+  CaseCard as CaseCardComponent,
   CaseCardFeedback,
   CaseCardFooter,
   CaseCardHeading,
@@ -107,7 +101,7 @@ const CaseCard: React.FC<CaseCardProps> = ({ client }: CaseCardProps) => {
   };
 
   return (
-    <Card stacked style={{ marginTop }}>
+    <CaseCardComponent stacked style={{ marginTop }}>
       <CaseCardHeading className="fs-exclude">
         <ClientNameRow>
           <H3 as="div">{client.name}</H3>
@@ -159,7 +153,7 @@ const CaseCard: React.FC<CaseCardProps> = ({ client }: CaseCardProps) => {
           </Button>
         </div>
       </CaseCardFooter>
-    </Card>
+    </CaseCardComponent>
   );
 };
 
