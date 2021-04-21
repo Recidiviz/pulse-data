@@ -69,6 +69,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa import (
     us_pa_violation_utils,
     us_pa_revocation_utils,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_compliance import (
+    UsPaSupervisionCaseCompliance,
+)
 from recidiviz.calculator.pipeline.utils.supervision_period_index import (
     SupervisionPeriodIndex,
 )
@@ -524,6 +527,14 @@ def get_state_specific_case_compliance_manager(
         )
     if state_code == StateCode.US_ND.value:
         return UsNdSupervisionCaseCompliance(
+            supervision_period,
+            case_type,
+            start_of_supervision,
+            assessments,
+            supervision_contacts,
+        )
+    if state_code == StateCode.US_PA.value:
+        return UsPaSupervisionCaseCompliance(
             supervision_period,
             case_type,
             start_of_supervision,

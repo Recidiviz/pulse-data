@@ -4294,6 +4294,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 level_2_supervision_location_external_id="DISTRICT_1",
                 supervising_officer_external_id="XXX",
                 judicial_district_code="XXX",
+                case_compliances=_generate_case_compliances(
+                    start_date=supervision_period.start_date,
+                    supervision_period=supervision_period,
+                ),
             )
         )
 
@@ -4446,6 +4450,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 level_2_supervision_location_external_id="DISTRICT_1",
                 supervising_officer_external_id="XXX",
                 judicial_district_code="XXX",
+                case_compliances=_generate_case_compliances(
+                    start_date=supervision_period.start_date,
+                    supervision_period=supervision_period,
+                ),
             )
         )
 
@@ -4623,6 +4631,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 level_2_supervision_location_external_id="DISTRICT_1",
                 supervising_officer_external_id="XXX",
                 judicial_district_code="XXX",
+                case_compliances=_generate_case_compliances(
+                    start_date=supervision_period.start_date,
+                    supervision_period=supervision_period,
+                ),
             )
         )
 
@@ -4640,6 +4652,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 level_2_supervision_location_external_id="DISTRICT_1",
                 supervising_officer_external_id="XXX",
                 judicial_district_code="XXX",
+                case_compliances=_generate_case_compliances(
+                    start_date=supervision_period.start_date,
+                    supervision_period=supervision_period,
+                ),
             )
         )
 
