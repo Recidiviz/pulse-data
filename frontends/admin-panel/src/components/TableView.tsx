@@ -70,7 +70,6 @@ const TableView = (): JSX.Element => {
       />
       <MetadataTable
         data={data}
-        metadataDataset={metadataDataset}
         initialColumnTitle="Column"
         initialColumnLink={(name: string) =>
           DatasetMetadata.routeForMetadataColumn(metadataDataset, table, name)

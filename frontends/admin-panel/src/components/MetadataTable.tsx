@@ -21,9 +21,7 @@ import { CheckboxChangeEvent } from "antd/es/checkbox";
 import { ColumnsType } from "antd/es/table";
 import { Link } from "react-router-dom";
 
-import MetadataDataset from "../models/MetadataDatasets";
-
-// const emptyCell = <div className="center">N/A</div>;
+const emptyCell = <div className="center">N/A</div>;
 
 const stateColumnsForBreakdown = (
   states: string[],
@@ -36,13 +34,14 @@ const stateColumnsForBreakdown = (
       render: (_: string, record: MetadataRecord) => {
         const countedRecord = record.resultsByState[s];
         if (countedRecord === undefined) {
-          return <div className="center">N/A</div>;
+          return emptyCell;
         }
-        const count = nonplaceholdersOnly
-          ? countedRecord.totalCount - countedRecord.placeholderCount
-          : countedRecord.totalCount;
+        const count =
+          nonplaceholdersOnly && countedRecord.placeholderCount
+            ? countedRecord.totalCount - countedRecord.placeholderCount
+            : countedRecord.totalCount;
         if (count === 0) {
-          return <div className="center">N/A</div>;
+          return emptyCell;
         }
         return <div className="success">{count.toLocaleString()}</div>;
       },
@@ -54,16 +53,10 @@ interface MetadataTableProps {
   initialColumnTitle: string;
   initialColumnLink?: (name: string) => string;
   data: MetadataAPIResult | undefined;
-  metadataDataset: MetadataDataset;
 }
 
 const MetadataTable = (props: MetadataTableProps): JSX.Element => {
-  const {
-    data,
-    initialColumnLink,
-    initialColumnTitle,
-    metadataDataset,
-  } = props;
+  const { data, initialColumnLink, initialColumnTitle } = props;
   const [nonplaceholdersOnly, setNonplaceholdersOnly] = React.useState<boolean>(
     true
   );
@@ -118,9 +111,19 @@ const MetadataTable = (props: MetadataTableProps): JSX.Element => {
     setNonplaceholdersOnly(e.target.checked);
   };
 
+  const hasPlaceholders = Object.keys(data).reduce(
+    (nameAccumulator, name) =>
+      nameAccumulator ||
+      Object.keys(data[name]).reduce(
+        (stateAccumulator, state) =>
+          stateAccumulator || data[name][state].placeholderCount !== undefined,
+        false
+      ),
+    false
+  );
   return (
     <>
-      {metadataDataset === MetadataDataset.INGEST && (
+      {hasPlaceholders && (
         <Checkbox
           className="buffer"
           onChange={onChange}

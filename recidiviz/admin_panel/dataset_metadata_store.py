@@ -33,20 +33,27 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 @attr.s
 class DatasetMetadataCounts:
     total_count: int = attr.ib()
-    # TODO(#6624): Make this optional when no longer assumed in Admin Panel
-    placeholder_count: int = attr.ib()
+    placeholder_count: Optional[int] = attr.ib(default=None)
 
     def to_json(self) -> Dict[str, int]:
-        return {
+        base_dict = {
             "totalCount": self.total_count,
-            "placeholderCount": self.placeholder_count,
         }
+        if self.placeholder_count is not None:
+            base_dict["placeholderCount"] = self.placeholder_count
+        return base_dict
 
     @staticmethod
     def from_json(json_dict: Dict[str, str]) -> "DatasetMetadataCounts":
+        total_count = int(json_dict["total_count"])
+        placeholder_count = (
+            None
+            if "placeholder_count" not in json_dict
+            else int(json_dict["placeholder_count"])
+        )
         return DatasetMetadataCounts(
-            total_count=int(json_dict["total_count"]),
-            placeholder_count=int(json_dict["placeholder_count"]),
+            total_count=total_count,
+            placeholder_count=placeholder_count,
         )
 
 
@@ -154,12 +161,18 @@ class DatasetMetadataCountsStore(AdminPanelStore):
                 for state_code, result in state_map.items():
                     if result.total_count > max_state_total[state_code]:
                         max_state_total[state_code] = result.total_count
-                    if result.placeholder_count > max_state_placeholder[state_code]:
+                    if (
+                        result.placeholder_count is not None
+                        and result.placeholder_count > max_state_placeholder[state_code]
+                    ):
                         max_state_placeholder[state_code] = result.placeholder_count
             for state_code in max_state_placeholder.keys():
+                state_placeholder: Optional[int] = None
+                if max_state_placeholder[state_code] >= 0:
+                    state_placeholder = max_state_placeholder[state_code]
                 results[table][state_code] = DatasetMetadataCounts(
                     total_count=max_state_total[state_code],
-                    placeholder_count=max_state_placeholder[state_code],
+                    placeholder_count=state_placeholder,
                 )
         return results
 
@@ -174,6 +187,7 @@ class DatasetMetadataCountsStore(AdminPanelStore):
 
         results: DatasetMetadataResult = defaultdict(dict)
         for col, val_map in self.store[table].items():
+            has_placeholders = False
             placeholder_count: Dict[str, int] = defaultdict(int)
             total_count: Dict[str, int] = defaultdict(int)
             for val, state_map in val_map.items():
@@ -181,11 +195,15 @@ class DatasetMetadataCountsStore(AdminPanelStore):
                     continue
                 for state_code, result in state_map.items():
                     total_count[state_code] += result.total_count
-                    placeholder_count[state_code] += result.placeholder_count
+                    if result.placeholder_count is not None:
+                        has_placeholders = True
+                        placeholder_count[state_code] += result.placeholder_count
             for state_code in placeholder_count.keys():
                 results[col][state_code] = DatasetMetadataCounts(
                     total_count=total_count[state_code],
-                    placeholder_count=placeholder_count[state_code],
+                    placeholder_count=(
+                        placeholder_count[state_code] if has_placeholders else None
+                    ),
                 )
 
         return results
