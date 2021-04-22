@@ -64,7 +64,7 @@ class DirectIngestRawDataTableLatestViewUpdater:
         self.raw_file_region_config = DirectIngestRegionRawFileConfig(state_code)
 
     def _create_or_update_views_for_table(
-        self, raw_file_config: DirectIngestRawFileConfig, views_dataset: str
+        self, raw_file_config: DirectIngestRawFileConfig
     ) -> None:
         """Creates/Updates views corresponding to the provided |raw_file_config|."""
         logging.info(
@@ -113,10 +113,7 @@ class DirectIngestRawDataTableLatestViewUpdater:
             )
             return
 
-        views_dataset_ref = self.bq_client.dataset_ref_for_id(views_dataset)
-        self.bq_client.create_or_update_view(
-            dataset_ref=views_dataset_ref, view=latest_view
-        )
+        self.bq_client.create_or_update_view(view=latest_view)
         logging.info("Created/Updated view %s", latest_view.view_id)
 
     def update_views_for_state(self) -> None:
@@ -137,7 +134,7 @@ class DirectIngestRawDataTableLatestViewUpdater:
             ):
                 try:
                     self._create_or_update_views_for_table(
-                        raw_file_config=raw_file_config, views_dataset=views_dataset
+                        raw_file_config=raw_file_config
                     )
                     succeeded_tables.append(raw_file_config.file_tag)
                 except Exception as e:

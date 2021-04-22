@@ -104,9 +104,7 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
     def create_table(self, table: bigquery.Table) -> bigquery.Table:
         raise ValueError("Must be implemented for use in tests.")
 
-    def create_or_update_view(
-        self, dataset_ref: bigquery.DatasetReference, view: BigQueryView
-    ) -> bigquery.Table:
+    def create_or_update_view(self, view: BigQueryView) -> bigquery.Table:
         raise ValueError("Must be implemented for use in tests.")
 
     def load_table_from_cloud_storage_async(
@@ -223,7 +221,7 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
     ) -> bigquery.QueryJob:
         raise ValueError("Must be implemented for use in tests.")
 
-    def materialize_view_to_table(self, view: BigQueryView) -> None:
+    def materialize_view_to_table(self, view: BigQueryView) -> bigquery.Table:
         raise ValueError("Must be implemented for use in tests.")
 
     def add_missing_fields_to_schema(
@@ -257,3 +255,8 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
 
     def delete_table(self, dataset_id: str, table_id: str) -> None:
         return
+
+    def update_description(
+        self, dataset_id: str, table_id: str, description: str
+    ) -> bigquery.Table:
+        raise ValueError("Must be implemented for use in tests.")
