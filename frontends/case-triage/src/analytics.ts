@@ -55,22 +55,31 @@ const track = (eventName: string, metadata?: Record<string, unknown>): void => {
   }
 };
 
-export const trackPersonCaseUpdated = (
-  client: Client,
-  previousActionsTaken: CaseUpdateActionType[] | undefined,
-  addedActions: CaseUpdateActionType[]
-): void => {
-  const prevActions = previousActionsTaken || [];
-  track("frontend.person_case_updated", {
-    personExternalId: client.personExternalId,
-    previousActionSet: prevActions,
-    newActionSet: [...prevActions, ...addedActions],
-  });
-};
-
 export const trackPersonSelected = (client: Client): void => {
   track("frontend.person_selected", {
     personExternalId: client.personExternalId,
+  });
+};
+
+export const trackPersonActionRemoved = (
+  client: Client,
+  updateId: string,
+  actionRemoved: CaseUpdateActionType
+): void => {
+  track("frontend.person_action_removed", {
+    personExternalId: client.personExternalId,
+    updateId,
+    actionRemoved,
+  });
+};
+
+export const trackPersonActionTaken = (
+  client: Client,
+  actionTaken: CaseUpdateActionType
+): void => {
+  track("frontend.person_action_taken", {
+    personExternalId: client.personExternalId,
+    actionTaken,
   });
 };
 

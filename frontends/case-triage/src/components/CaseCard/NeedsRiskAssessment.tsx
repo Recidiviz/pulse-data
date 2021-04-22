@@ -31,7 +31,10 @@ import {
   ScoreMinMaxBySupervisionLevel,
 } from "../../stores/PolicyStore";
 import { titleCase } from "../../utils";
-import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
+import {
+  CaseUpdateActionType,
+  CaseUpdateStatus,
+} from "../../stores/CaseUpdatesStore";
 
 interface NeedsRiskAssessmentProps {
   className: string;
@@ -79,7 +82,10 @@ const NeedsRiskAssessment: React.FC<NeedsRiskAssessmentProps> = ({
 }: NeedsRiskAssessmentProps) => {
   const [needChecked, setNeedChecked] = React.useState(false);
   React.useEffect(() => {
-    setNeedChecked(false);
+    setNeedChecked(
+      client.caseUpdates[CaseUpdateActionType.COMPLETED_ASSESSMENT]?.status ===
+        CaseUpdateStatus.IN_PROGRESS
+    );
   }, [client]);
 
   const { policyStore } = useRootStore();
@@ -154,13 +160,9 @@ const NeedsRiskAssessment: React.FC<NeedsRiskAssessmentProps> = ({
           <CheckboxButtonContainer>
             <NeedsCheckboxButton
               checked={needChecked}
-              inProgress={client.inProgressActions?.includes(
-                CaseUpdateActionType.COMPLETED_ASSESSMENT
-              )}
               onToggleCheck={onToggleCheck}
-            >
-              I completed their risk assessment
-            </NeedsCheckboxButton>
+              title="I completed their risk assessment"
+            />
           </CheckboxButtonContainer>
         ) : null}
       </CaseCardInfo>

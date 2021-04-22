@@ -27,4 +27,14 @@ export enum CaseUpdateActionType {
   OTHER_DISMISSAL = "OTHER_DISMISSAL",
 }
 
-export default CaseUpdateActionType;
+export enum CaseUpdateStatus {
+  IN_PROGRESS = "IN_PROGRESS",
+}
+
+export interface CaseUpdate {
+  actionTs: string;
+  actionType: CaseUpdateActionType;
+  comment: string;
+  status: CaseUpdateStatus;
+  updateId: string;
+}

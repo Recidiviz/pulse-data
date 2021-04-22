@@ -58,9 +58,7 @@ def _should_see_demo() -> bool:
 def load_client(person_external_id: str) -> ETLClient:
     try:
         if _should_see_demo():
-            return DemoCaseTriageQuerier.etl_client_with_id(
-                g.api_data["person_external_id"]
-            )
+            return DemoCaseTriageQuerier.etl_client_with_id(person_external_id)
 
         return CaseTriageQuerier.etl_client_for_officer(
             current_session, g.current_user, person_external_id
@@ -181,11 +179,12 @@ def create_api_blueprint(
 
             etl_client = load_client(case_update.person_external_id)
 
-            if segment_client:
+            if segment_client and not _should_see_demo():
                 segment_client.track_person_action_removed(
                     g.current_user,
                     etl_client,
                     CaseUpdateActionType(case_update.action_type),
+                    str(case_update.update_id),
                 )
         except CaseUpdateDoesNotExistError as e:
             raise CaseTriageBadRequestException(

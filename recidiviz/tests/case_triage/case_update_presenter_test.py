@@ -63,7 +63,7 @@ class TestCaseUpdatePresenter(TestCase):
         case_updates = [
             generate_fake_case_update(
                 self.mock_client,
-                self.mock_officer,
+                self.mock_officer.external_id,
                 action_type=action_type,
                 last_version=serialize_last_version_info(
                     action_type, self.mock_client
@@ -86,7 +86,7 @@ class TestCaseUpdatePresenter(TestCase):
             self.mock_client,
             generate_fake_case_update(
                 self.mock_client,
-                self.mock_officer,
+                self.mock_officer.external_id,
                 action_type=CaseUpdateActionType.COMPLETED_ASSESSMENT,
                 last_version={
                     CaseUpdateMetadataKeys.LAST_RECORDED_DATE: self.mock_client.most_recent_assessment_date.isoformat(),
@@ -111,7 +111,7 @@ class TestCaseUpdatePresenter(TestCase):
             self.mock_client,
             generate_fake_case_update(
                 self.mock_client,
-                self.mock_officer,
+                self.mock_officer.external_id,
                 action_type=CaseUpdateActionType.DISCHARGE_INITIATED,
             ),
         )
@@ -124,7 +124,7 @@ class TestCaseUpdatePresenter(TestCase):
             self.mock_client,
             generate_fake_case_update(
                 self.mock_client,
-                self.mock_officer,
+                self.mock_officer.external_id,
                 action_type=CaseUpdateActionType.DOWNGRADE_INITIATED,
                 last_version={
                     CaseUpdateMetadataKeys.LAST_SUPERVISION_LEVEL: self.mock_client.supervision_level,
@@ -147,7 +147,7 @@ class TestCaseUpdatePresenter(TestCase):
             self.mock_client,
             generate_fake_case_update(
                 self.mock_client,
-                self.mock_officer,
+                self.mock_officer.external_id,
                 action_type=CaseUpdateActionType.FOUND_EMPLOYMENT,
             ),
         )
@@ -167,7 +167,7 @@ class TestCaseUpdatePresenter(TestCase):
             self.mock_client,
             generate_fake_case_update(
                 self.mock_client,
-                self.mock_officer,
+                self.mock_officer.external_id,
                 action_type=CaseUpdateActionType.SCHEDULED_FACE_TO_FACE,
                 last_version={
                     CaseUpdateMetadataKeys.LAST_RECORDED_DATE: self.mock_client.most_recent_face_to_face_date.isoformat(),

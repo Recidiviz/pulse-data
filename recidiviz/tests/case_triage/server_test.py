@@ -82,8 +82,7 @@ class TestCaseTriageAPIRoutes(TestCase):
         db_url = local_postgres_helpers.postgres_db_url_from_env_vars()
         engine = setup_scoped_sessions(self.test_app, db_url)
         # Auto-generate all tables that exist in our schema in this database
-        database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
-        database_key.declarative_meta.metadata.create_all(engine)
+        self.database_key.declarative_meta.metadata.create_all(engine)
         self.session = SessionFactory.for_database(self.database_key)
 
         # Add seed data
@@ -106,7 +105,7 @@ class TestCaseTriageAPIRoutes(TestCase):
         )
         self.case_update_1 = generate_fake_case_update(
             self.client_1,
-            self.officer,
+            self.officer.external_id,
             action_type=CaseUpdateActionType.COMPLETED_ASSESSMENT,
             last_version=serialize_last_version_info(
                 CaseUpdateActionType.COMPLETED_ASSESSMENT, self.client_1
@@ -114,7 +113,7 @@ class TestCaseTriageAPIRoutes(TestCase):
         )
         self.case_update_2 = generate_fake_case_update(
             self.client_2,
-            self.officer,
+            self.officer_without_clients.external_id,
             action_type=CaseUpdateActionType.COMPLETED_ASSESSMENT,
             last_version=serialize_last_version_info(
                 CaseUpdateActionType.COMPLETED_ASSESSMENT, self.client_2
@@ -122,7 +121,7 @@ class TestCaseTriageAPIRoutes(TestCase):
         )
         self.case_update_3 = generate_fake_case_update(
             self.client_1,
-            self.officer,
+            self.officer.external_id,
             action_type=CaseUpdateActionType.OTHER_DISMISSAL,
             last_version=serialize_last_version_info(
                 CaseUpdateActionType.OTHER_DISMISSAL, self.client_1
@@ -258,7 +257,7 @@ class TestCaseTriageAPIRoutes(TestCase):
             # Record new user action
             case_update = generate_fake_case_update(
                 self.client_2,
-                self.officer,
+                self.officer.external_id,
                 action_type=CaseUpdateActionType.OTHER_DISMISSAL,
                 comment="They are currently in jail.",
             )

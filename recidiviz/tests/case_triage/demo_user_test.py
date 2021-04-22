@@ -26,14 +26,19 @@ from flask import Flask
 
 import recidiviz.case_triage
 from recidiviz.case_triage.api_routes import create_api_blueprint
+from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
 from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
+from recidiviz.persistence.database.schema.case_triage.schema import ETLClient
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.case_triage.api_test_helpers import (
     CaseTriageTestHelpers,
 )
 from recidiviz.tools.postgres import local_postgres_helpers
+
+
+DEMO_USER_EMAIL = "demo_user@recidiviz.org"
 
 
 @pytest.mark.uses_db
@@ -62,8 +67,8 @@ class TestDemoUser(TestCase):
         db_url = local_postgres_helpers.postgres_db_url_from_env_vars()
         engine = setup_scoped_sessions(self.test_app, db_url)
         # Auto-generate all tables that exist in our schema in this database
-        database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
-        database_key.declarative_meta.metadata.create_all(engine)
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
+        self.database_key.declarative_meta.metadata.create_all(engine)
 
         demo_fixture_path = os.path.abspath(
             os.path.join(
@@ -74,6 +79,17 @@ class TestDemoUser(TestCase):
 
         with open(demo_fixture_path) as f:
             self.demo_data = json.load(f)
+
+        self.client_1 = ETLClient.from_json(self.demo_data[0])
+
+        with self.helpers.as_demo_user():
+            self.test_client.post(
+                "/case_updates",
+                json={
+                    "personExternalId": self.client_1.person_external_id,
+                    "actionType": CaseUpdateActionType.OTHER_DISMISSAL.value,
+                },
+            )
 
     def tearDown(self) -> None:
         local_postgres_helpers.restore_local_env_vars(self.overridden_env_vars)
@@ -91,9 +107,21 @@ class TestDemoUser(TestCase):
         with self.helpers.as_demo_user():
             self.assertEqual(len(self.helpers.get_clients()), len(self.demo_data))
 
+            client = self.helpers.find_client_in_api_response(
+                self.client_1.person_external_id
+            )
+            self.assertTrue(len(client["caseUpdates"]) == 1)
+
     def test_create_case_updates_action(self) -> None:
         with self.helpers.as_demo_user():
-            client_to_modify = self.helpers.get_clients()[0]
+            all_clients = self.helpers.get_clients()
+            client_to_modify = None
+            for client in all_clients:
+                if client["personExternalId"] != self.client_1.person_external_id:
+                    client_to_modify = client
+                    break
+            assert client_to_modify is not None
+            self.assertTrue(len(client_to_modify["caseUpdates"]) == 0)
 
             response = self.test_client.post(
                 "/case_updates",
@@ -112,3 +140,21 @@ class TestDemoUser(TestCase):
                 "FILED_REVOCATION_OR_VIOLATION",
                 new_client["caseUpdates"],
             )
+
+    def test_delete_case_updates_action(self) -> None:
+        with self.helpers.as_demo_user():
+            client_to_modify = self.helpers.find_client_in_api_response(
+                self.client_1.person_external_id
+            )
+            self.assertTrue(len(client_to_modify["caseUpdates"]) == 1)
+
+            case_update_id = client_to_modify["caseUpdates"][
+                CaseUpdateActionType.OTHER_DISMISSAL.value
+            ]["updateId"]
+            response = self.test_client.delete(f"/case_updates/{case_update_id}")
+            self.assertEqual(response.status_code, HTTPStatus.OK)
+
+            new_client = self.helpers.find_client_in_api_response(
+                self.client_1.person_external_id
+            )
+            self.assertTrue(len(new_client["caseUpdates"]) == 0)

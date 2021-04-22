@@ -52,14 +52,19 @@ class CaseTriageSegmentClient(SegmentClient):
         )
 
     def track_person_action_removed(
-        self, officer: ETLOfficer, client: ETLClient, action: CaseUpdateActionType
+        self,
+        officer: ETLOfficer,
+        client: ETLClient,
+        action: CaseUpdateActionType,
+        update_id: str,
     ) -> None:
         user_id = segment_user_id_for_email(officer.email_address)
         self.track(
             user_id,
-            "backend.person_action_taken",
+            "backend.person_action_removed",
             {
                 "personExternalId": client.person_external_id,
                 "actionRemoved": action.value,
+                "updateId": update_id,
             },
         )
