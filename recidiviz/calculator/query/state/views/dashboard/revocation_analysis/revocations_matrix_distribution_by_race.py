@@ -33,9 +33,27 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_DESCRIPTION = """
  """
 
 SUPPORTED_RACE_VALUES = "'AMERICAN_INDIAN_ALASKAN_NATIVE', 'ASIAN', 'BLACK', 'EXTERNAL_UNKNOWN', 'HISPANIC', 'OTHER', 'WHITE'"
+US_PA_SUPPORTED_RACE_VALUES = "'BLACK', 'HISPANIC', 'OTHER', 'WHITE'"
 
-REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY_TEMPLATE = """
-    /*{description}*/
+
+def generate_state_specific_racial_groupings(field: str) -> str:
+    return f"""
+    CASE
+      WHEN state_code = 'US_PA'
+        THEN IF({field} IN ({US_PA_SUPPORTED_RACE_VALUES}, 'ALL'), {field}, 'OTHER')
+      ELSE IF({field} IN ({SUPPORTED_RACE_VALUES}, 'ALL'), {field}, 'OTHER')
+    END AS race
+    """
+
+
+STATE_SPECIFIC_SUPPORTED_RACE_VALUES_LIST = f"""
+    (CASE WHEN state_code = 'US_PA' THEN [{US_PA_SUPPORTED_RACE_VALUES}]
+          ELSE [{SUPPORTED_RACE_VALUES}]
+    END)"""
+
+
+REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY_TEMPLATE = f"""
+    /*{{description}}*/
     
     WITH supervision_counts AS (
     SELECT
@@ -45,18 +63,18 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY_TEMPLATE = """
       reported_violations,
       COUNT(DISTINCT person_id) AS supervision_population_count,
       COUNT(DISTINCT IF(recommended_for_revocation, person_id, NULL)) AS recommended_for_revocation_count,
-      IF(race IN ({supported_race_values}, 'ALL'), race, 'OTHER') AS race,
+      {generate_state_specific_racial_groupings('race')},
       supervision_type,
       supervision_level,
       charge_category,
       level_1_supervision_location,
       level_2_supervision_location,
       metric_period_months    
-    FROM `{project_id}.{reference_views_dataset}.admission_types_per_state_for_matrix_materialized`
+    FROM `{{project_id}}.{{reference_views_dataset}}.admission_types_per_state_for_matrix_materialized`
     LEFT JOIN
-        `{project_id}.{reference_views_dataset}.supervision_matrix_by_person_materialized`
+        `{{project_id}}.{{reference_views_dataset}}.supervision_matrix_by_person_materialized`
     USING (state_code),
-        {race_dimension}
+        {{race_dimension}}
     GROUP BY state_code, violation_type, reported_violations, race, supervision_type, supervision_level, charge_category, 
       level_1_supervision_location, level_2_supervision_location, metric_period_months, admission_type
   ), termination_counts AS (
@@ -66,16 +84,16 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY_TEMPLATE = """
       violation_type,
       reported_violations,
       COUNT(DISTINCT person_id) AS termination_count,
-      IF(prioritized_race_or_ethnicity IN ({supported_race_values}, 'ALL'), prioritized_race_or_ethnicity, 'OTHER') AS race,
+      {generate_state_specific_racial_groupings('prioritized_race_or_ethnicity')},
       supervision_type,
       supervision_level,
       charge_category,
       level_1_supervision_location,
       level_2_supervision_location,
       metric_period_months
-    FROM `{project_id}.{reference_views_dataset}.admission_types_per_state_for_matrix_materialized`
+    FROM `{{project_id}}.{{reference_views_dataset}}.admission_types_per_state_for_matrix_materialized`
     LEFT JOIN  
-        `{project_id}.{reference_views_dataset}.supervision_termination_matrix_by_person_materialized`
+        `{{project_id}}.{{reference_views_dataset}}.supervision_termination_matrix_by_person_materialized`
     USING (state_code)
     GROUP BY state_code, violation_type, reported_violations, race, supervision_type, supervision_level, charge_category,
       level_1_supervision_location, level_2_supervision_location, metric_period_months, admission_type
@@ -86,15 +104,15 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY_TEMPLATE = """
       violation_type,
       reported_violations,
       COUNT(DISTINCT person_id) AS revocation_count,
-      IF(race IN ({supported_race_values}, 'ALL'), race, 'OTHER') AS race,
+      {generate_state_specific_racial_groupings('race')},
       supervision_type,
       supervision_level,
       charge_category,
       level_1_supervision_location,
       level_2_supervision_location,
       metric_period_months
-    FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person_materialized`,
-    {race_dimension}
+    FROM `{{project_id}}.{{reference_views_dataset}}.revocations_matrix_by_person_materialized`,
+    {{race_dimension}}
     GROUP BY state_code, violation_type, reported_violations, race, supervision_type, supervision_level, charge_category,
       level_1_supervision_location, level_2_supervision_location, metric_period_months, admission_type
   )
@@ -127,7 +145,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY_TEMPLATE = """
          GROUP BY state_code, violation_type, reported_violations, supervision_type, supervision_level, charge_category,
         level_1_supervision_location, level_2_supervision_location, metric_period_months, admission_type),
       -- Create one row per race supported on the FE and per non-empty dimension in the supervision counts --
-      UNNEST([{supported_race_values}]) as race) total_pop
+      UNNEST({STATE_SPECIFIC_SUPPORTED_RACE_VALUES_LIST}) as race) total_pop
     LEFT JOIN
       (SELECT * FROM
         (SELECT * EXCEPT(race, revocation_count), SUM(revocation_count) AS revocation_count_all
@@ -135,7 +153,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY_TEMPLATE = """
          GROUP BY state_code, violation_type, reported_violations, supervision_type, supervision_level, charge_category,
         level_1_supervision_location, level_2_supervision_location, metric_period_months, admission_type),
       -- Create one row per race supported on the FE and per non-empty dimension in the revocation counts --
-      UNNEST([{supported_race_values}]) as race) total_rev
+      UNNEST({STATE_SPECIFIC_SUPPORTED_RACE_VALUES_LIST}) as race) total_rev
     USING (state_code, violation_type, reported_violations, race, supervision_type, supervision_level, charge_category,
       level_1_supervision_location, level_2_supervision_location, metric_period_months, admission_type)
     LEFT JOIN
@@ -174,7 +192,6 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_VIEW_BUILDER = MetricBigQueryViewBuilder
     description=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     race_dimension=bq_utils.unnest_column("prioritized_race_or_ethnicity", "race"),
-    supported_race_values=SUPPORTED_RACE_VALUES,
 )
 
 if __name__ == "__main__":
