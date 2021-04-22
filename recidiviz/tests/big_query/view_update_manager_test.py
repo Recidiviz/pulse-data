@@ -95,10 +95,7 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.dataset_ref_for_id.assert_called_with(_DATASET_NAME)
         self.mock_client.create_dataset_if_necessary.assert_called_with(dataset, None)
         self.mock_client.create_or_update_view.assert_has_calls(
-            [
-                mock.call(dataset, view_builder.build())
-                for view_builder in mock_view_builders
-            ],
+            [mock.call(view_builder.build()) for view_builder in mock_view_builders],
             any_order=True,
         )
 
@@ -187,9 +184,10 @@ class ViewManagerTest(unittest.TestCase):
             )
 
         # Create/Update returns the table that was already there
-        def mock_create_or_update(
-            dataset_ref: bigquery.DatasetReference, view: BigQueryView
-        ) -> bigquery.Table:
+        def mock_create_or_update(view: BigQueryView) -> bigquery.Table:
+            dataset_ref = bigquery.dataset.DatasetReference(
+                _PROJECT_ID, view.dataset_id
+            )
             return mock_get_table(dataset_ref, view.view_id)
 
         self.mock_client.dataset_ref_for_id.return_value = dataset
@@ -207,9 +205,9 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.create_dataset_if_necessary.assert_called_with(dataset, None)
         self.mock_client.create_or_update_view.assert_has_calls(
             [
-                mock.call(dataset, mock_view_builders[0].build()),
-                mock.call(dataset, mock_view_builders[1].build()),
-                mock.call(dataset, mock_view_builders[2].build()),
+                mock.call(mock_view_builders[0].build()),
+                mock.call(mock_view_builders[1].build()),
+                mock.call(mock_view_builders[2].build()),
             ],
             any_order=True,
         )
@@ -271,9 +269,10 @@ class ViewManagerTest(unittest.TestCase):
             )
 
         # Create/Update returns the table that was already there
-        def mock_create_or_update(
-            dataset_ref: bigquery.DatasetReference, view: BigQueryView
-        ) -> bigquery.Table:
+        def mock_create_or_update(view: BigQueryView) -> bigquery.Table:
+            dataset_ref = bigquery.dataset.DatasetReference(
+                _PROJECT_ID, view.dataset_id
+            )
             table = mock_get_table(dataset_ref, view.view_id)
             if view.view_id == "my_fake_view_2":
                 table.view_query = mock_view_builders[1].build().view_query
@@ -294,9 +293,9 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.create_dataset_if_necessary.assert_called_with(dataset, None)
         self.mock_client.create_or_update_view.assert_has_calls(
             [
-                mock.call(dataset, mock_view_builders[0].build()),
-                mock.call(dataset, mock_view_builders[1].build()),
-                mock.call(dataset, mock_view_builders[2].build()),
+                mock.call(mock_view_builders[0].build()),
+                mock.call(mock_view_builders[1].build()),
+                mock.call(mock_view_builders[2].build()),
             ],
             any_order=True,
         )
@@ -369,8 +368,8 @@ class ViewManagerTest(unittest.TestCase):
         )
         self.mock_client.create_or_update_view.assert_has_calls(
             [
-                mock.call(dataset, mock_view_builders[0].build()),
-                mock.call(dataset_2, mock_view_builders[1].build()),
+                mock.call(mock_view_builders[0].build()),
+                mock.call(mock_view_builders[1].build()),
             ],
             any_order=True,
         )
@@ -420,9 +419,7 @@ class ViewManagerTest(unittest.TestCase):
         )
         self.mock_client.create_or_update_view.assert_has_calls(
             [
-                mock.call(
-                    dataset, view_builder.build(dataset_overrides=dataset_overrides)
-                )
+                mock.call(view_builder.build(dataset_overrides=dataset_overrides))
                 for view_builder in mock_view_builders
             ],
             any_order=True,
@@ -455,7 +452,7 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.dataset_ref_for_id.assert_called_with(_DATASET_NAME)
         self.mock_client.create_dataset_if_necessary.assert_called_with(dataset, None)
         self.mock_client.create_or_update_view.assert_has_calls(
-            [mock.call(dataset, view) for view in mock_views], any_order=True
+            [mock.call(view) for view in mock_views], any_order=True
         )
 
     def test_no_duplicate_views_in_update_list(self) -> None:

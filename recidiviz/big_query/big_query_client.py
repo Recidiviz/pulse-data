@@ -155,18 +155,12 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
-    def create_or_update_view(
-        self,
-        # TODO(#3020): BigQueryView now encodes dataset information, remove this parameter.
-        dataset_ref: bigquery.DatasetReference,
-        view: BigQueryView,
-    ) -> bigquery.Table:
+    def create_or_update_view(self, view: BigQueryView) -> bigquery.Table:
         """Create a View if it does not exist, or update its query if it does.
 
         This runs synchronously and waits for the job to complete.
 
         Args:
-            dataset_ref: The BigQuery dataset to store the view in.
             view: The View to create or update.
 
         Returns:
@@ -476,7 +470,7 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
-    def materialize_view_to_table(self, view: BigQueryView) -> None:
+    def materialize_view_to_table(self, view: BigQueryView) -> bigquery.Table:
         """Materializes the result of a view's view_query into a table. The view's
         materialized_location must be set. The resulting table is put in the same
         project as the view, and it overwrites any previous materialization of the view.
@@ -499,6 +493,21 @@ class BigQueryClient:
 
         Returns:
             The bigquery.Table that is created.
+        """
+
+    @abc.abstractmethod
+    def update_description(
+        self, dataset_id: str, table_id: str, description: str
+    ) -> bigquery.Table:
+        """Updates the description for a given table / view.
+
+        Args:
+            dataset_id: The name of the dataset where the table/view lives
+            table_id: The name of the table/view to update
+            description: The new description string.
+
+        Returns:
+            The bigquery.Table result of the update.
         """
 
     @abc.abstractmethod
@@ -666,25 +675,26 @@ class BigQueryClientImpl(BigQueryClient):
     def create_table(self, table: bigquery.Table) -> bigquery.Table:
         return self.client.create_table(table, exists_ok=False)
 
-    def create_or_update_view(
-        self, dataset_ref: bigquery.DatasetReference, view: BigQueryView
-    ) -> bigquery.Table:
+    def create_or_update_view(self, view: BigQueryView) -> bigquery.Table:
         bq_view = bigquery.Table(view)
         bq_view.view_query = view.view_query
+        bq_view.description = view.description
 
         try:
-            table = self.get_table(dataset_ref, view.view_id)
+            table = self.get_table(
+                self.dataset_ref_for_id(view.dataset_id), view.view_id
+            )
         except exceptions.NotFound:
             logging.info("Creating view %s", str(bq_view))
             return self.client.create_table(bq_view)
 
         if table.table_type == "TABLE":
             raise ValueError(
-                f"Cannot call create_or_update_view on table {view.view_id} in dataset {dataset_ref.dataset_id}."
+                f"Cannot call create_or_update_view on table {view.view_id} in dataset {view.dataset_id}."
             )
 
         logging.info("Updating existing view [%s]", str(bq_view))
-        return self.client.update_table(bq_view, ["view_query"])
+        return self.client.update_table(bq_view, ["view_query", "description"])
 
     def load_table_from_cloud_storage_async(
         self,
@@ -1051,7 +1061,10 @@ class BigQueryClientImpl(BigQueryClient):
             ]
 
         logging.info(
-            "Inserting into table [%s] result of query: %s", destination_table_id, query
+            "Inserting into table [%s.%s] result of query: %s",
+            destination_dataset_id,
+            destination_table_id,
+            query,
         )
 
         return self.client.query(
@@ -1118,7 +1131,7 @@ class BigQueryClientImpl(BigQueryClient):
 
         return self.client.query(delete_query)
 
-    def materialize_view_to_table(self, view: BigQueryView) -> None:
+    def materialize_view_to_table(self, view: BigQueryView) -> bigquery.Table:
         if view.materialized_location is None:
             raise ValueError(
                 "Trying to materialize a view that does not have a set "
@@ -1141,6 +1154,15 @@ class BigQueryClientImpl(BigQueryClient):
             overwrite=True,
         )
         create_job.result()
+        table_description = (
+            f"Materialized data from view [{view.dataset_id}.{view.view_id}]. "
+            f"View description:\n{view.description}"
+        )
+        return self.update_description(
+            dst_dataset_id,
+            dst_table_id,
+            table_description,
+        )
 
     def create_table_with_schema(
         self, dataset_id: str, table_id: str, schema_fields: List[bigquery.SchemaField]
@@ -1157,6 +1179,16 @@ class BigQueryClientImpl(BigQueryClient):
 
         logging.info("Creating table %s.%s", dataset_id, table_id)
         return self.client.create_table(table)
+
+    def update_description(
+        self, dataset_id: str, table_id: str, description: str
+    ) -> bigquery.Table:
+        table = self.get_table(self.dataset_ref_for_id(dataset_id), table_id)
+        if description == table.description:
+            return table
+
+        table.description = description
+        return self.client.update_table(table, ["description"])
 
     @staticmethod
     def _get_excess_schema_fields(
