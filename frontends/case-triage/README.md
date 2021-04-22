@@ -12,6 +12,12 @@ We use `docker-compose` to run our development services locally, this includes:
 - [`postgres`](https://www.postgresql.org/) database
 - `migrations` container, which automatically runs [`alembic`](https://alembic.sqlalchemy.org/) migrations
 
+For those without access to GCR repository, you will have to build the image before being able to run docker-compose
+
+```bash
+docker build . -t us.gcr.io/recidiviz-staging/appengine/default:latest
+```
+
 ### Local Cloud Services
 
 When running locally, we mock Google Cloud Storage and Google Secrets Manager to use the local filesystem.
