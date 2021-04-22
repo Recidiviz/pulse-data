@@ -17,12 +17,12 @@
 import { IconSVG, Need, NeedState } from "@recidiviz/design-system";
 import * as React from "react";
 import {
+  ButtonContainer,
   Caption,
   CaseCardBody,
   CaseCardInfo,
-  CheckboxButtonContainer,
 } from "./CaseCard.styles";
-import { NeedsCheckboxButton } from "./NeedsCheckboxButton";
+import { NeedsCheckboxButton } from "./CaseCardButtons";
 import { DecoratedClient } from "../../stores/ClientsStore/Client";
 import {
   CaseUpdateActionType,
@@ -76,13 +76,13 @@ const NeedsEmployment: React.FC<NeedsEmploymentProps> = ({
         <br />
         {caption}
         {!client.needsMet.employment ? (
-          <CheckboxButtonContainer>
+          <ButtonContainer>
             <NeedsCheckboxButton
               checked={needChecked}
               onToggleCheck={onToggleCheck}
               title="I helped them find employment"
             />
-          </CheckboxButtonContainer>
+          </ButtonContainer>
         ) : null}
       </CaseCardInfo>
     </CaseCardBody>

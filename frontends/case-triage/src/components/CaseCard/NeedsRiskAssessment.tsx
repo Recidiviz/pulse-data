@@ -18,12 +18,12 @@ import { IconSVG, Need, NeedState } from "@recidiviz/design-system";
 import moment from "moment";
 import * as React from "react";
 import {
+  ButtonContainer,
   Caption,
   CaseCardBody,
   CaseCardInfo,
-  CheckboxButtonContainer,
 } from "./CaseCard.styles";
-import { NeedsCheckboxButton } from "./NeedsCheckboxButton";
+import { NeedsCheckboxButton } from "./CaseCardButtons";
 import { DecoratedClient } from "../../stores/ClientsStore/Client";
 import { useRootStore } from "../../stores";
 import {
@@ -157,13 +157,13 @@ const NeedsRiskAssessment: React.FC<NeedsRiskAssessmentProps> = ({
           {nextAssessmentText}
         </Caption>
         {!client.needsMet.assessment ? (
-          <CheckboxButtonContainer>
+          <ButtonContainer>
             <NeedsCheckboxButton
               checked={needChecked}
               onToggleCheck={onToggleCheck}
               title="I completed their risk assessment"
             />
-          </CheckboxButtonContainer>
+          </ButtonContainer>
         ) : null}
       </CaseCardInfo>
     </CaseCardBody>

@@ -34,6 +34,8 @@ export const CaseCardSection = styled(CardSection)`
 `;
 
 export const CaseCardHeading = styled(CaseCardSection)`
+  padding-bottom: ${rem(spacing.lg)};
+
   position: relative;
   &:before {
     position: absolute;
@@ -47,6 +49,13 @@ export const CaseCardHeading = styled(CaseCardSection)`
     left: -15px;
     top: 38px;
   }
+`;
+
+export const CaseCardIconContainer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
 `;
 
 export const CaseCardInfo = styled.div`
@@ -74,7 +83,7 @@ export const CaseCardFeedback = styled.div`
   font-size: ${rem("14px")};
 `;
 
-export const CheckboxButtonContainer = styled.div`
+export const ButtonContainer = styled.div`
   display: flex;
   margin-top: ${rem(spacing.md)};
 `;
