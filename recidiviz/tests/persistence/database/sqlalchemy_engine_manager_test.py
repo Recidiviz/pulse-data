@@ -15,13 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for sqlalchemy_engine_manager.py"""
-
+from unittest import mock
 from unittest.case import TestCase
 from mock import call, patch
 import sqlalchemy
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database import schema_utils, sqlalchemy_database_key
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
@@ -30,7 +31,7 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
 class SQLAlchemyEngineManagerTest(TestCase):
     """Tests"""
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         SQLAlchemyEngineManager.teardown_engines()
 
     @patch(
@@ -43,12 +44,12 @@ class SQLAlchemyEngineManagerTest(TestCase):
     @patch("recidiviz.utils.secrets.get_secret")
     def testInitEngines_usesCorrectIsolationLevels(
         self,
-        mock_get_secret,
-        mock_in_gcp,
-        mock_in_production,
-        mock_create_engine,
-        mock_get_states,
-    ):
+        mock_get_secret: mock.MagicMock,
+        mock_in_gcp: mock.MagicMock,
+        mock_in_production: mock.MagicMock,
+        mock_create_engine: mock.MagicMock,
+        mock_get_states: mock.MagicMock,
+    ) -> None:
         # Arrange
         mock_in_gcp.return_value = True
         mock_in_production.return_value = True
@@ -150,12 +151,12 @@ class SQLAlchemyEngineManagerTest(TestCase):
     @patch("recidiviz.utils.secrets.get_secret")
     def testInitEngines_usesCorrectIsolationLevelsInStaging(
         self,
-        mock_get_secret,
-        mock_in_gcp,
-        mock_in_staging,
-        mock_create_engine,
-        mock_get_states,
-    ):
+        mock_get_secret: mock.MagicMock,
+        mock_in_gcp: mock.MagicMock,
+        mock_in_staging: mock.MagicMock,
+        mock_create_engine: mock.MagicMock,
+        mock_get_states: mock.MagicMock,
+    ) -> None:
         # Arrange
         mock_in_gcp.return_value = True
         mock_in_staging.return_value = True
@@ -248,20 +249,62 @@ class SQLAlchemyEngineManagerTest(TestCase):
         mock_get_states.assert_called()
 
     @patch("recidiviz.utils.secrets.get_secret")
-    def testGetAllStrippedCloudSqlInstanceIds_returnsOnlyConfiguredIds(
-        self, mock_secrets
-    ):
+    def testGetAllStrippedCloudSqlInstanceIds(
+        self, mock_secrets: mock.MagicMock
+    ) -> None:
         # Arrange
         mock_secrets.side_effect = [
-            "project:zone:111",
-            "project:zone:222",
-            "project:zone:333",
-            "project:zone:444",
-            "project:zone:555",
+            "project:region:111",
+            "project:region:222",
+            "project:region:333",
+            "project:region:444",
+            "project:region:555",
         ]
 
         # Act
         ids = SQLAlchemyEngineManager.get_all_stripped_cloudsql_instance_ids()
 
         # Assert
-        assert ids == ["111", "222", "333", "444", "555"]
+        self.assertEqual(ids, ["111", "222", "333", "444", "555"])
+        mock_secrets.assert_has_calls(
+            [
+                mock.call("sqlalchemy_cloudsql_instance_id"),
+                mock.call("state_cloudsql_instance_id"),
+                mock.call("operations_cloudsql_instance_id"),
+                mock.call("justice_counts_cloudsql_instance_id"),
+                mock.call("case_triage_cloudsql_instance_id"),
+            ],
+            any_order=True,
+        )
+
+    @patch("recidiviz.utils.secrets.get_secret")
+    def testGetStrippedCloudSqlInstanceId(self, mock_secrets: mock.MagicMock) -> None:
+        # Arrange
+        mock_secrets.side_effect = [
+            "project:region:111",
+        ]
+
+        # Act
+        instance_id = SQLAlchemyEngineManager.get_stripped_cloudsql_instance_id(
+            schema_type=SchemaType.OPERATIONS
+        )
+
+        # Assert
+        self.assertEqual(instance_id, "111")
+        mock_secrets.assert_called_with("operations_cloudsql_instance_id")
+
+    @patch("recidiviz.utils.secrets.get_secret")
+    def testGetAllStrippedCloudSqlRegion(self, mock_secrets: mock.MagicMock) -> None:
+        # Arrange
+        mock_secrets.side_effect = [
+            "project:us-central1:111",
+        ]
+
+        # Act
+        region = SQLAlchemyEngineManager.get_cloudsql_instance_region(
+            schema_type=SchemaType.OPERATIONS
+        )
+
+        # Assert
+        self.assertEqual(region, "us-central1")
+        mock_secrets.assert_called_with("operations_cloudsql_instance_id")

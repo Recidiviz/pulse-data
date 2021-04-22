@@ -256,29 +256,52 @@ class SQLAlchemyEngineManager:
         return f"{secret_manager_prefix}_cloudsql_instance_id"
 
     @classmethod
-    def get_stripped_cloudsql_instance_id(
-        cls, schema_type: SchemaType
-    ) -> Optional[str]:
-        """The full instance id stored in secrets has the form project_id:zone:instance_id.
+    def _get_full_cloudsql_instance_id(cls, schema_type: SchemaType) -> str:
+        """Rerturns the full instance id stored in secrets with the form
+        project_id:region:instance_id.
 
-        This returns just the final instance_id, for example, 'dev-data' or 'prod-state-data'. If a key is not
-        configured for the given schema, returns None.
-
-        Should be used when using the sqladmin_client().
+        For example:
+            recidiviz-staging:us-east1:dev-state-data
         """
+
         instance_id_key = cls._get_cloudsql_instance_id_key(schema_type)
-        if instance_id_key is None:
-            return None
         instance_id_full = secrets.get_secret(instance_id_key)
 
         if instance_id_full is None:
             raise ValueError(
                 f"Unable to retrieve instance id for schema type [{schema_type}]"
             )
+        return instance_id_full
 
-        # Remove Project ID and Zone information from Cloud SQL instance ID.
-        # Expected format "project_id:zone:instance_id"
-        instance_id = instance_id_full.split(":")[-1]
+    @classmethod
+    def get_cloudsql_instance_region(cls, schema_type: SchemaType) -> str:
+        """The full instance id stored in secrets has the form
+        project_id:region:instance_id.
+
+        This returns just the region, for example, 'us-east1' or
+        'us-central1'.
+        """
+        instance_id_full = cls._get_full_cloudsql_instance_id(schema_type)
+
+        # Expected format "project_id:region:instance_id"
+        _, region, _ = instance_id_full.split(":")
+
+        return region
+
+    @classmethod
+    def get_stripped_cloudsql_instance_id(cls, schema_type: SchemaType) -> str:
+        """The full instance id stored in secrets has the form
+        project_id:region:instance_id.
+
+        This returns just the final instance_id, for example, 'dev-data' or
+        'prod-state-data'.
+
+        Should be used when using the sqladmin_client().
+        """
+        instance_id_full = cls._get_full_cloudsql_instance_id(schema_type)
+
+        # Expected format "project_id:region:instance_id"
+        _, _, instance_id = instance_id_full.split(":")
 
         return instance_id
 
