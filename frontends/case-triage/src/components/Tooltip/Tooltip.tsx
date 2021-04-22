@@ -44,6 +44,10 @@ const Tooltip: React.FC<TooltipProps> = ({ children, title }: TooltipProps) => {
     });
   };
 
+  React.useEffect(() => {
+    return () => window.clearTimeout(timeoutID);
+  }, [timeoutID]);
+
   const onMouseEnter = () => {
     setShouldRenderTooltip(true);
     window.clearTimeout(timeoutID);

@@ -23,7 +23,7 @@ interface APIProps {
 
 interface RequestProps {
   path: string;
-  method: "GET" | "POST";
+  method: "GET" | "POST" | "DELETE";
   body?: Record<string, unknown>;
 }
 
@@ -93,6 +93,10 @@ class API {
     }
 
     return response.json();
+  }
+
+  async delete<T>(path: string): Promise<T> {
+    return this.request({ path, method: "DELETE" });
   }
 
   async get<T>(path: string): Promise<T> {

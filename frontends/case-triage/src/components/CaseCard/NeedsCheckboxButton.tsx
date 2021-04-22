@@ -17,20 +17,24 @@
 import * as React from "react";
 import styled from "styled-components/macro";
 import { rem } from "polished";
-import { palette } from "@recidiviz/design-system";
+import {
+  Button,
+  Icon,
+  IconSVG,
+  palette,
+  spacing,
+} from "@recidiviz/design-system";
+import Tooltip from "../Tooltip";
 
-const BaseCheckboxButton = styled.button.attrs({
-  type: "button",
-})`
+const BaseCheckboxButton = styled.div`
   cursor: pointer;
-  min-height: 40px;
-  padding: 12px 16px;
+  padding: ${rem(spacing.xs)} ${rem(12)};
   display: flex;
   align-items: center;
   justify-content: center;
 
   font-size: ${rem("14px")};
-  line-height: ${rem("16px")};
+  line-height: ${rem(24)};
 
   box-sizing: border-box;
   border-radius: 4px;
@@ -38,46 +42,43 @@ const BaseCheckboxButton = styled.button.attrs({
 
 const CheckedCheckboxButton = styled(BaseCheckboxButton)`
   color: ${palette.white};
-  background-color: ${palette.signal.links};
-  border: 1px solid ${palette.signal.links};
+  background-color: ${palette.slate60};
+  border: 0px;
+
+  border-radius: 16px;
 
   &:hover {
-    background-color: ${palette.signal.links};
+    background-color: ${palette.slate70};
   }
 `;
 
-const UncheckedCheckboxButton = styled(
-  BaseCheckboxButton
-)<NeedsCheckboxButtonProps>`
+const UncheckedCheckboxButton = styled(BaseCheckboxButton)`
   background-color: transparent;
 
-  ${(props) =>
-    props.disabled
-      ? `
-  color: ${palette.text.caption};
-  border: 1px solid ${palette.marble5};
-`
-      : `
-  color: ${palette.signal.links};
-  border: 1px solid rgba(0, 108, 103, 0.3);
+  color: ${palette.pine4};
+  border: 1px solid ${palette.slate30};
 
   &:hover {
-    color: ${palette.text.normal};
+    color: ${palette.pine2};
+    border: 1px solid ${palette.signal.links};
   }
-`}
+`;
+
+const CloseButton = styled(Button).attrs({ kind: "link" })`
+  margin-left: ${rem(spacing.sm)};
+  height: 16px;
+  width: 16px;
 `;
 
 export interface NeedsCheckboxButtonProps {
-  children: React.ReactChild | React.ReactChild[];
+  title: React.ReactNode;
 
-  inProgress?: boolean;
   checked?: boolean;
   onToggleCheck?: (checked: boolean) => void;
 }
 
 export const NeedsCheckboxButton: React.FC<NeedsCheckboxButtonProps> = ({
-  children,
-  inProgress,
+  title,
   checked,
   onToggleCheck,
 }) => {
@@ -88,21 +89,35 @@ export const NeedsCheckboxButton: React.FC<NeedsCheckboxButtonProps> = ({
     }
   }, [checked]);
 
-  const Component =
-    checkedState && !inProgress
-      ? CheckedCheckboxButton
-      : UncheckedCheckboxButton;
-  const onClick = () => {
-    const nextCheck = !checkedState;
-    setCheckedState(nextCheck);
-    if (onToggleCheck) {
-      onToggleCheck(nextCheck);
-    }
-  };
+  const Component = checkedState
+    ? CheckedCheckboxButton
+    : UncheckedCheckboxButton;
+  const componentClick = checked
+    ? undefined
+    : () => {
+        setCheckedState(true);
+        if (onToggleCheck) {
+          onToggleCheck(true);
+        }
+      };
 
   return (
-    <Component disabled={inProgress} onClick={onClick}>
-      {!inProgress ? children : "In Progress"}
+    <Component onClick={componentClick}>
+      {title}
+      {checked ? (
+        <CloseButton
+          onClick={() => {
+            setCheckedState(false);
+            if (onToggleCheck) {
+              onToggleCheck(false);
+            }
+          }}
+        >
+          <Tooltip title="Remove">
+            <Icon kind={IconSVG.CloseOutlined} fill={palette.white} size={16} />
+          </Tooltip>
+        </CloseButton>
+      ) : null}
     </Component>
   );
 };

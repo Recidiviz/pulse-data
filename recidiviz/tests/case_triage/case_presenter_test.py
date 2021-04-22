@@ -90,7 +90,7 @@ class TestCasePresenter(TestCase):
             [
                 generate_fake_case_update(
                     self.mock_client,
-                    self.mock_officer,
+                    self.mock_officer.external_id,
                     action_type=CaseUpdateActionType.SCHEDULED_FACE_TO_FACE,
                 ),
             ],

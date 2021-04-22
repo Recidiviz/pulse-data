@@ -100,12 +100,14 @@ export const ClientListContainer = styled.div`
   position: relative;
 `;
 
+export const DEFAULT_IN_PROGRESS_INDICATOR_OFFSET = -32;
+export const IN_PROGRESS_INDICATOR_SIZE = 8;
+
 export const InProgressIndicator = styled.div`
   position: absolute;
-  width: ${rem(8)};
-  height: ${rem(8)};
+  width: ${rem(IN_PROGRESS_INDICATOR_SIZE)};
+  height: ${rem(IN_PROGRESS_INDICATOR_SIZE)};
   top: 42px;
-  left: -32px;
 
   border-radius: 999px;
   background-color: ${palette.slate60};

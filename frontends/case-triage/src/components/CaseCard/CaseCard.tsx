@@ -68,16 +68,7 @@ export interface CaseCardProps {
 const CaseCard: React.FC<CaseCardProps> = ({ client }: CaseCardProps) => {
   const { caseUpdatesStore, clientsStore } = useRootStore();
 
-  const [helpedWithEmployment, setHelpedWithEmployment] = useState(false);
-  const [completedAssessment, setCompletedAssessment] = useState(false);
-  const [scheduledFaceToFace, setScheduledFaceToFace] = useState(false);
   const [marginTop, setMarginTop] = useState(clientsStore.activeClientOffset);
-
-  React.useEffect(() => {
-    setHelpedWithEmployment(false);
-    setCompletedAssessment(false);
-    setScheduledFaceToFace(false);
-  }, [client]);
 
   React.useEffect(() =>
     autorun(() => {
@@ -85,19 +76,18 @@ const CaseCard: React.FC<CaseCardProps> = ({ client }: CaseCardProps) => {
     })
   );
 
-  const actionsTaken = () => {
-    const actions = [];
-
-    if (helpedWithEmployment) {
-      actions.push(CaseUpdateActionType.FOUND_EMPLOYMENT);
+  const recordEvent = (
+    eventType: CaseUpdateActionType,
+    completedAction: boolean
+  ): void => {
+    if (completedAction) {
+      caseUpdatesStore.recordAction(client, eventType);
+    } else {
+      const updateId = client.caseUpdates[eventType]?.updateId;
+      if (updateId) {
+        caseUpdatesStore.removeAction(client, updateId, eventType);
+      }
     }
-    if (completedAssessment) {
-      actions.push(CaseUpdateActionType.COMPLETED_ASSESSMENT);
-    }
-    if (scheduledFaceToFace) {
-      actions.push(CaseUpdateActionType.SCHEDULED_FACE_TO_FACE);
-    }
-    return actions;
   };
 
   return (
@@ -117,42 +107,26 @@ const CaseCard: React.FC<CaseCardProps> = ({ client }: CaseCardProps) => {
       </CaseCardHeading>
       <NeedsEmployment
         client={client}
-        onStatusChanged={(helped: boolean) => setHelpedWithEmployment(helped)}
+        onStatusChanged={(helped: boolean) =>
+          recordEvent(CaseUpdateActionType.FOUND_EMPLOYMENT, helped)
+        }
         className="fs-exclude"
       />
       <NeedsRiskAssessment
         client={client}
         onStatusChanged={(completed: boolean) =>
-          setCompletedAssessment(completed)
+          recordEvent(CaseUpdateActionType.COMPLETED_ASSESSMENT, completed)
         }
         className="fs-exclude"
       />
       <NeedsFaceToFaceContact
         client={client}
         onStatusChanged={(scheduled: boolean) =>
-          setScheduledFaceToFace(scheduled)
+          recordEvent(CaseUpdateActionType.SCHEDULED_FACE_TO_FACE, scheduled)
         }
         className="fs-exclude"
       />
-      <CaseCardFooter>
-        {useCardFeedback(client)}
-
-        <div>
-          <Button
-            kind="primary"
-            disabled={
-              !helpedWithEmployment &&
-              !completedAssessment &&
-              !scheduledFaceToFace
-            }
-            onClick={async (e) => {
-              await caseUpdatesStore.submit(client, actionsTaken(), "");
-            }}
-          >
-            Submit
-          </Button>
-        </div>
-      </CaseCardFooter>
+      <CaseCardFooter>{useCardFeedback(client)}</CaseCardFooter>
     </CaseCardComponent>
   );
 };

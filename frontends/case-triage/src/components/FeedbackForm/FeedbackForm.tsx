@@ -183,17 +183,18 @@ const InnerForm = ({
 const FeedbackForm = withFormik<FeedbackFormProps, FeedbackFormValues>({
   mapPropsToValues: () => ({ actions: [], otherText: "" }),
   validationSchema: FeedbackFormSchema,
-  handleSubmit: (
+  handleSubmit: async (
     values,
     {
       props: { caseUpdatesStore, client, onCancel },
     }: FormikBag<FeedbackFormProps, FeedbackFormValues>
   ) => {
-    caseUpdatesStore
-      .submit(client, values.actions, values.otherText)
-      .then(() => onCancel());
-
-    return false;
+    await Promise.all(
+      values.actions.map((actionType) =>
+        caseUpdatesStore.recordAction(client, actionType, values.otherText)
+      )
+    );
+    onCancel();
   },
 })(InnerForm);
 

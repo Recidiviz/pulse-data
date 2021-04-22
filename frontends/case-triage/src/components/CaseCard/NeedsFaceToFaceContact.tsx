@@ -32,7 +32,10 @@ import { NeedsCheckboxButton } from "./NeedsCheckboxButton";
 import { DecoratedClient } from "../../stores/ClientsStore/Client";
 import { useRootStore } from "../../stores";
 import { SupervisionContactFrequency } from "../../stores/PolicyStore/Policy";
-import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
+import {
+  CaseUpdateActionType,
+  CaseUpdateStatus,
+} from "../../stores/CaseUpdatesStore";
 
 interface NeedsFaceToFaceContactProps {
   className: string;
@@ -71,7 +74,10 @@ const NeedsFaceToFaceContact: React.FC<NeedsFaceToFaceContactProps> = ({
 }: NeedsFaceToFaceContactProps) => {
   const [needChecked, setNeedChecked] = React.useState(false);
   React.useEffect(() => {
-    setNeedChecked(false);
+    setNeedChecked(
+      client.caseUpdates[CaseUpdateActionType.SCHEDULED_FACE_TO_FACE]
+        ?.status === CaseUpdateStatus.IN_PROGRESS
+    );
   }, [client]);
 
   const { policyStore } = useRootStore();
@@ -112,13 +118,9 @@ const NeedsFaceToFaceContact: React.FC<NeedsFaceToFaceContactProps> = ({
           <CheckboxButtonContainer>
             <NeedsCheckboxButton
               checked={needChecked}
-              inProgress={client.inProgressActions?.includes(
-                CaseUpdateActionType.SCHEDULED_FACE_TO_FACE
-              )}
               onToggleCheck={onToggleCheck}
-            >
-              I scheduled our next face-to-face contact
-            </NeedsCheckboxButton>
+              title="I scheduled our next face-to-face contact"
+            />
           </CheckboxButtonContainer>
         ) : null}
       </CaseCardInfo>

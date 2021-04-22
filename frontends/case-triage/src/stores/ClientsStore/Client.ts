@@ -16,7 +16,7 @@
 // =============================================================================
 import moment from "moment";
 import { titleCase } from "../../utils";
-import { CaseUpdateActionType } from "../CaseUpdatesStore";
+import { CaseUpdate, CaseUpdateActionType } from "../CaseUpdatesStore";
 import PolicyStore from "../PolicyStore";
 
 /* eslint-disable camelcase */
@@ -39,14 +39,13 @@ type APIDate = string | moment.Moment | null;
 export interface Client {
   assessmentScore: number | null;
   caseType: CaseType;
+  caseUpdates: Record<CaseUpdateActionType, CaseUpdate>;
   currentAddress: string;
   fullName: ClientFullName;
   employer?: string;
   gender: Gender;
   supervisionStartDate: APIDate;
   projectedEndDate: APIDate;
-  inProgressActions?: CaseUpdateActionType[];
-  inProgressSubmissionDate?: APIDate;
   supervisionType: string;
   supervisionLevel: SupervisionLevel;
   personExternalId: string;
@@ -70,7 +69,6 @@ export interface DecoratedClient extends Client {
   mostRecentAssessmentDate: moment.Moment | null;
   nextAssessmentDate: moment.Moment | null;
   nextFaceToFaceDate: moment.Moment | null;
-  inProgressSubmissionDate: moment.Moment | null;
 
   previousInProgressActions?: CaseUpdateActionType[];
 
@@ -108,7 +106,6 @@ const decorateClient = (
     mostRecentAssessmentDate: parseDate(client.mostRecentAssessmentDate),
     nextFaceToFaceDate: parseDate(client.nextFaceToFaceDate),
     nextAssessmentDate: parseDate(client.nextAssessmentDate),
-    inProgressSubmissionDate: parseDate(client.inProgressSubmissionDate),
 
     supervisionLevelText: policyStore.getSupervisionLevelNameForClient(client),
   };
