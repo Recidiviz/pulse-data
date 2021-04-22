@@ -246,7 +246,7 @@ class MoveFilesToDeprecatedController:
         )
         result = []
         for subdir_path in subdirs:
-            from_paths = gsutil_ls(f"{subdir_path}*.csv")
+            from_paths = gsutil_ls(f"{subdir_path}*.*")
             for from_path in from_paths:
                 _, file_name = os.path.split(from_path)
                 if re.match(INGEST_FILEPATH_REGEX, file_name):
