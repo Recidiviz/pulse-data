@@ -52,7 +52,7 @@ class CaseUpdatesStore {
   async recordAction(
     client: DecoratedClient,
     actionType: CaseUpdateActionType,
-    comments?: string
+    comment?: string
   ): Promise<void> {
     this.isLoading = true;
 
@@ -63,7 +63,7 @@ class CaseUpdatesStore {
     await this.api.post("/api/case_updates", {
       personExternalId: client.personExternalId,
       actionType,
-      comments,
+      comment,
     });
     trackPersonActionTaken(client, actionType);
 
