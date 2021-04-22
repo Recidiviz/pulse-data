@@ -239,8 +239,6 @@ class UsNdController(CsvGcsfsDirectIngestController):
         ]
 
         if not environment.in_gcp_production():
-            # TODO(#5049): Remove once contacts have successfully run in staging.
-            tags.append("docstars_contacts")
             # TODO(#2399): Once we are capable of handling historical and nightly ingest of
             #  'elite_offense_in_custody_and_pos_report_data', remove this check.
             if not environment.in_gcp_staging():
@@ -253,6 +251,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
             "docstars_offensestable",
             "docstars_ftr_episode",
             "docstars_lsi_chronology",
+            "docstars_contacts",
             # TODO(#1918): Integrate bed assignment / location history
         ]
 

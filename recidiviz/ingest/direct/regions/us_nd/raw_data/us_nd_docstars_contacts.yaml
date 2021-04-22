@@ -1,8 +1,7 @@
 file_tag: docstars_contacts
 file_description: |-
-  Each row represents a contact between a supervision officer and person under supervision. This includes the kind
-  contacts which occurred, whether there were any signs of substance abuse, and free text notes about the contact from
-  the officer.
+  Each row represents a contact between a supervision officer and person under supervision. This includes the kinds of
+  contacts that occurred and where/when they took place.
 primary_key_cols:
   - RecID
 columns:
@@ -12,10 +11,6 @@ columns:
   - name: SID
     description: |-
       External id for a unique person from the Docstars system.
-  - name: TIME_STAMP
-    is_datetime: True
-    description: |-
-      When this contact occurred.
   - name: CONTACT_DATE
     is_datetime: True
     description: |-
@@ -38,62 +33,3 @@ columns:
   - name: C6
     description: |-
       Additional sub-code for the kind of contact which occurred.
-  - name: REMARKS
-    description: |-
-      Free text notes about the contact entered by the supervising officer.
-  - name: ALCO_POS
-    description: |-
-      Whether the person being supervised is positive for alcohol usage.
-  - name: ALCO_NEG
-    description: |-
-      Whether the person being supervised is negative for alcohol usage.
-  - name: COKE_POS
-    description: |-
-      Whether the person being supervised is positive for coke usage.
-  - name: COKE_NEG
-    description: |-
-      Whether the person being supervised is negative for alcohol usage.
-  - name: THC_POS
-    description: |-
-      Whether the person being supervised is positive for THC usage.
-  - name: THC_NEG
-    description: |-
-      Whether the person being supervised is negative for THC usage.
-  - name: OPIATE_POS
-    description: |-
-      Whether the person being supervised is positive for opiate usage.
-  - name: OPIATE_NEG
-    description: |-
-      Whether the person being supervised is negative for opiate usage.
-  - name: AMP_METH_POS
-    description: |-
-      Whether the person being supervised is positive for meth usage.
-  - name: AMP_METH_NEG
-    description: |-
-      Whether the person being supervised is negative for meth usage.
-  - name: SYNTHETIC_POS
-    description: |-
-      Whether the person being supervised is positive for synthetic substance usage.
-  - name: SYNTHETIC_NEG
-    description: |-
-      Whether the person being supervised is negative for synthetic substance usage.
-  - name: OTHER_POS
-    description: |-
-      Whether the person being supervised is positive for other substance usage.
-  - name: OTHER_NEG
-    description: |-
-      Whether the person being supervised is negative for synthetic substance usage.
-  - name: ORIGINATOR
-    description: |-
-      Name of the supervising officer.
-  - name: CATEGORY
-    description: |-
-      Why the contact occurred.
-  - name: RecDate
-    is_datetime: True
-    description: |-
-      When this record was first created in the source system.
-  - name: LASTUPDATE
-    is_datetime: True
-    description: |-
-      When this record was most recently modified in the source system.
