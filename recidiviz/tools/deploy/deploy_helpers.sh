@@ -77,7 +77,15 @@ function calculation_pipeline_changes_since_last_deploy {
     MIGRATION_CHANGES=$(git diff tags/${LAST_VERSION_TAG} -- ${BASH_SOURCE_DIR}/../../../recidiviz/persistence/database/migrations)
     CALCULATOR_CHANGES=$(git diff tags/${LAST_VERSION_TAG} -- ${BASH_SOURCE_DIR}/../../../recidiviz/calculator)
 
-    echo "${MIGRATION_CHANGES}${CALCULATOR_CHANGES}"
+    CHANGES="${MIGRATION_CHANGES}${CALCULATOR_CHANGES}"
+
+    if [[ ! -z $CHANGES ]]; then
+      CALC_CHANGES_SINCE_LAST_DEPLOY=1
+    else
+      CALC_CHANGES_SINCE_LAST_DEPLOY=0
+    fi
+
+    echo $CALC_CHANGES_SINCE_LAST_DEPLOY
 }
 
 # Helper for deploying any infrastructure changes before we deploy a new version of the application. Requires that we
@@ -274,8 +282,9 @@ function deploy_terraform_infrastructure {
 
 function post_deploy_triggers {
     PROJECT=$1
+    CALC_CHANGES_SINCE_LAST_DEPLOY=$2
 
-    if [[ ! -z $(calculation_pipeline_changes_since_last_deploy ${PROJECT}) ]]; then
+    if [[ $CALC_CHANGES_SINCE_LAST_DEPLOY -eq 1 ]]; then
         # We trigger historical calculations with every deploy where we believe there could be code changes that impact
         # historical metric output.
         echo "Triggering historical calculation pipelines"
