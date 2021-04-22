@@ -51,6 +51,7 @@ class DirectIngestRawDataTableLatestViewBuilder(
         self.should_build_predicate = should_build_predicate
         self.view_id = f"{raw_file_config.file_tag}_latest"
         self.dataset_id = f"{self.region_code.lower()}_raw_data_up_to_date_views"
+        self.materialized_location_override = None
 
     def _build(
         self, *, dataset_overrides: Optional[Dict[str, str]] = None

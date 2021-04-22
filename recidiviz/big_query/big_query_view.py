@@ -262,6 +262,7 @@ class BigQueryViewBuilder(Generic[BigQueryViewType]):
 
     dataset_id: str
     view_id: str
+    materialized_location_override: Optional[BigQueryLocation]
 
     def build(
         self, *, dataset_overrides: Optional[Dict[str, str]] = None
