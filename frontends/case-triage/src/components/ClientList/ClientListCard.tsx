@@ -22,18 +22,21 @@ import {
   CardHeader,
   ClientCard,
   ClientNeed,
+  DEFAULT_IN_PROGRESS_INDICATOR_OFFSET,
   FlexCardSection,
   InProgressIndicator,
+  IN_PROGRESS_INDICATOR_SIZE,
   MainText,
   SecondaryText,
 } from "./ClientList.styles";
 import { titleCase } from "../../utils";
 import DueDate from "../DueDate";
 import Tooltip from "../Tooltip";
+import { CaseUpdateStatus } from "../../stores/CaseUpdatesStore";
 
 interface ClientProps {
   client: DecoratedClient;
-  isInProgress: boolean;
+  showInProgress?: boolean;
 }
 
 const getNeedsMetState = (
@@ -45,7 +48,7 @@ const getNeedsMetState = (
 
 const ClientComponent: React.FC<ClientProps> = ({
   client,
-  isInProgress,
+  showInProgress,
 }: ClientProps) => {
   const { clientsStore, policyStore } = useRootStore();
   const cardRef = React.useRef<HTMLDivElement>(null);
@@ -77,8 +80,26 @@ const ClientComponent: React.FC<ClientProps> = ({
     viewClient,
   ]);
 
-  const numInProgressActions = client.inProgressActions?.length;
+  const numInProgressActions =
+    client.caseUpdates === undefined
+      ? 0
+      : Object.values(client.caseUpdates).reduce(
+          (accumulator, val) =>
+            accumulator + (val.status === CaseUpdateStatus.IN_PROGRESS ? 1 : 0),
+          0
+        );
+
   const omsName = policyStore.policies?.omsName || "OMS";
+  const tooltipOffset =
+    cardRef === null || cardRef.current === null
+      ? DEFAULT_IN_PROGRESS_INDICATOR_OFFSET
+      : Math.max(
+          -(
+            cardRef.current.getBoundingClientRect().left +
+            IN_PROGRESS_INDICATOR_SIZE
+          ) / 2,
+          DEFAULT_IN_PROGRESS_INDICATOR_OFFSET
+        );
 
   return (
     <ClientCard ref={cardRef} onClick={viewClient}>
@@ -112,7 +133,7 @@ const ClientComponent: React.FC<ClientProps> = ({
       <FlexCardSection>
         <DueDate date={client.nextFaceToFaceDate} />
       </FlexCardSection>
-      {isInProgress ? (
+      {showInProgress ? (
         <Tooltip
           title={
             <>
@@ -122,7 +143,7 @@ const ClientComponent: React.FC<ClientProps> = ({
             </>
           }
         >
-          <InProgressIndicator />
+          <InProgressIndicator style={{ left: tooltipOffset }} />
         </Tooltip>
       ) : null}
     </ClientCard>

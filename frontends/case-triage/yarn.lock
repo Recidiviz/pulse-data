@@ -1583,10 +1583,10 @@
     prop-types "^15.6.1"
     react-lifecycles-compat "^3.0.4"
 
-"@recidiviz/design-system@0.4.4":
-  version "0.4.4"
-  resolved "https://registry.yarnpkg.com/@recidiviz/design-system/-/design-system-0.4.4.tgz#6175dd95f65c3950fea0f114b23d97959d67094d"
-  integrity sha512-eF31mzaiC/MVVw0ivTr5pQiRO/xhWUm5V1xyC7HpLMvKEPMvQXBP2kdcqf1JuSzo5O2gNNSAC5hHOFvieirwOw==
+"@recidiviz/design-system@0.4.5":
+  version "0.4.5"
+  resolved "https://registry.yarnpkg.com/@recidiviz/design-system/-/design-system-0.4.5.tgz#73ad83a7eb0f39ea6e355bc07c078f4dc0965696"
+  integrity sha512-JmO7Q/sCDL2ClfqiHDPpvSaxxPqvoJtAWDJra8+n/Mioh4RmslM7HLYJ87KmiUAf11J5vqmai1ttphflXJKrqg==
   dependencies:
     "@fontsource/libre-baskerville" "^4.1.0"
     "@fontsource/libre-franklin" "^4.1.0"

@@ -24,7 +24,10 @@ import {
 } from "./CaseCard.styles";
 import { NeedsCheckboxButton } from "./NeedsCheckboxButton";
 import { DecoratedClient } from "../../stores/ClientsStore/Client";
-import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
+import {
+  CaseUpdateActionType,
+  CaseUpdateStatus,
+} from "../../stores/CaseUpdatesStore";
 
 interface NeedsEmploymentProps {
   className: string;
@@ -40,7 +43,10 @@ const NeedsEmployment: React.FC<NeedsEmploymentProps> = ({
 }: NeedsEmploymentProps) => {
   const [needChecked, setNeedChecked] = React.useState(false);
   React.useEffect(() => {
-    setNeedChecked(false);
+    setNeedChecked(
+      client.caseUpdates[CaseUpdateActionType.FOUND_EMPLOYMENT]?.status ===
+        CaseUpdateStatus.IN_PROGRESS
+    );
   }, [client]);
 
   const {
@@ -73,13 +79,9 @@ const NeedsEmployment: React.FC<NeedsEmploymentProps> = ({
           <CheckboxButtonContainer>
             <NeedsCheckboxButton
               checked={needChecked}
-              inProgress={client.inProgressActions?.includes(
-                CaseUpdateActionType.FOUND_EMPLOYMENT
-              )}
               onToggleCheck={onToggleCheck}
-            >
-              I helped them find employment
-            </NeedsCheckboxButton>
+              title="I helped them find employment"
+            />
           </CheckboxButtonContainer>
         ) : null}
       </CaseCardInfo>

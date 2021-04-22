@@ -75,7 +75,8 @@ export const CaseCardFeedback = styled.div`
 `;
 
 export const CheckboxButtonContainer = styled.div`
-  margin-top: ${rem(spacing.sm)};
+  display: flex;
+  margin-top: ${rem(spacing.md)};
 `;
 
 export const ClientNameRow = styled.div`

@@ -77,7 +77,7 @@ def generate_fake_opportunity(
 
 def generate_fake_case_update(
     client: ETLClient,
-    officer: ETLOfficer,
+    officer_external_id: str,
     action_type: CaseUpdateActionType,
     action_ts: Optional[datetime] = None,
     comment: Optional[str] = None,
@@ -90,7 +90,7 @@ def generate_fake_case_update(
         state_code=client.state_code,
         etl_client=client,
         person_external_id=client.person_external_id,
-        officer_external_id=str(officer.external_id),
+        officer_external_id=officer_external_id,
         action_type=action_type.value,
         action_ts=action_ts,
         comment=comment,

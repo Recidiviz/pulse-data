@@ -33,7 +33,7 @@ const ClientList = () => {
     clients = clientsStore.clients.map((client) => (
       <ClientListCard
         client={client}
-        isInProgress={client.inProgressSubmissionDate !== null}
+        showInProgress={Object.keys(client.caseUpdates).length > 0}
         key={client.personExternalId}
       />
     ));

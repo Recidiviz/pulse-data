@@ -20,7 +20,10 @@ import ClientsStore, { DecoratedClient } from "../ClientsStore";
 import UserStore from "../UserStore";
 
 import API from "../API";
-import { trackPersonCaseUpdated } from "../../analytics";
+import {
+  trackPersonActionRemoved,
+  trackPersonActionTaken,
+} from "../../analytics";
 
 interface CaseUpdatesStoreProps {
   api: API;
@@ -46,10 +49,10 @@ class CaseUpdatesStore {
     this.userStore = userStore;
   }
 
-  async submit(
+  async recordAction(
     client: DecoratedClient,
-    actions: CaseUpdateActionType[],
-    otherText: string
+    actionType: CaseUpdateActionType,
+    comments?: string
   ): Promise<void> {
     this.isLoading = true;
 
@@ -57,20 +60,32 @@ class CaseUpdatesStore {
       return;
     }
 
-    const inProgressActions =
-      client.inProgressActions !== undefined
-        ? [...client.inProgressActions, ...actions]
-        : [...actions];
-    await this.api.post("/api/record_client_action", {
+    await this.api.post("/api/case_updates", {
       personExternalId: client.personExternalId,
-      actions: inProgressActions,
-      otherText,
+      actionType,
+      comments,
     });
-    trackPersonCaseUpdated(client, client.inProgressActions, actions);
+    trackPersonActionTaken(client, actionType);
 
-    this.clientsStore.view();
-    this.clientsStore.fetchClientsList();
+    await this.clientsStore.fetchClientsList();
+    this.isLoading = false;
+  }
 
+  async removeAction(
+    client: DecoratedClient,
+    updateId: string,
+    actionType: CaseUpdateActionType
+  ): Promise<void> {
+    this.isLoading = true;
+
+    if (!this.userStore.getTokenSilently) {
+      return;
+    }
+
+    await this.api.delete(`/api/case_updates/${updateId}`);
+    trackPersonActionRemoved(client, updateId, actionType);
+
+    await this.clientsStore.fetchClientsList();
     this.isLoading = false;
   }
 }
