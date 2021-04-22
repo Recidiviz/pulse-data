@@ -35,6 +35,7 @@ import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore/CaseUpdates"
 import { DecoratedClient } from "../../stores/ClientsStore";
 import { titleCase } from "../../utils";
 import { useRootStore } from "../../stores";
+import NotInCaseload from "./NotInCaseload";
 
 const useCardFeedback = (client: DecoratedClient) => {
   const { caseUpdatesStore } = useRootStore();
@@ -105,6 +106,17 @@ const CaseCard: React.FC<CaseCardProps> = ({ client }: CaseCardProps) => {
           {titleCase(client.personExternalId)}
         </Caption>
       </CaseCardHeading>
+      {client.caseUpdates[CaseUpdateActionType.NOT_ON_CASELOAD] ? (
+        <NotInCaseload
+          client={client}
+          onUndo={() => {
+            const actionType = CaseUpdateActionType.NOT_ON_CASELOAD;
+            const updateId = client.caseUpdates[actionType]?.updateId;
+            caseUpdatesStore.removeAction(client, updateId, actionType);
+          }}
+          className="fs-exclude"
+        />
+      ) : null}
       <NeedsEmployment
         client={client}
         onStatusChanged={(helped: boolean) =>

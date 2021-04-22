@@ -17,10 +17,12 @@
 import { observer } from "mobx-react-lite";
 import * as React from "react";
 import { useRootStore } from "../../stores";
+import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
 import {
   ClientListContainer,
   ClientListHeading,
   ClientListTableHeading,
+  FirstClientListHeading,
 } from "./ClientList.styles";
 import ClientListCard from "./ClientListCard";
 import EmptyStateCard from "./EmptyStateCard";
@@ -28,9 +30,16 @@ import EmptyStateCard from "./EmptyStateCard";
 const ClientList = () => {
   const { clientsStore } = useRootStore();
 
-  let clients;
-  if (clientsStore.clients.length > 0) {
-    clients = clientsStore.clients.map((client) => (
+  const activeClients = clientsStore.clients.filter(
+    ({ caseUpdates }) => !caseUpdates[CaseUpdateActionType.NOT_ON_CASELOAD]
+  );
+  const processingClients = clientsStore.clients.filter(
+    ({ caseUpdates }) => caseUpdates[CaseUpdateActionType.NOT_ON_CASELOAD]
+  );
+
+  let activeClientList;
+  if (activeClients.length > 0) {
+    activeClientList = activeClients.map((client) => (
       <ClientListCard
         client={client}
         showInProgress={Object.keys(client.caseUpdates).length > 0}
@@ -38,22 +47,42 @@ const ClientList = () => {
       />
     ));
   } else {
-    clients = <EmptyStateCard />;
+    activeClientList = <EmptyStateCard />;
+  }
+
+  let processingList;
+  if (processingClients.length > 0) {
+    processingList = (
+      <>
+        <ClientListHeading>Processing Feedback</ClientListHeading>
+        <ClientListTableHeading />
+        {processingClients.map((client) => (
+          <ClientListCard client={client} key={client.personExternalId} />
+        ))}
+      </>
+    );
   }
 
   return (
-    <ClientListContainer>
-      <ClientListHeading>Caseload</ClientListHeading>
-      <ClientListTableHeading>
-        <span>Client</span>
-        <span>Needs Met</span>
-        <span>Recommended Contact</span>
-      </ClientListTableHeading>
+    <>
+      <ClientListContainer>
+        <FirstClientListHeading>Caseload</FirstClientListHeading>
+        <ClientListTableHeading>
+          <span>Client</span>
+          <span>Needs Met</span>
+          <span>Recommended Contact</span>
+        </ClientListTableHeading>
 
-      {clientsStore.isLoading && clientsStore.clients.length === 0
-        ? `Loading... ${clientsStore.error || ""}`
-        : clients}
-    </ClientListContainer>
+        {clientsStore.isLoading && clientsStore.clients.length === 0 ? (
+          `Loading... ${clientsStore.error || ""}`
+        ) : (
+          <>
+            {activeClientList}
+            {processingList}
+          </>
+        )}
+      </ClientListContainer>
+    </>
   );
 };
 

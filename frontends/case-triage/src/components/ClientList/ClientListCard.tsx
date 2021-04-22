@@ -27,12 +27,16 @@ import {
   InProgressIndicator,
   IN_PROGRESS_INDICATOR_SIZE,
   MainText,
+  PendingText,
   SecondaryText,
 } from "./ClientList.styles";
 import { titleCase } from "../../utils";
 import DueDate from "../DueDate";
 import Tooltip from "../Tooltip";
-import { CaseUpdateStatus } from "../../stores/CaseUpdatesStore";
+import {
+  CaseUpdateActionType,
+  CaseUpdateStatus,
+} from "../../stores/CaseUpdatesStore";
 
 interface ClientProps {
   client: DecoratedClient;
@@ -101,6 +105,8 @@ const ClientComponent: React.FC<ClientProps> = ({
           DEFAULT_IN_PROGRESS_INDICATOR_OFFSET
         );
 
+  const hasDueDate = !client.caseUpdates[CaseUpdateActionType.NOT_ON_CASELOAD];
+
   return (
     <ClientCard ref={cardRef} onClick={viewClient}>
       <CardHeader className="fs-exclude">
@@ -131,7 +137,11 @@ const ClientComponent: React.FC<ClientProps> = ({
         </Tooltip>
       </FlexCardSection>
       <FlexCardSection>
-        <DueDate date={client.nextFaceToFaceDate} />
+        {hasDueDate ? (
+          <DueDate date={client.nextFaceToFaceDate} />
+        ) : (
+          <PendingText>Pending</PendingText>
+        )}
       </FlexCardSection>
       {showInProgress ? (
         <Tooltip

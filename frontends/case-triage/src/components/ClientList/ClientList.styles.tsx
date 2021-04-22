@@ -74,8 +74,10 @@ export const CardHeader = styled(CardSection)`
   justify-content: center;
 `;
 
+export const FirstClientListHeading = styled(H2)``;
+
 export const ClientListHeading = styled(H2)`
-  margin-bottom: ${rem(spacing.lg)};
+  margin-top: ${rem(spacing.lg)};
 `;
 
 export const ClientListTableHeading = styled.div`
@@ -111,4 +113,8 @@ export const InProgressIndicator = styled.div`
 
   border-radius: 999px;
   background-color: ${palette.slate60};
+`;
+
+export const PendingText = styled.span`
+  color: ${palette.slate70};
 `;

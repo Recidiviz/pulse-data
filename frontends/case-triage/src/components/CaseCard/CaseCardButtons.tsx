@@ -40,7 +40,7 @@ const BaseCheckboxButton = styled.div`
   border-radius: 4px;
 `;
 
-const CheckedCheckboxButton = styled(BaseCheckboxButton)`
+const CheckedButton = styled(BaseCheckboxButton)`
   color: ${palette.white};
   background-color: ${palette.slate60};
   border: 0px;
@@ -52,7 +52,7 @@ const CheckedCheckboxButton = styled(BaseCheckboxButton)`
   }
 `;
 
-const UncheckedCheckboxButton = styled(BaseCheckboxButton)`
+export const UncheckedButton = styled(BaseCheckboxButton)`
   background-color: transparent;
 
   color: ${palette.pine4};
@@ -89,9 +89,7 @@ export const NeedsCheckboxButton: React.FC<NeedsCheckboxButtonProps> = ({
     }
   }, [checked]);
 
-  const Component = checkedState
-    ? CheckedCheckboxButton
-    : UncheckedCheckboxButton;
+  const Component = checkedState ? CheckedButton : UncheckedButton;
   const componentClick = checked
     ? undefined
     : () => {

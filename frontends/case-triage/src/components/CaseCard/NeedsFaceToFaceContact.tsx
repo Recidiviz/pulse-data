@@ -23,12 +23,12 @@ import {
 } from "@recidiviz/design-system";
 import * as React from "react";
 import {
+  ButtonContainer,
   Caption,
   CaseCardBody,
   CaseCardInfo,
-  CheckboxButtonContainer,
 } from "./CaseCard.styles";
-import { NeedsCheckboxButton } from "./NeedsCheckboxButton";
+import { NeedsCheckboxButton } from "./CaseCardButtons";
 import { DecoratedClient } from "../../stores/ClientsStore/Client";
 import { useRootStore } from "../../stores";
 import { SupervisionContactFrequency } from "../../stores/PolicyStore/Policy";
@@ -115,13 +115,13 @@ const NeedsFaceToFaceContact: React.FC<NeedsFaceToFaceContactProps> = ({
           {getLastContactedText(client)}
         </Caption>
         {!client.needsMet.faceToFaceContact ? (
-          <CheckboxButtonContainer>
+          <ButtonContainer>
             <NeedsCheckboxButton
               checked={needChecked}
               onToggleCheck={onToggleCheck}
               title="I scheduled our next face-to-face contact"
             />
-          </CheckboxButtonContainer>
+          </ButtonContainer>
         ) : null}
       </CaseCardInfo>
     </CaseCardBody>
