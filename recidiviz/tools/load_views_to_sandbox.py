@@ -37,8 +37,8 @@ from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS_BY_NAM
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
-from recidiviz.tools.utils.dataset_overrides_for_all_view_datasets import (
-    dataset_overrides_for_all_view_datasets,
+from recidiviz.tools.utils.dataset_overrides import (
+    dataset_overrides_for_deployed_view_datasets,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
 from recidiviz.utils.metadata import local_project_id_override
@@ -52,7 +52,7 @@ def load_views_to_sandbox(
     refresh_materialized_tables_only: bool = False,
 ) -> None:
     """Loads all views into sandbox datasets prefixed with the sandbox_dataset_prefix."""
-    sandbox_dataset_overrides = dataset_overrides_for_all_view_datasets(
+    sandbox_dataset_overrides = dataset_overrides_for_deployed_view_datasets(
         view_dataset_override_prefix=sandbox_dataset_prefix,
         dataflow_dataset_override=dataflow_dataset_override,
     )

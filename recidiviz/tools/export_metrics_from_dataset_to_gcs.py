@@ -40,8 +40,8 @@ from recidiviz.metrics.export.view_export_manager import (
     trigger_export_for_configs,
     get_configs_for_export_name,
 )
-from recidiviz.tools.utils.dataset_overrides_for_all_view_datasets import (
-    dataset_overrides_for_all_view_datasets,
+from recidiviz.tools.utils.dataset_overrides import (
+    dataset_overrides_for_deployed_view_datasets,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
 from recidiviz.utils.metadata import local_project_id_override
@@ -69,7 +69,7 @@ def export_metrics_from_dataset_to_gcs(
     """Exports metric files into a sandbox GCS bucket."""
     sandbox_dataset_overrides = None
     if sandbox_dataset_prefix:
-        sandbox_dataset_overrides = dataset_overrides_for_all_view_datasets(
+        sandbox_dataset_overrides = dataset_overrides_for_deployed_view_datasets(
             view_dataset_override_prefix=sandbox_dataset_prefix,
         )
 
