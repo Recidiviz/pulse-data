@@ -113,7 +113,7 @@ class DirectIngestRawDataUpdateControllerTest(unittest.TestCase):
             )
 
             self.mock_big_query_client.create_or_update_view.assert_has_calls(
-                [mock.call(views_dataset, x) for x in mock_views]
+                [mock.call(x) for x in mock_views]
             )
 
             self.mock_big_query_client.create_dataset_if_necessary.assert_called_once()

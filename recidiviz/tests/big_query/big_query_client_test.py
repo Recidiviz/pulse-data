@@ -24,7 +24,7 @@ from unittest import mock
 import pytest
 from google.cloud import bigquery, exceptions
 from google.cloud.bigquery import SchemaField, QueryJobConfig
-from mock import call
+from mock import call, create_autospec
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryLocation
@@ -52,7 +52,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client = self.client_patcher.start().return_value
 
         self.mock_view = BigQueryView(
-            dataset_id="dataset",
+            dataset_id=self.mock_dataset_id,
             view_id="test_view",
             description="test_view description",
             view_query_template="SELECT NULL LIMIT 0",
@@ -105,14 +105,14 @@ class BigQueryClientImplTest(unittest.TestCase):
     def test_create_or_update_view_creates_view(self) -> None:
         """create_or_update_view creates a View if it does not exist."""
         self.mock_client.get_table.side_effect = exceptions.NotFound("!")
-        self.bq_client.create_or_update_view(self.mock_dataset_ref, self.mock_view)
+        self.bq_client.create_or_update_view(self.mock_view)
         self.mock_client.create_table.assert_called()
         self.mock_client.update_table.assert_not_called()
 
     def test_create_or_update_view_updates_view(self) -> None:
         """create_or_update_view updates a View if it already exist."""
         self.mock_client.get_table.side_effect = None
-        self.bq_client.create_or_update_view(self.mock_dataset_ref, self.mock_view)
+        self.bq_client.create_or_update_view(self.mock_view)
         self.mock_client.update_table.assert_called()
         self.mock_client.create_table.assert_not_called()
 
@@ -367,15 +367,30 @@ class BigQueryClientImplTest(unittest.TestCase):
 
     def test_materialize_view_to_table(self) -> None:
         """Tests that the materialize_view_to_table function calls the function to create a table from a query."""
+        mock_table = create_autospec(bigquery.Table)
+        self.mock_client.get_table.return_value = mock_table
+
         self.bq_client.materialize_view_to_table(self.mock_view)
 
         expected_job_config_matcher = MaterializeTableJobConfigMatcher(
-            expected_destination="fake-recidiviz-project.dataset.test_view_materialized"
+            expected_destination="fake-recidiviz-project.fake-dataset.test_view_materialized"
         )
         self.mock_client.query.assert_called_with(
-            query="SELECT * FROM `fake-recidiviz-project.dataset.test_view`",
+            query="SELECT * FROM `fake-recidiviz-project.fake-dataset.test_view`",
             location="US",
             job_config=expected_job_config_matcher,
+        )
+        self.mock_client.get_table.assert_called_with(
+            bigquery.TableReference(
+                bigquery.DatasetReference("fake-recidiviz-project", "fake-dataset"),
+                "test_view_materialized",
+            )
+        )
+        self.mock_client.update_table.assert_called_with(mock_table, ["description"])
+        self.assertEqual(
+            mock_table.description,
+            "Materialized data from view [fake-dataset.test_view]. "
+            "View description:\ntest_view description",
         )
 
     def test_materialize_view_to_table_destination_override(self) -> None:
@@ -383,6 +398,9 @@ class BigQueryClientImplTest(unittest.TestCase):
         to create a table from a query, even when the view is configured to materialize
         in a custom location.
         """
+        mock_table = create_autospec(bigquery.Table)
+        self.mock_client.get_table.return_value = mock_table
+
         mock_view = BigQueryView(
             dataset_id="dataset",
             view_id="test_view",
@@ -404,6 +422,13 @@ class BigQueryClientImplTest(unittest.TestCase):
             location="US",
             job_config=expected_job_config_matcher,
         )
+        self.mock_client.get_table.assert_called_with(
+            bigquery.TableReference(
+                bigquery.DatasetReference("fake-recidiviz-project", "custom_dataset"),
+                "custom_view",
+            )
+        )
+        self.mock_client.update_table.assert_called_with(mock_table, ["description"])
 
     def test_materialize_view_to_table_no_materialized_location(self) -> None:
         """Tests that the materialize_view_to_table function does not call the function to create a table from a
@@ -419,6 +444,32 @@ class BigQueryClientImplTest(unittest.TestCase):
         with pytest.raises(ValueError):
             self.bq_client.materialize_view_to_table(invalid_view)
         self.mock_client.query.assert_not_called()
+
+    def test_update_description(self) -> None:
+        mock_table = create_autospec(bigquery.Table)
+        mock_table.description = None
+        self.mock_client.get_table.return_value = mock_table
+        self.mock_client.update_table.return_value = mock_table
+
+        result = self.bq_client.update_description(
+            "dataset_id", "view_id", "some description"
+        )
+        self.assertEqual(mock_table.description, "some description")
+        self.mock_client.update_table.assert_called_with(mock_table, ["description"])
+        self.assertEqual(result, mock_table)
+
+    def test_update_description_no_change(self) -> None:
+        mock_table = create_autospec(bigquery.Table)
+        mock_table.description = "some description"
+        self.mock_client.get_table.return_value = mock_table
+        self.mock_client.update_table.return_value = mock_table
+
+        result = self.bq_client.update_description(
+            "dataset_id", "view_id", "some description"
+        )
+        self.assertEqual(mock_table.description, "some description")
+        self.mock_client.update_table.assert_not_called()
+        self.assertEqual(result, mock_table)
 
     def test_create_table_with_schema(self) -> None:
         """Tests that the create_table_with_schema function calls the create_table function on the client."""

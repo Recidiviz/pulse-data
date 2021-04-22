@@ -296,7 +296,7 @@ def _create_or_update_view_and_materialize_if_necessary(
     # changes from underlying tables to be reflected in its schema.
     if old_schema is not None:
         bq_client.delete_table(dataset_ref.dataset_id, view.view_id)
-    updated_view = bq_client.create_or_update_view(dataset_ref, view)
+    updated_view = bq_client.create_or_update_view(view)
 
     if updated_view.schema != old_schema:
         # We also check for schema changes, just in case a parent view or table has added a column
