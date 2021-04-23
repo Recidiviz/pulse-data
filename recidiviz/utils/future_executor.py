@@ -34,6 +34,10 @@ class FutureExecutorProgress:
     completed: int = attr.ib()
     total: int = attr.ib()
 
+    def format(self) -> str:
+        """ Format to progress string """
+        return f"{self.running} running - {self.completed} / {self.total}"
+
 
 class FutureExecutor:
     """ Given a list of task futures, exposes a progress generator, and the results of futures """
@@ -55,7 +59,7 @@ class FutureExecutor:
 
         for _ in futures.as_completed(self.task_futures, timeout=timeout):
             completed += 1
-            running = self.futures_count - completed
+            running = len([future for future in self.task_futures if future.running()])
 
             yield FutureExecutorProgress(
                 running=running, completed=completed, total=self.futures_count

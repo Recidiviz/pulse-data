@@ -56,13 +56,16 @@ class DataDiscoveryStore {
     if (!this.files) {
       return [];
     }
-    for (let x = 0; x < Object.keys(this.files.raw).length; x += 1) {
-      const { columns } = this.files.raw[x];
+
+    const rawFiles = Object.values(this.files.raw);
+    for (let x = 0; x < rawFiles.length; x += 1) {
+      const { columns } = rawFiles[x];
       columns.map((column) => found.add(column));
     }
 
-    for (let x = 0; x < Object.keys(this.files.ingest_view).length; x += 1) {
-      const { columns } = this.files.ingest_view[x];
+    const ingestViews = Object.values(this.files.ingest_view);
+    for (let x = 0; x < ingestViews.length; x += 1) {
+      const { columns } = ingestViews[x];
       columns.map((column) => found.add(column));
     }
 

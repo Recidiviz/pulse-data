@@ -210,6 +210,7 @@ def main() -> int:
                 "recidiviz.case_triage.state_utils",
                 "recidiviz.case_triage.views",
                 "recidiviz.cloud_functions",
+                "recidiviz.cloud_memorystore",
                 "recidiviz.cloud_sql",
                 "recidiviz.cloud_storage",
                 "recidiviz.common",
@@ -222,6 +223,7 @@ def main() -> int:
                 "recidiviz.tests.ingest.fixtures",
                 # TODO(#4472): Refactor justice counts code out of the tools directory
                 "recidiviz.tools.justice_counts.manual_upload",
+                "recidiviz.tools.gsutil_shell_helpers",
                 "recidiviz.utils",
                 "recidiviz.validation",
                 "recidiviz.view_registry",

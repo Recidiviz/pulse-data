@@ -29,6 +29,7 @@ from recidiviz.admin_panel.dataset_metadata_store import (
 from recidiviz.admin_panel.ingest_metadata_store import IngestDataFreshnessStore
 from recidiviz.admin_panel.ingest_operations_store import IngestOperationsStore
 from recidiviz.admin_panel.routes.case_triage import add_case_triage_routes
+from recidiviz.admin_panel.routes.data_discovery import add_data_discovery_routes
 from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import (
@@ -95,6 +96,7 @@ ingest_operations_store = IngestOperationsStore(
 
 admin_panel = Blueprint("admin_panel", __name__, static_folder=static_folder)
 add_case_triage_routes(admin_panel)
+add_data_discovery_routes(admin_panel)
 
 
 def jsonify_dataset_metadata_result(

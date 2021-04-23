@@ -21,7 +21,7 @@ import logging
 import time
 import uuid
 from datetime import datetime, timedelta
-from typing import Generator, Optional
+from typing import Generator, Optional, Any, Dict
 from uuid import UUID
 
 import attr
@@ -44,12 +44,11 @@ class RedisCommunicatorMessage:
     data: str = attr.ib()
     kind: MessageKind = attr.ib(default=MessageKind.UPDATE)
 
-    def to_json(self) -> str:
+    def to_json(self) -> Dict[str, Any]:
         """ Converts the message to json"""
         message = attr.asdict(self)
         message["kind"] = self.kind.value
-
-        return json.dumps(message)
+        return message
 
     @staticmethod
     def from_json(json_string: Optional[bytes]) -> Optional["RedisCommunicatorMessage"]:
@@ -140,7 +139,9 @@ class RedisCommunicator:
 
         pipeline = self.cache.pipeline()
 
-        pipeline.zadd(self.channel_cache_key, {message.to_json(): message.cursor})
+        pipeline.zadd(
+            self.channel_cache_key, {json.dumps(message.to_json()): message.cursor}
+        )
         pipeline.expire(self.channel_cache_key, MESSAGE_CACHE_EXPIRY_SECONDS)
         pipeline.expire(self.cursor_cache_key, MESSAGE_CACHE_EXPIRY_SECONDS)
         pipeline.expire(self.options_cache_key, MESSAGE_CACHE_EXPIRY_SECONDS)
@@ -157,7 +158,7 @@ class RedisCommunicator:
 
     def listen(
         self, listener_cursor: int, timeout: int = MESSAGE_LISTEN_TIMEOUT_SECONDS
-    ) -> Generator[Optional[RedisCommunicatorMessage], None, None]:
+    ) -> Generator[RedisCommunicatorMessage, None, None]:
         """Listens for new messages in the channel.
         Yields the latest message whenever a new message is published to the communication channel
         Args:
@@ -176,7 +177,10 @@ class RedisCommunicator:
             if self.latest_message and self.latest_message.cursor > listener_cursor:
                 break
 
-        yield self.latest_message
+        latest_message = self.latest_message
+
+        if latest_message:
+            yield latest_message
 
     @classmethod
     def build_channel_cache_key(cls, channel_uuid: UUID) -> str:

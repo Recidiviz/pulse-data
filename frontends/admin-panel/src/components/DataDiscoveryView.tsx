@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import * as React from "react";
-import { Alert, Badge, Button, Card, Form, Space, Steps } from "antd";
+import { Badge, Button, Card, Form, Space, Steps } from "antd";
 import { LoadingOutlined, SearchOutlined } from "@ant-design/icons";
 import { FormInstance } from "antd/es/form";
 import {
@@ -102,7 +102,7 @@ const Component: React.FC = () => {
     {
       title: "Choose State",
       description: "Select the state you want to search ingest data for",
-      content: <div />,
+      content: <DataDiscoverySelectStateView />,
     },
     {
       title: "Choose Files",
@@ -127,69 +127,56 @@ const Component: React.FC = () => {
   ];
 
   return (
-    <>
-      <Alert
-        type="error"
-        message="Not yet available"
-        description="The Data discovery tool is not yet available, it will be soon, though!"
-      />
-      <br />
-      <FormContext.Provider value={{ form }}>
-        <Card title="Data Discovery" className="data-discovery__card">
-          <Form onFinish={submit} layout="vertical" form={form}>
-            <Space direction="vertical" size={16}>
-              <Steps current={current} style={{ width: "100%" }}>
-                {steps.map((item) => (
-                  <Step key={item.title} title={item.title} icon={item.icon} />
-                ))}
-              </Steps>
+    <FormContext.Provider value={{ form }}>
+      <Card title="Data Discovery" className="data-discovery__card">
+        <Form onFinish={submit} layout="vertical" form={form}>
+          <Space direction="vertical" size={16}>
+            <Steps current={current} style={{ width: "100%" }}>
+              {steps.map((item) => (
+                <Step key={item.title} title={item.title} icon={item.icon} />
+              ))}
+            </Steps>
 
-              <Card
-                title={steps[current].description || ""}
-                type="inner"
-                key={steps[current].title}
-              >
-                {steps[current].content}
-              </Card>
+            <Card
+              title={steps[current].description || ""}
+              type="inner"
+              key={steps[current].title}
+            >
+              {steps[current].content}
+            </Card>
 
-              <Space>
-                {current < steps.length - 2 && (
-                  <Button
-                    type="primary"
-                    onClick={() => next()}
-                    size="large"
-                    disabled
-                  >
-                    Next
-                  </Button>
-                )}
-                {current === steps.length - 2 && (
-                  <Button
-                    type="primary"
-                    htmlType="submit"
-                    onClick={async () => {
-                      await form.validateFields();
-                      await form.submit();
-                      next();
-                    }}
-                    icon={<SearchOutlined />}
-                    loading={isLoading}
-                    size="large"
-                  >
-                    Search
-                  </Button>
-                )}
-                {current > 0 && (
-                  <Button onClick={() => prev()} size="large">
-                    Previous
-                  </Button>
-                )}
-              </Space>
+            <Space>
+              {current < steps.length - 2 && (
+                <Button type="primary" onClick={() => next()} size="large">
+                  Next
+                </Button>
+              )}
+              {current === steps.length - 2 && (
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  onClick={async () => {
+                    await form.validateFields();
+                    await form.submit();
+                    next();
+                  }}
+                  icon={<SearchOutlined />}
+                  loading={isLoading}
+                  size="large"
+                >
+                  Search
+                </Button>
+              )}
+              {current > 0 && (
+                <Button onClick={() => prev()} size="large">
+                  Previous
+                </Button>
+              )}
             </Space>
-          </Form>
-        </Card>
-      </FormContext.Provider>
-    </>
+          </Space>
+        </Form>
+      </Card>
+    </FormContext.Provider>
   );
 };
 

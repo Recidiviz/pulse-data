@@ -28,8 +28,8 @@ from recidiviz.admin_panel.data_discovery.cache_ingest_file_as_parquet import (
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 
 
-class TestParquetFileCache(TestCase):
-    """ Tests for ParquetFileCache """
+class TestSingleIngestFileParquetCache(TestCase):
+    """ Tests for SingleIngestFileParquetCache """
 
     def setUp(self) -> None:
         self.fakeredis = fakeredis.FakeRedis()
@@ -49,7 +49,7 @@ class TestParquetFileCache(TestCase):
 
         parquet_file_cache.add_chunk(first_chunk)
         parquet_file_cache.add_chunk(second_chunk)
-
+        parquet_file_cache.move_staged_files_to_completed()
         self.assertEqual(self.fakeredis.ttl(parquet_file_cache.cache_key), expiry)
 
         dataframes = [

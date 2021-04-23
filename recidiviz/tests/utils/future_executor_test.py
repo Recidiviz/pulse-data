@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements tests for FutureExecutor. """
-from unittest import TestCase
+from unittest import TestCase, mock
 
 from recidiviz.utils.future_executor import FutureExecutor, FutureExecutorProgress
 
@@ -34,9 +34,9 @@ class TestFutureExecutor(TestCase):
             self.assertEqual(
                 list(executor.progress()),
                 [
-                    FutureExecutorProgress(running=2, completed=1, total=3),
-                    FutureExecutorProgress(running=1, completed=2, total=3),
-                    FutureExecutorProgress(running=0, completed=3, total=3),
+                    FutureExecutorProgress(running=mock.ANY, completed=1, total=3),
+                    FutureExecutorProgress(running=mock.ANY, completed=2, total=3),
+                    FutureExecutorProgress(running=mock.ANY, completed=3, total=3),
                 ],
             )
 
