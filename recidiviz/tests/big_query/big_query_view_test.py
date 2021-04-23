@@ -20,7 +20,7 @@ import unittest
 import pytest
 from mock import patch
 
-from recidiviz.big_query.big_query_view import BigQueryView, BigQueryLocation
+from recidiviz.big_query.big_query_view import BigQueryView, BigQueryAddress
 
 
 class BigQueryViewTest(unittest.TestCase):
@@ -120,14 +120,14 @@ class BigQueryViewTest(unittest.TestCase):
                 select_col_2="date",
             )
 
-    def test_materialized_location_override_same_as_view_throws(self) -> None:
+    def test_materialized_address_override_same_as_view_throws(self) -> None:
         with self.assertRaises(ValueError) as e:
             _ = BigQueryView(
                 dataset_id="view_dataset",
                 view_id="my_view",
                 description="my_view description",
                 should_materialize=True,
-                materialized_location_override=BigQueryLocation(
+                materialized_address_override=BigQueryAddress(
                     dataset_id="view_dataset", table_id="my_view"
                 ),
                 view_query_template="SELECT * FROM `{project_id}.{some_dataset}.table`",
@@ -135,18 +135,18 @@ class BigQueryViewTest(unittest.TestCase):
             )
         self.assertEqual(
             str(e.exception),
-            "Materialized location override "
-            "[BigQueryLocation(dataset_id='view_dataset', table_id='my_view')] cannot be "
+            "Materialized address override "
+            "[BigQueryAddress(dataset_id='view_dataset', table_id='my_view')] cannot be "
             "same as view itself.",
         )
 
-    def test_materialized_location_override_no_should_materialize_throws(self) -> None:
+    def test_materialized_address_override_no_should_materialize_throws(self) -> None:
         with self.assertRaises(ValueError) as e:
             _ = BigQueryView(
                 dataset_id="view_dataset",
                 view_id="my_view",
                 description="my_view description",
-                materialized_location_override=BigQueryLocation(
+                materialized_address_override=BigQueryAddress(
                     dataset_id="view_dataset_materialized",
                     table_id="my_view_table",
                 ),
@@ -155,13 +155,13 @@ class BigQueryViewTest(unittest.TestCase):
             )
         self.assertTrue(
             str(e.exception).startswith(
-                "Found nonnull materialized_location_override ["
-                "BigQueryLocation(dataset_id='view_dataset_materialized', table_id='my_view_table')] "
+                "Found nonnull materialized_address_override ["
+                "BigQueryAddress(dataset_id='view_dataset_materialized', table_id='my_view_table')] "
                 "when `should_materialize` is not True"
             )
         )
 
-    def test_materialized_location(self) -> None:
+    def test_materialized_address(self) -> None:
         view_materialized_no_override = BigQueryView(
             dataset_id="view_dataset",
             view_id="my_view",
@@ -172,15 +172,11 @@ class BigQueryViewTest(unittest.TestCase):
         )
 
         self.assertEqual(
-            BigQueryLocation(
-                dataset_id="view_dataset", table_id="my_view_materialized"
-            ),
-            view_materialized_no_override.materialized_location,
+            BigQueryAddress(dataset_id="view_dataset", table_id="my_view_materialized"),
+            view_materialized_no_override.materialized_address,
         )
         self.assertEqual(
-            BigQueryLocation(
-                dataset_id="view_dataset", table_id="my_view_materialized"
-            ),
+            BigQueryAddress(dataset_id="view_dataset", table_id="my_view_materialized"),
             view_materialized_no_override.table_for_query,
         )
 
@@ -189,7 +185,7 @@ class BigQueryViewTest(unittest.TestCase):
             view_id="my_view",
             description="my_view description",
             should_materialize=True,
-            materialized_location_override=BigQueryLocation(
+            materialized_address_override=BigQueryAddress(
                 dataset_id="other_dataset",
                 table_id="my_view_table",
             ),
@@ -198,11 +194,11 @@ class BigQueryViewTest(unittest.TestCase):
         )
 
         self.assertEqual(
-            BigQueryLocation(dataset_id="other_dataset", table_id="my_view_table"),
-            view_with_override.materialized_location,
+            BigQueryAddress(dataset_id="other_dataset", table_id="my_view_table"),
+            view_with_override.materialized_address,
         )
         self.assertEqual(
-            BigQueryLocation(dataset_id="other_dataset", table_id="my_view_table"),
+            BigQueryAddress(dataset_id="other_dataset", table_id="my_view_table"),
             view_with_override.table_for_query,
         )
 
@@ -214,13 +210,13 @@ class BigQueryViewTest(unittest.TestCase):
             some_dataset="a_dataset",
         )
 
-        self.assertIsNone(view_not_materialized.materialized_location)
+        self.assertIsNone(view_not_materialized.materialized_address)
         self.assertEqual(
-            BigQueryLocation(dataset_id="view_dataset", table_id="my_view"),
+            BigQueryAddress(dataset_id="view_dataset", table_id="my_view"),
             view_not_materialized.table_for_query,
         )
 
-    def test_materialized_location_dataset_overrides(self) -> None:
+    def test_materialized_address_dataset_overrides(self) -> None:
         dataset_overrides = {
             "view_dataset": "my_override_view_dataset",
             "other_dataset": "my_override_other_dataset",
@@ -237,13 +233,13 @@ class BigQueryViewTest(unittest.TestCase):
         )
 
         self.assertEqual(
-            BigQueryLocation(
+            BigQueryAddress(
                 dataset_id="my_override_view_dataset", table_id="my_view_materialized"
             ),
-            view_materialized_no_override.materialized_location,
+            view_materialized_no_override.materialized_address,
         )
         self.assertEqual(
-            BigQueryLocation(
+            BigQueryAddress(
                 dataset_id="my_override_view_dataset", table_id="my_view_materialized"
             ),
             view_materialized_no_override.table_for_query,
@@ -254,7 +250,7 @@ class BigQueryViewTest(unittest.TestCase):
             view_id="my_view",
             description="my_view description",
             should_materialize=True,
-            materialized_location_override=BigQueryLocation(
+            materialized_address_override=BigQueryAddress(
                 dataset_id="other_dataset",
                 table_id="my_view_table",
             ),
@@ -264,13 +260,13 @@ class BigQueryViewTest(unittest.TestCase):
         )
 
         self.assertEqual(
-            BigQueryLocation(
+            BigQueryAddress(
                 dataset_id="my_override_other_dataset", table_id="my_view_table"
             ),
-            view_with_override.materialized_location,
+            view_with_override.materialized_address,
         )
         self.assertEqual(
-            BigQueryLocation(
+            BigQueryAddress(
                 dataset_id="my_override_other_dataset", table_id="my_view_table"
             ),
             view_with_override.table_for_query,
@@ -285,8 +281,8 @@ class BigQueryViewTest(unittest.TestCase):
             some_dataset="a_dataset",
         )
 
-        self.assertIsNone(view_not_materialized.materialized_location)
+        self.assertIsNone(view_not_materialized.materialized_address)
         self.assertEqual(
-            BigQueryLocation(dataset_id="my_override_view_dataset", table_id="my_view"),
+            BigQueryAddress(dataset_id="my_override_view_dataset", table_id="my_view"),
             view_not_materialized.table_for_query,
         )

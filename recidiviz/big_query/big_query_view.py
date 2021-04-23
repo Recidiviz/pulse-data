@@ -30,8 +30,8 @@ _DEFAULT_MATERIALIZED_SUFFIX = "_materialized"
 
 
 @attr.s(frozen=True, kw_only=True)
-class BigQueryLocation:
-    """Represents the (dataset_id, table_id) location of a view or table. """
+class BigQueryAddress:
+    """Represents the (dataset_id, table_id) address of a view or table. """
 
     dataset_id: str = attr.ib(validator=attr_validators.is_str)
     table_id: str = attr.ib(validator=attr_validators.is_str)
@@ -49,9 +49,9 @@ class BigQueryView(bigquery.TableReference):
         description: str,
         view_query_template: str,
         should_materialize: bool = False,
-        # Override for location this table will be materialized to - should_materialize
+        # Override for address this table will be materialized to - should_materialize
         # must be True if this is set.
-        materialized_location_override: Optional[BigQueryLocation] = None,
+        materialized_address_override: Optional[BigQueryAddress] = None,
         dataset_overrides: Optional[
             Dict[str, str]
         ] = None,  # 'original_name' -> 'prefix_original_name'
@@ -74,15 +74,15 @@ class BigQueryView(bigquery.TableReference):
                 dataset_id = dataset_overrides[dataset_id]
 
             if (
-                materialized_location_override
-                and materialized_location_override.dataset_id in dataset_overrides
+                materialized_address_override
+                and materialized_address_override.dataset_id in dataset_overrides
             ):
                 updated_materialized_dataset_override = dataset_overrides[
-                    materialized_location_override.dataset_id
+                    materialized_address_override.dataset_id
                 ]
-                materialized_location_override = BigQueryLocation(
+                materialized_address_override = BigQueryAddress(
                     dataset_id=updated_materialized_dataset_override,
-                    table_id=materialized_location_override.table_id,
+                    table_id=materialized_address_override.table_id,
                 )
 
         if project_id is None:
@@ -110,18 +110,18 @@ class BigQueryView(bigquery.TableReference):
             view_query_template, inject_project_id=True, **self.query_format_kwargs
         )
         self._should_materialize = should_materialize
-        if not self._should_materialize and materialized_location_override:
+        if not self._should_materialize and materialized_address_override:
             raise ValueError(
-                f"Found nonnull materialized_location_override "
-                f"[{materialized_location_override}] when `should_materialize` is not "
-                f"True. Must set `should_materialize` to set location override."
+                f"Found nonnull materialized_address_override "
+                f"[{materialized_address_override}] when `should_materialize` is not "
+                f"True. Must set `should_materialize` to set address override."
             )
-        if materialized_location_override == self.location:
+        if materialized_address_override == self.address:
             raise ValueError(
-                f"Materialized location override [{materialized_location_override}] "
+                f"Materialized address override [{materialized_address_override}] "
                 f"cannot be same as view itself."
             )
-        self._materialized_location_override = materialized_location_override
+        self._materialized_address_override = materialized_address_override
 
     @classmethod
     def _get_dataset_override_kwargs(
@@ -202,36 +202,36 @@ class BigQueryView(bigquery.TableReference):
         return f"SELECT * FROM `{{project_id}}.{self.dataset_id}.{self.view_id}`"
 
     @property
-    def location(self) -> BigQueryLocation:
-        """The (dataset_id, table_id) location for this view"""
-        return BigQueryLocation(dataset_id=self.dataset_id, table_id=self.view_id)
+    def address(self) -> BigQueryAddress:
+        """The (dataset_id, table_id) address for this view"""
+        return BigQueryAddress(dataset_id=self.dataset_id, table_id=self.view_id)
 
     @property
-    def materialized_location(self) -> Optional[BigQueryLocation]:
+    def materialized_address(self) -> Optional[BigQueryAddress]:
         """The (dataset_id, table_id) for a table that contains the result of the
         view_query if this view were to be materialized.
         """
         if not self._should_materialize:
             return None
 
-        if self._materialized_location_override:
-            return self._materialized_location_override
+        if self._materialized_address_override:
+            return self._materialized_address_override
 
-        return BigQueryLocation(
+        return BigQueryAddress(
             dataset_id=self.dataset_id,
             table_id=self.view_id + _DEFAULT_MATERIALIZED_SUFFIX,
         )
 
     @property
-    def table_for_query(self) -> BigQueryLocation:
+    def table_for_query(self) -> BigQueryAddress:
         """The (dataset_id, table_id) to use when querying from this view.
 
-        Will return the materialized view location when available, otherwise the plain
-        view location."""
+        Will return the materialized view address when available, otherwise the plain
+        view address."""
 
-        if self.materialized_location:
-            return self.materialized_location
-        return self.location
+        if self.materialized_address:
+            return self.materialized_address
+        return self.address
 
     def __repr__(self) -> str:
         return (
@@ -262,7 +262,7 @@ class BigQueryViewBuilder(Generic[BigQueryViewType]):
 
     dataset_id: str
     view_id: str
-    materialized_location_override: Optional[BigQueryLocation]
+    materialized_address_override: Optional[BigQueryAddress]
 
     def build(
         self, *, dataset_overrides: Optional[Dict[str, str]] = None
@@ -306,7 +306,7 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder):
         description: str,
         view_query_template: str,
         should_materialize: bool = False,
-        materialized_location_override: Optional[BigQueryLocation] = None,
+        materialized_address_override: Optional[BigQueryAddress] = None,
         should_build_predicate: Optional[Callable[[], bool]] = None,
         # All query format kwargs args must have string values
         **query_format_kwargs: str,
@@ -317,7 +317,7 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder):
         self.view_query_template = view_query_template
         self.should_materialize = should_materialize
         self.should_build_predicate = should_build_predicate
-        self.materialized_location_override = materialized_location_override
+        self.materialized_address_override = materialized_address_override
         self.query_format_kwargs = query_format_kwargs
 
     def _build(self, *, dataset_overrides: Dict[str, str] = None) -> BigQueryView:
@@ -327,7 +327,7 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder):
             description=self.description,
             view_query_template=self.view_query_template,
             should_materialize=self.should_materialize,
-            materialized_location_override=self.materialized_location_override,
+            materialized_address_override=self.materialized_address_override,
             dataset_overrides=dataset_overrides,
             **self.query_format_kwargs,
         )

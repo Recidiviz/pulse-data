@@ -957,7 +957,7 @@ class UnnormalizedDirectIngestPreProcessedIngestViewBuilder(
             primary_key_tables_for_entity_deletion or []
         )
         self.materialize_raw_data_table_views = materialize_raw_data_table_views
-        self.materialized_location_override = None
+        self.materialized_address_override = None
 
     @property
     def file_tag(self) -> str:

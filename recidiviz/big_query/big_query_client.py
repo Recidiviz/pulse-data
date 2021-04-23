@@ -19,7 +19,8 @@ tables and views.
 """
 import abc
 import logging
-from typing import List, Optional, Iterator, Callable
+from collections import defaultdict
+from typing import List, Optional, Iterator, Callable, Dict
 
 from google.cloud import bigquery, exceptions
 
@@ -27,14 +28,21 @@ from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
 from recidiviz.utils import metadata
 
-_clients_by_project_id = {}
+_clients_by_project_id_by_region: Dict[str, Dict[str, bigquery.Client]] = defaultdict(
+    dict
+)
 
 
-def client(project_id: str) -> bigquery.Client:
-    global _clients_by_project_id
-    if project_id not in _clients_by_project_id:
-        _clients_by_project_id[project_id] = bigquery.Client(project=project_id)
-    return _clients_by_project_id[project_id]
+def client(project_id: str, region: str) -> bigquery.Client:
+    global _clients_by_project_id_by_region
+    if (
+        project_id not in _clients_by_project_id_by_region
+        or region not in _clients_by_project_id_by_region[project_id]
+    ):
+        _clients_by_project_id_by_region[project_id][region] = bigquery.Client(
+            project=project_id, location=region
+        )
+    return _clients_by_project_id_by_region[project_id][region]
 
 
 # The urllib3 library (used by the Google BigQuery client) has a default limit of 10 connections and when we do
@@ -49,6 +57,9 @@ class BigQueryClient:
     """Interface for a wrapper around the bigquery.Client with convenience functions for querying, creating, copying and
     exporting BigQuery tables and views.
     """
+
+    # Default region that will be associated with all bigquery.Client() calls
+    DEFAULT_REGION = "US"
 
     @property
     @abc.abstractmethod
@@ -349,9 +360,10 @@ class BigQueryClient:
         query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
         overwrite: Optional[bool] = False,
     ) -> bigquery.QueryJob:
-        """Creates a table at the given location with the output from the given query. If overwrite is False, a
-        'duplicate' error is returned in the job result if the table already exists and contains data. If overwrite is
-        True, overwrites the table if it already exists.
+        """Creates a table at the given address with the output from the given query.
+        If overwrite is False, a 'duplicate' error is returned in the job result if the
+        table already exists and contains data. If overwrite is True, overwrites the
+        table if it already exists.
 
         Args:
             dataset_id: The name of the dataset where the table should be created.
@@ -435,9 +447,10 @@ class BigQueryClient:
         allow_field_additions: bool = False,
         write_disposition: bigquery.WriteDisposition = bigquery.WriteDisposition.WRITE_APPEND,
     ) -> bigquery.QueryJob:
-        """Inserts the results of the given query into the table at the given location. Creates a table if one does not
-        yet exist. If |allow_field_additions| is set to False and the table exists, the schema of the query result must
-        match the schema of the destination table.
+        """Inserts the results of the given query into the table at the given address.
+        Creates a table if one does not yet exist. If |allow_field_additions| is set to
+        False and the table exists, the schema of the query result must match the schema
+        of the destination table.
 
         Args:
             destination_dataset_id: The name of the dataset where the result should be inserted.
@@ -472,7 +485,7 @@ class BigQueryClient:
     @abc.abstractmethod
     def materialize_view_to_table(self, view: BigQueryView) -> bigquery.Table:
         """Materializes the result of a view's view_query into a table. The view's
-        materialized_location must be set. The resulting table is put in the same
+        materialized_address must be set. The resulting table is put in the same
         project as the view, and it overwrites any previous materialization of the view.
 
         Args:
@@ -579,10 +592,9 @@ class BigQueryClientImpl(BigQueryClient):
     BigQuery tables and views.
     """
 
-    # Location of the GCP project that must be the same for bigquery.Client calls
-    LOCATION = "US"
-
-    def __init__(self, project_id: Optional[str] = None):
+    def __init__(
+        self, project_id: Optional[str] = None, region_override: Optional[str] = None
+    ):
         if not project_id:
             project_id = metadata.project_id()
 
@@ -592,7 +604,8 @@ class BigQueryClientImpl(BigQueryClient):
             )
 
         self._project_id = project_id
-        self.client = client(self._project_id)
+        self.region = region_override or self.DEFAULT_REGION
+        self.client = client(self._project_id, region=self.region)
 
     @property
     def project_id(self) -> str:
@@ -782,7 +795,7 @@ class BigQueryClientImpl(BigQueryClient):
             table_ref,
             destination_uri,
             # Location must match that of the source table.
-            location=self.LOCATION,
+            location=self.region,
             job_config=job_config,
         )
 
@@ -852,7 +865,7 @@ class BigQueryClientImpl(BigQueryClient):
 
         return self.client.query(
             query=query_str,
-            location=self.LOCATION,
+            location=self.region,
             job_config=job_config,
         )
 
@@ -1069,7 +1082,7 @@ class BigQueryClientImpl(BigQueryClient):
 
         return self.client.query(
             query=query,
-            location=self.LOCATION,
+            location=self.region,
             job_config=job_config,
         )
 
@@ -1132,16 +1145,17 @@ class BigQueryClientImpl(BigQueryClient):
         return self.client.query(delete_query)
 
     def materialize_view_to_table(self, view: BigQueryView) -> bigquery.Table:
-        if view.materialized_location is None:
+        if view.materialized_address is None:
             raise ValueError(
                 "Trying to materialize a view that does not have a set "
-                "materialized_location."
+                "materialized_address."
             )
 
-        dst_dataset_id = view.materialized_location.dataset_id
-        dst_table_id = view.materialized_location.table_id
+        dst_dataset_id = view.materialized_address.dataset_id
+        dst_table_id = view.materialized_address.table_id
         logging.info(
-            "Materializing %s into a table with location: %s.%s",
+            "Materializing %s.%s into a table with address: %s.%s",
+            view.dataset_id,
             view.view_id,
             dst_dataset_id,
             dst_table_id,
