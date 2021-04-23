@@ -16,6 +16,10 @@
 # =============================================================================
 """Counts of the total state population by race/ethnicity, grouped by state-specific categories."""
 # pylint: disable=trailing-whitespace
+from recidiviz.calculator.query.state.views.dashboard.revocation_analysis.revocations_matrix_distribution_by_race import (
+    US_PA_SUPPORTED_RACE_VALUES,
+)
+from recidiviz.common.constants.states import StateCode
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query.state import (
     dataset_config,
@@ -67,7 +71,9 @@ STATE_RACE_ETHNICITY_POPULATION_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dimensions=("state_code", "race_or_ethnicity"),
     description=STATE_RACE_ETHNICITY_POPULATION_VIEW_DESCRIPTION,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
-    state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(),
+    state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(
+        supported_race_overrides={StateCode.US_PA: US_PA_SUPPORTED_RACE_VALUES}
+    ),
 )
 
 if __name__ == "__main__":
