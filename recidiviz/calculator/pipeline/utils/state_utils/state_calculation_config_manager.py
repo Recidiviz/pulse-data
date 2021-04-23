@@ -93,7 +93,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violation_utils
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration_period import (
-    is_revocation_admission,
+    is_commitment_from_supervision,
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
@@ -331,6 +331,7 @@ def get_post_incarceration_supervision_type(
     return None
 
 
+# TODO(#6985): Change all revocation language to commitment to supervision
 def get_pre_revocation_supervision_type(
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_sentences: List[StateSupervisionSentence],
@@ -408,6 +409,7 @@ def state_specific_filter_of_violation_responses(
     return violation_responses
 
 
+# TODO(#6985): Change all "revocation" language to "commitment from supervision"
 def filter_supervision_periods_for_revocation_identification(
     supervision_periods: List[StateSupervisionPeriod],
 ) -> List[StateSupervisionPeriod]:
@@ -420,6 +422,7 @@ def filter_supervision_periods_for_revocation_identification(
     return supervision_periods
 
 
+# TODO(#6985): Change all "revocation" language to "commitment from supervision"
 def incarceration_period_is_from_revocation(
     incarceration_period: StateIncarcerationPeriod,
     preceding_incarceration_period: Optional[StateIncarcerationPeriod],
@@ -431,7 +434,7 @@ def incarceration_period_is_from_revocation(
         )
     if incarceration_period.state_code.upper() == "US_PA":
         return us_pa_is_revocation_admission(incarceration_period)
-    return is_revocation_admission(incarceration_period.admission_reason)
+    return is_commitment_from_supervision(incarceration_period.admission_reason)
 
 
 def should_produce_supervision_time_bucket_for_period(
@@ -727,6 +730,7 @@ def shorthand_for_violation_subtype(state_code: str, violation_subtype: str) -> 
     return violation_subtype.lower()
 
 
+# TODO(#6985): Change all "revocation" language to "commitment from supervision"
 def revoked_supervision_periods_if_revocation_occurred(
     state_code: str,
     incarceration_period: StateIncarcerationPeriod,
@@ -762,7 +766,7 @@ def revoked_supervision_periods_if_revocation_occurred(
             incarceration_period, supervision_periods
         )
     else:
-        admission_is_revocation = is_revocation_admission(
+        admission_is_revocation = is_commitment_from_supervision(
             incarceration_period.admission_reason
         )
         revoked_periods = get_relevant_supervision_periods_before_admission_date(
@@ -772,6 +776,7 @@ def revoked_supervision_periods_if_revocation_occurred(
     return admission_is_revocation, revoked_periods
 
 
+# TODO(#6985): Change all "revocation" language to "commitment from supervision"
 def state_specific_revocation_type_and_subtype(
     state_code: str,
     incarceration_period: StateIncarcerationPeriod,

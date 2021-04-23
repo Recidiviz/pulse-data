@@ -17,15 +17,21 @@
 """Incarceration metrics we calculate."""
 
 from datetime import date
-from typing import Optional
+from typing import Optional, List
 
 import attr
 
+from recidiviz.calculator.pipeline.utils.event_utils import (
+    SupervisionLocationMixin,
+    ViolationHistoryMixin,
+)
 from recidiviz.calculator.pipeline.utils.metric_utils import (
     RecidivizMetric,
     PersonLevelMetric,
     RecidivizMetricType,
+    AssessmentMetricMixin,
 )
+from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
@@ -33,6 +39,10 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
+    StateSupervisionLevel,
+)
+from recidiviz.common.constants.state.state_supervision_violation_response import (
+    StateSupervisionViolationResponseDecision,
 )
 
 
@@ -40,12 +50,15 @@ class IncarcerationMetricType(RecidivizMetricType):
     """The type of incarceration metrics."""
 
     INCARCERATION_ADMISSION = "INCARCERATION_ADMISSION"
+    INCARCERATION_COMMITMENT_FROM_SUPERVISION = (
+        "INCARCERATION_COMMITMENT_FROM_SUPERVISION"
+    )
     INCARCERATION_POPULATION = "INCARCERATION_POPULATION"
     INCARCERATION_RELEASE = "INCARCERATION_RELEASE"
 
 
 @attr.s
-class IncarcerationMetric(RecidivizMetric, PersonLevelMetric):
+class IncarcerationMetric(RecidivizMetric[IncarcerationMetricType], PersonLevelMetric):
     """Models a single incarceration metric.
 
     Contains all of the identifying characteristics of the metric, including required characteristics for normalization
@@ -53,6 +66,7 @@ class IncarcerationMetric(RecidivizMetric, PersonLevelMetric):
     """
 
     # Required characteristics
+    metric_type_cls = IncarcerationMetricType
 
     # The type of IncarcerationMetric
     metric_type: IncarcerationMetricType = attr.ib(default=None)
@@ -104,11 +118,6 @@ class IncarcerationPopulationMetric(IncarcerationMetric):
     # Raw text value of the most recent "official" admission reason for this time of incarceration
     admission_reason_raw_text: Optional[str] = attr.ib(default=None)
 
-    # Supervision type at the time of admission, if any.
-    supervision_type_at_admission: Optional[
-        StateSupervisionPeriodSupervisionType
-    ] = attr.ib(default=None)
-
     # Area of jurisdictional coverage of the court that sentenced the person to this incarceration
     judicial_district_code: Optional[str] = attr.ib(default=None)
 
@@ -146,13 +155,69 @@ class IncarcerationAdmissionMetric(IncarcerationMetric):
         StateSpecializedPurposeForIncarceration
     ] = attr.ib(default=None)
 
-    # Supervision type at the time of admission, if any.
-    supervision_type_at_admission: Optional[
-        StateSupervisionPeriodSupervisionType
-    ] = attr.ib(default=None)
-
     # Admission date
     admission_date: Optional[date] = attr.ib(default=None)
+
+
+@attr.s
+class IncarcerationCommitmentFromSupervisionMetric(
+    IncarcerationAdmissionMetric,
+    SupervisionLocationMixin,
+    AssessmentMetricMixin,
+    ViolationHistoryMixin,
+):
+    """Subclass of IncarcerationAdmissionMetric for admissions to incarceration that
+    qualify as a commitment from supervision. Tracks information about the supervision
+    that preceded the admission to incarceration."""
+
+    # The type of IncarcerationMetric
+    metric_type: IncarcerationMetricType = attr.ib(
+        init=False,
+        default=IncarcerationMetricType.INCARCERATION_COMMITMENT_FROM_SUPERVISION,
+    )
+
+    # A string subtype to capture more information about the
+    # specialized_purpose_for_incarceration, e.g. the length of stay for a
+    # SHOCK_INCARCERATION admission
+    purpose_for_incarceration_subtype: Optional[str] = attr.ib(default=None)
+
+    # Type of supervision the person was committed from
+    supervision_type: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(
+        default=None
+    )
+
+    # The type of supervision case
+    case_type: Optional[StateSupervisionCaseType] = attr.ib(default=None)
+
+    # Level of supervision
+    supervision_level: Optional[StateSupervisionLevel] = attr.ib(default=None)
+
+    # Raw text of the level of supervision
+    supervision_level_raw_text: Optional[str] = attr.ib(default=None)
+
+    # External ID of the officer who was supervising the person described by this
+    # metric.
+    supervising_officer_external_id: Optional[str] = attr.ib(default=None)
+
+    # A string representation of the violations recorded in the period leading up to the
+    # commitment to incarceration, which is the number of each of the represented types
+    # separated by a semicolon
+    violation_history_description: Optional[str] = attr.ib(default=None)
+
+    # A list of a list of strings for each violation type and subtype recorded during
+    # the period leading up to the commitment admission. The elements of the outer list
+    # represent every StateSupervisionViolation that was reported in the period leading
+    # up to the admission. Each inner list represents all of the violation types and
+    # conditions that were listed on the given violation. For example, 3 violations may
+    # be represented as: [['FELONY', 'TECHNICAL'], ['MISDEMEANOR'],
+    # ['ABSCONDED', 'MUNICIPAL']]
+    violation_type_frequency_counter: Optional[List[List[str]]] = attr.ib(default=None)
+
+    # The most severe decision on the most recent response leading up to the commitment
+    # admission
+    most_recent_response_decision: Optional[
+        StateSupervisionViolationResponseDecision
+    ] = attr.ib(default=None)
 
 
 @attr.s

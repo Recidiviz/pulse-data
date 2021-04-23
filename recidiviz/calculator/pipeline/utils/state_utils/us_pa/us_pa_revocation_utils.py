@@ -46,6 +46,8 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponse,
 )
 
+# TODO(#6985): Change all "revocation" language to "commitment from supervision"
+
 PURPOSE_FOR_INCARCERATION_PVC = "CCIS-26"
 SHOCK_INCARCERATION_12_MONTHS = "RESCR12"
 SHOCK_INCARCERATION_9_MONTHS = "RESCR9"
