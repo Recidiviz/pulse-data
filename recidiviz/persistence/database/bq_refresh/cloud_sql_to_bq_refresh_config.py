@@ -135,7 +135,7 @@ class CloudSqlToBQConfig:
         return list(
             column.name
             for column in table.columns
-            if column not in self.columns_to_exclude.get(table.name, [])
+            if column.name not in self.columns_to_exclude.get(table.name, [])
         )
 
     def get_bq_schema_for_table(self, table_name: str) -> List[bigquery.SchemaField]:

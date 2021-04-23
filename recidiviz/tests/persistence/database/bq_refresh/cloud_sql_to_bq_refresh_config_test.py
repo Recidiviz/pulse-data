@@ -95,6 +95,20 @@ county_columns_to_exclude:
                 config = CloudSqlToBQConfig.for_schema_type(schema_type)
                 self.assertIsInstance(config, CloudSqlToBQConfig)
 
+    def test_excluded_columns(self) -> None:
+        for schema_type in self.enabled_schema_types:
+            config = CloudSqlToBQConfig.for_schema_type(schema_type)
+            for table in config.sorted_tables:
+                # pylint: disable=protected-access
+                columns = config._get_table_columns_to_export(table)
+                for column in columns:
+                    self.assertIsInstance(column, str)
+                    self.assertTrue(
+                        column not in config.columns_to_exclude.get(table.name, []),
+                        msg=f"Column {column} should not be included. It is found in "
+                        f"COUNTY_COLUMNS_TO_EXCLUDE` for this table {table.name}.",
+                    )
+
     def test_get_bq_schema_for_table(self) -> None:
         """Test that get_bq_schema_for_table returns a list
         of SchemaField objects when given a valid table_name
@@ -109,13 +123,14 @@ county_columns_to_exclude:
             for schema_field in schema:
                 self.assertIsInstance(schema_field, bigquery.SchemaField)
 
-            for table, column in config.columns_to_exclude.items():
-                schema = config.get_bq_schema_for_table(table)
-                self.assertTrue(
-                    column not in list(map(lambda s: s.name, schema)),
-                    msg='Column "{}" should not be included. It is found in '
-                    'COUNTY_COLUMNS_TO_EXCLUDE` for this table "{}".',
-                )
+            for table_name, excluded_columns in config.columns_to_exclude.items():
+                schema = config.get_bq_schema_for_table(table_name)
+                for column in excluded_columns:
+                    self.assertTrue(
+                        column not in {s.name for s in schema},
+                        msg=f"Column {column} should not be included. It is found in "
+                        f"COUNTY_COLUMNS_TO_EXCLUDE` for this table {table_name}.",
+                    )
 
     def test_get_bq_schema_for_table_region_code_in_schema(self) -> None:
         """Assert that the region code is included in the schema for association tables in the State schema."""
