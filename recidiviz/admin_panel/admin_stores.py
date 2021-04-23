@@ -1,0 +1,73 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2021 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+"""Store used to maintain all admin panel related stores"""
+
+from recidiviz.admin_panel.dataset_metadata_store import DatasetMetadataCountsStore
+from recidiviz.admin_panel.ingest_metadata_store import IngestDataFreshnessStore
+from recidiviz.admin_panel.ingest_operations_store import IngestOperationsStore
+from recidiviz.utils.environment import in_gcp, in_development, GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.timer import RepeatedTimer
+
+_INGEST_METADATA_NICKNAME = "ingest"
+_INGEST_METADATA_PREFIX = "ingest_state_metadata"
+_VALIDATION_METADATA_NICKNAME = "validation"
+_VALIDATION_METADATA_PREFIX = "validation_metadata"
+
+
+class AdminStores:
+    """
+    A wrapper around all AdminStores needed for the admin panel.
+    """
+
+    def __init__(self) -> None:
+        if in_gcp() or in_development():
+            if in_development():
+                with local_project_id_override(GCP_PROJECT_STAGING):
+                    self._initialize_stores()
+            else:
+                self._initialize_stores()
+
+    def _initialize_stores(self) -> None:
+        self.ingest_metadata_store = DatasetMetadataCountsStore(
+            _INGEST_METADATA_NICKNAME,
+            _INGEST_METADATA_PREFIX,
+        )
+
+        self.validation_metadata_store = DatasetMetadataCountsStore(
+            _VALIDATION_METADATA_NICKNAME,
+            _VALIDATION_METADATA_PREFIX,
+        )
+
+        self.ingest_data_freshness_store = IngestDataFreshnessStore()
+
+        self.ingest_operations_store = IngestOperationsStore()
+
+    def start_timers(self) -> None:
+        """Starts store refresh timers for all stores."""
+        if in_gcp() or in_development():
+            all_stores = [
+                self.ingest_metadata_store,
+                self.validation_metadata_store,
+                self.ingest_data_freshness_store,
+                self.ingest_operations_store,
+            ]
+
+            for store in all_stores:
+                RepeatedTimer(
+                    15 * 60, store.recalculate_store, run_immediately=True
+                ).start()
