@@ -39,6 +39,7 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentType,
     StateAssessmentLevel,
 )
+from recidiviz.common.constants.state.state_charge import StateChargeClassificationType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentType,
@@ -521,7 +522,12 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                     state_charges=[
                                         StateCharge(
                                             state_charge_id="N7825555",
-                                            statute="CC3701A ",
+                                            statute="CC3502",
+                                            description="Burglary (General)",
+                                            offense_type="Burglary-Violent-Property",
+                                            classification_type="Felony",
+                                            classification_subtype="F1",
+                                            is_violent="True",
                                         )
                                     ],
                                 )
@@ -555,7 +561,12 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                     state_charges=[
                                         StateCharge(
                                             state_charge_id="U1196666",
-                                            statute="CC3701A ",
+                                            statute="CC4101",
+                                            description="Forgery",
+                                            offense_type="Forgery",
+                                            classification_type="Felony",
+                                            classification_subtype="F2",
+                                            is_violent="False",
                                         )
                                     ],
                                 )
@@ -589,7 +600,12 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                     state_charges=[
                                         StateCharge(
                                             state_charge_id="L3947777",
-                                            statute="CC6318A1",
+                                            statute="CC2502B",
+                                            description="Murder (2Nd Degree)",
+                                            offense_type="Murder 2-Homicide",
+                                            classification_type="Felony",
+                                            classification_subtype="F",
+                                            is_violent="True",
                                         )
                                     ],
                                 )
@@ -622,7 +638,12 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                     state_charges=[
                                         StateCharge(
                                             state_charge_id="L7858888",
-                                            statute="CC3503A ",
+                                            statute="XX0500",
+                                            description="Theft",
+                                            offense_type="Theft",
+                                            classification_type="Misdemeanor",
+                                            classification_subtype="M1",
+                                            is_violent="False",
                                         )
                                     ],
                                 ),
@@ -640,7 +661,12 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                     state_charges=[
                                         StateCharge(
                                             state_charge_id="L7858890",
-                                            statute="CC3503B ",
+                                            statute="CC2702A1",
+                                            description="Aggravated Assault W/Serious Bodily Injury against Elderly/Young Person",
+                                            offense_type="Aggravated Assault-Assault",
+                                            classification_type="Felony",
+                                            classification_subtype="F1",
+                                            is_violent="True",
                                         )
                                     ],
                                 ),
@@ -2735,7 +2761,13 @@ class TestUsPaController(BaseDirectIngestControllerTests):
 
         p1_is_charge = entities.StateCharge.new_with_defaults(
             external_id="N7825555",
-            statute="CC3701A",
+            statute="CC3502",
+            description="BURGLARY (GENERAL)",
+            offense_type="BURGLARY-VIOLENT-PROPERTY",
+            classification_type=StateChargeClassificationType.FELONY,
+            classification_type_raw_text="FELONY",
+            classification_subtype="F1",
+            is_violent=True,
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
             state_code=_STATE_CODE_UPPER,
             person=person_1,
@@ -2764,7 +2796,13 @@ class TestUsPaController(BaseDirectIngestControllerTests):
 
         p2_is_charge = entities.StateCharge.new_with_defaults(
             external_id="U1196666",
-            statute="CC3701A",
+            statute="CC4101",
+            description="FORGERY",
+            offense_type="FORGERY",
+            classification_type=StateChargeClassificationType.FELONY,
+            classification_type_raw_text="FELONY",
+            classification_subtype="F2",
+            is_violent=False,
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
             state_code=_STATE_CODE_UPPER,
             person=person_2,
@@ -2794,7 +2832,13 @@ class TestUsPaController(BaseDirectIngestControllerTests):
 
         p3_is_charge = entities.StateCharge.new_with_defaults(
             external_id="L3947777",
-            statute="CC6318A1",
+            statute="CC2502B",
+            description="MURDER (2ND DEGREE)",
+            offense_type="MURDER 2-HOMICIDE",
+            classification_type=StateChargeClassificationType.FELONY,
+            classification_type_raw_text="FELONY",
+            classification_subtype="F",
+            is_violent=True,
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
             state_code=_STATE_CODE_UPPER,
             person=person_3,
@@ -2839,7 +2883,13 @@ class TestUsPaController(BaseDirectIngestControllerTests):
 
         p4_is_1_charge = entities.StateCharge.new_with_defaults(
             external_id="L7858888",
-            statute="CC3503A",
+            statute="XX0500",
+            description="THEFT",
+            offense_type="THEFT",
+            classification_type=StateChargeClassificationType.MISDEMEANOR,
+            classification_type_raw_text="MISDEMEANOR",
+            classification_subtype="M1",
+            is_violent=False,
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
             state_code=_STATE_CODE_UPPER,
             person=person_4,
@@ -2849,7 +2899,13 @@ class TestUsPaController(BaseDirectIngestControllerTests):
 
         p4_is_2_charge = entities.StateCharge.new_with_defaults(
             external_id="L7858890",
-            statute="CC3503B",
+            statute="CC2702A1",
+            description="AGGRAVATED ASSAULT W/SERIOUS BODILY INJURY AGAINST ELDERLY/YOUNG PERSON",
+            offense_type="AGGRAVATED ASSAULT-ASSAULT",
+            classification_type=StateChargeClassificationType.FELONY,
+            classification_type_raw_text="FELONY",
+            classification_subtype="F1",
+            is_violent=True,
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
             state_code=_STATE_CODE_UPPER,
             person=person_4,

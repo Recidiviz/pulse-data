@@ -3,9 +3,72 @@ file_description: |-
   A PADOC-provided table containing a list of all offenses that a person can be convicted
   and sentenced for within the Pennsylvania justice systems, with various bits of
   metadata about those offenses. Each offense has a "Code" which is a unique identifier
-  that is referenced from other tables, such as dbo_Senrec.offense_code. This table
-  is not provided regularly: it was provided a single time in a manual send by PADOC
-  in November 2020.
-# TODO(#7094): Fill these in once they've made their way to BigQuery
-primary_key_cols: []
-columns: []
+  that is referenced from other tables, such as dbo_Senrec.offense_code.
+
+  This file was initially provided one time as a static transfer in November 2020. If it
+  is transferred again, it should be manually updated in us_pa_raw_data.
+primary_key_cols:
+  - Code
+columns:
+  - name: ReviewFlag
+    description: A boolean flag indicating whether this offense code is under review by PADOC.
+  - name: Code
+    description: |-
+      The unique code identifying a single offense in PADOC. This code can also be thought of as
+      a "statute" number for purposes of identifying an offense among systems.
+  - name: Offense
+    description: |-
+      A string describing the offense. This is sometimes a short and simple string, like "Theft."
+      It is sometimes a longer string with more detail. But it is not "free text" in the typical
+      sense, since it is consistently formatted and does not contain long paragraphs.
+  - name: Category
+    description: |-
+      A string describing the type of offense, such as "DUI" or "DRUGS" or "FRAUD".
+  - name: ASCA_Category___Ranked
+    description: |-
+      A separate taxonomy for categorizing offenses, with a smaller set of consistent values.
+      Each value is in the format of "[digit]-Words", e.g. "1-Violent" or "2-Property".
+      All violent offenses in this file have a value of "1-Violent" for this column.
+  - name: SubCategory
+    description: |-
+      A string providing extra detail about the type/category of offense, such as "VIOLENT-PROPERTY"
+      or "SEX OFFENSE" or "HOMICIDE". This can be null.
+  - name: AddDt
+    description: The date the offense code was added to this PADOC-internal table.
+    is_datetime: True
+  - name: Grade_Category
+    description: The charge classification, i.e. FELONY or MISDEMEANOR (or null in rare cases).
+  - name: Grade
+    description: |-
+      The charge sub-classification, e.g. "F1" or Felony 1st Degree or "M2" for Misdemeanor
+      2nd Degree. This may also include simply "F" or "M" where there is no further sub-classification
+      or even "S" which indicates a "Summary Offense" that typically carries penalties
+      lighter than felonies or misdemeanors (such as "Disorderly Conduct" or "Underage Drinking").
+  - name: F
+  - name: F1
+  - name: F_1
+  - name: F2
+  - name: F_2_F_1
+  - name: _F_2__F_1
+  - name: F3
+  - name: F_3_F_2
+  - name: F_31
+  - name: M
+  - name: M1
+  - name: M_1
+  - name: M_1_F_3
+  - name: M2
+  - name: M_2
+  - name: M3
+  - name: M_3
+  - name: MU
+  - name: S
+  - name: S1
+  - name: S2
+  - name: S3
+  - name: S4
+  - name: H
+  - name: H1
+  - name: H2
+  - name: GradeSource
+    description: The PADOC-internal source of this offense code
