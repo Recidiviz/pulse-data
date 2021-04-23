@@ -17,11 +17,13 @@
 """ Helper file for collecting and consolidating raw ingest file/ingest view configurations """
 import csv
 import os
-from typing import List, Optional
+from typing import List
+from typing import Optional
 
 import attr
 
 import recidiviz
+
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
     DirectIngestRegionRawFileConfig,
 )
@@ -33,7 +35,7 @@ from recidiviz.utils.regions import get_region
 
 @attr.s
 class DataDiscoveryStandardizedFileConfig:
-    """ Shared interface describing both raw file / ingest view output metadata"""
+    """ Shared interface describing both raw file / ingest view metadata"""
 
     file_tag: str = attr.ib()
     columns: List[str] = attr.ib()
