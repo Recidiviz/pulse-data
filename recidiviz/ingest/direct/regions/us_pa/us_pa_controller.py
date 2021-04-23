@@ -190,6 +190,8 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 self._set_incarceration_sentence_id,
                 self._enrich_incarceration_sentence,
                 self._strip_id_whitespace,
+                self._rationalize_offense_type,
+                self._set_is_violent,
             ],
             "sci_incarceration_period": sci_incarceration_period_row_postprocessors,
             "ccis_incarceration_period": [
@@ -1052,6 +1054,35 @@ class UsPaController(CsvGcsfsDirectIngestController):
             if isinstance(obj, StateCharge):
                 if obj.state_charge_id:
                     obj.state_charge_id = obj.state_charge_id.strip()
+
+    @staticmethod
+    def _set_is_violent(
+        _file_tag: str,
+        row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
+        asca_category = row.get("ASCA_Category___Ranked", None)
+        is_violent = asca_category == "1-Violent"
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateCharge):
+                obj.is_violent = str(is_violent)
+
+    @staticmethod
+    def _rationalize_offense_type(
+        _file_tag: str,
+        row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
+        category = row.get("Category", "")
+        sub_category = row.get("SubCategory", None)
+        offense_type = "-".join(filter(None, [category, sub_category]))
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateCharge):
+                obj.offense_type = offense_type
 
     @staticmethod
     def _concatenate_admission_reason_codes(

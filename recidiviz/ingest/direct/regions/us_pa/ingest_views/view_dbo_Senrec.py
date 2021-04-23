@@ -22,7 +22,9 @@ from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_QUERY_TEMPLATE = """SELECT ids.control_number AS control_number, sentences.*
+VIEW_QUERY_TEMPLATE = """SELECT ids.control_number AS control_number, sentences.*,
+    offense_codes.Offense, offense_codes.Category, offense_codes.ASCA_Category___Ranked, offense_codes.SubCategory, offense_codes.Grade_Category,
+    offense_codes.Grade
 FROM 
     {dbo_Senrec} sentences
 -- As of 2020-06-10, there are only 6 sentences with no control numbers - we omit these since there's not way for us to
@@ -30,6 +32,8 @@ FROM
 JOIN
     (SELECT DISTINCT control_number, inmate_number FROM {dbo_tblSearchInmateInfo}) ids
 ON ids.inmate_number = sentences.curr_inmate_num
+LEFT JOIN {offense_codes} offense_codes
+    ON sentences.offense_code = offense_codes.Code
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(

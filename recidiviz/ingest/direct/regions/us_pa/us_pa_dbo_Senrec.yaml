@@ -11,6 +11,9 @@ child_key_mappings:
   sentcing_cnty: state_incarceration_sentence.county_code
   offense_track_num: state_charge.state_charge_id
   offense_code: state_charge.statute
+  Offense: state_charge.description
+  Grade_Category: state_charge.classification_type
+  Grade: state_charge.classification_subtype
 
 primary_key:
   curr_inmate_num: state_sentence_group.state_sentence_group_id
@@ -64,3 +67,6 @@ keys_to_ignore:
   - cntinued_frm_doc_n      # Prior Inmate Number when an inmate rolls over into a new sentence without being released - unused as of yet
   - indictment_num          # Court case id - unused
   - judge                   # Judge name - unused
+  - Category                # A charge category - handled manually in the controller
+  - SubCategory             # A charge sub-category - handled manually in the controller
+  - ASCA_Category___Ranked  # ASCA category, a separate category taxonomy - handled manually in the controller
