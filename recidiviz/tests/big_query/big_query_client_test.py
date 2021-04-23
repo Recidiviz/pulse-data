@@ -26,8 +26,9 @@ from google.cloud import bigquery, exceptions
 from google.cloud.bigquery import SchemaField, QueryJobConfig
 from mock import call, create_autospec
 
-from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.big_query.big_query_view import BigQueryView, BigQueryLocation
+from recidiviz.big_query import big_query_client
+from recidiviz.big_query.big_query_client import BigQueryClientImpl, BigQueryClient
+from recidiviz.big_query.big_query_view import BigQueryView, BigQueryAddress
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
 
 
@@ -35,7 +36,6 @@ class BigQueryClientImplTest(unittest.TestCase):
     """Tests for BigQueryClientImpl"""
 
     def setUp(self) -> None:
-        self.location = "US"
         self.mock_project_id = "fake-recidiviz-project"
         self.mock_dataset_id = "fake-dataset"
         self.mock_table_id = "test_table"
@@ -48,8 +48,15 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_project_id_fn = self.metadata_patcher.start()
         self.mock_project_id_fn.return_value = self.mock_project_id
 
-        self.client_patcher = mock.patch("recidiviz.big_query.big_query_client.client")
-        self.mock_client = self.client_patcher.start().return_value
+        self.client_patcher = mock.patch(
+            "recidiviz.big_query.big_query_client.bigquery.Client"
+        )
+        self.client_fn = self.client_patcher.start()
+        self.mock_client = mock.MagicMock()
+        self.other_mock_client = mock.MagicMock()
+        self.client_fn.side_effect = [self.mock_client, self.other_mock_client]
+        # Reset client caching
+        big_query_client._clients_by_project_id_by_region.clear()
 
         self.mock_view = BigQueryView(
             dataset_id=self.mock_dataset_id,
@@ -85,6 +92,25 @@ class BigQueryClientImplTest(unittest.TestCase):
             self.mock_dataset_ref, default_table_expiration_ms=6000
         )
         self.mock_client.create_dataset.assert_called()
+
+    def test_multiple_client_locations(self) -> None:
+        other_location_bq_client = BigQueryClientImpl(region_override="us-east1")
+
+        self.bq_client.get_table(self.mock_dataset_ref, self.mock_table_id)
+        self.mock_client.get_table.assert_called()
+        self.other_mock_client.get_table.assert_not_called()
+
+        # The client that was created with a different location will use a new client
+        other_location_bq_client.dataset_exists(self.mock_dataset_ref)
+        self.other_mock_client.get_dataset.assert_called()
+        self.mock_client.get_dataset.assert_not_called()
+
+        # Creating another client with the default location uses the original
+        # bigquery.Client.
+        default_location_bq_client = BigQueryClientImpl()
+        default_location_bq_client.run_query_async("some query")
+        self.mock_client.query.assert_called()
+        self.other_mock_client.query.assert_not_called()
 
     def test_table_exists(self) -> None:
         """Check that table_exists returns True if the table exists."""
@@ -250,7 +276,9 @@ class BigQueryClientImplTest(unittest.TestCase):
         expected_query = f"SELECT * FROM `fake-recidiviz-project.{self.mock_dataset_id}.{self.mock_table_id}`"
         self.mock_client.get_table.assert_called()
         self.mock_client.query.assert_called_with(
-            query=expected_query, location=self.location, job_config=mock_job_config()
+            query=expected_query,
+            location=BigQueryClient.DEFAULT_REGION,
+            job_config=mock_job_config(),
         )
 
     @mock.patch("google.cloud.bigquery.job.QueryJobConfig")
@@ -281,7 +309,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             )
             self.mock_client.query.assert_called_with(
                 query=expected_query,
-                location=self.location,
+                location=BigQueryClient.DEFAULT_REGION,
                 job_config=mock_job_config(),
             )
 
@@ -332,7 +360,9 @@ class BigQueryClientImplTest(unittest.TestCase):
             "WHERE state_code IN ('US_ND')"
         )
         self.mock_client.query.assert_called_with(
-            query=expected_query, location=self.location, job_config=job_config
+            query=expected_query,
+            location=BigQueryClient.DEFAULT_REGION,
+            job_config=job_config,
         )
 
     def test_insert_into_table_from_cloud_storage_async(self) -> None:
@@ -377,7 +407,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         )
         self.mock_client.query.assert_called_with(
             query="SELECT * FROM `fake-recidiviz-project.fake-dataset.test_view`",
-            location="US",
+            location=BigQueryClient.DEFAULT_REGION,
             job_config=expected_job_config_matcher,
         )
         self.mock_client.get_table.assert_called_with(
@@ -407,7 +437,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             description="test_view description",
             view_query_template="SELECT NULL LIMIT 0",
             should_materialize=True,
-            materialized_location_override=BigQueryLocation(
+            materialized_address_override=BigQueryAddress(
                 dataset_id="custom_dataset", table_id="custom_view"
             ),
         )
@@ -419,7 +449,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         )
         self.mock_client.query.assert_called_with(
             query="SELECT * FROM `fake-recidiviz-project.dataset.test_view`",
-            location="US",
+            location=BigQueryClient.DEFAULT_REGION,
             job_config=expected_job_config_matcher,
         )
         self.mock_client.get_table.assert_called_with(
@@ -430,9 +460,9 @@ class BigQueryClientImplTest(unittest.TestCase):
         )
         self.mock_client.update_table.assert_called_with(mock_table, ["description"])
 
-    def test_materialize_view_to_table_no_materialized_location(self) -> None:
+    def test_materialize_view_to_table_no_materialized_address(self) -> None:
         """Tests that the materialize_view_to_table function does not call the function to create a table from a
-        query if there is no set materialized_location on the view."""
+        query if there is no set materialized_address on the view."""
         invalid_view = BigQueryView(
             dataset_id="dataset",
             view_id="test_view",

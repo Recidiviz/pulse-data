@@ -26,7 +26,7 @@ from typing import Dict
 from unittest.mock import patch
 
 from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
-from recidiviz.big_query.big_query_view import BigQueryView, BigQueryLocation
+from recidiviz.big_query.big_query_view import BigQueryView, BigQueryAddress
 from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagWalker,
     BigQueryViewDagNode,
@@ -225,20 +225,20 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
             view: BigQueryView, _parent_results: Dict[BigQueryView, None]
         ) -> None:
             node = walker.node_for_view(view)
-            for parent_table_location in node.parent_tables:
-                if parent_table_location in walker.materialized_locations:
+            for parent_table_address in node.parent_tables:
+                if parent_table_address in walker.materialized_addresss:
                     # We are using materialized version of a table
                     continue
-                parent_key = DagKey(view_location=parent_table_location)
+                parent_key = DagKey(view_address=parent_table_address)
                 if parent_key not in walker.nodes_by_key:
                     # We assume this is a source data table (checked in other tests)
                     continue
                 parent_view: BigQueryView = walker.view_for_key(parent_key)
                 self.assertIsNone(
-                    parent_view.materialized_location,
+                    parent_view.materialized_address,
                     f"Found view [{node.dag_key}] referencing un-materialized version "
                     f"of view [{parent_key}] when materialized table "
-                    f"[{parent_view.materialized_location}] exists.",
+                    f"[{parent_view.materialized_address}] exists.",
                 )
 
         result = walker.process_dag(process_check_using_materialized)
@@ -396,7 +396,7 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         self.assertEqual(
             {
                 DagKey(
-                    view_location=BigQueryLocation(
+                    view_address=BigQueryAddress(
                         dataset_id="source_dataset", table_id="source_table"
                     )
                 )
@@ -412,12 +412,12 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         )
         expected_parent_nodes = {
             DagKey(
-                view_location=BigQueryLocation(
+                view_address=BigQueryAddress(
                     dataset_id="source_dataset", table_id="source_table"
                 )
             ),
             DagKey(
-                view_location=BigQueryLocation(
+                view_address=BigQueryAddress(
                     dataset_id="source_dataset", table_id="source_table_2"
                 )
             ),
@@ -434,12 +434,12 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         )
         expected_parent_nodes = {
             DagKey(
-                view_location=BigQueryLocation(
+                view_address=BigQueryAddress(
                     dataset_id="source_dataset", table_id="source_table"
                 )
             ),
             DagKey(
-                view_location=BigQueryLocation(
+                view_address=BigQueryAddress(
                     dataset_id="source_dataset", table_id="source_table_2"
                 )
             ),
@@ -504,7 +504,7 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         )
         expected_parent_nodes = {
             DagKey(
-                view_location=BigQueryLocation(
+                view_address=BigQueryAddress(
                     dataset_id="source_dataset", table_id="source_table"
                 )
             ),
@@ -526,7 +526,7 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
             view_id="table_2",
             description="table_2 description",
             should_materialize=True,
-            materialized_location_override=BigQueryLocation(
+            materialized_address_override=BigQueryAddress(
                 dataset_id=view_1.dataset_id, table_id=view_1.view_id
             ),
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
@@ -535,18 +535,18 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
             _ = BigQueryViewDagWalker([view_1, view_2])
         self.assertTrue(
             str(e.exception).startswith(
-                "Found materialized view location for view [('dataset_2', 'table_2')] that "
-                "matches the view location of another view [('dataset_1', 'table_1')]."
+                "Found materialized view address for view [('dataset_2', 'table_2')] that "
+                "matches the view address of another view [('dataset_1', 'table_1')]."
             )
         )
 
-    def test_dag_two_views_same_materialized_location(self) -> None:
+    def test_dag_two_views_same_materialized_address(self) -> None:
         view_1 = BigQueryView(
             dataset_id="dataset_1",
             view_id="table_1",
             description="table_1 description",
             should_materialize=True,
-            materialized_location_override=BigQueryLocation(
+            materialized_address_override=BigQueryAddress(
                 dataset_id="other_dataset", table_id="other_table"
             ),
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
@@ -556,7 +556,7 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
             view_id="table_2",
             description="table_2 description",
             should_materialize=True,
-            materialized_location_override=BigQueryLocation(
+            materialized_address_override=BigQueryAddress(
                 dataset_id="other_dataset", table_id="other_table"
             ),
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
@@ -565,8 +565,8 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
             _ = BigQueryViewDagWalker([view_1, view_2])
         self.assertTrue(
             str(e.exception).startswith(
-                "Found materialized view location for view [('dataset_2', 'table_2')] "
-                "that matches materialized_location of another view: "
+                "Found materialized view address for view [('dataset_2', 'table_2')] "
+                "that matches materialized_address of another view: "
                 "[('dataset_1', 'table_1')]."
             )
         )
@@ -621,7 +621,7 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
             view_id="table_1",
             description="table_1 description",
             should_materialize=True,
-            materialized_location_override=BigQueryLocation(
+            materialized_address_override=BigQueryAddress(
                 dataset_id="other_dataset_1", table_id="other_table_1"
             ),
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
@@ -631,7 +631,7 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
             view_id="table_2",
             description="table_2 description",
             should_materialize=True,
-            materialized_location_override=BigQueryLocation(
+            materialized_address_override=BigQueryAddress(
                 dataset_id="other_dataset_2", table_id="other_table_2"
             ),
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
@@ -668,31 +668,31 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         """Fails the test if a view that has no parents is an expected view with no
         parents. Failures could be indicative of poorly formed view queries.
         """
-        known_empty_parent_view_locations = {
+        known_empty_parent_view_addresss = {
             # These views unnest data from a static list
-            BigQueryLocation(
+            BigQueryAddress(
                 dataset_id="census_views", table_id="charge_class_severity_ranks"
             ),
-            BigQueryLocation(
+            BigQueryAddress(
                 dataset_id="analyst_data",
                 table_id="admission_start_reason_dedup_priority",
             ),
-            BigQueryLocation(
+            BigQueryAddress(
                 dataset_id="analyst_data",
                 table_id="release_termination_reason_dedup_priority",
             ),
-            BigQueryLocation(
+            BigQueryAddress(
                 dataset_id="analyst_data", table_id="violation_type_dedup_priority"
             ),
             # Generate data using pure date functions
-            BigQueryLocation(
+            BigQueryAddress(
                 dataset_id="reference_views", table_id="covid_report_weeks"
             ),
-            BigQueryLocation(
+            BigQueryAddress(
                 dataset_id="population_projection_data", table_id="simulation_run_dates"
             ),
         }
-        if node.dag_key.view_location in known_empty_parent_view_locations:
+        if node.dag_key.view_address in known_empty_parent_view_addresss:
             return
 
         if "FROM EXTERNAL_QUERY" in node.view.view_query:
@@ -771,13 +771,13 @@ class TestBigQueryViewDagNode(unittest.TestCase):
             view_query_template="SELECT * FROM `{project_id}.some_dataset.some_table`",
         )
         node = BigQueryViewDagNode(view)
-        self.assertIsNone(view.materialized_location)
-        node.set_materialized_locations({})
+        self.assertIsNone(view.materialized_address)
+        node.set_materialized_addresss({})
         self.assertEqual(node.is_root, False)
         self.assertEqual(
             node.dag_key,
             DagKey(
-                view_location=BigQueryLocation(
+                view_address=BigQueryAddress(
                     dataset_id="my_dataset", table_id="my_view_id"
                 )
             ),
@@ -786,7 +786,7 @@ class TestBigQueryViewDagNode(unittest.TestCase):
             node.parent_keys,
             {
                 DagKey(
-                    view_location=BigQueryLocation(
+                    view_address=BigQueryAddress(
                         dataset_id="some_dataset", table_id="some_table"
                     )
                 )
@@ -796,7 +796,7 @@ class TestBigQueryViewDagNode(unittest.TestCase):
 
         node.is_root = True
         child_key = DagKey(
-            view_location=BigQueryLocation(
+            view_address=BigQueryAddress(
                 dataset_id="other_dataset", table_id="other_table"
             )
         )
@@ -820,16 +820,16 @@ class TestBigQueryViewDagNode(unittest.TestCase):
             should_materialize=True,
         )
         node = BigQueryViewDagNode(view)
-        if not parent_view.materialized_location:
-            raise ValueError("Null materialized_location for view [{parent_view}]")
-        node.set_materialized_locations(
-            {parent_view.materialized_location: DagKey.for_view(parent_view)}
+        if not parent_view.materialized_address:
+            raise ValueError("Null materialized_address for view [{parent_view}]")
+        node.set_materialized_addresss(
+            {parent_view.materialized_address: DagKey.for_view(parent_view)}
         )
         self.assertEqual(
             node.parent_keys,
             {
                 DagKey(
-                    view_location=BigQueryLocation(
+                    view_address=BigQueryAddress(
                         dataset_id="some_dataset", table_id="some_table"
                     )
                 )
@@ -847,17 +847,17 @@ class TestBigQueryViewDagNode(unittest.TestCase):
             """,
         )
         node = BigQueryViewDagNode(view)
-        node.set_materialized_locations({})
+        node.set_materialized_addresss({})
         self.assertEqual(
             node.parent_keys,
             {
                 DagKey(
-                    view_location=BigQueryLocation(
+                    view_address=BigQueryAddress(
                         dataset_id="some_dataset", table_id="some_table"
                     )
                 ),
                 DagKey(
-                    view_location=BigQueryLocation(
+                    view_address=BigQueryAddress(
                         dataset_id="some_dataset", table_id="other_table"
                     )
                 ),

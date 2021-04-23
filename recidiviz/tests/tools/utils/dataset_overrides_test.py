@@ -22,7 +22,7 @@ from typing import Set, Sequence
 from recidiviz.big_query.big_query_view import (
     BigQueryViewBuilder,
     SimpleBigQueryViewBuilder,
-    BigQueryLocation,
+    BigQueryAddress,
 )
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
@@ -43,8 +43,8 @@ class TestDatasetOverrides(unittest.TestCase):
         datasets = set()
         for builder in builders:
             datasets.add(builder.dataset_id)
-            if builder.materialized_location_override:
-                datasets.add(builder.materialized_location_override.dataset_id)
+            if builder.materialized_address_override:
+                datasets.add(builder.materialized_address_override.dataset_id)
         return datasets
 
     def test_dataset_overrides_for_view_builders(self) -> None:
@@ -62,7 +62,7 @@ class TestDatasetOverrides(unittest.TestCase):
                 description="my_fake_view_2 description",
                 view_query_template="SELECT NULL LIMIT 0",
                 should_materialize=True,
-                materialized_location_override=BigQueryLocation(
+                materialized_address_override=BigQueryAddress(
                     dataset_id="materialized_dataset", table_id="table_materialized"
                 ),
             ),

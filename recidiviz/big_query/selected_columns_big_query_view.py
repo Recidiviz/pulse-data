@@ -20,7 +20,7 @@ from typing import List, Dict, Optional
 from recidiviz.big_query.big_query_view import (
     BigQueryView,
     BigQueryViewBuilder,
-    BigQueryLocation,
+    BigQueryAddress,
 )
 
 
@@ -40,7 +40,7 @@ class SelectedColumnsBigQueryView(BigQueryView):
         view_query_template: str,
         columns: List[str],
         should_materialize: bool,
-        materialized_location_override: Optional[BigQueryLocation],
+        materialized_address_override: Optional[BigQueryAddress],
         dataset_overrides: Optional[Dict[str, str]],
         **query_format_kwargs: str,
     ):
@@ -52,7 +52,7 @@ class SelectedColumnsBigQueryView(BigQueryView):
             description=description,
             view_query_template=view_query_template,
             should_materialize=should_materialize,
-            materialized_location_override=materialized_location_override,
+            materialized_address_override=materialized_address_override,
             dataset_overrides=dataset_overrides,
             **query_format_kwargs,
         )
@@ -80,7 +80,7 @@ class SelectedColumnsBigQueryViewBuilder(
         view_query_template: str,
         columns: List[str],
         should_materialize: bool = False,
-        materialized_location_override: Optional[BigQueryLocation] = None,
+        materialized_address_override: Optional[BigQueryAddress] = None,
         # All keyword args must have string values
         **query_format_kwargs: str,
     ):
@@ -89,7 +89,7 @@ class SelectedColumnsBigQueryViewBuilder(
         self.view_query_template = view_query_template
         self.columns = columns
         self.should_materialize = should_materialize
-        self.materialized_location_override = materialized_location_override
+        self.materialized_address_override = materialized_address_override
         self.query_format_kwargs = query_format_kwargs
 
     def _build(
@@ -101,7 +101,7 @@ class SelectedColumnsBigQueryViewBuilder(
             view_query_template=self.view_query_template,
             columns=self.columns,
             should_materialize=self.should_materialize,
-            materialized_location_override=self.materialized_location_override,
+            materialized_address_override=self.materialized_address_override,
             dataset_overrides=dataset_overrides,
             **self.query_format_kwargs,
         )

@@ -25,7 +25,7 @@ import logging
 from typing import List
 
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker, DagKey
-from recidiviz.big_query.big_query_view import BigQueryViewBuilder, BigQueryLocation
+from recidiviz.big_query.big_query_view import BigQueryViewBuilder, BigQueryAddress
 from recidiviz.big_query.view_update_manager import (
     _build_views_to_update,
 )
@@ -66,7 +66,7 @@ def print_dfs_tree(dataset_id: str, view_id: str) -> None:
     stack = [
         (
             DagKey(
-                view_location=BigQueryLocation(dataset_id=dataset_id, table_id=view_id)
+                view_address=BigQueryAddress(dataset_id=dataset_id, table_id=view_id)
             ),
             0,
         )
