@@ -16,7 +16,8 @@
 # =============================================================================
 """Functions that return state-specific logic used in BigQuery queries."""
 
-from typing import List
+from typing import List, Optional, Dict
+from recidiviz.common.constants.states import StateCode
 
 # The states in the vitals reports that will be grouping by level 1 supervision locations.
 VITALS_LEVEL_1_SUPERVISION_LOCATION_STATES: List[str] = ['"US_ND"', '"US_PA"']
@@ -50,8 +51,20 @@ def state_specific_judicial_district_groupings(judicial_district_column: str) ->
 
 def state_specific_race_or_ethnicity_groupings(
     race_or_ethnicity_column: str = "race_or_ethnicity",
+    supported_race_overrides: Optional[Dict[StateCode, str]] = None,
 ) -> str:
-    return f"""CASE WHEN state_code = 'US_ND' AND ({race_or_ethnicity_column} IS NULL OR {race_or_ethnicity_column} IN
+    overrides_clauses = []
+    if supported_race_overrides:
+        for state_code, override_values in supported_race_overrides.items():
+            when_clause = (
+                f"WHEN state_code = '{state_code.value}' AND ({race_or_ethnicity_column} IS NULL "
+                f"OR {race_or_ethnicity_column} NOT IN ({override_values})) THEN 'OTHER'"
+            )
+            overrides_clauses.append(when_clause)
+    override_when_block = "\n              ".join(overrides_clauses)
+
+    return f"""CASE {override_when_block}
+              WHEN state_code = 'US_ND' AND ({race_or_ethnicity_column} IS NULL OR {race_or_ethnicity_column} IN
               ('EXTERNAL_UNKNOWN', 'ASIAN', 'NATIVE_HAWAIIAN_PACIFIC_ISLANDER')) THEN 'OTHER'
               WHEN {race_or_ethnicity_column} IS NULL THEN 'EXTERNAL_UNKNOWN'
               ELSE {race_or_ethnicity_column} END AS race_or_ethnicity"""
