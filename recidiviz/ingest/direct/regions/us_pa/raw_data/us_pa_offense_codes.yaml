@@ -1,0 +1,11 @@
+file_tag: offense_codes
+file_description: |-
+  A PADOC-provided table containing a list of all offenses that a person can be convicted
+  and sentenced for within the Pennsylvania justice systems, with various bits of
+  metadata about those offenses. Each offense has a "Code" which is a unique identifier
+  that is referenced from other tables, such as dbo_Senrec.offense_code. This table
+  is not provided regularly: it was provided a single time in a manual send by PADOC
+  in November 2020.
+# TODO(#7094): Fill these in once they've made their way to BigQuery
+primary_key_cols: []
+columns: []
