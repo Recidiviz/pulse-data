@@ -19,20 +19,24 @@
 import unittest
 from collections import defaultdict
 from datetime import date
-from typing import List, Dict
+from typing import List, Dict, Type
 
 from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.program import metric_producer
 from recidiviz.calculator.pipeline.program.metric_producer import (
-    EVENT_TO_METRIC_TYPES,
+    EVENT_TO_METRIC_CLASSES,
 )
-from recidiviz.calculator.pipeline.program.metrics import ProgramMetricType
+from recidiviz.calculator.pipeline.program.metrics import (
+    ProgramMetricType,
+    ProgramMetric,
+)
 from recidiviz.calculator.pipeline.program.program_event import (
     ProgramReferralEvent,
     ProgramEvent,
     ProgramParticipationEvent,
 )
+from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.common.constants.person_characteristics import Gender, Race, Ethnicity
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
@@ -363,11 +367,14 @@ class TestProduceProgramMetrics(unittest.TestCase):
 
 def expected_metrics_count(program_events: List[ProgramEvent]) -> int:
     """Calculates the expected number of metrics given the incarceration events."""
-    output_count_by_metric_type: Dict[ProgramMetricType, int] = defaultdict(int)
+    output_count_by_metric_class: Dict[
+        Type[RecidivizMetric[ProgramMetricType]], int
+    ] = defaultdict(int)
 
-    for event_type, metric_type in EVENT_TO_METRIC_TYPES.items():
-        output_count_by_metric_type[metric_type] += len(
-            [event for event in program_events if isinstance(event, event_type)]
-        )
+    for event in program_events:
+        metric_classes = EVENT_TO_METRIC_CLASSES[type(event)]
 
-    return sum(value for value in output_count_by_metric_type.values())
+        for metric_class in metric_classes:
+            output_count_by_metric_class[metric_class] += 1
+
+    return sum(value for value in output_count_by_metric_class.values())

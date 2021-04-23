@@ -21,13 +21,17 @@ from typing import Optional, List, Any, Dict, Type, TypeVar
 import attr
 from dateutil.relativedelta import relativedelta
 
+from recidiviz.calculator.dataflow_config import (
+    DATAFLOW_METRICS_TO_TABLES,
+    DATAFLOW_TABLES_TO_METRIC_TYPES,
+)
 from recidiviz.calculator.pipeline.utils.event_utils import (
     IdentifierEventWithSingularDate,
     IdentifierEvent,
 )
 from recidiviz.calculator.pipeline.utils.metric_utils import (
     RecidivizMetric,
-    RecidivizMetricType,
+    RecidivizMetricTypeT,
 )
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.common.constants.state.external_id_types import (
@@ -83,9 +87,6 @@ DECISION_SEVERITY_ORDER = [
     StateSupervisionViolationResponseDecision.CONTINUANCE,
 ]
 
-
-RecidivizMetricT = TypeVar("RecidivizMetricT", bound=RecidivizMetric)
-RecidivizMetricTypeT = TypeVar("RecidivizMetricTypeT", bound=RecidivizMetricType)
 IdentifierEventT = TypeVar("IdentifierEventT", bound=IdentifierEvent)
 IdentifierEventWithSingularDateT = TypeVar(
     "IdentifierEventWithSingularDateT", bound=IdentifierEventWithSingularDate
@@ -303,16 +304,14 @@ def produce_standard_metrics(
     calculation_end_month: Optional[str],
     calculation_month_count: int,
     person_metadata: PersonMetadata,
-    event_to_metric_types: Dict[
-        Type[IdentifierEventWithSingularDateT], RecidivizMetricTypeT
-    ],
     event_to_metric_classes: Dict[
-        Type[IdentifierEventWithSingularDateT], Type[RecidivizMetricT]
+        Type[IdentifierEventWithSingularDateT],
+        List[Type[RecidivizMetric[RecidivizMetricTypeT]]],
     ],
     pipeline_job_id: str,
     additional_attributes: Optional[Dict[str, Any]] = None,
 ) -> List[RecidivizMetric]:
-    """Produces metrics for pipelines with a standard 1:1 mapping of event to metric
+    """Produces metrics for pipelines with a standard mapping of event to metric
     type."""
     metrics: List[RecidivizMetric] = []
 
@@ -337,31 +336,24 @@ def produce_standard_metrics(
         ):
             continue
 
-        metric_type = event_to_metric_types.get(type(event))
-        metric_class = event_to_metric_classes.get((type(event)))
-        if not metric_type:
-            raise ValueError(
-                "No metric type mapped to event of type {}".format(type(event))
-            )
+        metric_classes = event_to_metric_classes[type(event)]
 
-        if not metric_class:
-            raise ValueError(
-                "No metric class mapped to event of type {}".format(type(event))
-            )
+        for metric_class in metric_classes:
+            metric_type = metric_type_for_metric_class(metric_class)
 
-        if metric_inclusions.get(metric_type):
-            metric = build_metric(
-                pipeline=pipeline,
-                event=event,
-                metric_class=metric_class,
-                person=person,
-                event_date=event_date,
-                person_metadata=person_metadata,
-                pipeline_job_id=pipeline_job_id,
-                additional_attributes=additional_attributes,
-            )
+            if metric_inclusions.get(metric_type):
+                metric = build_metric(
+                    pipeline=pipeline,
+                    event=event,
+                    metric_class=metric_class,
+                    person=person,
+                    event_date=event_date,
+                    person_metadata=person_metadata,
+                    pipeline_job_id=pipeline_job_id,
+                    additional_attributes=additional_attributes,
+                )
 
-            metrics.append(metric)
+                metrics.append(metric)
 
     return metrics
 
@@ -415,3 +407,17 @@ def build_metric(
                 setattr(metric_cls_builder, attribute, value)
 
     return metric_cls_builder.build()
+
+
+def metric_type_for_metric_class(
+    metric_class: Type[RecidivizMetric[RecidivizMetricTypeT]],
+) -> RecidivizMetricTypeT:
+    """Returns the RecidivizMetricType corresponding to the given RecidivizMetric class."""
+    metric_table = DATAFLOW_METRICS_TO_TABLES[metric_class]
+    metric_type = DATAFLOW_TABLES_TO_METRIC_TYPES[metric_table]
+    if not isinstance(metric_type, metric_class.metric_type_cls):
+        raise ValueError(
+            f"Found incorrect metric type [{metric_type}], expected value of type "
+            f"[{metric_class.metric_type_cls}]"
+        )
+    return metric_type

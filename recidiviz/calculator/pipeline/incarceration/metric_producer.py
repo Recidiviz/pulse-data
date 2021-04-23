@@ -23,9 +23,10 @@ from typing import List, Dict, Type, Optional
 
 from recidiviz.calculator.pipeline.incarceration.incarceration_event import (
     IncarcerationEvent,
-    IncarcerationAdmissionEvent,
     IncarcerationReleaseEvent,
     IncarcerationStayEvent,
+    IncarcerationCommitmentFromSupervisionAdmissionEvent,
+    IncarcerationStandardAdmissionEvent,
 )
 from recidiviz.calculator.pipeline.incarceration.metrics import (
     IncarcerationMetricType,
@@ -33,24 +34,25 @@ from recidiviz.calculator.pipeline.incarceration.metrics import (
     IncarcerationAdmissionMetric,
     IncarcerationPopulationMetric,
     IncarcerationReleaseMetric,
+    IncarcerationCommitmentFromSupervisionMetric,
 )
 from recidiviz.calculator.pipeline.utils.calculator_utils import (
     produce_standard_metrics,
 )
+from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.persistence.entity.state.entities import StatePerson
 
-
-EVENT_TO_METRIC_TYPES: Dict[Type[IncarcerationEvent], IncarcerationMetricType] = {
-    IncarcerationAdmissionEvent: IncarcerationMetricType.INCARCERATION_ADMISSION,
-    IncarcerationStayEvent: IncarcerationMetricType.INCARCERATION_POPULATION,
-    IncarcerationReleaseEvent: IncarcerationMetricType.INCARCERATION_RELEASE,
-}
-
-EVENT_TO_METRIC_CLASSES: Dict[Type[IncarcerationEvent], Type[IncarcerationMetric]] = {
-    IncarcerationAdmissionEvent: IncarcerationAdmissionMetric,
-    IncarcerationStayEvent: IncarcerationPopulationMetric,
-    IncarcerationReleaseEvent: IncarcerationReleaseMetric,
+EVENT_TO_METRIC_CLASSES: Dict[
+    Type[IncarcerationEvent], List[Type[RecidivizMetric[IncarcerationMetricType]]]
+] = {
+    IncarcerationStandardAdmissionEvent: [IncarcerationAdmissionMetric],
+    IncarcerationCommitmentFromSupervisionAdmissionEvent: [
+        IncarcerationAdmissionMetric,
+        IncarcerationCommitmentFromSupervisionMetric,
+    ],
+    IncarcerationStayEvent: [IncarcerationPopulationMetric],
+    IncarcerationReleaseEvent: [IncarcerationReleaseMetric],
 }
 
 
@@ -90,7 +92,6 @@ def produce_incarceration_metrics(
         calculation_end_month=calculation_end_month,
         calculation_month_count=calculation_month_count,
         person_metadata=person_metadata,
-        event_to_metric_types=EVENT_TO_METRIC_TYPES,
         event_to_metric_classes=EVENT_TO_METRIC_CLASSES,
         pipeline_job_id=pipeline_job_id,
     )

@@ -27,6 +27,8 @@ from recidiviz.calculator.pipeline.incarceration.incarceration_event import (
     IncarcerationAdmissionEvent,
     IncarcerationReleaseEvent,
     IncarcerationStayEvent,
+    IncarcerationCommitmentFromSupervisionAdmissionEvent,
+    IncarcerationStandardAdmissionEvent,
 )
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     list_of_dicts_to_dict_with_keys,
@@ -54,6 +56,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateSpecializedPurposeForIncarceration,
     StateIncarcerationPeriodReleaseReason,
+    is_commitment_from_supervision,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
@@ -383,7 +386,6 @@ def find_incarceration_stays(
                 most_serious_offense_statute=most_serious_offense_statute,
                 admission_reason=original_admission_reason,
                 admission_reason_raw_text=original_admission_reason_raw_text,
-                supervision_type_at_admission=supervision_type_at_admission,
                 judicial_district_code=judicial_district_code,
                 specialized_purpose_for_incarceration=specialized_purpose_of_incarceration,
             )
@@ -594,13 +596,26 @@ def admission_event_for_period(
             incarceration_period,
             admission_reason,
         )
-        return IncarcerationAdmissionEvent(
+
+        if is_commitment_from_supervision(admission_reason):
+            # TODO(#6985): Fill in all supervision-related fields
+            return IncarcerationCommitmentFromSupervisionAdmissionEvent(
+                state_code=incarceration_period.state_code,
+                event_date=admission_date,
+                facility=incarceration_period.facility,
+                admission_reason=admission_reason,
+                admission_reason_raw_text=incarceration_period.admission_reason_raw_text,
+                specialized_purpose_for_incarceration=specialized_purpose_for_incarceration,
+                county_of_residence=county_of_residence,
+                supervision_type=supervision_type_at_admission,
+            )
+
+        return IncarcerationStandardAdmissionEvent(
             state_code=incarceration_period.state_code,
             event_date=admission_date,
             facility=incarceration_period.facility,
             admission_reason=admission_reason,
             admission_reason_raw_text=incarceration_period.admission_reason_raw_text,
-            supervision_type_at_admission=supervision_type_at_admission,
             specialized_purpose_for_incarceration=specialized_purpose_for_incarceration,
             county_of_residence=county_of_residence,
         )

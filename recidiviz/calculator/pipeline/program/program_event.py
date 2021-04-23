@@ -24,10 +24,6 @@ from recidiviz.calculator.pipeline.utils.event_utils import (
     AssessmentEventMixin,
     IdentifierEventWithSingularDate,
 )
-from recidiviz.common.constants.state.state_assessment import (
-    StateAssessmentType,
-    StateAssessmentLevel,
-)
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
@@ -58,15 +54,6 @@ class ProgramReferralEvent(ProgramEvent, AssessmentEventMixin):
     participation_status: Optional[StateProgramAssignmentParticipationStatus] = attr.ib(
         default=None
     )
-
-    # Most recent assessment score at the time of referral
-    assessment_score: Optional[int] = attr.ib(default=None)
-
-    # Assessment type
-    assessment_type: Optional[StateAssessmentType] = attr.ib(default=None)
-
-    # Most recent assessment level
-    assessment_level: Optional[StateAssessmentLevel] = attr.ib(default=None)
 
     # External ID of the officer who was supervising the person
     supervising_officer_external_id: Optional[str] = attr.ib(default=None)

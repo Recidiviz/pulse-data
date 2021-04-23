@@ -35,17 +35,15 @@ from recidiviz.calculator.pipeline.program.program_event import (
 from recidiviz.calculator.pipeline.utils.calculator_utils import (
     produce_standard_metrics,
 )
+from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.persistence.entity.state.entities import StatePerson
 
-EVENT_TO_METRIC_TYPES: Dict[Type[ProgramEvent], ProgramMetricType] = {
-    ProgramReferralEvent: ProgramMetricType.PROGRAM_REFERRAL,
-    ProgramParticipationEvent: ProgramMetricType.PROGRAM_PARTICIPATION,
-}
-
-EVENT_TO_METRIC_CLASSES: Dict[Type[ProgramEvent], Type[ProgramMetric]] = {
-    ProgramReferralEvent: ProgramReferralMetric,
-    ProgramParticipationEvent: ProgramParticipationMetric,
+EVENT_TO_METRIC_CLASSES: Dict[
+    Type[ProgramEvent], List[Type[RecidivizMetric[ProgramMetricType]]]
+] = {
+    ProgramReferralEvent: [ProgramReferralMetric],
+    ProgramParticipationEvent: [ProgramParticipationMetric],
 }
 
 
@@ -87,7 +85,6 @@ def produce_program_metrics(
         calculation_end_month=calculation_end_month,
         calculation_month_count=calculation_month_count,
         person_metadata=person_metadata,
-        event_to_metric_types=EVENT_TO_METRIC_TYPES,
         event_to_metric_classes=EVENT_TO_METRIC_CLASSES,
         pipeline_job_id=pipeline_job_id,
     )

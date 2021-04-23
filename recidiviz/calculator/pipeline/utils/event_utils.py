@@ -17,11 +17,21 @@
 """Utils for events that are a product of each pipeline's identifier step."""
 import datetime
 import logging
+from typing import Optional
 
 import attr
 
 from recidiviz.common.attr_mixins import BuildableAttr
-from recidiviz.common.constants.state.state_assessment import StateAssessmentType
+from recidiviz.common.constants.state.state_assessment import (
+    StateAssessmentType,
+    StateAssessmentLevel,
+)
+from recidiviz.common.constants.state.state_supervision_violation import (
+    StateSupervisionViolationType,
+)
+from recidiviz.common.constants.state.state_supervision_violation_response import (
+    StateSupervisionViolationResponseDecision,
+)
 
 
 @attr.s
@@ -41,11 +51,67 @@ class IdentifierEventWithSingularDate(IdentifierEvent):
     event_date: datetime.date = attr.ib()
 
 
+@attr.s(frozen=True)
+class ViolationHistoryMixin(BuildableAttr):
+    """Set of attributes to store information about violation and response history."""
+
+    # The most severe violation type leading up to the date of and event
+    most_severe_violation_type: Optional[StateSupervisionViolationType] = attr.ib(
+        default=None
+    )
+
+    # A string subtype that provides further insight into the
+    # most_severe_violation_type above.
+    most_severe_violation_type_subtype: Optional[str] = attr.ib(default=None)
+
+    # The number of responses that were included in determining the most severe
+    # type/subtype
+    response_count: Optional[int] = attr.ib(default=0)
+
+    # The most severe decision on the responses that were included in determining the
+    # most severe type/subtype
+    most_severe_response_decision: Optional[
+        StateSupervisionViolationResponseDecision
+    ] = attr.ib(default=None)
+
+
+@attr.s
+class SupervisionLocationMixin(BuildableAttr):
+    """Set of attributes to store supervision location information."""
+
+    # External ID of the district of the officer that was supervising the person
+    # described by this object
+    # TODO(#4709): THIS FIELD IS DEPRECATED - USE level_1_supervision_location_external_id and
+    #  level_2_supervision_location_external_id instead.
+    supervising_district_external_id: Optional[str] = attr.ib(default=None)
+
+    # External ID of the lowest-level sub-geography (e.g. an individual office with a
+    # street address) of the officer that was supervising the person described by this
+    # object.
+    level_1_supervision_location_external_id: Optional[str] = attr.ib(default=None)
+
+    # For states with a hierachical structure of supervision locations, this is the
+    # external ID the next-lowest-level sub-geography after
+    # level_1_supervision_sub_geography_external_id. For example, in PA this is a
+    # "district" where level 1 is an office.
+    level_2_supervision_location_external_id: Optional[str] = attr.ib(default=None)
+
+
 @attr.s
 class AssessmentEventMixin:
-    """Attribute that enables an event to be able to calculate the score bucket from assessment information."""
+    """Sef of attributes that store information about assessments, and enables an event
+    to be able to calculate the score bucket from assessment information."""
 
     DEFAULT_ASSESSMENT_SCORE_BUCKET = "NOT_ASSESSED"
+
+    # Assessment type
+    assessment_type: Optional[StateAssessmentType] = attr.ib(default=None)
+
+    # Most recent assessment score at the time of referral
+    assessment_score: Optional[int] = attr.ib(default=None)
+
+    # Most recent assessment level
+    assessment_level: Optional[StateAssessmentLevel] = attr.ib(default=None)
 
     @property
     def assessment_score_bucket(self) -> str:
@@ -60,27 +126,24 @@ class AssessmentEventMixin:
                 assessment information.
         """
         state_code = getattr(self, "state_code")
-        assessment_score = getattr(self, "assessment_score")
-        assessment_level = getattr(self, "assessment_level")
-        assessment_type = getattr(self, "assessment_type")
 
-        if assessment_type:
-            if assessment_type == StateAssessmentType.LSIR:
+        if self.assessment_type:
+            if self.assessment_type == StateAssessmentType.LSIR:
                 if state_code == "US_PA":
                     # The score buckets for US_PA have changed over time, so we defer to the assessment_level
-                    if assessment_level:
-                        return assessment_level.value
+                    if self.assessment_level:
+                        return self.assessment_level.value
                 else:
-                    if assessment_score:
-                        if assessment_score < 24:
+                    if self.assessment_score:
+                        if self.assessment_score < 24:
                             return "0-23"
-                        if assessment_score <= 29:
+                        if self.assessment_score <= 29:
                             return "24-29"
-                        if assessment_score <= 38:
+                        if self.assessment_score <= 38:
                             return "30-38"
                         return "39+"
 
-            elif assessment_type in [
+            elif self.assessment_type in [
                 StateAssessmentType.ORAS,
                 StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
                 StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
@@ -93,9 +156,9 @@ class AssessmentEventMixin:
                 StateAssessmentType.ORAS_STATIC,
                 StateAssessmentType.ORAS_SUPPLEMENTAL_REENTRY,
             ]:
-                if assessment_level:
-                    return assessment_level.value
-            elif assessment_type in [
+                if self.assessment_level:
+                    return self.assessment_level.value
+            elif self.assessment_type in [
                 StateAssessmentType.INTERNAL_UNKNOWN,
                 StateAssessmentType.ASI,
                 StateAssessmentType.CSSM,
@@ -106,10 +169,12 @@ class AssessmentEventMixin:
                 StateAssessmentType.STATIC_99,
                 StateAssessmentType.TCU_DRUG_SCREEN,
             ]:
-                logging.warning("Assessment type %s is unsupported.", assessment_type)
+                logging.warning(
+                    "Assessment type %s is unsupported.", self.assessment_type
+                )
             else:
                 raise ValueError(
-                    f"Unexpected unsupported StateAssessmentType: {assessment_type}"
+                    f"Unexpected unsupported StateAssessmentType: {self.assessment_type}"
                 )
 
         return self.DEFAULT_ASSESSMENT_SCORE_BUCKET

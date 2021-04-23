@@ -28,6 +28,8 @@ from recidiviz.calculator.pipeline.incarceration.metrics import (
     IncarcerationMetricType,
     IncarcerationPopulationMetric,
     IncarcerationReleaseMetric,
+    IncarcerationCommitmentFromSupervisionMetric,
+    IncarcerationMetric,
 )
 from recidiviz.calculator.pipeline.program.metrics import (
     ProgramMetricType,
@@ -53,7 +55,6 @@ from recidiviz.calculator.pipeline.supervision.metrics import (
 )
 from recidiviz.calculator.pipeline.utils.metric_utils import (
     json_serializable_metric_key,
-    RecidivizMetric,
 )
 from recidiviz.common.constants.person_characteristics import Gender
 
@@ -119,7 +120,7 @@ class TestBQSchemaForMetricTable(unittest.TestCase):
     """Tests the bq_schema_for_metric_table function."""
 
     def test_bq_schema_for_metric_table(self):
-        schema_fields = RecidivizMetric.bq_schema_for_metric_table()
+        schema_fields = IncarcerationMetric.bq_schema_for_metric_table()
 
         expected_output = [
             SchemaField("metric_type", bigquery.enums.SqlTypeNames.STRING.value),
@@ -133,13 +134,22 @@ class TestBQSchemaForMetricTable(unittest.TestCase):
             SchemaField("gender", bigquery.enums.SqlTypeNames.STRING.value),
             SchemaField("created_on", bigquery.enums.SqlTypeNames.DATE.value),
             SchemaField("updated_on", bigquery.enums.SqlTypeNames.DATE.value),
+            SchemaField("person_id", bigquery.enums.SqlTypeNames.INTEGER.value),
+            SchemaField("person_external_id", bigquery.enums.SqlTypeNames.STRING.value),
+            SchemaField("year", bigquery.enums.SqlTypeNames.INTEGER.value),
+            SchemaField("month", bigquery.enums.SqlTypeNames.INTEGER.value),
+            SchemaField("facility", bigquery.enums.SqlTypeNames.STRING.value),
+            SchemaField(
+                "county_of_residence", bigquery.enums.SqlTypeNames.STRING.value
+            ),
         ]
 
-        self.assertEqual(expected_output, schema_fields)
+        self.assertCountEqual(expected_output, schema_fields)
 
     def test_bq_schema_for_metric_table_incarceration(self):
         incarceration_metrics_for_type = {
             IncarcerationMetricType.INCARCERATION_ADMISSION: IncarcerationAdmissionMetric,
+            IncarcerationMetricType.INCARCERATION_COMMITMENT_FROM_SUPERVISION: IncarcerationCommitmentFromSupervisionMetric,
             IncarcerationMetricType.INCARCERATION_POPULATION: IncarcerationPopulationMetric,
             IncarcerationMetricType.INCARCERATION_RELEASE: IncarcerationReleaseMetric,
         }

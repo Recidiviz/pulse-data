@@ -24,7 +24,7 @@ from recidiviz.common.constants.state.state_incarceration import StateIncarcerat
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
-    is_revocation_admission,
+    is_commitment_from_supervision,
 )
 from recidiviz.ingest.direct.regions.us_nd import us_nd_enum_helpers
 from recidiviz.persistence.database.base_schema import StateBase
@@ -71,7 +71,10 @@ def associate_revocation_svrs_with_ips(merged_persons: List[schema.StatePerson])
                 )
             )
             if isinstance(admission_reason, StateIncarcerationPeriodAdmissionReason):
-                if is_revocation_admission(admission_reason) and ip.admission_date:
+                if (
+                    is_commitment_from_supervision(admission_reason)
+                    and ip.admission_date
+                ):
                     revocation_ips.append(ip)
 
         if not revocation_svrs or not revocation_ips:

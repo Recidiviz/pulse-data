@@ -39,7 +39,9 @@ class ReincarcerationRecidivismMetricType(RecidivizMetricType):
 # TODO(#1841): Implement rearrest recidivism metrics
 # TODO(#1842): Implement reconviction recidivism metrics
 @attr.s
-class ReincarcerationRecidivismMetric(RecidivizMetric, PersonLevelMetric):
+class ReincarcerationRecidivismMetric(
+    RecidivizMetric[ReincarcerationRecidivismMetricType], PersonLevelMetric
+):
     """Models a single recidivism metric.
 
     Contains all of the identifying characteristics of the metric, including required characteristics for normalization
@@ -47,6 +49,7 @@ class ReincarcerationRecidivismMetric(RecidivizMetric, PersonLevelMetric):
     """
 
     # Required characteristics
+    metric_type_cls = ReincarcerationRecidivismMetricType
 
     # The type of ReincarcerationRecidivismMetric
     metric_type: ReincarcerationRecidivismMetricType = attr.ib(default=None)

@@ -56,16 +56,16 @@ class TestProgramEvent(unittest.TestCase):
         supervising_district_external_id = "DISTRICT 100"
 
         program_event = ProgramReferralEvent(
-            state_code,
-            event_date,
-            program_id,
-            supervision_type,
-            participation_status,
-            assessment_score,
-            assessment_type,
-            assessment_level,
-            supervising_officer_external_id,
-            supervising_district_external_id,
+            state_code=state_code,
+            event_date=event_date,
+            program_id=program_id,
+            supervision_type=supervision_type,
+            participation_status=participation_status,
+            assessment_score=assessment_score,
+            assessment_type=assessment_type,
+            assessment_level=assessment_level,
+            supervising_officer_external_id=supervising_officer_external_id,
+            supervising_district_external_id=supervising_district_external_id,
         )
 
         assert program_event.state_code == state_code
