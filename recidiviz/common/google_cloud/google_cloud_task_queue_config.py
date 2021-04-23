@@ -37,9 +37,23 @@ from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
     DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2,
     JOB_MONITOR_QUEUE_V2,
     SCRAPER_PHASE_QUEUE_V2,
+    ADMIN_PANEL_DATA_DISCOVERY_QUEUE,
 )
 from recidiviz.common.google_cloud.protobuf_builder import ProtobufBuilder
 from recidiviz.utils import metadata, regions, vendors
+
+ADMIN_PANEL_DATA_DISCOVERY_QUEUE_CONFIG = queue_pb2.Queue(
+    rate_limits=queue_pb2.RateLimits(
+        max_dispatches_per_second=100,
+        max_concurrent_dispatches=100,
+    ),
+    retry_config=queue_pb2.RetryConfig(
+        max_attempts=0,
+    ),
+    stackdriver_logging_config=queue_pb2.StackdriverLoggingConfig(
+        sampling_ratio=1.0,
+    ),
+)
 
 DIRECT_INGEST_QUEUE_BASE_CONFIG = queue_pb2.Queue(
     rate_limits=queue_pb2.RateLimits(
@@ -151,6 +165,14 @@ def _build_cloud_task_queue_configs(
                 client_wrapper, DIRECT_INGEST_QUEUE_BASE_CONFIG, queue_name
             )
         )
+
+    queues.append(
+        _queue_config_with_name(
+            client_wrapper,
+            ADMIN_PANEL_DATA_DISCOVERY_QUEUE_CONFIG,
+            ADMIN_PANEL_DATA_DISCOVERY_QUEUE,
+        )
+    )
 
     queues.append(
         ProtobufBuilder(queue_pb2.Queue)

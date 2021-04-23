@@ -37,7 +37,11 @@ import { FormContext } from "../DataDiscoveryView";
 
 const { Option } = Select;
 
-const getDefaultCondition = () => ({ columns: [], operator: "=", values: [] });
+const getDefaultCondition = () => ({
+  column: null,
+  operator: "in",
+  values: [],
+});
 const getDefaultGroup = () => ({ conditions: [getDefaultCondition()] });
 
 interface ConditionProps {
@@ -86,7 +90,7 @@ const Condition = observer(
             noStyle
           >
             <Select>
-              {["=", "!=", "in", "not in"].map((operator) => (
+              {["in", "not in"].map((operator) => (
                 <Option value={operator} key={operator}>
                   {operator}
                 </Option>

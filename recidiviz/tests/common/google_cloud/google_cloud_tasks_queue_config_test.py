@@ -150,3 +150,4 @@ class TestGoogleCloudTasksQueueConfig(unittest.TestCase):
         self.assertTrue("bigquery-v2" in queues_updated_by_id)
         self.assertTrue("job-monitor-v2" in queues_updated_by_id)
         self.assertTrue("scraper-phase-v2" in queues_updated_by_id)
+        self.assertTrue("admin-panel-data-discovery" in queues_updated_by_id)

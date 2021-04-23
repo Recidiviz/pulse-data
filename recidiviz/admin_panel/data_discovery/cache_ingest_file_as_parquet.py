@@ -42,16 +42,26 @@ class SingleIngestFileParquetCache:
     ) -> None:
         self.cache = cache
         self.expiry = expiry
-        self.cache_key = f"{file.uri()}.pq"
+        self.cache_key = self.parquet_cache_key(file)
+        self.staged_cache_key = f"{self.cache_key}.tmp"
+
+    @classmethod
+    def parquet_cache_key(cls, file: GcsfsFilePath) -> str:
+        return f"{file.uri()}.pq"
 
     def clear(self) -> None:
         """ Removes the entry from the cache """
         self.cache.delete(self.cache_key)
+        self.cache.delete(self.staged_cache_key)
 
     def add_chunk(self, df: pandas.DataFrame) -> None:
         """ Serializes a dataframe to parquet format; pushes to redis """
-        self.cache.rpush(self.cache_key, df.to_parquet(compression="GZIP"))
-        self.cache.expire(self.cache_key, self.expiry)
+        self.cache.rpush(self.staged_cache_key, df.to_parquet(compression="GZIP"))
+        self.cache.expire(self.staged_cache_key, self.expiry)
+
+    def move_staged_files_to_completed(self) -> None:
+        """ Once a file has been fully cached, we can move it to the main cache key"""
+        self.cache.rename(self.staged_cache_key, self.cache_key)
 
     def get_parquet_files(self) -> Generator[BytesIO, None, None]:
         file_count = self.cache.llen(self.cache_key)
@@ -78,7 +88,7 @@ class CacheIngestFileAsParquetDelegate(GcsfsCsvReaderDelegate):
         self.parquet_cache = parquet_cache
         self.parquet_cache.clear()
 
-    def on_dataframe(self, _encoding: str, _chunk_num: int, df: pd.DataFrame) -> bool:
+    def on_dataframe(self, encoding: str, chunk_num: int, df: pd.DataFrame) -> bool:
         """ For each chunked dataframe, append the processing date column, and push to Redis """
         df["ingest_processing_date"] = self.file_parts.utc_upload_datetime.strftime(
             "%D"
@@ -89,23 +99,22 @@ class CacheIngestFileAsParquetDelegate(GcsfsCsvReaderDelegate):
         # Continue to the next chunk
         return True
 
-    def on_unicode_decode_error(self, _encoding: str, _e: UnicodeError) -> bool:
+    def on_unicode_decode_error(self, encoding: str, e: UnicodeError) -> bool:
         # The file cannot be decoded; delete cache key and don't retry
         self.parquet_cache.clear()
 
         return False
 
-    def on_exception(self, _encoding: str, e: Exception) -> bool:
+    def on_exception(self, encoding: str, e: Exception) -> bool:
         # If the file cannot be successfully parsed, remove from cache
         if isinstance(e, pandas.errors.ParserError):
-            print(e)
             self.parquet_cache.clear()
 
         # Re-raise exception
         return True
 
     def on_file_read_success(self, encoding: str) -> None:
-        pass
+        self.parquet_cache.move_staged_files_to_completed()
 
     def on_start_read_with_encoding(self, encoding: str) -> None:
         pass
