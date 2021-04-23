@@ -160,6 +160,9 @@ from recidiviz.validation.views.state.supervision_population_person_level_extern
 from recidiviz.validation.views.state.supervision_revocations_by_period_by_type_by_demographics_internal_consistency import (
     SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.supervision_start_person_level_external_comparison import (
+    SUPERVISION_START_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.supervision_success_by_month_dashboard_comparison import (
     SUPERVISION_SUCCESS_BY_MONTH_DASHBOARD_COMPARISON_VIEW_BUILDER,
 )
@@ -552,6 +555,15 @@ def get_all_validations() -> List[DataValidationCheck]:
             view=RECIDIVISM_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER.build(),
             sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
             comparison_columns=["external_recidivated", "internal_recidivated"],
+            max_allowed_error=0.02,
+        ),
+        SamenessDataValidationCheck(
+            view=SUPERVISION_START_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER.build(),
+            sameness_check_type=SamenessDataValidationCheckType.STRINGS,
+            comparison_columns=[
+                "external_person_external_id",
+                "internal_person_external_id",
+            ],
             max_allowed_error=0.02,
         ),
         SamenessDataValidationCheck(
