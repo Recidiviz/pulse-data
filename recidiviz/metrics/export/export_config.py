@@ -20,6 +20,9 @@ from typing import Optional, Sequence, List, Dict, Set
 
 import attr
 
+from recidiviz.calculator.query.state.views.dashboard.vitals_summaries.vitals_views import (
+    VITALS_VIEW_BUILDERS,
+)
 from recidiviz.metrics import export as export_module
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.export.export_query_config import (
@@ -36,7 +39,6 @@ from recidiviz.calculator.query.state.views.covid_dashboard.covid_dashboard_view
 from recidiviz.calculator.query.state.views.dashboard.dashboard_views import (
     LANTERN_DASHBOARD_VIEW_BUILDERS,
     CORE_DASHBOARD_VIEW_BUILDERS,
-    UP_DASHBOARD_VIEW_BUILDERS,
 )
 from recidiviz.calculator.query.state.views.po_report.po_monthly_report_data import (
     PO_MONTHLY_REPORT_DATA_VIEW_BUILDER,
@@ -286,11 +288,11 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         # are empty.
         allow_empty=True,
     ),
-    # Unified Product views
+    # Unified Product -- Vitals
     ExportViewCollectionConfig(
-        view_builders_to_export=UP_DASHBOARD_VIEW_BUILDERS,
+        view_builders_to_export=VITALS_VIEW_BUILDERS,
         output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
-        export_name="UP",
+        export_name="VITALS",
         bq_view_namespace=BigQueryViewNamespace.STATE,
     ),
 ]
