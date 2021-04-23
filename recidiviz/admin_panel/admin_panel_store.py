@@ -23,14 +23,10 @@ from recidiviz.utils import metadata
 
 class AdminPanelStore:
     def __init__(self, override_project_id: Optional[str] = None) -> None:
-        self._override_project_id = override_project_id
-
-    @property
-    def project_id(self) -> str:
-        return (
+        self.project_id = (
             metadata.project_id()
-            if self._override_project_id is None
-            else self._override_project_id
+            if override_project_id is None
+            else override_project_id
         )
 
     @abstractmethod

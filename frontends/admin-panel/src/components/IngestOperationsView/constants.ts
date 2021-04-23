@@ -22,8 +22,8 @@ export enum IngestActions {
 
 export const actionNames = {
   [IngestActions.StartIngestRun]: "Start Ingest Run",
-  [IngestActions.PauseIngestQueues]: "Pause Ingest Queues",
-  [IngestActions.ResumeIngestQueues]: "Resume Ingest Queues",
+  [IngestActions.PauseIngestQueues]: "Pause Queues",
+  [IngestActions.ResumeIngestQueues]: "Resume Queues",
 };
 
 export enum QueueState {
@@ -34,4 +34,24 @@ export enum QueueState {
 export type QueueMetadata = {
   name: string;
   state: QueueState;
+};
+
+export enum DirectIngestInstance {
+  PRIMARY = "PRIMARY",
+  SECONDARY = "SECONDARY",
+}
+
+export type IngestBucketSummary = {
+  name: string;
+  unprocessedFilesRaw: number;
+  processedFilesRaw: number;
+  unprocessedFilesIngestView: number;
+  processedFilesIngestView: number;
+};
+
+export type IngestInstanceSummary = {
+  instance: DirectIngestInstance;
+  storage: string;
+  ingest: IngestBucketSummary;
+  dbName: string;
 };

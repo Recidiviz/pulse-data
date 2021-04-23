@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import * as React from "react";
-import { Card, Col, Row } from "antd";
+import { Table } from "antd";
 import { QueueMetadata } from "./constants";
 
 interface IngestQueueStatusCardProps {
@@ -24,34 +24,50 @@ interface IngestQueueStatusCardProps {
   loading: boolean;
 }
 
-const IngestQueueStatusCard: React.FC<IngestQueueStatusCardProps> = ({
+const IngestQueuesTable: React.FC<IngestQueueStatusCardProps> = ({
   projectId,
   queueStates,
   loading,
 }) => {
-  const cloudTasksUrl = `https://console.cloud.google.com/cloudtasks?organizationId=448885369991&project=${projectId}`;
+  const columns = [
+    {
+      title: "Queue Name",
+      dataIndex: "name",
+      key: "name",
+      render: (name: string) => (
+        <a
+          href={`https://console.cloud.google.com/cloudtasks/queue/us-east1/${name}/tasks?project=${projectId}`}
+        >
+          {name}
+        </a>
+      ),
+    },
+    {
+      title: "State",
+      dataIndex: "state",
+      key: "state",
+    },
+  ];
 
   return (
-    <Row gutter={[16, 16]}>
-      <Col span={24}>
-        <Card
-          title="Queue States"
-          extra={<a href={cloudTasksUrl}>Go to Cloud Task Queues</a>}
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      {queueStates ? (
+        <Table
+          columns={columns}
+          dataSource={queueStates}
+          pagination={false}
           loading={loading}
-        >
-          <ul>
-            {queueStates?.map((queueData: QueueMetadata) => {
-              return (
-                <li key={queueData.name}>
-                  {queueData.name}: {queueData.state}
-                </li>
-              );
-            })}
-          </ul>
-        </Card>
-      </Col>
-    </Row>
+          style={{ width: 1000 }}
+        />
+      ) : null}
+    </div>
   );
 };
 
-export default IngestQueueStatusCard;
+export default IngestQueuesTable;

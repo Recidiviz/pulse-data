@@ -16,7 +16,10 @@
 // =============================================================================
 
 import MetadataDataset from "./models/MetadataDatasets";
-import { QueueState } from "./components/IngestOperationsView/constants";
+import {
+  DirectIngestInstance,
+  QueueState,
+} from "./components/IngestOperationsView/constants";
 
 const postWithURLAndBody = async (
   url: string,
@@ -102,10 +105,13 @@ export const fetchIngestRegionCodes = async (): Promise<Response> => {
 };
 
 // Start Ingest
-export const startIngestRun = async (regionCode: string): Promise<Response> => {
+export const startIngestRun = async (
+  regionCode: string,
+  instance: DirectIngestInstance
+): Promise<Response> => {
   return postWithURLAndBody(
     `/api/ingest_operations/${regionCode}/start_ingest_run`,
-    {}
+    { instance }
   );
 };
 
@@ -126,6 +132,20 @@ export const getIngestQueuesState = async (
 ): Promise<Response> => {
   return fetch(
     `/admin/api/ingest_operations/${regionCode}/get_ingest_queue_states`,
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+};
+
+// Get ingest instance summaries
+export const getIngestInstanceSummaries = async (
+  regionCode: string
+): Promise<Response> => {
+  return fetch(
+    `/admin/api/ingest_operations/${regionCode}/get_ingest_instance_summaries`,
     {
       headers: {
         "Content-Type": "application/json",
