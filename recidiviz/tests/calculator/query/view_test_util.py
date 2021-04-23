@@ -33,7 +33,7 @@ from sqlalchemy.sql import sqltypes
 from recidiviz.big_query.big_query_view import (
     BigQueryView,
     BigQueryViewBuilder,
-    BigQueryLocation,
+    BigQueryAddress,
 )
 from recidiviz.persistence.database.session import Session
 from recidiviz.tools.postgres import local_postgres_helpers
@@ -155,7 +155,7 @@ class BaseViewTest(unittest.TestCase):
 
     def setUp(self) -> None:
         # Stores the list of mock tables that have been created as (dataset_id, table_id) tuples.
-        self.mock_bq_tables: Set[BigQueryLocation] = set()
+        self.mock_bq_tables: Set[BigQueryAddress] = set()
 
         self.type_name_generator = NameGenerator("__type_")
         self.postgres_engine = create_engine(
@@ -206,7 +206,7 @@ class BaseViewTest(unittest.TestCase):
         mock_schema: MockTableSchema,
         mock_data: pd.DataFrame,
     ) -> None:
-        location = BigQueryLocation(dataset_id=dataset_id, table_id=table_id)
+        location = BigQueryAddress(dataset_id=dataset_id, table_id=table_id)
         self.mock_bq_tables.add(location)
         mock_data.to_sql(
             name=self._to_postgres_table_name(location),
@@ -258,7 +258,7 @@ class BaseViewTest(unittest.TestCase):
         self._execute_statement(query)
 
     @classmethod
-    def _to_postgres_table_name(cls, bq_location: BigQueryLocation) -> str:
+    def _to_postgres_table_name(cls, bq_location: BigQueryAddress) -> str:
         # Postgres does not support '.' in table names, so we instead join them with an underscore.
         return "_".join([bq_location.dataset_id, bq_location.table_id])
 
@@ -357,7 +357,7 @@ class BaseViewTest(unittest.TestCase):
         for match in re.finditer(table_reference_regex, query):
             table_reference = match.group()
             dataset_id, table_id = match.groups()
-            location = BigQueryLocation(dataset_id=dataset_id, table_id=table_id)
+            location = BigQueryAddress(dataset_id=dataset_id, table_id=table_id)
             if location not in self.mock_bq_tables:
                 raise KeyError(
                     f"Table {table_reference} does not exist, must be created via create_mock_bq_table."

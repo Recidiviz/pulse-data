@@ -212,13 +212,12 @@ def compare_metric_view_output_to_sandbox(
 
             if view_builder.should_materialize and not check_determinism:
                 view = view_builder.build()
-                if not view.materialized_location:
+                if not view.materialized_address:
                     raise ValueError(
-                        f"Unexpected empty materialized_location for "
-                        f"{view_builder}."
+                        f"Unexpected empty materialized_address for " f"{view_builder}."
                     )
-                base_dataset_id = view.materialized_location.dataset_id
-                base_view_id = view.materialized_location.table_id
+                base_dataset_id = view.materialized_address.dataset_id
+                base_view_id = view.materialized_address.table_id
             else:
                 base_dataset_id, base_view_id = (
                     view_builder.dataset_id,

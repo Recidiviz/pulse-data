@@ -80,6 +80,7 @@ def rematerialize_views_for_namespace(
     candidate_view_builders: Sequence[BigQueryViewBuilder],
     dataset_overrides: Optional[Dict[str, str]] = None,
     skip_missing_views: bool = False,
+    bq_region_override: Optional[str] = None,
 ) -> None:
     """For all views in a given namespace, re-materializes any materialized views. This should be called only when we
     want to refresh the data in the materialized view, not when we want to update the underlying query of the view.
@@ -98,7 +99,7 @@ def rematerialize_views_for_namespace(
             dataset_overrides=dataset_overrides,
         )
 
-        bq_client = BigQueryClientImpl()
+        bq_client = BigQueryClientImpl(region_override=bq_region_override)
         _create_all_datasets_if_necessary(
             bq_client, views_to_update, set_default_table_expiration_for_new_datasets
         )
@@ -108,7 +109,7 @@ def rematerialize_views_for_namespace(
         def _materialize_view(
             v: BigQueryView, _parent_results: Dict[BigQueryView, None]
         ) -> None:
-            if not v.materialized_location:
+            if not v.materialized_address:
                 logging.info(
                     "Skipping non-materialized view [%s.%s].", v.dataset_id, v.view_id
                 )
@@ -142,6 +143,7 @@ def create_dataset_and_deploy_views_for_view_builders(
     view_source_table_datasets: Set[str],
     view_builders_to_update: Sequence[BigQueryViewBuilder],
     dataset_overrides: Optional[Dict[str, str]] = None,
+    bq_region_override: Optional[str] = None,
 ) -> None:
     """Creates or updates all the views in the provided list with the view query in the provided view builder list. If
     any materialized view has been updated (or if an ancestor view has been updated), the view will be re-materialized
@@ -164,7 +166,9 @@ def create_dataset_and_deploy_views_for_view_builders(
         )
 
         _create_dataset_and_deploy_views(
-            views_to_update, set_default_table_expiration_for_new_datasets
+            views_to_update,
+            bq_region_override,
+            set_default_table_expiration_for_new_datasets,
         )
     except Exception as e:
         with monitoring.measurements(
@@ -218,8 +222,9 @@ def _create_all_datasets_if_necessary(
     views_to_update: List[BigQueryView],
     set_temp_dataset_table_expiration: bool,
 ) -> None:
-    """Creates all required datasets for the list of views, with a table timeout if necessary. Done up front to avoid
-    conflicts during a run of the DagWalker.
+    """Creates all required datasets for the list of views, both where the view itself
+    lives and where its materialized data lives, with a table timeout if necessary. Done
+    up front to avoid conflicts during a run of the DagWalker.
     """
     new_dataset_table_expiration_ms = (
         TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
@@ -228,23 +233,30 @@ def _create_all_datasets_if_necessary(
     )
     dataset_ids = set()
     for view in views_to_update:
-        views_dataset_ref = bq_client.dataset_ref_for_id(view.dataset_id)
-        if view.dataset_id not in dataset_ids:
-            bq_client.create_dataset_if_necessary(
-                views_dataset_ref, new_dataset_table_expiration_ms
+        relevant_datasets = [bq_client.dataset_ref_for_id(view.dataset_id)]
+        if view.materialized_address:
+            relevant_datasets.append(
+                bq_client.dataset_ref_for_id(view.materialized_address.dataset_id)
             )
-            dataset_ids.add(view.dataset_id)
+        for dataset_ref in relevant_datasets:
+            if dataset_ref.dataset_id not in dataset_ids:
+                bq_client.create_dataset_if_necessary(
+                    dataset_ref, new_dataset_table_expiration_ms
+                )
+                dataset_ids.add(dataset_ref.dataset_id)
 
 
 def _create_dataset_and_deploy_views(
-    views_to_update: List[BigQueryView], set_temp_dataset_table_expiration: bool = False
+    views_to_update: List[BigQueryView],
+    bq_region_override: Optional[str],
+    set_temp_dataset_table_expiration: bool = False,
 ) -> None:
     """Create and update the given views and their parent datasets.
 
     For each dataset key in the given dictionary, creates the dataset if it does not
     exist, and creates or updates the underlying views mapped to that dataset.
 
-    If a view has a set materialized_location field, materializes the view into a
+    If a view has a set materialized_address field, materializes the view into a
     table.
 
     Args:
@@ -253,7 +265,7 @@ def _create_dataset_and_deploy_views(
          expiration of TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS.
     """
 
-    bq_client = BigQueryClientImpl()
+    bq_client = BigQueryClientImpl(region_override=bq_region_override)
     _create_all_datasets_if_necessary(
         bq_client, views_to_update, set_temp_dataset_table_expiration
     )
@@ -302,15 +314,15 @@ def _create_or_update_view_and_materialize_if_necessary(
         # We also check for schema changes, just in case a parent view or table has added a column
         view_changed = True
 
-    if view.materialized_location:
+    if view.materialized_address:
         materialized_view_dataset_ref = bq_client.dataset_ref_for_id(
-            view.materialized_location.dataset_id
+            view.materialized_address.dataset_id
         )
         if (
             view_changed
             or parent_changed
             or not bq_client.table_exists(
-                materialized_view_dataset_ref, view.materialized_location.table_id
+                materialized_view_dataset_ref, view.materialized_address.table_id
             )
         ):
             bq_client.materialize_view_to_table(view)
