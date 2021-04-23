@@ -178,18 +178,17 @@ class StateSpecializedPurposeForIncarceration(EntityEnum, metaclass=EntityEnumMe
         return _STATE_SPECIALIZED_PURPOSE_FOR_INCARCERATION_MAP
 
 
-def is_revocation_admission(
+def is_commitment_from_supervision(
     admission_reason: Optional[StateIncarcerationPeriodAdmissionReason],
 ) -> bool:
-    """Determines if the provided admission_reason is a type of revocation admission."""
+    """Determines if the provided admission_reason represents a type of commitment from
+    supervision due to a sanction or revocation."""
     if not admission_reason:
         return False
     revocation_types = [
         StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
         StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
         StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
-        # This is sometimes, but not always, a revocation admission. Handled by state-specific revocation logic.
-        StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
         StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
     ]
     non_revocation_types = [
@@ -207,6 +206,14 @@ def is_revocation_admission(
     if admission_reason in revocation_types:
         return True
     if admission_reason in non_revocation_types:
+        return False
+    if (
+        admission_reason
+        == StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION
+    ):
+        # TODO(#7070): Once we have guaranteed ADMITTED_FROM_SUPERVISION is an
+        #  ingest-only enum, and can expect to not see it after pre-processing,
+        #  raise an error here.
         return False
     raise ValueError(
         f"Unexpected StateIncarcerationPeriodAdmissionReason {admission_reason}."

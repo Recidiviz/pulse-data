@@ -37,6 +37,7 @@ from recidiviz.persistence.entity.state.entities import (
 )
 
 
+# TODO(#6985): Change all "revocation" language to "commitment from supervision"
 def us_id_revoked_supervision_period_if_revocation_occurred(
     incarceration_period: StateIncarcerationPeriod,
     filtered_supervision_periods: List[StateSupervisionPeriod],

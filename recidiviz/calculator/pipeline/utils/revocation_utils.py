@@ -44,7 +44,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponse,
 )
 
-
+# TODO(#6985): Change all "revocation" language to "commitment from supervision"
 RevocationDetails = NamedTuple(
     "RevocationDetails",
     [

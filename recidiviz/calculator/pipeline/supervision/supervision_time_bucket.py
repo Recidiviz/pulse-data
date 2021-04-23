@@ -26,24 +26,20 @@ from recidiviz.calculator.pipeline.supervision.supervision_case_compliance impor
 from recidiviz.calculator.pipeline.utils.event_utils import (
     AssessmentEventMixin,
     IdentifierEventWithSingularDate,
+    ViolationHistoryMixin,
+    SupervisionLocationMixin,
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_index import (
     _is_official_supervision_admission,
 )
+from recidiviz.common import attr_validators
 from recidiviz.common.attr_mixins import BuildableAttr
-from recidiviz.common.constants.state.state_assessment import (
-    StateAssessmentType,
-    StateAssessmentLevel,
-)
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
-)
-from recidiviz.common.constants.state.state_supervision_violation import (
-    StateSupervisionViolationType,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseRevocationType,
@@ -53,17 +49,19 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 
 # TODO(#5307): Convert all "bucket" language to use "event"
 @attr.s(frozen=True)
-class SupervisionTimeBucket(IdentifierEventWithSingularDate, AssessmentEventMixin):
+class SupervisionTimeBucket(
+    IdentifierEventWithSingularDate, SupervisionLocationMixin, AssessmentEventMixin
+):
     """Models details related to a bucket of time on supervision.
 
     Describes a month in which a person spent any amount of time on supervision. This includes the information
     pertaining to time on supervision that we will want to track when calculating supervision and revocation metrics."""
 
     # Year for when the person was on supervision
-    year: int = attr.ib()
+    year: int = attr.ib(default=None, validator=attr_validators.is_int)
 
     # Month for when the person was on supervision
-    month: int = attr.ib()
+    month: int = attr.ib(default=None, validator=attr_validators.is_int)
 
     # TODO(#2891): Consider moving this out of the base class, and making the supervision type specific to each
     #   bucket type
@@ -81,34 +79,8 @@ class SupervisionTimeBucket(IdentifierEventWithSingularDate, AssessmentEventMixi
     # The type of supervision case
     case_type: Optional[StateSupervisionCaseType] = attr.ib(default=None)
 
-    # TODO(#3885): Add a custodial_authority field to this class, then update metrics / BQ views to pass through to
-    #  dashboard
-
-    # Most recent assessment score
-    assessment_score: Optional[int] = attr.ib(default=None)
-
-    # Most recent assessment level
-    assessment_level: Optional[StateAssessmentLevel] = attr.ib(default=None)
-
-    # Type of the most recent assessment score
-    assessment_type: Optional[StateAssessmentType] = attr.ib(default=None)
-
     # External ID of the officer who was supervising the people described by this metric
     supervising_officer_external_id: Optional[str] = attr.ib(default=None)
-
-    # External ID of the district of the officer that was supervising the people described by this metric
-    # TODO(#4709): THIS FIELD IS DEPRECATED - USE level_1_supervision_location_external_id and
-    #  level_2_supervision_location_external_id instead.
-    supervising_district_external_id: Optional[str] = attr.ib(default=None)
-
-    # External ID of the lowest-level sub-geography (e.g. an individual office with a street address) of the officer
-    # that was supervising the person described by this metric.
-    level_1_supervision_location_external_id: Optional[str] = attr.ib(default=None)
-
-    # For states with a hierachical structure of supervision locations, this is the external ID the next-lowest-level
-    # sub-geography after level_1_supervision_sub_geography_external_id. For example, in PA this is a "district" where
-    # level 1 is an office.
-    level_2_supervision_location_external_id: Optional[str] = attr.ib(default=None)
 
     # Area of jurisdictional coverage of the court that sentenced the person to this supervision
     judicial_district_code: Optional[str] = attr.ib(default=None)
@@ -116,27 +88,6 @@ class SupervisionTimeBucket(IdentifierEventWithSingularDate, AssessmentEventMixi
     @property
     def date_of_evaluation(self) -> date:
         return self.event_date
-
-
-@attr.s(frozen=True)
-class ViolationHistoryBucket(BuildableAttr):
-    """Base class for including the most severe violation type and subtype features on a SupervisionTimeBucket."""
-
-    # The most severe violation type leading up to the date of the event the bucket describes
-    most_severe_violation_type: Optional[StateSupervisionViolationType] = attr.ib(
-        default=None
-    )
-
-    # A string subtype that provides further insight into the most_severe_violation_type above.
-    most_severe_violation_type_subtype: Optional[str] = attr.ib(default=None)
-
-    # The number of responses that were included in determining the most severe type/subtype
-    response_count: Optional[int] = attr.ib(default=0)
-
-    # The most severe decision on the responses that were included in determining the most severe type/subtype
-    most_severe_response_decision: Optional[
-        StateSupervisionViolationResponseDecision
-    ] = attr.ib(default=None)
 
 
 @attr.s(frozen=True)
@@ -157,10 +108,12 @@ class SupervisionDowngradeBucket(BuildableAttr):
 
 @attr.s(frozen=True)
 class RevocationReturnSupervisionTimeBucket(
-    SupervisionTimeBucket, ViolationHistoryBucket
+    SupervisionTimeBucket, ViolationHistoryMixin
 ):
     """Models a SupervisionTimeBucket where the person was incarcerated for a revocation."""
 
+    # Note: This will temporarily store StateSpecializedPurposeForIncarceration values
+    # as we transition to the IncarcerationCommitmentFromSupervisionMetric
     # The type of revocation of supervision
     revocation_type: Optional[
         StateSupervisionViolationResponseRevocationType
@@ -205,7 +158,9 @@ class RevocationReturnSupervisionTimeBucket(
 
 @attr.s(frozen=True)
 class NonRevocationReturnSupervisionTimeBucket(
-    SupervisionTimeBucket, ViolationHistoryBucket, SupervisionDowngradeBucket
+    SupervisionTimeBucket,
+    ViolationHistoryMixin,
+    SupervisionDowngradeBucket,
 ):
     """Models a SupervisionTimeBucket where the person was not incarcerated for a revocation."""
 
@@ -311,11 +266,11 @@ class SupervisionStartBucket(SupervisionTimeBucket):
 
 
 @attr.s(frozen=True)
-class SupervisionTerminationBucket(SupervisionTimeBucket, ViolationHistoryBucket):
+class SupervisionTerminationBucket(SupervisionTimeBucket, ViolationHistoryMixin):
     """Models a month in which supervision was terminated.
 
-    Describes the reason for termination, and the change in assessment score between first reassessment and termination
-    of supervision.
+    Describes the reason for termination, and the change in assessment score between
+    first reassessment and termination of supervision.
     """
 
     # The reason for supervision termination

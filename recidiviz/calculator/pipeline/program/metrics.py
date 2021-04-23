@@ -21,12 +21,12 @@ from typing import Optional
 
 import attr
 
+from recidiviz.calculator.pipeline.utils.event_utils import SupervisionLocationMixin
 from recidiviz.calculator.pipeline.utils.metric_utils import (
     RecidivizMetric,
     PersonLevelMetric,
     RecidivizMetricType,
-    AssessmentMetric,
-    SupervisionLocationMetric,
+    AssessmentMetricMixin,
 )
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
@@ -42,7 +42,7 @@ class ProgramMetricType(RecidivizMetricType):
 
 
 @attr.s
-class ProgramMetric(RecidivizMetric, PersonLevelMetric):
+class ProgramMetric(RecidivizMetric[ProgramMetricType], PersonLevelMetric):
     """Models a single program metric.
 
     Contains all of the identifying characteristics of the metric, including
@@ -51,6 +51,7 @@ class ProgramMetric(RecidivizMetric, PersonLevelMetric):
     """
 
     # Required characteristics
+    metric_type_cls = ProgramMetricType
 
     # The type of ProgramMetric
     metric_type: ProgramMetricType = attr.ib(default=None)
@@ -68,7 +69,9 @@ class ProgramMetric(RecidivizMetric, PersonLevelMetric):
 
 
 @attr.s
-class ProgramReferralMetric(ProgramMetric, AssessmentMetric, SupervisionLocationMetric):
+class ProgramReferralMetric(
+    ProgramMetric, AssessmentMetricMixin, SupervisionLocationMixin
+):
     """Subclass of ProgramMetric that contains program referral information."""
 
     # Required characteristics

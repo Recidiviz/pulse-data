@@ -18,7 +18,7 @@
 
 import datetime
 from datetime import date
-from typing import Any, Dict, Optional, cast, List
+from typing import Any, Dict, Optional, List, Generic, TypeVar, Type
 from enum import Enum
 
 import attr
@@ -42,8 +42,11 @@ class RecidivizMetricType(Enum):
     """Enum describing the type of metric described in the metric class."""
 
 
+RecidivizMetricTypeT = TypeVar("RecidivizMetricTypeT", bound=RecidivizMetricType)
+
+
 @attr.s
-class RecidivizMetric(BuildableAttr):
+class RecidivizMetric(Generic[RecidivizMetricTypeT], BuildableAttr):
     """Base class for modeling a single metric.
 
     Contains all of the identifying characteristics of the metric, including
@@ -54,7 +57,9 @@ class RecidivizMetric(BuildableAttr):
     # Required characteristics
 
     # The type of metric described
-    metric_type: RecidivizMetricType = attr.ib()
+    metric_type_cls: Type[RecidivizMetricTypeT]
+
+    metric_type: RecidivizMetricTypeT = attr.ib()
 
     # The string id of the calculation pipeline job that produced this metric.
     job_id: str = attr.ib()  # non-nullable
@@ -83,32 +88,14 @@ class RecidivizMetric(BuildableAttr):
     # A date for when this metric was last updated
     updated_on: Optional[date] = attr.ib(default=None)
 
-    @staticmethod
-    def build_from_metric_key_group(
-        metric_key: Dict[str, Any], job_id: str
-    ) -> Optional["RecidivizMetric"]:
-        """Builds a RecidivizMetric object from the given arguments."""
-
-        if not metric_key:
-            raise ValueError("The metric_key is empty.")
-
-        metric_key["job_id"] = job_id
-        metric_key["created_on"] = date.today()
-
-        recidiviz_metric = cast(
-            RecidivizMetric, RecidivizMetric.build_from_dictionary(metric_key)
-        )
-
-        return recidiviz_metric
-
     @classmethod
     def bq_schema_for_metric_table(cls) -> List[bigquery.SchemaField]:
         """Returns the necessary BigQuery schema for the RecidivizMetric, which is a list of SchemaField objects
         containing the column name and value type for each attribute on the RecidivizMetric."""
 
         def schema_type_for_attribute(attribute: Any) -> str:
-            # Race and ethnicity fields are the only ones that support list form. These are converted to
-            # comma-separated lists stored as strings in BigQuery.
+            # Race and ethnicity fields are the only ones that support list form. These
+            # are converted to comma-separated lists stored as strings in BigQuery.
             if is_enum(attribute) or is_list(attribute) or is_str(attribute):
                 return bigquery.enums.SqlTypeNames.STRING.value
             if is_int(attribute):
@@ -141,33 +128,14 @@ class PersonLevelMetric(BuildableAttr):
 
 
 @attr.s
-class AssessmentMetric(BuildableAttr):
-    """Base class for including assessment features on a metric."""
+class AssessmentMetricMixin(BuildableAttr):
+    """Set of attributes to store information about assessments on a metric."""
 
     # Assessment score
     assessment_score_bucket: Optional[str] = attr.ib(default=None)
 
     # Assessment type
     assessment_type: Optional[StateAssessmentType] = attr.ib(default=None)
-
-
-@attr.s
-class SupervisionLocationMetric(BuildableAttr):
-    """Base class for including supervision location information on a metric."""
-
-    # External ID of the district of the officer that was supervising the person described by this metric
-    # TODO(#4709): THIS FIELD IS DEPRECATED - USE level_1_supervision_location_external_id and
-    #  level_2_supervision_location_external_id instead.
-    supervising_district_external_id: Optional[str] = attr.ib(default=None)
-
-    # External ID of the lowest-level sub-geography (e.g. an individual office with a street address) of the officer
-    # that was supervising the person described by this metric.
-    level_1_supervision_location_external_id: Optional[str] = attr.ib(default=None)
-
-    # For states with a hierachical structure of supervision locations, this is the external ID the next-lowest-level
-    # sub-geography after level_1_supervision_sub_geography_external_id. For example, in PA this is a "district" where
-    # level 1 is an office.
-    level_2_supervision_location_external_id: Optional[str] = attr.ib(default=None)
 
 
 def json_serializable_metric_key(metric_key: Dict[str, Any]) -> Dict[str, Any]:
@@ -199,3 +167,6 @@ def json_serializable_metric_key(metric_key: Dict[str, Any]) -> Dict[str, Any]:
             serializable_dict[key] = v
 
     return serializable_dict
+
+
+RecidivizMetricT = TypeVar("RecidivizMetricT", bound=RecidivizMetric)

@@ -36,6 +36,8 @@ from recidiviz.calculator.pipeline.incarceration.incarceration_event import (
     IncarcerationAdmissionEvent,
     IncarcerationReleaseEvent,
     IncarcerationStayEvent,
+    IncarcerationCommitmentFromSupervisionAdmissionEvent,
+    IncarcerationStandardAdmissionEvent,
 )
 from recidiviz.calculator.pipeline.incarceration.metrics import (
     IncarcerationMetric,
@@ -92,12 +94,14 @@ _STATE_CODE = "US_XX"
 
 ALL_METRICS_INCLUSIONS_DICT = {
     IncarcerationMetricType.INCARCERATION_ADMISSION: True,
+    IncarcerationMetricType.INCARCERATION_COMMITMENT_FROM_SUPERVISION: True,
     IncarcerationMetricType.INCARCERATION_POPULATION: True,
     IncarcerationMetricType.INCARCERATION_RELEASE: True,
 }
 
 ALL_METRIC_TYPES_SET = {
     IncarcerationMetricType.INCARCERATION_ADMISSION,
+    IncarcerationMetricType.INCARCERATION_COMMITMENT_FROM_SUPERVISION,
     IncarcerationMetricType.INCARCERATION_POPULATION,
     IncarcerationMetricType.INCARCERATION_RELEASE,
 }
@@ -208,7 +212,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
             county_code="124",
             facility="San Quentin",
             facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
             projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             admission_date=date(2011, 4, 5),
             release_date=date(2014, 4, 14),
@@ -650,7 +654,6 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             IncarcerationStayEvent(
                 admission_reason=incarceration_period.admission_reason,
                 admission_reason_raw_text=incarceration_period.admission_reason_raw_text,
-                supervision_type_at_admission=StateSupervisionPeriodSupervisionType.PROBATION,
                 state_code=incarceration_period.state_code,
                 event_date=incarceration_period.admission_date,
                 facility=incarceration_period.facility,
@@ -659,15 +662,15 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
                 most_serious_offense_statute="30A123",
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
             ),
-            IncarcerationAdmissionEvent(
+            IncarcerationCommitmentFromSupervisionAdmissionEvent(
                 state_code=incarceration_period.state_code,
                 event_date=incarceration_period.admission_date,
                 facility=incarceration_period.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 admission_reason=incarceration_period.admission_reason,
                 admission_reason_raw_text=incarceration_period.admission_reason_raw_text,
-                supervision_type_at_admission=StateSupervisionPeriodSupervisionType.PROBATION,
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             ),
             IncarcerationReleaseEvent(
                 state_code=incarceration_period.state_code,
@@ -763,7 +766,6 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
             release_date=date(2010, 11, 21),
             release_reason=StateIncarcerationPeriodReleaseReason.DEATH,
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
         )
 
         post_mortem_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
@@ -773,10 +775,9 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             state_code="US_XX",
             facility="PRISON XX",
             admission_date=date(2010, 11, 22),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2010, 11, 23),
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
         )
 
         post_mortem_incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
@@ -787,7 +788,6 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             facility="PRISON XX",
             admission_date=date(2010, 11, 24),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
         )
 
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
@@ -845,24 +845,21 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             IncarcerationStayEvent(
                 admission_reason=incarceration_period_with_death.admission_reason,
                 admission_reason_raw_text=incarceration_period_with_death.admission_reason_raw_text,
-                supervision_type_at_admission=StateSupervisionPeriodSupervisionType.PROBATION,
                 state_code=incarceration_period_with_death.state_code,
                 event_date=incarceration_period_with_death.admission_date,
                 facility=incarceration_period_with_death.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 most_serious_offense_ncic_code="5699",
                 most_serious_offense_statute="30A123",
-                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
             ),
-            IncarcerationAdmissionEvent(
+            IncarcerationCommitmentFromSupervisionAdmissionEvent(
                 state_code=incarceration_period_with_death.state_code,
                 event_date=incarceration_period_with_death.admission_date,
                 facility=incarceration_period_with_death.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 admission_reason=incarceration_period_with_death.admission_reason,
                 admission_reason_raw_text=incarceration_period_with_death.admission_reason_raw_text,
-                supervision_type_at_admission=StateSupervisionPeriodSupervisionType.PROBATION,
-                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             ),
             IncarcerationReleaseEvent(
                 state_code=incarceration_period_with_death.state_code,
@@ -875,7 +872,6 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
                     incarceration_period_with_death.release_date
                     - incarceration_period_with_death.admission_date
                 ).days,
-                purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
             ),
         ]
 
@@ -926,7 +922,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         )
 
         incarceration_events = [
-            IncarcerationAdmissionEvent(
+            IncarcerationStandardAdmissionEvent(
                 state_code="US_XX",
                 event_date=date(2001, 3, 16),
                 facility="SAN QUENTIN",

@@ -34,6 +34,8 @@ from recidiviz.calculator.pipeline.incarceration.incarceration_event import (
     IncarcerationReleaseEvent,
     IncarcerationStayEvent,
     IncarcerationEvent,
+    IncarcerationCommitmentFromSupervisionAdmissionEvent,
+    IncarcerationStandardAdmissionEvent,
 )
 from recidiviz.calculator.pipeline.utils.incarceration_period_index import (
     IncarcerationPeriodIndex,
@@ -146,7 +148,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
 
         expected_events.extend(
             [
-                IncarcerationAdmissionEvent(
+                IncarcerationStandardAdmissionEvent(
                     state_code=incarceration_period.state_code,
                     event_date=incarceration_period.admission_date,
                     facility=incarceration_period.facility,
@@ -252,7 +254,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
 
         expected_events.extend(
             [
-                IncarcerationAdmissionEvent(
+                IncarcerationStandardAdmissionEvent(
                     state_code=incarceration_period_1.state_code,
                     event_date=incarceration_period_1.admission_date,
                     facility=incarceration_period_1.facility,
@@ -328,7 +330,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
 
         expected_events.extend(
             [
-                IncarcerationAdmissionEvent(
+                IncarcerationStandardAdmissionEvent(
                     state_code=incarceration_period.state_code,
                     event_date=incarceration_period.admission_date,
                     facility=incarceration_period.facility,
@@ -412,19 +414,17 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         expected_events: List[IncarcerationEvent] = expected_incarceration_stay_events(
             incarceration_period,
             judicial_district_code="NW",
-            supervision_type_at_admission=StateSupervisionPeriodSupervisionType.INVESTIGATION,
             original_admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
         )
 
         expected_events.extend(
             [
-                IncarcerationAdmissionEvent(
+                IncarcerationStandardAdmissionEvent(
                     state_code=incarceration_period.state_code,
                     event_date=incarceration_period.admission_date,
                     facility=incarceration_period.facility,
                     county_of_residence=_COUNTY_OF_RESIDENCE,
                     admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-                    supervision_type_at_admission=StateSupervisionPeriodSupervisionType.INVESTIGATION,
                 ),
                 IncarcerationReleaseEvent(
                     state_code=incarceration_period.state_code,
@@ -534,7 +534,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
 
         expected_events.extend(
             [
-                IncarcerationAdmissionEvent(
+                IncarcerationStandardAdmissionEvent(
                     state_code=treatment_incarceration_period.state_code,
                     event_date=treatment_incarceration_period.admission_date,
                     facility=treatment_incarceration_period.facility,
@@ -543,7 +543,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                     county_of_residence=_COUNTY_OF_RESIDENCE,
                     specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
                 ),
-                IncarcerationAdmissionEvent(
+                IncarcerationStandardAdmissionEvent(
                     state_code=general_incarceration_period.state_code,
                     event_date=general_incarceration_period.admission_date,
                     facility=general_incarceration_period.facility,
@@ -658,7 +658,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
 
         expected_events.extend(
             [
-                IncarcerationAdmissionEvent(
+                IncarcerationStandardAdmissionEvent(
                     state_code=incarceration_period.state_code,
                     event_date=incarceration_period.admission_date,
                     facility=incarceration_period.facility,
@@ -789,7 +789,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 IncarcerationStayEvent(
                     admission_reason=revocation_period.admission_reason,
                     admission_reason_raw_text=revocation_period.admission_reason_raw_text,
-                    supervision_type_at_admission=StateSupervisionPeriodSupervisionType.PROBATION,
                     state_code=revocation_period.state_code,
                     event_date=revocation_period.admission_date,
                     facility=revocation_period.facility,
@@ -797,14 +796,14 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                     most_serious_offense_ncic_code="0901",
                     most_serious_offense_statute="9999",
                 ),
-                IncarcerationAdmissionEvent(
+                IncarcerationCommitmentFromSupervisionAdmissionEvent(
                     state_code=revocation_period.state_code,
                     event_date=revocation_period.admission_date,
                     facility=revocation_period.facility,
                     county_of_residence=_COUNTY_OF_RESIDENCE,
                     admission_reason=revocation_period.admission_reason,
                     admission_reason_raw_text=revocation_period.admission_reason_raw_text,
-                    supervision_type_at_admission=StateSupervisionPeriodSupervisionType.PROBATION,
+                    supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 ),
                 IncarcerationReleaseEvent(
                     state_code=revocation_period.state_code,
@@ -953,7 +952,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 IncarcerationStayEvent(
                     admission_reason=temp_custody_period.admission_reason,
                     admission_reason_raw_text=temp_custody_period.admission_reason_raw_text,
-                    supervision_type_at_admission=StateSupervisionPeriodSupervisionType.DUAL,
                     state_code=temp_custody_period.state_code,
                     event_date=temp_custody_period.admission_date,
                     facility=temp_custody_period.facility,
@@ -965,7 +963,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 IncarcerationStayEvent(
                     admission_reason=revocation_period.admission_reason,
                     admission_reason_raw_text=revocation_period.admission_reason_raw_text,
-                    supervision_type_at_admission=StateSupervisionPeriodSupervisionType.DUAL,
                     state_code=revocation_period.state_code,
                     event_date=revocation_period.admission_date,
                     facility=revocation_period.facility,
@@ -973,14 +970,14 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                     most_serious_offense_ncic_code="0901",
                     most_serious_offense_statute="9999",
                 ),
-                IncarcerationAdmissionEvent(
+                IncarcerationCommitmentFromSupervisionAdmissionEvent(
                     state_code=temp_custody_period.state_code,
                     event_date=temp_custody_period.admission_date,
                     facility=temp_custody_period.facility,
                     county_of_residence=_COUNTY_OF_RESIDENCE,
                     admission_reason=revocation_period.admission_reason,
                     admission_reason_raw_text=revocation_period.admission_reason_raw_text,
-                    supervision_type_at_admission=StateSupervisionPeriodSupervisionType.DUAL,
+                    supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
                 ),
                 IncarcerationReleaseEvent(
                     state_code=revocation_period.state_code,
@@ -1094,7 +1091,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 IncarcerationStayEvent(
                     admission_reason=temp_custody_period.admission_reason,
                     admission_reason_raw_text=temp_custody_period.admission_reason_raw_text,
-                    supervision_type_at_admission=None,
                     state_code=temp_custody_period.state_code,
                     event_date=temp_custody_period.admission_date,
                     facility=temp_custody_period.facility,
@@ -1103,14 +1099,13 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                     most_serious_offense_statute="9999",
                     specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
                 ),
-                IncarcerationAdmissionEvent(
+                IncarcerationStandardAdmissionEvent(
                     state_code=temp_custody_period.state_code,
                     event_date=temp_custody_period.admission_date,
                     facility=temp_custody_period.facility,
                     county_of_residence=_COUNTY_OF_RESIDENCE,
                     admission_reason=temp_custody_period.admission_reason,
                     admission_reason_raw_text=temp_custody_period.admission_reason_raw_text,
-                    supervision_type_at_admission=None,
                     specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
                 ),
                 IncarcerationReleaseEvent(
@@ -1138,9 +1133,10 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
     def _run_find_incarceration_stays_with_no_sentences(
         incarceration_period: StateIncarcerationPeriod, county_of_residence: str
     ):
-        """Runs `find_incarceration_stays` without providing sentence information. Sentence information
-        is only used in `US_MO` to inform supervision_type_at_admission. All tests using this method should not require
-        that state specific logic.
+        """Runs `find_incarceration_stays` without providing sentence information.
+        Sentence information is only used in `US_MO` to inform information about
+        supervision types prior to admission. All tests using this method should not
+        require that state specific logic.
         """
         incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_sentences: List[StateSupervisionSentence] = []
@@ -1237,7 +1233,6 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
                 attr.evolve(
                     expected_event,
                     judicial_district_code="XXX",
-                    supervision_type_at_admission=StateSupervisionPeriodSupervisionType.PROBATION,
                 )
             )
 
@@ -1963,9 +1958,10 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
     def _run_admission_event_for_period_with_no_sentences(
         self, incarceration_period: StateIncarcerationPeriod, county_of_residence: str
     ):
-        """Runs `admission_event_for_period` without providing sentence information. Sentence information
-        is only used in `US_MO` to inform supervision_type_at_admission. All tests using this method should not require
-        that state specific logic.
+        """Runs `admission_event_for_period` without providing sentence information.
+        Sentence information is only used in `US_MO` to inform information about
+        supervision types prior to admission. All tests using this method should not
+        require that state specific logic.
         """
         incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_sentences: List[StateSupervisionSentence] = []
@@ -2028,7 +2024,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
         )
 
         self.assertEqual(
-            IncarcerationAdmissionEvent(
+            IncarcerationStandardAdmissionEvent(
                 state_code=current_general_period.state_code,
                 event_date=current_general_period.admission_date,
                 facility=current_general_period.facility,
@@ -2089,13 +2085,12 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
         )
 
         self.assertEqual(
-            IncarcerationAdmissionEvent(
+            IncarcerationStandardAdmissionEvent(
                 state_code=incarceration_period.state_code,
                 event_date=incarceration_period.admission_date,
                 facility="PRISON3",
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 admission_reason=incarceration_period.admission_reason,
-                supervision_type_at_admission=StateSupervisionPeriodSupervisionType.PROBATION,
             ),
             admission_event,
         )
@@ -2139,13 +2134,12 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
         )
 
         self.assertEqual(
-            IncarcerationAdmissionEvent(
+            IncarcerationStandardAdmissionEvent(
                 state_code=incarceration_period.state_code,
                 event_date=incarceration_period.admission_date,
                 facility="PRISON3",
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-                supervision_type_at_admission=StateSupervisionPeriodSupervisionType.INVESTIGATION,
             ),
             admission_event,
         )
@@ -2168,13 +2162,13 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
         )
 
         self.assertEqual(
-            IncarcerationAdmissionEvent(
+            IncarcerationCommitmentFromSupervisionAdmissionEvent(
                 state_code=incarceration_period.state_code,
                 event_date=incarceration_period.admission_date,
                 facility="PRISON3",
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 admission_reason=incarceration_period.admission_reason,
-                supervision_type_at_admission=StateSupervisionPeriodSupervisionType.DUAL,
+                supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
             ),
             admission_event,
         )
@@ -2219,7 +2213,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
         )
 
         self.assertEqual(
-            IncarcerationAdmissionEvent(
+            IncarcerationStandardAdmissionEvent(
                 state_code=incarceration_period.state_code,
                 event_date=incarceration_period.admission_date,
                 facility="PRISON3",
@@ -2248,7 +2242,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
         )
 
         self.assertEqual(
-            IncarcerationAdmissionEvent(
+            IncarcerationStandardAdmissionEvent(
                 state_code=incarceration_period.state_code,
                 event_date=incarceration_period.admission_date,
                 facility="CJ10",
@@ -2257,6 +2251,17 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
             ),
             admission_event,
         )
+
+    def test_cannot_instantiate_IncarcerationAdmissionEvent(self):
+        """Test to confirm that an exception will be raised if an
+        IncarcerationAdmissionEvent is instantiated directly."""
+        with pytest.raises(Exception):
+            _ = IncarcerationAdmissionEvent(
+                state_code="US_XX",
+                event_date=date(2000, 12, 1),
+                facility="CJ10",
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+            )
 
 
 class TestReleaseEventForPeriod(unittest.TestCase):
@@ -3305,9 +3310,6 @@ def expected_incarceration_stay_events(
     most_serious_offense_statute: Optional[str] = None,
     most_serious_offense_ncic_code: Optional[str] = None,
     judicial_district_code: Optional[str] = None,
-    supervision_type_at_admission: Optional[
-        StateSupervisionPeriodSupervisionType
-    ] = None,
 ) -> List[IncarcerationStayEvent]:
     """Returns the expected incarceration stay events based on the provided |incarceration_period|."""
 
@@ -3341,30 +3343,6 @@ def expected_incarceration_stay_events(
             assert max(days_incarcerated) < release_date
 
         for stay_date in days_incarcerated:
-            # Update the `supervision_type_at_admission` if it is not specified.
-            if supervision_type_at_admission is None:
-                if (
-                    incarceration_period.admission_reason
-                    == StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
-                ):
-                    supervision_type_at_admission = (
-                        StateSupervisionPeriodSupervisionType.PAROLE
-                    )
-                if (
-                    incarceration_period.admission_reason
-                    == StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
-                ):
-                    supervision_type_at_admission = (
-                        StateSupervisionPeriodSupervisionType.PROBATION
-                    )
-                if (
-                    incarceration_period.admission_reason
-                    == StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION
-                ):
-                    supervision_type_at_admission = (
-                        StateSupervisionPeriodSupervisionType.DUAL
-                    )
-
             event = IncarcerationStayEvent(
                 admission_reason=original_admission_reason,
                 admission_reason_raw_text=original_admission_reason_raw_text,
@@ -3372,7 +3350,6 @@ def expected_incarceration_stay_events(
                 facility=incarceration_period.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 event_date=stay_date,
-                supervision_type_at_admission=supervision_type_at_admission,
                 most_serious_offense_statute=most_serious_offense_statute,
                 most_serious_offense_ncic_code=most_serious_offense_ncic_code,
                 judicial_district_code=judicial_district_code,

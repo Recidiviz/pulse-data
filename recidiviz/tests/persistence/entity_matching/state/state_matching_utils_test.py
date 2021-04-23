@@ -23,7 +23,7 @@ from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
-    is_revocation_admission,
+    is_commitment_from_supervision,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.database.schema.state import schema
@@ -435,13 +435,13 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         period = schema.StateIncarcerationPeriod()
         for admission_reason in StateIncarcerationPeriodAdmissionReason:
             period.admission_reason = admission_reason.value
-            is_revocation_admission(
+            is_commitment_from_supervision(
                 StateIncarcerationPeriodAdmissionReason.parse_from_canonical_string(
                     period.admission_reason
                 )
             )
 
-        is_revocation_admission(
+        is_commitment_from_supervision(
             StateIncarcerationPeriodAdmissionReason.parse_from_canonical_string(None)
         )
 

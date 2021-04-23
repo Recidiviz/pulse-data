@@ -45,6 +45,7 @@ from recidiviz.calculator.pipeline.incarceration.metrics import (
     IncarcerationReleaseMetric,
     IncarcerationPopulationMetric,
     IncarcerationMetricType,
+    IncarcerationCommitmentFromSupervisionMetric,
 )
 from recidiviz.calculator.pipeline.utils.beam_utils import (
     ConvertDictToKVTuple,
@@ -530,6 +531,7 @@ def run(
             | "Convert to dict to be written to BQ"
             >> beam.ParDo(RecidivizMetricWritableDict()).with_outputs(
                 IncarcerationMetricType.INCARCERATION_ADMISSION.value,
+                IncarcerationMetricType.INCARCERATION_COMMITMENT_FROM_SUPERVISION.value,
                 IncarcerationMetricType.INCARCERATION_POPULATION.value,
                 IncarcerationMetricType.INCARCERATION_RELEASE.value,
             )
@@ -537,6 +539,9 @@ def run(
 
         # Write the metrics to the output tables in BigQuery
         admissions_table_id = DATAFLOW_METRICS_TO_TABLES[IncarcerationAdmissionMetric]
+        commitment_from_supervision_table_id = DATAFLOW_METRICS_TO_TABLES[
+            IncarcerationCommitmentFromSupervisionMetric
+        ]
         population_table_id = DATAFLOW_METRICS_TO_TABLES[IncarcerationPopulationMetric]
         releases_table_id = DATAFLOW_METRICS_TO_TABLES[IncarcerationReleaseMetric]
 
@@ -547,6 +552,11 @@ def run(
                 output_table=admissions_table_id,
                 output_dataset=output,
             )
+        )
+
+        _ = writable_metrics.INCARCERATION_COMMITMENT_FROM_SUPERVISION | f"Write commitment from supervision metrics to BQ table: {commitment_from_supervision_table_id}" >> WriteAppendToBigQuery(
+            output_table=commitment_from_supervision_table_id,
+            output_dataset=output,
         )
 
         _ = (
