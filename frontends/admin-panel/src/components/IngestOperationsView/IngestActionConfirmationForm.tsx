@@ -16,7 +16,7 @@
 // =============================================================================
 import * as React from "react";
 import { Form, Input, Modal } from "antd";
-import { actionNames, IngestActions } from "./constants";
+import { actionNames, DirectIngestInstance, IngestActions } from "./constants";
 
 interface IngestActionConfirmationFormProps {
   visible: boolean;
@@ -24,6 +24,7 @@ interface IngestActionConfirmationFormProps {
   onCancel: () => void;
   ingestAction: IngestActions;
   regionCode: string;
+  ingestInstance: DirectIngestInstance | undefined;
 }
 
 const IngestActionConfirmationForm: React.FC<IngestActionConfirmationFormProps> = ({
@@ -32,12 +33,15 @@ const IngestActionConfirmationForm: React.FC<IngestActionConfirmationFormProps> 
   onCancel,
   ingestAction,
   regionCode,
+  ingestInstance,
 }) => {
   const [form] = Form.useForm();
   const actionName = actionNames[ingestAction];
-  const confirmationRegEx = regionCode
-    .toUpperCase()
-    .concat("_", ingestAction.toUpperCase());
+  const confirmationRegEx = ingestInstance
+    ? regionCode
+        .toUpperCase()
+        .concat("_", ingestAction.toUpperCase(), "_", ingestInstance)
+    : regionCode.toUpperCase().concat("_", ingestAction.toUpperCase());
 
   return (
     <Modal
@@ -59,7 +63,11 @@ const IngestActionConfirmationForm: React.FC<IngestActionConfirmationFormProps> 
       }}
     >
       <p>
-        Are you sure you want to <b>{actionName?.toLowerCase()}</b> for{" "}
+        Are you sure you want to
+        <b> {actionName?.toLowerCase()} </b>
+        for
+        <b>{ingestInstance ? ` ${ingestInstance}` : ""}</b>
+        {ingestInstance ? " ingest instance in " : " "}
         <b>{regionCode.toUpperCase()}</b>?
       </p>
       <p>

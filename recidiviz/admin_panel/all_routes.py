@@ -22,76 +22,31 @@ from typing import Dict, Optional, Tuple
 
 from flask import Blueprint, Response, jsonify, request, send_from_directory
 
+from recidiviz.admin_panel.admin_stores import AdminStores
 from recidiviz.admin_panel.dataset_metadata_store import (
     DatasetMetadataCountsStore,
     DatasetMetadataResult,
 )
-from recidiviz.admin_panel.ingest_metadata_store import IngestDataFreshnessStore
-from recidiviz.admin_panel.ingest_operations_store import IngestOperationsStore
 from recidiviz.admin_panel.routes.case_triage import add_case_triage_routes
 from recidiviz.admin_panel.routes.data_discovery import add_data_discovery_routes
 from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import (
-    GCP_PROJECT_STAGING,
     in_development,
-    in_gcp,
     in_gcp_staging,
     in_gcp_production,
 )
-from recidiviz.utils.timer import RepeatedTimer
-
-
-_INGEST_METADATA_NICKNAME = "ingest"
-_INGEST_METADATA_PREFIX = "ingest_state_metadata"
-_VALIDATION_METADATA_NICKNAME = "validation"
-_VALIDATION_METADATA_PREFIX = "validation_metadata"
-
 
 logging.getLogger().setLevel(logging.INFO)
 
-if in_gcp() or in_development():
-    override_project_id: Optional[str] = None
-    if in_development():
-        override_project_id = GCP_PROJECT_STAGING
-
-    ingest_metadata_store = DatasetMetadataCountsStore(
-        _INGEST_METADATA_NICKNAME,
-        _INGEST_METADATA_PREFIX,
-        override_project_id=override_project_id,
-    )
-    validation_metadata_store = DatasetMetadataCountsStore(
-        _VALIDATION_METADATA_NICKNAME,
-        _VALIDATION_METADATA_PREFIX,
-        override_project_id=override_project_id,
-    )
-    ingest_data_freshness_store = IngestDataFreshnessStore(
-        override_project_id=override_project_id
-    )
-
-    all_stores = [
-        ingest_metadata_store,
-        validation_metadata_store,
-        ingest_data_freshness_store,
-    ]
-
-    store_refresh_timers = [
-        RepeatedTimer(15 * 60, store.recalculate_store, run_immediately=True)
-        for store in all_stores
-    ]
-
-    for timer in store_refresh_timers:
-        timer.start()
+admin_stores = AdminStores()
+admin_stores.start_timers()  # Start store refresh timers
 
 static_folder = os.path.abspath(
     os.path.join(
         os.path.dirname(os.path.realpath(__file__)),
         "../../frontends/admin-panel/build/",
     )
-)
-
-ingest_operations_store = IngestOperationsStore(
-    override_project_id=(GCP_PROJECT_STAGING if in_development() else None)
 )
 
 admin_panel = Blueprint("admin_panel", __name__, static_folder=static_folder)
@@ -121,9 +76,9 @@ def _get_state_code_from_region_code(region_code: str) -> StateCode:
 
 def _get_metadata_store(metadata_dataset: str) -> DatasetMetadataCountsStore:
     if metadata_dataset == "ingest_metadata":
-        return ingest_metadata_store
+        return admin_stores.ingest_metadata_store
     if metadata_dataset == "validation_metadata":
-        return validation_metadata_store
+        return admin_stores.validation_metadata_store
     raise ValueError(
         f"Unknown metadata dataset [{metadata_dataset}], must be 'ingest_metadata' or 'validation_metadata' "
     )
@@ -176,7 +131,10 @@ def fetch_object_counts_by_table(metadata_dataset: str) -> Tuple[str, int]:
 @admin_panel.route("/api/ingest_metadata/data_freshness", methods=["POST"])
 @requires_gae_auth
 def fetch_ingest_data_freshness() -> Tuple[str, HTTPStatus]:
-    return jsonify(ingest_data_freshness_store.data_freshness_results), HTTPStatus.OK
+    return (
+        jsonify(admin_stores.ingest_data_freshness_store.data_freshness_results),
+        HTTPStatus.OK,
+    )
 
 
 # Ingest Operations Actions
@@ -185,19 +143,20 @@ def fetch_ingest_data_freshness() -> Tuple[str, HTTPStatus]:
 def fetch_ingest_region_codes() -> Tuple[str, HTTPStatus]:
     region_codes = [
         region_code.value
-        for region_code in ingest_operations_store.region_codes_launched_in_env
+        for region_code in admin_stores.ingest_operations_store.region_codes_launched_in_env
     ]
     return jsonify(region_codes), HTTPStatus.OK
 
 
-# Start an ingest run
+# Start an ingest run for a specific instance
 @admin_panel.route(
     "/api/ingest_operations/<region_code>/start_ingest_run", methods=["POST"]
 )
 @requires_gae_auth
 def start_ingest_run(region_code: str) -> Tuple[str, HTTPStatus]:
     state_code = _get_state_code_from_region_code(region_code)
-    ingest_operations_store.start_ingest_run(state_code)
+    instance = request.json["instance"]
+    admin_stores.ingest_operations_store.start_ingest_run(state_code, instance)
     return "", HTTPStatus.OK
 
 
@@ -210,7 +169,9 @@ def start_ingest_run(region_code: str) -> Tuple[str, HTTPStatus]:
 def update_ingest_queues_state(region_code: str) -> Tuple[str, HTTPStatus]:
     state_code = _get_state_code_from_region_code(region_code)
     new_queue_state = request.json["new_queue_state"]
-    ingest_operations_store.update_ingest_queues_state(state_code, new_queue_state)
+    admin_stores.ingest_operations_store.update_ingest_queues_state(
+        state_code, new_queue_state
+    )
     return "", HTTPStatus.OK
 
 
@@ -219,8 +180,21 @@ def update_ingest_queues_state(region_code: str) -> Tuple[str, HTTPStatus]:
 @requires_gae_auth
 def get_ingest_queue_states(region_code: str) -> Tuple[str, HTTPStatus]:
     state_code = _get_state_code_from_region_code(region_code)
-    ingest_queue_states = ingest_operations_store.get_ingest_queue_states(state_code)
+    ingest_queue_states = admin_stores.ingest_operations_store.get_ingest_queue_states(
+        state_code
+    )
     return jsonify(ingest_queue_states), HTTPStatus.OK
+
+
+# Get summaries of all ingest instances for region
+@admin_panel.route("/api/ingest_operations/<region_code>/get_ingest_instance_summaries")
+@requires_gae_auth
+def get_ingest_instance_summaries(region_code: str) -> Tuple[str, HTTPStatus]:
+    state_code = _get_state_code_from_region_code(region_code)
+    ingest_instance_summaries = (
+        admin_stores.ingest_operations_store.get_ingest_instance_summaries(state_code)
+    )
+    return jsonify(ingest_instance_summaries), HTTPStatus.OK
 
 
 # Frontend configuration

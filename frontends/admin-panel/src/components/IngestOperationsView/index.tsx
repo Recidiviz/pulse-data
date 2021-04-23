@@ -18,6 +18,7 @@ import * as React from "react";
 import {
   Alert,
   Button,
+  Card,
   Col,
   Divider,
   PageHeader,
@@ -28,6 +29,7 @@ import {
 import { useEffect, useState } from "react";
 import {
   fetchIngestRegionCodes,
+  getIngestInstanceSummaries,
   getIngestQueuesState,
   startIngestRun,
   updateIngestQueuesState,
@@ -36,11 +38,14 @@ import useFetchedData from "../../hooks";
 import IngestActionConfirmationForm from "./IngestActionConfirmationForm";
 import {
   actionNames,
+  DirectIngestInstance,
   IngestActions,
+  IngestInstanceSummary,
   QueueMetadata,
   QueueState,
 } from "./constants";
-import IngestQueueStatusCard from "./IngestQueueStatusCard";
+import IngestQueuesTable from "./IngestQueuesTable";
+import IngestInstanceCard from "./IngestInstanceCard";
 
 const IngestOperationsView = (): JSX.Element => {
   const env = window.RUNTIME_GCP_ENVIRONMENT || "unknown env";
@@ -60,6 +65,16 @@ const IngestOperationsView = (): JSX.Element => {
   >(undefined);
   const [queueStates, setQueueStates] = useState<QueueMetadata[]>([]);
   const [queueStatesLoading, setQueueStatesLoading] = useState<boolean>(true);
+  const [ingestInstanceSummaries, setIngestInstanceSummaries] = useState<
+    IngestInstanceSummary[]
+  >([]);
+  const [
+    ingestInstanceSummariesLoading,
+    setIngestInstanceSummariesLoading,
+  ] = useState<boolean>(true);
+  const [ingestInstance, setIngestInstance] = useState<
+    DirectIngestInstance | undefined
+  >(undefined);
 
   const ingestQueueActions = [
     IngestActions.PauseIngestQueues,
@@ -69,11 +84,21 @@ const IngestOperationsView = (): JSX.Element => {
   useEffect(() => {
     if (regionCode) {
       fetchQueueStates(regionCode);
+      fetchIngestInstanceSummaries(regionCode);
     }
   }, [regionCode]);
 
   const handleRegionChange = (value: string) => {
     setRegionCode(value);
+  };
+
+  const handleIngestActionOnClick = (
+    action: IngestActions,
+    instance: DirectIngestInstance | undefined = undefined
+  ) => {
+    setIngestAction(action);
+    setIngestInstance(instance);
+    showConfirmationModal();
   };
 
   async function fetchQueueStates(regionCodeInput: string) {
@@ -84,13 +109,24 @@ const IngestOperationsView = (): JSX.Element => {
     setQueueStatesLoading(false);
   }
 
+  async function fetchIngestInstanceSummaries(regionCodeInput: string) {
+    setIngestInstanceSummariesLoading(true);
+    const response = await getIngestInstanceSummaries(regionCodeInput);
+    const result: IngestInstanceSummary[] = await response.json();
+    setIngestInstanceSummaries(result);
+    setIngestInstanceSummariesLoading(false);
+  }
+
   const onIngestActionConfirmation = async (
     ingestActionToExecute: IngestActions | undefined
   ) => {
     setIsConfirmationModalVisible(false);
     if (regionCode) {
-      if (ingestActionToExecute === IngestActions.StartIngestRun) {
-        await startIngestRun(regionCode);
+      if (
+        ingestActionToExecute === IngestActions.StartIngestRun &&
+        ingestInstance
+      ) {
+        await startIngestRun(regionCode, ingestInstance);
       } else if (ingestActionToExecute === IngestActions.PauseIngestQueues) {
         setQueueStatesLoading(true);
         await updateIngestQueuesState(regionCode, QueueState.PAUSED);
@@ -146,33 +182,38 @@ const IngestOperationsView = (): JSX.Element => {
 
       <Divider orientation="left">Ingest Queues</Divider>
       <div className="site-card-wrapper">
-        {regionCode ? (
-          <IngestQueueStatusCard
-            projectId={projectId}
-            queueStates={queueStates}
-            loading={queueStatesLoading}
-          />
-        ) : null}
-        <Row gutter={[16, 16]}>
+        <IngestQueuesTable
+          projectId={projectId}
+          queueStates={queueStates}
+          loading={queueStatesLoading}
+        />
+        <br />
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-evenly",
+          }}
+        >
           {ingestQueueActions.map((action) => {
             return (
-              <Col span={12} key={action}>
-                <Button
-                  onClick={() => {
-                    setIngestAction(action);
-                    showConfirmationModal();
-                  }}
-                  disabled={!regionCode}
-                  block
-                >
-                  {/* TODO(#6072): Remove development label when we migrate to state-specific queues */}
-                  {actionNames[action]?.concat(" (in development)")}
-                </Button>
-              </Col>
+              <Button
+                onClick={() => {
+                  handleIngestActionOnClick(action);
+                }}
+                disabled={!regionCode}
+                block
+                key={action}
+                style={{ display: "block", textAlign: "center", width: "auto" }}
+              >
+                {/* TODO(#6072): Remove development label when we migrate to state-specific queues */}
+                {actionNames[action]?.concat(" (in dev)")}
+              </Button>
             );
           })}
-        </Row>
+        </div>
       </div>
+
       {regionCode && ingestAction ? (
         <IngestActionConfirmationForm
           visible={isConfirmationModalVisible}
@@ -182,8 +223,35 @@ const IngestOperationsView = (): JSX.Element => {
           }}
           ingestAction={ingestAction}
           regionCode={regionCode}
+          ingestInstance={ingestInstance}
         />
       ) : null}
+
+      <Divider orientation="left" style={{ marginTop: 24 }}>
+        Ingest Instances
+      </Divider>
+      <div className="site-card-wrapper">
+        <Row gutter={[16, 16]}>
+          {ingestInstanceSummariesLoading
+            ? Object.keys(DirectIngestInstance).map((instance) => {
+                return (
+                  <Col span={12} key={instance}>
+                    <Card title={instance} loading />
+                  </Col>
+                );
+              })
+            : ingestInstanceSummaries.map((summary: IngestInstanceSummary) => {
+                return (
+                  <Col span={12} key={summary.instance}>
+                    <IngestInstanceCard
+                      data={summary}
+                      handleOnClick={handleIngestActionOnClick}
+                    />
+                  </Col>
+                );
+              })}
+        </Row>
+      </div>
     </>
   );
 };
