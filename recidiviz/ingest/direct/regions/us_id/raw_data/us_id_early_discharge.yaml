@@ -46,11 +46,11 @@ columns:
       Date that decision information was updated
   - name: submit_updt_user_id
     description: |-
-      Username of the person who submitted this request
+      Username of the person who updated this request
   - name: submit_updt_date
     is_datetime: True
     description: |-
-      The original submission date
+      The date the submission was last updated
   - name: early_discharge_form_typ_id
     description: |-
       Code that tells you the form type which includes information on who requested the early discharge
@@ -103,7 +103,7 @@ columns:
   - name: created_by_dt
     is_datetime: True
     description: |-
-      Date the form was first saved
+      Date the request was first submitted
   - name: decision_official_dt
     is_datetime: True
     description: |-
