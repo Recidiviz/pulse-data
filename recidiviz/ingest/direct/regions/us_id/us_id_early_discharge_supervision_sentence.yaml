@@ -16,7 +16,7 @@ child_key_mappings:
   decision_official_dt: state_early_discharge.decision_date
   early_discharge_form_typ_desc: state_early_discharge.requesting_body_type
   jurisdiction_decision_description: state_early_discharge.decision
-  submit_updt_date: state_early_discharge.request_date    # Always the original submission date according to ID
+  created_by_dt: state_early_discharge.request_date
 
 primary_key:
   ofndr_num: state_person.state_person_id
@@ -33,7 +33,6 @@ keys_to_ignore:
   - caseno_seq                        # Unused - Case sequence number within a single docket for related sentence
   - case_planning_respond             # Unused - TODO(#3506): Get more details from ID
   - compliance                        # Unused - whether the person has been compliant to their supervision conditions
-  - created_by_dt                     # Unused - date that the row was created
   - created_by_id                     # Unused - id of the person who created the request (usually a person's PO)
   - current_lsir_id                   # Unused - test id of the persons current LSIR assessment
   - decision_date                     # Unused - date a decision was made. We use official_decision_dt instead.
@@ -60,7 +59,8 @@ keys_to_ignore:
   - restitution_curr_bal              # Unused - current restitution balance
   - restitution_init_bal              # Unused - initial restitution balance
   - restitution_last_pymnt_dt         # Unused - last day a restitution payment was made
-  - submit_updt_user_id               # Unused - user who submitted the request
+  - submit_updt_date                  # Unused - date when the latest update was submitted
+  - submit_updt_user_id               # Unused - user who submitted the latest update
   - subst_tst_start_dt                # Unused - date since which the person has had no negative substance tests
   - sup_aprv_sbmt_dt                  # Unused - date that the supervisor reviewed the request
   - sup_aprv_sbmt_id                  # Unused - id of the person submitting the request to the supervisor
