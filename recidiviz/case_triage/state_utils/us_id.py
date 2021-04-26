@@ -19,6 +19,7 @@ from typing import Dict, Optional, Tuple
 
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_compliance import (
     SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS,
+    US_ID_SUPERVISION_HOME_VISIT_FREQUENCY_REQUIREMENTS,
 )
 from recidiviz.case_triage.state_utils.types import PolicyRequirements
 from recidiviz.common.constants.person_characteristics import Gender
@@ -63,12 +64,6 @@ US_ID_SUPERVISION_LEVEL_NAMES = {
     StateSupervisionLevel.HIGH: "High",
 }
 
-US_ID_HOME_VISIT_FREQUENCY_PER_YEAR: Dict[StateSupervisionLevel, Tuple[int, int]] = {
-    StateSupervisionLevel.MINIMUM: (1, 365),
-    StateSupervisionLevel.MEDIUM: (1, 365),
-    StateSupervisionLevel.HIGH: (2, 365),
-}
-
 
 def us_id_policy_requirements() -> PolicyRequirements:
     """Returns set of policy requirements for Idaho."""
@@ -77,5 +72,5 @@ def us_id_policy_requirements() -> PolicyRequirements:
         oms_name="CIS",
         supervision_contact_frequencies=SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS,
         supervision_level_names=US_ID_SUPERVISION_LEVEL_NAMES,
-        supervision_home_visit_frequencies=US_ID_HOME_VISIT_FREQUENCY_PER_YEAR,
+        supervision_home_visit_frequencies=US_ID_SUPERVISION_HOME_VISIT_FREQUENCY_REQUIREMENTS,
     )
