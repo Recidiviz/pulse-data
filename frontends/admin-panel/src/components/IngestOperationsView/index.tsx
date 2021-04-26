@@ -26,7 +26,8 @@ import {
   Select,
   Spin,
 } from "antd";
-import { useEffect, useState } from "react";
+import { SyncOutlined } from "@ant-design/icons";
+import { useCallback, useEffect, useState } from "react";
 import {
   fetchIngestRegionCodes,
   getIngestInstanceSummaries,
@@ -81,12 +82,18 @@ const IngestOperationsView = (): JSX.Element => {
     IngestActions.ResumeIngestQueues,
   ];
 
-  useEffect(() => {
+  const getData = useCallback(async () => {
     if (regionCode) {
-      fetchQueueStates(regionCode);
-      fetchIngestInstanceSummaries(regionCode);
+      setQueueStatesLoading(true);
+      setIngestInstanceSummariesLoading(true);
+      await fetchQueueStates(regionCode);
+      await fetchIngestInstanceSummaries(regionCode);
     }
   }, [regionCode]);
+
+  useEffect(() => {
+    getData();
+  }, [getData]);
 
   const handleRegionChange = (value: string) => {
     setRegionCode(value);
@@ -102,7 +109,6 @@ const IngestOperationsView = (): JSX.Element => {
   };
 
   async function fetchQueueStates(regionCodeInput: string) {
-    setQueueStatesLoading(true);
     const response = await getIngestQueuesState(regionCodeInput);
     const result: QueueMetadata[] = await response.json();
     setQueueStates(result);
@@ -110,7 +116,6 @@ const IngestOperationsView = (): JSX.Element => {
   }
 
   async function fetchIngestInstanceSummaries(regionCodeInput: string) {
-    setIngestInstanceSummariesLoading(true);
     const response = await getIngestInstanceSummaries(regionCodeInput);
     const result: IngestInstanceSummary[] = await response.json();
     setIngestInstanceSummaries(result);
@@ -157,6 +162,13 @@ const IngestOperationsView = (): JSX.Element => {
         title="Ingest Operations"
         subTitle={regionCode ? `${regionCode}, ${env}` : "Select a region"}
         extra={[
+          <Button
+            type="primary"
+            shape="circle"
+            icon={<SyncOutlined />}
+            disabled={!regionCode}
+            onClick={() => getData()}
+          />,
           <Select
             style={{ width: 200 }}
             placeholder="Select a region"
@@ -179,7 +191,6 @@ const IngestOperationsView = (): JSX.Element => {
           showIcon
         />
       )}
-
       <Divider orientation="left">Ingest Queues</Divider>
       <div className="site-card-wrapper">
         <IngestQueuesTable

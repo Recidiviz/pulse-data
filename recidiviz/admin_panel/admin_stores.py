@@ -31,7 +31,7 @@ _VALIDATION_METADATA_PREFIX = "validation_metadata"
 
 class AdminStores:
     """
-    A wrapper around all AdminStores needed for the admin panel.
+    A wrapper around all stores needed for the admin panel.
     """
 
     def __init__(self) -> None:
@@ -58,16 +58,15 @@ class AdminStores:
         self.ingest_operations_store = IngestOperationsStore()
 
     def start_timers(self) -> None:
-        """Starts store refresh timers for all stores."""
+        """Starts store refresh timers for all stores that are a subclass of the AdminPanelStore class."""
         if in_gcp() or in_development():
-            all_stores = [
+            stores_with_timers = [
                 self.ingest_metadata_store,
                 self.validation_metadata_store,
                 self.ingest_data_freshness_store,
-                self.ingest_operations_store,
             ]
 
-            for store in all_stores:
+            for store in stores_with_timers:
                 RepeatedTimer(
                     15 * 60, store.recalculate_store, run_immediately=True
                 ).start()
