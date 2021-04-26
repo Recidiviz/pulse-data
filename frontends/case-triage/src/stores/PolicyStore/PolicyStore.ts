@@ -104,5 +104,13 @@ class PolicyStore {
       ? contactFrequencies[client.supervisionLevel]
       : undefined;
   }
+
+  findHomeVisitFrequencyForClient(
+    client: DecoratedClient
+  ): SupervisionContactFrequency | undefined {
+    return this.policies?.supervisionHomeVisitFrequencies
+      ? this.policies?.supervisionHomeVisitFrequencies[client.supervisionLevel]
+      : undefined;
+  }
 }
 export default PolicyStore;
