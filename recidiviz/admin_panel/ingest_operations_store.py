@@ -20,7 +20,6 @@ from typing import List, Optional, Dict, Union, Any
 
 from google.cloud import tasks_v2
 
-from recidiviz.admin_panel.admin_panel_store import AdminPanelStore
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common.constants.states import StateCode
@@ -44,6 +43,7 @@ from recidiviz.ingest.direct.direct_ingest_region_utils import (
     get_direct_ingest_states_with_sftp_queue,
 )
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.utils import metadata
 from recidiviz.utils.regions import get_region
 
 
@@ -65,19 +65,20 @@ QUEUE_STATE_ENUM = tasks_v2.enums.Queue.State
 BucketSummaryType = Dict[str, Union[str, int]]
 
 
-class IngestOperationsStore(AdminPanelStore):
+class IngestOperationsStore:
     """
     A store for tracking the current state of direct ingest.
     """
 
     def __init__(self, override_project_id: Optional[str] = None) -> None:
-        super().__init__(override_project_id)
+        self.project_id = (
+            metadata.project_id()
+            if override_project_id is None
+            else override_project_id
+        )
         self.fs = DirectIngestGCSFileSystem(GcsfsFactory.build())
         self.cloud_task_manager = DirectIngestCloudTaskManagerImpl()
         self.cloud_tasks_client = tasks_v2.CloudTasksClient()
-
-    def recalculate_store(self) -> None:
-        pass
 
     @property
     def region_codes_launched_in_env(self) -> List[StateCode]:
