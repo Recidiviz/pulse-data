@@ -213,7 +213,7 @@ class CsvGcsfsDirectIngestController(BaseDirectIngestController):
     def _are_contents_empty(
         self, args: GcsfsIngestArgs, contents_handle: GcsfsFileContentsHandle
     ) -> bool:
-        """Returns true if the CSV file is emtpy, i.e. it contains no non-header
+        """Returns true if the CSV file is empty, i.e. it contains no non-header
         rows.
         """
         delegate = ReadOneGcsfsCsvReaderDelegate()

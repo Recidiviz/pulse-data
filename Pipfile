@@ -117,8 +117,7 @@ statsmodels = "==0.11.1"
 openpyxl = "*"
 pysftp = "*"
 analytics-python = "*"
-# TODO(#5967): Unpin when astroid's version numbers are fixed
-astroid = "2.5.0"
+astroid = "*"
 redis = "*"
 pyarrow = "*"
 

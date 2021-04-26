@@ -16,7 +16,8 @@
 # =============================================================================
 """Defines types used for general cloud storage code."""
 import abc
-from typing import TypeVar, Generic, Iterator
+from contextlib import contextmanager
+from typing import Generic, Iterator, TypeVar
 
 # Type for a single row/chunk returned by the ingest contents iterator.
 FileContentsRowType = TypeVar("FileContentsRowType")
@@ -35,5 +36,6 @@ class FileContentsHandle(Generic[FileContentsRowType, IoType]):
         """
 
     @abc.abstractmethod
-    def open(self) -> IoType:
+    @contextmanager
+    def open(self) -> Iterator[IoType]:
         """Should be overridden by subclasses to return a way to open a file stream."""
