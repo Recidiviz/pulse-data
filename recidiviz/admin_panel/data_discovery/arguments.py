@@ -84,7 +84,7 @@ class DataDiscoveryArgs:
         else:
             # Local override
             search_path = GcsfsDirectoryPath.from_absolute_path(
-                f"recidiviz-staging-direct-ingest-state-storage/{self.region_code}"
+                f"recidiviz-staging-direct-ingest-state-storage/{self.region_code.lower()}"
             )
 
         raw_data_path = os.path.join(
