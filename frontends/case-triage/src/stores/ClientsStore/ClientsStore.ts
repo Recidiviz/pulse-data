@@ -18,7 +18,12 @@ import { autorun, makeAutoObservable, runInAction } from "mobx";
 import { parse } from "query-string";
 import PolicyStore from "../PolicyStore";
 import UserStore from "../UserStore";
-import { Client, DecoratedClient, decorateClient } from "./Client";
+import {
+  Client,
+  DecoratedClient,
+  decorateClient,
+  getNextContactDate,
+} from "./Client";
 
 import API from "../API";
 import { trackPersonSelected } from "../../analytics";
@@ -96,20 +101,23 @@ class ClientsStore {
         this.unfilteredClients = clients
           .map((client) => decorateClient(client, this.policyStore))
           .sort((self: DecoratedClient, other: DecoratedClient) => {
+            const selfNextContactDate = getNextContactDate(self);
+            const otherNextContactDate = getNextContactDate(other);
+
             // No upcoming contact recommended. Shift myself to the right
-            if (!self.nextFaceToFaceDate) {
+            if (!selfNextContactDate) {
               return 1;
             }
             // I have upcoming contact recommended, but they do not. Shift myself left
-            if (!other.nextFaceToFaceDate) {
+            if (!otherNextContactDate) {
               return -1;
             }
             // My next face to face is before theirs. Shift myself left
-            if (self.nextFaceToFaceDate < other.nextFaceToFaceDate) {
+            if (selfNextContactDate < otherNextContactDate) {
               return -1;
             }
             // Their face to face date is before mine. Shift them left
-            if (self.nextFaceToFaceDate > other.nextFaceToFaceDate) {
+            if (selfNextContactDate > otherNextContactDate) {
               return 1;
             }
 

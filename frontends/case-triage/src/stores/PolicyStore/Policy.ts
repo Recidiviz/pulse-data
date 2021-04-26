@@ -41,6 +41,11 @@ export type SupervisionContactFrequencies = Record<
   ContactFrequencyByRisk
 >;
 
+export type SupervisionHomeVisitFrequencies = Record<
+  SupervisionLevel,
+  SupervisionContactFrequency
+>;
+
 export type SupervisionLevelNames = Record<SupervisionLevel, string>;
 
 export interface Policy {
@@ -48,4 +53,5 @@ export interface Policy {
   omsName: string;
   supervisionContactFrequencies: SupervisionContactFrequencies;
   supervisionLevelNames: SupervisionLevelNames;
+  supervisionHomeVisitFrequencies: SupervisionHomeVisitFrequencies;
 }

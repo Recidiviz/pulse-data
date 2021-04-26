@@ -31,11 +31,11 @@ import {
 import { NeedsCheckboxButton } from "./CaseCardButtons";
 import { DecoratedClient } from "../../stores/ClientsStore/Client";
 import { useRootStore } from "../../stores";
-import { SupervisionContactFrequency } from "../../stores/PolicyStore/Policy";
 import {
   CaseUpdateActionType,
   CaseUpdateStatus,
 } from "../../stores/CaseUpdatesStore";
+import { SupervisionContactFrequency } from "../../stores/PolicyStore/Policy";
 
 interface NeedsFaceToFaceContactProps {
   className: string;
@@ -55,6 +55,17 @@ const getLastContactedText = (client: DecoratedClient) => {
   return `Assumed no contact from CIS.`;
 };
 
+const getLastHomeVisitText = (client: DecoratedClient) => {
+  const { mostRecentHomeVisitDate } = client;
+
+  if (mostRecentHomeVisitDate) {
+    return `Last home visit on ${mostRecentHomeVisitDate.format(
+      "MMMM Do, YYYY"
+    )}`;
+  }
+  return `Assumed no home visit from CIS.`;
+};
+
 const getContactFrequencyText = (
   contactFrequency?: SupervisionContactFrequency
 ) => {
@@ -65,6 +76,19 @@ const getContactFrequencyText = (
   const [contacts, days] = contactFrequency;
   const pluralized = contacts === 1 ? "contact" : "contacts";
   return `${contacts} ${pluralized} every ${days} days`;
+};
+
+const getHomeVisitFrequencyText = (
+  homeVisitFrequency?: SupervisionContactFrequency
+) => {
+  if (!homeVisitFrequency) {
+    return null;
+  }
+
+  const [homeVisit, days] = homeVisitFrequency;
+  const homeVisitPluralized = homeVisit === 1 ? "home visit" : "home visits";
+  const daysPluralized = days === 1 ? "day" : "days";
+  return `${homeVisit} ${homeVisitPluralized} every ${days} ${daysPluralized}`;
 };
 
 const NeedsFaceToFaceContact: React.FC<NeedsFaceToFaceContactProps> = ({
@@ -82,13 +106,20 @@ const NeedsFaceToFaceContact: React.FC<NeedsFaceToFaceContactProps> = ({
 
   const { policyStore } = useRootStore();
   const {
-    needsMet: { faceToFaceContact: met },
+    needsMet: {
+      faceToFaceContact: faceToFaceMet,
+      homeVisitContact: homeVisitMet,
+    },
   } = client;
 
-  const title = met
-    ? `Face-to-Face Contact: Up To Date`
-    : `Face-to-Face Contact Needed`;
+  const title =
+    faceToFaceMet && homeVisitMet
+      ? `Face-to-Face Contact: Up To Date`
+      : `Face-to-Face Contact Needed`;
   const contactFrequency = policyStore.findContactFrequencyForClient(client);
+  const homeVisitFrequency = policyStore.findHomeVisitFrequencyForClient(
+    client
+  );
 
   const onToggleCheck = (checked: boolean) => {
     setNeedChecked(checked);
@@ -100,7 +131,9 @@ const NeedsFaceToFaceContact: React.FC<NeedsFaceToFaceContactProps> = ({
       <Need
         kind={IconSVG.NeedsContact}
         state={
-          client.needsMet.faceToFaceContact ? NeedState.MET : NeedState.NOT_MET
+          client.needsMet.faceToFaceContact && client.needsMet.homeVisitContact
+            ? NeedState.MET
+            : NeedState.NOT_MET
         }
       />
       <CaseCardInfo>
@@ -111,8 +144,14 @@ const NeedsFaceToFaceContact: React.FC<NeedsFaceToFaceContactProps> = ({
             <Icon kind={IconSVG.Place} size={10} fill={palette.text.caption} />{" "}
             {client.currentAddress || "No address on file"}
           </div>
-          <div>{getContactFrequencyText(contactFrequency)}</div>
-          {getLastContactedText(client)}
+          <div>
+            {getContactFrequencyText(contactFrequency)}.{" "}
+            {getLastContactedText(client)}
+          </div>
+          <div>
+            {getHomeVisitFrequencyText(homeVisitFrequency)}.{" "}
+            {getLastHomeVisitText(client)}
+          </div>
         </Caption>
         {!client.needsMet.faceToFaceContact ? (
           <ButtonContainer>
