@@ -17,10 +17,11 @@
 """ Endpoints for the data discovery tool. Combination of cloud task endpoints and user-facing endpoints
     Cloud task endpoints are suffixed with `_task`
 """
+import json
 import threading
 import uuid
 from http import HTTPStatus
-from typing import Tuple
+from typing import Tuple, Dict, Any
 
 import attr
 import flask
@@ -64,6 +65,12 @@ CACHE_HIT = "CACHE_HIT"
 CACHE_MISS = "CACHE_MISS"
 
 
+def _get_task_json_body() -> Dict[str, Any]:
+    """ Tasks in GCP do not send the appropriate headers for Flask to populate request.json """
+    json_data = request.get_data(as_text=True)
+    return json.loads(json_data)
+
+
 def add_data_discovery_routes(blueprint: Blueprint) -> None:
     """ Adds data discovery routes to the passed Flask Blueprint"""
 
@@ -87,7 +94,8 @@ def add_data_discovery_routes(blueprint: Blueprint) -> None:
              Cache hit/miss result
         """
         cache = get_data_discovery_cache()
-        path = GcsfsFilePath.from_absolute_path(request.json["gcs_file_uri"])
+        body = _get_task_json_body()
+        path = GcsfsFilePath.from_absolute_path(body["gcs_file_uri"])
         parquet_path = SingleIngestFileParquetCache.parquet_cache_key(path)
 
         if not cache.exists(parquet_path):
@@ -99,9 +107,9 @@ def add_data_discovery_routes(blueprint: Blueprint) -> None:
             csv_reader.streaming_read(
                 path,
                 CacheIngestFileAsParquetDelegate(parquet_cache, path),
-                encodings_to_try=[request.json["file_encoding"]],
-                delimiter=request.json["file_separator"],
-                quoting=request.json["file_quoting"],
+                encodings_to_try=[body["file_encoding"]],
+                delimiter=body["file_separator"],
+                quoting=body["file_quoting"],
                 chunk_size=75000,
             )
 
@@ -122,13 +130,12 @@ def add_data_discovery_routes(blueprint: Blueprint) -> None:
         Returns:
             N/A
         """
+        body = _get_task_json_body()
         if in_gcp():
-            discover_data(request.json["discovery_id"])
+            discover_data(body["discovery_id"])
         else:
             # Run discovery in a thread locally
-            threading.Thread(
-                target=discover_data, args=[request.json["discovery_id"]]
-            ).start()
+            threading.Thread(target=discover_data, args=[body["discovery_id"]]).start()
 
         return "", HTTPStatus.OK
 

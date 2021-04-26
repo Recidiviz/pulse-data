@@ -51,21 +51,19 @@ class DataDiscoveryStore {
     }
   }
 
-  columns(raw?: string[], ingest?: string[]): string[] {
+  columns(raw: string[] = [], ingest: string[] = []): string[] {
     const found: Set<string> = new Set();
     if (!this.files) {
       return [];
     }
 
-    const rawFiles = Object.values(this.files.raw);
-    for (let x = 0; x < rawFiles.length; x += 1) {
-      const { columns } = rawFiles[x];
+    for (let x = 0; x < raw.length; x += 1) {
+      const { columns } = this.files.raw[raw[x]];
       columns.map((column) => found.add(column));
     }
 
-    const ingestViews = Object.values(this.files.ingest_view);
-    for (let x = 0; x < ingestViews.length; x += 1) {
-      const { columns } = ingestViews[x];
+    for (let x = 0; x < ingest.length; x += 1) {
+      const { columns } = this.files.ingest_view[ingest[x]];
       columns.map((column) => found.add(column));
     }
 

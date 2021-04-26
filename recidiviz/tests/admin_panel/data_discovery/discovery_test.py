@@ -23,7 +23,6 @@ from unittest.mock import patch
 
 import fakeredis
 import pandas as pd
-import pyarrow
 
 from recidiviz.admin_panel.data_discovery.arguments import (
     Condition,
@@ -82,7 +81,7 @@ class TestDataDiscovery(TestCase):
 
     def test_collect_file_paths(self) -> None:
         data_discovery_args = DataDiscoveryArgs(
-            region_code="us_id",
+            region_code="US_ID",
             id="123",
             start_date=date.fromisoformat("2021-03-24"),
             end_date=date.fromisoformat("2021-03-25"),

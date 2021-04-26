@@ -23,6 +23,7 @@ from typing import Optional
 import attr
 
 import recidiviz
+from recidiviz.common.constants.states import StateCode
 
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
     DirectIngestRegionRawFileConfig,
@@ -70,6 +71,13 @@ def get_ingest_view_configs(
     region_code: str,
 ) -> List[DataDiscoveryStandardizedFileConfig]:
     """Collect ingest views for region; reads columns from their corresponding fixture csv"""
+    if not StateCode.is_state_code(region_code):
+        raise ValueError(
+            f"Unknown region_code [{region_code}] received, must be a valid state code."
+        )
+
+    region_code = region_code.lower()
+
     views = DirectIngestPreProcessedIngestViewCollector(
         get_region(region_code, True), []
     ).collect_view_builders()

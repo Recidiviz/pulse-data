@@ -141,10 +141,12 @@ def fetch_ingest_data_freshness() -> Tuple[str, HTTPStatus]:
 @admin_panel.route("/api/ingest_operations/fetch_ingest_region_codes", methods=["POST"])
 @requires_gae_auth
 def fetch_ingest_region_codes() -> Tuple[str, HTTPStatus]:
-    region_codes = [
-        region_code.value
-        for region_code in admin_stores.ingest_operations_store.region_codes_launched_in_env
-    ]
+    region_codes = sorted(
+        [
+            region_code.value
+            for region_code in admin_stores.ingest_operations_store.region_codes_launched_in_env
+        ]
+    )
     return jsonify(region_codes), HTTPStatus.OK
 
 
