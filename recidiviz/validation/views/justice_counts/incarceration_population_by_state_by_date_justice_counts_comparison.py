@@ -37,7 +37,7 @@ INCARCERATION_POPULATION_BY_STATE_BY_DATE_JUSTICE_COUNTS_COMPARISON_DESCRIPTION 
 INCARCERATION_POPULATION_BY_STATE_BY_DATE_JUSTICE_COUNTS_COMPARISON_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT 
-        jc_pop.state_code, 
+        jc_pop.state_code as region_code, 
         jc_pop.date_reported, 
         jc_pop.value as justice_counts_total_population, 
         internal_pop.population_count as internal_total_population
