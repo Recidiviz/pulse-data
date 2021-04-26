@@ -74,14 +74,12 @@ class FutureExecutor:
         func: Callable, kwargs_list: List[Dict], max_workers: Optional[int] = None
     ) -> Generator["FutureExecutor", None, None]:
         """ Creates a ThreadPoolExecutor and corresponding FutureExecutor """
-        executor = futures.ThreadPoolExecutor(max_workers=max_workers)
-        future_execution = FutureExecutor(
-            [
-                executor.submit(structured_logging.with_context(func), **kwargs)
-                for kwargs in kwargs_list
-            ]
-        )
+        with futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_execution = FutureExecutor(
+                [
+                    executor.submit(structured_logging.with_context(func), **kwargs)
+                    for kwargs in kwargs_list
+                ]
+            )
 
-        yield future_execution
-
-        executor.shutdown(wait=True)
+            yield future_execution

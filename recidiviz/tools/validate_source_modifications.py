@@ -349,12 +349,12 @@ def check_assertions(
 
 def _get_modified_files(commit_range: str) -> FrozenSet[str]:
     """Returns a set of all files that have been modified in the given commit range."""
-    git = subprocess.Popen(
+    with subprocess.Popen(
         ["git", "diff", "--name-only", commit_range], stdout=subprocess.PIPE
-    )
-    modified_files, _ = git.communicate()
-    git.wait()
-    return frozenset(modified_files.decode().splitlines())
+    ) as git:
+        modified_files, _ = git.communicate()
+        git.wait()
+        return frozenset(modified_files.decode().splitlines())
 
 
 def _format_failure(failure: Tuple[FrozenSet[str], FrozenSet[str]]) -> str:
@@ -379,7 +379,7 @@ def _get_assertions_to_skip(commit_range: str) -> FrozenSet[str]:
     This is determined based on the commit messages in this range, i.e. whether commit messages were written to skip
     either all assertion sets or specific assertion sets.
     """
-    git = subprocess.Popen(
+    with subprocess.Popen(
         [
             "git",
             "log",
@@ -388,13 +388,13 @@ def _get_assertions_to_skip(commit_range: str) -> FrozenSet[str]:
             commit_range,
         ],
         stdout=subprocess.PIPE,
-    )
-    skip_commits, _ = git.communicate()
-    git.wait()
+    ) as git:
+        skip_commits, _ = git.communicate()
+        git.wait()
 
-    if git.returncode != 0:
-        logging.error("git log failed")
-        sys.exit(git.returncode)
+        if git.returncode != 0:
+            logging.error("git log failed")
+            sys.exit(git.returncode)
 
     sets_to_skip = set()  # type: Set[str]
     full_validation_message = re.findall(

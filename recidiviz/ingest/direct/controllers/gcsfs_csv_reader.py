@@ -16,6 +16,7 @@
 # =============================================================================
 """Streaming read functionality for Google Cloud Storage CSV files."""
 import abc
+from contextlib import contextmanager
 from typing import Iterator, List, Optional, Any, TextIO
 
 import gcsfs
@@ -78,7 +79,10 @@ class GcsfsCsvReader:
     def __init__(self, fs: gcsfs.GCSFileSystem):
         self.gcs_file_system = fs
 
-    def _file_pointer_for_path(self, path: GcsfsFilePath, encoding: str) -> TextIO:
+    @contextmanager
+    def _file_pointer_for_path(
+        self, path: GcsfsFilePath, encoding: str
+    ) -> Iterator[TextIO]:
         """Returns a file pointer for the given path."""
 
         # From the GCSFileSystem docs (https://gcsfs.readthedocs.io/en/latest/api.html#gcsfs.core.GCSFileSystem),
@@ -87,7 +91,8 @@ class GcsfsCsvReader:
         # `gcloud config set project [PROJECT_ID]`. If we are running in the GCP environment, we should be able to query
         # the internal metadata for credentials.
         token = "google_default" if not environment.in_gcp() else "cloud"
-        return self.gcs_file_system.open(path.uri(), encoding=encoding, token=token)
+        with self.gcs_file_system.open(path.uri(), encoding=encoding, token=token) as f:
+            yield f
 
     def streaming_read(
         self,

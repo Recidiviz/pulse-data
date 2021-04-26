@@ -17,7 +17,8 @@
 """Tests for the GcsfsCsvReader."""
 
 import unittest
-from typing import IO, List, Optional
+from contextlib import contextmanager
+from typing import IO, Iterator, List, Optional
 
 import gcsfs
 import pandas as pd
@@ -63,18 +64,19 @@ class _TestGcsfsCsvReaderDelegate(GcsfsCsvReaderDelegate):
         self.successful_encoding = encoding
 
 
+@contextmanager
 def _fake_gcsfs_open(
     path_str: str,
     *,
     encoding: str,
     # pylint: disable=unused-argument
     token: str,
-) -> IO:
+) -> Iterator[IO]:
     if not path_str.startswith("gs://"):
         raise ValueError(f"Expected gs:// path URI, got this instead: {path_str}")
 
     # Convert to local absolute path
-    return open("/" + path_str[len("gs://") :], encoding=encoding)
+    yield open("/" + path_str[len("gs://") :], encoding=encoding)
 
 
 class GcsfsCsvReaderTest(unittest.TestCase):

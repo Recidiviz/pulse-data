@@ -21,7 +21,16 @@ import logging
 import os
 import tempfile
 import uuid
-from typing import List, Optional, TextIO, Union, Iterator, Callable, Dict
+from contextlib import contextmanager
+from typing import (
+    Callable,
+    Dict,
+    Iterator,
+    List,
+    Optional,
+    TextIO,
+    Union,
+)
 
 import pysftp
 from paramiko import SFTPFile
@@ -60,8 +69,10 @@ class GcsfsFileContentsHandle(FileContentsHandle[str, TextIO]):
                     break
                 yield line
 
-    def open(self) -> TextIO:
-        return open(self.local_file_path, mode="r", encoding="utf-8")
+    @contextmanager
+    def open(self) -> Iterator[TextIO]:
+        with open(self.local_file_path, mode="r", encoding="utf-8") as f:
+            yield f
 
     def __del__(self) -> None:
         """This ensures that the file contents on local disk are deleted when
@@ -84,8 +95,10 @@ class GcsfsSftpFileContentsHandle(FileContentsHandle[bytes, SFTPFile]):
                     break
                 yield line
 
-    def open(self) -> SFTPFile:
-        return self.sftp_connection.open(remote_file=self.local_file_path, mode="r")
+    @contextmanager
+    def open(self) -> Iterator[SFTPFile]:
+        with self.sftp_connection.open(remote_file=self.local_file_path, mode="r") as f:
+            yield f
 
 
 class GCSFileSystem:

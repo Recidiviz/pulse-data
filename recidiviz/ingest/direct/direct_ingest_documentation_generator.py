@@ -116,13 +116,15 @@ class DirectIngestDocumentationGenerator:
         relative_config_dir_path = os.path.relpath(
             yaml_config_file_dir, recidiviz.__file__
         )
-        res = subprocess.Popen(
+        with subprocess.Popen(
             rf'git diff --cached --name-only | grep "{relative_config_dir_path}.*\.yaml"',
             shell=True,
             stdout=subprocess.PIPE,
-        )
-        stdout, _stderr = res.communicate()
-        return [os.path.basename(filepath) for filepath in stdout.decode().splitlines()]
+        ) as res:
+            stdout, _stderr = res.communicate()
+            return [
+                os.path.basename(filepath) for filepath in stdout.decode().splitlines()
+            ]
 
     @staticmethod
     def _generate_docs_for_raw_config(
@@ -216,34 +218,34 @@ class DirectIngestDocumentationGenerator:
     def _get_updated_by(path: str, touched_configs: List[str]) -> str:
         """Returns the name of the person who last edited the file at the provided path"""
         if os.path.basename(path) in touched_configs:
-            res = subprocess.Popen(
+            with subprocess.Popen(
                 "git config user.name",
                 shell=True,
                 stdout=subprocess.PIPE,
-            )
-            stdout, _stderr = res.communicate()
-            return stdout.decode()
+            ) as res:
+                stdout, _stderr = res.communicate()
+                return stdout.decode()
 
-        res = subprocess.Popen(
+        with subprocess.Popen(
             f'git log -1 --pretty=format:"%an" -- {path}',
             shell=True,
             stdout=subprocess.PIPE,
-        )
-        stdout, _stderr = res.communicate()
-        return stdout.decode()
+        ) as res:
+            stdout, _stderr = res.communicate()
+            return stdout.decode()
 
     @staticmethod
     def _get_last_updated(path: str, touched_configs: List[str]) -> str:
         """Returns the date the file at the given path was last updated."""
         if os.path.basename(path) in touched_configs:
             return datetime.datetime.today().strftime("%Y-%m-%d")
-        res = subprocess.Popen(
+        with subprocess.Popen(
             f'git log -1 --date=short --pretty=format:"%ad" -- {path}',
             shell=True,
             stdout=subprocess.PIPE,
-        )
-        stdout, _stderr = res.communicate()
-        return stdout.decode()
+        ) as res:
+            stdout, _stderr = res.communicate()
+            return stdout.decode()
 
     @staticmethod
     def get_referencing_views(
