@@ -45,6 +45,7 @@ def generate_fake_client(
     supervising_officer_id: str = "id_1",
     last_assessment_date: Optional[date] = None,
     last_face_to_face_date: Optional[date] = None,
+    last_home_visit_date: Optional[date] = None,
 ) -> ETLClient:
     return ETLClient(
         person_external_id=client_id,
@@ -59,6 +60,7 @@ def generate_fake_client(
         most_recent_assessment_date=last_assessment_date,
         assessment_score=1,
         most_recent_face_to_face_date=last_face_to_face_date,
+        most_recent_home_visit_date=last_home_visit_date,
     )
 
 

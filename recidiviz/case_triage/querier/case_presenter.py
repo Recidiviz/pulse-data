@@ -29,9 +29,11 @@ import numpy as np
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_compliance import (
     NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS,
     NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS,
+    NEW_SUPERVISION_HOME_VISIT_DEADLINE_DAYS,
     REASSESSMENT_DEADLINE_DAYS,
     SEX_OFFENSE_LSIR_MINIMUM_SCORE,
     SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS,
+    US_ID_SUPERVISION_HOME_VISIT_FREQUENCY_REQUIREMENTS,
 )
 from recidiviz.case_triage.querier.case_update_presenter import CaseUpdatePresenter
 from recidiviz.case_triage.querier.utils import _json_map_dates_to_strings
@@ -84,6 +86,7 @@ class CasePresenter:
             "mostRecentAssessmentDate": self.etl_client.most_recent_assessment_date,
             "assessmentScore": self.etl_client.assessment_score,
             "mostRecentFaceToFaceDate": self.etl_client.most_recent_face_to_face_date,
+            "mostRecentHomeVisitDate": self.etl_client.most_recent_home_visit_date,
             "caseUpdates": {
                 case_update.action_type: CaseUpdatePresenter(
                     self.etl_client, case_update
@@ -104,6 +107,9 @@ class CasePresenter:
         next_face_to_face_date = self._next_face_to_face_date()
         if next_face_to_face_date:
             base_dict["nextFaceToFaceDate"] = next_face_to_face_date
+        next_home_visit_date = self._next_home_visit_date()
+        if next_home_visit_date:
+            base_dict["nextHomeVisitDate"] = next_home_visit_date
 
         today = date.today()
         base_dict["needsMet"] = {
@@ -114,6 +120,10 @@ class CasePresenter:
             # next due face to face contact is after today, the need is met.
             "faceToFaceContact": next_face_to_face_date is None
             or bool(next_face_to_face_date > today),
+            # If the home visit contact is missing, that means there may be no need for it. Otherwise, if the
+            # next due home visit contact is after today, the need is met.
+            "homeVisitContact": next_home_visit_date is None
+            or bool(next_home_visit_date > today),
             # If the next assessment is due after today, the need is met.
             "assessment": next_assessment_date is None
             or bool(next_assessment_date > today),
@@ -191,4 +201,30 @@ class CasePresenter:
             return None
         return self.etl_client.most_recent_face_to_face_date + timedelta(
             days=(face_to_face_requirements[1] // face_to_face_requirements[0])
+        )
+
+    def _next_home_visit_date(self) -> Optional[date]:
+        """This method returns the next home visit contact date. It returns None if no
+        future home visit contact is required."""
+        # TODO(#5768): Eventually delete or move this method to our calculate pipeline.
+        if self.etl_client.most_recent_home_visit_date is None:
+            return self.etl_client.supervision_start_date + timedelta(
+                days=NEW_SUPERVISION_HOME_VISIT_DEADLINE_DAYS
+            )
+
+        supervision_level = StateSupervisionLevel(self.etl_client.supervision_level)
+        if supervision_level not in US_ID_SUPERVISION_HOME_VISIT_FREQUENCY_REQUIREMENTS:
+            logging.warning(
+                "Could not find requirements for supervision level %s",
+                self.etl_client.supervision_level,
+            )
+            return None
+
+        home_visit_requirements = US_ID_SUPERVISION_HOME_VISIT_FREQUENCY_REQUIREMENTS[
+            supervision_level
+        ]
+        if home_visit_requirements[0] == 0:
+            return None
+        return self.etl_client.most_recent_home_visit_date + timedelta(
+            days=(home_visit_requirements[1] // home_visit_requirements[0])
         )

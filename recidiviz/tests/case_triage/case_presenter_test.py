@@ -43,6 +43,7 @@ class TestCasePresenter(TestCase):
             supervising_officer_id=self.mock_officer.external_id,
             last_assessment_date=date(2021, 2, 1),
             last_face_to_face_date=date(2021, 1, 15),
+            last_home_visit_date=date(2020, 5, 3),
         )
         self.mock_client.case_updates = []
 
@@ -72,11 +73,14 @@ class TestCasePresenter(TestCase):
                     "mostRecentAssessmentDate": self.mock_client.most_recent_assessment_date,
                     "assessmentScore": self.mock_client.assessment_score,
                     "mostRecentFaceToFaceDate": self.mock_client.most_recent_face_to_face_date,
+                    "mostRecentHomeVisitDate": self.mock_client.most_recent_home_visit_date,
                     "nextAssessmentDate": date(2022, 2, 1),
                     "nextFaceToFaceDate": date(2021, 3, 1),
+                    "nextHomeVisitDate": date(2021, 5, 3),
                     "needsMet": {
                         "employment": False,
                         "faceToFaceContact": True,
+                        "homeVisitContact": True,
                         "assessment": True,
                     },
                 },

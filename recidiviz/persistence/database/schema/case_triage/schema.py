@@ -128,6 +128,9 @@ class ETLClient(CaseTriageBase):
             most_recent_face_to_face_date=_get_json_field_as_date(
                 json_client, "most_recent_face_to_face_date"
             ),
+            most_recent_home_visit_date=_get_json_field_as_date(
+                json_client, "most_recent_home_visit_date"
+            ),
         )
 
 
