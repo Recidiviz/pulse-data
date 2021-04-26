@@ -18,8 +18,9 @@
 import datetime
 import time
 import unittest
+from contextlib import contextmanager
 from types import ModuleType
-from typing import List, Optional, Dict, Type, TextIO
+from typing import Dict, Iterator, List, Optional, Type, TextIO
 
 import attr
 import gcsfs
@@ -96,12 +97,15 @@ class _TestSafeGcsCsvReader(GcsfsCsvReader):
         super().__init__(create_autospec(gcsfs.GCSFileSystem))
         self.fs = fs
 
-    def _file_pointer_for_path(self, path: GcsfsFilePath, encoding: str) -> TextIO:
+    @contextmanager
+    def _file_pointer_for_path(
+        self, path: GcsfsFilePath, encoding: str
+    ) -> Iterator[TextIO]:
         try:
             path_str = self.fs.real_absolute_path_for_path(path)
         except AttributeError:
             path_str = self.fs.real_absolute_path_for_path(path)
-        return open(path_str, encoding=encoding)
+        yield open(path_str, encoding=encoding)
 
 
 class DirectIngestFakeGCSFileSystemDelegate(FakeGCSFileSystemDelegate):

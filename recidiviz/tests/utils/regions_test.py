@@ -15,7 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for utils/regions.py."""
-from typing import Any, Callable, IO, List
+from contextlib import contextmanager
+from typing import Any, Callable, IO, Iterator, List
 from unittest import TestCase
 from unittest.mock import patch, MagicMock
 
@@ -303,15 +304,17 @@ class TestRegions(TestCase):
         self.assertTrue(region.is_ingest_launched_in_env())
 
 
-def mock_manifest_open(filename: str, *args: Any) -> IO:
+@contextmanager
+def mock_manifest_open(filename: str, *args: Any) -> Iterator[IO]:
     if filename.endswith("manifest.yaml"):
         region = filename.split("/")[-2]
         if region in REGION_TO_MANIFEST:
             content = REGION_TO_MANIFEST[region]
             file_object = mock_open(read_data=content).return_value
             file_object.__iter__.return_value = content.splitlines(True)
-            return file_object
-    return open(filename, *args)
+            yield file_object
+            return
+    yield open(filename, *args)
 
 
 def with_manifest(func: Callable, *args: Any, **kwargs: Any) -> Any:
