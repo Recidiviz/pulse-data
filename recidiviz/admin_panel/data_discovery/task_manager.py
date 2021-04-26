@@ -16,6 +16,7 @@
 # =============================================================================
 """ Contains functions for enqueueing data discovery tasks """
 import abc
+import json
 from typing import Any, Dict
 from urllib.parse import urljoin
 
@@ -37,7 +38,7 @@ from recidiviz.utils import environment
 def _local_task(task_args: Dict[str, Any]) -> None:
     requests.post(
         urljoin("http://localhost:5000", task_args["relative_uri"]),
-        json=task_args["body"],
+        data=json.dumps(task_args["body"]).encode(),
     )
 
 

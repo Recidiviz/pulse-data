@@ -25,6 +25,7 @@ from recidiviz.admin_panel.data_discovery.file_configs import (
 )
 from recidiviz.ingest.direct.direct_ingest_region_utils import (
     get_existing_region_dir_names,
+    get_existing_direct_ingest_states,
 )
 
 
@@ -68,5 +69,5 @@ class TestDataDiscoveryFileConfigs(TestCase):
         self.assertIsNotNone(early_discharge_incarceration_sentence)
         self.assertIn("mitt_srl", early_discharge_incarceration_sentence.columns)
 
-        for region_code in get_existing_region_dir_names():
-            self.assertIsNotNone(get_ingest_view_configs(region_code))
+        for region_code in get_existing_direct_ingest_states():
+            self.assertIsNotNone(get_ingest_view_configs(region_code.value))
