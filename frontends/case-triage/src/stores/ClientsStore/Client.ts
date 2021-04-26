@@ -50,14 +50,17 @@ export interface Client {
   supervisionLevel: SupervisionLevel;
   personExternalId: string;
   mostRecentFaceToFaceDate: APIDate;
+  mostRecentHomeVisitDate: APIDate;
   mostRecentAssessmentDate: APIDate;
   needsMet: {
     assessment: boolean;
     employment: boolean;
     faceToFaceContact: boolean;
+    homeVisitContact: boolean;
   };
   nextAssessmentDate: APIDate;
   nextFaceToFaceDate: APIDate;
+  nextHomeVisitDate: APIDate;
 }
 
 export interface DecoratedClient extends Client {
@@ -66,9 +69,11 @@ export interface DecoratedClient extends Client {
   supervisionStartDate: moment.Moment | null;
   projectedEndDate: moment.Moment | null;
   mostRecentFaceToFaceDate: moment.Moment | null;
+  mostRecentHomeVisitDate: moment.Moment | null;
   mostRecentAssessmentDate: moment.Moment | null;
   nextAssessmentDate: moment.Moment | null;
   nextFaceToFaceDate: moment.Moment | null;
+  nextHomeVisitDate: moment.Moment | null;
 
   previousInProgressActions?: CaseUpdateActionType[];
 
@@ -103,12 +108,27 @@ const decorateClient = (
     supervisionStartDate: parseDate(client.supervisionStartDate),
     projectedEndDate: parseDate(client.projectedEndDate),
     mostRecentFaceToFaceDate: parseDate(client.mostRecentFaceToFaceDate),
+    mostRecentHomeVisitDate: parseDate(client.mostRecentHomeVisitDate),
     mostRecentAssessmentDate: parseDate(client.mostRecentAssessmentDate),
     nextFaceToFaceDate: parseDate(client.nextFaceToFaceDate),
+    nextHomeVisitDate: parseDate(client.nextHomeVisitDate),
     nextAssessmentDate: parseDate(client.nextAssessmentDate),
-
     supervisionLevelText: policyStore.getSupervisionLevelNameForClient(client),
   };
 };
 
 export { decorateClient };
+
+export const getNextContactDate = (
+  client: DecoratedClient
+): moment.Moment | null => {
+  if (client.nextHomeVisitDate === null) {
+    return client.nextFaceToFaceDate;
+  }
+  if (client.nextFaceToFaceDate === null) {
+    return client.nextHomeVisitDate;
+  }
+  return client.nextFaceToFaceDate < client.nextHomeVisitDate
+    ? client.nextFaceToFaceDate
+    : client.nextHomeVisitDate;
+};

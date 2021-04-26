@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import * as React from "react";
+import moment from "moment";
 import { IconSVG, NeedState } from "@recidiviz/design-system";
 import { DecoratedClient } from "../../stores/ClientsStore";
 import { useRootStore } from "../../stores";
@@ -37,6 +38,7 @@ import {
   CaseUpdateActionType,
   CaseUpdateStatus,
 } from "../../stores/CaseUpdatesStore";
+import { getNextContactDate } from "../../stores/ClientsStore/Client";
 
 interface ClientProps {
   client: DecoratedClient;
@@ -138,7 +140,7 @@ const ClientComponent: React.FC<ClientProps> = ({
       </FlexCardSection>
       <FlexCardSection>
         {hasDueDate ? (
-          <DueDate date={client.nextFaceToFaceDate} />
+          <DueDate date={getNextContactDate(client)} />
         ) : (
           <PendingText>Pending</PendingText>
         )}
