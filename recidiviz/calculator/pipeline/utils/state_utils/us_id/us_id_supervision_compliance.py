@@ -102,7 +102,8 @@ DEPRECATED_HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE = 30
 DEPRECATED_MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE = 180
 DEPRECATED_MINIMUM_SUPERVISION_CONTACT_FREQUENCY_GENERAL_CASE = sys.maxsize
 
-# Dictionary from case type -> supervision level -> tuple of number of times they must be contacted per time period
+# Dictionary from case type -> supervision level -> tuple of number of times they must be contacted per time period.
+# A tuple (x, y) should be interpreted as x home visits every y days.
 SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS: Dict[
     StateSupervisionCaseType, Dict[StateSupervisionLevel, Tuple[int, int]]
 ] = {
@@ -117,8 +118,18 @@ SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS: Dict[
         StateSupervisionLevel.HIGH: (2, 30),
     },
 }
+# Dictionary from supervision level -> tuple of number of times they must be contacted per time period.
+# A tuple (x, y) should be interpreted as x home visits every y days.
+US_ID_SUPERVISION_HOME_VISIT_FREQUENCY_REQUIREMENTS: Dict[
+    StateSupervisionLevel, Tuple[int, int]
+] = {
+    StateSupervisionLevel.MINIMUM: (1, 365),
+    StateSupervisionLevel.MEDIUM: (1, 365),
+    StateSupervisionLevel.HIGH: (2, 365),
+}
 
 NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS = 3
+NEW_SUPERVISION_HOME_VISIT_DEADLINE_DAYS = 30
 
 
 class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
