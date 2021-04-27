@@ -238,7 +238,7 @@ def transform_results_view_chain(
 
 
 def get_jail_population_with_resident_chain() -> List[SimpleBigQueryViewBuilder]:
-    jail_pop_view_builder = metric_by_month.CalculatedMetricByMonthViewBuilder(
+    jail_pop_view_chain = metric_by_month.calculate_metric_view_chain(
         dataset_id=dataset_config.JUSTICE_COUNTS_JAILS_DATASET,
         metric_to_calculate=metric_by_month.CalculatedMetricByMonth(
             system=schema.System.CORRECTIONS,
@@ -256,19 +256,37 @@ def get_jail_population_with_resident_chain() -> List[SimpleBigQueryViewBuilder]
     jail_pop_with_resident_view_builder = AddResidentPopulationViewBuilder(
         dataset_id=dataset_config.JUSTICE_COUNTS_JAILS_DATASET,
         metric_name=POPULATION_METRIC_NAME,
-        input_view=jail_pop_view_builder,
+        input_view=jail_pop_view_chain[-1],
     )
-    return [jail_pop_view_builder, jail_pop_with_resident_view_builder]
+    return [*jail_pop_view_chain, jail_pop_with_resident_view_builder]
 
 
-def get_jail_incarceration_rate_builder(
+def get_jail_incarceration_rate_chain(
     jail_pop_with_resident_view_builder: SimpleBigQueryViewBuilder,
-) -> SimpleBigQueryViewBuilder:
-    return IncarcerationRateViewBuilder(
+) -> List[SimpleBigQueryViewBuilder]:
+    with_state_totals_builder = metric_by_month.SpatialAggregationViewBuilder(
         dataset_id=dataset_config.JUSTICE_COUNTS_JAILS_DATASET,
         metric_name=RATE_METRIC_NAME,
         input_view=jail_pop_with_resident_view_builder,
+        partition_columns={"start_of_month"},
+        partition_dimensions={manual_upload.State},
+        context_columns={
+            "source_id": metric_by_month.SpatialAggregationViewBuilder.ContextAggregation.ARRAY,
+            "report_type": metric_by_month.SpatialAggregationViewBuilder.ContextAggregation.ARRAY,
+            "report_ids": metric_by_month.SpatialAggregationViewBuilder.ContextAggregation.ARRAY_CONCAT,
+            "time_window_end": metric_by_month.SpatialAggregationViewBuilder.ContextAggregation.MAX,
+            "publish_date": metric_by_month.SpatialAggregationViewBuilder.ContextAggregation.MAX,
+        },
+        value_columns={"resident_population", "value"},
+        collapse_dimensions_filter=f"dimension in ('{manual_upload.County.dimension_identifier()}')",
+        keep_original=True,
     )
+    rate_builder = IncarcerationRateViewBuilder(
+        dataset_id=dataset_config.JUSTICE_COUNTS_JAILS_DATASET,
+        metric_name=RATE_METRIC_NAME,
+        input_view=with_state_totals_builder,
+    )
+    return [with_state_totals_builder, rate_builder]
 
 
 class JailsMetricsByMonthBigQueryViewCollector(
@@ -283,8 +301,9 @@ class JailsMetricsByMonthBigQueryViewCollector(
         self.metric_builders.extend(jail_pop_chain)
         jail_pop_builder = jail_pop_chain[-1]
 
-        jail_rate_builder = get_jail_incarceration_rate_builder(jail_pop_builder)
-        self.metric_builders.append(jail_rate_builder)
+        jail_rate_chain = get_jail_incarceration_rate_chain(jail_pop_builder)
+        self.metric_builders.extend(jail_rate_chain)
+        jail_rate_builder = jail_rate_chain[-1]
 
         unified_query_select_clauses = []
         for metric_name, value_column, view_builder in [
