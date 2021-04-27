@@ -18,7 +18,6 @@ import { autorun, makeAutoObservable, runInAction } from "mobx";
 import UserStore from "../UserStore";
 import { Client, DecoratedClient } from "../ClientsStore";
 import {
-  ContactFrequencyByRisk,
   Policy,
   ScoreMinMaxBySupervisionLevel,
   SupervisionContactFrequency,
@@ -89,16 +88,12 @@ class PolicyStore {
     );
   }
 
-  getContactFrequenciesForClient(
-    client: DecoratedClient
-  ): ContactFrequencyByRisk | undefined {
-    return this.policies?.supervisionContactFrequencies[client.caseType];
-  }
-
   findContactFrequencyForClient(
     client: DecoratedClient
   ): SupervisionContactFrequency | undefined {
-    const contactFrequencies = this.getContactFrequenciesForClient(client);
+    const contactFrequencies = this.policies?.supervisionContactFrequencies[
+      client.caseType
+    ];
 
     return contactFrequencies
       ? contactFrequencies[client.supervisionLevel]
@@ -108,9 +103,9 @@ class PolicyStore {
   findHomeVisitFrequencyForClient(
     client: DecoratedClient
   ): SupervisionContactFrequency | undefined {
-    return this.policies?.supervisionHomeVisitFrequencies
-      ? this.policies?.supervisionHomeVisitFrequencies[client.supervisionLevel]
-      : undefined;
+    return this.policies?.supervisionHomeVisitFrequencies[
+      client.supervisionLevel
+    ];
   }
 }
 export default PolicyStore;
