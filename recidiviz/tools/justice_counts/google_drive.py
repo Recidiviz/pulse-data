@@ -219,6 +219,10 @@ def download_data(
     local_directory = os.path.join(base_local_directory, state_code.value, system.value)
     os.makedirs(local_directory, exist_ok=True)
 
+    # Clear the directory
+    for file in os.listdir(local_directory):
+        os.remove(os.path.join(local_directory, file))
+
     drive = Drive(credentials_directory)
 
     state_folder = drive.get_folder(state_code.get_state().name, base_drive_folder_id)
