@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for EntityDocumentationGenerator."""
+import os
 import unittest
 
 from recidiviz.tools.docs.entity_documentation_generator import (
@@ -22,6 +23,7 @@ from recidiviz.tools.docs.entity_documentation_generator import (
 )
 
 
+@unittest.skipIf(os.environ.get("TRAVIS") == "true", "docs/ does not exist in Travis")
 class EntityDocumentationGeneratorTest(unittest.TestCase):
     """Tests for EntityDocumentationGenerator"""
 
