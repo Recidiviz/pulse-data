@@ -16,9 +16,10 @@
 # =============================================================================
 
 """Scrapes the texas aggregate site and finds pdfs to download."""
+import re
+from datetime import date
 from typing import Set
 
-import re
 import requests
 from lxml import html
 
@@ -41,5 +42,12 @@ def get_urls_to_download() -> Set[str]:
             if search and search.group(1) < "2020":
                 continue
             result.add(link)
+
+    # New naming convention for PDFs that aren't visible on the website but can be found from direct URL
+    result.add(
+        date.today().strftime(
+            "https://www.tcjs.state.tx.us/wp-content/uploads/%Y/%m/AbbreRptCurrent.pdf"
+        )
+    )
 
     return result
