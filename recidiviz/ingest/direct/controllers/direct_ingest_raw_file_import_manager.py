@@ -56,6 +56,7 @@ from recidiviz.cloud_storage.gcsfs_path import (
 from recidiviz.ingest.direct.controllers.gcsfs_csv_reader import (
     GcsfsCsvReader,
     COMMON_RAW_FILE_ENCODINGS,
+    UTF_8_ENCODING,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_csv_reader_delegates import (
     ReadOneGcsfsCsvReaderDelegate,
@@ -564,7 +565,11 @@ class DirectIngestRawFileImportManager:
     ) -> None:
         for temp_output_path, load_job in temp_path_to_load_job.items():
             try:
-                logging.info("Waiting for load of [%s]", temp_output_path.abs_path())
+                logging.info(
+                    "Waiting for load of [%s] into [%s]",
+                    temp_output_path.abs_path(),
+                    load_job.destination,
+                )
                 load_job.result()
                 logging.info(
                     "BigQuery load of [%s] complete", temp_output_path.abs_path()
@@ -613,6 +618,7 @@ class DirectIngestRawFileImportManager:
             path,
             delegate=delegate,
             chunk_size=1,
+            encodings_to_try=file_config.encodings_to_try(),
             nrows=1,
             **self._common_read_csv_kwargs(file_config),
         )
@@ -680,12 +686,23 @@ class DirectIngestRawFileImportManager:
     def _common_read_csv_kwargs(
         file_config: DirectIngestRawFileConfig,
     ) -> Dict[str, Any]:
-        return {
+        kwargs = {
             "sep": file_config.separator,
             "quoting": (
                 csv.QUOTE_NONE if file_config.ignore_quotes else csv.QUOTE_MINIMAL
             ),
         }
+
+        # We get the following warning if we do not override the
+        # engine in this case: "ParserWarning: Falling back to the 'python'
+        # engine because the separator encoded in utf-8 is > 1 char
+        # long, and the 'c' engine does not support such separators;
+        # you can avoid this warning by specifying engine='python'.
+        if len(file_config.separator.encode(UTF_8_ENCODING)) > 1:
+            # The python engine is slower but more feature-complete.
+            kwargs["engine"] = "python"
+
+        return kwargs
 
 
 class DirectIngestRawDataSplittingGcsfsCsvReaderDelegate(

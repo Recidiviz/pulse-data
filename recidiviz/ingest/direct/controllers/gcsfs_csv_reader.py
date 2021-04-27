@@ -25,9 +25,18 @@ import pandas as pd
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.utils import environment
 
+UTF_8_ENCODING = "UTF-8"
+
+# Also known as 'latin-1', used in the census and lots of other government data
+ISO_8859_1_ENCODING = "ISO-8859-1"
+
+# Very similar to ISO-8859-1, but not quite the same. See differences in this table:
+# https://en.wikipedia.org/wiki/Windows-1252#Character_set
+WINDOWS_1252_ENCODING = "WINDOWS-1252"
+
 COMMON_RAW_FILE_ENCODINGS = [
-    "UTF-8",
-    "ISO-8859-1",  # Also known as 'latin-1', used in the census and lots of other government data
+    UTF_8_ENCODING,
+    ISO_8859_1_ENCODING,
 ]
 
 

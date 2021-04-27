@@ -1,0 +1,21 @@
+file_tag: tagDoubleDaggerWINDOWS1252
+file_description: |-
+  tagDoubleDaggerWINDOWS1252 file description
+primary_key_cols:
+  - PRIMARY_COL1
+columns:
+  - name: PRIMARY_COL1
+    description: |-
+      PRIMARY_COL1 description
+  - name: COL2
+    description: |-
+      COL2 description
+  - name: COL3
+    description: |-
+      COL3 description
+  - name: COL4
+    description: |-
+      COL4 description
+ignore_quotes: True
+encoding: WINDOWS-1252
+separator: '‡'
