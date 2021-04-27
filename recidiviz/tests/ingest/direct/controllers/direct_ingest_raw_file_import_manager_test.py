@@ -20,6 +20,7 @@ import unittest
 from typing import List, Any
 from unittest import mock
 
+import attr
 import pandas as pd
 from google.cloud import bigquery
 from mock import create_autospec, call, patch
@@ -92,12 +93,13 @@ class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
             region_code="us_xx",
             region_module=fake_regions_module,
         )
-        self.assertEqual(9, len(region_config.raw_file_configs))
+        self.assertEqual(10, len(region_config.raw_file_configs))
         self.assertEqual(
             {
                 "file_tag_first",
                 "file_tag_second",
                 "tagC",
+                "tagColCapsDoNotMatchConfig",
                 "tagFullHistoricalExport",
                 "tagInvalidCharacters",
                 "tagNormalizationConflict",
@@ -333,10 +335,46 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
             file_type=GcsfsDirectIngestFileType.RAW_DATA,
         )
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError) as e:
             self.import_manager.import_raw_file_to_big_query(
                 file_path, create_autospec(DirectIngestRawFileMetadata)
             )
+        self.assertEqual(
+            str(e.exception),
+            "Attempting to import raw file with tag [this_path_tag_not_in_yaml] "
+            "unspecified by [us_xx] config.",
+        )
+
+    def test_import_wrong_separator_cols_do_not_parse(self) -> None:
+        file_config = self.import_manager.region_raw_file_config.raw_file_configs[
+            "tagC"
+        ]
+        updated_file_config = attr.evolve(file_config, separator="#")
+        self.import_manager.region_raw_file_config.raw_file_configs[
+            "tagC"
+        ] = updated_file_config
+
+        file_path = path_for_fixture_file_in_test_gcs_directory(
+            bucket_path=self.ingest_bucket_path,
+            filename="tagC.csv",
+            should_normalize=True,
+            file_type=GcsfsDirectIngestFileType.RAW_DATA,
+        )
+
+        fixture_util.add_direct_ingest_path(
+            self.fs.gcs_file_system, file_path, region_code=self.test_region.region_code
+        )
+
+        with self.assertRaises(ValueError) as e:
+            self.import_manager.import_raw_file_to_big_query(
+                file_path, create_autospec(DirectIngestRawFileMetadata)
+            )
+        self.assertTrue(
+            str(e.exception).startswith(
+                "Found only one column: [COL1__COL2_COL3]. "
+                "Columns likely did not parse properly."
+            )
+        )
 
     def test_import_bq_file_with_ingest_view_file(self) -> None:
         file_path = path_for_fixture_file_in_test_gcs_directory(
@@ -346,10 +384,15 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
             file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
         )
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError) as e:
             self.import_manager.import_raw_file_to_big_query(
                 file_path, create_autospec(DirectIngestRawFileMetadata)
             )
+        self.assertEqual(
+            str(e.exception),
+            "Unexpected file type [GcsfsDirectIngestFileType.INGEST_VIEW] for "
+            "path [file_tag_first].",
+        )
 
     def test_import_bq_file_with_raw_file(self) -> None:
         file_path = path_for_fixture_file_in_test_gcs_directory(
@@ -598,6 +641,42 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
             ],
         )
         self.assertEqual(1, self.num_lines_uploaded)
+        self._check_no_temp_files_remain()
+
+    def test_import_bq_file_with_cols_not_matching_capitalization(self) -> None:
+        file_path = path_for_fixture_file_in_test_gcs_directory(
+            bucket_path=self.ingest_bucket_path,
+            filename="tagColCapsDoNotMatchConfig.csv",
+            should_normalize=True,
+            file_type=GcsfsDirectIngestFileType.RAW_DATA,
+        )
+
+        fixture_util.add_direct_ingest_path(
+            self.fs.gcs_file_system, file_path, region_code=self.test_region.region_code
+        )
+
+        self.import_manager.import_raw_file_to_big_query(
+            file_path, self._metadata_for_unprocessed_file_path(file_path)
+        )
+
+        self.assertEqual(1, len(self.fs.gcs_file_system.uploaded_paths))
+        path = one(self.fs.gcs_file_system.uploaded_paths)
+
+        self.mock_big_query_client.insert_into_table_from_cloud_storage_async.assert_called_with(
+            source_uri=path.uri(),
+            destination_dataset_ref=bigquery.DatasetReference(
+                self.project_id, "us_xx_raw_data"
+            ),
+            destination_table_id="tagColCapsDoNotMatchConfig",
+            destination_table_schema=[
+                bigquery.SchemaField("COL1", "STRING", "NULLABLE"),
+                bigquery.SchemaField("COL_2", "STRING", "NULLABLE"),
+                bigquery.SchemaField("Col3", "STRING", "NULLABLE"),
+                bigquery.SchemaField("file_id", "INTEGER", "REQUIRED"),
+                bigquery.SchemaField("update_datetime", "DATETIME", "REQUIRED"),
+            ],
+        )
+        self.assertEqual(2, self.num_lines_uploaded)
         self._check_no_temp_files_remain()
 
     def test_import_bq_file_with_raw_file_normalization_conflict(self) -> None:
