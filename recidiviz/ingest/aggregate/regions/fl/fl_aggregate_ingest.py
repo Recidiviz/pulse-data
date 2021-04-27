@@ -64,25 +64,14 @@ def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
 
 def _parse_county_table(_: str, filename: str) -> pd.DataFrame:
     """Parses the FL County - Table 1 in the PDF."""
-    part1 = tabula.read_pdf(
+    [result] = tabula.read_pdf(
         filename,
-        pages=[3],
-        pandas_options={
-            "header": [0, 1],
-        },
+        pages=[3, 4],
+        multiple_tables=False,
+        pandas_options={"skipfooter": 1, "engine": "python"},
     )
-    part2 = tabula.read_pdf(
-        filename,
-        pages=[4],
-        pandas_options={
-            "header": [0, 1],
-            "skipfooter": 1,  # The last row is the total
-            "engine": "python",  # Only python engine supports 'skipfooter'
-        },
-    )
-    result = part1.append(part2, ignore_index=True)
 
-    result.columns = aggregate_ingest_utils.collapse_header(result.columns)
+    result.columns = [c.replace("\r", " ") for c in result.columns]
     result = aggregate_ingest_utils.rename_columns_and_select(
         result,
         {
@@ -92,6 +81,9 @@ def _parse_county_table(_: str, filename: str) -> pd.DataFrame:
             "*Date Reported": "date_reported",
         },
     )
+
+    # Drop rows from header on second table (page 4)
+    result = result[~result["county_name"].isin(("Florida", "County"))]
 
     for column_name in {"county_population", "average_daily_population"}:
         result[column_name] = result[column_name].apply(locale.atoi)
@@ -114,27 +106,18 @@ def _parse_facility_table(_: str, filename: str) -> pd.DataFrame:
         "Number Misdemeanor Pretrial",
         "Total Percent Pretrial",
     ]
-
-    part1 = tabula.read_pdf(
+    [result] = tabula.read_pdf(
         filename,
-        pages=[5],
+        pages=[5, 6],
+        multiple_tables=False,
         pandas_options={
-            "skiprows": [0, 1, 2],
+            "usecols": range(1, 6),
             "names": column_names,
+            "skiprows": [0],
+            "skipfooter": 2,
+            "engine": "python",
         },
     )
-    part2 = tabula.read_pdf(
-        filename,
-        pages=[6],
-        pandas_options={
-            "skiprows": [0, 1, 2],
-            "usecols": [0, 2, 3, 4, 5],  # Column 1 contains no data
-            "names": column_names,
-            "skipfooter": 2,  # The last 2 rows are the totals
-            "engine": "python",  # Only python engine supports 'skipfooter'
-        },
-    )
-    result = part1.append(part2, ignore_index=True)
 
     result = aggregate_ingest_utils.rename_columns_and_select(
         result,
@@ -145,6 +128,7 @@ def _parse_facility_table(_: str, filename: str) -> pd.DataFrame:
             "Number Misdemeanor Pretrial": "number_misdemeanor_pretrial",
         },
     )
+    result = result.replace("Detention\rFacility\rName", None).dropna(how="all")
 
     result["average_daily_population"] = (
         result["average_daily_population"].apply(_use_stale_adp).apply(_to_int)
@@ -180,10 +164,12 @@ def _parse_date(filename: str) -> datetime.date:
 def _use_stale_adp(adp_str: str) -> str:
     """Use adp values listed in Table 2 that are listed as stale."""
     # Stale values are marked with an '*', so strip all '*'
-    return adp_str.rstrip("*")
+    return adp_str.rstrip("*") if isinstance(adp_str, str) else adp_str
 
 
 def _to_int(int_str: str) -> Optional[int]:
+    if not isinstance(int_str, str):
+        return int_str
     try:
         return locale.atoi(int_str)
     except ValueError:
