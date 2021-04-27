@@ -68,10 +68,21 @@ export const FlexCardSection = styled(CardSection)`
   align-items: center;
 `;
 
-export const CardHeader = styled(CardSection)`
+export const FirstCardSection = styled(FlexCardSection)`
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: flex-start;
+
+  flex: 0 0 30% !important;
+`;
+
+export const SecondCardSection = styled(FlexCardSection)`
+  flex: 0 0 30% !important;
+`;
+
+export const ThirdCardSection = styled(FlexCardSection)`
+  flex: 0 1 40% !important;
 `;
 
 export const FirstClientListHeading = styled(H2)``;
@@ -115,6 +126,6 @@ export const InProgressIndicator = styled.div`
   background-color: ${palette.slate60};
 `;
 
-export const PendingText = styled.span`
+export const PendingText = styled.div`
   color: ${palette.slate70};
 `;
