@@ -92,7 +92,7 @@ class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
             region_code="us_xx",
             region_module=fake_regions_module,
         )
-        self.assertEqual(8, len(region_config.raw_file_configs))
+        self.assertEqual(9, len(region_config.raw_file_configs))
         self.assertEqual(
             {
                 "file_tag_first",
@@ -102,6 +102,7 @@ class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
                 "tagInvalidCharacters",
                 "tagNormalizationConflict",
                 "tagPipeSeparatedNonUTF8",
+                "tagDoubleDaggerWINDOWS1252",
                 "tagColumnsMissing",
             },
             set(region_config.raw_file_configs.keys()),
@@ -413,6 +414,45 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
                 self.project_id, "us_xx_raw_data"
             ),
             destination_table_id="tagPipeSeparatedNonUTF8",
+            destination_table_schema=[
+                bigquery.SchemaField("PRIMARY_COL1", "STRING", "NULLABLE"),
+                bigquery.SchemaField("COL2", "STRING", "NULLABLE"),
+                bigquery.SchemaField("COL3", "STRING", "NULLABLE"),
+                bigquery.SchemaField("COL4", "STRING", "NULLABLE"),
+                bigquery.SchemaField("file_id", "INTEGER", "REQUIRED"),
+                bigquery.SchemaField("update_datetime", "DATETIME", "REQUIRED"),
+            ],
+        )
+        self.assertEqual(5, self.num_lines_uploaded)
+        self._check_no_temp_files_remain()
+
+    def test_import_bq_file_with_multibyte_raw_file_alternate_separator_and_encoding(
+        self,
+    ) -> None:
+        file_path = path_for_fixture_file_in_test_gcs_directory(
+            bucket_path=self.ingest_bucket_path,
+            filename="tagDoubleDaggerWINDOWS1252.csv",
+            should_normalize=True,
+            file_type=GcsfsDirectIngestFileType.RAW_DATA,
+        )
+
+        fixture_util.add_direct_ingest_path(
+            self.fs.gcs_file_system, file_path, region_code=self.test_region.region_code
+        )
+
+        self.import_manager.import_raw_file_to_big_query(
+            file_path, self._metadata_for_unprocessed_file_path(file_path)
+        )
+
+        self.assertEqual(1, len(self.fs.gcs_file_system.uploaded_paths))
+        path = one(self.fs.gcs_file_system.uploaded_paths)
+
+        self.mock_big_query_client.insert_into_table_from_cloud_storage_async.assert_called_with(
+            source_uri=path.uri(),
+            destination_dataset_ref=bigquery.DatasetReference(
+                self.project_id, "us_xx_raw_data"
+            ),
+            destination_table_id="tagDoubleDaggerWINDOWS1252",
             destination_table_schema=[
                 bigquery.SchemaField("PRIMARY_COL1", "STRING", "NULLABLE"),
                 bigquery.SchemaField("COL2", "STRING", "NULLABLE"),
