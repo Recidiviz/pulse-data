@@ -18,7 +18,7 @@
 import styled from "styled-components/macro";
 import { palette } from "@recidiviz/design-system";
 
-export const BaseDueDate = styled.span`
+export const BaseDueDate = styled.div`
   color: ${palette.signal.links};
 `;
 
