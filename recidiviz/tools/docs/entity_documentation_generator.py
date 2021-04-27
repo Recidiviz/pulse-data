@@ -31,12 +31,16 @@ from typing import List
 import sqlalchemy
 from pytablewriter import MarkdownTableWriter
 
+import recidiviz
 from recidiviz.persistence.database.schema.state import (
     schema as state_schema,
 )
 from recidiviz.persistence.database.base_schema import StateBase
+from recidiviz.tools.docs.summary_file_generator import update_summary_file
 
-ENTITY_DOCS_ROOT = "docs/schema"
+ENTITY_DOCS_ROOT = os.path.join(
+    os.path.dirname(recidiviz.__file__), "..", "docs", "schema"
+)
 
 
 def generate_entity_documentation() -> bool:
@@ -79,37 +83,56 @@ def generate_entity_documentation() -> bool:
         )
         return writer.dumps()
 
-    documentation = "# Entity Documentation\n\n"
+    anything_modified = False
     for t in StateBase.metadata.sorted_tables:
-        documentation += f"## {t.name}\n\n"
+        documentation = f"## {t.name}\n\n"
         documentation += (
             f"{t.comment}\n\n"
             if t.comment
             else "TODO(#7120): FILL IN THIS DESCRIPTION\n\n"
         )
         documentation += f"{_get_fields(t.columns)}\n\n"
-
-    markdown_file_path = os.path.join(ENTITY_DOCS_ROOT, "entities.md")
-
-    anything_modified = False
-
-    if os.path.exists(markdown_file_path):
-        prior_documentation = ""
-        with open(markdown_file_path, "r") as raw_data_md_file:
-            prior_documentation = raw_data_md_file.read()
-
-        if prior_documentation != documentation:
-            with open(markdown_file_path, "w") as raw_data_md_file:
-                raw_data_md_file.write(documentation)
-                anything_modified = True
+        markdown_file_path = os.path.join(ENTITY_DOCS_ROOT, f"{t.name}.md")
+        if os.path.exists(markdown_file_path):
+            with open(markdown_file_path, "r") as raw_data_md_file:
+                prior_documentation = raw_data_md_file.read()
+            if prior_documentation != documentation:
+                with open(markdown_file_path, "w") as raw_data_md_file:
+                    raw_data_md_file.write(documentation)
+                    anything_modified = True
+        else:
+            raise ValueError(
+                f"File {t.name}.md does not exist in directory {ENTITY_DOCS_ROOT}"
+            )
 
     return anything_modified
 
 
 def main() -> int:
+    def _generate_entity_documentation_summary() -> str:
+        list_of_tables: str = "\n".join(
+            sorted(
+                f"\t - [{entity_table}](schema/{entity_table}.md)"
+                for entity_table in StateBase.metadata.sorted_tables
+            )
+        )
+        list_of_tables += "\n"
+        return list_of_tables
+
+    def _generate_summary_strings() -> List[str]:
+        entity_documentation_summary = ["## Schema Catalog\n\n"]
+        entity_documentation_summary.extend(["- entities\n"])
+        entity_documentation_summary.extend(_generate_entity_documentation_summary())
+        return entity_documentation_summary
+
     # TODO(#7083): Add check that schema.py has been modified before generating entity documentation.
     modified = False
     modified |= generate_entity_documentation()
+    if modified:
+        update_summary_file(
+            _generate_summary_strings(),
+            "## Schema Catalog",
+        )
     return 1 if modified else 0
 
 
