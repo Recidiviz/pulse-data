@@ -15,33 +15,65 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements tests for FutureExecutor. """
+from typing import Optional, Dict, List
 from unittest import TestCase, mock
 
 from recidiviz.utils.future_executor import FutureExecutor, FutureExecutorProgress
 
 
+def _mock_future(
+    return_value: Optional[int] = None, exception: Optional[BaseException] = None
+) -> Optional[int]:
+    if exception:
+        raise exception
+
+    return return_value
+
+
 class TestFutureExecutor(TestCase):
-    def setUp(self) -> None:
-        self.future = lambda return_value: return_value
+    """ Tests cases for the FutureExecutor """
 
     def test_progress(self) -> None:
         targets = [{"return_value": 0.1}, {"return_value": 0.2}, {"return_value": 0.3}]
         with FutureExecutor.build(
-            self.future,
+            _mock_future,
             targets,
             max_workers=1,
         ) as executor:
             self.assertEqual(
-                list(executor.progress()),
                 [
                     FutureExecutorProgress(running=mock.ANY, completed=1, total=3),
                     FutureExecutorProgress(running=mock.ANY, completed=2, total=3),
                     FutureExecutorProgress(running=mock.ANY, completed=3, total=3),
                 ],
+                list(executor.progress()),
             )
+
+    def test_progress_exception(self) -> None:
+        # Mypy infers this to be `object` without the explicit typing
+        targets: List[Dict] = [
+            {"return_value": 0.1},
+            {"return_value": 0.2},
+            {"exception": ValueError("oh no!")},
+        ]
+        with self.assertRaises(ValueError) as cm:
+            with FutureExecutor.build(
+                _mock_future,
+                targets,
+                max_workers=1,
+            ) as executor:
+                self.assertEqual(
+                    [
+                        FutureExecutorProgress(running=mock.ANY, completed=1, total=3),
+                        FutureExecutorProgress(running=mock.ANY, completed=2, total=3),
+                        FutureExecutorProgress(running=mock.ANY, completed=3, total=3),
+                    ],
+                    list(executor.progress()),
+                )
+        self.assertEqual(cm.exception.args[0], "oh no!")
 
     def test_results(self) -> None:
         targets = [{"return_value": 1}, {"return_value": 2}, {"return_value": 999}]
 
-        with FutureExecutor.build(self.future, targets, max_workers=1) as executor:
+        with FutureExecutor.build(_mock_future, targets, max_workers=1) as executor:
             self.assertEqual(executor.results(), [1, 2, 999])

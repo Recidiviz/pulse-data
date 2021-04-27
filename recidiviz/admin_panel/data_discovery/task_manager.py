@@ -16,6 +16,7 @@
 # =============================================================================
 """ Contains functions for enqueueing data discovery tasks """
 import abc
+import hashlib
 import json
 from typing import Any, Dict
 from urllib.parse import urljoin
@@ -54,7 +55,9 @@ def build_cache_ingest_file_as_parquet_task(
     gcs_file: GcsfsFilePath, separator: str, encoding: str, quoting: int
 ) -> Dict[str, Any]:
     return {
-        "task_id": gcs_file.file_name,
+        # Encode as hex to meet task name character requirements
+        # Based off of filename for task de-duplication
+        "task_id": hashlib.md5(gcs_file.file_name.encode("utf-8")).hexdigest(),
         "relative_uri": "/admin/data_discovery/cache_ingest_file_as_parquet_task",
         "body": {
             "gcs_file_uri": gcs_file.uri(),
