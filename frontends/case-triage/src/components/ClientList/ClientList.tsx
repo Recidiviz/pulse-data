@@ -66,7 +66,7 @@ const ClientList = () => {
   return (
     <>
       <ClientListContainer>
-        <FirstClientListHeading>Caseload</FirstClientListHeading>
+        <FirstClientListHeading>Up Next</FirstClientListHeading>
         <ClientListTableHeading>
           <span>Client</span>
           <span>Needs Met</span>
