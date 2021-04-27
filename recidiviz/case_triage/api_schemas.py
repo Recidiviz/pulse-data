@@ -23,6 +23,7 @@ from marshmallow.fields import Field
 from marshmallow_enum import EnumField
 
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
+from recidiviz.case_triage.opportunities.types import OpportunityType
 
 
 def camelcase(s: str) -> str:
@@ -47,6 +48,13 @@ class CaseUpdateSchema(CamelCaseSchema):
     person_external_id = fields.Str(required=True)
     action_type = EnumField(CaseUpdateActionType, by_value=True, required=True)
     comment = fields.Str(default=None)
+
+
+class DeferOpportunitySchema(CamelCaseSchema):
+    person_external_id = fields.Str(required=True)
+    opportunity_type = EnumField(OpportunityType, by_value=True, required=True)
+    defer_until = fields.DateTime(required=True)
+    request_reminder = fields.Boolean(required=True)
 
 
 def requires_api_schema(api_schema: Type[Schema]) -> Callable:

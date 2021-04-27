@@ -206,6 +206,7 @@ def main() -> int:
                 "recidiviz.backup",
                 "recidiviz.big_query",
                 "recidiviz.calculator",
+                "recidiviz.case_triage.opportunities.types",
                 "recidiviz.case_triage.ops_routes",
                 "recidiviz.case_triage.state_utils",
                 "recidiviz.case_triage.views",
