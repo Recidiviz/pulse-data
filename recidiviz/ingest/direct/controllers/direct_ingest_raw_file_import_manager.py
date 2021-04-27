@@ -28,6 +28,7 @@ import gcsfs
 import pandas as pd
 from google.api_core.exceptions import BadRequest
 from google.cloud import bigquery
+from google.oauth2.credentials import Credentials
 
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.cloud_functions.cloud_function_utils import GCSFS_NO_CACHING
@@ -386,6 +387,7 @@ class DirectIngestRawFileImportManager:
         big_query_client: BigQueryClient,
         region_raw_file_config: Optional[DirectIngestRegionRawFileConfig] = None,
         upload_chunk_size: int = _DEFAULT_BQ_UPLOAD_CHUNK_SIZE,
+        credentials: Optional[Credentials] = None,
     ):
 
         self.region = region
@@ -404,7 +406,9 @@ class DirectIngestRawFileImportManager:
         self.upload_chunk_size = upload_chunk_size
         self.csv_reader = GcsfsCsvReader(
             gcsfs.GCSFileSystem(
-                project=metadata.project_id(), cache_timeout=GCSFS_NO_CACHING
+                project=metadata.project_id(),
+                cache_timeout=GCSFS_NO_CACHING,
+                token=credentials,
             )
         )
         self.raw_table_migrations = DirectIngestRawTableMigrationCollector(
@@ -433,6 +437,9 @@ class DirectIngestRawFileImportManager:
     @classmethod
     def raw_tables_dataset_for_region(cls, region_code: str) -> str:
         return f"{region_code.lower()}_raw_data"
+
+    def _raw_tables_dataset(self) -> str:
+        return self.raw_tables_dataset_for_region(self.region.region_code)
 
     def import_raw_file_to_big_query(
         self, path: GcsfsFilePath, file_metadata: DirectIngestRawFileMetadata
@@ -513,7 +520,7 @@ class DirectIngestRawFileImportManager:
         logging.info("Starting chunked load of contents to BigQuery")
         temp_output_paths = [path for path, _ in temp_paths_with_columns]
         temp_path_to_load_job: Dict[GcsfsFilePath, bigquery.LoadJob] = {}
-        dataset_id = self.raw_tables_dataset_for_region(self.region.region_code)
+        dataset_id = self._raw_tables_dataset()
 
         try:
             for i, (temp_output_path, columns) in enumerate(temp_paths_with_columns):

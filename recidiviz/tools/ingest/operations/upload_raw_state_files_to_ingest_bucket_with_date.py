@@ -23,7 +23,8 @@ Example usage (run from `pipenv shell`):
 
 python -m recidiviz.tools.ingest.operations.upload_raw_state_files_to_ingest_bucket_with_date \
     ~/Downloads/MyHistoricalDump/ --date 2019-08-12 \
-    --project-id recidiviz-staging --region us_nd --dry-run True
+    --project-id recidiviz-staging --region us_nd --dry-run True \
+    [--destination-bucket recidiviz-staging-my-test-bucket]
 """
 import argparse
 import datetime
@@ -34,14 +35,15 @@ from typing import Optional, List, Tuple
 
 from progress.bar import Bar
 
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import (
+    GcsfsFilePath,
+    GcsfsBucketPath,
+)
 from recidiviz.ingest.direct.controllers.base_upload_state_files_to_ingest_bucket_controller import (
     BaseUploadStateFilesToIngestBucketController,
 )
 from recidiviz.tools.gsutil_shell_helpers import gsutil_cp
 from recidiviz.utils.params import str_to_bool
-
-# pylint: disable=not-callable
 
 
 class ManualUploadStateFilesToIngestBucketController(
@@ -50,7 +52,13 @@ class ManualUploadStateFilesToIngestBucketController(
     """Class with functionality to upload a file or files from a local filesystem to a region's ingest bucket."""
 
     def __init__(
-        self, paths: str, project_id: str, region: str, date: str, dry_run: bool
+        self,
+        paths: str,
+        project_id: str,
+        region: str,
+        date: str,
+        dry_run: bool,
+        destination_bucket_override: Optional[GcsfsBucketPath],
     ):
         super().__init__(
             paths_with_timestamps=[
@@ -58,6 +66,7 @@ class ManualUploadStateFilesToIngestBucketController(
             ],
             project_id=project_id,
             region=region,
+            destination_bucket_override=destination_bucket_override,
         )
 
         self.dry_run = dry_run
@@ -88,6 +97,7 @@ class ManualUploadStateFilesToIngestBucketController(
 
         with self.mutex:
             if self.move_progress:
+                # pylint: disable=not-callable
                 self.move_progress.next()
 
     def get_paths_to_upload(self) -> List[Tuple[str, datetime.datetime]]:
@@ -165,28 +175,52 @@ def main() -> None:
         default=True,
         help="Whether or not to run this script in dry run (log only) mode.",
     )
+    parser.add_argument(
+        "--destination-bucket",
+        type=str,
+        default=True,
+        help="Override destination bucket for the upload. Can be used to upload files "
+        "to an arbitrary testing bucket with normalized names.",
+    )
+
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
+    override_bucket = (
+        GcsfsBucketPath(args.destination_bucket) if args.destination_bucket else None
+    )
     controller = ManualUploadStateFilesToIngestBucketController(
         paths=args.paths,
         project_id=args.project_id,
         region=args.region,
         date=args.date,
         dry_run=args.dry_run,
+        destination_bucket_override=override_bucket,
     )
 
     if controller.dry_run:
         logging.info("Running in DRY RUN mode for region [%s]", controller.region)
     else:
         i = input(
-            f"This will upload raw files to the [{controller.region}] ingest bucket [{controller.gcs_destination_path.uri()}] "
-            f"with datetime [{args.date}]. Type {controller.project_id} to continue: "
+            f"This will upload raw files to the [{controller.region}] ingest bucket "
+            f"[{controller.destination_ingest_bucket.uri()}] with datetime "
+            f"[{args.date}]. Type {controller.project_id} to continue: "
         )
 
         if i != controller.project_id:
             return
+
+    if override_bucket:
+        if not controller.dry_run:
+            i = input(
+                f"Are you sure you want to upload to non-standard bucket "
+                f"[{controller.destination_ingest_bucket.uri()}]?. Type "
+                f"{controller.destination_ingest_bucket.bucket_name} to continue: "
+            )
+
+            if i != controller.destination_ingest_bucket.bucket_name:
+                return
 
     msg_prefix = "DRY_RUN: " if controller.dry_run else ""
     controller.move_progress = Bar(
