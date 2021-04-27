@@ -57,6 +57,7 @@ class BaseUploadStateFilesToIngestBucketController:
         paths_with_timestamps: List[Tuple[str, datetime.datetime]],
         project_id: str,
         region: str,
+        destination_bucket_override: Optional[GcsfsBucketPath] = None,
     ):
         self.paths_with_timestamps = paths_with_timestamps
         self.project_id = project_id
@@ -65,11 +66,14 @@ class BaseUploadStateFilesToIngestBucketController:
         self.gcsfs = DirectIngestGCSFileSystem(GcsfsFactory.build())
 
         # Raw data uploads always default to primary ingest bucket
-        self.gcs_destination_path = gcsfs_direct_ingest_bucket_for_region(
-            region_code=region,
-            system_level=SystemLevel.STATE,
-            ingest_instance=DirectIngestInstance.PRIMARY,
-            project_id=self.project_id,
+        self.destination_ingest_bucket = (
+            destination_bucket_override
+            or gcsfs_direct_ingest_bucket_for_region(
+                region_code=region,
+                system_level=SystemLevel.STATE,
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                project_id=self.project_id,
+            )
         )
 
         self.uploaded_files: List[str] = []
@@ -92,7 +96,7 @@ class BaseUploadStateFilesToIngestBucketController:
             )
         )
         full_file_upload_path = GcsfsFilePath.from_directory_and_file_name(
-            self.gcs_destination_path, normalized_file_name
+            self.destination_ingest_bucket, normalized_file_name
         )
         self._copy_to_ingest_bucket(path, full_file_upload_path)
 
@@ -120,7 +124,7 @@ class BaseUploadStateFilesToIngestBucketController:
         logging.info(
             "Uploading raw files to the %s ingest bucket [%s] for project [%s].",
             self.region,
-            self.gcs_destination_path.uri(),
+            self.destination_ingest_bucket.uri(),
             self.project_id,
         )
 
@@ -128,7 +132,7 @@ class BaseUploadStateFilesToIngestBucketController:
         logging.info(
             "Found %s items to upload to ingest bucket [%s]",
             len(paths_with_timestamps_to_upload),
-            self.gcs_destination_path.uri(),
+            self.destination_ingest_bucket.uri(),
         )
 
         thread_pool = ThreadPool(processes=12)
@@ -142,7 +146,7 @@ class BaseUploadStateFilesToIngestBucketController:
             "Upload complete, successfully uploaded %s files to ingest bucket [%s], "
             "could not upload %s files, skipped %s files",
             len(self.uploaded_files),
-            self.gcs_destination_path.uri(),
+            self.destination_ingest_bucket.uri(),
             len(self.unable_to_upload_files),
             len(self.skipped_files),
         )
@@ -168,9 +172,8 @@ class UploadStateFilesToIngestBucketController(
             paths_with_timestamps=paths_with_timestamps,
             project_id=project_id,
             region=region,
+            destination_bucket_override=gcs_destination_path,
         )
-        if gcs_destination_path:
-            self.gcs_destination_path = gcs_destination_path
         self.postgres_direct_ingest_file_metadata_manager = (
             PostgresDirectIngestRawFileMetadataManager(region)
         )
@@ -239,7 +242,7 @@ class UploadStateFilesToIngestBucketController(
                 logging.warning(
                     "Could not indicate %s as a directory or a file in %s. Skipping",
                     path,
-                    self.gcs_destination_path.uri(),
+                    self.destination_ingest_bucket.uri(),
                 )
                 self.unable_to_upload_files.append(path)
                 continue
