@@ -45,7 +45,7 @@ class PolicyRequirementsSchema(CamelCaseSchema):
 
 class CaseUpdateSchema(CamelCaseSchema):
     person_external_id = fields.Str(required=True)
-    action_type = EnumField(CaseUpdateActionType, required=True)
+    action_type = EnumField(CaseUpdateActionType, by_value=True, required=True)
     comment = fields.Str(default=None)
 
 

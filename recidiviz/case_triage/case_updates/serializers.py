@@ -15,54 +15,42 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements common serializers for different CaseUpdate subtypes."""
-from typing import Callable, Dict
+from typing import Dict
 
 from recidiviz.case_triage.case_updates.types import (
     CaseUpdateActionType,
-    LastVersionData,
+    CaseActionVersionData,
 )
 from recidiviz.persistence.database.schema.case_triage.schema import ETLClient
 
+assessment_mappings = {"last_recorded_date": "most_recent_assessment_date"}
+contact_mappings = {"last_recorded_date": "most_recent_face_to_face_date"}
+employment_mappings = {"last_employer": "employer"}
+supervision_level_mappings = {"last_supervision_level": "supervision_level"}
 
-def _default_user_initiated_action_serializer(_client: ETLClient) -> LastVersionData:
-    return LastVersionData()
-
-
-def _completed_assessment_serializer(client: ETLClient) -> LastVersionData:
-    return LastVersionData(last_recorded_date=client.most_recent_assessment_date)
-
-
-def _discharge_initiated_serializer(_client: ETLClient) -> LastVersionData:
+_ACTION_TYPE_TO_MAPPINGS: Dict[CaseUpdateActionType, Dict[str, str]] = {
+    # Risk assessment serializers
+    CaseUpdateActionType.COMPLETED_ASSESSMENT: assessment_mappings,
+    CaseUpdateActionType.INCORRECT_ASSESSMENT_DATA: assessment_mappings,
+    # Employment serializers
+    CaseUpdateActionType.FOUND_EMPLOYMENT: employment_mappings,
+    CaseUpdateActionType.INCORRECT_EMPLOYMENT_DATA: employment_mappings,
+    # Face to face contact serializers
+    CaseUpdateActionType.SCHEDULED_FACE_TO_FACE: contact_mappings,
+    CaseUpdateActionType.INCORRECT_CONTACT_DATA: contact_mappings,
     # TODO(#5721): Figure out what additional metadata is needed
-    return LastVersionData()
-
-
-def _downgrade_initiated_serializer(client: ETLClient) -> LastVersionData:
-    return LastVersionData(last_supervision_level=client.supervision_level)
-
-
-def _scheduled_face_to_face_serializer(client: ETLClient) -> LastVersionData:
-    return LastVersionData(last_recorded_date=client.most_recent_face_to_face_date)
-
-
-_USER_INITIATED_ACTION_TO_SERIALIZER: Dict[
-    CaseUpdateActionType,
-    Callable[[ETLClient], LastVersionData],
-] = {
-    CaseUpdateActionType.COMPLETED_ASSESSMENT: _completed_assessment_serializer,
-    CaseUpdateActionType.DISCHARGE_INITIATED: _discharge_initiated_serializer,
-    CaseUpdateActionType.DOWNGRADE_INITIATED: _downgrade_initiated_serializer,
-    CaseUpdateActionType.FOUND_EMPLOYMENT: _default_user_initiated_action_serializer,
-    CaseUpdateActionType.SCHEDULED_FACE_TO_FACE: _scheduled_face_to_face_serializer,
-    CaseUpdateActionType.INFORMATION_DOESNT_MATCH_OMS: _default_user_initiated_action_serializer,
-    CaseUpdateActionType.NOT_ON_CASELOAD: _default_user_initiated_action_serializer,
-    CaseUpdateActionType.FILED_REVOCATION_OR_VIOLATION: _default_user_initiated_action_serializer,
-    CaseUpdateActionType.OTHER_DISMISSAL: _default_user_initiated_action_serializer,
+    CaseUpdateActionType.DISCHARGE_INITIATED: {},
+    CaseUpdateActionType.DOWNGRADE_INITIATED: supervision_level_mappings,
+    CaseUpdateActionType.NOT_ON_CASELOAD: {},
+    CaseUpdateActionType.CURRENTLY_IN_CUSTODY: {},
+    CaseUpdateActionType.DEPRECATED__INFORMATION_DOESNT_MATCH_OMS: {},
+    CaseUpdateActionType.DEPRECATED__FILED_REVOCATION_OR_VIOLATION: {},
+    CaseUpdateActionType.DEPRECATED__OTHER_DISMISSAL: {},
 }
 
 
-def serialize_last_version_info(
+def serialize_client_case_version(
     action: CaseUpdateActionType, client: ETLClient
-) -> LastVersionData:
-    serializer = _USER_INITIATED_ACTION_TO_SERIALIZER[action]
-    return serializer(client)
+) -> CaseActionVersionData:
+    mappings = _ACTION_TYPE_TO_MAPPINGS[action]
+    return CaseActionVersionData.from_client_mappings(mappings, client)
