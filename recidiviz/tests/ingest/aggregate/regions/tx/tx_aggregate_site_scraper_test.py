@@ -15,22 +15,28 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for tx_aggregate_ingest.py."""
+from datetime import date
 from unittest import TestCase
-from mock import patch, Mock
+
 import requests
+from mock import patch, Mock
 
 from recidiviz.ingest.aggregate.regions.tx import tx_aggregate_site_scraper
 from recidiviz.tests.ingest import fixtures
+
+_TODAY = date(2021, 4, 1)
 
 
 class TestTxAggregateSiteScraper(TestCase):
     """Test that tx_aggregate_site_scraper correctly scrapes urls."""
 
     @patch.object(requests, "get")
-    def testGetAllUrls(self, mockget: Mock) -> None:
+    @patch("datetime.date")
+    def testGetAllUrls(self, mock_date: Mock, mockget: Mock) -> None:
         mockresponse = Mock()
         mockget.return_value = mockresponse
         mockresponse.text = fixtures.as_string("aggregate/regions/tx", "reports.html")
+        mock_date.today.return_value = _TODAY
         url1 = (
             "https://www.tcjs.state.tx.us/docs/AbbreviatedPopReports/"
             "Abbreviated Pop Rpt June 2020.pdf"
@@ -39,7 +45,8 @@ class TestTxAggregateSiteScraper(TestCase):
             "https://www.tcjs.state.tx.us/docs/AbbreviatedPopReports/"
             "Abbreviated Pop Rpt Jan 2021.pdf"
         )
-        expected_urls = {url1, url2}
+        url3 = "https://www.tcjs.state.tx.us/wp-content/uploads/2021/04/AbbreRptCurrent.pdf"
+        expected_urls = {url1, url2, url3}
 
         urls = tx_aggregate_site_scraper.get_urls_to_download()
         self.assertEqual(expected_urls, urls)
