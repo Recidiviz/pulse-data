@@ -77,7 +77,9 @@ from google.cloud.bigquery import QueryJob
 from more_itertools import peekable
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE
+from recidiviz.view_registry.deployed_views import (
+    DEPLOYED_VIEW_BUILDERS,
+)
 from recidiviz.calculator.query.state.views.dashboard.supervision.us_nd.average_change_lsir_score_by_month import (
     AVERAGE_CHANGE_LSIR_SCORE_MONTH_VIEW_BUILDER,
 )
@@ -180,86 +182,83 @@ def compare_metric_view_output_to_sandbox(
     query_jobs: List[Tuple[QueryJob, str]] = []
     skipped_views: List[str] = []
 
-    for view_builders in DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE.values():
-        for view_builder in view_builders:
-            # Only compare output of metric views
-            if not isinstance(view_builder, MetricBigQueryViewBuilder):
-                continue
+    for view_builder in DEPLOYED_VIEW_BUILDERS:
+        # Only compare output of metric views
+        if not isinstance(view_builder, MetricBigQueryViewBuilder):
+            continue
 
-            if dataset_id_filters and view_builder.dataset_id not in dataset_id_filters:
-                continue
+        if dataset_id_filters and view_builder.dataset_id not in dataset_id_filters:
+            continue
 
-            if view_builder in VIEW_BUILDERS_WITH_KNOWN_NOT_DETERMINISTIC_OUTPUT:
-                logging.warning(
-                    "View %s.%s has known non-deterministic output. Skipping output comparison.",
-                    view_builder.dataset_id,
-                    view_builder.view_id,
-                )
-                skipped_views.append(
-                    f"{view_builder.dataset_id}.{view_builder.view_id}"
-                )
-                continue
+        if view_builder in VIEW_BUILDERS_WITH_KNOWN_NOT_DETERMINISTIC_OUTPUT:
+            logging.warning(
+                "View %s.%s has known non-deterministic output. Skipping output comparison.",
+                view_builder.dataset_id,
+                view_builder.view_id,
+            )
+            skipped_views.append(f"{view_builder.dataset_id}.{view_builder.view_id}")
+            continue
 
-            sandbox_dataset_id = sandbox_dataset_prefix + "_" + view_builder.dataset_id
+        sandbox_dataset_id = sandbox_dataset_prefix + "_" + view_builder.dataset_id
 
-            if not bq_client.dataset_exists(
-                bq_client.dataset_ref_for_id(sandbox_dataset_id)
-            ):
-                raise ValueError(
-                    f"Trying to compare output to a sandbox dataset that does not exist: "
-                    f"{bq_client.project_id}.{sandbox_dataset_id}"
-                )
-
-            if view_builder.should_materialize and not check_determinism:
-                view = view_builder.build()
-                if not view.materialized_address:
-                    raise ValueError(
-                        f"Unexpected empty materialized_address for " f"{view_builder}."
-                    )
-                base_dataset_id = view.materialized_address.dataset_id
-                base_view_id = view.materialized_address.table_id
-            else:
-                base_dataset_id, base_view_id = (
-                    view_builder.dataset_id,
-                    view_builder.view_id,
-                )
-
-            base_dataset_ref = bq_client.dataset_ref_for_id(base_dataset_id)
-
-            if not check_determinism and not bq_client.table_exists(
-                base_dataset_ref, base_view_id
-            ):
-                logging.warning(
-                    "View %s.%s does not exist. Skipping output comparison.",
-                    base_dataset_ref.dataset_id,
-                    base_view_id,
-                )
-                skipped_views.append(f"{base_dataset_id}.{base_view_id}")
-                continue
-
-            if not bq_client.table_exists(
-                bq_client.dataset_ref_for_id(sandbox_dataset_id), base_view_id
-            ):
-                logging.warning(
-                    "View %s.%s does not exist in sandbox. Skipping output comparison.",
-                    sandbox_dataset_id,
-                    base_view_id,
-                )
-                skipped_views.append(f"{sandbox_dataset_id}.{base_view_id}")
-                continue
-            query_job, output_table_id = _view_output_comparison_job(
-                bq_client,
-                view_builder,
-                base_view_id,
-                base_dataset_id,
-                sandbox_dataset_id,
-                sandbox_comparison_output_dataset_id,
-                check_determinism,
-                allow_schema_changes,
+        if not bq_client.dataset_exists(
+            bq_client.dataset_ref_for_id(sandbox_dataset_id)
+        ):
+            raise ValueError(
+                f"Trying to compare output to a sandbox dataset that does not exist: "
+                f"{bq_client.project_id}.{sandbox_dataset_id}"
             )
 
-            # Add query job to the list of running jobs
-            query_jobs.append((query_job, output_table_id))
+        if view_builder.should_materialize and not check_determinism:
+            view = view_builder.build()
+            if not view.materialized_address:
+                raise ValueError(
+                    f"Unexpected empty materialized_address for " f"{view_builder}."
+                )
+            base_dataset_id = view.materialized_address.dataset_id
+            base_view_id = view.materialized_address.table_id
+        else:
+            base_dataset_id, base_view_id = (
+                view_builder.dataset_id,
+                view_builder.view_id,
+            )
+
+        base_dataset_ref = bq_client.dataset_ref_for_id(base_dataset_id)
+
+        if not check_determinism and not bq_client.table_exists(
+            base_dataset_ref, base_view_id
+        ):
+            logging.warning(
+                "View %s.%s does not exist. Skipping output comparison.",
+                base_dataset_ref.dataset_id,
+                base_view_id,
+            )
+            skipped_views.append(f"{base_dataset_id}.{base_view_id}")
+            continue
+
+        if not bq_client.table_exists(
+            bq_client.dataset_ref_for_id(sandbox_dataset_id), base_view_id
+        ):
+            logging.warning(
+                "View %s.%s does not exist in sandbox. Skipping output comparison.",
+                sandbox_dataset_id,
+                base_view_id,
+            )
+            skipped_views.append(f"{sandbox_dataset_id}.{base_view_id}")
+            continue
+        query_job, output_table_id = _view_output_comparison_job(
+            bq_client,
+            view_builder,
+            base_view_id,
+            base_dataset_id,
+            sandbox_dataset_id,
+            sandbox_comparison_output_dataset_id,
+            check_determinism,
+            allow_schema_changes,
+        )
+
+        # Add query job to the list of running jobs
+        query_jobs.append((query_job, output_table_id))
 
     for query_job, output_table_id in query_jobs:
         # Wait for the insert job to complete before looking for the table

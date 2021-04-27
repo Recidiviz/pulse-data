@@ -22,16 +22,15 @@ python -m recidiviz.tools.display_bq_dag_for_view --project_id recidiviz-staging
 """
 import argparse
 import logging
-from typing import List
 
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker, DagKey
-from recidiviz.big_query.big_query_view import BigQueryViewBuilder, BigQueryAddress
+from recidiviz.big_query.big_query_view import BigQueryAddress
 from recidiviz.big_query.view_update_manager import (
     _build_views_to_update,
 )
 from recidiviz.view_registry.deployed_views import (
-    DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE,
     NOISY_DEPENDENCY_VIEW_BUILDERS,
+    DEPLOYED_VIEW_BUILDERS,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
 from recidiviz.utils.metadata import local_project_id_override
@@ -39,23 +38,20 @@ from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 
 
 def build_dag_walker(dataset_id: str, view_id: str) -> BigQueryViewDagWalker:
-    view_builders_for_dag: List[BigQueryViewBuilder] = []
     is_valid_view = False
-    for _, builders in DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE.items():
-        view_builders_for_dag.extend(builders)
-        for builder in builders:
-            if (
-                not is_valid_view
-                and builder.dataset_id == dataset_id
-                and builder.view_id == view_id
-            ):
-                is_valid_view = True
+    for builder in DEPLOYED_VIEW_BUILDERS:
+        if (
+            not is_valid_view
+            and builder.dataset_id == dataset_id
+            and builder.view_id == view_id
+        ):
+            is_valid_view = True
     if not is_valid_view:
         raise ValueError(f"invalid view {dataset_id}.{view_id}")
     return BigQueryViewDagWalker(
         _build_views_to_update(
             view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-            candidate_view_builders=view_builders_for_dag,
+            candidate_view_builders=DEPLOYED_VIEW_BUILDERS,
             dataset_overrides=None,
         )
     )

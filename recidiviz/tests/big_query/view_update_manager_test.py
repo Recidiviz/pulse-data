@@ -33,7 +33,7 @@ from recidiviz.big_query.big_query_view import (
 )
 from recidiviz.tools.utils.dataset_overrides import dataset_overrides_for_view_builders
 from recidiviz.view_registry.deployed_views import (
-    DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE,
+    DEPLOYED_VIEW_BUILDERS,
 )
 from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 from recidiviz.ingest.direct.views.normalized_direct_ingest_big_query_view_types import (
@@ -534,10 +534,9 @@ class ViewManagerTest(unittest.TestCase):
         ) as mock_table_exists:
             mock_table_has_column.return_value = True
             mock_table_exists.return_value = True
-            all_views = []
-            for view_builder_list in DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE.values():
-                for view_builder in view_builder_list:
-                    all_views.append(view_builder.build())
+            all_views = [
+                view_builder.build() for view_builder in DEPLOYED_VIEW_BUILDERS
+            ]
 
         expected_keys: Set[Tuple[str, str]] = set()
         for view in all_views:
@@ -546,16 +545,15 @@ class ViewManagerTest(unittest.TestCase):
             expected_keys.add(dag_key)
 
     def test_no_views_in_source_data_datasets(self) -> None:
-        for view_builder_list in DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE.values():
-            for view_builder in view_builder_list:
-                # TODO(#6314): Remove this check once we delete the us_pa_supervision_period_TEMP view
-                if isinstance(
-                    view_builder, NormalizedDirectIngestPreProcessedIngestViewBuilder
-                ):
-                    continue
+        for view_builder in DEPLOYED_VIEW_BUILDERS:
+            # TODO(#6314): Remove this check once we delete the us_pa_supervision_period_TEMP view
+            if isinstance(
+                view_builder, NormalizedDirectIngestPreProcessedIngestViewBuilder
+            ):
+                continue
 
-                self.assertNotIn(
-                    view_builder.dataset_id,
-                    VIEW_SOURCE_TABLE_DATASETS,
-                    f"Found view [{view_builder.view_id}] in source-table-only dataset [{view_builder.dataset_id}]",
-                )
+            self.assertNotIn(
+                view_builder.dataset_id,
+                VIEW_SOURCE_TABLE_DATASETS,
+                f"Found view [{view_builder.view_id}] in source-table-only dataset [{view_builder.dataset_id}]",
+            )
