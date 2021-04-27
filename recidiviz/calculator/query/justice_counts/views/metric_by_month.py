@@ -16,7 +16,8 @@
 # =============================================================================
 """Provides a template for calculating a Justice Counts metric by month."""
 
-from typing import Dict, Iterable, List, Type
+import enum
+from typing import Dict, Iterable, List, Set, Type
 
 import attr
 
@@ -29,7 +30,7 @@ from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.tools.justice_counts import manual_upload
 
 
-CALCULATED_METRIC_BY_MONTH_TEMPLATE = """
+FETCH_AND_FILTER_METRIC_VIEW_TEMPLATE = """
 /*{description}*/
 
 -- FETCH DATA
@@ -50,8 +51,9 @@ WITH sufficient_table_defs as (
     {input_required_dimensions_clause}
 ),
 
--- Gets the cells for these table definitions and flattens the filtered and aggregated dimensions into a single set of
--- dimensions, represented as an array of dimension identifiers and a parallel array of values.
+-- Gets the cells for these table definitions and flattens the filtered and aggregated
+-- dimensions into a single set of dimensions, represented as an array of dimension
+-- identifiers and a parallel array of values.
 flattened as (
   SELECT
     instance.id as instance_id, cell.id as cell_id,
@@ -69,82 +71,337 @@ flattened as (
 flattened_zipped as (
   SELECT
     instance_id, cell_id,
-    -- Aggregate the unnested dimensions into a single array for that cell, pulling in the dimension value as well
-    ARRAY_AGG(STRUCT<dimension string, dimension_value string>(dimension, dimension_values[OFFSET(dimension_offset)])) as dimension_values,
-    -- Each cell only has a single value, which has been exploded out to multiple rows. Since we are grouping by cell we
-    -- can just pick any value since they are all the same
+    -- Aggregate the unnested dimensions into a single array for that cell, pulling in
+    -- the dimension value as well
+    ARRAY_AGG(
+        STRUCT<dimension string, dimension_value string>(dimension, dimension_values[OFFSET(dimension_offset)])
+    ) as dimensions,
+    -- Each cell only has a single value, which has been exploded out to multiple rows.
+    -- Since we are grouping by cell we can just pick any value since they are all the same
     ANY_VALUE(value) as value
   FROM flattened, UNNEST(dimensions) AS dimension WITH OFFSET dimension_offset
   GROUP BY instance_id, cell_id
-),
+)
 
 -- FILTER DATA
 -- Filters the cells to only those that match the provided filters.
-filtered_values as (
-  SELECT instance_id, cell_id, dimension_values, value
-  FROM (
-    SELECT
-      *, ARRAY(
-        SELECT dimension_value FROM UNNEST(dimension_values)
-        -- Filters the dimension array, only keeping ones that match the filters.
-        WHERE {dimensions_match_filter_clause}
-      ) as matching_filters
-    FROM flattened_zipped
-  ) as matched
-  -- Only keep cells where with all filters present.
-  WHERE ARRAY_LENGTH(matched.matching_filters) = {num_filtered_dimensions}
-),
-
--- SPATIAL AGGREGATION
--- Note: Right now we do spatial then time which works because we don't ever do spatial aggregation across tables.
-aggregated_values as (
+SELECT instance_id, cell_id, dimensions, value
+FROM (
   SELECT
-    instance_id,
-    ANY_VALUE(grouped_dimensions) as dimensions,
+    *, ARRAY(
+      SELECT dimension_value FROM UNNEST(dimensions)
+      -- Filters the dimension array, only keeping ones that match the filters.
+      WHERE {dimensions_match_filter_clause}
+    ) as matching_filters
+  FROM flattened_zipped
+) as matched
+-- Only keep cells where with all filters present.
+WHERE ARRAY_LENGTH(matched.matching_filters) = {num_filtered_dimensions}
+"""
+
+
+class FetchAndFilterMetricViewBuilder(SimpleBigQueryViewBuilder):
+    """Factory class for building views that fetch and filter to relevant data for a metric.
+
+    Reads directly from the justice counts base dataset. Output has the following columns:
+    * instance_id: The report instance that the data is from
+    * cell_id: The cell the data is from
+    * dimensions: The dimensions of the data, including both filtered and aggregated dimensions
+        in the form ARRAY<STRUCT<dimension string, dimension_value string>>
+
+    Example Output:
+
+    | instance_id | cell_id | dimensions                                                                                    | value |
+    | ----------- | ------- | --------------------------------------------------------------------------------------------- | ----- |
+    | 1           | 1       | [("global/location/state", "US_XX")]                                                          | 4     |
+    | 1           | 2       | [("global/location/state", "US_YY")]                                                          | 5     |
+    | 2           | 3       | [("global/location/state", "US_ZZ"), ("global/gender", "FEMALE"), ("global/gender/raw", "F")] | 6     |
+    """
+
+    def __init__(
+        self, *, dataset_id: str, metric_to_calculate: "CalculatedMetricByMonth"
+    ):
+        # For determining which table definitions can be used.
+        input_allowed_filters = ", ".join(
+            [
+                f"'{dimension.dimension_identifier()}'"
+                for dimension in metric_to_calculate.input_allowed_filters
+            ]
+        )
+
+        input_required_dimension_conditions: List[str] = []
+        for aggregation in metric_to_calculate.input_required_aggregations:
+            columns = ["aggregated_dimensions"]
+            if not aggregation.comprehensive:
+                columns.append("filtered_dimensions")
+            input_required_dimension_conditions.append(
+                f"AND '{aggregation.dimension.dimension_identifier()}' "
+                f"IN UNNEST(ARRAY_CONCAT({', '.join(columns)}))"
+            )
+        input_required_dimensions_clause = " ".join(input_required_dimension_conditions)
+
+        # For filtering data
+        if metric_to_calculate.filtered_dimensions:
+            dimensions_match_filter_clause = " OR ".join(
+                [
+                    f"(dimension = '{dimension.dimension_identifier()}' "
+                    f"AND dimension_value = '{dimension.dimension_value}')"
+                    for dimension in metric_to_calculate.filtered_dimensions
+                ]
+            )
+        else:
+            dimensions_match_filter_clause = "FALSE"
+
+        super().__init__(
+            dataset_id=dataset_id,
+            view_id=f"{metric_to_calculate.view_prefix}_fetch",
+            view_query_template=FETCH_AND_FILTER_METRIC_VIEW_TEMPLATE,
+            # Query Format Arguments
+            description=f"{metric_to_calculate.output_name} raw data",
+            base_dataset=dataset_config.JUSTICE_COUNTS_BASE_DATASET,
+            system=metric_to_calculate.system.value,
+            metric_type=metric_to_calculate.metric.value,
+            input_allowed_filters=input_allowed_filters,
+            input_required_dimensions_clause=input_required_dimensions_clause,
+            dimensions_match_filter_clause=dimensions_match_filter_clause,
+            num_filtered_dimensions=str(len(metric_to_calculate.filtered_dimensions)),
+        )
+
+
+SPATIAL_AGGREGATION_VIEW_TEMPLATE = """
+/*{description}*/
+
+SELECT
+    {partition_columns_clause}{select_columns_clause}
     ANY_VALUE(num_original_dimensions) as num_original_dimensions,
-    ARRAY_CONCAT_AGG(collapsed_dimension_values ORDER BY ARRAY_TO_STRING(collapsed_dimension_values, '|')) as collapsed_dimension_values,
-    SUM(value) as value
-  FROM (
+    ANY_VALUE(grouped_dimensions) AS dimensions,
+    dimensions_string,
+    ARRAY_CONCAT_AGG(
+        collapsed_dimension_values ORDER BY ARRAY_TO_STRING(collapsed_dimension_values, '|')
+    ) AS collapsed_dimension_values,
+    {value_columns_clause}
+FROM (
     SELECT
-      instance_id, cell_id, ARRAY_LENGTH(dimension_values) as num_original_dimensions,
-      -- Rebuild the dimensions array, only including dimensions we want to aggregate by
-      ARRAY(
-        SELECT STRUCT<dimension string, dimension_value string>(dimension, dimension_value) FROM UNNEST(dimension_values)
-        WHERE dimension IN ({aggregated_dimension_identifiers})
-      ) as grouped_dimensions,
-      ARRAY(
-        SELECT dimension_value FROM UNNEST(dimension_values)
-        WHERE ENDS_WITH(dimension, '/raw')
-      ) as collapsed_dimension_values,
-      value
-    FROM filtered_values) as grouped
-  -- BigQuery doesn't allow grouping by an array, so we build a string instead. Uses '|' as a delimeter, relying on this
-  -- not being present in dimension values to avoid conflicts.
-  GROUP BY
-    instance_id,
-    ARRAY_TO_STRING(ARRAY(SELECT dimension_value FROM UNNEST(grouped_dimensions) ORDER BY dimension), '|')
-),
+        *,
+        -- BigQuery doesn't allow grouping by an array, so we build a string instead.
+        -- Uses '|' as a delimeter, relying on this not being present in dimension
+        -- values to avoid conflicts.
+        ARRAY_TO_STRING(ARRAY(SELECT dimension_value FROM UNNEST(grouped_dimensions)
+                              ORDER BY dimension), '|') AS dimensions_string
+    FROM (
+        SELECT
+            {all_columns_clause}
+            ARRAY_LENGTH(dimensions) as num_original_dimensions,
+            ARRAY(
+                SELECT dimension_struct
+                FROM UNNEST(dimensions) dimension_struct
+                -- If should_group is False, then this is an original row we should keep
+                -- as is, otherwise we should only keep the specified dimensions.
+                WHERE NOT should_group OR dimension_struct.dimension IN ({dimensions_to_keep_clause})
+            ) AS grouped_dimensions,
+            ARRAY(
+                SELECT dimension_value
+                FROM UNNEST(dimensions)
+                WHERE {collapse_dimensions_filter}
+            ) AS collapsed_dimension_values
+        FROM
+            `{project_id}.{input_dataset}.{input_table}`,
+            UNNEST(ARRAY[{should_group_values}]) AS should_group
+    ) as filtered_dimensions
+) as filtered_dimensions_with_dimensions_string
+GROUP BY {partition_columns_clause}dimensions_string
+"""
 
--- TIME AGGREGATION
--- Get necessary columns from the table instance's parents.
-joined_data as (
+
+class SpatialAggregationViewBuilder(SimpleBigQueryViewBuilder):
+    """Aggregates the data, keeping only the specified dimensions and summing the values.
+
+    Requires the input table to have a `dimensions` column that is of type
+    ARRAY<STRUCT<dimension string, dimension_value string>>. Any other columns that
+    should be kept in the output must be included in one of the builder arguments.
+
+    Output will also contain the following columns:
+    * dimensions_string: the dimensions values concatenated into a string, used to group by
+    * num_original_dimensions: the number of dimensions the row had prior to aggregation
+    * collapsed_dimension_values: the values from any collapsed dimensions
+
+    **Simple Example:**
+
+    Arguments:
+    * partition_columns={"date"}
+    * context_columns={}
+    * dimensions_to_keep={manual_upload.State}
+    * value_columns={"value"}
+
+    Input Table:
+    | date       | dimensions                                                        | value |
+    | ---------- | ----------------------------------------------------------------- | ----- |
+    | 2020-12-01 | [('global/location/state', 'US_XX'), ('global/gender', 'MALE')]   | 5     |
+    | 2020-12-01 | [('global/location/state', 'US_XX'), ('global/gender', 'FEMALE')] | 1     |
+    | 2020-12-01 | [('global/location/state', 'US_YY'), ('global/gender', 'MALE')]   | 10    |
+    | 2020-12-01 | [('global/location/state', 'US_YY'), ('global/gender', 'FEMALE')] | 2     |
+    | 2021-01-01 | [('global/location/state', 'US_XX'), ('global/gender', 'MALE')]   | 8     |
+    | 2021-01-01 | [('global/location/state', 'US_XX'), ('global/gender', 'FEMALE')] | 1     |
+
+    Output Table:
+    | date       | dimensions                           | value | num_original_dimensions | dimensions_string | collapsed_dimension_values |
+    | ---------- | ------------------------------------ | ----- | ----------------------- | ----------------- | -------------------------- |
+    | 2020-12-01 | [('global/location/state', 'US_XX')] | 6     | 2                       | US_XX             | []                         |
+    | 2020-12-01 | [('global/location/state', 'US_YY')] | 12    | 2                       | US_YY             | []                         |
+    | 2021-01-01 | [('global/location/state', 'US_XX')] | 9     | 2                       | US_XX             | []                         |
+
+    **Extended Example:**
+
+    Arguments:
+    * partition_columns={"date"}
+    * context_columns={"source_id": ContextAggregation.ARRAY}
+    * dimensions_to_keep={manual_upload.State}
+    * value_columns={"value"}
+    * collapse_dimensions_filter="dimension = 'global/gender'"
+    * keep_original=True
+
+    Input Table:
+    | date       | source_id | dimensions                                                        | value |
+    | ---------- | --------- | ----------------------------------------------------------------- | ----- |
+    | 2020-12-01 | 1         | [('global/location/state', 'US_XX'), ('global/gender', 'MALE')]   | 5     |
+    | 2020-12-01 | 1         | [('global/location/state', 'US_XX'), ('global/gender', 'FEMALE')] | 1     |
+    | 2020-12-01 | 2         | [('global/location/state', 'US_YY'), ('global/gender', 'MALE')]   | 10    |
+    | 2020-12-01 | 3         | [('global/location/state', 'US_YY'), ('global/gender', 'FEMALE')] | 2     |
+    | 2021-01-01 | 1         | [('global/location/state', 'US_XX'), ('global/gender', 'MALE')]   | 8     |
+    | 2021-01-01 | 1         | [('global/location/state', 'US_XX'), ('global/gender', 'FEMALE')] | 1     |
+
+    Output Table:
+    | date       | source_id | dimensions                                                        | value | num_original_dimensions | dimensions_string | collapsed_dimension_values |
+    | ---------- | --------- | ----------------------------------------------------------------- | ----- | ----------------------- | ----------------- | -------------------------- |
+    | 2020-12-01 | [1]       | [('global/location/state', 'US_XX'), ('global/gender', 'MALE')]   | 5     | 2                       | US_XX|MALE        | ['MALE']                   |
+    | 2020-12-01 | [1]       | [('global/location/state', 'US_XX'), ('global/gender', 'FEMALE')] | 1     | 2                       | US_XX|FEMALE      | ['FEMALE']                 |
+    | 2020-12-01 | [1]       | [('global/location/state', 'US_XX')]                              | 6     | 2                       | US_XX             | ['MALE', 'FEMALE']         |
+    | 2020-12-01 | [2]       | [('global/location/state', 'US_YY'), ('global/gender', 'MALE')]   | 10    | 2                       | US_XX|MALE        | ['MALE']                   |
+    | 2020-12-01 | [3]       | [('global/location/state', 'US_YY'), ('global/gender', 'FEMALE')] | 2     | 2                       | US_XX|FEMALE      | ['FEMALE']                 |
+    | 2020-12-01 | [2, 3]    | [('global/location/state', 'US_YY')]                              | 12    | 2                       | US_YY             | ['MALE', 'FEMALE']         |
+    | 2021-01-01 | [1]       | [('global/location/state', 'US_XX'), ('global/gender', 'MALE')]   | 8     | 2                       | US_XX|MALE        | ['MALE']                   |
+    | 2021-01-01 | [1]       | [('global/location/state', 'US_XX'), ('global/gender', 'FEMALE')] | 1     | 2                       | US_XX|FEMALE      | ['FEMALE']                 |
+    | 2021-01-01 | [1]       | [('global/location/state', 'US_XX')]                              | 9     | 2                       | US_XX             | ['MALE', 'FEMALE']         |
+    """
+
+    class ContextAggregation(enum.Enum):
+        ANY = "ANY"
+        ARRAY = "ARRAY"
+        ARRAY_CONCAT = "ARRAY_CONCAT"
+        MAX = "MAX"
+        MIN = "MIN"
+
+    def __init__(
+        self,
+        *,
+        dataset_id: str,
+        metric_name: str,
+        input_view: BigQueryViewBuilder,
+        partition_columns: Set[str],
+        partition_dimensions: Set[Type[manual_upload.Dimension]],
+        context_columns: Dict[str, ContextAggregation],
+        value_columns: Set[str],
+        collapse_dimensions_filter: str = "FALSE",
+        keep_original: bool = False,
+    ):
+        """Initializes the view builder and query based on the specified aggregation options.
+
+        Args:
+            partition_columns: Columns that should not be aggregated across; these
+                are included in the group by.
+            partition_dimensions: Dimensions that should not be aggregated across;
+                these will be included in the group by, all other dimensions will be
+                dropped and aggregated across.
+            context_columns: Columns that should be aggregated across, but not
+                summed, in order to provide more context to a given metric result row.
+            value_columns: Columns that contain the values to sum to produce a metric
+                value; these will be summed.
+            collapse_dimensions_filter: A clause used to include any dimension values
+                in an array to keep around for context. Defaults to not including any
+                dimension values.
+            keep_original: If true, keeps the unaggregated values around as their own
+                rows in addition to the aggregated rows. Defaults to False.
+        """
+        all_columns: List[str] = list(partition_columns)
+
+        select_clauses: List[str] = []
+        for column, aggregation in context_columns.items():
+            if aggregation is self.ContextAggregation.ANY:
+                formatter = "ANY_VALUE({column})"
+            elif aggregation is self.ContextAggregation.ARRAY:
+                formatter = "ARRAY_AGG(DISTINCT {column})"
+            elif aggregation is self.ContextAggregation.ARRAY_CONCAT:
+                formatter = "ARRAY_CONCAT_AGG({column})"
+            elif aggregation is self.ContextAggregation.MAX:
+                formatter = "MAX({column})"
+            elif aggregation is self.ContextAggregation.MIN:
+                formatter = "MIN({column})"
+            else:
+                raise ValueError(f"Unsupported context aggregation: {aggregation}")
+            select_clauses.append(formatter.format(column=column) + f" AS {column}")
+        all_columns.extend(context_columns)
+
+        value_columns_clause = ", ".join(
+            f"SUM({column}) AS {column}" for column in value_columns
+        )
+        all_columns.extend(value_columns)
+
+        dimensions_to_keep_clause = ", ".join(
+            f"'{dimension.dimension_identifier()}'"
+            for dimension in partition_dimensions
+        )
+
+        should_group_values = "TRUE"
+        if keep_original:
+            should_group_values += ", FALSE"
+
+        super().__init__(
+            dataset_id=dataset_id,
+            view_id=f"{view_prefix_for_metric_name(metric_name)}_dropped_{'_'.join(dimension.__name__ for dimension in partition_dimensions)}",
+            view_query_template=SPATIAL_AGGREGATION_VIEW_TEMPLATE,
+            # Query Format Arguments
+            description=f"{metric_name} aggregated by dimensions",
+            input_dataset=input_view.dataset_id,
+            input_table=input_view.view_id,
+            all_columns_clause="".join(f"{column}, " for column in all_columns),
+            partition_columns_clause="".join(
+                f"{column}, " for column in partition_columns
+            ),
+            select_columns_clause="".join(f"{clause}, " for clause in select_clauses),
+            value_columns_clause=value_columns_clause,
+            dimensions_to_keep_clause=dimensions_to_keep_clause,
+            collapse_dimensions_filter=collapse_dimensions_filter,
+            should_group_values=should_group_values,
+        )
+
+
+AGGREGATE_TO_MONTH_VIEW_TEMPLATE = """
+/*{description}*/
+
+WITH joined_data as (
   SELECT
-    report.source_id as source_id, report.id as report_id, report.type as report_type, report.publish_date as publish_date,
-    definition.id as definition_id, definition.measurement_type,
+    report.source_id as source_id,
+    report.id as report_id,
+    report.type as report_type,
+    report.publish_date as publish_date,
+    definition.id as definition_id,
+    definition.measurement_type,
     instance.id as instance_id,
-    time_window_start, time_window_end, DATE_TRUNC(DATE_SUB(time_window_end, INTERVAL 1 DAY), MONTH) as start_of_month,
-    dimensions,
-    ARRAY_TO_STRING(ARRAY(SELECT dimension_value FROM UNNEST(dimensions) ORDER BY dimension), '|') as dimensions_string,
-    num_original_dimensions,
-    collapsed_dimension_values,
-    value
+    instance.time_window_start,
+    instance.time_window_end,
+    DATE_TRUNC(DATE_SUB(instance.time_window_end, INTERVAL 1 DAY), MONTH) as start_of_month,
+    input.dimensions,
+    input.dimensions_string,
+    input.num_original_dimensions,
+    input.collapsed_dimension_values,
+    input.value
   FROM `{project_id}.{base_dataset}.report_table_instance_materialized` instance
   JOIN `{project_id}.{base_dataset}.report_table_definition_materialized` definition
     ON definition.id = report_table_definition_id
   JOIN `{project_id}.{base_dataset}.report_materialized` report
     ON instance.report_id = report.id
-  JOIN aggregated_values
-    ON aggregated_values.instance_id = instance.id
+  JOIN `{project_id}.{input_dataset}.{input_table}` input
+    ON input.instance_id = instance.id
 ),
 
 -- Aggregate values for the same (source, report type, table definition, start_of_month)
@@ -207,66 +464,92 @@ WHERE partitioned.ordinal = 1
 """
 
 
-class CalculatedMetricByMonthViewBuilder(SimpleBigQueryViewBuilder):
-    """Factory class for building views that calculate metrics by month."""
+class MetricByMonthViewBuilder(SimpleBigQueryViewBuilder):
+    """Factory class for building views that calculate metrics by month.
+
+    This takes data from an input view and joins it against tables from the base dataset
+    to produce the output data by month.
+
+    Required input columns:
+
+    * `instance_id`: The id of the report_table_instance.
+    * `dimensions`: List of dimensions, in the form ARRAY<STRUCT<dimension string, dimension_value string>>.
+    * `dimensions_string`: The dimension values concatenated into a string, to be used in group bys.
+    * `num_original_dimensions`: The number of dimensions that the table originally
+      had, to be used in prioritizing which point to use if there are multiple that
+      represent the same metric.
+    * `collapsed_dimension_values`: List of values for dimensions that were dropped.
+    * `value`: The actual value for the metric.
+
+    **Example:**
+
+    Input Table:
+    | instance_id | dimensions                           | value | num_original_dimensions | dimensions_string | collapsed_dimension_values |
+    | ----------- | ------------------------------------ | ----- | ----------------------- | ----------------- | -------------------------- |
+    | 1           | [('global/location/state', 'US_XX')] | 6     | 2                       | US_XX             | ['M', 'F']                 |
+    | 2           | [('global/location/state', 'US_XX')] | 9     | 2                       | US_XX             | ['M', 'F']                 |
+    | 3           | [('global/location/state', 'US_YY')] | 12    | 2                       | US_YY             | ['Male', 'Female']         |
+    | 4           | [('global/location/state', 'US_YY')] | 15    | 2                       | US_YY             | ['Male', 'Female']         |
+    | 5           | [('global/location/state', 'US_XX')] | 10    | 0                       | US_XX             | [] .                       |
+
+    Additional data is pulled from the base dataset.
+
+    Output Table:
+    | start_of_month | dimensions                           | value | source_id | report_type | report_ids | publish_date | time_window_start | time_window_end | dimensions_string | collapsed_dimension_values |
+    | -------------- | ------------------------------------ | ----- | --------- | ----------- | ---------- | ------------ | ----------------- | --------------- | ----------------- | -------------------------- |
+    | 2020-11-01     | [('global/location/state', 'US_XX')] | 6     | 1         | Annual Data | [1]        | 2020-12-07   | 2020-11-01        | 2020-12-01      | US_XX             | ['M', 'F']                 |
+    | 2020-12-01     | [('global/location/state', 'US_XX')] | 10    | 3         | Facts       | [5]        | 2021-01-02   | 2020-12-01        | 2021-01-01      | US_XX             |                            |
+    | 2020-11-01     | [('global/location/state', 'US_YY')] | 12    | 2         | Dashboard   | [3]        | 2020-12-15   | 2020-11-01        | 2020-12-01      | US_YY             | ['Male', 'Female']         |
+    | 2020-12-01     | [('global/location/state', 'US_YY')] | 15    | 2         | Dashboard   | [4]        | 2021-01-15   | 2020-12-01        | 2021-01-01      | US_YY             | ['Male', 'Female']         |
+
+    """
 
     def __init__(
-        self, *, dataset_id: str, metric_to_calculate: "CalculatedMetricByMonth"
+        self,
+        *,
+        dataset_id: str,
+        metric_name: str,
+        input_view: BigQueryViewBuilder,
     ):
-        # For determining which table definitions can be used.
-        input_allowed_filters = ", ".join(
-            [
-                f"'{dimension.dimension_identifier()}'"
-                for dimension in metric_to_calculate.input_allowed_filters
-            ]
-        )
-
-        input_required_dimension_conditions: List[str] = []
-        for aggregation in metric_to_calculate.input_required_aggregations:
-            columns = ["aggregated_dimensions"]
-            if not aggregation.comprehensive:
-                columns.append("filtered_dimensions")
-            input_required_dimension_conditions.append(
-                f"AND '{aggregation.dimension.dimension_identifier()}' "
-                f"IN UNNEST(ARRAY_CONCAT({', '.join(columns)}))"
-            )
-        input_required_dimensions_clause = " ".join(input_required_dimension_conditions)
-
-        # For filtering data
-        if metric_to_calculate.filtered_dimensions:
-            dimensions_match_filter_clause = " OR ".join(
-                [
-                    f"(dimension = '{dimension.dimension_identifier()}' "
-                    f"AND dimension_value = '{dimension.dimension_value}')"
-                    for dimension in metric_to_calculate.filtered_dimensions
-                ]
-            )
-        else:
-            dimensions_match_filter_clause = "FALSE"
-
-        # For spatial aggregation
-        aggregated_dimension_identifiers = ", ".join(
-            [
-                f"'{aggregation.dimension.dimension_identifier()}'"
-                for aggregation in metric_to_calculate.aggregated_dimensions.values()
-            ]
-        )
-
         super().__init__(
             dataset_id=dataset_id,
-            view_id=f"{metric_to_calculate.view_prefix}_by_month",
-            view_query_template=CALCULATED_METRIC_BY_MONTH_TEMPLATE,
+            view_id=f"{view_prefix_for_metric_name(metric_name)}_by_month",
+            view_query_template=AGGREGATE_TO_MONTH_VIEW_TEMPLATE,
             # Query Format Arguments
-            description=f"{metric_to_calculate.output_name} by month",
+            description=f"{metric_name} by month",
             base_dataset=dataset_config.JUSTICE_COUNTS_BASE_DATASET,
-            system=metric_to_calculate.system.value,
-            metric_type=metric_to_calculate.metric.value,
-            input_allowed_filters=input_allowed_filters,
-            input_required_dimensions_clause=input_required_dimensions_clause,
-            dimensions_match_filter_clause=dimensions_match_filter_clause,
-            num_filtered_dimensions=str(len(metric_to_calculate.filtered_dimensions)),
-            aggregated_dimension_identifiers=aggregated_dimension_identifiers,
+            input_dataset=input_view.dataset_id,
+            input_table=input_view.view_id,
         )
+
+
+def calculate_metric_view_chain(
+    dataset_id: str, metric_to_calculate: "CalculatedMetricByMonth"
+) -> List[SimpleBigQueryViewBuilder]:
+    fetch_and_filter = FetchAndFilterMetricViewBuilder(
+        dataset_id=dataset_id, metric_to_calculate=metric_to_calculate
+    )
+    # Note: Right now we do spatial then time which works because we don't ever do
+    # spatial aggregation across tables.
+    spatial = SpatialAggregationViewBuilder(
+        dataset_id=dataset_id,
+        metric_name=metric_to_calculate.output_name,
+        input_view=fetch_and_filter,
+        partition_columns={"instance_id"},
+        partition_dimensions=set(
+            aggregation.dimension
+            for aggregation in metric_to_calculate.aggregated_dimensions.values()
+        ),
+        context_columns={},
+        value_columns={"value"},
+        collapse_dimensions_filter="ENDS_WITH(dimension, '/raw')",
+    )
+    by_month = MetricByMonthViewBuilder(
+        dataset_id=dataset_id,
+        metric_name=metric_to_calculate.output_name,
+        input_view=spatial,
+    )
+    return [fetch_and_filter, spatial, by_month]
 
 
 COMPARISON_VIEW_TEMPLATE = """
@@ -276,18 +559,18 @@ COMPARISON_VIEW_TEMPLATE = """
 -- Compare against the most recent data that is at least one year older
 SELECT * EXCEPT(ordinal)
 FROM (
-SELECT
-    base_data.*,
-    compared_data.start_of_month as compare_start_of_month, compared_data.{value_column} as compare_{value_column},
-    ROW_NUMBER() OVER (
-    PARTITION BY base_data.dimensions_string, base_data.start_of_month, base_data.time_window_end
-    -- Orders by recency of the compared data
-    ORDER BY DATE_DIFF(base_data.start_of_month, compared_data.start_of_month, DAY)) as ordinal
-FROM `{project_id}.{input_dataset}.{input_table}` base_data
--- Explodes to every row that is at least a year older
-LEFT JOIN `{project_id}.{compare_dataset}.{compare_table}` compared_data ON
-    (base_data.dimensions_string  = compared_data.dimensions_string AND
-    compared_data.start_of_month <= DATE_SUB(base_data.start_of_month, INTERVAL 1 YEAR))
+    SELECT
+        base_data.*,
+        compared_data.start_of_month as compare_start_of_month, compared_data.{value_column} as compare_{value_column},
+        ROW_NUMBER() OVER (
+        PARTITION BY base_data.dimensions_string, base_data.start_of_month
+        -- Orders by recency of the compared data
+        ORDER BY DATE_DIFF(base_data.start_of_month, compared_data.start_of_month, DAY)) as ordinal
+    FROM `{project_id}.{input_dataset}.{input_table}` base_data
+    -- Explodes to every row that is at least a year older
+    LEFT JOIN `{project_id}.{compare_dataset}.{compare_table}` compared_data ON
+        (base_data.dimensions_string  = compared_data.dimensions_string AND
+        compared_data.start_of_month <= DATE_SUB(base_data.start_of_month, INTERVAL 1 YEAR))
 ) as joined_with_prior
 -- Picks the row with the compared data that is the most recent
 WHERE joined_with_prior.ordinal = 1
@@ -295,7 +578,37 @@ WHERE joined_with_prior.ordinal = 1
 
 
 class CompareToPriorYearViewBuilder(SimpleBigQueryViewBuilder):
-    """Factory class for building views that compare monthly metrics to the prior year."""
+    """Factory class for building views that compare monthly metrics to the prior year.
+
+    Required input columns (must be present in both input and compare tables):
+    * start_of_month
+    * dimensions_string
+    * {value_column}
+
+    The output includes all columns from the input unchanged, plus two additional columns:
+    * compare_start_of_month
+    * compare_{value_column}
+
+    **Example:**
+
+    Input Table (used for compare also):
+
+    | start_of_month | dimensions_string | value | publish_date |
+    |--------------- | ----------------- | ----- | ------------ |
+    | 2020-06-01     | US_XX             | 1000  | 2020-07-12   |
+    | 2019-12-01     | US_XX             | 900   | 2020-01-24   |
+    | 2019-06-01     | US_XX             | 800   | 2019-08-02   |
+    | 2018-12-01     | US_XX             | 700   | 2019-01-17   |
+
+    Output Table:
+
+    | start_of_month | dimensions_string | value | publish_date | compare_start_of_month | compare_value |
+    | -------------- | ----------------- | ----- | ------------ | ---------------------- | ------------- |
+    | 2020-06-01     | US_XX             | 1000  | 2020-07-12   | 2019-06-01             | 800           |
+    | 2019-12-01     | US_XX             | 900   | 2020-01-24   | 2018-12-01             | 700           |
+    | 2019-06-01     | US_XX             | 800   | 2019-08-02   |                        |               |
+    | 2018-12-01     | US_XX             | 700   | 2019-01-17   |                        |               |
+    """
 
     def __init__(
         self,
@@ -323,14 +636,9 @@ class CompareToPriorYearViewBuilder(SimpleBigQueryViewBuilder):
 
 DIMENSIONS_TO_COLUMNS_TEMPLATE = """
 SELECT
-    * EXCEPT({aggregated_dimensions_array_columns}),
-    {aggregated_dimensions_array_columns_to_single_value_columns_clause}
-FROM (
-    SELECT 
-        *,
-        {aggregated_dimensions_array_split_to_columns_clause}
-    FROM `{project_id}.{input_dataset}.{input_table}`
-) as unnested_dimensions
+    *,
+    {aggregated_dimensions_to_columns_clause}
+FROM `{project_id}.{input_dataset}.{input_table}`
 """
 
 
@@ -342,16 +650,16 @@ class DimensionsToColumnsViewBuilder(SimpleBigQueryViewBuilder):
     metric_to_calculate.aggregated_dimensions={'state_code': StateCode, 'gender': Gender}
 
     Input Table:
-    | date       | dimensions                                                  | value |
-    | ---------- | ----------------------------------------------------------- | ----- |
-    | 2020-12-01 | {'global/location/state': 'US_XX', 'global/gender': 'MALE'} | 1234  |
-    | 2020-12-01 | {'global/location/state': 'US_YY', 'global/gender': 'MALE'} | 5678  |
+    | date       | dimensions                                                      | value |
+    | ---------- | --------------------------------------------------------------- | ----- |
+    | 2020-12-01 | [('global/location/state', 'US_XX'), ('global/gender', 'MALE')] | 1234  |
+    | 2020-12-01 | [('global/location/state', 'US_YY'), ('global/gender', 'MALE')] | 5678  |
 
     Output Table:
-    | date       | dimensions                                                  | state_code | gender | value |
-    | ---------- | ----------------------------------------------------------- | ---------- | ------ | ----- |
-    | 2020-12-01 | {'global/location/state': 'US_XX', 'global/gender': 'MALE'} | US_XX      | MALE   | 1234  |
-    | 2020-12-01 | {'global/location/state': 'US_YY', 'global/gender': 'MALE'} | US_XX      | MALE   | 5678  |
+    | date       | dimensions                                                      | state_code | gender | value |
+    | ---------- | --------------------------------------------------------------- | ---------- | ------ | ----- |
+    | 2020-12-01 | [('global/location/state', 'US_XX'), ('global/gender', 'MALE')] | US_XX      | MALE   | 1234  |
+    | 2020-12-01 | [('global/location/state', 'US_YY'), ('global/gender', 'MALE')] | US_XX      | MALE   | 5678  |
     """
 
     def __init__(
@@ -362,22 +670,12 @@ class DimensionsToColumnsViewBuilder(SimpleBigQueryViewBuilder):
         aggregations: Dict[str, "Aggregation"],
         input_view: BigQueryViewBuilder,
     ):
-        aggregated_dimensions_array_columns_to_single_value_columns_clause = ", ".join(
+        aggregated_dimensions_to_columns_clause = ", ".join(
             [
-                f"unnested_dimensions.{column_name}_array[ORDINAL(1)] as {column_name}"
-                for column_name in aggregations
-            ]
-        )
-        aggregated_dimensions_array_split_to_columns_clause = ", ".join(
-            [
-                f"ARRAY(SELECT dimension_value FROM UNNEST(dimensions) "
-                f"WHERE dimension = '{aggregation.dimension.dimension_identifier()}') as {column_name}_array"
+                f"(SELECT dimension_value FROM UNNEST(dimensions) "
+                f"WHERE dimension = '{aggregation.dimension.dimension_identifier()}') as {column_name}"
                 for column_name, aggregation in aggregations.items()
             ]
-        )
-
-        aggregated_dimensions_array_columns = ", ".join(
-            f"{column_name}_array" for column_name in aggregations
         )
 
         super().__init__(
@@ -389,9 +687,7 @@ class DimensionsToColumnsViewBuilder(SimpleBigQueryViewBuilder):
             base_dataset=dataset_config.JUSTICE_COUNTS_BASE_DATASET,
             input_dataset=input_view.dataset_id,
             input_table=input_view.view_id,
-            aggregated_dimensions_array_columns_to_single_value_columns_clause=aggregated_dimensions_array_columns_to_single_value_columns_clause,
-            aggregated_dimensions_array_split_to_columns_clause=aggregated_dimensions_array_split_to_columns_clause,
-            aggregated_dimensions_array_columns=aggregated_dimensions_array_columns,
+            aggregated_dimensions_to_columns_clause=aggregated_dimensions_to_columns_clause,
         )
 
 

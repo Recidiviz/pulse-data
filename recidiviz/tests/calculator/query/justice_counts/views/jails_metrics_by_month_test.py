@@ -470,6 +470,28 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                 + [None] * 6
                 + [datetime.date.fromisoformat("2021-01-01")],
                 [
+                    "US_XX",
+                    np.nan,
+                    "INCARCERATION_RATE_JAIL",
+                    2020,
+                    11,
+                    _npd("2020-11-30"),
+                    307,
+                ]
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
+                    "US_XX",
+                    np.nan,
+                    "INCARCERATION_RATE_JAIL",
+                    2020,
+                    12,
+                    _npd("2020-12-31"),
+                    423,
+                ]
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
                     "US_YY",
                     "US_YY_ALPHA",
                     "INCARCERATION_RATE_JAIL",
@@ -514,6 +536,28 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                 + [None] * 6
                 + [datetime.date.fromisoformat("2021-01-02")],
                 [
+                    "US_YY",
+                    np.nan,
+                    "INCARCERATION_RATE_JAIL",
+                    2020,
+                    11,
+                    _npd("2020-11-30"),
+                    833,
+                ]
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-02")],
+                [
+                    "US_YY",
+                    np.nan,
+                    "INCARCERATION_RATE_JAIL",
+                    2020,
+                    12,
+                    _npd("2020-12-31"),
+                    1000,
+                ]
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-02")],
+                [
                     "US_ZZ",
                     "US_ZZ_ALPHA",
                     "INCARCERATION_RATE_JAIL",
@@ -554,6 +598,28 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     12,
                     _npd("2020-12-31"),
                     22000,
+                ]
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-02")],
+                [
+                    "US_ZZ",
+                    np.nan,
+                    "INCARCERATION_RATE_JAIL",
+                    2020,
+                    11,
+                    _npd("2020-11-30"),
+                    909,
+                ]
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-02")],
+                [
+                    "US_ZZ",
+                    np.nan,
+                    "INCARCERATION_RATE_JAIL",
+                    2020,
+                    12,
+                    _npd("2020-12-31"),
+                    1000,
                 ]
                 + [None] * 6
                 + [datetime.date.fromisoformat("2021-01-02")],

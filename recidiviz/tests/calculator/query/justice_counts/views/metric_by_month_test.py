@@ -293,9 +293,9 @@ class MetricByMonthViewTest(BaseViewTest):
             },
             output_name="POP",
         )
-        results = self.query_view(
-            metric_by_month.CalculatedMetricByMonthViewBuilder(
-                dataset_id="fake-dataset", metric_to_calculate=prison_population_metric
+        results = self.query_view_chain(
+            metric_by_month.calculate_metric_view_chain(
+                dataset_id="fake_dataset", metric_to_calculate=prison_population_metric
             ),
             data_types={
                 "time_window_start": _npd,
@@ -539,9 +539,9 @@ class MetricByMonthViewTest(BaseViewTest):
             },
             output_name="POP",
         )
-        results = self.query_view(
-            metric_by_month.CalculatedMetricByMonthViewBuilder(
-                dataset_id="fake-dataset", metric_to_calculate=parole_population
+        results = self.query_view_chain(
+            metric_by_month.calculate_metric_view_chain(
+                dataset_id="fake_dataset", metric_to_calculate=parole_population
             ),
             data_types={
                 "time_window_start": _npd,
@@ -864,9 +864,9 @@ class MetricByMonthViewTest(BaseViewTest):
             },
             output_name="POP",
         )
-        results = self.query_view(
-            metric_by_month.CalculatedMetricByMonthViewBuilder(
-                dataset_id="fake-dataset", metric_to_calculate=parole_population
+        results = self.query_view_chain(
+            metric_by_month.calculate_metric_view_chain(
+                dataset_id="fake_dataset", metric_to_calculate=parole_population
             ),
             data_types={
                 "time_window_start": _npd,
@@ -1154,9 +1154,9 @@ class MetricByMonthViewTest(BaseViewTest):
             },
             output_name="POP",
         )
-        results = self.query_view(
-            metric_by_month.CalculatedMetricByMonthViewBuilder(
-                dataset_id="fake-dataset", metric_to_calculate=parole_population
+        results = self.query_view_chain(
+            metric_by_month.calculate_metric_view_chain(
+                dataset_id="fake_dataset", metric_to_calculate=parole_population
             ),
             data_types={
                 "time_window_start": _npd,
@@ -1315,9 +1315,9 @@ class MetricByMonthViewTest(BaseViewTest):
             },
             output_name="POP",
         )
-        results = self.query_view(
-            metric_by_month.CalculatedMetricByMonthViewBuilder(
-                dataset_id="fake-dataset", metric_to_calculate=parole_population
+        results = self.query_view_chain(
+            metric_by_month.calculate_metric_view_chain(
+                dataset_id="fake_dataset", metric_to_calculate=parole_population
             ),
             data_types={
                 "time_window_start": _npd,
@@ -1458,9 +1458,9 @@ class MetricByMonthViewTest(BaseViewTest):
             },
             output_name="POP",
         )
-        results = self.query_view(
-            metric_by_month.CalculatedMetricByMonthViewBuilder(
-                dataset_id="fake-dataset", metric_to_calculate=parole_population
+        results = self.query_view_chain(
+            metric_by_month.calculate_metric_view_chain(
+                dataset_id="fake_dataset", metric_to_calculate=parole_population
             ),
             data_types={
                 "time_window_start": _npd,
@@ -1655,9 +1655,9 @@ class MetricByMonthViewTest(BaseViewTest):
             },
             output_name="ADMISSIONS",
         )
-        results = self.query_view(
-            metric_by_month.CalculatedMetricByMonthViewBuilder(
-                dataset_id="fake-dataset", metric_to_calculate=parole_population
+        results = self.query_view_chain(
+            metric_by_month.calculate_metric_view_chain(
+                dataset_id="fake_dataset", metric_to_calculate=parole_population
             ),
             data_types={
                 "time_window_start": _npd,
@@ -1805,9 +1805,9 @@ class MetricByMonthViewTest(BaseViewTest):
             },
             output_name="ADMISSIONS",
         )
-        results = self.query_view(
-            metric_by_month.CalculatedMetricByMonthViewBuilder(
-                dataset_id="fake-dataset", metric_to_calculate=parole_population
+        results = self.query_view_chain(
+            metric_by_month.calculate_metric_view_chain(
+                dataset_id="fake_dataset", metric_to_calculate=parole_population
             ),
             data_types={
                 "time_window_start": _npd,
@@ -1961,9 +1961,9 @@ class MetricByMonthViewTest(BaseViewTest):
             },
             output_name="POP",
         )
-        results = self.query_view(
-            metric_by_month.CalculatedMetricByMonthViewBuilder(
-                dataset_id="fake-dataset", metric_to_calculate=parole_population
+        results = self.query_view_chain(
+            metric_by_month.calculate_metric_view_chain(
+                dataset_id="fake_dataset", metric_to_calculate=parole_population
             ),
             data_types={
                 "time_window_start": _npd,
@@ -2146,9 +2146,9 @@ class MetricByMonthViewTest(BaseViewTest):
             },
             output_name="POP",
         )
-        results = self.query_view(
-            metric_by_month.CalculatedMetricByMonthViewBuilder(
-                dataset_id="fake-dataset", metric_to_calculate=parole_population
+        results = self.query_view_chain(
+            metric_by_month.calculate_metric_view_chain(
+                dataset_id="fake_dataset", metric_to_calculate=parole_population
             ),
             data_types={
                 "time_window_start": _npd,
@@ -2333,9 +2333,9 @@ class MetricByMonthViewTest(BaseViewTest):
             },
             output_name="ADMISSIONS",
         )
-        results = self.query_view(
-            metric_by_month.CalculatedMetricByMonthViewBuilder(
-                dataset_id="fake-dataset", metric_to_calculate=parole_population
+        results = self.query_view_chain(
+            metric_by_month.calculate_metric_view_chain(
+                dataset_id="fake_dataset", metric_to_calculate=parole_population
             ),
             data_types={
                 "time_window_start": _npd,
@@ -2439,7 +2439,7 @@ class MetricByMonthViewTest(BaseViewTest):
         dimensions = ["dimensions_string", "start_of_month"]
         results = self.query_view(
             metric_by_month.CompareToPriorYearViewBuilder(
-                dataset_id="fake-dataset",
+                dataset_id="fake_dataset",
                 metric_name="ADMISSIONS",
                 input_view=SimpleBigQueryViewBuilder(
                     dataset_id="justice_counts",
