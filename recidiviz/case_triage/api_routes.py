@@ -26,6 +26,7 @@ from flask_wtf.csrf import generate_csrf
 from recidiviz.case_triage.analytics import CaseTriageSegmentClient
 from recidiviz.case_triage.api_schemas import (
     CaseUpdateSchema,
+    DeferOpportunitySchema,
     PolicyRequirementsSchema,
     requires_api_schema,
 )
@@ -38,6 +39,10 @@ from recidiviz.case_triage.demo_helpers import DEMO_FROZEN_DATE
 from recidiviz.case_triage.demo_helpers import fake_officer_id_for_demo_user
 from recidiviz.case_triage.exceptions import (
     CaseTriageBadRequestException,
+)
+from recidiviz.case_triage.opportunities.interface import (
+    DemoOpportunitiesInterface,
+    OpportunitiesInterface,
 )
 from recidiviz.case_triage.querier.querier import (
     CaseTriageQuerier,
@@ -116,6 +121,43 @@ def create_api_blueprint(
                 "segmentUserId": g.segment_user_id,
             }
         )
+
+    @api.route("/defer_opportunity", methods=["POST"])
+    @requires_api_schema(DeferOpportunitySchema)
+    def _defer_opportunity() -> str:
+        etl_client = load_client(g.api_data["person_external_id"])
+
+        if _should_see_demo():
+            demo_timedelta_shift = DEMO_FROZEN_DATE - date.today()
+
+            DemoOpportunitiesInterface.defer_opportunity(
+                current_session,
+                g.email,
+                etl_client,
+                g.api_data["opportunity_type"],
+                g.api_data["defer_until"] + demo_timedelta_shift,
+                g.api_data["request_reminder"],
+            )
+        else:
+            OpportunitiesInterface.defer_opportunity(
+                current_session,
+                g.current_user,
+                etl_client,
+                g.api_data["opportunity_type"],
+                g.api_data["defer_until"],
+                g.api_data["request_reminder"],
+            )
+
+            if segment_client:
+                segment_client.track_opportunity_deferred(
+                    g.current_user,
+                    etl_client,
+                    g.api_data["opportunity_type"],
+                    g.api_data["defer_until"],
+                    g.api_data["request_reminder"],
+                )
+
+        return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
 
     @api.route("/policy_requirements_for_state", methods=["POST"])
     @requires_api_schema(PolicyRequirementsSchema)

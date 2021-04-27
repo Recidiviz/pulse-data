@@ -20,6 +20,7 @@ from datetime import date, datetime
 from typing import Optional, Dict
 
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
+from recidiviz.case_triage.opportunities.types import OpportunityType
 from recidiviz.persistence.database.schema.case_triage.schema import (
     ETLClient,
     ETLOfficer,
@@ -72,7 +73,7 @@ def generate_fake_opportunity(
         supervising_officer_external_id=officer_id,
         person_external_id=person_external_id,
         state_code="US_XX",
-        opportunity_type="OVERDUE_DISCHARGE",
+        opportunity_type=OpportunityType.OVERDUE_DISCHARGE.value,
         opportunity_metadata={},
     )
 

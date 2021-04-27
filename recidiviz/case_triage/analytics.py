@@ -16,9 +16,11 @@
 # =============================================================================
 """Contains classes used to log events to Segment."""
 from base64 import b64encode
+from datetime import datetime
 from hashlib import sha256
 
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
+from recidiviz.case_triage.opportunities.types import OpportunityType
 from recidiviz.persistence.database.schema.case_triage.schema import (
     ETLClient,
     ETLOfficer,
@@ -34,6 +36,26 @@ def segment_user_id_for_email(email: str) -> str:
 
 class CaseTriageSegmentClient(SegmentClient):
     """A Case-Triage-specific Segment client."""
+
+    def track_opportunity_deferred(
+        self,
+        officer: ETLOfficer,
+        client: ETLClient,
+        opportunity: OpportunityType,
+        deferred_until: datetime,
+        reminder_requested: bool,
+    ) -> None:
+        user_id = segment_user_id_for_email(officer.email_address)
+        self.track(
+            user_id,
+            "backend.opportunity_deferred",
+            {
+                "personExternalId": client.person_external_id,
+                "opportunity": opportunity.value,
+                "deferredUntil": deferred_until,
+                "reminderRequested": reminder_requested,
+            },
+        )
 
     def track_person_action_taken(
         self,

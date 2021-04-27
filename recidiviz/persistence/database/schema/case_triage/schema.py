@@ -235,6 +235,16 @@ class OpportunityDeferral(CaseTriageBase):
     and ones that they think are not applicable."""
 
     __tablename__ = "opportunity_deferrals"
+    __table_args__ = (
+        UniqueConstraint(
+            "state_code",
+            "person_external_id",
+            "supervising_officer_external_id",
+            "opportunity_type",
+            name="unique_person_officer_opportunity_triple",
+        ),
+    )
+
     state_code = Column(String(255), nullable=False, index=True, primary_key=True)
     supervising_officer_external_id = Column(
         String(255), nullable=False, index=True, primary_key=True

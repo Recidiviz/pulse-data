@@ -33,6 +33,7 @@ from recidiviz.case_triage.impersonate_users import (
     IMPERSONATED_EMAIL_KEY,
     ImpersonateUser,
 )
+from recidiviz.case_triage.opportunities.types import OpportunityType
 from recidiviz.case_triage.querier.case_update_presenter import CaseUpdateStatus
 from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
 from recidiviz.persistence.database.schema.case_triage.schema import (
@@ -196,6 +197,42 @@ class TestCaseTriageAPIRoutes(TestCase):
         with self.helpers.as_officer(self.officer):
             # Only one of the opportunities should be active
             self.assertEqual(len(self.helpers.get_opportunities()), 1)
+
+    def test_defer_opportunity_malformed_input(self) -> None:
+        with self.helpers.as_officer(self.officer):
+            # GET instead of POST
+            response = self.test_client.get("/defer_opportunity")
+            self.assertEqual(response.status_code, HTTPStatus.METHOD_NOT_ALLOWED)
+
+            # `personExternalId` doesn't map to a real person
+            response = self.test_client.post(
+                "/defer_opportunity",
+                json={
+                    "personExternalId": "nonexistent-person",
+                    "opportunityType": OpportunityType.EARLY_DISCHARGE.value,
+                    "deferUntil": str(datetime.now()),
+                    "requestReminder": True,
+                },
+            )
+
+            self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+            self.assertEqual(response.get_json()["code"], "bad_request")
+            self.assertIn(
+                "does not correspond to a known person",
+                response.get_json()["description"]["personExternalId"],
+            )
+
+    def test_defer_opportunity_successful(self) -> None:
+        with self.helpers.as_officer(self.officer):
+            opportunity_type = self.opportunity_2.opportunity_type
+            person_external_id = self.client_2.person_external_id
+
+            # Submit API request
+            self.helpers.defer_opportunity(person_external_id, opportunity_type)
+            self.mock_segment_client.track_opportunity_deferred.assert_called()
+
+            # Verify that no more opportunities since they are all deferred
+            self.assertEqual(len(self.helpers.get_opportunities()), 0)
 
     def test_case_updates_malformed_input(self) -> None:
         with self.helpers.as_officer(self.officer):
