@@ -169,7 +169,17 @@ METRICS = [
         metric=schema.MetricType.RELEASES,
         filtered_dimensions=[manual_upload.ReleaseType.TO_SUPERVISION],
         aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
-        output_name="RELEASES_SUPERVISION",
+        output_name="RELEASES_TO_ALL_SUPERVISION",
+    ),
+    metric_by_month.CalculatedMetricByMonth(
+        system=schema.System.CORRECTIONS,
+        metric=schema.MetricType.RELEASES,
+        filtered_dimensions=[
+            manual_upload.ReleaseType.TO_SUPERVISION,
+            manual_upload.SupervisionType.PAROLE,
+        ],
+        aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
+        output_name="RELEASES_TO_PAROLE",
     ),
     metric_by_month.CalculatedMetricByMonth(
         system=schema.System.CORRECTIONS,
