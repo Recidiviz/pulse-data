@@ -83,12 +83,9 @@ class TestDemoUser(TestCase):
         self.client_1 = ETLClient.from_json(self.demo_data[0])
 
         with self.helpers.as_demo_user():
-            self.test_client.post(
-                "/case_updates",
-                json={
-                    "personExternalId": self.client_1.person_external_id,
-                    "actionType": CaseUpdateActionType.OTHER_DISMISSAL.value,
-                },
+            self.helpers.create_case_update(
+                self.client_1.person_external_id,
+                CaseUpdateActionType.COMPLETED_ASSESSMENT.value,
             )
 
     def tearDown(self) -> None:
@@ -123,21 +120,16 @@ class TestDemoUser(TestCase):
             assert client_to_modify is not None
             self.assertTrue(len(client_to_modify["caseUpdates"]) == 0)
 
-            response = self.test_client.post(
-                "/case_updates",
-                json={
-                    "personExternalId": client_to_modify["personExternalId"],
-                    "actionType": "FILED_REVOCATION_OR_VIOLATION",
-                    "comment": "",
-                },
+            action = CaseUpdateActionType.FOUND_EMPLOYMENT.value
+            self.helpers.create_case_update(
+                client_to_modify["personExternalId"], action
             )
-            self.assertEqual(response.status_code, HTTPStatus.OK)
 
             new_client = self.helpers.find_client_in_api_response(
                 client_to_modify["personExternalId"]
             )
             self.assertIn(
-                "FILED_REVOCATION_OR_VIOLATION",
+                action,
                 new_client["caseUpdates"],
             )
 
@@ -149,7 +141,7 @@ class TestDemoUser(TestCase):
             self.assertTrue(len(client_to_modify["caseUpdates"]) == 1)
 
             case_update_id = client_to_modify["caseUpdates"][
-                CaseUpdateActionType.OTHER_DISMISSAL.value
+                CaseUpdateActionType.COMPLETED_ASSESSMENT.value
             ]["updateId"]
             response = self.test_client.delete(f"/case_updates/{case_update_id}")
             self.assertEqual(response.status_code, HTTPStatus.OK)

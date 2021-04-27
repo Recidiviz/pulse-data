@@ -74,7 +74,7 @@ class TestCaseUpdateSchema(SchemaTestCase):
     test_missing_external_id = invalid_schema_test(
         {
             "person_external_id": "123",
-            "actions": [CaseUpdateActionType.OTHER_DISMISSAL.value],
+            "actions": [CaseUpdateActionType.DEPRECATED__OTHER_DISMISSAL.value],
         },
         invalid_keys=["personExternalId"],
     )
@@ -82,7 +82,7 @@ class TestCaseUpdateSchema(SchemaTestCase):
     test_missing_action = invalid_schema_test(
         {
             "personExternalId": "123",
-            "action": [CaseUpdateActionType.OTHER_DISMISSAL.value],
+            "action": [CaseUpdateActionType.DEPRECATED__OTHER_DISMISSAL.value],
         },
         invalid_keys=["action"],
     )
@@ -110,14 +110,14 @@ class TestCaseUpdateSchema(SchemaTestCase):
     test_valid_data = valid_schema_test(
         {
             "personExternalId": "123",
-            "actionType": CaseUpdateActionType.OTHER_DISMISSAL.value,
+            "actionType": CaseUpdateActionType.DEPRECATED__OTHER_DISMISSAL.value,
         }
     )
 
     test_invalid_comments = invalid_schema_test(
         {
             "personExternalId": "123",
-            "actionType": CaseUpdateActionType.OTHER_DISMISSAL.value,
+            "actionType": CaseUpdateActionType.DEPRECATED__OTHER_DISMISSAL.value,
             "comments": "Incorrect key",
         },
         invalid_keys=["comments"],
@@ -126,7 +126,7 @@ class TestCaseUpdateSchema(SchemaTestCase):
     test_valid_comment = valid_schema_test(
         {
             "personExternalId": "123",
-            "actionType": CaseUpdateActionType.OTHER_DISMISSAL.value,
+            "actionType": CaseUpdateActionType.DEPRECATED__OTHER_DISMISSAL.value,
             "comment": "Correct comment key",
         }
     )

@@ -63,6 +63,20 @@ class CaseTriageTestHelpers:
         self.test.assertEqual(response.status_code, HTTPStatus.OK)
         return response.get_json()
 
+    def create_case_update(
+        self, person_external_id: str, action_type: str, comment: str = ""
+    ) -> None:
+        response = self.test_client.post(
+            "/case_updates",
+            json={
+                "personExternalId": person_external_id,
+                "actionType": action_type,
+                "comment": comment,
+            },
+        )
+
+        self.test.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
+
     def find_client_in_api_response(self, person_external_id: str) -> Dict[Any, Any]:
         client_json = self.get_clients()
 
