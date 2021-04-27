@@ -26,7 +26,7 @@ from flask import Flask, Response, jsonify, session
 
 from recidiviz.case_triage.api_routes import create_api_blueprint
 from recidiviz.case_triage.authorization import AuthorizationStore
-from recidiviz.case_triage.case_updates.serializers import serialize_last_version_info
+from recidiviz.case_triage.case_updates.serializers import serialize_client_case_version
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
 from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.case_triage.impersonate_users import (
@@ -39,7 +39,6 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
     OpportunityDeferral,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
-from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.case_triage.api_test_helpers import (
     CaseTriageTestHelpers,
@@ -83,7 +82,7 @@ class TestCaseTriageAPIRoutes(TestCase):
         engine = setup_scoped_sessions(self.test_app, db_url)
         # Auto-generate all tables that exist in our schema in this database
         self.database_key.declarative_meta.metadata.create_all(engine)
-        self.session = SessionFactory.for_database(self.database_key)
+        self.session = self.test_app.scoped_session
 
         # Add seed data
         self.officer = generate_fake_officer("officer_id_1", "officer1@recidiviz.org")
@@ -107,7 +106,7 @@ class TestCaseTriageAPIRoutes(TestCase):
             self.client_1,
             self.officer.external_id,
             action_type=CaseUpdateActionType.COMPLETED_ASSESSMENT,
-            last_version=serialize_last_version_info(
+            last_version=serialize_client_case_version(
                 CaseUpdateActionType.COMPLETED_ASSESSMENT, self.client_1
             ).to_json(),
         )
@@ -115,16 +114,16 @@ class TestCaseTriageAPIRoutes(TestCase):
             self.client_2,
             self.officer_without_clients.external_id,
             action_type=CaseUpdateActionType.COMPLETED_ASSESSMENT,
-            last_version=serialize_last_version_info(
+            last_version=serialize_client_case_version(
                 CaseUpdateActionType.COMPLETED_ASSESSMENT, self.client_2
             ).to_json(),
         )
         self.case_update_3 = generate_fake_case_update(
             self.client_1,
             self.officer.external_id,
-            action_type=CaseUpdateActionType.OTHER_DISMISSAL,
-            last_version=serialize_last_version_info(
-                CaseUpdateActionType.OTHER_DISMISSAL, self.client_1
+            action_type=CaseUpdateActionType.DEPRECATED__OTHER_DISMISSAL,
+            last_version=serialize_client_case_version(
+                CaseUpdateActionType.DEPRECATED__OTHER_DISMISSAL, self.client_1
             ).to_json(),
         )
         self.client_2.most_recent_assessment_date = date(2022, 2, 2)
@@ -141,7 +140,6 @@ class TestCaseTriageAPIRoutes(TestCase):
             officer_id=self.officer.external_id,
             person_external_id=self.client_2.person_external_id,
         )
-        self.session.expire_on_commit = False
 
         self.session.add_all(
             [
@@ -186,7 +184,7 @@ class TestCaseTriageAPIRoutes(TestCase):
                 client_1_response["caseUpdates"],
                 [
                     CaseUpdateActionType.COMPLETED_ASSESSMENT.value,
-                    CaseUpdateActionType.OTHER_DISMISSAL.value,
+                    CaseUpdateActionType.DEPRECATED__OTHER_DISMISSAL.value,
                 ],
             )
 
@@ -210,7 +208,7 @@ class TestCaseTriageAPIRoutes(TestCase):
                 "/case_updates",
                 json={
                     "personExternalId": "nonexistent-person",
-                    "actionType": CaseUpdateActionType.OTHER_DISMISSAL.value,
+                    "actionType": CaseUpdateActionType.DEPRECATED__OTHER_DISMISSAL.value,
                 },
             )
 
@@ -224,32 +222,36 @@ class TestCaseTriageAPIRoutes(TestCase):
     def test_case_updates_success(self) -> None:
         with self.helpers.as_officer(self.officer):
             # Record new user action
-            response = self.test_client.post(
-                "/case_updates",
-                json={
-                    "personExternalId": self.client_2.person_external_id,
-                    "actionType": CaseUpdateActionType.OTHER_DISMISSAL.value,
-                    "comment": "Not on my caseload!",
-                },
-            )
-            self.assertEqual(response.status_code, HTTPStatus.OK)
+            action = CaseUpdateActionType.INCORRECT_ASSESSMENT_DATA.value
+            person_external_id = self.client_2.person_external_id
+            comment = "I recently completed a risk assessment"
+
+            # Submit API request
+            self.helpers.create_case_update(person_external_id, action, comment)
+
             self.mock_segment_client.track_person_action_taken.assert_called()
 
             # Verify user action is persisted
-            client = self.helpers.find_client_in_api_response(
-                self.client_2.person_external_id
-            )
-            self.assertIn(
-                CaseUpdateActionType.OTHER_DISMISSAL.value, client["caseUpdates"]
-            )
+            client = self.helpers.find_client_in_api_response(person_external_id)
+            self.assertIn(action, client["caseUpdates"])
 
-            update = client["caseUpdates"][CaseUpdateActionType.OTHER_DISMISSAL.value]
+            update = client["caseUpdates"][action]
             self.assertEqual(update["status"], CaseUpdateStatus.IN_PROGRESS.value)
             self.assertEqual(
                 update["comment"],
-                "Not on my caseload!",
+                comment,
             )
             self.assertEqual(len(client["caseUpdates"].keys()), 2)
+
+            # Assessment completed in CIS
+            self.client_2.most_recent_assessment_date += timedelta(days=1)
+            self.session.commit()
+
+            client = self.helpers.find_client_in_api_response(person_external_id)
+            self.assertIn(action, client["caseUpdates"])
+
+            update = client["caseUpdates"][action]
+            self.assertEqual(CaseUpdateStatus.UPDATED_IN_CIS.value, update["status"])
 
     def test_delete_case_update(self) -> None:
         with self.helpers.as_officer(self.officer):
@@ -258,7 +260,7 @@ class TestCaseTriageAPIRoutes(TestCase):
             case_update = generate_fake_case_update(
                 self.client_2,
                 self.officer.external_id,
-                action_type=CaseUpdateActionType.OTHER_DISMISSAL,
+                action_type=CaseUpdateActionType.DEPRECATED__OTHER_DISMISSAL,
                 comment="They are currently in jail.",
             )
             self.session.add(case_update)
@@ -269,7 +271,8 @@ class TestCaseTriageAPIRoutes(TestCase):
                 self.client_2.person_external_id
             )
             self.assertIn(
-                CaseUpdateActionType.OTHER_DISMISSAL.value, client["caseUpdates"]
+                CaseUpdateActionType.DEPRECATED__OTHER_DISMISSAL.value,
+                client["caseUpdates"],
             )
 
             response = self.test_client.delete(f"/case_updates/{case_update.update_id}")
@@ -280,20 +283,20 @@ class TestCaseTriageAPIRoutes(TestCase):
                 self.client_2.person_external_id
             )
             self.assertNotIn(
-                CaseUpdateActionType.OTHER_DISMISSAL.value, client["caseUpdates"]
+                CaseUpdateActionType.DEPRECATED__OTHER_DISMISSAL.value,
+                client["caseUpdates"],
             )
 
     def test_delete_case_update_errors(self) -> None:
-        # Record new user action for officer 2
         case_update = self.case_update_2
-
-        # No signed in user
-        with self.helpers.as_demo_user():
-            response = self.test_client.delete(f"/case_updates/{case_update.update_id}")
-            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
 
         # Officer trying to delete another officer's update
         with self.helpers.as_officer(self.officer_without_clients):
+            response = self.test_client.delete(f"/case_updates/{case_update.update_id}")
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
+        # No signed in user
+        with self.helpers.as_demo_user():
             response = self.test_client.delete(f"/case_updates/{case_update.update_id}")
             self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
 

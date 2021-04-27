@@ -21,8 +21,9 @@ from typing import Dict
 from recidiviz.case_triage.case_updates.progress_checker import (
     check_case_update_action_progress,
 )
+from recidiviz.case_triage.case_updates.serializers import serialize_client_case_version
 from recidiviz.case_triage.case_updates.types import (
-    LastVersionData,
+    CaseActionVersionData,
     CaseUpdateActionType,
 )
 from recidiviz.case_triage.querier.utils import _json_map_dates_to_strings
@@ -60,8 +61,9 @@ class CaseUpdatePresenter:
         )
 
     def is_in_progress(self) -> bool:
+        action_type = CaseUpdateActionType(self.case_update.action_type)
         return check_case_update_action_progress(
-            CaseUpdateActionType(self.case_update.action_type),
-            self.etl_client,
-            LastVersionData.from_json(self.case_update.last_version),
+            action_type,
+            last_version=CaseActionVersionData.from_json(self.case_update.last_version),
+            current_version=serialize_client_case_version(action_type, self.etl_client),
         )

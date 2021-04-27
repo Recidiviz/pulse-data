@@ -17,32 +17,47 @@
 """Defines the types needed for modeling CaseUpdates."""
 from datetime import date
 from enum import Enum
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 
 import attr
 import dateutil.parser
 
+from recidiviz.persistence.database.schema.case_triage.schema import ETLClient
+
 
 class CaseUpdateActionType(Enum):
+    # Risk assessment
     COMPLETED_ASSESSMENT = "COMPLETED_ASSESSMENT"
+    INCORRECT_ASSESSMENT_DATA = "INCORRECT_ASSESSMENT_DATA"
+    # Employment
+    FOUND_EMPLOYMENT = "FOUND_EMPLOYMENT"
+    INCORRECT_EMPLOYMENT_DATA = "INCORRECT_EMPLOYMENT_DATA"
+    # Face to face contact
+    SCHEDULED_FACE_TO_FACE = "SCHEDULED_FACE_TO_FACE"
+    INCORRECT_CONTACT_DATA = "INCORRECT_CONTACT_DATA"
+
     DISCHARGE_INITIATED = "DISCHARGE_INITIATED"
     DOWNGRADE_INITIATED = "DOWNGRADE_INITIATED"
-    FOUND_EMPLOYMENT = "FOUND_EMPLOYMENT"
-    SCHEDULED_FACE_TO_FACE = "SCHEDULED_FACE_TO_FACE"
 
-    INFORMATION_DOESNT_MATCH_OMS = "INFORMATION_DOESNT_MATCH_OMS"
     NOT_ON_CASELOAD = "NOT_ON_CASELOAD"
-    FILED_REVOCATION_OR_VIOLATION = "FILED_REVOCATION_OR_VIOLATION"
-    OTHER_DISMISSAL = "OTHER_DISMISSAL"
+    CURRENTLY_IN_CUSTODY = "CURRENTLY_IN_CUSTODY"
+
+    DEPRECATED__INFORMATION_DOESNT_MATCH_OMS = "INFORMATION_DOESNT_MATCH_OMS"
+    DEPRECATED__FILED_REVOCATION_OR_VIOLATION = "FILED_REVOCATION_OR_VIOLATION"
+    DEPRECATED__OTHER_DISMISSAL = "OTHER_DISMISSAL"
 
 
 class CaseUpdateMetadataKeys:
+    LAST_EMPLOYER = "last_employer"
     LAST_RECORDED_DATE = "last_recorded_date"
     LAST_SUPERVISION_LEVEL = "last_supervision_level"
 
 
 @attr.s
-class LastVersionData:
+class CaseActionVersionData:
+    """ Contains logic for denormalizing and serializing a version of client data """
+
+    last_employer: Optional[str] = attr.ib(default=None)
     last_recorded_date: Optional[date] = attr.ib(default=None)
     last_supervision_level: Optional[str] = attr.ib(default=None)
 
@@ -56,20 +71,36 @@ class LastVersionData:
             base[
                 CaseUpdateMetadataKeys.LAST_SUPERVISION_LEVEL
             ] = self.last_supervision_level
+
+        if self.last_employer is not None:
+            base[CaseUpdateMetadataKeys.LAST_EMPLOYER] = self.last_employer
+
         return base
 
     @staticmethod
-    def from_json(json_dict: Dict[str, str]) -> "LastVersionData":
-        last_recorded_date = None
+    def from_json(json_dict: Dict[str, str]) -> "CaseActionVersionData":
+        kwargs: Dict[str, Any] = {**json_dict}
+
         if CaseUpdateMetadataKeys.LAST_RECORDED_DATE in json_dict:
-            last_recorded_date = dateutil.parser.parse(
+            kwargs[CaseUpdateMetadataKeys.LAST_RECORDED_DATE] = dateutil.parser.parse(
                 json_dict[CaseUpdateMetadataKeys.LAST_RECORDED_DATE]
             ).date()
-        last_supervision_level = json_dict.get(
-            CaseUpdateMetadataKeys.LAST_SUPERVISION_LEVEL
-        )
 
-        return LastVersionData(
-            last_recorded_date=last_recorded_date,
-            last_supervision_level=last_supervision_level,
+        return CaseActionVersionData(**kwargs)
+
+    @staticmethod
+    def from_client_mappings(
+        mappings: Dict[str, str],
+        client: ETLClient,
+    ) -> "CaseActionVersionData":
+        if not all(hasattr(ETLClient, column) for column in mappings.values()):
+            raise ValueError(
+                f"Some mapping columns were not found in ETLClient. mappings: {mappings}"
+            )
+
+        return CaseActionVersionData(
+            **{
+                metadata_key: getattr(client, column_name)
+                for metadata_key, column_name in mappings.items()
+            }
         )

@@ -21,7 +21,7 @@ from typing import Optional
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from recidiviz.case_triage.case_updates.serializers import serialize_last_version_info
+from recidiviz.case_triage.case_updates.serializers import serialize_client_case_version
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
 from recidiviz.case_triage.demo_helpers import (
     fake_officer_id_for_demo_user,
@@ -47,7 +47,7 @@ def _update_case_for_person(
     given officer_id and client. If other_text is provided, it's stored on the comment field.
     """
     action_ts = datetime.now() if action_ts is None else action_ts
-    last_version = serialize_last_version_info(action_type, client).to_json()
+    last_version = serialize_client_case_version(action_type, client).to_json()
     insert_statement = (
         insert(CaseUpdate)
         .values(

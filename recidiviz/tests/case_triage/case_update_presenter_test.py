@@ -15,12 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements tests for the CasePresenter class."""
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from unittest.case import TestCase
 
 from freezegun import freeze_time
 
-from recidiviz.case_triage.case_updates.serializers import serialize_last_version_info
+from recidiviz.case_triage.case_updates.serializers import serialize_client_case_version
 from recidiviz.case_triage.case_updates.types import (
     CaseUpdateMetadataKeys,
     CaseUpdateActionType,
@@ -54,10 +54,10 @@ class TestCaseUpdatePresenter(TestCase):
         """This tests dismissed actions. No changes to the ETL data that we see will
         affect the values we ultimately get from this."""
         dismiss_actions = [
-            CaseUpdateActionType.INFORMATION_DOESNT_MATCH_OMS,
             CaseUpdateActionType.NOT_ON_CASELOAD,
-            CaseUpdateActionType.FILED_REVOCATION_OR_VIOLATION,
-            CaseUpdateActionType.OTHER_DISMISSAL,
+            CaseUpdateActionType.DEPRECATED__INFORMATION_DOESNT_MATCH_OMS,
+            CaseUpdateActionType.DEPRECATED__FILED_REVOCATION_OR_VIOLATION,
+            CaseUpdateActionType.DEPRECATED__OTHER_DISMISSAL,
         ]
 
         case_updates = [
@@ -65,7 +65,7 @@ class TestCaseUpdatePresenter(TestCase):
                 self.mock_client,
                 self.mock_officer.external_id,
                 action_type=action_type,
-                last_version=serialize_last_version_info(
+                last_version=serialize_client_case_version(
                     action_type, self.mock_client
                 ).to_json(),
             )
@@ -80,44 +80,6 @@ class TestCaseUpdatePresenter(TestCase):
             self.assertEqual(
                 presenter.to_json()["actionTs"], str(datetime(2020, 1, 1, 0, 0))
             )
-
-    def test_completed_assessment_action_unresolved(self) -> None:
-        presenter = CaseUpdatePresenter(
-            self.mock_client,
-            generate_fake_case_update(
-                self.mock_client,
-                self.mock_officer.external_id,
-                action_type=CaseUpdateActionType.COMPLETED_ASSESSMENT,
-                last_version={
-                    CaseUpdateMetadataKeys.LAST_RECORDED_DATE: self.mock_client.most_recent_assessment_date.isoformat(),
-                },
-            ),
-        )
-        self.assertEqual(
-            presenter.to_json()["status"], CaseUpdateStatus.IN_PROGRESS.value
-        )
-
-        # Officer filled out a new assessment for the client
-        self.mock_client.most_recent_assessment_date = (
-            self.mock_client.most_recent_assessment_date + timedelta(days=1)
-        )
-
-        self.assertEqual(
-            presenter.to_json()["status"], CaseUpdateStatus.UPDATED_IN_CIS.value
-        )
-
-    def test_discharge_initiated_action_unresolved(self) -> None:
-        presenter = CaseUpdatePresenter(
-            self.mock_client,
-            generate_fake_case_update(
-                self.mock_client,
-                self.mock_officer.external_id,
-                action_type=CaseUpdateActionType.DISCHARGE_INITIATED,
-            ),
-        )
-        self.assertEqual(
-            presenter.to_json()["status"], CaseUpdateStatus.IN_PROGRESS.value
-        )
 
     def test_downgrade_initiated_action_resolve_flow(self) -> None:
         presenter = CaseUpdatePresenter(
@@ -137,50 +99,6 @@ class TestCaseUpdatePresenter(TestCase):
         )
 
         self.mock_client.supervision_level = "MINIMUM"
-
-        self.assertEqual(
-            presenter.to_json()["status"], CaseUpdateStatus.UPDATED_IN_CIS.value
-        )
-
-    def test_found_employment_action_resolve_flow(self) -> None:
-        presenter = CaseUpdatePresenter(
-            self.mock_client,
-            generate_fake_case_update(
-                self.mock_client,
-                self.mock_officer.external_id,
-                action_type=CaseUpdateActionType.FOUND_EMPLOYMENT,
-            ),
-        )
-        self.assertEqual(
-            presenter.to_json()["status"], CaseUpdateStatus.IN_PROGRESS.value
-        )
-
-        # Employment updated in CIS
-        self.mock_client.employer = "Recidiviz"
-
-        self.assertEqual(
-            presenter.to_json()["status"], CaseUpdateStatus.UPDATED_IN_CIS.value
-        )
-
-    def test_scheduled_face_to_face_action_resolve_flow(self) -> None:
-        presenter = CaseUpdatePresenter(
-            self.mock_client,
-            generate_fake_case_update(
-                self.mock_client,
-                self.mock_officer.external_id,
-                action_type=CaseUpdateActionType.SCHEDULED_FACE_TO_FACE,
-                last_version={
-                    CaseUpdateMetadataKeys.LAST_RECORDED_DATE: self.mock_client.most_recent_face_to_face_date.isoformat(),
-                },
-            ),
-        )
-
-        self.assertEqual(
-            presenter.to_json()["status"], CaseUpdateStatus.IN_PROGRESS.value
-        )
-
-        # Officer had a recent face to face contact with the client
-        self.mock_client.most_recent_face_to_face_date = date(2022, 2, 2)
 
         self.assertEqual(
             presenter.to_json()["status"], CaseUpdateStatus.UPDATED_IN_CIS.value
