@@ -53,6 +53,7 @@ class FutureExecutor:
     ) -> Generator[FutureExecutorProgress, None, None]:
         """Publishes progress of the futures until all futures are completed
         Raises a timeout error if futures have not completed after `timeout` seconds
+        Raises exceptions that the futures may have encountered
         """
 
         completed = 0
@@ -64,6 +65,9 @@ class FutureExecutor:
             yield FutureExecutorProgress(
                 running=running, completed=completed, total=self.futures_count
             )
+
+        # Aggregate results, raising any exceptions that a future may have encountered
+        self.results()
 
     def results(self) -> List:
         return [task_future.result() for task_future in self.task_futures]

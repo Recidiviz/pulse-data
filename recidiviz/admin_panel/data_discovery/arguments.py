@@ -63,7 +63,7 @@ class DataDiscoveryArgs:
     end_date: date = attr.ib()
 
     # Data will be filtered to rows that match any permutation of these conditions (columns/values)
-    condition_groups: List[ConditionGroup] = attr.ib()
+    condition_groups: List[ConditionGroup] = attr.ib(factory=list)
 
     raw_files: List[str] = attr.ib(factory=list)
     ingest_views: List[str] = attr.ib(factory=list)
@@ -73,32 +73,31 @@ class DataDiscoveryArgs:
         return uuid.UUID(self.id)
 
     @property
-    def search_paths(self) -> List[str]:
-        """ Returns the search paths to use when listing GCS file entries """
+    def direct_ingest_storage_directory(self) -> GcsfsDirectoryPath:
         if in_gcp():
-            search_path = gcsfs_direct_ingest_storage_directory_path_for_region(
+            return gcsfs_direct_ingest_storage_directory_path_for_region(
                 region_code=self.region_code,
                 system_level=SystemLevel.STATE,
                 ingest_instance=DirectIngestInstance.PRIMARY,
             )
-        else:
-            # Local override
-            search_path = GcsfsDirectoryPath.from_absolute_path(
-                f"recidiviz-staging-direct-ingest-state-storage/{self.region_code.lower()}"
-            )
 
-        raw_data_path = os.path.join(
-            search_path.abs_path(),
-            str(GcsfsDirectIngestFileType.RAW_DATA.value),
-            "**/*.*",
-        )
-        ingest_view_path = os.path.join(
-            search_path.abs_path(),
-            str(GcsfsDirectIngestFileType.INGEST_VIEW.value),
-            "**/*.*",
+        # Local override
+        return GcsfsDirectoryPath.from_absolute_path(
+            f"recidiviz-staging-direct-ingest-state-storage/{self.region_code.lower()}"
         )
 
-        return [f"gs://{raw_data_path}", f"gs://{ingest_view_path}"]
+    @property
+    def search_paths(self) -> List[str]:
+        """ Returns the search paths to use when listing GCS file entries """
+        return [
+            os.path.join(
+                self.region_code.lower(), str(GcsfsDirectIngestFileType.RAW_DATA.value)
+            ),
+            os.path.join(
+                self.region_code.lower(),
+                str(GcsfsDirectIngestFileType.INGEST_VIEW.value),
+            ),
+        ]
 
     @property
     def state_files_cache_key(self) -> str:

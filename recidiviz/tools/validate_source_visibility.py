@@ -224,7 +224,6 @@ def main() -> int:
                 "recidiviz.tests.ingest.fixtures",
                 # TODO(#4472): Refactor justice counts code out of the tools directory
                 "recidiviz.tools.justice_counts.manual_upload",
-                "recidiviz.tools.gsutil_shell_helpers",
                 "recidiviz.utils",
                 "recidiviz.validation",
                 "recidiviz.view_registry",

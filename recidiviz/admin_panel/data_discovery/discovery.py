@@ -58,13 +58,13 @@ from recidiviz.admin_panel.data_discovery.utils import (
 from recidiviz.cloud_memorystore.redis_communicator import (
     MessageKind,
 )
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     filename_parts_from_path,
     GcsfsDirectIngestFileType,
 )
 from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
-from recidiviz.tools.gsutil_shell_helpers import gsutil_ls
 from recidiviz.utils.environment import in_gcp
 from recidiviz.utils.future_executor import FutureExecutor
 
@@ -77,6 +77,15 @@ class DataDiscoveryException(Exception):
     pass
 
 
+def list_object_thread_task(bucket_name: str, prefix: str) -> List[str]:
+    gcsfs = GcsfsFactory.build()
+    return [
+        path.uri()
+        for path in gcsfs.ls_with_blob_prefix(bucket_name, prefix)
+        if isinstance(path, GcsfsFilePath)
+    ]
+
+
 def get_direct_ingest_storage_paths(args: DataDiscoveryArgs) -> List[str]:
     """ Returns the list of ingest file paths in GCS """
     cache = get_data_discovery_cache()
@@ -85,11 +94,17 @@ def get_direct_ingest_storage_paths(args: DataDiscoveryArgs) -> List[str]:
         state_files = (cache.get(args.state_files_cache_key) or b"").decode("utf-8")
     else:
         communicator = get_data_discovery_communicator(args.communication_channel_uuid)
-        gsutil_ls_targets = [
-            {"gs_path": search_path} for search_path in args.search_paths
+        list_object_targets = [
+            {
+                "bucket_name": args.direct_ingest_storage_directory.bucket_name,
+                "prefix": search_path,
+            }
+            for search_path in args.search_paths
         ]
 
-        with FutureExecutor.build(gsutil_ls, gsutil_ls_targets) as future_executor:
+        with FutureExecutor.build(
+            list_object_thread_task, list_object_targets
+        ) as future_executor:
             for progress in future_executor.progress():
                 communicator.communicate(
                     f"Preparing GCS object path cache. {progress.format()}"
