@@ -253,14 +253,14 @@ class CorrectionsOutputViewBuilder(SimpleBigQueryViewBuilder):
 def view_chain_for_metric(
     metric: metric_by_month.CalculatedMetricByMonth,
 ) -> List[SimpleBigQueryViewBuilder]:
-    calculate_view_builder = metric_by_month.CalculatedMetricByMonthViewBuilder(
+    calculate_view_chain = metric_by_month.calculate_metric_view_chain(
         dataset_id=dataset_config.JUSTICE_COUNTS_CORRECTIONS_DATASET,
         metric_to_calculate=metric,
     )
     comparison_view_builder = metric_by_month.CompareToPriorYearViewBuilder(
         dataset_id=dataset_config.JUSTICE_COUNTS_CORRECTIONS_DATASET,
         metric_name=metric.output_name,
-        input_view=calculate_view_builder,
+        input_view=calculate_view_chain[-1],
     )
     dimensions_to_columns_view_builder = metric_by_month.DimensionsToColumnsViewBuilder(
         dataset_id=dataset_config.JUSTICE_COUNTS_CORRECTIONS_DATASET,
@@ -274,7 +274,7 @@ def view_chain_for_metric(
         input_view=dimensions_to_columns_view_builder,
     )
     return [
-        calculate_view_builder,
+        *calculate_view_chain,
         comparison_view_builder,
         dimensions_to_columns_view_builder,
         output_view_builder,
