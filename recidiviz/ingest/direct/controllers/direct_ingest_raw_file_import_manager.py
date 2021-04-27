@@ -29,6 +29,7 @@ import pandas as pd
 from google.api_core.exceptions import BadRequest
 from google.cloud import bigquery
 from google.oauth2.credentials import Credentials
+from more_itertools import one
 
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.cloud_functions.cloud_function_utils import GCSFS_NO_CACHING
@@ -186,6 +187,16 @@ class DirectIngestRawFileConfig:
     def is_undocumented(self) -> bool:
         documented_cols = [column.name for column in self.columns if column.description]
         return not documented_cols
+
+    def caps_normalized_col(self, col_name: str) -> Optional[str]:
+        """If the provided column name has a case-insensitive match in the columns list,
+        returns the proper capitalization of the column, as listed in the configuration
+        file.
+        """
+        for registered_col in self.columns:
+            if registered_col.name.lower() == col_name.lower():
+                return registered_col.name
+        return None
 
     @classmethod
     def from_yaml_dict(
@@ -643,12 +654,32 @@ class DirectIngestRawFileImportManager:
             if column_name[0] in string.digits:
                 column_name = "_" + column_name
 
+            # If the capitalization of the column name doesn't match the capitalization
+            # listed in the file config, update the capitalization.
+            if column_name not in file_config.columns:
+                caps_normalized_col = file_config.caps_normalized_col(column_name)
+                if caps_normalized_col:
+                    column_name = caps_normalized_col
+
             if column_name in normalized_columns:
                 raise ValueError(
                     f"Multiple columns with name [{column_name}] after normalization."
                 )
             normalized_columns.add(column_name)
             columns[i] = column_name
+
+        if len(normalized_columns) == 1:
+            # A single-column file is almost always indicative of a parsing error. If
+            # this column name is not registered in the file config, we throw.
+            column = one(normalized_columns)
+            if column not in file_config.columns:
+                raise ValueError(
+                    f"Found only one column: [{column}]. Columns likely did not "
+                    f"parse properly. Are you using the correct separator and encoding "
+                    f"for this file? If this file really has just one column, the "
+                    f"column name must be registered in the raw file config before "
+                    f"upload."
+                )
 
         return columns
 
