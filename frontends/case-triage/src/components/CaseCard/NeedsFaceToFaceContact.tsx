@@ -66,29 +66,18 @@ const getLastHomeVisitText = (client: DecoratedClient) => {
   return `Assumed no home visit from CIS.`;
 };
 
-const getContactFrequencyText = (
-  contactFrequency?: SupervisionContactFrequency
+const getFrequencyText = (
+  contactFrequency: SupervisionContactFrequency | undefined,
+  singularUnit: string
 ) => {
   if (!contactFrequency) {
     return null;
   }
 
   const [contacts, days] = contactFrequency;
-  const pluralized = contacts === 1 ? "contact" : "contacts";
-  return `${contacts} ${pluralized} every ${days} days`;
-};
-
-const getHomeVisitFrequencyText = (
-  homeVisitFrequency?: SupervisionContactFrequency
-) => {
-  if (!homeVisitFrequency) {
-    return null;
-  }
-
-  const [homeVisit, days] = homeVisitFrequency;
-  const homeVisitPluralized = homeVisit === 1 ? "home visit" : "home visits";
+  const pluralized = contacts === 1 ? "" : "s";
   const daysPluralized = days === 1 ? "day" : "days";
-  return `${homeVisit} ${homeVisitPluralized} every ${days} ${daysPluralized}`;
+  return `${contacts} ${singularUnit}${pluralized} every ${days} ${daysPluralized}.`;
 };
 
 const NeedsFaceToFaceContact: React.FC<NeedsFaceToFaceContactProps> = ({
@@ -145,11 +134,11 @@ const NeedsFaceToFaceContact: React.FC<NeedsFaceToFaceContactProps> = ({
             {client.currentAddress || "No address on file"}
           </div>
           <div>
-            {getContactFrequencyText(contactFrequency)}.{" "}
+            {getFrequencyText(contactFrequency, "contact")}{" "}
             {getLastContactedText(client)}
           </div>
           <div>
-            {getHomeVisitFrequencyText(homeVisitFrequency)}.{" "}
+            {getFrequencyText(homeVisitFrequency, "home visit")}{" "}
             {getLastHomeVisitText(client)}
           </div>
         </Caption>
