@@ -26,31 +26,32 @@ from recidiviz.big_query.selected_columns_big_query_view import (
 from recidiviz.calculator.query.state.dataset_config import (
     CASE_TRIAGE_DATASET,
 )
+from recidiviz.case_triage.opportunities.types import OpportunityType
 from recidiviz.case_triage.state_utils.us_id import US_ID_ASSESSMENT_SCORE_RANGE
 from recidiviz.case_triage.views.dataset_config import VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 
-TOP_OPPORTUNITIES_QUERY_VIEW = """
+TOP_OPPORTUNITIES_QUERY_VIEW = f"""
 WITH overdue_downgrades AS (
   SELECT
     state_code,
     supervising_officer_external_id,
     person_external_id,
-    'OVERDUE_DOWNGRADE' AS opportunity_type,
+    '{OpportunityType.OVERDUE_DOWNGRADE.value}' AS opportunity_type,
     TO_JSON_STRING(STRUCT(assessment_score as assessmentScore, most_recent_assessment_date AS latestAssessmentDate)) AS opportunity_metadata
   FROM
-    `{project_id}.{case_triage_dataset}.etl_clients`
+    `{{project_id}}.{{case_triage_dataset}}.etl_clients`
   WHERE
     state_code = 'US_ID'
     AND case_type = 'GENERAL'
     AND assessment_score IS NOT NULL
     AND supervision_type NOT IN ('INTERNAL_UNKNOWN', 'INFORMAL_PROBATION')
-    AND ({assessment_scores_clause})
+    AND ({{assessment_scores_clause}})
 )
 SELECT
-  {columns}
+  {{columns}}
 FROM
   overdue_downgrades
 """

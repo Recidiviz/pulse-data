@@ -16,6 +16,7 @@
 # =============================================================================
 """ Test helpers for the Case Triage app """
 import contextlib
+from datetime import datetime, timedelta
 from http import HTTPStatus
 from typing import List, Dict, Any, Generator
 from unittest import TestCase
@@ -72,6 +73,19 @@ class CaseTriageTestHelpers:
                 "personExternalId": person_external_id,
                 "actionType": action_type,
                 "comment": comment,
+            },
+        )
+
+        self.test.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
+
+    def defer_opportunity(self, person_external_id: str, opportunity_type: str) -> None:
+        response = self.test_client.post(
+            "/defer_opportunity",
+            json={
+                "personExternalId": person_external_id,
+                "opportunityType": opportunity_type,
+                "deferUntil": str(datetime.now() + timedelta(days=1)),
+                "requestReminder": True,
             },
         )
 
