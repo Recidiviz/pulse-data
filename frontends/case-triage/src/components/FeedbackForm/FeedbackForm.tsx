@@ -132,8 +132,8 @@ const InnerForm = ({
     <Form>
       <H3>Give Us Feedback</H3>
       <Description>
-        After you click submit, we will move this item to the bottom of the
-        list.
+        If you select “This person is not on my caseload,” we will move this
+        item to the bottom of the list.
       </Description>
 
       <ReasonsContainer>
