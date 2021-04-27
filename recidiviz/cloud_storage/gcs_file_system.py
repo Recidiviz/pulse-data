@@ -338,9 +338,10 @@ class GCSFileSystemImpl(GCSFileSystem):
         content_type: str,
     ) -> None:
         bucket = self.storage_client.bucket(path.bucket_name)
-        bucket.blob(path.blob_name).upload_from_file(
-            contents_handle.open(), content_type=content_type
-        )
+        with contents_handle.open() as file_stream:
+            bucket.blob(path.blob_name).upload_from_file(
+                file_stream, content_type=content_type
+            )
 
     @retry.Retry(predicate=retry_predicate)
     def ls_with_blob_prefix(
