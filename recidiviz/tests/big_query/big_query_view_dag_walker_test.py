@@ -32,7 +32,9 @@ from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagNode,
     DagKey,
 )
-from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE
+from recidiviz.view_registry.deployed_views import (
+    DEPLOYED_VIEW_BUILDERS,
+)
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
     DirectIngestRegionRawFileConfig,
 )
@@ -58,10 +60,9 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
             mock_table_has_column.return_value = True
             mock_table_exists.return_value = True
 
-            self.all_views = []
-            for view_builder_list in DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE.values():
-                for view_builder in view_builder_list:
-                    self.all_views.append(view_builder.build())
+            self.all_views = [
+                view_builder.build() for view_builder in DEPLOYED_VIEW_BUILDERS
+            ]
 
     def tearDown(self) -> None:
         self.project_id_patcher.stop()

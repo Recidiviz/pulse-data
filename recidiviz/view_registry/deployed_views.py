@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Views that are regularly updated with the deploy and rematerialized with metric exports.."""
-from typing import Dict, Sequence
+from typing import Dict, Sequence, List
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.county.view_config import (
@@ -26,6 +26,9 @@ from recidiviz.calculator.query.justice_counts.view_config import (
 )
 from recidiviz.calculator.query.state.view_config import (
     VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as STATE_VIEW_BUILDERS,
+)
+from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_recent_daily_job_id_by_metric_and_state_code import (
+    MOST_RECENT_DAILY_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_recent_job_id_by_metric_and_state_code import (
     MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_BUILDER,
@@ -58,7 +61,15 @@ DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE: Dict[
     BigQueryViewNamespace.VALIDATION_METADATA: VALIDATION_METADATA_VIEW_BUILDERS,
 }
 
+# Full list of all deployed view builders
+DEPLOYED_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
+    builder
+    for builder_list in DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE.values()
+    for builder in builder_list
+]
+
 # TODO(#7049): refactor most_recent_job_id_by_metric_and_state_code dependencies
 NOISY_DEPENDENCY_VIEW_BUILDERS = {
-    MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_BUILDER
+    MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_BUILDER,
+    MOST_RECENT_DAILY_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_BUILDER,
 }

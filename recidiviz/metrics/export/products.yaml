@@ -1,4 +1,5 @@
 # List of products with their required exports and statuses
+# TODO(#7063): Add product descriptions
 
 products:
   - name: Admin Panel
@@ -58,9 +59,9 @@ products:
         environment: staging
       - state_code: US_ND
         environment: production
-  - name: Unified Product
+  - name: Vitals
     exports:
-      - UP
+      - VITALS
     states:
       - state_code: US_ID
         environment: staging

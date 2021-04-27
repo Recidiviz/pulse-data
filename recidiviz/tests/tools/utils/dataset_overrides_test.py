@@ -17,7 +17,7 @@
 """Tests for dataset_overrides.py."""
 
 import unittest
-from typing import Set, Sequence
+from typing import Set, List
 
 from recidiviz.big_query.big_query_view import (
     BigQueryViewBuilder,
@@ -32,14 +32,16 @@ from recidiviz.tools.utils.dataset_overrides import (
     dataset_overrides_for_deployed_view_datasets,
     dataset_overrides_for_view_builders,
 )
-from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE
+from recidiviz.view_registry.deployed_views import (
+    DEPLOYED_VIEW_BUILDERS,
+)
 
 
 class TestDatasetOverrides(unittest.TestCase):
     """Tests for dataset_overrides.py."""
 
     @staticmethod
-    def _all_datasets(builders: Sequence[BigQueryViewBuilder]) -> Set[str]:
+    def _all_datasets(builders: List[BigQueryViewBuilder]) -> Set[str]:
         datasets = set()
         for builder in builders:
             datasets.add(builder.dataset_id)
@@ -83,9 +85,7 @@ class TestDatasetOverrides(unittest.TestCase):
         prefix = "my_prefix"
         overrides = dataset_overrides_for_deployed_view_datasets(prefix)
 
-        datasets: Set[str] = set()
-        for builders in DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE.values():
-            datasets = datasets.union(self._all_datasets(builders))
+        datasets = self._all_datasets(DEPLOYED_VIEW_BUILDERS)
 
         datasets.remove(DATAFLOW_METRICS_MATERIALIZED_DATASET)
         self.assertEqual(datasets, set(overrides.keys()))
@@ -101,9 +101,7 @@ class TestDatasetOverrides(unittest.TestCase):
             prefix, dataflow_dataset_override
         )
 
-        datasets: Set[str] = set()
-        for builders in DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE.values():
-            datasets = datasets.union(self._all_datasets(builders))
+        datasets = self._all_datasets(DEPLOYED_VIEW_BUILDERS)
 
         datasets.add(DATAFLOW_METRICS_DATASET)
 

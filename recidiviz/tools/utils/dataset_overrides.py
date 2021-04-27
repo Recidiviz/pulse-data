@@ -21,7 +21,7 @@ from typing import Dict, Optional, Sequence
 import logging
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE
+from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
     DATAFLOW_METRICS_DATASET,
@@ -43,22 +43,21 @@ def dataset_overrides_for_deployed_view_datasets(
     """
 
     all_view_builders = []
-    for view_builders in DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE.values():
-        for builder in view_builders:
-            if (
-                builder.dataset_id == DATAFLOW_METRICS_MATERIALIZED_DATASET
-                and dataflow_dataset_override is None
-            ):
-                # The DATAFLOW_METRICS_MATERIALIZED_DATASET dataset is a super expensive
-                # dataset to reproduce and materialize, since it queries from all of the
-                # DATAFLOW_METRICS_DATASET tables. We have this special case to avoid
-                # making a sandbox version of this dataset unless the user is explicitly
-                # testing a change where the views should read from a dataflow metrics
-                # dataset that's different than usual (aka if
-                # `dataflow_dataset_override` is not None).
-                continue
+    for builder in DEPLOYED_VIEW_BUILDERS:
+        if (
+            builder.dataset_id == DATAFLOW_METRICS_MATERIALIZED_DATASET
+            and dataflow_dataset_override is None
+        ):
+            # The DATAFLOW_METRICS_MATERIALIZED_DATASET dataset is a super expensive
+            # dataset to reproduce and materialize, since it queries from all of the
+            # DATAFLOW_METRICS_DATASET tables. We have this special case to avoid
+            # making a sandbox version of this dataset unless the user is explicitly
+            # testing a change where the views should read from a dataflow metrics
+            # dataset that's different than usual (aka if
+            # `dataflow_dataset_override` is not None).
+            continue
 
-            all_view_builders.append(builder)
+        all_view_builders.append(builder)
 
     dataset_overrides = dataset_overrides_for_view_builders(
         view_dataset_override_prefix, all_view_builders

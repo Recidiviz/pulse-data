@@ -34,6 +34,11 @@ from recidiviz.validation.views.dataset_config import EXTERNAL_ACCURACY_DATASET
 RAW_TABLE_DATASETS = {
     f"{state_code.value.lower()}_raw_data" for state_code in StateCode
 }
+
+LATEST_VIEW_DATASETS = {
+    f"{state_code.value.lower()}_raw_data_up_to_date_views" for state_code in StateCode
+}
+
 OTHER_SOURCE_TABLE_DATASETS = {
     COUNTY_BASE_DATASET,
     COVID_DASHBOARD_REFERENCE_DATASET,
@@ -49,3 +54,35 @@ OTHER_SOURCE_TABLE_DATASETS = {
 
 # These datasets should only contain tables that provide the source data for our view graph.
 VIEW_SOURCE_TABLE_DATASETS = OTHER_SOURCE_TABLE_DATASETS | RAW_TABLE_DATASETS
+
+RAW_DATA_TABLE_DATASETS_TO_DESCRIPTIONS = {
+    f"{state_code.value.lower()}_raw_data": f"Raw data tables from {StateCode.get_state(state_code)}"
+    for state_code in StateCode
+}
+
+OTHER_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS = {
+    COUNTY_BASE_DATASET: "Ingested county jail data. This dataset is a copy of the jails postgres database.",
+    COVID_DASHBOARD_REFERENCE_DATASET: "Reference tables used by the COVID dashboard. Updated manually.",
+    DATAFLOW_METRICS_DATASET: "Stores metric output of Dataflow pipeline jobs.",
+    EXTERNAL_ACCURACY_DATASET: "Stores data provided by the states that are used in"
+    " external validations of state metrics. Requires manual"
+    " updates when onboarding a new state to a new external"
+    " validation.",
+    EXTERNAL_REFERENCE_DATASET: "Stores data gathered from external sources. CSV versions"
+    " of tables are committed to our codebase, and updates to"
+    " tables are fully managed by Terraform.",
+    OPERATIONS_BASE_DATASET: "Internal Recidiviz operations data. This dataset is a"
+    " copy of the operations postgres database.",
+    POPULATION_PROJECTION_OUTPUT_DATASET: "Stores output of the population projection"
+    " simulations.",
+    STATE_BASE_DATASET: "Ingested state data. This dataset is a copy of the state"
+    " postgres database.",
+    STATIC_REFERENCE_TABLES_DATASET: "Reference tables used by various views in BigQuery."
+    " May need to be updated manually for new states.",
+    VERA_DATASET: "Stores data calculated outside of our codebase by Vera. Used only by Vera.",
+}
+
+VIEW_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS = {
+    **RAW_DATA_TABLE_DATASETS_TO_DESCRIPTIONS,
+    **OTHER_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS,
+}
