@@ -19,16 +19,17 @@ import { IconSVG, NeedState } from "@recidiviz/design-system";
 import { DecoratedClient } from "../../stores/ClientsStore";
 import { useRootStore } from "../../stores";
 import {
-  CardHeader,
   ClientCard,
   ClientNeed,
   DEFAULT_IN_PROGRESS_INDICATOR_OFFSET,
-  FlexCardSection,
+  FirstCardSection,
   InProgressIndicator,
   IN_PROGRESS_INDICATOR_SIZE,
   MainText,
   PendingText,
+  SecondCardSection,
   SecondaryText,
+  ThirdCardSection,
 } from "./ClientList.styles";
 import { titleCase } from "../../utils";
 import DueDate from "../DueDate";
@@ -106,18 +107,30 @@ const ClientComponent: React.FC<ClientProps> = ({
           DEFAULT_IN_PROGRESS_INDICATOR_OFFSET
         );
 
-  const hasDueDate = !client.caseUpdates[CaseUpdateActionType.NOT_ON_CASELOAD];
+  const notOnCaseloadAction =
+    client.caseUpdates[CaseUpdateActionType.NOT_ON_CASELOAD];
+  let dueDateText;
+  if (!notOnCaseloadAction) {
+    dueDateText = <DueDate date={getNextContactDate(client)} />;
+  } else {
+    dueDateText = (
+      <PendingText>
+        Reported on{" "}
+        {moment(notOnCaseloadAction.actionTs).format("MMMM Do, YYYY")}
+      </PendingText>
+    );
+  }
 
   return (
     <ClientCard ref={cardRef} onClick={viewClient}>
-      <CardHeader className="fs-exclude">
+      <FirstCardSection className="fs-exclude">
         <MainText>{client.name}</MainText>
         <SecondaryText>
           {titleCase(client.supervisionType)},{" "}
           {titleCase(client.supervisionLevelText)}
         </SecondaryText>
-      </CardHeader>
-      <FlexCardSection>
+      </FirstCardSection>
+      <SecondCardSection>
         <Tooltip title="Employment">
           <ClientNeed
             kind={IconSVG.NeedsEmployment}
@@ -136,14 +149,8 @@ const ClientComponent: React.FC<ClientProps> = ({
             state={getNeedsMetState(client.needsMet, "faceToFaceContact")}
           />
         </Tooltip>
-      </FlexCardSection>
-      <FlexCardSection>
-        {hasDueDate ? (
-          <DueDate date={getNextContactDate(client)} />
-        ) : (
-          <PendingText>Pending</PendingText>
-        )}
-      </FlexCardSection>
+      </SecondCardSection>
+      <ThirdCardSection>{dueDateText}</ThirdCardSection>
       {showInProgress ? (
         <Tooltip
           title={

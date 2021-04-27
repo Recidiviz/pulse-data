@@ -41,7 +41,7 @@ const headerStyleBase = `
 export const UserName = styled.span`
   ${headerStyleBase}
   font-size: ${rem(15)};
-  margin: 0 ${rem(spacing.md)};
+  margin-right: ${rem(spacing.md)};
   cursor: pointer;
 `;
 
