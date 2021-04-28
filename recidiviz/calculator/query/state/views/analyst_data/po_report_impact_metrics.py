@@ -101,19 +101,17 @@ PO_REPORT_IMPACT_METRICS_QUERY_TEMPLATE = """
           (
             SELECT
                 state_code,
-                EXTRACT(YEAR FROM sub_sessions.end_date) AS year,
-                EXTRACT(MONTH FROM sub_sessions.end_date) AS month,
-                SPLIT(compartment_location, '|')[OFFSET(1)] AS district,
+                EXTRACT(YEAR FROM sessions.end_date) AS year,
+                EXTRACT(MONTH FROM sessions.end_date) AS month,
+                SPLIT(compartment_location_end, '|')[OFFSET(1)] AS district,
                 sessions.session_length_days as session_length_days,
                 DATE_DIFF(projected_completion_date_max, sessions.start_date, DAY) AS projected_sentence_length_days
-            FROM `{project_id}.{analyst_dataset}.compartment_sub_sessions_materialized` sub_sessions
+            FROM `{project_id}.{analyst_dataset}.compartment_sessions_materialized` sessions
             JOIN `{project_id}.{analyst_dataset}.compartment_sentences_materialized` sentences
               USING (state_code, person_id, session_id)
-            JOIN `{project_id}.{analyst_dataset}.compartment_sessions_materialized` sessions
-              USING (state_code, person_id, session_id)
-            WHERE sub_sessions.compartment_level_1 = 'SUPERVISION'
-              AND sub_sessions.outflow_to_level_1 = 'RELEASE'
-              AND sub_sessions.end_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 2 YEAR)
+            WHERE sessions.compartment_level_1 = 'SUPERVISION'
+              AND sessions.outflow_to_level_1 = 'RELEASE'
+              AND sessions.end_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 2 YEAR)
           )
       ),
 

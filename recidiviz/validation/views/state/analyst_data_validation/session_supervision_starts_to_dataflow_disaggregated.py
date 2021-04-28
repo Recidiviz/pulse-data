@@ -25,22 +25,21 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
-SUB_SESSIONS_SUPERVISION_STARTS_TO_DATAFLOW_DISAGGREGATED_VIEW_NAME = (
-    "sub_sessions_supervision_starts_to_dataflow_disaggregated"
+SESSION_SUPERVISION_STARTS_TO_DATAFLOW_DISAGGREGATED_VIEW_NAME = (
+    "session_supervision_starts_to_dataflow_disaggregated"
 )
 
-SUB_SESSIONS_SUPERVISION_STARTS_TO_DATAFLOW_DISAGGREGATED_DESCRIPTION = """
+SESSION_SUPERVISION_STARTS_TO_DATAFLOW_DISAGGREGATED_DESCRIPTION = """
     A view which provides a person / day level comparison between supervision session starts and dataflow supervision
     starts. For each person / day there are a set of binary variables that indicate whether that record meets a 
-    criteria. The first four (sub_session_start, session_start, sub_session_with_start_reason, 
-    session_with_start_reason) are used to identify sessions or sub sessions that do not have any dataflow start reason 
-    associated with them. The second three (dataflow_supervision_start, sub_session_supervision_start, 
-    session_supervision_start) are used to identify dataflow admissions that are not represented in the sessions or 
-    sub-sessions views. Note that a subset of admission reasons is used in this comparison because of the fact that we 
-    would not expect every dataflow metric event to be associated with a compartment transition
+    criteria. The first two (session_start, session_with_start_reason) are used to identify sessions or sub sessions 
+    that do not have any dataflow start reason associated with them. The second two (dataflow_supervision_start,
+    session_supervision_start) are used to identify dataflow admissions that are not represented in the sessions view.
+    Note that a subset of admission reasons is used in this comparison because of the fact that we would not expect 
+    every dataflow metric event to be associated with a compartment transition
     """
 
-SUB_SESSIONS_SUPERVISION_STARTS_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
+SESSION_SUPERVISION_STARTS_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT
         person_id,
@@ -48,21 +47,15 @@ SUB_SESSIONS_SUPERVISION_STARTS_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
         start_date,
         compartment_level_1,
         sessions.session_id,
-        sessions.sub_session_id,
         dataflow.start_reason,
-        CASE WHEN sessions.person_id IS NOT NULL THEN 1 ELSE 0 END as sub_session_start,
-        COALESCE(sessions.first_sub_session_in_session, 0) AS session_start,
-        CASE when dataflow.start_reason IS NOT NULL AND sessions.person_id IS NOT NULL THEN 1 ELSE 0 END AS sub_session_with_start_reason,
-        CASE when dataflow.start_reason IS NOT NULL AND first_sub_session_in_session = 1 THEN 1 ELSE 0 END AS session_with_start_reason,
+        CASE WHEN sessions.person_id IS NOT NULL THEN 1 ELSE 0 END as session_start,
+        CASE WHEN dataflow.start_reason IS NOT NULL AND sessions.person_id IS NOT NULL THEN 1 ELSE 0 END AS session_with_start_reason,
         CASE WHEN dataflow.start_reason IS NOT NULL 
             THEN 1 ELSE 0 END AS dataflow_supervision_start,
         CASE WHEN dataflow.start_reason IS NOT NULL
             AND sessions.person_id IS NOT NULL 
-            THEN 1 ELSE 0 END AS sub_session_supervision_start,
-        CASE WHEN dataflow.start_reason IS NOT NULL
-            AND sessions.first_sub_session_in_session = 1 
             THEN 1 ELSE 0 END AS session_supervision_start,
-    FROM `{project_id}.{analyst_dataset}.compartment_sub_sessions_materialized` sessions
+    FROM `{project_id}.{analyst_dataset}.compartment_sessions_materialized` sessions
     FULL OUTER JOIN (
         SELECT * 
         FROM `{project_id}.{analyst_dataset}.compartment_session_start_reasons_materialized` 
@@ -74,14 +67,14 @@ SUB_SESSIONS_SUPERVISION_STARTS_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
     ORDER BY state_code, start_date
     """
 
-SUB_SESSIONS_SUPERVISION_STARTS_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED = SimpleBigQueryViewBuilder(
+SESSION_SUPERVISION_STARTS_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
-    view_id=SUB_SESSIONS_SUPERVISION_STARTS_TO_DATAFLOW_DISAGGREGATED_VIEW_NAME,
-    view_query_template=SUB_SESSIONS_SUPERVISION_STARTS_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE,
-    description=SUB_SESSIONS_SUPERVISION_STARTS_TO_DATAFLOW_DISAGGREGATED_DESCRIPTION,
+    view_id=SESSION_SUPERVISION_STARTS_TO_DATAFLOW_DISAGGREGATED_VIEW_NAME,
+    view_query_template=SESSION_SUPERVISION_STARTS_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE,
+    description=SESSION_SUPERVISION_STARTS_TO_DATAFLOW_DISAGGREGATED_DESCRIPTION,
     analyst_dataset=ANALYST_VIEWS_DATASET,
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        SUB_SESSIONS_SUPERVISION_STARTS_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED.build_and_print()
+        SESSION_SUPERVISION_STARTS_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED.build_and_print()

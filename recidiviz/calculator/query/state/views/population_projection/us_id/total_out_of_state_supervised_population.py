@@ -35,19 +35,20 @@ TOTAL_OUT_OF_STATE_SUPERVISED_POPULATION_QUERY_TEMPLATE = """
     SELECT
       state_code,
       CASE 
-        WHEN compartment_level_1 = 'SUPERVISION' AND compartment_level_2 = 'DUAL' 
+        WHEN compartment_level_1 = 'SUPERVISION_OUT_OF_STATE' AND compartment_level_2 = 'DUAL' 
             THEN 'SUPERVISION - PAROLE'
-        ELSE CONCAT(compartment_level_1, ' - ', COALESCE(compartment_level_2, ''))
+        ELSE CONCAT('SUPERVISION', ' - ', COALESCE(compartment_level_2, ''))
       END AS compartment,
       start_date,
       end_date,
       run_date,
       COUNT(1) as total_population
-    FROM `{project_id}.{analyst_dataset}.compartment_sub_sessions_materialized`
+    FROM `{project_id}.{analyst_dataset}.dataflow_sessions_materialized`
     JOIN `{project_id}.{population_projection_dataset}.simulation_run_dates`
       ON start_date < run_date
     WHERE state_code = 'US_ID'
       AND metric_source = 'SUPERVISION_OUT_OF_STATE_POPULATION'
+      OR compartment_level_1 = 'SUPERVISION_OUT_OF_STATE'
     GROUP BY 1,2,3,4,5
     )
 
