@@ -18,6 +18,7 @@
 from datetime import datetime
 from typing import Optional
 
+import sqlalchemy.orm.exc
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -31,6 +32,10 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
     ETLClient,
     ETLOfficer,
 )
+
+
+class CaseUpdateDoesNotExistError(ValueError):
+    pass
 
 
 def _update_case_for_person(
@@ -72,6 +77,29 @@ def _update_case_for_person(
     session.commit()
 
 
+def _delete_case_update(
+    session: Session, officer_external_id: str, update_id: str
+) -> CaseUpdate:
+    try:
+        case_update = (
+            session.query(CaseUpdate)
+            .filter(
+                CaseUpdate.officer_external_id == officer_external_id,
+                CaseUpdate.update_id == update_id,
+            )
+            .one()
+        )
+    except sqlalchemy.orm.exc.NoResultFound as e:
+        raise CaseUpdateDoesNotExistError(
+            f"Could not find update for officer: {officer_external_id} update_id: {update_id}"
+        ) from e
+
+    session.delete(case_update)
+    session.commit()
+
+    return case_update
+
+
 class CaseUpdatesInterface:
     """Implements interface for querying case_updates."""
 
@@ -95,6 +123,12 @@ class CaseUpdatesInterface:
             action,
             comment,
         )
+
+    @staticmethod
+    def delete_case_update(
+        session: Session, officer: ETLOfficer, update_id: str
+    ) -> CaseUpdate:
+        return _delete_case_update(session, officer.external_id, update_id)
 
 
 class DemoCaseUpdatesInterface:
@@ -121,4 +155,12 @@ class DemoCaseUpdatesInterface:
             action,
             comment,
             action_ts,
+        )
+
+    @staticmethod
+    def delete_case_update(
+        session: Session, user_email: str, case_update_id: str
+    ) -> CaseUpdate:
+        return _delete_case_update(
+            session, fake_officer_id_for_demo_user(user_email), case_update_id
         )
