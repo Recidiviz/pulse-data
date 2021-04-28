@@ -17,7 +17,18 @@ columns:
       When this contact occurred.
   - name: CONTACT_CODE
     description: |-
-      - Supervision officers can pick up to **6** contact codes (i.e. 1 value for `CONTACT_CODE`, and `C2-C6` all populated as well)<br>- **Face to Face** contacts are *only* placed in the `CONTACT_CODE` column<br>- The rest can be in C2→ C6<br>- You can have `C2-6`, without `CONTACT_CODE`:<br>- This can happen when another officer (who doesn’t have the supervisee on their caseload) logs that something happened and the associated office is not present<br>- Only a person who has a supervisee in their caseload can add an entry with an associated `CONTACT_CODE`.<br>Values:<br>- SG - System Generated<br>- Ex: create a case (happens automatically)<br>- *Face to Face Contacts*:<br>- HV - Home Visit<br>- Going to the residence/current location<br>- OO - Out of Office Visit<br>- Supervisee’s workplace, public spot (ex: park/mall)<br>- OV - Office Visit<br>- Supervision officer’s office
+      - Supervision officers can pick up to **6** contact codes (i.e. 1 value for `CONTACT_CODE`, and `C2-C6` all populated as well)<br>- **Face to Face** contacts are *only* placed in the `CONTACT_CODE` column<br>- The rest can be in C2→ C6<br>- You can have `C2-6`, without `CONTACT_CODE`:<br>- This can happen when another officer (who doesn’t have the supervisee on their caseload) logs that something happened and the associated office is not present<br>- Only a person who has a supervisee in their caseload can add an entry with an associated `CONTACT_CODE`.
+    known_values:
+      - value: FR
+        description: Unknown  # TODO(#7196): Update when official description is known
+      - value: HV
+        description: Home Visit; going to the residence/current location
+      - value: OO
+        description: Out of Office Visit; supervisee's workplace, public spot (i.e. park, mall)
+      - value: OV
+        description: Office Visit; At supervision officer's office
+      - value: SG
+        description: System Generated; ex. create a case (happens automatically)
   - name: C2
     description: |-
       Additional sub-code for the kind of contact which occurred.

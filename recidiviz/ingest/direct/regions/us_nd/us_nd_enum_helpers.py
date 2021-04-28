@@ -50,6 +50,7 @@ from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactType,
     StateSupervisionContactReason,
     StateSupervisionContactLocation,
+    StateSupervisionContactStatus,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
@@ -329,6 +330,17 @@ def generate_enum_overrides() -> EnumOverrides:
         StateSupervisionContactLocation.RESIDENCE: ["HV"],  # Visit at Supervisee's Home
         StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT: [
             "OO"  # Visit at Supervisee's Work or Public Area
+        ],
+        StateSupervisionContactStatus.COMPLETED: [
+            # We infer that any contact that constitutes a face to face visit
+            # should have the contact status as completed
+            "HV",  # Visit at Supervisee's Home
+            "OO",  # Visit at Supervisee's Work or Public Area
+            "OV",  # Visit at Supervision Agent's Office
+        ],
+        StateSupervisionContactStatus.INTERNAL_UNKNOWN: [
+            "SG",
+            "FR",
         ],
     }
 
