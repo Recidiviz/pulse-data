@@ -92,7 +92,13 @@ class API {
       this.userStore.recordVersion(reportedVersion, method !== "GET");
     }
 
-    return response.json();
+    const json = await response.json();
+
+    if (response.status === 401 && json.code === "no_app_access") {
+      this.userStore.setLacksCaseTriageAuthorization(true);
+    }
+
+    return json;
   }
 
   async delete<T>(path: string): Promise<T> {
