@@ -41,6 +41,7 @@ from recidiviz.common.constants.state.state_incarceration_incident import (
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
+    StateSupervisionContactStatus,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -205,6 +206,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
                 self._add_supervision_officer_to_contact,
                 gen_set_agent_type(StateAgentType.SUPERVISION_OFFICER),
                 self._add_location_to_contact,
+                self._add_status_to_contact,
             ],
         }
 
@@ -364,6 +366,28 @@ class UsNdController(CsvGcsfsDirectIngestController):
                 for extracted_object in extracted_objects:
                     if isinstance(extracted_object, StateSupervisionContact):
                         extracted_object.location = contact_location.value
+
+    def _add_status_to_contact(
+        self,
+        _file_tag: str,
+        row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
+        # TODO(#1882): Specify this mapping in the YAML once a single csv column can be mapped to multiple fields.
+        """Adds a contact status to the extracted supervision contact."""
+        contact_status_from_code = row.get("CONTACT_CODE")
+        if contact_status_from_code:
+            contact_status = self.get_enum_overrides().parse(
+                contact_status_from_code, StateSupervisionContactStatus
+            )
+            if contact_status is None:
+                raise ValueError(
+                    f"Unable to parse [{contact_status_from_code}] into known StateSupervisionContactStatus value"
+                )
+            for extracted_object in extracted_objects:
+                if isinstance(extracted_object, StateSupervisionContact):
+                    extracted_object.status = contact_status.value
 
     @staticmethod
     def _add_supervising_officer(

@@ -63,6 +63,7 @@ from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactType,
     StateSupervisionContactReason,
     StateSupervisionContactLocation,
+    StateSupervisionContactStatus,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodStatus,
@@ -2027,6 +2028,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             location="PLACE_OF_EMPLOYMENT",
             contacted_agent=agent_22,
             contact_reason="Supervision",
+            status="COMPLETED",
         )
 
         expected = IngestInfo(
@@ -4563,6 +4565,8 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             contact_reason_raw_text="SUPERVISION",
             person=person_7,
             supervision_periods=[supervision_period_1231],
+            status=StateSupervisionContactStatus.COMPLETED,
+            status_raw_text="COMPLETED",
         )
 
         sentence_group_1231 = entities.StateSentenceGroup.new_with_defaults(
