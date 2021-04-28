@@ -23,11 +23,11 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
-SUB_SESSIONS_INCARCERATION_RELEASES_TO_DATAFLOW_VIEW_NAME = (
-    "sub_sessions_incarceration_releases_to_dataflow"
+SESSION_INCARCERATION_RELEASES_TO_DATAFLOW_VIEW_NAME = (
+    "session_incarceration_releases_to_dataflow"
 )
 
-SUB_SESSIONS_INCARCERATION_RELEASES_TO_DATAFLOW_DESCRIPTION = """
+SESSION_INCARCERATION_RELEASES_TO_DATAFLOW_DESCRIPTION = """
     A view which provides an annual comparison between incarceration session ends and dataflow releases. One
     comparison is session ends vs sessions_with_end_reason (the latter being a subset of the former), which can be used 
     to identify the % of sessions with end reasons. Another comparison is dataflow_releases vs session_releases (the 
@@ -35,31 +35,28 @@ SUB_SESSIONS_INCARCERATION_RELEASES_TO_DATAFLOW_DESCRIPTION = """
     sessions
     """
 
-SUB_SESSIONS_INCARCERATION_RELEASES_TO_DATAFLOW_QUERY_TEMPLATE = """
+SESSION_INCARCERATION_RELEASES_TO_DATAFLOW_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT 
         state_code AS region_code,
         DATE_TRUNC(end_date, YEAR) AS end_year,
-        SUM(sub_session_end) AS sub_session_ends,
         SUM(session_end) AS session_ends,
-        SUM(sub_session_with_end_reason) AS sub_sessions_with_end_reason,
         SUM(session_with_end_reason) AS sessions_with_end_reason,
         SUM(dataflow_release) AS dataflow_releases,
-        SUM(sub_session_release) AS sub_session_releases,
         SUM(session_release) AS session_releases,
-    FROM `{project_id}.{validation_views_dataset}.sub_sessions_incarceration_releases_to_dataflow_disaggregated`
+    FROM `{project_id}.{validation_views_dataset}.session_incarceration_releases_to_dataflow_disaggregated`
     GROUP BY 1,2
     ORDER BY 1,2
     """
 
-SUB_SESSIONS_INCARCERATION_RELEASES_TO_DATAFLOW_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+SESSION_INCARCERATION_RELEASES_TO_DATAFLOW_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
-    view_id=SUB_SESSIONS_INCARCERATION_RELEASES_TO_DATAFLOW_VIEW_NAME,
-    view_query_template=SUB_SESSIONS_INCARCERATION_RELEASES_TO_DATAFLOW_QUERY_TEMPLATE,
-    description=SUB_SESSIONS_INCARCERATION_RELEASES_TO_DATAFLOW_DESCRIPTION,
+    view_id=SESSION_INCARCERATION_RELEASES_TO_DATAFLOW_VIEW_NAME,
+    view_query_template=SESSION_INCARCERATION_RELEASES_TO_DATAFLOW_QUERY_TEMPLATE,
+    description=SESSION_INCARCERATION_RELEASES_TO_DATAFLOW_DESCRIPTION,
     validation_views_dataset=dataset_config.VIEWS_DATASET,
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        SUB_SESSIONS_INCARCERATION_RELEASES_TO_DATAFLOW_VIEW_BUILDER.build_and_print()
+        SESSION_INCARCERATION_RELEASES_TO_DATAFLOW_VIEW_BUILDER.build_and_print()

@@ -38,7 +38,7 @@ REINCARCERATION_SESSIONS_FROM_DATAFLOW_VIEW_DESCRIPTION = """
     "days_at_liberty" that is used to identify the prior session from which the person was released.
     
     The dataflow metric is used to identify release and re-incarceration sessions for those cases where someone was 
-    reincarcerated, and this is left joined to compartment_sub_sessions so that we have a record for every release.
+    reincarcerated, and this is left joined to compartment_sessions so that we have a record for every release.
     """
 
 REINCARCERATION_SESSIONS_FROM_DATAFLOW_QUERY_TEMPLATE = """
@@ -65,23 +65,21 @@ REINCARCERATION_SESSIONS_FROM_DATAFLOW_QUERY_TEMPLATE = """
     SELECT 
         release_session.person_id,
         release_session.state_code,
-        release_session.sub_session_id AS release_sub_session_id,
         release_session.session_id AS release_session_id,
         DATE_ADD(release_session.end_date, INTERVAL 1 DAY) AS release_date,
         DATE_DIFF(release_session.last_day_of_data, release_session.end_date, DAY) - 1 AS days_since_release,
         CAST(FLOOR((DATE_DIFF(release_session.last_day_of_data, release_session.end_date,  DAY)-1)/30) AS INT64) AS months_since_release,
         CAST(FLOOR((DATE_DIFF(release_session.last_day_of_data, release_session.end_date, DAY)-1)/365.25) AS INT64) AS years_since_release,
-        reincarceration_session.sub_session_id AS reincarceration_sub_session_id,
         reincarceration_session.session_id AS reincarceration_session_id,  
         recid_metric.reincarceration_date,
         recid_metric.days_at_liberty AS release_to_reincarceration_days,
         CAST(CEILING(recid_metric.days_at_liberty/30) AS INT64) AS release_to_reincarceration_months,
         CAST(CEILING(recid_metric.days_at_liberty/365.25) AS INT64) AS release_to_reincarceration_years,
-    FROM `{project_id}.{analyst_dataset}.compartment_sub_sessions_materialized` release_session
+    FROM `{project_id}.{analyst_dataset}.compartment_sessions_materialized` release_session
     LEFT JOIN recid_metric 
         ON release_session.person_id = recid_metric.person_id
         AND release_session.end_date = DATE_SUB(recid_metric.reincarceration_date, INTERVAL recid_metric.days_at_liberty + 1 DAY) 
-    LEFT JOIN `{project_id}.{analyst_dataset}.compartment_sub_sessions_materialized` reincarceration_session
+    LEFT JOIN `{project_id}.{analyst_dataset}.compartment_sessions_materialized` reincarceration_session
         ON reincarceration_session.person_id = recid_metric.person_id
         AND reincarceration_session.start_date = recid_metric.reincarceration_date
     /* 
@@ -92,9 +90,9 @@ REINCARCERATION_SESSIONS_FROM_DATAFLOW_QUERY_TEMPLATE = """
     consistent.
     */
     WHERE release_session.compartment_level_1 = 'INCARCERATION'
-        AND release_session.outflow_to_level_1 IN ('SUPERVISION','RELEASE')
-        --TODO(#5430): remove end reason logic once release compartment only represents true releases
-        AND COALESCE(release_session.end_reason,'MISSING') NOT IN ('ESCAPE', 'DEATH')
+        AND release_session.compartment_level_2 != 'COMMUNITY_PLACEMENT_PROGRAM'
+        AND (release_session.outflow_to_level_1 IN ('SUPERVISION','RELEASE','PENDING_SUPERVISION')
+        OR release_session.outflow_to_level_2 = 'COMMUNITY_PLACEMENT_PROGRAM')
     ORDER BY 1,2,3,4
     """
 

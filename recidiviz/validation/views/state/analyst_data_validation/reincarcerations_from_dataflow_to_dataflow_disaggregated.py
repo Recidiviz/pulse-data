@@ -32,9 +32,9 @@ REINCARCERATIONS_FROM_DATAFLOW_TO_DATAFLOW_DISAGGREGATED_VIEW_NAME = (
 )
 
 REINCARCERATIONS_FROM_DATAFLOW_TO_DATAFLOW_DISAGGREGATED_DESCRIPTION = """
-    A view which provides a person / day level comparison between sub-session identified reincarcerations and the 
+    A view which provides a person / day level comparison between session identified reincarcerations and the 
     recidivism count dataflow metric. For each person / reincarceration date there are a set of binary variables that 
-    indicate whether the reincarceration appears in dataflow, sub-sessions, or both. Additionally, there is a field that
+    indicate whether the reincarceration appears in dataflow, sessions, or both. Additionally, there is a field that
     indicates whether the number of days between the release and the reincarceration match.
     """
 

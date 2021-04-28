@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""A view which provides a comparison of annual sessions supervision population to dataflow."""
+"""A view which provides a comparison of annual sessions supervision out of state population to dataflow."""
 
 # pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
@@ -23,34 +23,33 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
-SUB_SESSIONS_SUPERVISION_POPULATION_TO_DATAFLOW_VIEW_NAME = (
-    "sub_sessions_supervision_population_to_dataflow"
+SESSION_SUPERVISION_OUT_OF_STATE_POPULATION_TO_DATAFLOW_VIEW_NAME = (
+    "session_supervision_out_of_state_population_to_dataflow"
 )
 
-SUB_SESSIONS_SUPERVISION_POPULATION_TO_DATAFLOW_DESCRIPTION = """
-    A view which provides a comparison of annual supervision population counts in sub-sessions vs dataflow
+SESSION_SUPERVISION_OUT_OF_STATE_POPULATION_TO_DATAFLOW_DESCRIPTION = """
+    A view which provides a comparison of annual supervision population counts in sessions vs dataflow
     """
 
-SUB_SESSIONS_SUPERVISION_POPULATION_TO_DATAFLOW_QUERY_TEMPLATE = """
+SESSION_SUPERVISION_OUT_OF_STATE_POPULATION_TO_DATAFLOW_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT
         state_code AS region_code,
         population_date,
-        SUM(in_dataflow) AS population_dataflow,
-        SUM(in_sub_sessions) AS population_sub_session,
-        SUM(in_sub_sessions_not_inferred) AS population_sub_session_not_inferred
-    FROM `{project_id}.{validation_views_dataset}.sub_sessions_supervision_population_to_dataflow_disaggregated`
+        SUM(in_dataflow) AS dataflow_population,
+        SUM(in_sessions) AS session_population
+    FROM `{project_id}.{validation_views_dataset}.session_supervision_out_of_state_population_to_dataflow_disaggregated`
     GROUP BY 1,2 order by 1,2
     """
 
-SUB_SESSIONS_SUPERVISION_POPULATION_TO_DATAFLOW_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+SESSION_SUPERVISION_OUT_OF_STATE_POPULATION_TO_DATAFLOW_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
-    view_id=SUB_SESSIONS_SUPERVISION_POPULATION_TO_DATAFLOW_VIEW_NAME,
-    view_query_template=SUB_SESSIONS_SUPERVISION_POPULATION_TO_DATAFLOW_QUERY_TEMPLATE,
-    description=SUB_SESSIONS_SUPERVISION_POPULATION_TO_DATAFLOW_DESCRIPTION,
+    view_id=SESSION_SUPERVISION_OUT_OF_STATE_POPULATION_TO_DATAFLOW_VIEW_NAME,
+    view_query_template=SESSION_SUPERVISION_OUT_OF_STATE_POPULATION_TO_DATAFLOW_QUERY_TEMPLATE,
+    description=SESSION_SUPERVISION_OUT_OF_STATE_POPULATION_TO_DATAFLOW_DESCRIPTION,
     validation_views_dataset=dataset_config.VIEWS_DATASET,
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        SUB_SESSIONS_SUPERVISION_POPULATION_TO_DATAFLOW_VIEW_BUILDER.build_and_print()
+        SESSION_SUPERVISION_OUT_OF_STATE_POPULATION_TO_DATAFLOW_VIEW_BUILDER.build_and_print()

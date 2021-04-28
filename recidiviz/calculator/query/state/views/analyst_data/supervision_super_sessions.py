@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Supervision super-sessions for each individual. Super-session defined as continuous stay under supervision including
- parole board holds."""
+ parole board holds, pending custody, temporary custody, and suspension."""
 # pylint: disable=trailing-whitespace
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
@@ -26,36 +26,37 @@ from recidiviz.utils.metadata import local_project_id_override
 SUPERVISION_SUPER_SESSIONS_VIEW_NAME = "supervision_super_sessions"
 
 SUPERVISION_SUPER_SESSIONS_VIEW_DESCRIPTION = """Supervision super-sessions for each individual. Super-session defined as continuous stay under supervision including
- parole board holds"""
+ parole board holds, pending custody, temporary custody, and suspension"""
 
 SUPERVISION_SUPER_SESSIONS_QUERY_TEMPLATE = """
     /*{description}*/
     WITH supervision_super_session_lookup AS
     /*
-    Identify and create supervision super-session ids from sub-sessions.
+    Identify and create supervision super-session ids from sessions.
     */
     (
     SELECT 
         person_id,
-        sub_session_id,
         session_id,
         supervision_super_session_id,
     FROM 
         (
         SELECT 
             *,
-            --Create a new ID when a sub-session is in the supervison super-compartment (supervision or parole board hold) and the previous sub-session is not
+            --Create a new ID when a session is in the supervison super-compartment (supervision, parole board hold, or pending custody) and the previous session is not
             SUM(CASE WHEN supervision_super_compartment AND NOT COALESCE(lag_supervision_super_compartment, FALSE) THEN 1 ELSE 0 END) 
                 OVER(PARTITION BY person_id ORDER BY start_date) AS supervision_super_session_id
         FROM 
             (
             SELECT
                 *,
-                --Identify sub-sessions that are in the supervision super-compartment as well as whether the prior sub-session is
-                compartment_level_1 = 'SUPERVISION' OR compartment_level_2 = 'PAROLE_BOARD_HOLD' AS supervision_super_compartment,
-                LAG(compartment_level_1 = 'SUPERVISION' OR compartment_level_2 = 'PAROLE_BOARD_HOLD') 
+                --Identify sessions that are in the supervision super-compartment as well as whether the prior session is
+                compartment_level_1 IN ('SUPERVISION','SUPERVISION_OUT_OF_STATE') 
+                    OR compartment_level_2 IN ('PAROLE_BOARD_HOLD', 'PENDING_CUSTODY', 'TEMPORARY_CUSTODY', 'SUSPENSION') AS supervision_super_compartment,
+                LAG(compartment_level_1 IN ('SUPERVISION', 'SUPERVISION_OUT_OF_STATE')
+                    OR compartment_level_2 IN ('PAROLE_BOARD_HOLD','PENDING_CUSTODY', 'TEMPORARY_CUSTODY', 'SUSPENSION'))
                     OVER(PARTITION BY person_id ORDER BY start_date) AS lag_supervision_super_compartment
-            FROM `{project_id}.{analyst_dataset}.compartment_sub_sessions_materialized`
+            FROM `{project_id}.{analyst_dataset}.compartment_sessions_materialized`
             )
       )
     --Subset the data at the end to only include supervision super-sessions and not other incarceration sessions
@@ -65,7 +66,7 @@ SUPERVISION_SUPER_SESSIONS_QUERY_TEMPLATE = """
     supervision_super_session_agg AS
     (
     /*
-    Use the super-session IDs created above to aggregate sub-sessions to supervision super-sessions
+    Use the super-session IDs created above to aggregate sessions to supervision super-sessions
     */
     SELECT
         person_id,
@@ -77,14 +78,12 @@ SUPERVISION_SUPER_SESSIONS_QUERY_TEMPLATE = """
         CASE WHEN LOGICAL_AND(end_date IS NOT NULL) THEN MAX(end_date) END AS end_date,        
         --keep track of the number of days within a supervision super-session that a person is incarcerated (parole board holds)
         SUM(CASE WHEN compartment_level_1 = 'INCARCERATION' THEN session_length_days ELSE 0 END) AS incarceration_days,
-        --store the session / sub-session ids at start and end for easy joining
+        --store the session ids at start and end for easy joining
         MIN(session_id) AS session_id_start,
         MAX(session_id) AS session_id_end,
-        MIN(sub_session_id) AS sub_session_id_start,
-        MAX(sub_session_id) AS sub_session_id_end
     FROM supervision_super_session_lookup
-    JOIN `{project_id}.{analyst_dataset}.compartment_sub_sessions_materialized`
-        USING(person_id, sub_session_id, session_id)
+    JOIN `{project_id}.{analyst_dataset}.compartment_sessions_materialized`
+        USING(person_id, session_id)
     GROUP BY 1,2,3,4
     ORDER BY 1,2,3,4
     )
@@ -98,11 +97,9 @@ SUPERVISION_SUPER_SESSIONS_QUERY_TEMPLATE = """
         s.end_date,
         s.state_code,
         s.incarceration_days,
-        DATE_DIFF(COALESCE(s.end_date, s.last_day_of_data), s.start_date, DAY) AS session_length_days,
+        DATE_DIFF(COALESCE(s.end_date, s.last_day_of_data), s.start_date, DAY) + 1 AS session_length_days,
         s.session_id_start,
         s.session_id_end,
-        s.sub_session_id_start,
-        s.sub_session_id_end,
         first.start_reason,
         first.start_sub_reason,
         last.end_reason,
@@ -112,12 +109,12 @@ SUPERVISION_SUPER_SESSIONS_QUERY_TEMPLATE = """
         last.outflow_to_level_2,
         s.last_day_of_data
     FROM supervision_super_session_agg s
-    LEFT JOIN `{project_id}.{analyst_dataset}.compartment_sub_sessions_materialized` first
+    LEFT JOIN `{project_id}.{analyst_dataset}.compartment_sessions_materialized` first
         ON first.person_id = s.person_id
-        AND first.sub_session_id = s.sub_session_id_start
-    LEFT JOIN `{project_id}.{analyst_dataset}.compartment_sub_sessions_materialized` last
+        AND first.session_id = s.session_id_start
+    LEFT JOIN `{project_id}.{analyst_dataset}.compartment_sessions_materialized` last
         ON last.person_id = s.person_id
-        AND last.sub_session_id = s.sub_session_id_end
+        AND last.session_id = s.session_id_end
     ORDER BY 1,2
     """
 
