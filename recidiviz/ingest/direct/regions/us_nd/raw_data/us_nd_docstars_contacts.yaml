@@ -33,3 +33,6 @@ columns:
   - name: C6
     description: |-
       Additional sub-code for the kind of contact which occurred.
+  - name: CATEGORY
+    description: |-
+      The type of contact (i.e. Supervision, Recovery, etc.).
