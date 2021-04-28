@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
+import sqlalchemy as sa
+
 from typing import List, Optional, Union
 
 from alembic.runtime.migration import MigrationContext
@@ -35,11 +37,15 @@ def add_column(table_name: str, column: str) -> None: ...
 def alter_column(
     table_name: str,
     column_name: str,
-    type_: Optional[TypeEngine] = None,
+    type_: Optional[postgresql.TypeEngine] = None,
     postgresql_using: Optional[str] = None,
-    existing_type: Optional[postgresql.ARRAY] = None,
+    existing_type: Optional[postgresql.TypeEngine] = None,
     nullable: Optional[bool] = False,
     existing_nullable: Optional[bool] = False,
+    comment: Optional[str] = None,
+    existing_comment: Optional[str] = None,
+    existing_server_default: Optional[sa.Text] = None,
+    autoincrement: Optional[bool] = False,
 ) -> None: ...
 def create_check_constraint(
     cosntraint_name: str, table_name: str, condition: str
@@ -60,6 +66,12 @@ def create_table(
     *columns: List[Column],
     postgresql_ignore_search_path: Optional[bool] = False
 ) -> None: ...
+def create_table_comment(
+    table_name: str,
+    comment: str,
+    existing_comment: Optional[str] = None,
+    schema: Optional[sa.types] = None,
+) -> None: ...
 def create_unique_constraint(
     constraint_name: str,
     table_name: str,
@@ -73,6 +85,12 @@ def drop_constraint(
 ) -> None: ...
 def drop_index(index_name: str, table_name: Optional[str] = None) -> None: ...
 def drop_table(table_name: str) -> None: ...
+def drop_table_comment(
+    table_name: str,
+    comment: Optional[str] = None,
+    existing_comment: Optional[str] = None,
+    schema: Optional[sa.types] = None,
+) -> None: ...
 def execute(sqltext: str) -> None: ...
 def f(name: str) -> str: ...
 def get_bind() -> Connection: ...

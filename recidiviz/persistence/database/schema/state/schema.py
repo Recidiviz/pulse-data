@@ -2615,32 +2615,71 @@ class _StateAgentSharedColumns:
             raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)  # type: ignore
 
-    external_id = Column(String(255), index=True)
-    agent_type = Column(state_agent_type, nullable=False)
-    agent_type_raw_text = Column(String(255))
-    state_code = Column(String(255), nullable=False, index=True)
-    full_name = Column(String(255))
+    external_id = Column(
+        String(255),
+        index=True,
+        comment="The  unique identifier for the "
+        "StateAgent, unique within the scope of the source data system",
+    )
+    agent_type = Column(state_agent_type, nullable=False, comment="The type of agent.")
+    agent_type_raw_text = Column(
+        String(255), comment="The raw text value of the agent type."
+    )
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment="The state this agent operates in.",
+    )
+    full_name = Column(String(255), comment="The state agent's full name.")
 
 
 class StateAgent(StateBase, _StateAgentSharedColumns):
     """Represents a StateAgent in the SQL schema"""
 
     __tablename__ = "state_agent"
+    __table_args__ = {
+        "comment": "The StateAgent object represents some agent operating on behalf of the criminal "
+        "justice system, usually referenced in the context of taking some action related "
+        "to a person moving through that system. This includes references such as the judges "
+        "trying cases, the officers supervising people on parole, the individuals who make a "
+        "decision at a parole hearing, and so on. We entity match across StateAgents where "
+        "possible so that we can see the full scope of actions taken by a particular agent "
+        "to understand patterns in their behavior."
+    }
 
-    agent_id = Column(Integer, primary_key=True)
+    agent_id = Column(
+        Integer,
+        primary_key=True,
+        comment="Unique identifier for an agent. If not specified, "
+        "one will be generated.",
+    )
 
 
 class StateAgentHistory(StateBase, _StateAgentSharedColumns, HistoryTableSharedColumns):
     """Represents the historical state of a StateAgent"""
 
     __tablename__ = "state_agent_history"
+    __tableargs__ = {
+        "comment": "The history table for StateAgent. Do i need more info?"
+    }
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
-    agent_history_id = Column(Integer, primary_key=True)
+    agent_history_id = Column(
+        Integer,
+        primary_key=True,
+        comment="This primary key should not be used. It only exists "
+        "because SQLAlchemy requires every table to have a "
+        "unique primary key.",
+    )
 
     agent_id = Column(
-        Integer, ForeignKey("state_agent.agent_id"), nullable=False, index=True
+        Integer,
+        ForeignKey("state_agent.agent_id"),
+        nullable=False,
+        index=True,
+        comment="Unique identifier for an agent. If not specified, one will be generated.",
     )
 
 

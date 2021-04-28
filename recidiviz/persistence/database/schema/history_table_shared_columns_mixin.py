@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""SQLAlchemy table mixin that defines all columns common on ahistory table"""
+"""SQLAlchemy table mixin that defines all columns common on a history table"""
 
 from typing import Any, Dict
 from sqlalchemy import Column, DateTime
@@ -29,5 +29,12 @@ class HistoryTableSharedColumns:
             raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)
 
-    valid_from = Column(DateTime, nullable=False)
-    valid_to = Column(DateTime)
+    valid_from = Column(
+        DateTime,
+        nullable=False,
+        comment="Timestamp on which the columns started having the associated values.",
+    )
+    valid_to = Column(
+        DateTime,
+        comment="Timestamp on which the columns stopped having the associated values.",
+    )
