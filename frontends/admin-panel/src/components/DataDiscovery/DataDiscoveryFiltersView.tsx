@@ -72,7 +72,7 @@ const Condition = observer(
           >
             <Select showSearch>
               {store
-                .columns(values.raw_files, values.ingest_view)
+                .columns(values.raw_files, values.ingest_views)
                 .map((value) => (
                   <Option value={value} key={value}>
                     {value}
