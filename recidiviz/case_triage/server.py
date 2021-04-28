@@ -92,7 +92,7 @@ def on_successful_authorization(_payload: Dict[str, str], token: str) -> None:
     email = session["user_info"]["email"]
     if email not in authorization_store.allowed_users:
         raise CaseTriageAuthorizationError(
-            code="unauthorized",
+            code="no_app_access",
             description="You are not authorized to access this application",
         )
 
@@ -165,7 +165,7 @@ def fetch_user_info() -> None:
     except NoResultFound as e:
         if not g.can_see_demo_data:
             raise CaseTriageAuthorizationError(
-                code="unauthorized",
+                code="no_app_access",
                 description="You are not authorized to access this application",
             ) from e
 
