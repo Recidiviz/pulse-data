@@ -132,22 +132,42 @@ const ClientComponent: React.FC<ClientProps> = ({
         </SecondaryText>
       </FirstCardSection>
       <SecondCardSection>
-        <Tooltip title="Employment">
+        <Tooltip
+          title={client.needsMet.employment ? "Employed" : "Employment Missing"}
+        >
           <ClientNeed
             kind={IconSVG.NeedsEmployment}
             state={getNeedsMetState(client.needsMet, "employment")}
           />
         </Tooltip>
-        <Tooltip title="Risk Assessment">
+        <Tooltip
+          title={
+            client.needsMet.assessment
+              ? "Risk Assessment Up to Date"
+              : "Risk Assessment Needed"
+          }
+        >
           <ClientNeed
             kind={IconSVG.NeedsRiskAssessment}
             state={getNeedsMetState(client.needsMet, "assessment")}
           />
         </Tooltip>
-        <Tooltip title="Face to Face Contact">
+        <Tooltip
+          title={
+            client.needsMet.faceToFaceContact &&
+            client.needsMet.homeVisitContact
+              ? "Face to Face Contact Up to Date"
+              : "Face to Face Contact Needed"
+          }
+        >
           <ClientNeed
             kind={IconSVG.NeedsContact}
-            state={getNeedsMetState(client.needsMet, "faceToFaceContact")}
+            state={
+              client.needsMet.faceToFaceContact &&
+              client.needsMet.homeVisitContact
+                ? NeedState.MET
+                : NeedState.NOT_MET
+            }
           />
         </Tooltip>
       </SecondCardSection>
@@ -156,7 +176,7 @@ const ClientComponent: React.FC<ClientProps> = ({
         <Tooltip
           title={
             <>
-              <strong>{numInProgressActions}</strong> Task
+              <strong>{numInProgressActions}</strong> action
               {numInProgressActions !== 1 ? "s" : ""} being confirmed with{" "}
               {omsName}
             </>

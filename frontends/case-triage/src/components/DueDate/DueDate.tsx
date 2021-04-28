@@ -17,6 +17,7 @@
 
 import moment from "moment";
 import * as React from "react";
+import Tooltip from "../Tooltip";
 import { BaseDueDate, PastDueDate, TodayDueDate } from "./DueDate.styles";
 
 export interface DueDateProps {
@@ -35,15 +36,27 @@ export const DueDate: React.FC<DueDateProps> = ({ date }: DueDateProps) => {
   const timeAgo = date.from(beginningOfDay, true);
 
   if (date.isSame(beginningOfDay, "day")) {
-    return <TodayDueDate>Today</TodayDueDate>;
+    return (
+      <Tooltip title="Face to Face Contact recommended today">
+        <TodayDueDate>Today</TodayDueDate>
+      </Tooltip>
+    );
   }
 
   if (date.isAfter(beginningOfDay, "day")) {
-    return <BaseDueDate>In {timeAgo}</BaseDueDate>;
+    return (
+      <Tooltip title={`Face to Face Contact recommended in ${timeAgo}`}>
+        <BaseDueDate>In {timeAgo}</BaseDueDate>
+      </Tooltip>
+    );
   }
 
   const capitalizedTimeAgo =
     timeAgo.charAt(0).toUpperCase() + timeAgo.substr(1);
 
-  return <PastDueDate>{capitalizedTimeAgo} ago</PastDueDate>;
+  return (
+    <Tooltip title={`Face to Face Contact recommended ${timeAgo} ago`}>
+      <PastDueDate>{capitalizedTimeAgo} ago</PastDueDate>
+    </Tooltip>
+  );
 };
