@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """This is a script that takes our CSV fixtures for etl_clients and outputs them to
-json for use as dummy data by the Case Triage project.
+json for use as demo data by the Case Triage project.
 
 This is highly specific to the current version of the fixtures. The output destination
 is intentional, so we do not offer command-line arguments to write to a different directory.
@@ -25,9 +25,12 @@ python -m recidiviz.tools.case_triage.create_client_json_fixtures
 import csv
 import json
 from datetime import date
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Literal, Optional, Union
 
 import dateutil.parser
+
+
+FixtureType = Union[Literal["clients"], Literal["opportunities"]]
 
 
 def parse_nullable_date(date_str: str) -> Optional[date]:
@@ -60,18 +63,35 @@ def csv_row_to_etl_client_json(row: List[str]) -> Dict[str, Any]:
     }
 
 
-def generate_json_fixtures_from_csv() -> None:
-    clients = []
-    with open("./recidiviz/tools/case_triage/fixtures/etl_clients.csv") as csvfile:
+def csv_row_to_etl_opportunity_json(row: List[str]) -> Dict[str, Any]:
+    return {
+        "state_code": row[0],
+        "supervising_officer_external_id": row[1],
+        "person_external_id": row[2],
+        "opportunity_type": row[3],
+        "opportunity_metadata": json.loads(row[4]),
+    }
+
+
+def generate_json_fixtures_from_csv(
+    fixture_type: FixtureType, converter_fn: Callable[[List[str]], Dict[str, Any]]
+) -> None:
+    converted_fixtures = []
+    with open(
+        f"./recidiviz/tools/case_triage/fixtures/etl_{fixture_type}.csv"
+    ) as csvfile:
         csv_reader = csv.reader(csvfile)
         for row in csv_reader:
-            if row[0] != "SIN":  # Only take entries belonging to the agent SIN
+            if "SIN" not in row:  # Only take entries belonging to the agent SIN
                 continue
-            clients.append(csv_row_to_etl_client_json(row))
+            converted_fixtures.append(converter_fn(row))
 
-    with open("./recidiviz/case_triage/fixtures/dummy_clients.json", "w") as jsonfile:
-        json.dump(clients, jsonfile, default=str)
+    with open(
+        f"./recidiviz/case_triage/fixtures/demo_{fixture_type}.json", "w"
+    ) as jsonfile:
+        json.dump(converted_fixtures, jsonfile, default=str)
 
 
 if __name__ == "__main__":
-    generate_json_fixtures_from_csv()
+    generate_json_fixtures_from_csv("clients", csv_row_to_etl_client_json)
+    generate_json_fixtures_from_csv("opportunities", csv_row_to_etl_opportunity_json)

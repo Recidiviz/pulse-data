@@ -36,7 +36,7 @@ from recidiviz.case_triage.case_updates.interface import (
     DemoCaseUpdatesInterface,
 )
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
-from recidiviz.case_triage.demo_helpers import DEMO_FROZEN_DATE
+from recidiviz.case_triage.demo_helpers import DEMO_FROZEN_DATE, DEMO_FROZEN_DATETIME
 from recidiviz.case_triage.exceptions import (
     CaseTriageBadRequestException,
 )
@@ -99,15 +99,20 @@ def create_api_blueprint(
     @api.route("/opportunities")
     def _get_opportunities() -> str:
         if _should_see_demo():
-            return jsonify([])
+            opportunity_presenters = DemoCaseTriageQuerier.opportunities_for_demo_user(
+                current_session, g.email
+            )
+            now = DEMO_FROZEN_DATETIME
+        else:
+            opportunity_presenters = CaseTriageQuerier.opportunities_for_officer(
+                current_session, g.current_user
+            )
+            now = datetime.now()
 
-        now = datetime.now()
         return jsonify(
             [
                 opportunity.to_json()
-                for opportunity in CaseTriageQuerier.opportunities_for_officer(
-                    current_session, g.current_user
-                )
+                for opportunity in opportunity_presenters
                 if opportunity.opportunity_active_at_time(now)
             ]
         )
@@ -175,19 +180,13 @@ def create_api_blueprint(
         etl_client = load_client(g.api_data["person_external_id"])
 
         if _should_see_demo():
-            demo_time = datetime(
-                year=DEMO_FROZEN_DATE.year,
-                month=DEMO_FROZEN_DATE.month,
-                day=DEMO_FROZEN_DATE.day,
-            )
-
             DemoCaseUpdatesInterface.update_case_for_person(
                 current_session,
                 g.email,
                 etl_client,
                 g.api_data["action_type"],
                 g.api_data.get("comment", None),
-                action_ts=demo_time,
+                action_ts=DEMO_FROZEN_DATETIME,
             )
         else:
             CaseUpdatesInterface.update_case_for_person(

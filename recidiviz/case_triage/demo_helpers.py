@@ -17,33 +17,54 @@
 """Implements some querying abstractions for use by demo users."""
 import json
 import os
-from datetime import date
+from datetime import datetime
 from typing import List
 
-from recidiviz.persistence.database.schema.case_triage.schema import ETLClient
+from recidiviz.persistence.database.schema.case_triage.schema import (
+    ETLClient,
+    ETLOpportunity,
+)
 
 
-DEMO_FROZEN_DATE = date(2021, 3, 9)
+DEMO_FROZEN_DATETIME = datetime(
+    year=2021,
+    month=3,
+    day=9,
+)
+DEMO_FROZEN_DATE = DEMO_FROZEN_DATETIME.date()
 
-
+_FIXTURE_PATH = os.path.abspath(
+    os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        "./fixtures/",
+    )
+)
 _FIXTURE_CLIENTS: List[ETLClient] = []
+_FIXTURE_OPPORTUNITIES: List[ETLOpportunity] = []
 
 
 def get_fixture_clients() -> List[ETLClient]:
     global _FIXTURE_CLIENTS
 
     if not _FIXTURE_CLIENTS:
-        fixture_path = os.path.abspath(
-            os.path.join(
-                os.path.dirname(os.path.realpath(__file__)),
-                "./fixtures/dummy_clients.json",
-            )
-        )
-        with open(fixture_path) as f:
+        with open(os.path.join(_FIXTURE_PATH, "demo_clients.json")) as f:
             clients = json.load(f)
         _FIXTURE_CLIENTS = [ETLClient.from_json(client) for client in clients]
 
     return _FIXTURE_CLIENTS
+
+
+def get_fixture_opportunities() -> List[ETLOpportunity]:
+    global _FIXTURE_OPPORTUNITIES
+
+    if not _FIXTURE_OPPORTUNITIES:
+        with open(os.path.join(_FIXTURE_PATH, "demo_opportunities.json")) as f:
+            clients = json.load(f)
+        _FIXTURE_OPPORTUNITIES = [
+            ETLOpportunity.from_json(client) for client in clients
+        ]
+
+    return _FIXTURE_OPPORTUNITIES
 
 
 def fake_officer_id_for_demo_user(user_email_address: str) -> str:

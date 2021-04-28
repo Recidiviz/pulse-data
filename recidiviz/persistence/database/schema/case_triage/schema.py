@@ -159,6 +159,18 @@ class ETLOpportunity(CaseTriageBase):
     opportunity_type = Column(String(255), nullable=False, index=True, primary_key=True)
     opportunity_metadata = Column(JSONB, nullable=False)
 
+    @staticmethod
+    def from_json(json_opportunity: Dict[str, Any]) -> "ETLOpportunity":
+        return ETLOpportunity(
+            person_external_id=json_opportunity["person_external_id"],
+            state_code=json_opportunity["state_code"],
+            supervising_officer_external_id=json_opportunity[
+                "supervising_officer_external_id"
+            ],
+            opportunity_type=json_opportunity["opportunity_type"],
+            opportunity_metadata=json_opportunity["opportunity_metadata"],
+        )
+
 
 class Deprecated__CaseUpdate(CaseTriageBase):
     """This type is deprecated, and CaseUpdateAction should be used instead."""
