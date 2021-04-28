@@ -39,6 +39,8 @@ export default class UserStore {
 
   isLoading: boolean;
 
+  lacksCaseTriageAuthorization: boolean;
+
   shouldReload: boolean;
 
   shouldNotHardReload: boolean;
@@ -55,6 +57,7 @@ export default class UserStore {
     makeAutoObservable(this);
 
     this.authSettings = authSettings;
+    this.lacksCaseTriageAuthorization = false;
     this.isAuthorized = false;
     this.isLoading = true;
     this.shouldReload = false;
@@ -134,5 +137,11 @@ export default class UserStore {
         }
       }, 1000);
     }
+  }
+
+  setLacksCaseTriageAuthorization(lacksCaseTriageAuthorization: boolean): void {
+    runInAction(() => {
+      this.lacksCaseTriageAuthorization = lacksCaseTriageAuthorization;
+    });
   }
 }

@@ -22,7 +22,12 @@ import * as React from "react";
 import { ReactElement, useEffect } from "react";
 import { when } from "mobx";
 import { observer } from "mobx-react-lite";
-import { Assets, Header } from "@recidiviz/design-system";
+import {
+  Assets,
+  ErrorPage,
+  Header,
+  Link as TypographyLink,
+} from "@recidiviz/design-system";
 import { useRootStore } from "../../stores";
 import Loading from "../Loading";
 import UserSection from "../UserSection";
@@ -57,6 +62,21 @@ const AuthWall: React.FC = ({ children }): ReactElement | null => {
         />
         <Loading />
       </>
+    );
+  }
+
+  if (userStore.lacksCaseTriageAuthorization) {
+    return (
+      <ErrorPage headerText="Thank you for your interest in Recidiviz.">
+        <p>
+          This page is currently unavailable for your account. Please reach out
+          to{" "}
+          <TypographyLink href="mailto:web-support@recidiviz.org?subject=Access to Recidiviz app">
+            Recidiviz Support
+          </TypographyLink>{" "}
+          with any questions.
+        </p>
+      </ErrorPage>
     );
   }
 
