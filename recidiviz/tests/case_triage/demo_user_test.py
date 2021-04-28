@@ -15,8 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements tests to enforce that demo users work."""
-import json
-import os
 from http import HTTPStatus
 from typing import Optional
 from unittest import TestCase
@@ -24,12 +22,14 @@ from unittest import TestCase
 import pytest
 from flask import Flask
 
-import recidiviz.case_triage
 from recidiviz.case_triage.api_routes import create_api_blueprint
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
+from recidiviz.case_triage.demo_helpers import (
+    get_fixture_clients,
+    get_fixture_opportunities,
+)
 from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
-from recidiviz.persistence.database.schema.case_triage.schema import ETLClient
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.case_triage.api_test_helpers import (
@@ -70,17 +70,10 @@ class TestDemoUser(TestCase):
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
         self.database_key.declarative_meta.metadata.create_all(engine)
 
-        demo_fixture_path = os.path.abspath(
-            os.path.join(
-                os.path.dirname(os.path.realpath(recidiviz.case_triage.__file__)),
-                "./fixtures/dummy_clients.json",
-            )
-        )
+        self.demo_clients = get_fixture_clients()
+        self.demo_opportunities = get_fixture_opportunities()
 
-        with open(demo_fixture_path) as f:
-            self.demo_data = json.load(f)
-
-        self.client_1 = ETLClient.from_json(self.demo_data[0])
+        self.client_1 = self.demo_clients[0]
 
         with self.helpers.as_demo_user():
             self.helpers.create_case_update(
@@ -102,7 +95,7 @@ class TestDemoUser(TestCase):
 
     def test_get_clients(self) -> None:
         with self.helpers.as_demo_user():
-            self.assertEqual(len(self.helpers.get_clients()), len(self.demo_data))
+            self.assertEqual(len(self.helpers.get_clients()), len(self.demo_clients))
 
             client = self.helpers.find_client_in_api_response(
                 self.client_1.person_external_id
@@ -150,3 +143,21 @@ class TestDemoUser(TestCase):
                 self.client_1.person_external_id
             )
             self.assertTrue(len(new_client["caseUpdates"]) == 0)
+
+    def test_get_opportunities(self) -> None:
+        with self.helpers.as_demo_user():
+            self.assertEqual(
+                len(self.helpers.get_opportunities()), len(self.demo_opportunities)
+            )
+
+    def test_defer_opportunity(self) -> None:
+        with self.helpers.as_demo_user():
+            opportunity_1 = self.demo_opportunities[0]
+            self.helpers.defer_opportunity(
+                opportunity_1.person_external_id, opportunity_1.opportunity_type
+            )
+
+            # There should be one fewer available opportunity post-deferral
+            self.assertEqual(
+                len(self.helpers.get_opportunities()), len(self.demo_opportunities) - 1
+            )

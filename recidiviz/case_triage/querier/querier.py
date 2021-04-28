@@ -17,7 +17,7 @@
 """Implements the Querier abstraction that is responsible for considering multiple
 data sources and coalescing answers for downstream consumers."""
 from collections import defaultdict
-from typing import List
+from typing import Dict, List, Optional
 
 import sqlalchemy.orm.exc
 from sqlalchemy.orm import Session, joinedload
@@ -25,6 +25,7 @@ from sqlalchemy.orm import Session, joinedload
 from recidiviz.case_triage.demo_helpers import (
     fake_officer_id_for_demo_user,
     get_fixture_clients,
+    get_fixture_opportunities,
 )
 from recidiviz.case_triage.querier.case_presenter import CasePresenter
 from recidiviz.case_triage.querier.opportunity_presenter import OpportunityPresenter
@@ -170,3 +171,36 @@ class DemoCaseTriageQuerier:
                 return client
 
         raise PersonDoesNotExistError(f"could not find id: {person_external_id}")
+
+    @staticmethod
+    def opportunities_for_demo_user(
+        session: Session, user_email_address: str
+    ) -> List[OpportunityPresenter]:
+        opportunity_deferrals = (
+            session.query(OpportunityDeferral)
+            .filter(
+                OpportunityDeferral.supervising_officer_external_id
+                == fake_officer_id_for_demo_user(user_email_address)
+            )
+            .all()
+        )
+
+        # Map from person -> opportunity type -> optional deferral
+        opportunity_to_deferral: Dict[
+            str, Dict[str, Optional[OpportunityDeferral]]
+        ] = defaultdict(dict)
+        for deferral in opportunity_deferrals:
+            opportunity_to_deferral[deferral.person_external_id][
+                deferral.opportunity_type
+            ] = deferral
+
+        opportunities = get_fixture_opportunities()
+        return [
+            OpportunityPresenter(
+                opportunity,
+                opportunity_to_deferral[opportunity.person_external_id].get(
+                    opportunity.opportunity_type
+                ),
+            )
+            for opportunity in opportunities
+        ]
