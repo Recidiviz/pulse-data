@@ -36,7 +36,6 @@ REVOCATION_SESSIONS_QUERY_TEMPLATE = """
         state_code,
         supervision_super_session_id,
         session_id_start AS supervision_session_id,
-        sub_session_id_start AS supervision_sub_session_id,
         start_date AS supervision_start_date,
         DATE_DIFF(last_day_of_data, start_date, DAY) AS days_since_start,
         CAST(FLOOR(DATE_DIFF(last_day_of_data, start_date, DAY)/30) AS INT64) AS months_since_start,
@@ -44,7 +43,6 @@ REVOCATION_SESSIONS_QUERY_TEMPLATE = """
         revocation_date,
         CASE WHEN revocation_date IS NOT NULL THEN 1 ELSE 0 END AS revocation,
         CASE WHEN revocation_date IS NOT NULL THEN session_id_end + 1 END AS revocation_session_id,
-        CASE WHEN revocation_date IS NOT NULL THEN sub_session_id_end + 1 END AS revocation_sub_session_id,
         DATE_DIFF(revocation_date, start_date, DAY) AS supervision_start_to_revocation_days,
         CAST(CEILING(DATE_DIFF(revocation_date, start_date, DAY)/30) AS INT64) AS supervision_start_to_revocation_months,
         CAST(CEILING(DATE_DIFF(revocation_date, start_date, DAY)/365.25) AS INT64) AS supervision_start_to_revocation_years

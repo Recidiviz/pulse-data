@@ -31,7 +31,7 @@ REINCARCERATION_SESSIONS_FROM_SESSIONS_VIEW_DESCRIPTION = """
     A table of incarceration sessions that end in release with session identifiers for a subsequent reincarceration 
     sessions.
     
-    This view is constructed directly from sessions / sub-sessions. The query does a self join where reincarceration 
+    This view is constructed directly from sessions. The query does a self join where reincarceration 
     sessions are left joined to incarceration sessions that end in release. The alias "release_session" 
     refers to the session from which a person is released, and the alias "reincarceration_session" refers to the
     incarceration sessions that follow this release.
@@ -58,34 +58,31 @@ REINCARCERATION_SESSIONS_FROM_SESSIONS_QUERY_TEMPLATE = """
     SELECT 
         release_session.person_id,
         release_session.state_code,
-        release_session.sub_session_id AS release_sub_session_id,
         release_session.session_id AS release_session_id,
         --release_date is the day after the session end_date which represents the last full day in the compartment
         DATE_ADD(release_session.end_date, INTERVAL 1 DAY) AS release_date,
         DATE_DIFF(release_session.last_day_of_data, release_session.end_date, DAY) - 1 AS days_since_release,
         CAST(FLOOR((DATE_DIFF(release_session.last_day_of_data, release_session.end_date,  DAY)-1)/30) AS INT64) AS months_since_release,
         CAST(FLOOR((DATE_DIFF(release_session.last_day_of_data, release_session.end_date, DAY)-1)/365.25) AS INT64) AS years_since_release,
-        reincarceration_session.sub_session_id AS reincarceration_sub_session_id,
         reincarceration_session.session_id AS reincarceration_session_id,
         reincarceration_session.start_date AS reincarceration_date,
         DATE_DIFF(reincarceration_session.start_date, release_session.end_date, DAY) - 1 AS release_to_reincarceration_days,
         CAST(CEILING((DATE_DIFF(reincarceration_session.start_date, release_session.end_date, DAY)-1)/30) AS INT64) AS release_to_reincarceration_months,
         CAST(CEILING((DATE_DIFF(reincarceration_session.start_date, release_session.end_date, DAY)-1)/365.25) AS INT64) AS release_to_reincarceration_years,
-        ROW_NUMBER() OVER(PARTITION BY release_session.person_id, release_session.session_id ORDER BY reincarceration_session.sub_session_id) AS rn
-    FROM `{project_id}.{analyst_dataset}.compartment_sub_sessions_materialized` release_session
-    LEFT JOIN `{project_id}.{analyst_dataset}.compartment_sub_sessions_materialized` reincarceration_session 
+        ROW_NUMBER() OVER(PARTITION BY release_session.person_id, release_session.session_id ORDER BY reincarceration_session.session_id) AS rn
+    FROM `{project_id}.{analyst_dataset}.compartment_sessions_materialized` release_session
+    LEFT JOIN `{project_id}.{analyst_dataset}.compartment_sessions_materialized` reincarceration_session 
         ON reincarceration_session.person_id = release_session.person_id 
         AND reincarceration_session.compartment_level_1 = 'INCARCERATION'
         AND reincarceration_session.start_date > release_session.end_date
-        AND reincarceration_session.compartment_level_2 != 'PAROLE_BOARD_HOLD'
+        AND reincarceration_session.compartment_level_2 NOT IN ('PAROLE_BOARD_HOLD','TEMPORARY_CUSTODY', 'COMMUNITY_PLACEMENT_PROGRAM')
         AND (reincarceration_session.inflow_from_level_1 != 'INCARCERATION' 
-            OR reincarceration_session.inflow_from_level_2 ='PAROLE_BOARD_HOLD')
-        AND COALESCE(reincarceration_session.start_reason,'MISSING') != 'RETURN_FROM_ESCAPE'
+            OR reincarceration_session.inflow_from_level_2 IN ('PAROLE_BOARD_HOLD', 'TEMPORARY_CUSTODY','COMMUNITY_PLACEMENT_PROGRAM'))
     WHERE release_session.compartment_level_1 = 'INCARCERATION'
-        AND release_session.outflow_to_level_1 IN ('SUPERVISION','RELEASE')
-        AND release_session.compartment_level_2 != 'PAROLE_BOARD_HOLD'
-        --TODO(#5430): remove end reason logic once release compartment only represents true releases
-        AND COALESCE(release_session.end_reason,'MISSING') NOT IN ('ESCAPE', 'DEATH')
+        AND release_session.compartment_level_2 != 'COMMUNITY_PLACEMENT_PROGRAM'
+        AND (release_session.outflow_to_level_1 IN ('SUPERVISION','RELEASE', 'PENDING_SUPERVISION') OR
+            release_session.outflow_to_level_2 = 'COMMUNITY_PLACEMENT_PROGRAM')
+        AND release_session.compartment_level_2 NOT IN ('PAROLE_BOARD_HOLD','TEMPORARY_CUSTODY')
     ORDER BY 1,2
     )
     SELECT * EXCEPT(rn)

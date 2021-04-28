@@ -23,6 +23,9 @@ from recidiviz.calculator.query.state.views.analyst_data.person_demographics imp
 from recidiviz.calculator.query.state.views.analyst_data.assessment_score_sessions import (
     ASSESSMENT_SCORE_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.compartment_level_2_dedup_priority import (
+    COMPARTMENT_LEVEL_2_DEDUP_PRIORITY_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.admission_start_reason_dedup_priority import (
     ADMISSION_START_REASON_DEDUP_PRIORITY_VIEW_BUILDER,
 )
@@ -34,9 +37,6 @@ from recidiviz.calculator.query.state.views.analyst_data.compartment_session_sta
 )
 from recidiviz.calculator.query.state.views.analyst_data.compartment_session_end_reasons import (
     COMPARTMENT_SESSION_END_REASONS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.compartment_sub_sessions import (
-    COMPARTMENT_SUB_SESSIONS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.compartment_sessions import (
     COMPARTMENT_SESSIONS_VIEW_BUILDER,
@@ -56,8 +56,11 @@ from recidiviz.calculator.query.state.views.analyst_data.reincarceration_session
 from recidiviz.calculator.query.state.views.analyst_data.reincarceration_sessions_from_sessions import (
     REINCARCERATION_SESSIONS_FROM_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.compartment_sub_sessions_unnested import (
-    COMPARTMENT_SUB_SESSIONS_UNNESTED_VIEW_BUILDER,
+from recidiviz.calculator.query.state.views.analyst_data.system_sessions import (
+    SYSTEM_SESSIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.compartment_sessions_unnested import (
+    COMPARTMENT_SESSIONS_UNNESTED_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.compartment_sentences import (
     COMPARTMENT_SENTENCES_VIEW_BUILDER,
@@ -89,21 +92,37 @@ from recidiviz.calculator.query.state.views.analyst_data.supervision_population_
 from recidiviz.calculator.query.state.views.analyst_data.violation_type_dedup_priority import (
     VIOLATION_TYPE_DEDUP_PRIORITY_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.dataflow_sessions import (
+    DATAFLOW_SESSIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.supervision_level_sessions import (
+    SUPERVISION_LEVEL_SESSIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.supervision_level_dedup_priority import (
+    SUPERVISION_LEVEL_DEDUP_PRIORITY_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.supervision_officer_sessions import (
+    SUPERVISION_OFFICER_SESSIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.location_sessions import (
+    LOCATION_SESSIONS_VIEW_BUILDER,
+)
 
 ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     PERSON_DEMOGRAPHICS_VIEW_BUILDER,
     ASSESSMENT_SCORE_SESSIONS_VIEW_BUILDER,
+    COMPARTMENT_LEVEL_2_DEDUP_PRIORITY_VIEW_BUILDER,
     ADMISSION_START_REASON_DEDUP_PRIORITY_VIEW_BUILDER,
     RELEASE_TERMINATION_REASON_DEDUP_PRIORITY_VIEW_BUILDER,
     COMPARTMENT_SESSION_START_REASONS_VIEW_BUILDER,
     COMPARTMENT_SESSION_END_REASONS_VIEW_BUILDER,
-    COMPARTMENT_SUB_SESSIONS_VIEW_BUILDER,
     COMPARTMENT_SESSIONS_VIEW_BUILDER,
     SUPERVISION_SUPER_SESSIONS_VIEW_BUILDER,
     REVOCATION_SESSIONS_VIEW_BUILDER,
     REINCARCERATION_SESSIONS_FROM_DATAFLOW_VIEW_BUILDER,
     REINCARCERATION_SESSIONS_FROM_SESSIONS_VIEW_BUILDER,
-    COMPARTMENT_SUB_SESSIONS_UNNESTED_VIEW_BUILDER,
+    SYSTEM_SESSIONS_VIEW_BUILDER,
+    COMPARTMENT_SESSIONS_UNNESTED_VIEW_BUILDER,
     COMPARTMENT_SENTENCES_VIEW_BUILDER,
     VIOLATIONS_SESSIONS_VIEW_BUILDER,
     US_ID_PPO_METRICS_EARLY_DISCHARGES_VIEW_BUILDER,
@@ -115,4 +134,9 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_VIEW_BUILDER,
     PO_REPORT_IMPACT_METRICS_VIEW_BUILDER,
     VIOLATION_TYPE_DEDUP_PRIORITY_VIEW_BUILDER,
+    DATAFLOW_SESSIONS_VIEW_BUILDER,
+    SUPERVISION_LEVEL_SESSIONS_VIEW_BUILDER,
+    SUPERVISION_LEVEL_DEDUP_PRIORITY_VIEW_BUILDER,
+    SUPERVISION_OFFICER_SESSIONS_VIEW_BUILDER,
+    LOCATION_SESSIONS_VIEW_BUILDER,
 ]
