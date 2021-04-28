@@ -41,10 +41,6 @@ class PersonDoesNotExistError(ValueError):
     pass
 
 
-class CaseUpdateDoesNotExistError(ValueError):
-    pass
-
-
 class CaseTriageQuerier:
     """Implements Querier abstraction for Case Triage data sources."""
 
@@ -137,29 +133,6 @@ class CaseTriageQuerier:
         )
         return [OpportunityPresenter(info[0], info[1]) for info in opportunity_info]
 
-    @staticmethod
-    def delete_case_update(
-        session: Session, officer_external_id: str, update_id: str
-    ) -> CaseUpdate:
-        try:
-            case_update = (
-                session.query(CaseUpdate)
-                .filter(
-                    CaseUpdate.officer_external_id == officer_external_id,
-                    CaseUpdate.update_id == update_id,
-                )
-                .one()
-            )
-        except sqlalchemy.orm.exc.NoResultFound as e:
-            raise CaseUpdateDoesNotExistError(
-                f"Could not find update for officer: {officer_external_id} update_id: {update_id}"
-            ) from e
-
-        session.delete(case_update)
-        session.commit()
-
-        return case_update
-
 
 class DemoCaseTriageQuerier:
     """Implements some querying abstractions for use by demo users."""
@@ -197,11 +170,3 @@ class DemoCaseTriageQuerier:
                 return client
 
         raise PersonDoesNotExistError(f"could not find id: {person_external_id}")
-
-    @staticmethod
-    def delete_case_update(
-        session: Session, officer_external_id: str, case_update_id: str
-    ) -> CaseUpdate:
-        return CaseTriageQuerier.delete_case_update(
-            session, officer_external_id, case_update_id
-        )

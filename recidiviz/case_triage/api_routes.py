@@ -31,12 +31,12 @@ from recidiviz.case_triage.api_schemas import (
     requires_api_schema,
 )
 from recidiviz.case_triage.case_updates.interface import (
+    CaseUpdateDoesNotExistError,
     CaseUpdatesInterface,
     DemoCaseUpdatesInterface,
 )
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
 from recidiviz.case_triage.demo_helpers import DEMO_FROZEN_DATE
-from recidiviz.case_triage.demo_helpers import fake_officer_id_for_demo_user
 from recidiviz.case_triage.exceptions import (
     CaseTriageBadRequestException,
 )
@@ -48,7 +48,6 @@ from recidiviz.case_triage.querier.querier import (
     CaseTriageQuerier,
     DemoCaseTriageQuerier,
     PersonDoesNotExistError,
-    CaseUpdateDoesNotExistError,
 )
 from recidiviz.case_triage.state_utils.requirements import policy_requirements_for_state
 from recidiviz.persistence.database.schema.case_triage.schema import ETLClient
@@ -211,23 +210,28 @@ def create_api_blueprint(
     @api.route("/case_updates/<update_id>", methods=["DELETE"])
     def _delete_case_update(update_id: str) -> Response:
         try:
-            case_update = CaseTriageQuerier.delete_case_update(
-                current_session,
-                fake_officer_id_for_demo_user(g.email)
-                if _should_see_demo()
-                else g.current_user.external_id,
-                update_id,
-            )
-
-            etl_client = load_client(case_update.person_external_id)
-
-            if segment_client and not _should_see_demo():
-                segment_client.track_person_action_removed(
-                    g.current_user,
-                    etl_client,
-                    CaseUpdateActionType(case_update.action_type),
-                    str(case_update.update_id),
+            if _should_see_demo():
+                DemoCaseUpdatesInterface.delete_case_update(
+                    current_session,
+                    g.email,
+                    update_id,
                 )
+            else:
+                case_update = CaseUpdatesInterface.delete_case_update(
+                    current_session,
+                    g.current_user,
+                    update_id,
+                )
+
+                etl_client = load_client(case_update.person_external_id)
+
+                if segment_client:
+                    segment_client.track_person_action_removed(
+                        g.current_user,
+                        etl_client,
+                        CaseUpdateActionType(case_update.action_type),
+                        str(case_update.update_id),
+                    )
         except CaseUpdateDoesNotExistError as e:
             raise CaseTriageBadRequestException(
                 "not_found", "The case update could not be found."
