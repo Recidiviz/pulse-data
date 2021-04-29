@@ -17,6 +17,10 @@
 """Daily summaries of vitals metrics, at the state, district, and PO level."""
 # pylint: disable=trailing-whitespace,line-too-long
 from recidiviz.calculator.query import bq_utils
+from recidiviz.calculator.query.bq_utils import generate_district_id_from_district_name
+from recidiviz.calculator.query.state.state_specific_query_strings import (
+    VITALS_LEVEL_1_SUPERVISION_LOCATION_OPTIONS,
+)
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -28,8 +32,57 @@ VITALS_SUMMARIES_DESCRIPTION = """
 Daily summaries of vitals metrics, at the state, district, and PO level.
 """
 
-VITALS_SUMMARIES_QUERY_TEMPLATE = """
-    /*{description}*/
+
+def generate_entity_summary_query(field: str, vitals_table: str) -> str:
+    po_condition = "supervising_officer_external_id != 'ALL' AND district_id != 'ALL'"
+    district_condition = (
+        "supervising_officer_external_id = 'ALL' AND district_id != 'ALL'"
+    )
+
+    district_level_name = f"""
+        IF(metric_table.state_code in {VITALS_LEVEL_1_SUPERVISION_LOCATION_OPTIONS}, 'level_1_supervision_location', 'level_2_supervision_location')
+    """
+
+    return f"""
+    SELECT
+      metric_table.state_code,
+      most_recent_date_of_supervision,
+      MAX(IF(date_of_supervision = most_recent_job_id.most_recent_date_of_supervision, {field}, null)) as most_recent_{field},
+      MAX(IF(date_of_supervision = DATE_SUB(most_recent_job_id.most_recent_date_of_supervision, INTERVAL 30 DAY), {field}, null)) as {field}_30_days_before,
+      MAX(IF(date_of_supervision = DATE_SUB(most_recent_job_id.most_recent_date_of_supervision, INTERVAL 90 DAY), {field}, null)) as {field}_90_days_before,
+      CASE
+        WHEN {po_condition} THEN {bq_utils.clean_up_supervising_officer_external_id()}
+        WHEN {district_condition} THEN {generate_district_id_from_district_name('district_name')}
+        ELSE 'STATE_DOC'
+      END as entity_id,
+      CASE
+        WHEN {po_condition} THEN supervising_officer_external_id
+        WHEN {district_condition} THEN district_name
+        ELSE 'STATE DOC'
+      END as entity_name,
+      IF( {po_condition}, {generate_district_id_from_district_name('district_name')}, 'STATE_DOC') as parent_entity_id,
+      CASE 
+        WHEN {po_condition} THEN 'po'
+        WHEN {district_condition} THEN {district_level_name}
+        ELSE 'state'
+      END as entity_type,
+    FROM
+     `{{project_id}}.{{vitals_report_dataset}}.{vitals_table}` metric_table
+    INNER JOIN
+        most_recent_job_id
+    ON
+        metric_table.state_code = most_recent_job_id.state_code
+    WHERE (supervising_officer_external_id = 'ALL' OR district_id <> 'ALL')
+      AND date_of_supervision IN (
+        most_recent_job_id.most_recent_date_of_supervision,
+        DATE_SUB(most_recent_job_id.most_recent_date_of_supervision, INTERVAL 30 DAY),
+        DATE_SUB(most_recent_job_id.most_recent_date_of_supervision, INTERVAL 90 DAY))
+    GROUP BY state_code, most_recent_date_of_supervision, entity_id, entity_name, parent_entity_id, supervising_officer_external_id, district_id
+    """
+
+
+VITALS_SUMMARIES_QUERY_TEMPLATE = f"""
+    /*{{description}}*/
     WITH most_recent_job_id AS (
     SELECT
         state_code,
@@ -37,177 +90,37 @@ VITALS_SUMMARIES_QUERY_TEMPLATE = """
         job_id,
         metric_type
       FROM
-        `{project_id}.{materialized_metrics_dataset}.most_recent_daily_job_id_by_metric_and_state_code_materialized`
+        `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_daily_job_id_by_metric_and_state_code_materialized`
       WHERE metric_type = "SUPERVISION_POPULATION"
     ), 
-    timely_discharge_po AS (
-        SELECT
-            due_for_release.state_code,
-            MAX(IF(date_of_supervision = most_recent_job_id.most_recent_date_of_supervision, timely_discharge, null)) as most_recent_timely_discharge,
-            MAX(IF(date_of_supervision = DATE_SUB(most_recent_job_id.most_recent_date_of_supervision, INTERVAL 7 DAY), timely_discharge, null)) as timely_discharge_7_days_before,
-            MAX(IF(date_of_supervision = DATE_SUB(most_recent_job_id.most_recent_date_of_supervision, INTERVAL 28 DAY), timely_discharge, null)) as timely_discharge_28_days_before,
-            {clean_up_supervising_officer_external_id} as entity_id,
-            supervising_officer_external_id as entity_name,REPLACE(district_name, ' ', '_') as parent_entity_id,
-            'po' as entity_type,
-            most_recent_date_of_supervision,
-        FROM `{project_id}.{vitals_report_dataset}.supervision_population_due_for_release_by_po_by_day` due_for_release
-        INNER JOIN
-            most_recent_job_id 
-        ON
-            due_for_release.state_code = most_recent_job_id.state_code
-        WHERE date_of_supervision IN (
-            most_recent_job_id.most_recent_date_of_supervision,
-            DATE_SUB(most_recent_job_id.most_recent_date_of_supervision, INTERVAL 7 DAY),
-            DATE_SUB(most_recent_job_id.most_recent_date_of_supervision, INTERVAL 28 DAY))
-        AND supervising_officer_external_id != 'ALL' AND district_id != 'ALL'
-        GROUP BY state_code, most_recent_date_of_supervision, entity_id, entity_name, parent_entity_id
+    timely_discharge AS (
+     {generate_entity_summary_query('timely_discharge', 'supervision_population_due_for_release_by_po_by_day')}
     ),
-    timely_risk_assessment_po AS (
-        SELECT
-            overdue_lsir.state_code,
-            MAX(IF(date_of_supervision = most_recent_job_id.most_recent_date_of_supervision, timely_risk_assessment, 0)) as most_recent_timely_risk_assessment,
-            MAX(IF(date_of_supervision = DATE_SUB(most_recent_job_id.most_recent_date_of_supervision, INTERVAL 7 DAY), timely_risk_assessment, 0)) as timely_risk_assessment_7_days_before,
-            MAX(IF(date_of_supervision = DATE_SUB(most_recent_job_id.most_recent_date_of_supervision, INTERVAL 28 DAY), timely_risk_assessment, 0)) as timely_risk_assessment_28_days_before, 
-            {clean_up_supervising_officer_external_id} as entity_id,
-            supervising_officer_external_id as entity_name,
-            REPLACE(district_name, ' ', '_') as parent_entity_id,
-            'po' as entity_type,
-            most_recent_date_of_supervision,
-        FROM `{project_id}.{vitals_report_dataset}.overdue_lsir_by_po_by_day` overdue_lsir
-        INNER JOIN
-            most_recent_job_id 
-        ON
-            overdue_lsir.state_code = most_recent_job_id.state_code
-        WHERE date_of_supervision IN (
-            most_recent_job_id.most_recent_date_of_supervision,
-            DATE_SUB(most_recent_job_id.most_recent_date_of_supervision, INTERVAL 7 DAY),
-            DATE_SUB(most_recent_job_id.most_recent_date_of_supervision, INTERVAL 28 DAY))
-        AND supervising_officer_external_id != 'ALL' AND district_id != 'ALL'
-        GROUP BY state_code, most_recent_date_of_supervision, entity_id, entity_name, parent_entity_id
-    ), timely_discharge_district AS (
-        SELECT
-            due_for_release.state_code,
-            MAX(IF(date_of_supervision = most_recent_job_id.most_recent_date_of_supervision, timely_discharge, null)) as most_recent_timely_discharge,
-            MAX(IF(date_of_supervision = DATE_SUB(most_recent_job_id.most_recent_date_of_supervision, INTERVAL 7 DAY), timely_discharge, null)) as timely_discharge_7_days_before,
-            MAX(IF(date_of_supervision = DATE_SUB(most_recent_job_id.most_recent_date_of_supervision, INTERVAL 28 DAY), timely_discharge, null)) as timely_discharge_28_days_before,
-            REPLACE(district_name, ' ', '_') as entity_id,district_name as entity_name,
-            'STATE_DOC' as parent_entity_id,
-            'level_1_supervision_location' as entity_type,
-            most_recent_date_of_supervision,
-        FROM `{project_id}.{vitals_report_dataset}.supervision_population_due_for_release_by_po_by_day` due_for_release
-        INNER JOIN
-            most_recent_job_id 
-        ON
-            due_for_release.state_code = most_recent_job_id.state_code
-       WHERE date_of_supervision IN (
-            most_recent_job_id.most_recent_date_of_supervision,
-            DATE_SUB(most_recent_job_id.most_recent_date_of_supervision, INTERVAL 7 DAY),
-            DATE_SUB(most_recent_job_id.most_recent_date_of_supervision, INTERVAL 28 DAY))
-        AND supervising_officer_external_id = 'ALL' AND district_id != 'ALL'
-        GROUP BY state_code, most_recent_date_of_supervision, entity_id, entity_name, parent_entity_id
-    ),
-    timely_risk_assessment_district AS (
-        SELECT
-            overdue_lsir.state_code,
-            MAX(IF(date_of_supervision = most_recent_job_id.most_recent_date_of_supervision, timely_risk_assessment, 0)) as most_recent_timely_risk_assessment,
-            MAX(IF(date_of_supervision = DATE_SUB(most_recent_job_id.most_recent_date_of_supervision, INTERVAL 7 DAY), timely_risk_assessment, 0)) as timely_risk_assessment_7_days_before,
-            MAX(IF(date_of_supervision = DATE_SUB(most_recent_job_id.most_recent_date_of_supervision, INTERVAL 28 DAY), timely_risk_assessment, 0)) as timely_risk_assessment_28_days_before, 
-            REPLACE(district_name, ' ', '_') as entity_id,district_name as entity_name,
-            'STATE_DOC' as parent_entity_id,
-            'district_level' as entity_type,
-            most_recent_date_of_supervision,
-        FROM `{project_id}.{vitals_report_dataset}.overdue_lsir_by_po_by_day` overdue_lsir
-        INNER JOIN
-            most_recent_job_id 
-        ON
-            overdue_lsir.state_code = most_recent_job_id.state_code
-        WHERE date_of_supervision IN (
-            most_recent_job_id.most_recent_date_of_supervision,
-            DATE_SUB(most_recent_job_id.most_recent_date_of_supervision, INTERVAL 7 DAY),
-            DATE_SUB(most_recent_job_id.most_recent_date_of_supervision, INTERVAL 28 DAY))
-        AND supervising_officer_external_id = 'ALL' AND district_id != 'ALL'
-        GROUP BY state_code, most_recent_date_of_supervision, entity_id, entity_name, parent_entity_id
-    ), timely_discharge_state AS (
-        SELECT
-            due_for_release.state_code,
-            MAX(IF(date_of_supervision = most_recent_job_id.most_recent_date_of_supervision, timely_discharge, null)) as most_recent_timely_discharge,
-            MAX(IF(date_of_supervision = DATE_SUB(most_recent_job_id.most_recent_date_of_supervision, INTERVAL 7 DAY), timely_discharge, null)) as timely_discharge_7_days_before,
-            MAX(IF(date_of_supervision = DATE_SUB(most_recent_job_id.most_recent_date_of_supervision, INTERVAL 28 DAY), timely_discharge, null)) as timely_discharge_28_days_before,
-            'STATE_DOC' as entity_id,'STATE DOC' as entity_name,'STATE_DOC' as parent_entity_id,
-            'state' as entity_type,
-            most_recent_date_of_supervision,
-        FROM `{project_id}.{vitals_report_dataset}.supervision_population_due_for_release_by_po_by_day` due_for_release
-        INNER JOIN
-            most_recent_job_id 
-        ON
-            due_for_release.state_code = most_recent_job_id.state_code
-        WHERE date_of_supervision IN (
-            most_recent_job_id.most_recent_date_of_supervision,
-            DATE_SUB(most_recent_job_id.most_recent_date_of_supervision, INTERVAL 7 DAY),
-            DATE_SUB(most_recent_job_id.most_recent_date_of_supervision, INTERVAL 28 DAY))
-        AND supervising_officer_external_id = 'ALL' AND district_id = 'ALL'
-        GROUP BY state_code, most_recent_date_of_supervision, entity_id, entity_name, parent_entity_id
-    ),
-    timely_risk_assessment_state AS (
-        SELECT
-            overdue_lsir.state_code,
-            MAX(IF(date_of_supervision = most_recent_job_id.most_recent_date_of_supervision, timely_risk_assessment, 0)) as most_recent_timely_risk_assessment,
-            MAX(IF(date_of_supervision = DATE_SUB(most_recent_job_id.most_recent_date_of_supervision, INTERVAL 7 DAY), timely_risk_assessment, 0)) as timely_risk_assessment_7_days_before,
-            MAX(IF(date_of_supervision = DATE_SUB(most_recent_job_id.most_recent_date_of_supervision, INTERVAL 28 DAY), timely_risk_assessment, 0)) as timely_risk_assessment_28_days_before,
-            'STATE_DOC' as entity_id,'STATE DOC' as entity_name,'STATE_DOC' as parent_entity_id,
-            'state' as entity_type,
-            most_recent_date_of_supervision,
-        FROM `{project_id}.{vitals_report_dataset}.overdue_lsir_by_po_by_day` overdue_lsir
-        INNER JOIN
-            most_recent_job_id 
-        ON
-            overdue_lsir.state_code = most_recent_job_id.state_code
-        WHERE date_of_supervision IN (
-            most_recent_job_id.most_recent_date_of_supervision,
-            DATE_SUB(most_recent_job_id.most_recent_date_of_supervision, INTERVAL 7 DAY),
-            DATE_SUB(most_recent_job_id.most_recent_date_of_supervision, INTERVAL 28 DAY))
-        AND supervising_officer_external_id = 'ALL' AND district_id = 'ALL'
-        GROUP BY state_code, most_recent_date_of_supervision, entity_id, entity_name, parent_entity_id
-    ), all_output AS (
-        SELECT timely_discharge_po.state_code, timely_discharge_po.most_recent_date_of_supervision, timely_discharge_po.entity_type, entity_id, entity_name, parent_entity_id, most_recent_timely_discharge, timely_discharge_7_days_before, timely_discharge_28_days_before, most_recent_timely_risk_assessment, timely_risk_assessment_7_days_before, timely_risk_assessment_28_days_before
-        FROM timely_discharge_po 
-        LEFT JOIN timely_risk_assessment_po
-        USING (entity_id, entity_name, parent_entity_id)
-
-        UNION ALL 
-
-        SELECT timely_discharge_district.state_code, timely_discharge_district.most_recent_date_of_supervision, timely_discharge_district.entity_type, entity_id, entity_name, parent_entity_id, most_recent_timely_discharge, timely_discharge_7_days_before, timely_discharge_28_days_before, most_recent_timely_risk_assessment, timely_risk_assessment_7_days_before, timely_risk_assessment_28_days_before
-        FROM timely_discharge_district 
-        LEFT JOIN timely_risk_assessment_district
-        USING (entity_id, entity_name, parent_entity_id) 
-
-        UNION ALL
-
-        SELECT timely_discharge_state.state_code, timely_discharge_state.most_recent_date_of_supervision, timely_discharge_state.entity_type, entity_id, entity_name, parent_entity_id, most_recent_timely_discharge, timely_discharge_7_days_before, timely_discharge_28_days_before, most_recent_timely_risk_assessment, timely_risk_assessment_7_days_before, timely_risk_assessment_28_days_before
-        FROM timely_discharge_state
-        LEFT JOIN timely_risk_assessment_state
-        USING (entity_id, entity_name, parent_entity_id)       
+    timely_risk_assessment AS (
+     {generate_entity_summary_query('timely_risk_assessment', 'overdue_lsir_by_po_by_day')}
     )
 
     SELECT 
-        state_code,
-        most_recent_date_of_supervision,
-        entity_type,
-        entity_id,
-        entity_name,
-        parent_entity_id,
-        ROUND((most_recent_timely_discharge + most_recent_timely_risk_assessment + 80) / 3, 0) as overall,
-        ROUND(most_recent_timely_discharge) as timely_discharge,
-        ROUND(most_recent_timely_risk_assessment) as timely_risk_assessment,
-        # TODO(#6703): update once contact vitals are completed.
-        80 as timely_contact,
-        ROUND((most_recent_timely_discharge + most_recent_timely_risk_assessment + 80) / 3 - (timely_discharge_7_days_before + timely_risk_assessment_7_days_before  + 80) / 3, 0) as overall_7d,
-        ROUND((most_recent_timely_discharge + most_recent_timely_risk_assessment + 80) / 3 - (timely_discharge_28_days_before + timely_risk_assessment_28_days_before + 80) / 3, 0) as overall_28d
-    FROM all_output
+      state_code,
+      timely_discharge.most_recent_date_of_supervision,
+      timely_discharge.entity_type,
+      timely_discharge.entity_id,
+      timely_discharge.entity_name,
+      timely_discharge.parent_entity_id,
+      ROUND((most_recent_timely_discharge + most_recent_timely_risk_assessment + 80) / 3, 0) as overall,
+      ROUND(most_recent_timely_discharge) as timely_discharge,
+      ROUND(most_recent_timely_risk_assessment) as timely_risk_assessment,
+      # TODO(#6703): update once contact vitals are completed.
+      80 as timely_contact,
+      ROUND((most_recent_timely_discharge + most_recent_timely_risk_assessment + 80) / 3 - (timely_discharge_30_days_before + timely_risk_assessment_30_days_before  + 80) / 3, 0) as overall_30d,
+      ROUND((most_recent_timely_discharge + most_recent_timely_risk_assessment + 80) / 3 - (timely_discharge_90_days_before + timely_risk_assessment_90_days_before + 80) / 3, 0) as overall_90d
+    FROM timely_discharge
+    LEFT JOIN timely_risk_assessment
+      USING (state_code, entity_id, parent_entity_id)
     WHERE entity_id is not null
-    AND entity_id != 'UNKNOWN'
-    AND ROUND(most_recent_timely_discharge) != 0
-    AND ROUND(most_recent_timely_risk_assessment) != 0
+      AND entity_id != 'UNKNOWN'
+      AND ROUND(most_recent_timely_discharge) != 0
+      AND ROUND(most_recent_timely_risk_assessment) != 0
     ORDER BY most_recent_date_of_supervision DESC
 """
 
@@ -217,7 +130,6 @@ VITALS_SUMMARIES_VIEW_BUILDER = MetricBigQueryViewBuilder(
     view_query_template=VITALS_SUMMARIES_QUERY_TEMPLATE,
     dimensions=("entity_id", "entity_name", "parent_entity_id"),
     description=VITALS_SUMMARIES_DESCRIPTION,
-    clean_up_supervising_officer_external_id=bq_utils.clean_up_supervising_officer_external_id(),
     vitals_report_dataset=dataset_config.VITALS_REPORT_DATASET,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )

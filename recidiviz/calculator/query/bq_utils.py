@@ -91,3 +91,7 @@ def most_severe_violation_type_subtype_grouping() -> str:
 
 def clean_up_supervising_officer_external_id() -> str:
     return """REPLACE(REPLACE(REPLACE(REPLACE(supervising_officer_external_id, ' - ', ' '), '-', ' '), ':', ''), ' ', '_')"""
+
+
+def generate_district_id_from_district_name(district_name_field: str) -> str:
+    return f"""REPLACE(REGEXP_REPLACE({district_name_field}, r"[',]", ''), ' ' , '_')"""
