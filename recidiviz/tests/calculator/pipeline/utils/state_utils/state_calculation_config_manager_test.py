@@ -45,9 +45,11 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
     StateIncarcerationPeriodAdmissionReason,
 )
+from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodStatus,
     StateSupervisionPeriodSupervisionType,
+    StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseType,
@@ -286,6 +288,188 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
 
         self.assertFalse(admission_is_revocation)
         self.assertEqual([], revoked_periods)
+
+    def test_revoked_supervision_periods_if_revocation_occurred_US_ND_NewAdmissionNotAfterProbation(
+        self,
+    ) -> None:
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_ND",
+            start_date=date(2019, 3, 5),
+            termination_date=date(2019, 6, 9),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            supervision_type=StateSupervisionType.PAROLE,
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code="US_ND",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            admission_date=date(2019, 6, 17),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+        )
+
+        supervision_periods = [supervision_period]
+
+        (
+            admission_is_commitment_from_supervision,
+            pre_commitment_supervision_periods,
+        ) = state_calculation_config_manager.revoked_supervision_periods_if_revocation_occurred(
+            incarceration_period.state_code,
+            incarceration_period,
+            supervision_periods,
+            None,
+        )
+
+        self.assertFalse(admission_is_commitment_from_supervision)
+        self.assertEqual([], pre_commitment_supervision_periods)
+
+    def test_revoked_supervision_periods_if_revocation_occurred_US_ND_NewAdmissionNotAfterRevocation(
+        self,
+    ) -> None:
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_ND",
+            start_date=date(2019, 3, 5),
+            termination_date=date(2019, 6, 9),
+            termination_reason=StateSupervisionPeriodTerminationReason.EXPIRATION,
+            supervision_type=StateSupervisionType.PROBATION,
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code="US_ND",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            admission_date=date(2019, 6, 17),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+        )
+
+        supervision_periods = [supervision_period]
+
+        (
+            admission_is_commitment_from_supervision,
+            pre_commitment_supervision_periods,
+        ) = state_calculation_config_manager.revoked_supervision_periods_if_revocation_occurred(
+            incarceration_period.state_code,
+            incarceration_period,
+            supervision_periods,
+            None,
+        )
+
+        self.assertFalse(admission_is_commitment_from_supervision)
+        self.assertEqual([], pre_commitment_supervision_periods)
+
+    def test_revoked_supervision_periods_if_revocation_occurred_US_ND_NewAdmissionAfterProbationRevocation(
+        self,
+    ) -> None:
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_ND",
+            start_date=date(2019, 3, 5),
+            termination_date=date(2019, 6, 9),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            supervision_type=StateSupervisionType.PROBATION,
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code="US_ND",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            admission_date=date(2019, 6, 17),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+        )
+
+        supervision_periods = [supervision_period]
+
+        (
+            admission_is_commitment_from_supervision,
+            pre_commitment_supervision_periods,
+        ) = state_calculation_config_manager.revoked_supervision_periods_if_revocation_occurred(
+            incarceration_period.state_code,
+            incarceration_period,
+            supervision_periods,
+            None,
+        )
+
+        self.assertTrue(admission_is_commitment_from_supervision)
+        self.assertEqual(supervision_periods, pre_commitment_supervision_periods)
+
+    def test_revoked_supervision_periods_if_revocation_occurred_US_ND_RevocationAdmission(
+        self,
+    ) -> None:
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_ND",
+            start_date=date(2019, 3, 5),
+            termination_date=date(2019, 6, 9),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            supervision_type=StateSupervisionType.PAROLE,
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code="US_ND",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            admission_date=date(2019, 6, 17),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+        )
+
+        supervision_periods = [supervision_period]
+
+        (
+            admission_is_commitment_from_supervision,
+            pre_commitment_supervision_periods,
+        ) = state_calculation_config_manager.revoked_supervision_periods_if_revocation_occurred(
+            incarceration_period.state_code,
+            incarceration_period,
+            supervision_periods,
+            None,
+        )
+
+        self.assertTrue(admission_is_commitment_from_supervision)
+        self.assertEqual(supervision_periods, pre_commitment_supervision_periods)
+
+    def test_revoked_supervision_periods_if_revocation_occurred_US_ND_RevocationAdmissionNoSupervisionPeriod(
+        self,
+    ) -> None:
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code="US_ND",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            admission_date=date(2019, 6, 17),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+        )
+
+        (
+            admission_is_commitment_from_supervision,
+            pre_commitment_supervision_periods,
+        ) = state_calculation_config_manager.revoked_supervision_periods_if_revocation_occurred(
+            incarceration_period.state_code,
+            incarceration_period,
+            [],
+            None,
+        )
+
+        self.assertTrue(admission_is_commitment_from_supervision)
+        self.assertEqual([], pre_commitment_supervision_periods)
 
 
 class TestGetSupervisingOfficerAndLocationInfoFromSupervisionPeriod(unittest.TestCase):
