@@ -49,13 +49,17 @@ from recidiviz.tools.justice_counts.manual_upload import csv_filename
 
 # If modifying these scopes, delete the file token.pickle from your credentials directory.
 SCOPES = [
-    "https://www.googleapis.com/auth/drive.readonly",
-    "https://www.googleapis.com/auth/spreadsheets.readonly",
+    "https://www.googleapis.com/auth/drive",
+    "https://www.googleapis.com/auth/spreadsheets",
 ]
 
 
-def get_credentials(directory: str) -> Credentials:
+def get_credentials(directory: str, readonly: bool) -> Credentials:
     creds = None
+
+    scopes = SCOPES
+    if readonly:
+        scopes = [f"{scope}.readonly" for scope in SCOPES]
 
     token_path = os.path.join(directory, "token.pickle")
     # The file token.pickle stores the user's access and refresh tokens, and is
@@ -70,7 +74,7 @@ def get_credentials(directory: str) -> Credentials:
             creds.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file(
-                os.path.join(directory, "credentials.json"), SCOPES
+                os.path.join(directory, "credentials.json"), scopes
             )
             creds = flow.run_local_server(port=0)
         # Save the credentials for the next run
@@ -107,8 +111,8 @@ class Drive:
     drive: Resource
     gc: gspread.Client
 
-    def __init__(self, credentials_directory: str) -> None:
-        creds = get_credentials(credentials_directory)
+    def __init__(self, credentials_directory: str, readonly: bool = True) -> None:
+        creds = get_credentials(credentials_directory, readonly)
         self.drive = get_drive_service(creds)
         self.gc = gspread.authorize(creds)
 
@@ -155,6 +159,17 @@ class Drive:
         if len(items) > 1:
             raise ValueError(f"Expected only one directory with name: {name}")
         return items[0]
+
+    def upload_csv(self, sheet_item: DriveItem, csv_path: str, sheet_name: str) -> None:
+        """Uploads data from the csv into the given sheet.
+
+        Note this will remove all other worksheets and replace the first worksheet in
+        the given sheet.
+        """
+        self.gc.import_csv(sheet_item.id, open(csv_path).read())
+        sheet = self.gc.open_by_key(sheet_item.id)
+        [worksheet] = sheet.worksheets()
+        worksheet.update_title(sheet_name)
 
     def download_sheet(self, sheet_item: DriveItem, local_directory: str) -> None:
         sheet = self.gc.open_by_key(sheet_item.id)
@@ -209,6 +224,17 @@ class Drive:
             )
 
 
+def get_data_folder(
+    drive: Drive,
+    state_code: states.StateCode,
+    system: schema.System,
+    base_drive_folder_id: str,
+) -> DriveItem:
+    state_folder = drive.get_folder(state_code.get_state().name, base_drive_folder_id)
+    corrections_folder = drive.get_folder(system.value.title(), state_folder.id)
+    return drive.get_folder("Data", corrections_folder.id)
+
+
 def download_data(
     state_code: states.StateCode,
     system: schema.System,
@@ -225,9 +251,7 @@ def download_data(
 
     drive = Drive(credentials_directory)
 
-    state_folder = drive.get_folder(state_code.get_state().name, base_drive_folder_id)
-    corrections_folder = drive.get_folder(system.value.title(), state_folder.id)
-    data_folder = drive.get_folder("Data", corrections_folder.id)
+    data_folder = get_data_folder(drive, state_code, system, base_drive_folder_id)
     drive.download_data(data_folder.id, local_directory=local_directory)
 
 

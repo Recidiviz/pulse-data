@@ -30,6 +30,7 @@ class Worksheet:
         allow_underscores_in_numeric_literals: bool = False,
         numericise_ignore: Optional[List[int]] = None,
     ) -> List[Dict[str, str]]: ...
+    def update_title(self, title: str) -> Dict: ...
 
 class Spreadsheet:
     @property
@@ -38,6 +39,7 @@ class Spreadsheet:
 
 class Client:
     def open_by_key(self, key: str) -> Spreadsheet: ...
+    def import_csv(self, file_id: str, data: str) -> None: ...
 
 ClientT = TypeVar("ClientT")
 # For some reason mypy doesn't like the default assignment here.
