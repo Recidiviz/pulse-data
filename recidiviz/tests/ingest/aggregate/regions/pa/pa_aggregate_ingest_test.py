@@ -49,7 +49,6 @@ def _parsed_result() -> Dict[DeclarativeMeta, pd.DataFrame]:
     global _PARSED_RESULT
     if not _PARSED_RESULT:
         _PARSED_RESULT = pa_aggregate_ingest.parse(
-            "",
             fixtures.as_filepath(
                 "2018 County Statistics _ General Information - 2017 Data.xlsx"
             ),

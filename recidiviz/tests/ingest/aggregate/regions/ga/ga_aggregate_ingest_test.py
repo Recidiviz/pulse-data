@@ -49,10 +49,10 @@ class TestGaAggregateIngest(TestCase):
     def setUpClass(cls) -> None:
         # Cache the parsed pdf between tests since it's expensive to compute
         cls.parsed_pdf = ga_aggregate_ingest.parse(
-            "", fixtures.as_filepath("jailreport_june18.pdf")
+            fixtures.as_filepath("jailreport_june18.pdf")
         )
         cls.parsed_pdf_with_extra_rows = ga_aggregate_ingest.parse(
-            "", fixtures.as_filepath("jul16_jail_report.pdf")
+            fixtures.as_filepath("jul16_jail_report.pdf")
         )
 
     def setUp(self) -> None:

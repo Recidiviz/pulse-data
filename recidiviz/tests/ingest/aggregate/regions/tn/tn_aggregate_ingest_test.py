@@ -58,13 +58,13 @@ class TestTnAggregateIngest(TestCase):
     def setUpClass(cls) -> None:
         # Cache the parsed pdfs between tests since it's expensive to compute
         cls.parsed_pdf = tn_aggregate_ingest.parse(
-            "", fixtures.as_filepath("_jailjanuary2019.pdf")
+            fixtures.as_filepath("_jailjanuary2019.pdf")
         )
         cls.parsed_female_pdf = tn_aggregate_ingest.parse(
-            "", fixtures.as_filepath("_jailfemalejanuary2019.pdf")
+            fixtures.as_filepath("_jailfemalejanuary2019.pdf")
         )
         cls.parsed_newer_pdf = tn_aggregate_ingest.parse(
-            "", fixtures.as_filepath("_jailmarch2020.pdf")
+            fixtures.as_filepath("_jailmarch2020.pdf")
         )
 
     def setUp(self) -> None:

@@ -93,8 +93,8 @@ _FACILITY_ACRONYM_TO_FIPS = {
 DATE_PARSE_ANCHOR_FILENAME = "pop-reports-eom-"
 
 
-def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
-    table = _parse_table(location, filename)
+def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
+    table = _parse_table(filename)
 
     table["report_date"] = parse_date(filename)
     table["aggregation_window"] = enum_strings.daily_granularity
@@ -117,7 +117,7 @@ def parse_date(filename: str) -> datetime.date:
     raise AggregateDateParsingError("Could not extract date")
 
 
-def _parse_table(_: str, filename: str) -> pd.DataFrame:
+def _parse_table(filename: str) -> pd.DataFrame:
     """Parse the Head Count Endings and Contracted Facilities Tables."""
     all_dfs = tabula.read_pdf(
         filename,
