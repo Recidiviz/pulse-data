@@ -1,0 +1,15 @@
+file_tag: dbo_ParoleCount
+file_description: |-
+  A table containing information about supervision identifiers that have changed but
+  should be associated with the same person.
+primary_key_cols:
+  - ParoleNumber
+columns:
+  - name: ParoleNumber
+    description: |-
+      External ID for a unique person who has been supervised by PADOC.
+  - name: ParoleInstNumber
+    description: |-
+      (Needs confirmation) ParoleNumber that this person has also been assigned.
+separator: ‡
+encoding: WINDOWS-1252
