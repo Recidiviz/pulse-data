@@ -35,10 +35,6 @@ from recidiviz.calculator.pipeline.supervision.supervision_case_compliance impor
     SupervisionCaseCompliance,
 )
 
-from recidiviz.calculator.pipeline.utils.assessment_utils import (
-    find_most_recent_applicable_assessment_of_class_for_state,
-)
-
 from recidiviz.calculator.pipeline.utils.incarceration_period_index import (
     IncarcerationPeriodIndex,
 )
@@ -59,11 +55,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classi
     SupervisionTypeSpan,
 )
 
-from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_compliance import (
-    REASSESSMENT_DEADLINE_DAYS as US_ND_REASSESSMENT_DEADLINE_DAYS,
-    LSIR_INITIAL_NUMBER_OF_DAYS_COMPLIANCE as US_ND_INITIAL_ASSESMENT_DEADLINE_DAYS,
-)
-
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_revocation_utils import (
     PURPOSE_FOR_INCARCERATION_PVC,
     SHOCK_INCARCERATION_9_MONTHS,
@@ -80,7 +71,6 @@ from recidiviz.common.constants.state.shared_enums import StateCustodialAuthorit
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentType,
     StateAssessmentLevel,
-    StateAssessmentClass,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
@@ -92,6 +82,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodStatus,
     StateSpecializedPurposeForIncarceration,
     StateIncarcerationPeriodAdmissionReason,
+    StateIncarcerationPeriodReleaseReason,
 )
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactStatus,
@@ -7743,6 +7734,397 @@ class TestFindRevocationReturnBuckets(unittest.TestCase):
         )
 
         self.assertEqual([expected_revocation_bucket], revocation_buckets)
+
+    def test_revocation_return_buckets_us_nd_new_admission_after_probation_revocation(
+        self,
+    ):
+        """Tests that the find_revocation_return_buckets when run for a US_ND
+        incarceration period with a NEW_ADMISSION admission reason following a
+        supervision period with a REVOCATION termination reason and a PROBATION
+        supervision type will correctly return a RevocationReturnSupervisionTimeBucket
+        for that commitment from supervision."""
+
+        supervision_violation_1 = StateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123455,
+            state_code="US_ND",
+            violation_date=date(2008, 12, 7),
+            supervision_violation_types=[
+                StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_ND",
+                    violation_type=StateSupervisionViolationType.FELONY,
+                )
+            ],
+        )
+
+        supervision_violation_response_1 = (
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code="US_ND",
+                supervision_violation_response_id=_DEFAULT_SSVR_ID,
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2008, 12, 7),
+                supervision_violation_response_decisions=[
+                    StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                        state_code="US_ND",
+                        decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
+                    )
+                ],
+                supervision_violation=supervision_violation_1,
+            )
+        )
+
+        supervision_violation_2 = StateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123455,
+            state_code="US_ND",
+            violation_date=date(2009, 11, 13),
+        )
+
+        supervision_violation_response_2 = StateSupervisionViolationResponse.new_with_defaults(
+            supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            state_code="US_ND",
+            response_date=date(2009, 11, 13),
+            supervision_violation_response_decisions=[
+                # This REVOCATION decision is the most severe, but this is not the most recent response
+                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code="US_ND",
+                    decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                    revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
+                )
+            ],
+            supervision_violation=supervision_violation_2,
+        )
+
+        supervision_violation_3 = StateSupervisionViolation.new_with_defaults(
+            state_code="US_ND",
+            supervision_violation_id=6789,
+            violation_date=date(2009, 12, 1),
+            supervision_violation_types=[
+                StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_ND",
+                    violation_type=StateSupervisionViolationType.TECHNICAL,
+                )
+            ],
+        )
+
+        supervision_violation_response_3 = (
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code="US_ND",
+                supervision_violation_response_id=_DEFAULT_SSVR_ID,
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2009, 12, 1),
+                supervision_violation_response_decisions=[
+                    StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                        state_code="US_ND",
+                        decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
+                    )
+                ],
+                supervision_violation=supervision_violation_3,
+            )
+        )
+
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
+            external_id="sp1",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_ND",
+            start_date=date(2008, 3, 5),
+            termination_date=date(2009, 12, 19),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            supervision_type=StateSupervisionType.PROBATION,
+            supervision_site="OFFICE_1",
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            external_id="ip1",
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            state_code="US_ND",
+            admission_date=date(2009, 12, 31),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            source_supervision_violation_response=supervision_violation_response_1,
+        )
+
+        violation_responses = [
+            supervision_violation_response_1,
+            supervision_violation_response_2,
+            supervision_violation_response_3,
+        ]
+
+        revocation_buckets = self._find_revocation_return_buckets(
+            supervision_periods=[supervision_period],
+            incarceration_periods=[incarceration_period],
+            violation_responses=violation_responses,
+        )
+
+        # This respects the US_ND-specific logic in state_specific_violation_responses
+        # which relies on the source_supervision_violation_response on the incarceration
+        # period and ignores the provided violation responses, if the former is present
+        expected_revocation_bucket = RevocationReturnSupervisionTimeBucket(
+            state_code=supervision_period.state_code,
+            year=2009,
+            month=12,
+            event_date=incarceration_period.admission_date,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            case_type=StateSupervisionCaseType.GENERAL,
+            revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
+            most_severe_violation_type=StateSupervisionViolationType.FELONY,
+            most_severe_violation_type_subtype=StateSupervisionViolationType.FELONY.value,
+            most_severe_response_decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
+            most_recent_response_decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
+            response_count=1,
+            violation_history_description="1felony",
+            violation_type_frequency_counter=[["FELONY"]],
+            supervising_officer_external_id="XXX",
+            supervising_district_external_id="OFFICE_1",
+            judicial_district_code="XXX",
+            level_1_supervision_location_external_id="OFFICE_1",
+            is_on_supervision_last_day_of_month=False,
+        )
+
+        self.assertEqual([expected_revocation_bucket], revocation_buckets)
+
+    def test_revocation_return_buckets_us_nd_new_admission_after_temporary_hold_and_probation_revocation(
+        self,
+    ):
+        """Tests that the find_revocation_return_buckets when run for a US_ND
+        incarceration period with a NEW_ADMISSION admission reason following a
+        TEMPORARY_CUSTODY incarceration period, which itself follows a supervision
+        period with a REVOCATION termination reason and a PROBATION supervision type
+        will correctly return a RevocationReturnSupervisionTimeBucket corresponding to
+        that NEW_ADMISSION commitment from supervision, and not the intermediate
+        TEMPORARY_CUSTODY period."""
+
+        supervision_violation_1 = StateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123455,
+            state_code="US_ND",
+            violation_date=date(2008, 12, 7),
+            supervision_violation_types=[
+                StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_ND",
+                    violation_type=StateSupervisionViolationType.FELONY,
+                )
+            ],
+        )
+
+        supervision_violation_response_1 = (
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code="US_ND",
+                supervision_violation_response_id=_DEFAULT_SSVR_ID,
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2008, 12, 7),
+                supervision_violation_response_decisions=[
+                    StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                        state_code="US_ND",
+                        decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
+                    )
+                ],
+                supervision_violation=supervision_violation_1,
+            )
+        )
+
+        supervision_violation_2 = StateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123455,
+            state_code="US_ND",
+            violation_date=date(2009, 11, 13),
+        )
+
+        supervision_violation_response_2 = StateSupervisionViolationResponse.new_with_defaults(
+            supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            state_code="US_ND",
+            response_date=date(2009, 11, 13),
+            supervision_violation_response_decisions=[
+                # This REVOCATION decision is the most severe, but this is not the most recent response
+                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code="US_ND",
+                    decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                    revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
+                )
+            ],
+            supervision_violation=supervision_violation_2,
+        )
+
+        supervision_violation_3 = StateSupervisionViolation.new_with_defaults(
+            state_code="US_ND",
+            supervision_violation_id=6789,
+            violation_date=date(2009, 12, 1),
+            supervision_violation_types=[
+                StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_ND",
+                    violation_type=StateSupervisionViolationType.TECHNICAL,
+                )
+            ],
+        )
+
+        supervision_violation_response_3 = (
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code="US_ND",
+                supervision_violation_response_id=_DEFAULT_SSVR_ID,
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2009, 12, 1),
+                supervision_violation_response_decisions=[
+                    StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                        state_code="US_ND",
+                        decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
+                    )
+                ],
+                supervision_violation=supervision_violation_3,
+            )
+        )
+
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
+            external_id="sp1",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_ND",
+            start_date=date(2008, 3, 5),
+            termination_date=date(2009, 12, 19),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            supervision_type=StateSupervisionType.PROBATION,
+            supervision_site="OFFICE_1",
+        )
+
+        temporary_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            external_id="ip1",
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            state_code="US_ND",
+            admission_date=date(2009, 12, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            release_date=date(2009, 12, 31),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            source_supervision_violation_response=supervision_violation_response_2,
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            external_id="ip1",
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            state_code="US_ND",
+            admission_date=date(2010, 1, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            source_supervision_violation_response=supervision_violation_response_1,
+        )
+
+        violation_responses = [
+            supervision_violation_response_1,
+            supervision_violation_response_2,
+            supervision_violation_response_3,
+        ]
+
+        revocation_buckets = self._find_revocation_return_buckets(
+            supervision_periods=[supervision_period],
+            incarceration_periods=[
+                temporary_incarceration_period,
+                incarceration_period,
+            ],
+            violation_responses=violation_responses,
+        )
+
+        expected_revocation_bucket = RevocationReturnSupervisionTimeBucket(
+            state_code=supervision_period.state_code,
+            year=2010,
+            month=1,
+            event_date=incarceration_period.admission_date,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            case_type=StateSupervisionCaseType.GENERAL,
+            revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
+            most_severe_violation_type=StateSupervisionViolationType.FELONY,
+            most_severe_violation_type_subtype=StateSupervisionViolationType.FELONY.value,
+            most_severe_response_decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
+            most_recent_response_decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
+            response_count=1,
+            violation_history_description="1felony",
+            violation_type_frequency_counter=[["FELONY"]],
+            supervising_officer_external_id="XXX",
+            supervising_district_external_id="OFFICE_1",
+            judicial_district_code="XXX",
+            level_1_supervision_location_external_id="OFFICE_1",
+            is_on_supervision_last_day_of_month=False,
+        )
+
+        self.assertEqual([expected_revocation_bucket], revocation_buckets)
+
+    def test_revocation_return_buckets_us_nd_new_admission_after_probation_non_revocation(
+        self,
+    ):
+        """Tests that the find_revocation_return_buckets when run for a US_ND
+        incarceration period with a NEW_ADMISSION admission reason following a
+        supervision period with a NON-REVOCATION termination reason and a PROBATION
+        supervision type will correctly return no RevocationReturnSupervisionTimeBuckets
+        in accordance with US_ND logic."""
+
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
+            external_id="sp1",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_ND",
+            start_date=date(2008, 3, 5),
+            termination_date=date(2009, 12, 19),
+            termination_reason=StateSupervisionPeriodTerminationReason.EXPIRATION,
+            supervision_type=StateSupervisionType.PAROLE,
+            supervision_site="OFFICE_1",
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            external_id="ip1",
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            state_code="US_ND",
+            admission_date=date(2009, 12, 31),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+        )
+
+        revocation_buckets = self._find_revocation_return_buckets(
+            supervision_periods=[supervision_period],
+            incarceration_periods=[incarceration_period],
+            violation_responses=[],
+        )
+
+        self.assertEqual([], revocation_buckets)
+
+    def test_revocation_return_buckets_us_nd_new_admission_after_parole_revocation(
+        self,
+    ):
+        """Tests that the find_revocation_return_buckets when run for a US_ND
+        incarceration period with a NEW_ADMISSION admission reason following a
+        supervision period with a REVOCATION termination reason and a PAROLE
+        supervision type will correctly return no RevocationReturnSupervisionTimeBuckets
+        in accordance with US_ND logic."""
+
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
+            external_id="sp1",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_ND",
+            start_date=date(2008, 3, 5),
+            termination_date=date(2009, 12, 19),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            supervision_type=StateSupervisionType.PAROLE,
+            supervision_site="OFFICE_1",
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            external_id="ip1",
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            state_code="US_ND",
+            admission_date=date(2009, 12, 31),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+        )
+
+        revocation_buckets = self._find_revocation_return_buckets(
+            supervision_periods=[supervision_period],
+            incarceration_periods=[incarceration_period],
+            violation_responses=[],
+        )
+
+        self.assertEqual([], revocation_buckets)
 
 
 class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):

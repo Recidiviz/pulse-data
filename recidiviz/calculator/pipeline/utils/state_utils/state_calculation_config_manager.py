@@ -34,6 +34,9 @@ from recidiviz.calculator.pipeline.utils.incarceration_period_index import (
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
     period_edges_are_valid_transfer,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_commitment_from_supervision_utils import (
+    us_nd_pre_commitment_supervision_periods_if_commitment_from_supervision,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_revocation_utils import (
     us_pa_is_revocation_admission,
     us_pa_revoked_supervision_periods_if_revocation_occurred,
@@ -64,6 +67,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_com
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_type_identification import (
     us_nd_get_post_incarceration_supervision_type,
     us_nd_infer_supervision_period_admission,
+    us_nd_get_pre_commitment_supervision_type,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa import (
     us_pa_violation_utils,
@@ -341,6 +345,10 @@ def get_pre_revocation_supervision_type(
     """Returns the supervision type the person was on before they had their supervision revoked."""
     if incarceration_period.state_code.upper() == "US_ID":
         return us_id_get_pre_revocation_supervision_type(revoked_supervision_period)
+    if incarceration_period.state_code.upper() == "US_ND":
+        return us_nd_get_pre_commitment_supervision_type(
+            incarceration_period, revoked_supervision_period
+        )
     if incarceration_period.state_code.upper() == "US_PA":
         return us_pa_get_pre_revocation_supervision_type(revoked_supervision_period)
 
@@ -740,7 +748,7 @@ def revoked_supervision_periods_if_revocation_occurred(
     """If the incarceration period was a result of a supervision revocation, finds the supervision periods that were
     revoked.
 
-    Returns False, [] if the incarceration period was not a result of a revocation. Returns True and the list of
+    Returns (False, []) if the incarceration period was not a result of a revocation. Returns True and the list of
     supervision periods that were revoked if the incarceration period was a result of a revocation. In some cases, it's
     possible for the admission to be a revocation even though we cannot identify the corresponding supervision periods
     that were revoked (e.g. the person was serving supervision out-of-state). In these instances, this function will
@@ -758,6 +766,13 @@ def revoked_supervision_periods_if_revocation_occurred(
 
         if revoked_period:
             revoked_periods = [revoked_period]
+    elif state_code == StateCode.US_ND.value:
+        (
+            admission_is_revocation,
+            revoked_periods,
+        ) = us_nd_pre_commitment_supervision_periods_if_commitment_from_supervision(
+            incarceration_period, supervision_periods
+        )
     elif state_code == StateCode.US_PA.value:
         (
             admission_is_revocation,
