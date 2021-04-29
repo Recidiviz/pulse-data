@@ -22,10 +22,12 @@ import { fetchIngestStateCodes } from "../AdminPanelAPI";
 
 interface IngestInstanceCardProps {
   handleStateCodeChange: (stateCode: string) => void;
+  initialValue: string | null;
 }
 
 const IngestStateSelector: React.FC<IngestInstanceCardProps> = ({
   handleStateCodeChange,
+  initialValue,
 }) => {
   const { loading, data } = useFetchedData<StateCodeInfo[]>(
     fetchIngestStateCodes
@@ -37,12 +39,15 @@ const IngestStateSelector: React.FC<IngestInstanceCardProps> = ({
     }
   };
 
+  const defaultValue = initialValue == null ? undefined : initialValue;
+
   return (
     <Select
       style={{ width: 200 }}
       placeholder="Select a state"
       loading={loading}
       optionFilterProp="children"
+      defaultValue={defaultValue}
       onChange={handleOnChange}
       filterOption={(input, option) =>
         option?.props.children.toLowerCase().indexOf(input.toLowerCase()) >=
