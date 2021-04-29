@@ -47,3 +47,6 @@ columns:
   - name: CATEGORY
     description: |-
       The type of contact (i.e. Supervision, Recovery, etc.).
+  - name: ORIGINATOR
+    description: |-
+      The name of the supervision officer associated with this contact.
