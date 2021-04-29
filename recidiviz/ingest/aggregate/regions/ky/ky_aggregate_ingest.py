@@ -33,8 +33,8 @@ from recidiviz.ingest.aggregate.errors import AggregateDateParsingError
 from recidiviz.persistence.database.schema.aggregate.schema import KyFacilityAggregate
 
 
-def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
-    table = _parse_table(location, filename)
+def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
+    table = _parse_table(filename)
 
     # Fuzzy match each facility_name to a county fips
     county_names = table.facility_name.map(_pretend_facility_is_county)
@@ -47,7 +47,7 @@ def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     return {KyFacilityAggregate: table}
 
 
-def _parse_table(_, filename: str) -> pd.DataFrame:
+def _parse_table(filename: str) -> pd.DataFrame:
     """Parses the table in the KY PDF."""
     whole_df = one(
         tabula.read_pdf(filename, pages="all", multiple_tables=False, lattice=True)

@@ -45,7 +45,7 @@ def _parsed_result() -> Dict[DeclarativeMeta, pd.DataFrame]:
 
     if not _PARSED_RESULT:
         _PARSED_RESULT = ca_aggregate_ingest.parse(
-            "", fixtures.as_filepath("QueryResult.xls")
+            fixtures.as_filepath("QueryResult.xls")
         )
 
     return _PARSED_RESULT
@@ -109,7 +109,7 @@ class TestCaAggregateIngest(TestCase):
 
     def testParse_ParsesHeadAndTail2(self) -> None:
         result = ca_aggregate_ingest.parse(
-            "", fixtures.as_filepath("california_california2018")
+            fixtures.as_filepath("california_california2018")
         )[CaFacilityAggregate]
 
         # Assert Head

@@ -50,14 +50,12 @@ class TestKyAggregateIngest(TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         # Cache the parsed pdf between tests since it's expensive to compute
-        cls.parsed_pdf = ky_aggregate_ingest.parse(
-            "", fixtures.as_filepath("12-20-18.pdf")
-        )
+        cls.parsed_pdf = ky_aggregate_ingest.parse(fixtures.as_filepath("12-20-18.pdf"))
         cls.parsed_pdf_2 = ky_aggregate_ingest.parse(
-            "", fixtures.as_filepath("08-23-18.pdf")
+            fixtures.as_filepath("08-23-18.pdf")
         )
         cls.parsed_pdf_3 = ky_aggregate_ingest.parse(
-            "", fixtures.as_filepath("08-22-19.pdf")
+            fixtures.as_filepath("08-22-19.pdf")
         )
 
     def setUp(self) -> None:

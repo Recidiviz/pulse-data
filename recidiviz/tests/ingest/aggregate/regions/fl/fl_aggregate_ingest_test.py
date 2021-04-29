@@ -58,10 +58,10 @@ class TestFlAggregateIngest(TestCase):
     def setUpClass(cls) -> None:
         # Cache the parsed pdf between tests since it's expensive to compute
         cls.parsed_pdf = fl_aggregate_ingest.parse(
-            "", fixtures.as_filepath("jails-2018-01.pdf")
+            fixtures.as_filepath("jails-2018-01.pdf")
         )
         cls.parsed_pdf_2 = fl_aggregate_ingest.parse(
-            "", fixtures.as_filepath("florida__pub_jails_2019_2019_06 june fcdf.pdf")
+            fixtures.as_filepath("florida__pub_jails_2019_2019_06 june fcdf.pdf")
         )
 
     def setUp(self) -> None:

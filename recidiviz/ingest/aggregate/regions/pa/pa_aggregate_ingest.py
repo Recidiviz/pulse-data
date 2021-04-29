@@ -32,7 +32,7 @@ from recidiviz.persistence.database.schema.aggregate.schema import (
 )
 
 
-def parse(_, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
+def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     table_1 = _parse_tab_1(filename)
     table_2 = _parse_tab_2(filename)
 

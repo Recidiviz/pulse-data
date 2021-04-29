@@ -83,14 +83,14 @@ _MANUAL_FACILITY_TO_COUNTY_MAP = {
 }
 
 
-def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
+def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     # There are two types of reports, total jail population and female
     # jail population. The reports are very similar, but need to be
     # handled slightly differently.
     is_female = "female" in filename
     report_date = _parse_date(filename)
 
-    table = _parse_table(location, filename, is_female, report_date)
+    table = _parse_table(filename, is_female, report_date)
 
     names = table.facility_name.apply(_pretend_facility_is_county)
     table = fips.add_column_to_df(table, names, us.states.TN)
@@ -107,7 +107,7 @@ def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
 
 
 def _parse_table(
-    _: str, filename: str, is_female: bool, report_date: datetime.date
+    filename: str, is_female: bool, report_date: datetime.date
 ) -> pd.DataFrame:
     """Read PDF and format resulting dataframes into a single table."""
     # Most but not all PDFs have data on pages 2-4.

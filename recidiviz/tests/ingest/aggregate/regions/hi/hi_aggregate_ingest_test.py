@@ -50,10 +50,10 @@ class TestHiAggregateIngest(TestCase):
     def setUpClass(cls) -> None:
         # Cache the parsed pdf between tests since it's expensive to compute
         cls.parsed_pdf = hi_aggregate_ingest.parse(
-            "", fixtures.as_filepath("Pop-Reports-EOM-2018-11-30.pdf")
+            fixtures.as_filepath("Pop-Reports-EOM-2018-11-30.pdf")
         )
         cls.parsed_pdf_2 = hi_aggregate_ingest.parse(
-            "", fixtures.as_filepath("pop-reports-eom-2017-09-30-17.pdf")
+            fixtures.as_filepath("pop-reports-eom-2017-09-30-17.pdf")
         )
 
     def setUp(self) -> None:

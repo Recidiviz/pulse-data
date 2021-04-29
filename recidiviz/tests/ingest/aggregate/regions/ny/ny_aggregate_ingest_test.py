@@ -46,10 +46,10 @@ class TestNyAggregateIngest(TestCase):
     def setUpClass(cls) -> None:
         # Cache the parsed pdf between tests since it's expensive to compute
         cls.parsed_pdf = ny_aggregate_ingest.parse(
-            "", fixtures.as_filepath("jail_population.pdf")
+            fixtures.as_filepath("jail_population.pdf")
         )
         cls.parsed_pdf_3_pages = ny_aggregate_ingest.parse(
-            "", fixtures.as_filepath("jail_population_2019.pdf")
+            fixtures.as_filepath("jail_population_2019.pdf")
         )
 
     def setUp(self) -> None:

@@ -35,16 +35,16 @@ from recidiviz.persistence.database.schema.aggregate.schema import (
 )
 
 
-def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
+def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     _setup()
 
-    fl_county_table = _parse_county_table(location, filename)
+    fl_county_table = _parse_county_table(filename)
     fl_county_table = fips.add_column_to_df(
         fl_county_table, fl_county_table.county_name, us.states.FL
     )
 
     # TODO(#689): Also set the facility_fips
-    fl_facility_table = _parse_facility_table(location, filename)
+    fl_facility_table = _parse_facility_table(filename)
     names = fl_facility_table.facility_name.apply(_pretend_facility_is_county)
     fl_facility_table = fips.add_column_to_df(fl_facility_table, names, us.states.FL)
 
@@ -62,7 +62,7 @@ def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     return result
 
 
-def _parse_county_table(_: str, filename: str) -> pd.DataFrame:
+def _parse_county_table(filename: str) -> pd.DataFrame:
     """Parses the FL County - Table 1 in the PDF."""
     [result] = tabula.read_pdf(
         filename,
@@ -96,7 +96,7 @@ def _parse_county_table(_: str, filename: str) -> pd.DataFrame:
     return result
 
 
-def _parse_facility_table(_: str, filename: str) -> pd.DataFrame:
+def _parse_facility_table(filename: str) -> pd.DataFrame:
     """Parse the FL County Pretrial Inmate Report - Table 2 in the PDF."""
     # Set column names directly since the pdf format makes them hard to parse
     column_names = [
