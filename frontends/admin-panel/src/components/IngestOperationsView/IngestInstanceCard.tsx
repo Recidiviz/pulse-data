@@ -80,6 +80,31 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
           {data.dbName}
         </Descriptions.Item>
       </Descriptions>
+      <br />
+      <Descriptions title="Operations Database" bordered>
+        <Descriptions.Item label="Unprocessed Files" span={3}>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Statistic
+                title="Raw"
+                value={data.operations.unprocessedFilesRaw}
+              />
+            </Col>
+            <Col span={12}>
+              <Statistic
+                title="Ingest View"
+                value={data.operations.unprocessedFilesIngestView}
+              />
+            </Col>
+          </Row>
+        </Descriptions.Item>
+        <Descriptions.Item
+          label="Date of Earliest Unprocessed Ingest File"
+          span={3}
+        >
+          {data.operations.dateOfEarliestUnprocessedIngestView}
+        </Descriptions.Item>
+      </Descriptions>
     </Card>
   );
 };

@@ -54,4 +54,16 @@ export type IngestInstanceSummary = {
   storage: string;
   ingest: IngestBucketSummary;
   dbName: string;
+  operations: OperationsDbInfo;
+};
+
+export type OperationsDbInfo = {
+  unprocessedFilesRaw: number;
+  unprocessedFilesIngestView: number;
+  dateOfEarliestUnprocessedIngestView: Date;
+};
+
+export type StateCodeInfo = {
+  code: string;
+  name: string;
 };

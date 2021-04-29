@@ -21,21 +21,19 @@ import {
   Card,
   Col,
   Divider,
+  Empty,
   PageHeader,
   Row,
-  Select,
-  Spin,
+  Table,
 } from "antd";
 import { SyncOutlined } from "@ant-design/icons";
 import { useCallback, useEffect, useState } from "react";
 import {
-  fetchIngestRegionCodes,
   getIngestInstanceSummaries,
   getIngestQueuesState,
   startIngestRun,
   updateIngestQueuesState,
 } from "../../AdminPanelAPI";
-import useFetchedData from "../../hooks";
 import IngestActionConfirmationForm from "./IngestActionConfirmationForm";
 import {
   actionNames,
@@ -47,14 +45,14 @@ import {
 } from "./constants";
 import IngestQueuesTable from "./IngestQueuesTable";
 import IngestInstanceCard from "./IngestInstanceCard";
+import IngestStateSelector from "../IngestStateSelector";
 
 const IngestOperationsView = (): JSX.Element => {
   const env = window.RUNTIME_GCP_ENVIRONMENT || "unknown env";
   const projectId =
     env === "production" ? "recidiviz-123" : "recidiviz-staging";
 
-  const { loading, data } = useFetchedData<string[]>(fetchIngestRegionCodes);
-  const [regionCode, setRegionCode] = React.useState<string | undefined>(
+  const [stateCode, setStateCode] = React.useState<string | undefined>(
     undefined
   );
   const [
@@ -83,20 +81,20 @@ const IngestOperationsView = (): JSX.Element => {
   ];
 
   const getData = useCallback(async () => {
-    if (regionCode) {
+    if (stateCode) {
       setQueueStatesLoading(true);
       setIngestInstanceSummariesLoading(true);
-      await fetchQueueStates(regionCode);
-      await fetchIngestInstanceSummaries(regionCode);
+      await fetchQueueStates(stateCode);
+      await fetchIngestInstanceSummaries(stateCode);
     }
-  }, [regionCode]);
+  }, [stateCode]);
 
   useEffect(() => {
     getData();
   }, [getData]);
 
-  const handleRegionChange = (value: string) => {
-    setRegionCode(value);
+  const handleStateCodeChange = (value: string) => {
+    setStateCode(value);
   };
 
   const handleIngestActionOnClick = (
@@ -126,20 +124,20 @@ const IngestOperationsView = (): JSX.Element => {
     ingestActionToExecute: IngestActions | undefined
   ) => {
     setIsConfirmationModalVisible(false);
-    if (regionCode) {
+    if (stateCode) {
       if (
         ingestActionToExecute === IngestActions.StartIngestRun &&
         ingestInstance
       ) {
-        await startIngestRun(regionCode, ingestInstance);
+        await startIngestRun(stateCode, ingestInstance);
       } else if (ingestActionToExecute === IngestActions.PauseIngestQueues) {
         setQueueStatesLoading(true);
-        await updateIngestQueuesState(regionCode, QueueState.PAUSED);
-        await fetchQueueStates(regionCode);
+        await updateIngestQueuesState(stateCode, QueueState.PAUSED);
+        await fetchQueueStates(stateCode);
       } else if (ingestActionToExecute === IngestActions.ResumeIngestQueues) {
         setQueueStatesLoading(true);
-        await updateIngestQueuesState(regionCode, QueueState.RUNNING);
-        await fetchQueueStates(regionCode);
+        await updateIngestQueuesState(stateCode, QueueState.RUNNING);
+        await fetchQueueStates(stateCode);
       }
     }
   };
@@ -148,43 +146,22 @@ const IngestOperationsView = (): JSX.Element => {
     setIsConfirmationModalVisible(true);
   };
 
-  if (loading) {
-    return (
-      <div className="center">
-        <Spin size="large" />
-      </div>
-    );
-  }
-
   return (
     <>
       <PageHeader
         title="Ingest Operations"
-        subTitle={regionCode ? `${regionCode}, ${env}` : "Select a region"}
         extra={[
           <Button
             type="primary"
             shape="circle"
             icon={<SyncOutlined />}
-            disabled={!regionCode}
+            disabled={!stateCode}
             onClick={() => getData()}
           />,
-          <Select
-            style={{ width: 200 }}
-            placeholder="Select a region"
-            onChange={handleRegionChange}
-          >
-            {data?.sort().map((code: string) => {
-              return (
-                <Select.Option key={code} value={code}>
-                  {code}
-                </Select.Option>
-              );
-            })}
-          </Select>,
+          <IngestStateSelector handleStateCodeChange={handleStateCodeChange} />,
         ]}
       />
-      {regionCode ? null : (
+      {stateCode ? null : (
         <Alert
           message="A region must be selected to view the below information"
           type="warning"
@@ -193,11 +170,17 @@ const IngestOperationsView = (): JSX.Element => {
       )}
       <Divider orientation="left">Ingest Queues</Divider>
       <div className="site-card-wrapper">
-        <IngestQueuesTable
-          projectId={projectId}
-          queueStates={queueStates}
-          loading={queueStatesLoading}
-        />
+        {stateCode ? (
+          <IngestQueuesTable
+            projectId={projectId}
+            queueStates={queueStates}
+            loading={queueStatesLoading}
+          />
+        ) : (
+          <Table>
+            <Empty />
+          </Table>
+        )}
         <br />
         <div
           style={{
@@ -212,7 +195,7 @@ const IngestOperationsView = (): JSX.Element => {
                 onClick={() => {
                   handleIngestActionOnClick(action);
                 }}
-                disabled={!regionCode}
+                disabled={!stateCode}
                 block
                 key={action}
                 style={{ display: "block", textAlign: "center", width: "auto" }}
@@ -225,7 +208,7 @@ const IngestOperationsView = (): JSX.Element => {
         </div>
       </div>
 
-      {regionCode && ingestAction ? (
+      {stateCode && ingestAction ? (
         <IngestActionConfirmationForm
           visible={isConfirmationModalVisible}
           onConfirm={onIngestActionConfirmation}
@@ -233,7 +216,7 @@ const IngestOperationsView = (): JSX.Element => {
             setIsConfirmationModalVisible(false);
           }}
           ingestAction={ingestAction}
-          regionCode={regionCode}
+          regionCode={stateCode}
           ingestInstance={ingestInstance}
         />
       ) : null}
@@ -241,6 +224,15 @@ const IngestOperationsView = (): JSX.Element => {
       <Divider orientation="left" style={{ marginTop: 24 }}>
         Ingest Instances
       </Divider>
+      {env === "development" ? (
+        <Alert
+          message="The Operations Database information is inaccurate. Users are unable to hit a live database
+          from a local machine"
+          type="warning"
+          showIcon
+        />
+      ) : null}
+      <br />
       <div className="site-card-wrapper">
         <Row gutter={[16, 16]}>
           {ingestInstanceSummariesLoading

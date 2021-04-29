@@ -97,9 +97,9 @@ export const getPOFeedback = async (): Promise<Response> => {
 };
 
 // Ingest Operations Actions
-export const fetchIngestRegionCodes = async (): Promise<Response> => {
+export const fetchIngestStateCodes = async (): Promise<Response> => {
   return postWithURLAndBody(
-    "/api/ingest_operations/fetch_ingest_region_codes",
+    "/api/ingest_operations/fetch_ingest_state_codes",
     {}
   );
 };

@@ -65,13 +65,13 @@ def jsonify_dataset_metadata_result(
     return jsonify(results_dict), HTTPStatus.OK
 
 
-def _get_state_code_from_region_code(region_code: str) -> StateCode:
-    if not StateCode.is_state_code(region_code):
+def _get_state_code_from_str(state_code_str: str) -> StateCode:
+    if not StateCode.is_state_code(state_code_str):
         raise ValueError(
-            f"Unknown region_code [{region_code}] received, must be a valid state code."
+            f"Unknown region_code [{state_code_str}] received, must be a valid state code."
         )
 
-    return StateCode[region_code.upper()]
+    return StateCode[state_code_str.upper()]
 
 
 def _get_metadata_store(metadata_dataset: str) -> DatasetMetadataCountsStore:
@@ -138,25 +138,24 @@ def fetch_ingest_data_freshness() -> Tuple[str, HTTPStatus]:
 
 
 # Ingest Operations Actions
-@admin_panel.route("/api/ingest_operations/fetch_ingest_region_codes", methods=["POST"])
+@admin_panel.route("/api/ingest_operations/fetch_ingest_state_codes", methods=["POST"])
 @requires_gae_auth
-def fetch_ingest_region_codes() -> Tuple[str, HTTPStatus]:
-    region_codes = sorted(
-        [
-            region_code.value
-            for region_code in admin_stores.ingest_operations_store.region_codes_launched_in_env
-        ]
-    )
-    return jsonify(region_codes), HTTPStatus.OK
+def fetch_ingest_state_codes() -> Tuple[str, HTTPStatus]:
+    all_state_codes = admin_stores.ingest_operations_store.state_codes_launched_in_env
+    state_code_info = []
+    for state_code in all_state_codes:
+        code_to_name = {"code": state_code.value, "name": state_code.get_state().name}
+        state_code_info.append(code_to_name)
+    return jsonify(state_code_info), HTTPStatus.OK
 
 
 # Start an ingest run for a specific instance
 @admin_panel.route(
-    "/api/ingest_operations/<region_code>/start_ingest_run", methods=["POST"]
+    "/api/ingest_operations/<state_code_str>/start_ingest_run", methods=["POST"]
 )
 @requires_gae_auth
-def start_ingest_run(region_code: str) -> Tuple[str, HTTPStatus]:
-    state_code = _get_state_code_from_region_code(region_code)
+def start_ingest_run(state_code_str: str) -> Tuple[str, HTTPStatus]:
+    state_code = _get_state_code_from_str(state_code_str)
     instance = request.json["instance"]
     admin_stores.ingest_operations_store.start_ingest_run(state_code, instance)
     return "", HTTPStatus.OK
@@ -164,12 +163,12 @@ def start_ingest_run(region_code: str) -> Tuple[str, HTTPStatus]:
 
 # Update ingest queues
 @admin_panel.route(
-    "/api/ingest_operations/<region_code>/update_ingest_queues_state",
+    "/api/ingest_operations/<state_code_str>/update_ingest_queues_state",
     methods=["POST"],
 )
 @requires_gae_auth
-def update_ingest_queues_state(region_code: str) -> Tuple[str, HTTPStatus]:
-    state_code = _get_state_code_from_region_code(region_code)
+def update_ingest_queues_state(state_code_str: str) -> Tuple[str, HTTPStatus]:
+    state_code = _get_state_code_from_str(state_code_str)
     new_queue_state = request.json["new_queue_state"]
     admin_stores.ingest_operations_store.update_ingest_queues_state(
         state_code, new_queue_state
@@ -177,22 +176,24 @@ def update_ingest_queues_state(region_code: str) -> Tuple[str, HTTPStatus]:
     return "", HTTPStatus.OK
 
 
-# Get all ingest queues and their state for given region code
-@admin_panel.route("/api/ingest_operations/<region_code>/get_ingest_queue_states")
+# Get all ingest queues and their state for given state code
+@admin_panel.route("/api/ingest_operations/<state_code_str>/get_ingest_queue_states")
 @requires_gae_auth
-def get_ingest_queue_states(region_code: str) -> Tuple[str, HTTPStatus]:
-    state_code = _get_state_code_from_region_code(region_code)
+def get_ingest_queue_states(state_code_str: str) -> Tuple[str, HTTPStatus]:
+    state_code = _get_state_code_from_str(state_code_str)
     ingest_queue_states = admin_stores.ingest_operations_store.get_ingest_queue_states(
         state_code
     )
     return jsonify(ingest_queue_states), HTTPStatus.OK
 
 
-# Get summaries of all ingest instances for region
-@admin_panel.route("/api/ingest_operations/<region_code>/get_ingest_instance_summaries")
+# Get summaries of all ingest instances for state
+@admin_panel.route(
+    "/api/ingest_operations/<state_code_str>/get_ingest_instance_summaries"
+)
 @requires_gae_auth
-def get_ingest_instance_summaries(region_code: str) -> Tuple[str, HTTPStatus]:
-    state_code = _get_state_code_from_region_code(region_code)
+def get_ingest_instance_summaries(state_code_str: str) -> Tuple[str, HTTPStatus]:
+    state_code = _get_state_code_from_str(state_code_str)
     ingest_instance_summaries = (
         admin_stores.ingest_operations_store.get_ingest_instance_summaries(state_code)
     )
