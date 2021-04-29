@@ -22,11 +22,10 @@ import tempfile
 from http import HTTPStatus
 from typing import Tuple
 
-from flask import Blueprint, request
 import gcsfs
+from flask import Blueprint, request
 
 from recidiviz.cloud_functions.cloud_function_utils import GCSFS_NO_CACHING
-
 from recidiviz.ingest.aggregate.regions.ca import ca_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.fl import fl_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.ga import ga_aggregate_ingest
@@ -95,7 +94,7 @@ def state_aggregate() -> Tuple[str, HTTPStatus]:
     fs.get(path, tmpdir_path)
     logging.info("Successfully downloaded file from gcs: %s", path)
 
-    result = parser(os.path.join(bucket, state), tmpdir_path)
+    result = parser(tmpdir_path)
     logging.info("Successfully parsed the report")
     for table, df in result.items():
         dao.write_df(table, df)

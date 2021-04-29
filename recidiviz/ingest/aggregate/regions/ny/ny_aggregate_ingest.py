@@ -34,10 +34,10 @@ from recidiviz.common import fips
 from recidiviz.persistence.database.schema.aggregate.schema import NyFacilityAggregate
 
 
-def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
+def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     _setup()
 
-    table = _parse_table(location, filename)
+    table = _parse_table(filename)
 
     # Fuzzy match each facility_name to a county fips
     county_names = table.facility_name.map(_pretend_facility_is_county)
@@ -49,7 +49,7 @@ def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     return {NyFacilityAggregate: table}
 
 
-def _parse_table(_: str, filename: str) -> pd.DataFrame:
+def _parse_table(filename: str) -> pd.DataFrame:
     """Parses all tables in the GA PDF."""
     all_dfs = tabula.read_pdf(
         filename,

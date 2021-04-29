@@ -34,9 +34,9 @@ from recidiviz.persistence.database.schema.aggregate.schema import TxCountyAggre
 DATE_PARSE_ANCHOR_FILENAME = "abbreviated pop rpt"
 
 
-def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
+def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     report_date = _parse_date(filename)
-    table = _parse_table(location, filename, report_date)
+    table = _parse_table(filename, report_date)
 
     county_names = table.facility_name.map(_pretend_facility_is_county)
     table = fips.add_column_to_df(table, county_names, us.states.TX)
@@ -71,7 +71,7 @@ def _parse_date(filename: str) -> datetime.date:
         raise AggregateDateParsingError("Could not extract date") from e
 
 
-def _parse_table(_: str, filename: str, report_date: datetime.date) -> pd.DataFrame:
+def _parse_table(filename: str, report_date: datetime.date) -> pd.DataFrame:
     """Parses the TX County Table in the PDF."""
     num_pages = 9
     columns_to_schema = _get_column_names(report_date)

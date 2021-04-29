@@ -58,19 +58,18 @@ class TestTxAggregateIngest(TestCase):
     def setUpClass(cls) -> None:
         # Cache the parsed pdf between tests since it's expensive to compute
         cls.parsed_pdf_before_1996 = tx_aggregate_ingest.parse(
-            "", fixtures.as_filepath("abbreviated pop rpt march 1994.pdf")
+            fixtures.as_filepath("abbreviated pop rpt march 1994.pdf")
         )
         cls.parsed_pdf_1996 = tx_aggregate_ingest.parse(
-            "", fixtures.as_filepath("texas_url_abbreviated pop rpt June 1996.pdf")
+            fixtures.as_filepath("texas_url_abbreviated pop rpt June 1996.pdf")
         )
         cls.parsed_pdf_after_1996 = tx_aggregate_ingest.parse(
-            "", fixtures.as_filepath("Abbreviated Pop Rpt Dec 2017.pdf")
+            fixtures.as_filepath("Abbreviated Pop Rpt Dec 2017.pdf")
         )
         cls.parsed_pdf_concat = tx_aggregate_ingest.parse(
-            "",
             fixtures.as_filepath(
                 "docs_abbreviatedpopreports_abbreviated pop rpt oct 2003.pdf"
-            ),
+            )
         )
 
     def setUp(self) -> None:

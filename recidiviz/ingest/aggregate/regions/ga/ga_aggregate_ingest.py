@@ -34,9 +34,9 @@ from recidiviz.persistence.database.schema.aggregate.schema import GaCountyAggre
 DATE_PARSE_ANCHOR = "DATA SUMMARY"
 
 
-def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
+def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     report_date = _parse_date(filename)
-    table = _parse_table(location, filename, report_date)
+    table = _parse_table(filename, report_date)
 
     # Fuzzy match each facility_name to a county fips
     county_names = table.county_name.map(_sanitize_county_name)
@@ -67,7 +67,7 @@ def _parse_date(filename: str) -> datetime.date:
         raise AggregateDateParsingError("Could not extract date")
 
 
-def _parse_table(_: str, filename: str, report_date: datetime.date) -> pd.DataFrame:
+def _parse_table(filename: str, report_date: datetime.date) -> pd.DataFrame:
     """Parses the last table in the GA PDF."""
 
     # Set column names since the pdf makes them hard to parse directly
