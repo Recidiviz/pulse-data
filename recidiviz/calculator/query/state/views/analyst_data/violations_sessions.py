@@ -110,7 +110,7 @@ VIOLATIONS_SESSIONS_QUERY_TEMPLATE = """
     LEFT JOIN `{project_id}.{analyst_dataset}.supervision_super_sessions_materialized` super_sessions
         ON sessions.person_id = super_sessions.person_id
         AND sessions.session_id BETWEEN super_sessions.session_id_start AND super_sessions.session_id_end
-    LEFT JOIN `{analyst_dataset}.revocation_sessions_materialized` revocations
+    LEFT JOIN `{project_id}.{analyst_dataset}.revocation_sessions_materialized` revocations
       ON revocations.person_id = violations.person_id
       AND revocations.revocation_date BETWEEN violations.response_date AND DATE_ADD(violations.response_date, INTERVAL 365 DAY)
       
