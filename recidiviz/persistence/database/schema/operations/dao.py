@@ -20,11 +20,11 @@ from typing import Optional, List
 
 from more_itertools import one
 
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
     filename_parts_from_path,
 )
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.session import Session
 
@@ -198,3 +198,33 @@ def get_metadata_for_raw_files_discovered_after_datetime(
         )
 
     return query.all()
+
+
+def get_date_sorted_unprocessed_raw_files_for_region(
+    session: Session,
+    region_code: str,
+) -> List[schema.DirectIngestRawFileMetadata]:
+    """Returns metadata for all raw files that do not have a processed_time from earliest to latest"""
+    return (
+        session.query(schema.DirectIngestRawFileMetadata)
+        .filter_by(region_code=region_code, processed_time=None)
+        .order_by(
+            schema.DirectIngestRawFileMetadata.datetimes_contained_upper_bound_inclusive.asc()
+        )
+        .all()
+    )
+
+
+def get_date_sorted_unprocessed_ingest_view_files_for_region(
+    session: Session,
+    region_code: str,
+) -> List[schema.DirectIngestIngestFileMetadata]:
+    """Returns metadata for all ingest files that do not have a processed_time from earliest to latest"""
+    return (
+        session.query(schema.DirectIngestIngestFileMetadata)
+        .filter_by(region_code=region_code, processed_time=None)
+        .order_by(
+            schema.DirectIngestIngestFileMetadata.datetimes_contained_upper_bound_inclusive.asc()
+        )
+        .all()
+    )

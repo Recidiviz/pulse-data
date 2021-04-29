@@ -66,6 +66,10 @@ class DirectIngestRawFileMetadataManager:
     ) -> List[DirectIngestRawFileMetadata]:
         """Returns metadata for all raw files with a given tag that have been updated after the provided date."""
 
+    @abc.abstractmethod
+    def get_num_unprocessed_raw_files(self) -> int:
+        """Returns the number of unprocessed raw files in the operations table for this region"""
+
 
 class DirectIngestIngestFileMetadataManager:
     """An abstract interface for a class that handles writing metadata about raw data
@@ -151,6 +155,16 @@ class DirectIngestIngestFileMetadataManager:
         self,
     ) -> List[DirectIngestIngestFileMetadata]:
         """Returns metadata for all ingest files have not yet been exported."""
+
+    @abc.abstractmethod
+    def get_num_unprocessed_ingest_files(self) -> int:
+        """Returns the number of unprocessed ingest files in the operations table for this region"""
+
+    @abc.abstractmethod
+    def get_date_of_earliest_unprocessed_ingest_file(
+        self,
+    ) -> Optional[datetime.datetime]:
+        """Returns the earliest unprocessed ingest file in the operations table for this region"""
 
 
 class DirectIngestFileMetadataManager(

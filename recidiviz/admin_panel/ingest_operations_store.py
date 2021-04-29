@@ -16,6 +16,7 @@
 # =============================================================================
 """Store used to keep information related to direct ingest operations"""
 import logging
+from datetime import datetime
 from typing import List, Optional, Dict, Union, Any
 
 from google.cloud import tasks_v2
@@ -35,6 +36,9 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     gcsfs_direct_ingest_storage_directory_path_for_region,
     GcsfsDirectIngestFileType,
 )
+from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import (
+    PostgresDirectIngestFileMetadataManager,
+)
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     DirectIngestCloudTaskManagerImpl,
 )
@@ -44,8 +48,8 @@ from recidiviz.ingest.direct.direct_ingest_region_utils import (
 )
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.utils import metadata
+from recidiviz.utils.environment import in_development
 from recidiviz.utils.regions import get_region
-
 
 _BQ_IMPORT_EXPORT_QUEUE = "direct-ingest-state-{}-bq-import-export"
 _PROCESS_JOB_QUEUE = "direct-ingest-state-{}-process-job-queue"
@@ -81,7 +85,7 @@ class IngestOperationsStore:
         self.cloud_tasks_client = tasks_v2.CloudTasksClient()
 
     @property
-    def region_codes_launched_in_env(self) -> List[StateCode]:
+    def state_codes_launched_in_env(self) -> List[StateCode]:
         return get_direct_ingest_states_launched_in_env()
 
     @staticmethod
@@ -112,14 +116,14 @@ class IngestOperationsStore:
                 f"Invalid instance [{instance_str}] received",
             ) from e
 
-        can_start_ingest = state_code in self.region_codes_launched_in_env
+        can_start_ingest = state_code in self.state_codes_launched_in_env
 
-        formatted_region_code = state_code.value.lower()
-        region = get_region(formatted_region_code, is_direct_ingest=True)
+        formatted_state_code = state_code.value.lower()
+        region = get_region(formatted_state_code, is_direct_ingest=True)
 
         # Get the ingest bucket for this region and instance
         ingest_bucket_path = gcsfs_direct_ingest_bucket_for_region(
-            region_code=formatted_region_code,
+            region_code=formatted_state_code,
             system_level=SystemLevel.for_region(region),
             ingest_instance=instance,
             project_id=self.project_id,
@@ -128,7 +132,7 @@ class IngestOperationsStore:
         logging.info(
             "Creating cloud task to schedule next job and kick ingest for %s instance in %s.",
             instance,
-            formatted_region_code,
+            formatted_state_code,
         )
         self.cloud_task_manager.create_direct_ingest_handle_new_files_task(
             region=region,
@@ -242,16 +246,21 @@ class IngestOperationsStore:
                 processedFilesRaw: how many processed raw data files are in the bucket (should be zero),
                 unprocessedFilesIngestView: how many unprocessed ingest view files in the bucket,
                 processedFilesIngestView: how many processed ingest view files are in the bucket (should be zero),
+            },
+            operations: {
+                unprocessedFilesRaw: number of unprocessed raw files in the operations database
+                unprocessedFilesIngestView: number of unprocessed ingest view files in the operations database
+                dateOfEarliestUnprocessedIngestView: date of earliest unprocessed ingest file, if it exists
             }
         }
         """
-        formatted_region_code = state_code.value.lower()
+        formatted_state_code = state_code.value.lower()
 
         ingest_instance_summaries: List[Dict[str, Any]] = []
         for instance in DirectIngestInstance:
             # Get the ingest bucket path
             ingest_bucket_path = gcsfs_direct_ingest_bucket_for_region(
-                region_code=formatted_region_code,
+                region_code=formatted_state_code,
                 system_level=SystemLevel.STATE,
                 ingest_instance=instance,
                 project_id=self.project_id,
@@ -261,24 +270,68 @@ class IngestOperationsStore:
 
             # Get the storage bucket for this instance
             storage_bucket_path = gcsfs_direct_ingest_storage_directory_path_for_region(
-                region_code=formatted_region_code,
+                region_code=formatted_state_code,
                 system_level=SystemLevel.STATE,
                 ingest_instance=instance,
                 project_id=self.project_id,
             )
 
             # Get the database name corresponding to this instance
-            db_name = SQLAlchemyDatabaseKey.for_state_code(
-                state_code, instance.database_version(SystemLevel.STATE)
-            ).db_name
+            ingest_db_name = self._get_database_name_for_state(state_code, instance)
+
+            # Get the operations metadata for this ingest instance
+            operations_db_metadata = self._get_operations_db_metadata(
+                state_code, ingest_db_name
+            )
 
             ingest_instance_summary: Dict[str, Any] = {
                 "instance": instance.value,
                 "storage": storage_bucket_path.abs_path(),
                 "ingest": ingest_bucket_metadata,
-                "dbName": db_name,
+                "dbName": ingest_db_name,
+                "operations": operations_db_metadata,
             }
 
             ingest_instance_summaries.append(ingest_instance_summary)
 
         return ingest_instance_summaries
+
+    @staticmethod
+    def _get_database_name_for_state(
+        state_code: StateCode, instance: DirectIngestInstance
+    ) -> str:
+        """Returns the database name for the given state and instance"""
+        return SQLAlchemyDatabaseKey.for_state_code(
+            state_code, instance.database_version(SystemLevel.STATE)
+        ).db_name
+
+    @staticmethod
+    def _get_operations_db_metadata(
+        state_code: StateCode, ingest_db_name: str
+    ) -> Dict[str, Union[int, Optional[datetime]]]:
+        """Returns the following dictionary with information about the operations database for the state:
+        {
+            unprocessedFilesRaw: <int>
+            unprocessedFilesIngestView: <int>
+            dateOfEarliestUnprocessedIngestView: <datetime>
+        }
+
+        If running locally, this does not hit the live DB instance and only returns fake data.
+        """
+        if in_development():
+            return {
+                "unprocessedFilesRaw": -1,
+                "unprocessedFilesIngestView": -2,
+                "dateOfEarliestUnprocessedIngestView": datetime(2021, 4, 28),
+            }
+
+        file_metadata_manager = PostgresDirectIngestFileMetadataManager(
+            region_code=state_code.value,
+            ingest_database_name=ingest_db_name,
+        )
+
+        return {
+            "unprocessedFilesRaw": file_metadata_manager.get_num_unprocessed_raw_files(),
+            "unprocessedFilesIngestView": file_metadata_manager.get_num_unprocessed_ingest_files(),
+            "dateOfEarliestUnprocessedIngestView": file_metadata_manager.get_date_of_earliest_unprocessed_ingest_file(),
+        }

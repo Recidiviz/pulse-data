@@ -208,6 +208,25 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
                 f"Unexpected files type [{parts.file_type}] for path [{path.abs_path()}]"
             )
 
+    def get_num_unprocessed_raw_files(self) -> int:
+        """Returns the number of unprocessed raw files in the operations table for this region"""
+        session = SessionFactory.for_database(self.database_key)
+
+        try:
+            unprocessed_raw_files = (
+                dao.get_date_sorted_unprocessed_raw_files_for_region(
+                    session, self.region_code
+                )
+            )
+            num_unprocessed_raw_files = len(unprocessed_raw_files)
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
+
+        return num_unprocessed_raw_files
+
 
 class PostgresDirectIngestIngestFileMetadataManager(
     DirectIngestIngestFileMetadataManager
@@ -529,6 +548,56 @@ class PostgresDirectIngestIngestFileMetadataManager(
                 f"Unexpected files type [{parts.file_type}] for path [{path.abs_path()}]"
             )
 
+    def get_num_unprocessed_ingest_files(self) -> int:
+        """Returns the number of unprocessed ingest files in the operations table for this region"""
+        session = SessionFactory.for_database(self.database_key)
+
+        try:
+            unprocessed_ingest_files = (
+                dao.get_date_sorted_unprocessed_ingest_view_files_for_region(
+                    session, self.region_code
+                )
+            )
+            num_unprocessed_ingest_files = len(unprocessed_ingest_files)
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
+
+        return num_unprocessed_ingest_files
+
+    def get_date_of_earliest_unprocessed_ingest_file(
+        self,
+    ) -> Optional[datetime.datetime]:
+        """Returns the earliest unprocessed ingest file in the operations table for this region"""
+        session = SessionFactory.for_database(self.database_key)
+
+        try:
+            # The unprocessed ingest files are returned from earliest to latest
+            unprocessed_ingest_files = (
+                dao.get_date_sorted_unprocessed_ingest_view_files_for_region(
+                    session, self.region_code
+                )
+            )
+
+            if not unprocessed_ingest_files:
+                return None
+
+            earliest_unprocessed_ingest_file: schema.DirectIngestIngestFileMetadata = (
+                unprocessed_ingest_files[0]
+            )
+            date_of_earliest_unprocessed_ingest_file = (
+                earliest_unprocessed_ingest_file.job_creation_time
+            )
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
+
+        return date_of_earliest_unprocessed_ingest_file
+
 
 class PostgresDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
     """An implementation for a class that handles writing metadata about each direct
@@ -638,3 +707,14 @@ class PostgresDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
         self,
     ) -> List[DirectIngestIngestFileMetadata]:
         return self.ingest_file_manager.get_ingest_view_metadata_pending_export()
+
+    def get_num_unprocessed_raw_files(self) -> int:
+        return self.raw_file_manager.get_num_unprocessed_raw_files()
+
+    def get_num_unprocessed_ingest_files(self) -> int:
+        return self.ingest_file_manager.get_num_unprocessed_ingest_files()
+
+    def get_date_of_earliest_unprocessed_ingest_file(
+        self,
+    ) -> Optional[datetime.datetime]:
+        return self.ingest_file_manager.get_date_of_earliest_unprocessed_ingest_file()

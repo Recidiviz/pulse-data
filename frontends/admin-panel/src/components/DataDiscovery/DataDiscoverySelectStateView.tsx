@@ -16,27 +16,24 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 =============================================================================
 */
-import { Form, Select } from "antd";
+import { Form, FormInstance } from "antd";
 import * as React from "react";
-import useFetchedData from "../../hooks";
-import { fetchIngestRegionCodes } from "../../AdminPanelAPI";
+import IngestStateSelector from "../IngestStateSelector";
 
-const DataDiscoverySelectStateView = (): JSX.Element => {
-  const { loading, data: regionCodes } = useFetchedData<string[]>(
-    fetchIngestRegionCodes
-  );
+interface DataDiscoverySelectStateViewProps {
+  form: FormInstance;
+}
+
+const DataDiscoverySelectStateView: React.FC<DataDiscoverySelectStateViewProps> = ({
+  form,
+}) => {
+  const handleStateCodeChange = (value: string) => {
+    form.setFieldsValue({ region_code: value });
+  };
 
   return (
     <Form.Item label="State" name="region_code" rules={[{ required: true }]}>
-      <Select>
-        {!loading && regionCodes
-          ? regionCodes.map((code) => (
-              <Select.Option key={code} value={code}>
-                {code}
-              </Select.Option>
-            ))
-          : null}
-      </Select>
+      <IngestStateSelector handleStateCodeChange={handleStateCodeChange} />
     </Form.Item>
   );
 };
