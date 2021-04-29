@@ -31,11 +31,11 @@ def generate_time_series_query(metric_name: str, table_name: str) -> str:
       IF(district_id = "ALL", "STATE_DOC", REPLACE(district_name, ' ', '_')) as entity_id,
       "{metric_name.upper()}" as metric,
       ROUND(timely_{metric_name}) as value,
-      ROUND(AVG(timely_{metric_name}) OVER (ORDER BY district_id, date_of_supervision ROWS BETWEEN 6 PRECEDING AND CURRENT ROW)) as avg_7d
+      ROUND(AVG(timely_{metric_name}) OVER (ORDER BY district_id, date_of_supervision ROWS BETWEEN 29 PRECEDING AND CURRENT ROW)) as avg_30d
     FROM `{{project_id}}.{{vitals_report_dataset}}.{table_name}`
     WHERE supervising_officer_external_id = 'ALL'
       AND district_id <> "UNKNOWN"
-      AND date_of_supervision >= DATE_SUB(CURRENT_DATE(), INTERVAL 372 DAY) -- Need to go an additional 7 days back for the avg
+      AND date_of_supervision >= DATE_SUB(CURRENT_DATE(), INTERVAL 210 DAY) -- Need to go an additional 30 days back for the avg
     """
 
 
@@ -59,7 +59,7 @@ VITALS_TIME_SERIES_TEMPLATE = f"""
       "CONTACT" as metric,
       # TODO(#6703): update once contact vitals are completed.
       80 as value,
-      80 as avg_7d
+      80 as avg_30d
     FROM risk_assessment
   ), summary AS (
     SELECT
@@ -68,7 +68,7 @@ VITALS_TIME_SERIES_TEMPLATE = f"""
       entity_id,
       "OVERALL" as metric,
       ROUND((discharge.value + risk_assessment.value + contact.value)/3) as value,
-      ROUND((discharge.avg_7d + risk_assessment.avg_7d + contact.avg_7d)/3) as avg_7d
+      ROUND((discharge.avg_30d + risk_assessment.avg_30d + contact.avg_30d)/3) as avg_30d
     FROM discharge
       JOIN risk_assessment 
       USING (state_code, date, entity_id)
@@ -79,13 +79,13 @@ VITALS_TIME_SERIES_TEMPLATE = f"""
   SELECT
    *
   FROM (
-    SELECT * FROM discharge WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 4 WEEK)
+    SELECT * FROM discharge WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 180 DAY)
     UNION ALL
-    SELECT * FROM risk_assessment WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 4 WEEK)
+    SELECT * FROM risk_assessment WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 180 DAY)
     UNION ALL
-    SELECT * FROM contact WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 4 WEEK)
+    SELECT * FROM contact WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 180 DAY)
     UNION ALL
-    SELECT * FROM summary WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 4 WEEK)
+    SELECT * FROM summary WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 180 DAY)
   )
   WHERE value != 0
   ORDER BY entity_id, date, metric
