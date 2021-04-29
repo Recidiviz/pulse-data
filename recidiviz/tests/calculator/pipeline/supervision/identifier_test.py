@@ -4297,6 +4297,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 case_compliances=_generate_case_compliances(
                     start_date=supervision_period.start_date,
                     supervision_period=supervision_period,
+                    assessments=assessments,
                 ),
             )
         )
@@ -4453,6 +4454,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 case_compliances=_generate_case_compliances(
                     start_date=supervision_period.start_date,
                     supervision_period=supervision_period,
+                    assessments=assessments,
                 ),
             )
         )
@@ -4634,6 +4636,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 case_compliances=_generate_case_compliances(
                     start_date=supervision_period.start_date,
                     supervision_period=supervision_period,
+                    assessments=assessments,
                 ),
             )
         )
@@ -4655,6 +4658,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 case_compliances=_generate_case_compliances(
                     start_date=supervision_period.start_date,
                     supervision_period=supervision_period,
+                    assessments=assessments,
                 ),
             )
         )
