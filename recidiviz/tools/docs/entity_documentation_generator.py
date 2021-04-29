@@ -92,19 +92,16 @@ def generate_entity_documentation() -> bool:
             else "TODO(#7120): FILL IN THIS DESCRIPTION\n\n"
         )
         documentation += f"{_get_fields(t.columns)}\n\n"
+
+        prior_documentation = None
         markdown_file_path = os.path.join(ENTITY_DOCS_ROOT, f"{t.name}.md")
         if os.path.exists(markdown_file_path):
             with open(markdown_file_path, "r") as raw_data_md_file:
                 prior_documentation = raw_data_md_file.read()
-            if prior_documentation != documentation:
-                with open(markdown_file_path, "w") as raw_data_md_file:
-                    raw_data_md_file.write(documentation)
-                    anything_modified = True
-        else:
-            raise ValueError(
-                f"File {t.name}.md does not exist in directory {ENTITY_DOCS_ROOT}"
-            )
-
+        if prior_documentation != documentation:
+            with open(markdown_file_path, "w") as raw_data_md_file:
+                raw_data_md_file.write(documentation)
+                anything_modified = True
     return anything_modified
 
 
