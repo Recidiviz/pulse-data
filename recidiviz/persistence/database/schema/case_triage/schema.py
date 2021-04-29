@@ -172,25 +172,6 @@ class ETLOpportunity(CaseTriageBase):
         )
 
 
-class Deprecated__CaseUpdate(CaseTriageBase):
-    """This type is deprecated, and CaseUpdateAction should be used instead."""
-
-    __tablename__ = "case_updates"
-
-    person_external_id = Column(
-        String(255), nullable=False, index=True, primary_key=True
-    )
-    officer_external_id = Column(
-        String(255), nullable=False, index=True, primary_key=True
-    )
-    state_code = Column(String(255), nullable=False, index=True, primary_key=True)
-
-    # To start, we're just keeping things in json. We will eventually migrate this to
-    # some other format when we know better what we need, but for the moment we will
-    # enforce schema decisions and/or migrations largely in code.
-    update_metadata = Column(JSONB, nullable=False)
-
-
 class CaseUpdate(CaseTriageBase):
     """Represents an update to a parole officer's case based on actions that an officer
     indicates they have taken on behalf of a client. We store one active row per
