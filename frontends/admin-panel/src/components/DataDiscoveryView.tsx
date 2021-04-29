@@ -102,7 +102,7 @@ const Component: React.FC = () => {
     {
       title: "Choose State",
       description: "Select the state you want to search ingest data for",
-      content: <DataDiscoverySelectStateView />,
+      content: <DataDiscoverySelectStateView form={form} />,
     },
     {
       title: "Choose Files",

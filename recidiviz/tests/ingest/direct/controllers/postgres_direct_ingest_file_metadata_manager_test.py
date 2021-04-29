@@ -917,3 +917,139 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
                     "bucket/file_tag.csv", GcsfsDirectIngestFileType.INGEST_VIEW
                 ),
             )
+
+    @freeze_time("2015-01-02T03:04:06")
+    def test_get_num_unprocessed_raw_files(self) -> None:
+        # Arrange
+        raw_unprocessed_path_1 = self._make_unprocessed_path(
+            "bucket/file_tag.csv",
+            GcsfsDirectIngestFileType.RAW_DATA,
+        )
+
+        raw_unprocessed_path_2 = self._make_unprocessed_path(
+            "bucket/file_tag2.csv",
+            GcsfsDirectIngestFileType.RAW_DATA,
+        )
+
+        # Act
+        self.metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path_1)
+        self.metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path_2)
+
+        unprocessed_paths = [raw_unprocessed_path_1, raw_unprocessed_path_2]
+
+        # Assert
+        self.assertEqual(
+            len(unprocessed_paths),
+            self.metadata_manager.get_num_unprocessed_raw_files(),
+        )
+
+    @freeze_time("2015-01-02T03:04:06")
+    def test_get_num_unprocessed_raw_files_when_no_files(self) -> None:
+        # Assert
+        self.assertEqual(0, self.metadata_manager.get_num_unprocessed_raw_files())
+
+    def test_get_num_unprocessed_ingest_files(self) -> None:
+        # Arrange
+        args = GcsfsIngestViewExportArgs(
+            ingest_view_name="file_tag",
+            output_bucket_name=self.output_bucket_name,
+            upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
+        )
+
+        ingest_view_unprocessed_path = self._make_unprocessed_path(
+            "bucket/file_tag.csv", GcsfsDirectIngestFileType.INGEST_VIEW
+        )
+
+        # Act
+        metadata_entity = self.metadata_manager.register_ingest_file_export_job(args)
+        self.metadata_manager.register_ingest_view_export_file_name(
+            metadata_entity,
+            ingest_view_unprocessed_path,
+        )
+
+        unprocessed_paths = [ingest_view_unprocessed_path]
+
+        # Assert
+        self.assertEqual(
+            len(unprocessed_paths),
+            self.metadata_manager.get_num_unprocessed_ingest_files(),
+        )
+
+    def test_get_date_of_earliest_unprocessed_ingest_file(self) -> None:
+        # Arrange
+        with freeze_time("2015-01-02T03:05:05"):
+            args = GcsfsIngestViewExportArgs(
+                ingest_view_name="file_tag",
+                output_bucket_name=self.output_bucket_name,
+                upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+                upper_bound_datetime_to_export=datetime.datetime(
+                    2015, 1, 2, 3, 3, 3, 3
+                ),
+            )
+
+            ingest_view_unprocessed_path = self._make_unprocessed_path(
+                "bucket/file_tag.csv", GcsfsDirectIngestFileType.INGEST_VIEW
+            )
+
+            metadata_entity = self.metadata_manager.register_ingest_file_export_job(
+                args
+            )
+            self.metadata_manager.register_ingest_view_export_file_name(
+                metadata_entity,
+                ingest_view_unprocessed_path,
+            )
+
+        with freeze_time("2015-01-03T03:05:05"):
+            args_2 = GcsfsIngestViewExportArgs(
+                ingest_view_name="file_tag_2",
+                output_bucket_name=self.output_bucket_name,
+                upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+                upper_bound_datetime_to_export=datetime.datetime(
+                    2015, 1, 2, 3, 3, 3, 3
+                ),
+            )
+
+            ingest_view_unprocessed_path_2 = self._make_unprocessed_path(
+                "bucket/file_tag_2.csv", GcsfsDirectIngestFileType.INGEST_VIEW
+            )
+
+            metadata_entity_2 = self.metadata_manager.register_ingest_file_export_job(
+                args_2
+            )
+            self.metadata_manager.register_ingest_view_export_file_name(
+                metadata_entity_2,
+                ingest_view_unprocessed_path_2,
+            )
+
+        expected_date = metadata_entity.job_creation_time
+
+        # Assert
+        self.assertEqual(
+            expected_date,
+            self.metadata_manager.get_date_of_earliest_unprocessed_ingest_file(),
+        )
+
+    def test_get_date_of_earliest_unprocessed_ingest_file_no_unprocessed_files(
+        self,
+    ) -> None:
+        # Arrange
+        args = GcsfsIngestViewExportArgs(
+            ingest_view_name="file_tag",
+            output_bucket_name=self.output_bucket_name,
+            upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
+        )
+
+        ingest_view_unprocessed_path = self._make_unprocessed_path(
+            "bucket/file_tag.csv", GcsfsDirectIngestFileType.INGEST_VIEW
+        )
+
+        self.run_ingest_view_file_progression(
+            args, self.metadata_manager, ingest_view_unprocessed_path
+        )
+
+        # Assert
+        self.assertIsNone(
+            self.metadata_manager.get_date_of_earliest_unprocessed_ingest_file()
+        )

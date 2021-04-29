@@ -64,6 +64,7 @@ const IngestQueuesTable: React.FC<IngestQueueStatusCardProps> = ({
           pagination={false}
           loading={loading}
           style={{ width: 1000 }}
+          rowKey="name"
         />
       ) : null}
     </div>
