@@ -71,6 +71,39 @@ from recidiviz.persistence.database.schema.shared_enums import (
 # between the master and historical tables for each entity.
 from recidiviz.persistence.database.base_schema import StateBase
 
+ASSOCIATON_TABLE_COMMENT_TEMPLATE = (
+    "Association table that connects {first_object_name_plural} with "
+    "{second_object_name_plural} by their ids."
+)
+
+EXTERNAL_ID_COMMENT_TEMPLATE = (
+    "The unique identifier for the {object_name}, unique within the scope of the source "
+    "data system."
+)
+
+PRIMARY_KEY_COMMENT_TEMPLATE = (
+    "Unique identifier for a(n) {object_name}, generated automatically by the "
+    "Recidiviz system. This identifier is not stable over time (it may change if "
+    "historical data is re-ingested), but should be used within the context of a given "
+    "dataset to connect this object to others."
+)
+
+FOREIGN_KEY_COMMENT_TEMPLATE = (
+    "Unique identifier for a(n) {object_name}, generated automatically by the "
+    "Recidiviz system. This identifier is not stable over time (it may change if "
+    "historical data is re-ingested), but should be used within the context of a given "
+    "dataset to connect this object to relevant {object_name} information."
+)
+
+HISTORICAL_TABLE_COMMENT_TEMPLATE = (
+    "Represents all updates that have made to a(n) {object_name} object over time."
+)
+
+HISTORICAL_ID_COMMENT = (
+    "This primary key should not be used. It only exists because SQLAlchemy requires every table "
+    "to have a unique primary key."
+)
+
 state_assessment_class = Enum(
     state_enum_strings.state_assessment_class_mental_health,
     state_enum_strings.state_assessment_class_risk,
@@ -679,12 +712,25 @@ state_incarceration_period_program_assignment_association_table = Table(
 state_charge_incarceration_sentence_association_table = Table(
     "state_charge_incarceration_sentence_association",
     StateBase.metadata,
-    Column("charge_id", Integer, ForeignKey("state_charge.charge_id"), index=True),
+    Column(
+        "charge_id",
+        Integer,
+        ForeignKey("state_charge.charge_id"),
+        index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="charge"),
+    ),
     Column(
         "incarceration_sentence_id",
         Integer,
         ForeignKey("state_incarceration_sentence.incarceration_sentence_id"),
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
+            object_name="incarceration sentence"
+        ),
+    ),
+    comment=ASSOCIATON_TABLE_COMMENT_TEMPLATE.format(
+        first_object_name_plural="charges",
+        second_object_name_plural="incarceration_sentences",
     ),
 )
 
@@ -703,8 +749,23 @@ state_charge_supervision_sentence_association_table = Table(
 state_charge_fine_association_table = Table(
     "state_charge_fine_association",
     StateBase.metadata,
-    Column("charge_id", Integer, ForeignKey("state_charge.charge_id"), index=True),
-    Column("fine_id", Integer, ForeignKey("state_fine.fine_id"), index=True),
+    Column(
+        "charge_id",
+        Integer,
+        ForeignKey("state_charge.charge_id"),
+        index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="charge"),
+    ),
+    Column(
+        "fine_id",
+        Integer,
+        ForeignKey("state_fine.fine_id"),
+        index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="fine"),
+    ),
+    comment=ASSOCIATON_TABLE_COMMENT_TEMPLATE.format(
+        first_object_name_plural="charges", second_object_name_plural="fines"
+    ),
 )
 
 state_parole_decision_decision_agent_association_table = Table(
@@ -759,6 +820,7 @@ class _ReferencesStatePersonSharedColumns:
             ForeignKey("state_person.person_id", deferrable=True, initially="DEFERRED"),
             index=True,
             nullable=False,
+            comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="person"),
         )
 
 
@@ -1068,16 +1130,29 @@ class _StateBondSharedColumns(_ReferencesStatePersonSharedColumns):
             raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)  # type: ignore
 
-    external_id = Column(String(255), index=True)
-    status = Column(bond_status, nullable=False)
-    status_raw_text = Column(String(255))
-    bond_type = Column(bond_type, nullable=False)
-    bond_type_raw_text = Column(String(255))
-    date_paid = Column(Date)
-    state_code = Column(String(255), nullable=False, index=True)
-    county_code = Column(String(255), index=True)
-    amount_dollars = Column(Integer)
-    bond_agent = Column(String(255))
+    external_id = Column(
+        String(255),
+        index=True,
+        comment="DEPRECATED. See #2891.",
+    )
+    status = Column(bond_status, nullable=False, comment="DEPRECATED. See #2891.")
+    status_raw_text = Column(String(255), comment="DEPRECATED. See #2891.")
+    bond_type = Column(bond_type, nullable=False, comment="DEPRECATED. See #2891.")
+    bond_type_raw_text = Column(String(255), comment="DEPRECATED. See #2891.")
+    date_paid = Column(Date, comment="DEPRECATED. See #2891.")
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment="DEPRECATED. See #2891.",
+    )
+    county_code = Column(
+        String(255),
+        index=True,
+        comment="DEPRECATED. See #2891.",
+    )
+    amount_dollars = Column(Integer, comment="DEPRECATED. See #2891.")
+    bond_agent = Column(String(255), comment="DEPRECATED. See #2891.")
 
 
 class StateBond(StateBase, _StateBondSharedColumns):
@@ -1092,8 +1167,9 @@ class StateBond(StateBase, _StateBondSharedColumns):
             deferrable=True,
             initially="DEFERRED",
         ),
+        {"comment": "DEPRECATED. See #2891."},
     )
-    bond_id = Column(Integer, primary_key=True)
+    bond_id = Column(Integer, primary_key=True, comment="DEPRECATED. See #2891.")
 
     person = relationship("StatePerson", uselist=False)
 
@@ -1102,13 +1178,22 @@ class StateBondHistory(StateBase, _StateBondSharedColumns, HistoryTableSharedCol
     """Represents the historical state of a StateBond"""
 
     __tablename__ = "state_bond_history"
+    __table_args__ = {"comment": "DEPRECATED. See #2891."}
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
-    bond_history_id = Column(Integer, primary_key=True)
+    bond_history_id = Column(
+        Integer,
+        primary_key=True,
+        comment=HISTORICAL_ID_COMMENT,
+    )
 
     bond_id = Column(
-        Integer, ForeignKey("state_bond.bond_id"), nullable=False, index=True
+        Integer,
+        ForeignKey("state_bond.bond_id"),
+        nullable=False,
+        index=True,
+        comment="DEPRECATED. See #2891.",
     )
 
 
@@ -1197,34 +1282,101 @@ class _StateChargeSharedColumns(_ReferencesStatePersonSharedColumns):
             raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)  # type: ignore
 
-    external_id = Column(String(255), index=True)
-    status = Column(charge_status, nullable=False)
-    status_raw_text = Column(String(255))
-    offense_date = Column(Date)
-    date_charged = Column(Date)
-    state_code = Column(String(255), nullable=False, index=True)
-    county_code = Column(String(255), index=True)
-    ncic_code = Column(String(255))
-    statute = Column(String(255))
-    description = Column(Text)
-    attempted = Column(Boolean)
-    classification_type = Column(state_charge_classification_type)
-    classification_type_raw_text = Column(String(255))
-    classification_subtype = Column(String(255))
-    offense_type = Column(String(255))
-    is_violent = Column(Boolean)
-    counts = Column(Integer)
-    charge_notes = Column(Text)
-    charging_entity = Column(String(255))
-    is_controlling = Column(Boolean)
+    external_id = Column(
+        String(255),
+        index=True,
+        comment=EXTERNAL_ID_COMMENT_TEMPLATE.format(object_name="StateCharge"),
+    )
+    status = Column(charge_status, nullable=False, comment="The status of the charge.")
+    status_raw_text = Column(
+        String(255), comment="The raw text value of the status of the charge."
+    )
+    offense_date = Column(
+        Date, comment="The date of the alleged offense that led to this charge."
+    )
+    date_charged = Column(
+        Date, comment="The date the person was charged with the alleged offense."
+    )
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment="The code of the state under whose jurisdiction the charge was brought.",
+    )
+    county_code = Column(
+        String(255),
+        index=True,
+        comment="The code of the county under whose jurisdiction the charge was brought.",
+    )
+    ncic_code = Column(
+        String(255),
+        comment="The standardized NCIC (National Crime Information Center) code for "
+        "the charged offense. NCIC codes are a set of nationally recognized "
+        "codes for certain types of crimes.",
+    )
+    statute = Column(
+        String(255),
+        comment="The identifier of the charge in the state or federal code.",
+    )
+    description = Column(Text, comment="A text description of the charge.")
+    attempted = Column(
+        Boolean,
+        comment="Whether this charge was an attempt or not (e.g. attempted murder).",
+    )
+    classification_type = Column(
+        state_charge_classification_type, comment="Charge classification."
+    )
+    classification_type_raw_text = Column(
+        String(255), comment="The raw text value of the charge classification."
+    )
+    classification_subtype = Column(
+        String(255),
+        comment="The sub-classification of the charge, such as a degree "
+        "(e.g. 1st Degree, 2nd Degree, etc.) or a class (e.g. Class A,"
+        " Class B, etc.).",
+    )
+    offense_type = Column(
+        String(255), comment="The type of offense associated with the charge."
+    )
+    is_violent = Column(
+        Boolean, comment="Whether this charge was for a violent crime or not."
+    )
+    counts = Column(
+        Integer,
+        comment="The number of counts of this charge which are being brought against the person.",
+    )
+    charge_notes = Column(
+        Text, comment="Free text containing other information about a charge."
+    )
+    charging_entity = Column(
+        String(255),
+        comment="The entity that brought this charge (e.g., Boston Police"
+        " Department, Southern District of New York).",
+    )
+    is_controlling = Column(
+        Boolean,
+        comment='Whether or not this is the "controlling" charge in a set of related '
+        "charges. A controlling charge is the one which is responsible for the "
+        "longest possible sentence duration in the set.",
+    )
 
     @declared_attr
     def court_case_id(self) -> Column:
-        return Column(Integer, ForeignKey("state_court_case.court_case_id"), index=True)
+        return Column(
+            Integer,
+            ForeignKey("state_court_case.court_case_id"),
+            index=True,
+            comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="court case"),
+        )
 
     @declared_attr
     def bond_id(self) -> Column:
-        return Column(Integer, ForeignKey("state_bond.bond_id"), index=True)
+        return Column(
+            Integer,
+            ForeignKey("state_bond.bond_id"),
+            index=True,
+            comment="DEPRECATED. See #2891.",
+        )
 
 
 class StateCharge(StateBase, _StateChargeSharedColumns):
@@ -1239,9 +1391,22 @@ class StateCharge(StateBase, _StateChargeSharedColumns):
             deferrable=True,
             initially="DEFERRED",
         ),
+        {
+            "comment": "The StateCharge object holds information on a single charge that a person has been accused of. "
+            "A single StateCharge can reference multiple Incarceration/Supervision Sentences (e.g. multiple "
+            "concurrent sentences served due to an overlapping set of charges) and a multiple charges can "
+            "reference a single Incarceration/Supervision Sentence (e.g. one sentence resulting from multiple "
+            "charges). Thus, the relationship between StateCharge and each distinct Supervision/Incarceration "
+            "Sentence type is many:many. Each StateCharge is brought to trial as part of no more than a single"
+            " StateCourtCase."
+        },
     )
 
-    charge_id = Column(Integer, primary_key=True)
+    charge_id = Column(
+        Integer,
+        primary_key=True,
+        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(object_name="charge"),
+    )
 
     # Cross-entity relationships
     person = relationship("StatePerson", uselist=False)
@@ -1257,13 +1422,23 @@ class StateChargeHistory(
     """Represents the historical state of a StateCharge"""
 
     __tablename__ = "state_charge_history"
-
+    __table_args__ = {
+        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(object_name="StateCharge")
+    }
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
-    charge_history_id = Column(Integer, primary_key=True)
+    charge_history_id = Column(
+        Integer,
+        primary_key=True,
+        comment=HISTORICAL_ID_COMMENT,
+    )
 
     charge_id = Column(
-        Integer, ForeignKey("state_charge.charge_id"), nullable=False, index=True
+        Integer,
+        ForeignKey("state_charge.charge_id"),
+        nullable=False,
+        index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="state charge"),
     )
 
 
@@ -1280,17 +1455,49 @@ class _StateAssessmentSharedColumns(_ReferencesStatePersonSharedColumns):
             raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)  # type: ignore
 
-    external_id = Column(String(255), index=True)
-    assessment_class = Column(state_assessment_class)
-    assessment_class_raw_text = Column(String(255))
-    assessment_type = Column(state_assessment_type)
-    assessment_type_raw_text = Column(String(255))
-    assessment_date = Column(Date)
-    state_code = Column(String(255), nullable=False, index=True)
-    assessment_score = Column(Integer)
-    assessment_level = Column(state_assessment_level)
-    assessment_level_raw_text = Column(String(255))
-    assessment_metadata = Column(Text)
+    external_id = Column(
+        String(255),
+        index=True,
+        comment=EXTERNAL_ID_COMMENT_TEMPLATE.format(object_name="StateAssessment"),
+    )
+    assessment_class = Column(
+        state_assessment_class,
+        comment="The classification of assessment that was conducted.",
+    )
+    assessment_class_raw_text = Column(
+        String(255), comment="The raw text value of the classification of assessment."
+    )
+    assessment_type = Column(
+        state_assessment_type,
+        comment="The specific type of assessment that was conducted.",
+    )
+    assessment_type_raw_text = Column(
+        String(255), comment="The raw text value of the assessment type."
+    )
+    assessment_date = Column(Date, comment="The date the assessment was conducted.")
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment="The code of the state under whose "
+        "jurisdiction the assessment was conducted.",
+    )
+    assessment_score = Column(
+        Integer, comment="The final score output by the assessment, if applicable."
+    )
+    assessment_level = Column(
+        state_assessment_level,
+        comment="The final level output by the assessment, " "if applicable.",
+    )
+    assessment_level_raw_text = Column(
+        String(255), comment="The raw text value of the assessment level"
+    )
+    assessment_metadata = Column(
+        Text,
+        comment="This includes whichever fields and values are relevant to a fine "
+        "understanding of a particular assessment. It can be provided in any "
+        "format, but will be transformed into JSON prior to persistence.",
+    )
 
     @declared_attr
     def incarceration_period_id(self) -> Column:
@@ -1299,6 +1506,7 @@ class _StateAssessmentSharedColumns(_ReferencesStatePersonSharedColumns):
             ForeignKey("state_incarceration_period.incarceration_period_id"),
             index=True,
             nullable=True,
+            comment="The incarceration period id associated with this assessment.",
         )
 
     @declared_attr
@@ -1308,12 +1516,17 @@ class _StateAssessmentSharedColumns(_ReferencesStatePersonSharedColumns):
             ForeignKey("state_supervision_period.supervision_period_id"),
             index=True,
             nullable=True,
+            comment="The supervision period id associated with this assessment.",
         )
 
     @declared_attr
     def conducting_agent_id(self) -> Column:
         return Column(
-            Integer, ForeignKey("state_agent.agent_id"), index=True, nullable=True
+            Integer,
+            ForeignKey("state_agent.agent_id"),
+            index=True,
+            nullable=True,
+            comment="The id of the agent conducting this assessment.",
         )
 
 
@@ -1321,8 +1534,19 @@ class StateAssessment(StateBase, _StateAssessmentSharedColumns):
     """Represents a StateAssessment in the SQL schema"""
 
     __tablename__ = "state_assessment"
+    __table_args__ = {
+        "comment": "The StateAssessment object represents information about an assessment conducted for some person. "
+        "Assessments are used in various stages of the justice system to assess a person's risk, or a "
+        "person's needs, or to determine what course of action to take, such as pretrial sentencing or "
+        "program reference. A StateAssessment is always about a particular person, but it may also be "
+        "optionally linked to a particular StateIncarcerationPeriod or StateSupervisionPeriod."
+    }
 
-    assessment_id = Column(Integer, primary_key=True)
+    assessment_id = Column(
+        Integer,
+        primary_key=True,
+        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(object_name="assessment"),
+    )
 
     conducting_agent = relationship("StateAgent", uselist=False, lazy="selectin")
 
@@ -1333,16 +1557,26 @@ class StateAssessmentHistory(
     """Represents the historical state of a StateAssessment"""
 
     __tablename__ = "state_assessment_history"
+    __table_args__ = {
+        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
+            object_name="StateAssessment"
+        )
+    }
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
-    assessment_history_id = Column(Integer, primary_key=True)
+    assessment_history_id = Column(
+        Integer,
+        primary_key=True,
+        comment=HISTORICAL_ID_COMMENT,
+    )
 
     assessment_id = Column(
         Integer,
         ForeignKey("state_assessment.assessment_id"),
         nullable=False,
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="state assessment"),
     )
 
 
@@ -2618,8 +2852,7 @@ class _StateAgentSharedColumns:
     external_id = Column(
         String(255),
         index=True,
-        comment="The  unique identifier for the "
-        "StateAgent, unique within the scope of the source data system",
+        comment=EXTERNAL_ID_COMMENT_TEMPLATE.format(object_name="StateAgent"),
     )
     agent_type = Column(state_agent_type, nullable=False, comment="The type of agent.")
     agent_type_raw_text = Column(
@@ -2651,8 +2884,7 @@ class StateAgent(StateBase, _StateAgentSharedColumns):
     agent_id = Column(
         Integer,
         primary_key=True,
-        comment="Unique identifier for an agent. If not specified, "
-        "one will be generated.",
+        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(object_name="agent"),
     )
 
 
@@ -2660,8 +2892,8 @@ class StateAgentHistory(StateBase, _StateAgentSharedColumns, HistoryTableSharedC
     """Represents the historical state of a StateAgent"""
 
     __tablename__ = "state_agent_history"
-    __tableargs__ = {
-        "comment": "The history table for StateAgent. Do i need more info?"
+    __table_args__ = {
+        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(object_name="StateAgent")
     }
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
@@ -2669,9 +2901,7 @@ class StateAgentHistory(StateBase, _StateAgentSharedColumns, HistoryTableSharedC
     agent_history_id = Column(
         Integer,
         primary_key=True,
-        comment="This primary key should not be used. It only exists "
-        "because SQLAlchemy requires every table to have a "
-        "unique primary key.",
+        comment=HISTORICAL_ID_COMMENT,
     )
 
     agent_id = Column(
