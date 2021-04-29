@@ -33,7 +33,10 @@ const DataDiscoverySelectStateView: React.FC<DataDiscoverySelectStateViewProps> 
 
   return (
     <Form.Item label="State" name="region_code" rules={[{ required: true }]}>
-      <IngestStateSelector handleStateCodeChange={handleStateCodeChange} />
+      <IngestStateSelector
+        handleStateCodeChange={handleStateCodeChange}
+        initialValue={null}
+      />
     </Form.Item>
   );
 };

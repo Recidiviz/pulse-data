@@ -28,6 +28,7 @@ import {
 } from "antd";
 import { SyncOutlined } from "@ant-design/icons";
 import { useCallback, useEffect, useState } from "react";
+import { useHistory, useLocation } from "react-router-dom";
 import {
   getIngestInstanceSummaries,
   getIngestQueuesState,
@@ -52,8 +53,15 @@ const IngestOperationsView = (): JSX.Element => {
   const projectId =
     env === "production" ? "recidiviz-123" : "recidiviz-staging";
 
-  const [stateCode, setStateCode] = React.useState<string | undefined>(
-    undefined
+  const history = useHistory();
+
+  const location = useLocation();
+  const queryString = location.search;
+  const params = new URLSearchParams(queryString);
+  const initialStateCode = params.get("stateCode");
+
+  const [stateCode, setStateCode] = React.useState<string | null>(
+    initialStateCode
   );
   const [
     isConfirmationModalVisible,
@@ -95,6 +103,14 @@ const IngestOperationsView = (): JSX.Element => {
 
   const handleStateCodeChange = (value: string) => {
     setStateCode(value);
+    updateQueryParams(value);
+  };
+
+  const updateQueryParams = (stateCodeInput: string) => {
+    const locationObj = {
+      search: `?stateCode=${stateCodeInput}`,
+    };
+    history.push(locationObj);
   };
 
   const handleIngestActionOnClick = (
@@ -158,7 +174,10 @@ const IngestOperationsView = (): JSX.Element => {
             disabled={!stateCode}
             onClick={() => getData()}
           />,
-          <IngestStateSelector handleStateCodeChange={handleStateCodeChange} />,
+          <IngestStateSelector
+            handleStateCodeChange={handleStateCodeChange}
+            initialValue={initialStateCode}
+          />,
         ]}
       />
       {stateCode ? null : (
