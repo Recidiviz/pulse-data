@@ -34,6 +34,7 @@ import { titleCase } from "../../utils";
 import { useRootStore } from "../../stores";
 import NotInCaseload from "./NotInCaseload";
 import {
+  CaseUpdateActionType,
   NotInCaseloadActions,
   NotInCaseloadActionType,
 } from "../../stores/CaseUpdatesStore";
@@ -55,6 +56,26 @@ const CaseCard: React.FC<CaseCardProps> = ({ client }: CaseCardProps) => {
   const currentNotOnCaseloadAction = NotInCaseloadActions.find(
     (value: string) => client.caseUpdates[value as NotInCaseloadActionType]
   );
+  let ellipsisDropdown;
+  if (!currentNotOnCaseloadAction) {
+    ellipsisDropdown = (
+      <EllipsisDropdown
+        actions={NotInCaseloadActions}
+        client={client}
+        icon={IconSVG.TripleDot}
+        borderless
+      />
+    );
+  } else if (!client.caseUpdates[CaseUpdateActionType.NOT_ON_CASELOAD]) {
+    ellipsisDropdown = (
+      <EllipsisDropdown
+        actions={[CaseUpdateActionType.NOT_ON_CASELOAD]}
+        client={client}
+        icon={IconSVG.TripleDot}
+        borderless
+      />
+    );
+  }
 
   return (
     <CaseCardComponent stacked style={{ marginTop }}>
@@ -62,12 +83,7 @@ const CaseCard: React.FC<CaseCardProps> = ({ client }: CaseCardProps) => {
         <ClientNameRow>
           <H3 as="div">{client.name}</H3>
 
-          <EllipsisDropdown
-            actions={NotInCaseloadActions}
-            client={client}
-            icon={IconSVG.TripleDot}
-            borderless
-          />
+          {ellipsisDropdown}
           <CloseButton onClick={() => clientsStore.view()}>
             <Icon kind={IconSVG.Close} />
           </CloseButton>

@@ -82,10 +82,10 @@ const NeedsFaceToFaceContact: React.FC<NeedsFaceToFaceContactProps> = ({
     },
   } = client;
 
-  const title =
-    faceToFaceMet && homeVisitMet
-      ? `Face-to-Face Contact: Up To Date`
-      : `Face-to-Face Contact Needed`;
+  const met = faceToFaceMet && homeVisitMet;
+  const title = met
+    ? `Face to Face Contact: Up To Date`
+    : `Face to Face Contact Needed`;
   const contactFrequency = policyStore.findContactFrequencyForClient(client);
   const homeVisitFrequency = policyStore.findHomeVisitFrequencyForClient(
     client
@@ -95,11 +95,7 @@ const NeedsFaceToFaceContact: React.FC<NeedsFaceToFaceContactProps> = ({
     <CaseCardBody className={className}>
       <Need
         kind={IconSVG.NeedsContact}
-        state={
-          client.needsMet.faceToFaceContact && client.needsMet.homeVisitContact
-            ? NeedState.MET
-            : NeedState.NOT_MET
-        }
+        state={met ? NeedState.MET : NeedState.NOT_MET}
       />
       <CaseCardInfo>
         <strong>{title}</strong>
@@ -121,7 +117,7 @@ const NeedsFaceToFaceContact: React.FC<NeedsFaceToFaceContactProps> = ({
 
         <NeedsActionFlow
           client={client}
-          met={client.needsMet.faceToFaceContact}
+          met={met}
           resolve={CaseUpdateActionType.SCHEDULED_FACE_TO_FACE}
           dismiss={CaseUpdateActionType.INCORRECT_CONTACT_DATA}
         />

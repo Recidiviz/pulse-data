@@ -43,16 +43,19 @@ const BaseCheckboxButton = styled.button.attrs({
 
   box-sizing: border-box;
   border-radius: 4px;
+
+  &:focus {
+    outline: none;
+  }
 `;
 
-const CheckedButton = styled(BaseCheckboxButton)`
+const CheckedButton = styled(BaseCheckboxButton).attrs({
+  as: "div",
+})`
   color: ${palette.white};
   background-color: ${palette.slate60};
   border-radius: 16px;
-
-  &:hover {
-    background-color: ${palette.slate70};
-  }
+  cursor: auto;
 `;
 
 export const UncheckedButton = styled(BaseCheckboxButton)`

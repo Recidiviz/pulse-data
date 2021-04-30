@@ -17,7 +17,8 @@
 import * as React from "react";
 import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
 import { DecoratedClient } from "../../stores/ClientsStore";
-import ProcessingFeedbackHeader from "./ProcessingFeedbackHeader";
+import InCustodyHeader from "./InCustodyHeader";
+import NotOnCaseloadHeader from "./NotOnCaseloadHeader";
 import BaseFeedbackForm from "./BaseForm";
 import { useRootStore } from "../../stores";
 
@@ -37,6 +38,13 @@ const MoveToProcessingForm = ({
 }: MoveToProcessingFormProps): JSX.Element => {
   const { caseUpdatesStore } = useRootStore();
 
+  const header =
+    actionType === CaseUpdateActionType.NOT_ON_CASELOAD ? (
+      <NotOnCaseloadHeader />
+    ) : (
+      <InCustodyHeader />
+    );
+
   return (
     <BaseFeedbackForm
       caseUpdatesStore={caseUpdatesStore}
@@ -45,7 +53,7 @@ const MoveToProcessingForm = ({
       commentPlaceholder="Tell us more details..."
       description="After you click submit, we will move this person to the bottom of the list. Once processed, this person will be removed from your list."
       title={title}
-      header={<ProcessingFeedbackHeader />}
+      header={header}
       onCancel={onCancel}
     />
   );

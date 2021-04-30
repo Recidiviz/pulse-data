@@ -24,26 +24,22 @@ import {
   ClientNeed,
   DEFAULT_IN_PROGRESS_INDICATOR_OFFSET,
   FirstCardSection,
-  InProgressIndicator,
   IN_PROGRESS_INDICATOR_SIZE,
+  InProgressIndicator,
   MainText,
   PendingText,
-  SecondCardSection,
   SecondaryText,
+  SecondCardSection,
   ThirdCardSection,
 } from "./ClientList.styles";
 import { titleCase } from "../../utils";
 import DueDate from "../DueDate";
 import Tooltip from "../Tooltip";
-import {
-  CaseUpdateActionType,
-  CaseUpdateStatus,
-} from "../../stores/CaseUpdatesStore";
+import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
 import { getNextContactDate } from "../../stores/ClientsStore/Client";
 
 interface ClientProps {
   client: DecoratedClient;
-  showInProgress?: boolean;
 }
 
 const getNeedsMetState = (
@@ -53,10 +49,7 @@ const getNeedsMetState = (
   return needsMet[need] ? NeedState.MET : NeedState.NOT_MET;
 };
 
-const ClientComponent: React.FC<ClientProps> = ({
-  client,
-  showInProgress,
-}: ClientProps) => {
+const ClientComponent: React.FC<ClientProps> = ({ client }: ClientProps) => {
   const { clientsStore, policyStore } = useRootStore();
   const cardRef = React.useRef<HTMLDivElement>(null);
 
@@ -87,14 +80,13 @@ const ClientComponent: React.FC<ClientProps> = ({
     viewClient,
   ]);
 
-  const numInProgressActions =
-    client.caseUpdates === undefined
-      ? 0
-      : Object.values(client.caseUpdates).reduce(
-          (accumulator, val) =>
-            accumulator + (val.status === CaseUpdateStatus.IN_PROGRESS ? 1 : 0),
-          0
-        );
+  // Counts in-progress (non-deprecated) actions
+  const numInProgressActions = Object.values(CaseUpdateActionType).reduce(
+    (accumulator, actionType) =>
+      accumulator +
+      (client.hasInProgressUpdate(actionType as CaseUpdateActionType) ? 1 : 0),
+    0
+  );
 
   const omsName = policyStore.policies?.omsName || "OMS";
   const tooltipOffset =
@@ -109,18 +101,19 @@ const ClientComponent: React.FC<ClientProps> = ({
         );
 
   const notOnCaseloadAction =
-    client.caseUpdates[CaseUpdateActionType.NOT_ON_CASELOAD] ||
-    client.caseUpdates[CaseUpdateActionType.CURRENTLY_IN_CUSTODY];
+    client.caseUpdates[CaseUpdateActionType.NOT_ON_CASELOAD];
   let dueDateText;
-  if (!notOnCaseloadAction) {
-    dueDateText = <DueDate date={getNextContactDate(client)} />;
-  } else {
+  if (notOnCaseloadAction) {
     dueDateText = (
       <PendingText>
         Reported on{" "}
         {moment(notOnCaseloadAction.actionTs).format("MMMM Do, YYYY")}
       </PendingText>
     );
+  } else if (client.caseUpdates[CaseUpdateActionType.CURRENTLY_IN_CUSTODY]) {
+    dueDateText = <PendingText>In Custody</PendingText>;
+  } else {
+    dueDateText = <DueDate date={getNextContactDate(client)} />;
   }
 
   return (
@@ -173,7 +166,7 @@ const ClientComponent: React.FC<ClientProps> = ({
         </Tooltip>
       </SecondCardSection>
       <ThirdCardSection>{dueDateText}</ThirdCardSection>
-      {showInProgress ? (
+      {numInProgressActions > 0 ? (
         <Tooltip
           title={
             <>
