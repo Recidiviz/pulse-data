@@ -17,7 +17,7 @@
 import { observer } from "mobx-react-lite";
 import * as React from "react";
 import { useRootStore } from "../../stores";
-import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
+import { NotInCaseloadActions } from "../../stores/CaseUpdatesStore";
 import {
   ClientListContainer,
   ClientListHeading,
@@ -31,10 +31,11 @@ const ClientList = () => {
   const { clientsStore } = useRootStore();
 
   const activeClients = clientsStore.clients.filter(
-    ({ caseUpdates }) => !caseUpdates[CaseUpdateActionType.NOT_ON_CASELOAD]
+    ({ caseUpdates }) =>
+      !NotInCaseloadActions.find((action) => caseUpdates[action])
   );
-  const processingClients = clientsStore.clients.filter(
-    ({ caseUpdates }) => caseUpdates[CaseUpdateActionType.NOT_ON_CASELOAD]
+  const processingClients = clientsStore.clients.filter(({ caseUpdates }) =>
+    NotInCaseloadActions.find((action) => caseUpdates[action])
   );
 
   let activeClientList;

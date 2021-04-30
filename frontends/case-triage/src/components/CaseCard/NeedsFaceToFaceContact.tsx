@@ -22,26 +22,16 @@ import {
   palette,
 } from "@recidiviz/design-system";
 import * as React from "react";
-import {
-  ButtonContainer,
-  Caption,
-  CaseCardBody,
-  CaseCardInfo,
-} from "./CaseCard.styles";
-import { NeedsCheckboxButton } from "./CaseCardButtons";
+import { Caption, CaseCardBody, CaseCardInfo } from "./CaseCard.styles";
 import { DecoratedClient } from "../../stores/ClientsStore/Client";
 import { useRootStore } from "../../stores";
-import {
-  CaseUpdateActionType,
-  CaseUpdateStatus,
-} from "../../stores/CaseUpdatesStore";
+import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
 import { SupervisionContactFrequency } from "../../stores/PolicyStore/Policy";
+import { NeedsActionFlow } from "./NeedsCorrectionDropdown";
 
 interface NeedsFaceToFaceContactProps {
   className: string;
   client: DecoratedClient;
-
-  onStatusChanged: (helped: boolean) => void;
 }
 
 const getLastContactedText = (client: DecoratedClient) => {
@@ -83,16 +73,7 @@ const getFrequencyText = (
 const NeedsFaceToFaceContact: React.FC<NeedsFaceToFaceContactProps> = ({
   className,
   client,
-  onStatusChanged,
 }: NeedsFaceToFaceContactProps) => {
-  const [needChecked, setNeedChecked] = React.useState(false);
-  React.useEffect(() => {
-    setNeedChecked(
-      client.caseUpdates[CaseUpdateActionType.SCHEDULED_FACE_TO_FACE]
-        ?.status === CaseUpdateStatus.IN_PROGRESS
-    );
-  }, [client]);
-
   const { policyStore } = useRootStore();
   const {
     needsMet: {
@@ -109,11 +90,6 @@ const NeedsFaceToFaceContact: React.FC<NeedsFaceToFaceContactProps> = ({
   const homeVisitFrequency = policyStore.findHomeVisitFrequencyForClient(
     client
   );
-
-  const onToggleCheck = (checked: boolean) => {
-    setNeedChecked(checked);
-    onStatusChanged(checked);
-  };
 
   return (
     <CaseCardBody className={className}>
@@ -142,15 +118,13 @@ const NeedsFaceToFaceContact: React.FC<NeedsFaceToFaceContactProps> = ({
             {getLastHomeVisitText(client)}
           </div>
         </Caption>
-        {!client.needsMet.faceToFaceContact ? (
-          <ButtonContainer>
-            <NeedsCheckboxButton
-              checked={needChecked}
-              onToggleCheck={onToggleCheck}
-              title="I scheduled our next face-to-face contact"
-            />
-          </ButtonContainer>
-        ) : null}
+
+        <NeedsActionFlow
+          client={client}
+          met={client.needsMet.faceToFaceContact}
+          resolve={CaseUpdateActionType.SCHEDULED_FACE_TO_FACE}
+          dismiss={CaseUpdateActionType.INCORRECT_CONTACT_DATA}
+        />
       </CaseCardInfo>
     </CaseCardBody>
   );

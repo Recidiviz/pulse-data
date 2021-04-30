@@ -14,6 +14,17 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
+import { CaseUpdateActionType } from "./CaseUpdates";
+
 export { default } from "./CaseUpdatesStore";
 export { CaseUpdateActionType, CaseUpdateStatus } from "./CaseUpdates";
 export type { CaseUpdate } from "./CaseUpdates";
+
+export type NotInCaseloadActionType =
+  | CaseUpdateActionType.NOT_ON_CASELOAD
+  | CaseUpdateActionType.CURRENTLY_IN_CUSTODY;
+
+export const NotInCaseloadActions = [
+  CaseUpdateActionType.NOT_ON_CASELOAD,
+  CaseUpdateActionType.CURRENTLY_IN_CUSTODY,
+];

@@ -16,39 +16,20 @@
 // =============================================================================
 import { IconSVG, Need, NeedState } from "@recidiviz/design-system";
 import * as React from "react";
-import {
-  ButtonContainer,
-  Caption,
-  CaseCardBody,
-  CaseCardInfo,
-} from "./CaseCard.styles";
-import { NeedsCheckboxButton } from "./CaseCardButtons";
+import { Caption, CaseCardBody, CaseCardInfo } from "./CaseCard.styles";
+import { NeedsActionFlow } from "./NeedsCorrectionDropdown";
 import { DecoratedClient } from "../../stores/ClientsStore/Client";
-import {
-  CaseUpdateActionType,
-  CaseUpdateStatus,
-} from "../../stores/CaseUpdatesStore";
+import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
 
 interface NeedsEmploymentProps {
   className: string;
   client: DecoratedClient;
-
-  onStatusChanged: (helped: boolean) => void;
 }
 
 const NeedsEmployment: React.FC<NeedsEmploymentProps> = ({
   className,
   client,
-  onStatusChanged,
 }: NeedsEmploymentProps) => {
-  const [needChecked, setNeedChecked] = React.useState(false);
-  React.useEffect(() => {
-    setNeedChecked(
-      client.caseUpdates[CaseUpdateActionType.FOUND_EMPLOYMENT]?.status ===
-        CaseUpdateStatus.IN_PROGRESS
-    );
-  }, [client]);
-
   const {
     needsMet: { employment: met },
   } = client;
@@ -60,11 +41,6 @@ const NeedsEmployment: React.FC<NeedsEmploymentProps> = ({
     caption = <Caption>Assumed unemployed from CIS {suffix}</Caption>;
   }
 
-  const onToggleCheck = (checked: boolean) => {
-    setNeedChecked(checked);
-    onStatusChanged(checked);
-  };
-
   return (
     <CaseCardBody className={className}>
       <Need
@@ -75,15 +51,13 @@ const NeedsEmployment: React.FC<NeedsEmploymentProps> = ({
         <strong>{title}</strong>
         <br />
         {caption}
-        {!client.needsMet.employment ? (
-          <ButtonContainer>
-            <NeedsCheckboxButton
-              checked={needChecked}
-              onToggleCheck={onToggleCheck}
-              title="I helped them find employment"
-            />
-          </ButtonContainer>
-        ) : null}
+
+        <NeedsActionFlow
+          client={client}
+          met={met}
+          resolve={CaseUpdateActionType.FOUND_EMPLOYMENT}
+          dismiss={CaseUpdateActionType.INCORRECT_EMPLOYMENT_DATA}
+        />
       </CaseCardInfo>
     </CaseCardBody>
   );

@@ -88,6 +88,18 @@ class CaseUpdatesStore {
     await this.clientsStore.fetchClientsList();
     this.isLoading = false;
   }
+
+  async toggleAction(
+    client: DecoratedClient,
+    eventType: CaseUpdateActionType,
+    completedAction: boolean
+  ): Promise<void> {
+    if (completedAction) {
+      return this.recordAction(client, eventType);
+    }
+    const updateId = client.caseUpdates[eventType]?.updateId;
+    return this.removeAction(client, updateId, eventType);
+  }
 }
 
 export default CaseUpdatesStore;
