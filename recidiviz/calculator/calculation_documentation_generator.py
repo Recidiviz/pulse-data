@@ -20,8 +20,9 @@ import logging
 import os
 import sys
 from collections import defaultdict
-from typing import List, Dict, Set
+from typing import List, Dict, Set, Optional
 
+import attr
 from pytablewriter import MarkdownTableWriter
 
 from recidiviz.big_query.big_query_view import BigQueryAddress
@@ -46,15 +47,17 @@ from recidiviz.calculator.pipeline.recidivism.metrics import (
 from recidiviz.calculator.pipeline.supervision.metrics import (
     SupervisionMetric,
 )
+from recidiviz.common import attr_validators
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.metrics.export.export_config import (
     PRODUCTS_CONFIG_PATH,
     ProductConfig,
     VIEW_COLLECTION_EXPORT_INDEX,
-    ProductStateConfig,
+    ProductName,
 )
 from recidiviz.tools.docs.summary_file_generator import update_summary_file
+from recidiviz.tools.docs.utils import persist_file_contents
 from recidiviz.utils.environment import (
     GCP_PROJECT_STAGING,
     GCPEnvironment,
@@ -72,18 +75,73 @@ from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS
 CALC_DOCS_PATH = "docs/calculation"
 
 
+@attr.s
+class PipelineMetricInfo:
+    """Stores info about calculation metric from the pipeline templates config."""
+
+    # Metric name
+    name: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # How many months the calculation includes
+    month_count: Optional[int] = attr.ib(validator=attr_validators.is_opt_int)
+    # Frequency of calculation
+    frequency: str = attr.ib(validator=attr_validators.is_non_empty_str)
+
+
 class CalculationDocumentationGenerator:
     """A class for generating documentation about our calculations."""
 
-    def __init__(self, products: List[ProductConfig]):
+    def __init__(
+        self,
+        products: List[ProductConfig],
+        root_calc_docs_dir: str,
+    ):
+        self.root_calc_docs_dir = root_calc_docs_dir
         self.products = products
+
+        self.states_by_product = self.get_states_by_product()
+
+        self.products_by_state: Dict[
+            StateCode, Dict[GCPEnvironment, List[ProductName]]
+        ] = defaultdict(lambda: defaultdict(list))
+
+        for product_name, environments_to_states in self.states_by_product.items():
+            for environment, states in environments_to_states.items():
+                for state in states:
+                    self.products_by_state[state][environment].append(product_name)
+
         walker_views = [view_builder.build() for view_builder in DEPLOYED_VIEW_BUILDERS]
         self.dag_walker = BigQueryViewDagWalker(walker_views)
         self.prod_templates_yaml = YAMLDict.from_path(PRODUCTION_TEMPLATES_PATH)
+
         self.daily_pipelines = self.prod_templates_yaml.pop_dicts("daily_pipelines")
         self.historical_pipelines = self.prod_templates_yaml.pop_dicts(
             "historical_pipelines"
         )
+
+        self.state_metric_calculations = self._get_state_metric_calculations(
+            self.daily_pipelines, "daily"
+        )
+        # combine with the historical pipelines
+        for name, metric_info_list in self._get_state_metric_calculations(
+            self.historical_pipelines, "triggered by code changes"
+        ).items():
+            self.state_metric_calculations[name].extend(metric_info_list)
+
+    def get_states_by_product(
+        self,
+    ) -> Dict[ProductName, Dict[GCPEnvironment, List[StateCode]]]:
+        """Returns the dict of products to states and environments,
+        while also building up the dict of states to products"""
+        states_by_product: Dict[
+            ProductName, Dict[GCPEnvironment, List[StateCode]]
+        ] = defaultdict(lambda: defaultdict(list))
+        for product in self.products:
+            for state in product.states:
+                environment = GCPEnvironment(state.environment)
+                state_code = StateCode(state.state_code)
+                states_by_product[product.name][environment].append(state_code)
+
+        return states_by_product
 
     @staticmethod
     def bulleted_list(string_list: List[str], tabs: int = 1) -> str:
@@ -139,10 +197,15 @@ class CalculationDocumentationGenerator:
             self._get_product_enabled_states()
         )
 
-        state_names = [state_code.get_state() for state_code in states]
-        header = "- States (links to come)\n"
+        state_names = [str(state_code.get_state()) for state_code in states]
+        header = "- States\n"
         return header + self.bulleted_list(
-            sorted([f"{state_name}" for state_name in state_names])
+            sorted(
+                [
+                    f"[{state_name}](calculation/states/{self._normalize_string_for_path(state_name)}.md)"
+                    for state_name in state_names
+                ]
+            )
         )
 
     def _get_products_summary_str(self) -> str:
@@ -152,8 +215,8 @@ class CalculationDocumentationGenerator:
         return header + self.bulleted_list(
             [
                 f"[{product_name}](calculation/products/"
-                f"{self._get_product_name_for_path(product_name)}/"
-                f"{self._get_product_name_for_path(product_name)}_summary.md)"
+                f"{self._normalize_string_for_path(product_name)}/"
+                f"{self._normalize_string_for_path(product_name)}_summary.md)"
                 for product_name in product_names
             ]
         )
@@ -200,25 +263,43 @@ class CalculationDocumentationGenerator:
 
         return calculation_catalog_summary
 
-    def states_list_for_env(
-        self, states: List[ProductStateConfig], environment: GCPEnvironment
+    def products_list_for_env(
+        self, state_code: StateCode, environment: GCPEnvironment
     ) -> str:
+        """Returns a bulleted list of products launched in the state in the given environment."""
+        if environment not in {GCPEnvironment.PRODUCTION, GCPEnvironment.STAGING}:
+            raise ValueError(f"Unexpected environment: [{environment.value}]")
+
+        if (
+            not state_code in self.products_by_state
+            or environment not in self.products_by_state[state_code]
+            or not self.products_by_state[state_code][environment]
+        ):
+            return "N/A"
+
+        return self.bulleted_list(self.products_by_state[state_code][environment])
+
+    def states_list_for_env(
+        self, product: ProductConfig, environment: GCPEnvironment
+    ) -> str:
+        """Returns a bulleted list of states where a product is launched in the given environment."""
         if environment not in {GCPEnvironment.PRODUCTION, GCPEnvironment.STAGING}:
             raise ValueError(f"Unexpected environment: [{environment.value}]")
         states_list = [
-            StateCode(state.state_code).get_state().name
-            for state in states
-            if state.environment == environment.value
+            str(state_code.get_state())
+            for state_code in self.states_by_product[product.name][environment]
         ]
 
         return self.bulleted_list(states_list) if states_list else "  N/A"
 
     def _get_shipped_states_str(self, product: ProductConfig) -> str:
+
         shipped_states_str = self.states_list_for_env(
-            product.states, GCPEnvironment.PRODUCTION
+            product, GCPEnvironment.PRODUCTION
         )
+
         development_states_str = self.states_list_for_env(
-            product.states, GCPEnvironment.STAGING
+            product, GCPEnvironment.STAGING
         )
 
         return (
@@ -388,10 +469,10 @@ class CalculationDocumentationGenerator:
         return documentation
 
     @staticmethod
-    def _get_product_name_for_path(product_name: str) -> str:
-        return product_name.lower().replace(" ", "_")
+    def _normalize_string_for_path(target_string: str) -> str:
+        return target_string.lower().replace(" ", "_")
 
-    def generate_products_markdowns(self, root_dir_path: str) -> bool:
+    def generate_products_markdowns(self) -> bool:
         """Generates markdown files if necessary for the docs/calculation/products
         directories"""
         anything_modified = False
@@ -400,9 +481,9 @@ class CalculationDocumentationGenerator:
             documentation = self._get_product_information(product)
 
             # Write documentation to markdown files
-            product_name_for_path = self._get_product_name_for_path(product.name)
+            product_name_for_path = self._normalize_string_for_path(product.name)
             product_dir_path = os.path.join(
-                root_dir_path, "products", product_name_for_path
+                self.root_calc_docs_dir, "products", product_name_for_path
             )
             os.makedirs(product_dir_path, exist_ok=True)
 
@@ -411,16 +492,110 @@ class CalculationDocumentationGenerator:
                 f"{product_name_for_path}_summary.md",
             )
 
-            prior_documentation = None
-            if os.path.exists(product_markdown_path):
-                with open(product_markdown_path, "r") as product_md_file:
-                    prior_documentation = product_md_file.read()
+            anything_modified |= persist_file_contents(
+                documentation, product_markdown_path
+            )
+        return anything_modified
 
-            if prior_documentation != documentation:
-                with open(product_markdown_path, "w") as raw_data_md_file:
-                    raw_data_md_file.write(documentation)
-                    anything_modified = True
+    @staticmethod
+    def _get_state_metric_calculations(
+        pipelines: List[YAMLDict], frequency: str
+    ) -> Dict[str, List[PipelineMetricInfo]]:
+        """Returns a dict of state names to lists of info about their regularly
+        calculated metrics."""
+        state_metric_calculations = defaultdict(list)
+        for pipeline in pipelines:
+            state_metric_calculations[
+                str(StateCode(pipeline.peek("state_code", str)).get_state())
+            ].extend(
+                [
+                    PipelineMetricInfo(
+                        name=metric,
+                        month_count=pipeline.peek_optional(
+                            "calculation_month_count", int
+                        ),
+                        frequency=frequency,
+                    )
+                    for metric in pipeline.peek("metric_types", str).split()
+                ],
+            )
+        return state_metric_calculations
 
+    def _get_sorted_state_metric_info(self) -> Dict[str, List[PipelineMetricInfo]]:
+        """Returns a dictionary of state names (in alphabetical order) to their
+        regularly calculated metric information (sorted by metric name)"""
+        sorted_state_metric_calculations: Dict[str, List[PipelineMetricInfo]] = {
+            state_name_key: sorted(
+                self.state_metric_calculations[state_name_key],
+                key=lambda info: info.name,
+            )
+            for state_name_key in sorted(self.state_metric_calculations)
+        }
+        return sorted_state_metric_calculations
+
+    def _get_metrics_table_for_state(self, state_name: str) -> str:
+        sorted_state_metric_calculations = self._get_sorted_state_metric_info()
+
+        if state_name in sorted_state_metric_calculations:
+            headers = [
+                "**Metric**",
+                "**Number of Months Calculated**",
+                "**Calculation Frequency**",
+            ]
+            table_matrix = [
+                [
+                    metric_info.name,
+                    metric_info.month_count if metric_info.month_count else "N/A",
+                    metric_info.frequency,
+                ]
+                for metric_info in sorted_state_metric_calculations[state_name]
+            ]
+            writer = MarkdownTableWriter(
+                headers=headers, value_matrix=table_matrix, margin=1
+            )
+            return writer.dumps()
+        return "_This state has no regularly calculated metrics._"
+
+    def _get_state_information(self, state_code: StateCode, state_name: str) -> str:
+        """Returns string contents for the state markdown."""
+        documentation = f"#{state_name}\n\n"
+
+        # Products section
+        documentation += "##Shipped Products\n\n"
+        documentation += self.products_list_for_env(
+            state_code, GCPEnvironment.PRODUCTION
+        )
+        documentation += "\n\n##Products in Development\n\n"
+        documentation += self.products_list_for_env(state_code, GCPEnvironment.STAGING)
+
+        # Metrics section
+        documentation += "\n\n##Regularly Calculated Metrics\n\n"
+
+        documentation += self._get_metrics_table_for_state(state_name)
+
+        return documentation
+
+    def generate_states_markdowns(self) -> bool:
+        """Generate markdown files for each state."""
+        anything_modified = False
+
+        states_dir_path = os.path.join(self.root_calc_docs_dir, "states")
+        os.makedirs(states_dir_path, exist_ok=True)
+
+        for state_code in self._get_dataflow_pipeline_enabled_states():
+            state_name = str(state_code.get_state())
+
+            # Generate documentation
+            documentation = self._get_state_information(state_code, state_name)
+
+            # Write to markdown files
+            states_markdown_path = os.path.join(
+                states_dir_path,
+                f"{self._normalize_string_for_path(state_name)}.md",
+            )
+            anything_modified |= persist_file_contents(
+                documentation, states_markdown_path
+            )
         return anything_modified
 
 
@@ -434,14 +609,15 @@ def generate_calculation_documentation(
     docs_generator: CalculationDocumentationGenerator,
 ) -> bool:
     # TODO(#7125): Add calc doc generation to the pre-commit config
-    modified = docs_generator.generate_products_markdowns(CALC_DOCS_PATH)
+    modified = docs_generator.generate_products_markdowns()
+    modified |= docs_generator.generate_states_markdowns()
     return modified
 
 
 def main() -> int:
     with local_project_id_override(GCP_PROJECT_STAGING):
         products = ProductConfig.product_configs_from_file(PRODUCTS_CONFIG_PATH)
-        docs_generator = CalculationDocumentationGenerator(products)
+        docs_generator = CalculationDocumentationGenerator(products, CALC_DOCS_PATH)
         modified = generate_calculation_documentation(docs_generator)
         if modified:
             update_summary_file(
