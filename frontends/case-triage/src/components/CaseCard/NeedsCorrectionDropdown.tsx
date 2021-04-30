@@ -83,11 +83,13 @@ const ACTION_TITLES: Record<CaseUpdateActionType, string> = {
   [CaseUpdateActionType.DISCHARGE_INITIATED]: "DISCHARGE_INITIATED",
   [CaseUpdateActionType.DOWNGRADE_INITIATED]: "DOWNGRADE_INITIATED",
 
-  [CaseUpdateActionType.INCORRECT_ASSESSMENT_DATA]: "Incorrect assessment data",
-  [CaseUpdateActionType.INCORRECT_EMPLOYMENT_DATA]: "Incorrect employment data",
-  [CaseUpdateActionType.INCORRECT_CONTACT_DATA]: "Incorrect contact data",
+  [CaseUpdateActionType.INCORRECT_ASSESSMENT_DATA]:
+    "Incorrect assessment status",
+  [CaseUpdateActionType.INCORRECT_EMPLOYMENT_DATA]:
+    "Incorrect employment status",
+  [CaseUpdateActionType.INCORRECT_CONTACT_DATA]: "Incorrect contact status",
   [CaseUpdateActionType.NOT_ON_CASELOAD]: "Not on Caseload",
-  [CaseUpdateActionType.CURRENTLY_IN_CUSTODY]: "In custody",
+  [CaseUpdateActionType.CURRENTLY_IN_CUSTODY]: "In Custody",
 };
 
 interface NeedsActionFlowProps {

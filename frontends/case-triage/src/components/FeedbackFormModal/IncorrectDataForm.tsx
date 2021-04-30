@@ -42,8 +42,8 @@ const IncorrectDataForm = ({
       caseUpdatesStore={caseUpdatesStore}
       client={client}
       actionType={actionType}
-      commentPlaceholder={`This data does not match ${omsName} because...`}
-      description={`Let us know how this information is different from the information in ${omsName}.`}
+      commentPlaceholder={`This person's status does not match ${omsName} because...`}
+      description="Tell us more (optional)."
       title={title}
       onCancel={onCancel}
     />
