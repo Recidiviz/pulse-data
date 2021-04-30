@@ -17,7 +17,10 @@
 import { observer } from "mobx-react-lite";
 import * as React from "react";
 import { useRootStore } from "../../stores";
-import { NotInCaseloadActions } from "../../stores/CaseUpdatesStore";
+import {
+  CaseUpdateActionType,
+  NotInCaseloadActions,
+} from "../../stores/CaseUpdatesStore";
 import {
   ClientListContainer,
   ClientListHeading,
@@ -32,32 +35,37 @@ const ClientList = () => {
 
   const activeClients = clientsStore.clients.filter(
     ({ caseUpdates }) =>
-      !NotInCaseloadActions.find((action) => caseUpdates[action])
+      !NotInCaseloadActions.find(
+        (action: CaseUpdateActionType) => caseUpdates[action]
+      )
   );
-  const processingClients = clientsStore.clients.filter(({ caseUpdates }) =>
-    NotInCaseloadActions.find((action) => caseUpdates[action])
+  const inCustodyClients = clientsStore.clients.filter(
+    ({ caseUpdates }) =>
+      caseUpdates[CaseUpdateActionType.CURRENTLY_IN_CUSTODY] &&
+      !caseUpdates[CaseUpdateActionType.NOT_ON_CASELOAD]
+  );
+  const notOnCaseloadClients = clientsStore.clients.filter(
+    ({ caseUpdates }) => caseUpdates[CaseUpdateActionType.NOT_ON_CASELOAD]
   );
 
+  const upNextClients = activeClients.concat(inCustodyClients);
+
   let activeClientList;
-  if (activeClients.length > 0) {
-    activeClientList = activeClients.map((client) => (
-      <ClientListCard
-        client={client}
-        showInProgress={Object.keys(client.caseUpdates).length > 0}
-        key={client.personExternalId}
-      />
+  if (upNextClients.length > 0) {
+    activeClientList = upNextClients.map((client) => (
+      <ClientListCard client={client} key={client.personExternalId} />
     ));
   } else {
     activeClientList = <EmptyStateCard />;
   }
 
   let processingList;
-  if (processingClients.length > 0) {
+  if (notOnCaseloadClients.length > 0) {
     processingList = (
       <>
         <ClientListHeading>Processing Feedback</ClientListHeading>
         <ClientListTableHeading />
-        {processingClients.map((client) => (
+        {notOnCaseloadClients.map((client) => (
           <ClientListCard client={client} key={client.personExternalId} />
         ))}
       </>

@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { Modal } from "@recidiviz/design-system";
+import { rem } from "polished";
 import React from "react";
 import styled from "styled-components/macro";
 import {
@@ -27,6 +28,7 @@ import MoveToProcessingForm from "./MoveToProcessingForm";
 
 const UnpaddedModal = styled(Modal)`
   .ReactModal__Content {
+    width: ${rem(512)} !important;
     padding: 0 !important;
   }
 `;
@@ -41,15 +43,15 @@ interface FeedbackFormModalProps {
 const titleForActionType = (actionType: CaseUpdateActionType): string => {
   switch (actionType) {
     case CaseUpdateActionType.INCORRECT_ASSESSMENT_DATA:
-      return "Incorrect assessment data";
+      return "Incorrect Assessment Status";
     case CaseUpdateActionType.INCORRECT_EMPLOYMENT_DATA:
-      return "Incorrect employment data";
+      return "Incorrect Employment Status";
     case CaseUpdateActionType.INCORRECT_CONTACT_DATA:
-      return "Incorrect contact data";
+      return "Incorrect Contact Status";
     case CaseUpdateActionType.NOT_ON_CASELOAD:
       return "Not on Caseload";
     case CaseUpdateActionType.CURRENTLY_IN_CUSTODY:
-      return "In custody";
+      return "In Custody";
     default:
       return "Incorrect data";
   }

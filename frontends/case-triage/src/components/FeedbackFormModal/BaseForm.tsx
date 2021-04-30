@@ -16,7 +16,6 @@
 // =============================================================================
 import { H3, Icon, IconSVG } from "@recidiviz/design-system";
 import * as React from "react";
-import * as Yup from "yup";
 import { FormikBag, FormikProps, withFormik } from "formik";
 import CaseUpdatesStore, {
   CaseUpdateActionType,
@@ -48,10 +47,6 @@ interface BaseFormProps {
 
   onCancel: (event?: React.MouseEvent<Element, MouseEvent>) => void;
 }
-
-const FeedbackFormSchema = Yup.object().shape({
-  comment: Yup.string(),
-});
 
 interface FeedbackFormValues {
   comment: string;
@@ -87,8 +82,8 @@ const InnerForm = ({
         />
 
         <SubmitContainer>
-          <SubmitButton type="submit" disabled={!(isValid && dirty)}>
-            Submit
+          <SubmitButton type="submit" disabled={!isValid}>
+            Report
           </SubmitButton>
           <CancelButton onClick={onCancel}>Cancel</CancelButton>
         </SubmitContainer>
@@ -99,7 +94,6 @@ const InnerForm = ({
 
 const BaseFeedbackForm = withFormik<BaseFormProps, FeedbackFormValues>({
   mapPropsToValues: () => ({ comment: "" }),
-  validationSchema: FeedbackFormSchema,
   handleSubmit: async (
     values,
     {

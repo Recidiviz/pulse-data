@@ -42,8 +42,8 @@ interface NotInCaseloadProps {
 }
 
 const NotInCaseloadActionTitles = {
-  [CaseUpdateActionType.NOT_ON_CASELOAD]: "Client not in caseload",
-  [CaseUpdateActionType.CURRENTLY_IN_CUSTODY]: "Client in custody",
+  [CaseUpdateActionType.NOT_ON_CASELOAD]: "Not on Caseload",
+  [CaseUpdateActionType.CURRENTLY_IN_CUSTODY]: "In Custody",
 };
 
 const NotInCaseload = ({
@@ -58,18 +58,18 @@ const NotInCaseload = ({
   return (
     <CaseCardBody className={className}>
       <CaseCardIconContainer>
-        <Icon kind={IconSVG.UserDelete} size={24} />
+        <Icon kind={IconSVG.ItemDelete} size={24} />
       </CaseCardIconContainer>
       <CaseCardInfo>
         <strong>{NotInCaseloadActionTitles[action]}</strong>
         <br />
         <Caption>
-          <div>Reported on {submissionTime}.</div>
-          <div>Once confirmed, this client will be removed from your list.</div>
+          <div>Reported on {submissionTime}</div>
+          <div>Once processed, this client will be removed from your list.</div>
         </Caption>
         <ButtonContainer>
           <UncheckedButton onClick={() => onUndo(caseUpdate.updateId)}>
-            Undo
+            Return to Caseload
           </UncheckedButton>
         </ButtonContainer>
       </CaseCardInfo>

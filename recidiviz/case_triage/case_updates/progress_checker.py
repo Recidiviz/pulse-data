@@ -52,8 +52,8 @@ def _found_employment_progress_checker(
     current_version: CaseActionVersionData, _last_version: CaseActionVersionData
 ) -> bool:
     return (
-        not current_version.last_employer
-        or current_version.last_employer.upper() == "UNEMPLOYED"
+        current_version.last_employer is None
+        or "UNEMP" in current_version.last_employer.upper()
     )
 
 
