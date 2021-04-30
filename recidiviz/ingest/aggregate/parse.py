@@ -49,25 +49,24 @@ class StateAggregateError(Exception):
 
 HISTORICAL_BUCKET = "{}-processed-state-aggregates"
 
+# Please add new states in alphabetical order
+STATE_TO_PARSER = {
+    "california": ca_aggregate_ingest.parse,
+    "florida": fl_aggregate_ingest.parse,
+    "georgia": ga_aggregate_ingest.parse,
+    "hawaii": hi_aggregate_ingest.parse,
+    "kentucky": ky_aggregate_ingest.parse,
+    "new_york": ny_aggregate_ingest.parse,
+    "pennsylvania": pa_aggregate_ingest.parse,
+    "tennessee": tn_aggregate_ingest.parse,
+    "texas": tx_aggregate_ingest.parse,
+}
+
 
 @aggregate_parse_blueprint.route("/persist_file")
 @requires_gae_auth
 def state_aggregate() -> Tuple[str, HTTPStatus]:
     """Calls state aggregates"""
-
-    # Please add new states in alphabetical order
-    state_to_parser = {
-        "california": ca_aggregate_ingest.parse,
-        "florida": fl_aggregate_ingest.parse,
-        "georgia": ga_aggregate_ingest.parse,
-        "hawaii": hi_aggregate_ingest.parse,
-        "kentucky": ky_aggregate_ingest.parse,
-        "new_york": ny_aggregate_ingest.parse,
-        "pennsylvania": pa_aggregate_ingest.parse,
-        "tennessee": tn_aggregate_ingest.parse,
-        "texas": tx_aggregate_ingest.parse,
-    }
-
     bucket = get_str_param_value("bucket", request.args)
     state = get_str_param_value("state", request.args)
     filename = get_str_param_value("filename", request.args)
@@ -76,7 +75,7 @@ def state_aggregate() -> Tuple[str, HTTPStatus]:
     if not bucket or not state or not filename:
         raise StateAggregateError("All of state, bucket, and filename must be provided")
     path = os.path.join(bucket, state, filename)
-    parser = state_to_parser[state]
+    parser = STATE_TO_PARSER[state]
     # Don't use the gcsfs cache
     fs = gcsfs.GCSFileSystem(project=project_id, cache_timeout=GCSFS_NO_CACHING)
     logging.info("The path to download from is %s", path)
