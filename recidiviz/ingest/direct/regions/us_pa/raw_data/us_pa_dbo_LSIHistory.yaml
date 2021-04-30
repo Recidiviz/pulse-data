@@ -1,7 +1,11 @@
 file_tag: dbo_LSIHistory
 file_description: |-
   A table containing LSIR assessments which have been conducted for people under supervision by PADOC.
-primary_key_cols: []
+primary_key_cols:
+  - ParoleNumber
+  - ParoleCountID
+  - LsirID
+  - ReleaseStatus
 columns:
   - name: ParoleNumber
     description: |-
@@ -15,6 +19,11 @@ columns:
   - name: ReleaseStatus
     description: |-
       Whether or not the person has since been released from this period of supervision.
+    known_values:
+      - value: Y
+        description: TODO(#7222) - Get confirmation from PA about meaning
+      - value: N
+        description: TODO(#7222) - Get confirmation from PA about meaning
   - name: InstitutionNumber
     description: |-
       ID of the institution under whose authority the assessment was administered.

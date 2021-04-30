@@ -1359,7 +1359,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, "dbo_Offender")
 
-    def test_populate_data_dbo_LSIR(self) -> None:
+    def test_populate_data_dbo_LSIHistory(self) -> None:
         expected = IngestInfo(
             state_people=[
                 StatePerson(
@@ -1371,10 +1371,10 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                     ],
                     state_assessments=[
                         StateAssessment(
-                            state_assessment_id="789C-0-1",
+                            state_assessment_id="789C-0-1-N",
                             assessment_type="LSIR",
                             assessment_class="RISK",
-                            assessment_date="01312001",
+                            assessment_date="2001-01-31",
                             assessment_score="14",
                             assessment_level=StateAssessmentLevel.LOW.value,
                         ),
@@ -1389,10 +1389,10 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                     ],
                     state_assessments=[
                         StateAssessment(
-                            state_assessment_id="456B-1-1",
+                            state_assessment_id="456B-1-1-N",
                             assessment_type="LSIR",
                             assessment_class="RISK",
-                            assessment_date="12222005",
+                            assessment_date="2005-12-22",
                             assessment_score="23",
                             assessment_level=StateAssessmentLevel.MEDIUM.value,
                         ),
@@ -1407,34 +1407,42 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                     ],
                     state_assessments=[
                         StateAssessment(
-                            state_assessment_id="345E-3-1",
+                            state_assessment_id="345E-3-1-N",
                             assessment_type="LSIR",
                             assessment_class="RISK",
-                            assessment_date="01192006",
+                            assessment_date="2006-01-19",
                             assessment_score="30",
                             assessment_level=StateAssessmentLevel.HIGH.value,
                         ),
                         StateAssessment(
-                            state_assessment_id="345E-3-2",
+                            state_assessment_id="345E-3-2-N",
                             assessment_type="LSIR",
                             assessment_class="RISK",
-                            assessment_date="08032006",
+                            assessment_date="2006-08-03",
                             assessment_score=None,
                             assessment_level="UNKNOWN (60-ATTEMPTED_INCOMPLETE)",
                         ),
                         StateAssessment(
-                            state_assessment_id="345E-3-3",
+                            state_assessment_id="345E-3-3-N",
                             assessment_type="LSIR",
                             assessment_class="RISK",
-                            assessment_date="01152007",
+                            assessment_date="2007-01-15",
                             assessment_score="31",
                             assessment_level=StateAssessmentLevel.HIGH.value,
                         ),
                         StateAssessment(
-                            state_assessment_id="345E-4-1",
+                            state_assessment_id="345E-3-3-Y",
                             assessment_type="LSIR",
                             assessment_class="RISK",
-                            assessment_date="07142007",
+                            assessment_date="2009-04-29",
+                            assessment_score="15",
+                            assessment_level=StateAssessmentLevel.LOW.value,
+                        ),
+                        StateAssessment(
+                            state_assessment_id="345E-4-1-Y",
+                            assessment_type="LSIR",
+                            assessment_class="RISK",
+                            assessment_date="2007-07-14",
                             assessment_score="33",
                             assessment_level=StateAssessmentLevel.HIGH.value,
                         ),
@@ -1443,7 +1451,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "dbo_LSIR")
+        self.run_parse_file_test(expected, "dbo_LSIHistory")
 
     def test_populate_data_supervision_period(self) -> None:
         expected = IngestInfo(
@@ -3910,7 +3918,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         self.assert_expected_db_people(expected_people)
 
         ######################################
-        # dbo_LSIR
+        # dbo_LSIHistory
         ######################################
         # Arrange
         person_2_pbpp_assessments = [
@@ -3923,7 +3931,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                 assessment_level_raw_text="MEDIUM",
                 assessment_score=23,
                 assessment_date=datetime.date(year=2005, month=12, day=22),
-                external_id="456B-1-1",
+                external_id="456B-1-1-N",
                 state_code=_STATE_CODE_UPPER,
                 person=person_2,
             ),
@@ -3940,7 +3948,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                 assessment_level_raw_text="HIGH",
                 assessment_score=30,
                 assessment_date=datetime.date(year=2006, month=1, day=19),
-                external_id="345E-3-1",
+                external_id="345E-3-1-N",
                 state_code=_STATE_CODE_UPPER,
                 person=person_4,
             ),
@@ -3953,7 +3961,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                 assessment_level_raw_text="UNKNOWN (60-ATTEMPTED_INCOMPLETE)",
                 assessment_score=None,
                 assessment_date=datetime.date(year=2006, month=8, day=3),
-                external_id="345E-3-2",
+                external_id="345E-3-2-N",
                 state_code=_STATE_CODE_UPPER,
                 person=person_4,
             ),
@@ -3966,7 +3974,20 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                 assessment_level_raw_text="HIGH",
                 assessment_score=31,
                 assessment_date=datetime.date(year=2007, month=1, day=15),
-                external_id="345E-3-3",
+                external_id="345E-3-3-N",
+                state_code=_STATE_CODE_UPPER,
+                person=person_4,
+            ),
+            entities.StateAssessment.new_with_defaults(
+                assessment_class=StateAssessmentClass.RISK,
+                assessment_class_raw_text="RISK",
+                assessment_type=StateAssessmentType.LSIR,
+                assessment_type_raw_text="LSIR",
+                assessment_level=StateAssessmentLevel.LOW,
+                assessment_level_raw_text="LOW",
+                assessment_score=15,
+                assessment_date=datetime.date(year=2009, month=4, day=29),
+                external_id="345E-3-3-Y",
                 state_code=_STATE_CODE_UPPER,
                 person=person_4,
             ),
@@ -3979,7 +4000,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                 assessment_level_raw_text="HIGH",
                 assessment_score=33,
                 assessment_date=datetime.date(year=2007, month=7, day=14),
-                external_id="345E-4-1",
+                external_id="345E-4-1-Y",
                 state_code=_STATE_CODE_UPPER,
                 person=person_4,
             ),
@@ -3996,7 +4017,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                 assessment_level_raw_text="LOW",
                 assessment_score=14,
                 assessment_date=datetime.date(year=2001, month=1, day=31),
-                external_id="789C-0-1",
+                external_id="789C-0-1-N",
                 state_code=_STATE_CODE_UPPER,
                 person=person_5,
             ),
@@ -4006,7 +4027,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         populate_person_backedges(expected_people)
 
         # Act
-        self._run_ingest_job_for_filename("dbo_LSIR.csv")
+        self._run_ingest_job_for_filename("dbo_LSIHistory.csv")
 
         # Assert
         self.assert_expected_db_people(expected_people)

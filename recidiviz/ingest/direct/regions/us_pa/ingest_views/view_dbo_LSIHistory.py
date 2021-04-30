@@ -22,14 +22,19 @@ from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-# TODO(#7222): Delete once dbo_LSIHistory has been shipped to prod.
-VIEW_QUERY_TEMPLATE = """SELECT *
-FROM {dbo_LSIR}
+VIEW_QUERY_TEMPLATE = """SELECT
+ ParoleNumber,
+ LsirID,
+ ParoleCountID,
+ TotalScore AS LSIRScore,
+ ReleaseStatus,
+ EXTRACT(DATE FROM SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', AssessmentTime)) AS InterviewDate
+FROM {dbo_LSIHistory}
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region="us_pa",
-    ingest_view_name="dbo_LSIR",
+    ingest_view_name="dbo_LSIHistory",
     view_query_template=VIEW_QUERY_TEMPLATE,
     order_by_cols="ParoleNumber",
 )

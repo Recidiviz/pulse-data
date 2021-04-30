@@ -1,3 +1,4 @@
+# TODO(#7222): Delete this when supervision_period_v2 has been shipped to prod
 key_mappings:
   supervision_types: state_supervision_period.supervision_period_supervision_type
   admission_reason: state_supervision_period.admission_reason
