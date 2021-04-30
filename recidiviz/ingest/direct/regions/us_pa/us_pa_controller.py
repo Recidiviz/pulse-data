@@ -214,7 +214,13 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 self._hydrate_races,
                 gen_rationalize_race_and_ethnicity(self.ENUM_OVERRIDES),
             ],
+            # TODO(#7222): Delete this when dbo_LSIHistory has shipped to prod
             "dbo_LSIR": [
+                gen_label_single_external_id_hook(US_PA_PBPP),
+                self._generate_legacy_pbpp_assessment_external_id,
+                self._enrich_pbpp_assessments,
+            ],
+            "dbo_LSIHistory": [
                 gen_label_single_external_id_hook(US_PA_PBPP),
                 self._generate_pbpp_assessment_external_id,
                 self._enrich_pbpp_assessments,
@@ -258,6 +264,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
             ],
             "dbo_Offender": [],
             "dbo_LSIR": [],
+            "dbo_LSIHistory": [],
             "supervision_period": [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
@@ -699,12 +706,13 @@ class UsPaController(CsvGcsfsDirectIngestController):
             "ccis_incarceration_period",
             # Data source: PBPP
             "dbo_Offender",
-            "dbo_LSIR",
         ]
         if environment.in_gcp():
+            launched_file_tags.append("dbo_LSIR")
             launched_file_tags.append("supervision_period")
         else:
             # TODO(#6251): Ungate this for next PA rerun.
+            launched_file_tags.append("dbo_LSIHistory")
             launched_file_tags.append("supervision_period_v2")
 
         launched_file_tags += [
@@ -973,6 +981,24 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 if assessment_type == "LSI-R":
                     set_date_specific_lsir_fields(obj)
 
+    # TODO(#7222): Delete this when dbo_LSIHistory has shipped to prod
+    @staticmethod
+    def _generate_legacy_pbpp_assessment_external_id(
+        _file_tag: str,
+        row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
+        """Adds the assessment external_id to the extracted state assessment."""
+        parole_number = row["ParoleNumber"]
+        parole_count_id = row["ParoleCountID"]
+        lsir_instance = row["LsirID"]
+        external_id = "-".join([parole_number, parole_count_id, lsir_instance])
+
+        for extracted_object in extracted_objects:
+            if isinstance(extracted_object, StateAssessment):
+                extracted_object.state_assessment_id = external_id
+
     @staticmethod
     def _generate_pbpp_assessment_external_id(
         _file_tag: str,
@@ -984,7 +1010,10 @@ class UsPaController(CsvGcsfsDirectIngestController):
         parole_number = row["ParoleNumber"]
         parole_count_id = row["ParoleCountID"]
         lsir_instance = row["LsirID"]
-        external_id = "-".join([parole_number, parole_count_id, lsir_instance])
+        release_status = row["ReleaseStatus"]
+        external_id = "-".join(
+            [parole_number, parole_count_id, lsir_instance, release_status]
+        )
 
         for extracted_object in extracted_objects:
             if isinstance(extracted_object, StateAssessment):
