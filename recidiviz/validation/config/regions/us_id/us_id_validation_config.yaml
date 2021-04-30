@@ -4,7 +4,8 @@ region_code: US_ID
 exclusions:
   - validation_name: incarceration_population_by_facility_external_comparison
     exclusion_type: BROKEN
-    exclusion_reason: TODO(#4059) ID has many small (<10) facilities and any small errors result in the validation
+    exclusion_reason:
+      TODO(#4059) ID has many small (<10) facilities and any small errors result in the validation
       threshold being exceeded. We're also already checking facility accuracy over the whole population with
       incarceration_population_person_level_external_comparison_matching_people validation.
   - validation_name: revocation_matrix_comparison_revocation_cell_vs_month
@@ -23,6 +24,12 @@ max_allowed_error_overrides:
   - validation_name: incarceration_population_by_state_by_date_justice_counts_comparison
     max_allowed_error_override: 0.05
     override_reason: ID currently has some population percentage differences greater than the default
+  - validation_name: incarceration_admission_person_level_external_comparison
+    max_allowed_error_override: 0.50
+    override_reason: TODO(#7156) - Lots of mismatches :(
+  - validation_name: incarceration_release_person_level_external_comparison
+    max_allowed_error_override: 0.20
+    override_reason: TODO(#7156) - Lots of mismatches :(
 num_allowed_rows_overrides:
   - validation_name: incarceration_admission_after_open_period
     num_allowed_rows_override: 60

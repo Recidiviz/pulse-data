@@ -60,6 +60,9 @@ from recidiviz.validation.views.state.incarceration_admission_after_open_period 
 from recidiviz.validation.views.state.incarceration_admission_nulls import (
     INCARCERATION_ADMISSION_NULLS_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.incarceration_admission_person_level_external_comparison import (
+    INCARCERATION_ADMISSION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.incarceration_lengths_by_demographics_internal_consistency import (
     INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
@@ -83,6 +86,9 @@ from recidiviz.validation.views.state.incarceration_population_person_level_exte
 )
 from recidiviz.validation.views.state.incarceration_population_person_level_external_comparison_matching_people import (
     INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.incarceration_release_person_level_external_comparison import (
+    INCARCERATION_RELEASE_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.incarceration_release_prior_to_admission import (
     INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW_BUILDER,
@@ -483,6 +489,15 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         # External comparison validations
         SamenessDataValidationCheck(
+            view=INCARCERATION_ADMISSION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER.build(),
+            sameness_check_type=SamenessDataValidationCheckType.STRINGS,
+            comparison_columns=[
+                "external_person_external_id",
+                "internal_person_external_id",
+            ],
+            max_allowed_error=0.02,
+        ),
+        SamenessDataValidationCheck(
             view=INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW_BUILDER.build(),
             comparison_columns=[
                 "external_population_count",
@@ -504,6 +519,15 @@ def get_all_validations() -> List[DataValidationCheck]:
             validation_name_suffix="facility",
             sameness_check_type=SamenessDataValidationCheckType.STRINGS,
             comparison_columns=["external_facility", "internal_facility"],
+            max_allowed_error=0.02,
+        ),
+        SamenessDataValidationCheck(
+            view=INCARCERATION_RELEASE_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER.build(),
+            sameness_check_type=SamenessDataValidationCheckType.STRINGS,
+            comparison_columns=[
+                "external_person_external_id",
+                "internal_person_external_id",
+            ],
             max_allowed_error=0.02,
         ),
         SamenessDataValidationCheck(
