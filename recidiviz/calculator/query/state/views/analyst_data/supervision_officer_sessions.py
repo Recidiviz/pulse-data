@@ -37,7 +37,7 @@ SUPERVISION_OFFICER_SESSIONS_QUERY_TEMPLATE = """
         dataflow_session_id,
     FROM `{project_id}.{analyst_dataset}.dataflow_sessions_materialized`,
     UNNEST(session_attributes) session_attributes
-    WHERE compartment_level_1 = 'SUPERVISION'
+    WHERE compartment_level_1 = 'SUPERVISION' OR compartment_level_1 = 'SUPERVISION_OUT_OF_STATE'
     )
     SELECT state_code, person_id, supervising_officer_external_id, supervising_officer_session_id, MIN(start_date) start_date,
     CASE WHEN LOGICAL_AND(end_date IS NOT NULL) THEN MAX(end_date) END AS end_date,
