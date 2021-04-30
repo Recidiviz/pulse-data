@@ -59,6 +59,8 @@ PRODUCTS_CONFIG_PATH = os.path.join(
     "products.yaml",
 )
 
+ProductName = str
+
 
 @attr.s
 class ProductStateConfig:
@@ -88,7 +90,7 @@ class ProductConfig:
     """Stores information about a product, parsed from the product config file"""
 
     # Product name
-    name: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    name: ProductName = attr.ib(validator=attr_validators.is_non_empty_str)
     # List of export names required for this product
     exports: List[str] = attr.ib(validator=attr_validators.is_list)
     # Product launch environment, only for state agnostic products
