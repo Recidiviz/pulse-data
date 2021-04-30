@@ -27,23 +27,33 @@ import {
   CaseCardInfo,
 } from "./CaseCard.styles";
 import { UncheckedButton } from "./CaseCardButtons";
-import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
+import {
+  NotInCaseloadActionType,
+  CaseUpdateActionType,
+} from "../../stores/CaseUpdatesStore";
 
 interface NotInCaseloadProps {
+  action: NotInCaseloadActionType;
+
   className: string;
   client: DecoratedClient;
 
-  onUndo: () => void;
+  onUndo: (updateId: string) => void;
 }
 
+const NotInCaseloadActionTitles = {
+  [CaseUpdateActionType.NOT_ON_CASELOAD]: "Client not in caseload",
+  [CaseUpdateActionType.CURRENTLY_IN_CUSTODY]: "Client in custody",
+};
+
 const NotInCaseload = ({
+  action,
   client,
   className,
   onUndo,
 }: NotInCaseloadProps): JSX.Element => {
-  const submissionTime = moment(
-    client.caseUpdates[CaseUpdateActionType.NOT_ON_CASELOAD].actionTs
-  ).format("MMMM Do, Y");
+  const caseUpdate = client.caseUpdates[action];
+  const submissionTime = moment(caseUpdate.actionTs).format("MMMM Do, Y");
 
   return (
     <CaseCardBody className={className}>
@@ -51,14 +61,16 @@ const NotInCaseload = ({
         <Icon kind={IconSVG.UserDelete} size={24} />
       </CaseCardIconContainer>
       <CaseCardInfo>
-        <strong>Client not in caseload</strong>
+        <strong>{NotInCaseloadActionTitles[action]}</strong>
         <br />
         <Caption>
           <div>Reported on {submissionTime}.</div>
           <div>Once confirmed, this client will be removed from your list.</div>
         </Caption>
         <ButtonContainer>
-          <UncheckedButton onClick={onUndo}>Undo</UncheckedButton>
+          <UncheckedButton onClick={() => onUndo(caseUpdate.updateId)}>
+            Undo
+          </UncheckedButton>
         </ButtonContainer>
       </CaseCardInfo>
     </CaseCardBody>

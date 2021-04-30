@@ -16,51 +16,27 @@
 // =============================================================================
 import * as React from "react";
 import { useState } from "react";
-import { Button, H3, Icon, IconSVG, Modal } from "@recidiviz/design-system";
+import { H3, Icon, IconSVG } from "@recidiviz/design-system";
 import { autorun } from "mobx";
 import {
   Caption,
   CaseCard as CaseCardComponent,
-  CaseCardFeedback,
-  CaseCardFooter,
   CaseCardHeading,
   ClientNameRow,
   CloseButton,
+  EllipsisDropdown,
 } from "./CaseCard.styles";
 import NeedsEmployment from "./NeedsEmployment";
 import NeedsFaceToFaceContact from "./NeedsFaceToFaceContact";
 import NeedsRiskAssessment from "./NeedsRiskAssessment";
-import FeedbackForm from "../FeedbackForm";
-import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore/CaseUpdates";
 import { DecoratedClient } from "../../stores/ClientsStore";
 import { titleCase } from "../../utils";
 import { useRootStore } from "../../stores";
 import NotInCaseload from "./NotInCaseload";
-
-const useCardFeedback = (client: DecoratedClient) => {
-  const { caseUpdatesStore } = useRootStore();
-  const [feedbackModalIsOpen, setFeedbackModalIsOpen] = useState(false);
-
-  return (
-    <CaseCardFeedback>
-      See something wrong?
-      <br />
-      <Button kind="link" onClick={() => setFeedbackModalIsOpen(true)}>
-        Submit a correction
-      </Button>
-      <Modal
-        isOpen={feedbackModalIsOpen}
-        onRequestClose={() => setFeedbackModalIsOpen(false)}
-      >
-        <FeedbackForm
-          caseUpdatesStore={caseUpdatesStore}
-          client={client}
-          onCancel={() => setFeedbackModalIsOpen(false)}
-        />
-      </Modal>
-    </CaseCardFeedback>
-  );
-};
+import {
+  NotInCaseloadActions,
+  NotInCaseloadActionType,
+} from "../../stores/CaseUpdatesStore";
 
 export interface CaseCardProps {
   client: DecoratedClient;
@@ -76,26 +52,22 @@ const CaseCard: React.FC<CaseCardProps> = ({ client }: CaseCardProps) => {
       setMarginTop(clientsStore.activeClientOffset);
     })
   );
-
-  const recordEvent = (
-    eventType: CaseUpdateActionType,
-    completedAction: boolean
-  ): void => {
-    if (completedAction) {
-      caseUpdatesStore.recordAction(client, eventType);
-    } else {
-      const updateId = client.caseUpdates[eventType]?.updateId;
-      if (updateId) {
-        caseUpdatesStore.removeAction(client, updateId, eventType);
-      }
-    }
-  };
+  const currentNotOnCaseloadAction = NotInCaseloadActions.find(
+    (value: string) => client.caseUpdates[value as NotInCaseloadActionType]
+  );
 
   return (
     <CaseCardComponent stacked style={{ marginTop }}>
       <CaseCardHeading className="fs-exclude">
         <ClientNameRow>
           <H3 as="div">{client.name}</H3>
+
+          <EllipsisDropdown
+            actions={NotInCaseloadActions}
+            client={client}
+            icon={IconSVG.TripleDot}
+            borderless
+          />
           <CloseButton onClick={() => clientsStore.view()}>
             <Icon kind={IconSVG.Close} />
           </CloseButton>
@@ -106,39 +78,23 @@ const CaseCard: React.FC<CaseCardProps> = ({ client }: CaseCardProps) => {
           {titleCase(client.personExternalId)}
         </Caption>
       </CaseCardHeading>
-      {client.caseUpdates[CaseUpdateActionType.NOT_ON_CASELOAD] ? (
+      {currentNotOnCaseloadAction ? (
         <NotInCaseload
+          action={currentNotOnCaseloadAction as NotInCaseloadActionType}
           client={client}
-          onUndo={() => {
-            const actionType = CaseUpdateActionType.NOT_ON_CASELOAD;
-            const updateId = client.caseUpdates[actionType]?.updateId;
-            caseUpdatesStore.removeAction(client, updateId, actionType);
+          onUndo={(updateId: string) => {
+            caseUpdatesStore.removeAction(
+              client,
+              updateId,
+              currentNotOnCaseloadAction
+            );
           }}
           className="fs-exclude"
         />
       ) : null}
-      <NeedsEmployment
-        client={client}
-        onStatusChanged={(helped: boolean) =>
-          recordEvent(CaseUpdateActionType.FOUND_EMPLOYMENT, helped)
-        }
-        className="fs-exclude"
-      />
-      <NeedsRiskAssessment
-        client={client}
-        onStatusChanged={(completed: boolean) =>
-          recordEvent(CaseUpdateActionType.COMPLETED_ASSESSMENT, completed)
-        }
-        className="fs-exclude"
-      />
-      <NeedsFaceToFaceContact
-        client={client}
-        onStatusChanged={(scheduled: boolean) =>
-          recordEvent(CaseUpdateActionType.SCHEDULED_FACE_TO_FACE, scheduled)
-        }
-        className="fs-exclude"
-      />
-      <CaseCardFooter>{useCardFeedback(client)}</CaseCardFooter>
+      <NeedsEmployment client={client} className="fs-exclude" />
+      <NeedsRiskAssessment client={client} className="fs-exclude" />
+      <NeedsFaceToFaceContact client={client} className="fs-exclude" />
     </CaseCardComponent>
   );
 };

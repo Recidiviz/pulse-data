@@ -17,13 +17,7 @@
 import { IconSVG, Need, NeedState } from "@recidiviz/design-system";
 import moment from "moment";
 import * as React from "react";
-import {
-  ButtonContainer,
-  Caption,
-  CaseCardBody,
-  CaseCardInfo,
-} from "./CaseCard.styles";
-import { NeedsCheckboxButton } from "./CaseCardButtons";
+import { Caption, CaseCardBody, CaseCardInfo } from "./CaseCard.styles";
 import { DecoratedClient } from "../../stores/ClientsStore/Client";
 import { useRootStore } from "../../stores";
 import {
@@ -31,16 +25,12 @@ import {
   ScoreMinMaxBySupervisionLevel,
 } from "../../stores/PolicyStore";
 import { titleCase } from "../../utils";
-import {
-  CaseUpdateActionType,
-  CaseUpdateStatus,
-} from "../../stores/CaseUpdatesStore";
+import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
+import { NeedsActionFlow } from "./NeedsCorrectionDropdown";
 
 interface NeedsRiskAssessmentProps {
   className: string;
   client: DecoratedClient;
-
-  onStatusChanged: (helped: boolean) => void;
 }
 
 const getAssessmentLevelText = (
@@ -78,16 +68,7 @@ const getCutoffsText = ([min, max]: ScoreMinMax) => {
 const NeedsRiskAssessment: React.FC<NeedsRiskAssessmentProps> = ({
   className,
   client,
-  onStatusChanged,
 }: NeedsRiskAssessmentProps) => {
-  const [needChecked, setNeedChecked] = React.useState(false);
-  React.useEffect(() => {
-    setNeedChecked(
-      client.caseUpdates[CaseUpdateActionType.COMPLETED_ASSESSMENT]?.status ===
-        CaseUpdateStatus.IN_PROGRESS
-    );
-  }, [client]);
-
   const { policyStore } = useRootStore();
   const supervisionLevelCutoffs = policyStore.getSupervisionLevelCutoffsForClient(
     client
@@ -138,11 +119,6 @@ const NeedsRiskAssessment: React.FC<NeedsRiskAssessmentProps> = ({
     );
   }
 
-  const onToggleCheck = (checked: boolean) => {
-    setNeedChecked(checked);
-    onStatusChanged(checked);
-  };
-
   return (
     <CaseCardBody className={className}>
       <Need
@@ -156,15 +132,13 @@ const NeedsRiskAssessment: React.FC<NeedsRiskAssessmentProps> = ({
           {caption}
           {nextAssessmentText}
         </Caption>
-        {!client.needsMet.assessment ? (
-          <ButtonContainer>
-            <NeedsCheckboxButton
-              checked={needChecked}
-              onToggleCheck={onToggleCheck}
-              title="I completed their risk assessment"
-            />
-          </ButtonContainer>
-        ) : null}
+
+        <NeedsActionFlow
+          client={client}
+          met={met}
+          resolve={CaseUpdateActionType.COMPLETED_ASSESSMENT}
+          dismiss={CaseUpdateActionType.INCORRECT_ASSESSMENT_DATA}
+        />
       </CaseCardInfo>
     </CaseCardBody>
   );
