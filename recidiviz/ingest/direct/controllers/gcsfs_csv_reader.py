@@ -109,6 +109,7 @@ class GcsfsCsvReader:
         delegate: GcsfsCsvReaderDelegate,
         chunk_size: int,
         encodings_to_try: Optional[List[str]] = None,
+        dtype: Optional[Any] = str,
         **kwargs: Any,
     ) -> None:
         """
@@ -121,6 +122,7 @@ class GcsfsCsvReader:
             delegate: A delegate for handling read chunks one by one.
             chunk_size: The max number of rows each chunk of the CSV should have.
             encodings_to_try: If provided, the ordered list of file encodings we should try for the given file.
+            dtype: The data type for values
             wrapper: If provided and true, use wrapper function when calling the helper function in direct_ingest_utils
             kwargs: Key-value args passed through to the pandas read_csv() call.
         """
@@ -139,7 +141,7 @@ class GcsfsCsvReader:
                             # creating and passing in a file pointer instead so that we have control over the scope.
                             fp,
                             encoding=encoding,
-                            dtype=str,
+                            dtype=dtype,
                             chunksize=chunk_size,
                             **kwargs,
                         )

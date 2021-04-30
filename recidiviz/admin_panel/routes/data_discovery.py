@@ -111,6 +111,8 @@ def add_data_discovery_routes(blueprint: Blueprint) -> None:
                 delimiter=body["file_separator"],
                 quoting=body["file_quoting"],
                 chunk_size=75000,
+                # Let pandas automatically infer data types
+                dtype=None,
             )
 
             return CACHE_MISS, HTTPStatus.CREATED
