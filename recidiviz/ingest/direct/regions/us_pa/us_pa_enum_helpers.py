@@ -28,6 +28,10 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     get_most_relevant_supervision_type,
 )
+from recidiviz.common.constants.state.state_supervision_contact import (
+    StateSupervisionContactLocation,
+    StateSupervisionContactType,
+)
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseRevocationType,
 )
@@ -598,3 +602,40 @@ def assessment_level_mapper(
     raise ValueError(
         f"Unexpected assessment_level_raw_text: {assessment_level_raw_text}"
     )
+
+
+def supervision_contact_location_mapper(
+    supervision_contact_location_raw_text: Optional[str],
+) -> Optional[StateSupervisionContactLocation]:
+    """Maps a supervision_contact_location_raw_text to the corresponding StateSupervisionContactLocation, if applicable."""
+    if supervision_contact_location_raw_text:
+        collateral_type, method = supervision_contact_location_raw_text.split(" ")
+        if collateral_type == "TREATMENTPROVIDER":
+            return StateSupervisionContactLocation.TREATMENT_PROVIDER
+        if collateral_type == "EMPLOYER":
+            return StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT
+        if method == "FIELD":
+            return StateSupervisionContactLocation.FIELD
+        if method == "OFFICE":
+            return StateSupervisionContactLocation.SUPERVISION_OFFICE
+        if method == "HOME":
+            return StateSupervisionContactLocation.RESIDENCE
+        if method == "WORK":
+            return StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT
+    return None
+
+
+def supervision_contact_type_mapper(
+    supervision_contact_type_raw_text: Optional[str],
+) -> Optional[StateSupervisionContactType]:
+    """Maps a supervision_contact_type_raw_text to the corresponding StateSupervisionContactType, if applicable."""
+    if supervision_contact_type_raw_text:
+        contact_type, method = supervision_contact_type_raw_text.split(" ")
+        if contact_type in ["BOTH", "OFFENDER"]:
+            if method in ["EMAIL", "FACSIMILE", "MAIL", "PHONETEXT"]:
+                return StateSupervisionContactType.WRITTEN_MESSAGE
+            if method in ["PHONEVOICE", "PHONEVOICEMAIL"]:
+                return StateSupervisionContactType.TELEPHONE
+            if method in ["HOME", "OFFICE", "WORK", "FIELD"]:
+                return StateSupervisionContactType.FACE_TO_FACE
+    return None

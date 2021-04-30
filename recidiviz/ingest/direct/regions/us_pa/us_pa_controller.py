@@ -62,6 +62,11 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     StateSupervisionLevel,
 )
+from recidiviz.common.constants.state.state_supervision_contact import (
+    StateSupervisionContactLocation,
+    StateSupervisionContactStatus,
+    StateSupervisionContactType,
+)
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
@@ -95,6 +100,8 @@ from recidiviz.ingest.direct.regions.us_pa.us_pa_enum_helpers import (
     concatenate_ccis_incarceration_period_start_codes,
     concatenate_ccis_incarceration_period_purpose_codes,
     concatenate_ccis_incarceration_period_end_codes,
+    supervision_contact_location_mapper,
+    supervision_contact_type_mapper,
     supervision_period_supervision_type_mapper,
 )
 from recidiviz.ingest.direct.regions.us_pa.us_pa_violation_type_reference import (
@@ -120,6 +127,7 @@ from recidiviz.ingest.models.ingest_info import (
     StateIncarcerationIncidentOutcome,
     StateSupervisionPeriod,
     StatePersonRace,
+    StateSupervisionContact,
     StateSupervisionViolation,
     StateSupervisionViolationResponse,
 )
@@ -226,6 +234,10 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 self._set_board_action_violation_response_fields,
                 self._append_board_action_supervision_violation_response_entries,
             ],
+            "supervision_contacts": [
+                self._set_supervision_contact_agent,
+                self._set_supervision_contact_fields,
+            ],
         }
 
         self.file_post_processors_by_file: Dict[str, List[Callable]] = {
@@ -261,6 +273,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
             "board_action": [
+                gen_convert_person_ids_to_external_id_objects(self._get_id_type)
+            ],
+            "supervision_contacts": [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type)
             ],
         }
@@ -635,6 +650,8 @@ class UsPaController(CsvGcsfsDirectIngestController):
             # INCARCERATION CUSTODIAL AUTHORITY CODES
             "26",  # Parolee in a Parole Violator Center
         ],
+        StateSupervisionContactStatus.ATTEMPTED: ["No"],
+        StateSupervisionContactStatus.COMPLETED: ["Yes"],
     }
 
     ENUM_MAPPERS: Dict[EntityEnumMeta, EnumMapper] = {
@@ -644,6 +661,8 @@ class UsPaController(CsvGcsfsDirectIngestController):
         StateSpecializedPurposeForIncarceration: incarceration_period_purpose_mapper,
         StateSupervisionViolationResponseRevocationType: revocation_type_mapper,
         StateSupervisionPeriodSupervisionType: supervision_period_supervision_type_mapper,
+        StateSupervisionContactLocation: supervision_contact_location_mapper,
+        StateSupervisionContactType: supervision_contact_type_mapper,
     }
 
     ENUM_IGNORES: Dict[EntityEnumMeta, List[str]] = {
@@ -692,6 +711,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
             "supervision_violation",
             "supervision_violation_response",
             "board_action",
+            "supervision_contacts",
         ]
 
         unlaunched_file_tags: List[str] = [
@@ -786,6 +806,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
             "supervision_violation",
             "supervision_violation_response",
             "board_action",
+            "supervision_contacts",
         ]:
             return US_PA_PBPP
         return None
@@ -1469,6 +1490,50 @@ class UsPaController(CsvGcsfsDirectIngestController):
                     decision=condition_code,
                     revocation_type=condition_code,
                 )
+
+    @staticmethod
+    def _set_supervision_contact_agent(
+        _file_tag: str,
+        row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
+        """Sets the supervision officer (as a contacted Agent entity) on the supervision contact."""
+        officer_id = row.get("agent_number", None)
+        officer_first_name = row.get("agent_first_name", None)
+        officer_last_name = row.get("agent_last_name", None)
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateSupervisionContact):
+                if officer_id and officer_first_name and officer_last_name:
+                    full_name = (
+                        f"{officer_last_name.upper()}, {officer_first_name.upper()}"
+                    )
+                    obj.create_state_agent(
+                        state_agent_id=officer_id,
+                        full_name=full_name,
+                        agent_type=StateAgentType.SUPERVISION_OFFICER.value,
+                    )
+
+    @staticmethod
+    def _set_supervision_contact_fields(
+        _file_tag: str,
+        row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
+        """Sets the supervision contact fields accordingly so that they can be parsed by enum mappers."""
+        contact_type = row["contact_type"]
+        method = row["method"].replace("-", "")
+        collateral_type = row["collateral_type"].replace(" ", "")
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateSupervisionContact):
+                if not collateral_type:
+                    obj.location = f"None-{method}"
+                else:
+                    obj.location = f"{collateral_type}-{method}"
+                obj.contact_type = f"{contact_type}-{method}"
 
 
 def _generate_sci_incarceration_period_primary_key(
