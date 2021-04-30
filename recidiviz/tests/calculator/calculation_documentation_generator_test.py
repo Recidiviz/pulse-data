@@ -29,6 +29,7 @@ from recidiviz.big_query.big_query_view_dag_walker import DagKey
 from recidiviz.calculator.calculation_documentation_generator import (
     CalculationDocumentationGenerator,
     CALC_DOCS_PATH,
+    PipelineMetricInfo,
 )
 from recidiviz.calculator.pipeline.incarceration.metrics import (
     IncarcerationAdmissionMetric,
@@ -44,7 +45,7 @@ from recidiviz.calculator.pipeline.supervision.metrics import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.metrics.export.export_config import ProductConfig, PRODUCTS_CONFIG_PATH
 from recidiviz.tests.metrics.export import fixtures
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCPEnvironment
 from recidiviz.utils.metadata import local_project_id_override
 
 FIXTURE_PRODUCTS_DIR = os.path.relpath(
@@ -62,6 +63,8 @@ class CalculationDocumentationGeneratorTest(unittest.TestCase):
         self.product_configs = ProductConfig.product_configs_from_file(
             self.mock_config_path
         )
+        self.mock_product_states = {StateCode("US_MO")}
+        self.mock_pipeline_states = {StateCode("US_MO"), StateCode("US_PA")}
         with local_project_id_override(GCP_PROJECT_STAGING), patch.object(
             BigQueryTableChecker, "_table_has_column"
         ) as mock_table_has_column, patch.object(
@@ -70,7 +73,7 @@ class CalculationDocumentationGeneratorTest(unittest.TestCase):
             mock_table_has_column.return_value = True
             mock_table_exists.return_value = True
             self.docs_generator = CalculationDocumentationGenerator(
-                self.product_configs
+                self.product_configs, CALC_DOCS_PATH
             )
 
     @patch(
@@ -104,15 +107,15 @@ class CalculationDocumentationGeneratorTest(unittest.TestCase):
         mock_product_states: MagicMock,
         mock_pipeline_states: MagicMock,
     ) -> None:
-        mock_pipeline_states.return_value = {StateCode("US_MO")}
-        mock_product_states.return_value = {StateCode("US_MO"), StateCode("US_PA")}
+        mock_pipeline_states.return_value = self.mock_pipeline_states
+        mock_product_states.return_value = self.mock_product_states
 
         summary_strings = self.docs_generator.generate_summary_strings()
 
         expected_header_str = "## Calculation Catalog\n\n"
-        expected_states_str = """- States (links to come)
-  - Missouri
-  - Pennsylvania"""
+        expected_states_str = """- States
+  - [Missouri](calculation/states/missouri.md)
+  - [Pennsylvania](calculation/states/pennsylvania.md)"""
         expected_products_str = """\n- Products
   - [Test Product](calculation/products/test_product/test_product_summary.md)
   - [Test Product Without Exports](calculation/products/test_product_without_exports/test_product_without_exports_summary.md)
@@ -156,7 +159,7 @@ class CalculationDocumentationGeneratorTest(unittest.TestCase):
         mock_states_to_metrics: MagicMock,
         mock_view_keys: MagicMock,
     ) -> None:
-        mock_pipeline_states.return_value = {StateCode("US_MO"), StateCode("US_PA")}
+        mock_pipeline_states.return_value = self.mock_pipeline_states
         mock_states_to_metrics.return_value = {
             "US_PA": ["PROGRAM_REFERRAL"],
             "US_MO": ["INCARCERATION_ADMISSION"],
@@ -225,23 +228,78 @@ The presence of all required metrics for a state does not guarantee that this pr
 """
                 self.assertEqual(expected_docs, documentation)
 
+    @patch(
+        "recidiviz.calculator.calculation_documentation_generator."
+        "CalculationDocumentationGenerator._get_sorted_state_metric_info",
+    )
+    def test_get_state_information(self, mock_metric_calculations: MagicMock) -> None:
+        # Because _get_state_metric_calculations is called twice,
+        # we should end up with double the PipelineMetricInfos
+        mock_metric_calculations.return_value = {
+            "Missouri": [
+                PipelineMetricInfo(
+                    name="INCARCERATION_ADMISSION", month_count=24, frequency="daily"
+                ),
+                PipelineMetricInfo(
+                    name="INCARCERATION_ADMISSION",
+                    month_count=240,
+                    frequency="triggered by code changes",
+                ),
+            ]
+        }
+        self.docs_generator.products_by_state = {
+            state_code: {
+                GCPEnvironment.STAGING: ["Test Product Without Exports"],
+                GCPEnvironment.PRODUCTION: ["Test Product"],
+            }
+            for state_code in self.mock_product_states
+        }
+        for state_code in self.mock_product_states:
+            expected_docs = """#Missouri
+
+##Shipped Products
+
+  - Test Product
+
+##Products in Development
+
+  - Test Product Without Exports
+
+##Regularly Calculated Metrics
+
+|       **Metric**        | **Number of Months Calculated** | **Calculation Frequency** |
+|-------------------------|--------------------------------:|---------------------------|
+| INCARCERATION_ADMISSION |                              24 | daily                     |
+| INCARCERATION_ADMISSION |                             240 | triggered by code changes |
+"""
+            documentation = (
+                self.docs_generator._get_state_information(  # pylint: disable=W0212
+                    state_code, str(state_code.get_state())
+                )
+            )
+
+            self.assertEqual(expected_docs, documentation)
+
     # TODO(#7125): Improve calc docs generation speed
     @unittest.skipIf(
         os.environ.get("TRAVIS") == "true", "docs/ does not exist in Travis"
     )
-    def test_generate_products_markdowns(self) -> None:
+    def test_generate_markdowns(self) -> None:
         products = ProductConfig.product_configs_from_file(PRODUCTS_CONFIG_PATH)
-        with local_project_id_override(GCP_PROJECT_STAGING), patch.object(
-            BigQueryTableChecker, "_table_has_column"
-        ) as mock_table_has_column, patch.object(
-            BigQueryTableChecker, "_table_exists"
-        ) as mock_table_exists:
-            mock_table_has_column.return_value = True
-            mock_table_exists.return_value = True
-            docs_generator = CalculationDocumentationGenerator(products=products)
 
         with tempfile.TemporaryDirectory() as tmpdirname:
-            docs_generator.generate_products_markdowns(tmpdirname)
+            with local_project_id_override(GCP_PROJECT_STAGING), patch.object(
+                BigQueryTableChecker, "_table_has_column"
+            ) as mock_table_has_column, patch.object(
+                BigQueryTableChecker, "_table_exists"
+            ) as mock_table_exists:
+                mock_table_has_column.return_value = True
+                mock_table_exists.return_value = True
+                docs_generator = CalculationDocumentationGenerator(
+                    products=products, root_calc_docs_dir=tmpdirname
+                )
+            docs_generator.generate_products_markdowns()
+            docs_generator.generate_states_markdowns()
             dir_comparison = dircmp(
                 tmpdirname,
                 os.path.join(os.path.dirname(recidiviz.__file__), "..", CALC_DOCS_PATH),
