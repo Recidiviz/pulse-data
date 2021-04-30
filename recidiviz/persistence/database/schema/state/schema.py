@@ -104,6 +104,8 @@ HISTORICAL_ID_COMMENT = (
     "to have a unique primary key."
 )
 
+STATE_CODE_COMMENT = "The U.S. state or region that provided the source data."
+
 state_assessment_class = Enum(
     state_enum_strings.state_assessment_class_mental_health,
     state_enum_strings.state_assessment_class_risk,
@@ -864,9 +866,27 @@ class _StatePersonExternalIdSharedColumns(_ReferencesStatePersonSharedColumns):
             raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)  # type: ignore
 
-    external_id = Column(String(255), nullable=False, index=True)
-    state_code = Column(String(255), nullable=False, index=True)
-    id_type = Column(String(255), nullable=False)
+    external_id = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=EXTERNAL_ID_COMMENT_TEMPLATE.format(
+            object_name="StatePersonExternalId"
+        ),
+    )
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=STATE_CODE_COMMENT,
+    )
+    id_type = Column(
+        String(255),
+        nullable=False,
+        comment="The type of id provided by the system. For example, in a "
+        "state with multiple data systems that we ingest, this may "
+        "be the name of the system from the id emanates.",
+    )
 
 
 class StatePersonExternalId(StateBase, _StatePersonExternalIdSharedColumns):
@@ -882,6 +902,12 @@ class StatePersonExternalId(StateBase, _StatePersonExternalIdSharedColumns):
             deferrable=True,
             initially="DEFERRED",
         ),
+        {
+            "comment": "Each StatePersonExternalId holds a single external id provided by the source data system being "
+            "ingested. An external id is a unique identifier for an individual, unique within the scope of "
+            "the source data system. We include information denoting the source of the id to make this into "
+            "a globally unique identifier."
+        },
     )
 
     person_external_id_id = Column(Integer, primary_key=True)
@@ -893,16 +919,23 @@ class StatePersonExternalIdHistory(
     """Represents the historical state of a StatePersonExternalId"""
 
     __tablename__ = "state_person_external_id_history"
-
+    __table_args__ = {
+        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
+            object_name="StatePersonExternalId"
+        )
+    }
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
-    person_external_id_history_id = Column(Integer, primary_key=True)
+    person_external_id_history_id = Column(
+        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
+    )
 
     person_external_id_id = Column(
         Integer,
         ForeignKey("state_person_external_id.person_external_id_id"),
         nullable=False,
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="person external id"),
     )
 
 
@@ -920,18 +953,36 @@ class _StatePersonAliasSharedColumns(_ReferencesStatePersonSharedColumns):
             raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)  # type: ignore
 
-    state_code = Column(String(255), nullable=False, index=True)
-    full_name = Column(String(255))
-    alias_type = Column(state_person_alias_type)
-    alias_type_raw_text = Column(String(255))
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=STATE_CODE_COMMENT,
+    )
+    full_name = Column(String(255), comment="A person’s name.")
+    alias_type = Column(state_person_alias_type, comment="The type of the name alias.")
+    alias_type_raw_text = Column(
+        String(255), comment="The raw text value for the alias type."
+    )
 
 
 class StatePersonAlias(StateBase, _StatePersonAliasSharedColumns):
     """Represents a StatePersonAlias in the SQL schema"""
 
     __tablename__ = "state_person_alias"
-
-    person_alias_id = Column(Integer, primary_key=True)
+    __table_args__ = {
+        "comment": "Each StatePersonAlias holds the naming information for an alias for a particular "
+        "person. Because a given name is an alias of sorts, we copy over the name fields "
+        "provided on the StatePerson object into a child StatePersonAlias object. An alias "
+        "is structured similarly to a name, with various different fields, and not a "
+        "raw string -- systems storing aliases are raw strings should provide those in "
+        "the full_name field below."
+    }
+    person_alias_id = Column(
+        Integer,
+        primary_key=True,
+        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(object_name="person"),
+    )
 
 
 class StatePersonAliasHistory(
@@ -940,16 +991,24 @@ class StatePersonAliasHistory(
     """Represents the historical state of a StatePersonAlias"""
 
     __tablename__ = "state_person_alias_history"
+    __table_args__ = {
+        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
+            object_name="StatePersonAlias"
+        )
+    }
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
-    person_alias_history_id = Column(Integer, primary_key=True)
+    person_alias_history_id = Column(
+        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
+    )
 
     person_alias_id = Column(
         Integer,
         ForeignKey("state_person_alias.person_alias_id"),
         nullable=False,
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="person alias"),
     )
 
 
@@ -966,17 +1025,33 @@ class _StatePersonRaceSharedColumns(_ReferencesStatePersonSharedColumns):
             raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)  # type: ignore
 
-    state_code = Column(String(255), nullable=False, index=True)
-    race = Column(race)
-    race_raw_text = Column(String(255))
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=STATE_CODE_COMMENT,
+    )
+    race = Column(race, comment="A person’s reported race.")
+    race_raw_text = Column(
+        String(255), comment="The raw text value of the person's race."
+    )
 
 
 class StatePersonRace(StateBase, _StatePersonRaceSharedColumns):
     """Represents a StatePersonRace in the SQL schema"""
 
     __tablename__ = "state_person_race"
+    __table_args__ = {
+        "comment": "Each StatePersonRace holds a single reported race for a single person. A "
+        "StatePerson may have multiple StatePersonRace objects because they may be "
+        "multi-racial, or because different data sources may report different races."
+    }
 
-    person_race_id = Column(Integer, primary_key=True)
+    person_race_id = Column(
+        Integer,
+        primary_key=True,
+        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(object_name="person race"),
+    )
 
 
 class StatePersonRaceHistory(
@@ -985,16 +1060,24 @@ class StatePersonRaceHistory(
     """Represents the historical state of a StatePersonRace"""
 
     __tablename__ = "state_person_race_history"
+    __table_args__ = {
+        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
+            object_name="StatePersonRace"
+        )
+    }
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
-    person_race_history_id = Column(Integer, primary_key=True)
+    person_race_history_id = Column(
+        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
+    )
 
     person_race_id = Column(
         Integer,
         ForeignKey("state_person_race.person_race_id"),
         nullable=False,
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="person race"),
     )
 
 
@@ -1011,17 +1094,33 @@ class _StatePersonEthnicitySharedColumns(_ReferencesStatePersonSharedColumns):
             raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)  # type: ignore
 
-    state_code = Column(String(255), nullable=False, index=True)
-    ethnicity = Column(ethnicity)
-    ethnicity_raw_text = Column(String(255))
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=STATE_CODE_COMMENT,
+    )
+    ethnicity = Column(ethnicity, comment="A person’s reported ethnicity.")
+    ethnicity_raw_text = Column(
+        String(255), comment="The raw text value of the ethnicity."
+    )
 
 
 class StatePersonEthnicity(StateBase, _StatePersonEthnicitySharedColumns):
     """Represents a state person in the SQL schema"""
 
     __tablename__ = "state_person_ethnicity"
+    __table_args__ = {
+        "comment": "Each StatePersonEthnicity holds a single reported ethnicity for a single person. "
+        "A StatePerson may have multiple StatePersonEthnicity objects, because they may be"
+        " multi-ethnic, or because different data sources may report different ethnicities."
+    }
 
-    person_ethnicity_id = Column(Integer, primary_key=True)
+    person_ethnicity_id = Column(
+        Integer,
+        primary_key=True,
+        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(object_name="person ethnicity"),
+    )
 
 
 class StatePersonEthnicityHistory(
@@ -1030,16 +1129,26 @@ class StatePersonEthnicityHistory(
     """Represents the historical state of a state person ethnicity"""
 
     __tablename__ = "state_person_ethnicity_history"
+    __table_args__ = {
+        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
+            object_name="StatePersonEthnicity"
+        )
+    }
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
-    person_ethnicity_history_id = Column(Integer, primary_key=True)
+    person_ethnicity_history_id = Column(
+        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
+    )
 
     person_ethnicity_id = Column(
         Integer,
         ForeignKey("state_person_ethnicity.person_ethnicity_id"),
         nullable=False,
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
+            object_name="state person ethnicity"
+        ),
     )
 
 
@@ -1056,24 +1165,52 @@ class _StatePersonSharedColumns:
             raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)  # type: ignore
 
-    state_code = Column(String(255), nullable=False, index=True)
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=STATE_CODE_COMMENT,
+    )
 
-    current_address = Column(Text)
+    current_address = Column(Text, comment="The current address of the person.")
 
-    full_name = Column(String(255), index=True)
+    full_name = Column(
+        String(255),
+        index=True,
+        comment="A person’s name. Only use this when names are in a "
+        "single field. Use surname and given_names when they are "
+        "separate.",
+    )
 
-    birthdate = Column(Date, index=True)
-    birthdate_inferred_from_age = Column(Boolean)
+    birthdate = Column(
+        Date,
+        index=True,
+        comment="Date the person was born. Use this when it is known. When a "
+        "person’s age but not birthdate is reported, use age instead.",
+    )
+    #  TODO(#7236): Remove this field.
+    birthdate_inferred_from_age = Column(
+        Boolean,
+        comment="Whether or not the person's birthdate was inferred from " "their age.",
+    )
 
-    gender = Column(gender)
-    gender_raw_text = Column(String(255))
+    gender = Column(gender, comment="A person’s gender, as reported by the state.")
+    gender_raw_text = Column(
+        String(255), comment="The raw text value of the person's state-reported gender."
+    )
 
-    residency_status = Column(residency_status)
+    residency_status = Column(
+        residency_status, comment="A person's reported residency status."
+    )
 
     @declared_attr
     def supervising_officer_id(self) -> Column:
         return Column(
-            Integer, ForeignKey("state_agent.agent_id"), index=True, nullable=True
+            Integer,
+            ForeignKey("state_agent.agent_id"),
+            index=True,
+            nullable=True,
+            comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="state agent"),
         )
 
 
@@ -1081,8 +1218,17 @@ class StatePerson(StateBase, _StatePersonSharedColumns):
     """Represents a StatePerson in the state SQL schema"""
 
     __tablename__ = "state_person"
-
-    person_id = Column(Integer, primary_key=True)
+    __table_args__ = {
+        "comment": "Each StatePerson holds details about the individual, as well as lists of several "
+        "child entities. Some of these child entities are extensions of individual details,"
+        " e.g. Race is its own entity as opposed to a single field, to allow for the"
+        " inclusion/tracking of multiple such entities or sources of such information."
+    }
+    person_id = Column(
+        Integer,
+        primary_key=True,
+        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(object_name="person"),
+    )
 
     external_ids = relationship(
         "StatePersonExternalId", backref="person", lazy="selectin"
@@ -1108,13 +1254,20 @@ class StatePersonHistory(
     """Represents the historical state of a StatePerson"""
 
     __tablename__ = "state_person_history"
+    __table_args__ = {
+        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(object_name="StatePerson")
+    }
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
-    person_history_id = Column(Integer, primary_key=True)
+    person_history_id = Column(Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT)
 
     person_id = Column(
-        Integer, ForeignKey("state_person.person_id"), nullable=False, index=True
+        Integer,
+        ForeignKey("state_person.person_id"),
+        nullable=False,
+        index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="state person"),
     )
 
 
@@ -1238,7 +1391,7 @@ class _StateCourtCaseSharedColumns(_ReferencesStatePersonSharedColumns):
         String(255),
         nullable=False,
         index=True,
-        comment="The code of the state under whose jurisdiction the case was tried.",
+        comment=STATE_CODE_COMMENT,
     )
     county_code = Column(
         String(255),
@@ -1356,7 +1509,7 @@ class _StateChargeSharedColumns(_ReferencesStatePersonSharedColumns):
         String(255),
         nullable=False,
         index=True,
-        comment="The code of the state under whose jurisdiction the charge was brought.",
+        comment=STATE_CODE_COMMENT,
     )
     county_code = Column(
         String(255),
@@ -1534,8 +1687,7 @@ class _StateAssessmentSharedColumns(_ReferencesStatePersonSharedColumns):
         String(255),
         nullable=False,
         index=True,
-        comment="The code of the state under whose "
-        "jurisdiction the assessment was conducted.",
+        comment=STATE_CODE_COMMENT,
     )
     assessment_score = Column(
         Integer, comment="The final score output by the assessment, if applicable."
@@ -1915,8 +2067,7 @@ class _StateFineSharedColumns(
         String(255),
         nullable=False,
         index=True,
-        comment="The code of the state under whose "
-        "jurisdiction the fine was imposed.",
+        comment=STATE_CODE_COMMENT,
     )
     county_code = Column(
         String(255),
@@ -2028,7 +2179,7 @@ class _StateIncarcerationPeriodSharedColumns(_ReferencesStatePersonSharedColumns
         String(255),
         nullable=False,
         index=True,
-        comment="The code of the state where the person is currently incarcerated.",
+        comment=STATE_CODE_COMMENT,
     )
     county_code = Column(
         String(255),
@@ -2420,7 +2571,7 @@ class _StateIncarcerationIncidentSharedColumns(_ReferencesStatePersonSharedColum
         String(255),
         nullable=False,
         index=True,
-        comment="The code of the state where the incident" " took place.",
+        comment=STATE_CODE_COMMENT,
     )
     facility = Column(
         String(255), comment="The facility in which the incident took place."
@@ -2556,7 +2707,7 @@ class _StateIncarcerationIncidentOutcomeSharedColumns(
         String(255),
         nullable=False,
         index=True,
-        comment="The code of the state under whose jurisdiction the outcome is enforced.",
+        comment=STATE_CODE_COMMENT,
     )
     date_effective = Column(Date, comment="The date on which the outcome takes effect.")
     hearing_date = Column(
@@ -3159,7 +3310,7 @@ class _StateAgentSharedColumns:
         String(255),
         nullable=False,
         index=True,
-        comment="The state this agent operates in.",
+        comment=STATE_CODE_COMMENT,
     )
     full_name = Column(String(255), comment="The state agent's full name.")
 
@@ -3309,7 +3460,7 @@ class _StateEarlyDischargeSharedColumns(_ReferencesStatePersonSharedColumns):
         String(255),
         nullable=False,
         index=True,
-        comment="The code of the state under whose jurisdiction the early discharge took place.",
+        comment=STATE_CODE_COMMENT,
     )
     county_code = Column(
         String(255),
