@@ -1,0 +1,26 @@
+key_mappings:
+  contact_start_date: state_supervision_contact.contact_date
+  contact_attempt: state_supervision_contact.status
+  agent_number: state_supervision_contact.contacted_agent
+
+ancestor_keys:
+  parole_number: state_person.state_person_id
+
+enforced_ancestor_types:
+  state_sentence: state_supervision_sentence
+
+primary_key:
+  contact_id: state_supervision_contact.state_supervision_contact_id
+
+keys_to_ignore:
+  - person_id               # Need clarification
+  - contact_end_date        # Unused - generally the same as contact_start_date
+  - duration                # Unused - describes how long the contact was
+  - contact_type            # Either (Offender, Both, Collateral) - Handled manually in controller
+  - method                  # Along with collateral_type, determines how the contact was done - Handled manually in controller
+  - collateral_type         # Along with method, determines how the contact was done - Handled manually in controller
+  - assisted                # Unused - whether or not the agent was assisted by another agent for the contact
+  - note                    # Unused - raw text that the agent inputs with details of the contact
+  - agent_first_name        # Unused - first name of the agent
+  - agent_last_name         # Unused - last name of the agent
+  - parole_org              # Unused - organization of the agent

@@ -53,6 +53,11 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_supervision_contact import (
+    StateSupervisionContactType,
+    StateSupervisionContactLocation,
+    StateSupervisionContactStatus,
+)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodStatus,
     StateSupervisionPeriodSupervisionType,
@@ -88,6 +93,7 @@ from recidiviz.ingest.models.ingest_info import (
     StateIncarcerationPeriod,
     StateIncarcerationIncident,
     StateIncarcerationIncidentOutcome,
+    StateSupervisionContact,
     StateSupervisionSentence,
     StateSupervisionPeriod,
     StateSupervisionViolation,
@@ -2231,6 +2237,59 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         )
 
         self.run_parse_file_test(expected, "board_action")
+
+    def test_populate_data_supervision_contact(self) -> None:
+        expected = IngestInfo(
+            state_people=[
+                StatePerson(
+                    state_person_id="456B",
+                    state_person_external_ids=[
+                        StatePersonExternalId(
+                            state_person_external_id_id="456B", id_type=US_PA_PBPP
+                        ),
+                    ],
+                    state_sentence_groups=[
+                        StateSentenceGroup(
+                            state_supervision_sentences=[
+                                StateSupervisionSentence(
+                                    state_supervision_periods=[
+                                        StateSupervisionPeriod(
+                                            state_supervision_contacts=[
+                                                StateSupervisionContact(
+                                                    state_supervision_contact_id="1",
+                                                    contact_date="2014-09-15",
+                                                    contact_type="Offender-Home",
+                                                    location="None-Home",
+                                                    status="Yes",
+                                                    contacted_agent=StateAgent(
+                                                        state_agent_id="444123",
+                                                        agent_type="SUPERVISION_OFFICER",
+                                                        full_name="BENES, ELAINE",
+                                                    ),
+                                                ),
+                                                StateSupervisionContact(
+                                                    state_supervision_contact_id="5",
+                                                    contact_date="2016-10-01",
+                                                    contact_type="Both-Email",
+                                                    location="Employer-Email",
+                                                    status="No",
+                                                    contacted_agent=StateAgent(
+                                                        state_agent_id="444123",
+                                                        agent_type="SUPERVISION_OFFICER",
+                                                        full_name="BENES, ELAINE",
+                                                    ),
+                                                ),
+                                            ]
+                                        )
+                                    ]
+                                )
+                            ]
+                        )
+                    ],
+                ),
+            ]
+        )
+        self.run_parse_file_test(expected, "supervision_contacts")
 
     def test_run_full_ingest_all_files_specific_order(self) -> None:
         self.maxDiff = None
@@ -4883,6 +4942,80 @@ class TestUsPaController(BaseDirectIngestControllerTests):
 
         # Act
         self._run_ingest_job_for_filename("board_action.csv")
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        ######################################
+        # supervision_contacts
+        ######################################
+
+        p2_placeholder_sg_for_contacts = entities.StateSentenceGroup.new_with_defaults(
+            person=person_2,
+            state_code=_STATE_CODE_UPPER,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+        )
+        p2_placeholder_ss_for_contacts = (
+            entities.StateSupervisionSentence.new_with_defaults(
+                person=person_2,
+                sentence_group=p2_placeholder_sg_for_contacts,
+                state_code=_STATE_CODE_UPPER,
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            )
+        )
+        p2_placeholder_sp_for_contacts = (
+            entities.StateSupervisionPeriod.new_with_defaults(
+                person=person_2,
+                supervision_sentences=[p2_placeholder_ss_for_contacts],
+                state_code=_STATE_CODE_UPPER,
+                status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            )
+        )
+
+        p2_sc_2_1 = entities.StateSupervisionContact.new_with_defaults(
+            external_id="1",
+            person=person_2,
+            supervision_periods=[p2_placeholder_sp_for_contacts],
+            state_code=_STATE_CODE_UPPER,
+            contact_date=datetime.date(year=2014, month=9, day=15),
+            contact_type=StateSupervisionContactType.FACE_TO_FACE,
+            contact_type_raw_text="OFFENDER-HOME",
+            location=StateSupervisionContactLocation.RESIDENCE,
+            location_raw_text="NONE-HOME",
+            status=StateSupervisionContactStatus.COMPLETED,
+            status_raw_text="YES",
+            contacted_agent=p2_sp_2_1.supervising_officer,
+        )
+
+        p2_sc_2_2 = entities.StateSupervisionContact.new_with_defaults(
+            external_id="5",
+            person=person_2,
+            supervision_periods=[p2_placeholder_sp_for_contacts],
+            state_code=_STATE_CODE_UPPER,
+            contact_date=datetime.date(year=2016, month=10, day=1),
+            contact_type=StateSupervisionContactType.WRITTEN_MESSAGE,
+            contact_type_raw_text="BOTH-EMAIL",
+            location=StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT,
+            location_raw_text="EMPLOYER-EMAIL",
+            status=StateSupervisionContactStatus.ATTEMPTED,
+            status_raw_text="NO",
+            contacted_agent=p2_sp_2_1.supervising_officer,
+        )
+        p2_placeholder_sp_for_contacts.supervision_contacts.extend(
+            [p2_sc_2_2, p2_sc_2_1]
+        )
+        p2_placeholder_ss_for_contacts.supervision_periods.append(
+            p2_placeholder_sp_for_contacts
+        )
+        p2_placeholder_sg_for_contacts.supervision_sentences.append(
+            p2_placeholder_ss_for_contacts
+        )
+        person_2.sentence_groups.append(p2_placeholder_sg_for_contacts)
+
+        populate_person_backedges(expected_people)
+
+        # Act
+        self._run_ingest_job_for_filename("supervision_contacts.csv")
 
         # Assert
         self.assert_expected_db_people(expected_people)
