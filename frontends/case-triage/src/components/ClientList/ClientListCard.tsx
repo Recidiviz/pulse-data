@@ -109,7 +109,8 @@ const ClientComponent: React.FC<ClientProps> = ({
         );
 
   const notOnCaseloadAction =
-    client.caseUpdates[CaseUpdateActionType.NOT_ON_CASELOAD];
+    client.caseUpdates[CaseUpdateActionType.NOT_ON_CASELOAD] ||
+    client.caseUpdates[CaseUpdateActionType.CURRENTLY_IN_CUSTODY];
   let dueDateText;
   if (!notOnCaseloadAction) {
     dueDateText = <DueDate date={getNextContactDate(client)} />;

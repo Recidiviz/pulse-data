@@ -23,6 +23,7 @@ import {
   spacing,
 } from "@recidiviz/design-system";
 import { rem } from "polished";
+import NeedsCorrectionDropdown from "./NeedsCorrectionDropdown";
 
 export const CaseCard = styled(Card)`
   box-shadow: 0px 15px 40px rgba(53, 83, 98, 0.3),
@@ -69,11 +70,6 @@ export const CaseCardBody = styled(CaseCardSection)`
   align-items: start;
 `;
 
-export const CaseCardFooter = styled(CaseCardSection)`
-  display: flex;
-  justify-content: space-between;
-`;
-
 export const Caption = styled.span`
   color: ${palette.slate80};
   font-size: ${rem("14px")};
@@ -97,4 +93,9 @@ export const ClientNameRow = styled.div`
 export const CloseButton = styled(Button).attrs({ kind: "link" })`
   height: 16px;
   width: 16px;
+`;
+
+export const EllipsisDropdown = styled(NeedsCorrectionDropdown)`
+  margin-left: auto;
+  margin-right: ${rem(spacing.sm)};
 `;

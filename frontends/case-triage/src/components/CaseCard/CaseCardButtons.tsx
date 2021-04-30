@@ -26,15 +26,20 @@ import {
 } from "@recidiviz/design-system";
 import Tooltip from "../Tooltip";
 
-const BaseCheckboxButton = styled.div`
+const BaseCheckboxButton = styled.button.attrs({
+  type: "button",
+})`
   cursor: pointer;
   padding: ${rem(spacing.xs)} ${rem(12)};
+  height: ${rem(32)};
   display: flex;
   align-items: center;
   justify-content: center;
 
+  border: 1px solid transparent;
   font-size: ${rem("14px")};
-  line-height: ${rem(24)};
+  white-space: nowrap;
+  margin-right: ${rem(spacing.sm)};
 
   box-sizing: border-box;
   border-radius: 4px;
@@ -43,8 +48,6 @@ const BaseCheckboxButton = styled.div`
 const CheckedButton = styled(BaseCheckboxButton)`
   color: ${palette.white};
   background-color: ${palette.slate60};
-  border: 0px;
-
   border-radius: 16px;
 
   &:hover {
@@ -56,11 +59,11 @@ export const UncheckedButton = styled(BaseCheckboxButton)`
   background-color: transparent;
 
   color: ${palette.pine4};
-  border: 1px solid ${palette.slate30};
+  border-color: ${palette.slate30};
 
   &:hover {
     color: ${palette.pine2};
-    border: 1px solid ${palette.signal.links};
+    border-color: ${palette.signal.links};
   }
 `;
 

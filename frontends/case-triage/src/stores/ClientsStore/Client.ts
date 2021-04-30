@@ -16,7 +16,11 @@
 // =============================================================================
 import moment from "moment";
 import { titleCase } from "../../utils";
-import { CaseUpdate, CaseUpdateActionType } from "../CaseUpdatesStore";
+import {
+  CaseUpdate,
+  CaseUpdateActionType,
+  CaseUpdateStatus,
+} from "../CaseUpdatesStore";
 import PolicyStore from "../PolicyStore";
 
 /* eslint-disable camelcase */
@@ -36,6 +40,13 @@ export type SupervisionLevel = typeof SupervisionLevels[number];
 
 type APIDate = string | moment.Moment | null;
 
+export interface NeedsMet {
+  assessment: boolean;
+  employment: boolean;
+  faceToFaceContact: boolean;
+  homeVisitContact: boolean;
+}
+
 export interface Client {
   assessmentScore: number | null;
   caseType: CaseType;
@@ -52,12 +63,7 @@ export interface Client {
   mostRecentFaceToFaceDate: APIDate;
   mostRecentHomeVisitDate: APIDate;
   mostRecentAssessmentDate: APIDate;
-  needsMet: {
-    assessment: boolean;
-    employment: boolean;
-    faceToFaceContact: boolean;
-    homeVisitContact: boolean;
-  };
+  needsMet: NeedsMet;
   nextAssessmentDate: APIDate;
   nextFaceToFaceDate: APIDate;
   nextHomeVisitDate: APIDate;
@@ -78,6 +84,12 @@ export interface DecoratedClient extends Client {
   previousInProgressActions?: CaseUpdateActionType[];
 
   supervisionLevelText: string;
+  hasCaseUpdateInStatus(
+    action: CaseUpdateActionType,
+    status: CaseUpdateStatus
+  ): boolean;
+
+  hasInProgressUpdate(action: CaseUpdateActionType): boolean;
 }
 
 const parseDate = (date?: APIDate) => {
@@ -114,6 +126,17 @@ const decorateClient = (
     nextHomeVisitDate: parseDate(client.nextHomeVisitDate),
     nextAssessmentDate: parseDate(client.nextAssessmentDate),
     supervisionLevelText: policyStore.getSupervisionLevelNameForClient(client),
+
+    hasCaseUpdateInStatus(
+      action: CaseUpdateActionType,
+      status: CaseUpdateStatus
+    ) {
+      return client.caseUpdates[action]?.status === status;
+    },
+
+    hasInProgressUpdate(action: CaseUpdateActionType) {
+      return this.hasCaseUpdateInStatus(action, CaseUpdateStatus.IN_PROGRESS);
+    },
   };
 };
 

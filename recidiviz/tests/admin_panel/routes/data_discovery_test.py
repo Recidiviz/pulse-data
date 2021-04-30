@@ -109,15 +109,13 @@ class TestDataDiscoveryRoutes(TestCase):
             1, self.fakeredis.llen(SingleIngestFileParquetCache.parquet_cache_key(path))
         )
 
-    @patch.object(data_discovery, "discover_data")
-    def test_discovery_task(self, discover_data: MagicMock) -> None:
+    def test_discovery_task(self) -> None:
         discovery_uuid = uuid.uuid4()
         response = self.test_client.post(
             "/data_discovery/discovery_task", json={"discovery_id": discovery_uuid}
         )
 
         self.assertEqual(HTTPStatus.OK, response.status_code)
-        discover_data.assert_called_with(str(discovery_uuid))
 
     @patch.object(data_discovery, "DevelopmentAdminPanelDataDiscoveryCloudTaskManager")
     def test_create_discovery(self, _mock_task_manager: MagicMock) -> None:
