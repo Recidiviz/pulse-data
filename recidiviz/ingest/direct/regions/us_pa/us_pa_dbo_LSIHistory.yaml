@@ -1,4 +1,3 @@
-# TODO(#7222): Delete this when dbo_LSIHistory has been shipped to prod
 key_mappings:
   ParoleNumber: state_person.state_person_id
 
@@ -12,4 +11,5 @@ primary_key:
 
 keys_to_ignore:
   - ParoleCountID           # Parole count id (meaning unclear) - handled manually in the controller
+  - ReleaseStatus           # Release status (meaning unclear) - handled manually in the controller
   - LsirID                  # Index of a particular instance of this assessment taken by a particular person - handled manually in the controller
