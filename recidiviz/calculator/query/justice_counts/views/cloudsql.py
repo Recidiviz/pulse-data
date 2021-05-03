@@ -18,10 +18,12 @@
 
 from typing import List
 
-import sqlalchemy
-
 from recidiviz.calculator.query.justice_counts import dataset_config
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.persistence.database.base_schema import JusticeCountsBase
+from recidiviz.persistence.database.schema_table_region_filtered_query_builder import (
+    FederatedSchemaTableRegionFilteredQueryBuilder,
+)
 from recidiviz.persistence.database.schema_utils import get_justice_counts_table_classes
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -34,7 +36,7 @@ TABLE_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT
         *
-    FROM EXTERNAL_QUERY("{project_id}.US.justice_counts_cloudsql", "SELECT {columns} FROM {table};")
+    FROM EXTERNAL_QUERY("{project_id}.US.justice_counts_cloudsql", "{postgres_query}")
     """
 
 
@@ -42,22 +44,11 @@ def get_table_view_builders() -> List[SimpleBigQueryViewBuilder]:
     """Returns populated, formatted query builders for all Justice Counts BigQuery views."""
     table_view_builders = []
     for table in get_justice_counts_table_classes():
-        select_columns = []
-        for column in table.columns:
-            if isinstance(column.type, sqlalchemy.Enum):
-                select_columns.append(f"CAST({column.name} as VARCHAR)")
-            elif isinstance(column.type, sqlalchemy.ARRAY) and isinstance(
-                column.type.item_type, sqlalchemy.String
-            ):
-                # BigQuery, while claiming to support NULL values in an array, actually does not. For strings, we
-                # instead replace NULL with the empty string. Arrays of other types are not modified, so if they
-                # include NULL values they will fail.
-                select_columns.append(
-                    f"ARRAY_REPLACE({column.name}, NULL, '') as {column.name}"
-                )
-            else:
-                select_columns.append(column.name)
-
+        query_builder = FederatedSchemaTableRegionFilteredQueryBuilder(
+            metadata_base=JusticeCountsBase,
+            table=table,
+            columns_to_include=[c.name for c in table.columns],
+        )
         table_view_builders.append(
             SimpleBigQueryViewBuilder(
                 dataset_id=dataset_config.JUSTICE_COUNTS_BASE_DATASET,
@@ -65,8 +56,7 @@ def get_table_view_builders() -> List[SimpleBigQueryViewBuilder]:
                 view_query_template=TABLE_QUERY_TEMPLATE,
                 should_materialize=True,
                 description=f"Data from the {table.name} table imported into BQ",
-                columns=", ".join(select_columns),
-                table=table.name,
+                postgres_query=query_builder.full_query(),
             )
         )
     return table_view_builders
