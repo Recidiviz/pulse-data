@@ -74,6 +74,9 @@ class IncarcerationPreProcessingConfig(BuildableAttr):
     # Whether or not to overwrite facility information when collapsing transfer edges
     overwrite_facility_information_in_transfers: bool = attr.ib()
 
+    # The end date of the earliest period ending in death. None if no periods end in death.
+    earliest_death_date: Optional[date] = attr.ib(default=None)
+
 
 def drop_placeholder_periods(
     incarceration_periods: List[StateIncarcerationPeriod],
@@ -317,7 +320,7 @@ def _filter_and_update_incarceration_periods_for_calculations(
     filtered_incarceration_periods = drop_placeholder_periods(incarceration_periods)
 
     filtered_incarceration_periods = _infer_missing_dates_and_statuses(
-        filtered_incarceration_periods
+        filtered_incarceration_periods, ip_preprocessing_config.earliest_death_date
     )
 
     if ip_preprocessing_config.drop_temporary_custody_periods:
@@ -343,19 +346,16 @@ def _is_active_period(period: StateIncarcerationPeriod) -> bool:
 
 def _infer_missing_dates_and_statuses(
     incarceration_periods: List[StateIncarcerationPeriod],
+    earliest_death_date: Optional[date] = None,
 ) -> List[StateIncarcerationPeriod]:
     """First, sorts the incarceration_periods in chronological order of the admission and release dates. Then, for any
     periods missing dates and statuses, infers this information given the other incarceration periods.
     """
     sort_periods_by_set_dates_and_statuses(incarceration_periods, _is_active_period)
 
-    period_ending_in_death: Optional[StateIncarcerationPeriod] = None
     updated_periods: List[StateIncarcerationPeriod] = []
 
     for index, ip in enumerate(incarceration_periods):
-        if ip.release_reason == StateIncarcerationPeriodReleaseReason.DEATH:
-            period_ending_in_death = ip
-
         previous_ip = incarceration_periods[index - 1] if index > 0 else None
         next_ip = (
             incarceration_periods[index + 1]
@@ -363,17 +363,22 @@ def _infer_missing_dates_and_statuses(
             else None
         )
 
-        if (
-            period_ending_in_death
-            and ip.admission_date
-            and period_ending_in_death.release_date
-            and period_ending_in_death.release_date <= ip.admission_date
-        ):
-            logging.info(
-                "Dropping incarceration period with with an admission_date after a release due to death: [%s]",
-                ip,
-            )
-            continue
+        if earliest_death_date:
+            if ip.admission_date and earliest_death_date <= ip.admission_date:
+                # If a period starts after the earliest_death_date, drop the period.
+                logging.info(
+                    "Dropping incarceration period with with an admission_date after a release due to death: [%s]",
+                    ip,
+                )
+                continue
+            if (
+                ip.release_date and ip.release_date > earliest_death_date
+            ) or ip.release_date is None:
+                # If the incarceration period duration exceeds the earliest_death_date or is not terminated,
+                # set the release date to earliest_death_date, change release_reason to DEATH, update status
+                ip.release_date = earliest_death_date
+                ip.release_reason = StateIncarcerationPeriodReleaseReason.DEATH
+                ip.status = StateIncarcerationPeriodStatus.NOT_IN_CUSTODY
 
         if ip.release_date is None:
             if next_ip:
