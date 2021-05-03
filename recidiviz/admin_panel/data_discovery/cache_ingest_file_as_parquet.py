@@ -93,9 +93,9 @@ class CacheIngestFileAsParquetDelegate(GcsfsCsvReaderDelegate):
         df["ingest_processing_date"] = self.file_parts.utc_upload_datetime.strftime(
             "%D"
         )
+        df = df.applymap(lambda x: str(x).strip())
 
         self.parquet_cache.add_chunk(df)
-
         # Continue to the next chunk
         return True
 
