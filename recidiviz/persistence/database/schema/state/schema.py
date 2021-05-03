@@ -106,6 +106,14 @@ HISTORICAL_ID_COMMENT = (
 
 STATE_CODE_COMMENT = "The U.S. state or region that provided the source data."
 
+CUSTODIAL_AUTHORITY_COMMENT = (
+    "The type of government entity directly responsible for the person in this period of "
+    "incarceration. Not necessarily the decision making authority. For example, the "
+    "supervision authority in a state might be the custodial authority for someone on "
+    "probation, even though the courts are the body with the power to make decisions about "
+    "that person's path through the system."
+)
+
 state_assessment_class = Enum(
     state_enum_strings.state_assessment_class_mental_health,
     state_enum_strings.state_assessment_class_risk,
@@ -684,12 +692,14 @@ state_supervision_period_program_assignment_association_table = Table(
         Integer,
         ForeignKey("state_supervision_period.supervision_period_id"),
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="supervision period"),
     ),
     Column(
         "program_assignment_id",
         Integer,
         ForeignKey("state_program_assignment.program_assignment_id"),
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="program assignment"),
     ),
 )
 
@@ -1833,15 +1843,19 @@ class _StateSentenceGroupSharedColumns(_ReferencesStatePersonSharedColumns):
             raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)  # type: ignore
 
-    external_id = Column(String(255), index=True)
-    status = Column(state_sentence_status, nullable=False)
-    status_raw_text = Column(String(255))
-    date_imposed = Column(Date)
-    state_code = Column(String(255), nullable=False, index=True)
-    county_code = Column(String(255), index=True)
-    min_length_days = Column(Integer)
-    max_length_days = Column(Integer)
-    is_life = Column(Boolean)
+    external_id = Column(String(255), index=True, comment="DEPRECATED. See #2891.")
+    status = Column(
+        state_sentence_status, nullable=False, comment="DEPRECATED. See #2891."
+    )
+    status_raw_text = Column(String(255), comment="DEPRECATED. See #2891.")
+    date_imposed = Column(Date, comment="DEPRECATED. See #2891.")
+    state_code = Column(
+        String(255), nullable=False, index=True, comment="DEPRECATED. See #2891."
+    )
+    county_code = Column(String(255), index=True, comment="DEPRECATED. See #2891.")
+    min_length_days = Column(Integer, comment="DEPRECATED. See #2891.")
+    max_length_days = Column(Integer, comment="DEPRECATED. See #2891.")
+    is_life = Column(Boolean, comment="DEPRECATED. See #2891.")
 
 
 class StateSentenceGroup(StateBase, _StateSentenceGroupSharedColumns):
@@ -1856,9 +1870,14 @@ class StateSentenceGroup(StateBase, _StateSentenceGroupSharedColumns):
             deferrable=True,
             initially="DEFERRED",
         ),
+        {"comment": "DEPRECATED. See #2891."},
     )
 
-    sentence_group_id = Column(Integer, primary_key=True)
+    sentence_group_id = Column(
+        Integer,
+        primary_key=True,
+        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(object_name="sentence group"),
+    )
 
     supervision_sentences = relationship(
         "StateSupervisionSentence", backref="sentence_group", lazy="selectin"
@@ -1875,16 +1894,20 @@ class StateSentenceGroupHistory(
     """Represents the historical state of a StateSentenceGroup"""
 
     __tablename__ = "state_sentence_group_history"
+    __table_args__ = {"comment": "DEPRECATED. See #2891."}
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
-    sentence_group_history_id = Column(Integer, primary_key=True)
+    sentence_group_history_id = Column(
+        Integer, primary_key=True, comment="DEPRECATED. See #2891."
+    )
 
     sentence_group_id = Column(
         Integer,
         ForeignKey("state_sentence_group.sentence_group_id"),
         nullable=False,
         index=True,
+        comment="DEPRECATED. See #2891.",
     )
 
 
@@ -2361,10 +2384,7 @@ class _StateIncarcerationPeriodSharedColumns(_ReferencesStatePersonSharedColumns
     )
     custodial_authority = Column(
         state_custodial_authority,
-        comment="The type of government entity directly responsible for the person in this period of "
-        "incarceration. Not necessarily the decision making authority. For example, the supervision authority "
-        "in a state might be the custodial authority for someone on probation, even though the courts are the "
-        "body with the power to make decisions about that person's path through the system.",
+        comment=CUSTODIAL_AUTHORITY_COMMENT,
     )
     custodial_authority_raw_text = Column(
         String(255),
@@ -2492,37 +2512,115 @@ class _StateSupervisionPeriodSharedColumns(_ReferencesStatePersonSharedColumns):
             raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)  # type: ignore
 
-    external_id = Column(String(255), index=True)
-    status = Column(state_supervision_period_status, nullable=False)
-    status_raw_text = Column(String(255))
-    supervision_type = Column(state_supervision_type)
-    supervision_type_raw_text = Column(String(255))
-    supervision_period_supervision_type = Column(
-        state_supervision_period_supervision_type
+    external_id = Column(
+        String(255),
+        index=True,
+        comment=EXTERNAL_ID_COMMENT_TEMPLATE.format(
+            object_name="StateSupervisionPeriod"
+        ),
     )
-    supervision_period_supervision_type_raw_text = Column(String(255))
-    start_date = Column(Date)
-    termination_date = Column(Date)
-    state_code = Column(String(255), nullable=False, index=True)
-    county_code = Column(String(255), index=True)
-    supervision_site = Column(String(255))
-    admission_reason = Column(state_supervision_period_admission_reason)
-    admission_reason_raw_text = Column(String(255))
-    termination_reason = Column(state_supervision_period_termination_reason)
-    termination_reason_raw_text = Column(String(255))
-    supervision_level = Column(state_supervision_level)
-    supervision_level_raw_text = Column(String(255))
+    status = Column(
+        state_supervision_period_status,
+        nullable=False,
+        comment="The current status of this period.",
+    )
+    status_raw_text = Column(
+        String(255), comment="The raw text value of the current status."
+    )
+    supervision_type = Column(
+        state_supervision_type,
+        comment="DEPRECATED - use supervision_period_supervision_type instead. See #2891.",
+    )
+    supervision_type_raw_text = Column(
+        String(255),
+        comment="DEPRECATED - use supervision_period_supervision_type instead. See #2891.",
+    )
+    supervision_period_supervision_type = Column(
+        state_supervision_period_supervision_type,
+        comment="The type of supervision the person is serving during "
+        "this time period.",
+    )
+    supervision_period_supervision_type_raw_text = Column(
+        String(255),
+        comment="The raw text value of the supervision period" " supervision type.",
+    )
+    start_date = Column(
+        Date, comment="The date the person began this period of supervision."
+    )
+    termination_date = Column(
+        Date,
+        comment="The date the period of supervision was terminated, either positively"
+        " or negatively.",
+    )
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=STATE_CODE_COMMENT,
+    )
+    county_code = Column(
+        String(255),
+        index=True,
+        comment="The code of the county where the person is currently supervised.",
+    )
+    supervision_site = Column(
+        String(255),
+        comment="A single string encoding the location (i.e. office/region/district) this person is being supervised"
+        " out of. This field may eventually be split into multiple to better encode supervision org structure. "
+        "See #3829.",
+    )
+    admission_reason = Column(
+        state_supervision_period_admission_reason,
+        comment="The reason the person was admitted to this particular period of supervision.",
+    )
+    admission_reason_raw_text = Column(
+        String(255),
+        comment="The raw text value of the supervision period's admission reason.",
+    )
+    termination_reason = Column(
+        state_supervision_period_termination_reason,
+        comment="The reason the period of supervision was terminated.",
+    )
+    termination_reason_raw_text = Column(
+        String(255),
+        comment="The raw text value of the supervision period's termination reason.",
+    )
+    supervision_level = Column(
+        state_supervision_level,
+        comment="The level of supervision the person is receiving, "
+        "i.e. an analog to the security level of "
+        "incarceration, indicating frequency of contact, "
+        "strictness of constraints, etc.",
+    )
+    supervision_level_raw_text = Column(
+        String(255),
+        comment="The raw text value of the supervision period's " "supervision level.",
+    )
 
     # This field can contain an arbitrarily long list of conditions, so we do not restrict the length of the length like
     # we do for most other String fields.
-    conditions = Column(Text)
-    custodial_authority = Column(state_custodial_authority)
-    custodial_authority_raw_text = Column(String(255))
+    conditions = Column(
+        Text,
+        comment="The conditions of this period of supervision which the person must follow "
+        "to avoid a disciplinary response.",
+    )
+    custodial_authority = Column(
+        state_custodial_authority,
+        comment=CUSTODIAL_AUTHORITY_COMMENT,
+    )
+    custodial_authority_raw_text = Column(
+        String(255),
+        comment="The raw text value of the supervision period's custodial authority.",
+    )
 
     @declared_attr
     def supervising_officer_id(self) -> Column:
         return Column(
-            Integer, ForeignKey("state_agent.agent_id"), index=True, nullable=True
+            Integer,
+            ForeignKey("state_agent.agent_id"),
+            index=True,
+            nullable=True,
+            comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="state agent"),
         )
 
 
@@ -2530,8 +2628,27 @@ class StateSupervisionPeriod(StateBase, _StateSupervisionPeriodSharedColumns):
     """Represents a StateSupervisionPeriod in the SQL schema"""
 
     __tablename__ = "state_supervision_period"
+    __table_args__ = {
+        "comment": "The StateSupervisionPeriod object represents information about a single period of "
+        "supervision, defined as a contiguous period of custody for a particular person "
+        "under a particular jurisdiction. As a person transfers from jurisdiction to "
+        "jurisdiction, these are modeled as multiple abutting supervision periods. Multiple "
+        "periods of supervision for a particular person may be overlapping, due to extended "
+        "periods of supervision that are temporarily interrupted by, say, periods of "
+        "incarceration, or periods of supervision stemming from charges in different "
+        "jurisdictions.<br /><br />StateSupervisionPeriods can be children of either "
+        "StateIncarcerationSentences or StateSupervisionSentences, for reasons established "
+        "in the descriptions of those objects.<br /><br />StateSupervisionPeriods have zero"
+        " to many StateSupervisionViolations as children. They also may have StateAssessments "
+        "or StateProgramAssignments as children, if any of those objects are explicitly "
+        "related to this particular period of supervision."
+    }
 
-    supervision_period_id = Column(Integer, primary_key=True)
+    supervision_period_id = Column(
+        Integer,
+        primary_key=True,
+        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(object_name="supervision period"),
+    )
 
     person = relationship("StatePerson", uselist=False)
     supervising_officer = relationship("StateAgent", uselist=False, lazy="selectin")
@@ -2574,16 +2691,26 @@ class StateSupervisionPeriodHistory(
     """Represents the historical state of a StateSupervisionPeriod"""
 
     __tablename__ = "state_supervision_period_history"
+    __table_args__ = {
+        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
+            object_name="StateSupervisionPeriod"
+        )
+    }
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
-    supervision_period_history_id = Column(Integer, primary_key=True)
+    supervision_period_history_id = Column(
+        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
+    )
 
     supervision_period_id = Column(
         Integer,
         ForeignKey("state_supervision_period.supervision_period_id"),
         nullable=False,
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
+            object_name="state supervision period"
+        ),
     )
 
 
@@ -2603,9 +2730,19 @@ class _StateSupervisionCaseTypeEntrySharedColumns(_ReferencesStatePersonSharedCo
             raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)  # type: ignore
 
-    case_type = Column(state_supervision_case_type)
-    case_type_raw_text = Column(String(255))
-    state_code = Column(String(255), nullable=False, index=True)
+    case_type = Column(
+        state_supervision_case_type,
+        comment="The type of case that describes the associated period of supervision.",
+    )
+    case_type_raw_text = Column(
+        String(255), comment="The raw text value of the case type."
+    )
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=STATE_CODE_COMMENT,
+    )
 
     @declared_attr
     def supervision_period_id(self) -> Column:
@@ -2614,6 +2751,9 @@ class _StateSupervisionCaseTypeEntrySharedColumns(_ReferencesStatePersonSharedCo
             ForeignKey("state_supervision_period.supervision_period_id"),
             index=True,
             nullable=True,
+            comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
+                object_name="state supervision period"
+            ),
         )
 
 
@@ -2631,13 +2771,31 @@ class StateSupervisionCaseTypeEntry(
             deferrable=True,
             initially="DEFERRED",
         ),
+        {
+            "comment": "The StateSupervisionCaseTypeEntry object represents a particular case type that applies to this "
+            "period of supervision. A case type implies certain conditions of supervision that may apply, or "
+            "certain levels or intensity of supervision, or certain kinds of specialized courts that "
+            "generated the sentence to supervision, or even that the person being supervised may be "
+            "supervised by particular kinds of officers with particular types of caseloads they are "
+            "responsible for. A StateSupervisionPeriod may have zero to many distinct case types."
+        },
     )
 
-    supervision_case_type_entry_id = Column(Integer, primary_key=True)
+    supervision_case_type_entry_id = Column(
+        Integer,
+        primary_key=True,
+        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(object_name="case type entry"),
+    )
 
     person = relationship("StatePerson", uselist=False)
 
-    external_id = Column(String(255), index=True)
+    external_id = Column(
+        String(255),
+        index=True,
+        comment=EXTERNAL_ID_COMMENT_TEMPLATE.format(
+            object_name="StateSupervisionCaseTypeEntry"
+        ),
+    )
 
 
 # TODO(#4136): Update historical column names here -- or downgrade and upgrade?
@@ -2647,10 +2805,17 @@ class StateSupervisionCaseTypeEntryHistory(
     """Represents the historical state of a StateSupervisionCaseTypeEntry"""
 
     __tablename__ = "state_supervision_case_type_entry_history"
+    __table_args__ = {
+        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
+            object_name="StateSupervisionCaseTypeEntry"
+        )
+    }
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
-    supervision_case_type_entry_history_id = Column(Integer, primary_key=True)
+    supervision_case_type_entry_history_id = Column(
+        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
+    )
 
     supervision_case_type_entry_id = Column(
         Integer,
@@ -2659,6 +2824,9 @@ class StateSupervisionCaseTypeEntryHistory(
         ),
         nullable=False,
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
+            object_name="state case type entry"
+        ),
     )
 
 
@@ -3539,28 +3707,68 @@ class _StateProgramAssignmentSharedColumns(_ReferencesStatePersonSharedColumns):
             raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)  # type: ignore
 
-    external_id = Column(String(255), index=True)
-    state_code = Column(String(255), nullable=False, index=True)
+    external_id = Column(
+        String(255),
+        index=True,
+        comment=EXTERNAL_ID_COMMENT_TEMPLATE.format(
+            object_name="StateProgramAssignment"
+        ),
+    )
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=STATE_CODE_COMMENT,
+    )
     # TODO(#2450): Switch program_id/location_id for a program foreign key once
     # we've ingested program information into our schema.
-    program_id = Column(String(255))
-    program_location_id = Column(String(255))
+    program_id = Column(
+        String(255), comment="Unique identifier for a program being assigned to."
+    )
+    program_location_id = Column(
+        String(255), comment="The id of where the program takes place."
+    )
 
     participation_status = Column(
-        state_program_assignment_participation_status, nullable=False
+        state_program_assignment_participation_status,
+        nullable=False,
+        comment="The status of the person's participation in the program.",
     )
-    participation_status_raw_text = Column(String(255))
-    discharge_reason = Column(state_program_assignment_discharge_reason)
-    discharge_reason_raw_text = Column(String(255))
-    referral_date = Column(Date)
-    start_date = Column(Date)
-    discharge_date = Column(Date)
-    referral_metadata = Column(Text)
+    participation_status_raw_text = Column(
+        String(255), comment="The raw text value of the participation status."
+    )
+    discharge_reason = Column(
+        state_program_assignment_discharge_reason,
+        comment="The reason the person was discharged from the program, if applicable.",
+    )
+    discharge_reason_raw_text = Column(
+        String(255), comment="The raw text value for the discharge reason."
+    )
+    referral_date = Column(
+        Date, comment="The date the person was referred to the program, if applicable."
+    )
+    start_date = Column(
+        Date, comment="The date the person started the program, if applicable."
+    )
+    discharge_date = Column(
+        Date,
+        comment="The date the person was discharged from the program, if applicable.",
+    )
+    referral_metadata = Column(
+        Text,
+        comment="This includes whichever fields and values are relevant to a fine"
+        " understanding of a particular referral. It can be provided in any "
+        "format, but will be transformed into JSON prior to persistence.",
+    )
 
     @declared_attr
     def referring_agent_id(self) -> Column:
         return Column(
-            Integer, ForeignKey("state_agent.agent_id"), index=True, nullable=True
+            Integer,
+            ForeignKey("state_agent.agent_id"),
+            index=True,
+            nullable=True,
+            comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="state agent"),
         )
 
 
@@ -3576,9 +3784,25 @@ class StateProgramAssignment(StateBase, _StateProgramAssignmentSharedColumns):
             deferrable=True,
             initially="DEFERRED",
         ),
+        {
+            "comment": "The StateProgramAssignment object represents information about the assignment of a person to "
+            "some form of rehabilitative programming -- and their participation in the program -- intended "
+            "to address specific needs of the person. People can be assigned to programs while under various "
+            "forms of custody, principally while incarcerated or under supervision. These programs can be "
+            "administered by the agency/government, by a quasi-governmental organization, by a private third "
+            "party, or any other number of service providers. A StateProgramAssignment is always for a "
+            "particular person, but it may also be optionally linked to a particular StateIncarcerationPeriod "
+            "or StateSupervisionPeriod if the program is explicitly within the bounds of that period of "
+            "custody. The programming-related portion of our schema is still being constructed and will be "
+            "added to in the near future."
+        },
     )
 
-    program_assignment_id = Column(Integer, primary_key=True)
+    program_assignment_id = Column(
+        Integer,
+        primary_key=True,
+        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(object_name="program assignment"),
+    )
     referring_agent = relationship("StateAgent", uselist=False, lazy="selectin")
 
 
@@ -3588,16 +3812,23 @@ class StateProgramAssignmentHistory(
     """Represents the historical state of a StateProgramAssignment"""
 
     __tablename__ = "state_program_assignment_history"
-
+    __table_args__ = {
+        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
+            object_name="StateProgramAssignment"
+        )
+    }
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
-    program_assignment_history_id = Column(Integer, primary_key=True)
+    program_assignment_history_id = Column(
+        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
+    )
 
     program_assignment_id = Column(
         Integer,
         ForeignKey("state_program_assignment.program_assignment_id"),
         nullable=False,
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="program assignment"),
     )
 
 
@@ -3770,25 +4001,63 @@ class _StateSupervisionContactSharedColumns(_ReferencesStatePersonSharedColumns)
             raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)  # type: ignore
 
-    external_id = Column(String(255), index=True)
-    state_code = Column(String(255), nullable=False, index=True)
+    external_id = Column(
+        String(255),
+        index=True,
+        comment=EXTERNAL_ID_COMMENT_TEMPLATE.format(
+            object_name="StateSupervisionContact"
+        ),
+    )
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=STATE_CODE_COMMENT,
+    )
 
-    contact_date = Column(Date)
-    contact_reason = Column(state_supervision_contact_reason)
-    contact_reason_raw_text = Column(String(255))
-    contact_type = Column(state_supervision_contact_type)
-    contact_type_raw_text = Column(String(255))
-    location = Column(state_supervision_contact_location)
-    location_raw_text = Column(String(255))
-    resulted_in_arrest = Column(Boolean)
-    status = Column(state_supervision_contact_status)
-    status_raw_text = Column(String(255))
-    verified_employment = Column(Boolean)
+    contact_date = Column(Date, comment="The date when this contact happened.")
+    contact_reason = Column(
+        state_supervision_contact_reason,
+        comment="The reason why this contact took place.",
+    )
+    contact_reason_raw_text = Column(
+        String(255), comment="The raw text value of the contact reason."
+    )
+    contact_type = Column(
+        state_supervision_contact_type, comment="The type of contact which took place."
+    )
+    contact_type_raw_text = Column(
+        String(255), comment="The raw text value of the contact type."
+    )
+    location = Column(
+        state_supervision_contact_location, comment="Where this contact took place."
+    )
+    location_raw_text = Column(
+        String(255), comment="The raw text value of the contact location."
+    )
+    resulted_in_arrest = Column(
+        Boolean, comment="Whether or not this contact resulted in the person's arrest."
+    )
+    status = Column(
+        state_supervision_contact_status, comment="The current status of this contact."
+    )
+    status_raw_text = Column(
+        String(255), comment="The raw text value of the contact status."
+    )
+    verified_employment = Column(
+        Boolean,
+        comment="Whether or not the person's current employment status was "
+        "verified at this contact.",
+    )
 
     @declared_attr
     def contacted_agent_id(self) -> Column:
         return Column(
-            Integer, ForeignKey("state_agent.agent_id"), index=True, nullable=True
+            Integer,
+            ForeignKey("state_agent.agent_id"),
+            index=True,
+            nullable=True,
+            comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="state agent"),
         )
 
 
@@ -3804,9 +4073,25 @@ class StateSupervisionContact(StateBase, _StateSupervisionContactSharedColumns):
             deferrable=True,
             initially="DEFERRED",
         ),
+        {
+            "comment": "The StateSupervisionContact object represents information about a point of contact between a "
+            "person under supervision and some agent representing the department, typically a "
+            "supervising officer. These may include face-to-face meetings, phone calls, emails, or other "
+            "such media. At these contacts, specific things may occur, such as referral to programming or "
+            "written warnings or even arrest, but any and all events that happen as part of a single contact "
+            "are modeled as one supervision contact. StateSupervisionPeriods have zero to many "
+            "StateSupervisionContacts as children, and each StateSupervisionContact has one to many "
+            "StateSupervisionPeriods as parents. This is because a given person may be serving multiple "
+            "periods of supervision simultaneously in rare cases, and a given point of contact may apply "
+            "to both."
+        },
     )
 
-    supervision_contact_id = Column(Integer, primary_key=True)
+    supervision_contact_id = Column(
+        Integer,
+        primary_key=True,
+        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(object_name="supervision contact"),
+    )
 
     person = relationship("StatePerson", uselist=False)
     contacted_agent = relationship("StateAgent", uselist=False, lazy="selectin")
@@ -3818,14 +4103,24 @@ class StateSupervisionContactHistory(
     """Represents the historical state of a StateSupervisionContact"""
 
     __tablename__ = "state_supervision_contact_history"
+    __table_args__ = {
+        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
+            object_name="StateSupervisionContact"
+        )
+    }
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
-    supervision_contact_history_id = Column(Integer, primary_key=True)
+    supervision_contact_history_id = Column(
+        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
+    )
 
     supervision_contact_id = Column(
         Integer,
         ForeignKey("state_supervision_contact.supervision_contact_id"),
         nullable=False,
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
+            object_name="state supervision contact"
+        ),
     )
