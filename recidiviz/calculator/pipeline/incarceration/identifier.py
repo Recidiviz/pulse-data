@@ -41,6 +41,9 @@ from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
     prepare_incarceration_periods_for_calculations,
     IncarcerationPreProcessingConfig,
 )
+from recidiviz.calculator.pipeline.utils.period_utils import (
+    find_earliest_date_of_period_ending_in_death,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_pre_incarceration_supervision_type,
     get_post_incarceration_supervision_type,
@@ -99,11 +102,21 @@ def find_incarceration_events(
         supervision_sentences.extend(sentence_group.supervision_sentences)
     (
         incarceration_periods,
-        _supervision_periods,
+        supervision_periods,
     ) = get_unique_periods_from_sentence_groups_and_add_backedges(sentence_groups)
 
     if not incarceration_periods:
         return incarceration_events
+
+    all_periods: List[Union[StateIncarcerationPeriod, StateSupervisionPeriod]] = []
+    all_periods.extend(supervision_periods)
+    all_periods.extend(incarceration_periods)
+
+    # The IP pre-processing function needs to know if this person has any periods that
+    # ended because of death to handle any open periods or periods that extend past their death date accordingly.
+    earliest_death_date: Optional[date] = find_earliest_date_of_period_ending_in_death(
+        periods=all_periods
+    )
 
     county_of_residence: Optional[str] = extract_county_of_residence_from_rows(
         persons_to_recent_county_of_residence
@@ -127,6 +140,7 @@ def find_incarceration_events(
             incarceration_periods,
             incarceration_period_to_judicial_district,
             county_of_residence,
+            earliest_death_date,
         )
     )
 
@@ -137,6 +151,7 @@ def find_incarceration_events(
             supervision_sentences,
             incarceration_periods,
             county_of_residence,
+            earliest_death_date,
         )
     )
 
@@ -149,6 +164,7 @@ def find_all_admission_release_events(
     supervision_sentences: List[StateSupervisionSentence],
     original_incarceration_periods: List[StateIncarcerationPeriod],
     county_of_residence: Optional[str],
+    earliest_death_date: Optional[date] = None,
 ) -> List[Union[IncarcerationAdmissionEvent, IncarcerationReleaseEvent]]:
     """Given the |original_incarceration_periods| generates and returns all IncarcerationAdmissionEvents and
     IncarcerationReleaseEvents.
@@ -170,6 +186,7 @@ def find_all_admission_release_events(
         collapse_temporary_custody_periods_with_revocation=True,
         collapse_transfers_with_different_pfi=should_collapse_transfers_with_different_pfi,
         overwrite_facility_information_in_transfers=False,
+        earliest_death_date=earliest_death_date,
     )
 
     incarceration_periods_for_admissions: List[
@@ -249,6 +266,7 @@ def find_all_stay_events(
     original_incarceration_periods: List[StateIncarcerationPeriod],
     incarceration_period_to_judicial_district: Dict[int, Dict[Any, Any]],
     county_of_residence: Optional[str],
+    earliest_death_date: Optional[date] = None,
 ) -> List[IncarcerationStayEvent]:
     """Given the |original_incarceration_periods| generates and returns all IncarcerationStayEvents based on the
     final day relevant months.
@@ -264,6 +282,7 @@ def find_all_stay_events(
         collapse_temporary_custody_periods_with_revocation=False,
         collapse_transfers_with_different_pfi=False,
         overwrite_facility_information_in_transfers=False,
+        earliest_death_date=earliest_death_date,
     )
 
     incarceration_periods: List[

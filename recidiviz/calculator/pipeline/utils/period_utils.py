@@ -21,7 +21,17 @@ from typing import List, Callable, Optional
 
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.persistence.entity.state.entities import PeriodType
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodReleaseReason,
+)
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodTerminationReason,
+)
+from recidiviz.persistence.entity.state.entities import (
+    PeriodType,
+    StateIncarcerationPeriod,
+    StateSupervisionPeriod,
+)
 
 
 def sort_periods_by_set_dates_and_statuses(
@@ -190,5 +200,40 @@ def find_last_terminated_period_before_date(
 
     if previous_periods:
         return max(previous_periods, key=lambda p: p.end_date_exclusive or date.min)
+
+    return None
+
+
+def find_earliest_date_of_period_ending_in_death(
+    periods: Optional[List[PeriodType]],
+) -> Optional[date]:
+    """Looks for the incarceration or supervision period that ended in death and a set end_date_exclusive,
+    and returns the earliest end_date_exclusive of the periods ending in death.
+
+    If no terminated period is ending in death, returns None.
+    """
+
+    def _is_period_ending_in_death(period: PeriodType) -> bool:
+        """Whether or not the period terminates in death."""
+        if isinstance(period, StateIncarcerationPeriod) and period.release_reason:
+            return period.release_reason == StateIncarcerationPeriodReleaseReason.DEATH
+        if isinstance(period, StateSupervisionPeriod) and period.termination_reason:
+            return (
+                period.termination_reason
+                == StateSupervisionPeriodTerminationReason.DEATH
+            )
+        return False
+
+    if not periods:
+        return None
+
+    dates_of_death: List[date] = []
+    for pd in periods:
+        if _is_period_ending_in_death(pd) and pd.end_date_exclusive:
+            # We should only return a date for a period that has a set end_date_exclusive
+            dates_of_death.append(pd.end_date_exclusive)
+
+    if dates_of_death:
+        return min(dates_of_death)
 
     return None

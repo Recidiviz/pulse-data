@@ -180,6 +180,7 @@ class TestPrepareSupervisionPeriodsForCalculations(unittest.TestCase):
         updated_periods = prepare_supervision_periods_for_calculations(
             [supervision_period_1, supervision_period_2, supervision_period_3],
             drop_federal_and_other_country_supervision_periods=True,
+            earliest_death_date=supervision_period_1.termination_date,
         )
 
         self.assertEqual([supervision_period_1], updated_periods)
@@ -206,6 +207,7 @@ class TestPrepareSupervisionPeriodsForCalculations(unittest.TestCase):
         updated_periods = prepare_supervision_periods_for_calculations(
             [supervision_period_1, supervision_period_2],
             drop_federal_and_other_country_supervision_periods=True,
+            earliest_death_date=supervision_period_1.termination_date,
         )
 
         updated_period_2 = StateSupervisionPeriod.new_with_defaults(
@@ -226,28 +228,30 @@ class TestPrepareSupervisionPeriodsForCalculations(unittest.TestCase):
         period ending in death is dropped"""
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
-            start_date=date(1999, 1, 15),
-            status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
+            start_date=date(2020, 1, 1),
+            termination_date=date(2020, 1, 31),
+            status=StateSupervisionPeriodStatus.TERMINATED,
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
-            start_date=date(1999, 1, 15),
-            termination_date=date(2001, 1, 1),
-            status=StateSupervisionPeriodStatus.TERMINATED,
+            start_date=date(2020, 1, 15),
+            status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
         )
 
-        supervision_period_3 = StateSupervisionPeriod.new_with_defaults(
+        updated_sp2 = StateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
-            start_date=date(2001, 1, 1),
-            termination_date=date(2001, 1, 30),
+            start_date=date(2020, 1, 15),
+            termination_date=date(2020, 3, 1),
             termination_reason=StateSupervisionPeriodTerminationReason.DEATH,
             status=StateSupervisionPeriodStatus.TERMINATED,
+            admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
         )
 
         updated_periods = prepare_supervision_periods_for_calculations(
-            [supervision_period_1, supervision_period_2, supervision_period_3],
+            [supervision_period_1, supervision_period_2],
             drop_federal_and_other_country_supervision_periods=True,
+            earliest_death_date=date(2020, 3, 1),
         )
 
-        self.assertEqual([supervision_period_2, supervision_period_3], updated_periods)
+        self.assertEqual([supervision_period_1, updated_sp2], updated_periods)

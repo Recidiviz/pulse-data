@@ -19,7 +19,7 @@ supervision sentences as successfully completed or not."""
 import logging
 from collections import defaultdict
 from datetime import date
-from typing import List, Dict, Tuple, Optional, Any, NamedTuple, Type, Set
+from typing import List, Dict, Tuple, Optional, Any, NamedTuple, Type, Set, Union
 
 import attr
 from dateutil.relativedelta import relativedelta
@@ -45,6 +45,9 @@ from recidiviz.calculator.pipeline.utils.calculator_utils import (
 )
 from recidiviz.calculator.pipeline.utils.incarceration_period_index import (
     IncarcerationPeriodIndex,
+)
+from recidiviz.calculator.pipeline.utils.period_utils import (
+    find_earliest_date_of_period_ending_in_death,
 )
 from recidiviz.calculator.pipeline.utils.revocation_utils import (
     get_revocation_details,
@@ -214,8 +217,20 @@ def find_supervision_time_buckets(
         filter_out_federal_and_other_country_supervision_periods(state_code)
     )
 
+    all_periods: List[Union[StateIncarcerationPeriod, StateSupervisionPeriod]] = []
+    all_periods.extend(supervision_periods)
+    all_periods.extend(incarceration_periods)
+
+    # The SP pre-processing function needs to know if this person has any periods that
+    # ended because of death to handle any open periods or periods that extend past their death date accordingly.
+    earliest_death_date: Optional[date] = find_earliest_date_of_period_ending_in_death(
+        periods=all_periods
+    )
+
     supervision_periods = prepare_supervision_periods_for_calculations(
-        supervision_periods, should_drop_federal_and_other_country
+        supervision_periods,
+        should_drop_federal_and_other_country,
+        earliest_death_date,
     )
 
     should_collapse_transfers_with_different_pfi = (
@@ -233,6 +248,7 @@ def find_supervision_time_buckets(
         collapse_temporary_custody_periods_with_revocation=False,
         collapse_transfers_with_different_pfi=should_collapse_transfers_with_different_pfi,
         overwrite_facility_information_in_transfers=True,
+        earliest_death_date=earliest_death_date,
     )
 
     incarceration_periods = prepare_incarceration_periods_for_calculations(
