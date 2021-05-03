@@ -46,6 +46,7 @@ from recidiviz.big_query.big_query_client import BigQueryClient
 # metadata_base in this class. We would like to eventually have a better
 # way to achieve this and have the tables loaded alongside the DeclarativeMeta base class.
 # pylint:disable=unused-import
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.operations import schema as operations_schema
 from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.database.schema.state import schema as state_schema
@@ -77,6 +78,7 @@ from recidiviz.persistence.database.schema_utils import (
 from recidiviz.persistence.database.schema_table_region_filtered_query_builder import (
     CloudSqlSchemaTableRegionFilteredQueryBuilder,
     BigQuerySchemaTableRegionFilteredQueryBuilder,
+    FederatedSchemaTableRegionFilteredQueryBuilder,
 )
 
 
@@ -199,6 +201,32 @@ class CloudSqlToBQConfig:
             table,
             columns,
             region_codes_to_exclude=self.region_codes_to_exclude,
+        )
+        return query_builder.full_query()
+
+    def get_single_state_table_export_query(
+        self, table: Table, state_code: StateCode
+    ) -> str:
+        """Return a formatted SQL query for a given CloudSQL schema table that can be
+        used to export data for a given state to BigQuery.
+
+        For association tables, it adds a region code column to the select statement
+        through a join.
+
+        Throws if the provided state_code is in the list of region_codes_to_exclude.
+        """
+        if state_code.value in self.region_codes_to_exclude:
+            raise ValueError(
+                "State [{state_code}] listed in region codes to exclude - "
+                "cannot produce query."
+            )
+
+        columns = self._get_table_columns_to_export(table)
+        query_builder = FederatedSchemaTableRegionFilteredQueryBuilder(
+            self.metadata_base,
+            table,
+            columns,
+            region_codes_to_include=[state_code.value],
         )
         return query_builder.full_query()
 
