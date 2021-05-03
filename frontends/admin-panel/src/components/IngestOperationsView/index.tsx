@@ -47,6 +47,7 @@ import {
 import IngestQueuesTable from "./IngestQueuesTable";
 import IngestInstanceCard from "./IngestInstanceCard";
 import IngestStateSelector from "../IngestStateSelector";
+import IngestLogsCard from "./IngestLogsCard";
 
 const IngestOperationsView = (): JSX.Element => {
   const env = window.RUNTIME_GCP_ENVIRONMENT || "unknown env";
@@ -273,6 +274,25 @@ const IngestOperationsView = (): JSX.Element => {
                 );
               })}
         </Row>
+      </div>
+
+      <Divider orientation="left" style={{ marginTop: 24 }}>
+        Ingest Logs
+      </Divider>
+      <br />
+      <div
+        className="site-card-wrapper"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-evenly",
+        }}
+      >
+        {stateCode ? (
+          <IngestLogsCard stateCode={stateCode} env={env} />
+        ) : (
+          <Card title="Summary" loading style={{ width: 1000 }} />
+        )}
       </div>
     </>
   );
