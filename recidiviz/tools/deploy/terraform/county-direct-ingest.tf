@@ -15,11 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-# States with Terraform-managed infrastructure for direct ingest
-locals {
-  direct_ingest_state_codes = yamldecode(file("${path.module}/direct_ingest_state_codes.yaml"))
+module "county_direct_ingest_buckets" {
+  for_each = toset(local.direct_ingest_county_codes)
+  source   = "./modules/county-direct-ingest-resources"
 
-  sftp_state_alpha_codes = yamldecode(file("${path.module}/sftp_state_alpha_codes.yaml"))
-
-  direct_ingest_county_codes = yamldecode(file("${path.module}/direct_ingest_county_codes.yaml"))
+  county_code       = each.key
+  region            = "us-east1"
+  project_id       = var.project_id
 }

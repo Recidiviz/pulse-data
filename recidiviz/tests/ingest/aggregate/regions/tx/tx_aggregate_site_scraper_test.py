@@ -45,7 +45,7 @@ class TestTxAggregateSiteScraper(TestCase):
             "https://www.tcjs.state.tx.us/docs/AbbreviatedPopReports/"
             "Abbreviated Pop Rpt Jan 2021.pdf"
         )
-        url3 = "https://www.tcjs.state.tx.us/wp-content/uploads/2021/04/AbbreRptCurrent.pdf"
+        url3 = "https://www.tcjs.state.tx.us/wp-content/uploads/2021/05/AbbreRptCurrent.pdf"
         expected_urls = {url1, url2, url3}
 
         urls = tx_aggregate_site_scraper.get_urls_to_download()
