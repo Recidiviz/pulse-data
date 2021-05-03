@@ -136,8 +136,8 @@ def query_periods_with_all_non_facility_info(period_type: PeriodType) -> str:
             # applicable. Removing them leads to cleaner period outputs without deeply
             # affecting the correctness of our system (since we aren't tasked with
             # maintaining a perfect ledger).
-            po.start_date != po.end_date
-            AND w.start_date != w.end_date
+            (po.docno IS NULL OR po.start_date != po.end_date)
+            AND (w.docno IS NULL OR w.start_date != w.end_date)
         """
     raise ValueError(f"Unexpected PeriodType {period_type}")
 
@@ -268,7 +268,7 @@ PO_PERIODS_FRAGMENT = """
       LAG(empl_sdesc) OVER w AS prev_empl_sdesc,
       LAG(move_typ) OVER w AS prev_move_typ,
       FROM casemgr_movements
-      WINDOW w AS (PARTITION BY docno ORDER BY case_dtd ASC, move_dtd ASC, move_srl ASC)
+      WINDOW w AS (PARTITION BY docno, incrno ORDER BY case_dtd ASC, move_dtd ASC, move_srl ASC)
     ),
     # Only keep periods where the person transitioned POs or transitioned between supervision, prison, or history.
     filtered_casemgr AS (
@@ -409,9 +409,7 @@ ALL_PERIODS_FRAGMENT = f"""
       SELECT 
         docno, 
         incrno,
-        statno, 
         stat_cd,
-        SAFE_CAST(SAFE_CAST(stat_intake_dtd AS DATETIME) AS DATE) AS stat_intake_dtd,
         SAFE_CAST(SAFE_CAST(stat_strt_dtd AS DATETIME) AS DATE) AS start_date,
         COALESCE(
             SAFE_CAST(SAFE_CAST(stat_rls_dtd AS DATETIME) AS DATE),
