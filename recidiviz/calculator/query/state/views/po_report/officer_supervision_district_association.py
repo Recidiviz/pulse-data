@@ -44,7 +44,6 @@ OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_QUERY_TEMPLATE = """
                 -- Only the following supervision types should be included in the PO report --
                 AND supervision_type IN ('DUAL', 'PROBATION', 'PAROLE', 'INTERNAL_UNKNOWN')
                 -- Only the following states are supported for the PO report --
-                AND state_code = 'US_ID'
                 AND officer_external_id IS NOT NULL
                 AND {thirty_six_month_filter}
              GROUP BY state_code, year, month, officer_external_id, district_name),
