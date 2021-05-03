@@ -1244,6 +1244,7 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
             collapse_temporary_custody_periods_with_revocation=False,
             collapse_transfers_with_different_pfi=True,
             overwrite_facility_information_in_transfers=True,
+            earliest_death_date=incarceration_period_1.release_date,
         )
 
         validated_incarceration_periods = (

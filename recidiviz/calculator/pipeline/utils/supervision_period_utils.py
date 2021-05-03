@@ -41,6 +41,7 @@ SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT = 24
 def prepare_supervision_periods_for_calculations(
     supervision_periods: List[StateSupervisionPeriod],
     drop_federal_and_other_country_supervision_periods: bool,
+    earliest_death_date: Optional[date] = None,
 ) -> List[StateSupervisionPeriod]:
     supervision_periods = _drop_placeholder_periods(supervision_periods)
 
@@ -51,12 +52,9 @@ def prepare_supervision_periods_for_calculations(
 
     supervision_periods = _infer_missing_dates_and_statuses(supervision_periods)
 
-    supervision_periods_terminating_with_death: List[
-        StateSupervisionPeriod
-    ] = _supervision_periods_ending_in_death(supervision_periods)
-    if supervision_periods_terminating_with_death:
+    if earliest_death_date:
         supervision_periods = _drop_and_close_open_supervision_periods_for_deceased(
-            supervision_periods, supervision_periods_terminating_with_death[-1]
+            supervision_periods, earliest_death_date
         )
 
     return supervision_periods
@@ -200,76 +198,34 @@ def _supervision_periods_overlapping_with_date(
     return overlapping_periods
 
 
-def _supervision_periods_ending_in_death(
-    supervision_periods: List[StateSupervisionPeriod],
-) -> List[StateSupervisionPeriod]:
-    """Returns the supervision periods that have termination_reason == DEATH"""
-    return [
-        sp
-        for sp in supervision_periods
-        if sp.termination_reason == StateSupervisionPeriodTerminationReason.DEATH
-    ]
-
-
 def _drop_and_close_open_supervision_periods_for_deceased(
     supervision_periods: List[StateSupervisionPeriod],
-    period_ending_in_death: StateSupervisionPeriod,
+    earliest_death_date: date,
 ) -> List[StateSupervisionPeriod]:
     """Updates supervision periods for people who are deceased by
-    - Dropping open supervision periods that start after the period_ending_in_death.termination_date
-    - Dropping open supervision periods whose start dates are outside of the date range of the
-      period_ending_in_death but are covered by an adjacent period
-    - Closing any open supervision period that start within the date range of the period_ending_in_death
-      and uses the termination information of the period_ending_in_death"""
+    - Dropping open supervision periods that start after the |earliest_death_date|
+    - Setting supervision periods with termination dates after the |earliest_death_date| to have a termination
+      date of |earliest_death_date| and a termination reason of DEATH
+    - Closing any open supervision period that start before the |earliest_death_date| to have a termination date
+      of |earliest_death_date| and a termination reason of DEATH"""
 
     updated_periods: List[StateSupervisionPeriod] = []
-    date_of_death = period_ending_in_death.termination_date
 
-    for index, sp in enumerate(supervision_periods):
-        previous_sp = supervision_periods[index - 1] if index > 0 else None
-        next_sp = (
-            supervision_periods[index + 1]
-            if index < len(supervision_periods) - 1
-            else None
-        )
-
-        if not period_ending_in_death.start_date or not date_of_death:
-            raise ValueError(
-                f"Period ending in death cannot have unset dates: {period_ending_in_death}"
-            )
-
+    for sp in supervision_periods:
         if not sp.start_date:
-            raise ValueError(f"Period cannot have unset dates: {sp}")
+            raise ValueError(f"Period cannot have unset start dates: {sp}")
 
-        if sp.start_date >= date_of_death:
+        if sp.start_date >= earliest_death_date:
             # Drop open supervision periods that start after the person's death
             continue
 
-        if sp.termination_date is None:
-            if period_ending_in_death.duration.contains_day(sp.start_date):
-                # The open supervision period has a start_date that is captured by the
-                # period that ends in the person's death, so we close this period with
-                # the termination information from the period ending in death
-                sp.termination_date = date_of_death
-                sp.termination_reason = StateSupervisionPeriodTerminationReason.DEATH
-                sp.termination_reason_raw_text = (
-                    period_ending_in_death.termination_reason_raw_text
-                )
-                sp.status = StateSupervisionPeriodStatus.TERMINATED
-
-            else:
-                # Drop open supervision periods that are started prior to the duration of
-                # the period ending in death
-                if (
-                    previous_sp and previous_sp.duration.contains_day(sp.start_date)
-                ) or (next_sp and next_sp.duration.contains_day(sp.start_date)):
-                    # Supervision period start date is captured by adjacent supervision period
-                    continue
-
-                raise ValueError(
-                    f"There is an open supervision period with supervision_period_id {sp.supervision_period_id}"
-                    "that is not captured by the periods it is adjacent to",
-                )
+        if (sp.termination_date is None) or (earliest_death_date < sp.termination_date):
+            # If the supervision period is open, or if the termination_date is after
+            # the earliest_death_date, set the termination_date to the
+            # earliest_death_date and update the termination_reason and status
+            sp.termination_date = earliest_death_date
+            sp.termination_reason = StateSupervisionPeriodTerminationReason.DEATH
+            sp.status = StateSupervisionPeriodStatus.TERMINATED
 
         updated_periods.append(sp)
 

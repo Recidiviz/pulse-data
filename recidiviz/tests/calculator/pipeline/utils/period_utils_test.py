@@ -23,14 +23,23 @@ from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.utils.period_utils import (
     find_last_terminated_period_before_date,
+    find_earliest_date_of_period_ending_in_death,
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
 )
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodStatus,
+    StateIncarcerationPeriodReleaseReason,
+)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodStatus,
+    StateSupervisionPeriodTerminationReason,
 )
-from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
+from recidiviz.persistence.entity.state.entities import (
+    StateSupervisionPeriod,
+    StateIncarcerationPeriod,
+)
 
 
 class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
@@ -269,3 +278,176 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
         )
 
         self.assertIsNone(most_recently_terminated_period)
+
+
+class TestEarliestPeriodEndingInDeath(unittest.TestCase):
+    """Tests the find_earliest_period_ending_in_death function."""
+
+    def test_find_earliest_period_ending_in_death_in_sp(self):
+        supervision_period_death = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_XX",
+            start_date=date(2000, 1, 1),
+            termination_date=date(2005, 1, 2),
+            termination_reason=StateSupervisionPeriodTerminationReason.DEATH,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            admission_date=date(2005, 1, 1),
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+        )
+
+        earliest_date_of_period_ending_in_death = (
+            find_earliest_date_of_period_ending_in_death(
+                periods=[
+                    supervision_period_death,
+                    incarceration_period,
+                ],
+            )
+        )
+
+        self.assertEqual(
+            supervision_period_death.end_date_exclusive,
+            earliest_date_of_period_ending_in_death,
+        )
+
+    def test_find_earliest_period_ending_in_death_multiple_ip_death(self):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_XX",
+            start_date=date(2000, 1, 1),
+            termination_date=date(2005, 1, 2),
+            status=StateSupervisionPeriodStatus.TERMINATED,
+        )
+
+        later_death_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            admission_date=date(2005, 1, 3),
+            release_date=date(2005, 1, 6),
+            release_reason=StateIncarcerationPeriodReleaseReason.DEATH,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+        )
+
+        earliest_death_incarceration_period = (
+            StateIncarcerationPeriod.new_with_defaults(
+                state_code="US_XX",
+                admission_date=date(2005, 1, 3),
+                release_date=date(2005, 1, 4),
+                release_reason=StateIncarcerationPeriodReleaseReason.DEATH,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            )
+        )
+
+        earliest_date_of_period_ending_in_death = (
+            find_earliest_date_of_period_ending_in_death(
+                periods=[
+                    supervision_period,
+                    later_death_incarceration_period,
+                    earliest_death_incarceration_period,
+                ],
+            )
+        )
+
+        self.assertEqual(
+            earliest_death_incarceration_period.end_date_exclusive,
+            earliest_date_of_period_ending_in_death,
+        )
+
+    def test_find_earliest_period_ending_in_death_no_deaths(self):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_XX",
+            start_date=date(2000, 1, 1),
+            termination_date=date(2005, 1, 2),
+            status=StateSupervisionPeriodStatus.TERMINATED,
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            admission_date=date(2005, 1, 3),
+            release_date=date(2005, 1, 6),
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+        )
+
+        earliest_date_of_period_ending_in_death = (
+            find_earliest_date_of_period_ending_in_death(
+                periods=[
+                    supervision_period,
+                    incarceration_period,
+                ],
+            )
+        )
+
+        self.assertIsNone(earliest_date_of_period_ending_in_death)
+
+    def test_find_earliest_period_ending_in_death_both_sp_ip_deaths(self):
+        supervision_period_death = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_XX",
+            start_date=date(2000, 1, 1),
+            termination_date=date(2005, 1, 4),
+            termination_reason=StateSupervisionPeriodTerminationReason.DEATH,
+            status=StateSupervisionPeriodStatus.TERMINATED,
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            admission_date=date(2003, 1, 3),
+            release_date=date(2004, 1, 3),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+        )
+
+        incarceration_period_death = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            admission_date=date(2004, 1, 3),
+            release_date=date(2005, 1, 3),
+            release_reason=StateIncarcerationPeriodReleaseReason.DEATH,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+        )
+
+        earliest_date_of_period_ending_in_death = (
+            find_earliest_date_of_period_ending_in_death(
+                periods=[
+                    supervision_period_death,
+                    incarceration_period,
+                    incarceration_period_death,
+                ],
+            )
+        )
+
+        self.assertEqual(
+            incarceration_period_death.end_date_exclusive,
+            earliest_date_of_period_ending_in_death,
+        )
+
+    def test_find_earliest_period_ending_in_death_no_end_date(self):
+        supervision_period_death = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_XX",
+            start_date=date(2000, 1, 1),
+            termination_reason=StateSupervisionPeriodTerminationReason.DEATH,
+            status=StateSupervisionPeriodStatus.TERMINATED,
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            admission_date=date(2003, 1, 3),
+            release_date=date(2004, 1, 3),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+        )
+
+        incarceration_period_death = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            admission_date=date(2004, 1, 3),
+            release_reason=StateIncarcerationPeriodReleaseReason.DEATH,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+        )
+
+        earliest_period_ending_in_death = find_earliest_date_of_period_ending_in_death(
+            periods=[
+                supervision_period_death,
+                incarceration_period,
+                incarceration_period_death,
+            ],
+        )
+
+        self.assertIsNone(earliest_period_ending_in_death)
