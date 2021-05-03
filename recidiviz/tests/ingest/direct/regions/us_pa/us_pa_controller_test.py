@@ -2287,6 +2287,18 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                                         full_name="BENES, ELAINE",
                                                     ),
                                                 ),
+                                                StateSupervisionContact(
+                                                    state_supervision_contact_id="6",
+                                                    contact_date="2016-10-03",
+                                                    contact_type="Collateral-Home",
+                                                    location="None-Home",
+                                                    status="No",
+                                                    contacted_agent=StateAgent(
+                                                        state_agent_id="444123",
+                                                        agent_type="SUPERVISION_OFFICER",
+                                                        full_name="BENES, ELAINE",
+                                                    ),
+                                                ),
                                             ]
                                         )
                                     ]
@@ -5022,8 +5034,23 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             status_raw_text="NO",
             contacted_agent=p2_sp_2_1.supervising_officer,
         )
+
+        p2_sc_2_3 = entities.StateSupervisionContact.new_with_defaults(
+            external_id="6",
+            person=person_2,
+            supervision_periods=[p2_placeholder_sp_for_contacts],
+            state_code=_STATE_CODE_UPPER,
+            contact_date=datetime.date(year=2016, month=10, day=3),
+            contact_type=StateSupervisionContactType.INTERNAL_UNKNOWN,
+            contact_type_raw_text="COLLATERAL-HOME",
+            location=StateSupervisionContactLocation.RESIDENCE,
+            location_raw_text="NONE-HOME",
+            status=StateSupervisionContactStatus.ATTEMPTED,
+            status_raw_text="NO",
+            contacted_agent=p2_sp_2_1.supervising_officer,
+        )
         p2_placeholder_sp_for_contacts.supervision_contacts.extend(
-            [p2_sc_2_2, p2_sc_2_1]
+            [p2_sc_2_3, p2_sc_2_2, p2_sc_2_1]
         )
         p2_placeholder_ss_for_contacts.supervision_periods.append(
             p2_placeholder_sp_for_contacts
