@@ -617,12 +617,20 @@ state_incarceration_sentence_incarceration_period_association_table = Table(
         Integer,
         ForeignKey("state_incarceration_sentence.incarceration_sentence_id"),
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
+            object_name="incarceration sentence"
+        ),
     ),
     Column(
         "incarceration_period_id",
         Integer,
         ForeignKey("state_incarceration_period.incarceration_period_id"),
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="incarceration period"),
+    ),
+    comment=ASSOCIATON_TABLE_COMMENT_TEMPLATE.format(
+        first_object_name_plural="incarceration sentences",
+        second_object_name_plural="incarceration periods",
     ),
 )
 
@@ -634,12 +642,20 @@ state_incarceration_sentence_supervision_period_association_table = Table(
         Integer,
         ForeignKey("state_incarceration_sentence.incarceration_sentence_id"),
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
+            object_name="incarceration sentence"
+        ),
     ),
     Column(
         "supervision_period_id",
         Integer,
         ForeignKey("state_supervision_period.supervision_period_id"),
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="supervision period"),
+    ),
+    comment=ASSOCIATON_TABLE_COMMENT_TEMPLATE.format(
+        first_object_name_plural="incarceration sentences",
+        second_object_name_plural="supervision periods",
     ),
 )
 
@@ -702,12 +718,18 @@ state_incarceration_period_program_assignment_association_table = Table(
         Integer,
         ForeignKey("state_incarceration_period.incarceration_period_id"),
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="incarceration period"),
     ),
     Column(
         "program_assignment_id",
         Integer,
         ForeignKey("state_program_assignment.program_assignment_id"),
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="program assignment"),
+    ),
+    comment=ASSOCIATON_TABLE_COMMENT_TEMPLATE.format(
+        first_object_name_plural="incarceration periods",
+        second_object_name_plural="program assignments",
     ),
 )
 
@@ -779,8 +801,18 @@ state_parole_decision_decision_agent_association_table = Table(
         Integer,
         ForeignKey("state_parole_decision.parole_decision_id"),
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="parole decision"),
     ),
-    Column("agent_id", Integer, ForeignKey("state_agent.agent_id"), index=True),
+    Column(
+        "agent_id",
+        Integer,
+        ForeignKey("state_agent.agent_id"),
+        index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="fine"),
+    ),
+    comment=ASSOCIATON_TABLE_COMMENT_TEMPLATE.format(
+        first_object_name_plural="parole decisions", second_object_name_plural="agents"
+    ),
 )
 
 state_supervision_violation_response_decision_agent_association_table = Table(
@@ -850,6 +882,7 @@ class _ReferencesStateSentenceGroupSharedColumns:
             ),
             index=True,
             nullable=False,
+            comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="sentence group"),
         )
 
 
@@ -1951,27 +1984,88 @@ class _StateIncarcerationSentenceSharedColumns(
             raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)  # type: ignore
 
-    external_id = Column(String(255), index=True)
-    status = Column(state_sentence_status, nullable=False)
-    status_raw_text = Column(String(255))
-    incarceration_type = Column(state_incarceration_type)
-    incarceration_type_raw_text = Column(String(255))
-    date_imposed = Column(Date)
-    start_date = Column(Date)
-    projected_min_release_date = Column(Date)
-    projected_max_release_date = Column(Date)
-    completion_date = Column(Date)
-    parole_eligibility_date = Column(Date)
-    state_code = Column(String(255), nullable=False, index=True)
-    county_code = Column(String(255), index=True)
-    min_length_days = Column(Integer)
-    max_length_days = Column(Integer)
-    is_life = Column(Boolean)
-    is_capital_punishment = Column(Boolean)
-    parole_possible = Column(Boolean)
-    initial_time_served_days = Column(Integer)
-    good_time_days = Column(Integer)
-    earned_time_days = Column(Integer)
+    external_id = Column(
+        String(255),
+        index=True,
+        comment=EXTERNAL_ID_COMMENT_TEMPLATE.format(
+            object_name="StateIncarcerationSentence"
+        ),
+    )
+    status = Column(
+        state_sentence_status,
+        nullable=False,
+        comment=STATE_CODE_COMMENT,
+    )
+    status_raw_text = Column(
+        String(255), comment="The raw text value of the status of the sentence."
+    )
+    incarceration_type = Column(
+        state_incarceration_type,
+        comment="The type of incarceration the person is being sentenced to.",
+    )
+    incarceration_type_raw_text = Column(
+        String(255),
+        comment="The raw text value of the type of incarceration of this sentence.",
+    )
+    date_imposed = Column(
+        Date,
+        comment="The date this sentence was imposed, e.g. the date of actual sentencing, but not necessarily the "
+        "date the person started serving the sentence",
+    )
+    start_date = Column(Date, comment="The date this sentence started.")
+    projected_min_release_date = Column(
+        Date,
+        comment="The earliest projected date the person may be released from incarceration due to this sentence.",
+    )
+    projected_max_release_date = Column(
+        Date,
+        comment="The latest projected date the person may be released from incarceration due to this sentence.",
+    )
+    completion_date = Column(Date, comment="The date this sentence has been completed.")
+    parole_eligibility_date = Column(
+        Date,
+        comment="The first date under which the person becomes eligible for parole under the terms of this sentence.",
+    )
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment="The code of the state under whose jurisdiction the sentence was imposed.",
+    )
+    county_code = Column(
+        String(255),
+        index=True,
+        comment="The code of the county under whose jurisdiction the sentence was imposed.",
+    )
+    min_length_days = Column(
+        Integer, comment="The minimum duration of this sentence in days."
+    )
+    max_length_days = Column(
+        Integer, comment="The maximum duration of this sentence in days."
+    )
+    is_life = Column(Boolean, comment="Whether or not this is a life sentence.")
+    is_capital_punishment = Column(
+        Boolean, comment="Whether or not this is a sentence for the death penalty."
+    )
+    parole_possible = Column(
+        Boolean,
+        comment="Whether or not the person may be released to parole under the terms of this sentence.",
+    )
+    initial_time_served_days = Column(
+        Integer,
+        comment="The amount of any time already served (in days), to possible be credited against "
+        "the overall sentence duration.",
+    )
+    good_time_days = Column(
+        Integer,
+        comment="Any good time (in days) the person has credited against this sentence due to good conduct, a.k.a. "
+        "time off for good behavior, if applicable.",
+    )
+    earned_time_days = Column(
+        Integer,
+        comment="Any earned time (in days) the person has credited against this sentence due to participation in "
+        "programming designed to reduce the likelihood of re-offense, if applicable.",
+    )
 
 
 class StateIncarcerationSentence(StateBase, _StateIncarcerationSentenceSharedColumns):
@@ -1986,9 +2080,28 @@ class StateIncarcerationSentence(StateBase, _StateIncarcerationSentenceSharedCol
             deferrable=True,
             initially="DEFERRED",
         ),
+        {
+            "comment": "The StateIncarcerationSentence object represents information about a single sentence to a "
+            "period of incarceration imposed as part of a group of related sentences. Multiple distinct, related "
+            "sentences to incarceration should be captured as separate incarceration sentence objects within the same "
+            "group. These sentences may, for example, be concurrent or consecutive to one another. Like the sentence "
+            "group, the StateIncarcerationSentence represents only the imposition of some sentence terms, "
+            "not an actual period of incarceration experienced by the person.<br /><br />A StateIncarcerationSentence "
+            "can reference many charges, and each charge can reference many sentences -- the relationship "
+            "is many:many.<br /><br />A StateIncarcerationSentence can have multiple child StateIncarcerationPeriods. "
+            "It can also have child StateSupervisionPeriods since a sentence to incarceration may result in a person "
+            "being paroled, for example. In some jurisdictions, this would be modeled as distinct sentences of "
+            "incarceration and supervision, but this is not universal."
+        },
     )
 
-    incarceration_sentence_id = Column(Integer, primary_key=True)
+    incarceration_sentence_id = Column(
+        Integer,
+        primary_key=True,
+        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(
+            object_name="incarceration sentence"
+        ),
+    )
 
     person = relationship("StatePerson", uselist=False)
     charges = relationship(
@@ -2022,16 +2135,26 @@ class StateIncarcerationSentenceHistory(
     """Represents the historical state of a StateIncarcerationSentence"""
 
     __tablename__ = "state_incarceration_sentence_history"
+    __table_args__ = {
+        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
+            object_name="StateIncarcerationSentence"
+        )
+    }
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
-    incarceration_sentence_history_id = Column(Integer, primary_key=True)
+    incarceration_sentence_history_id = Column(
+        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
+    )
 
     incarceration_sentence_id = Column(
         Integer,
         ForeignKey("state_incarceration_sentence.incarceration_sentence_id"),
         nullable=False,
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
+            object_name="incarceration sentence"
+        ),
     )
 
 
@@ -2813,16 +2936,40 @@ class _StateParoleDecisionSharedColumns(_ReferencesStatePersonSharedColumns):
             raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)  # type: ignore
 
-    external_id = Column(String(255), index=True)
+    external_id = Column(
+        String(255),
+        index=True,
+        comment=EXTERNAL_ID_COMMENT_TEMPLATE.format(object_name="StateParoleDecision"),
+    )
 
-    decision_date = Column(Date)
-    corrective_action_deadline = Column(Date)
-    state_code = Column(String(255), nullable=False, index=True)
-    county_code = Column(String(255), index=True)
-    decision_outcome = Column(state_parole_decision_outcome)
-    decision_outcome_raw_text = Column(String(255))
-    decision_reasoning = Column(String(255))
-    corrective_action = Column(String(255))
+    decision_date = Column(Date, comment="The date on which the decision was made.")
+    corrective_action_deadline = Column(
+        Date,
+        comment="The date by which any corrective actions must be taken to ensure parole is granted, if applicable.",
+    )
+    state_code = Column(
+        String(255), nullable=False, index=True, comment=STATE_CODE_COMMENT
+    )
+    county_code = Column(
+        String(255),
+        index=True,
+        comment="The code of the county under whose jurisdiction the parole hearing is convened.",
+    )
+    decision_outcome = Column(
+        state_parole_decision_outcome, comment="The outcome of the decision."
+    )
+    decision_outcome_raw_text = Column(
+        String(255), comment="The raw text value of the outcome of the decision."
+    )
+    decision_reasoning = Column(
+        String(255),
+        comment="Descriptive notes describing the reasoning behind the decision.",
+    )
+    corrective_action = Column(
+        String(255),
+        comment="Any corrective actions that must be taken by the person to ensure their parole is granted, "
+        "if applicable.",
+    )
 
     @declared_attr
     def incarceration_period_id(self) -> Column:
@@ -2846,8 +2993,17 @@ class StateParoleDecision(StateBase, _StateParoleDecisionSharedColumns):
             deferrable=True,
             initially="DEFERRED",
         ),
+        {
+            "comment": "The StateParoleDecision object represents information about a particular parole hearing deciding "
+            "whether or not to grant parole to a currently incarcerated person. This includes information about "
+            "the context of the hearing and also its final decision/outcome."
+        },
     )
-    parole_decision_id = Column(Integer, primary_key=True)
+    parole_decision_id = Column(
+        Integer,
+        primary_key=True,
+        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(object_name="parole decision"),
+    )
 
     person = relationship("StatePerson", uselist=False)
     decision_agents = relationship(
@@ -2863,16 +3019,24 @@ class StateParoleDecisionHistory(
     """Represents the historical state of a StateParoleDecision"""
 
     __tablename__ = "state_parole_decision_history"
+    __table_args__ = {
+        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
+            object_name="StateParoleDecision"
+        )
+    }
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
-    parole_decision_history_id = Column(Integer, primary_key=True)
+    parole_decision_history_id = Column(
+        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
+    )
 
     parole_decision_id = Column(
         Integer,
         ForeignKey("state_parole_decision.parole_decision_id"),
         nullable=False,
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="parole decision"),
     )
 
 
