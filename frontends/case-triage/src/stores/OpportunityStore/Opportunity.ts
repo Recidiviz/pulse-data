@@ -14,10 +14,18 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
+export enum OpportunityDeferralType {
+  REMINDER = "REMINDER",
+  ACTION_TAKEN = "ACTION_TAKEN",
+  INCORRECT_DATA = "INCORRECT_DATA",
+}
+
 export type Opportunity = {
   personExternalId: string;
   stateCode: string;
   supervisingOfficerExternalId: string;
   opportunityType: string;
   opportunityMetadata: { [index: string]: unknown };
+  deferredUntil?: string;
+  deferralType?: OpportunityDeferralType;
 };

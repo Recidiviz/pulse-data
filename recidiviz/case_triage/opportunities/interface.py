@@ -23,10 +23,18 @@ from sqlalchemy.orm import Session
 from recidiviz.case_triage.demo_helpers import (
     fake_officer_id_for_demo_user,
 )
-from recidiviz.case_triage.opportunities.types import OpportunityType
+from recidiviz.case_triage.opportunities.types import (
+    OpportunityDeferralType,
+    OpportunityType,
+)
+from recidiviz.case_triage.querier.querier import (
+    DemoCaseTriageQuerier,
+    CaseTriageQuerier,
+)
 from recidiviz.persistence.database.schema.case_triage.schema import (
     ETLClient,
     ETLOfficer,
+    ETLOpportunity,
     OpportunityDeferral,
 )
 
@@ -34,30 +42,33 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
 def _defer_opportunity(
     session: Session,
     officer_id: str,
-    client: ETLClient,
-    opportunity: OpportunityType,
+    etl_opportunity: ETLOpportunity,
+    deferral_type: OpportunityDeferralType,
     defer_until: datetime,
     reminder_requested: bool,
 ) -> None:
     """This method updates the opportunity_deferrals table with
     the given parameters."""
+
     insert_statement = (
         insert(OpportunityDeferral)
         .values(
-            person_external_id=client.person_external_id,
+            person_external_id=etl_opportunity.person_external_id,
             supervising_officer_external_id=officer_id,
-            state_code=client.state_code,
-            opportunity_type=opportunity.value,
+            state_code=etl_opportunity.state_code,
+            opportunity_type=etl_opportunity.opportunity_type,
+            deferral_type=deferral_type.value,
             deferred_until=defer_until,
             reminder_was_requested=reminder_requested,
-            opportunity_metadata={},
+            opportunity_metadata=etl_opportunity.opportunity_metadata,
         )
         .on_conflict_do_update(
             constraint="unique_person_officer_opportunity_triple",
             set_={
+                "deferral_type": deferral_type.value,
                 "deferred_until": defer_until,
                 "reminder_was_requested": reminder_requested,
-                "opportunity_metadata": {},
+                "opportunity_metadata": etl_opportunity.opportunity_metadata,
             },
         )
     )
@@ -73,16 +84,20 @@ class OpportunitiesInterface:
         session: Session,
         officer: ETLOfficer,
         client: ETLClient,
-        opportunity: OpportunityType,
+        opportunity_type: OpportunityType,
+        deferral_type: OpportunityDeferralType,
         defer_until: datetime,
         reminder_requested: bool,
     ) -> None:
         """Implements base opportunity deferral and commits back to database."""
+        etl_opportunity = CaseTriageQuerier.fetch_etl_opportunity(
+            session, officer, client, opportunity_type
+        )
         _defer_opportunity(
             session,
             officer.external_id,
-            client,
-            opportunity,
+            etl_opportunity,
+            deferral_type,
             defer_until,
             reminder_requested,
         )
@@ -98,15 +113,19 @@ class DemoOpportunitiesInterface:
         user_email: str,
         client: ETLClient,
         opportunity: OpportunityType,
+        deferral_type: OpportunityDeferralType,
         defer_until: datetime,
         reminder_requested: bool,
     ) -> None:
         """Implements base opportunity deferral and commits back to database."""
+        etl_opportunity = DemoCaseTriageQuerier.fetch_etl_opportunity(
+            client, opportunity
+        )
         _defer_opportunity(
             session,
             fake_officer_id_for_demo_user(user_email),
-            client,
-            opportunity,
+            etl_opportunity,
+            deferral_type,
             defer_until,
             reminder_requested,
         )
