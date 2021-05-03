@@ -31,7 +31,7 @@ class TestTxAggregateSiteScraper(TestCase):
     """Test that tx_aggregate_site_scraper correctly scrapes urls."""
 
     @patch.object(requests, "get")
-    @patch("datetime.date")
+    @patch("recidiviz.ingest.aggregate.regions.tx.tx_aggregate_site_scraper.date")
     def testGetAllUrls(self, mock_date: Mock, mockget: Mock) -> None:
         mockresponse = Mock()
         mockget.return_value = mockresponse
