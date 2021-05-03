@@ -3227,9 +3227,15 @@ class _StateSupervisionViolationTypeEntrySharedColumns(
             raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)  # type: ignore
 
-    state_code = Column(String(255), nullable=False, index=True)
-    violation_type = Column(state_supervision_violation_type)
-    violation_type_raw_text = Column(String(255))
+    state_code = Column(
+        String(255), nullable=False, index=True, comment=STATE_CODE_COMMENT
+    )
+    violation_type = Column(
+        state_supervision_violation_type, comment="The type of violation."
+    )
+    violation_type_raw_text = Column(
+        String(255), comment="The raw text value of the violation type."
+    )
 
     @declared_attr
     def supervision_violation_id(self) -> Column:
@@ -3238,6 +3244,9 @@ class _StateSupervisionViolationTypeEntrySharedColumns(
             ForeignKey("state_supervision_violation." "supervision_violation_id"),
             index=True,
             nullable=True,
+            comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
+                object_name="supervision violation"
+            ),
         )
 
 
@@ -3247,8 +3256,26 @@ class StateSupervisionViolationTypeEntry(
     """Represents a StateSupervisionViolationTypeEntry in the SQL schema."""
 
     __tablename__ = "state_supervision_violation_type_entry"
+    __table_args__ = {
+        "comment": "The StateSupervisionViolationTypeEntry object represents each specific violation "
+        "type that was composed within a single violation. Each supervision violation has "
+        "zero to many such violation types. For example, a single violation may have been "
+        "reported for both absconsion and a technical violation. However, it may also be "
+        "the case that separate violations were recorded for both an absconsion and a "
+        "technical violation which were related in the real world. The drawing line is "
+        "how the violation is itself reported in the source data: if a single violation"
+        " report filed by an agency staff member includes multiple types of violations, "
+        "then it will be ingested into our schema as a single supervision violation with"
+        " multiple supervision violation type entries."
+    }
 
-    supervision_violation_type_entry_id = Column(Integer, primary_key=True)
+    supervision_violation_type_entry_id = Column(
+        Integer,
+        primary_key=True,
+        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(
+            object_name="supervision violation type entry"
+        ),
+    )
 
     person = relationship("StatePerson", uselist=False)
 
@@ -3263,10 +3290,17 @@ class StateSupervisionViolationTypeEntryHistory(
     """
 
     __tablename__ = "state_supervision_violation_type_entry_history"
+    __table_args__ = {
+        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
+            object_name="StateSupervisionViolationTypeEntry"
+        )
+    }
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
-    supervision_violation_type_history_id = Column(Integer, primary_key=True)
+    supervision_violation_type_history_id = Column(
+        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
+    )
 
     supervision_violation_type_entry_id = Column(
         Integer,
@@ -3276,6 +3310,9 @@ class StateSupervisionViolationTypeEntryHistory(
         ),
         nullable=False,
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
+            object_name="supervision violation type entry"
+        ),
     )
 
 
@@ -3333,6 +3370,11 @@ class StateSupervisionViolatedConditionEntryHistory(
     """
 
     __tablename__ = "state_supervision_violated_condition_entry_history"
+    __table_args__ = {
+        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
+            object_name="StateSupervisionViolatedConditionEntry"
+        )
+    }
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
@@ -3346,6 +3388,9 @@ class StateSupervisionViolatedConditionEntryHistory(
         ),
         nullable=False,
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
+            object_name="supervision violation response decision entry"
+        ),
     )
 
 
@@ -3363,14 +3408,29 @@ class _StateSupervisionViolationSharedColumns(_ReferencesStatePersonSharedColumn
             raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)  # type: ignore
 
-    external_id = Column(String(255), index=True)
-    violation_type = Column(state_supervision_violation_type)
-    violation_type_raw_text = Column(String(255))
-    violation_date = Column(Date)
-    state_code = Column(String(255), nullable=False, index=True)
-    is_violent = Column(Boolean)
-    is_sex_offense = Column(Boolean)
-    violated_conditions = Column(String(255))
+    external_id = Column(
+        String(255),
+        index=True,
+        comment=EXTERNAL_ID_COMMENT_TEMPLATE.format(
+            object_name="StateSupervisionViolation"
+        ),
+    )
+    violation_type = Column(
+        state_supervision_violation_type,
+        comment="DEPRECATED. See #2668.",
+    )
+    violation_type_raw_text = Column(String(255), comment="DEPRECATED. See #2668.")
+    violation_date = Column(Date, comment="The date on which the violation took place.")
+    state_code = Column(
+        String(255), nullable=False, index=True, comment=STATE_CODE_COMMENT
+    )
+    is_violent = Column(
+        Boolean, comment="Whether or not the violation was violent in nature."
+    )
+    is_sex_offense = Column(
+        Boolean, comment="Whether or not the violation involved a sex offense."
+    )
+    violated_conditions = Column(String(255), comment="DEPRECATED. See #2668.")
 
     # TODO(#2668): Deprecated - remove this column from our schema.
     @declared_attr
@@ -3380,6 +3440,9 @@ class _StateSupervisionViolationSharedColumns(_ReferencesStatePersonSharedColumn
             ForeignKey("state_supervision_period.supervision_period_id"),
             index=True,
             nullable=True,
+            comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
+                object_name="supervision period"
+            ),
         )
 
 
@@ -3395,9 +3458,22 @@ class StateSupervisionViolation(StateBase, _StateSupervisionViolationSharedColum
             deferrable=True,
             initially="DEFERRED",
         ),
+        {
+            "comment": "The StateSupervisionViolation object represents any violations recorded against a person"
+            " during a period of supervision, such as technical violation or a new offense. A "
+            "StateSupervisionViolation has zero to many StateSupervisionViolationResponse children, "
+            "indicating any official response to the violation, e.g. a disciplinary response such as a "
+            "revocation back to prison or extension of supervision."
+        },
     )
 
-    supervision_violation_id = Column(Integer, primary_key=True)
+    supervision_violation_id = Column(
+        Integer,
+        primary_key=True,
+        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(
+            object_name="supervision violation"
+        ),
+    )
 
     person = relationship("StatePerson", uselist=False)
 
@@ -3424,16 +3500,26 @@ class StateSupervisionViolationHistory(
     """Represents the historical state of a StateSupervisionViolation"""
 
     __tablename__ = "state_supervision_violation_history"
+    __table_args__ = {
+        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
+            object_name="StateSupervisionViolation"
+        )
+    }
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
-    supervision_violation_history_id = Column(Integer, primary_key=True)
+    supervision_violation_history_id = Column(
+        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
+    )
 
     supervision_violation_id = Column(
         Integer,
         ForeignKey("state_supervision_violation.supervision_violation_id"),
         nullable=False,
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
+            object_name="supervision violation"
+        ),
     )
 
 
@@ -3456,11 +3542,25 @@ class _StateSupervisionViolationResponseDecisionEntrySharedColumns(
             raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)  # type: ignore
 
-    state_code = Column(String(255), nullable=False, index=True)
-    decision = Column(state_supervision_violation_response_decision)
-    decision_raw_text = Column(String(255))
-    revocation_type = Column(state_supervision_violation_response_revocation_type)
-    revocation_type_raw_text = Column(String(255))
+    state_code = Column(
+        String(255), nullable=False, index=True, comment=STATE_CODE_COMMENT
+    )
+    decision = Column(
+        state_supervision_violation_response_decision,
+        comment="A specific decision that was made in response, if applicable.",
+    )
+    decision_raw_text = Column(
+        String(255),
+        comment="The raw text value of the supervision violation response decision.",
+    )
+    revocation_type = Column(
+        state_supervision_violation_response_revocation_type,
+        comment="The specific type of revocation that the person will be subject to, if "
+        "applicable.",
+    )
+    revocation_type_raw_text = Column(
+        String(255), comment="The raw text value of the revocation type."
+    )
 
     @declared_attr
     def supervision_violation_response_id(self) -> Column:
@@ -3472,6 +3572,9 @@ class _StateSupervisionViolationResponseDecisionEntrySharedColumns(
             ),
             index=True,
             nullable=True,
+            comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
+                object_name="supervision violation response"
+            ),
         )
 
 
@@ -3483,8 +3586,21 @@ class StateSupervisionViolationResponseDecisionEntry(
     """
 
     __tablename__ = "state_supervision_violation_response_decision_entry"
+    __table_args__ = {
+        "comment": "The StateSupervisionViolationResponseDecisionEntry object represents each "
+        "specific decision made in response to a particular supervision violation. Each "
+        "supervision violation response has zero to many such decisions. Decisions are "
+        "essentially the final consequences of a violation, actions such as continuance, "
+        "privileges revoked, or revocation."
+    }
 
-    supervision_violation_response_decision_entry_id = Column(Integer, primary_key=True)
+    supervision_violation_response_decision_entry_id = Column(
+        Integer,
+        primary_key=True,
+        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(
+            object_name="supervision violation response decision " "entry"
+        ),
+    )
 
     person = relationship("StatePerson", uselist=False)
 
@@ -3499,11 +3615,16 @@ class StateSupervisionViolationResponseDecisionEntryHistory(
     """
 
     __tablename__ = "state_supervision_violation_response_decision_entry_history"
+    __table_args__ = {
+        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
+            object_name="StateSupervisionViolationResponseDecisionEntry"
+        )
+    }
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
     supervision_violation_response_decision_entry_history_id = Column(
-        Integer, primary_key=True
+        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
     )
 
     supervision_violation_response_decision_entry_id = Column(
@@ -3514,6 +3635,9 @@ class StateSupervisionViolationResponseDecisionEntryHistory(
         ),
         nullable=False,
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
+            object_name="supervision violation response"
+        ),
     )
 
 
@@ -3536,20 +3660,57 @@ class _StateSupervisionViolationResponseSharedColumns(
             raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)  # type: ignore
 
-    external_id = Column(String(255), index=True)
-    response_type = Column(state_supervision_violation_response_type)
-    response_type_raw_text = Column(String(255))
-    response_subtype = Column(String(255))
-    response_date = Column(Date)
-    state_code = Column(String(255), nullable=False, index=True)
+    external_id = Column(
+        String(255),
+        index=True,
+        comment=EXTERNAL_ID_COMMENT_TEMPLATE.format(
+            object_name="StateSupervisionViolationResponse"
+        ),
+    )
+    response_type = Column(
+        state_supervision_violation_response_type,
+        comment="The type of response to the violation.",
+    )
+    response_type_raw_text = Column(
+        String(255), comment="The raw text value of the response type."
+    )
+    response_subtype = Column(
+        String(255), comment="The type of response subtype to the violation."
+    )
+    response_date = Column(
+        Date, comment="The date on which the response was made official."
+    )
+    state_code = Column(
+        String(255), nullable=False, index=True, comment=STATE_CODE_COMMENT
+    )
     # TODO(#2668): DEPRECATED - DELETE IN FOLLOW-UP PR
-    decision = Column(state_supervision_violation_response_decision)
-    decision_raw_text = Column(String(255))
-    revocation_type = Column(state_supervision_violation_response_revocation_type)
-    revocation_type_raw_text = Column(String(255))
-    deciding_body_type = Column(state_supervision_violation_response_deciding_body_type)
-    deciding_body_type_raw_text = Column(String(255))
-    is_draft = Column(Boolean)
+    decision = Column(
+        state_supervision_violation_response_decision, comment="DEPRECATED. See #2668."
+    )
+    decision_raw_text = Column(String(255), comment="DEPRECATED. See #2668.")
+    revocation_type = Column(
+        state_supervision_violation_response_revocation_type,
+        comment="If the violation resulted in a return to incarceration, this (poorly-named) field describes further "
+        "what type of return, e.g. whether it's a legal revocation, return for treatment, or something else.",
+    )
+    revocation_type_raw_text = Column(
+        String(255), comment="The raw text value of the revocation type."
+    )
+    deciding_body_type = Column(
+        state_supervision_violation_response_deciding_body_type,
+        comment="The type of decision-making body who made the decision, such as a supervising "
+        "officer or a parole board or a judge.",
+    )
+    deciding_body_type_raw_text = Column(
+        String(255),
+        comment="The raw text value of the supervision violation "
+        "deciding body type.",
+    )
+    is_draft = Column(
+        Boolean,
+        comment="Whether or not this is response is still a draft, i.e. is not yet "
+        "finalized by the deciding body.",
+    )
 
     @declared_attr
     def supervision_violation_id(self) -> Column:
@@ -3558,6 +3719,9 @@ class _StateSupervisionViolationResponseSharedColumns(
             ForeignKey("state_supervision_violation.supervision_violation_id"),
             index=True,
             nullable=True,
+            comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
+                object_name="supervision violation"
+            ),
         )
 
 
@@ -3575,9 +3739,25 @@ class StateSupervisionViolationResponse(
             deferrable=True,
             initially="DEFERRED",
         ),
+        {
+            "comment": "The StateSupervisionViolationResponse object represents the official responses to a"
+            " particular StateSupervisionViolation. These can be positive, neutral, or negative, but they "
+            "should never be empty or null -- a violation that has no responses should simply have no "
+            "StateSupervisionViolationResponse children objects.<br /><br />As described under "
+            "StateIncarcerationPeriod, any StateSupervisionViolationResponse which leads to a revocation "
+            "back to prison should be linked to the subsequent period of incarceration. This can be done "
+            "implicitly in entity matching, or can be marked explicitly in incoming data, either here or "
+            "on the incarceration period as the case may be."
+        },
     )
 
-    supervision_violation_response_id = Column(Integer, primary_key=True)
+    supervision_violation_response_id = Column(
+        Integer,
+        primary_key=True,
+        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(
+            object_name="supervision violation response"
+        ),
+    )
 
     person = relationship("StatePerson", uselist=False)
     supervision_violation_response_decisions = relationship(
@@ -3600,10 +3780,17 @@ class StateSupervisionViolationResponseHistory(
     """Represents the historical state of a StateSupervisionViolationResponse"""
 
     __tablename__ = "state_supervision_violation_response_history"
+    __table_args__ = {
+        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
+            object_name="StateSupervisionViolationResponse"
+        )
+    }
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
-    supervision_violation_response_history_id = Column(Integer, primary_key=True)
+    supervision_violation_response_history_id = Column(
+        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
+    )
 
     supervision_violation_response_id = Column(
         Integer,
