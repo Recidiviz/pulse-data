@@ -19,13 +19,17 @@
 
 import unittest
 import collections
+from typing import List
 from unittest import mock
+
+import sqlalchemy
 
 from recidiviz.persistence.database.base_schema import StateBase, JailsBase
 from recidiviz.persistence.database.schema_table_region_filtered_query_builder import (
     CloudSqlSchemaTableRegionFilteredQueryBuilder,
     SchemaTableRegionFilteredQueryBuilder,
     BigQuerySchemaTableRegionFilteredQueryBuilder,
+    FederatedSchemaTableRegionFilteredQueryBuilder,
 )
 
 
@@ -53,42 +57,50 @@ class SchemaTableRegionFilteredQueryBuilderTest(unittest.TestCase):
             "'US_ND','US_ID'",
         )
 
-    def test_format_columns_for_sql(self) -> None:
-        """Assert that a list of columns are formatted to a comma delimited string
-        to be used for a SQL clause
-        """
+    def test_qualified_column_names_map(self) -> None:
         self.assertEqual(
-            SchemaTableRegionFilteredQueryBuilder.format_columns_for_sql(
-                ["name", "state_code", "person_id"]
+            SchemaTableRegionFilteredQueryBuilder.qualified_column_names_map(
+                ["name", "state_code", "person_id"], table_prefix=None
             ),
-            "name,state_code,person_id",
+            {"name": "name", "person_id": "person_id", "state_code": "state_code"},
         )
         self.assertEqual(
-            SchemaTableRegionFilteredQueryBuilder.format_columns_for_sql([]), ""
+            SchemaTableRegionFilteredQueryBuilder.qualified_column_names_map(
+                [], table_prefix=None
+            ),
+            {},
         )
 
-    def test_format_columns_for_sql_with_prefix(self) -> None:
-        """Assert that a list of columns are formatted to a comma delimited string
-        to be used for a SQL clause
-        """
+    def test_qualified_column_names_map_with_prefix(self) -> None:
         table_prefix = "table_prefix"
-        expected = "table_prefix.name,table_prefix.state_code,table_prefix.person_id"
+        expected = {
+            "name": "table_prefix.name",
+            "person_id": "table_prefix.person_id",
+            "state_code": "table_prefix.state_code",
+        }
         self.assertEqual(
-            SchemaTableRegionFilteredQueryBuilder.format_columns_for_sql(
+            SchemaTableRegionFilteredQueryBuilder.qualified_column_names_map(
                 ["name", "state_code", "person_id"], table_prefix
             ),
             expected,
         )
         self.assertEqual(
-            SchemaTableRegionFilteredQueryBuilder.format_columns_for_sql(
+            SchemaTableRegionFilteredQueryBuilder.qualified_column_names_map(
                 [], table_prefix
             ),
-            "",
+            {},
         )
 
 
 class CloudSqlSchemaTableRegionFilteredQueryBuilderTest(unittest.TestCase):
     """Tests for the CloudSqlSchemaTableRegionFilteredQueryBuilder class."""
+
+    @staticmethod
+    def sqlalchemy_columns(column_names: List[str]) -> List[sqlalchemy.Column]:
+        return [
+            sqlalchemy.Column(col_name, sqlalchemy.String(length=255))
+            for col_name in column_names
+        ]
 
     def setUp(self) -> None:
 
@@ -97,10 +109,33 @@ class CloudSqlSchemaTableRegionFilteredQueryBuilderTest(unittest.TestCase):
         ForeignKeyConstraint = collections.namedtuple(
             "ForeignKeyConstraint", ["referred_table", "column_keys"]
         )
-        Table = collections.namedtuple("Table", ["name"])
-        self.fake_jails_table = Table("fake_jails_table")
-        self.fake_state_table = Table("fake_state_table")
-        self.fake_association_table = Table("fake_state_table_association")
+        Table = collections.namedtuple("Table", ["name", "columns"])
+        self.fake_jails_table = Table(
+            "fake_jails_table",
+            self.sqlalchemy_columns([*self.mock_columns_to_include, "excluded_col"]),
+        )
+        self.fake_state_table = Table(
+            "fake_state_table",
+            self.sqlalchemy_columns([*self.mock_columns_to_include, "excluded_col"]),
+        )
+        self.fake_association_table = Table(
+            "fake_state_table_association",
+            self.sqlalchemy_columns([*self.mock_association_table_columns_to_include]),
+        )
+
+        self.fake_table_complex_schema = Table(
+            "fake_complex_schema_table",
+            [
+                sqlalchemy.Column("state_code", sqlalchemy.String(length=255)),
+                sqlalchemy.Column(
+                    "column1", sqlalchemy.ARRAY(sqlalchemy.String(length=255))
+                ),
+                sqlalchemy.Column(
+                    "column2", sqlalchemy.Enum("VAL1", "VAL2", name="my_enum")
+                ),
+            ],
+        )
+
         self.foreign_key = "fake_foreign_key"
         self.get_foreign_key_constraints_patcher = mock.patch(
             "recidiviz.persistence.database.schema_table_region_filtered_query_builder"
@@ -117,7 +152,7 @@ class CloudSqlSchemaTableRegionFilteredQueryBuilderTest(unittest.TestCase):
         )
         self.get_region_code_col_patcher.start().return_value = "state_code"
         self.get_foreign_key_constraints_patcher.start().return_value = [
-            ForeignKeyConstraint(Table(self.fake_state_table), [self.foreign_key])
+            ForeignKeyConstraint(self.fake_state_table, [self.foreign_key])
         ]
 
     def tearDown(self) -> None:
@@ -278,6 +313,33 @@ class CloudSqlSchemaTableRegionFilteredQueryBuilderTest(unittest.TestCase):
         expected_query = (
             f"SELECT {self.fake_jails_table.name}.column1,{self.fake_jails_table.name}.state_code "
             f"FROM {self.fake_jails_table.name}"
+        )
+        self.assertEqual(expected_query, query_builder.full_query())
+
+    def test_full_query_federated(self) -> None:
+        """Given a table it returns a full query string."""
+        query_builder = FederatedSchemaTableRegionFilteredQueryBuilder(
+            JailsBase, self.fake_jails_table, self.mock_columns_to_include
+        )
+        expected_query = (
+            f"SELECT {self.fake_jails_table.name}.column1,{self.fake_jails_table.name}.state_code "
+            f"FROM {self.fake_jails_table.name}"
+        )
+        self.assertEqual(expected_query, query_builder.full_query())
+
+    def test_full_query_federated_complex_schema(self) -> None:
+        """Given a table it returns a full query string."""
+        query_builder = FederatedSchemaTableRegionFilteredQueryBuilder(
+            JailsBase,
+            self.fake_table_complex_schema,
+            [c.name for c in self.fake_table_complex_schema.columns],
+        )
+        expected_query = (
+            f"SELECT {self.fake_table_complex_schema.name}.state_code,"
+            f"ARRAY_REPLACE({self.fake_table_complex_schema.name}.column1, NULL, '') "
+            f"as column1,"
+            f"CAST({self.fake_table_complex_schema.name}.column2 as VARCHAR) "
+            f"FROM {self.fake_table_complex_schema.name}"
         )
         self.assertEqual(expected_query, query_builder.full_query())
 

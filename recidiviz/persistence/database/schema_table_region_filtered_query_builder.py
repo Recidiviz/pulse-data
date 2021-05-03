@@ -19,9 +19,10 @@
     BigQuery tables. For association tables, a join clause is added to filter for region codes via their associated
     table.
 """
-from abc import abstractmethod
-from typing import List, Optional
+from abc import abstractmethod, ABC
+from typing import List, Optional, Dict
 
+import sqlalchemy
 from sqlalchemy import Table, ForeignKeyConstraint
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
@@ -119,9 +120,7 @@ class SchemaTableRegionFilteredQueryBuilder:
         return constraint.column_keys[0]
 
     def select_clause(self) -> str:
-        formatted_columns = self.format_columns_for_sql(
-            self.columns_to_include, table_prefix=self.table_name
-        )
+        formatted_columns = self._formatted_columns_for_select_clause()
 
         if schema_has_region_code_query_support(self.metadata_base):
             region_code_col = self._get_region_code_col()
@@ -133,6 +132,25 @@ class SchemaTableRegionFilteredQueryBuilder:
                 )
 
         return "SELECT {columns}".format(columns=formatted_columns)
+
+    @abstractmethod
+    def _formatted_columns_for_select_clause(self) -> str:
+        """A string columns list for use in the select clause. Should be overidden by
+        subclasses.
+        """
+
+    def _unmodified_qualified_columns_for_select_clause(self) -> str:
+        """Returns a comma-separated string of columns for use in the select clause with
+        no modifications other than qualifying column names by the table name.
+
+        Example:
+            "state_person.full_name,state_person.birthdate,state_person.person_id"
+        """
+        return ",".join(
+            self.qualified_column_names_map(
+                self.columns_to_include, table_prefix=self.table_name
+            ).values()
+        )
 
     @abstractmethod
     def from_clause(self) -> str:
@@ -188,18 +206,20 @@ class SchemaTableRegionFilteredQueryBuilder:
         return ",".join([f"'{region_code.upper()}'" for region_code in region_codes])
 
     @staticmethod
-    def format_columns_for_sql(
+    def qualified_column_names_map(
         columns: List[str], table_prefix: Optional[str] = None
-    ) -> str:
+    ) -> Dict[str, str]:
         if table_prefix:
-            return ",".join(map(lambda col: f"{table_prefix}.{col}", columns))
-        return ",".join(columns)
+            return {col: f"{table_prefix}.{col}" for col in columns}
+        return {col: col for col in columns}
 
 
-class CloudSqlSchemaTableRegionFilteredQueryBuilder(
-    SchemaTableRegionFilteredQueryBuilder
+class BaseCloudSqlSchemaTableRegionFilteredQueryBuilder(
+    SchemaTableRegionFilteredQueryBuilder, ABC
 ):
-    """Implementation of the SchemaTableRegionFilteredQueryBuilder for querying tables in CloudSQL (i.e. Postgres)."""
+    """Base class for building queries that will both be run directly in CloudSQL
+    (Postgres) and against CloudSQL using BigQuery federated queries.
+    """
 
     def from_clause(self) -> str:
         return f"FROM {self.table_name}"
@@ -208,6 +228,52 @@ class CloudSqlSchemaTableRegionFilteredQueryBuilder(
         return schema_has_region_code_query_support(
             self.metadata_base
         ) and is_association_table(self.table_name)
+
+
+class CloudSqlSchemaTableRegionFilteredQueryBuilder(
+    BaseCloudSqlSchemaTableRegionFilteredQueryBuilder
+):
+    """Implementation of the SchemaTableRegionFilteredQueryBuilder for querying tables
+    directly in CloudSQL (i.e. Postgres).
+    """
+
+    def _formatted_columns_for_select_clause(self) -> str:
+        return self._unmodified_qualified_columns_for_select_clause()
+
+
+class FederatedSchemaTableRegionFilteredQueryBuilder(
+    BaseCloudSqlSchemaTableRegionFilteredQueryBuilder
+):
+    """Implementation of the SchemaTableRegionFilteredQueryBuilder for querying tables
+    in CloudSQL using a BigQuery `EXTERNAL_QUERY` federated query. BigQuery places some
+    restrictions on the output columns that we must handle when doing this type of
+    query.
+    """
+
+    def _formatted_columns_for_select_clause(self) -> str:
+        qualified_names_map = self.qualified_column_names_map(
+            self.columns_to_include, table_prefix=self.table_name
+        )
+        select_columns = []
+        for column in self.table.columns:
+            if column.name not in self.columns_to_include:
+                continue
+            qualified_name = qualified_names_map[column.name]
+            if isinstance(column.type, sqlalchemy.Enum):
+                select_columns.append(f"CAST({qualified_name} as VARCHAR)")
+            elif isinstance(column.type, sqlalchemy.ARRAY) and isinstance(
+                column.type.item_type, sqlalchemy.String
+            ):
+                # BigQuery, while claiming to support NULL values in an array, actually
+                # does not. For strings, we instead replace NULL with the empty string.
+                # Arrays of other types are not modified, so if they include NULL values
+                # they will fail.
+                select_columns.append(
+                    f"ARRAY_REPLACE({qualified_name}, NULL, '') as {column.name}"
+                )
+            else:
+                select_columns.append(qualified_name)
+        return ",".join(select_columns)
 
 
 class BigQuerySchemaTableRegionFilteredQueryBuilder(
@@ -236,6 +302,9 @@ class BigQuerySchemaTableRegionFilteredQueryBuilder(
         )
         self.project_id = project_id
         self.dataset_id = dataset_id
+
+    def _formatted_columns_for_select_clause(self) -> str:
+        return self._unmodified_qualified_columns_for_select_clause()
 
     def from_clause(self) -> str:
         return f"FROM `{self.project_id}.{self.dataset_id}.{self.table_name}` {self.table_name}"
