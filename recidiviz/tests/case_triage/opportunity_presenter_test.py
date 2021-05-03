@@ -19,6 +19,7 @@ from datetime import datetime, timedelta
 from unittest.case import TestCase
 
 from recidiviz.case_triage.querier.opportunity_presenter import OpportunityPresenter
+from recidiviz.case_triage.opportunities.types import OpportunityDeferralType
 from recidiviz.persistence.database.schema.case_triage.schema import (
     OpportunityDeferral,
 )
@@ -34,10 +35,8 @@ class TestOpportunityPresenter(TestCase):
     def test_no_deferral(self) -> None:
         presenter = OpportunityPresenter(self.mock_opportunity, None)
         now = datetime.now()
-
-        self.assertTrue(presenter.opportunity_active_at_time(now))
         self.assertEqual(
-            presenter.to_json(),
+            presenter.to_json(now),
             {
                 "personExternalId": self.mock_opportunity.person_external_id,
                 "supervisingOfficerExternalId": self.mock_opportunity.supervising_officer_external_id,
@@ -53,9 +52,12 @@ class TestOpportunityPresenter(TestCase):
         day_after_tomorrow = now + timedelta(days=2)
 
         deferral = OpportunityDeferral.from_etl_opportunity(
-            self.mock_opportunity, tomorrow, True
+            self.mock_opportunity,
+            OpportunityDeferralType.REMINDER.value,
+            tomorrow,
+            True,
         )
         presenter = OpportunityPresenter(self.mock_opportunity, deferral)
 
-        self.assertFalse(presenter.opportunity_active_at_time(now))
-        self.assertTrue(presenter.opportunity_active_at_time(day_after_tomorrow))
+        self.assertTrue("deferredUntil" in presenter.to_json(now))
+        self.assertFalse("deferredUntil" in presenter.to_json(day_after_tomorrow))

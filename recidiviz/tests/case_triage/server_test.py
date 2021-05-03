@@ -33,7 +33,10 @@ from recidiviz.case_triage.impersonate_users import (
     IMPERSONATED_EMAIL_KEY,
     ImpersonateUser,
 )
-from recidiviz.case_triage.opportunities.types import OpportunityType
+from recidiviz.case_triage.opportunities.types import (
+    OpportunityDeferralType,
+    OpportunityType,
+)
 from recidiviz.case_triage.querier.case_update_presenter import CaseUpdateStatus
 from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
 from recidiviz.persistence.database.schema.case_triage.schema import (
@@ -135,7 +138,7 @@ class TestCaseTriageAPIRoutes(TestCase):
         )
         tomorrow = datetime.now() + timedelta(days=1)
         self.deferral_1 = OpportunityDeferral.from_etl_opportunity(
-            self.opportunity_1, tomorrow, True
+            self.opportunity_1, OpportunityDeferralType.REMINDER.value, tomorrow, True
         )
         self.opportunity_2 = generate_fake_opportunity(
             officer_id=self.officer.external_id,
@@ -195,8 +198,10 @@ class TestCaseTriageAPIRoutes(TestCase):
 
     def test_get_opportunities(self) -> None:
         with self.helpers.as_officer(self.officer):
-            # Only one of the opportunities should be active
-            self.assertEqual(len(self.helpers.get_opportunities()), 1)
+            # Only one of the opportunities should be active, but there should be
+            # two total.
+            self.assertEqual(len(self.helpers.get_opportunities()), 2)
+            self.assertEqual(len(self.helpers.get_undeferred_opportunities()), 1)
 
     def test_defer_opportunity_malformed_input(self) -> None:
         with self.helpers.as_officer(self.officer):
@@ -210,6 +215,7 @@ class TestCaseTriageAPIRoutes(TestCase):
                 json={
                     "personExternalId": "nonexistent-person",
                     "opportunityType": OpportunityType.EARLY_DISCHARGE.value,
+                    "deferralType": OpportunityDeferralType.REMINDER.value,
                     "deferUntil": str(datetime.now()),
                     "requestReminder": True,
                 },
@@ -231,8 +237,8 @@ class TestCaseTriageAPIRoutes(TestCase):
             self.helpers.defer_opportunity(person_external_id, opportunity_type)
             self.mock_segment_client.track_opportunity_deferred.assert_called()
 
-            # Verify that no more opportunities since they are all deferred
-            self.assertEqual(len(self.helpers.get_opportunities()), 0)
+            # Verify that all opportunities are deferred
+            self.assertEqual(len(self.helpers.get_undeferred_opportunities()), 0)
 
     def test_case_updates_malformed_input(self) -> None:
         with self.helpers.as_officer(self.officer):

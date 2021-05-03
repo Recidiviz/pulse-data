@@ -18,7 +18,17 @@
 from enum import Enum
 
 
+class OpportunityDoesNotExistError(ValueError):
+    pass
+
+
 class OpportunityType(Enum):
     OVERDUE_DISCHARGE = "OVERDUE_DISCHARGE"
     OVERDUE_DOWNGRADE = "OVERDUE_DOWNGRADE"
     EARLY_DISCHARGE = "EARLY_DISCHARGE"
+
+
+class OpportunityDeferralType(Enum):
+    REMINDER = "REMINDER"
+    ACTION_TAKEN = "ACTION_TAKEN"
+    INCORRECT_DATA = "INCORRECT_DATA"

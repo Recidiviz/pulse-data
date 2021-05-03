@@ -27,6 +27,10 @@ from recidiviz.case_triage.demo_helpers import (
     get_fixture_clients,
     get_fixture_opportunities,
 )
+from recidiviz.case_triage.opportunities.interface import (
+    OpportunityType,
+)
+from recidiviz.case_triage.opportunities.types import OpportunityDoesNotExistError
 from recidiviz.case_triage.querier.case_presenter import CasePresenter
 from recidiviz.case_triage.querier.opportunity_presenter import OpportunityPresenter
 from recidiviz.persistence.database.schema.case_triage.schema import (
@@ -134,6 +138,31 @@ class CaseTriageQuerier:
         )
         return [OpportunityPresenter(info[0], info[1]) for info in opportunity_info]
 
+    @staticmethod
+    def fetch_etl_opportunity(
+        session: Session,
+        officer: ETLOfficer,
+        client: ETLClient,
+        opportunity_type: OpportunityType,
+    ) -> ETLOpportunity:
+        try:
+            return (
+                session.query(ETLOpportunity)
+                .filter(
+                    ETLOpportunity.state_code == client.state_code,
+                    ETLOpportunity.supervising_officer_external_id
+                    == officer.external_id,
+                    ETLOpportunity.person_external_id == client.person_external_id,
+                    ETLOpportunity.opportunity_type == opportunity_type.value,
+                )
+                .one()
+            )
+        except sqlalchemy.orm.exc.NoResultFound as e:
+            raise OpportunityDoesNotExistError(
+                f"Could not find opportunity for officer: {officer.external_id}, "
+                f"person: {client.person_external_id}, opportunity_type: {opportunity_type}"
+            ) from e
+
 
 class DemoCaseTriageQuerier:
     """Implements some querying abstractions for use by demo users."""
@@ -204,3 +233,19 @@ class DemoCaseTriageQuerier:
             )
             for opportunity in opportunities
         ]
+
+    @staticmethod
+    def fetch_etl_opportunity(
+        client: ETLClient, opportunity_type: OpportunityType
+    ) -> ETLOpportunity:
+        opportunities = get_fixture_opportunities()
+        for opp in opportunities:
+            if (
+                opp.person_external_id == client.person_external_id
+                and opp.opportunity_type == opportunity_type.value
+            ):
+                return opp
+        raise OpportunityDoesNotExistError(
+            f"No opportunity exists with type {opportunity_type} and "
+            f"for person {client.person_external_id}"
+        )

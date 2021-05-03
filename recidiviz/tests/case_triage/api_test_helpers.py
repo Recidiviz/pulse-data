@@ -64,6 +64,10 @@ class CaseTriageTestHelpers:
         self.test.assertEqual(response.status_code, HTTPStatus.OK)
         return response.get_json()
 
+    def get_undeferred_opportunities(self) -> List[Dict[Any, Any]]:
+        all_opportunities = self.get_opportunities()
+        return [opp for opp in all_opportunities if "deferredUntil" not in opp]
+
     def create_case_update(
         self, person_external_id: str, action_type: str, comment: str = ""
     ) -> None:
@@ -78,12 +82,18 @@ class CaseTriageTestHelpers:
 
         self.test.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
 
-    def defer_opportunity(self, person_external_id: str, opportunity_type: str) -> None:
+    def defer_opportunity(
+        self,
+        person_external_id: str,
+        opportunity_type: str,
+        deferral_type: str = "REMINDER",
+    ) -> None:
         response = self.test_client.post(
             "/defer_opportunity",
             json={
                 "personExternalId": person_external_id,
                 "opportunityType": opportunity_type,
+                "deferralType": deferral_type,
                 "deferUntil": str(datetime.now() + timedelta(days=1)),
                 "requestReminder": True,
             },
