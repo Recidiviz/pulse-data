@@ -82,12 +82,12 @@ def add_data_discovery_routes(blueprint: Blueprint) -> None:
         """Downloads a GCS file and stores it to our Redis cache in Parquet format
 
          Example:
-             POST /admin/data_discovery/cache_ingest_file_as_parquet
+             POST /admin/data_discovery/cache_ingest_file_as_parquet_task
          Request Body:
              gcs_file_uri: (string) The `gs://` URI of the file to cache
              file_encoding: (string) The encoding of said file
              file_separator: (string) The value delimiter of side file
-             file_quoting: (int) A `csv.QUOTE_*` value for the parser i.e. csv.QUOTE_NONE
+             file_quoting: (int) A `csv.QUOTE_*` value for the parser i.e. 3 (csv.QUOTE_NONE)
         Args:
              N/A
          Returns:
@@ -111,8 +111,8 @@ def add_data_discovery_routes(blueprint: Blueprint) -> None:
                 delimiter=body["file_separator"],
                 quoting=body["file_quoting"],
                 chunk_size=75000,
-                # Let pandas automatically infer data types
-                dtype=None,
+                index_col=False,
+                keep_default_na=False,
             )
 
             return CACHE_MISS, HTTPStatus.CREATED

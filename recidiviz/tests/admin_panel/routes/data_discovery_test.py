@@ -16,6 +16,7 @@
 # =============================================================================
 """Implements tests for the data discovery routes."""
 import csv
+import os
 import uuid
 from http import HTTPStatus
 from io import StringIO
@@ -37,6 +38,12 @@ from recidiviz.cloud_memorystore.redis_communicator import (
     RedisCommunicator,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+
+
+fixture_path = os.path.join(
+    os.path.dirname(__file__),
+    "fixtures/data_discovery_malformed_csv.csv",
+)
 
 
 class TestDataDiscoveryRoutes(TestCase):
@@ -85,29 +92,76 @@ class TestDataDiscoveryRoutes(TestCase):
         self.redis_patcher.start()
         self.requires_gae_auth_patcher.stop()
 
-    def test_cache_ingest_file_as_parquet(self) -> None:
-        path = GcsfsFilePath(
-            bucket_name="test-bucket",
-            blob_name="storage_bucket/raw/2021/04/20/processed_2021-04-20T00:00:00:000000_raw_test_file-(1).csv",
-        )
-        self.files[path.uri()] = pandas.DataFrame(
-            data=[[1, 2], [2, 3]], columns=["x", "y"]
-        ).to_csv()
-
+    def cache_ingest_file(
+        self, path: GcsfsFilePath, csv_text: str, separator: str = ","
+    ) -> None:
+        self.files[path.uri()] = csv_text
         response = self.test_client.post(
             "/data_discovery/cache_ingest_file_as_parquet_task",
             json={
                 "gcs_file_uri": path.uri(),
                 "file_encoding": "UTF-8",
-                "file_separator": ",",
+                "file_separator": separator,
                 "file_quoting": csv.QUOTE_MINIMAL,
             },
         )
-
         self.assertEqual(HTTPStatus.CREATED, response.status_code)
-        self.assertEqual(
-            1, self.fakeredis.llen(SingleIngestFileParquetCache.parquet_cache_key(path))
+
+    def test_cache_ingest_file_as_parquet(self) -> None:
+        path = GcsfsFilePath(
+            bucket_name="test-bucket",
+            blob_name="storage_bucket/raw/2021/04/20/processed_2021-05-03T00:00:00:000000_raw_test_file-(1).csv",
         )
+        input_df = pandas.DataFrame(data=[[1, 2], [2, 3]], columns=["x", "y"])
+
+        self.cache_ingest_file(path, input_df.to_csv(index=False))
+
+        cache = SingleIngestFileParquetCache(self.fakeredis, path)
+        self.assertEqual(1, self.fakeredis.llen(cache.cache_key))
+
+        expected = pandas.DataFrame(
+            data=[
+                ["1", "2", "05/03/21"],
+                ["2", "3", "05/03/21"],
+            ],
+            columns=["x", "y", "ingest_processing_date"],
+        )
+        actual = [
+            pandas.read_parquet(parquet_file)
+            for parquet_file in cache.get_parquet_files()
+        ][0]
+
+        self.assertTrue(expected.compare(actual).empty)
+
+    def test_cache_ingest_file_as_parquet_malformed(self) -> None:
+        path = GcsfsFilePath(
+            bucket_name="test-bucket",
+            blob_name="storage_bucket/raw/2021/04/20/processed_2021-05-03T00:00:00:000000_raw_test_file-(1).csv",
+        )
+
+        with open(fixture_path, "r") as f:
+            self.cache_ingest_file(path, f.read(), separator="|")
+
+        cache = SingleIngestFileParquetCache(self.fakeredis, path)
+        self.assertEqual(1, self.fakeredis.llen(cache.cache_key))
+
+        expected = pandas.DataFrame(
+            data=[["val1", "val2", "", "val4", "", "05/03/21"]],
+            columns=[
+                "col1",
+                "col2",
+                "col3",
+                "col4",
+                "col5",
+                "ingest_processing_date",
+            ],
+        )
+        actual = [
+            pandas.read_parquet(parquet_file)
+            for parquet_file in cache.get_parquet_files()
+        ][0]
+
+        self.assertTrue(expected.compare(actual).empty, expected.compare(actual))
 
     def test_discovery_task(self) -> None:
         discovery_uuid = uuid.uuid4()
