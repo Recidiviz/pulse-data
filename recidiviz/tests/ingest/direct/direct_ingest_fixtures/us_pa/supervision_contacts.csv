@@ -1,3 +1,3 @@
-contact_id,person_id,parole_number,contact_start_date,contact_end_date,duration,contact_type,method,contact_attempt,collateral_type,assisted,note,agent_number,agent_first_name,agent_last_name,parole_org    
-1,3,456B,2014-09-15,2014-09-15,30,Offender,Home,Yes,,,<p>Successfully contacted at home</p>,444123,Elaine,Benes,PP North Shore Gen Unt
-5,3,456B,2016-10-01,2016-10-01,50,Both,Email,No,Employer,,<p>employer</p>,444123,Elaine,Benes,PP North Shore Gen Unt
+contact_id,person_id,parole_number,contact_start_date,contact_end_date,duration,contact_type,method,contact_attempt,collateral_type,assisted,agent_number,agent_first_name,agent_last_name,parole_org    
+1,3,456B,2014-09-15,2014-09-15,30,Offender,Home,Yes,,,444123,Elaine,Benes,PP North Shore Gen Unt
+5,3,456B,2016-10-01,2016-10-01,50,Both,Email,No,Employer,,444123,Elaine,Benes,PP North Shore Gen Unt

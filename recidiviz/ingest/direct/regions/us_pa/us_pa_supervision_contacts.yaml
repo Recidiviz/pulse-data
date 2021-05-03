@@ -20,7 +20,6 @@ keys_to_ignore:
   - method                  # Along with collateral_type, determines how the contact was done - Handled manually in controller
   - collateral_type         # Along with method, determines how the contact was done - Handled manually in controller
   - assisted                # Unused - whether or not the agent was assisted by another agent for the contact
-  - note                    # Unused - raw text that the agent inputs with details of the contact
   - agent_first_name        # Unused - first name of the agent
   - agent_last_name         # Unused - last name of the agent
   - parole_org              # Unused - organization of the agent
