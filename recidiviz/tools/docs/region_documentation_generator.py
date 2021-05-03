@@ -39,6 +39,7 @@ from recidiviz.ingest.direct.direct_ingest_documentation_generator import (
     STATE_RAW_DATA_FILE_HEADER_PATH,
 )
 from recidiviz.tools.docs.summary_file_generator import update_summary_file
+from recidiviz.tools.docs.utils import persist_file_contents
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -68,15 +69,7 @@ def generate_raw_data_documentation_for_region(region_code: str) -> bool:
         else:
             markdown_file_path = os.path.join(markdown_dir_path, "raw_data", file_path)
 
-        prior_documentation = None
-        if os.path.exists(markdown_file_path):
-            with open(markdown_file_path, "r") as raw_data_md_file:
-                prior_documentation = raw_data_md_file.read()
-
-        if prior_documentation != file_contents:
-            with open(markdown_file_path, "w") as raw_data_md_file:
-                raw_data_md_file.write(file_contents)
-                anything_modified = True
+        anything_modified |= persist_file_contents(file_contents, markdown_file_path)
 
     return anything_modified
 
