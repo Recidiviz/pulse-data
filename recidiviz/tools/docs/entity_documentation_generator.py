@@ -32,11 +32,9 @@ import sqlalchemy
 from pytablewriter import MarkdownTableWriter
 
 import recidiviz
-from recidiviz.persistence.database.schema.state import (
-    schema as state_schema,
-)
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.tools.docs.summary_file_generator import update_summary_file
+from recidiviz.tools.docs.utils import persist_file_contents
 
 ENTITY_DOCS_ROOT = os.path.join(
     os.path.dirname(recidiviz.__file__), "..", "docs", "schema"
@@ -93,15 +91,9 @@ def generate_entity_documentation() -> bool:
         )
         documentation += f"{_get_fields(t.columns)}\n\n"
 
-        prior_documentation = None
         markdown_file_path = os.path.join(ENTITY_DOCS_ROOT, f"{t.name}.md")
-        if os.path.exists(markdown_file_path):
-            with open(markdown_file_path, "r") as raw_data_md_file:
-                prior_documentation = raw_data_md_file.read()
-        if prior_documentation != documentation:
-            with open(markdown_file_path, "w") as raw_data_md_file:
-                raw_data_md_file.write(documentation)
-                anything_modified = True
+        anything_modified |= persist_file_contents(documentation, markdown_file_path)
+
     return anything_modified
 
 
