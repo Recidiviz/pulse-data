@@ -266,6 +266,7 @@ class OpportunityDeferral(CaseTriageBase):
     )
     opportunity_type = Column(String(255), nullable=False, index=True, primary_key=True)
 
+    deferral_type = Column(String(255), nullable=False)
     deferred_at = Column(DateTime, nullable=False, server_default=func.now())
     deferred_until = Column(DateTime, nullable=False)
     reminder_was_requested = Column(Boolean, nullable=False)
@@ -274,6 +275,7 @@ class OpportunityDeferral(CaseTriageBase):
     @staticmethod
     def from_etl_opportunity(
         etl_opportunity: ETLOpportunity,
+        deferral_type: str,
         deferred_until: datetime,
         reminder_was_requested: bool,
     ) -> "OpportunityDeferral":
@@ -282,6 +284,7 @@ class OpportunityDeferral(CaseTriageBase):
             supervising_officer_external_id=etl_opportunity.supervising_officer_external_id,
             person_external_id=etl_opportunity.person_external_id,
             opportunity_type=etl_opportunity.opportunity_type,
+            deferral_type=deferral_type,
             deferred_until=deferred_until,
             reminder_was_requested=reminder_was_requested,
             opportunity_metadata=etl_opportunity.opportunity_metadata,

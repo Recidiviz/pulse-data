@@ -38,21 +38,22 @@ class OpportunityPresenter:
         self.etl_opportunity = etl_opportunity
         self.opportunity_deferral = opportunity_deferral
 
-    def opportunity_active_at_time(self, query_time: datetime) -> bool:
-        """This method indicates whether the specified opportunity is active.
-        As we fold in more complex behaviors, the logic in this method will
-        evolve and likely branch based on the specifics of the opportunity and
-        its accompanying metadata."""
-        return (
-            self.opportunity_deferral is None
-            or self.opportunity_deferral.deferred_until < query_time
-        )
-
-    def to_json(self) -> Dict[str, Any]:
-        return {
+    def to_json(self, query_time: Optional[datetime]) -> Dict[str, Any]:
+        if not query_time:
+            query_time = datetime.now()
+        base = {
             "personExternalId": self.etl_opportunity.person_external_id,
             "stateCode": self.etl_opportunity.state_code,
             "supervisingOfficerExternalId": self.etl_opportunity.supervising_officer_external_id,
             "opportunityType": self.etl_opportunity.opportunity_type,
             "opportunityMetadata": self.etl_opportunity.opportunity_metadata,
         }
+        if (
+            self.opportunity_deferral is not None
+            and self.opportunity_deferral.deferred_until >= query_time
+        ):
+            # TODO(#5708): Check the metadata as well to see if the deferral is
+            # still active
+            base["deferredUntil"] = self.opportunity_deferral.deferred_until
+            base["deferralType"] = self.opportunity_deferral.deferral_type
+        return base

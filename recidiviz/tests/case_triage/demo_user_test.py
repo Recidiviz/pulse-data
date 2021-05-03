@@ -152,12 +152,14 @@ class TestDemoUser(TestCase):
 
     def test_defer_opportunity(self) -> None:
         with self.helpers.as_demo_user():
-            opportunity_1 = self.demo_opportunities[0]
+            opportunity = self.demo_opportunities[0]
             self.helpers.defer_opportunity(
-                opportunity_1.person_external_id, opportunity_1.opportunity_type
+                opportunity.person_external_id,
+                opportunity.opportunity_type,
             )
 
             # There should be one fewer available opportunity post-deferral
             self.assertEqual(
-                len(self.helpers.get_opportunities()), len(self.demo_opportunities) - 1
+                len(self.helpers.get_undeferred_opportunities()),
+                len(self.demo_opportunities) - 1,
             )

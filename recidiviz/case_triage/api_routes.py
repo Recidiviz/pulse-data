@@ -44,6 +44,7 @@ from recidiviz.case_triage.opportunities.interface import (
     DemoOpportunitiesInterface,
     OpportunitiesInterface,
 )
+from recidiviz.case_triage.opportunities.types import OpportunityDoesNotExistError
 from recidiviz.case_triage.querier.querier import (
     CaseTriageQuerier,
     DemoCaseTriageQuerier,
@@ -110,11 +111,7 @@ def create_api_blueprint(
             now = datetime.now()
 
         return jsonify(
-            [
-                opportunity.to_json()
-                for opportunity in opportunity_presenters
-                if opportunity.opportunity_active_at_time(now)
-            ]
+            [opportunity.to_json(now) for opportunity in opportunity_presenters]
         )
 
     @api.route("/bootstrap")
@@ -131,35 +128,42 @@ def create_api_blueprint(
     def _defer_opportunity() -> str:
         etl_client = load_client(g.api_data["person_external_id"])
 
-        if _should_see_demo():
-            demo_timedelta_shift = DEMO_FROZEN_DATE - date.today()
+        try:
+            if _should_see_demo():
+                demo_timedelta_shift = DEMO_FROZEN_DATE - date.today()
 
-            DemoOpportunitiesInterface.defer_opportunity(
-                current_session,
-                g.email,
-                etl_client,
-                g.api_data["opportunity_type"],
-                g.api_data["defer_until"] + demo_timedelta_shift,
-                g.api_data["request_reminder"],
-            )
-        else:
-            OpportunitiesInterface.defer_opportunity(
-                current_session,
-                g.current_user,
-                etl_client,
-                g.api_data["opportunity_type"],
-                g.api_data["defer_until"],
-                g.api_data["request_reminder"],
-            )
-
-            if segment_client:
-                segment_client.track_opportunity_deferred(
+                DemoOpportunitiesInterface.defer_opportunity(
+                    current_session,
+                    g.email,
+                    etl_client,
+                    g.api_data["opportunity_type"],
+                    g.api_data["deferral_type"],
+                    g.api_data["defer_until"] + demo_timedelta_shift,
+                    g.api_data["request_reminder"],
+                )
+            else:
+                OpportunitiesInterface.defer_opportunity(
+                    current_session,
                     g.current_user,
                     etl_client,
                     g.api_data["opportunity_type"],
+                    g.api_data["deferral_type"],
                     g.api_data["defer_until"],
                     g.api_data["request_reminder"],
                 )
+
+                if segment_client:
+                    segment_client.track_opportunity_deferred(
+                        g.current_user,
+                        etl_client,
+                        g.api_data["opportunity_type"],
+                        g.api_data["defer_until"],
+                        g.api_data["request_reminder"],
+                    )
+        except OpportunityDoesNotExistError as e:
+            raise CaseTriageBadRequestException(
+                "not_found", "The opportunity could not be found."
+            ) from e
 
         return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
 
