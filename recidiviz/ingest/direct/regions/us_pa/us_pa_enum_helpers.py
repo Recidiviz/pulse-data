@@ -606,7 +606,7 @@ def assessment_level_mapper(
 
 def supervision_contact_location_mapper(
     supervision_contact_location_raw_text: Optional[str],
-) -> Optional[StateSupervisionContactLocation]:
+) -> StateSupervisionContactLocation:
     """Maps a supervision_contact_location_raw_text to the corresponding StateSupervisionContactLocation, if applicable."""
     if supervision_contact_location_raw_text:
         collateral_type, method = supervision_contact_location_raw_text.split(" ")
@@ -622,12 +622,12 @@ def supervision_contact_location_mapper(
             return StateSupervisionContactLocation.RESIDENCE
         if method == "WORK":
             return StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT
-    return None
+    return StateSupervisionContactLocation.INTERNAL_UNKNOWN
 
 
 def supervision_contact_type_mapper(
     supervision_contact_type_raw_text: Optional[str],
-) -> Optional[StateSupervisionContactType]:
+) -> StateSupervisionContactType:
     """Maps a supervision_contact_type_raw_text to the corresponding StateSupervisionContactType, if applicable."""
     if supervision_contact_type_raw_text:
         contact_type, method = supervision_contact_type_raw_text.split(" ")
@@ -638,4 +638,4 @@ def supervision_contact_type_mapper(
                 return StateSupervisionContactType.TELEPHONE
             if method in ["HOME", "OFFICE", "WORK", "FIELD"]:
                 return StateSupervisionContactType.FACE_TO_FACE
-    return None
+    return StateSupervisionContactType.INTERNAL_UNKNOWN
