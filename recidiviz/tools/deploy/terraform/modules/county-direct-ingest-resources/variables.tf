@@ -15,11 +15,22 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-# States with Terraform-managed infrastructure for direct ingest
+# The county code associated with the buckets and cloud task queues (ex: "US_TX_BRAZOS").
+variable "county_code" {
+  type = string
+}
+
+# the project id associated with the buckets and cloud tasks queues (ex: "recidiviz-123").
+variable "project_id" {
+  type = string
+}
+
+# The preferred region for the buckets and cloud task queues (ex: "us-east4").
+variable "region" {
+  type = string
+}
+
 locals {
-  direct_ingest_state_codes = yamldecode(file("${path.module}/direct_ingest_state_codes.yaml"))
-
-  sftp_state_alpha_codes = yamldecode(file("${path.module}/sftp_state_alpha_codes.yaml"))
-
-  direct_ingest_county_codes = yamldecode(file("${path.module}/direct_ingest_county_codes.yaml"))
+  lower_county_code       = replace(lower(var.county_code), "_", "-")
+  direct_ingest_county_str = "direct-ingest-county-${local.lower_county_code}"
 }
