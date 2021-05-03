@@ -591,12 +591,18 @@ state_supervision_sentence_incarceration_period_association_table = Table(
         Integer,
         ForeignKey("state_supervision_sentence.supervision_sentence_id"),
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="supervision sentence"),
     ),
     Column(
         "incarceration_period_id",
         Integer,
         ForeignKey("state_incarceration_period.incarceration_period_id"),
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="incarceration period"),
+    ),
+    comment=ASSOCIATON_TABLE_COMMENT_TEMPLATE.format(
+        first_object_name_plural="supervision sentences",
+        second_object_name_plural="incarceration periods",
     ),
 )
 
@@ -608,12 +614,18 @@ state_supervision_sentence_supervision_period_association_table = Table(
         Integer,
         ForeignKey("state_supervision_sentence.supervision_sentence_id"),
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="supervision sentence"),
     ),
     Column(
         "supervision_period_id",
         Integer,
         ForeignKey("state_supervision_period.supervision_period_id"),
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="supervision period"),
+    ),
+    comment=ASSOCIATON_TABLE_COMMENT_TEMPLATE.format(
+        first_object_name_plural="supervision sentences",
+        second_object_name_plural="supervision periods",
     ),
 )
 
@@ -675,12 +687,20 @@ state_supervision_period_supervision_violation_association_table = Table(
         Integer,
         ForeignKey("state_supervision_period.supervision_period_id"),
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="supervision period"),
     ),
     Column(
         "supervision_violation_id",
         Integer,
         ForeignKey("state_supervision_violation.supervision_violation_id"),
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
+            object_name="supervision violation"
+        ),
+    ),
+    comment=ASSOCIATON_TABLE_COMMENT_TEMPLATE.format(
+        first_object_name_plural="supervision periods",
+        second_object_name_plural="supervision violations",
     ),
 )
 
@@ -711,12 +731,18 @@ state_supervision_period_supervision_contact_association_table = Table(
         Integer,
         ForeignKey("state_supervision_period.supervision_period_id"),
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="supervision period"),
     ),
     Column(
         "supervision_contact_id",
         Integer,
         ForeignKey("state_supervision_contact.supervision_contact_id"),
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="supervision contact"),
+    ),
+    comment=ASSOCIATON_TABLE_COMMENT_TEMPLATE.format(
+        first_object_name_plural="supervision periods",
+        second_object_name_plural="supervision contacts",
     ),
 )
 
@@ -764,21 +790,31 @@ state_charge_incarceration_sentence_association_table = Table(
     ),
     comment=ASSOCIATON_TABLE_COMMENT_TEMPLATE.format(
         first_object_name_plural="charges",
-        second_object_name_plural="incarceration_sentences",
+        second_object_name_plural="incarceration sentences",
     ),
 )
 
 state_charge_supervision_sentence_association_table = Table(
     "state_charge_supervision_sentence_association",
     StateBase.metadata,
-    Column("charge_id", Integer, ForeignKey("state_charge.charge_id"), index=True),
+    Column(
+        "charge_id",
+        Integer,
+        ForeignKey("state_charge.charge_id"),
+        index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="charge"),
+    ),
     Column(
         "supervision_sentence_id",
         Integer,
         ForeignKey("state_supervision_sentence.supervision_sentence_id"),
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="supervision sentence"),
     ),
-    comment="Association table that connects charges with supervision sentences by their ids.",
+    comment=ASSOCIATON_TABLE_COMMENT_TEMPLATE.format(
+        first_object_name_plural="charges",
+        second_object_name_plural="supervision sentences",
+    ),
 )
 
 state_charge_fine_association_table = Table(
@@ -1926,27 +1962,88 @@ class _StateSupervisionSentenceSharedColumns(
             raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)  # type: ignore
 
-    external_id = Column(String(255), index=True)
-    status = Column(state_sentence_status, nullable=False)
-    status_raw_text = Column(String(255))
-    supervision_type = Column(state_supervision_type)
-    supervision_type_raw_text = Column(String(255))
-    date_imposed = Column(Date)
-    start_date = Column(Date)
-    projected_completion_date = Column(Date)
-    completion_date = Column(Date)
-    state_code = Column(String(255), nullable=False, index=True)
-    county_code = Column(String(255), index=True)
-    min_length_days = Column(Integer)
-    max_length_days = Column(Integer)
+    external_id = Column(
+        String(255),
+        index=True,
+        comment=EXTERNAL_ID_COMMENT_TEMPLATE.format(
+            object_name="StateSupervisionSentence"
+        ),
+    )
+    status = Column(
+        state_sentence_status,
+        nullable=False,
+        comment="The current status of this sentence.",
+    )
+    status_raw_text = Column(
+        String(255),
+        comment="The raw text value of the current status of this sentence.",
+    )
+    supervision_type = Column(
+        state_supervision_type,
+        comment="The type of supervision the person is being sentenced to.",
+    )
+    supervision_type_raw_text = Column(
+        String(255),
+        comment="The raw text value of the type of supervision the person is being sentenced to.",
+    )
+    date_imposed = Column(
+        Date,
+        comment="The date this sentence was imposed, e.g. the date of actual sentencing, but not necessarily "
+        "the date the person started serving the sentence.",
+    )
+    start_date = Column(
+        Date, comment="The date the person started serving the sentence."
+    )
+    projected_completion_date = Column(
+        Date,
+        comment="The earliest projected date the person may have completed their supervision.",
+    )
+    completion_date = Column(
+        Date, comment="The date the person actually did complete their supervision."
+    )
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=STATE_CODE_COMMENT,
+    )
+    county_code = Column(
+        String(255),
+        index=True,
+        comment="The code of the county under whose jurisdiction the sentence was imposed.",
+    )
+    min_length_days = Column(
+        Integer, comment="Minimum duration of this sentence in days."
+    )
+    max_length_days = Column(
+        Integer, comment="Maximum duration of this sentence in days."
+    )
 
 
 class StateSupervisionSentence(StateBase, _StateSupervisionSentenceSharedColumns):
     """Represents a StateSupervisionSentence in the SQL schema"""
 
     __tablename__ = "state_supervision_sentence"
+    __table_args__ = {
+        "comment": "The StateSupervisionSentence object represents information about a single sentence to a period of "
+        "supervision imposed as part of a group of related sentences. Multiple distinct, related sentences "
+        "to supervision should be captured as separate supervision sentence objects within the same group. "
+        "These sentences may, for example, be concurrent or consecutive to one another. "
+        "Like the sentence group above, the supervision sentence represents only the imposition of some "
+        "sentence terms, not an actual period of supervision experienced by the person.<br /><br />"
+        "A StateSupervisionSentence object can reference many charges, and each charge can reference many "
+        "sentences -- the relationship is many:many.<br /><br />"
+        "A StateSupervisionSentence can have multiple child StateSupervisionPeriods. It can also have child "
+        "StateIncarcerationPeriods since a sentence to supervision may result in a person's parole being "
+        "revoked and the person being re-incarcerated, for example. In some jurisdictions, this would be "
+        "modeled as distinct sentences of supervision and incarceration, but this is not universal."
+    }
 
-    supervision_sentence_id = Column(Integer, primary_key=True)
+    supervision_sentence_id = Column(
+        Integer,
+        primary_key=True,
+        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(object_name="supervision sentence"),
+    )
 
     person = relationship("StatePerson", uselist=False)
     charges = relationship(
@@ -1978,16 +2075,24 @@ class StateSupervisionSentenceHistory(
     """Represents the historical state of a StateSupervisionSentence"""
 
     __tablename__ = "state_supervision_sentence_history"
+    __table_args__ = {
+        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
+            object_name="StateSupervisionSentence"
+        )
+    }
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
-    supervision_sentence_history_id = Column(Integer, primary_key=True)
+    supervision_sentence_history_id = Column(
+        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
+    )
 
     supervision_sentence_id = Column(
         Integer,
         ForeignKey("state_supervision_sentence.supervision_sentence_id"),
         nullable=False,
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="supervision sentence"),
     )
 
 
@@ -3335,8 +3440,17 @@ class _StateSupervisionViolatedConditionEntrySharedColumns(
             raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)  # type: ignore
 
-    state_code = Column(String(255), nullable=False, index=True)
-    condition = Column(String(255), nullable=False)
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=STATE_CODE_COMMENT,
+    )
+    condition = Column(
+        String(255),
+        nullable=False,
+        comment="The specific condition of supervision which was violated.",
+    )
 
     @declared_attr
     def supervision_violation_id(self) -> Column:
@@ -3354,8 +3468,20 @@ class StateSupervisionViolatedConditionEntry(
     """Represents a StateSupervisionViolatedConditionEntry in the SQL schema."""
 
     __tablename__ = "state_supervision_violated_condition_entry"
+    __table_args__ = {
+        "comment": "The StateSupervisionViolatedConditionEntry object represents a particular condition of supervision "
+        "which was violated by a particular supervision violation. Each supervision violation has zero "
+        "to many violated conditions. For example, a violation may be recorded because a brand new charge "
+        "has been brought against the supervised person."
+    }
 
-    supervision_violated_condition_entry_id = Column(Integer, primary_key=True)
+    supervision_violated_condition_entry_id = Column(
+        Integer,
+        primary_key=True,
+        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(
+            object_name="supervision violated condition entry"
+        ),
+    )
 
     person = relationship("StatePerson", uselist=False)
 
@@ -3378,7 +3504,9 @@ class StateSupervisionViolatedConditionEntryHistory(
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
-    supervision_violated_condition_entry_history_id = Column(Integer, primary_key=True)
+    supervision_violated_condition_entry_history_id = Column(
+        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
+    )
 
     supervision_violated_condition_entry_id = Column(
         Integer,
