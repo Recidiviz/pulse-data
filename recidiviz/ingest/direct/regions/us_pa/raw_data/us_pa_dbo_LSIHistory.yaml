@@ -20,9 +20,9 @@ columns:
     description: |-
       Whether or not the person has since been released from this period of supervision.
     known_values:
-      - value: Y
-        description: TODO(#7222) - Get confirmation from PA about meaning
       - value: N
+        description: TODO(#7222) - Get confirmation from PA about meaning
+      - value: Y
         description: TODO(#7222) - Get confirmation from PA about meaning
   - name: InstitutionNumber
     description: |-

@@ -1554,7 +1554,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         """Sets the supervision contact fields accordingly so that they can be parsed by enum mappers."""
         contact_type = row["contact_type"]
         method = row["method"].replace("-", "")
-        collateral_type = row["collateral_type"].replace(" ", "")
+        collateral_type = row["collateral_type"].replace(" ", "").replace("/", "")
 
         for obj in extracted_objects:
             if isinstance(obj, StateSupervisionContact):
