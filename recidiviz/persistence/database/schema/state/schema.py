@@ -721,6 +721,10 @@ state_supervision_period_program_assignment_association_table = Table(
         index=True,
         comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="program assignment"),
     ),
+    comment=ASSOCIATON_TABLE_COMMENT_TEMPLATE.format(
+        first_object_name_plural="supervision periods",
+        second_object_name_plural="program assignments",
+    ),
 )
 
 state_supervision_period_supervision_contact_association_table = Table(
@@ -871,8 +875,19 @@ state_supervision_violation_response_decision_agent_association_table = Table(
             "state_supervision_violation_response." "supervision_violation_response_id"
         ),
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="violation response"),
     ),
-    Column("agent_id", Integer, ForeignKey("state_agent.agent_id"), index=True),
+    Column(
+        "agent_id",
+        Integer,
+        ForeignKey("state_agent.agent_id"),
+        index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="agent"),
+    ),
+    comment=ASSOCIATON_TABLE_COMMENT_TEMPLATE.format(
+        first_object_name_plural="supervision violation responses",
+        second_object_name_plural="agents",
+    ),
 )
 
 SchemaPeriodType = TypeVar(
@@ -989,7 +1004,11 @@ class StatePersonExternalId(StateBase, _StatePersonExternalIdSharedColumns):
         },
     )
 
-    person_external_id_id = Column(Integer, primary_key=True)
+    person_external_id_id = Column(
+        Integer,
+        primary_key=True,
+        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(object_name="person external id"),
+    )
 
 
 class StatePersonExternalIdHistory(
@@ -3054,7 +3073,9 @@ class StateIncarcerationIncidentHistory(
     }
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
-    incarceration_incident_history_id = Column(Integer, primary_key=True)
+    incarceration_incident_history_id = Column(
+        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
+    )
 
     incarceration_incident_id = Column(
         Integer,
@@ -3251,6 +3272,9 @@ class _StateParoleDecisionSharedColumns(_ReferencesStatePersonSharedColumns):
             ForeignKey("state_incarceration_period.incarceration_period_id"),
             index=True,
             nullable=True,
+            comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
+                object_name="incarceration period"
+            ),
         )
 
 
@@ -3459,6 +3483,9 @@ class _StateSupervisionViolatedConditionEntrySharedColumns(
             ForeignKey("state_supervision_violation." "supervision_violation_id"),
             index=True,
             nullable=True,
+            comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
+                object_name="supervision violation"
+            ),
         )
 
 
@@ -3726,7 +3753,7 @@ class StateSupervisionViolationResponseDecisionEntry(
         Integer,
         primary_key=True,
         comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(
-            object_name="supervision violation response decision " "entry"
+            object_name="supervision violation response decision entry"
         ),
     )
 
@@ -3927,6 +3954,9 @@ class StateSupervisionViolationResponseHistory(
         ),
         nullable=False,
         index=True,
+        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
+            object_name="supervision violation response"
+        ),
     )
 
 
