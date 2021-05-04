@@ -35,13 +35,11 @@ from recidiviz.tests.calculator.query.justice_counts.views.metric_by_month_test 
     FakeState,
     row,
 )
-from recidiviz.tests.calculator.query.view_test_util import (
+from recidiviz.tests.big_query.view_test_util import (
     BaseViewTest,
     MockTableSchema,
 )
 from recidiviz.tools.justice_counts import manual_upload
-
-_npd = np.datetime64
 
 
 @patch("recidiviz.common.fips.validate_county_code", Mock(return_value=None))
@@ -157,23 +155,71 @@ class JailsOutputViewTest(BaseViewTest):
         # Assert
         expected = pd.DataFrame(
             [
-                ["US_XX", "US_XX_ALPHA", "POP", 2020, 11, _npd("2020-11-30"), 3000]
+                [
+                    "US_XX",
+                    "US_XX_ALPHA",
+                    "POP",
+                    2020,
+                    11,
+                    datetime.date.fromisoformat("2020-11-30"),
+                    3000,
+                ]
                 + [None] * 6
                 + [datetime.date.fromisoformat("2021-01-01")],
-                ["US_XX", "US_XX_ALPHA", "POP", 2020, 12, _npd("2020-12-31"), 4000]
+                [
+                    "US_XX",
+                    "US_XX_ALPHA",
+                    "POP",
+                    2020,
+                    12,
+                    datetime.date.fromisoformat("2020-12-31"),
+                    4000,
+                ]
                 + [None] * 6
                 + [datetime.date.fromisoformat("2021-01-01")],
-                ["US_XX", "US_XX_BETA", "POP", 2020, 11, _npd("2020-11-30"), 1000]
+                [
+                    "US_XX",
+                    "US_XX_BETA",
+                    "POP",
+                    2020,
+                    11,
+                    datetime.date.fromisoformat("2020-11-30"),
+                    1000,
+                ]
                 + [None] * 6
                 + [datetime.date.fromisoformat("2021-01-01")],
-                ["US_XX", "US_XX_BETA", "POP", 2020, 12, _npd("2020-12-31"), 1500]
+                [
+                    "US_XX",
+                    "US_XX_BETA",
+                    "POP",
+                    2020,
+                    12,
+                    datetime.date.fromisoformat("2020-12-31"),
+                    1500,
+                ]
                 + [None] * 6
                 + [datetime.date.fromisoformat("2021-01-01")],
-                ["US_YY", "", "POP", 2020, 11, _npd("2020-11-30"), 12000]
+                [
+                    "US_YY",
+                    "",
+                    "POP",
+                    2020,
+                    11,
+                    datetime.date.fromisoformat("2020-11-30"),
+                    12000,
+                ]
                 + [None] * 4
                 + [0.12, 0.5]
                 + [datetime.date.fromisoformat("2021-01-01")],
-                ["US_YY", "", "POP", 2020, 12, _npd("2020-12-31"), 13000]
+                [
+                    "US_YY",
+                    "",
+                    "POP",
+                    2020,
+                    12,
+                    datetime.date.fromisoformat("2020-12-31"),
+                    13000,
+                ]
                 + [None] * 4
                 + [0.12, 0.5]
                 + [datetime.date.fromisoformat("2021-01-01")],
@@ -387,7 +433,7 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     "INCARCERATION_RATE_JAIL",
                     2020,
                     11,
-                    _npd("2020-11-30"),
+                    datetime.date.fromisoformat("2020-11-30"),
                     375,
                 ]
                 + [None] * 6
@@ -398,7 +444,7 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     "INCARCERATION_RATE_JAIL",
                     2020,
                     12,
-                    _npd("2020-12-31"),
+                    datetime.date.fromisoformat("2020-12-31"),
                     500,
                 ]
                 + [None] * 6
@@ -409,7 +455,7 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     "POPULATION_JAIL",
                     2020,
                     11,
-                    _npd("2020-11-30"),
+                    datetime.date.fromisoformat("2020-11-30"),
                     3000,
                 ]
                 + [None] * 6
@@ -420,7 +466,7 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     "POPULATION_JAIL",
                     2020,
                     12,
-                    _npd("2020-12-31"),
+                    datetime.date.fromisoformat("2020-12-31"),
                     4000,
                 ]
                 + [None] * 6
@@ -431,7 +477,7 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     "INCARCERATION_RATE_JAIL",
                     2020,
                     11,
-                    _npd("2020-11-30"),
+                    datetime.date.fromisoformat("2020-11-30"),
                     200,
                 ]
                 + [None] * 6
@@ -442,7 +488,7 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     "INCARCERATION_RATE_JAIL",
                     2020,
                     12,
-                    _npd("2020-12-31"),
+                    datetime.date.fromisoformat("2020-12-31"),
                     300,
                 ]
                 + [None] * 6
@@ -453,7 +499,7 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     "POPULATION_JAIL",
                     2020,
                     11,
-                    _npd("2020-11-30"),
+                    datetime.date.fromisoformat("2020-11-30"),
                     1000,
                 ]
                 + [None] * 6
@@ -464,7 +510,7 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     "POPULATION_JAIL",
                     2020,
                     12,
-                    _npd("2020-12-31"),
+                    datetime.date.fromisoformat("2020-12-31"),
                     1500,
                 ]
                 + [None] * 6
@@ -475,7 +521,7 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     "INCARCERATION_RATE_JAIL",
                     2020,
                     11,
-                    _npd("2020-11-30"),
+                    datetime.date.fromisoformat("2020-11-30"),
                     307,
                 ]
                 + [None] * 6
@@ -486,7 +532,7 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     "INCARCERATION_RATE_JAIL",
                     2020,
                     12,
-                    _npd("2020-12-31"),
+                    datetime.date.fromisoformat("2020-12-31"),
                     423,
                 ]
                 + [None] * 6
@@ -497,7 +543,7 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     "INCARCERATION_RATE_JAIL",
                     2020,
                     11,
-                    _npd("2020-11-30"),
+                    datetime.date.fromisoformat("2020-11-30"),
                     833,
                 ]
                 + [None] * 6
@@ -508,7 +554,7 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     "INCARCERATION_RATE_JAIL",
                     2020,
                     12,
-                    _npd("2020-12-31"),
+                    datetime.date.fromisoformat("2020-12-31"),
                     1000,
                 ]
                 + [None] * 6
@@ -519,7 +565,7 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     "POPULATION_JAIL",
                     2020,
                     11,
-                    _npd("2020-11-30"),
+                    datetime.date.fromisoformat("2020-11-30"),
                     10000,
                 ]
                 + [None] * 6
@@ -530,7 +576,7 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     "POPULATION_JAIL",
                     2020,
                     12,
-                    _npd("2020-12-31"),
+                    datetime.date.fromisoformat("2020-12-31"),
                     12000,
                 ]
                 + [None] * 6
@@ -541,7 +587,7 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     "INCARCERATION_RATE_JAIL",
                     2020,
                     11,
-                    _npd("2020-11-30"),
+                    datetime.date.fromisoformat("2020-11-30"),
                     833,
                 ]
                 + [None] * 6
@@ -552,7 +598,7 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     "INCARCERATION_RATE_JAIL",
                     2020,
                     12,
-                    _npd("2020-12-31"),
+                    datetime.date.fromisoformat("2020-12-31"),
                     1000,
                 ]
                 + [None] * 6
@@ -563,7 +609,7 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     "INCARCERATION_RATE_JAIL",
                     2020,
                     11,
-                    _npd("2020-11-30"),
+                    datetime.date.fromisoformat("2020-11-30"),
                     909,
                 ]
                 + [None] * 6
@@ -574,7 +620,7 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     "INCARCERATION_RATE_JAIL",
                     2020,
                     12,
-                    _npd("2020-12-31"),
+                    datetime.date.fromisoformat("2020-12-31"),
                     1000,
                 ]
                 + [None] * 6
@@ -585,7 +631,7 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     "POPULATION_JAIL",
                     2020,
                     11,
-                    _npd("2020-11-30"),
+                    datetime.date.fromisoformat("2020-11-30"),
                     20000,
                 ]
                 + [None] * 6
@@ -596,7 +642,7 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     "POPULATION_JAIL",
                     2020,
                     12,
-                    _npd("2020-12-31"),
+                    datetime.date.fromisoformat("2020-12-31"),
                     22000,
                 ]
                 + [None] * 6
@@ -607,7 +653,7 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     "INCARCERATION_RATE_JAIL",
                     2020,
                     11,
-                    _npd("2020-11-30"),
+                    datetime.date.fromisoformat("2020-11-30"),
                     909,
                 ]
                 + [None] * 6
@@ -618,7 +664,7 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
                     "INCARCERATION_RATE_JAIL",
                     2020,
                     12,
-                    _npd("2020-12-31"),
+                    datetime.date.fromisoformat("2020-12-31"),
                     1000,
                 ]
                 + [None] * 6

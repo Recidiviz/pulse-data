@@ -232,11 +232,10 @@ class UnnormalizedDirectIngestRawDataTableBigQueryView(BigQueryView):
     def _columns_clause_for_config(raw_file_config: DirectIngestRawFileConfig) -> str:
         columns_str = ", ".join(
             [
-                column.name
-                if not column.is_datetime and column.description
-                else DATETIME_COL_NORMALIZATION_TEMPLATE.format(col_name=column.name)
-                for column in raw_file_config.columns
-                if column.description
+                DATETIME_COL_NORMALIZATION_TEMPLATE.format(col_name=column.name)
+                if column.is_datetime
+                else column.name
+                for column in raw_file_config.available_columns
             ]
         )
         return f"{columns_str}"

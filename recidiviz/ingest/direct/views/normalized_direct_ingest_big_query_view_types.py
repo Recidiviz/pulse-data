@@ -231,7 +231,7 @@ class NormalizedDirectIngestRawDataTableBigQueryView(BigQueryView):
     @staticmethod
     def _columns_clause_for_config(raw_file_config: DirectIngestRawFileConfig) -> str:
         columns_str = ", ".join(
-            [column.name for column in raw_file_config.columns if column.description]
+            [column.name for column in raw_file_config.available_columns]
         )
         return columns_str
 

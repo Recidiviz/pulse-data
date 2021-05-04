@@ -30,7 +30,7 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.common import date
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.calculator.query.justice_counts.views import metric_by_month
-from recidiviz.tests.calculator.query.view_test_util import (
+from recidiviz.tests.big_query.view_test_util import (
     BaseViewTest,
     MockTableSchema,
 )
