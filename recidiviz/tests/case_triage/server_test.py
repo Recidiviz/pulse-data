@@ -206,12 +206,12 @@ class TestCaseTriageAPIRoutes(TestCase):
     def test_defer_opportunity_malformed_input(self) -> None:
         with self.helpers.as_officer(self.officer):
             # GET instead of POST
-            response = self.test_client.get("/defer_opportunity")
+            response = self.test_client.get("/opportunity_deferrals")
             self.assertEqual(response.status_code, HTTPStatus.METHOD_NOT_ALLOWED)
 
             # `personExternalId` doesn't map to a real person
             response = self.test_client.post(
-                "/defer_opportunity",
+                "/opportunity_deferrals",
                 json={
                     "personExternalId": "nonexistent-person",
                     "opportunityType": OpportunityType.EARLY_DISCHARGE.value,
@@ -239,6 +239,25 @@ class TestCaseTriageAPIRoutes(TestCase):
 
             # Verify that all opportunities are deferred
             self.assertEqual(len(self.helpers.get_undeferred_opportunities()), 0)
+
+    def test_delete_opportunity_deferral(self) -> None:
+        with self.helpers.as_officer(self.officer):
+            # Submit API request
+            self.helpers.delete_opportunity_deferral(self.deferral_1.deferral_id)
+            self.mock_segment_client.track_opportunity_deferral_deleted.assert_called()
+
+            # Verify that all opportunities are undeferred
+            self.assertEqual(len(self.helpers.get_undeferred_opportunities()), 2)
+
+    def test_cannot_delete_anothers_opportunity_deferral(self) -> None:
+        # Fetch original deferral id
+        with self.helpers.as_officer(self.officer_without_clients):
+            response = self.test_client.delete(
+                f"/opportunity_deferrals/{self.deferral_1.deferral_id}"
+            )
+            self.assertEqual(
+                response.status_code, HTTPStatus.BAD_REQUEST, response.get_json()
+            )
 
     def test_case_updates_malformed_input(self) -> None:
         with self.helpers.as_officer(self.officer):

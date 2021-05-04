@@ -20,7 +20,10 @@ from datetime import datetime
 from hashlib import sha256
 
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
-from recidiviz.case_triage.opportunities.types import OpportunityType
+from recidiviz.case_triage.opportunities.types import (
+    OpportunityDeferralType,
+    OpportunityType,
+)
 from recidiviz.persistence.database.schema.case_triage.schema import (
     ETLClient,
     ETLOfficer,
@@ -54,6 +57,24 @@ class CaseTriageSegmentClient(SegmentClient):
                 "opportunity": opportunity.value,
                 "deferredUntil": deferred_until,
                 "reminderRequested": reminder_requested,
+            },
+        )
+
+    def track_opportunity_deferral_deleted(
+        self,
+        officer: ETLOfficer,
+        client: ETLClient,
+        deferral_type: OpportunityDeferralType,
+        deferral_id: str,
+    ) -> None:
+        user_id = segment_user_id_for_email(officer.email_address)
+        self.track(
+            user_id,
+            "backend.opportunity_deferral_removed",
+            {
+                "personExternalId": client.person_external_id,
+                "deferralType": deferral_type.value,
+                "deferralId": deferral_id,
             },
         )
 

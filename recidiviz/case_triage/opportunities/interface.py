@@ -17,6 +17,7 @@
 """Implements common interface used to support opportunity deferrals."""
 from datetime import datetime
 
+import sqlalchemy.orm.exc
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -37,6 +38,10 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
     ETLOpportunity,
     OpportunityDeferral,
 )
+
+
+class OpportunityDeferralDoesNotExistError(ValueError):
+    pass
 
 
 def _defer_opportunity(
@@ -76,6 +81,30 @@ def _defer_opportunity(
     session.commit()
 
 
+def _delete_opportunity_deferral(
+    session: Session, officer_external_id: str, deferral_id: str
+) -> OpportunityDeferral:
+    try:
+        opportunity_deferral = (
+            session.query(OpportunityDeferral)
+            .filter(
+                OpportunityDeferral.supervising_officer_external_id
+                == officer_external_id,
+                OpportunityDeferral.deferral_id == deferral_id,
+            )
+            .one()
+        )
+    except sqlalchemy.orm.exc.NoResultFound as e:
+        raise OpportunityDeferralDoesNotExistError(
+            f"Could not find deferral for officer: {officer_external_id} deferral_id: {deferral_id}"
+        ) from e
+
+    session.delete(opportunity_deferral)
+    session.commit()
+
+    return opportunity_deferral
+
+
 class OpportunitiesInterface:
     """Implements interface for querying and modifying opportunities."""
 
@@ -101,6 +130,12 @@ class OpportunitiesInterface:
             defer_until,
             reminder_requested,
         )
+
+    @staticmethod
+    def delete_opportunity_deferral(
+        session: Session, officer: ETLOfficer, deferral_id: str
+    ) -> OpportunityDeferral:
+        return _delete_opportunity_deferral(session, officer.external_id, deferral_id)
 
 
 class DemoOpportunitiesInterface:
@@ -128,4 +163,12 @@ class DemoOpportunitiesInterface:
             deferral_type,
             defer_until,
             reminder_requested,
+        )
+
+    @staticmethod
+    def delete_opportunity_deferral(
+        session: Session, user_email: str, deferral_id: str
+    ) -> OpportunityDeferral:
+        return _delete_opportunity_deferral(
+            session, fake_officer_id_for_demo_user(user_email), deferral_id
         )

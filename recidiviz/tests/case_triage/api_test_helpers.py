@@ -89,7 +89,7 @@ class CaseTriageTestHelpers:
         deferral_type: str = "REMINDER",
     ) -> None:
         response = self.test_client.post(
-            "/defer_opportunity",
+            "/opportunity_deferrals",
             json={
                 "personExternalId": person_external_id,
                 "opportunityType": opportunity_type,
@@ -99,6 +99,13 @@ class CaseTriageTestHelpers:
             },
         )
 
+        self.test.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
+
+    def delete_opportunity_deferral(
+        self,
+        deferral_id: str,
+    ) -> None:
+        response = self.test_client.delete(f"/opportunity_deferrals/{deferral_id}")
         self.test.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
 
     def find_client_in_api_response(self, person_external_id: str) -> Dict[Any, Any]:

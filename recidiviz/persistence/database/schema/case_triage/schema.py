@@ -257,14 +257,12 @@ class OpportunityDeferral(CaseTriageBase):
         ),
     )
 
-    state_code = Column(String(255), nullable=False, index=True, primary_key=True)
-    supervising_officer_external_id = Column(
-        String(255), nullable=False, index=True, primary_key=True
-    )
-    person_external_id = Column(
-        String(255), nullable=False, index=True, primary_key=True
-    )
-    opportunity_type = Column(String(255), nullable=False, index=True, primary_key=True)
+    deferral_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    state_code = Column(String(255), nullable=False, index=True)
+    supervising_officer_external_id = Column(String(255), nullable=False, index=True)
+    person_external_id = Column(String(255), nullable=False, index=True)
+    opportunity_type = Column(String(255), nullable=False, index=True)
 
     deferral_type = Column(String(255), nullable=False)
     deferred_at = Column(DateTime, nullable=False, server_default=func.now())
