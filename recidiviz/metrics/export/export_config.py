@@ -39,6 +39,7 @@ from recidiviz.calculator.query.state.views.covid_dashboard.covid_dashboard_view
 from recidiviz.calculator.query.state.views.dashboard.dashboard_views import (
     LANTERN_DASHBOARD_VIEW_BUILDERS,
     CORE_DASHBOARD_VIEW_BUILDERS,
+    DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDERS,
 )
 from recidiviz.calculator.query.state.views.po_report.po_monthly_report_data import (
     PO_MONTHLY_REPORT_DATA_VIEW_BUILDER,
@@ -215,6 +216,9 @@ class ExportViewCollectionConfig:
 CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-case-triage-data"
 COVID_DASHBOARD_OUTPUT_DIRECTORY_URI = "gs://{project_id}-covid-dashboard-data"
 DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-dashboard-data"
+DASHBOARD_USER_RESTRICTIONS_OUTPUT_DIRECTORY_URI = (
+    "gs://{project_id}-dashboard-user-restrictions"
+)
 JUSTICE_COUNTS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-justice-counts-data"
 PO_REPORT_OUTPUT_DIRECTORY_URI = "gs://{project_id}-report-data/po_monthly_report"
 PUBLIC_DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-public-dashboard-data"
@@ -295,6 +299,13 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         view_builders_to_export=VITALS_VIEW_BUILDERS,
         output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="VITALS",
+        bq_view_namespace=BigQueryViewNamespace.STATE,
+    ),
+    # Lantern and Core Dashboard User Restrictions views
+    ExportViewCollectionConfig(
+        view_builders_to_export=DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDERS,
+        output_directory_uri_template=DASHBOARD_USER_RESTRICTIONS_OUTPUT_DIRECTORY_URI,
+        export_name="DASHBOARD_USER_RESTRICTIONS",
         bq_view_namespace=BigQueryViewNamespace.STATE,
     ),
 ]

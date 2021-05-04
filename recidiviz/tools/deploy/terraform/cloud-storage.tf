@@ -29,3 +29,10 @@ module "direct-ingest-state-storage-secondary" {
   location    = var.direct_ingest_region
   name_suffix = "direct-ingest-state-storage-secondary"
 }
+
+module "dashboard-user-restrictions-bucket" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id  = var.project_id
+  name_suffix = "dashboard-user-restrictions"
+}
