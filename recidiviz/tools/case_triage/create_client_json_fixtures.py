@@ -39,14 +39,20 @@ def parse_nullable_date(date_str: str) -> Optional[date]:
     return dateutil.parser.parse(date_str).date()
 
 
+def treat_empty_as_null(input_str: str) -> Optional[str]:
+    if not input_str:
+        return None
+    return input_str
+
+
 def csv_row_to_etl_client_json(row: List[str]) -> Dict[str, Any]:
     return {
         "person_external_id": row[1],
         "state_code": row[9],
         "supervising_officer_external_id": row[0],
-        "full_name": row[2],
-        "gender": row[13],
-        "current_address": row[3],
+        "full_name": treat_empty_as_null(row[2]),
+        "gender": treat_empty_as_null(row[13]),
+        "current_address": treat_empty_as_null(row[3]),
         "birthdate": parse_nullable_date(row[4]),
         "birthdate_inferred_from_age": bool(row[5]),
         "supervision_start_date": parse_nullable_date(row[14]),
@@ -54,7 +60,7 @@ def csv_row_to_etl_client_json(row: List[str]) -> Dict[str, Any]:
         "supervision_type": row[6],
         "case_type": row[7],
         "supervision_level": row[8],
-        "employer": row[10],
+        "employer": treat_empty_as_null(row[10]),
         "last_known_date_of_employment": parse_nullable_date(row[17]),
         "most_recent_assessment_date": parse_nullable_date(row[11]),
         "assessment_score": int(row[15]),
