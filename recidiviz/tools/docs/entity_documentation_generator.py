@@ -62,19 +62,21 @@ def generate_entity_documentation() -> bool:
         if not fields:
             return "<No columns>"
 
-        table_matrix = [
-            [
+        table_matrix = []
+        for field in fields:
+            if field.comment is None:
+                raise ValueError(
+                    f"Every entity field must have an associated comment. "
+                    f"Field {field.name} has no comment."
+                )
+            field_values = [
                 field.name,
-                field.comment
-                # TODO(#7120) once all comments are added to schema.py, throw an error if comment is None.
-                if field.comment is not None
-                else "TODO(#7120): FILL IN THIS DESCRIPTION",
+                field.comment,
                 f"ENUM: <br />{'<br />'.join([f'{e}' for e in field.type.enums])}"
                 if hasattr(field.type, "enums")
                 else field.type.python_type.__name__.upper(),
             ]
-            for field in fields
-        ]
+            table_matrix.append(field_values)
 
         writer = MarkdownTableWriter(
             headers=[
@@ -89,12 +91,13 @@ def generate_entity_documentation() -> bool:
 
     anything_modified = False
     for t in StateBase.metadata.sorted_tables:
+        if t.comment is None:
+            raise ValueError(
+                f"Every entity must have an associated comment. "
+                f"Entity {t.name} has no comment."
+            )
         documentation = f"## {t.name}\n\n"
-        documentation += (
-            f"{t.comment}\n\n"
-            if t.comment
-            else "TODO(#7120): FILL IN THIS DESCRIPTION\n\n"
-        )
+        documentation += f"{t.comment}\n\n"
         documentation += f"{_get_fields(t.columns)}\n\n"
 
         markdown_file_path = os.path.join(ENTITY_DOCS_ROOT, f"{t.name}.md")
