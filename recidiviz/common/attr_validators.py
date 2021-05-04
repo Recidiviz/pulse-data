@@ -36,7 +36,7 @@ def is_opt(cls_type: Type) -> Callable:
 
 def is_non_empty_str(_instance: Any, _attribute: attr.Attribute, value: str) -> None:
     if not isinstance(value, str):
-        raise ValueError(f"Expected value type str, found {type(str)}.")
+        raise ValueError(f"Expected value type str, found {type(value)}.")
     if not value:
         raise ValueError("String value should not be empty.")
 

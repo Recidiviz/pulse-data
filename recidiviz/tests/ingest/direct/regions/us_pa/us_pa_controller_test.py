@@ -2299,6 +2299,18 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                                         full_name="BENES, ELAINE",
                                                     ),
                                                 ),
+                                                StateSupervisionContact(
+                                                    state_supervision_contact_id="7",
+                                                    contact_date="2016-10-04",
+                                                    contact_type="Collateral-Field",
+                                                    location="CourtProbationStaf-Field",
+                                                    status="Yes",
+                                                    contacted_agent=StateAgent(
+                                                        state_agent_id="444123",
+                                                        agent_type="SUPERVISION_OFFICER",
+                                                        full_name="BENES, ELAINE",
+                                                    ),
+                                                ),
                                             ]
                                         )
                                     ]
@@ -5049,8 +5061,23 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             status_raw_text="NO",
             contacted_agent=p2_sp_2_1.supervising_officer,
         )
+
+        p2_sc_2_4 = entities.StateSupervisionContact.new_with_defaults(
+            external_id="7",
+            person=person_2,
+            supervision_periods=[p2_placeholder_sp_for_contacts],
+            state_code=_STATE_CODE_UPPER,
+            contact_date=datetime.date(year=2016, month=10, day=4),
+            contact_type=StateSupervisionContactType.INTERNAL_UNKNOWN,
+            contact_type_raw_text="COLLATERAL-FIELD",
+            location=StateSupervisionContactLocation.FIELD,
+            location_raw_text="COURTPROBATIONSTAF-FIELD",
+            status=StateSupervisionContactStatus.COMPLETED,
+            status_raw_text="YES",
+            contacted_agent=p2_sp_2_1.supervising_officer,
+        )
         p2_placeholder_sp_for_contacts.supervision_contacts.extend(
-            [p2_sc_2_3, p2_sc_2_2, p2_sc_2_1]
+            [p2_sc_2_4, p2_sc_2_3, p2_sc_2_2, p2_sc_2_1]
         )
         p2_placeholder_ss_for_contacts.supervision_periods.append(
             p2_placeholder_sp_for_contacts

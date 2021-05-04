@@ -6,62 +6,152 @@ primary_key_cols:
   - FACT_PAROLEE_CNTC_SUMRY_ID
 columns:
   - name: FACT_PAROLEE_CNTC_SUMRY_ID
-    description: Unique identifier for a given supervision contact.
+    description: |-
+      Unique identifier for a given supervision contact.
   - name: REPORT_DATE
   - name: PERSON_ID
-    description: Unique identifier for the person within the PADOC system
+    description: |-
+      Unique identifier for the person within the PADOC system
   - name: PAROLE_NUMBER
-    description: Unique identifier for the person on supervision
+    description: |-
+      Unique identifier for the person on supervision
   - name: SUFFIX
-    description: Optional suffix post last name for the person on supervision
+    description: |-
+      Optional suffix post last name for the person on supervision
   - name: FIRST_NAME
-    description: First name for the person on supervision
-  - name: LAST_NAME 
-    description: Last name for the person on supervision
+    description: |-
+      First name for the person on supervision
+  - name: LAST_NAME
+    description: |-
+      Last name for the person on supervision
   - name: CREATED_DATE
     is_datetime: True
-    description: The date of when this contact period was created by the agent
+    description: |-
+      The date of when this contact period was created by the agent
   - name: START_DATE
     is_datetime: True
-    description: When the supervision contact period started by the agent
+    description: |-
+      When the supervision contact period started by the agent
   - name: END_DATE
     is_datetime: True
-    description: When the supervision contact period ended by the agent
+    description: |-
+      When the supervision contact period ended by the agent
   - name: DURATION_MINS
-    description: How long the supervision contact period lasted
+    description: |-
+      How long the supervision contact period lasted
   - name: CONTACT_TYPE
-    description: Categorical (Both, Offender, Collateral) to describe the kind of contact made
+    description: |-
+      Categorical (Both, Offender, Collateral) to describe the kind of contact made
+    known_values:
+      - value: Both
+        description: The contact satisfies both a collateral contact and a contact to the person on supervision
+      - value: Collateral
+        description: Collateral contact (e.g. treatment provider, employer)
+      - value: Offender
+        description: Contact made to the person on supervision
   - name: METHOD
-    description: The method of which the parole officer used to contact their client
+    description: |-
+      The method of which the parole officer used to contact their client
+    known_values:
+      - value: Email
+        description: Email
+      - value: Facsimile
+        description: Fax
+      - value: Field
+        description: Field visit (usually associated with a collateral contact)
+      - value: Home
+        description: Home visit
+      - value: Mail
+        description: Mail
+      - value: Office
+        description: Supervision office
+      - value: Phone-Text
+        description: Text message
+      - value: Phone-Voice
+        description: Voice call
+      - value: Phone-Voicemail
+        description: Leaving a voicemail
+      - value: Work
+        description: Place of employment
   - name: ATTEMPTED
-    description: Yes/No of whether the agent initiates the contact
+    description: |-
+      Yes/No of whether the agent initiates the contact
   - name: COLLATERAL_TYPE
-    description: Categorical to describe the agency or individuals contacted as part of a collateral contact
+    description: |-
+      Categorical to describe the agency or individuals contacted as part of a collateral contact
+    known_values:
+      - value: Associate
+        description: TODO(#7280) - Clarify with PADOC
+      - value: BCC/CCC/CCF Staff
+        description: TODO(#7280) - Clarify with PADOC
+      - value: Child
+        description: contact made with the child of the person on supervision
+      - value: Cohabitant
+        description: contact made with someone living with the person on supervision
+      - value: Court/Probation Staf
+        description: contact made with court or probation staff
+      - value: Electronic Monitorin
+        description: contact made via online supervision
+      - value: Employer
+        description: contact made with the employer
+      - value: Home Provider
+        description: contact made with home provider
+      - value: Landlord/Property Ma
+        description: contact made with landlord or property manager
+      - value: Law Enforcement
+        description: contact made with law enforcement
+      - value: Neighbor
+        description: contact made with neighbor
+      - value: Other Not Listed
+        description: contact made with another person not in the categories
+      - value: Other Relative
+        description: contact made with other relative of the person on supervision
+      - value: Paramour
+        description: contact made with the significant other of the person on supervision
+      - value: Parent
+        description: contact made with the parent of the person on supervision
+      - value: Spouse
+        description: contact made with the spouse of the person on supervision
+      - value: Treatment Provider
+        description: contact made with the treatment provider of the person on supervision
   - name: ASSISTED
-    description: Yes/No if the agent is assisted by another parole officer
+    description: |-
+      Yes/No if the agent is assisted by another parole officer
   - name: CASE_NOTE_TYPE_CODE
-    description: Unclear, all entries are ROI
+    description: |-
+      Unclear, all entries are ROI
   - name: NOTE_TEXT
-    description: Raw text that contains the notes that the parole officer entered regarding the contact
+    description: |-
+      Raw text that contains the notes that the parole officer entered regarding the contact
   - name: PRL_AGNT_EMPL_NO
-    description: Employee number for the parole officer
+    description: |-
+      Employee number for the parole officer
   - name: PRL_AGNT_FIRST_NAME
-    description: First name for the parole officer
+    description: |-
+      First name for the parole officer
   - name: PRL_AGNT_MIDDLE_NAME
-    description: Middle name for the parole officer
+    description: |-
+      Middle name for the parole officer
   - name: PRL_AGNT_LAST_NAME
-    description: Last name for the parole officer
+    description: |-
+      Last name for the parole officer
   - name: PRL_AGNT_JOB_CLASSIFCTN
-    description: Role and title for the parole officer
+    description: |-
+      Role and title for the parole officer
   - name: PRL_AGNT_ORG_NAME
-    description: The district or unit for the parole officer
+    description: |-
+      The district or unit for the parole officer
   - name: IND_LOGCL_DEL
-    description: Unclear, all entries are N
+    description: |-
+      Unclear, all entries are N
   - name: DW_CREATED_DATE
     is_datetime: True
   - name: DW_CREATED_BY
-    description: Unclear, all entries are DW_CRTD_USER
+    description: |-
+      Unclear, all entries are DW_CRTD_USER
   - name: DW_UPDATED_DATE
-    description: Unclear, always null
+    description: |-
+      Unclear, always null
   - name: DW_UPDATED_BY
-    description: Unclear, always null
+    description: |-
+      Unclear, always null
