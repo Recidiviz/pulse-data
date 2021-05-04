@@ -17,7 +17,6 @@
 """Tests Corrections metrics functionality."""
 import datetime
 from mock import Mock, patch
-import numpy as np
 import pandas as pd
 from pandas.testing import assert_frame_equal
 from sqlalchemy.sql import sqltypes
@@ -33,13 +32,11 @@ from recidiviz.tests.calculator.query.justice_counts.views.metric_by_month_test 
     FakeState,
     row,
 )
-from recidiviz.tests.calculator.query.view_test_util import (
+from recidiviz.tests.big_query.view_test_util import (
     BaseViewTest,
     MockTableSchema,
 )
 from recidiviz.tools.justice_counts import manual_upload
-
-_npd = np.datetime64
 
 
 @patch("recidiviz.utils.metadata.project_id", Mock(return_value="t"))
@@ -216,7 +213,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                     "POP",
                     2020,
                     11,
-                    _npd("2020-11-30"),
+                    datetime.date.fromisoformat("2020-11-30"),
                     "XX",
                     "xx.gov",
                     "_",
@@ -230,7 +227,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                     "POP",
                     2020,
                     12,
-                    _npd("2020-12-31"),
+                    datetime.date.fromisoformat("2020-12-31"),
                     "XX",
                     "xx.gov",
                     "_",
@@ -244,7 +241,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                     "POP",
                     2020,
                     11,
-                    _npd("2020-11-30"),
+                    datetime.date.fromisoformat("2020-11-30"),
                     "YY",
                     "yy.gov",
                     "_",
@@ -258,7 +255,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                     "POP",
                     2020,
                     12,
-                    _npd("2020-12-31"),
+                    datetime.date.fromisoformat("2020-12-31"),
                     "YY",
                     "yy.gov",
                     "_",
@@ -272,7 +269,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                     "POP",
                     2020,
                     11,
-                    _npd("2020-11-30"),
+                    datetime.date.fromisoformat("2020-11-30"),
                     "ZZ",
                     "zz.gov",
                     "_",
@@ -286,7 +283,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                     "POP",
                     2020,
                     12,
-                    _npd("2020-12-31"),
+                    datetime.date.fromisoformat("2020-12-31"),
                     "ZZ",
                     "zz.gov",
                     "_",
@@ -362,9 +359,9 @@ class CorrectionsOutputViewTest(BaseViewTest):
             mock_data=pd.DataFrame(
                 [
                     row(1, "2021-01-01", "2022-01-01", (FakeState("US_XX"),), [], 3)
-                    + (_npd("2021-01-01"), 0, "US_XX"),
+                    + (datetime.date.fromisoformat("2021-01-01"), 0, "US_XX"),
                     row(1, "2021-01-01", "2021-01-01", (FakeState("US_XX"),), [], 0)
-                    + (_npd("2020-01-01"), 2, "US_XX"),
+                    + (datetime.date.fromisoformat("2020-01-01"), 2, "US_XX"),
                     row(1, "2021-01-01", "2020-01-01", (FakeState("US_XX"),), [], 2)
                     + (None, None, "US_XX"),
                 ],
@@ -408,7 +405,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                     "ADMISSIONS",
                     2020,
                     1,
-                    _npd("2020-01-31"),
+                    datetime.date.fromisoformat("2020-01-31"),
                     "XX",
                     "xx.gov",
                     "_",
@@ -425,7 +422,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                     "ADMISSIONS",
                     2021,
                     1,
-                    _npd("2021-01-31"),
+                    datetime.date.fromisoformat("2021-01-31"),
                     "XX",
                     "xx.gov",
                     "_",
@@ -443,7 +440,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                     "ADMISSIONS",
                     2022,
                     1,
-                    _npd("2022-01-31"),
+                    datetime.date.fromisoformat("2022-01-31"),
                     "XX",
                     "xx.gov",
                     "_",
@@ -669,7 +666,7 @@ class CorrectionsMetricsByMonthIntegrationTest(BaseViewTest):
                     "POP",
                     2020,
                     11,
-                    _npd("2020-11-30"),
+                    datetime.date.fromisoformat("2020-11-30"),
                     "XX",
                     "xx.gov",
                     "_",
@@ -683,7 +680,7 @@ class CorrectionsMetricsByMonthIntegrationTest(BaseViewTest):
                     "POP",
                     2020,
                     12,
-                    _npd("2020-12-31"),
+                    datetime.date.fromisoformat("2020-12-31"),
                     "XX",
                     "xx.gov",
                     "_",
@@ -697,7 +694,7 @@ class CorrectionsMetricsByMonthIntegrationTest(BaseViewTest):
                     "POP",
                     2020,
                     11,
-                    _npd("2020-11-30"),
+                    datetime.date.fromisoformat("2020-11-30"),
                     "YY",
                     "yy.gov",
                     "_",
@@ -711,7 +708,7 @@ class CorrectionsMetricsByMonthIntegrationTest(BaseViewTest):
                     "POP",
                     2020,
                     12,
-                    _npd("2020-12-31"),
+                    datetime.date.fromisoformat("2020-12-31"),
                     "YY",
                     "yy.gov",
                     "_",
@@ -725,7 +722,7 @@ class CorrectionsMetricsByMonthIntegrationTest(BaseViewTest):
                     "POP",
                     2020,
                     11,
-                    _npd("2020-11-30"),
+                    datetime.date.fromisoformat("2020-11-30"),
                     "ZZ",
                     "zz.gov",
                     "_",
@@ -739,7 +736,7 @@ class CorrectionsMetricsByMonthIntegrationTest(BaseViewTest):
                     "POP",
                     2020,
                     12,
-                    _npd("2020-12-31"),
+                    datetime.date.fromisoformat("2020-12-31"),
                     "ZZ",
                     "zz.gov",
                     "_",

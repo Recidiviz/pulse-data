@@ -18,7 +18,7 @@
 
 import logging
 import re
-from typing import Dict, Iterator, List, Optional, Sequence, Set, Type
+from typing import Any, Dict, Iterator, List, Optional, Sequence, Set, Tuple, Type
 import unittest
 
 import attr
@@ -35,12 +35,15 @@ from recidiviz.big_query.big_query_view import (
     BigQueryViewBuilder,
     BigQueryAddress,
 )
+from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
+    DirectIngestRawFileConfig,
+)
 from recidiviz.persistence.database.session import Session
 from recidiviz.tools.postgres import local_postgres_helpers
 
 
-def _replace_iter(query: str, regex: str, replacement: str) -> str:
-    compiled = re.compile(regex)
+def _replace_iter(query: str, regex: str, replacement: str, flags: int = 0) -> str:
+    compiled = re.compile(regex, flags)
     for match in re.finditer(compiled, query):
         query = query.replace(match[0], replacement.format(**match.groupdict()))
     return query
@@ -61,6 +64,14 @@ class MockTableSchema:
             else:
                 data_types[column.name] = column.type
         return cls(data_types)
+
+    @classmethod
+    def from_raw_file_config(
+        cls, config: DirectIngestRawFileConfig
+    ) -> "MockTableSchema":
+        return cls(
+            {column.name: sqltypes.String for column in config.available_columns}
+        )
 
     @classmethod
     def from_big_query_schema_fields(
@@ -123,6 +134,18 @@ _DROP_ARRAY_CONCAT_AGG_FUNC = """
 DROP AGGREGATE array_concat_agg (anyarray)
 """
 
+_CREATE_COND_FUNC = """
+CREATE OR REPLACE FUNCTION cond(boolean, anyelement, anyelement)
+ RETURNS anyelement LANGUAGE SQL AS
+$func$
+SELECT CASE WHEN $1 THEN $2 ELSE $3 END
+$func$;
+"""
+
+_DROP_COND_FUNC = """
+DROP FUNCTION cond(boolean, anyelement, anyelement)
+"""
+
 
 @pytest.mark.uses_db
 class BaseViewTest(unittest.TestCase):
@@ -165,6 +188,9 @@ class BaseViewTest(unittest.TestCase):
         # Implement ARRAY_CONCAT_AGG function that behaves the same (ARRAY_AGG fails on empty arrays)
         self._execute_statement(_CREATE_ARRAY_CONCAT_AGG_FUNC)
 
+        # Implement COND to behave like IF, as munging to case is error prone
+        self._execute_statement(_CREATE_COND_FUNC)
+
     def _execute_statement(self, statement: str) -> None:
         session = Session(bind=self.postgres_engine)
         try:
@@ -188,6 +214,7 @@ class BaseViewTest(unittest.TestCase):
             for type_name in self.type_name_generator.all_names_generated():
                 self._execute_statement(f"DROP TYPE {type_name}")
         self._execute_statement(_DROP_ARRAY_CONCAT_AGG_FUNC)
+        self._execute_statement(_DROP_COND_FUNC)
 
         if self.postgres_engine is not None:
             self.postgres_engine.dispose()
@@ -213,6 +240,20 @@ class BaseViewTest(unittest.TestCase):
             con=self.postgres_engine,
             dtype=mock_schema.data_types,
             index=False,
+        )
+
+    def create_mock_raw_file(
+        self,
+        region_code: str,
+        file_config: DirectIngestRawFileConfig,
+        mock_data: List[Tuple[Any, ...]],
+    ) -> None:
+        mock_schema = MockTableSchema.from_raw_file_config(file_config)
+        self.create_mock_bq_table(
+            dataset_id=f"{region_code.lower()}_raw_data_up_to_date_views",
+            table_id=f"{file_config.file_tag}_latest",
+            mock_schema=mock_schema,
+            mock_data=pd.DataFrame(mock_data, columns=mock_schema.data_types.keys()),
         )
 
     def query_view(
@@ -268,6 +309,9 @@ class BaseViewTest(unittest.TestCase):
 
         query = self._rewrite_unnest_with_offset(query)
 
+        # Replace '#' comments with '--'
+        query = _replace_iter(query, r"#", "--")
+
         # Must index the array directly, instead of using OFFSET or ORDINAL
         query = _replace_iter(query, r"\[OFFSET\((?P<offset>.+?)\)\]", "[{offset}]")
         query = _replace_iter(query, r"\[ORDINAL\((?P<ordinal>.+?)\)\]", "[{ordinal}]")
@@ -316,21 +360,23 @@ class BaseViewTest(unittest.TestCase):
 
         # Date arithmetic just uses operators (e.g. -), not function calls
         query = _replace_iter(
-            query, r"DATE_SUB\((?P<first>.+?), (?P<second>.+?)\)", "{first} - {second}"
+            query,
+            r"DATE_SUB\((?P<first>.+?), (?P<second>.+?)\)",
+            "CAST({first} - {second} AS DATE)",
         )
 
         # The parameters for DATE_TRUNC are in the opposite order, and the interval must be quoted.
         query = _replace_iter(
             query,
             r"DATE_TRUNC\((?P<first>.+?), (?P<second>.+?)\)",
-            "DATE_TRUNC('{second}', {first})",
+            "CAST(DATE_TRUNC('{second}', {first}) AS DATE)",
         )
 
         # LAST_DAY doesn't exist in postgres, so replace with the logic to calculate it
         query = _replace_iter(
             query,
             r"LAST_DAY\((?P<column>.+?)\)",
-            "(DATE_TRUNC('MONTH', {column} + INTERVAL '1 MONTH')::date - 1)",
+            "CAST(DATE_TRUNC('MONTH', {column} + INTERVAL '1 MONTH')::date - 1 AS DATE)",
         )
 
         # Postgres doesn't have SAFE_DIVIDE, instead we use NULLIF to make the denominator NULL if it was going to be
@@ -341,9 +387,16 @@ class BaseViewTest(unittest.TestCase):
             "({first} / NULLIF({second}, 0))",
         )
 
+        query = _replace_iter(query, r"SAFE_CAST", "CAST", flags=re.IGNORECASE)
+        query = _replace_iter(query, r"IFNULL", "COALESCE", flags=re.IGNORECASE)
+        query = _replace_iter(query, r"(^| )IF\s*\(", " COND(", flags=re.IGNORECASE)
+
+        query = _replace_iter(query, r"datetime", "timestamp", flags=re.IGNORECASE)
+        query = _replace_iter(query, r"int64", "integer", flags=re.IGNORECASE)
+
         # Postgres doesn't support the '* EXCEPT(...)' construct. There is really no
         # good way to suppport it so just ignore it.
-        query = _replace_iter(query, r"\* EXCEPT\(.*\)", "*")
+        query = _replace_iter(query, r"\*\s+EXCEPT\s*\(.*\)", "*")
 
         query = self._rewrite_structs(query)
 
