@@ -28,4 +28,5 @@ export type Opportunity = {
   opportunityMetadata: { [index: string]: unknown };
   deferredUntil?: string;
   deferralType?: OpportunityDeferralType;
+  deferralId?: string;
 };

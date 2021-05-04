@@ -56,4 +56,5 @@ class OpportunityPresenter:
             # still active
             base["deferredUntil"] = self.opportunity_deferral.deferred_until
             base["deferralType"] = self.opportunity_deferral.deferral_type
+            base["deferralId"] = self.opportunity_deferral.deferral_id
         return base

@@ -43,8 +43,12 @@ from recidiviz.case_triage.exceptions import (
 from recidiviz.case_triage.opportunities.interface import (
     DemoOpportunitiesInterface,
     OpportunitiesInterface,
+    OpportunityDeferralDoesNotExistError,
 )
-from recidiviz.case_triage.opportunities.types import OpportunityDoesNotExistError
+from recidiviz.case_triage.opportunities.types import (
+    OpportunityDeferralType,
+    OpportunityDoesNotExistError,
+)
 from recidiviz.case_triage.querier.querier import (
     CaseTriageQuerier,
     DemoCaseTriageQuerier,
@@ -123,7 +127,7 @@ def create_api_blueprint(
             }
         )
 
-    @api.route("/defer_opportunity", methods=["POST"])
+    @api.route("/opportunity_deferrals", methods=["POST"])
     @requires_api_schema(DeferOpportunitySchema)
     def _defer_opportunity() -> str:
         etl_client = load_client(g.api_data["person_external_id"])
@@ -163,6 +167,40 @@ def create_api_blueprint(
         except OpportunityDoesNotExistError as e:
             raise CaseTriageBadRequestException(
                 "not_found", "The opportunity could not be found."
+            ) from e
+
+        return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
+
+    @api.route("/opportunity_deferrals/<deferral_id>", methods=["DELETE"])
+    def _delete_opportunity_deferral(deferral_id: str) -> Response:
+        try:
+            if _should_see_demo():
+                DemoOpportunitiesInterface.delete_opportunity_deferral(
+                    current_session,
+                    g.email,
+                    deferral_id,
+                )
+            else:
+                opportunity_deferral = (
+                    OpportunitiesInterface.delete_opportunity_deferral(
+                        current_session,
+                        g.current_user,
+                        deferral_id,
+                    )
+                )
+
+                etl_client = load_client(opportunity_deferral.person_external_id)
+
+                if segment_client:
+                    segment_client.track_opportunity_deferral_deleted(
+                        g.current_user,
+                        etl_client,
+                        OpportunityDeferralType(opportunity_deferral.deferral_type),
+                        deferral_id,
+                    )
+        except OpportunityDeferralDoesNotExistError as e:
+            raise CaseTriageBadRequestException(
+                "not_found", "The opportunity deferral could not be found."
             ) from e
 
         return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
