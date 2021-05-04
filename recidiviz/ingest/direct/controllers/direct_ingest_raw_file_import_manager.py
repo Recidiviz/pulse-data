@@ -174,6 +174,14 @@ class DirectIngestRawFileConfig:
         ]
 
     @property
+    def available_columns(self) -> List[RawTableColumnInfo]:
+        """Filters to only columns that can be used for ingest.
+
+        Currently just excludes undocumented columns.
+        """
+        return [column for column in self.columns if column.description]
+
+    @property
     def datetime_cols(self) -> List[str]:
         return [column.name for column in self.columns if column.is_datetime]
 
