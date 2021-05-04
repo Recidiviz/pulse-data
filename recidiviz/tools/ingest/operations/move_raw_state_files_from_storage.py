@@ -271,15 +271,15 @@ class MoveFilesFromStorageController:
 
     def do_post_request(self, url: str) -> None:
         """Executes a googleapis.com curl POST request with the given url. """
-        with subprocess.Popen(
+        res = subprocess.run(
             self.CURL_POST_REQUEST_TEMPLATE.format(url),
             shell=True,
             stdout=subprocess.PIPE,
-        ) as res:
-            stdout, _stderr = res.communicate()
-            response = json.loads(stdout)
-            if "error" in response:
-                raise ValueError(response["error"])
+            check=True,
+        )
+        response = json.loads(res.stdout)
+        if "error" in response:
+            raise ValueError(response["error"])
 
     def pause_queue(self, queue_name: str) -> None:
         """Posts a request to pause the queue with the given name."""

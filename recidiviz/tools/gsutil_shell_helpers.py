@@ -34,23 +34,23 @@ def gsutil_ls(gs_path: str, directories_only: bool = False) -> List[str]:
     See more documentation here:
     https://cloud.google.com/storage/docs/gsutil/commands/ls
     """
-    with subprocess.Popen(
+    res = subprocess.run(
         f'gsutil ls "{gs_path}"',
         shell=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-    ) as res:
-        stdout, stderr = res.communicate()
+        check=True,
+    )
 
-        if stderr:
-            raise ValueError(stderr.decode("utf-8"))
+    if res.stderr:
+        raise ValueError(res.stderr.decode("utf-8"))
 
-        result_paths = [p for p in stdout.decode("utf-8").splitlines() if p != gs_path]
+    result_paths = [p for p in res.stdout.decode("utf-8").splitlines() if p != gs_path]
 
-        if not directories_only:
-            return result_paths
+    if not directories_only:
+        return result_paths
 
-        return [p for p in result_paths if p.endswith("/")]
+    return [p for p in result_paths if p.endswith("/")]
 
 
 # See https://github.com/GoogleCloudPlatform/gsutil/issues/464#issuecomment-633334888
@@ -66,13 +66,16 @@ def gsutil_cp(from_path: str, to_path: str) -> None:
     https://cloud.google.com/storage/docs/gsutil/commands/cp
     """
     command = f'gsutil {_GSUTIL_PARALLEL_COMMAND_OPTIONS} cp "{from_path}" "{to_path}"'
-    with subprocess.Popen(
-        command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    ) as res:
-        _stdout, stderr = res.communicate()
+    res = subprocess.run(
+        command,
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=True,
+    )
 
-        if stderr:
-            raise ValueError(stderr.decode("utf-8"))
+    if res.stderr:
+        raise ValueError(res.stderr.decode("utf-8"))
 
 
 def gsutil_mv(from_path: str, to_path: str) -> None:
@@ -82,16 +85,16 @@ def gsutil_mv(from_path: str, to_path: str) -> None:
     https://cloud.google.com/storage/docs/gsutil/commands/mv
     """
 
-    with subprocess.Popen(
+    res = subprocess.run(
         f'gsutil {_GSUTIL_PARALLEL_COMMAND_OPTIONS} mv "{from_path}" "{to_path}"',
         shell=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-    ) as res:
-        _stdout, stderr = res.communicate()
+        check=True,
+    )
 
-        if stderr:
-            raise ValueError(stderr.decode("utf-8"))
+    if res.stderr:
+        raise ValueError(res.stderr.decode("utf-8"))
 
 
 def _date_str_from_date_subdir_path(date_subdir_path: str) -> str:
