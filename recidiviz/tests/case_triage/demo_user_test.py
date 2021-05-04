@@ -163,3 +163,26 @@ class TestDemoUser(TestCase):
                 len(self.helpers.get_undeferred_opportunities()),
                 len(self.demo_opportunities) - 1,
             )
+
+    def test_delete_opportunity_deferral(self) -> None:
+        with self.helpers.as_demo_user():
+            opportunity = self.demo_opportunities[0]
+            self.helpers.defer_opportunity(
+                opportunity.person_external_id,
+                opportunity.opportunity_type,
+            )
+
+            api_opportunies = self.helpers.get_opportunities()
+            deferral_id = None
+            for api_opp in api_opportunies:
+                if deferral_id := api_opp.get("deferralId"):
+                    break
+            assert deferral_id is not None
+
+            self.helpers.delete_opportunity_deferral(deferral_id)
+
+            # After deleting the deferral, all opportunities should be available
+            self.assertEqual(
+                len(self.helpers.get_undeferred_opportunities()),
+                len(self.demo_opportunities),
+            )
