@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Functions that return state-specific logic used in BigQuery queries."""
+# pylint: disable=anomalous-backslash-in-string
 
 from typing import List, Optional, Dict
 from recidiviz.common.constants.states import StateCode
@@ -268,3 +269,29 @@ def vitals_state_specific_join_with_supervision_population(right_table: str) -> 
             WHEN {right_table}.state_code IN {VITALS_LEVEL_2_SUPERVISION_LOCATION_OPTIONS}
                 THEN sup_pop.supervising_district_external_id = {right_table}.level_2_supervision_location_external_id
         END"""
+
+
+def vitals_state_specific_po_name(state_code: str, officer_id: str) -> str:
+    """State-specific logic to format PO ids into displayable names."""
+    return f"""
+        CASE {state_code}
+          WHEN 'US_ND' THEN REGEXP_REPLACE({officer_id}, r'\d+: ', '')
+          ELSE {officer_id}
+        END
+    """
+
+
+def vitals_state_specific_district_display_name(
+    state_code: str, district_name: str
+) -> str:
+    """State-specific logic to normalize district names into displayable versions."""
+    return f"""
+        CASE {state_code}
+          WHEN 'US_ND'
+            THEN IF(
+              INSTR(UPPER({district_name}), 'OFFICE') != 0,
+              {district_name},
+              CONCAT({district_name}, ' OFFICE'))
+          ELSE {district_name}
+        END
+    """

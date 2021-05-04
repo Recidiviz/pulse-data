@@ -20,6 +20,8 @@ from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.bq_utils import generate_district_id_from_district_name
 from recidiviz.calculator.query.state.state_specific_query_strings import (
     VITALS_LEVEL_1_SUPERVISION_LOCATION_OPTIONS,
+    vitals_state_specific_po_name,
+    vitals_state_specific_district_display_name,
 )
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
@@ -39,8 +41,8 @@ def generate_entity_summary_query(field: str, vitals_table: str) -> str:
         "supervising_officer_external_id = 'ALL' AND district_id != 'ALL'"
     )
 
-    district_level_name = f"""
-        IF(metric_table.state_code in {VITALS_LEVEL_1_SUPERVISION_LOCATION_OPTIONS}, 'level_1_supervision_location', 'level_2_supervision_location')
+    district_level_type = f"""
+        IF(state_code in {VITALS_LEVEL_1_SUPERVISION_LOCATION_OPTIONS}, 'level_1_supervision_location', 'level_2_supervision_location')
     """
 
     return f"""
@@ -56,23 +58,22 @@ def generate_entity_summary_query(field: str, vitals_table: str) -> str:
         ELSE 'STATE_DOC'
       END as entity_id,
       CASE
-        WHEN {po_condition} THEN supervising_officer_external_id
-        WHEN {district_condition} THEN district_name
+        WHEN {po_condition} THEN {vitals_state_specific_po_name('state_code', 'supervising_officer_external_id')}
+        WHEN {district_condition} THEN {vitals_state_specific_district_display_name('state_code', 'district_name')}
         ELSE 'STATE DOC'
       END as entity_name,
       IF( {po_condition}, {generate_district_id_from_district_name('district_name')}, 'STATE_DOC') as parent_entity_id,
       CASE 
         WHEN {po_condition} THEN 'po'
-        WHEN {district_condition} THEN {district_level_name}
+        WHEN {district_condition} THEN {district_level_type}
         ELSE 'state'
       END as entity_type,
     FROM
      `{{project_id}}.{{vitals_report_dataset}}.{vitals_table}` metric_table
     INNER JOIN
         most_recent_job_id
-    ON
-        metric_table.state_code = most_recent_job_id.state_code
-    WHERE (supervising_officer_external_id = 'ALL' OR district_id <> 'ALL')
+    USING (state_code)
+    WHERE (supervising_officer_external_id = 'ALL' OR district_id != 'ALL')
       AND date_of_supervision IN (
         most_recent_job_id.most_recent_date_of_supervision,
         DATE_SUB(most_recent_job_id.most_recent_date_of_supervision, INTERVAL 30 DAY),
