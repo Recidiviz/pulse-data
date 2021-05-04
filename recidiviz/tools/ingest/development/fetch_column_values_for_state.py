@@ -18,7 +18,8 @@
 """Tool to refresh a state's raw config column known values from existing raw data in BigQuery.
 
 This reads the raw files in BigQuery for the given state if the existing config for that file
-has at least one column with a known_values entry (can be empty, i.e. `known_values: []`),
+has at least one column with a known_values entry (can be empty to indicate
+this column is to be treated as an enum column, i.e. `known_values: []`),
 then populates the yaml config with any values for those enum columns, while maintaining
 existing documentation.
 
