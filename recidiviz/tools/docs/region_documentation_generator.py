@@ -127,13 +127,13 @@ def get_touched_raw_data_regions(touched_files: Optional[List[str]]) -> Set[str]
             os.path.dirname(regions_module.__file__),
             os.path.dirname(os.path.dirname(recidiviz.__file__)),
         )
-        with subprocess.Popen(
+        res = subprocess.run(
             f'git diff --cached --name-only | grep "{regions_dir_path}"',
             shell=True,
             stdout=subprocess.PIPE,
-        ) as res:
-            stdout, _stderr = res.communicate()
-            touched_files = stdout.decode().splitlines()
+            check=True,
+        )
+        touched_files = res.stdout.decode().splitlines()
 
     region_names = {file.split("/")[4] for file in touched_files}
     return {
