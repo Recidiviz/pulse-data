@@ -40,6 +40,7 @@ products:
   - name: Lantern Dashboard
     exports:
       - LANTERN
+      - DASHBOARD_USER_RESTRICTIONS
     states:
       - state_code: US_MO
         environment: production

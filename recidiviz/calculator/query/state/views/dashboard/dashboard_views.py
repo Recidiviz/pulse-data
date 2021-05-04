@@ -42,6 +42,10 @@ from recidiviz.calculator.query.state.views.dashboard.vitals_summaries import (
     vitals_views,
 )
 
+from recidiviz.calculator.query.state.views.reference.supervision_location_restricted_access_emails import (
+    SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_VIEW_BUILDER,
+)
+
 CORE_DASHBOARD_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = (
     admissions_views.ADMISSIONS_VIEW_BUILDERS
     + reincarcerations_views.REINCARCERATIONS_VIEW_BUILDERS
@@ -60,6 +64,10 @@ UP_DASHBOARD_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = (
     population_projections_views.POPULATION_PROJECTION_VIEW_BUILDERS
     + vitals_views.VITALS_VIEW_BUILDERS
 )
+
+DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = [
+    SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_VIEW_BUILDER
+]
 
 
 DASHBOARD_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = list(

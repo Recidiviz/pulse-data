@@ -20,7 +20,7 @@ variable "project_id" {
   type = string
 }
 
-# Combined with the project id to creat the name (ex: "dashboard-data" becomes "recidiviz-123-dashboard-data")
+# Combined with the project id to create the name (ex: "dashboard-data" becomes "recidiviz-123-dashboard-data")
 variable "name_suffix" {
   type = string
 }
