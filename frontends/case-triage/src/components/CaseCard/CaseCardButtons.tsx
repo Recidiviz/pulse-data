@@ -26,9 +26,7 @@ import {
 } from "@recidiviz/design-system";
 import Tooltip from "../Tooltip";
 
-const BaseCheckboxButton = styled.button.attrs({
-  type: "button",
-})`
+const baseStyle = `
   cursor: pointer;
   padding: ${rem(spacing.xs)} ${rem(12)};
   height: ${rem(32)};
@@ -49,16 +47,20 @@ const BaseCheckboxButton = styled.button.attrs({
   }
 `;
 
-const CheckedButton = styled(BaseCheckboxButton).attrs({
-  as: "div",
-})`
+const CheckedButton = styled.div`
+  ${baseStyle}
+
   color: ${palette.white};
   background-color: ${palette.slate60};
   border-radius: 16px;
   cursor: auto;
 `;
 
-export const UncheckedButton = styled(BaseCheckboxButton)`
+export const UncheckedButton = styled.button.attrs({
+  type: "button",
+})`
+  ${baseStyle}
+
   background-color: transparent;
 
   color: ${palette.pine4};
@@ -95,20 +97,10 @@ export const NeedsCheckboxButton: React.FC<NeedsCheckboxButtonProps> = ({
     }
   }, [checked]);
 
-  const Component = checkedState ? CheckedButton : UncheckedButton;
-  const componentClick = checked
-    ? undefined
-    : () => {
-        setCheckedState(true);
-        if (onToggleCheck) {
-          onToggleCheck(true);
-        }
-      };
-
-  return (
-    <Component onClick={componentClick}>
-      {title}
-      {checked ? (
+  if (checkedState) {
+    return (
+      <CheckedButton>
+        {title}
         <CloseButton
           onClick={() => {
             setCheckedState(false);
@@ -121,7 +113,16 @@ export const NeedsCheckboxButton: React.FC<NeedsCheckboxButtonProps> = ({
             <Icon kind={IconSVG.CloseOutlined} fill={palette.white} size={16} />
           </Tooltip>
         </CloseButton>
-      ) : null}
-    </Component>
-  );
+      </CheckedButton>
+    );
+  }
+
+  const componentClick = () => {
+    setCheckedState(true);
+    if (onToggleCheck) {
+      onToggleCheck(true);
+    }
+  };
+
+  return <UncheckedButton onClick={componentClick}>{title}</UncheckedButton>;
 };
