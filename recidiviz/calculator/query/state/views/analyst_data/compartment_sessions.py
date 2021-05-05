@@ -160,13 +160,17 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         LEAD(starts.start_reason) OVER (PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS next_start_reason,
     FROM sessions_aggregated AS sessions
     LEFT JOIN `{project_id}.{analyst_dataset}.compartment_session_start_reasons_materialized` starts
-        USING(person_id, start_date, compartment_level_1)
+        ON sessions.person_id =  starts.person_id
+        AND sessions.start_date = starts.start_date
+        AND (sessions.compartment_level_1 = starts.compartment_level_1
+        OR (starts.compartment_level_1 = 'SUPERVISION' AND sessions.compartment_level_1 = 'SUPERVISION_OUT_OF_STATE'))
     LEFT JOIN `{project_id}.{analyst_dataset}.compartment_session_end_reasons_materialized` ends
     -- The release date will be a day after the session end date as the population metrics count a person towards 
     -- population based on full days within that compartment
         ON ends.end_date = DATE_ADD(sessions.end_date, INTERVAL 1 DAY)
         AND ends.person_id = sessions.person_id
-        AND ends.compartment_level_1 = sessions.compartment_level_1
+        AND (sessions.compartment_level_1 = ends.compartment_level_1
+        OR (ends.compartment_level_1 = 'SUPERVISION' AND sessions.compartment_level_1 = 'SUPERVISION_OUT_OF_STATE'))
     )
     ,
     sessions_with_inferred_compartments AS
@@ -193,7 +197,8 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
                 WHEN inferred_missing_data THEN LAG(compartment_level_1) OVER(PARTITION BY person_id ORDER BY start_date)
                 WHEN inferred_pending_custody THEN 'PENDING_CUSTODY' 
                 WHEN inferred_pending_supervision THEN 'PENDING_SUPERVISION'
-                WHEN inferred_oos THEN CONCAT(LAG(compartment_level_1) OVER(PARTITION BY person_id ORDER BY start_date), '_', 'OUT_OF_STATE')
+                WHEN inferred_oos AND LAG(compartment_level_1) OVER(PARTITION BY person_id ORDER BY start_date) IN ('INCARCERATION','SUPERVISION') THEN CONCAT(LAG(compartment_level_1) OVER(PARTITION BY person_id ORDER BY start_date), '_', 'OUT_OF_STATE')
+                WHEN inferred_oos AND LAG(compartment_level_1) OVER(PARTITION BY person_id ORDER BY start_date) IN ('SUPERVISION_OUT_OF_STATE') THEN 'SUPERVISION_OUT_OF_STATE'
                 WHEN inferred_suspension THEN 'SUSPENSION'
                 ELSE compartment_level_1 END, 'INTERNAL_UNKNOWN') AS compartment_level_1,
         COALESCE(
