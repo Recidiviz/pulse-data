@@ -183,6 +183,22 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
 
         self.assertFalse(tasks)
 
+    def test_create_anonymous_task(self) -> None:
+        self.client_wrapper.create_task(
+            queue_name=self.QUEUE_NAME, relative_uri="/process_job?region=us_mo"
+        )
+
+        self.mock_client.create_task.assert_called_with(
+            parent="projects/my-project-id/locations/us-east1/queues/queue-name",
+            task=tasks_v2.types.task_pb2.Task(
+                app_engine_http_request={
+                    "http_method": "POST",
+                    "relative_uri": "/process_job?region=us_mo",
+                    "body": b"{}",
+                },
+            ),
+        )
+
     def test_create_task_no_schedule_delay(self) -> None:
         self.client_wrapper.create_task(
             task_id="us_mo-file_name_1-123456",

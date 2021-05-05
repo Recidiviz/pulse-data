@@ -16,8 +16,9 @@
 # =============================================================================
 """ Functionality for converting CSVs to Parquet format and storing in Redis
 """
-from typing import Generator
+import uuid
 from io import BytesIO
+from typing import Generator
 
 import pandas
 import pandas as pd
@@ -43,7 +44,7 @@ class SingleIngestFileParquetCache:
         self.cache = cache
         self.expiry = expiry
         self.cache_key = self.parquet_cache_key(file)
-        self.staged_cache_key = f"{self.cache_key}.tmp"
+        self.staged_cache_key = f"{self.cache_key}.{uuid.uuid4()}.tmp"
 
     @classmethod
     def parquet_cache_key(cls, file: GcsfsFilePath) -> str:
