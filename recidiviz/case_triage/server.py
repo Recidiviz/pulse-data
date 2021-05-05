@@ -29,7 +29,7 @@ from recidiviz.case_triage.analytics import (
     segment_user_id_for_email,
 )
 from recidiviz.case_triage.api_routes import create_api_blueprint
-from recidiviz.case_triage.authorization import AuthorizationStore
+from recidiviz.case_triage.authorization import AuthorizationStore, KNOWN_EXPERIMENTS
 from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.case_triage.exceptions import (
     CaseTriageAuthorizationError,
@@ -152,6 +152,10 @@ def fetch_user_info() -> None:
     """
     email = session["user_info"]["email"].lower()
     g.email = email
+    g.known_experiments = {
+        exp: authorization_store.get_feature_variant(exp, email)
+        for exp in KNOWN_EXPERIMENTS
+    }
     g.segment_user_id = segment_user_id_for_email(email)
     g.can_impersonate = authorization_store.can_impersonate_others(email)
     g.can_see_demo_data = authorization_store.can_see_demo_data(email)

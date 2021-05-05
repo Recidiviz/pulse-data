@@ -124,6 +124,7 @@ def create_api_blueprint(
             {
                 "csrf": generate_csrf(current_app.secret_key),
                 "segmentUserId": g.segment_user_id,
+                "knownExperiments": {k: v for k, v in g.known_experiments.items() if v},
             }
         )
 
