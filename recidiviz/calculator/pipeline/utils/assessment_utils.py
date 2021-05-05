@@ -23,7 +23,9 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentLevel,
     StateAssessmentClass,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import StateAssessment
+from recidiviz.utils import environment
 
 _ASSESSMENT_TYPES_TO_INCLUDE_FOR_CLASS: Dict[
     StateAssessmentClass, Dict[str, List[StateAssessmentType]]
@@ -48,6 +50,15 @@ def _assessment_types_of_class_for_state(
     types_for_class = _ASSESSMENT_TYPES_TO_INCLUDE_FOR_CLASS.get(assessment_class)
 
     if types_for_class:
+        if environment.in_test() and state_code == StateCode.US_XX.value:
+            # In testing, return all supported assessment types for this
+            # assessment_class
+            return [
+                assessment_type
+                for state_list in types_for_class.values()
+                for assessment_type in state_list
+            ]
+
         assessment_types_to_include = types_for_class.get(state_code)
 
         if not assessment_types_to_include:

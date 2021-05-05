@@ -66,6 +66,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
     StateIncarcerationFacilitySecurityLevel,
+    StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
@@ -1991,7 +1992,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     response_count=1,
                     violation_type_frequency_counter=[["MISDEMEANOR"]],
                     case_type=StateSupervisionCaseType.GENERAL,
-                    revocation_type=RevocationType.REINCARCERATION,
+                    revocation_type=StateSpecializedPurposeForIncarceration.GENERAL,
                     assessment_score=assessment.assessment_score,
                     assessment_level=assessment.assessment_level,
                     assessment_type=assessment.assessment_type,
@@ -2214,7 +2215,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     violation_history_description="1misd",
                     violation_type_frequency_counter=[["MISDEMEANOR"]],
                     case_type=StateSupervisionCaseType.GENERAL,
-                    revocation_type=RevocationType.REINCARCERATION,
+                    revocation_type=StateSpecializedPurposeForIncarceration.GENERAL,
                     assessment_score=assessment.assessment_score,
                     assessment_level=assessment.assessment_level,
                     assessment_type=assessment.assessment_type,

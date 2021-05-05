@@ -14,14 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests the functions in us_id_revocation_utils.py"""
+"""Tests the functions in us_id_commitment_from_supervision_utils.py"""
 import unittest
 from datetime import date
 
-from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_revocation_utils import (
-    us_id_revoked_supervision_period_if_revocation_occurred,
-    us_id_filter_supervision_periods_for_revocation_identification,
-    us_id_get_pre_revocation_supervision_type,
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_commitment_from_supervision_utils import (
+    us_id_pre_commitment_supervision_periods_if_commitment,
+    us_id_filter_sps_for_commitment_from_supervision_identification,
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -41,9 +40,9 @@ from recidiviz.persistence.entity.state.entities import (
 
 
 class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
-    """Tests the us_id_revoked_supervision_period_if_revocation_occurred function."""
+    """Tests the us_id_pre_commitment_supervision_periods_if_commitment function."""
 
-    def test_us_id_revoked_supervision_period_if_revocation_occurred_probation_revocation(
+    def test_us_id_pre_commitment_supervision_periods_if_commitment_probation_revocation(
         self,
     ):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -72,14 +71,14 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
         (
             admission_is_revocation,
             revoked_period,
-        ) = us_id_revoked_supervision_period_if_revocation_occurred(
+        ) = us_id_pre_commitment_supervision_periods_if_commitment(
             incarceration_revocation_period, supervision_periods, None
         )
 
         self.assertTrue(admission_is_revocation)
         self.assertEqual(revoked_period, supervision_period)
 
-    def test_us_id_revoked_supervision_period_if_revocation_occurred_treatment(self):
+    def test_us_id_pre_commitment_supervision_periods_if_commitment_treatment(self):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
             start_date=date(2017, 1, 1),
@@ -106,7 +105,7 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
         (
             admission_is_revocation,
             revoked_period,
-        ) = us_id_revoked_supervision_period_if_revocation_occurred(
+        ) = us_id_pre_commitment_supervision_periods_if_commitment(
             incarceration_revocation_period, supervision_periods, None
         )
 
@@ -140,14 +139,14 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
         (
             admission_is_revocation,
             revoked_period,
-        ) = us_id_revoked_supervision_period_if_revocation_occurred(
+        ) = us_id_pre_commitment_supervision_periods_if_commitment(
             incarceration_revocation_period, supervision_periods, None
         )
 
         self.assertFalse(admission_is_revocation)
         self.assertIsNone(revoked_period)
 
-    def test_us_id_revoked_supervision_period_if_revocation_occurred_parole_board_revocation(
+    def test_us_id_pre_commitment_supervision_periods_if_commitment_parole_board_revocation(
         self,
     ):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -187,13 +186,13 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
         (
             admission_is_revocation,
             revoked_period,
-        ) = us_id_revoked_supervision_period_if_revocation_occurred(
+        ) = us_id_pre_commitment_supervision_periods_if_commitment(
             incarceration_revocation_period, supervision_periods, board_hold_period
         )
         self.assertTrue(admission_is_revocation)
         self.assertEqual(revoked_period, supervision_period)
 
-    def test_us_id_revoked_supervision_period_if_revocation_occurred_parole_board_to_treatment_revocation(
+    def test_us_id_pre_commitment_supervision_periods_if_commitment_parole_board_to_treatment_revocation(
         self,
     ):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -233,13 +232,13 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
         (
             admission_is_revocation,
             revoked_period,
-        ) = us_id_revoked_supervision_period_if_revocation_occurred(
+        ) = us_id_pre_commitment_supervision_periods_if_commitment(
             incarceration_revocation_period, supervision_periods, board_hold_period
         )
         self.assertTrue(admission_is_revocation)
         self.assertEqual(revoked_period, supervision_period)
 
-    def test_us_id_revoked_supervision_period_if_revocation_occurred_treatment_transfer_not_revocation(
+    def test_us_id_pre_commitment_supervision_periods_if_commitment_treatment_transfer_not_revocation(
         self,
     ):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -279,13 +278,13 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
         (
             admission_is_revocation,
             revoked_period,
-        ) = us_id_revoked_supervision_period_if_revocation_occurred(
+        ) = us_id_pre_commitment_supervision_periods_if_commitment(
             transfer_incarceration_period, supervision_periods, treatment_period
         )
         self.assertFalse(admission_is_revocation)
         self.assertIsNone(revoked_period)
 
-    def test_us_id_revoked_supervision_period_if_revocation_occurred_transfers_not_same_day(
+    def test_us_id_pre_commitment_supervision_periods_if_commitment_transfers_not_same_day(
         self,
     ):
         treatment_period = StateIncarcerationPeriod.new_with_defaults(
@@ -315,14 +314,14 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
         (
             admission_is_revocation,
             revoked_period,
-        ) = us_id_revoked_supervision_period_if_revocation_occurred(
+        ) = us_id_pre_commitment_supervision_periods_if_commitment(
             incarceration_revocation_period, [], treatment_period
         )
 
         self.assertFalse(admission_is_revocation)
         self.assertIsNone(revoked_period)
 
-    def test_us_id_revoked_supervision_period_if_revocation_occurred_no_revocation(
+    def test_us_id_pre_commitment_supervision_periods_if_commitment_no_revocation(
         self,
     ):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -341,14 +340,14 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
         (
             admission_is_revocation,
             revoked_period,
-        ) = us_id_revoked_supervision_period_if_revocation_occurred(
+        ) = us_id_pre_commitment_supervision_periods_if_commitment(
             incarceration_period, [], None
         )
 
         self.assertFalse(admission_is_revocation)
         self.assertIsNone(revoked_period)
 
-    def test_us_id_revoked_supervision_period_if_revocation_occurred_transfer_admission(
+    def test_us_id_pre_commitment_supervision_periods_if_commitment_transfer_admission(
         self,
     ):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -367,14 +366,14 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
         (
             admission_is_revocation,
             revoked_period,
-        ) = us_id_revoked_supervision_period_if_revocation_occurred(
+        ) = us_id_pre_commitment_supervision_periods_if_commitment(
             incarceration_period, [], None
         )
 
         self.assertFalse(admission_is_revocation)
         self.assertIsNone(revoked_period)
 
-    def test_us_id_revoked_supervision_period_if_revocation_occurred_regular_transfer(
+    def test_us_id_pre_commitment_supervision_periods_if_commitment_regular_transfer(
         self,
     ):
         board_hold_period = StateIncarcerationPeriod.new_with_defaults(
@@ -404,14 +403,14 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
         (
             admission_is_revocation,
             revoked_period,
-        ) = us_id_revoked_supervision_period_if_revocation_occurred(
+        ) = us_id_pre_commitment_supervision_periods_if_commitment(
             incarceration_revocation_period, [], board_hold_period
         )
 
         self.assertFalse(admission_is_revocation)
         self.assertIsNone(revoked_period)
 
-    def test_us_id_revoked_supervision_period_if_revocation_occurred_investigation_not_revocation(
+    def test_us_id_pre_commitment_supervision_periods_if_commitment_investigation_not_revocation(
         self,
     ):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -440,7 +439,7 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
         (
             admission_is_revocation,
             revoked_period,
-        ) = us_id_revoked_supervision_period_if_revocation_occurred(
+        ) = us_id_pre_commitment_supervision_periods_if_commitment(
             incarceration_revocation_period, supervision_periods, None
         )
 
@@ -476,7 +475,7 @@ class TestSupervisionFiltering(unittest.TestCase):
 
         self.assertEqual(
             [supervision_period_set],
-            us_id_filter_supervision_periods_for_revocation_identification(
+            us_id_filter_sps_for_commitment_from_supervision_identification(
                 supervision_periods
             ),
         )
@@ -508,7 +507,7 @@ class TestSupervisionFiltering(unittest.TestCase):
 
         self.assertEqual(
             [supervision_period_set],
-            us_id_filter_supervision_periods_for_revocation_identification(
+            us_id_filter_sps_for_commitment_from_supervision_identification(
                 supervision_periods
             ),
         )
@@ -520,30 +519,7 @@ class TestSupervisionFiltering(unittest.TestCase):
 
         self.assertEqual(
             [],
-            us_id_filter_supervision_periods_for_revocation_identification(
+            us_id_filter_sps_for_commitment_from_supervision_identification(
                 supervision_periods
             ),
         )
-
-
-class TestGetPreRevocationSupervisionType(unittest.TestCase):
-    """Tests the us_id_get_pre_revocation_supervision_type function."""
-
-    def test_us_id_get_pre_revocation_supervision_type(self):
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
-            state_code="US_ID",
-            start_date=date(2017, 3, 5),
-            termination_date=date(2017, 5, 9),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-        )
-
-        self.assertEqual(
-            StateSupervisionPeriodSupervisionType.PROBATION,
-            us_id_get_pre_revocation_supervision_type(supervision_period),
-        )
-
-    def test_us_id_get_pre_revocation_supervision_type_Empty(self):
-        self.assertIsNone(us_id_get_pre_revocation_supervision_type(None))

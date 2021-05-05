@@ -37,19 +37,15 @@ from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_commitment_from_supervision_utils import (
     us_nd_pre_commitment_supervision_periods_if_commitment_from_supervision,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_revocation_utils import (
-    us_pa_is_revocation_admission,
-    us_pa_revoked_supervision_periods_if_revocation_occurred,
-    us_pa_get_pre_revocation_supervision_type,
+from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_commitment_from_supervision_utils import (
+    us_pa_pre_commitment_supervision_periods_if_commitment,
 )
 from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager import (
     StateSupervisionCaseComplianceManager,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_revocation_utils import (
-    us_id_filter_supervision_periods_for_revocation_identification,
-    us_id_get_pre_revocation_supervision_type,
-    us_id_is_revocation_admission,
-    us_id_revoked_supervision_period_if_revocation_occurred,
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_commitment_from_supervision_utils import (
+    us_id_filter_sps_for_commitment_from_supervision_identification,
+    us_id_pre_commitment_supervision_periods_if_commitment,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_compliance import (
     UsIdSupervisionCaseCompliance,
@@ -71,7 +67,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_typ
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa import (
     us_pa_violation_utils,
-    us_pa_revocation_utils,
+    us_pa_commitment_from_supervision_utils,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_compliance import (
     UsPaSupervisionCaseCompliance,
@@ -85,6 +81,7 @@ from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import (
     get_month_supervision_type_default,
     get_pre_incarceration_supervision_type_from_incarceration_period,
+    get_pre_incarceration_supervision_type_from_supervision_period,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_type_identification import (
     us_mo_get_month_supervision_type,
@@ -111,7 +108,6 @@ from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
-    StateSupervisionViolationResponseRevocationType,
     StateSupervisionViolationResponseType,
 )
 from recidiviz.common.constants.states import StateCode
@@ -335,22 +331,26 @@ def get_post_incarceration_supervision_type(
     return None
 
 
-# TODO(#6985): Change all revocation language to commitment to supervision
-def get_pre_revocation_supervision_type(
+def get_commitment_from_supervision_supervision_type(
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_sentences: List[StateSupervisionSentence],
     incarceration_period: StateIncarcerationPeriod,
-    revoked_supervision_period: Optional[StateSupervisionPeriod],
+    previous_supervision_period: Optional[StateSupervisionPeriod],
 ) -> Optional[StateSupervisionPeriodSupervisionType]:
-    """Returns the supervision type the person was on before they had their supervision revoked."""
-    if incarceration_period.state_code.upper() == "US_ID":
-        return us_id_get_pre_revocation_supervision_type(revoked_supervision_period)
+    """Returns the supervision type the person was on before they were committed to
+    incarceration from supervision."""
+    if incarceration_period.state_code.upper() in ("US_ID", "US_PA"):
+        return get_pre_incarceration_supervision_type_from_supervision_period(
+            previous_supervision_period
+        )
+    if incarceration_period.state_code.upper() == "US_MO":
+        return us_mo_get_pre_incarceration_supervision_type(
+            incarceration_sentences, supervision_sentences, incarceration_period
+        )
     if incarceration_period.state_code.upper() == "US_ND":
         return us_nd_get_pre_commitment_supervision_type(
-            incarceration_period, revoked_supervision_period
+            incarceration_period, previous_supervision_period
         )
-    if incarceration_period.state_code.upper() == "US_PA":
-        return us_pa_get_pre_revocation_supervision_type(revoked_supervision_period)
 
     return get_pre_incarceration_supervision_type(
         incarceration_sentences, supervision_sentences, incarceration_period
@@ -417,32 +417,17 @@ def state_specific_filter_of_violation_responses(
     return violation_responses
 
 
-# TODO(#6985): Change all "revocation" language to "commitment from supervision"
-def filter_supervision_periods_for_revocation_identification(
+def filter_supervision_periods_for_commitment_from_supervision_identification(
     supervision_periods: List[StateSupervisionPeriod],
 ) -> List[StateSupervisionPeriod]:
-    """State-specific filtering of supervision periods that should be included in pre-revocation analysis."""
+    """State-specific filtering of supervision periods that should be included in
+    pre-commitment from supervision analysis."""
     if supervision_periods:
         if supervision_periods[0].state_code.upper() == "US_ID":
-            return us_id_filter_supervision_periods_for_revocation_identification(
+            return us_id_filter_sps_for_commitment_from_supervision_identification(
                 supervision_periods
             )
     return supervision_periods
-
-
-# TODO(#6985): Change all "revocation" language to "commitment from supervision"
-def incarceration_period_is_from_revocation(
-    incarceration_period: StateIncarcerationPeriod,
-    preceding_incarceration_period: Optional[StateIncarcerationPeriod],
-) -> bool:
-    """Determines if the sequence of incarceration periods represents a revocation."""
-    if incarceration_period.state_code.upper() == "US_ID":
-        return us_id_is_revocation_admission(
-            incarceration_period, preceding_incarceration_period
-        )
-    if incarceration_period.state_code.upper() == "US_PA":
-        return us_pa_is_revocation_admission(incarceration_period)
-    return is_commitment_from_supervision(incarceration_period.admission_reason)
 
 
 def should_produce_supervision_time_bucket_for_period(
@@ -738,76 +723,82 @@ def shorthand_for_violation_subtype(state_code: str, violation_subtype: str) -> 
     return violation_subtype.lower()
 
 
-# TODO(#6985): Change all "revocation" language to "commitment from supervision"
-def revoked_supervision_periods_if_revocation_occurred(
+def pre_commitment_supervision_periods_if_commitment(
     state_code: str,
     incarceration_period: StateIncarcerationPeriod,
     supervision_periods: List[StateSupervisionPeriod],
     preceding_incarceration_period: Optional[StateIncarcerationPeriod],
 ) -> Tuple[bool, List[StateSupervisionPeriod]]:
-    """If the incarceration period was a result of a supervision revocation, finds the supervision periods that were
-    revoked.
+    """If the incarceration period was a result of a commitment from supervision, finds
+    the supervision periods that caused the commitment from supervision.
 
-    Returns (False, []) if the incarceration period was not a result of a revocation. Returns True and the list of
-    supervision periods that were revoked if the incarceration period was a result of a revocation. In some cases, it's
-    possible for the admission to be a revocation even though we cannot identify the corresponding supervision periods
-    that were revoked (e.g. the person was serving supervision out-of-state). In these instances, this function will
-    return True and an empty list [].
+    Returns (False, []) if the incarceration period was not a result of a commitment from
+    supervision. Returns True and the list of supervision periods that caused the
+    commitment if the incarceration period was a result of a commitment from
+    supervision. In some cases, it's possible for the admission to be a commitment from
+    supervision even though we cannot identify the corresponding supervision periods
+    that caused the admission (e.g. the person was serving supervision out-of-state).
+    In these instances, this function will return True and an empty list [].
     """
-    revoked_periods: List[StateSupervisionPeriod] = []
+    pre_commitment_supervision_periods: List[StateSupervisionPeriod] = []
 
     if state_code == StateCode.US_ID.value:
         (
-            admission_is_revocation,
+            admission_is_commitment,
             revoked_period,
-        ) = us_id_revoked_supervision_period_if_revocation_occurred(
+        ) = us_id_pre_commitment_supervision_periods_if_commitment(
             incarceration_period, supervision_periods, preceding_incarceration_period
         )
 
         if revoked_period:
-            revoked_periods = [revoked_period]
+            pre_commitment_supervision_periods = [revoked_period]
     elif state_code == StateCode.US_ND.value:
         (
-            admission_is_revocation,
-            revoked_periods,
+            admission_is_commitment,
+            pre_commitment_supervision_periods,
         ) = us_nd_pre_commitment_supervision_periods_if_commitment_from_supervision(
             incarceration_period, supervision_periods
         )
     elif state_code == StateCode.US_PA.value:
         (
-            admission_is_revocation,
-            revoked_periods,
-        ) = us_pa_revoked_supervision_periods_if_revocation_occurred(
+            admission_is_commitment,
+            pre_commitment_supervision_periods,
+        ) = us_pa_pre_commitment_supervision_periods_if_commitment(
             incarceration_period, supervision_periods
         )
     else:
-        admission_is_revocation = is_commitment_from_supervision(
+        admission_is_commitment = is_commitment_from_supervision(
             incarceration_period.admission_reason
         )
-        revoked_periods = get_relevant_supervision_periods_before_admission_date(
-            incarceration_period.admission_date, supervision_periods
+        pre_commitment_supervision_periods = (
+            get_relevant_supervision_periods_before_admission_date(
+                incarceration_period.admission_date, supervision_periods
+            )
         )
 
-    return admission_is_revocation, revoked_periods
+    return admission_is_commitment, pre_commitment_supervision_periods
 
 
-# TODO(#6985): Change all "revocation" language to "commitment from supervision"
-def state_specific_revocation_type_and_subtype(
+def state_specific_purpose_for_incarceration_and_subtype(
     state_code: str,
     incarceration_period: StateIncarcerationPeriod,
     violation_responses: List[StateSupervisionViolationResponse],
-    default_revocation_type_and_subtype_identifier: Callable[
+    default_purpose_for_incarceration_and_subtype_identifier: Callable[
         [StateIncarcerationPeriod],
-        Tuple[Optional[StateSupervisionViolationResponseRevocationType], Optional[str]],
+        Tuple[Optional[StateSpecializedPurposeForIncarceration], Optional[str]],
     ],
-) -> Tuple[Optional[StateSupervisionViolationResponseRevocationType], Optional[str]]:
-    """Returns the revocation_type and, if applicable, revocation_type_subtype for the given revocation admission."""
+) -> Tuple[Optional[StateSpecializedPurposeForIncarceration], Optional[str]]:
+    """Returns the specialized_purpose_for_incarceration and, if applicable, the
+    specialized_purpose_for_incarceration_subtype of the commitment from supervision
+    admission to the given incarceration_period."""
     if state_code.upper() == StateCode.US_PA.value:
-        return us_pa_revocation_utils.us_pa_revocation_type_and_subtype(
+        return us_pa_commitment_from_supervision_utils.us_pa_purpose_for_incarceration_and_subtype(
             incarceration_period, violation_responses
         )
 
-    return default_revocation_type_and_subtype_identifier(incarceration_period)
+    return default_purpose_for_incarceration_and_subtype_identifier(
+        incarceration_period
+    )
 
 
 def state_specific_supervision_admission_reason_override(
