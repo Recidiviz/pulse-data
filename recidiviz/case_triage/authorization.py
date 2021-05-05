@@ -15,15 +15,55 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-This module contains various pieces related to the Case Triage authentication / authorization flow
+This module contains various pieces related to the Case Triage authentication /
+authorization flow. It also has added support for feature gating and variant
+selection.
 """
 import json
-from typing import List
+import logging
+from datetime import date
+from typing import Dict, List, Optional
+
+import attr
+import dateutil.parser
 
 from recidiviz.case_triage.util import get_local_file
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.utils.environment import in_gcp
 from recidiviz.utils.metadata import project_id
+
+
+KNOWN_EXPERIMENTS = [
+    "can-see-top-opportunities",
+]
+
+
+@attr.s(auto_attribs=True)
+class FeatureGateInfo:
+    """Represents what variant a user belongs to and at what time
+    that variant is active."""
+
+    variant: str
+    active_date: Optional[date] = attr.ib(default=None)
+
+    @staticmethod
+    def from_json(json_dict: Dict[str, str]) -> "FeatureGateInfo":
+        f = FeatureGateInfo(variant=json_dict["variant"])
+        if date_str := json_dict.get("active_date"):
+            try:
+                f.active_date = dateutil.parser.parse(date_str).date()
+            except (TypeError, ValueError):
+                logging.warning(
+                    "invalid date found in feature gate json: %s", json_dict
+                )
+        return f
+
+    def get_current_variant(self, on_date: Optional[date] = None) -> Optional[str]:
+        if on_date is None:
+            on_date = date.today()
+        if self.active_date is not None and self.active_date > on_date:
+            return None
+        return self.variant
 
 
 class AuthorizationStore:
@@ -37,11 +77,23 @@ class AuthorizationStore:
         self.allowlist_path = GcsfsFilePath.from_absolute_path(
             f"{prefix}case-triage-data/allowlist_v2.json"
         )
+        self.feature_gate_path = GcsfsFilePath.from_absolute_path(
+            f"{prefix}case-triage-data/feature_variants.json"
+        )
+
         self.allowed_users: List[str] = []
         self.admin_users: List[str] = []
         self.demo_users: List[str] = []
 
+        # Map from feature name to a map of email addresses to variants
+        # of the feature that they are in.
+        self.feature_variants: Dict[str, Dict[str, FeatureGateInfo]] = {}
+
     def refresh(self) -> None:
+        self._refresh_auth_info()
+        self._refresh_feature_gates()
+
+    def _refresh_auth_info(self) -> None:
         data = json.loads(get_local_file(self.allowlist_path))
         self.allowed_users = [struct["email"] for struct in data]
         self.admin_users = [
@@ -51,8 +103,29 @@ class AuthorizationStore:
             struct["email"] for struct in data if struct.get("is_demo_user")
         ]
 
+    def _refresh_feature_gates(self) -> None:
+        feature_gate_json = json.loads(get_local_file(self.feature_gate_path))
+
+        self.feature_variants = {
+            feature: {
+                email: FeatureGateInfo.from_json(gate_info)
+                for email, gate_info in submap.items()
+            }
+            for feature, submap in feature_gate_json.items()
+        }
+
     def can_impersonate_others(self, email: str) -> bool:
         return email in self.admin_users
 
     def can_see_demo_data(self, email: str) -> bool:
         return email in self.admin_users or email in self.demo_users
+
+    def get_feature_variant(
+        self, feature: str, email: str, on_date: Optional[date] = None
+    ) -> Optional[str]:
+        """This returns the feature variant for a given user and returns
+        None if the user is in the control (no variant assigned)."""
+        feature_gate_info = self.feature_variants.get(feature, {}).get(email)
+        if not feature_gate_info:
+            return None
+        return feature_gate_info.get_current_variant(on_date=on_date)

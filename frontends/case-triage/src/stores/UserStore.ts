@@ -28,12 +28,18 @@ interface UserStoreProps {
   authSettings: Auth0ClientOptions;
 }
 
+export interface FeatureVariants {
+  [feature: string]: string;
+}
+
 export default class UserStore {
   authError?: Error;
 
   authSettings: Auth0ClientOptions;
 
   currentVersion?: string;
+
+  featureVariants: FeatureVariants;
 
   isAuthorized: boolean;
 
@@ -58,6 +64,7 @@ export default class UserStore {
 
     this.authSettings = authSettings;
     this.lacksCaseTriageAuthorization = false;
+    this.featureVariants = {};
     this.isAuthorized = false;
     this.isLoading = true;
     this.shouldReload = false;
@@ -143,5 +150,9 @@ export default class UserStore {
     runInAction(() => {
       this.lacksCaseTriageAuthorization = lacksCaseTriageAuthorization;
     });
+  }
+
+  setFeatureVariants(variants: FeatureVariants): void {
+    this.featureVariants = variants;
   }
 }
