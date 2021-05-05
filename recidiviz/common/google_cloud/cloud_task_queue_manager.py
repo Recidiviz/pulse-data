@@ -16,7 +16,7 @@
 # =============================================================================
 """Various helper classes for interacting with a cloud task queue."""
 
-from typing import List, Type, TypeVar, Generic, Dict
+from typing import List, Type, TypeVar, Generic, Dict, Optional
 
 import attr
 
@@ -63,9 +63,9 @@ class CloudTaskQueueManager(Generic[QueueInfoType]):
     def create_task(
         self,
         *,
-        task_id: str,
         relative_uri: str,
         body: Dict[str, str],
+        task_id: Optional[str] = None,
         schedule_delay_seconds: int = 0
     ) -> None:
         self.cloud_task_client.create_task(
