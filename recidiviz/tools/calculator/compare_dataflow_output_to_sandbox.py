@@ -176,23 +176,26 @@ def compare_dataflow_output_to_sandbox(
         sandbox_comparison_output_dataset_id
     )
 
-    if (
-        bq_client.dataset_exists(sandbox_comparison_output_dataset_ref)
-        and any(bq_client.list_tables(sandbox_comparison_output_dataset_id))
-        and not allow_overwrite
+    if bq_client.dataset_exists(sandbox_comparison_output_dataset_ref) and any(
+        bq_client.list_tables(sandbox_comparison_output_dataset_id)
     ):
-        if __name__ == "__main__":
-            logging.error(
-                "Dataset %s already exists in project %s. To overwrite, set --allow_overwrite.",
-                sandbox_comparison_output_dataset_id,
-                bq_client.project_id,
-            )
-            sys.exit(1)
+        if not allow_overwrite:
+            if __name__ == "__main__":
+                logging.error(
+                    "Dataset %s already exists in project %s. To overwrite, set --allow_overwrite.",
+                    sandbox_comparison_output_dataset_id,
+                    bq_client.project_id,
+                )
+                sys.exit(1)
+            else:
+                raise ValueError(
+                    f"Cannot write comparison output to a non-empty dataset. Please delete tables in dataset: "
+                    f"{bq_client.project_id}.{sandbox_comparison_output_dataset_id}."
+                )
         else:
-            raise ValueError(
-                f"Cannot write comparison output to a non-empty dataset. Please delete tables in dataset: "
-                f"{bq_client.project_id}.{sandbox_comparison_output_dataset_id}."
-            )
+            # Clean up the existing tables in the dataset
+            for table in bq_client.list_tables(sandbox_comparison_output_dataset_id):
+                bq_client.delete_table(table.dataset_id, table.table_id)
 
     bq_client.create_dataset_if_necessary(
         sandbox_comparison_output_dataset_ref, TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
