@@ -18,10 +18,12 @@
 from collections import defaultdict
 from typing import Dict, Any, Union, List
 
-from more_itertools import one
 import apache_beam as beam
 from apache_beam.typehints import with_input_types, with_output_types
 
+from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
+    attach_ssvrs_to_ips,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import (
     UsMoSupervisionSentence,
     UsMoIncarcerationSentence,
@@ -160,27 +162,10 @@ class SetViolationResponseOnIncarcerationPeriod(beam.DoFn):
         )
 
         if incarceration_periods:
+            if violation_responses:
+                attach_ssvrs_to_ips(incarceration_periods, violation_responses)
+
             for incarceration_period in incarceration_periods:
-                if (
-                    incarceration_period.source_supervision_violation_response
-                    and violation_responses
-                ):
-
-                    corresponding_response = [
-                        response
-                        for response in violation_responses
-                        if response.supervision_violation_response_id
-                        == incarceration_period.source_supervision_violation_response.supervision_violation_response_id
-                    ]
-
-                    # If there's a corresponding response, there should only
-                    # be 1 (this is enforced at a DB level)
-                    response = one(corresponding_response)
-
-                    incarceration_period.source_supervision_violation_response = (
-                        response
-                    )
-
                 yield (person_id, incarceration_period)
 
     def to_runner_api_parameter(self, _):

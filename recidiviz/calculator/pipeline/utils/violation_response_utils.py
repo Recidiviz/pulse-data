@@ -19,6 +19,13 @@ import datetime
 from collections import defaultdict
 from typing import List, Optional, Callable, Dict
 
+from recidiviz.calculator.pipeline.utils.calculator_utils import (
+    identify_most_severe_response_decision,
+)
+from recidiviz.common.constants.state.state_supervision_violation_response import (
+    StateSupervisionViolationResponseDecision,
+)
+
 from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponse,
 )
@@ -62,3 +69,24 @@ def responses_on_most_recent_response_date(
     most_recent_response_date = max(responses_by_date.keys())
 
     return responses_by_date[most_recent_response_date]
+
+
+def get_most_severe_response_decision(
+    violation_responses: List[StateSupervisionViolationResponse],
+) -> Optional[StateSupervisionViolationResponseDecision]:
+    """Returns the most severe response decision on the given |violation_responses|."""
+    if not violation_responses:
+        return None
+
+    response_decisions: List[StateSupervisionViolationResponseDecision] = []
+    for response in violation_responses:
+
+        if response.supervision_violation_response_decisions:
+            decision_entries = response.supervision_violation_response_decisions
+
+            for decision_entry in decision_entries:
+                if decision_entry.decision:
+                    response_decisions.append(decision_entry.decision)
+
+    # Find the most severe decision responses
+    return identify_most_severe_response_decision(response_decisions)

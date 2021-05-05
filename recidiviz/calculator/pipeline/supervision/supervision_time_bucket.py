@@ -35,6 +35,9 @@ from recidiviz.calculator.pipeline.utils.supervision_period_index import (
 from recidiviz.common import attr_validators
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateSpecializedPurposeForIncarceration,
+)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
     StateSupervisionPeriodSupervisionType,
@@ -42,7 +45,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
-    StateSupervisionViolationResponseRevocationType,
     StateSupervisionViolationResponseDecision,
 )
 
@@ -106,18 +108,20 @@ class SupervisionDowngradeBucket(BuildableAttr):
     previous_supervision_level: Optional[StateSupervisionLevel] = attr.ib(default=None)
 
 
+# TODO(#6988): Delete this bucket after we transition to the
+#  IncarcerationCommitmentFromSupervisionMetric
 @attr.s(frozen=True)
 class RevocationReturnSupervisionTimeBucket(
     SupervisionTimeBucket, ViolationHistoryMixin
 ):
     """Models a SupervisionTimeBucket where the person was incarcerated for a revocation."""
 
-    # Note: This will temporarily store StateSpecializedPurposeForIncarceration values
-    # as we transition to the IncarcerationCommitmentFromSupervisionMetric
+    # TODO(#6988): This will temporarily store StateSpecializedPurposeForIncarceration
+    #  values as we transition to the IncarcerationCommitmentFromSupervisionMetric
     # The type of revocation of supervision
-    revocation_type: Optional[
-        StateSupervisionViolationResponseRevocationType
-    ] = attr.ib(default=None)
+    revocation_type: Optional[StateSpecializedPurposeForIncarceration] = attr.ib(
+        default=None
+    )
 
     # A string subtype that provides further insight into the revocation_type above.
     revocation_type_subtype: Optional[str] = attr.ib(default=None)

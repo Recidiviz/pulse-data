@@ -24,13 +24,17 @@ from datetime import date
 from typing import List, Optional
 
 import attr
+from more_itertools import one
 
 from recidiviz.calculator.pipeline.utils.period_utils import (
     sort_periods_by_set_dates_and_statuses,
 )
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationPeriod,
+    StateSupervisionViolationResponse,
+)
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason as AdmissionReason,
     StateIncarcerationPeriodStatus,
@@ -633,3 +637,34 @@ def period_edges_are_valid_transfer(
         and admission_reason == StateIncarcerationPeriodAdmissionReason.TRANSFER
         and release_reason == StateIncarcerationPeriodReleaseReason.TRANSFER
     )
+
+
+def attach_ssvrs_to_ips(
+    incarceration_periods: List[StateIncarcerationPeriod],
+    violation_responses: List[StateSupervisionViolationResponse],
+) -> None:
+    """For the incarceration periods and supervision violation responses of a given
+    person, finds the matching hydrated supervision violation response for a resulting
+    incarceration period, and sets the hydrated version onto the incarceration_period
+    entity.
+
+    Assumes that the list of |violation_responses| contains ALL
+    StateSupervisionViolationResponses for the person.
+    """
+    if not violation_responses:
+        return
+
+    for incarceration_period in incarceration_periods:
+        if incarceration_period.source_supervision_violation_response:
+            corresponding_response = [
+                response
+                for response in violation_responses
+                if response.supervision_violation_response_id
+                == incarceration_period.source_supervision_violation_response.supervision_violation_response_id
+            ]
+
+            # If there's a corresponding response, there should only be 1 (this is
+            # enforced at a DB level)
+            response = one(corresponding_response)
+
+            incarceration_period.source_supervision_violation_response = response

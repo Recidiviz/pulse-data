@@ -45,6 +45,17 @@ SUPERVISION_TYPE_PRECEDENCE_ORDER = [
 ]
 
 
+def get_pre_incarceration_supervision_type_from_supervision_period(
+    supervision_period: Optional[StateSupervisionPeriod],
+) -> Optional[StateSupervisionPeriodSupervisionType]:
+    """Returns the supervision_period_supervision_type associated with the given
+    supervision_period that preceded the admission to incarceration from supervision,
+    if present. If not, returns None."""
+    if supervision_period:
+        return supervision_period.supervision_period_supervision_type
+    return None
+
+
 def get_pre_incarceration_supervision_type_from_incarceration_period(
     incarceration_period: StateIncarcerationPeriod,
 ) -> Optional[StateSupervisionPeriodSupervisionType]:

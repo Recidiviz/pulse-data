@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """US_ID-specific implementations of functions related to supervision type identification."""
-import itertools
 from collections import defaultdict
 from datetime import date
 from typing import Optional, List, Dict, Set, Union
@@ -28,6 +27,9 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import (
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_index import (
     SupervisionPeriodIndex,
+)
+from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
+    get_supervision_periods_from_sentences,
 )
 from recidiviz.common.common_utils import date_spans_overlap_exclusive
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -72,7 +74,7 @@ def us_id_get_pre_incarceration_supervision_type(
             f"No admission date for incarceration period {incarceration_period.incarceration_period_id}"
         )
 
-    supervision_periods = _get_supervision_periods_from_sentences(
+    supervision_periods = get_supervision_periods_from_sentences(
         incarceration_sentences, supervision_sentences
     )
 
@@ -103,7 +105,7 @@ def us_id_get_post_incarceration_supervision_type(
     ):
         return None
 
-    supervision_periods = _get_supervision_periods_from_sentences(
+    supervision_periods = get_supervision_periods_from_sentences(
         incarceration_sentences, supervision_sentences
     )
 
@@ -177,34 +179,6 @@ def us_id_get_most_recent_supervision_period_supervision_type_before_upper_bound
     return get_most_relevant_supervision_type(
         supervision_types_by_end_date[max_end_date]
     )
-
-
-def _get_supervision_periods_from_sentences(
-    incarceration_sentences: List[StateIncarcerationSentence],
-    supervision_sentences: List[StateSupervisionSentence],
-) -> List[StateSupervisionPeriod]:
-    """Returns all unique supervision periods associated with any of the given sentences."""
-    sentences = itertools.chain(supervision_sentences, incarceration_sentences)
-    supervision_period_ids: Set[int] = set()
-    supervision_periods: List[StateSupervisionPeriod] = []
-
-    for sentence in sentences:
-        if not isinstance(
-            sentence, (StateIncarcerationSentence, StateSupervisionSentence)
-        ):
-            raise ValueError(f"Sentence has unexpected type {type(sentence)}")
-
-        for supervision_period in sentence.supervision_periods:
-            supervision_period_id = supervision_period.supervision_period_id
-
-            if (
-                supervision_period_id is not None
-                and supervision_period_id not in supervision_period_ids
-            ):
-                supervision_periods.append(supervision_period)
-                supervision_period_ids.add(supervision_period_id)
-
-    return supervision_periods
 
 
 def us_id_supervision_period_is_out_of_state(

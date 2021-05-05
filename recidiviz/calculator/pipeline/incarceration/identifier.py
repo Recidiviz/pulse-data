@@ -30,6 +30,10 @@ from recidiviz.calculator.pipeline.incarceration.incarceration_event import (
     IncarcerationCommitmentFromSupervisionAdmissionEvent,
     IncarcerationStandardAdmissionEvent,
 )
+from recidiviz.calculator.pipeline.utils import assessment_utils
+from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
+    get_commitment_from_supervision_details,
+)
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     list_of_dicts_to_dict_with_keys,
     extract_county_of_residence_from_rows,
@@ -40,6 +44,7 @@ from recidiviz.calculator.pipeline.utils.incarceration_period_index import (
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
     prepare_incarceration_periods_for_calculations,
     IncarcerationPreProcessingConfig,
+    attach_ssvrs_to_ips,
 )
 from recidiviz.calculator.pipeline.utils.period_utils import (
     find_earliest_date_of_period_ending_in_death,
@@ -53,13 +58,28 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     drop_temporary_custody_periods,
     drop_non_state_prison_incarceration_type_periods,
     state_specific_specialized_purpose_for_incarceration_override,
+    pre_commitment_supervision_periods_if_commitment,
+    filter_supervision_periods_for_commitment_from_supervision_identification,
+    sorted_violation_responses_in_window,
+    include_decisions_on_follow_up_responses_for_most_severe_response,
+    get_commitment_from_supervision_supervision_type,
 )
+from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
+    get_supervision_periods_from_sentences,
+)
+from recidiviz.calculator.pipeline.utils.violation_response_utils import (
+    responses_on_most_recent_response_date,
+    get_most_severe_response_decision,
+)
+from recidiviz.calculator.pipeline.utils.violation_utils import (
+    get_violation_and_response_history,
+)
+from recidiviz.common.constants.state.state_assessment import StateAssessmentClass
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodStatus,
     StateIncarcerationPeriodAdmissionReason,
     StateSpecializedPurposeForIncarceration,
     StateIncarcerationPeriodReleaseReason,
-    is_commitment_from_supervision,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
@@ -73,13 +93,18 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionSentence,
     StateSupervisionPeriod,
     PeriodType,
+    StateAssessment,
+    StateSupervisionViolationResponse,
 )
 
 
 def find_incarceration_events(
     sentence_groups: List[StateSentenceGroup],
+    assessments: List[StateAssessment],
+    violation_responses: List[StateSupervisionViolationResponse],
     incarceration_period_judicial_district_association: List[Dict[str, Any]],
     persons_to_recent_county_of_residence: List[Dict[str, Any]],
+    supervision_period_to_agent_association: List[Dict[str, Any]],
 ) -> List[IncarcerationEvent]:
     """Finds instances of admission or release from incarceration.
     Transforms the person's StateIncarcerationPeriods, which are connected to their StateSentenceGroups, into
@@ -118,6 +143,11 @@ def find_incarceration_events(
         periods=all_periods
     )
 
+    # TODO(#7141): Properly hydrate StateIncarcerationPeriods so that this works for US_ND
+    # Set the fully hydrated StateSupervisionViolationResponse entities on the
+    # corresponding StateIncarcerationPeriods
+    attach_ssvrs_to_ips(incarceration_periods, violation_responses)
+
     county_of_residence: Optional[str] = extract_county_of_residence_from_rows(
         persons_to_recent_county_of_residence
     )
@@ -130,6 +160,11 @@ def find_incarceration_events(
     ] = list_of_dicts_to_dict_with_keys(
         incarceration_period_judicial_district_association,
         key=StateIncarcerationPeriod.get_class_id_name(),
+    )
+
+    supervision_period_to_agent_associations = list_of_dicts_to_dict_with_keys(
+        supervision_period_to_agent_association,
+        StateSupervisionPeriod.get_class_id_name(),
     )
 
     incarceration_events.extend(
@@ -146,12 +181,15 @@ def find_incarceration_events(
 
     incarceration_events.extend(
         find_all_admission_release_events(
-            state_code,
-            incarceration_sentences,
-            supervision_sentences,
-            incarceration_periods,
-            county_of_residence,
-            earliest_death_date,
+            state_code=state_code,
+            incarceration_sentences=incarceration_sentences,
+            supervision_sentences=supervision_sentences,
+            original_incarceration_periods=incarceration_periods,
+            assessments=assessments,
+            violation_responses=violation_responses,
+            supervision_period_to_agent_associations=supervision_period_to_agent_associations,
+            county_of_residence=county_of_residence,
+            earliest_death_date=earliest_death_date,
         )
     )
 
@@ -163,6 +201,9 @@ def find_all_admission_release_events(
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_sentences: List[StateSupervisionSentence],
     original_incarceration_periods: List[StateIncarcerationPeriod],
+    assessments: List[StateAssessment],
+    violation_responses: List[StateSupervisionViolationResponse],
+    supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
     county_of_residence: Optional[str],
     earliest_death_date: Optional[date] = None,
 ) -> List[Union[IncarcerationAdmissionEvent, IncarcerationReleaseEvent]]:
@@ -205,13 +246,21 @@ def find_all_admission_release_events(
         )
     )
 
+    supervision_periods = get_supervision_periods_from_sentences(
+        incarceration_sentences, supervision_sentences
+    )
+
     for incarceration_period in de_duplicated_incarceration_admissions:
         admission_event = admission_event_for_period(
-            incarceration_sentences,
-            supervision_sentences,
-            incarceration_period,
-            incarceration_periods_for_admissions_index,
-            county_of_residence,
+            incarceration_sentences=incarceration_sentences,
+            supervision_sentences=supervision_sentences,
+            incarceration_period=incarceration_period,
+            incarceration_period_index=incarceration_periods_for_admissions_index,
+            supervision_periods=supervision_periods,
+            assessments=assessments,
+            violation_responses=violation_responses,
+            supervision_period_to_agent_associations=supervision_period_to_agent_associations,
+            county_of_residence=county_of_residence,
         )
 
         if admission_event:
@@ -576,6 +625,10 @@ def admission_event_for_period(
     supervision_sentences: List[StateSupervisionSentence],
     incarceration_period: StateIncarcerationPeriod,
     incarceration_period_index: IncarcerationPeriodIndex,
+    supervision_periods: List[StateSupervisionPeriod],
+    assessments: List[StateAssessment],
+    violation_responses: List[StateSupervisionViolationResponse],
+    supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
     county_of_residence: Optional[str],
 ) -> Optional[IncarcerationAdmissionEvent]:
     """Returns an IncarcerationAdmissionEvent if this incarceration period represents an admission to incarceration."""
@@ -616,17 +669,32 @@ def admission_event_for_period(
             admission_reason,
         )
 
-        if is_commitment_from_supervision(admission_reason):
-            # TODO(#6985): Fill in all supervision-related fields
-            return IncarcerationCommitmentFromSupervisionAdmissionEvent(
-                state_code=incarceration_period.state_code,
-                event_date=admission_date,
-                facility=incarceration_period.facility,
-                admission_reason=admission_reason,
-                admission_reason_raw_text=incarceration_period.admission_reason_raw_text,
-                specialized_purpose_for_incarceration=specialized_purpose_for_incarceration,
+        filtered_supervision_periods = (
+            filter_supervision_periods_for_commitment_from_supervision_identification(
+                supervision_periods
+            )
+        )
+
+        (
+            admission_is_commitment_from_supervision,
+            pre_commitment_supervision_periods,
+        ) = pre_commitment_supervision_periods_if_commitment(
+            incarceration_period.state_code,
+            incarceration_period,
+            filtered_supervision_periods,
+            preceding_incarceration_period,
+        )
+
+        if admission_is_commitment_from_supervision:
+            return _commitment_from_supervision_event_for_period(
+                incarceration_sentences=incarceration_sentences,
+                supervision_sentences=supervision_sentences,
+                incarceration_period=incarceration_period,
+                pre_commitment_supervision_periods=pre_commitment_supervision_periods,
+                assessments=assessments,
+                violation_responses=violation_responses,
+                supervision_period_to_agent_associations=supervision_period_to_agent_associations,
                 county_of_residence=county_of_residence,
-                supervision_type=supervision_type_at_admission,
             )
 
         return IncarcerationStandardAdmissionEvent(
@@ -640,6 +708,162 @@ def admission_event_for_period(
         )
 
     return None
+
+
+def _commitment_from_supervision_event_for_period(
+    incarceration_sentences: List[StateIncarcerationSentence],
+    supervision_sentences: List[StateSupervisionSentence],
+    incarceration_period: StateIncarcerationPeriod,
+    pre_commitment_supervision_periods: List[StateSupervisionPeriod],
+    assessments: List[StateAssessment],
+    violation_responses: List[StateSupervisionViolationResponse],
+    supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
+    county_of_residence: Optional[str],
+) -> IncarcerationCommitmentFromSupervisionAdmissionEvent:
+    """
+    Returns the IncarcerationCommitmentFromSupervisionAdmissionEvent corresponding to
+    the admission to the |incarceration_period| that qualifies as a commitment from
+    supervision admission. Includes details about the period of supervision that
+    preceded the admission.
+    """
+    admission_date = incarceration_period.admission_date
+    admission_reason = incarceration_period.admission_reason
+
+    if not admission_date or not admission_reason:
+        raise ValueError(
+            "Should only be calling this function with a set "
+            "admission_date and admission_reason."
+        )
+
+    (
+        assessment_score,
+        assessment_level,
+        assessment_type,
+    ) = assessment_utils.most_recent_applicable_assessment_attributes_for_class(
+        admission_date,
+        assessments,
+        assessment_class=StateAssessmentClass.RISK,
+        state_code=incarceration_period.state_code,
+    )
+
+    # We will use the date of the last response prior to the admission as the
+    # window cutoff.
+    responses_in_window = sorted_violation_responses_in_window(
+        violation_responses,
+        upper_bound_exclusive=admission_date + relativedelta(days=1),
+        lower_bound_inclusive=None,
+        include_follow_up_responses=False,
+    )
+
+    violation_history_end_date = admission_date
+
+    if responses_in_window:
+        # If there were violation responses leading up to the incarceration
+        # admission, then we want the violation history leading up to the last
+        # response_date instead of the admission_date on the
+        # incarceration_period
+        last_response = responses_in_window[-1]
+
+        if not last_response.response_date:
+            # This should never happen, but is here to silence mypy warnings
+            # about empty response_dates.
+            raise ValueError(
+                "Not effectively filtering out responses without valid"
+                " response_dates."
+            )
+        violation_history_end_date = last_response.response_date
+
+    # Get details about the violation and response history leading up to the
+    # admission to incarceration
+    violation_history = get_violation_and_response_history(
+        violation_history_end_date,
+        violation_responses,
+        incarceration_period,
+    )
+
+    responses_in_window_for_decision_evaluation = responses_in_window
+
+    if include_decisions_on_follow_up_responses_for_most_severe_response(
+        incarceration_period.state_code
+    ):
+        responses_in_window_for_decision_evaluation = sorted_violation_responses_in_window(
+            violation_responses,
+            upper_bound_exclusive=(admission_date + relativedelta(days=1)),
+            # We're just looking for the most recent response
+            lower_bound_inclusive=None,
+            include_follow_up_responses=True,
+        )
+
+    # Find the most severe decision on the most recent response decisions
+    most_recent_responses = responses_on_most_recent_response_date(
+        responses_in_window_for_decision_evaluation
+    )
+    most_recent_response_decision = get_most_severe_response_decision(
+        most_recent_responses
+    )
+
+    pre_commitment_supervision_period: Optional[StateSupervisionPeriod] = None
+
+    if pre_commitment_supervision_periods:
+        # TODO(#7140): Handle commitment to incarceration from multiple supervision
+        #  periods
+        # Deterministically sort by supervision_period_id and take the first one
+        pre_commitment_supervision_periods.sort(
+            key=lambda b: b.supervision_period_id or -1
+        )
+        pre_commitment_supervision_period = pre_commitment_supervision_periods[0]
+
+    commitment_details = get_commitment_from_supervision_details(
+        incarceration_period=incarceration_period,
+        pre_commitment_supervision_period=pre_commitment_supervision_period,
+        violation_responses=violation_responses,
+        supervision_period_to_agent_associations=supervision_period_to_agent_associations,
+    )
+
+    supervision_type = get_commitment_from_supervision_supervision_type(
+        incarceration_sentences=incarceration_sentences,
+        supervision_sentences=supervision_sentences,
+        incarceration_period=incarceration_period,
+        previous_supervision_period=pre_commitment_supervision_period,
+    )
+
+    deprecated_supervising_district_external_id = (
+        commitment_details.level_2_supervision_location_external_id
+        or commitment_details.level_1_supervision_location_external_id
+    )
+
+    return IncarcerationCommitmentFromSupervisionAdmissionEvent(
+        state_code=incarceration_period.state_code,
+        event_date=admission_date,
+        facility=incarceration_period.facility,
+        admission_reason=admission_reason,
+        admission_reason_raw_text=incarceration_period.admission_reason_raw_text,
+        supervision_type=supervision_type,
+        specialized_purpose_for_incarceration=commitment_details.purpose_for_incarceration,
+        specialized_purpose_for_incarceration_subtype=commitment_details.purpose_for_incarceration_subtype,
+        county_of_residence=county_of_residence,
+        case_type=commitment_details.case_type,
+        supervision_level=commitment_details.supervision_level,
+        supervision_level_raw_text=commitment_details.supervision_level_raw_text,
+        assessment_score=assessment_score,
+        assessment_level=assessment_level,
+        assessment_type=assessment_type,
+        most_severe_violation_type=violation_history.most_severe_violation_type,
+        most_severe_violation_type_subtype=violation_history.most_severe_violation_type_subtype,
+        most_severe_response_decision=violation_history.most_severe_response_decision,
+        most_recent_response_decision=most_recent_response_decision,
+        response_count=violation_history.response_count,
+        violation_history_description=violation_history.violation_history_description,
+        violation_type_frequency_counter=violation_history.violation_type_frequency_counter,
+        supervising_officer_external_id=commitment_details.supervising_officer_external_id,
+        supervising_district_external_id=deprecated_supervising_district_external_id,
+        level_1_supervision_location_external_id=(
+            commitment_details.level_1_supervision_location_external_id
+        ),
+        level_2_supervision_location_external_id=(
+            commitment_details.level_2_supervision_location_external_id
+        ),
+    )
 
 
 def release_event_for_period(
