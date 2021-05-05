@@ -113,9 +113,9 @@ class GoogleCloudTasksClientWrapper:
     def create_task(
         self,
         *,
-        task_id: str,
         queue_name: str,
         relative_uri: str,
+        task_id: Optional[str] = None,
         body: Optional[Dict[str, Any]] = None,
         schedule_delay_seconds: int = 0,
         http_method: HttpMethod = HttpMethod.POST
@@ -123,7 +123,11 @@ class GoogleCloudTasksClientWrapper:
         """Creates a task with the given details.
 
         Args:
-            task_id: Id of the task to include in the task name
+            task_id: (optional) ID of the task to include in the task name
+            Specifying task IDs enables task de-duplication for the queue. Subsequent requests to enqueue a task with the
+            same ID as a recently completed task will raise `409 Conflict (entity already exists)
+            If left unspecified, Cloud Tasks will automatically generate an ID for the task
+            https://cloud.google.com/tasks/docs/reference/rest/v2beta3/projects.locations.queues.tasks/create#body.request_body.FIELDS.task
             queue_name: The queue on which to schedule the task
             schedule_delay_seconds: The number of seconds by which to delay the
                 scheduling of the given task.
@@ -132,7 +136,6 @@ class GoogleCloudTasksClientWrapper:
             included in the request.
             http_method: The method for this request (i.e. GET or POST)
         """
-        task_name = self.format_task_path(queue_name, task_id)
 
         schedule_timestamp = None
         if schedule_delay_seconds > 0:
@@ -142,11 +145,16 @@ class GoogleCloudTasksClientWrapper:
             )
 
         task_builder = ProtobufBuilder(task_pb2.Task).update_args(
-            name=task_name,
             app_engine_http_request={
                 "relative_uri": relative_uri,
             },
         )
+
+        if task_id is not None:
+            task_name = self.format_task_path(queue_name, task_id)
+            task_builder.update_args(
+                name=task_name,
+            )
 
         if schedule_timestamp:
             task_builder.update_args(

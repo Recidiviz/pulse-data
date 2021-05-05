@@ -53,6 +53,7 @@ from recidiviz.admin_panel.data_discovery.utils import (
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.controllers.gcsfs_csv_reader import (
     GcsfsCsvReader,
+    COMMON_RAW_FILE_ENCODINGS,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
@@ -107,7 +108,12 @@ def add_data_discovery_routes(blueprint: Blueprint) -> None:
             csv_reader.streaming_read(
                 path,
                 CacheIngestFileAsParquetDelegate(parquet_cache, path),
-                encodings_to_try=[body["file_encoding"]],
+                encodings_to_try=list(
+                    {
+                        body["file_encoding"],
+                        *COMMON_RAW_FILE_ENCODINGS,
+                    }
+                ),
                 delimiter=body["file_separator"],
                 quoting=body["file_quoting"],
                 chunk_size=75000,

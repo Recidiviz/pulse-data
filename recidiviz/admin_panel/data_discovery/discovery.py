@@ -18,7 +18,6 @@
 Data discovery tool for raw data files and ingest views.
 """
 import logging
-import time
 from collections import defaultdict
 from io import BytesIO
 from typing import List, Tuple, Optional, Literal
@@ -58,6 +57,7 @@ from recidiviz.admin_panel.data_discovery.utils import (
 from recidiviz.cloud_memorystore.redis_communicator import (
     MessageKind,
 )
+from recidiviz.cloud_memorystore.utils import await_redis_keys, RedisKeyTimeoutError
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
@@ -119,14 +119,6 @@ def get_direct_ingest_storage_paths(args: DataDiscoveryArgs) -> List[str]:
         )
 
     return state_files.split("\n")
-
-
-def await_redis_key(redis_key: str) -> None:
-    """ Waits for the specified redis key to exist """
-    cache = get_data_discovery_cache()
-
-    while not cache.exists(redis_key):
-        time.sleep(0.5)
 
 
 def collect_file_paths(
@@ -220,15 +212,17 @@ def prepare_cache(
                 f"Enqueueing cache_ingest_file_as_parquet tasks. {progress.format()}"
             )
 
-    await_redis_key_args = [
-        {"redis_key": redis_key} for redis_key in required_redis_keys
-    ]
-
-    with FutureExecutor.build(await_redis_key, await_redis_key_args) as future_executor:
-        for progress in future_executor.progress():
+    try:
+        total = len(required_redis_keys)
+        for remaining_keys in await_redis_keys(cache, required_redis_keys):
+            completed = total - len(remaining_keys)
             communicator.communicate(
-                f"Awaiting cache_ingest_file_as_parquet completion - {progress.format()}"
+                f"Awaiting ingest file cache {completed} / {total}"
             )
+    except RedisKeyTimeoutError as e:
+        missing_keys = "\n".join(e.missing_keys)
+        message = f"Failed to cache the following ingest files: {missing_keys}"
+        raise DataDiscoveryException(message) from e
 
 
 PyArrowCondition = Tuple[str, Literal["in", "not in"], List[str]]
@@ -406,8 +400,7 @@ def discover_data(discovery_id: str) -> None:
         communicator.communicate(
             build_report(loaded_dataframes, configs), kind=MessageKind.CLOSE
         )
-    except Exception as e:
-        logger.exception(e)
+    except DataDiscoveryException as e:
         communicator.communicate(
             f"Failed to search data, due to exception: {e}", kind=MessageKind.CLOSE
         )
