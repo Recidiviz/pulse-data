@@ -1,0 +1,14 @@
+{
+    "can-see-test-feature": {
+        "eventually@recidiviz.org": {
+            "variant": "in-experiment",
+            "active_date": "2022-02-02"
+        },
+        "always@recidiviz.org": {
+            "variant": "in-experiment"
+        },
+        "second-variant@recidiviz.org": {
+            "variant": "second-variant"
+        }
+    }
+}

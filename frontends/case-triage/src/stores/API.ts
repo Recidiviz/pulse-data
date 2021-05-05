@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import UserStore from "./UserStore";
+import UserStore, { FeatureVariants } from "./UserStore";
 import { identify } from "../analytics";
 
 interface APIProps {
@@ -30,6 +30,7 @@ interface RequestProps {
 interface BootstrapResponse {
   csrf: string;
   segmentUserId: string;
+  featureVariants: FeatureVariants;
 }
 
 const BOOTSTRAP_ROUTE = "/api/bootstrap";
@@ -52,9 +53,10 @@ class API {
     this.bootstrapping =
       this.bootstrapping ||
       this.get<BootstrapResponse>(BOOTSTRAP_ROUTE).then(
-        ({ csrf, segmentUserId }) => {
+        ({ csrf, segmentUserId, featureVariants }) => {
           this.csrfToken = csrf;
           identify(segmentUserId);
+          this.userStore.setFeatureVariants(featureVariants);
           this.bootstrapped = true;
         }
       );

@@ -1,0 +1,7 @@
+[
+    {"email": "admin@recidiviz.org", "is_admin": true},
+
+    {"email": "demoer@recidiviz.org", "is_demo_user": true},
+    
+    {"email": "user@recidiviz.org"}
+]
