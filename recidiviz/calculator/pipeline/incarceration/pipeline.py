@@ -56,6 +56,7 @@ from recidiviz.calculator.pipeline.utils.beam_utils import (
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import (
     SetSentencesOnSentenceGroup,
     ConvertSentencesToStateSpecificType,
+    SetViolationOnViolationsResponse,
 )
 from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
 from recidiviz.calculator.pipeline.utils.execution_utils import (
@@ -81,6 +82,9 @@ from recidiviz.calculator.query.state.views.reference.incarceration_period_judic
 )
 from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import (
     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
+)
+from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import (
+    SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
 )
 from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
     US_MO_SENTENCE_STATUSES_VIEW_NAME,
@@ -369,6 +373,40 @@ def run(
             state_code=state_code,
         )
 
+        # Get StateAssessments
+        assessments = p | "Load Assessments" >> BuildRootEntity(
+            dataset=input_dataset,
+            root_entity_class=entities.StateAssessment,
+            unifying_id_field=entities.StatePerson.get_class_id_name(),
+            build_related_entities=False,
+            unifying_id_field_filter_set=person_id_filter_set,
+            state_code=state_code,
+        )
+
+        # Get StateSupervisionViolations
+        supervision_violations = p | "Load SupervisionViolations" >> BuildRootEntity(
+            dataset=input_dataset,
+            root_entity_class=entities.StateSupervisionViolation,
+            unifying_id_field=entities.StatePerson.get_class_id_name(),
+            build_related_entities=True,
+            unifying_id_field_filter_set=person_id_filter_set,
+            state_code=state_code,
+        )
+
+        # Get StateSupervisionViolationResponses
+        supervision_violation_responses = (
+            p
+            | "Load SupervisionViolationResponses"
+            >> BuildRootEntity(
+                dataset=input_dataset,
+                root_entity_class=entities.StateSupervisionViolationResponse,
+                unifying_id_field=entities.StatePerson.get_class_id_name(),
+                build_related_entities=True,
+                unifying_id_field_filter_set=person_id_filter_set,
+                state_code=state_code,
+            )
+        )
+
         if state_code == "US_MO":
             # Bring in the reference table that includes sentence status ranking information
             us_mo_sentence_status_query = select_all_by_person_query(
@@ -452,6 +490,18 @@ def run(
             )
         )
 
+        supervision_period_to_agent_associations_as_kv = (
+            p
+            | "Load supervision_period_to_agent_associations_as_kv"
+            >> ImportTableAsKVTuples(
+                dataset_id=reference_dataset,
+                table_id=SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
+                table_key="person_id",
+                state_code_filter=state_code,
+                person_id_filter_set=person_id_filter_set,
+            )
+        )
+
         state_race_ethnicity_population_counts = (
             p
             | "Load state_race_ethnicity_population_counts"
@@ -463,11 +513,33 @@ def run(
             )
         )
 
+        # Group StateSupervisionViolationResponses and StateSupervisionViolations by person_id
+        supervision_violations_and_responses = (
+            {
+                "violations": supervision_violations,
+                "violation_responses": supervision_violation_responses,
+            }
+            | "Group StateSupervisionViolationResponses to "
+            "StateSupervisionViolations" >> beam.CoGroupByKey()
+        )
+
+        # Set the fully hydrated StateSupervisionViolation entities on the corresponding
+        # StateSupervisionViolationResponses
+        violation_responses_with_hydrated_violations = (
+            supervision_violations_and_responses
+            | "Set hydrated StateSupervisionViolations on "
+            "the StateSupervisionViolationResponses"
+            >> beam.ParDo(SetViolationOnViolationsResponse())
+        )
+
         # Group each StatePerson with their related entities
         person_entities = {
             "person": persons,
+            "assessments": assessments,
             "sentence_groups": sentence_groups_with_hydrated_sentences,
+            "violation_responses": violation_responses_with_hydrated_violations,
             "incarceration_period_judicial_district_association": ip_to_judicial_district_kv,
+            "supervision_period_to_agent_association": supervision_period_to_agent_associations_as_kv,
             "persons_to_recent_county_of_residence": person_id_to_county_kv,
         } | "Group StatePerson to SentenceGroups" >> beam.CoGroupByKey()
 

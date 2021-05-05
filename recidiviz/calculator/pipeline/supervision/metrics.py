@@ -32,6 +32,9 @@ from recidiviz.calculator.pipeline.utils.metric_utils import (
     AssessmentMetricMixin,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateSpecializedPurposeForIncarceration,
+)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
     StateSupervisionPeriodSupervisionType,
@@ -39,7 +42,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
-    StateSupervisionViolationResponseRevocationType,
     StateSupervisionViolationResponseDecision,
 )
 
@@ -146,6 +148,8 @@ class SupervisionOutOfStatePopulationMetric(SupervisionPopulationMetric):
     )
 
 
+# TODO(#6988): Delete this metric once we've transitioned to the
+#  IncarcerationCommitmentFromSupervisionMetric
 @attr.s
 class SupervisionRevocationMetric(
     SupervisionMetric, PersonLevelMetric, AssessmentMetricMixin, ViolationHistoryMixin
@@ -161,11 +165,12 @@ class SupervisionRevocationMetric(
 
     # Optional characteristics
 
-    # The StateSupervisionViolationResponseRevocationType enum for the type of revocation of supervision that this
-    # metric describes
-    revocation_type: Optional[
-        StateSupervisionViolationResponseRevocationType
-    ] = attr.ib(default=None)
+    # TODO(#6988): This will temporarily store StateSpecializedPurposeForIncarceration
+    #  values as we transition to the IncarcerationCommitmentFromSupervisionMetric
+    # The type of revocation of supervision
+    revocation_type: Optional[StateSpecializedPurposeForIncarceration] = attr.ib(
+        default=None
+    )
 
     # A string subtype that provides further insight into the revocation_type above.
     revocation_type_subtype: Optional[str] = attr.ib(default=None)

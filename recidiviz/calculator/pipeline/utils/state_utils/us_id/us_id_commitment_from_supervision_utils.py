@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Utils for state-specific logic related to identifying revocations in US_ID."""
+"""Utils for state-specific logic related to incarceration commitments from supervision
+in US_ID."""
 from typing import List, Tuple, Optional
 
 from recidiviz.calculator.pipeline.utils.period_utils import (
@@ -37,31 +38,37 @@ from recidiviz.persistence.entity.state.entities import (
 )
 
 
-# TODO(#6985): Change all "revocation" language to "commitment from supervision"
-def us_id_revoked_supervision_period_if_revocation_occurred(
+def us_id_pre_commitment_supervision_periods_if_commitment(
     incarceration_period: StateIncarcerationPeriod,
     filtered_supervision_periods: List[StateSupervisionPeriod],
     preceding_incarceration_period: Optional[StateIncarcerationPeriod],
 ) -> Tuple[bool, Optional[StateSupervisionPeriod]]:
-    """Determines whether the incarceration_period started because of a revocation of supervision. If a revocation did
-    occur, finds the supervision period that was revoked.
-    For US_ID, revocations occur in the following circumstances:
-        - The person is admitted to GENERAL incarceration from non-investigative supervision (typically a probation
-            revocation).
-        - The person is admitted to TREATMENT_IN_PRISON incarceration from non-investigative supervision.
-        - The person is transferred from a PAROLE_BOARD_HOLD incarceration period to a GENERAL or
-            TREATMENT_IN_PRISON incarceration period because they were revoked by the parole board.
+    """Determines whether the incarceration_period started because of a commitment from
+    supervision, which is either a sanction or a revocation admission. If a commitment
+    did occur, finds the supervision period that the person was serving that caused the
+    commitment.
+    For US_ID, commitments from supervision occur in the following circumstances:
+        - The person is admitted to GENERAL incarceration from non-investigative
+            supervision (typically a probation revocation).
+        - The person is admitted to TREATMENT_IN_PRISON incarceration from
+            non-investigative supervision (sanction admission).
+        - The person is transferred from a PAROLE_BOARD_HOLD incarceration period to a
+            GENERAL (parole revoked by the parole board) or TREATMENT_IN_PRISON
+            (treatment mandated by the parole board) incarceration period.
     Args:
-        - incarceration_period: The StateIncarcerationPeriod being evaluated for an instance of revocation.
-        - filtered_supervision_periods: A list of the person's StateSupervisionPeriods that have a set
-            supervision_period_supervision_type.
-        - preceding_incarceration_period: The incarceration period that occurred before the given incarceration_period,
-            if the person has any preceding incarceration periods. Used to determine whether the person was transferred
+        - incarceration_period: The StateIncarcerationPeriod being evaluated for an
+            instance of commitment from supervision.
+        - filtered_supervision_periods: A list of the person's StateSupervisionPeriods
+            that have a set supervision_period_supervision_type.
+        - preceding_incarceration_period: The incarceration period that occurred before
+            the given incarceration_period, if the person has any preceding
+            incarceration periods. Used to determine whether the person was transferred
             from a parole board hold or treatment.
     Returns:
-        A tuple in the format [bool, Optional[StateSupervisionPeriod]] representing whether or not a revocation occurred
-        and, if a revocation did occur, the supervision period that was revoked if it can be identified. It is possible
-        for this function to return True, None.
+        A tuple in the format [bool, Optional[StateSupervisionPeriod]] representing
+        whether or not a commitment from supervision occurred and, if it did occur,
+        the supervision period that caused the commitment if it can be identified. It is
+        possible for this function to return True, None.
     """
     admission_date = incarceration_period.admission_date
 
@@ -71,7 +78,7 @@ def us_id_revoked_supervision_period_if_revocation_occurred(
             f"the prepare_incarceration_periods_for_calculations process."
         )
 
-    if not us_id_is_revocation_admission(
+    if not _us_id_admission_is_commitment_from_supervision(
         incarceration_period, preceding_incarceration_period
     ):
         return False, None
@@ -86,7 +93,9 @@ def us_id_revoked_supervision_period_if_revocation_occurred(
             PurposeForIncarceration.TREATMENT_IN_PRISON,
             PurposeForIncarceration.GENERAL,
         ):
-            # If returning from supervision to prison for general incarceration or treatment, it is a revocation.
+            # An admission to treatment from supervision is a sanction admission,
+            # and being admitted to prison from supervision for general incarceration is
+            # a revocation
             incarceration_admission_date = incarceration_period.admission_date
 
     elif (
@@ -99,56 +108,62 @@ def us_id_revoked_supervision_period_if_revocation_occurred(
         ):
             if not preceding_incarceration_period:
                 raise ValueError(
-                    "Preceding incarceration period must exist for a transfer admission to be counted as "
-                    "a revocation. Revocation admission identification not working."
+                    "Preceding incarceration period must exist for a transfer admission"
+                    " to be counted as a commitment from supervision. Commitment"
+                    " admission identification not working."
                 )
 
             if not preceding_incarceration_period.admission_date:
                 raise ValueError(
                     f"Admission date null for {incarceration_period}. Should be set in "
-                    f"the prepare_incarceration_periods_for_calculations process."
+                    f"the IP pre-processing steps."
                 )
 
             if (
                 preceding_incarceration_period.specialized_purpose_for_incarceration
                 == PurposeForIncarceration.PAROLE_BOARD_HOLD
             ):
-                # This person was transferred from a parole board hold to incarceration. The date that they
-                # entered prison was the date of the preceding incarceration period.
+                # This person was transferred from a parole board hold to incarceration.
+                # The date that they entered prison was the date of the preceding
+                # incarceration period.
                 incarceration_admission_date = (
                     preceding_incarceration_period.admission_date
                 )
 
     if incarceration_admission_date:
-        # US_ID does not have overlapping supervision periods, so there there is a maximum of one revoked period.
-        revoked_period = find_last_terminated_period_before_date(
+        # US_ID does not have overlapping supervision periods, so there there is a
+        # maximum of one pre-commitment period.
+        pre_commitment_supervision_period = find_last_terminated_period_before_date(
             upper_bound_date=incarceration_admission_date,
             periods=filtered_supervision_periods,
             maximum_months_proximity=SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
         )
 
-        if revoked_period:
+        if pre_commitment_supervision_period:
             if (
-                revoked_period.supervision_period_supervision_type
+                pre_commitment_supervision_period.supervision_period_supervision_type
                 == StateSupervisionPeriodSupervisionType.INVESTIGATION
             ):
-                # If the most recent supervision period was of type INVESTIGATION, this is not actually a revocation
+                # If the most recent supervision period was of type INVESTIGATION,
+                # this is not actually a sanction or revocation admission
                 return False, None
 
-        return True, revoked_period
+        return True, pre_commitment_supervision_period
 
     raise ValueError(
-        "Should not reach this point. us_id_is_revocation_admission is not properly classifying "
-        "revocations."
+        "Should not reach this point. This function is not properly classifying "
+        "admissions as commitments from supervision."
     )
 
 
-def us_id_filter_supervision_periods_for_revocation_identification(
+def us_id_filter_sps_for_commitment_from_supervision_identification(
     supervision_periods: List[StateSupervisionPeriod],
 ) -> List[StateSupervisionPeriod]:
-    """Filters the list of supervision periods to only include ones with a set supervision_period_supervision_type."""
-    # Drop any supervision periods that don't have a set supervision_period_supervision_type (this could signify a
-    # bench warrant, for example).
+    """Filters the list of supervision periods to only include ones with a set
+    supervision_period_supervision_type."""
+    # Drop any supervision periods that don't have a set
+    # supervision_period_supervision_type (this could signify a bench warrant,
+    # for example).
     return [
         period
         for period in supervision_periods
@@ -158,22 +173,12 @@ def us_id_filter_supervision_periods_for_revocation_identification(
     ]
 
 
-def us_id_get_pre_revocation_supervision_type(
-    revoked_supervision_period: Optional[StateSupervisionPeriod],
-) -> Optional[StateSupervisionPeriodSupervisionType]:
-    """Returns the supervision_period_supervision_type associated with the given revoked_supervision_period,
-    if present. If not, returns None."""
-    if revoked_supervision_period:
-        return revoked_supervision_period.supervision_period_supervision_type
-    return None
-
-
-def us_id_is_revocation_admission(
+def _us_id_admission_is_commitment_from_supervision(
     incarceration_period: StateIncarcerationPeriod,
     preceding_incarceration_period: Optional[StateIncarcerationPeriod],
 ) -> bool:
-    """Determines whether the admission to incarceration for the given purpose indicates this person was revoked."""
-
+    """Determines whether the admission to incarceration for the given purpose
+    represents a commitment from supervision."""
     purpose_for_incarceration = (
         incarceration_period.specialized_purpose_for_incarceration
     )
@@ -196,7 +201,8 @@ def us_id_is_revocation_admission(
             PurposeForIncarceration.GENERAL,
         )
     ):
-        # Transfers from parole board holds to general incarceration or treatment in prison are revocation admissions
+        # Transfers from parole board holds to general incarceration or treatment in
+        # prison are commitments from supervision
         if not preceding_incarceration_period:
             return False
 
@@ -219,7 +225,7 @@ def us_id_is_revocation_admission(
             == incarceration_period.admission_date
         ):
             # Transfers from parole board holds to general incarceration or
-            # treatment in prison are revocation admissions
+            # treatment in prison are commitments from supervision
             if (
                 preceding_incarceration_period.release_reason
                 == StateIncarcerationPeriodReleaseReason.TRANSFER

@@ -15,20 +15,32 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for working with StateSupervisionViolations and their related entities."""
-from collections import OrderedDict
-from typing import List, Optional, Dict, Tuple
+from collections import OrderedDict, defaultdict
+from datetime import date
+from typing import List, Optional, Dict, Tuple, Set, NamedTuple
 
+from recidiviz.calculator.pipeline.utils.violation_response_utils import (
+    get_most_severe_response_decision,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     shorthand_for_violation_subtype,
     sorted_violation_subtypes_by_severity,
     get_violation_type_subtype_strings_for_violation,
     violation_type_from_subtype,
+    state_specific_violation_responses,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
+from recidiviz.common.constants.state.state_supervision_violation_response import (
+    StateSupervisionViolationResponseDecision,
+)
 from recidiviz.persistence.entity.entity_utils import get_single_state_code
-from recidiviz.persistence.entity.state.entities import StateSupervisionViolation
+from recidiviz.persistence.entity.state.entities import (
+    StateSupervisionViolation,
+    StateSupervisionViolationResponse,
+    StateIncarcerationPeriod,
+)
 
 SUBSTANCE_ABUSE_SUBTYPE_STR: str = "SUBSTANCE_ABUSE"
 
@@ -41,6 +53,11 @@ DEFAULT_VIOLATION_SUBTYPE_SEVERITY_ORDER: List[str] = [
     StateSupervisionViolationType.ESCAPED.value,
     StateSupervisionViolationType.TECHNICAL.value,
 ]
+
+# The number of months for the window of time in which violations and violation
+# responses should be considered when producing metrics related to a person's violation
+# history
+VIOLATION_HISTORY_WINDOW_MONTHS = 12
 
 
 def get_violations_of_type(
@@ -172,3 +189,126 @@ def get_violation_type_frequency_counter(
     return (
         violation_type_frequency_counter if violation_type_frequency_counter else None
     )
+
+
+ViolationHistory = NamedTuple(
+    "ViolationHistory",
+    [
+        ("most_severe_violation_type", Optional[StateSupervisionViolationType]),
+        ("most_severe_violation_type_subtype", Optional[str]),
+        (
+            "most_severe_response_decision",
+            Optional[StateSupervisionViolationResponseDecision],
+        ),
+        ("response_count", Optional[int]),
+        ("violation_history_description", Optional[str]),
+        ("violation_type_frequency_counter", Optional[List[List[str]]]),
+    ],
+)
+
+
+def get_violation_and_response_history(
+    end_date: date,
+    violation_responses: List[StateSupervisionViolationResponse],
+    incarceration_period: Optional[StateIncarcerationPeriod] = None,
+) -> ViolationHistory:
+    """Identifies and returns various details of the violation history on the responses that were recorded during the
+    VIOLATION_HISTORY_WINDOW_MONTHS of time preceding the |end_date|.
+    """
+    if not violation_responses and incarceration_period is None:
+        return ViolationHistory(
+            most_severe_violation_type=None,
+            most_severe_violation_type_subtype=None,
+            most_severe_response_decision=None,
+            response_count=0,
+            violation_history_description=None,
+            violation_type_frequency_counter=None,
+        )
+
+    responses_in_window = state_specific_violation_responses(
+        end_date,
+        violation_responses,
+        incarceration_period,
+        VIOLATION_HISTORY_WINDOW_MONTHS,
+    )
+
+    violations_in_window: List[StateSupervisionViolation] = []
+    violation_ids_in_window: Set[int] = set()
+
+    for response in responses_in_window:
+        violation = response.supervision_violation
+
+        if (
+            violation
+            and violation.supervision_violation_id
+            and violation.supervision_violation_id not in violation_ids_in_window
+        ):
+            violations_in_window.append(violation)
+            violation_ids_in_window.add(violation.supervision_violation_id)
+
+    # Find the most severe violation type info of all of the entries in the window
+    (
+        most_severe_violation_type,
+        most_severe_violation_type_subtype,
+    ) = identify_most_severe_violation_type_and_subtype(violations_in_window)
+
+    violation_type_entries = []
+    for violation in violations_in_window:
+        violation_type_entries.extend(violation.supervision_violation_types)
+
+    violation_history_description = get_violation_history_description(
+        violations_in_window
+    )
+
+    violation_type_frequency_counter = get_violation_type_frequency_counter(
+        violations_in_window
+    )
+
+    # Count the number of responses in the window
+    response_count = len(responses_in_window)
+
+    most_severe_response_decision = get_most_severe_response_decision(
+        responses_in_window
+    )
+
+    violation_history_result = ViolationHistory(
+        most_severe_violation_type,
+        most_severe_violation_type_subtype,
+        most_severe_response_decision,
+        response_count,
+        violation_history_description,
+        violation_type_frequency_counter,
+    )
+
+    return violation_history_result
+
+
+def get_violation_history_description(
+    violations: List[StateSupervisionViolation],
+) -> Optional[str]:
+    """Returns a string description of the violation history given the violation type entries. Tallies the number of
+    each violation type, and then builds a string that lists the number of each of the represented types in the order
+    listed in the violation_type_shorthand dictionary and separated by a semicolon.
+
+    For example, if someone has 3 felonies and 2 technicals, this will return '3fel;2tech'.
+    """
+    if not violations:
+        return None
+
+    subtype_counts: Dict[str, int] = defaultdict(int)
+
+    # Count all violation types and subtypes
+    for violation in violations:
+        most_severe_violation_type_and_subtype = (
+            identify_most_severe_violation_type_and_subtype([violation])
+        )
+        if not most_severe_violation_type_and_subtype:
+            continue
+        _, most_severe_subtype = most_severe_violation_type_and_subtype
+
+        if most_severe_subtype:
+            subtype_counts[most_severe_subtype] += 1
+
+    state_code = get_single_state_code(violations)
+
+    return shorthand_description_for_ranked_violation_counts(state_code, subtype_counts)

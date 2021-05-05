@@ -15,15 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for validating and manipulating supervision periods for use in calculations."""
+import itertools
 import logging
 from datetime import date
-from typing import List, Optional
+from typing import List, Optional, Set
 
 from recidiviz.calculator.pipeline.utils.period_utils import (
     sort_periods_by_set_dates_and_statuses,
     find_last_terminated_period_before_date,
 )
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
+from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodStatus,
     StateSupervisionPeriodAdmissionReason as AdmissionReason,
@@ -31,10 +33,29 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.entity_utils import is_placeholder
-from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
+from recidiviz.persistence.entity.state.entities import (
+    StateSupervisionPeriod,
+    StateIncarcerationSentence,
+    StateSupervisionSentence,
+)
 
-# The number of months for the window of time prior to a revocation return in which we look for a terminated supervision
-# period to attribute the revocation to
+CASE_TYPE_SEVERITY_ORDER = [
+    StateSupervisionCaseType.SEX_OFFENSE,
+    StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+    StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS,
+    # Diversionary courts
+    StateSupervisionCaseType.DRUG_COURT,
+    StateSupervisionCaseType.MENTAL_HEALTH_COURT,
+    StateSupervisionCaseType.FAMILY_COURT,
+    StateSupervisionCaseType.VETERANS_COURT,
+    # End Diversionary courts
+    StateSupervisionCaseType.ALCOHOL_DRUG,
+    StateSupervisionCaseType.GENERAL,
+]
+
+# The number of months for the window of time prior to a commitment to
+# from supervision in which we look for the associated terminated supervision
+# period
 SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT = 24
 
 
@@ -230,3 +251,55 @@ def _drop_and_close_open_supervision_periods_for_deceased(
         updated_periods.append(sp)
 
     return updated_periods
+
+
+def get_supervision_periods_from_sentences(
+    incarceration_sentences: List[StateIncarcerationSentence],
+    supervision_sentences: List[StateSupervisionSentence],
+) -> List[StateSupervisionPeriod]:
+    """Returns all unique supervision periods associated with any of the given
+    sentences."""
+    sentences = itertools.chain(supervision_sentences, incarceration_sentences)
+    supervision_period_ids: Set[int] = set()
+    supervision_periods: List[StateSupervisionPeriod] = []
+
+    for sentence in sentences:
+        if not isinstance(
+            sentence, (StateIncarcerationSentence, StateSupervisionSentence)
+        ):
+            raise ValueError(f"Sentence has unexpected type {type(sentence)}")
+
+        for supervision_period in sentence.supervision_periods:
+            supervision_period_id = supervision_period.supervision_period_id
+
+            if (
+                supervision_period_id is not None
+                and supervision_period_id not in supervision_period_ids
+            ):
+                supervision_periods.append(supervision_period)
+                supervision_period_ids.add(supervision_period_id)
+
+    return supervision_periods
+
+
+def identify_most_severe_case_type(
+    supervision_period: StateSupervisionPeriod,
+) -> StateSupervisionCaseType:
+    """Identifies the most severe supervision case type that the supervision period
+    is classified as. If there are no case types on the period that are listed in the
+    severity ranking, then StateSupervisionCaseType.GENERAL is returned."""
+    case_type_entries = supervision_period.case_type_entries
+
+    if case_type_entries:
+        case_types = [entry.case_type for entry in case_type_entries]
+    else:
+        case_types = [StateSupervisionCaseType.GENERAL]
+
+    return next(
+        (
+            case_type
+            for case_type in CASE_TYPE_SEVERITY_ORDER
+            if case_type in case_types
+        ),
+        StateSupervisionCaseType.GENERAL,
+    )
