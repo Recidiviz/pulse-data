@@ -325,7 +325,7 @@ def load_dataframes(
     )
 
     with FutureExecutor.build(
-        load_dataframe, load_dataframe_args, max_workers=4
+        load_dataframe, load_dataframe_args, max_workers=12
     ) as future_executor:
         for progress in future_executor.progress():
             communicator.communicate(f"Loading dataframes - {progress.format()}")
