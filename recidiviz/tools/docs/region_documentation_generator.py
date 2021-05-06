@@ -151,7 +151,7 @@ def get_touched_raw_data_regions(touched_files: Optional[List[str]]) -> Set[str]
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--filenames",
+        "filenames",
         nargs="*",
         help="Modified files to indicate which regions need their docs to be regenerated. "
         "Paths must be relative to the root of the repository. "
