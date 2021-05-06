@@ -175,7 +175,8 @@ class DirectIngestDocumentationGenerator:
                 "Distinct Values",
             ],
             value_matrix=table_matrix,
-            margin=1,
+            # Margin values other than 0 have nondeterministic spacing. Do not change.
+            margin=0,
         )
         documentation += writer.dumps()
 
@@ -214,7 +215,8 @@ class DirectIngestDocumentationGenerator:
                 "**Updated By**",
             ],
             value_matrix=table_matrix,
-            margin=1,
+            # Margin values other than 0 have nondeterministic spacing. Do not change.
+            margin=0,
         )
 
         return writer.dumps()

@@ -106,39 +106,39 @@ found in `us_ww_raw_data_up_to_date_views`.
 
 ## Table of Contents
 
-|                            **Table**                             |  **Referencing Views**  | **Last Updated** | **Updated By** |
-|------------------------------------------------------------------|-------------------------|------------------|----------------|
-| [multiLineDescription](raw_data/multiLineDescription.md)         | view_one,<br />view_two | 2021-02-10       | Julia Dressel  |
-| [tagColumnsMissing](raw_data/tagColumnsMissing.md)               | view_one                | 2021-02-10       | Julia Dressel  |
-| [tagPrimaryKeyColsMissing](raw_data/tagPrimaryKeyColsMissing.md) |                         | 2021-02-10       | Julia Dressel  |
+|                           **Table**                            | **Referencing Views** |**Last Updated**|**Updated By**|
+|----------------------------------------------------------------|-----------------------|----------------|--------------|
+|[multiLineDescription](raw_data/multiLineDescription.md)        |view_one,<br />view_two|2021-02-10      |Julia Dressel |
+|[tagColumnsMissing](raw_data/tagColumnsMissing.md)              |view_one               |2021-02-10      |Julia Dressel |
+|[tagPrimaryKeyColsMissing](raw_data/tagPrimaryKeyColsMissing.md)|                       |2021-02-10      |Julia Dressel |
 """
 
         expected_multi_line = """## multiLineDescription
 
 First raw file.
 
-|       Column        |                                                                      Column Description                                                                       | Part of Primary Key? |                                            Distinct Values                                             |
-|---------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------|--------------------------------------------------------------------------------------------------------|
-| col_name_1a         | First column.                                                                                                                                                 | YES                  | <ul><li><b>VAL1</b> - value 1</li><li><b>VAL2</b> - value 2</li><li><b>UNKWN</b> - <Unknown></li></ul> |
-| col_name_1b         | A column description that is long enough to take up multiple lines. This text block will be interpreted literally and trailing/leading whitespace is removed. | YES                  | N/A                                                                                                    |
-| undocumented_column | <No documentation>                                                                                                                                            |                      | N/A                                                                                                    |
+|      Column       |                                                                     Column Description                                                                      |Part of Primary Key?|                                           Distinct Values                                            |
+|-------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------|------------------------------------------------------------------------------------------------------|
+|col_name_1a        |First column.                                                                                                                                                |YES                 |<ul><li><b>VAL1</b> - value 1</li><li><b>VAL2</b> - value 2</li><li><b>UNKWN</b> - <Unknown></li></ul>|
+|col_name_1b        |A column description that is long enough to take up multiple lines. This text block will be interpreted literally and trailing/leading whitespace is removed.|YES                 |N/A                                                                                                   |
+|undocumented_column|<No documentation>                                                                                                                                           |                    |N/A                                                                                                   |
 """
 
         expected_tag_columns_missing = """## tagColumnsMissing
 
 tagColumnsMissing file description
 
-| Column | Column Description | Part of Primary Key? | Distinct Values |
-|--------|--------------------|----------------------|-----------------|
+|Column|Column Description|Part of Primary Key?|Distinct Values|
+|------|------------------|--------------------|---------------|
 """
 
         expected_tag_primary_key_cols_missing = """## tagPrimaryKeyColsMissing
 
 tagPrimaryKeyColsMissing file description
 
-|  Column  |  Column Description  | Part of Primary Key? | Distinct Values |
-|----------|----------------------|----------------------|-----------------|
-| column_1 | column_1 description |                      | N/A             |
+| Column | Column Description |Part of Primary Key?|Distinct Values|
+|--------|--------------------|--------------------|---------------|
+|column_1|column_1 description|                    |N/A            |
 """
 
         expected_documentation = {
