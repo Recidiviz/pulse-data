@@ -36,6 +36,7 @@ def generate_time_series_query(metric_name: str, table_name: str) -> str:
     WHERE supervising_officer_external_id = 'ALL'
       AND district_id <> "UNKNOWN"
       AND date_of_supervision >= DATE_SUB(CURRENT_DATE(), INTERVAL 210 DAY) -- Need to go an additional 30 days back for the avg
+      AND state_code = 'US_ND'
     """
 
 
