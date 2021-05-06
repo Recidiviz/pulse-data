@@ -89,6 +89,10 @@ protobuf = "*"
 "psycopg2" = "*"
 cryptography = "*"
 google-cloud-bigquery = "*"
+# TODO(#4287): Versions >= 3.0.0 create namespace conflicts with other cloud libraries
+#  (and resulting mypy errors). We should revisit upgrade when we've updated all
+#  google-cloud* libraries to >= 2.0.0.
+google-cloud-bigquery-datatransfer = "<3.0.0"
 google-api-python-client = "*"
 google-auth = "*"
 deepdiff = "*"
