@@ -47,7 +47,7 @@ def generate_entity_summary_query(field: str, vitals_table: str) -> str:
 
     return f"""
     SELECT
-      metric_table.state_code,
+      state_code,
       most_recent_date_of_supervision,
       MAX(IF(date_of_supervision = most_recent_job_id.most_recent_date_of_supervision, {field}, null)) as most_recent_{field},
       MAX(IF(date_of_supervision = DATE_SUB(most_recent_job_id.most_recent_date_of_supervision, INTERVAL 30 DAY), {field}, null)) as {field}_30_days_before,
@@ -78,6 +78,7 @@ def generate_entity_summary_query(field: str, vitals_table: str) -> str:
         most_recent_job_id.most_recent_date_of_supervision,
         DATE_SUB(most_recent_job_id.most_recent_date_of_supervision, INTERVAL 30 DAY),
         DATE_SUB(most_recent_job_id.most_recent_date_of_supervision, INTERVAL 90 DAY))
+      AND state_code = 'US_ND'
     GROUP BY state_code, most_recent_date_of_supervision, entity_id, entity_name, parent_entity_id, supervising_officer_external_id, district_id
     """
 
