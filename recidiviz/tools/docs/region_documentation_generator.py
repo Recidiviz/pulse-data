@@ -104,6 +104,8 @@ def _create_ingest_catalog_summary() -> List[str]:
         )
 
         raw_data_dir = join(_INGEST_CATALOG_ROOT, state, "raw_data")
+        if not isdir(raw_data_dir):
+            continue
         raw_data_files = sorted(
             [f for f in listdir(raw_data_dir) if isfile(join(raw_data_dir, f))]
         )
@@ -149,7 +151,7 @@ def get_touched_raw_data_regions(touched_files: Optional[List[str]]) -> Set[str]
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "filenames",
+        "--filenames",
         nargs="*",
         help="Modified files to indicate which regions need their docs to be regenerated. "
         "Paths must be relative to the root of the repository. "
