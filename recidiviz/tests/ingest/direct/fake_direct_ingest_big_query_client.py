@@ -19,7 +19,10 @@ from typing import List, Optional, Iterator, Callable
 
 from google.cloud import bigquery
 
-from recidiviz.big_query.big_query_client import BigQueryClient
+from recidiviz.big_query.big_query_client import (
+    BigQueryClient,
+    DEFAULT_CROSS_REGION_COPY_TIMEOUT_SEC,
+)
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
@@ -259,4 +262,12 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
     def update_description(
         self, dataset_id: str, table_id: str, description: str
     ) -> bigquery.Table:
+        raise ValueError("Must be implemented for use in tests.")
+
+    def cross_region_dataset_copy(
+        self,
+        source_dataset_id: str,
+        destination_dataset_id: str,
+        timeout_sec: float = DEFAULT_CROSS_REGION_COPY_TIMEOUT_SEC,
+    ) -> None:
         raise ValueError("Must be implemented for use in tests.")
