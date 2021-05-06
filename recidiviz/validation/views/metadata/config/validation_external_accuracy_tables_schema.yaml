@@ -2,6 +2,11 @@
 
 dataset: validation_external_accuracy_tables
 tables:
+  - name: incarceration_admission_person_level
+    columns:
+      - region_code
+      - person_external_id
+      - admission_date
   - name: incarceration_population_by_facility
     columns:
       - region_code
@@ -16,6 +21,11 @@ tables:
       - person_external_id
       - date_of_stay
       - facility
+  - name: incarceration_release_person_level
+    columns:
+      - region_code
+      - person_external_id
+      - release_date
   - name: population_projection_monthly_population
     columns:
       - region_code
@@ -23,6 +33,16 @@ tables:
       - year
       - month
       - total_population
+  - name: population_projection_monthly_population_per_facility
+    columns:
+      - region_code
+      - compartment
+      - year
+      - month
+      - facility
+      - total_population
+      - average_population
+      - r_facility
   - name: recidivism_person_level
     columns:
       - region_code
@@ -30,6 +50,15 @@ tables:
       - follow_up_period
       - person_external_id
       - recidivated
+  - name: supervision_early_discharge_person_level
+    columns:
+      - region_code
+      - person_external_id
+      - supervision_type
+      - request_date
+      - discharge_date
+      - parole_decision
+      - jurisdiction_decision_code_id
   - name: supervision_population_person_level
     columns:
       - region_code
@@ -38,6 +67,11 @@ tables:
       - district
       - supervising_officer
       - supervision_level
+  - name: supervision_start_person_level
+    columns:
+      - region_code
+      - person_external_id
+      - start_date
   - name: supervision_termination_person_level
     columns:
       - region_code
