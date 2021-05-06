@@ -18,11 +18,23 @@
 tables and views.
 """
 import abc
+import datetime
 import logging
+import time
 from collections import defaultdict
 from typing import List, Optional, Iterator, Callable, Dict
 
+import pytz
 from google.cloud import bigquery, exceptions
+from google.cloud.bigquery_datatransfer import (
+    StartManualTransferRunsRequest,
+    ScheduleOptions,
+    TransferState,
+    TransferConfig,
+    DataTransferServiceClient,
+)
+from google.protobuf import timestamp_pb2
+from more_itertools import one
 
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
@@ -51,6 +63,14 @@ def client(project_id: str, region: str) -> bigquery.Client:
 # In the future, we could increase this number by playing around with increasing the pool size per this post:
 # https://github.com/googleapis/python-storage/issues/253
 BIG_QUERY_CLIENT_MAX_CONNECTIONS = 10
+
+CROSS_REGION_COPY_STATUS_ATTEMPT_SLEEP_TIME_SEC = 10
+DEFAULT_CROSS_REGION_COPY_TIMEOUT_SEC = 10 * 60
+# Required value for the data_source_id field when copying datasets between regions
+CROSS_REGION_COPY_DATA_SOURCE_ID = "cross_region_copy"
+CROSS_REGION_COPY_DISPLAY_NAME_TEMPLATE = (
+    "Cross-region copy {source_dataset_id} -> {destination_dataset_id} [{ts}]"
+)
 
 
 class BigQueryClient:
@@ -584,6 +604,19 @@ class BigQueryClient:
         Args:
             dataset_id: The name of the dataset where the table lives.
             table_id: The name of the table to delete.
+        """
+
+    @abc.abstractmethod
+    def cross_region_dataset_copy(
+        self,
+        source_dataset_id: str,
+        destination_dataset_id: str,
+        timeout_sec: float = DEFAULT_CROSS_REGION_COPY_TIMEOUT_SEC,
+    ) -> None:
+        """Copies tables from |source_dataset_id| to |destination_dataset_id|. This only
+        works if the datasets live in different regions (e.g. 'us' vs 'us-east1'),
+        because the API for doing an inter-region dataset copy is inexplicably different
+        than for copies between regions.
         """
 
 
@@ -1375,3 +1408,82 @@ class BigQueryClientImpl(BigQueryClient):
             removal_job.result()
 
         self.add_missing_fields_to_schema(dataset_id, table_id, desired_schema_fields)
+
+    def cross_region_dataset_copy(
+        self,
+        source_dataset_id: str,
+        destination_dataset_id: str,
+        timeout_sec: float = DEFAULT_CROSS_REGION_COPY_TIMEOUT_SEC,
+    ) -> None:
+        transfer_client = DataTransferServiceClient()
+        if not self.dataset_exists(self.dataset_ref_for_id(destination_dataset_id)):
+            raise ValueError(
+                f"Cannot copy data to dataset [{destination_dataset_id}] which does not exist"
+            )
+
+        display_name = CROSS_REGION_COPY_DISPLAY_NAME_TEMPLATE.format(
+            source_dataset_id=source_dataset_id,
+            destination_dataset_id=destination_dataset_id,
+            ts=datetime.datetime.now(pytz.UTC).isoformat(),
+        )
+        transfer_config = TransferConfig(
+            destination_dataset_id=destination_dataset_id,
+            display_name=display_name,
+            data_source_id=CROSS_REGION_COPY_DATA_SOURCE_ID,
+            params={
+                "source_project_id": self.project_id,
+                "source_dataset_id": source_dataset_id,
+            },
+            schedule_options=ScheduleOptions(disable_auto_scheduling=True),
+        )
+        transfer_config = transfer_client.create_transfer_config(
+            parent=f"projects/{self.project_id}",
+            transfer_config=transfer_config,
+        )
+        logging.info("Created transfer config [%s]", transfer_config.name)
+        try:
+            requested_run_time = timestamp_pb2.Timestamp()
+            requested_run_time.FromDatetime(datetime.datetime.now(tz=pytz.UTC))
+            response = transfer_client.start_manual_transfer_runs(
+                StartManualTransferRunsRequest(
+                    parent=transfer_config.name, requested_run_time=requested_run_time
+                )
+            )
+
+            run = one(response.runs)
+            logging.info(
+                "Scheduled transfer run [%s] for transfer config [%s]",
+                run.name,
+                transfer_config.name,
+            )
+
+            timeout_time = datetime.datetime.now() + datetime.timedelta(
+                seconds=timeout_sec
+            )
+            while True:
+                run = transfer_client.get_transfer_run(name=run.name)
+                if run.state == TransferState.SUCCEEDED:
+                    logging.info("Transfer run succeeded")
+                    break
+
+                if run.state == TransferState.FAILED:
+                    raise ValueError(
+                        f"Transfer run [{run.name}] FAILED with status: {run.error_status}"
+                    )
+
+                if timeout_time < datetime.datetime.now():
+                    raise TimeoutError(
+                        f"Did not complete dataset copy before timeout of "
+                        f"[{timeout_sec}] seconds expired."
+                    )
+
+                logging.info(
+                    "Transfer run has status [%s] - sleeping for %s seconds",
+                    run.state.name,
+                    CROSS_REGION_COPY_STATUS_ATTEMPT_SLEEP_TIME_SEC,
+                )
+                time.sleep(CROSS_REGION_COPY_STATUS_ATTEMPT_SLEEP_TIME_SEC)
+        finally:
+            logging.info("Deleting transfer config [%s]", transfer_config.name)
+            transfer_client.delete_transfer_config(name=transfer_config.name)
+            logging.info("Finished deleting transfer config [%s]", transfer_config.name)

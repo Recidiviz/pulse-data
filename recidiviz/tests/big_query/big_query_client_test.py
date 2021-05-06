@@ -24,10 +24,20 @@ from unittest import mock
 import pytest
 from google.cloud import bigquery, exceptions
 from google.cloud.bigquery import SchemaField, QueryJobConfig
+from google.cloud.bigquery_datatransfer import (
+    DataTransferServiceClient,
+    TransferRun,
+    StartManualTransferRunsResponse,
+    TransferConfig,
+    TransferState,
+)
 from mock import call, create_autospec
 
 from recidiviz.big_query import big_query_client
-from recidiviz.big_query.big_query_client import BigQueryClientImpl, BigQueryClient
+from recidiviz.big_query.big_query_client import (
+    BigQueryClientImpl,
+    BigQueryClient,
+)
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryAddress
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
 
@@ -931,6 +941,189 @@ class BigQueryClientImplTest(unittest.TestCase):
                 call(max_results=2, start_index=4),
             ]
         )
+
+    @mock.patch("recidiviz.big_query.big_query_client.DataTransferServiceClient")
+    @mock.patch(
+        "recidiviz.big_query.big_query_client.CROSS_REGION_COPY_STATUS_ATTEMPT_SLEEP_TIME_SEC",
+        0.1,
+    )
+    def test_cross_region_dataset_copy(
+        self, mock_transfer_client_fn: mock.MagicMock
+    ) -> None:
+        mock_transfer_client = create_autospec(DataTransferServiceClient)
+        mock_transfer_client_fn.return_value = mock_transfer_client
+
+        config_name = "projects/12345/locations/us/transferConfigs/61421b53-0000-22d3-8007-001a114e540a"
+
+        def mock_create_transfer_config(
+            parent: str, transfer_config: TransferConfig
+        ) -> TransferConfig:
+            self.assertIsNotNone(parent)
+            transfer_config.name = config_name
+            return transfer_config
+
+        mock_transfer_client.create_transfer_config.side_effect = (
+            mock_create_transfer_config
+        )
+
+        run_name = f"{config_name}/runs/61394d2b-0000-2201-90bd-883d24f36b70"
+
+        run_info_pending = create_autospec(TransferRun)
+        run_info_pending.name = run_name
+        run_info_pending.state = TransferState.PENDING
+        run_info_success = create_autospec(TransferRun)
+        run_info_success.name = run_name
+        run_info_success.state = TransferState.SUCCEEDED
+
+        mock_start_runs_response = create_autospec(StartManualTransferRunsResponse)
+        mock_start_runs_response.runs = [run_info_pending]
+
+        mock_transfer_client.start_manual_transfer_runs.return_value = (
+            mock_start_runs_response
+        )
+
+        # Return pending, then success
+        mock_transfer_client.get_transfer_run.side_effect = [
+            run_info_pending,
+            run_info_success,
+        ]
+
+        self.bq_client.cross_region_dataset_copy("my_src_dataset", "my_dst_dataset")
+
+        mock_transfer_client.create_transfer_config.assert_called_once()
+        mock_transfer_client.get_transfer_run.assert_has_calls(
+            [
+                mock.call(name=run_name),
+                mock.call(name=run_name),
+            ]
+        )
+        mock_transfer_client.delete_transfer_config.assert_called_once()
+
+    @mock.patch("recidiviz.big_query.big_query_client.DataTransferServiceClient")
+    @mock.patch(
+        "recidiviz.big_query.big_query_client.CROSS_REGION_COPY_STATUS_ATTEMPT_SLEEP_TIME_SEC",
+        0.1,
+    )
+    def test_cross_region_dataset_copy_failure(
+        self, mock_transfer_client_fn: mock.MagicMock
+    ) -> None:
+        mock_transfer_client = create_autospec(DataTransferServiceClient)
+        mock_transfer_client_fn.return_value = mock_transfer_client
+
+        config_name = "projects/12345/locations/us/transferConfigs/61421b53-0000-22d3-8007-001a114e540a"
+
+        def mock_create_transfer_config(
+            parent: str, transfer_config: TransferConfig
+        ) -> TransferConfig:
+            self.assertIsNotNone(parent)
+            transfer_config.name = config_name
+            return transfer_config
+
+        mock_transfer_client.create_transfer_config.side_effect = (
+            mock_create_transfer_config
+        )
+
+        run_name = f"{config_name}/runs/61394d2b-0000-2201-90bd-883d24f36b70"
+
+        run_info_pending = create_autospec(TransferRun)
+        run_info_pending.name = run_name
+        run_info_pending.state = TransferState.PENDING
+        run_info_failure = create_autospec(TransferRun)
+        run_info_failure.name = run_name
+        run_info_failure.error_status = mock.MagicMock()
+        run_info_failure.state = TransferState.FAILED
+
+        mock_start_runs_response = create_autospec(StartManualTransferRunsResponse)
+        mock_start_runs_response.runs = [run_info_pending]
+
+        mock_transfer_client.start_manual_transfer_runs.return_value = (
+            mock_start_runs_response
+        )
+
+        # Return pending, then success
+        mock_transfer_client.get_transfer_run.side_effect = [
+            run_info_pending,
+            run_info_failure,
+        ]
+
+        with self.assertRaises(ValueError) as e:
+            self.bq_client.cross_region_dataset_copy("my_src_dataset", "my_dst_dataset")
+        self.assertTrue(
+            str(e.exception).startswith(f"Transfer run [{run_name}] FAILED with status")
+        )
+
+        mock_transfer_client.create_transfer_config.assert_called_once()
+        mock_transfer_client.get_transfer_run.assert_has_calls(
+            [
+                mock.call(name=run_name),
+                mock.call(name=run_name),
+            ]
+        )
+        # Important that we still delete the config
+        mock_transfer_client.delete_transfer_config.assert_called_once()
+
+    @mock.patch("recidiviz.big_query.big_query_client.DataTransferServiceClient")
+    @mock.patch(
+        "recidiviz.big_query.big_query_client.CROSS_REGION_COPY_STATUS_ATTEMPT_SLEEP_TIME_SEC",
+        0.1,
+    )
+    def test_cross_region_dataset_copy_timeout(
+        self, mock_transfer_client_fn: mock.MagicMock
+    ) -> None:
+        mock_transfer_client = create_autospec(DataTransferServiceClient)
+        mock_transfer_client_fn.return_value = mock_transfer_client
+
+        config_name = "projects/12345/locations/us/transferConfigs/61421b53-0000-22d3-8007-001a114e540a"
+
+        def mock_create_transfer_config(
+            parent: str, transfer_config: TransferConfig
+        ) -> TransferConfig:
+            self.assertIsNotNone(parent)
+            transfer_config.name = config_name
+            return transfer_config
+
+        mock_transfer_client.create_transfer_config.side_effect = (
+            mock_create_transfer_config
+        )
+
+        run_name = f"{config_name}/runs/61394d2b-0000-2201-90bd-883d24f36b70"
+
+        run_info_pending = create_autospec(TransferRun)
+        run_info_pending.name = run_name
+        run_info_pending.state = TransferState.PENDING
+
+        mock_start_runs_response = create_autospec(StartManualTransferRunsResponse)
+        mock_start_runs_response.runs = [run_info_pending]
+
+        mock_transfer_client.start_manual_transfer_runs.return_value = (
+            mock_start_runs_response
+        )
+
+        # Return pending, then success
+        mock_transfer_client.get_transfer_run.side_effect = [
+            run_info_pending,
+            run_info_pending,
+            run_info_pending,
+        ]
+
+        with self.assertRaises(TimeoutError) as e:
+            self.bq_client.cross_region_dataset_copy(
+                "my_src_dataset", "my_dst_dataset", timeout_sec=0.15
+            )
+        self.assertTrue(
+            str(e.exception).startswith("Did not complete dataset copy before timeout")
+        )
+
+        mock_transfer_client.create_transfer_config.assert_called_once()
+        mock_transfer_client.get_transfer_run.assert_has_calls(
+            [
+                mock.call(name=run_name),  # Runs immediately
+                mock.call(name=run_name),  # Runs at .1 seconds
+                mock.call(name=run_name),  # Runs at .2 seconds - timeout after this
+            ]
+        )
+        # Important that we still delete the config
+        mock_transfer_client.delete_transfer_config.assert_called_once()
 
 
 class MaterializeTableJobConfigMatcher:
