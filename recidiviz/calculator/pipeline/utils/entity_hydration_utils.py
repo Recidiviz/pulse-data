@@ -21,9 +21,6 @@ from typing import Dict, Any, Union, List
 import apache_beam as beam
 from apache_beam.typehints import with_input_types, with_output_types
 
-from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
-    attach_ssvrs_to_ips,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import (
     UsMoSupervisionSentence,
     UsMoIncarcerationSentence,
@@ -123,50 +120,6 @@ class ConvertSentencesToStateSpecificType(beam.DoFn):
                 "supervision_sentences",
                 (person_id, state_specific_supervision_sentence),
             )
-
-    def to_runner_api_parameter(self, _):
-        pass  # Passing unused abstract method.
-
-
-@with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
-@with_output_types(beam.typehints.Tuple[int, entities.StateIncarcerationPeriod])
-class SetViolationResponseOnIncarcerationPeriod(beam.DoFn):
-    """Sets a hydrated StateSupervisionviolationResponse onto the corresponding
-    StateIncarcerationPeriod."""
-
-    def process(self, element, *_args, **_kwargs):
-        """For the incarceration periods and supervision violation responses of
-        a given person, finds the matching hydrated supervision violation
-        response for a resulting incarceration period, and sets the hydrated
-        version onto the incarceration_period entity.
-
-        Args:
-            element: a tuple containing person_id and a dictionary of the
-                person's StateIncarcerationPeriods and
-                StateSupervisionviolationResponses
-
-        Yields:
-            For each incarceration period, a tuple containing the person_id and
-            the incarceration_period.
-        """
-        person_id, incarceration_periods_violation_responses = element
-
-        # Get the StateIncarcerationPeriods as a list
-        incarceration_periods = list(
-            incarceration_periods_violation_responses["incarceration_periods"]
-        )
-
-        # Get the StateSupervisionViolationResponses as a list
-        violation_responses = list(
-            incarceration_periods_violation_responses["violation_responses"]
-        )
-
-        if incarceration_periods:
-            if violation_responses:
-                attach_ssvrs_to_ips(incarceration_periods, violation_responses)
-
-            for incarceration_period in incarceration_periods:
-                yield (person_id, incarceration_period)
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
