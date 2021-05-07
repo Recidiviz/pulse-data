@@ -148,8 +148,7 @@ const ClientComponent: React.FC<ClientProps> = ({ client }: ClientProps) => {
         </Tooltip>
         <Tooltip
           title={
-            client.needsMet.faceToFaceContact &&
-            client.needsMet.homeVisitContact
+            client.needsMet.faceToFaceContact
               ? "Face to Face Contact Up to Date"
               : "Face to Face Contact Needed"
           }
@@ -157,8 +156,7 @@ const ClientComponent: React.FC<ClientProps> = ({ client }: ClientProps) => {
           <ClientNeed
             kind={IconSVG.NeedsContact}
             state={
-              client.needsMet.faceToFaceContact &&
-              client.needsMet.homeVisitContact
+              client.needsMet.faceToFaceContact
                 ? NeedState.MET
                 : NeedState.NOT_MET
             }

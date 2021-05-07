@@ -122,6 +122,9 @@ class CasePresenter:
             or bool(next_face_to_face_date > today),
             # If the home visit contact is missing, that means there may be no need for it. Otherwise, if the
             # next due home visit contact is after today, the need is met.
+            # TODO(#7320): This field determines whether compliance is up-to-date assuming
+            # the rules apply to F2F home visits and not collateral home visits. More work is
+            # needed to determine what the correct application of rules should actually be.
             "homeVisitContact": next_home_visit_date is None
             or bool(next_home_visit_date > today),
             # If the next assessment is due after today, the need is met.
