@@ -145,13 +145,9 @@ export { decorateClient };
 export const getNextContactDate = (
   client: DecoratedClient
 ): moment.Moment | null => {
-  if (client.nextHomeVisitDate === null) {
-    return client.nextFaceToFaceDate;
-  }
-  if (client.nextFaceToFaceDate === null) {
-    return client.nextHomeVisitDate;
-  }
-  return client.nextFaceToFaceDate < client.nextHomeVisitDate
-    ? client.nextFaceToFaceDate
-    : client.nextHomeVisitDate;
+  // TODO(#7320): Our current `nextHomeVisitDate` determines when the next home visit
+  // should be assuming that home visits must be F2F visits and not collateral visits.
+  // As a result, until we do more investigation into what the appropriate application
+  // of state policy is, we're not showing home visits as the next contact dates.
+  return client.nextFaceToFaceDate;
 };
