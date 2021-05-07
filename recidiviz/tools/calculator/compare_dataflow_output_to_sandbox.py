@@ -303,7 +303,9 @@ def _query_for_metric_comparison(
 
     if additional_columns_to_compare:
         applicable_columns = [
-            col for col in additional_columns_to_compare if hasattr(metric_class, col)
+            col
+            for col in additional_columns_to_compare
+            if hasattr(metric_class.__dict__.get("__attrs_attrs__"), col)
         ]
 
         if applicable_columns:
