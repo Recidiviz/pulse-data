@@ -24,3 +24,10 @@ repos:
         exclude: >
           (?x)(^recidiviz/tests/|^recidiviz/tools/|^recidiviz/ingest/direct/regions/)$
         require_serial: true
+      - id: generate_entity_documentation
+        name: generate_entity_documentation
+        entry: pipenv run python -m recidiviz.tools.docs.entity_documentation_generator
+        language: system
+        files: >
+           (?x)(^recidiviz/persistence/database/schema/state/schema.py|^recidiviz/persistence/database/schema/history_table_shared_columns_mixin.py)$
+        require_serial: true
