@@ -19,4 +19,10 @@
 
 VIEWS_DATASET: str = "census_views"
 
+# Transitional dataset in the same region (e.g. us-east1) as the Jails CloudSQL
+# instance where Jails CloudSQL data is stored before the CloudSQL -> BQ export
+# copies it to a dataset in the 'US' multi-region.
+COUNTY_BASE_REGIONAL_DATASET: str = "census_regional"
+
+# Where data exported from CloudSQL -> BQ federated export lives
 COUNTY_BASE_DATASET: str = "census"

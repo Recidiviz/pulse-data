@@ -97,6 +97,10 @@ class SQLAlchemyDatabaseKey:
         return schema_type_to_schema_base(self.schema_type)
 
     @property
+    def is_default_db(self) -> bool:
+        return self.db_name == DEFAULT_DB_NAME
+
+    @property
     def isolation_level(self) -> Optional[str]:
         # Set isolation level to SERIALIZABLE for states. This ensures that data read
         # during a transaction is still valid when the transaction is committed,
