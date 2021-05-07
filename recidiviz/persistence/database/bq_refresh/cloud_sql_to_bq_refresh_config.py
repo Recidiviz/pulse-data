@@ -204,11 +204,11 @@ class CloudSqlToBQConfig:
         )
         return query_builder.full_query()
 
-    def get_single_state_table_export_query(
+    def get_single_state_table_federated_export_query(
         self, table: Table, state_code: StateCode
     ) -> str:
         """Return a formatted SQL query for a given CloudSQL schema table that can be
-        used to export data for a given state to BigQuery.
+        used to export data for a given state to BigQuery via a federated query.
 
         For association tables, it adds a region code column to the select statement
         through a join.
@@ -217,8 +217,8 @@ class CloudSqlToBQConfig:
         """
         if state_code.value in self.region_codes_to_exclude:
             raise ValueError(
-                "State [{state_code}] listed in region codes to exclude - "
-                "cannot produce query."
+                f"State [{state_code}] listed in region codes to exclude - "
+                f"cannot produce query."
             )
 
         columns = self._get_table_columns_to_export(table)
@@ -227,6 +227,31 @@ class CloudSqlToBQConfig:
             table,
             columns,
             region_codes_to_include=[state_code.value],
+        )
+        return query_builder.full_query()
+
+    def get_table_federated_export_query(self, table_name: str) -> str:
+        """Return a formatted SQL query for a given CloudSQL schema table that can be
+        used to export data for a given state to BigQuery via a federated query.
+
+        For association tables, it adds a region code column to the select statement
+        through a join.
+
+        Throws if the provided state_code is in the list of region_codes_to_exclude.
+        """
+        if self.region_codes_to_exclude:
+            raise ValueError(
+                "Cannot be used with a schema that ever excludes region codes"
+            )
+
+        table = get_table_class_by_name(table_name, self.sorted_tables)
+        columns = self._get_table_columns_to_export(table)
+
+        query_builder = FederatedSchemaTableRegionFilteredQueryBuilder(
+            self.metadata_base,
+            table,
+            columns,
+            region_codes_to_exclude=[],
         )
         return query_builder.full_query()
 

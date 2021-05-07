@@ -28,10 +28,8 @@ from recidiviz.persistence.database.schema_utils import get_justice_counts_table
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-# TODO(#5081): Instead of querying directly from Postgres, migrate this to use the export to CSV and import into BQ flow
-# so that it is consistent with other databases. This will require splitting Dimensions and DimensionValues out into
-# their own entities in the Postgres schema, as arrays are not supported in CSV imports to BQ. We can then build a view
-# to recreate the arrays here.
+# TODO(#7285): Migrate to use standard federaded export code path and delete this file
+#   and associated views.
 TABLE_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT

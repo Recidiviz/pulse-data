@@ -23,9 +23,6 @@ TODO(#6615): This view is currently specific to Idaho, and it should be evolved
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
-from recidiviz.calculator.query.state.dataset_config import (
-    CASE_TRIAGE_DATASET,
-)
 from recidiviz.case_triage.opportunities.types import OpportunityType
 from recidiviz.case_triage.state_utils.us_id import US_ID_ASSESSMENT_SCORE_RANGE
 from recidiviz.case_triage.views.dataset_config import VIEWS_DATASET
@@ -75,7 +72,7 @@ TOP_OPPORTUNITIES_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     dataset_id=VIEWS_DATASET,
     view_id="etl_opportunities",
     view_query_template=TOP_OPPORTUNITIES_QUERY_VIEW,
-    case_triage_dataset=CASE_TRIAGE_DATASET,
+    case_triage_dataset=VIEWS_DATASET,
     assessment_scores_clause=_get_assessment_score_clause(),
     columns=[
         "state_code",
