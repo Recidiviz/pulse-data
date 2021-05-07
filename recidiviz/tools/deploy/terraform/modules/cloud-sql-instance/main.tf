@@ -216,6 +216,7 @@ resource "google_bigquery_connection" "default_db_bq_connection" {
 
   connection_id = "${var.instance_key}_cloudsql"
   friendly_name = "${local.bq_connection_friendly_name} Cloud SQL Postgres"
+  # TODO(#7285): Migrate Justice Counts connection to be in same region as instance
   location      = var.instance_key == "justice_counts" ? "us" : var.region
   description   = "Connection to the ${local.bq_connection_friendly_name} Cloud SQL database"
 
