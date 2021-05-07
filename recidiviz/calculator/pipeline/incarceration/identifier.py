@@ -33,6 +33,7 @@ from recidiviz.calculator.pipeline.incarceration.incarceration_event import (
 from recidiviz.calculator.pipeline.utils import assessment_utils
 from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
     get_commitment_from_supervision_details,
+    default_violation_history_window_pre_commitment_from_supervision,
 )
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     list_of_dicts_to_dict_with_keys,
@@ -44,7 +45,6 @@ from recidiviz.calculator.pipeline.utils.incarceration_period_index import (
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
     prepare_incarceration_periods_for_calculations,
     IncarcerationPreProcessingConfig,
-    attach_ssvrs_to_ips,
 )
 from recidiviz.calculator.pipeline.utils.period_utils import (
     find_earliest_date_of_period_ending_in_death,
@@ -60,9 +60,11 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     state_specific_specialized_purpose_for_incarceration_override,
     pre_commitment_supervision_periods_if_commitment,
     filter_supervision_periods_for_commitment_from_supervision_identification,
-    sorted_violation_responses_in_window,
     include_decisions_on_follow_up_responses_for_most_severe_response,
     get_commitment_from_supervision_supervision_type,
+    state_specific_violation_history_window_pre_commitment_from_supervision,
+    state_specific_violation_responses_for_violation_history,
+    state_specific_violation_response_pre_processing_function,
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     get_supervision_periods_from_sentences,
@@ -70,6 +72,8 @@ from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
 from recidiviz.calculator.pipeline.utils.violation_response_utils import (
     responses_on_most_recent_response_date,
     get_most_severe_response_decision,
+    violation_responses_in_window,
+    prepare_violation_responses_for_calculations,
 )
 from recidiviz.calculator.pipeline.utils.violation_utils import (
     get_violation_and_response_history,
@@ -142,11 +146,6 @@ def find_incarceration_events(
     earliest_death_date: Optional[date] = find_earliest_date_of_period_ending_in_death(
         periods=all_periods
     )
-
-    # TODO(#7141): Properly hydrate StateIncarcerationPeriods so that this works for US_ND
-    # Set the fully hydrated StateSupervisionViolationResponse entities on the
-    # corresponding StateIncarcerationPeriods
-    attach_ssvrs_to_ips(incarceration_periods, violation_responses)
 
     county_of_residence: Optional[str] = extract_county_of_residence_from_rows(
         persons_to_recent_county_of_residence
@@ -250,6 +249,13 @@ def find_all_admission_release_events(
         incarceration_sentences, supervision_sentences
     )
 
+    sorted_violation_responses = prepare_violation_responses_for_calculations(
+        violation_responses=violation_responses,
+        pre_processing_function=state_specific_violation_response_pre_processing_function(
+            state_code=state_code
+        ),
+    )
+
     for incarceration_period in de_duplicated_incarceration_admissions:
         admission_event = admission_event_for_period(
             incarceration_sentences=incarceration_sentences,
@@ -258,7 +264,7 @@ def find_all_admission_release_events(
             incarceration_period_index=incarceration_periods_for_admissions_index,
             supervision_periods=supervision_periods,
             assessments=assessments,
-            violation_responses=violation_responses,
+            sorted_violation_responses=sorted_violation_responses,
             supervision_period_to_agent_associations=supervision_period_to_agent_associations,
             county_of_residence=county_of_residence,
         )
@@ -627,7 +633,7 @@ def admission_event_for_period(
     incarceration_period_index: IncarcerationPeriodIndex,
     supervision_periods: List[StateSupervisionPeriod],
     assessments: List[StateAssessment],
-    violation_responses: List[StateSupervisionViolationResponse],
+    sorted_violation_responses: List[StateSupervisionViolationResponse],
     supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
     county_of_residence: Optional[str],
 ) -> Optional[IncarcerationAdmissionEvent]:
@@ -692,7 +698,7 @@ def admission_event_for_period(
                 incarceration_period=incarceration_period,
                 pre_commitment_supervision_periods=pre_commitment_supervision_periods,
                 assessments=assessments,
-                violation_responses=violation_responses,
+                sorted_violation_responses=sorted_violation_responses,
                 supervision_period_to_agent_associations=supervision_period_to_agent_associations,
                 county_of_residence=county_of_residence,
             )
@@ -716,7 +722,7 @@ def _commitment_from_supervision_event_for_period(
     incarceration_period: StateIncarcerationPeriod,
     pre_commitment_supervision_periods: List[StateSupervisionPeriod],
     assessments: List[StateAssessment],
-    violation_responses: List[StateSupervisionViolationResponse],
+    sorted_violation_responses: List[StateSupervisionViolationResponse],
     supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
     county_of_residence: Optional[str],
 ) -> IncarcerationCommitmentFromSupervisionAdmissionEvent:
@@ -728,6 +734,7 @@ def _commitment_from_supervision_event_for_period(
     """
     admission_date = incarceration_period.admission_date
     admission_reason = incarceration_period.admission_reason
+    state_code = incarceration_period.state_code
 
     if not admission_date or not admission_reason:
         raise ValueError(
@@ -746,53 +753,51 @@ def _commitment_from_supervision_event_for_period(
         state_code=incarceration_period.state_code,
     )
 
-    # We will use the date of the last response prior to the admission as the
-    # window cutoff.
-    responses_in_window = sorted_violation_responses_in_window(
-        violation_responses,
-        upper_bound_exclusive=admission_date + relativedelta(days=1),
-        lower_bound_inclusive=None,
-        include_follow_up_responses=False,
+    violation_responses_for_history = (
+        state_specific_violation_responses_for_violation_history(
+            state_code=state_code,
+            violation_responses=sorted_violation_responses,
+            include_follow_up_responses=False,
+        )
     )
 
-    violation_history_end_date = admission_date
-
-    if responses_in_window:
-        # If there were violation responses leading up to the incarceration
-        # admission, then we want the violation history leading up to the last
-        # response_date instead of the admission_date on the
-        # incarceration_period
-        last_response = responses_in_window[-1]
-
-        if not last_response.response_date:
-            # This should never happen, but is here to silence mypy warnings
-            # about empty response_dates.
-            raise ValueError(
-                "Not effectively filtering out responses without valid"
-                " response_dates."
-            )
-        violation_history_end_date = last_response.response_date
+    violation_history_window = state_specific_violation_history_window_pre_commitment_from_supervision(
+        state_code=state_code,
+        admission_date=admission_date,
+        sorted_and_filtered_violation_responses=violation_responses_for_history,
+        default_violation_history_window_function=default_violation_history_window_pre_commitment_from_supervision,
+    )
 
     # Get details about the violation and response history leading up to the
     # admission to incarceration
     violation_history = get_violation_and_response_history(
-        violation_history_end_date,
-        violation_responses,
-        incarceration_period,
+        upper_bound_exclusive_date=violation_history_window.upper_bound_exclusive_date,
+        lower_bound_inclusive_date_override=violation_history_window.lower_bound_inclusive_date,
+        violation_responses_for_history=violation_responses_for_history,
+        incarceration_period=incarceration_period,
     )
 
-    responses_in_window_for_decision_evaluation = responses_in_window
+    responses_for_decision_evaluation = violation_responses_for_history
 
     if include_decisions_on_follow_up_responses_for_most_severe_response(
         incarceration_period.state_code
     ):
-        responses_in_window_for_decision_evaluation = sorted_violation_responses_in_window(
-            violation_responses,
-            upper_bound_exclusive=(admission_date + relativedelta(days=1)),
-            # We're just looking for the most recent response
-            lower_bound_inclusive=None,
-            include_follow_up_responses=True,
+        # Get a new state-specific list of violation responses that includes follow-up
+        # responses
+        responses_for_decision_evaluation = (
+            state_specific_violation_responses_for_violation_history(
+                state_code=state_code,
+                violation_responses=sorted_violation_responses,
+                include_follow_up_responses=True,
+            )
         )
+
+    responses_in_window_for_decision_evaluation = violation_responses_in_window(
+        violation_responses=responses_for_decision_evaluation,
+        upper_bound_exclusive=(admission_date + relativedelta(days=1)),
+        # We're just looking for the most recent response
+        lower_bound_inclusive=None,
+    )
 
     # Find the most severe decision on the most recent response decisions
     most_recent_responses = responses_on_most_recent_response_date(
@@ -816,7 +821,7 @@ def _commitment_from_supervision_event_for_period(
     commitment_details = get_commitment_from_supervision_details(
         incarceration_period=incarceration_period,
         pre_commitment_supervision_period=pre_commitment_supervision_period,
-        violation_responses=violation_responses,
+        violation_responses=sorted_violation_responses,
         supervision_period_to_agent_associations=supervision_period_to_agent_associations,
     )
 

@@ -741,9 +741,9 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         violation_history = violation_utils.get_violation_and_response_history(
             revocation_date,
             [
-                supervision_violation_response_1,
-                supervision_violation_response_2,
                 supervision_violation_response_3,
+                supervision_violation_response_2,
+                supervision_violation_response_1,
             ],
         )
 
@@ -791,81 +791,6 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             response_count=1,
             violation_history_description=None,
             violation_type_frequency_counter=None,
-        )
-
-        self.assertEqual(expected_output, violation_history)
-
-    def test_get_violation_and_response_history_us_mo_response_subtype_filter(self):
-        supervision_violation = StateSupervisionViolation.new_with_defaults(
-            supervision_violation_id=123455,
-            state_code="US_MO",
-            violation_date=datetime.date(2009, 1, 3),
-            supervision_violation_types=[
-                StateSupervisionViolationTypeEntry.new_with_defaults(
-                    state_code="US_MO",
-                    violation_type=StateSupervisionViolationType.TECHNICAL,
-                ),
-            ],
-        )
-
-        # This should only be included when looking at the decision entries
-        supervision_violation_response = (
-            StateSupervisionViolationResponse.new_with_defaults(
-                supervision_violation_response_id=_DEFAULT_SSVR_ID,
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_subtype="INI",
-                state_code="US_MO",
-                response_date=datetime.date(2009, 1, 7),
-                supervision_violation_response_decisions=[
-                    StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-                        state_code="US_MO",
-                        decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
-                    )
-                ],
-                supervision_violation=supervision_violation,
-            )
-        )
-
-        # This should only be included when looking at the most recent decision
-        supervision_violation_response_supplemental = StateSupervisionViolationResponse.new_with_defaults(
-            supervision_violation_response_id=_DEFAULT_SSVR_ID,
-            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-            response_subtype="SUP",
-            state_code="US_MO",
-            response_date=datetime.date(2009, 1, 19),
-            supervision_violation_response_decisions=[
-                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-                    state_code="US_MO",
-                    decision=StateSupervisionViolationResponseDecision.REVOCATION,
-                    revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-                ),
-                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-                    state_code="US_MO",
-                    decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
-                    revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-                ),
-            ],
-        )
-
-        revocation_date = datetime.date(2009, 2, 13)
-
-        violation_history = violation_utils.get_violation_and_response_history(
-            revocation_date,
-            [
-                supervision_violation_response,
-                supervision_violation_response_supplemental,
-            ],
-        )
-
-        expected_output = violation_utils.ViolationHistory(
-            most_severe_violation_type=StateSupervisionViolationType.TECHNICAL,
-            most_severe_violation_type_subtype=StateSupervisionViolationType.TECHNICAL.value,
-            most_severe_response_decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
-            response_count=1,
-            violation_history_description="1tech",
-            violation_type_frequency_counter=[
-                [StateSupervisionViolationType.TECHNICAL.value]
-            ],
         )
 
         self.assertEqual(expected_output, violation_history)
@@ -938,57 +863,6 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             response_count=1,
             violation_history_description="1misdemeanor",
             violation_type_frequency_counter=[["ABSCONDED", "MISDEMEANOR"]],
-        )
-
-        self.assertEqual(expected_output, violation_history)
-
-    def test_get_violation_and_response_history_is_draft(self):
-        supervision_violation = StateSupervisionViolation.new_with_defaults(
-            supervision_violation_id=123455,
-            state_code="US_XX",
-            violation_date=datetime.date(2009, 1, 7),
-            supervision_violation_types=[
-                StateSupervisionViolationTypeEntry.new_with_defaults(
-                    state_code="US_XX",
-                    violation_type=StateSupervisionViolationType.ABSCONDED,
-                ),
-                StateSupervisionViolationTypeEntry.new_with_defaults(
-                    state_code="US_XX",
-                    violation_type=StateSupervisionViolationType.MISDEMEANOR,
-                ),
-            ],
-        )
-
-        supervision_violation_response = StateSupervisionViolationResponse.new_with_defaults(
-            state_code="US_XX",
-            supervision_violation_response_id=_DEFAULT_SSVR_ID,
-            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-            response_date=datetime.date(2009, 1, 7),
-            is_draft=True,
-            supervision_violation_response_decisions=[
-                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-                    state_code="US_XX",
-                    decision=StateSupervisionViolationResponseDecision.REVOCATION,
-                    revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-                ),
-            ],
-            supervision_violation=supervision_violation,
-        )
-
-        revocation_date = datetime.date(2009, 2, 13)
-
-        violation_history = violation_utils.get_violation_and_response_history(
-            revocation_date,
-            [supervision_violation_response],
-        )
-
-        expected_output = violation_utils.ViolationHistory(
-            most_severe_violation_type=None,
-            most_severe_violation_type_subtype=None,
-            most_severe_response_decision=None,
-            response_count=0,
-            violation_history_description=None,
-            violation_type_frequency_counter=None,
         )
 
         self.assertEqual(expected_output, violation_history)

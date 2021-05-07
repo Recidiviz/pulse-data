@@ -34,8 +34,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classi
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodStatus,
-    StateIncarcerationPeriodAdmissionReason,
-    StateIncarcerationPeriodReleaseReason,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_violation import (
@@ -255,73 +253,6 @@ class TestCovertSentenceToStateSpecificType(unittest.TestCase):
                 output.incarceration_sentences,
                 self.convert_sentence_output_is_valid(expected_output),
             )
-
-        test_pipeline.run()
-
-
-class TestSetViolationResponseOnIncarcerationPeriod(unittest.TestCase):
-    """Tests the SetViolationResponseOnIncarcerationPeriod DoFn."""
-
-    def testSetViolationResponseOnIncarcerationPeriod(self):
-        """Tests that the hydrated StateSupervisionViolationResponse is set
-        on the StateIncarcerationPeriod."""
-        supervision_violation_response = (
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_XX",
-                supervision_violation_response_id=123,
-                response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
-            )
-        )
-
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1111,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code="US_XX",
-            admission_date=date(2015, 5, 30),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
-            release_date=date(2020, 12, 4),
-            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-            source_supervision_violation_response=supervision_violation_response,
-        )
-
-        supervision_violation = StateSupervisionViolation.new_with_defaults(
-            state_code="US_XX", supervision_violation_id=55555
-        )
-
-        hydrated_supervision_violation_response = (
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_XX",
-                supervision_violation_response_id=123,
-                response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
-                supervision_violation=supervision_violation,
-            )
-        )
-
-        incarceration_periods_violation_responses = {
-            "incarceration_periods": [incarceration_period],
-            "violation_responses": [hydrated_supervision_violation_response],
-        }
-
-        expected_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1111,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code="US_XX",
-            admission_date=date(2015, 5, 30),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
-            release_date=date(2020, 12, 4),
-            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-            source_supervision_violation_response=hydrated_supervision_violation_response,
-        )
-
-        test_pipeline = TestPipeline()
-
-        output = test_pipeline | beam.Create(
-            [(12345, incarceration_periods_violation_responses)]
-        ) | "Set Supervision Violation Response on " "Incarceration Period" >> beam.ParDo(
-            entity_hydration_utils.SetViolationResponseOnIncarcerationPeriod()
-        )
-
-        assert_that(output, equal_to([(12345, expected_incarceration_period)]))
 
         test_pipeline.run()
 

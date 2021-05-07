@@ -90,10 +90,16 @@ def us_mo_filter_violation_responses(
     filtered_responses = [
         response
         for response in violation_responses
-        if response.response_type
-        != StateSupervisionViolationResponseType.VIOLATION_REPORT
-        or _get_violation_report_subtype_should_be_included_in_calculations(
-            response.response_subtype, include_follow_up_responses
+        if not response.is_draft
+        and (
+            response.response_type == StateSupervisionViolationResponseType.CITATION
+            or (
+                response.response_type
+                == StateSupervisionViolationResponseType.VIOLATION_REPORT
+                and _get_violation_report_subtype_should_be_included_in_calculations(
+                    response.response_subtype, include_follow_up_responses
+                )
+            )
         )
     ]
 

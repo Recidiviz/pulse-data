@@ -16,8 +16,10 @@
 # =============================================================================
 """Utils for state-specific logic related to identifying commitments from
 supervision in US_ND."""
-
+import datetime
 from typing import List, Tuple
+
+from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.utils.period_utils import (
     find_last_terminated_period_before_date,
@@ -33,6 +35,7 @@ from recidiviz.common.constants.state.state_supervision import StateSupervisionT
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
 )
+from recidiviz.common.date import DateRange
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionPeriod,
@@ -114,3 +117,23 @@ def us_nd_pre_commitment_supervision_periods_if_commitment_from_supervision(
             return True, [most_recent_supervision_period]
 
     return False, []
+
+
+def us_nd_violation_history_window_pre_commitment_from_supervision(
+    admission_date: datetime.date,
+) -> DateRange:
+    """Returns a DateRange representing the days which we should consider violations for
+    the violation history prior to the commitment from supervision admission.
+
+    For US_ND we look for violation responses with a response_date within 90 days of a
+    commitment from supervision admission to incarceration. 90 days is an arbitrary
+    buffer for which we accept discrepancies between the SupervisionViolationResponse
+    response_date and the StateIncarcerationPeriod's admission_date.
+    """
+
+    violation_window_lower_bound_inclusive = admission_date - relativedelta(days=90)
+    violation_window_upper_bound_exclusive = admission_date + relativedelta(days=90)
+    return DateRange(
+        lower_bound_inclusive_date=violation_window_lower_bound_inclusive,
+        upper_bound_exclusive_date=violation_window_upper_bound_exclusive,
+    )
