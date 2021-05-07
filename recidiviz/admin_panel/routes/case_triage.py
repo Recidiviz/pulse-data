@@ -84,14 +84,14 @@ def add_case_triage_routes(bp: Blueprint) -> None:
     def _generate_case_updates_export() -> Tuple[str, HTTPStatus]:
         export_from_cloud_sql_to_gcs_csv(
             SchemaType.CASE_TRIAGE,
-            "case_updates",
+            "case_update_actions",
             GcsfsFilePath.from_absolute_path(
                 os.path.join(
                     CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI.format(
                         project_id=metadata.project_id()
                     ),
                     "exported",
-                    "case_updates.csv",
+                    "case_update_actions.csv",
                 )
             ),
             [col.name for col in CaseUpdate.__table__.columns],
