@@ -1,20 +1,28 @@
 """Script to generate an alembic migration for adding a new value to an enum
 
 Usage:
-    python -m recidiviz.tools.create_enum_migration --schema [jails|state] \
-        --master_table <master table name> --historical_table \
-        <historical table name> --type <enum type name> --column <column name> \
-        --migration_name <name for migration>
+python -m recidiviz.tools.create_enum_migration --schema <schema name> \
+    --primary-table <primary table name> --enum-name <enum type name> \
+    --column <column name> --new-enum-value <new value> --remove-enum-value \
+    <remove value> --migration-name <name for migration>
 
 Example:
-    python -m recidiviz.tools.create_enum_migration --schema jails \
-    --master_table person --historical_table person_history --type race \
-    --column race --migration_name add_race_lizardperson
+python -m recidiviz.tools.create_enum_migration --schema STATE \
+    --primary-table state_person_race --enum-name race --column race \
+    --new-enum-value LIZARD --new-enum-value BIRD --remove-enum-value OTHER \
+    --migration-name add_race_lizard_bird
 """
-
 import argparse
 import os
-from typing import Set
+import sys
+from typing import List, Set
+
+from pytest_alembic import runner  # type: ignore
+from sqlalchemy import create_engine
+
+from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.tools.postgres import local_postgres_helpers
 
 
 _ALEMBIC_REVISION_COMMAND_TEMPLATE = (
@@ -29,15 +37,19 @@ _PATH_TO_BODY_SECTION_TEMPLATE = (
 _HEADER_SECTION_FINAL_LINE_START = "depends_on"
 
 
-def _path_to_versions_directory(schema: str) -> str:
-    return os.path.join(_PATH_TO_MIGRATIONS_DIRECTORY, schema, "versions")
+def _path_to_versions_directory(schema: SchemaType) -> str:
+    return os.path.join(_PATH_TO_MIGRATIONS_DIRECTORY, schema.value.lower(), "versions")
 
 
-def _path_to_config_file(schema: str) -> str:
-    return os.path.join(_PATH_TO_MIGRATIONS_DIRECTORY, f"{schema}_alembic.ini")
+def _path_to_config_file(schema: SchemaType) -> str:
+    return os.path.join(
+        _PATH_TO_MIGRATIONS_DIRECTORY, f"{schema.value.lower()}_alembic.ini"
+    )
 
 
-def _create_new_migration_and_return_filename(schema: str, migration_name: str) -> str:
+def _create_new_migration_and_return_filename(
+    schema: SchemaType, migration_name: str
+) -> str:
     """Calls alembic script to generate new empty migration with
     |migration_name| and returns its filename"""
     initial_filenames = _get_all_filenames_in_versions_directory(schema)
@@ -58,7 +70,7 @@ def _create_new_migration_and_return_filename(schema: str, migration_name: str) 
     return new_filenames.difference(initial_filenames).pop()
 
 
-def _get_all_filenames_in_versions_directory(schema: str) -> Set[str]:
+def _get_all_filenames_in_versions_directory(schema: SchemaType) -> Set[str]:
     """Returns set of all filenames currently in versions directory"""
     versions_directory = _path_to_versions_directory(schema)
 
@@ -85,7 +97,11 @@ def _get_migration_header_section(migration_filepath: str) -> str:
 
 
 def _get_migration_body_section(
-    master_table_name: str, historical_table_name: str, type_name: str, column_name: str
+    primary_table_name: str,
+    enum_name: str,
+    column_name: str,
+    old_values: List[str],
+    new_values: List[str],
 ) -> str:
     """Returns string of body section of enum migration by interpolating
     provided values into enum migration template
@@ -93,23 +109,139 @@ def _get_migration_body_section(
     with open(_PATH_TO_BODY_SECTION_TEMPLATE, "r") as template_file:
         template = template_file.read()
     return template.format(
-        master_table=master_table_name,
-        historical_table=historical_table_name,
-        type=type_name,
+        primary_table=primary_table_name,
+        enum_name=enum_name,
         column=column_name,
+        old_values=old_values,
+        new_values=new_values,
     )
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--schema")
-    parser.add_argument("--master_table")
-    parser.add_argument("--historical_table")
-    parser.add_argument("--type")
-    parser.add_argument("--column")
-    parser.add_argument("--migration_name")
+def _get_old_enum_values(schema_type: SchemaType, enum_name: str) -> List[str]:
+    """Fetches the current enum values for the given schema and enum name."""
+    # Setup temp pg database
+    db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+    database_key = SQLAlchemyDatabaseKey.canonical_for_schema(schema_type)
+    overridden_env_vars = (
+        local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
+    )
+    engine = create_engine(local_postgres_helpers.postgres_db_url_from_env_vars())
 
+    try:
+        # Fetch enums
+        default_config = {
+            "file": database_key.alembic_file,
+            "script_location": database_key.migrations_location,
+        }
+        with runner(default_config, engine) as r:
+            r.migrate_up_to("head")
+        conn = engine.connect()
+        rows = conn.execute(
+            f"""
+        SELECT e.enumlabel as enum_value
+        FROM pg_type t
+            JOIN pg_enum e ON t.oid = e.enumtypid
+            JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace
+        WHERE
+            n.nspname = 'public'
+            AND t.typname = '{enum_name}';
+        """
+        )
+        enums = [row[0] for row in rows]
+    finally:
+        # Teardown temp pg database
+        local_postgres_helpers.restore_local_env_vars(overridden_env_vars)
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(db_dir)
+
+    return enums
+
+
+def _create_parser() -> argparse.ArgumentParser:
+    """Creates an argparser for the script."""
+    parser = argparse.ArgumentParser(description="Autogenerate local migration.")
+    parser.add_argument(
+        "--schema",
+        type=SchemaType,
+        choices=list(SchemaType),
+        help="Specifies which schema to generate migrations for.",
+        required=True,
+    )
+    parser.add_argument(
+        "--migration-name",
+        type=str,
+        help="String message passed to alembic to apply to the revision.",
+        required=True,
+    )
+    parser.add_argument(
+        "--primary-table",
+        type=str,
+        help="Name of the primary table where the enum migration will be run.",
+        required=True,
+    )
+    parser.add_argument(
+        "--enum-name",
+        type=str,
+        help="Postgres name of the enum whose values will be updated.",
+        required=True,
+    )
+    parser.add_argument(
+        "--column",
+        type=str,
+        help="Name of the column whose values will be updated.",
+        required=True,
+    )
+    parser.add_argument(
+        "--new-enum-value",
+        type=str,
+        action="append",
+        default=[],
+        help="Name of the newly added enum value. Can be repeated to add multiple values.",
+    )
+    parser.add_argument(
+        "--remove-enum-value",
+        type=str,
+        action="append",
+        default=[],
+        help="Name of an enum value to remove. Can be repeated to remove multiple values.",
+    )
+    return parser
+
+
+def main() -> None:
+    """Implements the main function of the script."""
+    parser = _create_parser()
     args = parser.parse_args()
+
+    # NOTE: We use prints instead of logging because the call out to alembic
+    # does something to mess with our logging levels.
+    print("Generating old enum values...")
+    old_enum_values = _get_old_enum_values(args.schema, args.enum_name)
+    print("Found old enum values.")
+    for val in args.new_enum_value:
+        if val in old_enum_values:
+            print(
+                f"Enum value [{val}] was set to be added but is already present "
+                f"for enum [{args.enum_name}]."
+            )
+            sys.exit(1)
+    for val in args.remove_enum_value:
+        if val not in old_enum_values:
+            print(
+                f"Enum value [{val}] was set to be removed but is not present "
+                f"for enum [{args.enum_name}]."
+            )
+            sys.exit(1)
+        if val in args.new_enum_value:
+            print(
+                f"Enum value [{val}] was set to be both added and removed. Terminating."
+            )
+            sys.exit(1)
+
+    new_enum_values = [
+        val
+        for val in [*old_enum_values, *args.new_enum_value]
+        if val not in args.remove_enum_value
+    ]
 
     migration_filename = _create_new_migration_and_return_filename(
         args.schema, args.migration_name
@@ -119,14 +251,18 @@ def main() -> None:
     )
     header_section = _get_migration_header_section(migration_filepath)
     body_section = _get_migration_body_section(
-        args.master_table, args.historical_table, args.type, args.column
+        args.primary_table,
+        args.enum_name,
+        args.column,
+        old_enum_values,
+        new_enum_values,
     )
     file_content = "{}\n{}".format(header_section, body_section)
 
     with open(migration_filepath, "w") as migration_file:
         migration_file.write(file_content)
 
-    print("Successfully generated migration {}".format(migration_filename))
+    print(f"Successfully generated migration: {migration_filename}")
 
 
 if __name__ == "__main__":
