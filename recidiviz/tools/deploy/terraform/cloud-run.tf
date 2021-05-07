@@ -98,7 +98,6 @@ resource "google_cloud_run_service" "case-triage" {
     annotations = {
       "run.googleapis.com/ingress"        = "all"
       "run.googleapis.com/ingress-status" = "all"
-      "run.googleapis.com/launch-stage"   = "BETA"
     }
   }
 
