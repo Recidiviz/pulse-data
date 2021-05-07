@@ -33,6 +33,9 @@ from recidiviz.case_triage.views.last_known_date_of_employment import (
 from recidiviz.case_triage.views.latest_assessments import (
     LATEST_ASSESSMENTS_VIEW_BUILDER,
 )
+from recidiviz.case_triage.views.client_eligibility_criteria import (
+    CLIENT_ELIGIBILITY_CRITERIA_VIEW_BUILDER,
+)
 
 CASE_TRIAGE_EXPORTED_VIEW_BUILDERS: Sequence[SelectedColumnsBigQueryViewBuilder] = [
     CLIENT_LIST_VIEW_BUILDER,
@@ -47,4 +50,5 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = [
     LATEST_ASSESSMENTS_VIEW_BUILDER,
     OFFICER_LIST_VIEW_BUILDER,
     TOP_OPPORTUNITIES_VIEW_BUILDER,
+    CLIENT_ELIGIBILITY_CRITERIA_VIEW_BUILDER,
 ]
