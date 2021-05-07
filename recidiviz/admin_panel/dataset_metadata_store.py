@@ -118,7 +118,7 @@ class DatasetMetadataCountsStore(AdminPanelStore):
                 )
                 continue
 
-            logging.info(
+            logging.debug(
                 "Processing %s file to retrieve %s metadata",
                 path.file_name,
                 self.dataset_nickname,
@@ -141,7 +141,7 @@ class DatasetMetadataCountsStore(AdminPanelStore):
                 ] = DatasetMetadataCounts.from_json(struct)
             self.store[table_name][col_name] = col_store
 
-        logging.info("DONE PROCESSING FOR %s METADATA", self.dataset_nickname)
+        logging.debug("DONE PROCESSING FOR %s METADATA", self.dataset_nickname)
 
     def fetch_object_counts_by_table(self) -> DatasetMetadataResult:
         """
