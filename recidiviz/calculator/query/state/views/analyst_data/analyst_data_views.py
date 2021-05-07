@@ -107,6 +107,12 @@ from recidiviz.calculator.query.state.views.analyst_data.supervision_officer_ses
 from recidiviz.calculator.query.state.views.analyst_data.location_sessions import (
     LOCATION_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_employment_sessions import (
+    US_ID_EMPLOYMENT_SESSIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_positive_urine_analysis_sessions import (
+    US_ID_POSITIVE_URINE_ANALYSIS_SESSIONS_VIEW_BUILDER,
+)
 
 ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     PERSON_DEMOGRAPHICS_VIEW_BUILDER,
@@ -139,4 +145,6 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     SUPERVISION_LEVEL_DEDUP_PRIORITY_VIEW_BUILDER,
     SUPERVISION_OFFICER_SESSIONS_VIEW_BUILDER,
     LOCATION_SESSIONS_VIEW_BUILDER,
+    US_ID_EMPLOYMENT_SESSIONS_VIEW_BUILDER,
+    US_ID_POSITIVE_URINE_ANALYSIS_SESSIONS_VIEW_BUILDER,
 ]

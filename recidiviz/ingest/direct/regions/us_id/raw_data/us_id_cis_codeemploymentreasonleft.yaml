@@ -1,9 +1,7 @@
 file_tag: cis_codeemploymentreasonleft
 file_description: |-
   Not in use
-
   Last known entries as of `2021-03-01`
-
   | id  | codedescription | active | reasonleftcode
   | --- | --------------- | ------ | --------------
   | 1   | FIRED           | T      | A
@@ -23,10 +21,26 @@ primary_key_cols:
   - id
 columns:
   - name: id
+    is_datetime: False
+    description: Id of this row
   - name: codedescription
+    is_datetime: False
+    description: Description of reason for ending employment
   - name: active
+    is_datetime: False
+    description: Whether employment end reason is an active code
   - name: reasonleftcode
+    is_datetime: False
+    description: Code for reason for ending employment
   - name: insuser
+    is_datetime: False
+    description: IDOC username of whoever created this row
   - name: insdate
+    is_datetime: True
+    description: IDOC timestamp for when the row was created
   - name: upduser
+    is_datetime: False
+    description: IDOC username of the last person to update this row
   - name: upddate
+    is_datetime: True
+    description: IDOC update date for this row
