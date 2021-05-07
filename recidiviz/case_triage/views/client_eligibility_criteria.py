@@ -19,9 +19,9 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
-    CASE_TRIAGE_DATASET,
     STATE_BASE_DATASET,
 )
+from recidiviz.case_triage.views.dataset_config import VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -103,12 +103,12 @@ CLIENT_ELIGIBILITY_CRITERIA_QUERY_TEMPLATE = """
 """
 
 CLIENT_ELIGIBILITY_CRITERIA_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=CASE_TRIAGE_DATASET,
+    dataset_id=VIEWS_DATASET,
     view_id=CLIENT_ELIGIBILITY_CRITERIA_VIEW_NAME,
     description=CLIENT_ELIGIBILITY_CRITERIA_VIEW_DESCRIPTION,
     view_query_template=CLIENT_ELIGIBILITY_CRITERIA_QUERY_TEMPLATE,
     analyst_dataset=ANALYST_VIEWS_DATASET,
-    case_triage_dataset=CASE_TRIAGE_DATASET,
+    case_triage_dataset=VIEWS_DATASET,
     base_dataset=STATE_BASE_DATASET,
     should_materialize=True,
 )
