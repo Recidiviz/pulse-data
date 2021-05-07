@@ -45,17 +45,6 @@ const getLastContactedText = (client: DecoratedClient) => {
   return `Assumed no contact from CIS.`;
 };
 
-const getLastHomeVisitText = (client: DecoratedClient) => {
-  const { mostRecentHomeVisitDate } = client;
-
-  if (mostRecentHomeVisitDate) {
-    return `Last home visit on ${mostRecentHomeVisitDate.format(
-      "MMMM Do, YYYY"
-    )}`;
-  }
-  return `Assumed no home visit from CIS.`;
-};
-
 const getFrequencyText = (
   contactFrequency: SupervisionContactFrequency | undefined,
   singularUnit: string
@@ -67,7 +56,7 @@ const getFrequencyText = (
   const [contacts, days] = contactFrequency;
   const pluralized = contacts === 1 ? "" : "s";
   const daysPluralized = days === 1 ? "day" : "days";
-  return `${contacts} ${singularUnit}${pluralized} every ${days} ${daysPluralized}.`;
+  return `Policy: ${contacts} ${singularUnit}${pluralized} every ${days} ${daysPluralized}`;
 };
 
 const NeedsFaceToFaceContact: React.FC<NeedsFaceToFaceContactProps> = ({
@@ -76,26 +65,19 @@ const NeedsFaceToFaceContact: React.FC<NeedsFaceToFaceContactProps> = ({
 }: NeedsFaceToFaceContactProps) => {
   const { policyStore } = useRootStore();
   const {
-    needsMet: {
-      faceToFaceContact: faceToFaceMet,
-      homeVisitContact: homeVisitMet,
-    },
+    needsMet: { faceToFaceContact: faceToFaceMet },
   } = client;
 
-  const met = faceToFaceMet && homeVisitMet;
-  const title = met
+  const title = faceToFaceMet
     ? `Face to Face Contact: Up To Date`
     : `Face to Face Contact Needed`;
   const contactFrequency = policyStore.findContactFrequencyForClient(client);
-  const homeVisitFrequency = policyStore.findHomeVisitFrequencyForClient(
-    client
-  );
 
   return (
     <CaseCardBody className={className}>
       <Need
         kind={IconSVG.NeedsContact}
-        state={met ? NeedState.MET : NeedState.NOT_MET}
+        state={faceToFaceMet ? NeedState.MET : NeedState.NOT_MET}
       />
       <CaseCardInfo>
         <strong>{title}</strong>
@@ -106,18 +88,15 @@ const NeedsFaceToFaceContact: React.FC<NeedsFaceToFaceContactProps> = ({
             {client.currentAddress || "No address on file"}
           </div>
           <div>
-            {getFrequencyText(contactFrequency, "contact")}{" "}
+            {getFrequencyText(contactFrequency, "contact")}
+            <br />
             {getLastContactedText(client)}
-          </div>
-          <div>
-            {getFrequencyText(homeVisitFrequency, "home visit")}{" "}
-            {getLastHomeVisitText(client)}
           </div>
         </Caption>
 
         <NeedsActionFlow
           client={client}
-          met={met}
+          met={faceToFaceMet}
           resolve={CaseUpdateActionType.SCHEDULED_FACE_TO_FACE}
           dismiss={CaseUpdateActionType.INCORRECT_CONTACT_DATA}
         />
