@@ -16,7 +16,10 @@
 # =============================================================================
 """Utils for calculations regarding incarceration admissions that are commitments from
 supervision."""
+import datetime
 from typing import Optional, List, Dict, Any, NamedTuple, Tuple
+
+from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_supervising_officer_and_location_info_from_supervision_period,
@@ -25,6 +28,12 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     identify_most_severe_case_type,
 )
+from recidiviz.calculator.pipeline.utils.violation_response_utils import (
+    violation_responses_in_window,
+)
+from recidiviz.calculator.pipeline.utils.violation_utils import (
+    VIOLATION_HISTORY_WINDOW_MONTHS,
+)
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
@@ -32,6 +41,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
 )
+from recidiviz.common.date import DateRange
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionPeriod,
@@ -135,3 +145,48 @@ def _identify_specialized_purpose_for_incarceration_and_subtype(
     # For now, all non-state-specific specialized_purpose_for_incarceration_subtypes are
     # None
     return specialized_purpose_for_incarceration, None
+
+
+def default_violation_history_window_pre_commitment_from_supervision(
+    admission_date: datetime.date,
+    sorted_and_filtered_violation_responses: List[StateSupervisionViolationResponse],
+) -> DateRange:
+    """Returns the window of time before a commitment from supervision in which we
+    should consider violations for the violation history prior to the admission."""
+    # We will use the date of the last response prior to the admission as the
+    # window cutoff.
+    responses_in_window = violation_responses_in_window(
+        violation_responses=sorted_and_filtered_violation_responses,
+        upper_bound_exclusive=admission_date + relativedelta(days=1),
+        lower_bound_inclusive=None,
+    )
+
+    violation_history_end_date = admission_date
+
+    if responses_in_window:
+        # If there were violation responses leading up to the incarceration
+        # admission, then we want the violation history leading up to the last
+        # response_date instead of the admission_date on the
+        # incarceration_period
+        last_response = responses_in_window[-1]
+
+        if not last_response.response_date:
+            # This should never happen, but is here to silence mypy warnings
+            # about empty response_dates.
+            raise ValueError(
+                "Not effectively filtering out responses without valid"
+                " response_dates."
+            )
+        violation_history_end_date = last_response.response_date
+
+    violation_window_lower_bound_inclusive = violation_history_end_date - relativedelta(
+        months=VIOLATION_HISTORY_WINDOW_MONTHS
+    )
+    violation_window_upper_bound_exclusive = violation_history_end_date + relativedelta(
+        days=1
+    )
+
+    return DateRange(
+        lower_bound_inclusive_date=violation_window_lower_bound_inclusive,
+        upper_bound_exclusive_date=violation_window_upper_bound_exclusive,
+    )

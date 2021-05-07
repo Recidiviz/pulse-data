@@ -48,6 +48,7 @@ from recidiviz.calculator.pipeline.utils.period_utils import (
 )
 from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
     get_commitment_from_supervision_details,
+    default_violation_history_window_pre_commitment_from_supervision,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     supervision_types_mutually_exclusive_for_state,
@@ -66,9 +67,10 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     state_specific_violation_response_pre_processing_function,
     state_specific_supervision_admission_reason_override,
     filter_out_federal_and_other_country_supervision_periods,
-    sorted_violation_responses_in_window,
     drop_temporary_custody_periods,
     drop_non_state_prison_incarceration_type_periods,
+    state_specific_violation_responses_for_violation_history,
+    state_specific_violation_history_window_pre_commitment_from_supervision,
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_index import (
     SupervisionPeriodIndex,
@@ -84,6 +86,7 @@ from recidiviz.calculator.pipeline.utils.violation_response_utils import (
     prepare_violation_responses_for_calculations,
     responses_on_most_recent_response_date,
     get_most_severe_response_decision,
+    violation_responses_in_window,
 )
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentLevel,
@@ -231,11 +234,19 @@ def find_supervision_time_buckets(
         incarceration_periods=incarceration_periods
     )
 
-    violation_responses = prepare_violation_responses_for_calculations(
+    sorted_violation_responses = prepare_violation_responses_for_calculations(
         violation_responses=violation_responses,
         pre_processing_function=state_specific_violation_response_pre_processing_function(
             state_code=state_code
         ),
+    )
+
+    violation_responses_for_history = (
+        state_specific_violation_responses_for_violation_history(
+            state_code=state_code,
+            violation_responses=sorted_violation_responses,
+            include_follow_up_responses=False,
+        )
     )
 
     projected_supervision_completion_buckets = classify_supervision_success(
@@ -255,58 +266,52 @@ def find_supervision_time_buckets(
                 supervision_period, supervision_period_to_judicial_district_associations
             )
 
-            supervision_time_buckets = (
-                supervision_time_buckets
-                + find_time_buckets_for_supervision_period(
-                    supervision_sentences,
-                    incarceration_sentences,
-                    supervision_period,
-                    supervision_period_index,
-                    incarceration_period_index,
-                    assessments,
-                    violation_responses,
-                    supervision_contacts,
-                    supervision_period_to_agent_associations,
-                    judicial_district_code,
-                )
+            supervision_time_buckets = supervision_time_buckets + find_time_buckets_for_supervision_period(
+                supervision_sentences=supervision_sentences,
+                incarceration_sentences=incarceration_sentences,
+                supervision_period=supervision_period,
+                supervision_period_index=supervision_period_index,
+                incarceration_period_index=incarceration_period_index,
+                assessments=assessments,
+                violation_responses_for_history=violation_responses_for_history,
+                supervision_contacts=supervision_contacts,
+                supervision_period_to_agent_associations=supervision_period_to_agent_associations,
+                judicial_district_code=judicial_district_code,
             )
 
             supervision_termination_bucket = find_supervision_termination_bucket(
-                supervision_sentences,
-                incarceration_sentences,
-                supervision_period,
-                supervision_period_index,
-                assessments,
-                violation_responses,
-                supervision_period_to_agent_associations,
-                judicial_district_code,
+                supervision_sentences=supervision_sentences,
+                incarceration_sentences=incarceration_sentences,
+                supervision_period=supervision_period,
+                supervision_period_index=supervision_period_index,
+                assessments=assessments,
+                violation_responses_for_history=violation_responses_for_history,
+                supervision_period_to_agent_associations=supervision_period_to_agent_associations,
+                judicial_district_code=judicial_district_code,
             )
 
             if supervision_termination_bucket:
                 supervision_time_buckets.append(supervision_termination_bucket)
 
             supervision_start_bucket = find_supervision_start_bucket(
-                supervision_period,
-                supervision_period_index,
-                incarceration_period_index,
-                supervision_period_to_agent_associations,
-                judicial_district_code,
+                supervision_period=supervision_period,
+                supervision_period_index=supervision_period_index,
+                incarceration_period_index=incarceration_period_index,
+                supervision_period_to_agent_associations=supervision_period_to_agent_associations,
+                judicial_district_code=judicial_district_code,
             )
             if supervision_start_bucket:
                 supervision_time_buckets.append(supervision_start_bucket)
 
-    supervision_time_buckets = (
-        supervision_time_buckets
-        + find_revocation_return_buckets(
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_periods,
-            assessments,
-            violation_responses,
-            supervision_period_to_agent_associations,
-            supervision_period_to_judicial_district_associations,
-            incarceration_period_index,
-        )
+    supervision_time_buckets = supervision_time_buckets + find_revocation_return_buckets(
+        supervision_sentences=supervision_sentences,
+        incarceration_sentences=incarceration_sentences,
+        supervision_periods=supervision_periods,
+        assessments=assessments,
+        sorted_violation_responses=sorted_violation_responses,
+        supervision_period_to_agent_associations=supervision_period_to_agent_associations,
+        supervision_period_to_judicial_district_associations=supervision_period_to_judicial_district_associations,
+        incarceration_period_index=incarceration_period_index,
     )
 
     if supervision_types_mutually_exclusive_for_state(state_code):
@@ -326,7 +331,7 @@ def find_time_buckets_for_supervision_period(
     supervision_period_index: SupervisionPeriodIndex,
     incarceration_period_index: IncarcerationPeriodIndex,
     assessments: List[StateAssessment],
-    violation_responses: List[StateSupervisionViolationResponse],
+    violation_responses_for_history: List[StateSupervisionViolationResponse],
     supervision_contacts: List[StateSupervisionContact],
     supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
     judicial_district_code: Optional[str] = None,
@@ -340,7 +345,9 @@ def find_time_buckets_for_supervision_period(
         - supervision_period_index: Class containing information about this person's supervision periods
         - incarceration_period_index: Class containing information about this person's incarceration periods
         - assessments: List of StateAssessment for a person
-        - violation_responses: List of StateSupervisionViolationResponse for a person
+        - violation_responses_for_history: List of
+            StateSupervisionViolationResponse for a person, sorted by response_date and
+            filtered to those that are applicable when analyzing violation history
         - supervision_period_to_agent_associations: dictionary associating StateSupervisionPeriod ids to information
             about the corresponding StateAgent on the period
         - judicial_district_code: The judicial district responsible for the period of supervision
@@ -438,7 +445,8 @@ def find_time_buckets_for_supervision_period(
                 assessment_type = most_recent_assessment.assessment_type
 
             violation_history = get_violation_and_response_history(
-                event_date, violation_responses
+                upper_bound_exclusive_date=(event_date + relativedelta(days=1)),
+                violation_responses_for_history=violation_responses_for_history,
             )
 
             is_on_supervision_last_day_of_month = event_date == last_day_of_month(
@@ -634,7 +642,7 @@ def find_supervision_termination_bucket(
     supervision_period: StateSupervisionPeriod,
     supervision_period_index: SupervisionPeriodIndex,
     assessments: List[StateAssessment],
-    violation_responses: List[StateSupervisionViolationResponse],
+    violation_responses_for_history: List[StateSupervisionViolationResponse],
     supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
     judicial_district_code: Optional[str] = None,
 ) -> Optional[SupervisionTimeBucket]:
@@ -698,7 +706,8 @@ def find_supervision_termination_bucket(
         )
 
         violation_history = get_violation_and_response_history(
-            termination_date, violation_responses
+            upper_bound_exclusive_date=(termination_date + relativedelta(days=1)),
+            violation_responses_for_history=violation_responses_for_history,
         )
 
         (
@@ -828,7 +837,7 @@ def find_revocation_return_buckets(
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_periods: List[StateSupervisionPeriod],
     assessments: List[StateAssessment],
-    violation_responses: List[StateSupervisionViolationResponse],
+    sorted_violation_responses: List[StateSupervisionViolationResponse],
     supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
     supervision_period_to_judicial_district_associations: Dict[int, Dict[Any, Any]],
     incarceration_period_index: IncarcerationPeriodIndex,
@@ -856,6 +865,8 @@ def find_revocation_return_buckets(
         if not incarceration_period.admission_date:
             raise ValueError(f"Admission date for null for {incarceration_period}")
 
+        state_code = incarceration_period.state_code
+
         previous_incarceration_period = (
             incarceration_period_index.incarceration_periods[index - 1]
             if index > 0
@@ -866,7 +877,7 @@ def find_revocation_return_buckets(
             admission_is_revocation,
             revoked_supervision_periods,
         ) = pre_commitment_supervision_periods_if_commitment(
-            incarceration_period.state_code,
+            state_code,
             incarceration_period,
             filtered_supervision_periods,
             previous_incarceration_period,
@@ -890,48 +901,51 @@ def find_revocation_return_buckets(
             state_code=incarceration_period.state_code,
         )
 
-        # We will use the date of the last response prior to the revocation as the window cutoff.
-        responses_in_window = sorted_violation_responses_in_window(
-            violation_responses,
-            upper_bound_exclusive=admission_date + relativedelta(days=1),
-            lower_bound_inclusive=None,
-            include_follow_up_responses=False,
+        violation_responses_for_history = (
+            state_specific_violation_responses_for_violation_history(
+                state_code=state_code,
+                violation_responses=sorted_violation_responses,
+                include_follow_up_responses=False,
+            )
         )
 
-        violation_history_end_date = incarceration_period.admission_date
+        violation_history_window = state_specific_violation_history_window_pre_commitment_from_supervision(
+            state_code=state_code,
+            admission_date=admission_date,
+            sorted_and_filtered_violation_responses=violation_responses_for_history,
+            default_violation_history_window_function=default_violation_history_window_pre_commitment_from_supervision,
+        )
 
-        if responses_in_window:
-            # If there were violation responses leading up to the revocation admission,
-            # then we want the violation history leading up to the last response_date
-            # instead of the admission_date on the incarceration period
-            last_response = responses_in_window[-1]
-
-            if not last_response.response_date:
-                # This should never happen, but is here to silence mypy warnings about empty response_dates.
-                raise ValueError(
-                    "Not effectively filtering out responses without valid response_dates."
-                )
-            violation_history_end_date = last_response.response_date
-
-        # Get details about the violation and response history leading up to the revocation
+        # Get details about the violation and response history leading up to the
+        # admission to incarceration
         violation_history = get_violation_and_response_history(
-            violation_history_end_date,
-            violation_responses,
-            incarceration_period,
+            upper_bound_exclusive_date=violation_history_window.upper_bound_exclusive_date,
+            lower_bound_inclusive_date_override=violation_history_window.lower_bound_inclusive_date,
+            violation_responses_for_history=violation_responses_for_history,
+            incarceration_period=incarceration_period,
         )
 
-        responses_in_window_for_decision_evaluation = responses_in_window
+        responses_for_decision_evaluation = violation_responses_for_history
 
         if include_decisions_on_follow_up_responses_for_most_severe_response(
             incarceration_period.state_code
         ):
-            responses_in_window_for_decision_evaluation = sorted_violation_responses_in_window(
-                violation_responses,
-                upper_bound_exclusive=(admission_date + relativedelta(days=1)),
-                # We're just looking for the most recent response
-                lower_bound_inclusive=None,
-                include_follow_up_responses=True,
+            # Get a new state-specific list of violation responses that includes follow-up
+            # responses
+            responses_for_decision_evaluation = (
+                state_specific_violation_responses_for_violation_history(
+                    state_code=state_code,
+                    violation_responses=sorted_violation_responses,
+                    include_follow_up_responses=True,
+                )
             )
+
+        responses_in_window_for_decision_evaluation = violation_responses_in_window(
+            violation_responses=responses_for_decision_evaluation,
+            upper_bound_exclusive=(admission_date + relativedelta(days=1)),
+            # We're just looking for the most recent response
+            lower_bound_inclusive=None,
+        )
 
         # Find the most severe decision on the most recent response decisions
         most_recent_responses = responses_on_most_recent_response_date(
@@ -947,7 +961,7 @@ def find_revocation_return_buckets(
                 revocation_details = get_commitment_from_supervision_details(
                     incarceration_period,
                     supervision_period,
-                    violation_responses,
+                    sorted_violation_responses,
                     supervision_period_to_agent_associations,
                 )
 
@@ -1023,7 +1037,7 @@ def find_revocation_return_buckets(
             # There are no overlapping or proximal supervision periods. Add one
             # RevocationReturnSupervisionTimeBucket with as many details as possible about this revocation
             revocation_details = get_commitment_from_supervision_details(
-                incarceration_period, None, violation_responses, None
+                incarceration_period, None, sorted_violation_responses, None
             )
 
             pre_revocation_supervision_type = (

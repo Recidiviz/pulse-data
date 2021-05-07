@@ -787,10 +787,31 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             state_code="US_ND",
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
             supervision_violation=supervision_violation,
+            response_date=date(2008, 12, 25),
+            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+        )
+
+        duplicate_supervision_violation = StateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123455,
+            state_code="US_ND",
+            supervision_violation_types=[
+                StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_ND",
+                    violation_type=StateSupervisionViolationType.FELONY,
+                ),
+            ],
+        )
+
+        duplicate_ssvr = StateSupervisionViolationResponse.new_with_defaults(
+            state_code="US_ND",
+            supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            supervision_violation=duplicate_supervision_violation,
+            response_date=date(2008, 12, 25),
+            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
         )
 
         revocation_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1112,
+            incarceration_period_id=_DEFAULT_IP_ID,
             external_id="2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
@@ -802,12 +823,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             release_date=date(2008, 12, 21),
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             release_reason_raw_text="RPRB",
-            # SSVR with only the _id, will get replaced by fully hydrated entity in
-            # identifier
-            source_supervision_violation_response=StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_ND",
-                supervision_violation_response_id=_DEFAULT_SSVR_ID,
-            ),
         )
 
         revoked_supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -849,7 +864,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         sentence_groups = [sentence_group]
 
         incarceration_events = self._run_find_incarceration_events(
-            sentence_groups, violation_responses=[ssvr]
+            sentence_groups, violation_responses=[ssvr, duplicate_ssvr]
         )
 
         self.assertCountEqual(
@@ -863,6 +878,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                     county_of_residence=_COUNTY_OF_RESIDENCE,
                     most_serious_offense_ncic_code="0901",
                     most_serious_offense_statute="9999",
+                    judicial_district_code="NW",
                 ),
                 IncarcerationCommitmentFromSupervisionAdmissionEvent(
                     state_code=revoked_supervision_period.state_code,
@@ -876,6 +892,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                     specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     most_severe_violation_type=StateSupervisionViolationType.FELONY,
                     most_severe_violation_type_subtype=StateSupervisionViolationType.FELONY.value,
+                    # Duplicate responses were merged in pre-processing
                     response_count=1,
                     violation_history_description="1felony",
                     violation_type_frequency_counter=[["FELONY"]],
@@ -2349,7 +2366,11 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
         )
         supervision_periods = supervision_periods or []
         assessments = assessments or []
-        violation_responses = violation_responses or []
+        sorted_violation_responses = (
+            sorted(violation_responses, key=lambda b: b.response_date or date.min)
+            if violation_responses
+            else []
+        )
 
         return identifier.admission_event_for_period(
             incarceration_sentences=incarceration_sentences,
@@ -2358,7 +2379,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
             incarceration_period_index=incarceration_period_index,
             supervision_periods=supervision_periods,
             assessments=assessments,
-            violation_responses=violation_responses,
+            sorted_violation_responses=sorted_violation_responses,
             supervision_period_to_agent_associations=_DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             county_of_residence=county_of_residence,
         )
@@ -2654,7 +2675,11 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
         supervision_sentences = supervision_sentences or []
         incarceration_sentences = incarceration_sentences or []
         assessments = assessments or []
-        violation_responses = violation_responses or []
+        sorted_violation_responses = (
+            sorted(violation_responses, key=lambda b: b.response_date or date.min)
+            if violation_responses
+            else []
+        )
 
         return identifier._commitment_from_supervision_event_for_period(
             incarceration_sentences=incarceration_sentences,
@@ -2662,7 +2687,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             incarceration_period=incarceration_period,
             pre_commitment_supervision_periods=pre_commitment_supervision_periods,
             assessments=assessments,
-            violation_responses=violation_responses,
+            sorted_violation_responses=sorted_violation_responses,
             supervision_period_to_agent_associations=_DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             county_of_residence=_COUNTY_OF_RESIDENCE,
         )
@@ -3149,6 +3174,8 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             state_code="US_ND",
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
             supervision_violation=supervision_violation,
+            response_date=date(2018, 5, 25),
+            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -3159,7 +3186,6 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             state_code="US_ND",
             admission_date=date(2018, 6, 3),
             admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
-            source_supervision_violation_response=ssvr,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(

@@ -57,7 +57,6 @@ from recidiviz.calculator.pipeline.utils.beam_utils import (
     ImportTable,
 )
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import (
-    SetViolationResponseOnIncarcerationPeriod,
     SetViolationOnViolationsResponse,
     ConvertSentencesToStateSpecificType,
 )
@@ -528,30 +527,11 @@ def run(
             >> beam.ParDo(SetViolationOnViolationsResponse())
         )
 
-        # Group StateIncarcerationPeriods and StateSupervisionViolationResponses by person_id
-        incarceration_periods_and_violation_responses = (
-            {
-                "incarceration_periods": incarceration_periods,
-                "violation_responses": violation_responses_with_hydrated_violations,
-            }
-            | "Group StateIncarcerationPeriods to "
-            "StateSupervisionViolationResponses" >> beam.CoGroupByKey()
-        )
-
-        # Set the fully hydrated StateSupervisionViolationResponse entities on the corresponding
-        # StateIncarcerationPeriods
-        incarceration_periods_with_source_violations = (
-            incarceration_periods_and_violation_responses
-            | "Set hydrated StateSupervisionViolationResponses on "
-            "the StateIncarcerationPeriods"
-            >> beam.ParDo(SetViolationResponseOnIncarcerationPeriod())
-        )
-
         # Group each StatePerson with their related entities
         person_entities = {
             "person": persons,
             "assessments": assessments,
-            "incarceration_periods": incarceration_periods_with_source_violations,
+            "incarceration_periods": incarceration_periods,
             "supervision_periods": supervision_periods,
             "supervision_sentences": sentences_converted.supervision_sentences,
             "incarceration_sentences": sentences_converted.incarceration_sentences,

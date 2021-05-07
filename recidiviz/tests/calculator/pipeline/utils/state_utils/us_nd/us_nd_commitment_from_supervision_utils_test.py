@@ -21,6 +21,7 @@ import unittest
 
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_commitment_from_supervision_utils import (
     us_nd_pre_commitment_supervision_periods_if_commitment_from_supervision,
+    us_nd_violation_history_window_pre_commitment_from_supervision,
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -32,6 +33,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodStatus,
     StateSupervisionPeriodTerminationReason,
 )
+from recidiviz.common.date import DateRange
 from recidiviz.persistence.entity.state.entities import (
     StateSupervisionPeriod,
     StateIncarcerationPeriod,
@@ -276,3 +278,26 @@ class TestPreCommitmentSupervisionPeriodsIfCommitment(unittest.TestCase):
 
         self.assertTrue(admission_is_revocation)
         self.assertEqual([], revoked_periods)
+
+
+class TestViolationHistoryWindowPreCommitment(unittest.TestCase):
+    """Tests the us_nd_violation_history_window_pre_commitment_from_supervision
+    function."""
+
+    def test_us_nd_violation_history_window_pre_commitment_from_supervision(
+        self,
+    ):
+        violation_window = (
+            us_nd_violation_history_window_pre_commitment_from_supervision(
+                admission_date=date(2000, 1, 1),
+            )
+        )
+
+        expected_violation_window = DateRange(
+            # 90 days before
+            lower_bound_inclusive_date=date(1999, 10, 3),
+            # 90 days, including admission_date
+            upper_bound_exclusive_date=date(2000, 3, 31),
+        )
+
+        self.assertEqual(expected_violation_window, violation_window)

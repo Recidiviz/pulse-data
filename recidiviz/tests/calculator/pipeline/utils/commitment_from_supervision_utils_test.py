@@ -22,6 +22,7 @@ from typing import Optional, List, Dict, Any
 from recidiviz.calculator.pipeline.utils import commitment_from_supervision_utils
 from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
     CommitmentDetails,
+    default_violation_history_window_pre_commitment_from_supervision,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_commitment_from_supervision_utils import (
     PURPOSE_FOR_INCARCERATION_PVC,
@@ -42,6 +43,10 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     StateSupervisionLevel,
 )
+from recidiviz.common.constants.state.state_supervision_violation_response import (
+    StateSupervisionViolationResponseType,
+)
+from recidiviz.common.date import DateRange
 from recidiviz.persistence.entity.state.entities import (
     StateSupervisionPeriod,
     StateIncarcerationPeriod,
@@ -366,3 +371,126 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
             ),
         )
+
+
+class TestDefaultViolationHistoryWindowPreCommitmentFromSupervision(unittest.TestCase):
+    """Tests the default_violation_history_window_pre_commitment_from_supervision
+    function."""
+
+    def test_default_violation_history_window_pre_commitment_from_supervision(
+        self,
+    ):
+        state_code = "US_XX"
+
+        supervision_violation_response_1 = (
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code=state_code,
+                supervision_violation_response_id=123,
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2008, 12, 7),
+            )
+        )
+
+        supervision_violation_response_2 = (
+            StateSupervisionViolationResponse.new_with_defaults(
+                supervision_violation_response_id=234,
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                state_code=state_code,
+                response_date=date(2009, 11, 13),
+            )
+        )
+
+        supervision_violation_response_3 = (
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code=state_code,
+                supervision_violation_response_id=345,
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2009, 12, 1),
+            )
+        )
+
+        violation_window = (
+            default_violation_history_window_pre_commitment_from_supervision(
+                admission_date=date(2009, 12, 14),
+                sorted_and_filtered_violation_responses=[
+                    supervision_violation_response_1,
+                    supervision_violation_response_2,
+                    supervision_violation_response_3,
+                ],
+            )
+        )
+
+        expected_violation_window = DateRange(
+            lower_bound_inclusive_date=date(2008, 12, 1),
+            upper_bound_exclusive_date=date(2009, 12, 2),
+        )
+
+        self.assertEqual(expected_violation_window, violation_window)
+
+    def test_default_violation_history_window_pre_commitment_from_supervision_filter_after(
+        self,
+    ):
+        state_code = "US_XX"
+
+        supervision_violation_response_1 = (
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code=state_code,
+                supervision_violation_response_id=123,
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2008, 12, 7),
+            )
+        )
+
+        supervision_violation_response_2 = (
+            StateSupervisionViolationResponse.new_with_defaults(
+                supervision_violation_response_id=234,
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                state_code=state_code,
+                response_date=date(2009, 11, 13),
+            )
+        )
+
+        # This is after the admission_date
+        supervision_violation_response_3 = (
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code=state_code,
+                supervision_violation_response_id=345,
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2012, 12, 1),
+            )
+        )
+
+        violation_window = (
+            default_violation_history_window_pre_commitment_from_supervision(
+                admission_date=date(2009, 12, 14),
+                sorted_and_filtered_violation_responses=[
+                    supervision_violation_response_1,
+                    supervision_violation_response_2,
+                    supervision_violation_response_3,
+                ],
+            )
+        )
+
+        expected_violation_window = DateRange(
+            lower_bound_inclusive_date=date(2008, 11, 13),
+            upper_bound_exclusive_date=date(2009, 11, 14),
+        )
+
+        self.assertEqual(expected_violation_window, violation_window)
+
+    def test_default_violation_history_window_pre_commitment_from_supervision_no_responses(
+        self,
+    ):
+        violation_window = (
+            default_violation_history_window_pre_commitment_from_supervision(
+                admission_date=date(2009, 12, 14),
+                sorted_and_filtered_violation_responses=[],
+            )
+        )
+
+        expected_violation_window = DateRange(
+            lower_bound_inclusive_date=date(2008, 12, 14),
+            upper_bound_exclusive_date=date(2009, 12, 15),
+        )
+
+        self.assertEqual(expected_violation_window, violation_window)

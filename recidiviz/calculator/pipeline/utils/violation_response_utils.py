@@ -17,6 +17,7 @@
 """Various utils functions for working with StateSupervisionViolationResponses in calculations."""
 import datetime
 from collections import defaultdict
+from datetime import date
 from typing import List, Optional, Callable, Dict
 
 from recidiviz.calculator.pipeline.utils.calculator_utils import (
@@ -24,6 +25,7 @@ from recidiviz.calculator.pipeline.utils.calculator_utils import (
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
+    StateSupervisionViolationResponseType,
 )
 
 from recidiviz.persistence.entity.state.entities import (
@@ -42,9 +44,11 @@ def prepare_violation_responses_for_calculations(
 ) -> List[StateSupervisionViolationResponse]:
     """Performs the provided pre-processing step on the list of StateSupervisionViolationResponses, if applicable.
     Else, returns the original |violation_responses| list."""
+    prepared_violation_responses = violation_responses
     if pre_processing_function:
-        return pre_processing_function(violation_responses)
-    return violation_responses
+        prepared_violation_responses = pre_processing_function(violation_responses)
+
+    return sorted_violation_responses_with_set_dates(prepared_violation_responses)
 
 
 def responses_on_most_recent_response_date(
@@ -90,3 +94,64 @@ def get_most_severe_response_decision(
 
     # Find the most severe decision responses
     return identify_most_severe_response_decision(response_decisions)
+
+
+def sorted_violation_responses_with_set_dates(
+    violation_responses: List[StateSupervisionViolationResponse],
+) -> List[StateSupervisionViolationResponse]:
+    """Sorts the list of |violation_responses|. Filters out any responses that don't
+    have a set response_date."""
+    filtered_responses = [
+        response
+        for response in violation_responses
+        if response.response_date is not None
+    ]
+
+    # All responses will have a response_date at this point, but date.min helps to satisfy mypy
+    filtered_responses.sort(key=lambda b: b.response_date or date.min)
+
+    return filtered_responses
+
+
+def default_filtered_violation_responses_for_violation_history(
+    violation_responses: List[StateSupervisionViolationResponse],
+) -> List[StateSupervisionViolationResponse]:
+    """Default filtering function for including the kinds of
+    StateSupervisionViolationResponses that should be used in analyses of history of
+    violations."""
+    filtered_responses = [
+        response
+        for response in violation_responses
+        if response.response_date is not None
+        and not response.is_draft
+        and response.response_type
+        in (
+            StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            StateSupervisionViolationResponseType.CITATION,
+        )
+    ]
+
+    return filtered_responses
+
+
+def violation_responses_in_window(
+    violation_responses: List[StateSupervisionViolationResponse],
+    upper_bound_exclusive: date,
+    lower_bound_inclusive: Optional[date],
+) -> List[StateSupervisionViolationResponse]:
+    """Filters the violation responses to the ones that have a response_date before the
+    |upper_bound_exclusive| date and after the |lower_bound_inclusive|, if set.
+    """
+    responses_in_window = [
+        response
+        for response in violation_responses
+        if response.response_date is not None
+        and response.response_date < upper_bound_exclusive
+        # Only limit with a lower bound if one is set
+        and (
+            lower_bound_inclusive is None
+            or lower_bound_inclusive <= response.response_date
+        )
+    ]
+
+    return responses_in_window

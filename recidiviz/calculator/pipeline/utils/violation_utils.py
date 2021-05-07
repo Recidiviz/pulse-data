@@ -19,15 +19,17 @@ from collections import OrderedDict, defaultdict
 from datetime import date
 from typing import List, Optional, Dict, Tuple, Set, NamedTuple
 
+from dateutil.relativedelta import relativedelta
+
 from recidiviz.calculator.pipeline.utils.violation_response_utils import (
     get_most_severe_response_decision,
+    violation_responses_in_window,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     shorthand_for_violation_subtype,
     sorted_violation_subtypes_by_severity,
     get_violation_type_subtype_strings_for_violation,
     violation_type_from_subtype,
-    state_specific_violation_responses,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -208,14 +210,21 @@ ViolationHistory = NamedTuple(
 
 
 def get_violation_and_response_history(
-    end_date: date,
-    violation_responses: List[StateSupervisionViolationResponse],
+    upper_bound_exclusive_date: date,
+    violation_responses_for_history: List[StateSupervisionViolationResponse],
     incarceration_period: Optional[StateIncarcerationPeriod] = None,
+    lower_bound_inclusive_date_override: Optional[date] = None,
 ) -> ViolationHistory:
-    """Identifies and returns various details of the violation history on the responses that were recorded during the
-    VIOLATION_HISTORY_WINDOW_MONTHS of time preceding the |end_date|.
+    """Identifies and returns various details of the violation history on the responses
+    that were recorded during a period of time.
+
+    If a lower_bound_inclusive_date_override is provided, uses the period of time
+    between the lower_bound_inclusive_date_override and the upper_bound_exclusive_date.
+
+    If lower_bound_inclusive_date_override is null, uses the period of time
+    VIOLATION_HISTORY_WINDOW_MONTHS preceding the |end_date|.
     """
-    if not violation_responses and incarceration_period is None:
+    if not violation_responses_for_history and incarceration_period is None:
         return ViolationHistory(
             most_severe_violation_type=None,
             most_severe_violation_type_subtype=None,
@@ -225,11 +234,16 @@ def get_violation_and_response_history(
             violation_type_frequency_counter=None,
         )
 
-    responses_in_window = state_specific_violation_responses(
-        end_date,
-        violation_responses,
-        incarceration_period,
-        VIOLATION_HISTORY_WINDOW_MONTHS,
+    lower_bound_inclusive_date = (
+        lower_bound_inclusive_date_override
+        or upper_bound_exclusive_date
+        - relativedelta(months=VIOLATION_HISTORY_WINDOW_MONTHS)
+    )
+
+    responses_in_window = violation_responses_in_window(
+        violation_responses=violation_responses_for_history,
+        upper_bound_exclusive=upper_bound_exclusive_date,
+        lower_bound_inclusive=lower_bound_inclusive_date,
     )
 
     violations_in_window: List[StateSupervisionViolation] = []
