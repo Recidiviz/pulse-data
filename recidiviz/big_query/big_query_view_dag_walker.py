@@ -25,14 +25,14 @@ import attr
 
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryAddress
 from recidiviz.utils import structured_logging
+from recidiviz.view_registry.deployed_views import NOISY_DEPENDENCY_VIEW_BUILDERS
+
 
 # We set this to 10 because urllib3 (used by the Google BigQuery client) has an default limit of 10 connections and
 # we were seeing "urllib3.connectionpool:Connection pool is full, discarding connection" errors when this number
 # increased.
 # In the future, we could increase the worker number by playing around with increasing the pool size per this post:
 # https://github.com/googleapis/python-storage/issues/253
-from recidiviz.view_registry.deployed_views import NOISY_DEPENDENCY_VIEW_BUILDERS
-
 DAG_WALKER_MAX_WORKERS = 10
 
 
@@ -128,7 +128,9 @@ class BigQueryViewDagWalker:
 
     def __init__(self, views: List[BigQueryView]):
         dag_nodes = [BigQueryViewDagNode(view) for view in views]
-        self.nodes_by_key = {node.dag_key: node for node in dag_nodes}
+        self.nodes_by_key: Dict[DagKey, BigQueryViewDagNode] = {
+            node.dag_key: node for node in dag_nodes
+        }
         self.materialized_addresss = self._get_materialized_addresss_map()
 
         self._prepare_dag()
@@ -308,3 +310,61 @@ class BigQueryViewDagWalker:
             )
             full_parentage_keys = full_parentage_keys.union(ancestor_keys)
         return full_parentage_keys
+
+    def get_dfs_tree_str_for_table(
+        self,
+        dataset_id: str,
+        table_id: str,
+        datasets_to_skip: Optional[Set[str]] = None,
+        custom_node_formatter: Optional[Callable[[DagKey], str]] = None,
+    ) -> str:
+        """Returns a string tree representation of the ancestry of a view"""
+        stack = [
+            (
+                DagKey(
+                    view_address=BigQueryAddress(
+                        dataset_id=dataset_id, table_id=table_id
+                    )
+                ),
+                0,
+            )
+        ]
+
+        # TODO(#7049): refactor most_recent_job_id_by_metric_and_state_code dependencies
+        noisy_dependency_keys = [
+            DagKey(
+                view_address=BigQueryAddress(
+                    dataset_id=builder.dataset_id, table_id=builder.view_id
+                )
+            )
+            for builder in NOISY_DEPENDENCY_VIEW_BUILDERS
+        ]
+        tree = ""
+        while len(stack) > 0:
+            dag_key, tabs = stack.pop()
+            if not datasets_to_skip or dag_key.dataset_id not in datasets_to_skip:
+
+                table_name = (
+                    custom_node_formatter(dag_key)
+                    if custom_node_formatter
+                    else f"{dag_key.dataset_id}.{dag_key.table_id}"
+                )
+                tree += ("|" if tabs else "") + ("--" * tabs) + table_name + "\n"
+
+            value = self.nodes_by_key.get(dag_key)
+            if value:
+                for parent_key in sorted(
+                    value.parent_keys, key=lambda key: (key.dataset_id, key.table_id)
+                ):
+                    if parent_key not in noisy_dependency_keys:
+                        stack.append(
+                            (
+                                parent_key,
+                                # We don't add a tab if we are skipping a view
+                                tabs
+                                if datasets_to_skip
+                                and dag_key.dataset_id in datasets_to_skip
+                                else tabs + 1,
+                            )
+                        )
+        return tree

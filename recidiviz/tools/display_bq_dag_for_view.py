@@ -23,13 +23,11 @@ python -m recidiviz.tools.display_bq_dag_for_view --project_id recidiviz-staging
 import argparse
 import logging
 
-from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker, DagKey
-from recidiviz.big_query.big_query_view import BigQueryAddress
+from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.big_query.view_update_manager import (
     _build_views_to_update,
 )
 from recidiviz.view_registry.deployed_views import (
-    NOISY_DEPENDENCY_VIEW_BUILDERS,
     DEPLOYED_VIEW_BUILDERS,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
@@ -59,33 +57,12 @@ def build_dag_walker(dataset_id: str, view_id: str) -> BigQueryViewDagWalker:
 
 def print_dfs_tree(dataset_id: str, view_id: str) -> None:
     dag_walker = build_dag_walker(dataset_id, view_id)
-    stack = [
-        (
-            DagKey(
-                view_address=BigQueryAddress(dataset_id=dataset_id, table_id=view_id)
-            ),
-            0,
+    print(
+        dag_walker.get_dfs_tree_str_for_table(
+            dataset_id=dataset_id,
+            table_id=view_id,
         )
-    ]
-
-    # TODO(#7049): refactor most_recent_job_id_by_metric_and_state_code dependencies
-    noisy_dependency_keys = [
-        (builder.dataset_id, builder.view_id)
-        for builder in NOISY_DEPENDENCY_VIEW_BUILDERS
-    ]
-    while len(stack) > 0:
-        dag_key, tabs = stack.pop()
-        print(
-            ("|" if tabs else "")
-            + ("__" * tabs)
-            + f"{dag_key.dataset_id}.{dag_key.table_id}"
-        )
-        value = dag_walker.nodes_by_key.get(dag_key)
-        if value:
-            for parent_key in value.parent_keys:
-                if parent_key not in noisy_dependency_keys:
-                    stack.append((parent_key, tabs + 1))
-    print("\n")
+    )
 
 
 if __name__ == "__main__":
