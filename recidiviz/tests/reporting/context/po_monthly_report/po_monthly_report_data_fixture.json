@@ -33,6 +33,6 @@
   "assessments": "15",
   "assessment_percent": "73.3",
   "facetoface_out_of_date_clients": null,
-  "facetoface": "30",
-  "facetoface_percent": "45.3"
+  "facetoface": "0",
+  "facetoface_percent": "NaN"
 }

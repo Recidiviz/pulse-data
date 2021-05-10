@@ -17,6 +17,7 @@
 
 """Utilities for working with report-specific context and data preparation."""
 from datetime import datetime
+from math import isnan
 from typing import Optional, List
 import calendar
 
@@ -71,16 +72,24 @@ def month_number_to_name(month_number: str) -> str:
 
 def round_float_value_to_int(value: str) -> str:
     """Rounds the given float value to an integer. Values are provided as strings and returned as strings to work
-    with the interfaces in data preparation."""
+    with the interfaces in data preparation.
+
+    If the float is NaN, it returns N/A."""
     to_round = float(value)
+    if isnan(to_round):
+        return "N/A"
     rounded = int(round(to_round))
     return str(rounded)
 
 
 def round_float_value_to_number_of_digits(value: str, num_digits: int) -> str:
     """Rounds the given float value to the number of digits. Values are provided as strings and returned as
-    strings to work with the interfaces in data preparation."""
+    strings to work with the interfaces in data preparation.
+
+    If the float is NaN, it returns N/A."""
     to_round = float(value)
+    if isnan(to_round):
+        return "N/A"
     if to_round < 1:
         # If the value is less than 1.0, then we want one less digit because the 0 will be one of the digits
         num_digits -= 1
