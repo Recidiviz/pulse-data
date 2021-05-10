@@ -91,9 +91,8 @@ class PolicyStore {
   findContactFrequencyForClient(
     client: DecoratedClient
   ): SupervisionContactFrequency | undefined {
-    const contactFrequencies = this.policies?.supervisionContactFrequencies[
-      client.caseType
-    ];
+    const contactFrequencies =
+      this.policies?.supervisionContactFrequencies[client.caseType];
 
     return contactFrequencies
       ? contactFrequencies[client.supervisionLevel]

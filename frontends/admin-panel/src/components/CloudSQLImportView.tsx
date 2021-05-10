@@ -22,9 +22,10 @@ import { fetchETLViewIds, runCloudSQLImport } from "../AdminPanelAPI";
 import useFetchedData from "../hooks";
 
 const CloudSQLImportView = (): JSX.Element => {
-  const [importStatus, setImportStatus] = React.useState<
-    "not-started" | "started" | "done" | "errored"
-  >("not-started");
+  const [importStatus, setImportStatus] =
+    React.useState<"not-started" | "started" | "done" | "errored">(
+      "not-started"
+    );
   const [errorText, setErrorText] = React.useState<string>("");
   const { loading, data } = useFetchedData<string[]>(fetchETLViewIds);
 
@@ -72,7 +73,7 @@ const CloudSQLImportView = (): JSX.Element => {
     // a string[] and not just a string. See
     // https://basarat.gitbook.io/typescript/type-system/type-assertion#double-assertion
     // for more.
-    const viewIds = (values.viewIds as unknown) as string[];
+    const viewIds = values.viewIds as unknown as string[];
     setImportStatus("started");
     const r = await runCloudSQLImport(viewIds);
     if (r.status >= 400) {

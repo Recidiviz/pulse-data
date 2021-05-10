@@ -21,9 +21,8 @@ import { fetchDataFreshness } from "../AdminPanelAPI";
 import useFetchedData from "../hooks";
 
 const DataFreshnessView = (): JSX.Element => {
-  const { loading, data } = useFetchedData<DataFreshnessResult[]>(
-    fetchDataFreshness
-  );
+  const { loading, data } =
+    useFetchedData<DataFreshnessResult[]>(fetchDataFreshness);
 
   if (loading) {
     return (

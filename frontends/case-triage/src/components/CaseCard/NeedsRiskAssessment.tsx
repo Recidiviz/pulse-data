@@ -70,9 +70,8 @@ const NeedsRiskAssessment: React.FC<NeedsRiskAssessmentProps> = ({
   client,
 }: NeedsRiskAssessmentProps) => {
   const { policyStore } = useRootStore();
-  const supervisionLevelCutoffs = policyStore.getSupervisionLevelCutoffsForClient(
-    client
-  );
+  const supervisionLevelCutoffs =
+    policyStore.getSupervisionLevelCutoffsForClient(client);
 
   const {
     needsMet: { assessment: met },

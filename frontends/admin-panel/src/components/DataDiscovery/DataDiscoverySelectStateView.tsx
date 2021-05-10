@@ -24,21 +24,20 @@ interface DataDiscoverySelectStateViewProps {
   form: FormInstance;
 }
 
-const DataDiscoverySelectStateView: React.FC<DataDiscoverySelectStateViewProps> = ({
-  form,
-}) => {
-  const handleStateCodeChange = (value: string) => {
-    form.setFieldsValue({ region_code: value });
-  };
+const DataDiscoverySelectStateView: React.FC<DataDiscoverySelectStateViewProps> =
+  ({ form }) => {
+    const handleStateCodeChange = (value: string) => {
+      form.setFieldsValue({ region_code: value });
+    };
 
-  return (
-    <Form.Item label="State" name="region_code" rules={[{ required: true }]}>
-      <IngestStateSelector
-        handleStateCodeChange={handleStateCodeChange}
-        initialValue={null}
-      />
-    </Form.Item>
-  );
-};
+    return (
+      <Form.Item label="State" name="region_code" rules={[{ required: true }]}>
+        <IngestStateSelector
+          handleStateCodeChange={handleStateCodeChange}
+          initialValue={null}
+        />
+      </Form.Item>
+    );
+  };
 
 export default DataDiscoverySelectStateView;

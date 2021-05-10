@@ -35,8 +35,7 @@ import StoreProvider from "./stores";
 
 if (process.env.NODE_ENV !== "development") {
   Sentry.init({
-    dsn:
-      "https://1aa10e823cad49d9a662d71cedb3365b@o432474.ingest.sentry.io/5623757",
+    dsn: "https://1aa10e823cad49d9a662d71cedb3365b@o432474.ingest.sentry.io/5623757",
     integrations: [new Integrations.BrowserTracing()],
 
     // This value may need to be adjusted over time as usage increases.
