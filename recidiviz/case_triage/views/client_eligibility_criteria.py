@@ -70,8 +70,7 @@ CLIENT_ELIGIBILITY_CRITERIA_QUERY_TEMPLATE = """
         CASE WHEN is_employed THEN DATE_DIFF(CURRENT_DATE(), employment.earliest_employment_period_start_date, DAY) ELSE 0 END days_employed,
         /* Using the earliest start date within a given supervision session to calculate days employed while on supervision.*/
         CASE WHEN is_employed THEN DATE_DIFF(CURRENT_DATE(), employment.employment_status_start_date, DAY) ELSE 0 END days_employed_in_session,
-        # TODO(#7305): Adjust critical count to include contacts occurring in JAIL or LAW ENFORCEMENT AGENCY
-        COUNT(DISTINCT IF (contact_reason = 'EMERGENCY_CONTACT', contact_date, NULL)) OVER(PARTITION BY p.person_id) critical_contacts_count,
+        COUNT(DISTINCT IF (contact_reason = 'EMERGENCY_CONTACT' OR contacts.location IN ('JAIL', 'LAW_ENFORCEMENT_AGENCY'), contact_date, NULL)) OVER(PARTITION BY p.person_id) critical_contacts_count,
         ROW_NUMBER() OVER(PARTITION BY p.person_id) rn
         # TODO(#7303): Incorporate data about treatment enrollment or requirements as an additional elgibility criteria
       FROM `{project_id}.{case_triage_dataset}.etl_clients` clients

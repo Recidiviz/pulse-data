@@ -388,6 +388,7 @@ state_supervision_contact_location_place_of_employment = "PLACE_OF_EMPLOYMENT"
 state_supervision_contact_location_residence = "RESIDENCE"
 state_supervision_contact_location_supervision_office = "SUPERVISION_OFFICE"
 state_supervision_contact_location_treatment_provider = "TREATMENT_PROVIDER"
+state_supervision_contact_location_law_enforcement_agency = "LAW_ENFORCEMENT_AGENCY"
 
 # shared_enums.py
 
