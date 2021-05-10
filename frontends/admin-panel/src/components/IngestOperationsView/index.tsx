@@ -61,28 +61,21 @@ const IngestOperationsView = (): JSX.Element => {
   const params = new URLSearchParams(queryString);
   const initialStateCode = params.get("stateCode");
 
-  const [stateCode, setStateCode] = React.useState<string | null>(
-    initialStateCode
-  );
-  const [
-    isConfirmationModalVisible,
-    setIsConfirmationModalVisible,
-  ] = React.useState(false);
-  const [ingestAction, setIngestAction] = React.useState<
-    IngestActions | undefined
-  >(undefined);
+  const [stateCode, setStateCode] =
+    React.useState<string | null>(initialStateCode);
+  const [isConfirmationModalVisible, setIsConfirmationModalVisible] =
+    React.useState(false);
+  const [ingestAction, setIngestAction] =
+    React.useState<IngestActions | undefined>(undefined);
   const [queueStates, setQueueStates] = useState<QueueMetadata[]>([]);
   const [queueStatesLoading, setQueueStatesLoading] = useState<boolean>(true);
   const [ingestInstanceSummaries, setIngestInstanceSummaries] = useState<
     IngestInstanceSummary[]
   >([]);
-  const [
-    ingestInstanceSummariesLoading,
-    setIngestInstanceSummariesLoading,
-  ] = useState<boolean>(true);
-  const [ingestInstance, setIngestInstance] = useState<
-    DirectIngestInstance | undefined
-  >(undefined);
+  const [ingestInstanceSummariesLoading, setIngestInstanceSummariesLoading] =
+    useState<boolean>(true);
+  const [ingestInstance, setIngestInstance] =
+    useState<DirectIngestInstance | undefined>(undefined);
 
   const ingestQueueActions = [
     IngestActions.PauseIngestQueues,

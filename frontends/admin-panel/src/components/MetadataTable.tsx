@@ -57,23 +57,20 @@ interface MetadataTableProps {
 
 const MetadataTable = (props: MetadataTableProps): JSX.Element => {
   const { data, initialColumnLink, initialColumnTitle } = props;
-  const [nonplaceholdersOnly, setNonplaceholdersOnly] = React.useState<boolean>(
-    true
-  );
+  const [nonplaceholdersOnly, setNonplaceholdersOnly] =
+    React.useState<boolean>(true);
 
   if (data === undefined) {
     return <Empty className="buffer" />;
   }
   const metadataRecords = Object.keys(data)
     .sort()
-    .map(
-      (name: string): MetadataRecord => {
-        return {
-          name,
-          resultsByState: data[name],
-        };
-      }
-    );
+    .map((name: string): MetadataRecord => {
+      return {
+        name,
+        resultsByState: data[name],
+      };
+    });
   if (metadataRecords.length === 0) {
     return <Empty className="buffer" />;
   }

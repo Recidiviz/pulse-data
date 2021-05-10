@@ -47,12 +47,10 @@ const TableView = (): JSX.Element => {
     );
   }
 
-  const topBreadCrumbLabel = DatasetMetadata.getBreadCrumbLabel(
-    metadataDataset
-  );
-  const topBreadCrumbRoute = DatasetMetadata.routeForMetadataDataset(
-    metadataDataset
-  );
+  const topBreadCrumbLabel =
+    DatasetMetadata.getBreadCrumbLabel(metadataDataset);
+  const topBreadCrumbRoute =
+    DatasetMetadata.routeForMetadataDataset(metadataDataset);
 
   return (
     <>
