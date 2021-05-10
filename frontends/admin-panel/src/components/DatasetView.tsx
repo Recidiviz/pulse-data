@@ -45,9 +45,8 @@ const DatasetView = (): JSX.Element => {
     );
   }
 
-  const topBreadCrumbLabel = DatasetMetadata.getBreadCrumbLabel(
-    metadataDataset
-  );
+  const topBreadCrumbLabel =
+    DatasetMetadata.getBreadCrumbLabel(metadataDataset);
 
   return (
     <>

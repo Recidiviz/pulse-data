@@ -26,9 +26,8 @@ interface TooltipProps {
 const Tooltip: React.FC<TooltipProps> = ({ children, title }: TooltipProps) => {
   const [offset, setOffset] = React.useState({ top: "0px", left: "0px" });
   const [shouldRenderTooltip, setShouldRenderTooltip] = React.useState(false);
-  const [animationState, setAnimationState] = React.useState<TooltipState>(
-    null
-  );
+  const [animationState, setAnimationState] =
+    React.useState<TooltipState>(null);
   const [timeoutID, setTimeoutID] = React.useState<number>(-1);
 
   let frame: number;

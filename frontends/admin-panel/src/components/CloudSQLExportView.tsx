@@ -21,9 +21,10 @@ import { WarningFilled } from "@ant-design/icons";
 import { generateCaseUpdatesExport } from "../AdminPanelAPI";
 
 const CloudSQLExportView = (): JSX.Element => {
-  const [exportStatus, setExportStatus] = React.useState<
-    "not-started" | "started" | "done" | "errored"
-  >("not-started");
+  const [exportStatus, setExportStatus] =
+    React.useState<"not-started" | "started" | "done" | "errored">(
+      "not-started"
+    );
   const [errorText, setErrorText] = React.useState<string>("");
 
   if (exportStatus === "started") {

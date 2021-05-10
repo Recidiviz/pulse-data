@@ -36,10 +36,8 @@ const NeedsCorrectionDropdown = ({
   client,
   icon,
 }: NeedsCorrectionDropdownProps): JSX.Element => {
-  const [
-    feedbackModalActionType,
-    setFeedbackModalActionType,
-  ] = React.useState<CaseUpdateActionType>(actions[0]);
+  const [feedbackModalActionType, setFeedbackModalActionType] =
+    React.useState<CaseUpdateActionType>(actions[0]);
   const [feedbackModalIsOpen, setFeedbackModalIsOpen] = React.useState(false);
 
   const items = actions.map((action) => (
