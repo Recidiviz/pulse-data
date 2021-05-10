@@ -20,7 +20,7 @@ locals {
 
 resource "google_cloudfunctions_function" "primary-ingest" {
   name    = local.direct_ingest_formatted_str
-  runtime = "python37"
+  runtime = "python38"
   labels = {
     "deployment-tool" = "terraform"
   }
@@ -42,7 +42,7 @@ resource "google_cloudfunctions_function" "primary-ingest" {
 
 resource "google_cloudfunctions_function" "secondary-ingest" {
   name    = "${local.direct_ingest_formatted_str}-secondary"
-  runtime = "python37"
+  runtime = "python38"
   labels = {
     "deployment-tool" = "terraform"
   }
