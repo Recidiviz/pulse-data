@@ -298,7 +298,7 @@ class PoMonthlyReportContextTests(TestCase):
 
         expected["total_revocations"] = "2"
         expected["assessment_percent"] = "73"
-        expected["facetoface_percent"] = "45"
+        expected["facetoface_percent"] = "N/A"
 
         expected["pos_discharges_label"] = "Successful&nbsp;Case Completions"
         expected["earned_discharges_label"] = "Early Discharge"
