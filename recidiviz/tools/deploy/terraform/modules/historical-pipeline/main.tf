@@ -21,7 +21,7 @@ resource "google_pubsub_topic" "start_historical_pipeline" {
 
 resource "google_cloudfunctions_function" "trigger_historical_pipeline" {
   name    = "trigger_calculation_pipeline_historical_${var.pipeline_type}_${local.lower_state_code}"
-  runtime = "python37"
+  runtime = "python38"
   labels = {
     "deployment-tool" = "terraform"
   }
@@ -34,9 +34,9 @@ resource "google_cloudfunctions_function" "trigger_historical_pipeline" {
 
   entry_point = "start_calculation_pipeline"
   environment_variables = {
-    "TEMPLATE_NAME"                    = local.template_name
-    "JOB_NAME"                         = local.template_name
-    "REGION"                           = var.region
+    "TEMPLATE_NAME" = local.template_name
+    "JOB_NAME"      = local.template_name
+    "REGION"        = var.region
   }
 
   source_repository {

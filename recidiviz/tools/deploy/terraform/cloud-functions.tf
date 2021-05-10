@@ -39,7 +39,7 @@ resource "google_cloudfunctions_function" "direct-ingest-states-upload-testing" 
   for_each = local.is_production ? toset(["US_MO", "US_TN", "US_MI"]) : toset([])
 
   name    = "direct-ingest-state-${replace(lower(each.key), "_", "-")}-upload-testing"
-  runtime = "python37"
+  runtime = "python38"
   labels = {
     "deployment-tool" = "terraform"
   }
@@ -60,7 +60,7 @@ resource "google_cloudfunctions_function" "direct-ingest-states-upload-testing" 
 
 resource "google_cloudfunctions_function" "export_metric_view_data" {
   name    = "export_metric_view_data"
-  runtime = "python37"
+  runtime = "python38"
   labels = {
     "deployment-tool" = "terraform"
   }
@@ -87,7 +87,7 @@ resource "google_cloudfunctions_function" "export_metric_view_data" {
 
 resource "google_cloudfunctions_function" "parse-state-aggregate" {
   name    = "parse-state-aggregate"
-  runtime = "python37"
+  runtime = "python38"
   labels = {
     "deployment-tool" = "terraform"
   }
@@ -107,7 +107,7 @@ resource "google_cloudfunctions_function" "parse-state-aggregate" {
 
 resource "google_cloudfunctions_function" "report_deliver_emails_for_batch" {
   name    = "report_deliver_emails_for_batch"
-  runtime = "python37"
+  runtime = "python38"
   labels = {
     "deployment-tool" = "terraform"
   }
@@ -132,7 +132,7 @@ resource "google_cloudfunctions_function" "report_deliver_emails_for_batch" {
 
 resource "google_cloudfunctions_function" "report_start_new_batch" {
   name    = "report_start_new_batch"
-  runtime = "python37"
+  runtime = "python38"
   labels = {
     "deployment-tool" = "terraform"
   }
@@ -152,7 +152,7 @@ resource "google_cloudfunctions_function" "report_start_new_batch" {
 
 resource "google_cloudfunctions_function" "trigger_daily_calculation_pipeline_dag" {
   name    = "trigger_daily_calculation_pipeline_dag"
-  runtime = "python37"
+  runtime = "python38"
   labels = {
     "deployment-tool" = "terraform"
   }
