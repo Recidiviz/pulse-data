@@ -477,7 +477,9 @@ class PoMonthlyReportContext(ReportContext):
             for client in self.recipient_data[clients_key]:
                 base_columns = [
                     f"[{client['person_external_id']}]",
-                    format_name(client["full_name"]),
+                    # TODO(#7374): Revert to bracket access when current investigation
+                    # is figured out.
+                    format_name(client.get("full_name", "")),
                 ]
                 additional_columns = []
 
