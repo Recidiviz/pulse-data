@@ -25,7 +25,9 @@ from typing import List, Dict, Set, Optional
 import attr
 from pytablewriter import MarkdownTableWriter
 
-from recidiviz.big_query.big_query_view import BigQueryAddress
+from recidiviz.big_query.big_query_view import (
+    BigQueryAddress,
+)
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
@@ -69,10 +71,26 @@ from recidiviz.view_registry.datasets import (
     OTHER_SOURCE_TABLE_DATASETS,
     LATEST_VIEW_DATASETS,
     VIEW_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS,
+    RAW_TABLE_DATASETS,
 )
 from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS
 
+ESCAPED_DOUBLE_UNDERSCORE = r"\__"
 CALC_DOCS_PATH = "docs/calculation"
+VIEW_DOCS_TEMPLATE = """##{view_dataset_id}.{view_table_id}
+_{description}_
+
+####View schema in Big Query
+This view may not be deployed to all environments yet.<br/>
+[**Staging**](https://console.cloud.google.com/bigquery?pli=1&p=recidiviz-staging&page=table&project=recidiviz-staging&d={view_dataset_id}&t={view_table_id})
+<br/>
+[**Production**](https://console.cloud.google.com/bigquery?pli=1&p=recidiviz-123&page=table&project=recidiviz-123&d={view_dataset_id}&t={view_table_id})
+<br/>
+
+####Dependency Tree
+
+{dfs_tree}
+"""
 
 
 @attr.s
@@ -109,7 +127,11 @@ class CalculationDocumentationGenerator:
                 for state in states:
                     self.products_by_state[state][environment].append(product_name)
 
-        walker_views = [view_builder.build() for view_builder in DEPLOYED_VIEW_BUILDERS]
+        walker_views = [
+            view_builder.build()
+            for view_builder in DEPLOYED_VIEW_BUILDERS
+            if view_builder.should_build()
+        ]
         self.dag_walker = BigQueryViewDagWalker(walker_views)
         self.prod_templates_yaml = YAMLDict.from_path(PRODUCTION_TEMPLATES_PATH)
 
@@ -126,6 +148,8 @@ class CalculationDocumentationGenerator:
             self.historical_pipelines, "triggered by code changes"
         ).items():
             self.state_metric_calculations[name].extend(metric_info_list)
+
+        self.datasets_to_views: Dict[str, List[str]] = defaultdict(list)
 
     def get_states_by_product(
         self,
@@ -144,11 +168,16 @@ class CalculationDocumentationGenerator:
         return states_by_product
 
     @staticmethod
-    def bulleted_list(string_list: List[str], tabs: int = 1) -> str:
+    def bulleted_list(
+        string_list: List[str], tabs: int = 1, escape_underscores: bool = True
+    ) -> str:
         # To avoid formatting issues for some view IDs we use an escape sequence
-        escaped_underscore = r"\__"
+
         return "\n".join(
-            [f"{'  '*tabs}- {s.replace('__', escaped_underscore)}" for s in string_list]
+            [
+                f"{'  '*tabs}- {s.replace('__', ESCAPED_DOUBLE_UNDERSCORE) if escape_underscores else s}"
+                for s in string_list
+            ]
         )
 
     def _get_states_to_metrics(self) -> Dict[str, List[str]]:
@@ -221,6 +250,22 @@ class CalculationDocumentationGenerator:
             ]
         )
 
+    def _get_views_summary_str(self) -> str:
+        header = "\n- Views"
+        bullets = ""
+        for dataset_id, table_id_list in sorted(self.datasets_to_views.items()):
+            bullets += f"\n  - {dataset_id}\n"
+            bullets += self.bulleted_list(
+                [
+                    f"[{table_id.replace('__', ESCAPED_DOUBLE_UNDERSCORE)}](calculation/views/{dataset_id}/{table_id}.md)"
+                    for table_id in sorted(table_id_list)
+                ],
+                tabs=2,
+                escape_underscores=False,
+            )
+
+        return header + bullets + "\n"
+
     @staticmethod
     def _get_metric_types() -> Dict[str, List[str]]:
         metrics_dict = defaultdict(list)
@@ -259,6 +304,7 @@ class CalculationDocumentationGenerator:
 
         calculation_catalog_summary.extend([self._get_calculation_states_summary_str()])
         calculation_catalog_summary.extend([self._get_products_summary_str()])
+        calculation_catalog_summary.extend([self._get_views_summary_str()])
         calculation_catalog_summary.extend([self._get_dataflow_metrics_summary_str()])
 
         return calculation_catalog_summary
@@ -399,7 +445,6 @@ class CalculationDocumentationGenerator:
         for export in product.exports:
             collection_config = VIEW_COLLECTION_EXPORT_INDEX[export]
             view_builders = collection_config.view_builders_to_export
-
             # These views will be the starter nodes for the recursive call
             all_config_view_keys = {
                 DagKey(
@@ -598,6 +643,101 @@ class CalculationDocumentationGenerator:
             )
         return anything_modified
 
+    @staticmethod
+    def _dependency_tree_formatter_for_gitbook(dag_key: DagKey) -> str:
+        is_source_table = dag_key.dataset_id in OTHER_SOURCE_TABLE_DATASETS - {
+            DATAFLOW_METRICS_DATASET
+        }
+        is_raw_data_table = dag_key.dataset_id in LATEST_VIEW_DATASETS
+        is_metric = dag_key.dataset_id in DATAFLOW_METRICS_DATASET
+        is_documented_view = not (is_source_table or is_raw_data_table or is_metric)
+        return (
+            (
+                f"[{dag_key.dataset_id}.{dag_key.table_id.replace('__', ESCAPED_DOUBLE_UNDERSCORE)}]"
+                if is_documented_view
+                else f"{dag_key.dataset_id}.{dag_key.table_id.replace('__', ESCAPED_DOUBLE_UNDERSCORE)}"
+            )
+            + (
+                " (Source Table) "
+                if is_source_table
+                else " (Metric) "
+                if is_metric
+                else " (Raw Data) "
+                if is_raw_data_table
+                else f"(../{dag_key.dataset_id}/{dag_key.table_id}.md) "
+            )
+            + "<br/>"
+        )
+
+    def _get_view_information(self, view_key: DagKey) -> str:
+        """Returns string contents for a view markdown."""
+        view_node = self.dag_walker.nodes_by_key[
+            DagKey(
+                view_address=BigQueryAddress(
+                    dataset_id=view_key.dataset_id, table_id=view_key.table_id
+                )
+            )
+        ]
+        documentation = VIEW_DOCS_TEMPLATE.format(
+            view_dataset_id=view_key.dataset_id,
+            view_table_id=view_key.table_id,
+            description=view_node.view.description.strip(),
+            dfs_tree=self.dag_walker.get_dfs_tree_str_for_table(
+                view_key.dataset_id,
+                view_key.table_id,
+                datasets_to_skip={DATAFLOW_METRICS_MATERIALIZED_DATASET}
+                | RAW_TABLE_DATASETS,
+                custom_node_formatter=self._dependency_tree_formatter_for_gitbook,
+            ),
+        )
+
+        return documentation
+
+    def _get_all_views(self) -> Set[DagKey]:
+        """Retrieve all relevant views present in the DAG walker for documentation"""
+        all_view_keys: Set[DagKey] = set()
+
+        for product in self.products:
+            all_view_keys = all_view_keys.union(
+                {
+                    key
+                    for key in self._get_all_parent_keys_for_product(product)
+                    if key in self.dag_walker.nodes_by_key
+                }
+            )
+        return all_view_keys
+
+    def generate_view_markdowns(self) -> bool:
+        """Generate markdown files for each view."""
+        anything_modified = False
+        views_dir_path = os.path.join(self.root_calc_docs_dir, "views")
+        os.makedirs(views_dir_path, exist_ok=True)
+
+        views_to_document = self._get_all_views()
+
+        for view_key in views_to_document:
+            # This is used in the summary string generation
+            self.datasets_to_views[view_key.dataset_id].append(view_key.table_id)
+
+            # Generate documentation
+            documentation = self._get_view_information(view_key)
+
+            # Write to markdown files
+            dataset_dir = os.path.join(
+                views_dir_path,
+                f"{view_key.dataset_id}",
+            )
+            os.makedirs(dataset_dir, exist_ok=True)
+
+            view_markdown_path = os.path.join(
+                dataset_dir,
+                f"{view_key.table_id}.md",
+            )
+            anything_modified |= persist_file_contents(
+                documentation, view_markdown_path
+            )
+        return anything_modified
+
 
 def _create_ingest_catalog_calculation_summary(
     docs_generator: CalculationDocumentationGenerator,
@@ -611,6 +751,7 @@ def generate_calculation_documentation(
     # TODO(#7125): Add calc doc generation to the pre-commit config
     modified = docs_generator.generate_products_markdowns()
     modified |= docs_generator.generate_states_markdowns()
+    modified |= docs_generator.generate_view_markdowns()
     return modified
 
 
