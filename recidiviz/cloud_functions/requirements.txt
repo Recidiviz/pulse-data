@@ -1,4 +1,7 @@
 -i https://pypi.org/simple
 requests==2.20.0
-oauth2client==3.0.0 #TODO(#2377): Remove deprecated oauth2client dependency
+oauth2client==3.0.0 #TODO(#2922): Remove deprecated oauth2client dependency
 gcsfs==0.2.3
+
+google-api-python-client=="2.3.0"
+google-auth=="1.30.0"
