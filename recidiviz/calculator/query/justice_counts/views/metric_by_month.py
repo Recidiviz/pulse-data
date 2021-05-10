@@ -357,7 +357,7 @@ class SpatialAggregationViewBuilder(SimpleBigQueryViewBuilder):
 
         super().__init__(
             dataset_id=dataset_id,
-            view_id=f"{view_prefix_for_metric_name(metric_name)}_dropped_{'_'.join(dimension.__name__ for dimension in partition_dimensions)}",
+            view_id=f"{view_prefix_for_metric_name(metric_name)}_dropped_{'_'.join(sorted(dimension.__name__.lower() for dimension in partition_dimensions))}",
             view_query_template=SPATIAL_AGGREGATION_VIEW_TEMPLATE,
             # Query Format Arguments
             description=f"{metric_name} aggregated by dimensions",

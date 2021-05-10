@@ -102,11 +102,16 @@ class CalculationDocumentationGeneratorTest(unittest.TestCase):
             SupervisionRevocationMetric: "test_supervision_revocation_metrics",
         },
     )
+    @patch(
+        "recidiviz.calculator.calculation_documentation_generator.CalculationDocumentationGenerator._get_all_views",
+    )
     def test_generate_summary_strings(
         self,
+        mock_view_keys: MagicMock,
         mock_product_states: MagicMock,
         mock_pipeline_states: MagicMock,
     ) -> None:
+        mock_view_keys.return_value = set()
         mock_pipeline_states.return_value = self.mock_pipeline_states
         mock_product_states.return_value = self.mock_product_states
 
@@ -120,6 +125,7 @@ class CalculationDocumentationGeneratorTest(unittest.TestCase):
   - [Test Product](calculation/products/test_product/test_product_summary.md)
   - [Test Product Without Exports](calculation/products/test_product_without_exports/test_product_without_exports_summary.md)
   - [Test State Agnostic Product](calculation/products/test_state_agnostic_product/test_state_agnostic_product_summary.md)"""
+        expected_views_str = """\n- Views\n"""
         expected_metrics_str = """\n- Dataflow Metrics (links to come)
   - INCARCERATION
     - IncarcerationAdmissionMetric
@@ -135,6 +141,7 @@ class CalculationDocumentationGeneratorTest(unittest.TestCase):
             expected_header_str,
             expected_states_str,
             expected_products_str,
+            expected_views_str,
             expected_metrics_str,
         ]
 
