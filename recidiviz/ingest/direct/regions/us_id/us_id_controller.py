@@ -422,8 +422,10 @@ class UsIdController(CsvGcsfsDirectIngestController):
         StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT: [
             "EMPLOYER",
         ],
+        StateSupervisionContactLocation.LAW_ENFORCEMENT_AGENCY: [
+            "LAW ENFORCEMENT AGENCY",
+        ],
         StateSupervisionContactLocation.INTERNAL_UNKNOWN: [
-            "LAW ENFORCEMENT AGENCY",  # TODO(#3511): Consider adding as enum
             "COMPACT STATE",  # TODO(#3511): Consider adding as enum
             "PAROLE COMMISSION",  # TODO(#3511): Consider adding as enum
             "WBOR",  # Data entry error - WBOR is an online form filled out that isn't a location.
