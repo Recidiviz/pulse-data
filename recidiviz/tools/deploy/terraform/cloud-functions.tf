@@ -49,8 +49,10 @@ resource "google_cloudfunctions_function" "direct-ingest-states-upload-testing" 
     resource   = "${var.project_id}-direct-ingest-state-${replace(lower(each.key), "_", "-")}-upload-testing"
   }
 
-  entry_point           = "normalize_raw_file_path"
-  environment_variables = {}
+  entry_point = "normalize_raw_file_path"
+  environment_variables = {
+    "GCP_PROJECT" = var.project_id
+  }
 
   source_repository {
     url = local.repo_url
@@ -70,8 +72,10 @@ resource "google_cloudfunctions_function" "export_metric_view_data" {
     resource   = "projects/${var.project_id}/topics/v1.export.view.data"
   }
 
-  entry_point           = "export_metric_view_data"
-  environment_variables = {}
+  entry_point = "export_metric_view_data"
+  environment_variables = {
+    "GCP_PROJECT" = var.project_id
+  }
 
   source_repository {
     url = local.repo_url
@@ -94,8 +98,10 @@ resource "google_cloudfunctions_function" "parse-state-aggregate" {
 
   available_memory_mb = 2048
 
-  entry_point           = "parse_state_aggregate"
-  environment_variables = {}
+  entry_point = "parse_state_aggregate"
+  environment_variables = {
+    "GCP_PROJECT" = var.project_id
+  }
 
   source_repository {
     url = local.repo_url
@@ -116,6 +122,7 @@ resource "google_cloudfunctions_function" "report_deliver_emails_for_batch" {
   environment_variables = {
     "FROM_EMAIL_ADDRESS" = "reports@recidiviz.org"
     "FROM_EMAIL_NAME"    = "Recidiviz Reports"
+    "GCP_PROJECT"        = var.project_id
     "SENDGRID_API_KEY"   = data.google_secret_manager_secret_version.sendgrid_api_key.secret_data
   }
   trigger_http = true
@@ -140,6 +147,7 @@ resource "google_cloudfunctions_function" "report_start_new_batch" {
   entry_point = "handle_start_new_batch_email_reporting"
   environment_variables = {
     "CDN_STATIC_IP" = data.google_secret_manager_secret_version.po_report_cdn_static_ip.secret_data
+    "GCP_PROJECT"   = var.project_id
   }
   trigger_http = true
 
@@ -167,6 +175,7 @@ resource "google_cloudfunctions_function" "trigger_daily_calculation_pipeline_da
     # This is an output variable from the composer environment, relevant docs:
     # https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/composer_environment#config.0.airflow_uri
     "AIRFLOW_URI" = google_composer_environment.default.config.0.airflow_uri
+    "GCP_PROJECT" = var.project_id
     # Gets the IAP client id to use when talking to airflow from our custom python source.
     "IAP_CLIENT_ID" = data.external.composer_iap_client_id.result.iap_client_id
   }

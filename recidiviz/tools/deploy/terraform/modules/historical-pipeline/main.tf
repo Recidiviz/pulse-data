@@ -34,6 +34,7 @@ resource "google_cloudfunctions_function" "trigger_historical_pipeline" {
 
   entry_point = "start_calculation_pipeline"
   environment_variables = {
+    "GCP_PROJECT"   = var.project_id
     "TEMPLATE_NAME" = local.template_name
     "JOB_NAME"      = local.template_name
     "REGION"        = var.region
