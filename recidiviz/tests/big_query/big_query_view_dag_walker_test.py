@@ -618,6 +618,76 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
 """
         self.assertEqual(expected_tree, tree)
 
+    def test_get_dfs_tree_str_for_table_descendants(self) -> None:
+        view_1 = BigQueryView(
+            dataset_id="dataset_1",
+            view_id="table_1",
+            description="table_1 description",
+            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+        )
+        view_2 = BigQueryView(
+            dataset_id="dataset_2",
+            view_id="table_2",
+            description="table_2 description",
+            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
+        )
+        view_3 = BigQueryView(
+            dataset_id="dataset_3",
+            view_id="table_3",
+            description="table_3 description",
+            view_query_template="""
+            SELECT * FROM `{project_id}.dataset_1.table_1`
+            JOIN `{project_id}.dataset_2.table_2`
+            USING (col)""",
+        )
+        view_4 = BigQueryView(
+            dataset_id="dataset_4",
+            view_id="table_4",
+            description="table_4 description",
+            view_query_template="""
+            SELECT * FROM `{project_id}.dataset_3.table_3`""",
+        )
+        view_5 = BigQueryView(
+            dataset_id="dataset_5",
+            view_id="table_5",
+            description="table_5 description",
+            view_query_template="""
+            SELECT * FROM `{project_id}.dataset_3.table_3`""",
+        )
+        view_6 = BigQueryView(
+            dataset_id="dataset_6",
+            view_id="table_6",
+            description="table_6 description",
+            view_query_template="""
+            SELECT * FROM `{project_id}.dataset_5.table_5`""",
+        )
+        dag_walker = BigQueryViewDagWalker(
+            [view_1, view_2, view_3, view_4, view_5, view_6]
+        )
+
+        # Top level view
+        tree = dag_walker.get_dfs_tree_str_for_table(
+            dataset_id=view_2.dataset_id, table_id=view_2.table_id, descendants=True
+        )
+        expected_tree = """dataset_2.table_2
+|--dataset_3.table_3
+|----dataset_4.table_4
+|----dataset_5.table_5
+|------dataset_6.table_6
+"""
+        self.assertEqual(expected_tree, tree)
+
+        # Descendants from middle of tree
+        tree = dag_walker.get_dfs_tree_str_for_table(
+            dataset_id=view_3.dataset_id, table_id=view_3.table_id, descendants=True
+        )
+        expected_tree = """dataset_3.table_3
+|--dataset_4.table_4
+|--dataset_5.table_5
+|----dataset_6.table_6
+"""
+        self.assertEqual(expected_tree, tree)
+
     def test_dag_materialized_view_clobbers_other(self) -> None:
         view_1 = BigQueryView(
             dataset_id="dataset_1",
