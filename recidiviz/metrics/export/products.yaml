@@ -19,13 +19,6 @@ products:
       - COVID_DASHBOARD
     states: []
     environment: production
-  - name: COVID Report
-    exports: []
-    states:
-      - state_code: US_ID
-        environment: production
-      - state_code: US_ND
-        environment: production
   - name: Core Dashboard
     exports:
       - CORE
