@@ -300,7 +300,7 @@ def start_calculation_pipeline(
     )
 
     logging.info("The response to triggering the Dataflow job is: %s", response)
-    return "", response.status_code
+    return str(response), HTTPStatus.OK
 
 
 def handle_start_new_batch_email_reporting(request: Request) -> Tuple[str, HTTPStatus]:

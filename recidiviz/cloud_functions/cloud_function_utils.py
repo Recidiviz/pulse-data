@@ -30,7 +30,6 @@ import google.auth.app_engine
 import google.auth.compute_engine.credentials
 import google.auth.iam
 from google.auth import crypt
-from google.auth.transport import Response
 from google.auth.transport.requests import Request
 import google.oauth2.credentials
 import google.oauth2.service_account
@@ -137,7 +136,7 @@ def make_iap_request(
 
 def trigger_dataflow_job_from_template(
     project_id: str, bucket: str, template: str, job_name: str, location: str
-) -> Response:
+) -> Dict[str, Any]:
     """Trigger the Dataflow job at the given template location and execute it
     with the given `job_name`."""
     credentials = GoogleCredentials.get_application_default()
