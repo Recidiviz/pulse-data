@@ -16,10 +16,11 @@
 # =============================================================================
 
 """This file contains all of the relevant cloud functions"""
-from base64 import b64decode
 import logging
 import os
-from typing import Any, Dict, TypeVar
+from base64 import b64decode
+from http import HTTPStatus
+from typing import Any, Dict, Tuple, TypeVar
 
 from flask import Request
 
@@ -68,7 +69,9 @@ _APP_ENGINE_PO_MONTHLY_REPORT_DELIVER_EMAILS_URL = (
 )
 
 
-def parse_state_aggregate(data: Dict[str, Any], _: ContextType) -> None:
+def parse_state_aggregate(
+    data: Dict[str, Any], _: ContextType
+) -> Tuple[str, HTTPStatus]:
     """This function is triggered when a file is dropped into the state
     aggregate bucket and makes a request to parse and write the data to the
     aggregate table database.
@@ -93,18 +96,20 @@ def parse_state_aggregate(data: Dict[str, Any], _: ContextType) -> None:
     # database.
     response = make_iap_request(url, IAP_CLIENT_ID[project_id])
     logging.info("The response status is %s", response.status_code)
+    return "", response.status_code
 
 
-def normalize_raw_file_path(data: Dict[str, Any]) -> None:
+def normalize_raw_file_path(data: Dict[str, Any]) -> Tuple[str, HTTPStatus]:
     """Cloud functions can be configured to trigger this function on any bucket that is being used as a test bed for
     automatic uploads. This will just rename the incoming files to have a normalized path with a timestamp so
     subsequent uploads do not have naming conflicts."""
     project_id = os.environ.get(GCP_PROJECT_ID_KEY)
     if not project_id:
-        logging.error(
+        error_str = (
             "No project id set for call to direct ingest cloud function, returning."
         )
-        return
+        logging.error(error_str)
+        return error_str, HTTPStatus.BAD_REQUEST
 
     bucket = data["bucket"]
     relative_file_path = data["name"]
@@ -119,9 +124,12 @@ def normalize_raw_file_path(data: Dict[str, Any]) -> None:
     # data for unprocessed files in this bucket and persist to our database.
     response = make_iap_request(url, IAP_CLIENT_ID[project_id])
     logging.info("The response status is %s", response.status_code)
+    return "", response.status_code
 
 
-def handle_state_direct_ingest_file(data: Dict[str, Any], _: ContextType) -> None:
+def handle_state_direct_ingest_file(
+    data: Dict[str, Any], _: ContextType
+) -> Tuple[str, HTTPStatus]:
     """This function is triggered when a file is dropped into any of the state
     direct ingest buckets and makes a request to parse and write the data to
     the database.
@@ -131,12 +139,12 @@ def handle_state_direct_ingest_file(data: Dict[str, Any], _: ContextType) -> Non
     _: (google.cloud.functions.Context): Metadata of triggering event.
 
     """
-    _handle_state_direct_ingest_file(data, start_ingest=True)
+    return _handle_state_direct_ingest_file(data, start_ingest=True)
 
 
 def handle_state_direct_ingest_file_rename_only(
     data: Dict[str, Any], _: ContextType
-) -> None:
+) -> Tuple[str, HTTPStatus]:
     """Cloud functions can be configured to trigger this function instead of
     handle_state_direct_ingest_file when a region has turned on nightly/weekly
     automatic data transfer before we are ready to schedule and process ingest
@@ -149,25 +157,29 @@ def handle_state_direct_ingest_file_rename_only(
     _: (google.cloud.functions.Context): Metadata of triggering event.
 
     """
-    _handle_state_direct_ingest_file(data, start_ingest=False)
+    return _handle_state_direct_ingest_file(data, start_ingest=False)
 
 
-def _handle_state_direct_ingest_file(data: Dict[str, Any], start_ingest: bool) -> None:
+def _handle_state_direct_ingest_file(
+    data: Dict[str, Any], start_ingest: bool
+) -> Tuple[str, HTTPStatus]:
     """Calls direct ingest cloud function when a new file is dropped into a
     bucket."""
     project_id = os.environ.get(GCP_PROJECT_ID_KEY)
     if not project_id:
-        logging.error(
-            "No project id set for call to direct ingest cloud " "function, returning."
+        error_str = (
+            "No project id set for call to direct ingest cloud function, returning."
         )
-        return
+        logging.error(error_str)
+        return error_str, HTTPStatus.BAD_REQUEST
 
     bucket = data["bucket"]
     relative_file_path = data["name"]
     region_code = get_region_code_from_direct_ingest_bucket(bucket)
     if not region_code:
-        logging.error("Cannot parse region code from bucket %s, returning.", bucket)
-        return
+        error_str = f"Cannot parse region code from bucket {bucket}, returning."
+        logging.error(error_str)
+        return error_str, HTTPStatus.BAD_REQUEST
 
     url = _DIRECT_INGEST_CLOUD_FUNCTION_URL.format(
         project_id, region_code, bucket, relative_file_path, str(start_ingest)
@@ -179,16 +191,20 @@ def _handle_state_direct_ingest_file(data: Dict[str, Any], start_ingest: bool) -
     # data for unprocessed files in this bucket and persist to our database.
     response = make_iap_request(url, IAP_CLIENT_ID[project_id])
     logging.info("The response status is %s", response.status_code)
+    return "", response.status_code
 
 
-def export_metric_view_data(event: Dict[str, Any], _context: ContextType) -> None:
+def export_metric_view_data(
+    event: Dict[str, Any], _context: ContextType
+) -> Tuple[str, HTTPStatus]:
     """This function is triggered by a Pub/Sub event to begin the export of data contained in BigQuery metric views to
     files in cloud storage buckets.
     """
     project_id = os.environ.get(GCP_PROJECT_ID_KEY)
     if not project_id:
-        logging.error("No project id set for call to export view data, returning.")
-        return
+        error_str = "No project id set for call to export view data, returning."
+        logging.error(error_str)
+        return error_str, HTTPStatus.BAD_REQUEST
 
     if "data" in event:
         logging.info("data found")
@@ -198,10 +214,9 @@ def export_metric_view_data(event: Dict[str, Any], _context: ContextType) -> Non
             + b64decode(event["data"]).decode("utf-8")
         )
     else:
-        logging.error(
-            "Missing required export_job_filter in data of the Pub/Sub message."
-        )
-        return
+        error_str = "Missing required export_job_filter in data of the Pub/Sub message."
+        logging.error(error_str)
+        return error_str, HTTPStatus.BAD_REQUEST
 
     logging.info("project_id: %s", project_id)
     logging.info("Calling URL: %s", url)
@@ -209,29 +224,34 @@ def export_metric_view_data(event: Dict[str, Any], _context: ContextType) -> Non
     # Hit the cloud function backend, which exports view data to their assigned cloud storage bucket
     response = make_iap_request(url, IAP_CLIENT_ID[project_id])
     logging.info("The response status is %s", response.status_code)
+    return "", response.status_code
 
 
 def trigger_daily_calculation_pipeline_dag(
     data: Dict[str, Any], _context: ContextType
-) -> None:
+) -> Tuple[str, HTTPStatus]:
     """This function is triggered by a Pub/Sub event, triggers an Airflow DAG where all
     the daily calculation pipelines run simultaneously.
     """
     project_id = os.environ.get(GCP_PROJECT_ID_KEY, "")
     if not project_id:
-        logging.error(
+        error_str = (
             "No project id set for call to run the calculation pipelines, returning."
         )
-        return
+        logging.error(error_str)
+        return error_str, HTTPStatus.BAD_REQUEST
 
     iap_client_id = os.environ.get("IAP_CLIENT_ID")
     if not iap_client_id:
-        logging.error("The environment variable 'IAP_CLIENT_ID' is not set.")
+        error_str = "The environment variable 'IAP_CLIENT_ID' is not set."
+        logging.error(error_str)
+        return error_str, HTTPStatus.BAD_REQUEST
 
     airflow_uri = os.environ.get("AIRFLOW_URI")
     if not airflow_uri:
-        logging.error("The environment variable 'AIRFLOW_URI' is not set")
-        return
+        error_str = "The environment variable 'AIRFLOW_URI' is not set"
+        logging.error(error_str)
+        return error_str, HTTPStatus.BAD_REQUEST
     # The name of the DAG you wish to trigger
     dag_name = "{}_calculation_pipeline_dag".format(project_id)
     webserver_url = "{}/api/experimental/dags/{}/dag_runs".format(airflow_uri, dag_name)
@@ -240,42 +260,50 @@ def trigger_daily_calculation_pipeline_dag(
         webserver_url, iap_client_id, method="POST", json={"conf": data}
     )
     logging.info("The monitoring Airflow response is %s", monitor_response)
+    return "", monitor_response.status_code
 
 
-def start_calculation_pipeline(_event: Dict[str, Any], _context: ContextType) -> None:
+def start_calculation_pipeline(
+    _event: Dict[str, Any], _context: ContextType
+) -> Tuple[str, HTTPStatus]:
     """This function, which is triggered by a Pub/Sub event, can kick off any single Dataflow pipeline template."""
     project_id = os.environ.get(GCP_PROJECT_ID_KEY)
     if not project_id:
-        logging.error(
+        error_str = (
             "No project_id set for call to run a calculation pipeline, returning."
         )
-        return
+        logging.error(error_str)
+        return error_str, HTTPStatus.BAD_REQUEST
 
     bucket = get_dataflow_template_bucket(project_id)
 
     template_name = os.environ.get("TEMPLATE_NAME")
     if not template_name:
-        logging.error("No template_name set, returning.")
-        return
+        error_str = "No template_name set, returning."
+        logging.error(error_str)
+        return error_str, HTTPStatus.BAD_REQUEST
 
     job_name = os.environ.get("JOB_NAME")
     if not job_name:
-        logging.error("No job_name set, returning.")
-        return
+        error_str = "No job_name set, returning."
+        logging.error(error_str)
+        return error_str, HTTPStatus.BAD_REQUEST
 
     region = os.environ.get("REGION")
     if not region:
-        logging.error("No region set, returning.")
-        return
+        error_str = "No region set, returning."
+        logging.error(error_str)
+        return error_str, HTTPStatus.BAD_REQUEST
 
     response = trigger_dataflow_job_from_template(
         project_id, bucket, template_name, job_name, region
     )
 
     logging.info("The response to triggering the Dataflow job is: %s", response)
+    return "", response.status_code
 
 
-def handle_start_new_batch_email_reporting(request: Request) -> None:
+def handle_start_new_batch_email_reporting(request: Request) -> Tuple[str, HTTPStatus]:
     """Start a new batch of email generation for the indicated state.
     This function is the entry point for generating a new batch. It hits the App Engine endpoint `/start_new_batch`.
     It requires a JSON input containing the following keys:
@@ -294,13 +322,15 @@ def handle_start_new_batch_email_reporting(request: Request) -> None:
     """
     project_id = os.environ.get(GCP_PROJECT_ID_KEY)
     if not project_id:
-        logging.error("No project id set, returning")
-        return
+        error_str = "No project id set, returning"
+        logging.error(error_str)
+        return error_str, HTTPStatus.BAD_REQUEST
 
     request_params = request.get_json()
     if not request_params:
-        logging.error("No request params, returning")
-        return
+        error_str = "No request params, returning"
+        logging.error(error_str)
+        return error_str, HTTPStatus.BAD_REQUEST
 
     query_params = build_query_param_string(
         request_params,
@@ -322,9 +352,12 @@ def handle_start_new_batch_email_reporting(request: Request) -> None:
     # Hit the App Engine endpoint `reporting/start_new_batch`.
     response = make_iap_request(url, IAP_CLIENT_ID[project_id])
     logging.info("The response status is %s", response.status_code)
+    return "", response.status_code
 
 
-def handle_deliver_emails_for_batch_email_reporting(request: Request) -> None:
+def handle_deliver_emails_for_batch_email_reporting(
+    request: Request,
+) -> Tuple[str, HTTPStatus]:
     """Cloud function to deliver a batch of generated emails.
     It hits the App Engine endpoint `reporting/deliver_emails_for_batch`. It requires a JSON input containing the
     following keys:
@@ -344,13 +377,15 @@ def handle_deliver_emails_for_batch_email_reporting(request: Request) -> None:
     """
     project_id = os.environ.get(GCP_PROJECT_ID_KEY)
     if not project_id:
-        logging.error("No project id set, returning")
-        return
+        error_str = "No project id set, returning"
+        logging.error(error_str)
+        return error_str, HTTPStatus.BAD_REQUEST
 
     request_params = request.get_json()
     if not request_params:
-        logging.error("No request params, returning")
-        return
+        error_str = "No request params, returning"
+        logging.error(error_str)
+        return error_str, HTTPStatus.BAD_REQUEST
 
     query_params = build_query_param_string(
         request_params,
@@ -369,3 +404,4 @@ def handle_deliver_emails_for_batch_email_reporting(request: Request) -> None:
     logging.info("Calling URL: %s", url)
     response = make_iap_request(url, IAP_CLIENT_ID[project_id])
     logging.info("The response status is %s", response.status_code)
+    return "", response.status_code
