@@ -43,7 +43,7 @@ COMPARTMENT_SESSIONS_UNNESTED_QUERY_TEMPLATE = """
         population_date,
         DATE_DIFF(population_date,sessions.start_date,day) as time_served_in_compartment
     FROM `{project_id}.{analyst_dataset}.compartment_sessions_materialized` sessions,
-    UNNEST(GENERATE_DATE_ARRAY(DATE_SUB(CURRENT_DATE, INTERVAL 6 YEAR), CURRENT_DATE, INTERVAL 1 DAY)) AS population_date
+    UNNEST(GENERATE_DATE_ARRAY(DATE_SUB(CURRENT_DATE, INTERVAL 9 YEAR), CURRENT_DATE, INTERVAL 1 DAY)) AS population_date
     WHERE population_date BETWEEN sessions.start_date AND COALESCE(sessions.end_date, '9999-01-01')
     """
 
