@@ -232,6 +232,18 @@ class NonRevocationReturnSupervisionTimeBucket(
             return None
         return self.case_compliance.most_recent_home_visit_date
 
+    @property
+    def home_visit_count(self) -> Optional[int]:
+        if not self.case_compliance:
+            return None
+        return self.case_compliance.home_visit_count
+
+    @property
+    def home_visit_frequency_sufficient(self) -> Optional[bool]:
+        if not self.case_compliance:
+            return None
+        return self.case_compliance.home_visit_frequency_sufficient
+
 
 @attr.s(frozen=True)
 class ProjectedSupervisionCompletionBucket(SupervisionTimeBucket):

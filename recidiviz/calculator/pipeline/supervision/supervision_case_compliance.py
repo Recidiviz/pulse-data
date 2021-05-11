@@ -31,8 +31,7 @@ class SupervisionCaseCompliance(BuildableAttr):
     # The date the on which the case's compliance was evaluated
     date_of_evaluation: date = attr.ib(default=None)
 
-    # The number of risk assessments conducted on this person in the month of the date_of_evaluation, preceding the
-    # date_of_evaluation
+    # The number of risk assessments conducted on this person on the date_of_evaluation
     assessment_count: int = attr.ib(default=None)
 
     # The date that the last assessment happened. If no assessment has yet happened, this is None.
@@ -42,8 +41,7 @@ class SupervisionCaseCompliance(BuildableAttr):
     # its value is zero. We set it to None if we do not know the compliance standards for this person.
     num_days_assessment_overdue: Optional[int] = attr.ib(default=None)
 
-    # The number of face-to-face contacts with this person in the month of the date_of_evaluation, preceding the
-    # date_of_evaluation
+    # The number of face-to-face contacts with this person on the date_of_evaluation
     face_to_face_count: int = attr.ib(default=None)
 
     # The date that the last face-to-face contact happened. If no meetings have yet happened, this is None.
@@ -53,5 +51,14 @@ class SupervisionCaseCompliance(BuildableAttr):
     # enough to satisfy compliance measures. Should be unset if we do not know the compliance standards for this person.
     face_to_face_frequency_sufficient: Optional[bool] = attr.ib(default=None)
 
+    # The number of home visits conducted on this person on the date_of_evaluation
     # The date that the last home visit contact happened. If no meetings have yet happened, this is None.
     most_recent_home_visit_date: Optional[date] = attr.ib(default=None)
+
+    # The number of home visits conducted on this person by the date of the evaluation
+    home_visit_count: int = attr.ib(default=None)
+
+    # Whether or not the supervision officer has conducted home visits with the person on supervision recently
+    # enough to satisfy compliance measures. Should be unset if we do not know the
+    # home visit compliance standards for this person.
+    home_visit_frequency_sufficient: Optional[bool] = attr.ib(default=None)
