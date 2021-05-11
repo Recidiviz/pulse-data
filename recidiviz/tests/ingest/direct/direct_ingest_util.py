@@ -534,18 +534,19 @@ def run_task_queues_to_empty(controller: BaseDirectIngestController) -> None:
         controller.cloud_task_manager, FakeSynchronousDirectIngestCloudTaskManager
     ):
         tm = controller.cloud_task_manager
+        queue_args = (controller.region, controller.ingest_instance)
         while (
-            tm.get_scheduler_queue_info(controller.region).size()
-            or tm.get_process_job_queue_info(controller.region).size()
-            or tm.get_bq_import_export_queue_info(controller.region).size()
+            tm.get_scheduler_queue_info(*queue_args).size()
+            or tm.get_process_job_queue_info(*queue_args).size()
+            or tm.get_bq_import_export_queue_info(*queue_args).size()
         ):
-            if tm.get_bq_import_export_queue_info(controller.region).size():
+            if tm.get_bq_import_export_queue_info(*queue_args).size():
                 tm.test_run_next_bq_import_export_task()
                 tm.test_pop_finished_bq_import_export_task()
-            if tm.get_scheduler_queue_info(controller.region).size():
+            if tm.get_scheduler_queue_info(*queue_args).size():
                 tm.test_run_next_scheduler_task()
                 tm.test_pop_finished_scheduler_task()
-            if tm.get_process_job_queue_info(controller.region).size():
+            if tm.get_process_job_queue_info(*queue_args).size():
                 tm.test_run_next_process_job_task()
                 tm.test_pop_finished_process_job_task()
     else:

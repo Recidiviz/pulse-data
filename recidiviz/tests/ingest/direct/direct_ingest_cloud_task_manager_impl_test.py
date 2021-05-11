@@ -35,6 +35,9 @@ from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import (
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_file_path,
 )
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
+)
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsBucketPath
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     DirectIngestCloudTaskManagerImpl,
@@ -50,14 +53,14 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
 from recidiviz.utils import regions
 
 _REGION = regions.Region(
-    region_code="us_nc",
+    region_code="us_xx",
     agency_name="agency_name",
     agency_type="state",
     base_url="base_url",
-    shared_queue=DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2,
     timezone="America/New_York",
     jurisdiction_id="jid",
     environment="production",
+    is_direct_ingest=True,
 )
 
 
@@ -141,7 +144,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         body_encoded = json.dumps({}).encode()
         uuid = "random-uuid"
         mock_uuid.uuid4.return_value = uuid
-        queue_path = f"{_REGION.shared_queue}-path"
+        queue_path = f"{DIRECT_INGEST_SCHEDULER_QUEUE_V2}-path"
 
         task_name = DIRECT_INGEST_SCHEDULER_QUEUE_V2 + "/{}-{}-{}".format(
             _REGION.region_code, "2019-07-20", uuid
@@ -162,6 +165,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         # Act
         DirectIngestCloudTaskManagerImpl().create_direct_ingest_scheduler_queue_task(
             region=_REGION,
+            ingest_instance=DirectIngestInstance.PRIMARY,
             ingest_bucket=GcsfsBucketPath("some-bucket"),
             just_finished_job=False,
         )
@@ -169,6 +173,51 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         # Assert
         mock_client.return_value.queue_path.assert_called_with(
             self.mock_project_id, QUEUES_REGION, DIRECT_INGEST_SCHEDULER_QUEUE_V2
+        )
+        mock_client.return_value.create_task.assert_called_with(
+            parent=queue_path, task=task
+        )
+
+    @patch("recidiviz.ingest.direct.direct_ingest_cloud_task_manager.uuid")
+    @patch("google.cloud.tasks_v2.CloudTasksClient")
+    @freeze_time("2019-07-20")
+    def test_create_direct_ingest_scheduler_queue_task_secondary(
+        self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock
+    ) -> None:
+        # Arrange
+        body_encoded = json.dumps({}).encode()
+        uuid = "random-uuid"
+        mock_uuid.uuid4.return_value = uuid
+        queue_path = "us_xx-scheduler-queue-path"
+        queue_name = "direct-ingest-state-us-xx-scheduler"
+
+        task_name = "{}/{}-{}-{}".format(
+            queue_name, _REGION.region_code, "2019-07-20", uuid
+        )
+        task = tasks_v2.types.task_pb2.Task(
+            name=task_name,
+            app_engine_http_request={
+                "http_method": "POST",
+                "relative_uri": f"/direct/scheduler?region={_REGION.region_code}&"
+                f"bucket=some-bucket&just_finished_job=False",
+                "body": body_encoded,
+            },
+        )
+
+        mock_client.return_value.task_path.return_value = task_name
+        mock_client.return_value.queue_path.return_value = queue_path
+
+        # Act
+        DirectIngestCloudTaskManagerImpl().create_direct_ingest_scheduler_queue_task(
+            region=_REGION,
+            ingest_instance=DirectIngestInstance.SECONDARY,
+            ingest_bucket=GcsfsBucketPath("some-bucket"),
+            just_finished_job=False,
+        )
+
+        # Assert
+        mock_client.return_value.queue_path.assert_called_with(
+            self.mock_project_id, QUEUES_REGION, queue_name
         )
         mock_client.return_value.create_task.assert_called_with(
             parent=queue_path, task=task
@@ -198,10 +247,10 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         uuid = "random-uuid"
         mock_uuid.uuid4.return_value = uuid
         date = "2019-07-20"
-        queue_path = f"{_REGION.shared_queue}-path"
+        queue_path = "process-queue-path"
 
         task_name = "{}/{}-{}-{}".format(
-            _REGION.shared_queue, _REGION.region_code, date, uuid
+            DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2, _REGION.region_code, date, uuid
         )
         task = tasks_v2.types.task_pb2.Task(
             name=task_name,
@@ -217,12 +266,71 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
 
         # Act
         DirectIngestCloudTaskManagerImpl().create_direct_ingest_process_job_task(
-            _REGION, ingest_args
+            _REGION, DirectIngestInstance.PRIMARY, ingest_args
         )
 
         # Assert
         mock_client.return_value.queue_path.assert_called_with(
-            self.mock_project_id, QUEUES_REGION, _REGION.shared_queue
+            self.mock_project_id,
+            QUEUES_REGION,
+            DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2,
+        )
+        mock_client.return_value.create_task.assert_called_with(
+            parent=queue_path, task=task
+        )
+
+    @patch("recidiviz.ingest.direct.direct_ingest_cloud_task_manager.uuid")
+    @patch("google.cloud.tasks_v2.CloudTasksClient")
+    @freeze_time("2019-07-20")
+    def test_create_direct_ingest_process_job_task_secondary(
+        self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock
+    ) -> None:
+        # Arrange
+        ingest_args = GcsfsIngestArgs(
+            datetime.datetime(year=2019, month=7, day=20),
+            file_path=GcsfsFilePath.from_absolute_path(
+                to_normalized_unprocessed_file_path(
+                    "bucket/ingest_view_name.csv",
+                    file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
+                )
+            ),
+        )
+        body = {
+            "cloud_task_args": ingest_args.to_serializable(),
+            "args_type": "GcsfsIngestArgs",
+        }
+        body_encoded = json.dumps(body).encode()
+        uuid = "random-uuid"
+        mock_uuid.uuid4.return_value = uuid
+        date = "2019-07-20"
+        queue_path = "us-xx-process-queue-path"
+        queue_name = "direct-ingest-state-us-xx-process-job-queue"
+
+        task_name = "{}/{}-{}-{}".format(
+            DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2, _REGION.region_code, date, uuid
+        )
+        task = tasks_v2.types.task_pb2.Task(
+            name=task_name,
+            app_engine_http_request={
+                "http_method": "POST",
+                "relative_uri": f"/direct/process_job?region={_REGION.region_code}",
+                "body": body_encoded,
+            },
+        )
+
+        mock_client.return_value.task_path.return_value = task_name
+        mock_client.return_value.queue_path.return_value = queue_path
+
+        # Act
+        DirectIngestCloudTaskManagerImpl().create_direct_ingest_process_job_task(
+            _REGION, DirectIngestInstance.SECONDARY, ingest_args
+        )
+
+        # Assert
+        mock_client.return_value.queue_path.assert_called_with(
+            self.mock_project_id,
+            QUEUES_REGION,
+            queue_name,
         )
         mock_client.return_value.create_task.assert_called_with(
             parent=queue_path, task=task
@@ -253,7 +361,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         mock_uuid.uuid4.return_value = uuid
         date = "2019-07-20"
         mock_datetime.date.today.return_value = date
-        queue_path = f"{_REGION.shared_queue}-path"
+        queue_path = f"{DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2}-path"
 
         task_name = _REGION.get_queue_name() + "/{}-{}-{}".format(
             _REGION.region_code, date, uuid
@@ -272,12 +380,14 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
 
         # Act
         DirectIngestCloudTaskManagerImpl().create_direct_ingest_process_job_task(
-            _REGION, ingest_args
+            _REGION, DirectIngestInstance.PRIMARY, ingest_args
         )
 
         # Assert
         mock_client.return_value.queue_path.assert_called_with(
-            self.mock_project_id, QUEUES_REGION, _REGION.shared_queue
+            self.mock_project_id,
+            QUEUES_REGION,
+            DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2,
         )
         mock_client.return_value.create_task.assert_called_with(
             parent=queue_path, task=task
@@ -306,7 +416,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         uuid = "random-uuid"
         mock_uuid.uuid4.return_value = uuid
         date = "2019-07-20"
-        queue_path = f"{_REGION.shared_queue}-path"
+        queue_path = f"{DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2}-path"
 
         task_name = DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2 + "/{}-{}-{}".format(
             _REGION.region_code, date, uuid
@@ -325,7 +435,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
 
         # Act
         DirectIngestCloudTaskManagerImpl().create_direct_ingest_raw_data_import_task(
-            _REGION, import_args
+            _REGION, DirectIngestInstance.PRIMARY, import_args
         )
 
         # Assert
@@ -357,7 +467,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         uuid = "random-uuid"
         mock_uuid.uuid4.return_value = uuid
         date = "2019-07-20"
-        queue_path = f"{_REGION.shared_queue}-path"
+        queue_path = f"{DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2}-path"
 
         task_name = DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2 + "/{}-{}-{}".format(
             _REGION.region_code, date, uuid
@@ -376,7 +486,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
 
         # Act
         DirectIngestCloudTaskManagerImpl().create_direct_ingest_ingest_view_export_task(
-            _REGION, export_args
+            _REGION, DirectIngestInstance.PRIMARY, export_args
         )
 
         # Assert
@@ -395,11 +505,10 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
     ) -> None:
         uuid = "random-uuid"
         mock_uuid.uuid4.return_value = uuid
-        queue_path = f"{_REGION.shared_queue}-path"
+        queue_path = "us-xx-sftp-path"
+        queue_name = "direct-ingest-state-us-xx-sftp-queue"
         date = "2021-01-01"
-        task_name = "direct-ingest-state-{}-sftp-queue/{}-{}-{}".format(
-            _REGION.region_code.replace("_", "-"), _REGION.region_code, date, uuid
-        )
+        task_name = "{}/{}-{}-{}".format(queue_name, _REGION.region_code, date, uuid)
         task = tasks_v2.types.task_pb2.Task(
             name=task_name,
             app_engine_http_request={
@@ -417,9 +526,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         )
 
         mock_client.return_value.queue_path.assert_called_with(
-            self.mock_project_id,
-            QUEUES_REGION,
-            f"direct-ingest-state-{_REGION.region_code.replace('_', '-')}-sftp-queue",
+            self.mock_project_id, QUEUES_REGION, queue_name
         )
         mock_client.return_value.create_task.assert_called_with(
             parent=queue_path, task=task

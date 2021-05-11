@@ -120,6 +120,10 @@ class Region:
     def __attrs_post_init__(self):
         if self.queue and self.shared_queue:
             raise ValueError("Only one of `queue` and `shared_queue` can be set.")
+        if self.is_direct_ingest and (self.queue or self.shared_queue):
+            raise ValueError(
+                "Direct ingest regions may not have queues configured via yaml."
+            )
         if self.environment not in {*environment.GCP_ENVIRONMENTS, None}:
             raise ValueError("Invalid environment: {}".format(self.environment))
         if self.facility_id and len(self.facility_id) != 16:

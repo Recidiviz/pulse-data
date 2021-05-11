@@ -531,6 +531,8 @@ class TestDirectIngestControl(unittest.TestCase):
                     f"[{ingest_bucket_path.bucket_name}]"
                 )
             mock_controller.region = fake_supported_regions[region_code.lower()]
+            mock_controller.ingest_instance = DirectIngestInstance.PRIMARY
+
             mock_controllers_by_region_code[region_code] = mock_controller
             return mock_controller
 
@@ -556,6 +558,7 @@ class TestDirectIngestControl(unittest.TestCase):
             [
                 call(
                     fake_supported_regions["us_mo"],
+                    ingest_instance=DirectIngestInstance.PRIMARY,
                     ingest_bucket=mock_controllers_by_region_code[
                         "us_mo"
                     ].ingest_bucket_path,
@@ -563,6 +566,7 @@ class TestDirectIngestControl(unittest.TestCase):
                 ),
                 call(
                     fake_supported_regions[self.region_code],
+                    ingest_instance=DirectIngestInstance.PRIMARY,
                     ingest_bucket=mock_controllers_by_region_code[
                         self.region_code
                     ].ingest_bucket_path,
