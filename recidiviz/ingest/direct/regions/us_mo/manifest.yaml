@@ -3,5 +3,4 @@ agency_type: prison
 base_url: unused
 timezone: America/Chicago
 environment: production
-shared_queue: direct-ingest-state-process-job-queue-v2
 jurisdiction_id: unknown

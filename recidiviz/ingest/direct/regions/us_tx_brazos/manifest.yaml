@@ -1,7 +1,6 @@
-agency_name: unknown  # Template - purposefully unspecified
-agency_type: unknown  # Template - purposefully unspecified
-base_url: unknown  # Template - purposefully unspecified
+agency_name: unknown # Template - purposefully unspecified
+agency_type: unknown # Template - purposefully unspecified
+base_url: unknown # Template - purposefully unspecified
 timezone: America/New_York
 environment: staging
-shared_queue: direct-ingest-state-process-job-queue-v2
-jurisdiction_id: unknown  # Template - purposefully unspecified
+jurisdiction_id: unknown # Template - purposefully unspecified

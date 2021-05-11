@@ -22,6 +22,9 @@ from threading import Thread, Lock, Condition
 from typing import Callable, List, Tuple, Optional, Any
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
+)
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsRawDataBQImportArgs,
     GcsfsIngestViewExportArgs,
@@ -198,7 +201,10 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
         self.sftp_queue = SingleThreadTaskQueue(name="sftp")
 
     def create_direct_ingest_process_job_task(
-        self, region: Region, ingest_args: GcsfsIngestArgs
+        self,
+        region: Region,
+        ingest_instance: DirectIngestInstance,
+        ingest_args: GcsfsIngestArgs,
     ) -> None:
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
@@ -215,6 +221,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
     def create_direct_ingest_scheduler_queue_task(
         self,
         region: Region,
+        ingest_instance: DirectIngestInstance,
         ingest_bucket: GcsfsBucketPath,
         just_finished_job: bool,
     ) -> None:
@@ -236,7 +243,11 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
         )
 
     def create_direct_ingest_handle_new_files_task(
-        self, region: Region, ingest_bucket: GcsfsBucketPath, can_start_ingest: bool
+        self,
+        region: Region,
+        ingest_instance: DirectIngestInstance,
+        ingest_bucket: GcsfsBucketPath,
+        can_start_ingest: bool,
     ) -> None:
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
@@ -253,7 +264,10 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
         )
 
     def create_direct_ingest_raw_data_import_task(
-        self, region: Region, data_import_args: GcsfsRawDataBQImportArgs
+        self,
+        region: Region,
+        ingest_instance: DirectIngestInstance,
+        data_import_args: GcsfsRawDataBQImportArgs,
     ) -> None:
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
@@ -265,7 +279,10 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
         )
 
     def create_direct_ingest_ingest_view_export_task(
-        self, region: Region, ingest_view_export_args: GcsfsIngestViewExportArgs
+        self,
+        region: Region,
+        ingest_instance: DirectIngestInstance,
+        ingest_view_export_args: GcsfsIngestViewExportArgs,
     ) -> None:
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
@@ -282,7 +299,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
         )
 
     def get_process_job_queue_info(
-        self, region: Region
+        self, region: Region, ingest_instance: DirectIngestInstance
     ) -> ProcessIngestJobCloudTaskQueueInfo:
         with self.process_job_queue.all_tasks_mutex:
             task_names = self.process_job_queue.get_unfinished_task_names_unsafe()
@@ -291,7 +308,9 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
             queue_name=self.process_job_queue.name, task_names=task_names
         )
 
-    def get_scheduler_queue_info(self, region: Region) -> SchedulerCloudTaskQueueInfo:
+    def get_scheduler_queue_info(
+        self, region: Region, ingest_instance: DirectIngestInstance
+    ) -> SchedulerCloudTaskQueueInfo:
         with self.scheduler_queue.all_tasks_mutex:
             task_names = self.scheduler_queue.get_unfinished_task_names_unsafe()
 
@@ -300,7 +319,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
         )
 
     def get_bq_import_export_queue_info(
-        self, region: Region
+        self, region: Region, ingest_instance: DirectIngestInstance
     ) -> BQImportExportCloudTaskQueueInfo:
         with self.bq_import_export_queue.all_tasks_mutex:
             has_unfinished_tasks = (

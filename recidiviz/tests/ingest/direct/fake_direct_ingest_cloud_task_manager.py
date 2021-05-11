@@ -33,6 +33,9 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     BQImportExportCloudTaskQueueInfo,
     SftpCloudTaskQueueInfo,
 )
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
+)
 from recidiviz.utils.regions import Region
 
 
@@ -47,17 +50,19 @@ class FakeDirectIngestCloudTaskManager(DirectIngestCloudTaskManager):
 
     @abc.abstractmethod
     def get_process_job_queue_info(
-        self, region: Region
+        self, region: Region, ingest_instance: DirectIngestInstance
     ) -> ProcessIngestJobCloudTaskQueueInfo:
         pass
 
     @abc.abstractmethod
-    def get_scheduler_queue_info(self, region: Region) -> SchedulerCloudTaskQueueInfo:
+    def get_scheduler_queue_info(
+        self, region: Region, ingest_instance: DirectIngestInstance
+    ) -> SchedulerCloudTaskQueueInfo:
         pass
 
     @abc.abstractmethod
     def get_bq_import_export_queue_info(
-        self, region: Region
+        self, region: Region, ingest_instance: DirectIngestInstance
     ) -> BQImportExportCloudTaskQueueInfo:
         pass
 
@@ -67,7 +72,10 @@ class FakeDirectIngestCloudTaskManager(DirectIngestCloudTaskManager):
 
     @abc.abstractmethod
     def create_direct_ingest_process_job_task(
-        self, region: Region, ingest_args: GcsfsIngestArgs
+        self,
+        region: Region,
+        ingest_instance: DirectIngestInstance,
+        ingest_args: GcsfsIngestArgs,
     ) -> None:
         pass
 
@@ -75,6 +83,7 @@ class FakeDirectIngestCloudTaskManager(DirectIngestCloudTaskManager):
     def create_direct_ingest_scheduler_queue_task(
         self,
         region: Region,
+        ingest_instance: DirectIngestInstance,
         ingest_bucket: GcsfsBucketPath,
         just_finished_job: bool,
     ) -> None:
@@ -82,6 +91,10 @@ class FakeDirectIngestCloudTaskManager(DirectIngestCloudTaskManager):
 
     @abc.abstractmethod
     def create_direct_ingest_handle_new_files_task(
-        self, region: Region, ingest_bucket: GcsfsBucketPath, can_start_ingest: bool
+        self,
+        region: Region,
+        ingest_instance: DirectIngestInstance,
+        ingest_bucket: GcsfsBucketPath,
+        can_start_ingest: bool,
     ) -> None:
         pass

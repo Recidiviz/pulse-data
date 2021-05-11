@@ -25,6 +25,9 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsRawDataBQImportArgs,
     GcsfsIngestArgs,
 )
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
+)
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     _build_task_id,
     ProcessIngestJobCloudTaskQueueInfo,
@@ -56,20 +59,22 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         self.sftp_tasks: List[str] = []
 
     def get_process_job_queue_info(
-        self, region: Region
+        self, region: Region, ingest_instance: DirectIngestInstance
     ) -> ProcessIngestJobCloudTaskQueueInfo:
 
         return ProcessIngestJobCloudTaskQueueInfo(
             queue_name="process", task_names=[t[0] for t in self.process_job_tasks]
         )
 
-    def get_scheduler_queue_info(self, region: Region) -> SchedulerCloudTaskQueueInfo:
+    def get_scheduler_queue_info(
+        self, region: Region, ingest_instance: DirectIngestInstance
+    ) -> SchedulerCloudTaskQueueInfo:
         return SchedulerCloudTaskQueueInfo(
             queue_name="schedule", task_names=[t[0] for t in self.scheduler_tasks]
         )
 
     def get_bq_import_export_queue_info(
-        self, region: Region
+        self, region: Region, ingest_instance: DirectIngestInstance
     ) -> BQImportExportCloudTaskQueueInfo:
         return BQImportExportCloudTaskQueueInfo(
             queue_name="bq_import_export",
@@ -82,7 +87,10 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         )
 
     def create_direct_ingest_process_job_task(
-        self, region: Region, ingest_args: GcsfsIngestArgs
+        self,
+        region: Region,
+        ingest_instance: DirectIngestInstance,
+        ingest_args: GcsfsIngestArgs,
     ) -> None:
         """Queues *but does not run* a process job task."""
         if not self.controller:
@@ -96,6 +104,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
     def create_direct_ingest_scheduler_queue_task(
         self,
         region: Region,
+        ingest_instance: DirectIngestInstance,
         ingest_bucket: GcsfsBucketPath,
         just_finished_job: bool,
     ) -> None:
@@ -109,7 +118,11 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         )
 
     def create_direct_ingest_handle_new_files_task(
-        self, region: Region, ingest_bucket: GcsfsBucketPath, can_start_ingest: bool
+        self,
+        region: Region,
+        ingest_instance: DirectIngestInstance,
+        ingest_bucket: GcsfsBucketPath,
+        can_start_ingest: bool,
     ) -> None:
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
@@ -123,7 +136,10 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         )
 
     def create_direct_ingest_raw_data_import_task(
-        self, region: Region, data_import_args: GcsfsRawDataBQImportArgs
+        self,
+        region: Region,
+        ingest_instance: DirectIngestInstance,
+        data_import_args: GcsfsRawDataBQImportArgs,
     ) -> None:
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
@@ -133,7 +149,10 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         )
 
     def create_direct_ingest_ingest_view_export_task(
-        self, region: Region, ingest_view_export_args: GcsfsIngestViewExportArgs
+        self,
+        region: Region,
+        ingest_instance: DirectIngestInstance,
+        ingest_view_export_args: GcsfsIngestViewExportArgs,
     ) -> None:
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
