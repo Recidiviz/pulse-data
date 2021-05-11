@@ -36,7 +36,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
 
     @patch(
         f"{sqlalchemy_database_key.__name__}.get_existing_direct_ingest_states",
-        return_value=[StateCode.US_PA, StateCode.US_HI],
+        return_value=[StateCode.US_XX, StateCode.US_WW],
     )
     @patch("sqlalchemy.create_engine")
     @patch("recidiviz.utils.environment.in_gcp_production")
@@ -106,7 +106,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     pool_recycle=600,
                 ),
                 call(
-                    "postgresql://state_db_user_value:state_db_password_value@/us_pa_primary"
+                    "postgresql://state_db_user_value:state_db_password_value@/us_xx_primary"
                     "?host=/cloudsql/state_cloudsql_instance_id_value",
                     isolation_level="SERIALIZABLE",
                     poolclass=sqlalchemy.pool.NullPool,
@@ -114,7 +114,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     pool_recycle=600,
                 ),
                 call(
-                    "postgresql://state_db_user_value:state_db_password_value@/us_hi_primary"
+                    "postgresql://state_db_user_value:state_db_password_value@/us_ww_primary"
                     "?host=/cloudsql/state_cloudsql_instance_id_value",
                     isolation_level="SERIALIZABLE",
                     poolclass=sqlalchemy.pool.NullPool,
@@ -122,7 +122,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     pool_recycle=600,
                 ),
                 call(
-                    "postgresql://state_db_user_value:state_db_password_value@/us_pa_secondary"
+                    "postgresql://state_db_user_value:state_db_password_value@/us_xx_secondary"
                     "?host=/cloudsql/state_cloudsql_instance_id_value",
                     isolation_level="SERIALIZABLE",
                     poolclass=sqlalchemy.pool.NullPool,
@@ -130,7 +130,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     pool_recycle=600,
                 ),
                 call(
-                    "postgresql://state_db_user_value:state_db_password_value@/us_hi_secondary"
+                    "postgresql://state_db_user_value:state_db_password_value@/us_ww_secondary"
                     "?host=/cloudsql/state_cloudsql_instance_id_value",
                     isolation_level="SERIALIZABLE",
                     poolclass=sqlalchemy.pool.NullPool,
@@ -143,7 +143,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
 
     @patch(
         f"{sqlalchemy_database_key.__name__}.get_existing_direct_ingest_states",
-        return_value=[StateCode.US_PA, StateCode.US_HI],
+        return_value=[StateCode.US_XX, StateCode.US_WW],
     )
     @patch("sqlalchemy.create_engine")
     @patch("recidiviz.utils.environment.in_gcp_staging")
@@ -213,7 +213,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     pool_recycle=600,
                 ),
                 call(
-                    "postgresql://state_db_user_value:state_db_password_value@/us_pa_primary"
+                    "postgresql://state_db_user_value:state_db_password_value@/us_xx_primary"
                     "?host=/cloudsql/state_cloudsql_instance_id_value",
                     isolation_level="SERIALIZABLE",
                     poolclass=sqlalchemy.pool.NullPool,
@@ -221,7 +221,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     pool_recycle=600,
                 ),
                 call(
-                    "postgresql://state_db_user_value:state_db_password_value@/us_hi_primary"
+                    "postgresql://state_db_user_value:state_db_password_value@/us_ww_primary"
                     "?host=/cloudsql/state_cloudsql_instance_id_value",
                     isolation_level="SERIALIZABLE",
                     poolclass=sqlalchemy.pool.NullPool,
@@ -229,7 +229,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     pool_recycle=600,
                 ),
                 call(
-                    "postgresql://state_db_user_value:state_db_password_value@/us_pa_secondary"
+                    "postgresql://state_db_user_value:state_db_password_value@/us_xx_secondary"
                     "?host=/cloudsql/state_cloudsql_instance_id_value",
                     isolation_level="SERIALIZABLE",
                     poolclass=sqlalchemy.pool.NullPool,
@@ -237,7 +237,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     pool_recycle=600,
                 ),
                 call(
-                    "postgresql://state_db_user_value:state_db_password_value@/us_hi_secondary"
+                    "postgresql://state_db_user_value:state_db_password_value@/us_ww_secondary"
                     "?host=/cloudsql/state_cloudsql_instance_id_value",
                     isolation_level="SERIALIZABLE",
                     poolclass=sqlalchemy.pool.NullPool,

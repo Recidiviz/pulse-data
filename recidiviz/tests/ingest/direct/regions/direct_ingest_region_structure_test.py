@@ -16,7 +16,6 @@
 # =============================================================================
 """Tests that each regions direct ingest directory is set up properly."""
 import abc
-import importlib
 import os
 import re
 import unittest
@@ -27,7 +26,6 @@ import yaml
 from mock import patch
 from parameterized import parameterized
 
-from recidiviz.common.constants import states
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct import regions
@@ -369,7 +367,6 @@ class DirectIngestRegionTemplateDirStructure(
         super().setUp()
 
         # Ensures StateCode.US_XX is properly loaded
-        importlib.reload(states)
         self.supported_regions_patcher = patch(
             f"{direct_ingest_controller_factory.__name__}.get_supported_direct_ingest_region_codes"
         )

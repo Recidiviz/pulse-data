@@ -16,7 +16,6 @@
 # =============================================================================
 """Tests for CloudSqlToBQLockManager."""
 
-import importlib
 import unittest
 from unittest.mock import Mock, patch
 
@@ -28,7 +27,6 @@ from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager impor
     DirectIngestRegionLockManager,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.common.constants import states
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_lock_manager import (
     CloudSqlToBQLockManager,
@@ -41,7 +39,6 @@ class CloudSqlToBQLockManagerTest(unittest.TestCase):
     """Tests for CloudSqlToBQLockManager."""
 
     def setUp(self) -> None:
-        importlib.reload(states)
         self.fake_fs = FakeGCSFileSystem()
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
         self.project_id_patcher.start().return_value = "recidiviz-456"
