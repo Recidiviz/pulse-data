@@ -1063,6 +1063,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             termination_date=date(2017, 5, 9),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
+            supervision_level_raw_text="LOW",
         )
 
         # Supervision period with an unset supervision_period_supervision_type between the terminated period
@@ -1127,6 +1128,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 event_date=revocation_period.admission_date,
                 supervision_type=supervision_period.supervision_period_supervision_type,
                 supervision_level=supervision_period.supervision_level,
+                supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 case_type=StateSupervisionCaseType.GENERAL,
                 is_on_supervision_last_day_of_month=False,
                 revocation_type=StateSpecializedPurposeForIncarceration.GENERAL,
@@ -1141,6 +1143,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_level=supervision_period.supervision_level,
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason,
+                supervision_level_raw_text=supervision_period.supervision_level_raw_text,
             ),
             create_start_bucket_from_period(supervision_period_type_unset),
             SupervisionTerminationBucket(
@@ -1184,6 +1187,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             termination_date=date(2017, 5, 9),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
+            supervision_level_raw_text="LOW",
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             supervision_site="X|Y",
         )
@@ -1336,6 +1340,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             termination_date=date(2017, 5, 9),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
+            supervision_level_raw_text="LOW",
         )
 
         # Supervision period with an unset supervision_period_supervision_type between the terminated period
@@ -1413,6 +1418,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 event_date=revocation_period.admission_date,
                 supervision_type=supervision_period.supervision_period_supervision_type,
                 supervision_level=supervision_period.supervision_level,
+                supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 is_on_supervision_last_day_of_month=False,
                 case_type=StateSupervisionCaseType.GENERAL,
                 revocation_type=StateSpecializedPurposeForIncarceration.GENERAL,
@@ -1659,6 +1665,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             termination_date=date(2017, 5, 9),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
+            supervision_level_raw_text="LOW",
         )
 
         board_hold_period = StateIncarcerationPeriod.new_with_defaults(
@@ -1723,6 +1730,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 event_date=revocation_period.admission_date,
                 supervision_type=supervision_period.supervision_period_supervision_type,
                 supervision_level=supervision_period.supervision_level,
+                supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 case_type=StateSupervisionCaseType.GENERAL,
                 is_on_supervision_last_day_of_month=False,
                 revocation_type=StateSpecializedPurposeForIncarceration.GENERAL,
@@ -1735,6 +1743,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 event_date=supervision_period.termination_date,
                 supervision_type=supervision_period.supervision_period_supervision_type,
                 supervision_level=supervision_period.supervision_level,
+                supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason,
             ),
@@ -1766,6 +1775,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             termination_date=date(2017, 5, 9),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
+            supervision_level_raw_text="LOW",
         )
 
         board_hold_period = StateIncarcerationPeriod.new_with_defaults(
@@ -1830,6 +1840,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 event_date=revocation_period.admission_date,
                 supervision_type=supervision_period.supervision_period_supervision_type,
                 supervision_level=supervision_period.supervision_level,
+                supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 case_type=StateSupervisionCaseType.GENERAL,
                 is_on_supervision_last_day_of_month=False,
                 revocation_type=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
@@ -1842,6 +1853,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 event_date=supervision_period.termination_date,
                 supervision_type=supervision_period.supervision_period_supervision_type,
                 supervision_level=supervision_period.supervision_level,
+                supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason,
             ),
@@ -1876,6 +1888,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             termination_date=date(2017, 5, 9),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
+            supervision_level_raw_text="LOW",
         )
 
         parole_board_hold_period_1 = StateIncarcerationPeriod.new_with_defaults(
@@ -1974,6 +1987,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 event_date=revocation_period.admission_date,
                 supervision_type=supervision_period.supervision_period_supervision_type,
                 supervision_level=supervision_period.supervision_level,
+                supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 case_type=StateSupervisionCaseType.GENERAL,
                 is_on_supervision_last_day_of_month=False,
                 revocation_type=StateSpecializedPurposeForIncarceration.GENERAL,
@@ -1986,6 +2000,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 event_date=supervision_period.termination_date,
                 supervision_type=supervision_period.supervision_period_supervision_type,
                 supervision_level=supervision_period.supervision_level,
+                supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason,
             ),
@@ -3378,6 +3393,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             start_date=date(2018, 1, 5),
             termination_date=date(2018, 12, 19),
             supervision_type=StateSupervisionType.PAROLE,
+            supervision_level=StateSupervisionLevel.MINIMUM,
         )
 
         first_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -3449,6 +3465,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_type=supervision_period_supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
                 is_on_supervision_last_day_of_month=False,
+                supervision_level=StateSupervisionLevel.MINIMUM,
                 revocation_type=StateSpecializedPurposeForIncarceration.GENERAL,
             ),
             RevocationReturnSupervisionTimeBucket(
@@ -3459,6 +3476,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_type=supervision_period_supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
                 is_on_supervision_last_day_of_month=False,
+                supervision_level=StateSupervisionLevel.MINIMUM,
                 revocation_type=StateSpecializedPurposeForIncarceration.GENERAL,
             ),
             SupervisionTerminationBucket(
@@ -3469,6 +3487,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_type=supervision_period_supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason,
+                supervision_level=StateSupervisionLevel.MINIMUM,
             ),
             create_start_bucket_from_period(
                 supervision_period,
@@ -3497,9 +3516,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_period_supervision_type,
                 second_incarceration_period.admission_date,
                 case_compliances=_generate_case_compliances(
-                    start_date=first_incarceration_period.release_date,
+                    start_date=supervision_period.start_date,
                     supervision_period=supervision_period,
-                    num_days_assessment_overdue_increment=179,
                 ),
             )
         )
@@ -3512,9 +3530,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 ),
                 supervision_period_supervision_type,
                 case_compliances=_generate_case_compliances(
-                    start_date=second_incarceration_period.release_date,
+                    start_date=supervision_period.start_date,
                     supervision_period=supervision_period,
-                    num_days_assessment_overdue_increment=301,
                 ),
             )
         )
@@ -3695,7 +3712,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 case_compliances=_generate_case_compliances(
                     start_date=first_incarceration_period.release_date,
                     supervision_period=first_supervision_period,
-                    num_days_assessment_overdue_increment=179,
                 ),
             )
         )
@@ -3710,7 +3726,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 case_compliances=_generate_case_compliances(
                     start_date=second_incarceration_period.release_date,
                     supervision_period=first_supervision_period,
-                    num_days_assessment_overdue_increment=301,
                 ),
             )
         )
@@ -3722,7 +3737,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 case_compliances=_generate_case_compliances(
                     start_date=second_supervision_period.start_date,
                     supervision_period=second_supervision_period,
-                    num_days_assessment_overdue_increment=331,
                 ),
             )
         )
@@ -5030,6 +5044,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_type=None,
             supervision_level=StateSupervisionLevel.MINIMUM,
+            supervision_level_raw_text="LOW",
         )
 
         assessment = StateAssessment.new_with_defaults(
@@ -5070,6 +5085,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 event_date=supervision_period.termination_date,
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
                 supervision_level=supervision_period.supervision_level,
+                supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 termination_reason=supervision_period.termination_reason,
             ),
         ]
@@ -8348,6 +8364,12 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2019, 3, 5),
             supervision_type=StateSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.MINIMUM,
+            case_type_entries=[
+                StateSupervisionCaseTypeEntry.new_with_defaults(
+                    state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
+                ),
+            ],
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -8417,10 +8439,9 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                 ),
                 supervision_period_supervision_type,
                 case_compliances=_generate_case_compliances(
-                    start_date=incarceration_period.release_date,
+                    start_date=supervision_period.start_date,
                     supervision_period=supervision_period,
                     end_date_override=date(2019, 11, 3),
-                    num_days_assessment_overdue_increment=196,
                 ),
             )
         )
@@ -8606,6 +8627,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             termination_date=date(2001, 7, 1),
             supervision_type=StateSupervisionType.PROBATION,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            supervision_level=StateSupervisionLevel.MINIMUM,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -8660,6 +8682,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                 month=6,
                 event_date=date(2001, 6, 30),
                 supervision_type=supervision_period_supervision_type,
+                supervision_level=supervision_period.supervision_level,
                 case_type=StateSupervisionCaseType.GENERAL,
                 is_on_supervision_last_day_of_month=True,
             ),
@@ -8679,6 +8702,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             start_date=date(2001, 1, 5),
             termination_date=date(2001, 6, 30),
             supervision_type=StateSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.MINIMUM,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
@@ -8736,6 +8760,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                 supervision_type=supervision_period_supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
                 is_on_supervision_last_day_of_month=False,
+                supervision_level=supervision_period.supervision_level,
             ),
         )
 
@@ -9041,9 +9066,9 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             supervision_downgrade_occurred=True,
             previous_supervision_level=StateSupervisionLevel.HIGH,
             case_compliances=_generate_case_compliances(
-                start_date=supervision_periods[1].start_date,
+                start_date=supervision_periods[0].start_date,
                 supervision_period=supervision_periods[1],
-                num_days_assessment_overdue_increment=43,
+                num_days_assessment_overdue_increment=0,
             ),
         )
 
@@ -9063,7 +9088,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                 start_date=date(2010, 1, 5),
                 termination_date=date(2010, 3, 19),
                 supervision_type=StateSupervisionType.PROBATION,
-                supervision_level=StateSupervisionLevel.HIGH,
+                supervision_level=StateSupervisionLevel.MAXIMUM,
                 status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             ),
             StateSupervisionPeriod.new_with_defaults(
@@ -9119,9 +9144,9 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             supervision_periods[1],
             supervision_period_supervision_type,
             case_compliances=_generate_case_compliances(
-                start_date=supervision_periods[1].start_date,
+                start_date=supervision_periods[0].start_date,
                 supervision_period=supervision_periods[1],
-                num_days_assessment_overdue_increment=2965,
+                num_days_assessment_overdue_increment=0,
             ),
         )
 
@@ -11444,6 +11469,7 @@ def create_termination_bucket_from_period(period, **kwargs):
         event_date=period.termination_date,
         supervision_type=period.supervision_period_supervision_type,
         supervision_level=period.supervision_level,
+        supervision_level_raw_text=period.supervision_level_raw_text,
         supervising_district_external_id=deprecated_supervising_district_external_id,
         level_1_supervision_location_external_id=level_1_supervision_location_external_id,
         level_2_supervision_location_external_id=level_2_supervision_location_external_id,

@@ -180,7 +180,9 @@ class TestCaseCompliance(unittest.TestCase):
                 assessment_count=0,
                 num_days_assessment_overdue=0,
                 face_to_face_count=0,
-                face_to_face_frequency_sufficient=None,
+                face_to_face_frequency_sufficient=False,
+                home_visit_count=0,
+                home_visit_frequency_sufficient=True,
             ),
             compliance,
         )
@@ -233,7 +235,9 @@ class TestCaseCompliance(unittest.TestCase):
                 most_recent_assessment_date=date(2020, 3, 6),
                 num_days_assessment_overdue=0,
                 face_to_face_count=0,
-                face_to_face_frequency_sufficient=None,
+                face_to_face_frequency_sufficient=False,
+                home_visit_count=0,
+                home_visit_frequency_sufficient=False,
             ),
             compliance,
         )
@@ -286,7 +290,9 @@ class TestCaseCompliance(unittest.TestCase):
                 assessment_count=0,
                 num_days_assessment_overdue=722,
                 face_to_face_count=0,
-                face_to_face_frequency_sufficient=None,
+                face_to_face_frequency_sufficient=False,
+                home_visit_frequency_sufficient=False,
+                home_visit_count=0,
             ),
             compliance,
         )
@@ -339,7 +345,9 @@ class TestCaseCompliance(unittest.TestCase):
                 assessment_count=0,
                 num_days_assessment_overdue=0,
                 face_to_face_count=0,
-                face_to_face_frequency_sufficient=None,
+                face_to_face_frequency_sufficient=False,
+                home_visit_count=0,
+                home_visit_frequency_sufficient=False,
             ),
             compliance,
         )
@@ -408,6 +416,7 @@ class TestCaseCompliance(unittest.TestCase):
                 face_to_face_count=1,
                 most_recent_face_to_face_date=date(2018, 4, 30),
                 face_to_face_frequency_sufficient=True,
+                home_visit_count=0,
             ),
             compliance,
         )
@@ -479,6 +488,7 @@ class TestCaseCompliance(unittest.TestCase):
                 face_to_face_count=1,
                 most_recent_face_to_face_date=date(2018, 4, 6),
                 face_to_face_frequency_sufficient=True,
+                home_visit_count=0,
             ),
             compliance,
         )
@@ -495,6 +505,7 @@ class TestCaseCompliance(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text="MEDIUM",
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
@@ -520,6 +531,7 @@ class TestCaseCompliance(unittest.TestCase):
                 num_days_assessment_overdue=70,
                 face_to_face_count=0,
                 face_to_face_frequency_sufficient=False,
+                home_visit_count=0,
             ),
             compliance,
         )
@@ -582,6 +594,7 @@ class TestCaseCompliance(unittest.TestCase):
                 face_to_face_count=1,
                 most_recent_face_to_face_date=date(2018, 3, 31),
                 face_to_face_frequency_sufficient=None,
+                home_visit_count=0,
             ),
             compliance,
         )
@@ -626,6 +639,7 @@ class TestCaseCompliance(unittest.TestCase):
                 most_recent_face_to_face_date=None,
                 face_to_face_frequency_sufficient=False,
                 most_recent_home_visit_date=None,
+                home_visit_count=0,
             ),
             compliance,
         )
@@ -689,6 +703,7 @@ class TestCaseCompliance(unittest.TestCase):
                 most_recent_face_to_face_date=date(2018, 4, 30),
                 face_to_face_frequency_sufficient=True,
                 most_recent_home_visit_date=None,
+                home_visit_count=0,
             ),
             compliance,
         )
@@ -750,6 +765,7 @@ class TestCaseCompliance(unittest.TestCase):
                 most_recent_face_to_face_date=date(2018, 4, 30),
                 face_to_face_frequency_sufficient=True,
                 most_recent_home_visit_date=date(2018, 4, 30),
+                home_visit_count=1,
             ),
             compliance,
         )
@@ -811,6 +827,7 @@ class TestCaseCompliance(unittest.TestCase):
                 most_recent_face_to_face_date=date(2018, 4, 30),
                 face_to_face_frequency_sufficient=True,
                 most_recent_home_visit_date=date(2018, 3, 6),
+                home_visit_count=0,
             ),
             compliance,
         )
@@ -919,6 +936,7 @@ class TestCaseCompliance(unittest.TestCase):
                 most_recent_face_to_face_date=date(2018, 4, 30),
                 face_to_face_frequency_sufficient=True,
                 most_recent_home_visit_date=date(2018, 4, 30),
+                home_visit_count=1,
             ),
             compliance_1,
         )
@@ -933,6 +951,7 @@ class TestCaseCompliance(unittest.TestCase):
                 most_recent_face_to_face_date=date(2019, 4, 30),
                 face_to_face_frequency_sufficient=True,
                 most_recent_home_visit_date=date(2019, 4, 30),
+                home_visit_count=1,
             ),
             compliance_2,
         )
@@ -1042,6 +1061,7 @@ class TestCaseCompliance(unittest.TestCase):
                 most_recent_face_to_face_date=None,
                 face_to_face_frequency_sufficient=False,
                 most_recent_home_visit_date=None,
+                home_visit_count=0,
             ),
             compliance_1,
         )
@@ -1056,6 +1076,7 @@ class TestCaseCompliance(unittest.TestCase):
                 most_recent_face_to_face_date=None,
                 face_to_face_frequency_sufficient=False,
                 most_recent_home_visit_date=None,
+                home_visit_count=0,
             ),
             compliance_2,
         )

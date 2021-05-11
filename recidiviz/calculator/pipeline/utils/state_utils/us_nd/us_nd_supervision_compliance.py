@@ -14,13 +14,27 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""State-specific utils for determining compliance with supervision standards for US_ND."""
+"""State-specific utils for determining compliance with supervision standards for US_ND.
+   We currently measure compliance for `GENERAL` and `SEX_OFFENSE` case types. Below are the expected requirements:
+        - `MINIMUM`
+            - Face to face contacts: 1x every 90 days
+            - Home visit: within 90 days of start of supervision
+        - `MEDIUM`
+            - Face to face contacts: 1x every 60 days
+            - Home visit: within 90 days of start of supervision, 1x every 365 days
+        - `MAXIMUM`
+            - Face to face contacts: 1x every 30 days
+            - Home visit: within 90 days of start of supervision, 1x every 365 days
+    Contact with treatment staff is currently excluded for `SEX_OFFENSE` case types.
+"""
+import sys
 from datetime import date
 import logging
-from typing import Optional, List
+from typing import Optional, Dict, Tuple
 
 from dateutil.relativedelta import relativedelta
 
+from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
 )
@@ -33,6 +47,24 @@ from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager imp
 LSIR_INITIAL_NUMBER_OF_DAYS_COMPLIANCE: int = 30
 REASSESSMENT_DEADLINE_DAYS: int = 212
 
+# Dictionary from supervision level -> tuple of number of times they must be contacted per time period
+SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS: Dict[
+    StateSupervisionLevel, Tuple[int, int]
+] = {
+    StateSupervisionLevel.MINIMUM: (1, 90),
+    StateSupervisionLevel.MEDIUM: (1, 60),
+    StateSupervisionLevel.MAXIMUM: (1, 30),
+}
+
+HOME_VISIT_CONTACT_FREQUENCY_REQUIREMENTS: Dict[
+    StateSupervisionLevel, Tuple[int, int]
+] = {
+    StateSupervisionLevel.MINIMUM: (0, sys.maxsize),
+    StateSupervisionLevel.MEDIUM: (1, 365),
+    StateSupervisionLevel.MAXIMUM: (1, 365),
+}
+NEW_SUPERVISION_HOME_VISIT_DEADLINE_DAYS = 90
+
 
 class UsNdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
     """US_ND specific calculations for supervision case compliance."""
@@ -43,17 +75,24 @@ class UsNdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
 
     def _guidelines_applicable_for_case(self) -> bool:
         """Returns whether the standard state guidelines are applicable for the given supervision case. The standard
-        guidelines are not applicable for people who are not classified, who are in interstate compact, or in diversion
-        programs."""
-        disallowed_supervision_levels: List[StateSupervisionLevel] = [
-            StateSupervisionLevel.EXTERNAL_UNKNOWN,
-            StateSupervisionLevel.INTERSTATE_COMPACT,
-            StateSupervisionLevel.DIVERSION,
+        guidelines are not applicable for people who are not classified or who are in interstate compact."""
+        # Check case type
+        if self.case_type not in (
+            StateSupervisionCaseType.GENERAL,
+            StateSupervisionCaseType.SEX_OFFENSE,
+        ):
+            return False
+
+        # Check supervision level
+        allowed_supervision_levels = [
+            StateSupervisionLevel.MINIMUM,
+            StateSupervisionLevel.MEDIUM,
+            StateSupervisionLevel.MAXIMUM,
         ]
-        return (
-            self.supervision_period.supervision_level
-            not in disallowed_supervision_levels
-        )
+        if self.supervision_period.supervision_level not in allowed_supervision_levels:
+            return False
+
+        return True
 
     def _num_days_past_required_reassessment(
         self,
@@ -74,10 +113,114 @@ class UsNdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         )
         return max(0, (compliance_evaluation_date - reassessment_deadline).days)
 
+    def _get_required_face_to_face_contacts_and_period_days_for_level(
+        self,
+    ) -> Tuple[int, int]:
+        """Returns the number of face-to-face contacts that are required within time period (in days) for a supervision
+        case with the given supervision level.
+        """
+        supervision_level: Optional[
+            StateSupervisionLevel
+        ] = self.supervision_period.supervision_level
+
+        if self.case_type not in (
+            StateSupervisionCaseType.GENERAL,
+            StateSupervisionCaseType.SEX_OFFENSE,
+        ):
+            raise ValueError(
+                "Standard supervision compliance guidelines for face to face contacts are "
+                f"not applicable for cases with a supervision level of {supervision_level}. "
+                f"Should not be calculating compliance for this supervision case."
+            )
+        if supervision_level is None:
+            raise ValueError(
+                "Supervision level not provided and so cannot calculate required face to face contact frequency."
+            )
+
+        return SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS[supervision_level]
+
+    def _home_visit_frequency_is_sufficient(
+        self, compliance_evaluation_date: date
+    ) -> Optional[bool]:
+        """Calculates whether the frequency of home visits between the officer and the person on supervision
+        is sufficient with respect to the state standards for the level of supervision of the case.
+        """
+        days_since_start = (compliance_evaluation_date - self.start_of_supervision).days
+
+        if days_since_start <= NEW_SUPERVISION_HOME_VISIT_DEADLINE_DAYS:
+            # This is a recently started supervision period, and the person has not yet hit the number of days
+            # from the start of their supervision at which the officer is required to have made a home visit.
+            logging.debug(
+                "Supervision period %d started %d business days before the compliance date %s. Home visit is not "
+                "overdue.",
+                self.supervision_period.supervision_period_id,
+                days_since_start,
+                compliance_evaluation_date,
+            )
+            return True
+
+        # Get applicable home visits that occurred between the start of supervision and the
+        # compliance_evaluation_date (inclusive)
+        applicable_visits = self._get_applicable_home_visits_between_dates(
+            self.start_of_supervision, compliance_evaluation_date
+        )
+
+        if not applicable_visits:
+            # This person has been on supervision for longer than the allowed number of days without an initial
+            # home visit. The initial home visit standard is not in compliance.
+            return False
+
+        (
+            required_contacts,
+            period_days,
+        ) = self._get_required_home_visits_and_period_days()
+
+        if days_since_start < period_days:
+            # If they've had a visit since the start of their supervision, and they have been on supervision for less
+            # than the number of days in which they would need another contact, then the case is in compliance
+            return True
+
+        visits_within_period = [
+            visit
+            for visit in applicable_visits
+            if visit.contact_date is not None
+            and (compliance_evaluation_date - visit.contact_date).days < period_days
+        ]
+
+        return len(visits_within_period) >= required_contacts
+
+    def _get_required_home_visits_and_period_days(self) -> Tuple[int, int]:
+        """Returns the number of home visits that are required within time period (in days) for a supervision case"""
+        supervision_level: Optional[
+            StateSupervisionLevel
+        ] = self.supervision_period.supervision_level
+
+        if self.case_type not in (
+            StateSupervisionCaseType.GENERAL,
+            StateSupervisionCaseType.SEX_OFFENSE,
+        ):
+            raise ValueError(
+                "Standard supervision compliance guidelines for home visits are not applicable "
+                f"for cases with a supervision level of {supervision_level}. Should not be "
+                f"calculating compliance for this supervision case."
+            )
+        if supervision_level is None:
+            raise ValueError(
+                "Supervision level not provided and so cannot calculate required home visit frequency."
+            )
+
+        return SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS[supervision_level]
+
     def _face_to_face_contact_frequency_is_sufficient(
         self, compliance_evaluation_date: date
     ) -> Optional[bool]:
         """Returns whether the frequency of face-to-face contacts between the officer and the person on supervision
         is sufficient with respect to the state standards for the level of supervision of the case."""
-        # TODO(#5199): Update, once face to face contacts are ingested for US_ND.
-        return None
+        (
+            required_contacts,
+            period_days,
+        ) = self._get_required_face_to_face_contacts_and_period_days_for_level()
+
+        return self._face_to_face_contact_frequency_is_in_compliance(
+            compliance_evaluation_date, required_contacts, period_days
+        )

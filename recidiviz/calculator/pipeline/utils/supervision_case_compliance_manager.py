@@ -21,7 +21,7 @@
 import abc
 from datetime import date
 import logging
-from typing import Optional, List
+from typing import Optional, List, Tuple
 
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import (
     SupervisionCaseCompliance,
@@ -88,10 +88,12 @@ class StateSupervisionCaseComplianceManager:
         face_to_face_count = self._face_to_face_contacts_on_date(
             compliance_evaluation_date
         )
+        home_visit_count = self._home_visits_on_date(compliance_evaluation_date)
 
         most_recent_assessment_date = None
         num_days_assessment_overdue = None
         face_to_face_frequency_sufficient = None
+        home_visit_frequency_sufficient = None
 
         if self.guidelines_applicable_for_case:
             most_recent_assessment = (
@@ -115,6 +117,10 @@ class StateSupervisionCaseComplianceManager:
                 )
             )
 
+            home_visit_frequency_sufficient = self._home_visit_frequency_is_sufficient(
+                compliance_evaluation_date
+            )
+
         return SupervisionCaseCompliance(
             date_of_evaluation=compliance_evaluation_date,
             assessment_count=assessment_count,
@@ -128,6 +134,8 @@ class StateSupervisionCaseComplianceManager:
             most_recent_home_visit_date=self._most_recent_home_visit_contact(
                 compliance_evaluation_date
             ),
+            home_visit_count=home_visit_count,
+            home_visit_frequency_sufficient=home_visit_frequency_sufficient,
         )
 
     def _num_days_assessment_overdue(
@@ -243,11 +251,68 @@ class StateSupervisionCaseComplianceManager:
 
         return len(assessments_on_compliance_date)
 
+    def _face_to_face_contact_frequency_is_in_compliance(
+        self, compliance_evaluation_date: date, required_contacts: int, period_days: int
+    ) -> Optional[bool]:
+        """Returns whether the face-to-face contacts within the period are compliant with respect to the state
+        standards for the level of supervision of the case."""
+        # Get applicable contacts that occurred between the start of supervision and the
+        # compliance_evaluation_date (inclusive)
+        applicable_contacts = self._get_applicable_face_to_face_contacts_between_dates(
+            self.start_of_supervision, compliance_evaluation_date
+        )
+
+        if not applicable_contacts:
+            # This person has been on supervision for longer than the allowed number of days without an initial contact.
+            # The face-to-face contact standard is not in compliance.
+            return False
+
+        days_since_start = (compliance_evaluation_date - self.start_of_supervision).days
+
+        if days_since_start < period_days:
+            # If they've had a contact since the start of their supervision, and they have been on supervision for less
+            # than the number of days in which they would need another contact, then the case is in compliance
+            return True
+
+        contacts_within_period = [
+            contact
+            for contact in applicable_contacts
+            if contact.contact_date is not None
+            and (compliance_evaluation_date - contact.contact_date).days < period_days
+        ]
+
+        return len(contacts_within_period) >= required_contacts
+
+    def _home_visits_on_date(self, compliance_evaluation_date: date) -> int:
+        """Returns the number of face-to-face contacts that were completed on compliance_evaluation_date."""
+        applicable_visits = self._get_applicable_home_visits_between_dates(
+            lower_bound_inclusive=compliance_evaluation_date,
+            upper_bound_inclusive=compliance_evaluation_date,
+        )
+        return len(applicable_visits)
+
+    def _get_applicable_home_visits_between_dates(
+        self, lower_bound_inclusive: date, upper_bound_inclusive: date
+    ) -> List[StateSupervisionContact]:
+        """Returns the completed contacts that can be counted as home visits and occurred between the
+        lower_bound_inclusive date and the upper_bound_inclusive date.
+        """
+        return [
+            contact
+            for contact in self.supervision_contacts
+            # These are the types of contacts that can satisfy the home visit requirement
+            if contact.location == StateSupervisionContactLocation.RESIDENCE
+            # Contact must be marked as completed
+            and contact.status == StateSupervisionContactStatus.COMPLETED
+            and contact.contact_date is not None
+            and lower_bound_inclusive <= contact.contact_date <= upper_bound_inclusive
+        ]
+
     def _most_recent_home_visit_contact(
         self, compliance_evaluation_date: date
     ) -> Optional[date]:
         """Gets the most recent home visit contact date. If there is not any, it returns None."""
-        applicable_contacts = self._get_applicable_home_visit_contacts_between_dates(
+        applicable_contacts = self._get_applicable_home_visits_between_dates(
             self.start_of_supervision, compliance_evaluation_date
         )
         contact_dates = [
@@ -259,23 +324,6 @@ class StateSupervisionCaseComplianceManager:
             return None
 
         return max(contact_dates)
-
-    def _get_applicable_home_visit_contacts_between_dates(
-        self, lower_bound_inclusive: date, upper_bound_inclusive: date
-    ) -> List[StateSupervisionContact]:
-        """Returns the completed contacts that can be counted as face-to-face contacts and occurred between the
-        lower_bound_inclusive date and the upper_bound_inclusive date.
-        """
-        return [
-            contact
-            for contact in self.supervision_contacts
-            # These are the types of contacts that can satisfy the face-to-face contact requirement
-            if contact.location == StateSupervisionContactLocation.RESIDENCE
-            # Contact must be marked as completed
-            and contact.status == StateSupervisionContactStatus.COMPLETED
-            and contact.contact_date is not None
-            and lower_bound_inclusive <= contact.contact_date <= upper_bound_inclusive
-        ]
 
     @abc.abstractmethod
     def _guidelines_applicable_for_case(self) -> bool:
@@ -302,4 +350,19 @@ class StateSupervisionCaseComplianceManager:
     ) -> Optional[bool]:
         # TODO(#5199): Update to return `bool` once face to face contacts are ingested for US_ND.
         """Returns whether the frequency of face-to-face contacts between the officer and the person on supervision
+        is sufficient with respect to the state standards for the level of supervision of the case."""
+
+    @abc.abstractmethod
+    def _get_required_face_to_face_contacts_and_period_days_for_level(
+        self,
+    ) -> Tuple[int, int]:
+        """Returns the number of face-to-face contacts that are required within time period (in days) for a supervision
+        case with the given supervision level.
+        """
+
+    @abc.abstractmethod
+    def _home_visit_frequency_is_sufficient(
+        self, compliance_evaluation_date: date
+    ) -> Optional[bool]:
+        """Returns whether the frequency of home visits between the officer and the person on supervision
         is sufficient with respect to the state standards for the level of supervision of the case."""
