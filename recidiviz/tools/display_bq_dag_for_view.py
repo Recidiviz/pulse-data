@@ -33,6 +33,7 @@ from recidiviz.view_registry.deployed_views import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
+from recidiviz.utils.params import str_to_bool
 
 
 def build_dag_walker(dataset_id: str, view_id: str) -> BigQueryViewDagWalker:
@@ -55,12 +56,13 @@ def build_dag_walker(dataset_id: str, view_id: str) -> BigQueryViewDagWalker:
     )
 
 
-def print_dfs_tree(dataset_id: str, view_id: str) -> None:
+def print_dfs_tree(
+    dataset_id: str, view_id: str, print_downstream_tree: bool = False
+) -> None:
     dag_walker = build_dag_walker(dataset_id, view_id)
     print(
         dag_walker.get_dfs_tree_str_for_table(
-            dataset_id=dataset_id,
-            table_id=view_id,
+            dataset_id=dataset_id, table_id=view_id, descendants=print_downstream_tree
         )
     )
 
@@ -83,7 +85,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--view_id", required=True, help="The name of the view (po_monthly_report_data)"
     )
+    parser.add_argument(
+        "--show_downstream_dependencies",
+        required=False,
+        default=False,
+        type=str_to_bool,
+        help="If True, displays the downstream DAG graph instead of the upstream graph.",
+    )
     args = parser.parse_args()
 
     with local_project_id_override(args.project_id):
-        print_dfs_tree(args.dataset_id, args.view_id)
+        print_dfs_tree(args.dataset_id, args.view_id, args.show_downstream_dependencies)
