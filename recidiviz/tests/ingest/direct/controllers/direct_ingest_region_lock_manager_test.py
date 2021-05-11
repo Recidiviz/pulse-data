@@ -15,12 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for DirectIngestRegionLockManager."""
-import importlib
 import time
 import unittest
 from unittest.mock import patch, Mock
 
-from recidiviz.common.constants import states
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
     DirectIngestRegionLockManager,
@@ -32,7 +30,6 @@ class DirectIngestRegionLockManagerTest(unittest.TestCase):
     """Tests for DirectIngestRegionLockManager."""
 
     def setUp(self) -> None:
-        importlib.reload(states)
         self.fake_fs = FakeGCSFileSystem()
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
         self.project_id_patcher.start().return_value = "recidiviz-456"
