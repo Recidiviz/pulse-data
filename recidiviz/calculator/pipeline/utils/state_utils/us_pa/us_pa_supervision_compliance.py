@@ -173,3 +173,9 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
                 "Supervision level not provided and so cannot calculate required face to face contact frequency."
             )
         return SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS[supervision_level]
+
+    def _home_visit_frequency_is_sufficient(
+        self, compliance_evaluation_date: date
+    ) -> Optional[bool]:
+        # TODO(#7052) Update with appropriate policies
+        return None

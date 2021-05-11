@@ -288,6 +288,8 @@ class TestContactFrequencySufficient(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            supervision_level=StateSupervisionLevel.HIGH,
+            supervision_level_raw_text="LEVEL 3",
         )
 
         supervision_contacts = [
@@ -333,6 +335,8 @@ class TestContactFrequencySufficient(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            supervision_level=StateSupervisionLevel.HIGH,
+            supervision_level_raw_text="LEVEL 3",
         )
 
         supervision_contacts = [
@@ -380,6 +384,8 @@ class TestContactFrequencySufficient(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            supervision_level=StateSupervisionLevel.HIGH,
+            supervision_level_raw_text="LEVEL 3",
         )
 
         supervision_contacts = [
