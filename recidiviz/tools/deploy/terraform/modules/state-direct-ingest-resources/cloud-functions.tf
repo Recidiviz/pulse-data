@@ -30,8 +30,10 @@ resource "google_cloudfunctions_function" "primary-ingest" {
     resource   = google_storage_bucket.direct-ingest-bucket.name
   }
 
-  entry_point           = "handle_state_direct_ingest_file"
-  environment_variables = {}
+  entry_point = "handle_state_direct_ingest_file"
+  environment_variables = {
+    "GCP_PROJECT" = var.project_id
+  }
 
   source_repository {
     url = local.repo_url
@@ -54,8 +56,10 @@ resource "google_cloudfunctions_function" "secondary-ingest" {
 
   # TODO(#6226): Once we branch on bucket name to determine database destination, change this
   # entry_point from `normalize_raw_file_path` to `handle_state_direct_ingest_file`.
-  entry_point           = "normalize_raw_file_path"
-  environment_variables = {}
+  entry_point = "normalize_raw_file_path"
+  environment_variables = {
+    "GCP_PROJECT" = var.project_id
+  }
 
   source_repository {
     url = local.repo_url
