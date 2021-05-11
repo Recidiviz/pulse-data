@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "cac165de1a1439e2be6ef24de5a3bc97a86af49a12f8a1733aee1e2b9328d425"
+            "sha256": "2c0e9c4ff230fa3f923f0886acb49547f337cd4e76a834ba1cf1f3704a730010"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -184,6 +184,14 @@
             ],
             "index": "pypi",
             "version": "==21.2.0"
+        },
+        "auth0-python": {
+            "hashes": [
+                "sha256:6748b0048655f5cb2e3ffb660e298b453ac8ef7925cfaff49049b8a22e0c4e6e",
+                "sha256:e42d50be3dc8637d82c9cf95ac59f76b4a40ed3d52f4093c017c11fda22091a7"
+            ],
+            "index": "pypi",
+            "version": "==3.16.1"
         },
         "authencoding": {
             "hashes": [
@@ -2063,6 +2071,9 @@
             "version": "==2.9.0"
         },
         "pyjwt": {
+            "extras": [
+                "crypto"
+            ],
             "hashes": [
                 "sha256:934d73fbba91b0483d3857d1aff50e96b2a892384ee2c17417ed3203f173fca1",
                 "sha256:fba44e7898bbca160a2b2b501f492824fc8382485d3a6f11ba5d0c1937ce6130"
@@ -3692,7 +3703,7 @@
                 "sha256:f0b278ce10936db1a37e6954e15a3730bea96a0997c26d7fee88e6c396c2086d",
                 "sha256:f11642dddbb0253cc8853254301b51390ba0081750a8ac03f20ea8103f0c56b6"
             ],
-            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4' and python_version < '4.0'",
+            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4' and python_version < '4'",
             "version": "==5.5"
         },
         "coveralls": {
@@ -4215,7 +4226,7 @@
                 "sha256:0a943902919f65c5684ac4e0154b1ad4fac6dcaa5d9f3426b732f1c8b5419be6",
                 "sha256:2bb1680aad211e3c9944dbce1d4ba09a989f04e238296c87fe2139faa26d655d"
             ],
-            "markers": "python_version >= '3.6' and python_version < '4.0'",
+            "markers": "python_version >= '3.6' and python_version < '4'",
             "version": "==5.8.0"
         },
         "jedi": {
@@ -4826,7 +4837,7 @@
                 "sha256:d31a6793c6e5fa47137d7be3e796df3645b0afa0092db01ec946d6bee086ab8c",
                 "sha256:f7ae19ddfd71f11a421bcec9608d708c0fab816db98b51fdbc672a6d99a30874"
             ],
-            "markers": "python_version >= '2.6' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4' and python_version < '4.0'",
+            "markers": "python_version >= '2.6' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4' and python_version < '4'",
             "version": "==1.10.1"
         },
         "pylint": {

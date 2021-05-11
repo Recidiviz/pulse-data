@@ -203,6 +203,7 @@ def main() -> int:
         valid_module_prefixes=make_module_matcher(
             {
                 "recidiviz.admin_panel",
+                "recidiviz.auth",
                 "recidiviz.backup",
                 "recidiviz.big_query",
                 "recidiviz.calculator",

@@ -184,3 +184,25 @@ resource "google_cloudfunctions_function" "trigger_daily_calculation_pipeline_da
     url = local.repo_url
   }
 }
+
+# Cloud Function that calls an endpoint to update Auth0 users with the updated user restrictions file from the
+# triggering bucket
+resource "google_cloudfunctions_function" "handle_state_dashboard_user_restrictions_file" {
+  name    = "handle_state_dashboard_user_restrictions_file"
+  runtime = "python38"
+  labels = {
+    "deployment-tool" = "terraform"
+  }
+
+  event_trigger {
+    event_type = "google.storage.object.finalize"
+    resource   = "${var.project_id}-dashboard-user-restrictions"
+  }
+
+  entry_point           = "handle_state_dashboard_user_restrictions_file"
+  environment_variables = {}
+
+  source_repository {
+    url = local.repo_url
+  }
+}
