@@ -164,7 +164,9 @@ function check_terraform_installed {
     MIN_REQUIRED_TERRAFORM_VERSION="0.14.8"
 
     if version_less_than ${TERRAFORM_VERSION} ${MIN_REQUIRED_TERRAFORM_VERSION}; then
-      echo_error "Installed Terraform version [v$TERRAFORM_VERSION] must be at least [v$MIN_REQUIRED_TERRAFORM_VERSION]. Please install [v$MIN_REQUIRED_TERRAFORM_VERSION]."
+      echo_error "Installed Terraform version [v$TERRAFORM_VERSION] must be at least [v$MIN_REQUIRED_TERRAFORM_VERSION]. "
+      echo_error "Please install [v$MIN_REQUIRED_TERRAFORM_VERSION]. "
+      echo_error "See instructions at go/terraform for how to upgrade to [$MIN_REQUIRED_TERRAFORM_VERSION]."
       exit 1
     fi
 }
