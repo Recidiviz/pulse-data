@@ -77,9 +77,7 @@ gevent = ">=20.5.1"
 google-cloud-logging = "<2.0.0"
 google-cloud-trace = "<2.0.0"
 wrapt = "*"
-# TODO(#7326): Fix tests to upgrade to 21.1.0, which introduces backwards incompatible
-#  changes to attr.evolve()
-attrs = "==20.3.0"
+attrs = "*"
 requests = "*"
 pytz = "*"
 python-dateutil = "*"
