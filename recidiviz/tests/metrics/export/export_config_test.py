@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests the classes in the metric_export_config file."""
-import importlib
 import unittest
 from unittest import mock
 
@@ -24,7 +23,6 @@ from google.cloud import bigquery
 from recidiviz.big_query.export.export_query_config import ExportOutputFormatType
 from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
-from recidiviz.common.constants import states
 from recidiviz.metrics.export.export_config import (
     ExportBigQueryViewConfig,
     ExportViewCollectionConfig,
@@ -100,9 +98,6 @@ class TestExportViewCollectionConfig(unittest.TestCase):
         )
 
         self.views_for_dataset = [self.mock_view_builder]
-
-        # Ensures StateCode.US_XX is properly loaded
-        importlib.reload(states)
 
     def tearDown(self) -> None:
         self.metadata_patcher.stop()

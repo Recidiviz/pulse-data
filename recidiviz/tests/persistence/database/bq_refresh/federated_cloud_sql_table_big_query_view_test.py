@@ -16,14 +16,12 @@
 # =============================================================================
 """Tests for federated_cloud_sql_table_big_query_view.py."""
 
-import importlib
 import unittest
 from unittest import mock
 
 from more_itertools import one
 
 from recidiviz.big_query.big_query_view import BigQueryAddress
-from recidiviz.common.constants import states
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.base_schema import StateBase, JailsBase
 from recidiviz.persistence.database.bq_refresh.federated_cloud_sql_table_big_query_view import (
@@ -42,8 +40,6 @@ class FederatedCloudSQLTableBigQueryViewTest(unittest.TestCase):
     """Tests for federated_cloud_sql_table_big_query_view.py."""
 
     def setUp(self) -> None:
-        # Ensures StateCode.US_XX is properly loaded
-        importlib.reload(states)
         self.metadata_patcher = mock.patch("recidiviz.utils.metadata.project_id")
         self.mock_project_id_fn = self.metadata_patcher.start()
         self.mock_project_id_fn.return_value = "test-project"

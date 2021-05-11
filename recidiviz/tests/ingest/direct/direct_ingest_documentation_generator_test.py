@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for DirectIngestDocumentationGenerator."""
-import importlib
 import unittest
 
 import pytest
@@ -78,7 +77,6 @@ class DirectIngestDocumentationGeneratorTest(unittest.TestCase):
         mock_updated_by: MagicMock,
         mock_raw_config: MagicMock,
     ) -> None:
-        importlib.reload(states)
         region_code = states.StateCode.US_WW.value.lower()
         region_config = DirectIngestRegionRawFileConfig(
             region_code=region_code,

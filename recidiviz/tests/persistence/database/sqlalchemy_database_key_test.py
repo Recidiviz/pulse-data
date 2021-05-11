@@ -107,7 +107,7 @@ class SQLAlchemyDatabaseKeyTest(TestCase):
 
     @patch(
         f"{sqlalchemy_database_key.__name__}.get_existing_direct_ingest_states",
-        return_value=[StateCode.US_HI, StateCode.US_PA],
+        return_value=[StateCode.US_XX, StateCode.US_WW],
     )
     def test_get_all(self, state_codes_fn) -> None:
         all_keys = SQLAlchemyDatabaseKey.all()
@@ -118,10 +118,10 @@ class SQLAlchemyDatabaseKeyTest(TestCase):
             SQLAlchemyDatabaseKey(SchemaType.OPERATIONS, db_name="postgres"),
             SQLAlchemyDatabaseKey(SchemaType.JUSTICE_COUNTS, db_name="postgres"),
             SQLAlchemyDatabaseKey(SchemaType.CASE_TRIAGE, db_name="postgres"),
-            SQLAlchemyDatabaseKey(SchemaType.STATE, db_name="us_hi_primary"),
-            SQLAlchemyDatabaseKey(SchemaType.STATE, db_name="us_pa_primary"),
-            SQLAlchemyDatabaseKey(SchemaType.STATE, db_name="us_hi_secondary"),
-            SQLAlchemyDatabaseKey(SchemaType.STATE, db_name="us_pa_secondary"),
+            SQLAlchemyDatabaseKey(SchemaType.STATE, db_name="us_xx_primary"),
+            SQLAlchemyDatabaseKey(SchemaType.STATE, db_name="us_ww_primary"),
+            SQLAlchemyDatabaseKey(SchemaType.STATE, db_name="us_xx_secondary"),
+            SQLAlchemyDatabaseKey(SchemaType.STATE, db_name="us_ww_secondary"),
         ]
 
         self.assertCountEqual(expected_all_keys, all_keys)
