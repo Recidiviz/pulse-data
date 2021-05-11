@@ -317,8 +317,14 @@ class BigQueryViewDagWalker:
         table_id: str,
         datasets_to_skip: Optional[Set[str]] = None,
         custom_node_formatter: Optional[Callable[[DagKey], str]] = None,
+        descendants: bool = False,
     ) -> str:
-        """Returns a string tree representation of the ancestry of a view"""
+        """Returns a string tree representation of the ancestry of a view.
+
+        If |descendants| is True, returns the tree of all views that are dependent
+        on the view. If |descendants| is False, returns the tree of all views that this
+        view depends on.
+        """
         stack = [
             (
                 DagKey(
@@ -353,13 +359,19 @@ class BigQueryViewDagWalker:
 
             value = self.nodes_by_key.get(dag_key)
             if value:
-                for parent_key in sorted(
-                    value.parent_keys, key=lambda key: (key.dataset_id, key.table_id)
+                next_related_keys = (
+                    value.child_keys if descendants else value.parent_keys
+                )
+
+                for related_key in sorted(
+                    next_related_keys,
+                    key=lambda key: (key.dataset_id, key.table_id),
+                    reverse=descendants,
                 ):
-                    if parent_key not in noisy_dependency_keys:
+                    if related_key not in noisy_dependency_keys:
                         stack.append(
                             (
-                                parent_key,
+                                related_key,
                                 # We don't add a tab if we are skipping a view
                                 tabs
                                 if datasets_to_skip
