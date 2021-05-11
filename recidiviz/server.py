@@ -57,6 +57,7 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
 from recidiviz.reporting.reporting_endpoint import reporting_endpoint_blueprint
+from recidiviz.auth.auth_endpoint import auth_endpoint_blueprint
 from recidiviz.utils import environment, metadata, monitoring, structured_logging, trace
 from recidiviz.validation.validation_manager import validation_manager_blueprint
 
@@ -79,6 +80,7 @@ scraper_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
 ]
 default_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
     (admin_panel, "/admin"),
+    (auth_endpoint_blueprint, "/auth"),
     (backup_manager_blueprint, "/backup_manager"),
     (calculation_data_storage_manager_blueprint, "/calculation_data_storage_manager"),
     (case_triage_ops_blueprint, "/case_triage_ops"),

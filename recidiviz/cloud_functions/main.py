@@ -68,6 +68,11 @@ _APP_ENGINE_PO_MONTHLY_REPORT_DELIVER_EMAILS_URL = (
     "https://{}.appspot.com/reporting/deliver_emails_for_batch{}"
 )
 
+_APP_ENGINE_UPDATE_AUTH0_USER_METADATA_URL = (
+    "https://{}.appspot.com/auth/update_auth0_user_metadata"
+    "?bucket={}&region_code={}&filename={}"
+)
+
 
 def parse_state_aggregate(
     data: Dict[str, Any], _: ContextType
@@ -158,6 +163,40 @@ def handle_state_direct_ingest_file_rename_only(
 
     """
     return _handle_state_direct_ingest_file(data, start_ingest=False)
+
+
+def handle_state_dashboard_user_restrictions_file(
+    data: Dict[str, Any], _: ContextType
+) -> None:
+    """This function is triggered when a file is dropped in a
+    `recidiviz-{project_id}-dashboard-user-restrictions/US_XX` bucket. If the file matches
+    `supervision_location_restricted_access_emails.json`, then it makes a request to update
+    Auth0 users with the user restrictions in the file.
+
+    data: A cloud storage object that holds name information and other metadata
+    related to the file that was dropped into the bucket.
+    _: (google.cloud.functions.Context): Metadata of triggering event.
+
+    """
+    project_id = os.environ.get(GCP_PROJECT_ID_KEY)
+    if not project_id:
+        logging.error("No project id set for call to update auth0 users, returning.")
+        return
+    bucket = data["bucket"]
+    region_code, filename = data["name"].split("/")
+    user_restricted_access_file = "supervision_location_restricted_access_emails.json"
+
+    if not filename == user_restricted_access_file:
+        return
+
+    url = _APP_ENGINE_UPDATE_AUTH0_USER_METADATA_URL.format(
+        project_id, bucket, region_code, filename
+    )
+    logging.info("Calling URL: %s", url)
+
+    # Hit the App Engine endpoint `auth/update_auth0_user_metadata`.
+    response = make_iap_request(url, IAP_CLIENT_ID[project_id])
+    logging.info("The response status is %s", response.status_code)
 
 
 def _handle_state_direct_ingest_file(
