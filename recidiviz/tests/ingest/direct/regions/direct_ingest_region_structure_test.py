@@ -142,7 +142,6 @@ class DirectIngestRegionDirStructureBase:
                 "agency_type",
                 "timezone",
                 "environment",
-                "shared_queue",
                 "jurisdiction_id",
             ]
 

@@ -136,6 +136,7 @@ class IngestOperationsStore:
         )
         self.cloud_task_manager.create_direct_ingest_handle_new_files_task(
             region=region,
+            ingest_instance=instance,
             ingest_bucket=ingest_bucket_path,
             can_start_ingest=can_start_ingest,
         )

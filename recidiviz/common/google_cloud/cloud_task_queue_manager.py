@@ -19,6 +19,7 @@
 from typing import List, Type, TypeVar, Generic, Dict, Optional
 
 import attr
+from google.cloud import tasks_v2
 
 from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import (
     GoogleCloudTasksClientWrapper,
@@ -48,8 +49,13 @@ QueueInfoType = TypeVar("QueueInfoType", bound=CloudTaskQueueInfo)
 class CloudTaskQueueManager(Generic[QueueInfoType]):
     """Class with helpers for interacting with a single CloudTask queue."""
 
-    def __init__(self, queue_info_cls: Type[QueueInfoType], queue_name: str):
-        self.cloud_task_client = GoogleCloudTasksClientWrapper()
+    def __init__(
+        self,
+        queue_info_cls: Type[QueueInfoType],
+        queue_name: str,
+        cloud_tasks_client: Optional[tasks_v2.CloudTasksClient] = None,
+    ):
+        self.cloud_task_client = GoogleCloudTasksClientWrapper(cloud_tasks_client)
         self.queue_info_cls = queue_info_cls
         self.queue_name = queue_name
 
