@@ -204,7 +204,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                 ),
                 StatePerson(
                     state_person_id="4444",
-                    surname="LAST_4",
+                    surname="NULL",
                     given_names="FIRST_4",
                     middle_names="MIDDLE_4",
                     gender="F",
@@ -217,7 +217,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                     state_person_races=[StatePersonRace(race="O")],
                     state_aliases=[
                         StateAlias(
-                            surname="LAST_4",
+                            surname="NULL",
                             given_names="FIRST_4",
                             middle_names="MIDDLE_4",
                             alias_type="GIVEN_NAME",
@@ -1455,7 +1455,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             ],
         )
         person_4 = entities.StatePerson.new_with_defaults(
-            full_name='{"given_names": "FIRST_4", "middle_names": "MIDDLE_4", "surname": "LAST_4"}',
+            full_name='{"given_names": "FIRST_4", "middle_names": "MIDDLE_4", "surname": "NULL"}',
             gender=Gender.FEMALE,
             gender_raw_text="F",
             birthdate=datetime.date(year=2005, month=1, day=1),
@@ -1470,7 +1470,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             ],
             aliases=[
                 entities.StatePersonAlias.new_with_defaults(
-                    full_name='{"given_names": "FIRST_4", "middle_names": "MIDDLE_4", "surname": "LAST_4"}',
+                    full_name='{"given_names": "FIRST_4", "middle_names": "MIDDLE_4", "surname": "NULL"}',
                     state_code=_STATE_CODE_UPPER,
                     alias_type=StatePersonAliasType.GIVEN_NAME,
                     alias_type_raw_text="GIVEN_NAME",
