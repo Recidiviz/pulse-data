@@ -14,8 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { makeAutoObservable } from "mobx";
-import { CaseUpdateActionType } from "./CaseUpdates";
+import { makeAutoObservable, remove, runInAction, set } from "mobx";
+import moment from "moment";
+import {
+  CaseUpdate,
+  CaseUpdateActionType,
+  CaseUpdateStatus,
+} from "./CaseUpdates";
 import ClientsStore, { DecoratedClient } from "../ClientsStore";
 import UserStore from "../UserStore";
 
@@ -60,14 +65,34 @@ class CaseUpdatesStore {
       return;
     }
 
-    await this.api.post("/api/case_updates", {
+    runInAction(() => {
+      set(client, "caseUpdates", {
+        ...client.caseUpdates,
+        [actionType]: {
+          actionTs: moment().format(),
+          actionType,
+          comment: null,
+          status: CaseUpdateStatus.IN_PROGRESS,
+        },
+      });
+    });
+
+    const response = await this.api.post<CaseUpdate>("/api/case_updates", {
       personExternalId: client.personExternalId,
       actionType,
       comment,
     });
+
+    runInAction(() => {
+      set(client, "caseUpdates", {
+        ...client.caseUpdates,
+        [actionType]: response,
+      });
+    });
+
     trackPersonActionTaken(client, actionType);
 
-    await this.clientsStore.fetchClientsList();
+    this.clientsStore.updateClientsList();
     this.isLoading = false;
   }
 
@@ -82,10 +107,14 @@ class CaseUpdatesStore {
       return;
     }
 
+    runInAction(() => {
+      remove(client.caseUpdates, actionType);
+    });
+
     await this.api.delete(`/api/case_updates/${updateId}`);
     trackPersonActionRemoved(client, updateId, actionType);
 
-    await this.clientsStore.fetchClientsList();
+    this.clientsStore.updateClientsList();
     this.isLoading = false;
   }
 
@@ -98,6 +127,11 @@ class CaseUpdatesStore {
       return this.recordAction(client, eventType);
     }
     const updateId = client.caseUpdates[eventType]?.updateId;
+
+    if (!updateId) {
+      return Promise.reject();
+    }
+
     return this.removeAction(client, updateId, eventType);
   }
 }

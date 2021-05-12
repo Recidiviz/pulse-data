@@ -28,6 +28,10 @@ interface UserStoreProps {
   authSettings: Auth0ClientOptions;
 }
 
+export enum KNOWN_EXPERIMENTS {
+  TOP_OPPORTUNITIES = "can-see-top-opportunities",
+}
+
 export interface FeatureVariants {
   [feature: string]: string;
 }
@@ -154,5 +158,9 @@ export default class UserStore {
 
   setFeatureVariants(variants: FeatureVariants): void {
     this.featureVariants = variants;
+  }
+
+  isInExperiment(experiment: KNOWN_EXPERIMENTS): boolean {
+    return !!this.featureVariants[experiment];
   }
 }

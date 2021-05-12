@@ -51,7 +51,7 @@ const NotInCaseload = ({
   client,
   className,
   onUndo,
-}: NotInCaseloadProps): JSX.Element => {
+}: NotInCaseloadProps): JSX.Element | null => {
   const caseUpdate = client.caseUpdates[action];
   const submissionTime = moment(caseUpdate.actionTs).format("MMMM Do, Y");
 
@@ -68,7 +68,9 @@ const NotInCaseload = ({
           <div>Once processed, this client will be removed from your list.</div>
         </Caption>
         <ButtonContainer>
-          <UncheckedButton onClick={() => onUndo(caseUpdate.updateId)}>
+          <UncheckedButton
+            onClick={() => caseUpdate.updateId && onUndo(caseUpdate.updateId)}
+          >
             Return to Caseload
           </UncheckedButton>
         </ButtonContainer>

@@ -21,6 +21,7 @@ import PolicyStore from "./PolicyStore";
 import UserStore from "./UserStore";
 import CaseUpdatesStore from "./CaseUpdatesStore";
 import API from "./API";
+import { ClientListBuilder } from "./ClientsStore/ClientListBuilder";
 
 configure({
   useProxies: "never",
@@ -49,12 +50,19 @@ export default class RootStore {
     });
 
     this.opportunityStore = new OpportunityStore({
+      rootStore: this,
       api: this.api,
       userStore: this.userStore,
     });
 
+    const clientListBuilder = new ClientListBuilder({
+      opportunityStore: this.opportunityStore,
+      policyStore: this.policyStore,
+    });
+
     this.clientsStore = new ClientsStore({
       api: this.api,
+      clientListBuilder,
       policyStore: this.policyStore,
       userStore: this.userStore,
     });
@@ -64,5 +72,9 @@ export default class RootStore {
       clientsStore: this.clientsStore,
       userStore: this.userStore,
     });
+  }
+
+  updateClientsList(): void {
+    this.clientsStore.updateClientsList();
   }
 }
