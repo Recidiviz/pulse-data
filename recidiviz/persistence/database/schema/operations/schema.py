@@ -54,10 +54,10 @@ class _DirectIngestFileMetadataRowSharedColumns:
     # (ingest view files).
     normalized_file_name = Column(String(255), index=True)
 
-    # Time when the file is actually discovered by our controller's handle_new_files endpoint
+    # Time when the file is actually discovered by our controller's handle_new_files endpoint.
     discovery_time = Column(DateTime)
 
-    # Time when we have finished fully processing this file (either uploading to BQ or importing to Postgre)
+    # Time when we have finished fully processing this file (either uploading to BQ or importing to Postgres).
     processed_time = Column(DateTime)
 
 
