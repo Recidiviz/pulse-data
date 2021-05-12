@@ -75,8 +75,8 @@ from recidiviz.calculator.query.state.views.reference.supervision_matrix_by_pers
 from recidiviz.ingest.direct.regions.us_pa.ingest_views import (
     view_supervision_period_v2 as us_pa_view_supervision_period,
 )
-from recidiviz.ingest.direct.views.normalized_direct_ingest_big_query_view_types import (
-    NormalizedDirectIngestPreProcessedIngestViewBuilder,
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    DirectIngestPreProcessedIngestViewBuilder,
 )
 
 REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
@@ -101,7 +101,7 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     # TODO(#6314): Remove this view builder
     # Note: This view is loaded into the us_pa_ingest_views dataset, NOT the reference_views
     # dataset
-    NormalizedDirectIngestPreProcessedIngestViewBuilder(
+    DirectIngestPreProcessedIngestViewBuilder(
         region="us_pa",
         ingest_view_name="us_pa_supervision_period_TEMP",
         view_query_template=us_pa_view_supervision_period.VIEW_BUILDER.view_query_template,
