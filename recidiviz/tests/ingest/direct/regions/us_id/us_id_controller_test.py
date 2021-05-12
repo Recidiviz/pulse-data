@@ -638,9 +638,8 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                 ),
             ]
         )
-        # TODO(#6401) Update to use mitt_srl under ids_only when the ingest views are launched
         self.run_parse_file_test(
-            expected, "early_discharge_incarceration_sentence_deleted_rows_v2"
+            expected, "early_discharge_incarceration_sentence_deleted_rows"
         )
 
     def test_populate_data_early_discharge_supervision_sentence_deleted_rows(
@@ -674,9 +673,8 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                 ),
             ]
         )
-        # TODO(#6401) Update to use mitt_srl under ids_only when the ingest views are launched
         self.run_parse_file_test(
-            expected, "early_discharge_supervision_sentence_deleted_rows_v2"
+            expected, "early_discharge_supervision_sentence_deleted_rows"
         )
 
     def test_populate_data_movement_facility_location_offstat_incarceration_periods(
@@ -2782,9 +2780,8 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         ed_2.decision_status_raw_text = "INVALID"
 
         # Act
-        # TODO(#6401) Update to use mitt_srl under ids_only when the ingest views are launched
         self._run_ingest_job_for_filename(
-            "early_discharge_incarceration_sentence_deleted_rows_v2.csv"
+            "early_discharge_incarceration_sentence_deleted_rows.csv"
         )
 
         # Assert
@@ -2798,9 +2795,8 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         ed_4.decision_status_raw_text = "INVALID"
 
         # Act
-        # TODO(#6401) Update to use mitt_srl under ids_only when the ingest views are launched
         self._run_ingest_job_for_filename(
-            "early_discharge_supervision_sentence_deleted_rows_v2.csv"
+            "early_discharge_supervision_sentence_deleted_rows.csv"
         )
 
         # Assert
