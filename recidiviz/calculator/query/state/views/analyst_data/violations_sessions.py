@@ -34,6 +34,8 @@ VIOLATIONS_SESSIONS_SUPPORTED_STATES = ("US_ID", "US_PA")
 
 VIOLATIONS_SESSIONS_QUERY_TEMPLATE = """
     /*{description}*/
+    /* TODO(#7387): Incorporate the output of the calc pipeline to create this view once #6240 is merged */
+    
     WITH violations_cte AS (
         SELECT
             violation_response.supervision_violation_response_id,
@@ -61,6 +63,13 @@ VIOLATIONS_SESSIONS_QUERY_TEMPLATE = """
         LEFT JOIN `{project_id}.{state_dataset}.state_supervision_violation` violation
             USING (supervision_violation_id, person_id, state_code)
         
+        /*  This exclusion is to avoid double counting violations in PA. All violations - tracked
+        in raw table dbo_SanctionTracking - have response_type = 'VIOLATION_REPORT'. Some of those violations will also
+        have subsequent actions captured in dbo_BoardAction, where response_type = 'PERMANENT_DECISION' in our schema.
+        Counting both would double count certain violations, so we remove the board actions */
+        
+        WHERE violation_response.response_type != 'PERMANENT_DECISION'
+        
     ) , /* Violations are de-duplicated to keep most serious violation type for a single response date, but we also keep track of 
         distinct violations per day */
     violations_dedup_cte AS (
@@ -72,18 +81,28 @@ VIOLATIONS_SESSIONS_QUERY_TEMPLATE = """
                 /* Ordering logic:
                     - Deduplicates by person-day
                     - orders first by state-specific violation type prioritization
-                    - when violation types are the same we might have different response_decisions. This is a simplistic ordering
-                        that prioritizes the most restrictive decisions. This still leaves <2% of the data where the same violation_type
-                        has different response_decisions */
-                /* TODO(#6720): Research and improve prioritization order to deterministically choose a response decision */
+                    - when violation types are the same we might have different response_decisions. This ordering is the same
+                    as the one used in the calc pipeline to choose the most severe response decision */
                 ROW_NUMBER() OVER(PARTITION BY person_id, state_code, response_date ORDER BY COALESCE(priority,9999), 
                 CASE
                     WHEN response_decision IN ('REVOCATION') THEN 1
-                    WHEN response_decision IN ('TREATMENT_IN_PRISON') THEN 2
-                    WHEN response_decision IN ('SHOCK_INCARCERATION') THEN 3
-                    WHEN response_decision IN ('PRIVILEGES_REVOKED') THEN 4
-                    WHEN response_decision IN ('WARRANT_ISSUED') THEN 5
-                    ELSE 6 END ) as violation_priority,
+                    WHEN response_decision IN ('SHOCK_INCARCERATION') THEN 2 
+                    WHEN response_decision IN ('TREATMENT_IN_PRISON') THEN 3
+                    WHEN response_decision IN ('WARRANT_ISSUED') THEN 4
+                    WHEN response_decision IN ('PRIVILEGES_REVOKED') THEN 5
+                    WHEN response_decision IN ('NEW_CONDITIONS') THEN 6
+                    WHEN response_decision IN ('EXTENSION') THEN 7
+                    WHEN response_decision IN ('SPECIALIZED_COURT') THEN 8
+                    WHEN response_decision IN ('SUSPENSION') THEN 9
+                    WHEN response_decision IN ('SERVICE_TERMINATION') THEN 10
+                    WHEN response_decision IN ('TREATMENT_IN_FIELD') THEN 11
+                    WHEN response_decision IN ('COMMUNITY_SERVICE') THEN 12
+                    WHEN response_decision IN ('DELAYED_ACTION') THEN 13
+                    WHEN response_decision IN ('OTHER') THEN 14
+                    WHEN response_decision IN ('INTERNAL_UNKNOWN') THEN 15
+                    WHEN response_decision IN ('WARNING') THEN 16
+                    WHEN response_decision IN ('CONTINUANCE') THEN 17
+                    ELSE 18 END ) as violation_priority,
             FROM violations_cte
             LEFT JOIN `{project_id}.{analyst_dataset}.violation_type_dedup_priority`
                 USING(state_code, violation_type, violation_sub_type)
@@ -93,7 +112,10 @@ VIOLATIONS_SESSIONS_QUERY_TEMPLATE = """
     SELECT
         violations.state_code,
         violations.person_id,
+        violations.supervision_violation_id ,
+        violations.supervision_violation_response_id,
         violations.violation_type as most_serious_violation_type,
+        violations.violation_sub_type as most_serious_violation_sub_type,
         violations.response_date,
         violations.response_decision,
         violations.distinct_violations_per_day,
