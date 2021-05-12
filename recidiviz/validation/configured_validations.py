@@ -492,8 +492,8 @@ def get_all_validations() -> List[DataValidationCheck]:
             view=INCARCERATION_ADMISSION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER.build(),
             sameness_check_type=SamenessDataValidationCheckType.STRINGS,
             comparison_columns=[
-                "external_person_external_id",
-                "internal_person_external_id",
+                "external_data_person_id",
+                "internal_data_person_id",
             ],
             max_allowed_error=0.02,
         ),
@@ -509,8 +509,8 @@ def get_all_validations() -> List[DataValidationCheck]:
             view=INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER.build(),
             sameness_check_type=SamenessDataValidationCheckType.STRINGS,
             comparison_columns=[
-                "external_person_external_id",
-                "internal_person_external_id",
+                "external_data_person_id",
+                "internal_data_person_id",
             ],
             max_allowed_error=0.02,
         ),
@@ -525,8 +525,8 @@ def get_all_validations() -> List[DataValidationCheck]:
             view=INCARCERATION_RELEASE_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER.build(),
             sameness_check_type=SamenessDataValidationCheckType.STRINGS,
             comparison_columns=[
-                "external_person_external_id",
-                "internal_person_external_id",
+                "external_data_person_id",
+                "internal_data_person_id",
             ],
             max_allowed_error=0.02,
         ),
