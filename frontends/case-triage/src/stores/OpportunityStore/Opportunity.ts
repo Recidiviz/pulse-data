@@ -20,11 +20,46 @@ export enum OpportunityDeferralType {
   INCORRECT_DATA = "INCORRECT_DATA",
 }
 
+export enum OpportunityType {
+  OVERDUE_DOWNGRADE = "OVERDUE_DOWNGRADE",
+}
+
+export const OPPORTUNITY_TITLES: Record<OpportunityType, string> = {
+  [OpportunityType.OVERDUE_DOWNGRADE]: "Supervision level mismatch",
+};
+
+export const OPPORTUNITY_PRIORITY: Record<
+  keyof typeof OpportunityType,
+  number
+> = {
+  [OpportunityType.OVERDUE_DOWNGRADE]: 1,
+};
+
+export const opportunityPriorityComparator = (
+  self: Opportunity,
+  other: Opportunity
+): number => {
+  const first = OPPORTUNITY_PRIORITY[self.opportunityType];
+  const second = OPPORTUNITY_PRIORITY[other.opportunityType];
+  if (first < second) return -1;
+  if (first > second) return 1;
+
+  // If the sorting priority is the same, sort by external id so the sort is stable.
+  if (self.personExternalId < other.personExternalId) {
+    return -1;
+  }
+  if (self.personExternalId > other.personExternalId) {
+    return 1;
+  }
+
+  return 0;
+};
+
 export type Opportunity = {
   personExternalId: string;
   stateCode: string;
   supervisingOfficerExternalId: string;
-  opportunityType: string;
+  opportunityType: OpportunityType;
   opportunityMetadata: { [index: string]: unknown };
   deferredUntil?: string;
   deferralType?: OpportunityDeferralType;

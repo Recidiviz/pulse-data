@@ -23,7 +23,7 @@ import {
   spacing,
 } from "@recidiviz/design-system";
 import { rem } from "polished";
-import NeedsCorrectionDropdown from "./NeedsCorrectionDropdown";
+import NeedsCorrectionDropdown from "../NeedsActionFlow/NeedsCorrectionDropdown";
 
 export const CaseCard = styled(Card)`
   box-shadow: 0px 15px 40px rgba(53, 83, 98, 0.3),
@@ -82,6 +82,14 @@ export const CaseCardFeedback = styled.div`
 export const ButtonContainer = styled.div`
   display: flex;
   margin-top: ${rem(spacing.md)};
+
+  > div {
+    margin-right: ${rem(spacing.xs)};
+  }
+
+  :last-child {
+    margin-right: 0;
+  }
 `;
 
 export const ClientNameRow = styled.div`

@@ -19,7 +19,7 @@ import * as ReactDOM from "react-dom";
 import TooltipElement, { TooltipState } from "./Tooltip.styles";
 
 interface TooltipProps {
-  children: React.ReactChild | React.ReactChild[];
+  children: React.ReactNode | React.ReactChild | React.ReactChild[];
   title: React.ReactNode;
 }
 

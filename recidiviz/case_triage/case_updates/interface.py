@@ -45,7 +45,7 @@ def _update_case_for_person(
     action_type: CaseUpdateActionType,
     comment: Optional[str] = None,
     action_ts: Optional[datetime] = None,
-) -> None:
+) -> CaseUpdate:
     """This method updates the case_updates table with the newly provided actions.
     This private method can be used liberally without regards for foreign key constraints,
     as it creates a series of CaseUpdate objects (one for each action) associated with the
@@ -75,6 +75,16 @@ def _update_case_for_person(
     )
     session.execute(insert_statement)
     session.commit()
+
+    return (
+        session.query(CaseUpdate)
+        .filter(
+            CaseUpdate.person_external_id == client.person_external_id,
+            CaseUpdate.officer_external_id == officer_id,
+            CaseUpdate.action_type == action_type.value,
+        )
+        .one()
+    )
 
 
 def _delete_case_update(
@@ -110,13 +120,13 @@ class CaseUpdatesInterface:
         client: ETLClient,
         action: CaseUpdateActionType,
         comment: Optional[str] = None,
-    ) -> None:
+    ) -> CaseUpdate:
         """This method updates the case_updates table with the newly provided actions.
 
         Because the underlying table does not have foreign key constraints, independent
         validation must be provided before calling this method.
         """
-        _update_case_for_person(
+        return _update_case_for_person(
             session,
             officer.external_id,
             client,
@@ -142,13 +152,13 @@ class DemoCaseUpdatesInterface:
         action: CaseUpdateActionType,
         comment: Optional[str] = None,
         action_ts: Optional[datetime] = None,
-    ) -> None:
+    ) -> CaseUpdate:
         """This method updates the case_updates table for demo users.
 
         No checking is provided to ensure that the provided officer ids or person ids map
         back to anything.
         """
-        _update_case_for_person(
+        return _update_case_for_person(
             session,
             fake_officer_id_for_demo_user(user_email),
             client,

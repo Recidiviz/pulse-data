@@ -17,6 +17,7 @@
 import { IconSVG, Need, NeedState } from "@recidiviz/design-system";
 import moment from "moment";
 import * as React from "react";
+import { observer } from "mobx-react-lite";
 import { Caption, CaseCardBody, CaseCardInfo } from "./CaseCard.styles";
 import { DecoratedClient } from "../../stores/ClientsStore/Client";
 import { useRootStore } from "../../stores";
@@ -26,7 +27,7 @@ import {
 } from "../../stores/PolicyStore";
 import { titleCase } from "../../utils";
 import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
-import { NeedsActionFlow } from "./NeedsCorrectionDropdown";
+import { NeedsActionFlow } from "../NeedsActionFlow/NeedsActionFlow";
 
 interface NeedsRiskAssessmentProps {
   className: string;
@@ -133,8 +134,8 @@ const NeedsRiskAssessment: React.FC<NeedsRiskAssessmentProps> = ({
         </Caption>
 
         <NeedsActionFlow
+          actionable={!met}
           client={client}
-          met={met}
           resolve={CaseUpdateActionType.COMPLETED_ASSESSMENT}
           dismiss={CaseUpdateActionType.INCORRECT_ASSESSMENT_DATA}
         />
@@ -143,4 +144,4 @@ const NeedsRiskAssessment: React.FC<NeedsRiskAssessmentProps> = ({
   );
 };
 
-export default NeedsRiskAssessment;
+export default observer(NeedsRiskAssessment);

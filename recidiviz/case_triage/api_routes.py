@@ -19,6 +19,8 @@ from datetime import date, datetime
 from http import HTTPStatus
 from typing import Optional
 
+import pytz
+
 from flask import Blueprint, current_app, g, jsonify, Response
 from flask_sqlalchemy_session import current_session
 from flask_wtf.csrf import generate_csrf
@@ -49,6 +51,7 @@ from recidiviz.case_triage.opportunities.types import (
     OpportunityDeferralType,
     OpportunityDoesNotExistError,
 )
+from recidiviz.case_triage.querier.case_update_presenter import CaseUpdatePresenter
 from recidiviz.case_triage.querier.querier import (
     CaseTriageQuerier,
     DemoCaseTriageQuerier,
@@ -112,7 +115,7 @@ def create_api_blueprint(
             opportunity_presenters = CaseTriageQuerier.opportunities_for_officer(
                 current_session, g.current_user
             )
-            now = datetime.now()
+            now = datetime.now(tz=pytz.UTC)
 
         return jsonify(
             [opportunity.to_json(now) for opportunity in opportunity_presenters]
@@ -223,7 +226,7 @@ def create_api_blueprint(
         etl_client = load_client(g.api_data["person_external_id"])
 
         if _should_see_demo():
-            DemoCaseUpdatesInterface.update_case_for_person(
+            case_update = DemoCaseUpdatesInterface.update_case_for_person(
                 current_session,
                 g.email,
                 etl_client,
@@ -232,7 +235,7 @@ def create_api_blueprint(
                 action_ts=DEMO_FROZEN_DATETIME,
             )
         else:
-            CaseUpdatesInterface.update_case_for_person(
+            case_update = CaseUpdatesInterface.update_case_for_person(
                 current_session,
                 g.current_user,
                 etl_client,
@@ -246,8 +249,8 @@ def create_api_blueprint(
                     etl_client,
                     g.api_data["action_type"],
                 )
-
-        return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
+        presenter = CaseUpdatePresenter(etl_client, case_update)
+        return jsonify(presenter.to_json())
 
     @api.route("/case_updates/<update_id>", methods=["DELETE"])
     def _delete_case_update(update_id: str) -> Response:

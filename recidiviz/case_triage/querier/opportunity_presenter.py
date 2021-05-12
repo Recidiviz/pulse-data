@@ -21,6 +21,8 @@ be re-surfaced later."""
 from datetime import datetime
 from typing import Any, Dict, Optional
 
+import pytz
+
 from recidiviz.persistence.database.schema.case_triage.schema import (
     ETLOpportunity,
     OpportunityDeferral,
@@ -40,7 +42,7 @@ class OpportunityPresenter:
 
     def to_json(self, query_time: Optional[datetime]) -> Dict[str, Any]:
         if not query_time:
-            query_time = datetime.now()
+            query_time = datetime.now(tz=pytz.UTC)
         base = {
             "personExternalId": self.etl_opportunity.person_external_id,
             "stateCode": self.etl_opportunity.state_code,
@@ -50,7 +52,8 @@ class OpportunityPresenter:
         }
         if (
             self.opportunity_deferral is not None
-            and self.opportunity_deferral.deferred_until >= query_time
+            and self.opportunity_deferral.deferred_until.replace(tzinfo=pytz.UTC)
+            >= query_time
         ):
             # TODO(#5708): Check the metadata as well to see if the deferral is
             # still active

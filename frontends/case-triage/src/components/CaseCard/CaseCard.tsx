@@ -15,8 +15,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import * as React from "react";
-import { useState } from "react";
-import { H3, Icon, IconSVG } from "@recidiviz/design-system";
+import { useEffect, useState } from "react";
+import { Dropdown, H3, Icon, IconSVG } from "@recidiviz/design-system";
+import { observer } from "mobx-react-lite";
 import { autorun } from "mobx";
 import {
   Caption,
@@ -38,21 +39,33 @@ import {
   NotInCaseloadActions,
   NotInCaseloadActionType,
 } from "../../stores/CaseUpdatesStore";
+import OpportunitySupervisionLevelReview from "../CaseOpportunities/OpportunitySupervisionLevelReview";
 
 export interface CaseCardProps {
   client: DecoratedClient;
 }
 
 const CaseCard: React.FC<CaseCardProps> = ({ client }: CaseCardProps) => {
-  const { caseUpdatesStore, clientsStore } = useRootStore();
+  const { caseUpdatesStore, clientsStore, opportunityStore } = useRootStore();
 
-  const [marginTop, setMarginTop] = useState(clientsStore.activeClientOffset);
+  const [transitionDuration, setTransitionDuration] = useState("0");
+  const [translateY, setTranslateY] = useState(clientsStore.activeClientOffset);
 
-  React.useEffect(() =>
-    autorun(() => {
-      setMarginTop(clientsStore.activeClientOffset);
-    })
-  );
+  useEffect(() => {
+    return autorun(() => {
+      if (clientsStore.activeClientOffset !== translateY) {
+        if (clientsStore.clientPendingAnimation) {
+          clientsStore.setClientPendingAnimation(false);
+          setTransitionDuration("1s");
+        } else {
+          setTransitionDuration("0s");
+        }
+
+        setTranslateY(clientsStore.activeClientOffset);
+      }
+    });
+  });
+
   const currentNotOnCaseloadAction = NotInCaseloadActions.find(
     (value: string) => client.caseUpdates[value as NotInCaseloadActionType]
   );
@@ -62,23 +75,38 @@ const CaseCard: React.FC<CaseCardProps> = ({ client }: CaseCardProps) => {
       <EllipsisDropdown
         actions={NotInCaseloadActions}
         client={client}
-        icon={IconSVG.TripleDot}
+        alignment="right"
         borderless
-      />
+      >
+        <Dropdown.ToggleIcon kind={IconSVG.TripleDot} size={18} />
+      </EllipsisDropdown>
     );
   } else if (!client.caseUpdates[CaseUpdateActionType.NOT_ON_CASELOAD]) {
     ellipsisDropdown = (
       <EllipsisDropdown
         actions={[CaseUpdateActionType.NOT_ON_CASELOAD]}
         client={client}
-        icon={IconSVG.TripleDot}
+        alignment="right"
         borderless
-      />
+      >
+        <Dropdown.ToggleIcon kind={IconSVG.TripleDot} size={18} />
+      </EllipsisDropdown>
     );
   }
 
+  const opportunity = opportunityStore.getTopOpportunityForClient(
+    client.personExternalId
+  );
+
   return (
-    <CaseCardComponent stacked style={{ marginTop }}>
+    <CaseCardComponent
+      stacked
+      style={{
+        transitionDuration,
+        transitionProperty: "transform",
+        transform: `translateY(${translateY}px)`,
+      }}
+    >
       <CaseCardHeading className="fs-exclude">
         <ClientNameRow>
           <H3 as="div">{client.name}</H3>
@@ -94,6 +122,15 @@ const CaseCard: React.FC<CaseCardProps> = ({ client }: CaseCardProps) => {
           {titleCase(client.personExternalId)}
         </Caption>
       </CaseCardHeading>
+
+      {opportunity ? (
+        <OpportunitySupervisionLevelReview
+          className="fs-exclude"
+          client={client}
+          opportunity={opportunity}
+        />
+      ) : null}
+
       {currentNotOnCaseloadAction ? (
         <NotInCaseload
           action={currentNotOnCaseloadAction as NotInCaseloadActionType}
@@ -115,4 +152,4 @@ const CaseCard: React.FC<CaseCardProps> = ({ client }: CaseCardProps) => {
   );
 };
 
-export default CaseCard;
+export default observer(CaseCard);

@@ -81,6 +81,7 @@ class CaseTriageTestHelpers:
         )
 
         self.test.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
+        self.test.assertIsNotNone(response.get_json()["updateId"])
 
     def defer_opportunity(
         self,

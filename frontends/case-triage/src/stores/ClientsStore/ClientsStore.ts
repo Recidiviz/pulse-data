@@ -14,29 +14,29 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { autorun, makeAutoObservable, runInAction } from "mobx";
+import { action, autorun, makeAutoObservable, runInAction } from "mobx";
 import { parse } from "query-string";
 import PolicyStore from "../PolicyStore";
 import UserStore from "../UserStore";
-import {
-  Client,
-  DecoratedClient,
-  decorateClient,
-  getNextContactDate,
-} from "./Client";
+import { Client, decorateClient, DecoratedClient } from "./Client";
 
 import API from "../API";
-import { trackPersonSelected } from "../../analytics";
 import { caseInsensitiveIncludes } from "../../utils";
+import { CLIENT_LIST_KIND, ClientListBuilder } from "./ClientListBuilder";
 
 interface ClientsStoreProps {
   api: API;
-  userStore: UserStore;
+  clientListBuilder: ClientListBuilder;
   policyStore: PolicyStore;
+  userStore: UserStore;
 }
 
 class ClientsStore {
-  api: API;
+  private api: API;
+
+  private clients: DecoratedClient[];
+
+  private clientListBuilder: ClientListBuilder;
 
   isLoading?: boolean;
 
@@ -48,9 +48,11 @@ class ClientsStore {
 
   clientPendingView: DecoratedClient | null;
 
-  unfilteredClients: DecoratedClient[];
+  clientPendingAnimation: boolean;
 
-  clients: DecoratedClient[];
+  lists: Record<CLIENT_LIST_KIND, DecoratedClient[]>;
+
+  unfilteredLists: Record<CLIENT_LIST_KIND, DecoratedClient[]>;
 
   error?: string;
 
@@ -58,17 +60,34 @@ class ClientsStore {
 
   userStore: UserStore;
 
-  constructor({ api, policyStore, userStore }: ClientsStoreProps) {
-    makeAutoObservable(this);
+  constructor({
+    api,
+    clientListBuilder,
+    policyStore,
+    userStore,
+  }: ClientsStoreProps) {
+    makeAutoObservable(this, {
+      view: action,
+    });
     this.api = api;
     this.userStore = userStore;
 
-    this.unfilteredClients = [];
-    this.clients = [];
     this.activeClientOffset = 0;
+    this.clientListBuilder = clientListBuilder;
+    this.clients = [];
+    this.lists = {
+      [CLIENT_LIST_KIND.UP_NEXT]: [],
+      [CLIENT_LIST_KIND.PROCESSING_FEEDBACK]: [],
+    };
+    this.unfilteredLists = {
+      [CLIENT_LIST_KIND.UP_NEXT]: [],
+      [CLIENT_LIST_KIND.PROCESSING_FEEDBACK]: [],
+    };
+
     this.clientPendingView = null;
-    this.userStore = userStore;
     this.policyStore = policyStore;
+    this.userStore = userStore;
+    this.clientPendingAnimation = false;
     this.isLoading = false;
 
     const searchParam = parse(window.location.search).search;
@@ -77,7 +96,7 @@ class ClientsStore {
       : searchParam || "";
 
     const checkAuthAndFetchClients = () => {
-      if (!this.userStore.isAuthorized) {
+      if (!this.userStore.isAuthorized || this.userStore.isLoading) {
         return;
       }
 
@@ -91,49 +110,17 @@ class ClientsStore {
 
   async fetchClientsList(): Promise<void> {
     this.isLoading = true;
-
     try {
       const clients = await this.api.get<Client[]>("/api/clients");
 
       runInAction(() => {
         this.isLoading = false;
 
-        this.unfilteredClients = clients
-          .map((client) => decorateClient(client, this.policyStore))
-          .sort((self: DecoratedClient, other: DecoratedClient) => {
-            const selfNextContactDate = getNextContactDate(self);
-            const otherNextContactDate = getNextContactDate(other);
+        this.clients = clients.map((client) =>
+          decorateClient(client, this.policyStore)
+        );
 
-            // No upcoming contact recommended. Shift myself to the right
-            if (!selfNextContactDate) {
-              return 1;
-            }
-            // I have upcoming contact recommended, but they do not. Shift myself left
-            if (!otherNextContactDate) {
-              return -1;
-            }
-            // My next face to face is before theirs. Shift myself left
-            if (selfNextContactDate < otherNextContactDate) {
-              return -1;
-            }
-            // Their face to face date is before mine. Shift them left
-            if (selfNextContactDate > otherNextContactDate) {
-              return 1;
-            }
-
-            // If the sorting dates are the same, sort by external id so the sort is stable.
-            if (self.personExternalId < other.personExternalId) {
-              return -1;
-            }
-            if (self.personExternalId > other.personExternalId) {
-              return 1;
-            }
-
-            // We both have scheduled contacts on the same day
-            return 0;
-          });
-
-        this.filterClients(this.clientSearchString);
+        this.updateClientsList();
       });
     } catch (error) {
       runInAction(() => {
@@ -141,6 +128,19 @@ class ClientsStore {
         this.error = error;
       });
     }
+  }
+
+  updateClientsList(): void {
+    this.unfilteredLists = this.clientListBuilder.build(this.clients);
+    this.lists = {
+      [CLIENT_LIST_KIND.UP_NEXT]: [
+        ...this.unfilteredLists[CLIENT_LIST_KIND.UP_NEXT],
+      ],
+      [CLIENT_LIST_KIND.PROCESSING_FEEDBACK]: [
+        ...this.unfilteredLists[CLIENT_LIST_KIND.PROCESSING_FEEDBACK],
+      ],
+    };
+    this.filterClients(this.clientSearchString);
   }
 
   filterClients(searchString: string): void {
@@ -158,11 +158,16 @@ class ClientsStore {
         }
       }
 
-      this.clients = this.unfilteredClients.filter((client) =>
-        this.isVisible(client)
-      );
+      this.lists[CLIENT_LIST_KIND.UP_NEXT] = this.unfilteredLists[
+        CLIENT_LIST_KIND.UP_NEXT
+      ].filter((client) => this.isVisible(client));
+
+      this.lists[CLIENT_LIST_KIND.PROCESSING_FEEDBACK] = this.unfilteredLists[
+        CLIENT_LIST_KIND.PROCESSING_FEEDBACK
+      ].filter((client) => this.isVisible(client));
+
       if (this.activeClient) {
-        this.clientPendingView = this.activeClient;
+        this.setClientPendingView(this.activeClient);
       }
     });
   }
@@ -171,16 +176,33 @@ class ClientsStore {
     return caseInsensitiveIncludes(name, this.clientSearchString);
   }
 
-  view(client: DecoratedClient | undefined = undefined, offset = 0): void {
-    if (this.clientPendingView === null && client) {
-      trackPersonSelected(client);
+  isActive({ personExternalId }: DecoratedClient): boolean {
+    return (
+      this.clientPendingView?.personExternalId === personExternalId ||
+      this.activeClient?.personExternalId === personExternalId
+    );
+  }
+
+  setClientPendingAnimation(animation: boolean): void {
+    this.clientPendingAnimation = animation;
+  }
+
+  setClientPendingView(client?: DecoratedClient): void {
+    if (!client) {
+      return;
     }
 
+    this.clientPendingView = client;
+  }
+
+  view(client: DecoratedClient | undefined = undefined, offset = 0): void {
     this.activeClient =
       this.clientPendingView !== null && !client
         ? this.clientPendingView
         : client;
+
     this.activeClientOffset = offset;
+
     this.clientPendingView = null;
   }
 }

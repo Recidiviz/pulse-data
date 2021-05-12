@@ -37,14 +37,10 @@ const baseStyle = `
   border: 1px solid transparent;
   font-size: ${rem("14px")};
   white-space: nowrap;
-  margin-right: ${rem(spacing.sm)};
+  margin-right: ${rem(spacing.xs)};
 
   box-sizing: border-box;
   border-radius: 4px;
-
-  &:focus {
-    outline: none;
-  }
 `;
 
 const CheckedButton = styled.div`
@@ -80,6 +76,7 @@ const CloseButton = styled(Button).attrs({ kind: "link" })`
 
 export interface NeedsCheckboxButtonProps {
   title: React.ReactNode;
+  tooltip?: string;
 
   checked?: boolean;
   onToggleCheck?: (checked: boolean) => void;
@@ -87,23 +84,16 @@ export interface NeedsCheckboxButtonProps {
 
 export const NeedsCheckboxButton: React.FC<NeedsCheckboxButtonProps> = ({
   title,
+  tooltip,
   checked,
   onToggleCheck,
 }) => {
-  const [checkedState, setCheckedState] = React.useState(false);
-  React.useEffect(() => {
-    if (checked !== undefined) {
-      setCheckedState(checked);
-    }
-  }, [checked]);
-
-  if (checkedState) {
+  if (checked) {
     return (
       <CheckedButton>
-        {title}
+        {tooltip ? <Tooltip title={tooltip}>{title}</Tooltip> : title}
         <CloseButton
           onClick={() => {
-            setCheckedState(false);
             if (onToggleCheck) {
               onToggleCheck(false);
             }
@@ -118,7 +108,6 @@ export const NeedsCheckboxButton: React.FC<NeedsCheckboxButtonProps> = ({
   }
 
   const componentClick = () => {
-    setCheckedState(true);
     if (onToggleCheck) {
       onToggleCheck(true);
     }

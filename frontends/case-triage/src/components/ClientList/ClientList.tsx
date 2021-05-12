@@ -15,84 +15,68 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { observer } from "mobx-react-lite";
+
 import * as React from "react";
 import { useRootStore } from "../../stores";
 import {
-  CaseUpdateActionType,
-  NotInCaseloadActions,
-} from "../../stores/CaseUpdatesStore";
-import {
-  ClientListContainer,
+  ClientListContainerElement,
   ClientListHeading,
-  ClientListTableHeading,
   FirstClientListHeading,
 } from "./ClientList.styles";
 import ClientListCard from "./ClientListCard";
 import EmptyStateCard from "./EmptyStateCard";
+import { CLIENT_LIST_KIND } from "../../stores/ClientsStore/ClientListBuilder";
 
-const ClientList = () => {
-  const { clientsStore } = useRootStore();
+interface ClientListProps {
+  kind: CLIENT_LIST_KIND;
+  showEmptyState?: boolean;
+}
 
-  const activeClients = clientsStore.clients.filter(
-    ({ caseUpdates }) =>
-      !NotInCaseloadActions.find(
-        (action: CaseUpdateActionType) => caseUpdates[action]
-      )
-  );
-  const inCustodyClients = clientsStore.clients.filter(
-    ({ caseUpdates }) =>
-      caseUpdates[CaseUpdateActionType.CURRENTLY_IN_CUSTODY] &&
-      !caseUpdates[CaseUpdateActionType.NOT_ON_CASELOAD]
-  );
-  const notOnCaseloadClients = clientsStore.clients.filter(
-    ({ caseUpdates }) => caseUpdates[CaseUpdateActionType.NOT_ON_CASELOAD]
-  );
+const ClientList = observer(
+  ({ kind, showEmptyState = false }: ClientListProps) => {
+    const { clientsStore } = useRootStore();
 
-  const upNextClients = activeClients.concat(inCustodyClients);
+    React.useEffect(() => {
+      // Lets the `<ClientListCard />` know to recalculate its offset when the list updates
+      clientsStore.setClientPendingView(
+        clientsStore.clientPendingView || clientsStore.activeClient
+      );
+    });
 
-  let activeClientList;
-  if (upNextClients.length > 0) {
-    activeClientList = upNextClients.map((client) => (
-      <ClientListCard client={client} key={client.personExternalId} />
-    ));
-  } else {
-    activeClientList = <EmptyStateCard />;
-  }
+    const list = clientsStore.lists[kind];
 
-  let processingList;
-  if (notOnCaseloadClients.length > 0) {
-    processingList = (
+    if (showEmptyState && list.length === 0) {
+      return <EmptyStateCard />;
+    }
+
+    return (
       <>
-        <ClientListHeading>Processing Feedback</ClientListHeading>
-        <ClientListTableHeading />
-        {notOnCaseloadClients.map((client) => (
-          <ClientListCard client={client} key={client.personExternalId} />
-        ))}
+        {list.map((client) => {
+          return (
+            <ClientListCard client={client} key={client.personExternalId} />
+          );
+        })}
       </>
     );
   }
+);
+
+const ClientListContainer = observer(() => {
+  const { clientsStore } = useRootStore();
+  if (clientsStore.isLoading) {
+    return <ClientListContainerElement>Loading...</ClientListContainerElement>;
+  }
 
   return (
-    <>
-      <ClientListContainer>
-        <FirstClientListHeading>Up Next</FirstClientListHeading>
-        <ClientListTableHeading>
-          <span>Client</span>
-          <span>Needs Met</span>
-          <span>Recommended Contact</span>
-        </ClientListTableHeading>
-
-        {clientsStore.isLoading && clientsStore.clients.length === 0 ? (
-          `Loading... ${clientsStore.error || ""}`
-        ) : (
-          <>
-            {activeClientList}
-            {processingList}
-          </>
-        )}
-      </ClientListContainer>
-    </>
+    <ClientListContainerElement>
+      <FirstClientListHeading>Up Next</FirstClientListHeading>
+      <ClientList kind={CLIENT_LIST_KIND.UP_NEXT} showEmptyState />
+      {clientsStore.lists[CLIENT_LIST_KIND.PROCESSING_FEEDBACK].length > 0 ? (
+        <ClientListHeading>Processing Feedback</ClientListHeading>
+      ) : null}
+      <ClientList kind={CLIENT_LIST_KIND.PROCESSING_FEEDBACK} />
+    </ClientListContainerElement>
   );
-};
+});
 
-export default observer(ClientList);
+export default ClientListContainer;

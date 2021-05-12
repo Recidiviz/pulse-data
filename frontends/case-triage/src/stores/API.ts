@@ -30,7 +30,7 @@ interface RequestProps {
 interface BootstrapResponse {
   csrf: string;
   segmentUserId: string;
-  featureVariants: FeatureVariants;
+  knownExperiments: FeatureVariants;
 }
 
 const BOOTSTRAP_ROUTE = "/api/bootstrap";
@@ -53,7 +53,7 @@ class API {
     this.bootstrapping =
       this.bootstrapping ||
       this.get<BootstrapResponse>(BOOTSTRAP_ROUTE).then(
-        ({ csrf, segmentUserId, featureVariants }) => {
+        ({ csrf, segmentUserId, knownExperiments: featureVariants }) => {
           this.csrfToken = csrf;
           identify(segmentUserId);
           this.userStore.setFeatureVariants(featureVariants);

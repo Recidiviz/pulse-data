@@ -27,11 +27,18 @@ import {
 } from "@recidiviz/design-system";
 
 export const ClientNeed = styled(Need)`
-  margin-right: ${rem(spacing.sm)};
+  margin-left: ${rem(spacing.md)};
 `;
 
-export const ClientCard = styled(Card).attrs((props) => {
-  return { className: `client-card ${props.className}` };
+interface ClientCardProps {
+  className?: string;
+  active?: boolean;
+}
+
+export const ClientCard = styled(Card).attrs((props: ClientCardProps) => {
+  return {
+    className: `client-card ${props.className}`,
+  };
 })`
   padding: ${rem(spacing.lg)};
   position: relative;
@@ -40,6 +47,11 @@ export const ClientCard = styled(Card).attrs((props) => {
   &:hover,
   &:focus {
     cursor: pointer;
+    box-shadow: inset 0 0 0 1px #7dc1e8;
+  }
+
+  &.client-card--active {
+    background-color: #f7fcff;
     box-shadow: inset 0 0 0 1px #7dc1e8;
   }
 
@@ -77,35 +89,25 @@ export const FirstCardSection = styled(FlexCardSection)`
   flex: 0 0 30% !important;
 `;
 
-export const SecondCardSection = styled(FlexCardSection)`
+export const NextActionCardSection = styled(FlexCardSection)`
   flex: 0 0 30% !important;
+  justify-content: flex-end;
 `;
 
-export const ThirdCardSection = styled(FlexCardSection)`
+export const NeedsIconsCardSection = styled(FlexCardSection)`
   flex: 0 1 40% !important;
 `;
 
-export const FirstClientListHeading = styled(H2)``;
+export const FirstClientListHeading = styled(H2)`
+  margin-bottom: ${rem(spacing.lg)};
+`;
 
 export const ClientListHeading = styled(H2)`
   margin-top: ${rem(spacing.lg)};
+  margin-bottom: ${rem(spacing.lg)};
 `;
 
-export const ClientListTableHeading = styled.div`
-  color: ${palette.text.caption};
-  font-size: ${rem("13px")};
-  padding: 8px 24px;
-  border-bottom: 1px solid ${palette.slate20};
-  margin-bottom: 16px;
-  display: flex;
-  line-height: 1;
-
-  > span {
-    flex: 1 1 0%;
-  }
-`;
-
-export const ClientListContainer = styled.div`
+export const ClientListContainerElement = styled.div`
   margin-bottom: ${rem(spacing.xl)};
 
   // The ClientListContainer needs to be the ClientCard's _offsetParent_ so that we can correctly calculate the
@@ -113,13 +115,13 @@ export const ClientListContainer = styled.div`
   position: relative;
 `;
 
-export const DEFAULT_IN_PROGRESS_INDICATOR_OFFSET = -32;
 export const IN_PROGRESS_INDICATOR_SIZE = 8;
 
 export const InProgressIndicator = styled.div`
   position: absolute;
   width: ${rem(IN_PROGRESS_INDICATOR_SIZE)};
   height: ${rem(IN_PROGRESS_INDICATOR_SIZE)};
+  left: -${rem(spacing.xl / 2 + IN_PROGRESS_INDICATOR_SIZE / 2)};
   top: 42px;
 
   border-radius: 999px;

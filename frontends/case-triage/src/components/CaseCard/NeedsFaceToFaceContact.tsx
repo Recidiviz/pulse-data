@@ -22,12 +22,13 @@ import {
   palette,
 } from "@recidiviz/design-system";
 import * as React from "react";
+import { observer } from "mobx-react-lite";
 import { Caption, CaseCardBody, CaseCardInfo } from "./CaseCard.styles";
 import { DecoratedClient } from "../../stores/ClientsStore/Client";
 import { useRootStore } from "../../stores";
 import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
 import { SupervisionContactFrequency } from "../../stores/PolicyStore/Policy";
-import { NeedsActionFlow } from "./NeedsCorrectionDropdown";
+import { NeedsActionFlow } from "../NeedsActionFlow/NeedsActionFlow";
 
 interface NeedsFaceToFaceContactProps {
   className: string;
@@ -95,8 +96,8 @@ const NeedsFaceToFaceContact: React.FC<NeedsFaceToFaceContactProps> = ({
         </Caption>
 
         <NeedsActionFlow
+          actionable={!faceToFaceMet}
           client={client}
-          met={faceToFaceMet}
           resolve={CaseUpdateActionType.SCHEDULED_FACE_TO_FACE}
           dismiss={CaseUpdateActionType.INCORRECT_CONTACT_DATA}
         />
@@ -105,4 +106,4 @@ const NeedsFaceToFaceContact: React.FC<NeedsFaceToFaceContactProps> = ({
   );
 };
 
-export default NeedsFaceToFaceContact;
+export default observer(NeedsFaceToFaceContact);

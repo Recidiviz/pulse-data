@@ -16,13 +16,14 @@
 // =============================================================================
 import { autorun, makeAutoObservable, runInAction } from "mobx";
 import UserStore from "../UserStore";
-import { Client, DecoratedClient } from "../ClientsStore";
+import { Client, DecoratedClient, SupervisionLevel } from "../ClientsStore";
 import {
   Policy,
   ScoreMinMaxBySupervisionLevel,
   SupervisionContactFrequency,
 } from "./Policy";
 import API from "../API";
+import { Gender } from "../ClientsStore/Client";
 
 interface PolicyStoreProps {
   api: API;
@@ -79,6 +80,36 @@ class PolicyStore {
     client: DecoratedClient
   ): ScoreMinMaxBySupervisionLevel | undefined {
     return this.policies?.assessmentScoreCutoffs[client.gender];
+  }
+
+  findSupervisionLevelForScore(
+    gender: Gender,
+    score: number | null
+  ): string | undefined {
+    const supervisionLevelCutoffs =
+      this.policies?.assessmentScoreCutoffs[gender];
+
+    if (!supervisionLevelCutoffs) {
+      return;
+    }
+
+    const foundSupervisionLevel = Object.keys(supervisionLevelCutoffs).find(
+      (supervisionLevel) => {
+        const [min, max] =
+          supervisionLevelCutoffs[supervisionLevel as SupervisionLevel];
+        return (
+          score && score >= min && score <= (max || Number.MAX_SAFE_INTEGER)
+        );
+      }
+    );
+
+    if (!foundSupervisionLevel) {
+      return;
+    }
+
+    return this.policies?.supervisionLevelNames[
+      foundSupervisionLevel as SupervisionLevel
+    ];
   }
 
   getSupervisionLevelNameForClient(client: Client): string {

@@ -40,6 +40,13 @@ export type SupervisionLevel = typeof SupervisionLevels[number];
 
 type APIDate = string | moment.Moment | null;
 
+const POSSESSIVE_PRONOUNS: Record<Gender, string> = {
+  FEMALE: "her",
+  MALE: "his",
+  TRANS_FEMALE: "her",
+  TRANS_MALE: "his",
+};
+
 export interface NeedsMet {
   assessment: boolean;
   employment: boolean;
@@ -72,6 +79,7 @@ export interface Client {
 export interface DecoratedClient extends Client {
   name: string;
   formalName: string;
+  possessivePronoun: string;
   supervisionStartDate: moment.Moment | null;
   projectedEndDate: moment.Moment | null;
   mostRecentFaceToFaceDate: moment.Moment | null;
@@ -117,6 +125,7 @@ const decorateClient = (
     ...client,
     name,
     formalName,
+    possessivePronoun: POSSESSIVE_PRONOUNS[client.gender] || "their",
     supervisionStartDate: parseDate(client.supervisionStartDate),
     projectedEndDate: parseDate(client.projectedEndDate),
     mostRecentFaceToFaceDate: parseDate(client.mostRecentFaceToFaceDate),
@@ -131,7 +140,7 @@ const decorateClient = (
       action: CaseUpdateActionType,
       status: CaseUpdateStatus
     ) {
-      return client.caseUpdates[action]?.status === status;
+      return this.caseUpdates[action]?.status === status;
     },
 
     hasInProgressUpdate(action: CaseUpdateActionType) {

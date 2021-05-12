@@ -17,26 +17,29 @@
 import * as React from "react";
 import moment from "moment";
 import { IconSVG, NeedState } from "@recidiviz/design-system";
+import { observer } from "mobx-react-lite";
+import { autorun } from "mobx";
 import { DecoratedClient } from "../../stores/ClientsStore";
 import { useRootStore } from "../../stores";
 import {
   ClientCard,
   ClientNeed,
-  DEFAULT_IN_PROGRESS_INDICATOR_OFFSET,
   FirstCardSection,
-  IN_PROGRESS_INDICATOR_SIZE,
   InProgressIndicator,
   MainText,
   PendingText,
   SecondaryText,
-  SecondCardSection,
-  ThirdCardSection,
+  NextActionCardSection,
+  NeedsIconsCardSection,
 } from "./ClientList.styles";
 import { titleCase } from "../../utils";
 import DueDate from "../DueDate";
 import Tooltip from "../Tooltip";
 import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
 import { getNextContactDate } from "../../stores/ClientsStore/Client";
+import { TodayDueDate } from "../DueDate/DueDate.styles";
+import { OPPORTUNITY_TITLES } from "../../stores/OpportunityStore/Opportunity";
+import { trackPersonSelected } from "../../analytics";
 
 interface ClientProps {
   client: DecoratedClient;
@@ -49,136 +52,174 @@ const getNeedsMetState = (
   return needsMet[need] ? NeedState.MET : NeedState.NOT_MET;
 };
 
-const ClientComponent: React.FC<ClientProps> = ({ client }: ClientProps) => {
-  const { clientsStore, policyStore } = useRootStore();
-  const cardRef = React.useRef<HTMLDivElement>(null);
+interface TertiaryTextProps {
+  client: DecoratedClient;
+}
 
-  const viewClient = React.useCallback(() => {
-    clientsStore.view(
-      client,
-      cardRef !== null && cardRef.current !== null
-        ? cardRef.current.offsetTop
-        : 0
-    );
-  }, [client, clientsStore, cardRef]);
-
-  React.useEffect(() => {
-    // When undoing a Case Update, we need to re-open the client card
-    // Check if this card's client is pending a `view`, if so, re-open the Case Card
-    if (
-      cardRef &&
-      clientsStore.clientPendingView?.personExternalId ===
-        client.personExternalId
-    ) {
-      viewClient();
-    }
-  }, [
-    cardRef,
-    clientsStore.clientPendingView,
-    clientsStore.clientSearchString,
-    client.personExternalId,
-    viewClient,
-  ]);
-
-  // Counts in-progress (non-deprecated) actions
-  const numInProgressActions = Object.values(CaseUpdateActionType).reduce(
-    (accumulator, actionType) =>
-      accumulator +
-      (client.hasInProgressUpdate(actionType as CaseUpdateActionType) ? 1 : 0),
-    0
-  );
-
-  const omsName = policyStore.policies?.omsName || "OMS";
-  const tooltipOffset =
-    cardRef === null || cardRef.current === null
-      ? DEFAULT_IN_PROGRESS_INDICATOR_OFFSET
-      : Math.max(
-          -(
-            cardRef.current.getBoundingClientRect().left +
-            IN_PROGRESS_INDICATOR_SIZE
-          ) / 2,
-          DEFAULT_IN_PROGRESS_INDICATOR_OFFSET
-        );
+const TertiaryText = observer(({ client }: TertiaryTextProps): JSX.Element => {
+  const { opportunityStore } = useRootStore();
 
   const notOnCaseloadAction =
     client.caseUpdates[CaseUpdateActionType.NOT_ON_CASELOAD];
-  let dueDateText;
+
+  const currentlyInCustodyAction =
+    client.caseUpdates[CaseUpdateActionType.CURRENTLY_IN_CUSTODY];
+
+  const opportunity = opportunityStore.getTopOpportunityForClient(
+    client.personExternalId
+  );
+
+  if (opportunity && !opportunity.deferredUntil) {
+    return (
+      <TodayDueDate>
+        {OPPORTUNITY_TITLES[opportunity.opportunityType]}
+      </TodayDueDate>
+    );
+  }
+
   if (notOnCaseloadAction) {
-    dueDateText = (
+    return (
       <PendingText>
         Reported on{" "}
         {moment(notOnCaseloadAction.actionTs).format("MMMM Do, YYYY")}
       </PendingText>
     );
-  } else if (client.caseUpdates[CaseUpdateActionType.CURRENTLY_IN_CUSTODY]) {
-    dueDateText = <PendingText>In Custody</PendingText>;
-  } else {
-    dueDateText = <DueDate date={getNextContactDate(client)} />;
+  }
+  if (currentlyInCustodyAction) {
+    return <PendingText>In Custody</PendingText>;
   }
 
-  return (
-    <ClientCard ref={cardRef} onClick={viewClient}>
-      <FirstCardSection className="fs-exclude">
-        <MainText>{client.name}</MainText>
-        <SecondaryText>
-          {titleCase(client.supervisionType)},{" "}
-          {titleCase(client.supervisionLevelText)}
-        </SecondaryText>
-      </FirstCardSection>
-      <SecondCardSection>
-        <Tooltip
-          title={client.needsMet.employment ? "Employed" : "Employment Missing"}
-        >
-          <ClientNeed
-            kind={IconSVG.NeedsEmployment}
-            state={getNeedsMetState(client.needsMet, "employment")}
-          />
-        </Tooltip>
-        <Tooltip
-          title={
-            client.needsMet.assessment
-              ? "Risk Assessment Up to Date"
-              : "Risk Assessment Needed"
-          }
-        >
-          <ClientNeed
-            kind={IconSVG.NeedsRiskAssessment}
-            state={getNeedsMetState(client.needsMet, "assessment")}
-          />
-        </Tooltip>
-        <Tooltip
-          title={
-            client.needsMet.faceToFaceContact
-              ? "Face to Face Contact Up to Date"
-              : "Face to Face Contact Needed"
-          }
-        >
-          <ClientNeed
-            kind={IconSVG.NeedsContact}
-            state={
-              client.needsMet.faceToFaceContact
-                ? NeedState.MET
-                : NeedState.NOT_MET
+  return <DueDate date={getNextContactDate(client)} />;
+});
+
+const ClientComponent: React.FC<ClientProps> = observer(
+  ({ client }: ClientProps) => {
+    const { clientsStore, opportunityStore, policyStore } = useRootStore();
+    const cardRef = React.useRef<HTMLDivElement>(null);
+
+    const topOpp = opportunityStore.getTopOpportunityForClient(
+      client.personExternalId
+    );
+
+    const viewClient = React.useCallback(() => {
+      clientsStore.view(
+        client,
+        cardRef !== null && cardRef.current !== null
+          ? cardRef.current.offsetTop
+          : 0
+      );
+    }, [client, clientsStore, cardRef]);
+
+    React.useLayoutEffect(() => {
+      // When undoing a Case Update, we need to re-open the client card
+      // Check if this card's client is pending a `view`, if so, re-open the Case Card
+      return autorun(() => {
+        if (clientsStore.isActive(client)) {
+          viewClient();
+        }
+      });
+    }, [client, clientsStore, viewClient]);
+
+    // Counts in-progress (non-deprecated) actions
+    const numInProgressActions = Object.values(CaseUpdateActionType).reduce(
+      (accumulator, actionType) =>
+        accumulator +
+        (client.hasInProgressUpdate(actionType as CaseUpdateActionType)
+          ? 1
+          : 0),
+      0
+    );
+
+    const omsName = policyStore.policies?.omsName || "OMS";
+
+    return (
+      <ClientCard
+        className={
+          clientsStore.activeClient?.personExternalId ===
+          client.personExternalId
+            ? "client-card--active"
+            : ""
+        }
+        ref={cardRef}
+        onClick={() => {
+          trackPersonSelected(client);
+          viewClient();
+        }}
+      >
+        <FirstCardSection className="fs-exclude">
+          <MainText>{client.name}</MainText>
+          <SecondaryText>
+            {titleCase(client.supervisionType)},{" "}
+            {titleCase(client.supervisionLevelText)}
+          </SecondaryText>
+        </FirstCardSection>
+        <NeedsIconsCardSection>
+          <TertiaryText client={client} />
+        </NeedsIconsCardSection>
+        <NextActionCardSection>
+          {topOpp ? (
+            <Tooltip
+              key={topOpp.opportunityType}
+              title={OPPORTUNITY_TITLES[topOpp.opportunityType]}
+            >
+              <ClientNeed kind={IconSVG.Star} state={NeedState.NOT_MET} />
+            </Tooltip>
+          ) : null}
+          <Tooltip
+            title={
+              client.needsMet.employment ? "Employed" : "Employment Missing"
             }
-          />
-        </Tooltip>
-      </SecondCardSection>
-      <ThirdCardSection>{dueDateText}</ThirdCardSection>
-      {numInProgressActions > 0 ? (
-        <Tooltip
-          title={
-            <>
-              <strong>{numInProgressActions}</strong> action
-              {numInProgressActions !== 1 ? "s" : ""} being confirmed with{" "}
-              {omsName}
-            </>
-          }
-        >
-          <InProgressIndicator style={{ left: tooltipOffset }} />
-        </Tooltip>
-      ) : null}
-    </ClientCard>
-  );
-};
+          >
+            <ClientNeed
+              kind={IconSVG.NeedsEmployment}
+              state={getNeedsMetState(client.needsMet, "employment")}
+            />
+          </Tooltip>
+          <Tooltip
+            title={
+              client.needsMet.assessment
+                ? "Risk Assessment Up to Date"
+                : "Risk Assessment Needed"
+            }
+          >
+            <ClientNeed
+              kind={IconSVG.NeedsRiskAssessment}
+              state={getNeedsMetState(client.needsMet, "assessment")}
+            />
+          </Tooltip>
+          <Tooltip
+            title={
+              client.needsMet.faceToFaceContact
+                ? "Face to Face Contact Up to Date"
+                : "Face to Face Contact Needed"
+            }
+          >
+            <ClientNeed
+              kind={IconSVG.NeedsContact}
+              state={
+                client.needsMet.faceToFaceContact
+                  ? NeedState.MET
+                  : NeedState.NOT_MET
+              }
+            />
+          </Tooltip>
+        </NextActionCardSection>
+        {numInProgressActions > 0 ? (
+          <Tooltip
+            title={
+              <>
+                <strong>{numInProgressActions}</strong> action
+                {numInProgressActions !== 1 ? "s" : ""} being confirmed with{" "}
+                {omsName}
+              </>
+            }
+          >
+            <InProgressIndicator />
+          </Tooltip>
+        ) : null}
+      </ClientCard>
+    );
+  }
+);
 
 export default ClientComponent;

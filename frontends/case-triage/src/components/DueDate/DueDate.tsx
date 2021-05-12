@@ -26,7 +26,7 @@ export interface DueDateProps {
 
 export const DueDate: React.FC<DueDateProps> = ({ date }: DueDateProps) => {
   if (!date) {
-    return <BaseDueDate>Not required</BaseDueDate>;
+    return <BaseDueDate>Contact not required</BaseDueDate>;
   }
 
   const beginningOfDay = moment().startOf("day");
@@ -38,7 +38,7 @@ export const DueDate: React.FC<DueDateProps> = ({ date }: DueDateProps) => {
   if (date.isSame(beginningOfDay, "day")) {
     return (
       <Tooltip title="Face to Face Contact recommended today">
-        <TodayDueDate>Today</TodayDueDate>
+        <TodayDueDate>Contact today</TodayDueDate>
       </Tooltip>
     );
   }
@@ -46,17 +46,14 @@ export const DueDate: React.FC<DueDateProps> = ({ date }: DueDateProps) => {
   if (date.isAfter(beginningOfDay, "day")) {
     return (
       <Tooltip title={`Face to Face Contact recommended in ${timeAgo}`}>
-        <BaseDueDate>In {timeAgo}</BaseDueDate>
+        <BaseDueDate>Contact in {timeAgo}</BaseDueDate>
       </Tooltip>
     );
   }
 
-  const capitalizedTimeAgo =
-    timeAgo.charAt(0).toUpperCase() + timeAgo.substr(1);
-
   return (
     <Tooltip title={`Face to Face Contact recommended ${timeAgo} ago`}>
-      <PastDueDate>{capitalizedTimeAgo} ago</PastDueDate>
+      <PastDueDate>Contact due {timeAgo} ago</PastDueDate>
     </Tooltip>
   );
 };

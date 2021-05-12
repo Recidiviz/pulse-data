@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
+import { OpportunityType } from "../OpportunityStore/Opportunity";
+
 export enum CaseUpdateActionType {
   // Risk Assessment
   COMPLETED_ASSESSMENT = "COMPLETED_ASSESSMENT",
@@ -26,7 +28,10 @@ export enum CaseUpdateActionType {
   INCORRECT_CONTACT_DATA = "INCORRECT_CONTACT_DATA",
 
   DISCHARGE_INITIATED = "DISCHARGE_INITIATED",
+
+  // Supervision Level
   DOWNGRADE_INITIATED = "DOWNGRADE_INITIATED",
+  INCORRECT_SUPERVISION_LEVEL_DATA = "INCORRECT_SUPERVISION_LEVEL_DATA",
 
   NOT_ON_CASELOAD = "NOT_ON_CASELOAD",
   CURRENTLY_IN_CUSTODY = "CURRENTLY_IN_CUSTODY",
@@ -39,7 +44,17 @@ export enum CaseUpdateStatus {
 export interface CaseUpdate {
   actionTs: string;
   actionType: CaseUpdateActionType;
-  comment: string;
+  comment: string | null;
   status: CaseUpdateStatus;
-  updateId: string;
+  updateId?: string;
 }
+
+export const CASE_UPDATE_OPPORTUNITY_ASSOCIATION: Record<
+  OpportunityType,
+  [CaseUpdateActionType, CaseUpdateActionType]
+> = {
+  [OpportunityType.OVERDUE_DOWNGRADE]: [
+    CaseUpdateActionType.DOWNGRADE_INITIATED,
+    CaseUpdateActionType.INCORRECT_SUPERVISION_LEVEL_DATA,
+  ],
+};
