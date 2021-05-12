@@ -50,7 +50,7 @@ WITH external_data AS (
     SELECT state_code as region_code, person_external_id, person_id, admission_date
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_admission_metrics_materialized`
     -- Exclude parole revocation admissions for states that have parole board hold admissions --
-    WHERE state_code NOT IN ('US_ID', 'US_MO, 'US_PA') OR admission_reason != 'PAROLE_REVOCATION'
+    WHERE state_code NOT IN ('US_ID', 'US_MO', 'US_PA') OR admission_reason != 'PAROLE_REVOCATION'
 ), internal_metrics_for_valid_regions_and_dates AS (
     SELECT * FROM
     -- Only compare regions and dates for which we have external validation data
