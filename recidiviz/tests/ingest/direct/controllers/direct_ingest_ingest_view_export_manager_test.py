@@ -14,10 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for direct_ingest_ingest_view_export_manager.py.
-
-TODO(#6197): This file should be cleaned up after the new normalized views land.
-"""
+"""Tests for direct_ingest_ingest_view_export_manager.py."""
 import datetime
 import unittest
 from typing import List, Optional, Dict
@@ -44,8 +41,8 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
 from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestFileMetadataManager,
 )
-from recidiviz.ingest.direct.views.unnormalized_direct_ingest_big_query_view_types import (
-    UnnormalizedDirectIngestPreProcessedIngestView as DirectIngestPreProcessedIngestView,
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    DirectIngestPreProcessedIngestView,
 )
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.operations import schema
@@ -82,15 +79,21 @@ OPTIONS(
 
 WITH
 file_tag_first_generated_view AS (
-    WITH rows_with_recency_rank AS (
+    WITH normalized_rows AS (
+        SELECT
+            *
+        FROM
+            `recidiviz-456.us_xx_raw_data.file_tag_first`
+        WHERE
+            update_datetime <= @update_timestamp
+    ),
+    rows_with_recency_rank AS (
         SELECT
             col_name_1a, col_name_1b,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
-            `recidiviz-456.us_xx_raw_data.file_tag_first`
-        WHERE
-            update_datetime <= @update_timestamp
+            normalized_rows
     )
 
     SELECT *
@@ -115,15 +118,21 @@ tagFullHistoricalExport_generated_view AS (
         WHERE
             update_datetime = (SELECT update_datetime FROM max_update_datetime)
     ),
+    normalized_rows AS (
+        SELECT
+            *
+        FROM
+            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+        WHERE
+            file_id = (SELECT file_id FROM max_file_id)
+    ),
     rows_with_recency_rank AS (
         SELECT
             COL_1,
             ROW_NUMBER() OVER (PARTITION BY COL_1
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
-            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
-        WHERE
-            file_id = (SELECT file_id FROM max_file_id)
+            normalized_rows
     )
     SELECT *
     EXCEPT (recency_rank)
@@ -137,15 +146,21 @@ ORDER BY colA, colC
 
 
 _DATE_2_UPPER_BOUND_MATERIALIZED_RAW_TABLE_CREATE_TABLE_SCRIPT = """CREATE TEMP TABLE file_tag_first_generated_view AS (
-    WITH rows_with_recency_rank AS (
+    WITH normalized_rows AS (
+        SELECT
+            *
+        FROM
+            `recidiviz-456.us_xx_raw_data.file_tag_first`
+        WHERE
+            update_datetime <= @update_timestamp
+    ),
+    rows_with_recency_rank AS (
         SELECT
             col_name_1a, col_name_1b,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
-            `recidiviz-456.us_xx_raw_data.file_tag_first`
-        WHERE
-            update_datetime <= @update_timestamp
+            normalized_rows
     )
 
     SELECT *
@@ -170,15 +185,21 @@ CREATE TEMP TABLE tagFullHistoricalExport_generated_view AS (
         WHERE
             update_datetime = (SELECT update_datetime FROM max_update_datetime)
     ),
+    normalized_rows AS (
+        SELECT
+            *
+        FROM
+            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+        WHERE
+            file_id = (SELECT file_id FROM max_file_id)
+    ),
     rows_with_recency_rank AS (
         SELECT
             COL_1,
             ROW_NUMBER() OVER (PARTITION BY COL_1
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
-            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
-        WHERE
-            file_id = (SELECT file_id FROM max_file_id)
+            normalized_rows
     )
     SELECT *
     EXCEPT (recency_rank)
@@ -976,15 +997,21 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
 
 WITH
 file_tag_first_generated_view AS (
-    WITH rows_with_recency_rank AS (
+    WITH normalized_rows AS (
+        SELECT
+            *
+        FROM
+            `recidiviz-456.us_xx_raw_data.file_tag_first`
+        WHERE
+            update_datetime <= DATETIME(2020, 7, 20, 0, 0, 0)
+    ),
+    rows_with_recency_rank AS (
         SELECT
             col_name_1a, col_name_1b,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
-            `recidiviz-456.us_xx_raw_data.file_tag_first`
-        WHERE
-            update_datetime <= DATETIME(2020, 7, 20, 0, 0, 0)
+            normalized_rows
     )
 
     SELECT *
@@ -1009,15 +1036,21 @@ tagFullHistoricalExport_generated_view AS (
         WHERE
             update_datetime = (SELECT update_datetime FROM max_update_datetime)
     ),
+    normalized_rows AS (
+        SELECT
+            *
+        FROM
+            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+        WHERE
+            file_id = (SELECT file_id FROM max_file_id)
+    ),
     rows_with_recency_rank AS (
         SELECT
             COL_1,
             ROW_NUMBER() OVER (PARTITION BY COL_1
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
-            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
-        WHERE
-            file_id = (SELECT file_id FROM max_file_id)
+            normalized_rows
     )
     SELECT *
     EXCEPT (recency_rank)
@@ -1032,15 +1065,21 @@ CREATE TEMP TABLE ingest_view_2019_07_20_00_00_00_lower_bound AS (
 
 WITH
 file_tag_first_generated_view AS (
-    WITH rows_with_recency_rank AS (
+    WITH normalized_rows AS (
+        SELECT
+            *
+        FROM
+            `recidiviz-456.us_xx_raw_data.file_tag_first`
+        WHERE
+            update_datetime <= DATETIME(2019, 7, 20, 0, 0, 0)
+    ),
+    rows_with_recency_rank AS (
         SELECT
             col_name_1a, col_name_1b,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
-            `recidiviz-456.us_xx_raw_data.file_tag_first`
-        WHERE
-            update_datetime <= DATETIME(2019, 7, 20, 0, 0, 0)
+            normalized_rows
     )
 
     SELECT *
@@ -1065,15 +1104,21 @@ tagFullHistoricalExport_generated_view AS (
         WHERE
             update_datetime = (SELECT update_datetime FROM max_update_datetime)
     ),
+    normalized_rows AS (
+        SELECT
+            *
+        FROM
+            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+        WHERE
+            file_id = (SELECT file_id FROM max_file_id)
+    ),
     rows_with_recency_rank AS (
         SELECT
             COL_1,
             ROW_NUMBER() OVER (PARTITION BY COL_1
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
-            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
-        WHERE
-            file_id = (SELECT file_id FROM max_file_id)
+            normalized_rows
     )
     SELECT *
     EXCEPT (recency_rank)
@@ -1114,15 +1159,21 @@ ORDER BY colA, colC;"""
             )
 
         expected_debug_query = """CREATE TEMP TABLE upper_file_tag_first_generated_view AS (
-    WITH rows_with_recency_rank AS (
+    WITH normalized_rows AS (
+        SELECT
+            *
+        FROM
+            `recidiviz-456.us_xx_raw_data.file_tag_first`
+        WHERE
+            update_datetime <= DATETIME(2020, 7, 20, 0, 0, 0)
+    ),
+    rows_with_recency_rank AS (
         SELECT
             col_name_1a, col_name_1b,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
-            `recidiviz-456.us_xx_raw_data.file_tag_first`
-        WHERE
-            update_datetime <= DATETIME(2020, 7, 20, 0, 0, 0)
+            normalized_rows
     )
 
     SELECT *
@@ -1147,15 +1198,21 @@ CREATE TEMP TABLE upper_tagFullHistoricalExport_generated_view AS (
         WHERE
             update_datetime = (SELECT update_datetime FROM max_update_datetime)
     ),
+    normalized_rows AS (
+        SELECT
+            *
+        FROM
+            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+        WHERE
+            file_id = (SELECT file_id FROM max_file_id)
+    ),
     rows_with_recency_rank AS (
         SELECT
             COL_1,
             ROW_NUMBER() OVER (PARTITION BY COL_1
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
-            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
-        WHERE
-            file_id = (SELECT file_id FROM max_file_id)
+            normalized_rows
     )
     SELECT *
     EXCEPT (recency_rank)
@@ -1169,15 +1226,21 @@ ORDER BY colA, colC
 
 );
 CREATE TEMP TABLE lower_file_tag_first_generated_view AS (
-    WITH rows_with_recency_rank AS (
+    WITH normalized_rows AS (
+        SELECT
+            *
+        FROM
+            `recidiviz-456.us_xx_raw_data.file_tag_first`
+        WHERE
+            update_datetime <= DATETIME(2019, 7, 20, 0, 0, 0)
+    ),
+    rows_with_recency_rank AS (
         SELECT
             col_name_1a, col_name_1b,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
-            `recidiviz-456.us_xx_raw_data.file_tag_first`
-        WHERE
-            update_datetime <= DATETIME(2019, 7, 20, 0, 0, 0)
+            normalized_rows
     )
 
     SELECT *
@@ -1202,15 +1265,21 @@ CREATE TEMP TABLE lower_tagFullHistoricalExport_generated_view AS (
         WHERE
             update_datetime = (SELECT update_datetime FROM max_update_datetime)
     ),
+    normalized_rows AS (
+        SELECT
+            *
+        FROM
+            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+        WHERE
+            file_id = (SELECT file_id FROM max_file_id)
+    ),
     rows_with_recency_rank AS (
         SELECT
             COL_1,
             ROW_NUMBER() OVER (PARTITION BY COL_1
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
-            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
-        WHERE
-            file_id = (SELECT file_id FROM max_file_id)
+            normalized_rows
     )
     SELECT *
     EXCEPT (recency_rank)

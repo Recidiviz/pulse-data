@@ -29,8 +29,8 @@ from recidiviz.big_query.big_query_view import (
 )
 from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
-from recidiviz.ingest.direct.views.normalized_direct_ingest_big_query_view_types import (
-    NormalizedDirectIngestPreProcessedIngestViewBuilder,
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    DirectIngestPreProcessedIngestViewBuilder,
 )
 from recidiviz.utils import monitoring
 
@@ -194,9 +194,7 @@ def _build_views_to_update(
 
         # TODO(#6314): Remove this check once we have deleted the hack us_pa_supervision_period_TEMP view
         if (
-            isinstance(
-                view_builder, NormalizedDirectIngestPreProcessedIngestViewBuilder
-            )
+            isinstance(view_builder, DirectIngestPreProcessedIngestViewBuilder)
             and view_builder.ingest_view_name == "us_pa_supervision_period_TEMP"
             and dataset_overrides
         ):
