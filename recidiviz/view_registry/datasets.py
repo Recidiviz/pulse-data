@@ -19,6 +19,9 @@ from recidiviz.calculator.query.county.dataset_config import COUNTY_BASE_DATASET
 from recidiviz.calculator.query.county.views.vera.vera_view_constants import (
     VERA_DATASET,
 )
+from recidiviz.calculator.query.experiments.dataset_config import (
+    CASE_TRIAGE_SEGMENT_DATASET,
+)
 from recidiviz.calculator.query.operations.dataset_config import OPERATIONS_BASE_DATASET
 from recidiviz.calculator.query.state.dataset_config import (
     STATE_BASE_DATASET,
@@ -40,6 +43,7 @@ LATEST_VIEW_DATASETS = {
 }
 
 OTHER_SOURCE_TABLE_DATASETS = {
+    CASE_TRIAGE_SEGMENT_DATASET,
     COUNTY_BASE_DATASET,
     COVID_DASHBOARD_REFERENCE_DATASET,
     DATAFLOW_METRICS_DATASET,
@@ -61,6 +65,7 @@ RAW_DATA_TABLE_DATASETS_TO_DESCRIPTIONS = {
 }
 
 OTHER_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS = {
+    CASE_TRIAGE_SEGMENT_DATASET: "Stores metrics about users on case triage",
     COUNTY_BASE_DATASET: "Ingested county jail data. This dataset is a copy of the jails postgres database.",
     COVID_DASHBOARD_REFERENCE_DATASET: "Reference tables used by the COVID dashboard. Updated manually.",
     DATAFLOW_METRICS_DATASET: "Stores metric output of Dataflow pipeline jobs.",
