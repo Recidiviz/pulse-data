@@ -19,8 +19,6 @@
 TODO(#6197): This file should be cleaned up after the new normalized views land.
 """
 
-from recidiviz.utils.environment import in_gcp_staging
-
 # pylint: disable=unused-import
 from recidiviz.ingest.direct.views.unnormalized_direct_ingest_big_query_view_types import (
     DestinationTableType,
@@ -29,7 +27,7 @@ from recidiviz.ingest.direct.views.unnormalized_direct_ingest_big_query_view_typ
 
 
 def should_use_normalized_direct_ingest_raw_table_query() -> bool:
-    return in_gcp_staging()
+    return True
 
 
 if should_use_normalized_direct_ingest_raw_table_query():
