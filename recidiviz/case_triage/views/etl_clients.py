@@ -68,40 +68,6 @@ latest_employment AS (
     ) employments
     WHERE row_num = 1
 ),
--- HACK ALERT 
--- TODO(#6200): Until a full ID ingest re-run is a complete, we need to grab address data on the fly
--- HACK ALERT
-latest_idaho_address AS (
-   SELECT 
-    'US_ID' as state_code,
-    offendernumber as person_external_id,
-    current_address
-   FROM
-        (SELECT
-          cis_offender.offendernumber,
-          ARRAY_TO_STRING([line1, city, state_abbreviation, cis_personaddress.zipcode], ', ') AS current_address,
-          ROW_NUMBER() OVER (PARTITION BY personid ORDER BY startdate DESC) as row_num
-        FROM
-            `{project_id}.us_id_raw_data_up_to_date_views.cis_offenderaddress_latest` cis_offenderaddress
-        FULL OUTER JOIN
-            `{project_id}.us_id_raw_data_up_to_date_views.cis_personaddress_latest` cis_personaddress
-        ON
-            id = personaddressid
-        LEFT JOIN
-            `{project_id}.{static_reference_tables_dataset}.state_ids`
-        ON
-            codestateid = CAST(state_id AS STRING)
-        LEFT JOIN
-            `{project_id}.us_id_raw_data_up_to_date_views.cis_offender_latest` cis_offender
-        ON 
-            cis_offender.id = cis_personaddress.personid
-        WHERE cis_personaddress.personid IS NOT NULL
-            AND cis_offenderaddress.validaddress = 'T' -- Valid address
-            AND cis_offenderaddress.enddate IS NULL -- Active address
-            AND cis_personaddress.codeaddresstypeid IN ('1') -- Physical address
-         ) latest_idaho_addresses
-    WHERE row_num = 1
-),
 -- TODO(#5943): Make ideal_query the main query body.
 ideal_query AS (
 SELECT
@@ -153,18 +119,13 @@ WHERE
 -- HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT
 with_derived_supervising_officer as (
     SELECT
-      ideal_query.* EXCEPT (current_address, supervising_officer_external_id),
-      IF(state_code != 'US_ID', ideal_query.supervising_officer_external_id, UPPER(ofndr_agnt.agnt_id)) AS supervising_officer_external_id,
-      -- TODO(#6200): Until a full ID ingest re-run is a complete, we need to grab address data on the fly
-      IF(state_code != 'US_ID', ideal_query.current_address, latest_idaho_address.current_address) as current_address,
+      ideal_query.* EXCEPT (supervising_officer_external_id),
+      IF(state_code != 'US_ID', ideal_query.supervising_officer_external_id, UPPER(ofndr_agnt.agnt_id)) AS supervising_officer_external_id
   FROM
       ideal_query
     LEFT OUTER JOIN
       `{project_id}.us_id_raw_data_up_to_date_views.ofndr_agnt_latest` ofndr_agnt
     ON ideal_query.person_external_id = ofndr_agnt.ofndr_num
-    LEFT OUTER JOIN 
-        latest_idaho_address
-    USING (person_external_id, state_code)
 )
 SELECT *
 FROM with_derived_supervising_officer
@@ -183,6 +144,7 @@ CLIENT_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "state_code",
         "person_external_id",
         "full_name",
+        "current_address",
         "gender",
         "birthdate",
         "birthdate_inferred_from_age",
@@ -201,8 +163,6 @@ CLIENT_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         # this list because of the way that we have to derive this result from
         # the ofndr_agnt table for Idaho.
         "supervising_officer_external_id",
-        # TODO(#6200): Until a full ID ingest re-run is a complete, we need to grab address data on the fly
-        "current_address",
     ],
 )
 
