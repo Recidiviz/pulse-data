@@ -20,6 +20,8 @@ import os
 from datetime import datetime
 from typing import List
 
+import pytz
+
 from recidiviz.persistence.database.schema.case_triage.schema import (
     ETLClient,
     ETLOpportunity,
@@ -30,6 +32,7 @@ DEMO_FROZEN_DATETIME = datetime(
     year=2021,
     month=3,
     day=9,
+    tzinfo=pytz.UTC,
 )
 DEMO_FROZEN_DATE = DEMO_FROZEN_DATETIME.date()
 

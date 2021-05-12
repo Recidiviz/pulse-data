@@ -18,6 +18,8 @@
 from datetime import datetime, timedelta
 from unittest.case import TestCase
 
+import pytz
+
 from recidiviz.case_triage.querier.opportunity_presenter import OpportunityPresenter
 from recidiviz.case_triage.opportunities.types import OpportunityDeferralType
 from recidiviz.persistence.database.schema.case_triage.schema import (
@@ -47,7 +49,7 @@ class TestOpportunityPresenter(TestCase):
         )
 
     def test_deferral(self) -> None:
-        now = datetime.now()
+        now = datetime.now(tz=pytz.UTC)
         tomorrow = now + timedelta(days=1)
         day_after_tomorrow = now + timedelta(days=2)
 

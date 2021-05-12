@@ -16,8 +16,9 @@
 // =============================================================================
 import { IconSVG, Need, NeedState } from "@recidiviz/design-system";
 import * as React from "react";
+import { observer } from "mobx-react-lite";
 import { Caption, CaseCardBody, CaseCardInfo } from "./CaseCard.styles";
-import { NeedsActionFlow } from "./NeedsCorrectionDropdown";
+import { NeedsActionFlow } from "../NeedsActionFlow/NeedsActionFlow";
 import { DecoratedClient } from "../../stores/ClientsStore/Client";
 import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
 
@@ -53,8 +54,8 @@ const NeedsEmployment: React.FC<NeedsEmploymentProps> = ({
         {caption}
 
         <NeedsActionFlow
+          actionable={!met}
           client={client}
-          met={met}
           resolve={CaseUpdateActionType.FOUND_EMPLOYMENT}
           dismiss={CaseUpdateActionType.INCORRECT_EMPLOYMENT_DATA}
         />
@@ -63,4 +64,4 @@ const NeedsEmployment: React.FC<NeedsEmploymentProps> = ({
   );
 };
 
-export default NeedsEmployment;
+export default observer(NeedsEmployment);

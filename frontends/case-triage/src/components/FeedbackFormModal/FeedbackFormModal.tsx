@@ -52,6 +52,8 @@ const titleForActionType = (actionType: CaseUpdateActionType): string => {
       return "Not on Caseload";
     case CaseUpdateActionType.CURRENTLY_IN_CUSTODY:
       return "In Custody";
+    case CaseUpdateActionType.INCORRECT_SUPERVISION_LEVEL_DATA:
+      return "Incorrect Supervision Level Data";
     default:
       return "Incorrect data";
   }

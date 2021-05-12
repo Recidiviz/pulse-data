@@ -14,31 +14,45 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { autorun, makeAutoObservable, runInAction } from "mobx";
-import { Opportunity } from "./Opportunity";
-import UserStore from "../UserStore";
+import { autorun, makeAutoObservable, remove, runInAction } from "mobx";
+import moment from "moment";
+import {
+  Opportunity,
+  OPPORTUNITY_PRIORITY,
+  opportunityPriorityComparator,
+  OpportunityType,
+} from "./Opportunity";
+import UserStore, { KNOWN_EXPERIMENTS } from "../UserStore";
 import API from "../API";
+import { DecoratedClient } from "../ClientsStore";
+import RootStore from "../RootStore";
 
 interface OpportunityStoreProps {
   api: API;
+  rootStore: RootStore;
   userStore: UserStore;
 }
 
 class OpportunityStore {
   api: API;
 
+  rootStore: RootStore;
+
   isLoading?: boolean;
 
   opportunities?: Opportunity[];
+
+  opportunitiesByPerson?: Record<string, Opportunity[]>;
 
   error?: string;
 
   userStore: UserStore;
 
-  constructor({ api, userStore }: OpportunityStoreProps) {
+  constructor({ api, rootStore, userStore }: OpportunityStoreProps) {
     makeAutoObservable(this);
 
     this.api = api;
+    this.rootStore = rootStore;
     this.userStore = userStore;
     this.isLoading = false;
 
@@ -55,11 +69,32 @@ class OpportunityStore {
     this.isLoading = true;
 
     try {
-      runInAction(async () => {
+      await runInAction(async () => {
         this.isLoading = false;
-        this.opportunities = await this.api.get<Opportunity[]>(
+        let opportunities = await this.api.get<Opportunity[]>(
           "/api/opportunities"
         );
+
+        opportunities = opportunities.filter((opportunity: Opportunity) => {
+          return (
+            OPPORTUNITY_PRIORITY[opportunity.opportunityType] !== undefined
+          );
+        });
+
+        runInAction(() => {
+          this.opportunities = opportunities;
+          this.opportunitiesByPerson = opportunities.reduce(
+            (memo, opportunity) => {
+              const list = memo[opportunity.personExternalId] || [];
+
+              return {
+                ...memo,
+                [opportunity.personExternalId]: [...list, opportunity],
+              };
+            },
+            {} as Record<string, Opportunity[]>
+          );
+        });
       });
     } catch (error) {
       runInAction(() => {
@@ -67,6 +102,69 @@ class OpportunityStore {
         this.error = error;
       });
     }
+  }
+
+  *createOpportunityDeferral(
+    client: DecoratedClient,
+    opportunityType: OpportunityType,
+    deferUntil: moment.Moment
+  ): Generator {
+    yield this.api.post("/api/opportunity_deferrals", {
+      personExternalId: client.personExternalId,
+      opportunityType,
+      deferralType: "REMINDER",
+      deferUntil: deferUntil.format(),
+      requestReminder: true,
+    });
+
+    yield this.fetchOpportunities();
+    this.rootStore.updateClientsList();
+  }
+
+  *deleteOpportunityDeferral(opportunity: Opportunity): Generator {
+    yield this.api.delete(
+      `/api/opportunity_deferrals/${opportunity.deferralId}`
+    );
+
+    remove(opportunity, "deferredUntil");
+    remove(opportunity, "deferralId");
+    remove(opportunity, "deferralType");
+
+    this.rootStore.updateClientsList();
+
+    // HACK: Due to a combination of bugs in React/Chrome, the scroll position is reset to the top of the page when re-rendering the client list
+    // Store scroll position and re-scroll to the position upon the next re-render
+    // https://github.com/facebook/react/issues/19695#issuecomment-839079273
+    // https://bugs.chromium.org/p/chromium/issues/detail?id=1208152&q=label%3AHotlist-Polish
+    const scroll = window.scrollY;
+    requestAnimationFrame(() => {
+      window.scrollTo(window.scrollX, scroll);
+    });
+  }
+
+  getTopOpportunityForClient(
+    personExternalId: string
+  ): Opportunity | undefined {
+    if (
+      !this.userStore.isInExperiment(KNOWN_EXPERIMENTS.TOP_OPPORTUNITIES) ||
+      !this.opportunitiesByPerson ||
+      !this.opportunitiesByPerson[personExternalId]
+    ) {
+      return;
+    }
+
+    return this.opportunitiesByPerson[personExternalId]
+      .slice()
+      .sort(opportunityPriorityComparator)[0];
+  }
+
+  getOpportunitiesForClient(personExternalId: string): Opportunity[] {
+    return (
+      this.opportunities?.filter(
+        (opportunity: Opportunity) =>
+          opportunity.personExternalId === personExternalId
+      ) || []
+    );
   }
 }
 

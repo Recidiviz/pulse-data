@@ -73,6 +73,7 @@ _CASE_UPDATE_ACTION_TYPE_TO_PROGRESS_CHECKER: Dict[
     CaseUpdateActionType.DOWNGRADE_INITIATED: _in_progress_until_changed,
     # TODO(#5721): Need to better understand how to detect when DISCHARGE_INITIATED is no longer in-progress.
     CaseUpdateActionType.DISCHARGE_INITIATED: _always_in_progress,
+    CaseUpdateActionType.INCORRECT_SUPERVISION_LEVEL_DATA: _in_progress_until_changed,
     CaseUpdateActionType.NOT_ON_CASELOAD: _always_in_progress,
     CaseUpdateActionType.CURRENTLY_IN_CUSTODY: _always_in_progress,
     CaseUpdateActionType.DEPRECATED__INFORMATION_DOESNT_MATCH_OMS: _always_in_progress,

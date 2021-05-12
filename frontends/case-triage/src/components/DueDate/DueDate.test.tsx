@@ -28,25 +28,25 @@ test("DueDate", () => {
 
   // Long ago
   let { getByText } = render(<DueDate date={moment("2021-01-01")} />);
-  getByText("2 months ago");
+  getByText("Contact due 2 months ago");
 
   // Today
   ({ getByText } = render(<DueDate date={moment("2021-02-26")} />));
-  getByText("Today");
+  getByText("Contact today");
 
   MockDate.set(EveningFeb26);
 
   // Due date is 4 hours from now, rounds to 1 day
   ({ getByText } = render(<DueDate date={moment("2021-02-27")} />));
-  getByText("In a day");
+  getByText("Contact in a day");
 
   // Overdue
   ({ getByText } = render(<DueDate date={moment("2021-02-20")} />));
-  getByText("6 days ago");
+  getByText("Contact due 6 days ago");
 
   // Not required
   ({ getByText } = render(<DueDate date={null} />));
-  getByText("Not required");
+  getByText("Contact not required");
 
   MockDate.reset();
 });
