@@ -11,6 +11,7 @@ child_key_mappings:
   # TODO(#1883): We overwrite state_incarceration_sentence_id and state_early_discharge_id in the controller, but this
   # is here because otherwise the entities aren't added to our extracted objects cache.
   sent_no: state_incarceration_sentence.state_incarceration_sentence_id
+  mitt_srl: state_incarceration_sentence.state_incarceration_sentence_id
   early_discharge_id: state_early_discharge.state_early_discharge_id
 
 primary_key:
