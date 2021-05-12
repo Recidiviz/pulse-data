@@ -155,8 +155,6 @@ OPERATIONS_KEY = "operations"
 STATE_KEY = "state"
 INGEST_DOCS_KEY = "ingest_docs"
 CASE_TRIAGE_FIXTURES_KEY = "case_triage_fixtures"
-# TODO(#6197): Delete this key when we've committed to the new normalized preprocessing rows.
-NORMALIZED_SQL_PREPROCESSING_ROWS_KEY = "normalized_sql_preprocessing_rows"
 ENDPOINTS_DOCS_KEY = "endpoints_docs"
 
 MODIFIED_FILE_ASSERTIONS: Dict[str, List[RequiredModificationSets]] = {
@@ -258,32 +256,6 @@ MODIFIED_FILE_ASSERTIONS: Dict[str, List[RequiredModificationSets]] = {
                 {"recidiviz/case_triage/fixtures/dummy_clients.json"}
             ),
         )
-    ],
-    NORMALIZED_SQL_PREPROCESSING_ROWS_KEY: [
-        RequiredModificationSets.for_symmetric_check(
-            frozenset(
-                {
-                    "recidiviz/ingest/direct/views/normalized_direct_ingest_big_query_view_types.py",
-                    "recidiviz/ingest/direct/views/unnormalized_direct_ingest_big_query_view_types.py",
-                }
-            )
-        ),
-        RequiredModificationSets.for_symmetric_check(
-            frozenset(
-                {
-                    "recidiviz/tests/ingest/direct/controllers/normalized_direct_ingest_big_query_view_types_test.py",
-                    "recidiviz/tests/ingest/direct/controllers/unnormalized_direct_ingest_big_query_view_types_test.py",
-                }
-            )
-        ),
-        RequiredModificationSets.for_symmetric_check(
-            frozenset(
-                {
-                    "recidiviz/tests/ingest/direct/controllers/normalized_direct_ingest_ingest_view_export_manager_test.py",
-                    "recidiviz/tests/ingest/direct/controllers/unnormalized_direct_ingest_ingest_view_export_manager_test.py",
-                }
-            )
-        ),
     ],
     ENDPOINTS_DOCS_KEY: _get_modified_endpoints(),
 }
