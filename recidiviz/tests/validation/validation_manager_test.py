@@ -52,6 +52,9 @@ from recidiviz.validation.validation_models import (
     DataValidationJobResult,
     ValidationCheckType,
 )
+from recidiviz.calculator.query.experiments import (
+    view_config as experiments_view_config,
+)
 from recidiviz.calculator.query.county import view_config as county_view_config
 from recidiviz.calculator.query.justice_counts import (
     view_config as justice_counts_view_config,
@@ -318,6 +321,12 @@ class TestHandleRequest(TestCase):
                 view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
                 bq_view_namespace=BigQueryViewNamespace.COUNTY,
                 candidate_view_builders=county_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
+                dataset_overrides=None,
+            ),
+            call(
+                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+                bq_view_namespace=BigQueryViewNamespace.EXPERIMENTS,
+                candidate_view_builders=experiments_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
                 dataset_overrides=None,
             ),
             call(

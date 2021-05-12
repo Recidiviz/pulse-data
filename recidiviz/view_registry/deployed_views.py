@@ -21,6 +21,9 @@ from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.county.view_config import (
     VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as COUNTY_VIEW_BUILDERS,
 )
+from recidiviz.calculator.query.experiments.view_config import (
+    VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as EXPERIMENTS_VIEW_BUILDERS,
+)
 from recidiviz.calculator.query.justice_counts.view_config import (
     VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as JUSTICE_COUNTS_VIEW_BUILDERS,
 )
@@ -52,6 +55,7 @@ DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE: Dict[
     BigQueryViewNamespace, Sequence[BigQueryViewBuilder]
 ] = {
     BigQueryViewNamespace.COUNTY: COUNTY_VIEW_BUILDERS,
+    BigQueryViewNamespace.EXPERIMENTS: EXPERIMENTS_VIEW_BUILDERS,
     BigQueryViewNamespace.JUSTICE_COUNTS: JUSTICE_COUNTS_VIEW_BUILDERS,
     BigQueryViewNamespace.DIRECT_INGEST: DIRECT_INGEST_VIEW_BUILDERS,
     BigQueryViewNamespace.STATE: STATE_VIEW_BUILDERS,
