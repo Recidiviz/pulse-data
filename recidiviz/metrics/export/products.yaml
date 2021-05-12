@@ -59,6 +59,8 @@ products:
     states:
       - state_code: US_ID
         environment: staging
+      - state_code: US_ND
+        environment: staging
   - name: Vitals Report
     exports: []
     states:
