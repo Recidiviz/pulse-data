@@ -26,6 +26,7 @@ from recidiviz.cloud_functions.direct_ingest_bucket_name_utils import (
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common.ingest_metadata import SystemLevel
+from recidiviz.ingest.direct.errors import DirectIngestInstanceError
 from recidiviz.persistence.database.sqlalchemy_database_key import (
     SQLAlchemyStateDatabaseVersion,
 )
@@ -44,15 +45,23 @@ class DirectIngestInstance(Enum):
     # rerun.
     SECONDARY = "SECONDARY"
 
-    def database_version(
-        self, system_level: SystemLevel
-    ) -> SQLAlchemyStateDatabaseVersion:
+    def check_is_valid_system_level(self, system_level: SystemLevel) -> None:
+        """Throws a DirectIngestInstanceError if this is not a valid instance for the
+        given system level.
+        """
         if system_level == SystemLevel.COUNTY:
             if self != self.PRIMARY:
-                raise ValueError(
+                raise DirectIngestInstanceError(
                     f"Direct ingest for [{system_level}] only has single, "
                     f"primary ingest instance. Ingest instance [{self}] not valid."
                 )
+
+    def database_version(
+        self, system_level: SystemLevel
+    ) -> SQLAlchemyStateDatabaseVersion:
+        self.check_is_valid_system_level(system_level)
+
+        if system_level == SystemLevel.COUNTY:
             # County direct ingest writes to single, multi-tenant database
             return SQLAlchemyStateDatabaseVersion.LEGACY
 
