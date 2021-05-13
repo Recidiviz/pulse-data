@@ -1642,3 +1642,56 @@ class ManualUploadTest(unittest.TestCase):
         self.assertEqual("Admissions YTD", ytd_definition.label)
 
         session.close()
+
+
+class TestTableConverter(unittest.TestCase):
+    """Tests for TableConverter."""
+
+    def test_duplicate_columns_fail(self) -> None:
+        # Arrange
+        converter = manual_upload.TableConverter(
+            dimension_generators=[
+                manual_upload.DimensionGenerator(
+                    column_name="Age",
+                    dimension_mappings=[
+                        manual_upload.ColumnDimensionMapping(
+                            manual_upload.Age, overrides=None
+                        )
+                    ],
+                )
+            ],
+            value_column="Value",
+            filters=set(),
+        )
+
+        # Act
+        with self.assertRaisesRegex(ValueError, r"Column 'Age' appeared multiple"):
+            converter.dimension_classes_for_columns(["Age", "Age"])
+
+    def test_extra_mapped_columns_fail(self) -> None:
+        # Arrange
+        converter = manual_upload.TableConverter(
+            dimension_generators=[
+                manual_upload.DimensionGenerator(
+                    column_name="Age",
+                    dimension_mappings=[
+                        manual_upload.ColumnDimensionMapping(
+                            manual_upload.Age, overrides=None
+                        )
+                    ],
+                ),
+                manual_upload.DimensionGenerator(
+                    column_name="Race",
+                    dimension_mappings=[
+                        manual_upload.ColumnDimensionMapping(
+                            manual_upload.Race, overrides=None
+                        )
+                    ],
+                ),
+            ],
+            value_column="Value",
+            filters=set(),
+        )
+        # Act
+        with self.assertRaisesRegex(ValueError, r"Columns \[Race\] are mapped but"):
+            converter.dimension_classes_for_columns(["Age"])

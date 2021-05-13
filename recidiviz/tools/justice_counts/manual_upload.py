@@ -25,7 +25,6 @@ python -m recidiviz.tools.justice_counts.manual_upload \
     --project-id recidiviz-staging \
     --app-url http://127.0.0.1:5000
 """
-import re
 from abc import abstractmethod, ABCMeta
 import argparse
 import datetime
@@ -665,9 +664,9 @@ class County(Dimension):
 
     @county_code.validator
     def _value_is_valid(self, _attribute: attr.Attribute, county_code: str) -> None:
-        if re.search("^US_[A-Z]{2}_[A-Z_]+$", county_code) is None:
+        if not county_code.isupper():
             raise ValueError(
-                f"Invalid county code '{county_code}' does not match expected format. "
+                f"Invalid county code '{county_code}' must be uppercase. "
                 f"ex: 'US_NY_NEW_YORK'"
             )
         fips.validate_county_code(county_code.lower())
@@ -1461,18 +1460,29 @@ class TableConverter:
         """Returns a list of all possible dimensions that a value in a table could have (superset of possible dimensions
         from individual columns)."""
         dimensions: List[Type[Dimension]] = []
+
+        generators_to_use = dict(self.dimension_generators)
         for column in columns:
-            if column in self.dimension_generators:
-                possible_dimensions = self.dimension_generators[
+            if column in generators_to_use:
+                possible_dimensions = generators_to_use.pop(
                     column
-                ].possible_dimensions_for_column()
+                ).possible_dimensions_for_column()
                 dimensions.extend(
                     self._remove_filtered_dimensions_from_dimension_types_generated(
                         possible_dimensions
                     )
                 )
             elif column != self.value_column:
+                if column in self.dimension_generators:
+                    raise ValueError(
+                        f"Column '{column}' appeared multiple times in the data."
+                    )
                 raise ValueError(f"Column '{column}' was not mapped.")
+
+        if generators_to_use:
+            raise ValueError(
+                f"Columns [{', '.join(generators_to_use.keys())}] are mapped but do not appear in the data."
+            )
         return dimensions
 
     def table_to_data_points(self, df: pandas.DataFrame) -> List[DimensionalDataPoint]:
