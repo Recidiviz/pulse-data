@@ -1,0 +1,53 @@
+file_tag: Chain
+file_description: |-
+  This table contains one occurrence for each chain item scheduled for the offender. A chain item is a reserved location on a vehicle for the offender's verified travel.
+primary_key_cols:
+  - AppointmentDate
+  - SiteID
+  - AppointmentType
+  - OffenderID
+  - ReportFrom
+  - SequenceNumber
+columns:
+  - name: AppointmentDate
+    description: |-
+      The date of an appointment.
+  - name: SiteID
+    description: |-
+      This identifies an organizational/location entity. Sites may include institutions, staff agencies, hospitals, etc. This is a database element.
+  - name: AppointmentType
+    description: |-
+      This is the Appointment Type Code for the Appointment Type.
+    known_values:
+      - value: JOB
+        description:  TODO(#5582) - Populate with definition.
+      - value: DHR
+        description:  TODO(#5582) - Populate with definition.
+      - value: DEN
+        description:  TODO(#5582) - Populate with definition.
+      - value: CLF
+        description:  TODO(#5582) - Populate with definition.
+      - value: CNS
+        description:  TODO(#5582) - Populate with definition.
+      - value: CLS
+        description:  TODO(#5582) - Populate with definition.
+      - value: RTC
+        description:  TODO(#5582) - Populate with definition.
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: ReportFrom
+    description: |-
+      The time at which an inmate's scheduled appointment starts.
+  - name: SequenceNumber
+    description: |-
+      Uniquely identifies various DB2 tables.
+  - name: ReportLocation
+    description: |-
+      An exact location where the offender is to report.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.
