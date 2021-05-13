@@ -24,10 +24,7 @@ from recidiviz.case_triage.opportunities.types import (
     OpportunityDeferralType,
     OpportunityType,
 )
-from recidiviz.persistence.database.schema.case_triage.schema import (
-    ETLClient,
-    ETLOfficer,
-)
+from recidiviz.persistence.database.schema.case_triage.schema import ETLClient
 from recidiviz.utils.segment_client import SegmentClient
 
 
@@ -42,13 +39,13 @@ class CaseTriageSegmentClient(SegmentClient):
 
     def track_opportunity_deferred(
         self,
-        officer: ETLOfficer,
+        email_address: str,
         client: ETLClient,
         opportunity: OpportunityType,
         deferred_until: datetime,
         reminder_requested: bool,
     ) -> None:
-        user_id = segment_user_id_for_email(officer.email_address)
+        user_id = segment_user_id_for_email(email_address)
         self.track(
             user_id,
             "backend.opportunity_deferred",
@@ -62,12 +59,12 @@ class CaseTriageSegmentClient(SegmentClient):
 
     def track_opportunity_deferral_deleted(
         self,
-        officer: ETLOfficer,
+        email_address: str,
         client: ETLClient,
         deferral_type: OpportunityDeferralType,
         deferral_id: str,
     ) -> None:
-        user_id = segment_user_id_for_email(officer.email_address)
+        user_id = segment_user_id_for_email(email_address)
         self.track(
             user_id,
             "backend.opportunity_deferral_removed",
@@ -80,11 +77,11 @@ class CaseTriageSegmentClient(SegmentClient):
 
     def track_person_action_taken(
         self,
-        officer: ETLOfficer,
+        email_address: str,
         client: ETLClient,
         action: CaseUpdateActionType,
     ) -> None:
-        user_id = segment_user_id_for_email(officer.email_address)
+        user_id = segment_user_id_for_email(email_address)
         self.track(
             user_id,
             "backend.person_action_taken",
@@ -96,12 +93,12 @@ class CaseTriageSegmentClient(SegmentClient):
 
     def track_person_action_removed(
         self,
-        officer: ETLOfficer,
+        email_address: str,
         client: ETLClient,
         action: CaseUpdateActionType,
         update_id: str,
     ) -> None:
-        user_id = segment_user_id_for_email(officer.email_address)
+        user_id = segment_user_id_for_email(email_address)
         self.track(
             user_id,
             "backend.person_action_removed",

@@ -162,7 +162,7 @@ def create_api_blueprint(
 
                 if segment_client:
                     segment_client.track_opportunity_deferred(
-                        g.current_user,
+                        g.email,
                         etl_client,
                         g.api_data["opportunity_type"],
                         g.api_data["defer_until"],
@@ -197,7 +197,7 @@ def create_api_blueprint(
 
                 if segment_client:
                     segment_client.track_opportunity_deferral_deleted(
-                        g.current_user,
+                        g.email,
                         etl_client,
                         OpportunityDeferralType(opportunity_deferral.deferral_type),
                         deferral_id,
@@ -245,7 +245,7 @@ def create_api_blueprint(
 
             if segment_client:
                 segment_client.track_person_action_taken(
-                    g.current_user,
+                    g.email,
                     etl_client,
                     g.api_data["action_type"],
                 )
@@ -272,7 +272,7 @@ def create_api_blueprint(
 
                 if segment_client:
                     segment_client.track_person_action_removed(
-                        g.current_user,
+                        g.email,
                         etl_client,
                         CaseUpdateActionType(case_update.action_type),
                         str(case_update.update_id),
