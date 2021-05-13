@@ -37,6 +37,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
 from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestFileMetadataManager,
 )
+from recidiviz.ingest.direct.errors import DirectIngestInstanceError
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -948,6 +949,22 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
         # Assert
         self.assertEqual(0, self.metadata_manager.get_num_unprocessed_raw_files())
 
+    def test_get_num_unprocessed_raw_files_when_secondary_db(self) -> None:
+        # Arrange
+        raw_unprocessed_path_1 = self._make_unprocessed_path(
+            "bucket/file_tag.csv",
+            GcsfsDirectIngestFileType.RAW_DATA,
+        )
+
+        # Act
+        self.metadata_manager_secondary.mark_raw_file_as_discovered(
+            raw_unprocessed_path_1
+        )
+
+        # Assert
+        with self.assertRaises(DirectIngestInstanceError):
+            self.metadata_manager_secondary.get_num_unprocessed_raw_files()
+
     def test_get_num_unprocessed_ingest_files(self) -> None:
         # Arrange
         args = GcsfsIngestViewExportArgs(
@@ -968,12 +985,25 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
             ingest_view_unprocessed_path,
         )
 
+        metadata_entity_2 = (
+            self.metadata_manager_secondary.register_ingest_file_export_job(args)
+        )
+        self.metadata_manager_secondary.register_ingest_view_export_file_name(
+            metadata_entity_2,
+            ingest_view_unprocessed_path,
+        )
+
         unprocessed_paths = [ingest_view_unprocessed_path]
 
         # Assert
         self.assertEqual(
             len(unprocessed_paths),
             self.metadata_manager.get_num_unprocessed_ingest_files(),
+        )
+
+        self.assertEqual(
+            len(unprocessed_paths),
+            self.metadata_manager_secondary.get_num_unprocessed_ingest_files(),
         )
 
     def test_get_date_of_earliest_unprocessed_ingest_file(self) -> None:

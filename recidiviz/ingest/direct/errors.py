@@ -40,3 +40,10 @@ class DirectIngestError(Exception):
             self.error_type == DirectIngestErrorType.ENVIRONMENT_ERROR
             or self.error_type == DirectIngestErrorType.INPUT_ERROR
         )
+
+
+class DirectIngestInstanceError(Exception):
+    """Raised when trying to access functionality that is not allowed for a given instance."""
+
+    def __init__(self, msg: str):
+        super().__init__(msg)
