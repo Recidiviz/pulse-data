@@ -24,6 +24,7 @@ from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     gcsfs_direct_ingest_bucket_for_region,
 )
+from recidiviz.ingest.direct.errors import DirectIngestInstanceError
 from recidiviz.persistence.database.sqlalchemy_database_key import (
     SQLAlchemyStateDatabaseVersion,
 )
@@ -53,7 +54,7 @@ class TestDirectIngestInstance(unittest.TestCase):
             ),
         )
 
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaises(DirectIngestInstanceError) as e:
             _ = DirectIngestInstance.SECONDARY.database_version(
                 system_level=SystemLevel.COUNTY
             )
@@ -99,4 +100,20 @@ class TestDirectIngestInstance(unittest.TestCase):
         self.assertEqual(
             DirectIngestInstance.PRIMARY,
             DirectIngestInstance.for_ingest_bucket(ingest_bucket_path),
+        )
+
+    def test_check_is_valid_system_level(self) -> None:
+        for system_level in SystemLevel:
+            # Shouldn't crash for any system level
+            DirectIngestInstance.PRIMARY.check_is_valid_system_level(system_level)
+
+        DirectIngestInstance.SECONDARY.check_is_valid_system_level(SystemLevel.STATE)
+        with self.assertRaises(DirectIngestInstanceError) as e:
+            DirectIngestInstance.SECONDARY.check_is_valid_system_level(
+                system_level=SystemLevel.COUNTY
+            )
+        self.assertEqual(
+            str(e.exception),
+            "Direct ingest for [SystemLevel.COUNTY] only has single, primary ingest "
+            "instance. Ingest instance [DirectIngestInstance.SECONDARY] not valid.",
         )
