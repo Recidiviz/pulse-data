@@ -182,6 +182,7 @@ def _build_views_to_update(
     view_source_table_datasets: Set[str],
     candidate_view_builders: Sequence[BigQueryViewBuilder],
     dataset_overrides: Optional[Dict[str, str]],
+    override_should_build_predicate: bool = False,
 ) -> List[BigQueryView]:
     """Returns the list of views that should be updated, built from builders in the |candidate_view_builders| list."""
 
@@ -203,7 +204,10 @@ def _build_views_to_update(
             continue
 
         try:
-            view = view_builder.build(dataset_overrides=dataset_overrides)
+            view = view_builder.build(
+                dataset_overrides=dataset_overrides,
+                override_should_build_predicate=override_should_build_predicate,
+            )
         except BigQueryViewBuilderShouldNotBuildError:
             logging.warning(
                 "Condition failed for view builder %s in dataset %s. Continuing without it.",

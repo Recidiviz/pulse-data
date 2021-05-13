@@ -24,7 +24,7 @@ from mock import patch, MagicMock
 
 import recidiviz
 from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
-from recidiviz.big_query.big_query_view import BigQueryAddress
+from recidiviz.big_query.big_query_view import BigQueryAddress, BigQueryView
 from recidiviz.big_query.big_query_view_dag_walker import DagKey
 from recidiviz.calculator.calculation_documentation_generator import (
     CalculationDocumentationGenerator,
@@ -57,6 +57,8 @@ class CalculationDocumentationGeneratorTest(unittest.TestCase):
     """Tests for DirectIngestDocumentationGenerator."""
 
     def setUp(self) -> None:
+        self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
+        self.project_id_patcher.start().return_value = "recidiviz-456"
         self.mock_config_path = os.path.join(
             os.path.dirname(fixtures.__file__), "fixture_products.yaml"
         )
@@ -65,16 +67,65 @@ class CalculationDocumentationGeneratorTest(unittest.TestCase):
         )
         self.mock_product_states = {StateCode("US_MO")}
         self.mock_pipeline_states = {StateCode("US_MO"), StateCode("US_PA")}
+        view_1 = BigQueryView(
+            dataset_id="dataset_1",
+            view_id="table_1",
+            description="table_1 description",
+            view_query_template="SELECT * FROM `{project_id}.state.source_table`",
+        )
+        view_2 = BigQueryView(
+            dataset_id="dataset_2",
+            view_id="table_2",
+            description="table_2 description",
+            view_query_template="SELECT * FROM `{project_id}.state.source_table_2`",
+        )
+        view_3 = BigQueryView(
+            dataset_id="dataset_3",
+            view_id="table_3",
+            description="table_3 description",
+            view_query_template="""
+                            SELECT * FROM `{project_id}.dataset_1.table_1`
+                            JOIN `{project_id}.dataset_2.table_2`
+                            USING (col)""",
+        )
+        view_4 = BigQueryView(
+            dataset_id="dataset_4",
+            view_id="table_4",
+            description="table_4 description",
+            view_query_template="""
+                            SELECT * FROM `{project_id}.dataset_3.table_3`""",
+        )
+        view_5 = BigQueryView(
+            dataset_id="dataset_5",
+            view_id="table_5",
+            description="table_5 description",
+            view_query_template="""
+                            SELECT * FROM `{project_id}.dataset_3.table_3`""",
+        )
         with local_project_id_override(GCP_PROJECT_STAGING), patch.object(
             BigQueryTableChecker, "_table_has_column"
         ) as mock_table_has_column, patch.object(
             BigQueryTableChecker, "_table_exists"
-        ) as mock_table_exists:
+        ) as mock_table_exists, patch.object(
+            CalculationDocumentationGenerator,
+            "_get_all_export_config_view_builder_addresses",
+        ) as mock_top_level_view_addresses, patch.object(
+            CalculationDocumentationGenerator,
+            "_get_all_views_to_document",
+        ) as mock_all_views_to_document, patch(
+            "recidiviz.calculator.calculation_documentation_generator._build_views_to_update"
+        ) as mock_views:
+            mock_views.return_value = [view_1, view_2, view_3, view_4, view_5]
+            mock_top_level_view_addresses.return_value = {view_1.address}
+            mock_all_views_to_document.return_value = {view_1.address}
             mock_table_has_column.return_value = True
             mock_table_exists.return_value = True
             self.docs_generator = CalculationDocumentationGenerator(
                 self.product_configs, CALC_DOCS_PATH
             )
+
+    def tearDown(self) -> None:
+        self.project_id_patcher.stop()
 
     @patch(
         "recidiviz.calculator.calculation_documentation_generator."
@@ -102,16 +153,11 @@ class CalculationDocumentationGeneratorTest(unittest.TestCase):
             SupervisionRevocationMetric: "test_supervision_revocation_metrics",
         },
     )
-    @patch(
-        "recidiviz.calculator.calculation_documentation_generator.CalculationDocumentationGenerator._get_all_views",
-    )
     def test_generate_summary_strings(
         self,
-        mock_view_keys: MagicMock,
         mock_product_states: MagicMock,
         mock_pipeline_states: MagicMock,
     ) -> None:
-        mock_view_keys.return_value = set()
         mock_pipeline_states.return_value = self.mock_pipeline_states
         mock_product_states.return_value = self.mock_product_states
 
@@ -125,7 +171,10 @@ class CalculationDocumentationGeneratorTest(unittest.TestCase):
   - [Test Product](calculation/products/test_product/test_product_summary.md)
   - [Test Product Without Exports](calculation/products/test_product_without_exports/test_product_without_exports_summary.md)
   - [Test State Agnostic Product](calculation/products/test_state_agnostic_product/test_state_agnostic_product_summary.md)"""
-        expected_views_str = """\n- Views\n"""
+        expected_views_str = """\n- Views
+  - dataset_1
+    - [table_1](calculation/views/dataset_1/table_1.md)
+"""
         expected_metrics_str = """\n- Dataflow Metrics (links to come)
   - INCARCERATION
     - IncarcerationAdmissionMetric
@@ -286,6 +335,32 @@ The presence of all required metrics for a state does not guarantee that this pr
             )
 
             self.assertEqual(expected_docs, documentation)
+
+    def test_get_view_information(self) -> None:
+        dag_key = DagKey(
+            view_address=BigQueryAddress(dataset_id="dataset_1", table_id="table_1")
+        )
+
+        docs = self.docs_generator._get_view_information(  # pylint: disable=W0212
+            dag_key
+        )
+        expected_documentation_string = """##dataset_1.table_1
+_table_1 description_
+
+####View schema in Big Query
+This view may not be deployed to all environments yet.<br/>
+[**Staging**](https://console.cloud.google.com/bigquery?pli=1&p=recidiviz-staging&page=table&project=recidiviz-staging&d=dataset_1&t=table_1)
+<br/>
+[**Production**](https://console.cloud.google.com/bigquery?pli=1&p=recidiviz-123&page=table&project=recidiviz-123&d=dataset_1&t=table_1)
+<br/>
+
+####Dependency Tree
+
+[dataset_1.table_1](../dataset_1/table_1.md) <br/>
+|--state.source_table (Source Table) <br/>
+
+"""
+        self.assertEqual(expected_documentation_string, docs)
 
     # TODO(#7125): Improve calc docs generation speed
     @unittest.skipIf(

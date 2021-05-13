@@ -23,7 +23,8 @@ python -m recidiviz.tools.display_bq_dag_for_view --project_id recidiviz-staging
 import argparse
 import logging
 
-from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
+from recidiviz.big_query.big_query_view import BigQueryAddress
+from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker, DagKey
 from recidiviz.big_query.view_update_manager import (
     _build_views_to_update,
 )
@@ -60,10 +61,14 @@ def print_dfs_tree(
     dataset_id: str, view_id: str, print_downstream_tree: bool = False
 ) -> None:
     dag_walker = build_dag_walker(dataset_id, view_id)
+    node = dag_walker.nodes_by_key[
+        DagKey(view_address=BigQueryAddress(dataset_id=dataset_id, table_id=view_id))
+    ]
+    dag_walker.populate_node_family_for_node(node=node)
     print(
-        dag_walker.get_dfs_tree_str_for_table(
-            dataset_id=dataset_id, table_id=view_id, descendants=print_downstream_tree
-        )
+        node.node_family.child_dfs_tree_str
+        if print_downstream_tree
+        else node.node_family.parent_dfs_tree_str
     )
 
 
