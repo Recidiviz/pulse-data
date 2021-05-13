@@ -1,0 +1,87 @@
+file_tag: Contact
+file_description: |-
+  This table contains one occurrence for each offender/contact combination.
+primary_key_cols:
+  - ContactID
+columns:
+  - name: ContactID
+    description: |-
+      A unique identifier assigned to an offender contact person.
+  - name: LastName
+    description: |-
+      The last name of a person.
+  - name: FirstName
+    description: |-
+      This is the first name of a person.
+  - name: Race
+    description: |-
+      The NCIC (National Crime Information Center) race code.
+    known_values:
+      - value: A
+        description: TODO(#7424) - Populate with definition.
+      - value: B
+        description: TODO(#7424) - Populate with definition.
+      - value: H
+        description: TODO(#7424) - Populate with definition.
+      - value: I
+        description: TODO(#7424) - Populate with definition.
+      - value: W
+        description: TODO(#7424) - Populate with definition.
+  - name: Sex
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+    known_values:
+      - value: F
+        description: TODO(#7424) - Populate with definition.
+      - value: M
+        description: TODO(#7424) - Populate with definition.
+      - value: U
+        description: TODO(#7424) - Populate with definition.
+  - name: BirthDate
+    description: |-
+      The date on which a person was born.
+  - name: Weight
+    description: |-
+      The weight of an individual, measured in pounds.
+  - name: HeightFeet
+    description: |-
+      A unit of measure describing an inmate's height.
+  - name: HeightInches
+    description: |-
+      The inches portion of an offender's height.
+  - name: HairColor
+    description: |-
+      The predominant hair color classification of an offender.
+  - name: EyeColor
+    description: |-
+      The predominant eye color of an offender.
+  - name: Complexion
+    description: |-
+      The predominant skin color of an offender.
+  - name: DriversLicense
+    description: |-
+      A unique identifier assigned to a driver's license by the state issuing the license.
+  - name: DriversLicenseState
+    description: |-
+      The state issuing a driver's license.
+  - name: SocialSecurityNumber
+    description: |-
+      Social Security Number of an individual.
+  - name: DeadFlag
+    description: |-
+      Indicates whether an inmate survived an accident.
+  - name: VerifiedFlag
+    description: |-
+      The indicator for the verification of emergency travel request information.
+  - name: CriminalFlag
+    description: |-
+      Indicates whether a person has a criminal history.
+  - name: VerifiedDate
+    description: |-
+      The date information is entered into the system. This field is necessary to provide a processing audit trail.
+  - name: LastUpdateUserID
+    description: |-
+        This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.
