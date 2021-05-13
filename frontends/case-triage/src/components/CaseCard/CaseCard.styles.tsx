@@ -94,13 +94,13 @@ export const ButtonContainer = styled.div`
 
 export const ClientNameRow = styled.div`
   display: flex;
-  align-items: baseline;
   justify-content: space-between;
 `;
 
 export const CloseButton = styled(Button).attrs({ kind: "link" })`
-  height: 16px;
-  width: 16px;
+  height: ${rem(spacing.xl)};
+  width: ${rem(spacing.xl)};
+  padding: ${rem(spacing.sm)};
 `;
 
 export const EllipsisDropdown = styled(NeedsCorrectionDropdown)`
