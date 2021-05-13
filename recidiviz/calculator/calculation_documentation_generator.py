@@ -27,7 +27,9 @@ from pytablewriter import MarkdownTableWriter
 
 from recidiviz.big_query.big_query_view import (
     BigQueryAddress,
+    BigQueryView,
 )
+from recidiviz.big_query.view_update_manager import _build_views_to_update
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
@@ -118,6 +120,7 @@ class CalculationDocumentationGenerator:
 
         self.states_by_product = self.get_states_by_product()
 
+        # Reverses the states_by_product dictionary
         self.products_by_state: Dict[
             StateCode, Dict[GCPEnvironment, List[ProductName]]
         ] = defaultdict(lambda: defaultdict(list))
@@ -126,13 +129,14 @@ class CalculationDocumentationGenerator:
             for environment, states in environments_to_states.items():
                 for state in states:
                     self.products_by_state[state][environment].append(product_name)
-
-        walker_views = [
-            view_builder.build()
-            for view_builder in DEPLOYED_VIEW_BUILDERS
-            if view_builder.should_build()
-        ]
-        self.dag_walker = BigQueryViewDagWalker(walker_views)
+        self.dag_walker = BigQueryViewDagWalker(
+            _build_views_to_update(
+                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+                candidate_view_builders=DEPLOYED_VIEW_BUILDERS,
+                dataset_overrides=None,
+                override_should_build_predicate=True,
+            )
+        )
         self.prod_templates_yaml = YAMLDict.from_path(PRODUCTION_TEMPLATES_PATH)
 
         self.daily_pipelines = self.prod_templates_yaml.pop_dicts("daily_pipelines")
@@ -140,22 +144,62 @@ class CalculationDocumentationGenerator:
             "historical_pipelines"
         )
 
-        self.state_metric_calculations = self._get_state_metric_calculations(
+        self.metric_calculations_by_state = self._get_state_metric_calculations(
             self.daily_pipelines, "daily"
         )
         # combine with the historical pipelines
         for name, metric_info_list in self._get_state_metric_calculations(
             self.historical_pipelines, "triggered by code changes"
         ).items():
-            self.state_metric_calculations[name].extend(metric_info_list)
+            self.metric_calculations_by_state[name].extend(metric_info_list)
 
-        self.datasets_to_views: Dict[str, List[str]] = defaultdict(list)
+        self.view_addresses_by_parent_metric: Dict[
+            str, List[BigQueryAddress]
+        ] = defaultdict(list)
+
+        def _preprocess_views(
+            v: BigQueryView, _parent_results: Dict[BigQueryView, None]
+        ) -> None:
+            dag_key = DagKey(view_address=v.address)
+            node = self.dag_walker.nodes_by_key[dag_key]
+
+            # Fills out full child/parent dependencies and tree representations for use
+            # in various sections.
+            self.dag_walker.populate_node_family_for_node(
+                node=node,
+                datasets_to_skip={DATAFLOW_METRICS_MATERIALIZED_DATASET}
+                | RAW_TABLE_DATASETS,
+                custom_node_formatter=self._dependency_tree_formatter_for_gitbook,
+                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS
+                | LATEST_VIEW_DATASETS,
+            )
+
+            full_parentage_keys = node.node_family.full_parentage
+
+            # Store views dependent on each metric. We'll use in the metrics section.
+            metric_types = {
+                DATAFLOW_TABLES_TO_METRIC_TYPES[key.table_id].value
+                for key in full_parentage_keys
+                if key.dataset_id == DATAFLOW_METRICS_DATASET
+            }
+            for metric_type in metric_types:
+                self.view_addresses_by_parent_metric[metric_type].append(v.address)
+
+        self.dag_walker.process_dag(_preprocess_views)
+        self.all_views_to_document = self._get_all_views_to_document()
+
+    def _get_all_export_config_view_builder_addresses(self) -> Set[BigQueryAddress]:
+        all_export_view_builder_addresses: Set[BigQueryAddress] = set()
+        for product in self.products:
+            all_export_view_builder_addresses = all_export_view_builder_addresses.union(
+                self._get_all_config_view_addresses_for_product(product)
+            )
+        return all_export_view_builder_addresses
 
     def get_states_by_product(
         self,
     ) -> Dict[ProductName, Dict[GCPEnvironment, List[StateCode]]]:
-        """Returns the dict of products to states and environments,
-        while also building up the dict of states to products"""
+        """Returns the dict of products to states and environments."""
         states_by_product: Dict[
             ProductName, Dict[GCPEnvironment, List[StateCode]]
         ] = defaultdict(lambda: defaultdict(list))
@@ -171,8 +215,7 @@ class CalculationDocumentationGenerator:
     def bulleted_list(
         string_list: List[str], tabs: int = 1, escape_underscores: bool = True
     ) -> str:
-        # To avoid formatting issues for some view IDs we use an escape sequence
-
+        """Returns a string holding a bulleted list of the input string list."""
         return "\n".join(
             [
                 f"{'  '*tabs}- {s.replace('__', ESCAPED_DOUBLE_UNDERSCORE) if escape_underscores else s}"
@@ -181,6 +224,7 @@ class CalculationDocumentationGenerator:
         )
 
     def _get_states_to_metrics(self) -> Dict[str, List[str]]:
+        """Returns a dictionary of state code strings to metric types."""
         states_to_metrics = defaultdict(list)
         for pipeline in self.daily_pipelines:
             states_to_metrics[pipeline.peek("state_code", str)].extend(
@@ -189,6 +233,8 @@ class CalculationDocumentationGenerator:
         return states_to_metrics
 
     def _get_dataflow_pipeline_enabled_states(self) -> Set[StateCode]:
+        """Returns the set of StateCodes for all states present in our production calc
+        pipeline template."""
         states = {
             pipeline.peek("state_code", str).upper()
             for pipeline in self.daily_pipelines
@@ -253,7 +299,9 @@ class CalculationDocumentationGenerator:
     def _get_views_summary_str(self) -> str:
         header = "\n- Views"
         bullets = ""
-        for dataset_id, table_id_list in sorted(self.datasets_to_views.items()):
+        for dataset_id, table_id_list in sorted(
+            self._get_views_by_dataset(self.all_views_to_document).items()
+        ):
             bullets += f"\n  - {dataset_id}\n"
             bullets += self.bulleted_list(
                 [
@@ -339,6 +387,8 @@ class CalculationDocumentationGenerator:
         return self.bulleted_list(states_list) if states_list else "  N/A"
 
     def _get_shipped_states_str(self, product: ProductConfig) -> str:
+        """Returns a string containing lists of shipped states and states in development
+        for a given product."""
 
         shipped_states_str = self.states_list_for_env(
             product, GCPEnvironment.PRODUCTION
@@ -356,12 +406,19 @@ class CalculationDocumentationGenerator:
             + "\n\n"
         )
 
-    def _get_dataset_headers_to_views(
-        self, dag_keys: Set[DagKey], add_descriptions: bool = False
-    ) -> str:
+    @staticmethod
+    def _get_views_by_dataset(dag_keys: Set[DagKey]) -> Dict[str, List[str]]:
+        """Given a set of DagKeys, returns a dictionary of those view IDs, organized by dataset."""
         datasets_to_views = defaultdict(list)
         for key in dag_keys:
             datasets_to_views[key.dataset_id].append(key.table_id)
+        return datasets_to_views
+
+    def _get_dataset_headers_to_views_str(
+        self, dag_keys: Set[DagKey], add_descriptions: bool = False
+    ) -> str:
+        """Given a set of DagKeys, returns a str list of those views, organized by dataset."""
+        datasets_to_views = self._get_views_by_dataset(dag_keys)
         views_str = ""
         for dataset, views in sorted(datasets_to_views.items()):
             views_str += f"####{dataset}\n"
@@ -375,12 +432,14 @@ class CalculationDocumentationGenerator:
         return views_str
 
     def _get_views_str_for_product(self, view_keys: Set[DagKey]) -> str:
+        """Returns the string containing the VIEWS section of the product markdown."""
         views_header = "##VIEWS\n\n"
         if not view_keys:
             return views_header + "*This product does not use any BigQuery views.*\n\n"
-        return views_header + self._get_dataset_headers_to_views(view_keys)
+        return views_header + self._get_dataset_headers_to_views_str(view_keys)
 
     def _get_source_tables_str_for_product(self, source_keys: Set[DagKey]) -> str:
+        """Returns the string containing the SOURCE TABLES section of the product markdown."""
         source_tables_header = (
             "##SOURCE TABLES\n"
             "_Reference views that are used by other views. Some need to be updated manually._\n\n"
@@ -390,7 +449,7 @@ class CalculationDocumentationGenerator:
                 source_tables_header
                 + "*This product does not reference any source tables.*\n\n"
             )
-        return source_tables_header + self._get_dataset_headers_to_views(
+        return source_tables_header + self._get_dataset_headers_to_views_str(
             source_keys, add_descriptions=True
         )
 
@@ -436,38 +495,43 @@ class CalculationDocumentationGenerator:
         )
         return metrics_header + writer.dumps()
 
-    def _get_all_parent_keys_for_product(self, product: ProductConfig) -> Set[DagKey]:
-        """Uses the BigQueryViewDagWalker to create a set of all parent dag nodes, then
-        parses that set into views, metrics, and reference tables. Returns the file
-        contents for a calc product markdown."""
-        all_parent_keys: Set[DagKey] = set()
-
+    @staticmethod
+    def _get_all_config_view_addresses_for_product(
+        product: ProductConfig,
+    ) -> Set[BigQueryAddress]:
+        """Returns a set containing a BQ address for each view listed by each export
+        necessary for the given product."""
+        all_config_view_addresses: Set[BigQueryAddress] = set()
         for export in product.exports:
             collection_config = VIEW_COLLECTION_EXPORT_INDEX[export]
             view_builders = collection_config.view_builders_to_export
-            # These views will be the starter nodes for the recursive call
-            all_config_view_keys = {
-                DagKey(
-                    view_address=BigQueryAddress(
+
+            all_config_view_addresses = all_config_view_addresses.union(
+                {
+                    BigQueryAddress(
                         dataset_id=view_builder.dataset_id,
                         table_id=view_builder.view_id,
                     )
-                )
-                for view_builder in view_builders
-            }
+                    for view_builder in view_builders
+                }
+            )
 
-            start_nodes = [
-                self.dag_walker.nodes_by_key[key] for key in all_config_view_keys
-            ]
-            parentage = all_config_view_keys
-            for node in start_nodes:
-                parentage = parentage.union(
-                    self.dag_walker.find_full_parentage(
-                        node, VIEW_SOURCE_TABLE_DATASETS | LATEST_VIEW_DATASETS
-                    )
-                )
+        return all_config_view_addresses
 
-            all_parent_keys = all_parent_keys.union(parentage)
+    def _get_all_parent_keys_for_product(self, product: ProductConfig) -> Set[DagKey]:
+        """Returns a set containing a DagKey for every view that this product relies upon. """
+        all_config_view_addresses = self._get_all_config_view_addresses_for_product(
+            product
+        )
+
+        all_parent_keys: Set[DagKey] = set()
+        for view_address in all_config_view_addresses:
+            dag_key = DagKey(view_address=view_address)
+            node = self.dag_walker.nodes_by_key[dag_key]
+            # Add in the top level view
+            all_parent_keys.add(dag_key)
+            # Add in all ancestors
+            all_parent_keys = all_parent_keys.union(node.node_family.full_parentage)
 
         # Ignore materialized metric views as relevant metric info can be found in a
         # different dataset (DATAFLOW_METRICS_DATASET).
@@ -515,6 +579,7 @@ class CalculationDocumentationGenerator:
 
     @staticmethod
     def _normalize_string_for_path(target_string: str) -> str:
+        """Returns a lowercase, underscore-separated string."""
         return target_string.lower().replace(" ", "_")
 
     def generate_products_markdowns(self) -> bool:
@@ -571,10 +636,10 @@ class CalculationDocumentationGenerator:
         regularly calculated metric information (sorted by metric name)"""
         sorted_state_metric_calculations: Dict[str, List[PipelineMetricInfo]] = {
             state_name_key: sorted(
-                self.state_metric_calculations[state_name_key],
+                self.metric_calculations_by_state[state_name_key],
                 key=lambda info: info.name,
             )
-            for state_name_key in sorted(self.state_metric_calculations)
+            for state_name_key in sorted(self.metric_calculations_by_state)
         }
         return sorted_state_metric_calculations
 
@@ -672,31 +737,19 @@ class CalculationDocumentationGenerator:
     def _get_view_information(self, view_key: DagKey) -> str:
         """Returns string contents for a view markdown."""
         view_node = self.dag_walker.nodes_by_key[
-            DagKey(
-                view_address=BigQueryAddress(
-                    dataset_id=view_key.dataset_id, table_id=view_key.table_id
-                )
-            )
+            DagKey(view_address=view_key.view_address)
         ]
         documentation = VIEW_DOCS_TEMPLATE.format(
             view_dataset_id=view_key.dataset_id,
             view_table_id=view_key.table_id,
             description=view_node.view.description.strip(),
-            dfs_tree=self.dag_walker.get_dfs_tree_str_for_table(
-                view_key.dataset_id,
-                view_key.table_id,
-                datasets_to_skip={DATAFLOW_METRICS_MATERIALIZED_DATASET}
-                | RAW_TABLE_DATASETS,
-                custom_node_formatter=self._dependency_tree_formatter_for_gitbook,
-            ),
+            dfs_tree=view_node.node_family.parent_dfs_tree_str,
         )
-
         return documentation
 
-    def _get_all_views(self) -> Set[DagKey]:
-        """Retrieve all relevant views present in the DAG walker for documentation"""
+    def _get_all_views_to_document(self) -> Set[DagKey]:
+        """Retrieve all DAG Walker views that are relied upon by a product"""
         all_view_keys: Set[DagKey] = set()
-
         for product in self.products:
             all_view_keys = all_view_keys.union(
                 {
@@ -713,12 +766,7 @@ class CalculationDocumentationGenerator:
         views_dir_path = os.path.join(self.root_calc_docs_dir, "views")
         os.makedirs(views_dir_path, exist_ok=True)
 
-        views_to_document = self._get_all_views()
-
-        for view_key in views_to_document:
-            # This is used in the summary string generation
-            self.datasets_to_views[view_key.dataset_id].append(view_key.table_id)
-
+        for view_key in self.all_views_to_document:
             # Generate documentation
             documentation = self._get_view_information(view_key)
 

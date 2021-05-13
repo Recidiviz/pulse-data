@@ -265,11 +265,14 @@ class BigQueryViewBuilder(Generic[BigQueryViewType]):
     materialized_address_override: Optional[BigQueryAddress]
 
     def build(
-        self, *, dataset_overrides: Optional[Dict[str, str]] = None
+        self,
+        *,
+        dataset_overrides: Optional[Dict[str, str]] = None,
+        override_should_build_predicate: bool = False,
     ) -> BigQueryViewType:
         """Builds and returns the view object. Throws an exception of type  `BigQueryViewBuilderShouldNotBuildError`
         if `should_build()` is false for this view."""
-        if not self.should_build():
+        if not override_should_build_predicate and not self.should_build():
             raise BigQueryViewBuilderShouldNotBuildError()
         return self._build(dataset_overrides=dataset_overrides)
 

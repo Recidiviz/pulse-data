@@ -22,7 +22,7 @@ import re
 import threading
 import time
 import unittest
-from typing import Dict
+from typing import Dict, Set
 from unittest.mock import patch
 
 from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
@@ -350,7 +350,7 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         )
         _ = BigQueryViewDagWalker([view_1, view_2, view_3])
 
-    def test_find_full_parentage(self) -> None:
+    def test_populate_node_family_full_parentage(self) -> None:
         view_1 = BigQueryView(
             dataset_id="dataset_1",
             view_id="table_1",
@@ -390,10 +390,10 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
 
         # root node start
         start_node = dag_walker.node_for_view(view_1)
-        parentage_set = dag_walker.find_full_parentage(
-            curr_node=start_node,
-            view_source_table_datasets={"source_dataset"},
+        dag_walker.populate_node_family_for_node(
+            node=start_node, view_source_table_datasets={"source_dataset"}
         )
+
         self.assertEqual(
             {
                 DagKey(
@@ -402,14 +402,13 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
                     )
                 )
             },
-            parentage_set,
+            start_node.node_family.full_parentage,
         )
 
         # start in middle
         start_node = dag_walker.node_for_view(view_3)
-        parentage_set = dag_walker.find_full_parentage(
-            curr_node=start_node,
-            view_source_table_datasets={"source_dataset"},
+        dag_walker.populate_node_family_for_node(
+            node=start_node, view_source_table_datasets={"source_dataset"}
         )
         expected_parent_nodes = {
             DagKey(
@@ -425,13 +424,15 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
             DagKey.for_view(view_1),
             DagKey.for_view(view_2),
         }
-        self.assertEqual(expected_parent_nodes, parentage_set)
+        self.assertEqual(
+            expected_parent_nodes,
+            start_node.node_family.full_parentage,
+        )
 
         # single start node
         start_node = dag_walker.node_for_view(view_4)
-        parentage_set = dag_walker.find_full_parentage(
-            curr_node=start_node,
-            view_source_table_datasets={"source_dataset"},
+        dag_walker.populate_node_family_for_node(
+            node=start_node, view_source_table_datasets={"source_dataset"}
         )
         expected_parent_nodes = {
             DagKey(
@@ -448,23 +449,24 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
             DagKey.for_view(view_2),
             DagKey.for_view(view_3),
         }
-        self.assertEqual(expected_parent_nodes, parentage_set)
+        self.assertEqual(
+            expected_parent_nodes,
+            start_node.node_family.full_parentage,
+        )
 
         # multiple start nodes
         start_nodes = [start_node, dag_walker.node_for_view(view_5)]
 
-        parentage_set = set()
+        parentage_set: Set[DagKey] = set()
         for node in start_nodes:
-            parentage_set = parentage_set.union(
-                dag_walker.find_full_parentage(
-                    curr_node=node,
-                    view_source_table_datasets={"source_dataset"},
-                )
+            dag_walker.populate_node_family_for_node(
+                node=node, view_source_table_datasets={"source_dataset"}
             )
+            parentage_set = parentage_set.union(node.node_family.full_parentage)
 
         self.assertEqual(expected_parent_nodes, parentage_set)
 
-    def test_find_full_parentage_complex_dependencies(self) -> None:
+    def test_populate_node_family_full_parentage_complex_dependencies(self) -> None:
         view_1 = BigQueryView(
             dataset_id="dataset_1",
             view_id="table_1",
@@ -499,9 +501,8 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         dag_walker = BigQueryViewDagWalker([view_1, view_2, view_3, view_4])
         start_node = dag_walker.node_for_view(view_4)
 
-        parentage_set = dag_walker.find_full_parentage(
-            curr_node=start_node,
-            view_source_table_datasets={"source_dataset"},
+        dag_walker.populate_node_family_for_node(
+            node=start_node, view_source_table_datasets={"source_dataset"}
         )
         expected_parent_nodes = {
             DagKey(
@@ -513,9 +514,9 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
             DagKey.for_view(view_2),
             DagKey.for_view(view_3),
         }
-        self.assertEqual(expected_parent_nodes, parentage_set)
+        self.assertEqual(expected_parent_nodes, start_node.node_family.full_parentage)
 
-    def test_get_dfs_tree_str_for_table(self) -> None:
+    def test_populate_node_family_parentage_dfs_tree_str(self) -> None:
         view_1 = BigQueryView(
             dataset_id="dataset_1",
             view_id="table_1",
@@ -554,9 +555,8 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         dag_walker = BigQueryViewDagWalker([view_1, view_2, view_3, view_4, view_5])
 
         # Top level view
-        tree = dag_walker.get_dfs_tree_str_for_table(
-            dataset_id=view_5.dataset_id, table_id=view_5.table_id
-        )
+        node = dag_walker.node_for_view(view_5)
+        dag_walker.populate_node_family_for_node(node=node)
         expected_tree = """dataset_5.table_5
 |--dataset_3.table_3
 |----dataset_2.table_2
@@ -564,24 +564,22 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
 |----dataset_1.table_1
 |------source_dataset.source_table
 """
-        self.assertEqual(expected_tree, tree)
+        self.assertEqual(expected_tree, node.node_family.parent_dfs_tree_str)
 
         # Middle of tree
-        tree = dag_walker.get_dfs_tree_str_for_table(
-            dataset_id=view_3.dataset_id, table_id=view_3.table_id
-        )
+        node = dag_walker.node_for_view(view_3)
+        dag_walker.populate_node_family_for_node(node=node)
         expected_tree = """dataset_3.table_3
 |--dataset_2.table_2
 |----source_dataset.source_table_2
 |--dataset_1.table_1
 |----source_dataset.source_table
 """
-        self.assertEqual(expected_tree, tree)
+        self.assertEqual(expected_tree, node.node_family.parent_dfs_tree_str)
 
         # Skip datasets
-        tree = dag_walker.get_dfs_tree_str_for_table(
-            dataset_id=view_3.dataset_id,
-            table_id=view_3.table_id,
+        dag_walker.populate_node_family_for_node(
+            node=node,
             datasets_to_skip={"dataset_1"},
         )
         expected_tree = """dataset_3.table_3
@@ -589,16 +587,14 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
 |----source_dataset.source_table_2
 |--source_dataset.source_table
 """
-        self.assertEqual(expected_tree, tree)
+        self.assertEqual(expected_tree, node.node_family.parent_dfs_tree_str)
 
         # Custom formatted
         def _custom_formatter(dag_key: DagKey) -> str:
             return f"custom_formatted_{dag_key.dataset_id}_{dag_key.table_id}"
 
-        tree = dag_walker.get_dfs_tree_str_for_table(
-            dataset_id=view_3.dataset_id,
-            table_id=view_3.table_id,
-            custom_node_formatter=_custom_formatter,
+        dag_walker.populate_node_family_for_node(
+            node=node, custom_node_formatter=_custom_formatter
         )
 
         expected_tree = """custom_formatted_dataset_3_table_3
@@ -607,18 +603,9 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
 |--custom_formatted_dataset_1_table_1
 |----custom_formatted_source_dataset_source_table
 """
-        self.assertEqual(expected_tree, tree)
+        self.assertEqual(expected_tree, node.node_family.parent_dfs_tree_str)
 
-        # Source table
-        tree = dag_walker.get_dfs_tree_str_for_table(
-            dataset_id="source_dataset",
-            table_id="source_table",
-        )
-        expected_tree = """source_dataset.source_table
-"""
-        self.assertEqual(expected_tree, tree)
-
-    def test_get_dfs_tree_str_for_table_descendants(self) -> None:
+    def test_populate_node_family_descendants_dfs_tree_str(self) -> None:
         view_1 = BigQueryView(
             dataset_id="dataset_1",
             view_id="table_1",
@@ -666,27 +653,25 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         )
 
         # Top level view
-        tree = dag_walker.get_dfs_tree_str_for_table(
-            dataset_id=view_2.dataset_id, table_id=view_2.table_id, descendants=True
-        )
+        node = dag_walker.node_for_view(view_2)
+        dag_walker.populate_node_family_for_node(node=node)
         expected_tree = """dataset_2.table_2
 |--dataset_3.table_3
 |----dataset_4.table_4
 |----dataset_5.table_5
 |------dataset_6.table_6
 """
-        self.assertEqual(expected_tree, tree)
+        self.assertEqual(expected_tree, node.node_family.child_dfs_tree_str)
 
         # Descendants from middle of tree
-        tree = dag_walker.get_dfs_tree_str_for_table(
-            dataset_id=view_3.dataset_id, table_id=view_3.table_id, descendants=True
-        )
+        node = dag_walker.node_for_view(view_3)
+        dag_walker.populate_node_family_for_node(node=node)
         expected_tree = """dataset_3.table_3
 |--dataset_4.table_4
 |--dataset_5.table_5
 |----dataset_6.table_6
 """
-        self.assertEqual(expected_tree, tree)
+        self.assertEqual(expected_tree, node.node_family.child_dfs_tree_str)
 
     def test_dag_materialized_view_clobbers_other(self) -> None:
         view_1 = BigQueryView(
