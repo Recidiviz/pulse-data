@@ -36,6 +36,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     filename_parts_from_path,
     GcsfsDirectIngestFileType,
 )
+from recidiviz.ingest.direct.errors import DirectIngestInstanceError
 from recidiviz.persistence.database.schema.operations import schema, dao
 from recidiviz.persistence.database.schema_entity_converter.schema_entity_converter import (
     convert_schema_object_to_entity,
@@ -56,9 +57,10 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
     direct ingest file to the operations Postgres table.
     """
 
-    def __init__(self, region_code: str):
+    def __init__(self, region_code: str, ingest_database_name: str):
         self.region_code = region_code
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
+        self.ingest_database_name = ingest_database_name
 
     def has_raw_file_been_discovered(self, path: GcsfsFilePath) -> bool:
         self._check_is_raw_file_path(path)
@@ -210,6 +212,13 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
 
     def get_num_unprocessed_raw_files(self) -> int:
         """Returns the number of unprocessed raw files in the operations table for this region"""
+        if "secondary" in self.ingest_database_name:
+            raise DirectIngestInstanceError(
+                f"Invalid ingest database name [{self.ingest_database_name}] provided."
+                f"Raw files should only be processed in a primary ingest instance,"
+                f"not the secondary instance. "
+            )
+
         session = SessionFactory.for_database(self.database_key)
 
         try:
@@ -555,7 +564,7 @@ class PostgresDirectIngestIngestFileMetadataManager(
         try:
             unprocessed_ingest_files = (
                 dao.get_date_sorted_unprocessed_ingest_view_files_for_region(
-                    session, self.region_code
+                    session, self.region_code, self.ingest_database_name
                 )
             )
             num_unprocessed_ingest_files = len(unprocessed_ingest_files)
@@ -577,7 +586,7 @@ class PostgresDirectIngestIngestFileMetadataManager(
             # The unprocessed ingest files are returned from earliest to latest
             unprocessed_ingest_files = (
                 dao.get_date_sorted_unprocessed_ingest_view_files_for_region(
-                    session, self.region_code
+                    session, self.region_code, self.ingest_database_name
                 )
             )
 
@@ -607,7 +616,7 @@ class PostgresDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
     def __init__(self, region_code: str, ingest_database_name: str):
         self.region_code = region_code.upper()
         self.raw_file_manager = PostgresDirectIngestRawFileMetadataManager(
-            self.region_code
+            self.region_code, ingest_database_name
         )
         self.ingest_file_manager = PostgresDirectIngestIngestFileMetadataManager(
             self.region_code, ingest_database_name

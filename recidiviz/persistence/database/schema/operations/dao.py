@@ -218,11 +218,17 @@ def get_date_sorted_unprocessed_raw_files_for_region(
 def get_date_sorted_unprocessed_ingest_view_files_for_region(
     session: Session,
     region_code: str,
+    ingest_database_name: str,
 ) -> List[schema.DirectIngestIngestFileMetadata]:
     """Returns metadata for all ingest files that do not have a processed_time from earliest to latest"""
     return (
         session.query(schema.DirectIngestIngestFileMetadata)
-        .filter_by(region_code=region_code, processed_time=None)
+        .filter_by(
+            region_code=region_code,
+            processed_time=None,
+            ingest_database_name=ingest_database_name,
+            is_invalidated=False,
+        )
         .order_by(
             schema.DirectIngestIngestFileMetadata.datetimes_contained_upper_bound_inclusive.asc()
         )

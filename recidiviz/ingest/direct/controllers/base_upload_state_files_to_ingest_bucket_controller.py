@@ -175,7 +175,10 @@ class UploadStateFilesToIngestBucketController(
             destination_bucket_override=gcs_destination_path,
         )
         self.postgres_direct_ingest_file_metadata_manager = (
-            PostgresDirectIngestRawFileMetadataManager(region)
+            PostgresDirectIngestRawFileMetadataManager(
+                region,
+                DirectIngestInstance.PRIMARY.database_version(SystemLevel.STATE).name,
+            )
         )
 
     def _copy_to_ingest_bucket(
