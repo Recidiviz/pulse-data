@@ -768,6 +768,9 @@ class TestDirectIngestControl(unittest.TestCase):
     ) -> None:
 
         fake_supported_regions = {
+            "us_tx_brazos": fake_region(
+                region_code="us_tx_brazos", environment="staging"
+            ),
             "us_mo": fake_region(region_code="us_mo", environment="staging"),
             self.region_code: fake_region(
                 region_code=self.region_code, environment="production"
@@ -809,8 +812,12 @@ class TestDirectIngestControl(unittest.TestCase):
         kick_all_schedulers()
 
         mock_supported_region_codes.assert_called()
-        for _region_code, controllers in region_to_mock_controller.items():
-            self.assertEqual(len(controllers), len(DirectIngestInstance))
+        for region_code, controllers in region_to_mock_controller.items():
+            if region_code == "us_tx_brazos":
+                # Only run for PRIMARY instance
+                self.assertEqual(len(controllers), 1)
+            else:
+                self.assertEqual(len(controllers), len(DirectIngestInstance))
             for mock_controller in controllers:
                 mock_controller.kick_scheduler.assert_called_once()
 
@@ -825,6 +832,9 @@ class TestDirectIngestControl(unittest.TestCase):
     ) -> None:
 
         fake_supported_regions = {
+            "us_tx_brazos": fake_region(
+                region_code="us_tx_brazos", environment="staging"
+            ),
             "us_mo": fake_region(region_code="us_mo", environment="staging"),
             self.region_code: fake_region(
                 region_code=self.region_code, environment="production"

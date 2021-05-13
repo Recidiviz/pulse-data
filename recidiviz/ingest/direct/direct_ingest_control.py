@@ -71,7 +71,11 @@ from recidiviz.ingest.direct.controllers.direct_ingest_types import (
 from recidiviz.ingest.direct.direct_ingest_region_utils import (
     get_existing_region_dir_names,
 )
-from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
+from recidiviz.ingest.direct.errors import (
+    DirectIngestError,
+    DirectIngestErrorType,
+    DirectIngestInstanceError,
+)
 from recidiviz.utils import regions, monitoring, metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.monitoring import TagKey
@@ -517,10 +521,15 @@ def kick_all_schedulers() -> None:
             region = _region_for_region_code(region_code=region_code)
             if not region.is_ingest_launched_in_env():
                 continue
+            system_level = SystemLevel.for_region(region)
             for ingest_instance in DirectIngestInstance:
+                try:
+                    ingest_instance.check_is_valid_system_level(system_level)
+                except DirectIngestInstanceError:
+                    continue
                 ingest_bucket = gcsfs_direct_ingest_bucket_for_region(
                     region_code=region_code,
-                    system_level=SystemLevel.for_region(region),
+                    system_level=system_level,
                     ingest_instance=ingest_instance,
                 )
                 controller = DirectIngestControllerFactory.build(
