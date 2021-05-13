@@ -46,6 +46,7 @@ from recidiviz.ingest.direct.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
     get_direct_ingest_states_with_sftp_queue,
 )
+from recidiviz.ingest.direct.errors import DirectIngestInstanceError
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import in_development
@@ -331,8 +332,16 @@ class IngestOperationsStore:
             ingest_database_name=ingest_db_name,
         )
 
+        try:
+            # Raw files are processed in the primary instance, not secondary
+            num_unprocessed_raw_files = (
+                file_metadata_manager.get_num_unprocessed_raw_files()
+            )
+        except DirectIngestInstanceError as _:
+            num_unprocessed_raw_files = 0
+
         return {
-            "unprocessedFilesRaw": file_metadata_manager.get_num_unprocessed_raw_files(),
+            "unprocessedFilesRaw": num_unprocessed_raw_files,
             "unprocessedFilesIngestView": file_metadata_manager.get_num_unprocessed_ingest_files(),
             "dateOfEarliestUnprocessedIngestView": file_metadata_manager.get_date_of_earliest_unprocessed_ingest_file(),
         }
