@@ -19,7 +19,7 @@ max_allowed_error_overrides:
     max_allowed_error_override: 0.03
     override_reason: TODO(#6010) IDOC uses a slightly different population metric which causes discrepencies
   - validation_name: incarceration_population_by_state_by_date_justice_counts_comparison
-    max_allowed_error_override: 0.05
+    max_allowed_error_override: 0.09
     override_reason: ID currently has some population percentage differences greater than the default
   - validation_name: incarceration_admission_person_level_external_comparison
     max_allowed_error_override: 0.50
