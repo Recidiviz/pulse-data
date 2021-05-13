@@ -1,0 +1,86 @@
+file_tag: AssignedStaff
+file_description: |-
+  This table contains at least one occurrence of each staff member assigned to an offender, whether in custody, on parole or on probation.
+primary_key_cols:
+  - StaffID
+  - OffenderID
+  - AssignmentType
+  - StartDate
+columns:
+  - name: StaffID
+    description: |-
+      This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: AssignmentType
+    description: |-
+      An abbreviation for the type of assignment given to an offender.
+    known_values:
+      - value: CAM
+        description: TODO(#7424) - Populate with definition.
+      - value: CCC
+        description: TODO(#7424) - Populate with definition.
+      - value: CLR
+        description: TODO(#7424) - Populate with definition.
+      - value: COU
+        description: TODO(#7424) - Populate with definition.
+      - value: CWO
+        description: TODO(#7424) - Populate with definition.
+      - value: FOO
+        description: TODO(#7424) - Populate with definition.
+      - value: INP
+        description: TODO(#7424) - Populate with definition.
+      - value: INV
+        description: TODO(#7424) - Populate with definition.
+      - value: ISC
+        description: TODO(#7424) - Populate with definition.
+      - value: PAO
+        description: TODO(#7424) - Populate with definition.
+      - value: PDR
+        description: TODO(#7424) - Populate with definition.
+      - value: PRI
+        description: TODO(#7424) - Populate with definition.
+      - value: PRO
+        description: TODO(#7424) - Populate with definition.
+      - value: PSI
+        description: TODO(#7424) - Populate with definition.
+      - value: PSR
+        description: TODO(#7424) - Populate with definition.
+      - value: PSW
+        description: TODO(#7424) - Populate with definition.
+      - value: RPI
+        description: TODO(#7424) - Populate with definition.
+      - value: SDR
+        description: TODO(#7424) - Populate with definition.
+      - value: TII
+        description: TODO(#7424) - Populate with definition.
+      - value: WPC
+        description: TODO(#7424) - Populate with definition.
+  - name: StartDate
+    description: |-
+      The date on which an inmate begins a job, class or program.
+  - name: EndDate
+    description: |-
+      The date a vocational or class assignment ends. The date a draw limit ends.  Also, it is used in sentencing for credits and dead, delinquent, street-time, etc.
+  - name: CaseType
+    description: |-
+      An abbreviation for the type of case for an offender. TODO(#7424): The enums here seem maybe corrupted? Check once CSVs are loaded.
+  - name: AssignmentBeginReason
+    description: |-
+      An abbreviation for whether an assignment is a new case received from a different office type or a transfer in from the same office type. TODO(#7424): The enums here seem maybe corrupted? Check once CSVs are loaded.
+  - name: AssignmentEndReason
+    description: |-
+      An abbreviation for why a staff person is no longer assigned to an offender. TODO(#7424): The enums here seem maybe corrupted? Check once CSVs are loaded.
+  - name: AssignmentDueDate
+    description: |-
+      The date that an assignment such as transfer in investigation is due to be completed.
+  - name: SiteID
+    description: |-
+      This identifies an organizational/location entity. Sites may include institutions, staff agencies, hospitals, etc. This is a database element.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.

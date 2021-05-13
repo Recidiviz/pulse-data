@@ -1,0 +1,45 @@
+file_tag: DetainerActivity
+file_description: |-
+  This table contains one occurrence for each receipt or disbursement of any form or letter pertaining to an offender's detainer(s).
+primary_key_cols:
+  - OffenderID
+  - DetainerType
+  - SequenceNumber
+  - DetainerFormID
+columns:
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: DetainerType
+    description: |-
+      The type of detainer for an offender.  This will either be a regular detainer or a commitment detainer.
+    known_values:
+      - value: "0"
+        description: TODO(#7424) - Populate with definition.
+  - name: SequenceNumber
+    description: |-
+      Uniquely identifies various DB2 tables.
+  - name: DetainerFormID
+    description: |-
+      Identifies the forms used by ISC coordinators, institutions, and outside agencies to arrange for offenders to be tried on charges in an outside jurisdiction.
+  - name: OffenderSignatureDate
+    description: |-
+      The date on which an offender signs a document.
+  - name: ReceivedJurisdictionDate
+    description: |-
+      This is the date a foreign jurisdiction receives a detainer form.
+  - name: HearingDate
+    description: |-
+      The date that a hearing is originally scheduled to take place. This item is used to uniquely identify a particular offender.
+  - name: HearingDecision
+    description: |-
+      The decision on a hearing held for an offender in the detainer process.
+  - name: FormMailDate
+    description: |-
+      This is the date that a detainer form is mailed.
+  - name: LastUpdateUserID
+    description: |-
+        This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.

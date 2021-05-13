@@ -1,0 +1,70 @@
+file_tag: BoardMember
+file_description: |-
+  This table contains information about each board member on grievance or disciplinary boards.
+primary_key_cols:
+  - PersonID
+  - BoardCommitteeType
+  - StartDate
+  - SiteID
+columns:
+  - name: PersonID
+    description: |-
+      This is a unique identifier assigned to a particular person. This database element will be displayed on screen and reports as either TOMIS-ID or STAFF-ID depending on the functional requirements.
+  - name: BoardCommitteeType
+    description: |-
+      The types of committees or boards that are set up for each institution.
+    known_values:
+      - value: GC
+        description: TODO(#5582) - TODO(#5582) - Populate with definition.
+      - value: PB
+        description: TODO(#5582) - TODO(#5582) - Populate with definition.
+      - value: CC
+        description: TODO(#5582) - TODO(#5582) - Populate with definition.
+      - value: DB
+        description: TODO(#5582) - TODO(#5582) - Populate with definition.
+  - name: StartDate
+    description: |-
+      The date on which an inmate begins a job, class or program.
+  - name: SiteID
+    description: |-
+      This identifies an organizational/location entity. Sites may include institutions, staff agencies, hospitals, etc. This is a database element.
+  - name: PersonType
+    description: |-
+      This indicates if the person is a staff or an offender, judge, jailer, DA, etc.
+    known_values:
+      - value: O
+        description: TODO(#5582) - TODO(#5582) - Populate with definition.
+      - value: S
+        description: TODO(#5582) - TODO(#5582) - Populate with definition.
+  - name: UnitID
+    description: |-
+      A unique identifier assigned to a particular unit within an institution.
+  - name: EndDate
+    description: |-
+      The date a vocational or class assignment ends. The date a draw limit ends.  Also, it is used in sentencing for credits and dead, delinquent, street-time, etc.
+  - name: MemberType
+    description: |-
+      An abbreviation used for the type of board/committee member.
+    known_values:
+      - value: IC
+        description: TODO(#5582) - Populate with definition.
+      - value: CH
+        description: TODO(#5582) - Populate with definition.
+      - value: AC
+        description: TODO(#5582) - Populate with definition.
+      - value: SM
+        description: TODO(#5582) - Populate with definition.
+      - value: ME
+        description: TODO(#5582) - Populate with definition.
+      - value: AM
+        description: TODO(#5582) - Populate with definition.
+      - value: IA
+        description: TODO(#5582) - Populate with definition.
+      - value: IM
+        description: TODO(#5582) - Populate with definition.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.
