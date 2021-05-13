@@ -18,6 +18,12 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateSpecializedPurposeForIncarceration,
+)
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodSupervisionType,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -27,11 +33,19 @@ MICROSIM_PROJECTION_VIEW_DESCRIPTION = (
     """"The projected population for the simulated policy and the baseline"""
 )
 
+MICROSIM_PROJECTION_VIEW_EXCLUDED_TYPES = [
+    StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION,
+    StateSpecializedPurposeForIncarceration.EXTERNAL_UNKNOWN,
+    StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN,
+    StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+]
+
 MICROSIM_PROJECTION_QUERY_TEMPLATE = """
     /* {description} */
     WITH historical_dates AS (
+      -- Set the historical date array from Jan 2016 to the start of the current month
       SELECT *
-      FROM UNNEST(GENERATE_DATE_ARRAY('2016-01-01', DATE_TRUNC(DATE_SUB(CURRENT_DATE, INTERVAL 1 MONTH), MONTH),
+      FROM UNNEST(GENERATE_DATE_ARRAY('2016-01-01', DATE_TRUNC(CURRENT_DATE, MONTH),
         INTERVAL 1 MONTH)) AS date
     ),
     historical_supervision_population_output AS (
@@ -54,10 +68,11 @@ MICROSIM_PROJECTION_QUERY_TEMPLATE = """
         AND ((compartment_level_1 = 'SUPERVISION' AND metric_source = 'SUPERVISION_POPULATION')
             OR (compartment_level_1 = 'INCARCERATION' AND sessions.state_code = 'US_ND')
         )
-        AND compartment_level_2 NOT IN ('INTERNAL_UNKNOWN', 'INFORMAL_PROBATION')
+        AND compartment_level_2 NOT IN ('{excluded_types}')
       GROUP BY state_code, date, compartment, legal_status, simulation_group
     ),
     historical_incarceration_population_output AS (
+      -- TODO(#7337): use `dataflow_sessions_materialized` directly once it has paid bed logic
       SELECT
         state_code,
         report_month AS date,
@@ -72,7 +87,7 @@ MICROSIM_PROJECTION_QUERY_TEMPLATE = """
       UNNEST(['ALL', gender]) AS simulation_group
       WHERE state_code = 'US_ID'
         AND gender IN ('FEMALE', 'MALE')
-        AND compartment_level_2 != 'OTHER'
+        AND compartment_level_2 NOT IN ('{excluded_types}')
       GROUP BY state_code, date, compartment, legal_status, simulation_group
     ),
     most_recent_results AS (
@@ -99,7 +114,7 @@ MICROSIM_PROJECTION_QUERY_TEMPLATE = """
     INNER JOIN most_recent_results
     USING (simulation_tag, date_created)
     WHERE compartment NOT LIKE 'RELEASE%'
-      AND simulation_date > DATE_TRUNC(DATE_SUB(CURRENT_DATE, INTERVAL 1 MONTH), MONTH)
+      AND simulation_date > DATE_TRUNC(CURRENT_DATE, MONTH)
 
     UNION ALL
 
@@ -146,6 +161,9 @@ MICROSIM_PROJECTION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
     population_projection_dataset=dataset_config.POPULATION_PROJECTION_DATASET,
     population_projection_output_dataset=dataset_config.POPULATION_PROJECTION_OUTPUT_DATASET,
+    excluded_types="', '".join(
+        [status.name for status in MICROSIM_PROJECTION_VIEW_EXCLUDED_TYPES]
+    ),
     should_materialize=False,
 )
 
