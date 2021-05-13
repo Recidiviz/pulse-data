@@ -43,3 +43,22 @@ To use a local version of `@recidiviz/design-system` in conjunction with your de
 follow these instructions: [Development alongside dependent projects](https://github.com/Recidiviz/web-libraries/tree/main/packages/design-system#2-development-alongside-dependent-projects)
 
 This project was bootstrapped with [craco](https://github.com/gsoft-inc/craco).
+
+## End-to-end tests
+
+We have a suite of end-to-end tests built with [WebdriverIO](https://webdriver.io/docs/gettingstarted) and [Cucumber](https://cucumber.io/docs/cucumber/) that you can run.
+
+### Preparing your test environment
+
+In addition to a locally running backend and frontend serving fixture data, you will need valid login credentials for the "dev" Auth0 tenant.
+
+Create a file in this directory called `.env.e2e` to configure your local test environment:
+
+```
+TEST_AUTH_USER=<your email>
+TEST_AUTH_PASSWORD=<your password>
+# set this to false as needed; can help with debugging
+RUN_TESTS_HEADLESS=true
+```
+
+With this file in place, you can run `yarn test:e2e`, which will run tests against `localhost:3000`. The test configuration is in `wdio.conf.js` and the tests themselves can be found in `src/cucumber`. Any arguments you pass to that command will be forwarded to the `wdio` CLI tool.
