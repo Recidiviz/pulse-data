@@ -74,10 +74,12 @@ class BigQueryViewDagNode:
 
     def __init__(self, view: BigQueryView, is_root: bool = False):
         self.view = view
+        # Note: Must use add_child_key() to populate this member variable before using.
         self.child_node_keys: Set[DagKey] = set()
         self.materialized_addresss: Optional[Dict[BigQueryAddress, DagKey]] = None
-
         self.is_root = is_root
+        # Note: Must call populate_node_family_for_node() on a node before using this member variable.
+        self.node_family: BigQueryViewDagNodeFamily = BigQueryViewDagNodeFamily()
 
     @property
     def dag_key(self) -> DagKey:
@@ -121,6 +123,22 @@ class BigQueryViewDagNode:
     @property
     def child_keys(self) -> Set[DagKey]:
         return self.child_node_keys
+
+
+@attr.s
+class BigQueryViewDagNodeFamily:
+    """Class that holds a DAG node's full child and parent dependencies, as well as string
+    representations of those dependency trees.
+    Attributes can be populated using the DAG walker's populate_node_family_for_node()"""
+
+    # The set of DagKeys for all views this view relies on (parents, grandparents, etc...)
+    full_parentage: Set[DagKey] = attr.ib(default=None)
+    # The set of DagKeys for all views that depend on this view (children, grandchildren, etc...)
+    full_descendants: Set[DagKey] = attr.ib(default=None)
+    # The visual string representation of the full parentage dependency tree.
+    parent_dfs_tree_str: str = attr.ib(default=None)
+    # The visual string representation of the full descendants dependency tree.
+    child_dfs_tree_str: str = attr.ib(default=None)
 
 
 class BigQueryViewDagWalker:
@@ -278,64 +296,17 @@ class BigQueryViewDagWalker:
                             processing.add(child_node.dag_key)
         return result
 
-    def find_full_parentage(
+    def populate_node_family_for_node(
         self,
-        curr_node: BigQueryViewDagNode,
-        view_source_table_datasets: Set[str],
-    ) -> Set[DagKey]:
-        """Recursive function to build a set of DagKeys containing parent/grandparent/etc
-        keys for a node"""
-        full_parentage_keys: Set[DagKey] = set()
-        for parent_node_key in curr_node.parent_keys:
-            full_parentage_keys.add(parent_node_key)
-
-            # TODO(#7049): refactor most_recent_job_id_by_metric_and_state_code dependencies
-            noisy_dependency_keys = [
-                DagKey(
-                    view_address=BigQueryAddress(
-                        dataset_id=builder.dataset_id, table_id=builder.view_id
-                    )
-                )
-                for builder in NOISY_DEPENDENCY_VIEW_BUILDERS
-            ]
-            if parent_node_key in noisy_dependency_keys:
-                continue
-
-            # stop if we hit source views
-            if parent_node_key.dataset_id in view_source_table_datasets:
-                continue
-
-            ancestor_keys = self.find_full_parentage(
-                self.nodes_by_key[parent_node_key], view_source_table_datasets
-            )
-            full_parentage_keys = full_parentage_keys.union(ancestor_keys)
-        return full_parentage_keys
-
-    def get_dfs_tree_str_for_table(
-        self,
-        dataset_id: str,
-        table_id: str,
+        node: BigQueryViewDagNode,
         datasets_to_skip: Optional[Set[str]] = None,
         custom_node_formatter: Optional[Callable[[DagKey], str]] = None,
-        descendants: bool = False,
-    ) -> str:
-        """Returns a string tree representation of the ancestry of a view.
-
-        If |descendants| is True, returns the tree of all views that are dependent
-        on the view. If |descendants| is False, returns the tree of all views that this
-        view depends on.
+        view_source_table_datasets: Optional[Set[str]] = None,
+    ) -> None:
+        """Populates the BigQueryViewDagNodeFamily for a given node. This includes the
+         full set of all parent nodes, the full set of all child nodes, and the string
+        representations of those dependency trees.
         """
-        stack = [
-            (
-                DagKey(
-                    view_address=BigQueryAddress(
-                        dataset_id=dataset_id, table_id=table_id
-                    )
-                ),
-                0,
-            )
-        ]
-
         # TODO(#7049): refactor most_recent_job_id_by_metric_and_state_code dependencies
         noisy_dependency_keys = [
             DagKey(
@@ -345,38 +316,77 @@ class BigQueryViewDagWalker:
             )
             for builder in NOISY_DEPENDENCY_VIEW_BUILDERS
         ]
-        tree = ""
-        while len(stack) > 0:
-            dag_key, tabs = stack.pop()
-            if not datasets_to_skip or dag_key.dataset_id not in datasets_to_skip:
 
-                table_name = (
-                    custom_node_formatter(dag_key)
-                    if custom_node_formatter
-                    else f"{dag_key.dataset_id}.{dag_key.table_id}"
-                )
-                tree += ("|" if tabs else "") + ("--" * tabs) + table_name + "\n"
+        def _get_one_way_dependencies(
+            descendants: bool = False,
+        ) -> Tuple[Set[DagKey], str]:
+            """Returns a set of all dependent DagKeys in one direction, and a string
+             representation of that tree.
 
-            value = self.nodes_by_key.get(dag_key)
-            if value:
-                next_related_keys = (
-                    value.child_keys if descendants else value.parent_keys
-                )
-
-                for related_key in sorted(
-                    next_related_keys,
-                    key=lambda key: (key.dataset_id, key.table_id),
-                    reverse=descendants,
-                ):
-                    if related_key not in noisy_dependency_keys:
-                        stack.append(
-                            (
-                                related_key,
-                                # We don't add a tab if we are skipping a view
-                                tabs
-                                if datasets_to_skip
-                                and dag_key.dataset_id in datasets_to_skip
-                                else tabs + 1,
-                            )
+            If |descendants| is True, returns info about the tree of views that are
+            dependent on the view. If |descendants| is False, returns info about the
+            tree of all views that this view depends on."""
+            stack = [
+                (
+                    DagKey(
+                        view_address=BigQueryAddress(
+                            dataset_id=node.view.dataset_id, table_id=node.view.table_id
                         )
-        return tree
+                    ),
+                    0,
+                )
+            ]
+            tree = ""
+            full_dependencies: Set[DagKey] = set()
+            while len(stack) > 0:
+                dag_key, tabs = stack.pop()
+                if not datasets_to_skip or dag_key.dataset_id not in datasets_to_skip:
+                    table_name = (
+                        custom_node_formatter(dag_key)
+                        if custom_node_formatter
+                        else f"{dag_key.dataset_id}.{dag_key.table_id}"
+                    )
+                    tree += ("|" if tabs else "") + ("--" * tabs) + table_name + "\n"
+
+                # Stop if we reached a source view
+                if (
+                    view_source_table_datasets
+                    and dag_key.dataset_id in view_source_table_datasets
+                ):
+                    continue
+
+                curr_node = self.nodes_by_key.get(dag_key)
+                if curr_node:
+                    next_related_keys = (
+                        curr_node.child_keys if descendants else curr_node.parent_keys
+                    )
+
+                    for related_key in sorted(
+                        next_related_keys,
+                        key=lambda key: (key.dataset_id, key.table_id),
+                        reverse=descendants,
+                    ):
+                        full_dependencies.add(related_key)
+                        # Stop if we hit a noisy dependency
+                        if related_key not in noisy_dependency_keys:
+                            stack.append(
+                                (
+                                    related_key,
+                                    # We don't add a tab if we are skipping a view
+                                    tabs
+                                    if datasets_to_skip
+                                    and dag_key.dataset_id in datasets_to_skip
+                                    else tabs + 1,
+                                )
+                            )
+            return full_dependencies, tree
+
+        full_parentage, parent_tree = _get_one_way_dependencies()
+        full_descendants, child_tree = _get_one_way_dependencies(descendants=True)
+
+        node.node_family = BigQueryViewDagNodeFamily(
+            full_parentage=full_parentage,
+            parent_dfs_tree_str=parent_tree,
+            full_descendants=full_descendants,
+            child_dfs_tree_str=child_tree,
+        )
