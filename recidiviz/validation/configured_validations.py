@@ -636,7 +636,7 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "justice_counts_total_population",
                 "internal_total_population",
             ],
-            max_allowed_error=0.03,
+            max_allowed_error=0.06,
         ),
     ]
 
