@@ -29,9 +29,6 @@ from recidiviz.calculator.pipeline.utils.event_utils import (
     ViolationHistoryMixin,
     SupervisionLocationMixin,
 )
-from recidiviz.calculator.pipeline.utils.supervision_period_index import (
-    _is_official_supervision_admission,
-)
 from recidiviz.common import attr_validators
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
@@ -43,6 +40,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
+    is_official_supervision_admission,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
@@ -278,7 +276,7 @@ class SupervisionStartBucket(SupervisionTimeBucket):
 
     @property
     def is_official_supervision_admission(self) -> bool:
-        return _is_official_supervision_admission(self.admission_reason)
+        return is_official_supervision_admission(self.admission_reason)
 
 
 @attr.s(frozen=True)

@@ -269,13 +269,20 @@ def combine_incarceration_periods(
     return collapsed_incarceration_period
 
 
+def _is_active_period(period: StateIncarcerationPeriod) -> bool:
+    return period.status == StateIncarcerationPeriodStatus.IN_CUSTODY
+
+
+def _is_transfer_start(period: StateIncarcerationPeriod) -> bool:
+    return period.admission_reason == AdmissionReason.TRANSFER
+
+
 def standard_date_sort_for_incarceration_periods(
     incarceration_periods: List[StateIncarcerationPeriod],
 ) -> List[StateIncarcerationPeriod]:
-    """Sorts incarceration periods chronologically by admission and release dates. Periods with the same admission
-    date will be sorted by release date, with unset release dates coming after set release dates."""
-    incarceration_periods.sort(
-        key=lambda b: (b.admission_date, b.release_date or date.max)
+    """Sorts incarceration periods chronologically by dates and statuses."""
+    sort_periods_by_set_dates_and_statuses(
+        incarceration_periods, _is_active_period, _is_transfer_start
     )
 
     return incarceration_periods
@@ -337,11 +344,11 @@ def _filter_and_update_incarceration_periods_for_calculations(
         filtered_incarceration_periods
     )
 
-    return filtered_incarceration_periods
+    updated_incarceration_periods = _infer_missing_dates_and_statuses(
+        filtered_incarceration_periods
+    )
 
-
-def _is_active_period(period: StateIncarcerationPeriod) -> bool:
-    return period.status == StateIncarcerationPeriodStatus.IN_CUSTODY
+    return updated_incarceration_periods
 
 
 def _infer_missing_dates_and_statuses(
@@ -351,7 +358,7 @@ def _infer_missing_dates_and_statuses(
     """First, sorts the incarceration_periods in chronological order of the admission and release dates. Then, for any
     periods missing dates and statuses, infers this information given the other incarceration periods.
     """
-    sort_periods_by_set_dates_and_statuses(incarceration_periods, _is_active_period)
+    standard_date_sort_for_incarceration_periods(incarceration_periods)
 
     updated_periods: List[StateIncarcerationPeriod] = []
 
@@ -575,10 +582,13 @@ def _drop_zero_day_erroneous_periods(
     incarceration_periods: List[StateIncarcerationPeriod],
 ) -> List[StateIncarcerationPeriod]:
     """Removes any incarceration periods where the admission_date is the same as the
-    release_date, where the release_reason is RELEASED_FROM_ERRONEOUS_ADMISSION, and
-    where the admission_reason is not TRANSFER. It is reasonable to assume that these
-    periods are erroneous and should not be considered in any metrics involving
-    incarceration.
+    release_date, where one of the following is true:
+    - The release_reason is RELEASED_FROM_ERRONEOUS_ADMISSION, and
+        where the admission_reason is not TRANSFER.
+    - The admission_reason is ADMITTED_FROM_SUPERVISION and the release_reason is
+        CONDITIONAL_RELEASE.
+    It is reasonable to assume that these periods are erroneous and should not be
+    considered in any metrics involving incarceration.
     Returns the filtered incarceration periods.
     """
     periods_to_keep: List[StateIncarcerationPeriod] = []
@@ -588,10 +598,22 @@ def _drop_zero_day_erroneous_periods(
             ip.admission_date
             and ip.release_date
             and ip.admission_date == ip.release_date
-            and ip.release_reason == ReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION
-            and ip.admission_reason != AdmissionReason.TRANSFER
         ):
-            continue
+            # This is a zero-day period
+            if (
+                ip.release_reason == ReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION
+                and ip.admission_reason != AdmissionReason.TRANSFER
+            ):
+                # A release from an erroneous admission on a non-transfer zero-day
+                # period is reliably an entirely erroneous period
+                continue
+            if (
+                ip.admission_reason == AdmissionReason.ADMITTED_FROM_SUPERVISION
+                and ip.release_reason == ReleaseReason.CONDITIONAL_RELEASE
+            ):
+                # A zero-day return from supervision and then immediate conditional
+                # release is reliably an entirely erroneous period
+                continue
 
         periods_to_keep.append(ip)
 
