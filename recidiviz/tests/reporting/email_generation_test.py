@@ -75,9 +75,7 @@ class EmailGenerationTests(TestCase):
             prepared_html = html_template.substitute(prepared_data)
         generate(self.report_context)
         bucket_name = "recidiviz-test-report-html"
-        bucket_filepath = (
-            f"{self.mock_batch_id}/html/{self.recipient.email_address}.html"
-        )
+        bucket_filepath = f"{self.state_code}/{self.mock_batch_id}/html/{self.recipient.email_address}.html"
         path = GcsfsFilePath.from_absolute_path(f"gs://{bucket_name}/{bucket_filepath}")
         self.assertEqual(self.gcs_file_system.download_as_string(path), prepared_html)
 

@@ -145,6 +145,7 @@ def deliver_emails_for_batch() -> Tuple[str, HTTPStatus]:
 
     Query parameters:
         batch_id: (required) Identifier for this batch
+        state_code: (required) A valid state code for which reporting is enabled (ex. "US_ID")
         redirect_address: (optional) An email address to which all emails will be sent. This can be used for redirecting
         all of the reports to a supervisor.
         cc_address: (optional) An email address to which all emails will be CC'd. This can be used for sending
@@ -164,6 +165,7 @@ def deliver_emails_for_batch() -> Tuple[str, HTTPStatus]:
 
     try:
         batch_id = get_only_str_param_value("batch_id", request.args)
+        state_code = get_only_str_param_value("state_code", request.args)
         redirect_address = get_only_str_param_value("redirect_address", request.args)
         cc_addresses = get_str_param_values("cc_address", request.args)
         subject_override = get_only_str_param_value(
@@ -191,8 +193,15 @@ def deliver_emails_for_batch() -> Tuple[str, HTTPStatus]:
         logging.error(msg)
         return msg, HTTPStatus.BAD_REQUEST
 
+    if not state_code:
+        msg = "Query parameter 'state_code' not received"
+        logging.error(msg)
+        return msg, HTTPStatus.BAD_REQUEST
+    state_code = state_code.upper()
+
     result = email_delivery.deliver(
-        batch_id,
+        batch_id=batch_id,
+        state_code=state_code,
         redirect_address=redirect_address,
         cc_addresses=cc_addresses,
         subject_override=subject_override,

@@ -137,7 +137,7 @@ class EmailGenerationTests(TestCase):
         self.assertEqual(
             self.gcs_file_system.download_as_string(
                 GcsfsFilePath.from_absolute_path(
-                    "gs://recidiviz-test-report-data-archive/123.json"
+                    f"gs://recidiviz-test-report-data-archive/{self.state_code}/123.json"
                 )
             ),
             test_data,

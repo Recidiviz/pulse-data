@@ -50,6 +50,7 @@ def generate(report_context: ReportContext) -> None:
     html_path = utils.get_html_filepath(
         prepared_data[utils.KEY_BATCH_ID],
         prepared_data[utils.KEY_EMAIL_ADDRESS],
+        prepared_data[utils.KEY_STATE_CODE],
     )
     upload_file_contents_to_gcs(
         file_path=html_path, file_contents=html_content, content_type="text/html"
@@ -59,6 +60,7 @@ def generate(report_context: ReportContext) -> None:
         attachment_path = utils.get_attachment_filepath(
             prepared_data[utils.KEY_BATCH_ID],
             prepared_data[utils.KEY_EMAIL_ADDRESS],
+            prepared_data[utils.KEY_STATE_CODE],
         )
 
         upload_file_contents_to_gcs(

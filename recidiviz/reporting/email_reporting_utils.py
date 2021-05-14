@@ -117,42 +117,46 @@ def get_data_filename(state_code: str, report_type: str) -> str:
     return f"{report_type}/{state_code}/{report_type}_data.json"
 
 
-def get_data_archive_filename(batch_id: str) -> str:
-    return f"{batch_id}.json"
+def get_data_archive_filename(batch_id: str, state_code: str) -> str:
+    return f"{state_code}/{batch_id}.json"
 
 
-def get_html_folder(batch_id: str) -> str:
-    return f"{batch_id}/html"
+def get_html_folder(batch_id: str, state_code: str) -> str:
+    return f"{state_code}/{batch_id}/html"
 
 
-def get_html_filename(batch_id: str, email_address: str) -> str:
-    file_path = get_html_filepath(batch_id, email_address)
+def get_html_filename(batch_id: str, email_address: str, state_code: str) -> str:
+    file_path = get_html_filepath(batch_id, email_address, state_code)
     return file_path.blob_name
 
 
-def get_html_filepath(batch_id: str, email_address: str) -> GcsfsFilePath:
+def get_html_filepath(
+    batch_id: str, email_address: str, state_code: str
+) -> GcsfsFilePath:
     bucket = get_email_content_bucket_name()
-    folder = get_html_folder(batch_id)
+    folder = get_html_folder(batch_id, state_code)
     return GcsfsFilePath.from_absolute_path(
         f"gs://{bucket}/{folder}/{email_address}.html"
     )
 
 
-def get_attachment_filename(batch_id: str, email_address: str) -> str:
-    file_path = get_attachment_filepath(batch_id, email_address)
+def get_attachment_filename(batch_id: str, email_address: str, state_code: str) -> str:
+    file_path = get_attachment_filepath(batch_id, email_address, state_code)
     return file_path.blob_name
 
 
-def get_attachment_filepath(batch_id: str, email_address: str) -> GcsfsFilePath:
+def get_attachment_filepath(
+    batch_id: str, email_address: str, state_code: str
+) -> GcsfsFilePath:
     bucket = get_email_content_bucket_name()
-    folder = get_attachments_folder(batch_id)
+    folder = get_attachments_folder(batch_id, state_code)
     return GcsfsFilePath.from_absolute_path(
         f"gs://{bucket}/{folder}/{email_address}.txt"
     )
 
 
-def get_attachments_folder(batch_id: str) -> str:
-    return f"{batch_id}/attachments"
+def get_attachments_folder(batch_id: str, state_code: str) -> str:
+    return f"{state_code}/{batch_id}/attachments"
 
 
 # TODO(#3260): Make this general-purpose to work for any report type's chart
