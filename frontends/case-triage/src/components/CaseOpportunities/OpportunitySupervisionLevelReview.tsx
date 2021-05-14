@@ -43,6 +43,24 @@ const OpportunitySupervisionLevelReview: React.FC<OpportunitySupervisionLevelRev
   }: OpportunitySupervisionLevelReviewProps) => {
     const { policyStore } = useRootStore();
 
+    const policyText = `${policyStore.getDOCName()} policy`;
+    const policyLink =
+      policyStore.policies?.policyReferencesForOpportunities[
+        opportunity.opportunityType
+      ];
+    const policyLinkElement = policyLink ? (
+      <a
+        href={policyLink}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{ color: palette.signal.links }}
+      >
+        {policyText}
+      </a>
+    ) : (
+      policyText
+    );
+
     return (
       <CaseCardBody className={className}>
         <Need kind={IconSVG.Star} state={NeedState.NOT_MET} />
@@ -61,16 +79,7 @@ const OpportunitySupervisionLevelReview: React.FC<OpportunitySupervisionLevelRev
                 client.assessmentScore
               )}
             </strong>{" "}
-            according to {/* TODO(#7414): Pull document URL into API */}
-            <a
-              href="http://forms.idoc.idaho.gov/WebLink/0/edoc/281944/Interim%20Standards%20to%20Probation%20and%20Parole%20Supervision%20Strategies.pdf"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: palette.signal.links }}
-            >
-              IDOC policy
-            </a>
-            .
+            according to {policyLinkElement}.
           </Caption>
 
           <NeedsActionFlow
