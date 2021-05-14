@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { CaseType, Gender, SupervisionLevel } from "../ClientsStore/Client";
+import { OpportunityType } from "../OpportunityStore/Opportunity";
 
 export type ScoreMinMax = [number, number | null];
 
@@ -36,6 +37,8 @@ export type ContactFrequencyByRisk = Record<
   SupervisionContactFrequency
 >;
 
+export type PolicyReferencesForOpportunities = Record<OpportunityType, string>;
+
 export type SupervisionContactFrequencies = Record<
   CaseType,
   ContactFrequencyByRisk
@@ -50,7 +53,9 @@ export type SupervisionLevelNames = Record<SupervisionLevel, string>;
 
 export interface Policy {
   assessmentScoreCutoffs: AssessmentScoreCutoffs;
+  docShortName: string;
   omsName: string;
+  policyReferencesForOpportunities: PolicyReferencesForOpportunities;
   supervisionContactFrequencies: SupervisionContactFrequencies;
   supervisionLevelNames: SupervisionLevelNames;
   supervisionHomeVisitFrequencies: SupervisionHomeVisitFrequencies;

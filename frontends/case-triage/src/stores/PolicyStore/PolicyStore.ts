@@ -76,6 +76,10 @@ class PolicyStore {
     }
   }
 
+  getDOCName(): string {
+    return this.policies?.docShortName || "DOC";
+  }
+
   getSupervisionLevelCutoffsForClient(
     client: DecoratedClient
   ): ScoreMinMaxBySupervisionLevel | undefined {
