@@ -45,6 +45,8 @@ products:
     states:
       - state_code: US_ID
         environment: production
+      - state_code: US_PA
+        environment: staging
   - name: Public Dashboard
     exports:
       - PUBLIC_DASHBOARD
