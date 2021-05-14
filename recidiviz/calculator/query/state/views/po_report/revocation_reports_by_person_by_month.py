@@ -61,7 +61,11 @@ REVOCATION_REPORTS_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = """
       FROM revocation_recommendations
     )
     SELECT DISTINCT
-        state_code, year, month, person_id, officer_external_id, 
+        state_code, year, month, person_id, 
+        /* TODO(#7437): Remove specific US_PA handling */
+        IF(state_code = 'US_PA', 
+          SPLIT(SPLIT(officer_external_id, "|")[SAFE_OFFSET(2)], "#")[SAFE_OFFSET(1)]
+          ,officer_external_id) AS officer_external_id, 
         violation_type,
         response_date AS revocation_report_date
       FROM revocation_recommendations_ranking

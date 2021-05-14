@@ -43,7 +43,10 @@ REPORT_DATA_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = """
         ', ',
         REPLACE(JSON_EXTRACT(person.full_name, '$.given_names'), '"', '')
       ) AS full_name,
-      officer_external_id,
+      /* TODO(#7437): Remove specific US_PA handling */
+      IF(completions.state_code = 'US_PA', 
+        SPLIT(SPLIT(officer_external_id, "|")[SAFE_OFFSET(2)], "#")[SAFE_OFFSET(1)]
+      ,officer_external_id) AS officer_external_id,
       successful_completion_date,
       latest_supervision_downgrade_date,
       previous_supervision_level,

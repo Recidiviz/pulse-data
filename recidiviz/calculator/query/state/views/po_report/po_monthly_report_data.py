@@ -177,7 +177,9 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
     LEFT JOIN agents
       USING (state_code, officer_external_id)
     -- Only include output for the month before the current month
-    WHERE DATE(year, month, 1) = DATE_SUB(DATE(EXTRACT(YEAR FROM CURRENT_DATE()), EXTRACT(MONTH FROM CURRENT_DATE()), 1), INTERVAL 1 MONTH)
+    /* TODO(#7437): TESTING ALERT */
+    /* Remove the specific date that is inserted based on the lack of current data in PA. This needs to be removed prior to launch. */
+    WHERE DATE(year, month, 1) = IF(state_code = 'US_PA', DATE_SUB(DATE(2020, 06, 1), INTERVAL 1 MONTH), DATE_SUB(DATE(EXTRACT(YEAR FROM CURRENT_DATE()), EXTRACT(MONTH FROM CURRENT_DATE()), 1), INTERVAL 1 MONTH))
     ORDER BY review_month, email_address
     """
 
