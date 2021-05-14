@@ -99,19 +99,21 @@ class EmailReportingUtilsTests(TestCase):
         self.assertEqual(expected, actual)
 
     def test_get_data_archive_filename(self) -> None:
-        expected = "batch-1.json"
-        actual = self.eru.get_data_archive_filename("batch-1")
+        expected = "US_XX/batch-1.json"
+        actual = self.eru.get_data_archive_filename("batch-1", "US_XX")
         self.assertEqual(expected, actual)
 
     def test_get_email_html_filename(self) -> None:
-        expected = "batch-1/html/boards@canada.ca.html"
+        expected = "US_XX/batch-1/html/boards@canada.ca.html"
 
-        actual = self.eru.get_html_filename("batch-1", "boards@canada.ca")
+        actual = self.eru.get_html_filename("batch-1", "boards@canada.ca", "US_XX")
         self.assertEqual(expected, actual)
 
     def test_get_email_attachment_filename(self) -> None:
-        expected = "batch-1/attachments/boards@canada.ca.txt"
-        actual = self.eru.get_attachment_filename("batch-1", "boards@canada.ca")
+        expected = "US_XX/batch-1/attachments/boards@canada.ca.txt"
+        actual = self.eru.get_attachment_filename(
+            "batch-1", "boards@canada.ca", "US_XX"
+        )
         self.assertEqual(expected, actual)
 
     def test_format_test_address_valid(self) -> None:

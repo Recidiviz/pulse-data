@@ -175,7 +175,7 @@ def retrieve_data(state_code: str, report_type: str, batch_id: str) -> List[Reci
     archive_bucket = utils.get_data_archive_bucket_name()
     archive_filename = ""
     try:
-        archive_filename = utils.get_data_archive_filename(batch_id)
+        archive_filename = utils.get_data_archive_filename(batch_id, state_code)
         archive_path = GcsfsFilePath.from_absolute_path(
             f"gs://{archive_bucket}/{archive_filename}"
         )
