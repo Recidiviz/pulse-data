@@ -254,7 +254,10 @@ class ReportingEndpointTests(TestCase):
             )
             response = self.client.get(
                 self.deliver_emails_for_batch_url,
-                query_string={"batch_id": "test_batch_id"},
+                query_string={
+                    "batch_id": "test_batch_id",
+                    "state_code": self.state_code,
+                },
                 headers=self.headers,
             )
             self.assertEqual(HTTPStatus.OK, response.status_code)
@@ -264,7 +267,10 @@ class ReportingEndpointTests(TestCase):
             )
             response = self.client.get(
                 self.deliver_emails_for_batch_url,
-                query_string={"batch_id": "test_batch_id"},
+                query_string={
+                    "batch_id": "test_batch_id",
+                    "state_code": self.state_code,
+                },
                 headers=self.headers,
             )
             self.assertEqual(HTTPStatus.MULTI_STATUS, response.status_code)
@@ -274,7 +280,10 @@ class ReportingEndpointTests(TestCase):
             )
             response = self.client.get(
                 self.deliver_emails_for_batch_url,
-                query_string={"batch_id": "test_batch_id"},
+                query_string={
+                    "batch_id": "test_batch_id",
+                    "state_code": self.state_code,
+                },
                 headers=self.headers,
             )
             self.assertEqual(HTTPStatus.INTERNAL_SERVER_ERROR, response.status_code)

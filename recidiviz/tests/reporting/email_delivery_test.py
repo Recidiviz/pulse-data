@@ -33,6 +33,7 @@ class EmailDeliveryTest(TestCase):
         self.to_address = "tester_123@one.domain.org"
         self.redirect_address = "redirect@test.org"
         self.mock_files = {f"{self.to_address}": "<html><body></html>"}
+        self.state_code = "US_XX"
 
         self.sendgrid_client_patcher = patch(
             "recidiviz.reporting.email_delivery.SendGridClientWrapper"
@@ -75,7 +76,7 @@ class EmailDeliveryTest(TestCase):
         mock_load_files_from_storage.return_value = self.mock_files
         self.mock_sendgrid_client.send_message.return_value = True
         with self.assertLogs(level="INFO"):
-            result = email_delivery.deliver(self.batch_id)
+            result = email_delivery.deliver(self.batch_id, self.state_code)
 
         self.assertEqual(len(result.successes), 1)
         self.assertEqual(len(result.failures), 0)
@@ -87,7 +88,7 @@ class EmailDeliveryTest(TestCase):
         """Given a batch_id, test that the deliver returns the fail_count value when it fails"""
         mock_load_files_from_storage.return_value = self.mock_files
         self.mock_sendgrid_client.send_message.return_value = False
-        result = email_delivery.deliver(self.batch_id)
+        result = email_delivery.deliver(self.batch_id, self.state_code)
 
         self.assertEqual(len(result.successes), 0)
         self.assertEqual(len(result.failures), 1)
@@ -103,7 +104,7 @@ class EmailDeliveryTest(TestCase):
         self.mock_utils.get_email_content_bucket_name.return_value = bucket_name
 
         with self.assertRaises(IndexError):
-            email_delivery.deliver(self.batch_id)
+            email_delivery.deliver(self.batch_id, self.state_code)
 
     @patch("recidiviz.reporting.email_delivery.load_files_from_storage")
     def test_deliver_no_attachments(
@@ -120,7 +121,7 @@ class EmailDeliveryTest(TestCase):
         mock_load_files_from_storage.side_effect = fake_load_files
 
         with self.assertLogs(level="INFO"):
-            email_delivery.deliver(self.batch_id)
+            email_delivery.deliver(self.batch_id, self.state_code)
 
         self.mock_sendgrid_client.send_message.assert_called_with(
             to_email=self.to_address,
@@ -142,7 +143,7 @@ class EmailDeliveryTest(TestCase):
         """
         mock_load_files_from_storage.return_value = self.mock_files
         with self.assertLogs(level="INFO"):
-            email_delivery.deliver(self.batch_id)
+            email_delivery.deliver(self.batch_id, self.state_code)
 
         self.mock_sendgrid_client.send_message.assert_called_with(
             to_email=self.to_address,
@@ -164,7 +165,11 @@ class EmailDeliveryTest(TestCase):
         mock_load_files_from_storage.return_value = self.mock_files
 
         with self.assertLogs(level="INFO"):
-            email_delivery.deliver(self.batch_id, self.redirect_address)
+            email_delivery.deliver(
+                batch_id=self.batch_id,
+                state_code=self.state_code,
+                redirect_address=self.redirect_address,
+            )
 
         mock_load_files_from_storage.assert_has_calls(
             [
@@ -203,7 +208,7 @@ class EmailDeliveryTest(TestCase):
         the redirect_address, and the to address is included in the subject."""
         self.mock_utils.get_env_var.side_effect = KeyError
         with self.assertRaises(KeyError), self.assertLogs(level="ERROR"):
-            email_delivery.deliver(self.batch_id)
+            email_delivery.deliver(self.batch_id, self.state_code)
 
         mock_load_files_from_storage.assert_not_called()
         self.mock_sendgrid_client.send_message.assert_not_called()
@@ -219,7 +224,9 @@ class EmailDeliveryTest(TestCase):
         self.mock_sendgrid_client.send_message.return_value = True
         with self.assertLogs(level="INFO"):
             result = email_delivery.deliver(
-                batch_id=self.batch_id, email_allowlist=[self.to_address]
+                batch_id=self.batch_id,
+                state_code=self.state_code,
+                email_allowlist=[self.to_address],
             )
         self.mock_sendgrid_client.send_message.assert_called_with(
             to_email=self.to_address,
@@ -243,7 +250,7 @@ class EmailDeliveryTest(TestCase):
         self.mock_utils.get_email_content_bucket_name.return_value = bucket_name
 
         email_path = GcsfsFilePath.from_absolute_path(
-            f"gs://{bucket_name}/{self.batch_id}/{self.to_address}.html"
+            f"gs://{bucket_name}/{self.state_code}/{self.batch_id}/{self.to_address}.html"
         )
         other_path = GcsfsFilePath.from_absolute_path(
             f"gs://{bucket_name}/excluded/exclude.json"
@@ -259,6 +266,8 @@ class EmailDeliveryTest(TestCase):
 
         mock_gcs_factory.return_value = fake_gcs_file_system
 
-        files = email_delivery.load_files_from_storage(bucket_name, self.batch_id)
+        files = email_delivery.load_files_from_storage(
+            bucket_name, f"{self.state_code}/{self.batch_id}"
+        )
 
         self.assertEqual(files, {f"{self.to_address}": "<html>"})

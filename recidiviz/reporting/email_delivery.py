@@ -41,6 +41,7 @@ from recidiviz.reporting.sendgrid_client_wrapper import SendGridClientWrapper
 
 def deliver(
     batch_id: str,
+    state_code: str,
     redirect_address: Optional[str] = None,
     cc_addresses: Optional[List[str]] = None,
     subject_override: Optional[str] = None,
@@ -55,6 +56,7 @@ def deliver(
 
     Args:
         batch_id: The identifier for the batch
+        state_code: (required) A valid state code for which reporting is enabled (ex. "US_ID")
         redirect_address: (optional) An email address to which all emails will be sent
         cc_addresses: (optional) A list of email addressed to include on the cc line
         subject_override: (optional) The subject line to override to.
@@ -95,14 +97,14 @@ def deliver(
 
     content_bucket = utils.get_email_content_bucket_name()
     html_files = load_files_from_storage(
-        content_bucket, utils.get_html_folder(batch_id)
+        content_bucket, utils.get_html_folder(batch_id, state_code)
     )
     attachment_files = load_files_from_storage(
-        content_bucket, utils.get_attachments_folder(batch_id)
+        content_bucket, utils.get_attachments_folder(batch_id, state_code)
     )
 
     if len(html_files.items()) == 0:
-        msg = f"No files found for batch {batch_id} in the bucket {content_bucket}"
+        msg = f"No files found for batch {batch_id} for state {state_code} in the bucket {content_bucket}"
         logging.error(msg)
         raise IndexError(msg)
 
@@ -154,7 +156,7 @@ def email_from_file_name(file_name: str) -> str:
     return re.sub(r"(.html|.txt)$", "", file_name)
 
 
-def load_files_from_storage(bucket_name: str, batch_id: str) -> Dict[str, str]:
+def load_files_from_storage(bucket_name: str, batch_id_path: str) -> Dict[str, str]:
     """Loads the files for this batch and bucket name from Cloud Storage.
 
     This function is guaranteed to either return a dictionary with 1 or more results or throw an exception if there is
@@ -162,7 +164,7 @@ def load_files_from_storage(bucket_name: str, batch_id: str) -> Dict[str, str]:
 
     Args:
         bucket_name: The bucket name to find the batch_id files
-        batch_id: The identifier for this batch
+        batch_id_path: The path, containing the state_code, to the identifier for this batch
 
     Returns:
         A dict whose keys are the email addresses of recipients and values are strings of the email body or file
@@ -176,7 +178,7 @@ def load_files_from_storage(bucket_name: str, batch_id: str) -> Dict[str, str]:
         paths = [
             path
             for path in gcs_file_system.ls_with_blob_prefix(
-                bucket_name, blob_prefix=batch_id
+                bucket_name, blob_prefix=batch_id_path
             )
             if isinstance(path, GcsfsFilePath)
         ]
@@ -184,7 +186,7 @@ def load_files_from_storage(bucket_name: str, batch_id: str) -> Dict[str, str]:
         logging.error(
             "Unable to list files in folder. Bucket = %s, batch_id = %s",
             bucket_name,
-            batch_id,
+            batch_id_path,
         )
         raise
 
