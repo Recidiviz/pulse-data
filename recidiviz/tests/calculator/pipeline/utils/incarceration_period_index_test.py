@@ -109,16 +109,17 @@ class TestIndexIncarcerationPeriodsByAdmissionMonth(unittest.TestCase):
             state_code="US_XX",
             admission_date=date(2018, 6, 1),
             admission_reason=AdmissionReason.NEW_ADMISSION,
-            release_date=date(2018, 6, 21),
+            release_date=date(2018, 6, 1),
+            release_reason=ReleaseReason.TRANSFER,
         )
 
         second_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-            incarceration_period_id=111,
+            incarceration_period_id=222,
             external_id="ip2",
             state_code="US_XX",
             admission_date=date(2018, 6, 1),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=AdmissionReason.TRANSFER,
         )
 
         incarceration_period_index = IncarcerationPeriodIndex(
@@ -126,13 +127,13 @@ class TestIndexIncarcerationPeriodsByAdmissionMonth(unittest.TestCase):
         )
 
         self.assertEqual(
-            incarceration_period_index.incarceration_periods_by_admission_date,
             {
                 first_incarceration_period.admission_date: [
                     first_incarceration_period,
                     second_incarceration_period,
                 ]
             },
+            incarceration_period_index.incarceration_periods_by_admission_date,
         )
 
     def test_index_incarceration_periods_by_admission_date_none(self):

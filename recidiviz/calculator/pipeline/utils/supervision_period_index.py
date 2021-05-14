@@ -22,25 +22,15 @@ from typing import List, Dict, Optional
 
 import attr
 
+from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
+    standard_date_sort_for_supervision_periods,
+)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
+    is_official_supervision_admission,
 )
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
-
-
-def _supervision_periods_converter(
-    supervision_periods: List[StateSupervisionPeriod],
-) -> List[StateSupervisionPeriod]:
-    supervision_periods.sort(
-        key=lambda b: (
-            b.start_date,
-            b.termination_date or date.max,
-            # Official admissions should sort before other admissions on the same day
-            not _is_official_supervision_admission(b.admission_reason),
-        )
-    )
-    return supervision_periods
 
 
 @attr.s
@@ -48,7 +38,7 @@ class SupervisionPeriodIndex:
     """A class for caching information about a set of supervision periods for use in the calculation pipelines."""
 
     supervision_periods: List[StateSupervisionPeriod] = attr.ib(
-        converter=_supervision_periods_converter
+        converter=standard_date_sort_for_supervision_periods
     )
 
     # A dictionary mapping supervision_period_id values to the date on which the person started serving the
@@ -80,7 +70,7 @@ class SupervisionPeriodIndex:
                     "Supervision period pre-processing is not setting missing start_dates correctly."
                 )
 
-            if index == 0 or _is_official_supervision_admission(
+            if index == 0 or is_official_supervision_admission(
                 supervision_period.admission_reason
             ):
                 # These indicate that supervision is "officially" starting to serve their supervision.
@@ -179,40 +169,6 @@ class SupervisionPeriodIndex:
         ]
 
         return most_recent_previous_supervision_period
-
-
-def _is_official_supervision_admission(
-    admission_reason: Optional[StateSupervisionPeriodAdmissionReason],
-) -> bool:
-    """Returns whether or not the |admission_reason| is considered an official start of supervision."""
-    if not admission_reason:
-        return False
-
-    # A supervision period that has one of these admission reasons indicates the official start of supervision
-    official_admissions = [
-        StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-        StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
-    ]
-
-    non_official_admissions = [
-        StateSupervisionPeriodAdmissionReason.ABSCONSION,
-        StateSupervisionPeriodAdmissionReason.EXTERNAL_UNKNOWN,
-        StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
-        StateSupervisionPeriodAdmissionReason.INVESTIGATION,
-        StateSupervisionPeriodAdmissionReason.TRANSFER_OUT_OF_STATE,
-        StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
-        StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
-        StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION,
-    ]
-
-    if admission_reason in official_admissions:
-        return True
-    if admission_reason in non_official_admissions:
-        return False
-
-    raise ValueError(
-        f"Unsupported StateSupervisionPeriodAdmissionReason value: {admission_reason}"
-    )
 
 
 def _transfer_from_supervision_type_is_official_admission(
