@@ -304,3 +304,37 @@ def get_most_relevant_supervision_type(
     raise ValueError(
         f"Unexpected Supervision type in provided supervision_types set: [{supervision_types}]"
     )
+
+
+def is_official_supervision_admission(
+    admission_reason: Optional[StateSupervisionPeriodAdmissionReason],
+) -> bool:
+    """Returns whether or not the |admission_reason| is considered an official start of supervision."""
+    if not admission_reason:
+        return False
+
+    # A supervision period that has one of these admission reasons indicates the official start of supervision
+    official_admissions = [
+        StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+        StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+    ]
+
+    non_official_admissions = [
+        StateSupervisionPeriodAdmissionReason.ABSCONSION,
+        StateSupervisionPeriodAdmissionReason.EXTERNAL_UNKNOWN,
+        StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
+        StateSupervisionPeriodAdmissionReason.INVESTIGATION,
+        StateSupervisionPeriodAdmissionReason.TRANSFER_OUT_OF_STATE,
+        StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+        StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
+        StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION,
+    ]
+
+    if admission_reason in official_admissions:
+        return True
+    if admission_reason in non_official_admissions:
+        return False
+
+    raise ValueError(
+        f"Unsupported StateSupervisionPeriodAdmissionReason value: {admission_reason}"
+    )

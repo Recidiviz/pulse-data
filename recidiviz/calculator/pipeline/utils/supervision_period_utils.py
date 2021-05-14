@@ -92,13 +92,28 @@ def _is_active_period(period: StateSupervisionPeriod) -> bool:
     return period.status == StateSupervisionPeriodStatus.UNDER_SUPERVISION
 
 
+def _is_transfer_start(period: StateSupervisionPeriod) -> bool:
+    return period.admission_reason == AdmissionReason.TRANSFER_WITHIN_STATE
+
+
+def standard_date_sort_for_supervision_periods(
+    supervision_periods: List[StateSupervisionPeriod],
+) -> List[StateSupervisionPeriod]:
+    """Sorts supervision periods chronologically by dates and statuses."""
+    sort_periods_by_set_dates_and_statuses(
+        supervision_periods, _is_active_period, _is_transfer_start
+    )
+
+    return supervision_periods
+
+
 def _infer_missing_dates_and_statuses(
     supervision_periods: List[StateSupervisionPeriod],
 ) -> List[StateSupervisionPeriod]:
     """First, sorts the supervision_periods in chronological order of the start and termination dates. Then, for any
     periods missing dates and statuses, infers this information given the other supervision periods.
     """
-    sort_periods_by_set_dates_and_statuses(supervision_periods, _is_active_period)
+    standard_date_sort_for_supervision_periods(supervision_periods)
 
     updated_periods: List[StateSupervisionPeriod] = []
 

@@ -35,7 +35,9 @@ from recidiviz.persistence.entity.state.entities import (
 
 
 def sort_periods_by_set_dates_and_statuses(
-    periods: List[PeriodType], is_active_period_function: Callable[[PeriodType], int]
+    periods: List[PeriodType],
+    is_active_period_function: Callable[[PeriodType], int],
+    is_transfer_start_function: Callable[[PeriodType], int],
 ) -> None:
     """Sorts periods chronologically by the start and end dates according to this logic:
     - Sorts by start_date_inclusive, if set, else by end_date_exclusive
@@ -44,34 +46,44 @@ def sort_periods_by_set_dates_and_statuses(
         - Else, sorts by end_date_exclusive, with unset end_date_exclusives before set end_date_exclusives
     """
 
-    def _sort_period_by_external_id(p_a: PeriodType, p_b: PeriodType) -> int:
-        """Sorts two periods alphabetically by external_id."""
-        if p_a.external_id is None or p_b.external_id is None:
-            raise ValueError("Expect no placeholder periods in this function.")
+    def _sort_by_transfer_start(period_a: PeriodType, period_b: PeriodType) -> int:
+        period_a_transfer = is_transfer_start_function(period_a)
+        period_b_transfer = is_transfer_start_function(period_b)
 
-        # Alphabetic sort by external_id
-        return -1 if p_a.external_id < p_b.external_id else 1
+        # Sort by whether the period was started because of a transfer. Order periods
+        # that were started because of a transfer after periods that were not started
+        # because of a transfer.
+        if period_a_transfer == period_b_transfer:
+            # Either both or neither periods were started because of a transfer.
+            return 0
+
+        if period_a_transfer:
+            return 1
+        if period_b_transfer:
+            return -1
+        raise ValueError("One period should have a transfer start at this point")
 
     def _sort_by_nonnull_end_dates(period_a: PeriodType, period_b: PeriodType) -> int:
         if not period_a.end_date_exclusive or not period_b.end_date_exclusive:
             raise ValueError("Expected nonnull ending dates")
         if period_a.end_date_exclusive != period_b.end_date_exclusive:
             return (period_a.end_date_exclusive - period_b.end_date_exclusive).days
-        # They have the same start and end dates. Sort by external_id.
-        return _sort_period_by_external_id(period_a, period_b)
+
+        # They have the same start and end dates. Sort by transfer starts.
+        return _sort_by_transfer_start(period_a, period_b)
 
     def _sort_by_active_status(period_a: PeriodType, period_b: PeriodType) -> int:
         period_a_active = is_active_period_function(period_a)
         period_b_active = is_active_period_function(period_b)
 
         if period_a_active == period_b_active:
-            return _sort_period_by_external_id(period_a, period_b)
+            return 0
         # Sort by status of the period. Order periods that are active (no end date) after periods that have ended.
         if period_a_active:
             return 1
         if period_b_active:
             return -1
-        raise ValueError("One status should have UNDER_SUPERVISION at this point")
+        raise ValueError("One status should be active at this point")
 
     def _sort_equal_start_date(period_a: PeriodType, period_b: PeriodType) -> int:
         if period_a.start_date_inclusive != period_b.start_date_inclusive:
