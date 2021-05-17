@@ -21,7 +21,7 @@ import collections
 import json
 import logging
 from http import HTTPStatus
-from typing import Tuple, List, Dict
+from typing import Tuple, List, Dict, Union, Any
 
 from flask import Blueprint, request
 
@@ -81,15 +81,14 @@ def update_auth0_user_metadata() -> Tuple[str, HTTPStatus]:
                 HTTPStatus.BAD_REQUEST,
             )
 
-        user_restrictions: List[Dict[str, str]] = _load_json_lines(temp_file_handler)
+        user_restrictions: List[Dict[str, Any]] = _load_json_lines(temp_file_handler)
         user_restrictions_by_email: Dict[str, List[str]] = {}
 
         for user_restriction in user_restrictions:
             email = user_restriction["restricted_user_email"]
-            user_restrictions_by_email[email] = _format_user_restrictions(
-                user_restriction["allowed_level_1_supervision_location_ids"]
-            )
-
+            user_restrictions_by_email[email] = user_restriction[
+                "allowed_supervision_location_ids"
+            ]
         auth0 = Auth0Client()
         email_addresses = list(user_restrictions_by_email.keys())
         users = auth0.get_all_users_by_email_addresses(email_addresses)
@@ -138,15 +137,9 @@ def _should_update_restrictions(
     )
 
 
-def _format_user_restrictions(user_restrictions: str) -> List[str]:
-    return [
-        restriction
-        for restriction in map(lambda r: r.strip(), user_restrictions.split(","))
-        if restriction
-    ]
-
-
-def _load_json_lines(file_handler: GcsfsFileContentsHandle) -> List[Dict[str, str]]:
+def _load_json_lines(
+    file_handler: GcsfsFileContentsHandle,
+) -> List[Dict[str, Union[str, List[str]]]]:
     file_contents = file_handler.get_contents_iterator()
     loaded_json = []
     for json_line in file_contents:
