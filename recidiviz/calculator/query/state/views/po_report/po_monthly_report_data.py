@@ -106,7 +106,8 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
     agents AS (
       SELECT
         state_code,
-        external_id AS officer_external_id,
+        /* TODO(#6314): Change this back to external_id once PA re-run is complete where the hack no longer exists. */
+        agent_external_id AS officer_external_id,
         TRIM(SPLIT(given_names, ' ')[SAFE_OFFSET(0)]) AS officer_given_name
       FROM `{project_id}.{reference_views_dataset}.augmented_agent_info`
       GROUP BY state_code, external_id, officer_given_name
