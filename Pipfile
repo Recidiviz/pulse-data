@@ -42,7 +42,9 @@ tabula-py = "==2.2.0"
 us = "*"
 dateparser = "==0.7.6"
 # TODO(#2394): The gcsfs library is unsupported by Google - replace all usages with google-cloud-storage
-gcsfs = "*"
+# TODO(#7480): Upgrading to 2021.5.0 caused our tests to break, so if we can't eliminate usages, we should
+# at least try to fix the broken tests and unpin.
+gcsfs = "==2021.4.0"
 pandas = "*"
 more-itertools = "*"
 lxml = "*"
