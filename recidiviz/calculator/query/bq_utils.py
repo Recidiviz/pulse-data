@@ -49,6 +49,10 @@ def unnest_rolling_average_months() -> str:
     return "UNNEST ([1, 3, 6]) AS rolling_average_months"
 
 
+def unnest_rolling_window_days() -> str:
+    return "UNNEST ([1, 15, 30, 90, 180]) AS rolling_window_days"
+
+
 def metric_period_condition(month_offset: int = 1) -> str:
     return f"""DATE(year, month, 1) >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Pacific'), MONTH),
                                                 INTERVAL metric_period_months - {month_offset} MONTH)"""

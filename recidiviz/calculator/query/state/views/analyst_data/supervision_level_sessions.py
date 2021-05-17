@@ -53,7 +53,7 @@ SUPERVISION_LEVEL_SESSIONS_QUERY_TEMPLATE = """
                 AND session.dataflow_session_id = session_lag.dataflow_session_id + 1
                 AND session.start_date = DATE_ADD(session_lag.end_date, INTERVAL 1 DAY)
                 AND session_lag.compartment_level_1 = 'SUPERVISION'
-            WHERE session.compartment_level_1 = 'SUPERVISION'
+            WHERE session.compartment_level_1 IN ('SUPERVISION', 'SUPERVISION_OUT_OF_STATE')
             )
         )
 GROUP BY state_code, person_id, supervision_level, supervision_level_session_id, correctional_level_priority, is_discretionary_level
