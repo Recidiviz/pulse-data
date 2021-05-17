@@ -83,9 +83,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_ppo_metrics
 from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_ppo_metrics_successful_supervision_terminations import (
     US_ID_PPO_METRICS_SUCCESSFUL_SUPERVISION_TERMINATIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.po_report_impact_metrics import (
-    PO_REPORT_IMPACT_METRICS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.supervision_population_attributes_by_district_by_month import (
     SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_VIEW_BUILDER,
 )
@@ -113,6 +110,15 @@ from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_employment_
 from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_positive_urine_analysis_sessions import (
     US_ID_POSITIVE_URINE_ANALYSIS_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.supervision_population_by_officer_daily_windows import (
+    SUPERVISION_POPULATION_BY_OFFICER_DAILY_WINDOWS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.event_based_metrics_by_supervision_officer import (
+    EVENT_BASED_METRICS_BY_SUPERVISION_OFFICER_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.event_based_metrics_by_district import (
+    EVENT_BASED_METRICS_BY_DISTRICT_VIEW_BUILDER,
+)
 
 ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     PERSON_DEMOGRAPHICS_VIEW_BUILDER,
@@ -138,7 +144,6 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_ID_PPO_METRICS_SUPERVISION_LEVEL_VIEW_BUILDER,
     US_ID_PPO_METRICS_EARLY_DISCHARGE_REQUESTS_VIEW_BUILDER,
     SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_VIEW_BUILDER,
-    PO_REPORT_IMPACT_METRICS_VIEW_BUILDER,
     VIOLATION_TYPE_DEDUP_PRIORITY_VIEW_BUILDER,
     DATAFLOW_SESSIONS_VIEW_BUILDER,
     SUPERVISION_LEVEL_SESSIONS_VIEW_BUILDER,
@@ -147,4 +152,7 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     LOCATION_SESSIONS_VIEW_BUILDER,
     US_ID_EMPLOYMENT_SESSIONS_VIEW_BUILDER,
     US_ID_POSITIVE_URINE_ANALYSIS_SESSIONS_VIEW_BUILDER,
+    SUPERVISION_POPULATION_BY_OFFICER_DAILY_WINDOWS_VIEW_BUILDER,
+    EVENT_BASED_METRICS_BY_SUPERVISION_OFFICER_VIEW_BUILDER,
+    EVENT_BASED_METRICS_BY_DISTRICT_VIEW_BUILDER,
 ]
