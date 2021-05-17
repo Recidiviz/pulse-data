@@ -65,8 +65,8 @@ WITH external_data AS (
 SELECT
   region_code,
   release_date,
-  external_data.person_id AS external_data_person_id,
-  internal_data.person_id AS internal_data_person_id,
+  CAST(external_data.person_id AS STRING) AS external_data_person_id,
+  CAST(internal_data.person_id AS STRING) AS internal_data_person_id,
   external_data.person_external_id AS external_data_person_external_id
 FROM
     external_data_with_ids external_data
