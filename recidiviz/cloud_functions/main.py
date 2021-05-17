@@ -350,7 +350,7 @@ def handle_start_new_batch_email_reporting(request: Request) -> Tuple[str, HTTPS
         report_type: (required) The type of report (i.e. "po_monthly_report")
         test_address: (optional) A test address to generate emails for
         region_code: (optional) The sub-region of the state to generate emails for (i.e. "US_ID_D5")
-        message_body: (optional) If included, overrides the default message body.
+        message_body_override: (optional) If included, overrides the default message body.
     Args:
         request: The HTTP request. Must contain JSON with "state_code" and
         "report_type" keys, and may contain an optional "test_address" key.
@@ -378,7 +378,7 @@ def handle_start_new_batch_email_reporting(request: Request) -> Tuple[str, HTTPS
             "report_type",
             "test_address",
             "region_code",
-            "message_body",
+            "message_body_override",
         ],
     )
 

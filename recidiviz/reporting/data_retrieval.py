@@ -66,7 +66,7 @@ def start(
     test_address: Optional[str] = None,
     region_code: Optional[str] = None,
     email_allowlist: Optional[List[str]] = None,
-    message_body: Optional[str] = None,
+    message_body_override: Optional[str] = None,
 ) -> MultiRequestResult[str, str]:
     """Begins data retrieval for a new batch of email reports.
 
@@ -84,7 +84,7 @@ def start(
             generate reports. If empty, this generates reports for all regions.
         email_allowlist: Optional list of email_addresses to generate for; all other recipients are skipped
         recipient_emails: Optional list of email_addresses to generate for; all other recipients are skipped
-        message_body: Optional override for the message body in the email.
+        message_body_override: Optional override for the message body in the email.
 
     Returns: A MultiRequestResult containing the email addresses for which reports were successfully generated for
             and failed to generate for
@@ -116,12 +116,12 @@ def start(
             for recipient in recipients
         ]
 
-    if message_body is not None:
+    if message_body_override is not None:
         logging.info(
             "Overriding default message body in batch emails (batch id = %s)", batch_id
         )
         recipients = [
-            recipient.create_derived_recipient({"message_body": message_body})
+            recipient.create_derived_recipient({"message_body": message_body_override})
             for recipient in recipients
         ]
 
