@@ -155,7 +155,7 @@ class PoMonthlyReportContext(ReportContext):
             self.recipient_data["officer_given_name"]
         )
 
-        if "message_body" not in self.prepared_data:
+        if "message_body_override" not in self.prepared_data:
             self.prepared_data["message_body"] = DEFAULT_MESSAGE_BODY
 
         self._convert_month_to_name("review_month")

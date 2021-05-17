@@ -57,7 +57,7 @@ def start_new_batch() -> Tuple[str, HTTPStatus]:
             omitted, we generate emails for all sub-regions of the state.
         email_allowlist: (optional) A json list of emails we should generate emails for. Emails that do not exist in the
             report will be silently skipped.
-        message_body: (optional) If included, overrides the default message body.
+        message_body_override: (optional) If included, overrides the default message body.
 
     Returns:
         Text indicating the results of the run and an HTTP status
@@ -71,8 +71,8 @@ def start_new_batch() -> Tuple[str, HTTPStatus]:
         test_address = get_only_str_param_value("test_address", request.args)
         region_code = get_only_str_param_value("region_code", request.args)
         raw_email_allowlist = get_only_str_param_value("email_allowlist", request.args)
-        message_body = get_only_str_param_value(
-            "message_body", request.args, preserve_case=True
+        message_body_override = get_only_str_param_value(
+            "message_body_override", request.args, preserve_case=True
         )
 
         validate_email_address(test_address)
@@ -109,7 +109,7 @@ def start_new_batch() -> Tuple[str, HTTPStatus]:
             test_address=test_address,
             region_code=region_code,
             email_allowlist=email_allowlist,
-            message_body=message_body,
+            message_body_override=message_body_override,
         )
     except InvalidRegionCodeException:
         return "Invalid region code provided", HTTPStatus.BAD_REQUEST

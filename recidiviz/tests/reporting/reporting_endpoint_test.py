@@ -126,7 +126,7 @@ class ReportingEndpointTests(TestCase):
                 test_address=None,
                 region_code=None,
                 email_allowlist=["dev@recidiviz.org", "other@recidiviz.org"],
-                message_body=None,
+                message_body_override=None,
             )
 
             self.assertEqual(HTTPStatus.OK, response.status_code)
@@ -161,7 +161,7 @@ class ReportingEndpointTests(TestCase):
                 test_address=None,
                 region_code=None,
                 email_allowlist=None,
-                message_body=None,
+                message_body_override=None,
             )
 
             self.assertEqual(HTTPStatus.OK, response.status_code)
