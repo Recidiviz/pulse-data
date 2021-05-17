@@ -57,8 +57,8 @@ internal_metrics_for_valid_regions_and_dates AS (
 SELECT
   region_code,
   date_of_stay,
-  external_data.person_id AS external_data_person_id,
-  internal_data.person_id AS internal_data_person_id,
+  CAST(external_data.person_id AS STRING) AS external_data_person_id,
+  CAST(internal_data.person_id AS STRING) AS internal_data_person_id,
   external_data.person_external_id AS external_data_person_external_id,
   external_data.facility AS external_facility,
   internal_data.facility AS internal_facility,
