@@ -16,7 +16,10 @@
 #  =============================================================================
 """Time series view of vitals metrics at the state- and district-level."""
 # pylint: disable=trailing-whitespace,line-too-long
-
+from recidiviz.calculator.query.bq_utils import (
+    clean_up_supervising_officer_external_id,
+    generate_district_id_from_district_name,
+)
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -24,16 +27,25 @@ from recidiviz.utils.metadata import local_project_id_override
 
 
 def generate_time_series_query(metric_name: str, table_name: str) -> str:
+    po_condition = "supervising_officer_external_id != 'ALL' AND district_id = 'ALL'"
+    district_condition = (
+        "supervising_officer_external_id = 'ALL' AND district_id != 'ALL'"
+    )
+
     return f"""
     SELECT
       state_code,
       date_of_supervision as date,
-      IF(district_id = "ALL", "STATE_DOC", REPLACE(district_name, ' ', '_')) as entity_id,
+      CASE
+        WHEN {po_condition} THEN {clean_up_supervising_officer_external_id()}
+        WHEN {district_condition} THEN {generate_district_id_from_district_name('district_name')}
+        ELSE 'STATE_DOC'
+      END as entity_id,
       "{metric_name.upper()}" as metric,
       ROUND(timely_{metric_name}) as value,
-      ROUND(AVG(timely_{metric_name}) OVER (ORDER BY district_id, date_of_supervision ROWS BETWEEN 29 PRECEDING AND CURRENT ROW)) as avg_30d
+      ROUND(AVG(timely_{metric_name}) OVER (ORDER BY district_id, supervising_officer_external_id, date_of_supervision ROWS BETWEEN 29 PRECEDING AND CURRENT ROW)) as avg_30d
     FROM `{{project_id}}.{{vitals_report_dataset}}.{table_name}`
-    WHERE supervising_officer_external_id = 'ALL'
+    WHERE (supervising_officer_external_id = 'ALL' OR district_id = 'ALL')
       AND district_id <> "UNKNOWN"
       AND date_of_supervision >= DATE_SUB(CURRENT_DATE(), INTERVAL 210 DAY) -- Need to go an additional 30 days back for the avg
       AND state_code = 'US_ND'
