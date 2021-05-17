@@ -34,16 +34,43 @@ who should only have access to data from a single or limited set of supervision 
 SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_QUERY_TEMPLATE = """
     /*{description}*/
     WITH
-    mo_level_1_supervision_location_restricted_access AS (
+    mo_restricted_access AS (
         SELECT
-          'US_MO' AS state_code,
-          EMAIL AS restricted_user_email,
-          STRING_AGG(DISTINCT DISTRICT, ',') AS allowed_level_1_supervision_location_ids
+            'US_MO' AS state_code,
+            EMAIL AS restricted_user_email,
+            # TODO(#7413) Remove allowed_level_1_supervision_location_ids once FE is no longer using it
+            ARRAY_AGG(DISTINCT DISTRICT) AS allowed_level_1_supervision_location_ids,
+            ARRAY_AGG(DISTINCT DISTRICT) AS allowed_supervision_location_ids,
+            'level_1_supervision_location' as allowed_supervision_location_level,
+            'level_1_access_role' as internal_role
         FROM `{project_id}.us_mo_raw_data_up_to_date_views.LANTERN_DA_RA_LIST_latest`
         WHERE DISTRICT IS NOT NULL
         GROUP BY EMAIL
+    ),
+    id_restricted_access AS (
+        SELECT
+            'US_ID' AS state_code,
+            CONCAT(LOWER(empl_sdesc), '@idoc.idaho.gov') AS restricted_user_email,
+            # TODO(#7413) Remove allowed_level_1_supervision_location_ids once FE is no longer using it
+            ARRAY<string>[] AS allowed_level_1_supervision_location_ids,
+            ARRAY<string>[] AS allowed_supervision_location_ids,
+            'statewide' as allowed_supervision_location_level,
+            CASE
+                WHEN empl_title LIKE '%OFFICER%' THEN 'level_1_access_role'
+                WHEN empl_title LIKE '%SUPERVISOR%' THEN 'level_2_access_role'
+                WHEN empl_title LIKE '%DISTRICT MANAGER%' THEN 'leadership_role'
+            END AS internal_role
+        FROM `{project_id}.us_id_raw_data_up_to_date_views.employee_latest`
+        WHERE
+            (empl_title LIKE '%OFFICER%'
+                OR empl_title LIKE '%SUPERVISOR%'
+                OR empl_title LIKE '%DISTRICT MANAGER%' )
+            AND empl_stat = 'A'
+        GROUP BY empl_sdesc, empl_title
     )
-    SELECT * FROM mo_level_1_supervision_location_restricted_access;
+    SELECT * from mo_restricted_access
+    UNION ALL
+    SELECT * FROM id_restricted_access;
     """
 
 SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
