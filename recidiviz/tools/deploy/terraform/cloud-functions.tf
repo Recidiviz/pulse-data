@@ -200,7 +200,9 @@ resource "google_cloudfunctions_function" "handle_state_dashboard_user_restricti
   }
 
   entry_point           = "handle_state_dashboard_user_restrictions_file"
-  environment_variables = {}
+  environment_variables = {
+    "GCP_PROJECT" = var.project_id
+  }
 
   source_repository {
     url = local.repo_url
