@@ -91,7 +91,7 @@ US_ID_RIDER_PBH_REMAINING_SENTENCES_QUERY_TEMPLATE = """
       months_served,
       remaining_compartment_duration AS compartment_duration,
       outflow_to,
-      total_population/person_level_normalization_constant AS total_population
+      SAFE_DIVIDE(total_population, person_level_normalization_constant) AS total_population
     FROM cohorts_per_run_date
     JOIN normalization_cte
       USING (state_code, run_date, person_id, compartment)
