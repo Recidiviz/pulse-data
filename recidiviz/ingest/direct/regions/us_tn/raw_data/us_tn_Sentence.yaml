@@ -1,0 +1,210 @@
+file_tag: Sentence
+file_description: |- 
+  This entity stores information about each sentence which applies to a certain offense.  This includes suspendedsentences, probation, SAIU, etc.
+primary_key_cols: []
+columns:
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: ConvictionCounty
+    description: |-
+      The county in which an offender is convicted.  This element is used in identifying a particular sentence.
+  - name: CaseYear
+    description: |-
+      The year assigned to a sentence for a particular county. It will generally be the current year at assignment.
+  - name: CaseNumber
+    description: |-
+      A case number assigned to a particular offense, or judgment order. This number is used in identifying a sentence.
+  - name: CountNumber
+    description: |-
+      A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of an offender.
+  - name: SentenceChangedDate
+    is_datetime: True
+    description: |-
+      The date that a sentence of an offender last changed.
+  - name: SentenceStatus
+    description: |-
+      The sentence status indicates whether a sentence is currently be- ing served in incarceration, on parole, on probation in community corrections, on probation due to determinate release, or the sentence has ended.
+  - name: SentenceStatusDate
+    is_datetime: True
+    description: |-
+      The date on which a change of an offender's sentence status occurs.
+  - name: SentenceEffectiveDate
+    is_datetime: True
+    description: |-
+      The date on which a sentence begins being served (Sentence Effective Date).  The SED date is computed by subtracting the pre-trial jail credits from the sentence imposed date.
+  - name: FullExpirationDate
+    is_datetime: True
+    description: |-
+      The full-term expiration date of an offender's sentence. Street-Time can extend the FXP-Date.
+  - name: ExpirationDate
+    is_datetime: True
+    description: |-
+      The date that a sentence expires.  This date includes all credits earned by an offender.
+  - name: SafetyValveDate
+    is_datetime: True
+    description: |-
+      The date an offender is eligible for release on parole based on the safety valve percentage.
+  - name: ReleaseEligibilityDate
+    is_datetime: True
+    description: |-
+      The date an offender is eligible for release to parole for a sentence.
+  - name: EarliestPossibleReleaseDate
+    is_datetime: True
+    description: |-
+      This is the earliest possible release date that an offender may be paroled or released from custody.  Parole or release eligibility dates cannot be reduced by credits to be earlier than this date. This date is not in effect when safety-value law is in eff
+  - name: MandatoryParoleDate
+    is_datetime: True
+    description: |-
+      The mandatory parole date of an offender for Indeterminate and Determinate sentences.
+  - name: RegularParoleDate
+    is_datetime: True
+    description: |-
+      The regular parole date for sentences of an offender on Indeterminate and Determinate sentences.
+  - name: ProbationaryParoleDate
+    is_datetime: True
+    description: |-
+      The probationary parole date given for offenders on Indeterminate and Determinate sentences.
+  - name: TotalPPSCCredits
+    description: |-
+      The total of PPSC credits for a particular sentence of an offender.
+  - name: TotalBehaviorCredits
+    description: |-
+      The total of all PSRC behavior credits for a particular sentence of an offender.
+  - name: TotalProgramCredits
+    description: |-
+      The total of all PSRC program credits for a particular sentence of an offender.
+  - name: TotalGEDCredits
+    description: |-
+      The credit an offender receives for a sentence for obtaining his GED.
+  - name: TotalLiteraryCredits
+    description: |-
+      The credit an offender receives for a sentence for completing a literary class in a local jail or workhouse.
+  - name: TotalDrugAlcoholCredits
+    description: |-
+      The credit an offender receives for a sentence for participating in a drug or alcohol rehabilitation program in a local jail or TENB workhouse.
+  - name: TotalEducationAttendanceCredits
+    description: |-
+      The credit an offender receives for a sentence for attending an educational class. These credits are in addition to tradition TENB program credits.
+  - name: TotalLostGoodConductCredits
+    description: |-
+      The total net loss of good conduct credits an offender has earned for a particular sentence.
+  - name: TotalDeadTime
+    description: |-
+      The total of dead time for a sentence of an offender.
+  - name: TotalDelinquentTime
+    description: |-
+      The total of delinquent time for a sentence of an offender.
+  - name: TotalStreetTime
+    description: |-
+      The total of street time for a sentence of an offender.
+  - name: RangePercent
+    description: |-
+      The percentage, supplied by the court, which is used to determine the Release Eligibility Date (RED) of an offender. This percent is tied to the offender type for the particular sentence law.
+  - name: InactivePardonedFlag
+    description: |-
+      This is a flag indicating if an offender's sentence is inactive on account of a pardon.
+  - name: InactiveDismissedFlag
+    description: |-
+      This is a flag indicating if an offender's sentence is inactive because it has been dismissed.
+  - name: InactiveCommutedFlag
+    description: |-
+      This is a flag indicating if an offender's sentence is inactive on account of a commutation.
+  - name: InactiveExpiredFlag
+    description: |-
+      This is a flag indicating if an offender's sentence is inactive because it has expired.
+  - name: InactiveAwaitingRetrialFlag
+    description: |-
+      This is a flag indicating if an offender's sentence is inactive because it is waiting a retrial.
+  - name: InactiveCourtOrderFlag
+    description: |-
+      This is a flag indicating if an offender's sentence is inactive on account of a court order.
+  - name: ConfinementExpirationDate
+    is_datetime: True
+    description: |-
+      The date the sentence calculations determine that the first portion of an offender's split confinement will expire.  When the split confinement is legal, this date will be the same as the first-cnfmnt-fxp-date.
+  - name: ConvertedPPSCCredits
+    description: |-
+      The total of PPSC credits for a particular sentence converted from 7SCIS.
+  - name: ConvertedBehaviorCredits
+    description: |-
+      The total of all PSRC behavior credits for a particular sentence converted from OBSCIS.
+  - name: ConvertedProgramCredits
+    description: |-
+      The total of all PSRC program credits for a particular sentence converted from OBSCIS.
+  - name: ConvertedDeadTime
+    description: |-
+      The total of dead time for a sentence converted from OBSCIS.
+  - name: ConvertedLostGoodConductCredits
+    description: |-
+      The total net loss of good conduct credits an offender has earned
+  - name: ConfinementFullExpirationDate
+    is_datetime: True
+    description: |-
+      The date the sentence calculations determine that the first portion of an offender's split confinement will expire.  For an illegal split confinement, the first-cnfmnt-fxp-date will be greater than first-cnfmnt-exp-date.
+  - name: SlagleFlag
+    description: |-
+      This flag indicates the sentence is calculated under Slagle rules.
+  - name: ViolentOneHundredPercentFlag
+    description: |-
+      Indicator that tells should calculate as violent 100 percent.
+  - name: NoPreviousParoleFlag
+    description: |-
+      The code specifying for the sentence calculations that all sentences with a sentence imposed date prior to the offense date of the current sentence should not have any parole dates calculated.
+  - name: OriginalBehaviorCredits
+    description: |-
+      The number of original PSRC behavior credits for a credit month
+  - name: OriginalProgramCredits
+    description: |-
+      The number of original PSRC program credits for a credit month.
+  - name: OriginalPPSCCredits
+    description: |-
+      The number of original PPSC credits for a credit month.
+  - name: RemovedBehaviorCredits
+    description: |-
+      The number of PSRC behavior credits removed for a credit month.
+  - name: RemovedProgramCredits
+    description: |-
+      The number of removed PSRC program credits for a credit month.
+  - name: RemovedPPSCCredits
+    description: |-
+      The number of removed PPSC credits for a credit month.
+  - name: ReinstatedBehaviorCredits
+    description: |-
+      The number of PSRC behavior credits reinstated for a credit month.
+  - name: ReinstatedProgramCredits
+    description: |-
+      The number of reinstated PSRC program credits for a credit month.
+  - name: ReinstatedPPSCCredits
+    description: |-
+      The number of reinstated PPSC credits for a credit month.
+  - name: ConsecutiveConvictionCounty
+    description: |-
+      The county for the consecutive to sentence for the sentences being posted in a judgment order.
+  - name: ConsecutiveCaseYear
+    description: |-
+      The case year of the sentence that another sentence is consecutive to.
+  - name: ConsecutiveCaseNumber
+    description: |-
+      The Case Number of the sentence a sentence is consecutive to.
+  - name: ConsecutiveCountNumber
+    description: |-
+      The count number of a sentence that another sentence is consecutive to.
+  - name: AuthorizedLostGoodConductFlag
+    description: |-
+      The loss of good conduct credits an offender has earned for a particular sentence that are being removed by an authority.
+  - name: SafetyValveOverrideFlag
+    description: |-
+      This flag indicates the offender currently is not receiving safety valve on sentences.
+  - name: TotalTreatmentCredits
+    description: |-
+      NOT FOUND IN SOURCE DOCUMENT
+  - name: TotalJailEd
+    description: |-
+      NOT FOUND IN SOURCE DOCUMENT
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.

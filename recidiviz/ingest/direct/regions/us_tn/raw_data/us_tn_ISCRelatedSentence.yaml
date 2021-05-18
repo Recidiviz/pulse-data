@@ -1,0 +1,47 @@
+file_tag: ISCRelatedSentence
+file_description: |- 
+  This table contains one occurrence for each sentence that is related to an ISC sentence. An ISC related sentence can be either consecutive to or concurrent with the "parent" ISC sentence.
+primary_key_cols: []
+columns:
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: Jurisdication
+    description: |-
+      The code for the jurisdiction in which an offender is serving his sentence.
+  - name: CaseYear
+    description: |-
+      The year assigned to a sentence for a particular county.  It will generally be the current year at assignment.
+  - name: CaseNumber
+    description: |-
+      A case number assigned to a particular offense, or judgment order. This number is used in identifying a sentence.
+  - name: CountNumber
+    description: |-
+      A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of an offender.
+  - name: RelatedJurisidicationCounty
+    description: |-
+      The related county or jurisdiction of a sentence for an offender.
+  - name: RelatedCaseYear
+    description: |-
+      A unique sequential number assigned to a particular count of a concurrent or consecutive sentence.
+  - name: RelatedCaseNumber
+    description: |-
+      The case number of a concurrent or consecutive sentence.
+  - name: RelatedCountNumber
+    description: |-
+      A unique sequential number assigned to a particular count of a concurrent or consecutive sentence.
+  - name: RelatedSentenceType
+    description: |-
+      Indicator to tell whether a sentence related to a judgment order is concurrent or consecutive.
+  - name: CrimeType
+    description: |-
+      Indicator to tell whether a sentence related to a judgment order is a felony or a misdemeanor.
+  - name: OriginalSentence
+    description: |-
+      Indicator to tell whether a related sentence is a Tennessee sentence or an ISC sentence.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.

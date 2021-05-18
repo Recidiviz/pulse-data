@@ -1,0 +1,28 @@
+file_tag: ReferralPriorRecord
+file_description: |- 
+  This table contains one row for each prior record selected to be on the BI01MHK Referral Report for each referral.
+primary_key_cols: []
+columns:
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: OrderDate
+    is_datetime: True
+    description: |-
+      The date an order is made.
+  - name: ReferralSequenceNumber
+    description: |-
+      This is the referral sequence number.
+  - name: EventDate
+    is_datetime: True
+    description: |-
+      The date of either the arrest or conviction of an offender for a particular offense.  This date is used as the key for the criminal history of an individual.
+  - name: SequenceNumber
+    description: |-
+      Uniquely identifies various DB2 tables.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.

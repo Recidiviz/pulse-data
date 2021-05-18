@@ -1,0 +1,60 @@
+file_tag: SentenceMiscellaneous
+file_description: |- 
+  This table contains one occurrence for each sentence received by the offender. It contains miscellaneous information about the sentence.
+primary_key_cols: []
+columns:
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: ConvictionCounty
+    description: |-
+      The county in which an offender is convicted.  This element is used in identifying a particular sentence.
+  - name: CaseYear
+    description: |-
+      The year assigned to a sentence for a particular county.  It will generally be the current year at assignment.
+  - name: CaseNumber
+    description: |-
+      A case number assigned to a particular offense, or judgment order. This number is used in identifying a sentence.
+  - name: CountNumber
+    description: |-
+      A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of an offender.
+  - name: BOPDate
+    is_datetime: True
+    description: |-
+      The date the Board of Parole assigns to a sentence to replace the normal starting date of the sentence.
+  - name: CustodialParoleDate
+    is_datetime: True
+    description: |-
+      The date the Board of Parole assigns to a sentence to indicate the sentence has been paroled yet the offender is still in custody.
+  - name: AlternateSentenceImposeDate
+    is_datetime: True
+    description: |-
+      The date that replaces the original sentence imposed date taken the judgment order.  Used for sentences consective to a misde- meanor or an ISC sentence where the expiration date is not known.
+  - name: CustodialParoleDateFlag
+    description: |-
+      Custodial Date.
+  - name: BOPFlag
+    description: |-
+      An indicator of whether the offender is awaiting a Board of Parole Date.
+  - name: StaffID
+    description: |-
+      This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
+  - name: DeclineToExpireFlag
+    description: |-
+      This is a flag to indicate whether the Board of Parole Date should be adjusted down to the Expiration Date.
+  - name: CustodialParoleDateCode
+    description: |-
+      This element specifies the date that the Custodial Parole Date may be adjusted to.
+  - name: ConvictOffenderParole
+    description: |-
+      The code that indicates a converted offender should lose his parole dates for a sentence regardless of the information related to the offender.
+  - name: LastModificationDate
+    is_datetime: True
+    description: |-
+      The date that an entity was last modified by a user through a TOMIS conversation.
+  - name: LastUpatedUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.

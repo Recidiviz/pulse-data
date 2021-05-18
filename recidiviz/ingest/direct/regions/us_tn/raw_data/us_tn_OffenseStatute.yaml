@@ -1,0 +1,53 @@
+file_tag: OffenseStatute
+file_description: |- 
+  This table contains one occurrence for each offense type. It contains information about the offense for sentencing and for statistical analysis.
+primary_key_cols: []
+columns:
+  - name: Offense
+    description: |-
+      The offense codes as defined by the UNIFORM CRIME REPORTING AGENCY.  This code is tied directly to the offense code TCA.
+  - name: TCAOffense
+    description: |-
+      The offense codes as defined by TENNESSEE CODE ANNOTATED.  This code will be tied to the offense code UCR.
+  - name: OffenseDescription
+    description: |-
+      This element is a textual description of an offense code.
+  - name: OffensePriority
+    description: |-
+      The level of seriousness assigned to each offense as prioritized by TDOC.  Each offense statute will have a priority assigned.
+  - name: OffenseSeverity
+    description: |-
+      A rating of the severity of an offense by TDOC.  Each offense statute will be assigned a severity code.
+  - name: FelonyClass
+    description: |-
+      Class code assigned to a particular offense statute under 1194. For a particular UCR code there can be only one felony class.
+  - name: PsychologicalEvaluationRequiredFlag
+    description: |-
+      Indicates whether or not a psychological evaluation must be done on an offender. This flag is tied to the offense statute.
+  - name: DrugOffensesFlag
+    description: |-
+      Indicates an offense is a drug related offense for which an offender may serve the sentence in boot camp when the sentence length is greater than six years. Tied to offender status.
+  - name: AssaultiveOffenseFlag
+    description: |-
+      Indicator to tell whether an offense was assaultive or not. This information is used for classification.
+  - name: SexOffenderFlag
+    description: |-
+      Indicates the offense is considered to be a sex offense. This flag is tied to the offense status, and is used to determine eligibility for safety-value release.
+  - name: FelonyFlag
+    description: |-
+      An indicator for whether a crime was a felony.
+  - name: MisdemeanorFlag
+    description: |-
+      An indicator for whether a crime was a misdemeanor.
+  - name: MisdemeanorClass
+    description: |-
+      Class code assigned to a particular offense statute under 1194. For a particular UCR code there can be only one misdemeanor class.
+  - name: TIBRSOffense
+    description: |-
+      A categorizing code for felony offenses based on the FBI's National Incident Based Reporting System (NIBRS).
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.

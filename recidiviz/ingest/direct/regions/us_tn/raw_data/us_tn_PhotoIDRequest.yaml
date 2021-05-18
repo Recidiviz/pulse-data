@@ -1,0 +1,109 @@
+file_tag: PhotoIDRequest
+file_description: |- 
+  This table contains one occurrence for each photo id eligibility that is sent to the TN Dept. of Safety.  The response code and date and subsequent staff action are stored.
+primary_key_cols: []
+columns:
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: RequestDate
+    is_datetime: True
+    description: |-
+      The date on which a request is made.
+  - name: RequestLastName
+    description: |-
+      This is the last name of a person used on a request.
+  - name: RequestFirstName
+    description: |-
+      This is the first name of a person used on a request.
+  - name: RequestMiddleName
+    description: |-
+      This is the middle name of a person used on a request.
+  - name: RequestSuffix
+    description: |-
+      This is the suffix name of a person used on a request.
+  - name: RequestSocialSecurityNumber
+    description: |-
+      Social Security Number of an individual.
+  - name: RequestBirthDate
+    is_datetime: True
+    description: |-
+      The date on which a person was born.
+  - name: RequestRace
+    description: |-
+      The NCIC race code.
+  - name: RequestGender
+    description: |-
+      An abbreviation that identifies the sex of an offender.
+  - name: RequestDriverLicenseNumber
+    description: |-
+      A unique identifier assigned to a driver's license by the state issuing the license.
+  - name: RequestSiteID
+    description: |-
+      This identifies an organizational/location entity. Sites may include institutions, staff agencies, hospitals, etc. This is a database element.
+  - name: ResponseEligibleDate
+    is_datetime: True
+    description: |-
+      The date on which a response is received regarding eligibility.
+  - name: ResponseEligibleCode
+    description: |-
+      Indicates the status of the eligibility response.
+  - name: SubmittedApplicationFlag
+    description: |-
+      Indicates an application has been submitted.
+  - name: SubmittedApplicationDate
+    is_datetime: True
+    description: |-
+      The date an application is submitted.
+  - name: NonSubmittedReason
+    description: |-
+      The reason something is not submitted.
+  - name: IndigentFlag
+    description: |-
+      This indicates the offender is indigent.
+  - name: ReceivedDate
+    is_datetime: True
+    description: |-
+      Date an ID is received.
+  - name: TDOCHSDriverLicenseNumber
+    description: |-
+      Date on which a TDOS-issued license, ID or permit expires.
+  - name: TDOCHSLicenseClass
+    description: |-
+      Code used for the TDOS License Class returned as part of the Photo ID Response file.
+  - name: TDOCHSNonCommericalLicenseStatus
+    description: |-
+      Code used for the NCL License status in the TDOS Photo ID return file.
+  - name: TDOCHSCommericalDriversLicenseStatus
+    description: |-
+      Code used for the CDL License status in the TDOS Photo ID return file.
+  - name: TDOCHSPermittedStatus
+    description: |-
+      Code used for the permit status in the TDOS Photo ID return file.
+  - name: TDOCHSIDStatus
+    description: |-
+      Code used for the Photo ID status in the TDOS Photo ID return file.
+  - name: TDOcHSLicenseExpirationDate
+    is_datetime: True
+    description: |-
+      Date on which a TDOS-issued license, ID or permit expires.
+  - name: IssueTypeID
+    description: |-
+      Code used for the Photo ID type issued from the institution.
+  - name: InterimDocumentFiledDate
+    is_datetime: True
+    description: |-
+      The date the Interim documentation is filed.
+  - name: OfficialDocumentFiledDate
+    is_datetime: True
+    description: |-
+      The date the Official documentation is filed.
+  - name: LastUpdateStaffID
+    description: |-
+      Staff ID of the last person to update a row on a table.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.

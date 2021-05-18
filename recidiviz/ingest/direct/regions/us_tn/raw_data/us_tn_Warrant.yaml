@@ -1,0 +1,72 @@
+file_tag: Warrant
+file_description: |- 
+  This table contains one occurrance of each warrant served on the offender.
+primary_key_cols: []
+columns:
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: IssueDate
+    is_datetime: True
+    description: |-
+      Disposition Date
+  - name: SiteID
+    description: |-
+      This identifies an organizational/location entity. Sites may include institutions, staff agencies, hospitals, etc. This is a database element.
+  - name: WarrantNumber
+    description: |-
+      A unique identifier number assigned to a warrant for a particular judgment order.
+  - name: WarrantType
+    description: |-
+      The type of warrant that is requested and/or issued for an offender.
+  - name: WarrantReason
+    description: |-
+      The reason specified for issuing a warrant for an offender.
+  - name: BOPApprovedFlag
+    description: |-
+      The indicator for a warrant approved by Board of Paroles.
+  - name: PersonID
+    description: |-
+      This is a unique identifier assigned to a particular person. This database element will be displayed on screen and reports as either TOMIS-ID or STAFF-ID depending on the functional requirements.
+  - name: StaffID
+    description: |-
+      This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
+  - name: WarrantStatus
+    description: |-
+      The status of a warrant that has been issued for an offender.
+  - name: WarrantStatusDate
+    is_datetime: True
+    description: |-
+      This is the date of the warrant status.
+  - name: DelinquentDate
+    is_datetime: True
+    description: |-
+      The date on which an inmate is delinquent on his parole.
+  - name: NCICAgencyID
+    description: |-
+      A unique identifier for a NCIC agency.
+  - name: WarrantServedDate
+    is_datetime: True
+    description: |-
+      The date a Revocation Warrant is served.
+  - name: WarrantPendingDate
+    is_datetime: True
+    description: |-
+      The date the Revocation Warrant is pending.
+  - name: WarrantDisposeDate
+    is_datetime: True
+    description: |-
+      The date the Revocation Warrant has been disposed.
+  - name: InitalExtraditionDate
+    is_datetime: True
+    description: |-
+      This is the date warrant extradition initiated.
+  - name: Comments
+    description: |-
+      The free form text entered for comment on revocation warrant.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.

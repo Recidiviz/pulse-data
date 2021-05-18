@@ -1,0 +1,47 @@
+file_tag: SentenceCreditLaw
+file_description: |- 
+  This table contains one occurrence for each sentence waiver received by the offender.
+primary_key_cols: []
+columns:
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: ConvictionCounty
+    description: |-
+      The county in which an offender is convicted.  This element is used in identifying a particular sentence.
+  - name: CaseYear
+    description: |-
+      The year assigned to a sentence for a particular county.  It will generally be the current year at assignment.
+  - name: CaseNumber
+    description: |-
+      A case number assigned to a particular offense, or judgment order. This number is used in identifying a sentence.
+  - name: CountNumber
+    description: |-
+      A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of an offender.
+  - name: CreditEligibleDate
+    is_datetime: True
+    description: |-
+      The date on which an offender is eligible for a type of credits for a sentence.
+  - name: CreditLawID
+    description: |-
+      The ID associated with a credit law used to determine the number of days an offender may have his sentence reduced. Each credit law may have differing standards of maximum credit days available depending on custody type and level, inst type, and years ser
+  - name: CreditLawIDWaivedTo
+    description: |-
+      The credit law ID that is waived to by an inmate through the waiving procedure. The new credit law ID will be used for determining the maximum credit days available for an inmate.
+  - name: WaiverDate
+    is_datetime: True
+    description: |-
+      The date on which an inmate waived his right to earn credits from one credit law to another.
+  - name: StaffID
+    description: |-
+      This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
+  - name: LastModifiedDate
+    is_datetime: True
+    description: |-
+      The date that an entity was last modified by a user through a TOMIS conversation.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.
