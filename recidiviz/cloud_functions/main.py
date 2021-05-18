@@ -183,7 +183,21 @@ def handle_state_dashboard_user_restrictions_file(
         logging.error("No project id set for call to update auth0 users, returning.")
         return
     bucket = data["bucket"]
-    region_code, filename = data["name"].split("/")
+    path_delimiter = "/"
+
+    # Skip temp files in the bucket
+    if path_delimiter not in data["name"]:
+        logging.info("Skipping temp file: %s", data["name"])
+        return
+
+    filepath = data["name"].split(path_delimiter)
+
+    # Expected file path structure is US_XX/supervision_location_restricted_access_emails.json
+    if len(filepath) != 2:
+        logging.info("Skipping filepath, too many nested directories: %s", filepath)
+        return
+
+    region_code, filename = filepath
     user_restricted_access_file = "supervision_location_restricted_access_emails.json"
 
     if not filename == user_restricted_access_file:
