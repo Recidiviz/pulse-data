@@ -657,8 +657,8 @@ class UsPaController(CsvGcsfsDirectIngestController):
             # INCARCERATION CUSTODIAL AUTHORITY CODES
             "26",  # Parolee in a Parole Violator Center
         ],
-        StateSupervisionContactStatus.ATTEMPTED: ["No"],
-        StateSupervisionContactStatus.COMPLETED: ["Yes"],
+        StateSupervisionContactStatus.ATTEMPTED: ["Yes"],
+        StateSupervisionContactStatus.COMPLETED: ["No"],
     }
 
     ENUM_MAPPERS: Dict[EntityEnumMeta, EnumMapper] = {
