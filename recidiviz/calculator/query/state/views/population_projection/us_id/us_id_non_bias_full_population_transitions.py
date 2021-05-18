@@ -38,6 +38,7 @@ US_ID_PAROLE_BOARD_HOLD_POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
             run_date,
             CAST(ROUND(SUM(total_population)) AS INT64) AS total_population
         FROM `{project_id}.{population_projection_dataset}.us_id_rider_pbh_remaining_sentences`
+        WHERE total_population > 0
         GROUP BY state_code, run_date, compartment, gender, compartment_duration, outflow_to
     ),
     parole_board_hold_union AS (
