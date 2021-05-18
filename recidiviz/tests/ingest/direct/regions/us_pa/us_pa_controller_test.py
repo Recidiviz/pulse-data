@@ -5027,7 +5027,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             contact_type_raw_text="OFFENDER-HOME",
             location=StateSupervisionContactLocation.RESIDENCE,
             location_raw_text="NONE-HOME",
-            status=StateSupervisionContactStatus.COMPLETED,
+            status=StateSupervisionContactStatus.ATTEMPTED,
             status_raw_text="YES",
             contacted_agent=p2_sp_2_1.supervising_officer,
         )
@@ -5042,7 +5042,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             contact_type_raw_text="BOTH-EMAIL",
             location=StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT,
             location_raw_text="EMPLOYER-EMAIL",
-            status=StateSupervisionContactStatus.ATTEMPTED,
+            status=StateSupervisionContactStatus.COMPLETED,
             status_raw_text="NO",
             contacted_agent=p2_sp_2_1.supervising_officer,
         )
@@ -5057,7 +5057,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             contact_type_raw_text="COLLATERAL-HOME",
             location=StateSupervisionContactLocation.RESIDENCE,
             location_raw_text="NONE-HOME",
-            status=StateSupervisionContactStatus.ATTEMPTED,
+            status=StateSupervisionContactStatus.COMPLETED,
             status_raw_text="NO",
             contacted_agent=p2_sp_2_1.supervising_officer,
         )
@@ -5072,7 +5072,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             contact_type_raw_text="COLLATERAL-FIELD",
             location=StateSupervisionContactLocation.FIELD,
             location_raw_text="COURTPROBATIONSTAF-FIELD",
-            status=StateSupervisionContactStatus.COMPLETED,
+            status=StateSupervisionContactStatus.ATTEMPTED,
             status_raw_text="YES",
             contacted_agent=p2_sp_2_1.supervising_officer,
         )
