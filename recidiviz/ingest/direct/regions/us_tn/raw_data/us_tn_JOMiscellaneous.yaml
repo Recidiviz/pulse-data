@@ -1,0 +1,78 @@
+file_tag: JOMiscellaneous
+file_description: |- 
+  This table contains one occurrence for each judgment order received by an offender. This table contains miscellaneous information about the judgment order.
+primary_key_cols: []
+columns:
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: ConvictionCounty
+    description: |-
+      The county in which an offender is convicted.  This element is used in identifying a particular sentence.
+  - name: CaseYear
+    description: |-
+      The year assigned to a sentence for a particular county. It will generally be the current year at assignment.
+  - name: CaseNumber
+    description: |-
+      A case number assigned to a particular offense, or judgment order. This number is used in identifying a sentence.
+  - name: CountNumber
+    description: |-
+      A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of an offender.
+  - name: JudgeName
+    description: |-
+      The name for a judge. This element is only 30 characters instead of 50 characters used for JUDGE-NAME.
+  - name: JOStatusDate
+    is_datetime: True
+    description: |-
+      The date on which a status of a particular issue changes.
+  - name: JOStatus
+    description: |-
+      Code used to indicate if the judgment order is illegal, incomplete, or complete/legal.
+  - name: OverridenToLegalFlag
+    description: |-
+      Indicator for a judgment order to tell if the judgment order has been overriden to legal.
+  - name: JOEntryDate
+    is_datetime: True
+    description: |-
+      The date that a judgment order is signed by the presiding judge.
+  - name: LastLetterCreatedDate
+    is_datetime: True
+    description: |-
+      The date of the last letter for an illegal or incomplete judgment order was created.
+  - name: PostConvictionReliefConvictionCounty
+    description: |-
+      A unique sequential number assigned to a post conviction relief sentence ID count number.
+  - name: PostConvictionReliefCaseYear
+    description: |-
+      The year assigned to a post conviction relief sentence ID.
+  - name: PostConvictionReliefCaseNumber
+    description: |-
+      A case number assigned to a post conviction relief sentence ID.
+  - name: PostConvictionReliefCountNumber
+    description: |-
+      A unique sequential number assigned to a post conviction relief sentence ID count number.
+  - name: LastAppealFinalizedDate
+    is_datetime: True
+    description: |-
+      The date of the last appeal of a judgment order was finalized.
+  - name: LastAmendmentFiledDate
+    is_datetime: True
+    description: |-
+      The date of the last amendment of a judgment order was filed.
+  - name: LastPostConvictionReliefDate
+    is_datetime: True
+    description: |-
+      The date of the last post conviction relief for a judgment order.
+  - name: LastAppealDecision
+    description: |-
+      The code identifying the decision for the last appeal of a judgment order.
+  - name: LastJudgmentOrderChangeDate
+    is_datetime: True
+    description: |-
+      The date of the last change to a judgment order.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.

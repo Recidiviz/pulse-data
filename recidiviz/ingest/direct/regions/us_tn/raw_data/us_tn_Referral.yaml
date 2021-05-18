@@ -1,0 +1,97 @@
+file_tag: Referral
+file_description: |- 
+  This table contains one occurrence for each Referral for each offender.
+primary_key_cols: []
+columns:
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: OrderDate
+    is_datetime: True
+    description: |-
+      The date an order is made.
+  - name: ReferralSequenceNumber
+    description: |-
+      This is the referral sequence number.
+  - name: ReferralType
+    description: |-
+      An abbreviation for the type of referral given to an offender.
+  - name: DueDate
+    is_datetime: True
+    description: |-
+      The date the record is due.
+  - name: CourtDate
+    is_datetime: True
+    description: |-
+      The date and time of a scheduled court appearance for an offender. This date is posted during the PSI assignment process.
+  - name: ReferralName
+    description: |-
+      The name associated with a referral.
+  - name: BondAmount
+    description: |-
+      The dollar amount of bond set for an offender.
+  - name: BondCondition
+    description: |-
+      A code value defining a reason for the conditions of Bond for a offender awaiting sentencing.
+  - name: CoOffenderID1
+    description: |-
+      The first codefendant TOMIS ID for an offender.
+  - name: CoOffenderID2
+    description: |-
+      The second codefendant TOMIS ID for an offender.
+  - name: CoOffenderID3
+    description: |-
+      The third codefendant TOMIS ID for an offender.
+  - name: CoOffenderID4
+    description: |-
+      The fourth codefendant TOMIS ID for an offender.
+  - name: JudicalPersonID
+    description: |-
+      The unique identifier assigned to a judge.
+  - name: CountName
+    description: |-
+      The name of the court that found an offender guilty.
+  - name: DistrictAttorneyID
+    description: |-
+      The identifier of a district attorney's name posted to either a judgment order or PSI.
+  - name: DefenseAttorneyName
+    description: |-
+      The name of the attorney defending an offender. This name is posted in either the judgment order or the PSI. He/She is usually very wealthy.
+  - name: DefenseAttorneyType
+    description: |-
+      The type of defense attorney that a defendant has during his trial.
+  - name: County
+    description: |-
+      The code name of a territorial division for local government within a state.
+  - name: WeaponFlag
+    description: |-
+      Indicator to tell whether an offender used weapons in committing his offense.
+  - name: Violence
+    description: |-
+      Indicator for an offense statute that tells whether the particular offense was violent.
+  - name: OfficeID
+    description: |-
+      The identifying code for a probation, parole or community corrections office.
+  - name: StaffID
+    description: |-
+      This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
+  - name: CompletedDate
+    is_datetime: True
+    description: |-
+      The date that a task is completed.
+  - name: PostedByStaffID
+    description: |-
+      The staff id of the individual who initially posted information for an offender.
+  - name: PostedDate
+    is_datetime: True
+    description: |-
+      This is the date that data is actually posted to the system.
+  - name: LastUpdateStaffID
+    description: |-
+      Staff ID of the last person to update a row on a table.
+  - name: LastUpdateUserID
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.
+  - name: LastUpdateDate
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.

@@ -1,0 +1,32 @@
+file_tag: OffenderMovement
+file_description: |- 
+  This table contains one occurrence for every arrivel and/or departure of an offender from an institution.
+primary_key_cols: []
+columns:
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: MovementDateTime
+    description: |-
+      The date on which an offender is moved from one location to another. / The time at which an offender was moved.
+  - name: MovementType
+    description: |-
+      THIS IS THE GENERAL TYPE OF MOVEMENT OF THE OFFENDER AND INDICATES THE "FROM" AND "TO" LOCATIONS (e.g. FACILITY) NULL
+  - name: MovementReason
+    description: |-
+      THIS IS THE DESCRIPTION OF THE SPECIFIC REASON FOR THE MOVEMENT OF THE OFFENDER (e.g. PAROLE REVOKED). THE MOVEMENT IS TEMPORARY OR PERMANENT BASED ON THE MOVEMENT REASONS.
+  - name: FromLocationID
+    description: |-
+      This identifies an organizational/location entity. Location may include institutions, staff agencies, hospitals, etc. This is a database element.
+  - name: ToLocationID
+    description: |-
+      This identifies an organizational/location entity. Location may include institutions, staff agencies, hospitals, etc. This is a database element.
+  - name: ArrivalDepartureFlag
+    description: |-
+      This indicates that the user is entereing either an arrival or a departure.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.

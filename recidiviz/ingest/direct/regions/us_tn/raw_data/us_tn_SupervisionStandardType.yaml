@@ -1,0 +1,33 @@
+file_tag: SupervisionStandardType
+file_description: |- 
+  This table contains one occurrance for each Supervision Standard Type associated with a particular Supervision Std.
+primary_key_cols: []
+columns:
+  - name: PlanType
+    description: |-
+      The type of plan of supvn. that an offender has agreed to follow.
+  - name: SupervisionLevel
+    description: |-
+      An abbreviation for the level of supervision required to secure an offender.
+  - name: StandardStartDate
+    is_datetime: True
+    description: |-
+      The date on which a supervision standard begins.
+  - name: StandardType
+    description: |-
+      An abbreviation for available supervision standard type codes for a particular supervision standard.
+  - name: StandardFrequency
+    description: |-
+      The number of times supervision standard is required to be met.
+  - name: NumberMonths
+    description: |-
+      The period of time (in months) of a supervision standard.
+  - name: StandardEndDate
+    description: |-
+      A Contact Type code entered to stop the requirement of a particular supervision standard.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.

@@ -1,0 +1,32 @@
+file_tag: JOIllegalReasons
+file_description: |- 
+  This table contains one occurrence of a reason why a judgment order is illegal or incomplete. Multiple reasons can be present for a particular judgment order.
+primary_key_cols: []
+columns:
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: ConvictionCounty
+    description: |-
+      The county in which an offender is convicted.  This element is used in identifying a particular sentence.
+  - name: CaseYear
+    description: |-
+      NOT FOUND IN SOURCE DOCUMENT
+  - name: CaseNumber
+    description: |-
+      NOT FOUND IN SOURCE DOCUMENT
+  - name: CountNumber
+    description: |-
+      A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of an offender.
+  - name: IncompleteReason
+    description: |-
+      Reason that a judgment order is considered incomplete or illegal.
+  - name: ReasonType
+    description: |-
+      Indicator to tell whether a judgment order illegal/incomplete reason is either illegal or incomplete.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.

@@ -1,0 +1,61 @@
+file_tag: PardonCommutation
+file_description: |- 
+  This table contains one occurrance for each board member's recommendation for clemency for the offender.
+primary_key_cols: []
+columns:
+  - name: Offender
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: CountyofConviction
+    description: |-
+      The county in which an offender is convicted.  This element is used in identifying a particular sentence.
+  - name: CaseYear
+    description: |-
+      The year assigned to a sentence for a particular county. It will generally be the current year at assignment.
+  - name: CaseNumber
+    description: |-
+      A case number assigned to a particular offense, or judgment order. This number is used in identifying a sentence.
+  - name: CountNumber
+    description: |-
+      A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of an offender.
+  - name: PardonCommutationDate
+    is_datetime: True
+    description: |-
+      The date on which a pardon or commutation is imposed by the governor.
+  - name: GovernorName
+    description: |-
+      The name of the governor responsible for the pardon or commutation of a sentence.
+  - name: PardonCommutationType
+    description: |-
+      The type of commutation or the pardon for a sentence.
+  - name: MaxSentenceDay
+    description: |-
+      The maximum number of days for an offender's sentence.
+  - name: MaxSentenceMonth
+    description: |-
+      The maximum number of months for an offender's sentence.
+  - name: MaxSentenceYear
+    description: |-
+      The maximum number of years for an offender's sentence.
+  - name: MinSentenceDay
+    description: |-
+      The minimum number of days for an offender's sentence.
+  - name: MinSentenceMonth
+    description: |-
+      The minimum number of months for an offender's sentence.
+  - name: MinSentenceYear
+    description: |-
+      The minimum number of years for an offender's sentence.
+  - name: StaffID
+    description: |-
+      This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
+  - name: LastModifiedDate
+    is_datetime: True
+    description: |-
+      The date that an entity was last modified by a user through a TOMIS conversation.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.

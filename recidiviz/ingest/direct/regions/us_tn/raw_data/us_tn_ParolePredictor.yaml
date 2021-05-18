@@ -1,0 +1,44 @@
+file_tag: ParolePredictor
+file_description: |- 
+  This table contains the results of a parole predictor appraisal given to an offender for a specific sentence/offense he has committed.
+primary_key_cols: []
+columns:
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: AssessmentScore1
+    description: |-
+      A numeric value assigned to an offender based on a defined scale and how the offender's data fits into the scale. This value will be used to calculate the total parole predictor score.
+  - name: AssessmentScore2
+    description: |-
+      A numeric value assigned to an offender based on a defined scale and how the offender's data fits into the scale. This value will be used to calculate the total parole predictor score.
+  - name: AssessmentScore3
+    description: |-
+      A numeric value assigned to an offender based on a defined scale and how the offender's data fits into the scale. This value will be used to calculate the total parole predictor score.
+  - name: AssessmentScore4
+    description: |-
+      A numeric value assigned to an offender based on a defined scale and how the offender's data fits into the scale. This value will be used to calculate the total parole predictor score.
+  - name: AssessmentScore5
+    description: |-
+      A numeric value assigned to an offender based on a defined scale and how the offender's data fits into the scale. This value will be used to calculate the total parole predictor score.
+  - name: AssessmentScore6
+    description: |-
+      A numeric value assigned to an offender based on a defined scale and how the offender's data fits into the scale. This value will be used to calculate the total parole predictor score.
+  - name: AssessmentScore7
+    description: |-
+      A numeric value assigned to an offender based on a defined scale and how the offender's data fits into the scale. This value will be used to calculate the total parole predictor score.
+  - name: AssessmentScore8
+    description: |-
+      A numeric value assigned to an offender based on a defined scale and how the offender's data fits into the scale. This value will be used to calculate the total parole predictor score.
+  - name: AssessmentScore9
+    description: |-
+      A numeric value assigned to an offender based on a defined scale and how the offender's data fits into the scale. This value will be used to calculate the total parole predictor score.
+  - name: AssessmentScore10
+    description: |-
+      A numeric value assigned to an offender based on a defined scale and how the offender's data fits into the scale. This value will be used to calculate the total parole predictor score.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.

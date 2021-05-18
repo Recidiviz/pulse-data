@@ -1,0 +1,35 @@
+file_tag: SupervisionStandard
+file_description: |- 
+  This table contains one occurrance for each Supervision Standard.
+primary_key_cols: []
+columns:
+  - name: PlanType
+    description: |-
+      The type of plan of supvn. that an offender has agreed to follow.
+  - name: SupervisionLevel
+    description: |-
+      An abbreviation for the level of supervision required to secure an offender.
+  - name: StandardStartDate
+    is_datetime: True
+    description: |-
+      The date on which a supervision standard begins.
+  - name: StandardEndDate
+    is_datetime: True
+    description: |-
+      The date on which a supervision standard ends
+  - name: PostedByStaffID
+    description: |-
+      The staff id of the individual who initially posted information for an offender.
+  - name: PostedDate
+    is_datetime: True
+    description: |-
+      This is the date that data is actually posted to the system.
+  - name: LastUpdateStaffID
+    description: |-
+      Staff ID of the last person to update a row on a table.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.

@@ -1,0 +1,72 @@
+file_tag: Site
+file_description: |- 
+  This entity describes any organizational or physical unit to which an offender or staff person can be assigned. These types include adult institutions, agencies, parole, probation, or community serivice offices, local jails, or institution jails. Staff here represents the warden, office supervisor, etc.
+primary_key_cols: []
+columns:
+  - name: SiteID
+    description: |-
+      This identifies an organizational/location entity. Sites may include institutions, staff agencies, hospitals, etc. This is a database element.
+  - name: SiteName
+    description: |-
+      This is the name of a shorten site name.
+  - name: SiteType
+    description: |-
+      The type of site that an offender is assigned.  This code has an associated decode value
+  - name: Status
+    description: |-
+      The status of a site to which an offender is assigned.  This code has an associated decode value
+  - name: StatusDate
+    is_datetime: True
+    description: |-
+      The date a an offender is assigned to a particular institution.
+  - name: AddressLine1
+    description: |-
+      The first street address line.
+  - name: AddressLine2
+    description: |-
+      The second street address line.
+  - name: AddressCity
+    description: |-
+      The city for an address.
+  - name: AddressState
+    description: |-
+      The state for an address.
+  - name: AddressZip
+    description: |-
+      The zip code for an address.
+  - name: PhoneNumber
+    description: |-
+      The number at which someone can be reached.
+  - name: SecurityLevel
+    description: |-
+      The highest level of inmate security that a particular TDOC institution maintains.
+  - name: Region
+    description: |-
+      A unique geographical location governed by its own administrative unit.
+  - name: Division
+    description: |-
+      The division code relating to assignment of staff or offender persons.
+  - name: District
+    description: |-
+      The district code relating to parole or probation office locations.
+  - name: Agency
+    description: |-
+      An abbreviation for the name of agencies in the TOMIS system. These correspond to decode values in tables.
+  - name: NCICAgencyID
+    description: |-
+      A unique identifier for a NCIC agency.
+  - name: InChargeStaffID
+    description: |-
+      This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
+  - name: SexTypesAllowed
+    description: |-
+      This value indicates if males, females, or both can be admitted to a particular institution.
+  - name: ContactPerson
+    description: |-
+      Free form text containing the person to contact at a site.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.
