@@ -35,12 +35,11 @@ class AdminStores:
     """
 
     def __init__(self) -> None:
-        if in_gcp() or in_development():
-            if in_development():
-                with local_project_id_override(GCP_PROJECT_STAGING):
-                    self._initialize_stores()
-            else:
+        if in_development():
+            with local_project_id_override(GCP_PROJECT_STAGING):
                 self._initialize_stores()
+        elif in_gcp():
+            self._initialize_stores()
 
     def _initialize_stores(self) -> None:
         self.ingest_metadata_store = DatasetMetadataCountsStore(

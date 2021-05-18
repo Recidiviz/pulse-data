@@ -130,4 +130,5 @@ with models.DAG(
 
     # These exports don't depend on pipeline output.
     _ = trigger_export_operator("INGEST_METADATA")
+    _ = trigger_export_operator("VALIDATION_METADATA")
     _ = trigger_export_operator("JUSTICE_COUNTS")
