@@ -47,6 +47,7 @@
   "devDependencies": {
     "@cucumber/cucumber": "^7.2.1",
     "@recidiviz/eslint-config": "^1.0.0",
+    "@recidiviz/tsconfig": "^1.0.0",
     "@testing-library/react": "^11.2.5",
     "@types/jest": "^26.0.20",
     "@types/node": "14.6.4",

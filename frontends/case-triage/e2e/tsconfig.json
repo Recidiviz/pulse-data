@@ -1,23 +1,4 @@
 {
-  "compilerOptions": {
-    "target": "es6",
-    "allowJs": true,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "module": "commonjs",
-    "moduleResolution": "node",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noFallthroughCasesInSwitch": true,
-    "types": [
-      "node",
-      "webdriverio/async",
-      "@wdio/cucumber-framework",
-      "expect-webdriverio"
-    ]
-  },
+  "extends": "@recidiviz/tsconfig/e2e",
   "include": ["**/*.ts"]
 }
