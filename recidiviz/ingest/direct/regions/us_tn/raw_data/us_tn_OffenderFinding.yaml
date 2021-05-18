@@ -1,0 +1,34 @@
+file_tag: OffenderFinding
+file_description: |- 
+  This table contains one occurrence for each finding that is discovered about the offender. These findings include counselling, drug treatment, AA, etc.
+primary_key_cols: []
+columns:
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: FindingDate
+    is_datetime: True
+    description: |-
+      The date findings about an offender are posted.
+  - name: FindingType
+    description: |-
+      The type of finding about an offender as observed by the arresting officer or TDOC staff.
+  - name: StaffID
+    description: |-
+      This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
+  - name: PageNumber
+    description: |-
+      This element describes a page number.
+  - name: Findings
+    description: |-
+      The text associated with a finding about an offender made by an individual in the TOMIS system.
+  - name: PostedDate
+    is_datetime: True
+    description: |-
+      This is the date that data is actually posted to the system.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.

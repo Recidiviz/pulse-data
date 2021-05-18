@@ -1,0 +1,89 @@
+file_tag: Staff
+file_description: |- 
+  This entity contains descriptive information about each employee in the Tennessee Department of Corrections or other agency utilizing the TOMIS system.
+primary_key_cols: []
+columns:
+  - name: StaffID
+    description: |-
+      This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
+  - name: UserID
+    description: |-
+      The user identifier assigned to each successful trainee on TOMIS. Each trainee/employee must have an ID to gain access to the system
+  - name: UserClass
+    description: |-
+      The user class is a group of users with the same security access. A user class is made up of many users.
+  - name: UserClassDate
+    is_datetime: True
+    description: |-
+      This element describes the date when the USER CLASS was added or modified. It will be based on the system date at the time of the TED update.
+  - name: SecurityStatus
+    description: |-
+      This field describes the security status code for a user ID.
+  - name: SecurityStatusDate
+    is_datetime: True
+    description: |-
+      This element describes the date when the security statwas added or modified. It will be based on the system date at the time of the update.
+  - name: SiteID
+    description: |-
+      This identifies an organizational/location entity. Sites may include institutions, staff agencies, hospitals, etc. This is a database element.
+  - name: LastName
+    description: |-
+      The last name of a person.
+  - name: FirstName
+    description: |-
+      This is the first name of a person.
+  - name: Race
+    description: |-
+      The NCIC race code.
+  - name: Sex
+    description: |-
+      An abbreviation that identifies the sex of an offender.
+  - name: DriverLicenseNumber
+    description: |-
+      A unique identifier assigned to a driver's license by the state issuing the license.
+  - name: DriverLicenseState
+    description: |-
+      The state issuing a driver's license.
+  - name: SocialSecurityNumber
+    description: |-
+      Social Security Number of an individual.
+  - name: BirthDate
+    is_datetime: True
+    description: |-
+      The date on which a person was born.
+  - name: Status
+    description: |-
+      The status of a staff person in the TOMIS system. This status will change over the career of the individual, and can be changed at any time.
+  - name: StatusDate
+    is_datetime: True
+    description: |-
+      The date on which a status of a particular issue changes.
+  - name: StaffTitle
+    description: |-
+      The professional/occupational designator for an individual.
+  - name: CertificationDate
+    is_datetime: True
+    description: |-
+      The date on which a staff member is certified to teach/supervise.
+  - name: PersonalQuestionnaireDate
+    is_datetime: True
+    description: |-
+      This element describes the date when the personal questionnaire was taken. It will be based on the system date at the time of the entry.
+  - name: FailedQuestionNumber
+    description: |-
+      The unique identifier for the question a user fails on the first attempt during TOMIS Logon.
+  - name: Comments
+    description: |-
+      Free form text regarding observations made during an inventory audit, item assignment, etc.
+  - name: SignonTerminalID
+    description: |-
+      The terminal nodename that was last used by a staff-id to sigon to the TOMIS online system.
+  - name: LastSignonDateTime
+    description: |-
+      The time of the most recent signon to the TOMIS online system.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.

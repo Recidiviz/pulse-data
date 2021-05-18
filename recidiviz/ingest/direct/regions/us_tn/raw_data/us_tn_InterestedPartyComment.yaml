@@ -1,0 +1,57 @@
+file_tag: InterestedPartyComment
+file_description: |- 
+  This table contains one occurrence for each set of comments made by an interested party regarding an offender before his parole hearing.
+primary_key_cols: []
+columns:
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: PartyID
+    description: |-
+      The unique description given to a person who submits a parole comment, is subpoenaed to a hearing, or who wants to be listed as an interested party for an offender.
+  - name: PartyName
+    description: |-
+      The name of a party who submits comments on an offender's parole or who requests notification of an offender's release, hearing, and/or decision.
+  - name: AddressLine1
+    description: |-
+      The first street address line.
+  - name: AddressLine2
+    description: |-
+      The second street address line.
+  - name: AddressCity
+    description: |-
+      The city for an address.
+  - name: AddressState
+    description: |-
+      The state for an address.
+  - name: AddressZip
+    description: |-
+      The zip code for an address.
+  - name: PhoneNumber
+    description: |-
+      The number at which someone can be reached.
+  - name: NoteType
+    description: |-
+      A specific type of notification which an interested party requests about an offender.
+  - name: PartyType
+    description: |-
+      The type of party which would be interested in information concerning an offender's parole.
+  - name: ParoleStatement
+    description: |-
+      Free form text submitted by an interested party to the Board of Parole regarding the parole of an offender.
+  - name: PinID
+    description: |-
+      Number which is used for access Computer phone system.
+  - name: VictimLetterCreateDate
+    is_datetime: True
+    description: |-
+      The date a letter is created for notification of vivtims of future release of offender.
+  - name: NewLetterFlag
+    description: |-
+      This flag indicates a new victim letter is to be produced informing the victim or victim family member of VOICE information.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.

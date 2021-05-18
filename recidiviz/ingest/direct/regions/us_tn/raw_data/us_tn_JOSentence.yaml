@@ -1,0 +1,177 @@
+file_tag: JOSentence
+file_description: |- 
+  TODO(#7424) - Update once received from TN.
+primary_key_cols: []
+columns:
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: ConvictionCounty
+    description: |-
+      The county in which an offender is convicted.  This element is used in identifying a particular sentence.
+  - name: CaseYear
+    description: |-
+      The year assigned to a sentence for a particular county. It will generally be the current year at assignment.
+  - name: CaseNumber
+    description: |-
+      A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of an offender.
+  - name: CountNumber
+    description: |-
+      A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of an offender.
+  - name: ExecutionDate
+    is_datetime: True
+    description: |-
+      The date of an offender's stay of execution.
+  - name: FirstConfinementCompletedDate
+    is_datetime: True
+    description: |-
+      The date that the first portion of an offender's split confinement is completed as posted on the judgment order.
+  - name: CalculatedPretrialCredits
+    description: |-
+      The number of pretrial jail credits calculated from the entries of pretrial jail credits.
+  - name: CalculatedSheriffCredits
+    description: |-
+      The number of pretrial sheriff credits calculated from the entries of pretrial sheriff credits.
+  - name: PretrialJailCredits
+    description: |-
+      The number of total pretrial jail credits listed on the judgment order.
+  - name: CalculatedPretrialJailBehaviorCredits
+    description: |-
+      The number of pretrial behavior credits calculated from the entries of pretrial jail credits.
+  - name: CriminalInjuryCompensationAmount
+    description: |-
+      The amount of money an offender is to pay for criminal injury compensation according to the judgment order.
+  - name: SupervisionFeeAmount
+    description: |-
+      The amount an offender is to pay to defer the cost of his supervision according to the judgment order.
+  - name: ChildSupportAmount
+    description: |-
+      The amount an offender is to pay for child support according to the judgment order.
+  - name: CourtCostAmount
+    description: |-
+      The amount an offender is to pay for court costs according to the judgment order.
+  - name: CourtFineAmount
+    description: |-
+      The amount an offender is to pay for court fines according to the judgment order.
+  - name: RenderedInfamousFlag
+    description: |-
+      Indicates whether a defendant has been rendered infamous. This is captured on the judgment order.
+  - name: EnhancementYears
+    description: |-
+      The length of an enhancement in years for an offender's sentence.
+  - name: MaximumSentenceYears
+    description: |-
+      The maximum number of years for an offender's sentence.
+  - name: MaximumSentenceMonths
+    description: |-
+      The maximum number of months for an offender's sentence.
+  - name: MaximumSentenceDays
+    description: |-
+      The maximum number of days for an offender's sentence.
+  - name: MaximumSentenceWeekends
+    description: |-
+      The maximum number of weekends for an offender's sentence.
+  - name: MinimumSentenceYears
+    description: |-
+      The minimum number of years for an offender's sentence.
+  - name: MinimumSentenceMonths
+    description: |-
+      The minimum number of months for an offender's sentence.
+  - name: MinimumSentenceDays
+    description: |-
+      The minimum number of days for an offender's sentence.
+  - name: WorkReleaseYears
+    description: |-
+      The number of years for an offender's term of work release.
+  - name: WorkReleaseMonths
+    description: |-
+      The number of months for an offender's term of work release.
+  - name: WorkReleaseDays
+    description: |-
+      The number of days for an offender's term of work release.
+  - name: ProbationSentenceYears
+    description: |-
+      The number of years for an offender's time to serve a sentence suspended to probation.
+  - name: ProbationSentenceMonths
+    description: |-
+      The number of months for an offender's time to serve a sentence suspended to probation.
+  - name: ProbationSentenceDays
+    description: |-
+      The number of days for an offender's time to serve a sentence suspended to probation.
+  - name: FirstSplitConfinementYears
+    description: |-
+      The number of years for an offender's balance of a split confinement.
+  - name: FirstSplitConfinementMonths
+    description: |-
+      The number of months for an offender's balance of a split confinement.
+  - name: FirstSplitConfinementDays
+    description: |-
+      The number of days for an offender's balance of a split confinement.
+  - name: SecondSplitConfinementYears
+    description: |-
+      The number of years for an offender's second split confinement.
+  - name: SecondSplitConfinementMonths
+    description: |-
+      The number of days for an offender's second split confinement.
+  - name: SecondSplitConfinementDays
+    description: |-
+      The number of days for an offender's second split confinement.
+  - name: Period
+    description: |-
+      Text field for displaying the decode of the period of conflict codes.
+  - name: LifeDeathHabitual
+    description: |-
+      Indicator to tell if an offender was sentenced on the judgment order to a life or death sentence.
+  - name: UnpaidCommunityServiceHours
+    description: |-
+      The number of hours of unpaid community service of an offender according to the judgment order.
+  - name: UnpaidCommunityServiceDays
+    description: |-
+      The number of days of unpaid community service of an offender according to the judgment order.
+  - name: UnpaidCommunityServiceWeeks
+    description: |-
+      The number of weeks of unpaid community service of an offender according to the judgment order.
+  - name: UnpaidCommunityServiceMonths
+    description: |-
+      The number of months of unpaid community service of an offender according to the judgment order.
+  - name: LifetimeSupervision
+    description: |-
+      This is the code to indicate whether a sentence is to be served as lifetime supervision after the regular portion of the sentence is expired.
+  - name: DrugCourtFlag
+    description: |-
+      Indicates if a sentence is to a Drug Court.
+  - name: UnsupervisedPrivateProbationFlag
+    description: |-
+      Indicates if a sentence is to private or unsupervised probation.
+  - name: HIVSpecimenFlag
+    description: |-
+      Indicates if a sentence indicates the offender needs to provide a specimen for a HIV test.
+  - name: SexOffenderTaxAmount
+    description: |-
+      The amount an offender is to pay for sex offender tax according to the judgment order.
+  - name: MandatoryMinimumStartDate
+    is_datetime: True
+    description: |-
+      The date that specifies when a mandatory minimum sentence calculation starts.
+  - name: AbuseRegisterFlag
+    description: |-
+      Indicates if a sentence indicates TCA 68-11-10 Abuse Registry.
+  - name: StayExecutionDate
+    is_datetime: True
+    description: |-
+      The date of an offender's stay of execution.
+  - name: CommunityCorrectionYears
+    description: |-
+      The number of years for an offender's time to serve a sentence on community corrections.
+  - name: CommunityCorrectionMonths
+    description: |-
+      The number of months for an offender's time to serve a sentence on community corrections.
+  - name: CommunityCorrectionDays
+    description: |-
+      The number of days for an offender's time to serve a sentence on community corrections.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.

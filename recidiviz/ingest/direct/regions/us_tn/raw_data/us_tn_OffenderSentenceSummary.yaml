@@ -1,0 +1,90 @@
+file_tag: OffenderSentenceSummary
+file_description: |- 
+  This table contains one occurrence for each offender. It summarizes all dates for all sentences pertaining to the offender.
+primary_key_cols: []
+columns:
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: SentenceEffectiveDate
+    is_datetime: True
+    description: |-
+      The date on which a sentence begins being served (Sentence Effective Date).  The SED date is computed by subtracting the pre-trial jail credits from the sentence imposed date.
+  - name: EarliestPossibleDate
+    is_datetime: True
+    description: |-
+      This is the earliest possible release date that an offender may be paroled or released from custody.  Parole or release eligibility dates cannot be reduced by credits to be earlier than this date. This date is not in effect when safety-value law is in eff
+  - name: ExpirationDate
+    is_datetime: True
+    description: |-
+      The date that a sentence expires.  This date includes all credits earned by an offender.
+  - name: MandatoryParoleDate
+    is_datetime: True
+    description: |-
+      The mandatory parole date of an offender for Indeterminate and Determinate sentences.
+  - name: FullExpirationDate
+    is_datetime: True
+    description: |-
+      The full-term expiration date of an offender's sentence. Street-Time can extend the FXP-Date.
+  - name: RegularParoleDate
+    is_datetime: True
+    description: |-
+      The regular parole date for sentences of an offender on Indeterminate and Determinate sentences.
+  - name: ReleaseEligibilityDate
+    is_datetime: True
+    description: |-
+      The date an offender is eligible for release to parole for a sentence.
+  - name: ProbationaryParoleDate
+    is_datetime: True
+    description: |-
+      The probationary parole date given for offenders on Indeterminate and Determinate sentences.
+  - name: SafetyValveDate
+    is_datetime: True
+    description: |-
+      The date an offender is eligible for release on parole based on the safety valve percentage.
+  - name: ExecutionDate
+    is_datetime: True
+    description: |-
+      The date of execution of a defendant as specified on the judgement order or through another legal order.
+  - name: LastScheduledParoleHearingDate
+    is_datetime: True
+    description: |-
+      The date of the last parole hearing that was scheduled for an offender.
+  - name: PERBReleaseEligibilityDate
+    is_datetime: True
+    description: |-
+      The parole eligibilty review board assigned release eligibility date.
+  - name: PERBCreditEligibilityDate
+    is_datetime: True
+    description: |-
+      The parole eligibilty review board assigned Credit eligibility date.
+  - name: MaximumSentenceYears
+    description: |-
+      The maximum number of years for an offender's sentence.
+  - name: MaximumSentenceMonths
+    description: |-
+      The maximum number of months for an offender's sentence.
+  - name: MaximumSentenceDays
+    description: |-
+      The maximum number of days for an offender's sentence.
+  - name: MinimumSentenceYears
+    description: |-
+      The minimum number of years for an offender's sentence.
+  - name: MinimumSentenceMonths
+    description: |-
+      The minimum number of months for an offender's sentence.
+  - name: MinimumSentenceDays
+    description: |-
+      The minimum number of days for an offender's sentence.
+  - name: OutToCourtFlag
+    description: |-
+      Indicator for an offender that tells whether the offender is out to court.
+  - name: CalculateOffenderFlag
+    description: |-
+      Indicator specifying the need to calculate sentences of an offender.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.

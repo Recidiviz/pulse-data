@@ -1,0 +1,29 @@
+file_tag: OffenderOrientation
+file_description: |- 
+  This table contains one occurrence for each orientation at the site received by the offender.
+primary_key_cols: []
+columns:
+  - name: SiteID
+    description: |-
+      This identifies an organizational/location entity. Sites may include institutions, staff agencies, hospitals, etc. This is a database element.
+  - name: OrientationDueDate
+    is_datetime: True
+    description: |-
+      The date the orientation should be completed on an offender who has transferred to a new institution.
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: OrientationCompletedDate
+    is_datetime: True
+    description: |-
+      The date an offender signs the orientation form, having completed either initial or new institution.
+  - name: SignedDate
+    is_datetime: True
+    description: |-
+      The date a document is signed.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.

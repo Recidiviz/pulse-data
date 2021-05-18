@@ -1,0 +1,47 @@
+file_tag: OffenderContact
+file_description: |- 
+  This table contains one occurrence for each offender/contact combination.
+primary_key_cols: []
+columns:
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: ContactID
+    description: |-
+      A unique identifier assigned to an offender contact person.
+  - name: EffectiveFromDate
+    is_datetime: True
+    description: |-
+      The date on which a credit law or sentence law becomes effective. The date a draw limit becomes effective. The date on which a program becomes effective.  The date on which the pay rate becomes effective.
+  - name: Relation
+    description: |-
+      The code of an offender's relationship to a visitor.
+  - name: VisitorStatus
+    description: |-
+      The status of a visitor's priveleges.
+  - name: StartDate
+    is_datetime: True
+    description: |-
+      The date on which an inmate begins a job, class or program.
+  - name: EndDate
+    is_datetime: True
+    description: |-
+      The date a vocational or class assignment ends. The date a draw limit ends.  Also, it is used in sentencing for credits and dead, delinquent, street-time, etc.
+  - name: VisitorStatusReason1
+    description: |-
+      The reason the visitation status is changed.
+  - name: VisitorStatusReason2
+    description: |-
+      The reason the visitation status is changed.
+  - name: VisitorStatusReason3
+    description: |-
+      The reason the visitation status is changed.
+  - name: IncidentID
+    description: |-
+      The unique identifier for an incident.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.

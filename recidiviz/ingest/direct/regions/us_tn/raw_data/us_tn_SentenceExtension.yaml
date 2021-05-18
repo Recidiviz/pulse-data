@@ -1,0 +1,55 @@
+file_tag: SentenceExtension
+file_description: |- 
+  This table contains one occurrence for each extension posted for the offender's sentence.
+primary_key_cols: []
+columns:
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: ConvictionCounty
+    description: |-
+      The county in which an offender is convicted.  This element is used in identifying a particular sentence.
+  - name: CaseYear
+    description: |-
+      The year assigned to a sentence for a particular county.  It will generally be the current year at assignment.
+  - name: CaseNumber
+    description: |-
+      A case number assigned to a particular offense, or judgment order. This number is used in identifying a sentence.
+  - name: CountNumber
+    description: |-
+      A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of an offender.
+  - name: SequenceNumber
+    description: |-
+      Uniquely identifies various DB2 tables.
+  - name: ExtensionDate
+    is_datetime: True
+    description: |-
+      The date of the extension made to the parole eligibility dates of one of an offender's sentences for certain disciplinary infrac- tions.
+  - name: SentenceRangePercentExtension
+    description: |-
+      The percentage that the RED date percent for a particular sentence is extended.
+  - name: SentenceYears
+    description: |-
+      The number of years a sentence has its parole eligibility dates extended by a sentence extension.
+  - name: SentenceMonths
+    description: |-
+      The number of months a sentence has its parole eligibility dates extended by a sentence extension.
+  - name: SentenceDays
+    description: |-
+      The number of SENTENCE DAYS.
+  - name: IncidentID
+    description: |-
+      The unique identifier for an incident.
+  - name: StaffID
+    description: |-
+      This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
+  - name: LastModifiedDate
+    is_datetime: True
+    description: |-
+      The date that an entity was last modified by a user through a TOMIS conversation.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    description: |-
+      

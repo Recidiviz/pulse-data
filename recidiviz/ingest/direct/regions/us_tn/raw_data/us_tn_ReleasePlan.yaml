@@ -1,0 +1,148 @@
+file_tag: ReleasePlan
+file_description: |- 
+  This table contains one occurrence of each employment plan submitted by the offender for parole consideration.
+primary_key_cols: []
+columns:
+  - name: AddressCity
+    description: |-
+      The city for an address.
+  - name: AddressDeny
+    description: |-
+      Free form text regarding the denial of an offender's new location.
+  - name: AddressLine1
+    description: |-
+      The first street address line.
+  - name: AddressLine2
+    description: |-
+      The second street address line.
+  - name: AddressState
+    description: |-
+      The state for an address.
+  - name: AddressZip
+    description: |-
+      The zip code for an address.
+  - name: EmployerAddressCity
+    description: |-
+      The city for an address of an employer.
+  - name: EmployerAddressLine1
+    description: |-
+      The first line of the employer address. Alias of address line [D710.TEADE001].
+  - name: EmployerAddressLine2
+    description: |-
+      The second line of the employer address. Alias of address line [D710.TEADE002].
+  - name: EmployerAddressState
+    description: |-
+      The state of the employer address.
+  - name: EmployerAddressZip
+    description: |-
+      The zip code of an employer's address.
+  - name: EmployerDenyReason
+    description: |-
+      Free form text regarding the denial of employment to an offender by the employer.
+  - name: EmployerName
+    description: |-
+      The last name, first name, and middle initial of an employer. It is 25 characters instead of 40.
+  - name: EmployerPhoneNumber
+    description: |-
+      The number at which someone can be reached.
+  - name: EmployerVerified
+    description: |-
+      A code value describing the status of an employer contained in a parole plan or transfer in request.
+  - name: JobTitle
+    description: |-
+      The first name of the offender's job.
+  - name: LastUpdateDate
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: ParolePlanDate
+    is_datetime: True
+    description: |-
+      The date an offender submits a parole plan for investigation.
+  - name: ParolePlanFlag
+    description: |-
+      A field that decribes whether an offender's release plan is for release on parole.
+  - name: ParolePlanStatus
+    description: |-
+      The indication of whether an offender's parole plan has been approved or denied based on the status of the address and employment.
+  - name: PayPeriod
+    description: |-
+      The code of the pay period of an offender for a job in the free world.
+  - name: PhoneNumber
+    description: |-
+      The number at which someone can be reached.
+  - name: ProbationPlanFlag
+    description: |-
+      A field that decribes whether an offender's release plan is for probation release.
+  - name: RatePayAmount
+    description: |-
+      Rate of Pay
+  - name: Relation1
+    description: |-
+      The code of an offender's relationship to a visitor.
+  - name: Relation2
+    description: |-
+      An abbreviation representing an offender's relationship to a visitor or another party.
+  - name: RelationName1
+    description: |-
+      The name of a person related to or involved with an offender on a release plan.
+  - name: RelationName2
+    description: |-
+      The name of a person related to or involved with an offender on a release plan.
+  - name: ReleasedFromAgency
+    description: |-
+      The name of an agency where an offender will reside after release on parole.
+  - name: ReleasedFromAgency2
+    description: |-
+      The name of an agency where an offender will reside after release on parole.
+  - name: ReleasedRelation1
+    description: |-
+      An abbreviation representing an offender's proposed relationship to visitor or another party.
+  - name: ReleasedRelation2
+    description: |-
+      An abbreviation representing an offender's proposed relationship to visitor or another party.
+  - name: ReleasedRelationName1
+    description: |-
+      The name of a person related to or involved with an offender on a release plan.
+  - name: ReleasedRelationName2
+    description: |-
+      The name of a person related to or involved with an offender on a release plan.
+  - name: ReleasedToAddressCity
+    description: |-
+      The proposed city for an address.
+  - name: ReleasedToAddressLine1
+    description: |-
+      The first street address line of an offender's proposed address.
+  - name: ReleasedToAddressLine2
+    description: |-
+      The second street address line of an offender's proposed address.
+  - name: ReleasedToAddressState
+    description: |-
+      The state for an offender's proposed address on a release plan.
+  - name: ReleasedToAddressZip
+    description: |-
+      The zip code for an offender's proposed address on a release plan.
+  - name: ReleasedToPhoneNumber
+    description: |-
+      The number at which an offender can be reached on his release plan.
+  - name: ResidenceVerified
+    description: |-
+      A code value describing the status of an address contained in a parole plan.
+  - name: ResidenceVerified2
+    description: |-
+      A code value describing the status of an address contained in a parole plan.
+  - name: StaffID
+    description: |-
+      This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
+  - name: StartDate
+    is_datetime: True
+    description: |-
+      The date on which an inmate begins a job, class or program.
+  - name: SupervisorName
+    description: |-
+      The person who supervises an offender on his employment while on parole. Alias of job supervisor [D710.TENMJ003].

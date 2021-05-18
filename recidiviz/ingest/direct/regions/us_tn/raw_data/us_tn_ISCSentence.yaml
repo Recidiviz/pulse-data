@@ -1,0 +1,79 @@
+file_tag: ISCSentence
+file_description: |- 
+  This table contains one occurrence for each out of Tennessee jurisdiction sentence tracked for the offender.
+primary_key_cols: []
+columns:
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: Jurisdiction
+    description: |-
+      The code for the jurisdiction in which an offender is serving his sentence.
+  - name: CaseYear
+    description: |-
+      The year assigned to a sentence for a particular county.  It will generally be the current year at assignment.
+  - name: CaseNumber
+    description: |-
+      A case number assigned to a particular offense, or judgment order. This number is used in identifying a sentence.
+  - name: CountNumber
+    description: |-
+      A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of an offender.
+  - name: ForeignJurisdication
+    description: |-
+      The identifier given to an offender by another jurisdiction.
+  - name: IndictmentNumber
+    description: |-
+      A unique identifier number assigned to an indictment for a particular judgment order.
+  - name: ConvictedOffense
+    description: |-
+      The decode value of a conviction offense.
+  - name: OffenseDate
+    is_datetime: True
+    description: |-
+      This is the date the offense was committed as indicated on the judgment order or from another source.
+  - name: ISCSentencyType
+    description: |-
+      Indicates if an offender's ISC sentence is an incarceration, pro_ bation or parole sentence.
+  - name: WarrantNumber
+    description: |-
+      A unique identifier number assigned to a warrant for a particular judgment order.
+  - name: Sentence
+    description: |-
+      Text field used for description of the sentence an offender received for a particular offense.
+  - name: SentenceImposedDate
+    is_datetime: True
+    description: |-
+      The date that an offender's sentence is to begin as specified by the judge on the judgment order.  This date less any pretrial credits provides the sentence effective date.
+  - name: DispositionCase
+    description: |-
+      Code that tells how a case was decided, such as by guilty plea or jury verdict.
+  - name: JudgeName
+    description: |-
+      The name for a judge. This element is only 30 characters instead of 50 characters used for JUDGE-NAME.
+  - name: ReleaseEligibilityDate
+    is_datetime: True
+    description: |-
+      The date an offender is eligible for release to parole for a sentence.
+  - name: ExpirationDate
+    is_datetime: True
+    description: |-
+      The date that a sentence expires.  This date includes all credits earned by an offender.
+  - name: ActualReleaseDAte
+    is_datetime: True
+    description: |-
+      The date that an offender is actually released from an institution or supervision.
+  - name: ISCCreditDays
+    description: |-
+      The total number of credit days that an offender has received on an ISC sentence. These are awarded by the ISC jurisdiction.
+  - name: ISCCreditDeadTime
+    description: |-
+      The total amount of dead time that an offender has received on an 7C sentence.
+  - name: ISCPretrialCredit
+    description: |-
+      The total number of pretrial credit days that an offender has received for an ISC sentence.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.

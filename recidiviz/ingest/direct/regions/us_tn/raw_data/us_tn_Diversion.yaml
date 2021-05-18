@@ -1,0 +1,58 @@
+file_tag: Diversion
+file_description: |- 
+  This table contains one occurrence for each diversion that applies to the specified case. These diversions apply to offenders who have not yet been sentenced.
+primary_key_cols: []
+columns:
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: ConvictionCounty
+    description: |-
+      The county in which an offender is convicted.  This element is used in identifying a particular sentence.
+  - name: CaseYear
+    description: |-
+      The year assigned to a sentence for a particular county.  It will generally be the current year at assignment.
+  - name: CaseNumber
+    description: |-
+      A case number assigned to a particular offense, or judgment order. This number is used in identifying a sentence.
+  - name: CountNumber
+    description: |-
+      The number of counts of the conviction offense reported in the 7RP Extract.
+  - name: DiversionType
+    description: |-
+      The type of diversion that an offender is being supervised under. This will either be a standard diversion or a memorandum of understanding.
+  - name: DiversionStatus
+    description: |-
+      The status of an offender's diversion.  A valid status is either open or closed.
+  - name: StatusDate
+    is_datetime: True
+    description: |-
+      The date on which a status of a particular issue changes.
+  - name: DiversionGrantedDate
+    is_datetime: True
+    description: |-
+      The date that a diversion is granted to an offender by the judge.
+  - name: Offense
+    description: |-
+      The offense codes as defined by the UNIFORM CRIME REPORTING AGENCY.  This code is tied directly to the offense code TCA.
+  - name: ExpirationDate
+    is_datetime: True
+    description: |-
+      The date that an offender sentence expires. RED Date.
+  - name: JudicialCloseDate
+    is_datetime: True
+    description: |-
+      The date that the judge closed an offender's diversion.
+  - name: StaffID
+    description: |-
+      This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
+  - name: LastModificationDate
+    is_datetime: True
+    description: |-
+      The date that an entity was last modified by a user through a TOMIS conversation.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.

@@ -1,0 +1,43 @@
+file_tag: ReferralDocket
+file_description: |- 
+  This table contains 1 row for each docket number for a referral for an offender.
+primary_key_cols: []
+columns:
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: OrderDate
+    is_datetime: True
+    description: |-
+      The date an order is made.
+  - name: ReferenceNumber
+    description: |-
+      NOT FOUND IN SOURCE DOCUMENT
+  - name: ConvictionCounty
+    description: |-
+      The county in which an offender is convicted.  This element is used in identifying a particular sentence.
+  - name: CaseYear
+    description: |-
+      The year assigned to a sentence for a particular county. It will generally be the current year at assignment.
+  - name: CaseNumber
+    description: |-
+      A case number assigned to a particular offense, or judgment order. This number is used in identifying a sentence.
+  - name: CountNumber
+    description: |-
+      A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of an offender.
+  - name: PostedByStaffID
+    description: |-
+      The staff id of the individual who initially posted information for an offender.
+  - name: PostedDate
+    is_datetime: True
+    description: |-
+      This is the date that data is actually posted to the system.
+  - name: LastUpdateStaffID
+    description: |-
+      Staff ID of the last person to update a row on a table.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.
