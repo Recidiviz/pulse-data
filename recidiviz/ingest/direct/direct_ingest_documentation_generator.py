@@ -146,13 +146,13 @@ class DirectIngestDocumentationGenerator:
                 return "N/A"
             if not known_values:
                 return "<No documentation>"
-            list_contents = "</li><li>".join(
+            list_contents = ", ".join(
                 [
-                    f"<b>{enum.value}</b> - {enum.description if enum.description else '<Unknown>'}"
+                    f"<b>{enum.value}: </b> {enum.description if enum.description else 'Unknown'}"
                     for enum in known_values
                 ]
             )
-            return "<ul><li>" + list_contents + "</li></ul>"
+            return list_contents
 
         documentation = (
             f"## {raw_file_config.file_tag}\n\n{raw_file_config.file_description}\n\n"
