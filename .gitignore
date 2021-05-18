@@ -146,6 +146,8 @@ secrets.yaml # keep in case any developers still have them
 **/node_modules
 .yalc
 yalc.lock
+*.tsbuildinfo
+
 
 # Stackdriver Traces
 traces
