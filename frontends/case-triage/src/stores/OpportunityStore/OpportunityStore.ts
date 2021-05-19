@@ -146,7 +146,6 @@ class OpportunityStore {
     personExternalId: string
   ): Opportunity | undefined {
     if (
-      !this.userStore.isInExperiment(KNOWN_EXPERIMENTS.TOP_OPPORTUNITIES) ||
       !this.opportunitiesByPerson ||
       !this.opportunitiesByPerson[personExternalId]
     ) {
