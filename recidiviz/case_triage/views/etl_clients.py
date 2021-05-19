@@ -41,6 +41,16 @@ WITH supervision_start_dates AS (
     compartment_level_1 = 'SUPERVISION'
     AND end_date IS NULL
 ),
+days_with_po AS (
+  SELECT
+    person_id,
+    state_code,
+    DATE_DIFF(CURRENT_DATE, start_date, DAY) AS days_with_current_po
+  FROM
+    `{project_id}.{analyst_views_dataset}.supervision_officer_sessions_materialized`
+  WHERE
+    end_date IS NULL
+),
 latest_contacts AS (
   SELECT
     person_id,
@@ -93,6 +103,9 @@ USING (person_id, state_code)
 LEFT JOIN
   supervision_start_dates
 USING (person_id, state_code, supervision_type)
+LEFT JOIN
+  days_with_po
+USING (person_id, state_code)
 WHERE
   supervision_level IS NOT NULL
 ),
@@ -159,6 +172,7 @@ CLIENT_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "assessment_score",
         "most_recent_face_to_face_date",
         "most_recent_home_visit_date",
+        "days_with_current_po",
         # TODO(#5943): supervising_officer_external_id must be at the end of
         # this list because of the way that we have to derive this result from
         # the ofndr_agnt table for Idaho.

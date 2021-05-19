@@ -49,6 +49,7 @@ from recidiviz.tests.case_triage.api_test_helpers import (
 )
 from recidiviz.tests.case_triage.case_triage_helpers import (
     generate_fake_client,
+    generate_fake_client_info,
     generate_fake_officer,
     generate_fake_opportunity,
     generate_fake_case_update,
@@ -106,6 +107,10 @@ class TestCaseTriageAPIRoutes(TestCase):
             client_id="client_3",
             supervising_officer_id=self.officer.external_id,
         )
+        self.client_info_3 = generate_fake_client_info(
+            client=self.client_3,
+            preferred_name="Alex",
+        )
         self.case_update_1 = generate_fake_case_update(
             self.client_1,
             self.officer.external_id,
@@ -152,6 +157,7 @@ class TestCaseTriageAPIRoutes(TestCase):
                 self.client_1,
                 self.client_2,
                 self.client_3,
+                self.client_info_3,
                 self.case_update_1,
                 self.case_update_2,
                 self.case_update_3,
