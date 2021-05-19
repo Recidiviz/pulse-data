@@ -278,9 +278,9 @@ _All metrics required to support this product and whether or not each state regu
 ** DISCLAIMER **
 The presence of all required metrics for a state does not guarantee that this product is ready to launch in that state.
 
-|       **Metric**        | **US_MO** | **US_PA** |
-|-------------------------|-----------|-----------|
-| INCARCERATION_ADMISSION | X         |           |
+|      **Metric**       |**US_MO**|**US_PA**|
+|-----------------------|---------|---------|
+|INCARCERATION_ADMISSION|X        |         |
 """
                 self.assertEqual(expected_docs, documentation)
 
@@ -323,10 +323,10 @@ The presence of all required metrics for a state does not guarantee that this pr
 
 ##Regularly Calculated Metrics
 
-|       **Metric**        | **Number of Months Calculated** | **Calculation Frequency** |
-|-------------------------|--------------------------------:|---------------------------|
-| INCARCERATION_ADMISSION |                              24 | daily                     |
-| INCARCERATION_ADMISSION |                             240 | triggered by code changes |
+|      **Metric**       |**Number of Months Calculated**|**Calculation Frequency**|
+|-----------------------|------------------------------:|-------------------------|
+|INCARCERATION_ADMISSION|                             24|daily                    |
+|INCARCERATION_ADMISSION|                            240|triggered by code changes|
 """
             documentation = (
                 self.docs_generator._get_state_information(  # pylint: disable=W0212
