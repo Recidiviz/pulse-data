@@ -49,7 +49,7 @@ SELECT
     officer_external_id AS external_id,
     email_address
 FROM
-    `{project_id}.{static_reference_dataset}.po_report_recipients`
+    `{project_id}.{static_reference_dataset}.case_triage_users`
 )
 SELECT
     {columns}

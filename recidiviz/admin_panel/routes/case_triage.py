@@ -63,14 +63,7 @@ def add_case_triage_routes(bp: Blueprint) -> None:
             override_project_id = GCP_PROJECT_STAGING
         return (
             jsonify(
-                [
-                    builder.view_id
-                    for builder in CASE_TRIAGE_EXPORTED_VIEW_BUILDERS
-                    if builder.view_id != "etl_officers"
-                    # TODO(#6202): Until we get more consistent rosters, pushing `etl_officers`
-                    # may lead to inconsistencies (as we had to manually add 1-2 trusted testers
-                    # who were not on our rosters).
-                ]
+                [builder.view_id for builder in CASE_TRIAGE_EXPORTED_VIEW_BUILDERS]
                 + list(
                     get_importable_csvs(override_project_id=override_project_id).keys()
                 )
@@ -109,12 +102,7 @@ def add_case_triage_routes(bp: Blueprint) -> None:
             return "`viewIds` must be present in arugment list", HTTPStatus.BAD_REQUEST
 
         known_view_builders = {
-            builder.view_id: builder
-            for builder in CASE_TRIAGE_EXPORTED_VIEW_BUILDERS
-            if builder.view_id != "etl_officers"
-            # TODO(#6202): Until we get more consistent rosters, pushing `etl_officers`
-            # may lead to inconsistencies (as we had to manually add 1-2 trusted testers
-            # who were not on our rosters).
+            builder.view_id: builder for builder in CASE_TRIAGE_EXPORTED_VIEW_BUILDERS
         }
         importable_csvs = get_importable_csvs()
 
