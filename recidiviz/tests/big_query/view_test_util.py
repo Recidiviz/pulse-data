@@ -349,6 +349,9 @@ class BaseViewTest(unittest.TestCase):
             r"INTERVAL (?P<num>\d+?) (?P<unit>\w+?)(?P<end>\W)",
             "INTERVAL '{num} {unit}'{end}",
         )
+        query = _replace_iter(
+            query, r"(^| )DATE\s*\(", " make_date(", flags=re.IGNORECASE
+        )
 
         # Postgres doesn't have DATE_DIFF where you can specify the units to return, but subtracting two dates always
         # returns the number of days between them.
@@ -361,22 +364,35 @@ class BaseViewTest(unittest.TestCase):
         # Date arithmetic just uses operators (e.g. -), not function calls
         query = _replace_iter(
             query,
-            r"DATE_SUB\((?P<first>.+?), (?P<second>.+?)\)",
-            "CAST({first} - {second} AS DATE)",
+            r"DATE_SUB\((?P<first>.+?), INTERVAL '(?P<second>.+?)'\)",
+            "({first} - INTERVAL '{second}')::date",
+        )
+        query = _replace_iter(
+            query,
+            r"DATE_ADD\((?P<first>.+?), INTERVAL '(?P<second>.+?)'\)",
+            "({first} + INTERVAL '{second}')::date",
         )
 
         # The parameters for DATE_TRUNC are in the opposite order, and the interval must be quoted.
         query = _replace_iter(
             query,
             r"DATE_TRUNC\((?P<first>.+?), (?P<second>.+?)\)",
-            "CAST(DATE_TRUNC('{second}', {first}) AS DATE)",
+            "DATE_TRUNC('{second}', {first})::date",
+        )
+
+        # EXTRACT returns a double in postgres, but for all part types shared between
+        # the two, bigquery returns an int
+        query = _replace_iter(
+            query,
+            r"EXTRACT\((?P<clause>.+)\)(?P<end>[^:])",
+            "EXTRACT({clause})::integer{end}",
         )
 
         # LAST_DAY doesn't exist in postgres, so replace with the logic to calculate it
         query = _replace_iter(
             query,
             r"LAST_DAY\((?P<column>.+?)\)",
-            "CAST(DATE_TRUNC('MONTH', {column} + INTERVAL '1 MONTH')::date - 1 AS DATE)",
+            "DATE_TRUNC('MONTH', {column} + INTERVAL '1 MONTH')::date - 1",
         )
 
         # Postgres doesn't have SAFE_DIVIDE, instead we use NULLIF to make the denominator NULL if it was going to be

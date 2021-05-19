@@ -17,11 +17,12 @@
 """Provides a template for calculating a Justice Counts metric by month."""
 
 import enum
-from typing import Dict, Iterable, List, Set, Type
+from typing import Dict, Iterable, List, Optional, Set, Type
 
 import attr
 
 from recidiviz.big_query.big_query_view import (
+    BigQueryAddress,
     BigQueryViewBuilder,
     SimpleBigQueryViewBuilder,
 )
@@ -118,9 +119,7 @@ class FetchAndFilterMetricViewBuilder(SimpleBigQueryViewBuilder):
     | 2           | 3       | [("global/location/state", "US_ZZ"), ("global/gender", "FEMALE"), ("global/gender/raw", "F")] | 6     |
     """
 
-    def __init__(
-        self, *, dataset_id: str, metric_to_calculate: "CalculatedMetricByMonth"
-    ):
+    def __init__(self, *, dataset_id: str, metric_to_calculate: "CalculatedMetric"):
         # For determining which table definitions can be used.
         input_allowed_filters = ", ".join(
             [
@@ -375,9 +374,199 @@ class SpatialAggregationViewBuilder(SimpleBigQueryViewBuilder):
         )
 
 
-AGGREGATE_TO_MONTH_VIEW_TEMPLATE = """
-/*{description}*/
+MONTHLY_DATE_PARTITION_VIEW_TEMPLATE = """
+  SELECT
+    input.*,
+    DATE_ADD(DATE_TRUNC(instance.time_window_start, MONTH), INTERVAL 1 MONTH) as start_date_partition,
+    -- Ends are exclusive, so we subtract a day before calculating the partition
+    DATE_ADD(DATE_TRUNC(DATE_SUB(instance.time_window_end, INTERVAL 1 DAY), MONTH), INTERVAL 1 MONTH) as end_date_partition
+  FROM `{project_id}.{base_dataset}.report_table_instance_materialized` instance
+  JOIN `{project_id}.{input_dataset}.{input_table}` input
+    ON input.instance_id = instance.id
+"""
 
+
+class MonthlyDatePartitionViewBuilder(SimpleBigQueryViewBuilder):
+    """Determines the dates to use to partition data points into months.
+
+    There is a partition for every month, and the partition date is based on the end
+    date of the partition that a data point falls in. E.g.
+    Data Date  -> Partition Date
+    2020-01-01 -> 2020-02-01
+    2020-01-02 -> 2020-02-01
+    ...
+    2020-01-31 -> 2020-02-01
+    2020-02-01 -> 2020-03-01
+
+    Required input columns:
+
+    * `instance_id`: The id of the report_table_instance.
+
+    **Example:**
+
+    Input Table:
+    | instance_id | ... |
+    | ----------- | --- |
+    | 1           | ... |
+    | 1           | ... |
+    | 3           | ... |
+    | 4           | ... |
+
+    Report Table Instances:
+    | instance_id | time_window_start | time_window_end |
+    | ----------- | ----------------- | --------------- |
+    | 1           | 2020-01-01        | 2020-02-01      |
+    | 3           | 2020-01-31        | 2021-02-01      |
+    | 4           | 2020-01-01        | 2021-01-01      |
+
+    Output Table:
+    | instance_id | ... | start_date_partition | end_date_partition |
+    | ----------- | --- | -------------------- | ------------------ |
+    | 1           | ... | 2020-02-01           | 2020-02-01         |
+    | 1           | ... | 2020-02-01           | 2020-02-01         |
+    | 3           | ... | 2020-02-01           | 2020-02-01         |
+    | 4           | ... | 2020-02-01           | 2021-02-01         |
+    """
+
+    def __init__(
+        self,
+        *,
+        dataset_id: str,
+        metric_name: str,
+        input_view: BigQueryViewBuilder,
+    ):
+        super().__init__(
+            dataset_id=dataset_id,
+            view_id=f"{view_prefix_for_metric_name(metric_name)}_monthly",
+            view_query_template=MONTHLY_DATE_PARTITION_VIEW_TEMPLATE,
+            # Query Format Arguments
+            description=f"{metric_name} with monthly date partitions",
+            base_dataset=dataset_config.JUSTICE_COUNTS_BASE_DATASET,
+            input_dataset=input_view.dataset_id,
+            input_table=input_view.view_id,
+        )
+
+
+ANNUAL_DATE_PARTITION_VIEW_TEMPLATE = """
+  SELECT
+    input.*,
+    DATE(
+        CASE
+            WHEN time_window_start_month >= EXTRACT(MONTH from month_boundary.date_partition)
+            THEN time_window_start_year + 1
+            ELSE time_window_start_year
+        END,
+        EXTRACT(MONTH from month_boundary.date_partition),
+        1
+    ) as start_date_partition,
+    DATE(
+        CASE
+            WHEN time_window_end_month >= EXTRACT(MONTH from month_boundary.date_partition)
+            THEN time_window_end_year + 1
+            ELSE time_window_end_year
+        END,
+        EXTRACT(MONTH from month_boundary.date_partition),
+        1
+    ) as end_date_partition
+  FROM (
+      select
+        *,
+        EXTRACT(MONTH from instance.time_window_start) as time_window_start_month,
+        EXTRACT(YEAR from instance.time_window_start) as time_window_start_year,
+        EXTRACT(MONTH from DATE_SUB(instance.time_window_end, INTERVAL 1 DAY)) as time_window_end_month,
+        EXTRACT(YEAR from DATE_SUB(instance.time_window_end, INTERVAL 1 DAY)) as time_window_end_year
+      from `{project_id}.{base_dataset}.report_table_instance_materialized` instance
+  ) instance
+  JOIN `{project_id}.{input_dataset}.{input_table}` input
+    ON input.instance_id = instance.id
+  JOIN `{project_id}.{date_partition_dataset}.{date_partition_table}` month_boundary
+    ON input.dimensions_string = month_boundary.state_code
+"""
+
+
+class AnnualDatePartitionViewBuilder(SimpleBigQueryViewBuilder):
+    """Determines the dates to use to partition data points into years.
+
+    Much like MonthlyDatePartitionViewBuilder, but instead of partitioning data into
+    months, partitions them into years. Unlike for months, the partitions are year long
+    but are not forced to align with calendar years, only with months. The month
+    boundary to use is determined by `date_partition_table` and can differ for each
+    state. For instance if for a given state the boundary is 2020-07-01, then data is
+    partitioned as follows:
+    Data Date  -> Partition Date
+    2019-07-01 -> 2020-07-01
+    ...
+    2020-06-30 -> 2020-07-01
+    2020-07-01 -> 2021-07-01
+
+    Required input columns:
+
+    * `instance_id`: The id of the report_table_instance.
+    * `dimensions_string`: The data must be per state, so this should only contain the state_code.
+
+    Required date partition table columns:
+
+    * `state_code`: The state code (e.g. US_XX)
+    * `date_partition`: The first day of a month to use as the month boundary for each partiton.
+
+    **Example:**
+
+    Input Table:
+    | instance_id | dimensions_string | ... |
+    | ----------- | ----------------- | --- |
+    | 1           | US_XX             | ... |
+    | 1           | US_XX             | ... |
+    | 3           | US_YY             | ... |
+    | 4           | US_YY             | ... |
+    | 5           | US_YY             | ... |
+
+    Date Partition Table:
+    | state_code | date_partition |
+    | ---------- | -------------- |
+    | US_XX      | 2020-07-01     |
+    | US_YY      | 2015-01-01     |
+
+    Report Table Instances:
+    | instance_id | time_window_start | time_window_end |
+    | ----------- | ----------------- | --------------- |
+    | 1           | 2020-01-01        | 2020-02-01      |
+    | 3           | 2020-01-31        | 2021-02-01      |
+    | 4           | 2020-01-01        | 2021-01-01      |
+    | 5           | 2019-07-01        | 2020-07-01      |
+
+    Output Table:
+    | instance_id | ... | start_date_partition | end_date_partition |
+    | ----------- | --- | -------------------- | ------------------ |
+    | 1           | ... | 2020-07-01           | 2020-07-01         |
+    | 1           | ... | 2020-07-01           | 2020-07-01         |
+    | 3           | ... | 2021-01-01           | 2021-01-01         |
+    | 4           | ... | 2021-01-01           | 2021-01-01         |
+    | 5           | ... | 2020-01-01           | 2021-01-01         |
+    """
+
+    def __init__(
+        self,
+        *,
+        dataset_id: str,
+        metric_name: str,
+        input_view: BigQueryViewBuilder,
+        date_partition_table: BigQueryAddress,
+    ):
+        super().__init__(
+            dataset_id=dataset_id,
+            view_id=f"{view_prefix_for_metric_name(metric_name)}_annual",
+            view_query_template=ANNUAL_DATE_PARTITION_VIEW_TEMPLATE,
+            # Query Format Arguments
+            description=f"{metric_name} with annual date partitions",
+            base_dataset=dataset_config.JUSTICE_COUNTS_BASE_DATASET,
+            input_dataset=input_view.dataset_id,
+            input_table=input_view.view_id,
+            date_partition_dataset=date_partition_table.dataset_id,
+            date_partition_table=date_partition_table.table_id,
+        )
+
+
+AGGREGATE_TO_DATE_PARTITIONS_VIEW_TEMPLATE = """
 WITH joined_data as (
   SELECT
     report.source_id as source_id,
@@ -389,22 +578,23 @@ WITH joined_data as (
     instance.id as instance_id,
     instance.time_window_start,
     instance.time_window_end,
-    DATE_TRUNC(DATE_SUB(instance.time_window_end, INTERVAL 1 DAY), MONTH) as start_of_month,
+    input.start_date_partition,
+    input.end_date_partition,
     input.dimensions,
     input.dimensions_string,
     input.num_original_dimensions,
     input.collapsed_dimension_values,
     input.value
-  FROM `{project_id}.{base_dataset}.report_table_instance_materialized` instance
+  FROM `{project_id}.{input_dataset}.{input_table}` input
+  JOIN `{project_id}.{base_dataset}.report_table_instance_materialized` instance
+    ON input.instance_id = instance.id
   JOIN `{project_id}.{base_dataset}.report_table_definition_materialized` definition
     ON definition.id = report_table_definition_id
   JOIN `{project_id}.{base_dataset}.report_materialized` report
     ON instance.report_id = report.id
-  JOIN `{project_id}.{input_dataset}.{input_table}` input
-    ON input.instance_id = instance.id
 ),
 
--- Aggregate values for the same (source, report type, table definition, start_of_month)
+-- Aggregate values for the same (source, report type, table definition, end_date_partition)
 --  - DELTA: Sum them
 --  - INSTANT: Pick one
 combined_periods_data as (
@@ -412,7 +602,7 @@ combined_periods_data as (
   SELECT
     source_id, report_type, ARRAY_AGG(DISTINCT report_id) as report_ids, MAX(publish_date) as publish_date,
     definition_id, ANY_VALUE(measurement_type) as measurement_type,
-    start_of_month, MIN(time_window_start) as time_window_start, MAX(time_window_end) as time_window_end,
+    end_date_partition as date_partition, MIN(time_window_start) as time_window_start, MAX(time_window_end) as time_window_end,
     -- Since BQ won't allow us to group by dimensions, we are grouping by dimensions_string and just pick any dimensions
     -- since they are all the same for a single dimensions_string.
     ANY_VALUE(dimensions) as dimensions,
@@ -427,14 +617,19 @@ combined_periods_data as (
     -- (publish_date), then data from definitions with the fewest dimensions as that will help us accidentally avoid
     -- missing categories (num_original_dimensions)
     SELECT *, ROW_NUMBER()
-      OVER(PARTITION BY source_id, report_type, definition_id, start_of_month, dimensions_string
+      OVER(PARTITION BY source_id, report_type, definition_id, end_date_partition, dimensions_string
            ORDER BY time_window_end DESC, publish_date DESC, num_original_dimensions ASC) as ordinal
     FROM joined_data
+    -- TODO(#7455): We currently let averages not cover the whole time range and just
+    -- pick the most recent one in the range since we can't combine them. We should
+    -- probably just only let an average through if it matches the partition exactly,
+    -- otherwise it can be a bit misleading for annual?
+    WHERE measurement_type = 'AVERAGE' OR start_date_partition = end_date_partition
   ) as partitioned
   -- If it is DELTA then sum them, otherwise just pick one
   -- Note: For AVERAGE we could do a weighted average instead, but for now dropping is okay
   WHERE measurement_type = 'DELTA' OR partitioned.ordinal = 1
-  GROUP BY source_id, report_type, definition_id, start_of_month, dimensions_string
+  GROUP BY source_id, report_type, definition_id, end_date_partition, dimensions_string
 )
 
 -- Pick a single value for each dimension value, month combination
@@ -445,17 +640,21 @@ combined_periods_data as (
 -- bring in cells to do the spatial aggregation. Or we could split this off, group by non comprehensive dimensions and
 -- aggregate comprehensive dimensions, and take into account the coverage of dimension values when deciding which to
 -- use (e.g. one source reports on more race categories than another).
-SELECT source_id, report_type, report_ids, publish_date, start_of_month, time_window_start, time_window_end,
+SELECT source_id, report_type, report_ids, publish_date, date_partition, time_window_start, time_window_end,
        dimensions, dimensions_string, collapsed_dimension_values, value
 FROM (
   -- TODO(#5517): order by how much of the month it covers, then time_window_end, then publish date?
   SELECT *, ROW_NUMBER()
-    OVER(PARTITION BY dimensions_string, start_of_month
+    OVER(PARTITION BY dimensions_string, date_partition
          ORDER BY time_window_end DESC, publish_date DESC, num_original_dimensions ASC) as ordinal
   FROM (
-    -- For now, just filter out any DELTA points that don't cover the same number of days as the month
     SELECT * FROM combined_periods_data
-    WHERE measurement_type != 'DELTA' OR (DATE_DIFF(time_window_end, time_window_start, DAY) = EXTRACT(DAY FROM LAST_DAY(start_of_month)))
+    WHERE
+      -- Filter out any DELTA points that don't cover the same number of days as the month
+      (measurement_type != 'DELTA' OR DATE_DIFF(time_window_end, time_window_start, DAY) = DATE_DIFF(date_partition, DATE_SUB(date_partition, INTERVAL 1 {partition_part}), DAY))
+      -- Filter out any points that don't cover the last month of the partition. This is
+      -- important to prevent pulling instant measurements forward more than a month.
+      AND DATE_ADD(DATE_TRUNC(DATE_SUB(time_window_end, INTERVAL 1 DAY), MONTH), INTERVAL 1 MONTH) = date_partition
   ) as filtered_to_month
 -- TODO(#5517): If this covers more than just that month, do we want to drop more as well? Or are we okay with window
 -- being quarter but output period being month? Same question for if it covers less?
@@ -464,8 +663,11 @@ WHERE partitioned.ordinal = 1
 """
 
 
-class MetricByMonthViewBuilder(SimpleBigQueryViewBuilder):
-    """Factory class for building views that calculate metrics by month.
+class AggregateToDatePartitionsViewBuilder(SimpleBigQueryViewBuilder):
+    """Factory class for building views that aggregates metrics up to their date partitions.
+
+    This both sums delta metrics from the same source that fall into the same partition
+    and then picks a single point for each partition, dimension combination.
 
     This takes data from an input view and joins it against tables from the base dataset
     to produce the output data by month.
@@ -473,6 +675,8 @@ class MetricByMonthViewBuilder(SimpleBigQueryViewBuilder):
     Required input columns:
 
     * `instance_id`: The id of the report_table_instance.
+    * `start_date_partition`: The date partition that time_window_start falls into.
+    * `end_date_partition`: The date partition that time_window_end falls into.
     * `dimensions`: List of dimensions, in the form ARRAY<STRUCT<dimension string, dimension_value string>>.
     * `dimensions_string`: The dimension values concatenated into a string, to be used in group bys.
     * `num_original_dimensions`: The number of dimensions that the table originally
@@ -484,23 +688,26 @@ class MetricByMonthViewBuilder(SimpleBigQueryViewBuilder):
     **Example:**
 
     Input Table:
-    | instance_id | dimensions                           | value | num_original_dimensions | dimensions_string | collapsed_dimension_values |
-    | ----------- | ------------------------------------ | ----- | ----------------------- | ----------------- | -------------------------- |
-    | 1           | [('global/location/state', 'US_XX')] | 6     | 2                       | US_XX             | ['M', 'F']                 |
-    | 2           | [('global/location/state', 'US_XX')] | 9     | 2                       | US_XX             | ['M', 'F']                 |
-    | 3           | [('global/location/state', 'US_YY')] | 12    | 2                       | US_YY             | ['Male', 'Female']         |
-    | 4           | [('global/location/state', 'US_YY')] | 15    | 2                       | US_YY             | ['Male', 'Female']         |
-    | 5           | [('global/location/state', 'US_XX')] | 10    | 0                       | US_XX             | [] .                       |
+    | instance_id | start_date_partition | end_date_partition | dimensions                           | value | num_original_dimensions | dimensions_string | collapsed_dimension_values |
+    | ----------- | -------------------- | ------------------ | ------------------------------------ | ----- | ----------------------- | ----------------- | -------------------------- |
+    | 1           | 2020-12-01           | 2020-12-01         | [('global/location/state', 'US_XX')] | 6     | 2                       | US_XX             | ['M', 'F']                 |
+    | 2           | 2021-01-01           | 2021-01-01         | [('global/location/state', 'US_XX')] | 9     | 2                       | US_XX             | ['M', 'F']                 |
+    | 3           | 2020-12-01           | 2020-12-01         | [('global/location/state', 'US_YY')] | 12    | 2                       | US_YY             | ['Male', 'Female']         |
+    | 4           | 2021-01-01           | 2021-01-01         | [('global/location/state', 'US_YY')] | 15    | 2                       | US_YY             | ['Male', 'Female']         |
+    | 5           | 2021-01-01           | 2021-01-01         | [('global/location/state', 'US_XX')] | 10    | 0                       | US_XX             | []                         |
+    | 6           | 2021-01-01           | 2021-01-01         | [('global/location/state', 'US_ZZ')] | 30    | 0                       | US_ZZ             | []                         |
+    | 7           | 2021-01-01           | 2021-01-01         | [('global/location/state', 'US_ZZ')] | 40    | 0                       | US_ZZ             | []                         |
 
     Additional data is pulled from the base dataset.
 
     Output Table:
-    | start_of_month | dimensions                           | value | source_id | report_type | report_ids | publish_date | time_window_start | time_window_end | dimensions_string | collapsed_dimension_values |
+    | date_partition | dimensions                           | value | source_id | report_type | report_ids | publish_date | time_window_start | time_window_end | dimensions_string | collapsed_dimension_values |
     | -------------- | ------------------------------------ | ----- | --------- | ----------- | ---------- | ------------ | ----------------- | --------------- | ----------------- | -------------------------- |
-    | 2020-11-01     | [('global/location/state', 'US_XX')] | 6     | 1         | Annual Data | [1]        | 2020-12-07   | 2020-11-01        | 2020-12-01      | US_XX             | ['M', 'F']                 |
-    | 2020-12-01     | [('global/location/state', 'US_XX')] | 10    | 3         | Facts       | [5]        | 2021-01-02   | 2020-12-01        | 2021-01-01      | US_XX             |                            |
-    | 2020-11-01     | [('global/location/state', 'US_YY')] | 12    | 2         | Dashboard   | [3]        | 2020-12-15   | 2020-11-01        | 2020-12-01      | US_YY             | ['Male', 'Female']         |
-    | 2020-12-01     | [('global/location/state', 'US_YY')] | 15    | 2         | Dashboard   | [4]        | 2021-01-15   | 2020-12-01        | 2021-01-01      | US_YY             | ['Male', 'Female']         |
+    | 2020-12-01     | [('global/location/state', 'US_XX')] | 6     | 1         | Annual Data | [1]        | 2020-12-07   | 2020-11-01        | 2020-12-01      | US_XX             | ['M', 'F']                 |
+    | 2021-01-01     | [('global/location/state', 'US_XX')] | 10    | 3         | Facts       | [5]        | 2021-01-02   | 2020-12-01        | 2021-01-01      | US_XX             |                            |
+    | 2020-12-01     | [('global/location/state', 'US_YY')] | 12    | 2         | Dashboard   | [3]        | 2020-12-15   | 2020-11-01        | 2020-12-01      | US_YY             | ['Male', 'Female']         |
+    | 2021-01-01     | [('global/location/state', 'US_YY')] | 15    | 2         | Dashboard   | [4]        | 2021-01-15   | 2020-12-01        | 2021-01-01      | US_YY             | ['Male', 'Female']         |
+    | 2021-01-01     | [('global/location/state', 'US_ZZ')] | 70    |           | Weekly      | [6, 7]     | 2021-01-15   | 2020-12-01        | 2021-01-01      | US_ZZ             | []                         |
 
     """
 
@@ -510,21 +717,35 @@ class MetricByMonthViewBuilder(SimpleBigQueryViewBuilder):
         dataset_id: str,
         metric_name: str,
         input_view: BigQueryViewBuilder,
+        time_aggregation: "TimeAggregation",
     ):
         super().__init__(
             dataset_id=dataset_id,
-            view_id=f"{view_prefix_for_metric_name(metric_name)}_by_month",
-            view_query_template=AGGREGATE_TO_MONTH_VIEW_TEMPLATE,
+            view_id=f"{view_prefix_for_metric_name(metric_name)}_annual",
+            view_query_template=AGGREGATE_TO_DATE_PARTITIONS_VIEW_TEMPLATE,
             # Query Format Arguments
-            description=f"{metric_name} by month",
+            description=f"{metric_name} aggregated to date partitions",
             base_dataset=dataset_config.JUSTICE_COUNTS_BASE_DATASET,
             input_dataset=input_view.dataset_id,
             input_table=input_view.view_id,
+            partition_part=time_aggregation.to_date_part(),
         )
 
 
-def calculate_metric_view_chain(
-    dataset_id: str, metric_to_calculate: "CalculatedMetricByMonth"
+class TimeAggregation(enum.Enum):
+    ANNUAL = "annual"
+    MONTHLY = "monthly"
+
+    def to_date_part(self) -> str:
+        if self is TimeAggregation.ANNUAL:
+            return "YEAR"
+        if self is TimeAggregation.MONTHLY:
+            return "MONTH"
+        raise ValueError(f"Invalid TimeAggregation: {self}")
+
+
+def fetch_metric_view_chain(
+    dataset_id: str, metric_to_calculate: "CalculatedMetric"
 ) -> List[SimpleBigQueryViewBuilder]:
     fetch_and_filter = FetchAndFilterMetricViewBuilder(
         dataset_id=dataset_id, metric_to_calculate=metric_to_calculate
@@ -544,12 +765,63 @@ def calculate_metric_view_chain(
         value_columns={"value"},
         collapse_dimensions_filter="ENDS_WITH(dimension, '/raw')",
     )
-    by_month = MetricByMonthViewBuilder(
+    return [fetch_and_filter, spatial]
+
+
+def time_aggregation_view_chain(
+    input_view: SimpleBigQueryViewBuilder,
+    dataset_id: str,
+    metric_to_calculate: "CalculatedMetric",
+    time_aggregation: TimeAggregation,
+    date_partition_table: Optional[BigQueryAddress] = None,
+) -> List[SimpleBigQueryViewBuilder]:
+    """Returns a list of views that aggregate the fetched data to the specified frequency"""
+    aggregation_partition_view: SimpleBigQueryViewBuilder
+    if time_aggregation is TimeAggregation.MONTHLY:
+        if date_partition_table is not None:
+            raise ValueError("date_partition_table may not be set for MONTHLY")
+        aggregation_partition_view = MonthlyDatePartitionViewBuilder(
+            dataset_id=dataset_id,
+            metric_name=metric_to_calculate.output_name,
+            input_view=input_view,
+        )
+    elif time_aggregation is TimeAggregation.ANNUAL:
+        if date_partition_table is None:
+            raise ValueError("date_partition_table must be set for ANNUAL")
+        aggregation_partition_view = AnnualDatePartitionViewBuilder(
+            dataset_id=dataset_id,
+            metric_name=metric_to_calculate.output_name,
+            input_view=input_view,
+            date_partition_table=date_partition_table,
+        )
+    else:
+        raise ValueError(f"Invalid TimeAggregation: {time_aggregation}")
+
+    aggregated_view = AggregateToDatePartitionsViewBuilder(
         dataset_id=dataset_id,
-        metric_name=metric_to_calculate.output_name,
-        input_view=spatial,
+        metric_name=f"{metric_to_calculate.output_name}_{time_aggregation.value}",
+        input_view=aggregation_partition_view,
+        time_aggregation=time_aggregation,
     )
-    return [fetch_and_filter, spatial, by_month]
+
+    return [aggregation_partition_view, aggregated_view]
+
+
+def calculate_metric_view_chain(
+    dataset_id: str,
+    metric_to_calculate: "CalculatedMetric",
+    time_aggregation: TimeAggregation,
+    date_partition_table: Optional[BigQueryAddress] = None,
+) -> List[SimpleBigQueryViewBuilder]:
+    fetch_chain = fetch_metric_view_chain(dataset_id, metric_to_calculate)
+    time_aggregation_chain = time_aggregation_view_chain(
+        fetch_chain[-1],
+        dataset_id,
+        metric_to_calculate,
+        time_aggregation,
+        date_partition_table,
+    )
+    return fetch_chain + time_aggregation_chain
 
 
 COMPARISON_VIEW_TEMPLATE = """
@@ -561,16 +833,16 @@ SELECT * EXCEPT(ordinal)
 FROM (
     SELECT
         base_data.*,
-        compared_data.start_of_month as compare_start_of_month, compared_data.{value_column} as compare_{value_column},
+        compared_data.date_partition as compare_date_partition, compared_data.{value_column} as compare_{value_column},
         ROW_NUMBER() OVER (
-        PARTITION BY base_data.dimensions_string, base_data.start_of_month
+        PARTITION BY base_data.dimensions_string, base_data.date_partition
         -- Orders by recency of the compared data
-        ORDER BY DATE_DIFF(base_data.start_of_month, compared_data.start_of_month, DAY)) as ordinal
+        ORDER BY DATE_DIFF(base_data.date_partition, compared_data.date_partition, DAY)) as ordinal
     FROM `{project_id}.{input_dataset}.{input_table}` base_data
     -- Explodes to every row that is at least a year older
     LEFT JOIN `{project_id}.{compare_dataset}.{compare_table}` compared_data ON
         (base_data.dimensions_string  = compared_data.dimensions_string AND
-        compared_data.start_of_month <= DATE_SUB(base_data.start_of_month, INTERVAL 1 YEAR))
+        compared_data.date_partition <= DATE_SUB(base_data.date_partition, INTERVAL 1 YEAR))
 ) as joined_with_prior
 -- Picks the row with the compared data that is the most recent
 WHERE joined_with_prior.ordinal = 1
@@ -581,19 +853,19 @@ class CompareToPriorYearViewBuilder(SimpleBigQueryViewBuilder):
     """Factory class for building views that compare monthly metrics to the prior year.
 
     Required input columns (must be present in both input and compare tables):
-    * start_of_month
+    * date_partition
     * dimensions_string
     * {value_column}
 
     The output includes all columns from the input unchanged, plus two additional columns:
-    * compare_start_of_month
+    * compare_date_partition
     * compare_{value_column}
 
     **Example:**
 
     Input Table (used for compare also):
 
-    | start_of_month | dimensions_string | value | publish_date |
+    | date_partition | dimensions_string | value | publish_date |
     |--------------- | ----------------- | ----- | ------------ |
     | 2020-06-01     | US_XX             | 1000  | 2020-07-12   |
     | 2019-12-01     | US_XX             | 900   | 2020-01-24   |
@@ -602,7 +874,7 @@ class CompareToPriorYearViewBuilder(SimpleBigQueryViewBuilder):
 
     Output Table:
 
-    | start_of_month | dimensions_string | value | publish_date | compare_start_of_month | compare_value |
+    | date_partition | dimensions_string | value | publish_date | compare_date_partition | compare_value |
     | -------------- | ----------------- | ----- | ------------ | ---------------------- | ------------- |
     | 2020-06-01     | US_XX             | 1000  | 2020-07-12   | 2019-06-01             | 800           |
     | 2019-12-01     | US_XX             | 900   | 2020-01-24   | 2018-12-01             | 700           |
@@ -717,7 +989,7 @@ def view_prefix_for_metric_name(metric_name: str) -> str:
 
 
 @attr.s(frozen=True)
-class CalculatedMetricByMonth:
+class CalculatedMetric:
     """Represents a metric and describes how to calculate it"""
 
     system: schema.System = attr.ib()

@@ -26,12 +26,12 @@ from sqlalchemy.sql import sqltypes
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.justice_counts.views import (
-    jails_metrics_by_month,
-    metric_by_month,
+    jails_metrics,
+    metric_calculator,
 )
 from recidiviz.persistence.database.schema.justice_counts import schema
-from recidiviz.tests.calculator.query.justice_counts.views.metric_by_month_test import (
-    METRIC_BY_MONTH_SCHEMA,
+from recidiviz.tests.calculator.query.justice_counts.views.metric_calculator_test import (
+    METRIC_CALCULATOR_SCHEMA,
     FakeState,
     row,
 )
@@ -49,8 +49,8 @@ class JailsOutputViewTest(BaseViewTest):
 
     INPUT_SCHEMA = MockTableSchema(
         {
-            **METRIC_BY_MONTH_SCHEMA.data_types,
-            "compare_start_of_month": sqltypes.Date(),
+            **METRIC_CALCULATOR_SCHEMA.data_types,
+            "compare_date_partition": sqltypes.Date(),
             "compare_value": sqltypes.Numeric(),
             "state_code": sqltypes.String(255),
             "county_code": sqltypes.String(255),
@@ -63,7 +63,7 @@ class JailsOutputViewTest(BaseViewTest):
         """Tests the basic use case of calculating county population"""
         self.create_mock_bq_table(
             dataset_id="justice_counts",
-            table_id="metric_by_month",
+            table_id="metric_calculator",
             mock_schema=self.INPUT_SCHEMA,
             mock_data=pd.DataFrame(
                 [
@@ -129,22 +129,22 @@ class JailsOutputViewTest(BaseViewTest):
         # Act
         dimensions = ["state_code", "county_code", "metric", "year", "month"]
         results = self.query_view(
-            jails_metrics_by_month.JailOutputViewBuilder(
+            jails_metrics.JailOutputViewBuilder(
                 dataset_id="fake-dataset",
                 metric_name="POP",
                 aggregations={
-                    "state_code": metric_by_month.Aggregation(
+                    "state_code": metric_calculator.Aggregation(
                         dimension=manual_upload.State, comprehensive=False
                     ),
-                    "county_code": metric_by_month.Aggregation(
+                    "county_code": metric_calculator.Aggregation(
                         dimension=manual_upload.County, comprehensive=False
                     ),
                 },
                 value_column="value",
                 input_view=SimpleBigQueryViewBuilder(
                     dataset_id="justice_counts",
-                    view_id="metric_by_month",
-                    description="metric_by_month view",
+                    view_id="metric_calculator",
+                    description="metric_calculator view",
                     view_query_template="",
                 ),
             ),
@@ -247,12 +247,12 @@ class JailsOutputViewTest(BaseViewTest):
 
 @patch("recidiviz.common.fips.validate_county_code", Mock(return_value=None))
 @patch("recidiviz.utils.metadata.project_id", Mock(return_value="t"))
-class JailsMetricsByMonthIntegrationTest(BaseViewTest):
+class JailsMetricsIntegrationTest(BaseViewTest):
     """Tests the Jails output view."""
 
     INPUT_SCHEMA = MockTableSchema(
         {
-            **METRIC_BY_MONTH_SCHEMA.data_types,
+            **METRIC_CALCULATOR_SCHEMA.data_types,
             "compare_start_of_month": sqltypes.Date(),
             "compare_value": sqltypes.Numeric(),
             "state_code": sqltypes.String(255),
@@ -419,7 +419,7 @@ class JailsMetricsByMonthIntegrationTest(BaseViewTest):
         # Act
         dimensions = ["state_code", "county_code", "metric", "year", "month"]
         results = self.query_view_chain(
-            jails_metrics_by_month.JailsMetricsByMonthBigQueryViewCollector().collect_view_builders(),
+            jails_metrics.JailsMetricsBigQueryViewCollector().collect_view_builders(),
             data_types={"year": int, "month": int, "value": int},
             dimensions=dimensions,
         )

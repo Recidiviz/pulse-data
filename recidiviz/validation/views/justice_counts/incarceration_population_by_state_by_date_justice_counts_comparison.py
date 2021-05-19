@@ -50,7 +50,7 @@ INCARCERATION_POPULATION_BY_STATE_BY_DATE_JUSTICE_COUNTS_COMPARISON_QUERY_TEMPLA
         GROUP BY state_code, population_date
     ) as internal_pop 
     JOIN 
-        `{project_id}.{justice_counts_corrections_dataset}.population_prison_output_materialized` as jc_pop 
+        `{project_id}.{justice_counts_corrections_dataset}.population_prison_output_monthly_materialized` as jc_pop 
     ON 
     (
         jc_pop.state_code = internal_pop.state_code 
