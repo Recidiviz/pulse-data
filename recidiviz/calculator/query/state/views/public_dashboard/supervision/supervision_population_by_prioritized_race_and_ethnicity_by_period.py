@@ -49,6 +49,7 @@ SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_QUERY_TE
     UNNEST ([36]) AS metric_period_months
     WHERE {metric_period_condition}
       AND supervision_type IN ('ALL', 'PAROLE', 'PROBATION')
+      AND {state_specific_supervision_type_inclusion_filter}
     GROUP BY state_code, metric_period_months, supervision_type, race_or_ethnicity
     ORDER BY state_code, metric_period_months, supervision_type, race_or_ethnicity
     """
@@ -73,6 +74,7 @@ SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_BUILDER 
     gender_dimension=bq_utils.unnest_column("gender", "gender"),
     age_dimension=bq_utils.unnest_column("age_bucket", "age_bucket"),
     state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(),
+    state_specific_supervision_type_inclusion_filter=state_specific_query_strings.state_specific_supervision_type_inclusion_filter(),
 )
 
 if __name__ == "__main__":

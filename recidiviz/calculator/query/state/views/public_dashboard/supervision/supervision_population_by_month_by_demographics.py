@@ -50,6 +50,7 @@ SUPERVISION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
       WHERE date_of_supervision = DATE(year, month, 1)
         -- 20 years worth of monthly population metrics --
         AND date_of_supervision >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Pacific'), MONTH), INTERVAL 239 MONTH)
+        AND {state_specific_supervision_type_inclusion_filter}
     )
     
     SELECT
@@ -65,10 +66,10 @@ SUPERVISION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
       {unnested_race_or_ethnicity_dimension},
       {gender_dimension},
       {age_dimension}
-    WHERE (race_or_ethnicity != 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL') -- Race breakdown
+    WHERE ((race_or_ethnicity != 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL') -- Race breakdown
       OR (race_or_ethnicity = 'ALL' AND gender != 'ALL' AND age_bucket = 'ALL') -- Gender breakdown
       OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket != 'ALL') -- Age breakdown
-      OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL') -- State-wide count
+      OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL')) -- State-wide count
     GROUP BY state_code, population_date, supervision_type, race_or_ethnicity, gender, age_bucket
     ORDER BY state_code, population_date, supervision_type, race_or_ethnicity, gender, age_bucket
     """
@@ -95,6 +96,7 @@ SUPERVISION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQueryVie
     state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(
         "prioritized_race_or_ethnicity"
     ),
+    state_specific_supervision_type_inclusion_filter=state_specific_query_strings.state_specific_supervision_type_inclusion_filter(),
 )
 
 if __name__ == "__main__":

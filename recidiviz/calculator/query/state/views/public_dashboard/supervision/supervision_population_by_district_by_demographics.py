@@ -60,6 +60,7 @@ SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
       {age_dimension},
       {supervision_type_dimension}
     WHERE supervision_type IN ('ALL', 'PROBATION', 'PAROLE')
+      AND {state_specific_supervision_type_inclusion_filter}
       -- Omit district breakdowns for supervision_type = 'ALL' --
       AND (supervision_type != 'ALL' OR district = 'ALL')
       AND ((race_or_ethnicity != 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL') -- Race breakdown
@@ -99,6 +100,7 @@ SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQuery
     state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(
         "prioritized_race_or_ethnicity"
     ),
+    state_specific_supervision_type_inclusion_filter=state_specific_query_strings.state_specific_supervision_type_inclusion_filter(),
 )
 
 if __name__ == "__main__":
