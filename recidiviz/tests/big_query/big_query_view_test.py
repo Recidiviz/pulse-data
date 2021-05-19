@@ -179,6 +179,14 @@ class BigQueryViewTest(unittest.TestCase):
             BigQueryAddress(dataset_id="view_dataset", table_id="my_view_materialized"),
             view_materialized_no_override.table_for_query,
         )
+        self.assertEqual(
+            "SELECT * FROM `recidiviz-project-id.view_dataset.my_view_materialized`",
+            view_materialized_no_override.select_query,
+        )
+        self.assertEqual(
+            "SELECT * FROM `recidiviz-project-id.view_dataset.my_view`",
+            view_materialized_no_override.direct_select_query,
+        )
 
         view_with_override = BigQueryView(
             dataset_id="view_dataset",
@@ -201,6 +209,14 @@ class BigQueryViewTest(unittest.TestCase):
             BigQueryAddress(dataset_id="other_dataset", table_id="my_view_table"),
             view_with_override.table_for_query,
         )
+        self.assertEqual(
+            "SELECT * FROM `recidiviz-project-id.other_dataset.my_view_table`",
+            view_with_override.select_query,
+        )
+        self.assertEqual(
+            "SELECT * FROM `recidiviz-project-id.view_dataset.my_view`",
+            view_with_override.direct_select_query,
+        )
 
         view_not_materialized = BigQueryView(
             dataset_id="view_dataset",
@@ -214,6 +230,14 @@ class BigQueryViewTest(unittest.TestCase):
         self.assertEqual(
             BigQueryAddress(dataset_id="view_dataset", table_id="my_view"),
             view_not_materialized.table_for_query,
+        )
+        self.assertEqual(
+            "SELECT * FROM `recidiviz-project-id.view_dataset.my_view`",
+            view_not_materialized.select_query,
+        )
+        self.assertEqual(
+            "SELECT * FROM `recidiviz-project-id.view_dataset.my_view`",
+            view_not_materialized.direct_select_query,
         )
 
     def test_materialized_address_dataset_overrides(self) -> None:

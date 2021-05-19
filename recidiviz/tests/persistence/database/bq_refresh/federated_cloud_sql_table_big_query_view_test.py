@@ -52,7 +52,7 @@ class FederatedCloudSQLTableBigQueryViewTest(unittest.TestCase):
             t for t in StateBase.metadata.sorted_tables if t.name == "state_person"
         )
         view_builder = FederatedCloudSQLTableBigQueryViewBuilder(
-            instance_region="us-east2",
+            connection_region="us-east2",
             table=table,
             view_id=table.name,
             cloud_sql_query="SELECT * FROM state_person;",
@@ -125,7 +125,7 @@ FROM EXTERNAL_QUERY(
             t for t in StateBase.metadata.sorted_tables if t.name == "state_person"
         )
         view_builder = FederatedCloudSQLTableBigQueryViewBuilder(
-            instance_region="us-east2",
+            connection_region="us-east2",
             table=table,
             view_id=table.name,
             cloud_sql_query="SELECT * FROM state_person;",
@@ -172,7 +172,7 @@ FROM EXTERNAL_QUERY(
     def test_build_view_non_multi_db_schema(self) -> None:
         table = one(t for t in JailsBase.metadata.sorted_tables if t.name == "person")
         view_builder = FederatedCloudSQLTableBigQueryViewBuilder(
-            instance_region="us-east2",
+            connection_region="us-east2",
             table=table,
             view_id=table.name,
             cloud_sql_query="SELECT * FROM person;",

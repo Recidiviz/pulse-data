@@ -40,13 +40,39 @@ from sqlalchemy import Table
 from sqlalchemy.ext.declarative import DeclarativeMeta
 from google.cloud import bigquery
 from recidiviz.big_query.big_query_client import BigQueryClient
+from recidiviz.big_query.big_query_view import BigQueryAddress
+
+from recidiviz.calculator.query.county.dataset_config import (
+    COUNTY_BASE_DATASET,
+    COUNTY_BASE_REGIONAL_DATASET,
+)
+from recidiviz.calculator.query.justice_counts.dataset_config import (
+    JUSTICE_COUNTS_BASE_DATASET,
+    JUSTICE_COUNTS_BASE_REGIONAL_DATASET,
+)
+from recidiviz.calculator.query.operations.dataset_config import (
+    OPERATIONS_BASE_DATASET,
+    OPERATIONS_BASE_REGIONAL_DATASET,
+)
+from recidiviz.calculator.query.state.dataset_config import (
+    STATE_BASE_DATASET,
+    STATE_BASE_REGIONAL_DATASET,
+)
+from recidiviz.case_triage.views.dataset_config import (
+    CASE_TRIAGE_FEDERATED_DATASET,
+    CASE_TRIAGE_FEDERATED_REGIONAL_DATASET,
+)
+from recidiviz.common.constants.states import StateCode
 
 # TODO(#4302): Remove unused schema module imports
 # These imports are needed to ensure that the SQL Alchemy table metadata is loaded for the
 # metadata_base in this class. We would like to eventually have a better
 # way to achieve this and have the tables loaded alongside the DeclarativeMeta base class.
 # pylint:disable=unused-import
-from recidiviz.common.constants.states import StateCode
+from recidiviz.common.ingest_metadata import SystemLevel
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
+)
 from recidiviz.persistence.database.schema.operations import schema as operations_schema
 from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.database.schema.state import schema as state_schema
@@ -54,18 +80,17 @@ from recidiviz.persistence.database.schema.aggregate import schema as aggregate_
 from recidiviz.persistence.database.schema.justice_counts import (
     schema as justice_counts_schema,
 )
+from recidiviz.persistence.database.sqlalchemy_database_key import (
+    SQLAlchemyDatabaseKey,
+    SQLAlchemyStateDatabaseVersion,
+)
+from recidiviz.persistence.database.sqlalchemy_engine_manager import (
+    SQLAlchemyEngineManager,
+)
 
 from recidiviz.utils import environment
 from recidiviz.persistence.database import base_schema
 from recidiviz.utils import metadata
-from recidiviz.calculator.query.county import dataset_config as county_dataset_config
-from recidiviz.calculator.query.state import dataset_config as state_dataset_config
-from recidiviz.calculator.query.operations import (
-    dataset_config as operations_dataset_config,
-)
-from recidiviz.calculator.query.justice_counts import (
-    dataset_config as justice_counts_dataset_config,
-)
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.persistence.database.schema_utils import (
@@ -86,7 +111,6 @@ class CloudSqlToBQConfig:
     """Configuration class for exporting tables from Cloud SQL to BigQuery
     Args:
         metadata_base: The base schema for the config
-        dataset_id: String reference to the BigQuery dataset
         columns_to_exclude: An optional dictionary of table names and the columns
             to exclude from the export.
         history_tables_to_include: An optional List of history tables to include
@@ -101,7 +125,6 @@ class CloudSqlToBQConfig:
         self,
         metadata_base: DeclarativeMeta,
         schema_type: SchemaType,
-        dataset_id: str,
         columns_to_exclude: Optional[Dict[str, List[str]]] = None,
         history_tables_to_include: Optional[List[str]] = None,
         region_codes_to_exclude: Optional[List[str]] = None,
@@ -114,11 +137,162 @@ class CloudSqlToBQConfig:
             region_codes_to_exclude = []
         self.metadata_base = metadata_base
         self.schema_type = schema_type
-        self.dataset_id = dataset_id
         self.sorted_tables: List[Table] = metadata_base.metadata.sorted_tables
         self.columns_to_exclude = columns_to_exclude
         self.history_tables_to_include = history_tables_to_include
         self.region_codes_to_exclude = region_codes_to_exclude
+
+    def is_state_segmented_refresh_schema(self) -> bool:
+        """Returns True if the data for the config's schema can and should be refreshed
+        on a per-state basis.
+        """
+        if self.schema_type in (SchemaType.STATE, SchemaType.OPERATIONS):
+            return True
+
+        if self.schema_type in (
+            SchemaType.JAILS,
+            SchemaType.JUSTICE_COUNTS,
+            SchemaType.CASE_TRIAGE,
+        ):
+            return False
+
+        raise ValueError(f"Unexpected schema type [{self.schema_type}]")
+
+    def unioned_regional_dataset(self, dataset_override_prefix: Optional[str]) -> str:
+        """Returns the name of the dataset where refreshed data from all segments should
+        be written right before it is copied to its final destination in the
+        multi-region dataset that can be referenced by views.
+
+        This dataset will have a region that matches the region of the schema's CloudSQL
+        instance, e.g us-east1.
+        """
+        if self.schema_type == SchemaType.STATE:
+            dest_dataset = STATE_BASE_REGIONAL_DATASET
+        elif self.schema_type == SchemaType.OPERATIONS:
+            dest_dataset = OPERATIONS_BASE_REGIONAL_DATASET
+        elif self.schema_type == SchemaType.JAILS:
+            dest_dataset = COUNTY_BASE_REGIONAL_DATASET
+        elif self.schema_type == SchemaType.JUSTICE_COUNTS:
+            dest_dataset = JUSTICE_COUNTS_BASE_REGIONAL_DATASET
+        elif self.schema_type == SchemaType.CASE_TRIAGE:
+            dest_dataset = CASE_TRIAGE_FEDERATED_REGIONAL_DATASET
+        else:
+            raise ValueError(f"Unexpected schema_type [{self.schema_type}].")
+
+        if dataset_override_prefix:
+            dest_dataset = f"{dataset_override_prefix}_{dest_dataset}"
+        return dest_dataset
+
+    def unioned_multi_region_dataset(
+        self, dataset_override_prefix: Optional[str]
+    ) -> str:
+        """Returns the name of the dataset that is the final destination for refreshed
+        data. This dataset will live in the 'US' mult-region and can be referenced by
+        our views.
+
+        Note: By "unioned", we mean a union of all state segments for the given dataset,
+        if relevant.
+        """
+        if self.schema_type == SchemaType.STATE:
+            dest_dataset = STATE_BASE_DATASET
+        elif self.schema_type == SchemaType.OPERATIONS:
+            dest_dataset = OPERATIONS_BASE_DATASET
+        elif self.schema_type == SchemaType.JAILS:
+            dest_dataset = COUNTY_BASE_DATASET
+        elif self.schema_type == SchemaType.JUSTICE_COUNTS:
+            dest_dataset = JUSTICE_COUNTS_BASE_DATASET
+        elif self.schema_type == SchemaType.CASE_TRIAGE:
+            dest_dataset = CASE_TRIAGE_FEDERATED_DATASET
+        else:
+            raise ValueError(f"Unexpected schema_type [{self.schema_type}].")
+
+        if dataset_override_prefix:
+            dest_dataset = f"{dataset_override_prefix}_{dest_dataset}"
+        return dest_dataset
+
+    def database_key_for_segment(self, state_code: StateCode) -> SQLAlchemyDatabaseKey:
+        """Returns a key for the database associated with a particular state segment.
+        Throws for unsegmented schemas.
+        """
+        if not self.is_state_segmented_refresh_schema():
+            raise ValueError(
+                f"Only expect state-segmented schemas, found [{self.schema_type}]"
+            )
+
+        if self.schema_type == SchemaType.STATE:
+            return SQLAlchemyDatabaseKey.for_state_code(
+                state_code=state_code,
+                db_version=DirectIngestInstance.PRIMARY.database_version(
+                    SystemLevel.STATE
+                ),
+            )
+
+        return SQLAlchemyDatabaseKey.for_schema(self.schema_type)
+
+    @property
+    def unsegmented_database_key(self) -> SQLAlchemyDatabaseKey:
+        """Returns a key for the database associated with a particular unsegmented
+        schema. Throws for state-segmented schemas.
+        """
+        if self.is_state_segmented_refresh_schema():
+            raise ValueError(f"Unexpected schema type [{self.schema_type}]")
+
+        return SQLAlchemyDatabaseKey.for_schema(self.schema_type)
+
+    def materialized_dataset_for_segment(self, state_code: StateCode) -> str:
+        """Returns the dataset that data for a given state segment is materialized into.
+        Throws for unsegmented schemas.
+        """
+        if not self.is_state_segmented_refresh_schema():
+            raise ValueError(f"Unexpected schema type [{self.schema_type}]")
+        return f"{state_code.value.lower()}_{self.schema_type.value.lower()}_regional"
+
+    def materialized_address_for_segment_table(
+        self,
+        table: Table,
+        state_code: StateCode,
+    ) -> BigQueryAddress:
+        """Returns the dataset that data for a given table in a state segment is
+        materialized into. Throws for unsegmented schemas.
+        """
+        if not self.is_state_segmented_refresh_schema():
+            raise ValueError(f"Unexpected schema type [{self.schema_type}]")
+
+        return BigQueryAddress(
+            dataset_id=self.materialized_dataset_for_segment(state_code),
+            table_id=table.name,
+        )
+
+    def materialized_address_for_unsegmented_table(
+        self, table: Table
+    ) -> BigQueryAddress:
+        """Returns the dataset that data for a given table in an unsegmented schema is
+        materialized into. Throws for state-segmented schemas.
+        """
+        if self.is_state_segmented_refresh_schema():
+            raise ValueError(f"Unexpected schema type [{self.schema_type}]")
+
+        dataset = self.unioned_regional_dataset(dataset_override_prefix=None)
+        if self.schema_type == SchemaType.JUSTICE_COUNTS:
+            # TODO(#7285): JUSTICE_COUNTS has a custom materialized location for
+            #  backwards compatibility. Once we delete the legacy views at
+            #  `justice_counts.{table_name}` etc, we will be able to write materialized
+            #  tables to that location.
+            return BigQueryAddress(
+                dataset_id=dataset,
+                table_id=f"{table.name}_materialized",
+            )
+        return BigQueryAddress(dataset_id=dataset, table_id=table.name)
+
+    @property
+    def connection_region(self) -> str:
+        """Returns the region of the BigQuery CloudSQL external connection."""
+        # TODO(#7285): Migrate Justice Counts connection to be in same region as instance
+        return (
+            "US"
+            if self.schema_type == SchemaType.JUSTICE_COUNTS
+            else SQLAlchemyEngineManager.get_cloudsql_instance_region(self.schema_type)
+        )
 
     def _get_tables_to_exclude(self) -> List[Optional[Table]]:
         """Return List of table classes to exclude from export"""
@@ -270,6 +444,11 @@ class CloudSqlToBQConfig:
         Gets created if it does not already exist."""
         return big_query_client.dataset_ref_for_id(self.dataset_id)
 
+    @property
+    def dataset_id(self) -> str:
+        """Returns the dataset for legacy refresh."""
+        return self.unioned_multi_region_dataset(dataset_override_prefix=None)
+
     def get_stale_bq_rows_for_excluded_regions_query_builder(
         self, table_name: str
     ) -> BigQuerySchemaTableRegionFilteredQueryBuilder:
@@ -341,7 +520,6 @@ class CloudSqlToBQConfig:
             return CloudSqlToBQConfig(
                 metadata_base=base_schema.JailsBase,
                 schema_type=SchemaType.JAILS,
-                dataset_id=county_dataset_config.COUNTY_BASE_DATASET,
                 columns_to_exclude=yaml_config.get("county_columns_to_exclude", {}),
             )
         if schema_type == SchemaType.OPERATIONS:
@@ -349,13 +527,11 @@ class CloudSqlToBQConfig:
                 metadata_base=base_schema.OperationsBase,
                 schema_type=SchemaType.OPERATIONS,
                 region_codes_to_exclude=yaml_config.get("region_codes_to_exclude", []),
-                dataset_id=operations_dataset_config.OPERATIONS_BASE_DATASET,
             )
         if schema_type == SchemaType.STATE:
             return CloudSqlToBQConfig(
                 metadata_base=base_schema.StateBase,
                 schema_type=SchemaType.STATE,
-                dataset_id=state_dataset_config.STATE_BASE_DATASET,
                 region_codes_to_exclude=yaml_config.get("region_codes_to_exclude", []),
                 history_tables_to_include=yaml_config.get(
                     "state_history_tables_to_include", []

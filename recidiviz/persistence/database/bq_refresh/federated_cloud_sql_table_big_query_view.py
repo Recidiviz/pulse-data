@@ -55,7 +55,7 @@ class FederatedCloudSQLTableBigQueryView(BigQueryView):
     def __init__(
         self,
         dataset_id: str,
-        instance_region: str,
+        connection_region: str,
         connection_name: str,
         table: Table,
         view_id: str,
@@ -79,7 +79,7 @@ class FederatedCloudSQLTableBigQueryView(BigQueryView):
             dataset_overrides=dataset_overrides,
             view_query_template=TABLE_QUERY_TEMPLATE,
             # View query template args
-            connection_region=instance_region,
+            connection_region=connection_region,
             connection_name=connection_name,
             cloud_sql_query=cloud_sql_query,
         )
@@ -92,14 +92,14 @@ class FederatedCloudSQLTableBigQueryViewBuilder(
 
     def __init__(
         self,
-        instance_region: str,
+        connection_region: str,
         table: Table,
         view_id: str,
         database_key: SQLAlchemyDatabaseKey,
         cloud_sql_query: str,
         materialized_address_override: BigQueryAddress,
     ):
-        self.instance_region = instance_region
+        self.connection_region = connection_region
         self.table = table
         self.view_id = view_id
         self.database_key = database_key
@@ -124,7 +124,7 @@ class FederatedCloudSQLTableBigQueryViewBuilder(
             raise ValueError("The materialized_address_override field cannot be None.")
         return FederatedCloudSQLTableBigQueryView(
             dataset_id=self.dataset_id,
-            instance_region=self.instance_region,
+            connection_region=self.connection_region,
             connection_name=self.connection_name,
             table=self.table,
             view_id=self.view_id,

@@ -192,8 +192,18 @@ class BigQueryView(bigquery.TableReference):
         return self._view_query
 
     @property
+    def direct_select_query(self) -> str:
+        """Returns a SELECT * query that queries the view directly. Should be used only
+        when we need 100% live data from this view. In most cases, you should use
+        |select_query| instead, which will query from the materialized table if there
+        is one.
+        """
+        return f"SELECT * FROM `{self.project}.{self.address.dataset_id}.{self.address.table_id}`"
+
+    @property
     def select_query(self) -> str:
-        return f"SELECT * FROM `{self.project}.{self.dataset_id}.{self.view_id}`"
+        t = self.table_for_query
+        return f"SELECT * FROM `{self.project}.{t.dataset_id}.{t.table_id}`"
 
     @property
     def select_query_uninjected_project_id(self) -> str:
