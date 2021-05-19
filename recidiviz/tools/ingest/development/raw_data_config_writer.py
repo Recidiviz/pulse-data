@@ -105,6 +105,10 @@ class RawDataConfigWriter:
             config += f"encoding: {raw_file_config.encoding}\n"
         if raw_file_config.separator != default_separator:
             config += f"separator: '{raw_file_config.separator}'\n"
+        if raw_file_config.custom_line_terminator:
+            config += (
+                f"custom_line_terminator: '{raw_file_config.custom_line_terminator}'\n"
+            )
 
         prior_config = None
         if os.path.exists(output_path):

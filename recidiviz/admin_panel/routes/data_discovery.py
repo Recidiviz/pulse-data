@@ -116,6 +116,7 @@ def add_data_discovery_routes(blueprint: Blueprint) -> None:
                 ),
                 delimiter=body["file_separator"],
                 quoting=body["file_quoting"],
+                lineterminator=body.get("file_custom_line_terminator"),
                 chunk_size=75000,
                 index_col=False,
                 keep_default_na=False,
