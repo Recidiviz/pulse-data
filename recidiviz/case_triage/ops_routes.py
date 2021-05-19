@@ -43,12 +43,6 @@ case_triage_ops_blueprint = Blueprint("/case_triage_ops", __name__)
 def _run_cron_gcs_import() -> Tuple[str, HTTPStatus]:
     """Exposes an endpoint to trigger standard GCS imports via cron."""
     for builder in CASE_TRIAGE_EXPORTED_VIEW_BUILDERS:
-        if builder.view_id == "etl_officers":
-            # TODO(#6202): Until we get more consistent rosters, pushing `etl_officers`
-            # may lead to inconsistencies (as we had to manually add 1-2 trusted testers
-            # who were not on our rosters).
-            continue
-
         csv_path = GcsfsFilePath.from_absolute_path(
             os.path.join(
                 CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI.format(
