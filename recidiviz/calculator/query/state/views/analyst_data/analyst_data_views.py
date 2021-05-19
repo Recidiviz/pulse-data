@@ -119,6 +119,9 @@ from recidiviz.calculator.query.state.views.analyst_data.event_based_metrics_by_
 from recidiviz.calculator.query.state.views.analyst_data.event_based_metrics_by_district import (
     EVENT_BASED_METRICS_BY_DISTRICT_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.incarceration_super_sessions import (
+    INCARCERATION_SUPER_SESSIONS_VIEW_BUILDER,
+)
 
 ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     PERSON_DEMOGRAPHICS_VIEW_BUILDER,
@@ -155,4 +158,5 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     SUPERVISION_POPULATION_BY_OFFICER_DAILY_WINDOWS_VIEW_BUILDER,
     EVENT_BASED_METRICS_BY_SUPERVISION_OFFICER_VIEW_BUILDER,
     EVENT_BASED_METRICS_BY_DISTRICT_VIEW_BUILDER,
+    INCARCERATION_SUPER_SESSIONS_VIEW_BUILDER,
 ]
