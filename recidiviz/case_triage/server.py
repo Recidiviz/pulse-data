@@ -24,6 +24,11 @@ from flask_sqlalchemy_session import current_session
 from flask_wtf.csrf import CSRFProtect
 from sqlalchemy.orm.exc import NoResultFound
 
+from recidiviz.case_triage.admin_flask_views import (
+    IMPERSONATED_EMAIL_KEY,
+    ImpersonateUser,
+    RefreshAuthStore,
+)
 from recidiviz.case_triage.analytics import (
     CaseTriageSegmentClient,
     segment_user_id_for_email,
@@ -33,10 +38,6 @@ from recidiviz.case_triage.authorization import AuthorizationStore, KNOWN_EXPERI
 from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.case_triage.exceptions import (
     CaseTriageAuthorizationError,
-)
-from recidiviz.case_triage.impersonate_users import (
-    IMPERSONATED_EMAIL_KEY,
-    ImpersonateUser,
 )
 from recidiviz.case_triage.querier.querier import CaseTriageQuerier
 from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
@@ -175,10 +176,19 @@ def fetch_user_info() -> None:
 
 
 app.register_blueprint(api, url_prefix="/api")
+
 app.add_url_rule(
     "/impersonate_user",
     view_func=ImpersonateUser.as_view(
         "impersonate_user",
+        redirect_url="/",
+        authorization_store=authorization_store,
+    ),
+)
+app.add_url_rule(
+    "/refresh_auth_store",
+    view_func=RefreshAuthStore.as_view(
+        "refresh_auth_store",
         redirect_url="/",
         authorization_store=authorization_store,
     ),

@@ -22,7 +22,7 @@ import {
   opportunityPriorityComparator,
   OpportunityType,
 } from "./Opportunity";
-import UserStore, { KNOWN_EXPERIMENTS } from "../UserStore";
+import UserStore from "../UserStore";
 import API from "../API";
 import { DecoratedClient } from "../ClientsStore";
 import RootStore from "../RootStore";

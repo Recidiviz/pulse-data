@@ -38,7 +38,9 @@ class ImpersonateUser(View):
     def dispatch_request(self, *_args: Any, **_kwargs: Any) -> Response:
         if (
             "user_info" not in session
-            or session["user_info"]["email"] not in self.authorization_store.admin_users
+            or not self.authorization_store.can_impersonate_others(
+                session["user_info"]["email"]
+            )
         ):
             raise CaseTriageSecretForbiddenException()
         impersonated_email = request.args.get(IMPERSONATED_EMAIL_KEY)
@@ -46,4 +48,23 @@ class ImpersonateUser(View):
             session[IMPERSONATED_EMAIL_KEY] = impersonated_email
         elif IMPERSONATED_EMAIL_KEY in session:
             session.pop(IMPERSONATED_EMAIL_KEY)
+        return redirect(self.redirect_url)
+
+
+class RefreshAuthStore(View):
+    """Implements a flask view for manually refreshing the auth store."""
+
+    def __init__(self, redirect_url: str, authorization_store: AuthorizationStore):
+        self.redirect_url = redirect_url
+        self.authorization_store = authorization_store
+
+    def dispatch_request(self, *_args: Any, **_kwargs: Any) -> Response:
+        if (
+            "user_info" not in session
+            or not self.authorization_store.can_refresh_auth_store(
+                session["user_info"]["email"]
+            )
+        ):
+            raise CaseTriageSecretForbiddenException()
+        self.authorization_store.refresh()
         return redirect(self.redirect_url)
