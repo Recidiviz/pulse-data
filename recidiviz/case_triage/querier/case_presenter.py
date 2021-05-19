@@ -51,7 +51,11 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
 class CasePresenter:
     """Implements the case presenter abstraction."""
 
-    def __init__(self, etl_client: ETLClient, case_updates: List[CaseUpdate]):
+    def __init__(
+        self,
+        etl_client: ETLClient,
+        case_updates: List[CaseUpdate],
+    ):
         self.etl_client = etl_client
         self.case_updates = case_updates
 
@@ -131,6 +135,19 @@ class CasePresenter:
             "assessment": next_assessment_date is None
             or bool(next_assessment_date > today),
         }
+
+        if (client_info := self.etl_client.client_info) is not None:
+            if client_info.preferred_name is not None:
+                base_dict["preferredName"] = client_info.preferred_name
+            if client_info.preferred_contact_method is not None:
+                base_dict[
+                    "preferredContactMethod"
+                ] = client_info.preferred_contact_method
+        if (
+            client_officer_association := self.etl_client.client_officer_association
+        ) is not None:
+            if client_officer_association.notes is not None:
+                base_dict["notes"] = client_officer_association.notes
 
         return _json_map_dates_to_strings(base_dict, timedelta_shift)
 
