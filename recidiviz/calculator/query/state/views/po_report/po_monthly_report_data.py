@@ -110,7 +110,7 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
         agent_external_id AS officer_external_id,
         TRIM(SPLIT(given_names, ' ')[SAFE_OFFSET(0)]) AS officer_given_name
       FROM `{project_id}.{reference_views_dataset}.augmented_agent_info`
-      GROUP BY state_code, external_id, officer_given_name
+      GROUP BY state_code, officer_external_id, officer_given_name
     )
     SELECT
       state_code, officer_external_id, district,
