@@ -40,7 +40,7 @@ CLIENT_ELIGIBILITY_CRITERIA_VIEW_DESCRIPTION = """View containing attributes for
     - `is_employed`: CIS employment data contains a current job title/employer that does indicate unemployment
     - `last_verified_employment_date`: Most recent employment verification date available in CIS
     - `days_employed`: Number of days since person began any form of employment
-    - `critical_counts_count`: Count of number of emergency contacts in current supervision session
+    - `critical_contacts_count`: Count of number of emergency contacts in current supervision session
     """
 
 CLIENT_ELIGIBILITY_CRITERIA_QUERY_TEMPLATE = """

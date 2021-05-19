@@ -76,6 +76,7 @@ earned_discharge_eligible AS (
     AND days_served >= 365
     AND num_open_earned_discharge_requests = 0
     AND supervision_level IN ('MINIMUM', 'MEDIUM')
+    AND critical_contacts_count = 0
 ),
 limited_supervision_eligible AS (
   SELECT
