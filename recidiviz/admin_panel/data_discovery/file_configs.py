@@ -43,6 +43,7 @@ class DataDiscoveryStandardizedFileConfig:
     description: Optional[str] = attr.ib(default=None)
     primary_keys: List[str] = attr.ib(factory=list)
     separator: str = attr.ib(default=",")
+    custom_line_terminator: Optional[str] = attr.ib(default=None)
     encoding: str = attr.ib(default="UTF-8")
     quoting: int = attr.ib(default=csv.QUOTE_MINIMAL)
 
@@ -58,6 +59,7 @@ def get_raw_data_configs(region_code: str) -> List[DataDiscoveryStandardizedFile
             primary_keys=config.primary_key_cols,
             columns=[column.name for column in config.columns],
             separator=config.separator,
+            custom_line_terminator=config.custom_line_terminator,
             encoding=config.encoding,
             quoting=csv.QUOTE_NONE if config.ignore_quotes else csv.QUOTE_MINIMAL,
         )

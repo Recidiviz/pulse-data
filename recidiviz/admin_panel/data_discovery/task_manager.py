@@ -17,7 +17,7 @@
 """ Contains functions for enqueueing data discovery tasks """
 import abc
 import json
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from urllib.parse import urljoin
 
 import requests
@@ -50,16 +50,25 @@ def build_discovery_task(data_discovery_args: DataDiscoveryArgs) -> Dict[str, An
 
 
 def build_cache_ingest_file_as_parquet_task(
-    gcs_file: GcsfsFilePath, separator: str, encoding: str, quoting: int
+    gcs_file: GcsfsFilePath,
+    separator: str,
+    encoding: str,
+    quoting: int,
+    custom_line_terminator: Optional[str],
 ) -> Dict[str, Any]:
+    body = {
+        "gcs_file_uri": gcs_file.uri(),
+        "file_separator": separator,
+        "file_encoding": encoding,
+        "file_quoting": quoting,
+        "file_custom_line_terminator": custom_line_terminator,
+    }
+    if custom_line_terminator:
+        body["file_custom_line_terminator"] = custom_line_terminator
+
     return {
         "relative_uri": "/admin/data_discovery/cache_ingest_file_as_parquet_task",
-        "body": {
-            "gcs_file_uri": gcs_file.uri(),
-            "file_separator": separator,
-            "file_encoding": encoding,
-            "file_quoting": quoting,
-        },
+        "body": body,
     }
 
 
@@ -72,7 +81,12 @@ class AbstractAdminPanelDataDiscoveryCloudTaskManager:
 
     @abc.abstractmethod
     def create_cache_ingest_file_as_parquet_task(
-        self, gcs_file: GcsfsFilePath, separator: str, encoding: str, quoting: int
+        self,
+        gcs_file: GcsfsFilePath,
+        separator: str,
+        encoding: str,
+        quoting: int,
+        custom_line_terminator: Optional[str],
     ) -> None:
         """ Create a cache ingest file as parquet task """
 
@@ -94,11 +108,16 @@ class AdminPanelDataDiscoveryCloudTaskManager(
         )
 
     def create_cache_ingest_file_as_parquet_task(
-        self, gcs_file: GcsfsFilePath, separator: str, encoding: str, quoting: int
+        self,
+        gcs_file: GcsfsFilePath,
+        separator: str,
+        encoding: str,
+        quoting: int,
+        custom_line_terminator: Optional[str],
     ) -> None:
         self.cloud_task_queue_manager.create_task(
             **build_cache_ingest_file_as_parquet_task(
-                gcs_file, separator, encoding, quoting
+                gcs_file, separator, encoding, quoting, custom_line_terminator
             )
         )
 
@@ -114,10 +133,15 @@ class DevelopmentAdminPanelDataDiscoveryCloudTaskManager(
 
     @environment.local_only
     def create_cache_ingest_file_as_parquet_task(
-        self, gcs_file: GcsfsFilePath, separator: str, encoding: str, quoting: int
+        self,
+        gcs_file: GcsfsFilePath,
+        separator: str,
+        encoding: str,
+        quoting: int,
+        custom_line_terminator: Optional[str],
     ) -> None:
         _local_task(
             build_cache_ingest_file_as_parquet_task(
-                gcs_file, separator, encoding, quoting
+                gcs_file, separator, encoding, quoting, custom_line_terminator
             )
         )

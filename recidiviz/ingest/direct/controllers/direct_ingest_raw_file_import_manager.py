@@ -146,6 +146,10 @@ class DirectIngestRawFileConfig:
     # The separator character used to denote columns (e.g. ',' or '|').
     separator: str = attr.ib()
 
+    # The line terminator character(s) used to denote CSV rows. If None, will default to
+    # the Pandas default (any combination of \n and \r).
+    custom_line_terminator: Optional[str] = attr.ib()
+
     # If true, quoted strings are ignored and separators inside of quotes are treated as column separators. This should
     # be used on any file that has free text fields where the quotes are not escaped and the separator is not common to
     # free text. For example, to handle this row from a pipe separated file that has an open quotation with no close
@@ -237,6 +241,9 @@ class DirectIngestRawFileConfig:
         )
         encoding = file_config_dict.pop_optional("encoding", str)
         separator = file_config_dict.pop_optional("separator", str)
+        custom_line_terminator = file_config_dict.pop_optional(
+            "custom_line_terminator", str
+        )
         ignore_quotes = file_config_dict.pop_optional("ignore_quotes", bool)
         always_historical_export = file_config_dict.pop_optional(
             "always_historical_export", bool
@@ -273,6 +280,7 @@ class DirectIngestRawFileConfig:
             else "",
             encoding=encoding if encoding else default_encoding,
             separator=separator if separator else default_separator,
+            custom_line_terminator=custom_line_terminator,
             ignore_quotes=ignore_quotes if ignore_quotes else False,
             always_historical_export=always_historical_export
             if always_historical_export
@@ -725,12 +733,18 @@ class DirectIngestRawFileImportManager:
     def _common_read_csv_kwargs(
         file_config: DirectIngestRawFileConfig,
     ) -> Dict[str, Any]:
+        """Returns a set of arguments to be passed to the pandas.read_csv() call, based
+        on the provided raw file config.
+        """
         kwargs = {
             "sep": file_config.separator,
             "quoting": (
                 csv.QUOTE_NONE if file_config.ignore_quotes else csv.QUOTE_MINIMAL
             ),
         }
+
+        if file_config.custom_line_terminator:
+            kwargs["lineterminator"] = file_config.custom_line_terminator
 
         # We get the following warning if we do not override the
         # engine in this case: "ParserWarning: Falling back to the 'python'
@@ -740,6 +754,13 @@ class DirectIngestRawFileImportManager:
         if len(file_config.separator.encode(UTF_8_ENCODING)) > 1:
             # The python engine is slower but more feature-complete.
             kwargs["engine"] = "python"
+
+        if kwargs.get("lineterminator") and kwargs.get("engine") == "python":
+            # TODO(#5594): Remove this block once we will auto-convert the file stream
+            #  to standard separators / terminators in this case.
+            raise ValueError(
+                "No support yet for custom line terminators with the python engine."
+            )
 
         return kwargs
 
