@@ -1,7 +1,11 @@
 file_tag: PardonCommutationRecommendation
 file_description: |- 
   This table contains one occurrence for each pardon or commutation received by the offender.
-primary_key_cols: []
+primary_key_cols:
+  - OffenderID
+  - HearingDate
+  - HearingType
+  - StaffID
 columns:
   - name: OffenderID
     description: |-

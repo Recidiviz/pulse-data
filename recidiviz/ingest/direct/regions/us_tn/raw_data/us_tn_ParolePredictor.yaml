@@ -1,7 +1,8 @@
 file_tag: ParolePredictor
 file_description: |- 
   This table contains the results of a parole predictor appraisal given to an offender for a specific sentence/offense he has committed.
-primary_key_cols: []
+primary_key_cols:
+  - OffenderID
 columns:
   - name: OffenderID
     description: |-

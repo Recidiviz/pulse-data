@@ -1,7 +1,8 @@
 file_tag: OffenderSentenceSummary
 file_description: |- 
   This table contains one occurrence for each offender. It summarizes all dates for all sentences pertaining to the offender.
-primary_key_cols: []
+primary_key_cols:
+  - OffenderID
 columns:
   - name: OffenderID
     description: |-

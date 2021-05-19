@@ -1,7 +1,13 @@
 file_tag: SentenceExtension
 file_description: |- 
   This table contains one occurrence for each extension posted for the offender's sentence.
-primary_key_cols: []
+primary_key_cols:
+  - OffenderID
+  - ConvictionCounty
+  - CaseYear
+  - CaseNumber
+  - CountNumber
+  - SequenceNumber
 columns:
   - name: OffenderID
     description: |-

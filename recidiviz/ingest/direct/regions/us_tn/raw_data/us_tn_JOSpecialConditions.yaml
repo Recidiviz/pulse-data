@@ -1,7 +1,13 @@
 file_tag: JOSpecialConditions
 file_description: |- 
   This table contains multiple occurences for each Judgement Order Special Condition.
-primary_key_cols: []
+primary_key_cols:
+  - OffenderID
+  - CaseYear
+  - CaseNumber
+  - CountNumber
+  - PageNumber
+  - LineNumber
 columns:
   - name: OffenderID
     description: |-

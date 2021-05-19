@@ -1,7 +1,8 @@
 file_tag: SupervisionStandardType
 file_description: |- 
   This table contains one occurrance for each Supervision Standard Type associated with a particular Supervision Std.
-primary_key_cols: []
+primary_key_cols:
+  - PlanType
 columns:
   - name: PlanType
     description: |-

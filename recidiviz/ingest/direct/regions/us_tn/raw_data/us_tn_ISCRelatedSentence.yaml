@@ -1,7 +1,16 @@
 file_tag: ISCRelatedSentence
 file_description: |- 
   This table contains one occurrence for each sentence that is related to an ISC sentence. An ISC related sentence can be either consecutive to or concurrent with the "parent" ISC sentence.
-primary_key_cols: []
+primary_key_cols:
+  - OffenderID
+  - Jurisdication
+  - CaseYear
+  - CaseNumber
+  - CountNumber
+  - RelatedJurisdicationCounty
+  - RelatedCaseYear
+  - RelatedCaseNumber
+  - RelatedCountNumber
 columns:
   - name: OffenderID
     description: |-
@@ -18,7 +27,7 @@ columns:
   - name: CountNumber
     description: |-
       A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of an offender.
-  - name: RelatedJurisidicationCounty
+  - name: RelatedJurisdicationCounty
     description: |-
       The related county or jurisdiction of a sentence for an offender.
   - name: RelatedCaseYear

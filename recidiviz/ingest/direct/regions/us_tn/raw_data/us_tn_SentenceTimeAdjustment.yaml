@@ -1,7 +1,14 @@
 file_tag: SentenceTimeAdjustment
 file_description: |- 
   This table contains information about dead, delinquent, or street time an offender has received for a particular time period for a particular sentence. There is one occurrence for each debit to the offender's sentence.
-primary_key_cols: []
+primary_key_cols:
+  - OffenderID
+  - ConvictionCounty
+  - CaseYear
+  - CaseNumber
+  - CountNumber
+  - StartDate
+  - EndDate
 columns:
   - name: OffenderID
     description: |-

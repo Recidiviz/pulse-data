@@ -1,7 +1,12 @@
 file_tag: JOMiscellaneous
 file_description: |- 
   This table contains one occurrence for each judgment order received by an offender. This table contains miscellaneous information about the judgment order.
-primary_key_cols: []
+primary_key_cols:
+  - OffenderID
+  - ConvictionCounty
+  - CaseYear
+  - CaseNumber
+  - CountNumber
 columns:
   - name: OffenderID
     description: |-

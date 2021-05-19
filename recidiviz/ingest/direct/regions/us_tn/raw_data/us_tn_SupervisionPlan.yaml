@@ -1,7 +1,10 @@
 file_tag: SupervisionPlan
 file_description: |- 
   This table contains one occurance for each plan of supervision entered for an offender.
-primary_key_cols: []
+primary_key_cols:
+  - OffenderID
+  - PlanStartDate
+  - PlanType
 columns:
   - name: OffenderID
     description: |-
