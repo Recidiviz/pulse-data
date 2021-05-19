@@ -264,7 +264,7 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
     ) -> bigquery.Table:
         raise ValueError("Must be implemented for use in tests.")
 
-    def cross_region_dataset_copy(
+    def copy_dataset_tables_across_regions(
         self,
         source_dataset_id: str,
         destination_dataset_id: str,

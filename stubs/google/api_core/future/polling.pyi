@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,15 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+from typing import Optional, Any
 
-"""County-level dataset configuration."""
+from google.api_core import retry as retry_lib
 
-VIEWS_DATASET: str = "census_views"
+DEFAULT_RETRY: retry_lib.Retry = ...
 
-# Transitional dataset in the same region (e.g. us-east1) as the Jails CloudSQL
-# instance where Jails CloudSQL data is stored before the CloudSQL -> BQ refresh
-# copies it to a dataset in the 'US' multi-region.
-COUNTY_BASE_REGIONAL_DATASET: str = "census_regional"
-
-# Where data exported from CloudSQL -> BQ federated export lives
-COUNTY_BASE_DATASET: str = "census"
+class PollingFuture:
+    def result(
+        self, timeout: Optional[int] = None, retry: retry_lib.Retry = DEFAULT_RETRY
+    ) -> Any: ...
