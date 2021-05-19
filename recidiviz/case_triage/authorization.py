@@ -115,6 +115,9 @@ class AuthorizationStore:
     def can_impersonate_others(self, email: str) -> bool:
         return email in self.admin_users
 
+    def can_refresh_auth_store(self, email: str) -> bool:
+        return email in self.admin_users
+
     def can_see_demo_data(self, email: str) -> bool:
         return email in self.admin_users or email in self.demo_users
 

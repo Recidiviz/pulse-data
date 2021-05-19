@@ -24,15 +24,15 @@ from unittest.mock import MagicMock
 import pytest
 from flask import Flask, Response, jsonify, session
 
+from recidiviz.case_triage.admin_flask_views import (
+    IMPERSONATED_EMAIL_KEY,
+    ImpersonateUser,
+)
 from recidiviz.case_triage.api_routes import create_api_blueprint
 from recidiviz.case_triage.authorization import AuthorizationStore
 from recidiviz.case_triage.case_updates.serializers import serialize_client_case_version
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
 from recidiviz.case_triage.error_handlers import register_error_handlers
-from recidiviz.case_triage.impersonate_users import (
-    IMPERSONATED_EMAIL_KEY,
-    ImpersonateUser,
-)
 from recidiviz.case_triage.opportunities.types import (
     OpportunityDeferralType,
     OpportunityType,
