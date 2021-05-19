@@ -1,7 +1,9 @@
 file_tag: OffenderMovement
 file_description: |- 
   This table contains one occurrence for every arrivel and/or departure of an offender from an institution.
-primary_key_cols: []
+primary_key_cols:
+  - OffenderID
+  - MovementDateTime
 columns:
   - name: OffenderID
     description: |-

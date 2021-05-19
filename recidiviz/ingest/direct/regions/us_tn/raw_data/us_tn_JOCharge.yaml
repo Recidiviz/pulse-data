@@ -1,7 +1,11 @@
 file_tag: JOCharge
 file_description: |- 
   This table contains one occurrence for each judgment order received by an offender. This table contains information about the charge contained on the judgment order.
-primary_key_cols: []
+primary_key_cols:
+  - OffenderID
+  - ConvictionCounty
+  - CaseYear
+  - CaseNumber
 columns:
   - name: OffenderID
     description: |-

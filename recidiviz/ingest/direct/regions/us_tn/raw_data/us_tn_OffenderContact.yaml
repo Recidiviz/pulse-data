@@ -1,7 +1,9 @@
 file_tag: OffenderContact
 file_description: |- 
   This table contains one occurrence for each offender/contact combination.
-primary_key_cols: []
+primary_key_cols:
+  - OffenderID
+  - ContactID
 columns:
   - name: OffenderID
     description: |-

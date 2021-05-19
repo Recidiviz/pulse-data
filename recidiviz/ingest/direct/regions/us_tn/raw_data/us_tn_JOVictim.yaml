@@ -1,7 +1,13 @@
 file_tag: JOVictim
 file_description: |- 
   This table contains one occurrence for each victim of a count of a judgment order. There can be only one victim per count.
-primary_key_cols: []
+primary_key_cols:
+  - OffenderID
+  - ConvictionCounty
+  - CaseYear
+  - CaseNumber
+  - CountNumber
+  - VictimID
 columns:
   - name: OffenderID
     description: |-

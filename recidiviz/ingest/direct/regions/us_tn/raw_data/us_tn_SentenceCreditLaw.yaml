@@ -1,7 +1,8 @@
 file_tag: SentenceCreditLaw
 file_description: |- 
   This table contains one occurrence for each sentence waiver received by the offender.
-primary_key_cols: []
+primary_key_cols:
+  - OffenderID
 columns:
   - name: OffenderID
     description: |-

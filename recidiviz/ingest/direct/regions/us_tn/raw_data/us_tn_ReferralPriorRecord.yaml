@@ -1,7 +1,12 @@
 file_tag: ReferralPriorRecord
 file_description: |- 
   This table contains one row for each prior record selected to be on the BI01MHK Referral Report for each referral.
-primary_key_cols: []
+primary_key_cols:
+  - OffenderID
+  - OrderDate
+  - ReferralSequenceNumber
+  - EventDate
+  - SequenceNumber
 columns:
   - name: OffenderID
     description: |-

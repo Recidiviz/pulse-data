@@ -1,7 +1,12 @@
 file_tag: SentenceMiscellaneous
 file_description: |- 
   This table contains one occurrence for each sentence received by the offender. It contains miscellaneous information about the sentence.
-primary_key_cols: []
+primary_key_cols:
+  - OffenderID
+  - ConvictionCounty
+  - CaseYear
+  - CaseNumber
+  - CountNumber
 columns:
   - name: OffenderID
     description: |-
