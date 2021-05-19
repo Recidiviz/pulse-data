@@ -35,6 +35,9 @@ from recidiviz.persistence.database.schema_table_region_filtered_query_builder i
 )
 from recidiviz.persistence.database.schema_utils import is_association_table, SchemaType
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.view_registry.datasets import (
+    VIEW_SOURCE_TABLE_DATASETS,
+)
 
 
 class CloudSqlToBQConfigTest(unittest.TestCase):
@@ -94,6 +97,41 @@ county_columns_to_exclude:
             else:
                 config = CloudSqlToBQConfig.for_schema_type(schema_type)
                 self.assertIsInstance(config, CloudSqlToBQConfig)
+
+    def test_is_state_segmented_refresh_schema(self):
+        for schema_type in self.enabled_schema_types:
+            config = CloudSqlToBQConfig.for_schema_type(schema_type)
+            is_state_segmented = config.is_state_segmented_refresh_schema()
+            if schema_type == SchemaType.STATE:
+                self.assertTrue(is_state_segmented)
+
+    def test_unioned_regional_dataset(self):
+        for schema_type in self.enabled_schema_types:
+            config = CloudSqlToBQConfig.for_schema_type(schema_type)
+            dataset = config.unioned_regional_dataset(dataset_override_prefix=None)
+            self.assertTrue(dataset.endswith("regional"))
+            self.assertTrue(dataset not in VIEW_SOURCE_TABLE_DATASETS)
+
+            dataset_with_prefix = config.unioned_regional_dataset(
+                dataset_override_prefix="prefix"
+            )
+            self.assertTrue(dataset_with_prefix.startswith("prefix_"))
+            self.assertTrue(dataset_with_prefix.endswith("regional"))
+            self.assertTrue(dataset_with_prefix not in VIEW_SOURCE_TABLE_DATASETS)
+
+    def test_unioned_multi_region_dataset(self):
+        for schema_type in self.enabled_schema_types:
+            config = CloudSqlToBQConfig.for_schema_type(schema_type)
+            dataset = config.unioned_multi_region_dataset(dataset_override_prefix=None)
+            self.assertFalse(dataset.endswith("regional"))
+            self.assertTrue(dataset in VIEW_SOURCE_TABLE_DATASETS)
+
+            dataset_with_prefix = config.unioned_multi_region_dataset(
+                dataset_override_prefix="prefix"
+            )
+            self.assertTrue(dataset_with_prefix.startswith("prefix_"))
+            self.assertFalse(dataset_with_prefix.endswith("regional"))
+            self.assertTrue(dataset_with_prefix not in VIEW_SOURCE_TABLE_DATASETS)
 
     def test_excluded_columns(self) -> None:
         for schema_type in self.enabled_schema_types:
@@ -224,9 +262,12 @@ county_columns_to_exclude:
             assert config is not None
             allowed_characters = set(string.ascii_letters + string.digits + "_")
 
-            self.assertIsInstance(config.dataset_id, str)
+            dataset_id = config.unioned_multi_region_dataset(
+                dataset_override_prefix=None
+            )
+            self.assertIsInstance(dataset_id, str)
 
-            for char in config.dataset_id:
+            for char in dataset_id:
                 self.assertIn(char, allowed_characters)
 
     def test_get_stale_bq_rows_for_excluded_regions_query_builder(self) -> None:

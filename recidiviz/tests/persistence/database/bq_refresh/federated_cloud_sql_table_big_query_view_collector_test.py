@@ -34,9 +34,6 @@ from recidiviz.persistence.database.bq_refresh.federated_cloud_sql_table_big_que
     StateSegmentedSchemaFederatedBigQueryViewCollector,
     UnsegmentedSchemaFederatedBigQueryViewCollector,
 )
-from recidiviz.persistence.database.bq_refresh.federated_cloud_sql_table_big_query_view_collector import (
-    is_state_segmented_refresh_schema,
-)
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
@@ -108,14 +105,15 @@ class FederatedCloudSQLTableBigQueryViewCollectorTest(unittest.TestCase):
         for schema_type in SchemaType:
             if not CloudSqlToBQConfig.is_valid_schema_type(schema_type):
                 continue
+            config = CloudSqlToBQConfig.for_schema_type(schema_type)
 
-            if is_state_segmented_refresh_schema(schema_type):
+            if config.is_state_segmented_refresh_schema():
                 _ = StateSegmentedSchemaFederatedBigQueryViewCollector(
-                    schema_type
+                    config
                 ).collect_view_builders()
             else:
                 _ = UnsegmentedSchemaFederatedBigQueryViewCollector(
-                    schema_type
+                    config
                 ).collect_view_builders()
 
     def test_state_segmented_collector(self) -> None:
@@ -124,9 +122,8 @@ class FederatedCloudSQLTableBigQueryViewCollectorTest(unittest.TestCase):
             contents=NO_PAUSED_REGIONS_CLOUD_SQL_CONFIG_YAML,
             content_type="text/yaml",
         )
-        collector = StateSegmentedSchemaFederatedBigQueryViewCollector(
-            SchemaType.OPERATIONS
-        )
+        config = CloudSqlToBQConfig.for_schema_type(SchemaType.OPERATIONS)
+        collector = StateSegmentedSchemaFederatedBigQueryViewCollector(config)
         builders = collector.collect_view_builders()
         direct_ingest_states = get_existing_direct_ingest_states()
         self.assertEqual(
@@ -166,9 +163,8 @@ class FederatedCloudSQLTableBigQueryViewCollectorTest(unittest.TestCase):
             contents=PAUSED_REGION_CLOUD_SQL_CONFIG_YAML,
             content_type="text/yaml",
         )
-        collector = StateSegmentedSchemaFederatedBigQueryViewCollector(
-            SchemaType.OPERATIONS
-        )
+        config = CloudSqlToBQConfig.for_schema_type(SchemaType.OPERATIONS)
+        collector = StateSegmentedSchemaFederatedBigQueryViewCollector(config)
         builders = collector.collect_view_builders()
         direct_ingest_states = get_existing_direct_ingest_states()
         num_schema_tables = len(OperationsBase.metadata.sorted_tables)
@@ -208,7 +204,8 @@ class FederatedCloudSQLTableBigQueryViewCollectorTest(unittest.TestCase):
             contents=PAUSED_REGION_CLOUD_SQL_CONFIG_YAML,
             content_type="text/yaml",
         )
-        collector = UnsegmentedSchemaFederatedBigQueryViewCollector(SchemaType.JAILS)
+        config = CloudSqlToBQConfig.for_schema_type(SchemaType.JAILS)
+        collector = UnsegmentedSchemaFederatedBigQueryViewCollector(config)
         builders = collector.collect_view_builders()
         self.assertEqual(
             len(JailsBase.metadata.sorted_tables),

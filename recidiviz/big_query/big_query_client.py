@@ -22,9 +22,11 @@ import datetime
 import logging
 import time
 from collections import defaultdict
-from typing import List, Optional, Iterator, Callable, Dict
+from concurrent import futures
+from typing import List, Optional, Iterator, Callable, Dict, Any, Sequence
 
 import pytz
+from google.api_core.future.polling import PollingFuture
 from google.cloud import bigquery, exceptions
 from google.cloud.bigquery_datatransfer import (
     StartManualTransferRunsRequest,
@@ -63,6 +65,8 @@ def client(project_id: str, region: str) -> bigquery.Client:
 # In the future, we could increase this number by playing around with increasing the pool size per this post:
 # https://github.com/googleapis/python-storage/issues/253
 BIG_QUERY_CLIENT_MAX_CONNECTIONS = 10
+
+DATASET_BACKUP_TABLE_EXPIRATION_MS = 7 * 24 * 60 * 60 * 1000  # 7 days
 
 CROSS_REGION_COPY_STATUS_ATTEMPT_SLEEP_TIME_SEC = 10
 DEFAULT_CROSS_REGION_COPY_TIMEOUT_SEC = 10 * 60
@@ -607,16 +611,41 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
-    def cross_region_dataset_copy(
+    def copy_dataset_tables_across_regions(
         self,
         source_dataset_id: str,
         destination_dataset_id: str,
         timeout_sec: float = DEFAULT_CROSS_REGION_COPY_TIMEOUT_SEC,
     ) -> None:
-        """Copies tables from |source_dataset_id| to |destination_dataset_id|. This only
-        works if the datasets live in different regions (e.g. 'us' vs 'us-east1'),
-        because the API for doing an inter-region dataset copy is inexplicably different
-        than for copies between regions.
+        """Copies tables (but NOT views) from |source_dataset_id| to
+        |destination_dataset_id|. This only works if the datasets live in different
+        regions (e.g. 'us' vs 'us-east1'), because the API for doing an inter-region
+        dataset copy is inexplicably different than for copies between regions.
+        """
+
+    def copy_dataset_tables(
+        self,
+        source_dataset_id: str,
+        destination_dataset_id: str,
+    ) -> None:
+        """Copies all tables (but NOT views) in the source dataset to the destination
+        dataset, which must be empty if it exists. If the destination dataset does not
+        exist, we will create one.
+        """
+
+    def backup_dataset_tables_if_dataset_exists(
+        self, dataset_id: str
+    ) -> Optional[bigquery.DatasetReference]:
+        """Creates a backup of all tables (but NOT views) in |dataset_id| in a new
+        dataset with the format `my_dataset_backup_yyyy_mm_dd`. For example, the dataset
+        `state` might backup to `state_backup_2021_05_06`.
+        """
+
+    def wait_for_big_query_jobs(self, jobs: Sequence[PollingFuture]) -> List[Any]:
+        """Waits for a list of jobs to complete. These can by any of the async job types
+        the BQ client returns, e.g. QueryJob, CopyJob, LoadJob, etc.
+
+        If any job throws this function will throw with the first encountered exception.
         """
 
 
@@ -1197,7 +1226,7 @@ class BigQueryClientImpl(BigQueryClient):
         create_job = self.create_table_from_query_async(
             dst_dataset_id,
             dst_table_id,
-            view.select_query,
+            view.direct_select_query,
             overwrite=True,
         )
         create_job.result()
@@ -1409,7 +1438,77 @@ class BigQueryClientImpl(BigQueryClient):
 
         self.add_missing_fields_to_schema(dataset_id, table_id, desired_schema_fields)
 
-    def cross_region_dataset_copy(
+    def copy_dataset_tables(
+        self,
+        source_dataset_id: str,
+        destination_dataset_id: str,
+    ) -> None:
+        if self.dataset_exists(self.dataset_ref_for_id(destination_dataset_id)):
+            if any(self.list_tables(destination_dataset_id)):
+                raise ValueError(
+                    f"Destination dataset [{destination_dataset_id}] for copy is not empty."
+                )
+
+        logging.info(
+            "Copying tables in dataset [%s] to empty dataset [%s]",
+            source_dataset_id,
+            destination_dataset_id,
+        )
+        copy_jobs = []
+        for table in self.list_tables(source_dataset_id):
+            if table.table_type != "TABLE":
+                logging.warning(
+                    "Skipping copy of item with type [%s]: [%s]",
+                    table.table_type,
+                    table.table_id,
+                )
+                continue
+
+            source_table_ref = bigquery.TableReference(
+                self.dataset_ref_for_id(source_dataset_id), table.table_id
+            )
+            destination_table_ref = bigquery.TableReference(
+                self.dataset_ref_for_id(destination_dataset_id), table.table_id
+            )
+
+            copy_jobs.append(
+                self.client.copy_table(source_table_ref, destination_table_ref)
+            )
+        self.wait_for_big_query_jobs(jobs=copy_jobs)
+
+    def backup_dataset_tables_if_dataset_exists(
+        self, dataset_id: str
+    ) -> Optional[bigquery.DatasetReference]:
+        backup_dataset_id = (
+            f"{dataset_id}_backup_{datetime.date.today().isoformat().replace('-', '_')}"
+        )
+
+        if not self.dataset_exists(self.dataset_ref_for_id(dataset_id)):
+            return None
+
+        backup_dataset_ref = self.dataset_ref_for_id(backup_dataset_id)
+        self.create_dataset_if_necessary(
+            backup_dataset_ref,
+            default_table_expiration_ms=DATASET_BACKUP_TABLE_EXPIRATION_MS,
+        )
+        self.copy_dataset_tables(
+            source_dataset_id=dataset_id,
+            destination_dataset_id=backup_dataset_id,
+        )
+        return backup_dataset_ref
+
+    def wait_for_big_query_jobs(self, jobs: Sequence[PollingFuture]) -> List[Any]:
+        logging.info("Waiting for [%s] query jobs to complete", len(jobs))
+        results = []
+        with futures.ThreadPoolExecutor(
+            max_workers=BIG_QUERY_CLIENT_MAX_CONNECTIONS
+        ) as executor:
+            job_futures = [executor.submit(job.result) for job in jobs]
+            for f in futures.as_completed(job_futures):
+                results.append(f.result())
+        return results
+
+    def copy_dataset_tables_across_regions(
         self,
         source_dataset_id: str,
         destination_dataset_id: str,

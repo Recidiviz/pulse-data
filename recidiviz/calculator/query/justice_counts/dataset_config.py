@@ -17,7 +17,7 @@
 """Various BigQuery datasets."""
 
 # Transitional dataset in the same region (e.g. us-east1) as the Justice Counts CloudSQL
-# instance where Justice Counts CloudSQL data is stored before the CloudSQL -> BQ export
+# instance where Justice Counts CloudSQL data is stored before the CloudSQL -> BQ refresh
 # copies it to a dataset in the 'US' multi-region.
 JUSTICE_COUNTS_BASE_REGIONAL_DATASET: str = "justice_counts_regional"
 

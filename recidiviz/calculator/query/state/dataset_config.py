@@ -31,7 +31,13 @@ STATIC_REFERENCE_TABLES_DATASET: str = "static_reference_tables"
 # Where reference views (views used by other views) live
 REFERENCE_VIEWS_DATASET: str = "reference_views"
 
-# Where the base tables for the state schema live
+# Transitional dataset in the same region (e.g. us-east1) as the State CloudSQL
+# instance where State CloudSQL data is stored before the CloudSQL -> BQ refresh
+# copies it to a dataset in the 'US' multi-region.
+STATE_BASE_REGIONAL_DATASET: str = "state_regional"
+
+# Where the base tables for the state schema live. These are a mirror of the data in our
+# state CloudSQL instance, refreshed daily via the CloudSQL -> BQ federated export.
 STATE_BASE_DATASET: str = "state"
 
 # Where the views for the COVID dashboard live

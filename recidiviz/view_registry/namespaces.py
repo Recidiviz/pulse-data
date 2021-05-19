@@ -19,6 +19,7 @@ from enum import Enum
 
 
 class BigQueryViewNamespace(Enum):
+    CLOUDSQL_CONNECTION = "cloudsql_connection"
     COUNTY = "county"
     EXPERIMENTS = "experiments"
     JUSTICE_COUNTS = "justice_counts"

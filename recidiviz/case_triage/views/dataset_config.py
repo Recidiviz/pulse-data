@@ -19,7 +19,7 @@
 VIEWS_DATASET: str = "case_triage"
 
 # Transitional dataset in the same region (e.g. us-east1) as the Case Triage CloudSQL
-# instance where Case Triage CloudSQL data is stored before the CloudSQL -> BQ export
+# instance where Case Triage CloudSQL data is stored before the CloudSQL -> BQ refresh
 # copies it to a dataset in the 'US' multi-region.
 CASE_TRIAGE_FEDERATED_REGIONAL_DATASET: str = "case_triage_federated_regional"
 

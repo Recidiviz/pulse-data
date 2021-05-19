@@ -16,5 +16,12 @@
 # =============================================================================
 """Various BigQuery datasets."""
 
-# Where the base tables for the operations schema live
+# Transitional dataset in the same region (e.g. us-east1) as the Operations CloudSQL
+# instance where Operations CloudSQL data is stored before the CloudSQL -> BQ refresh
+# copies it to a dataset in the 'US' multi-region.
+OPERATIONS_BASE_REGIONAL_DATASET: str = "operations_regional"
+
+# Where the base tables for the operations schema live. These are a mirror of the data
+# in our operations CloudSQL instance, refreshed daily via the CloudSQL -> BQ federated
+# export.
 OPERATIONS_BASE_DATASET: str = "operations"
