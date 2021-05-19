@@ -33,9 +33,7 @@ from recidiviz.utils.environment import in_gcp
 from recidiviz.utils.metadata import project_id
 
 
-KNOWN_EXPERIMENTS = [
-    "can-see-top-opportunities",
-]
+KNOWN_EXPERIMENTS: List[str] = []
 
 
 @attr.s(auto_attribs=True)

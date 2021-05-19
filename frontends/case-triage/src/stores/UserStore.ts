@@ -28,9 +28,7 @@ interface UserStoreProps {
   authSettings: Auth0ClientOptions;
 }
 
-export enum KNOWN_EXPERIMENTS {
-  TOP_OPPORTUNITIES = "can-see-top-opportunities",
-}
+export enum KNOWN_EXPERIMENTS {}
 
 export interface FeatureVariants {
   [feature: string]: string;
