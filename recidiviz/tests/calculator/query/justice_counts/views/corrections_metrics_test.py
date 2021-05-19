@@ -23,12 +23,12 @@ from sqlalchemy.sql import sqltypes
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.justice_counts.views import (
-    corrections_metrics_by_month,
-    metric_by_month,
+    corrections_metrics,
+    metric_calculator,
 )
 from recidiviz.persistence.database.schema.justice_counts import schema
-from recidiviz.tests.calculator.query.justice_counts.views.metric_by_month_test import (
-    METRIC_BY_MONTH_SCHEMA,
+from recidiviz.tests.calculator.query.justice_counts.views.metric_calculator_test import (
+    METRIC_CALCULATOR_SCHEMA,
     FakeState,
     row,
 )
@@ -45,8 +45,8 @@ class CorrectionsOutputViewTest(BaseViewTest):
 
     INPUT_SCHEMA = MockTableSchema(
         {
-            **METRIC_BY_MONTH_SCHEMA.data_types,
-            "compare_start_of_month": sqltypes.Date(),
+            **METRIC_CALCULATOR_SCHEMA.data_types,
+            "compare_date_partition": sqltypes.Date(),
             "compare_value": sqltypes.Numeric(),
             "state_code": sqltypes.String(255),
         }
@@ -114,7 +114,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
         )
         self.create_mock_bq_table(
             dataset_id="justice_counts",
-            table_id="metric_by_month",
+            table_id="metric_calculator",
             mock_schema=self.INPUT_SCHEMA,
             mock_data=pd.DataFrame(
                 [
@@ -179,25 +179,25 @@ class CorrectionsOutputViewTest(BaseViewTest):
 
         # Act
         dimensions = ["state_code", "metric", "year", "month"]
-        prison_population_metric = metric_by_month.CalculatedMetricByMonth(
+        prison_population_metric = metric_calculator.CalculatedMetric(
             system=schema.System.CORRECTIONS,
             metric=schema.MetricType.POPULATION,
             filtered_dimensions=[manual_upload.PopulationType.PRISON],
             aggregated_dimensions={
-                "state_code": metric_by_month.Aggregation(
+                "state_code": metric_calculator.Aggregation(
                     dimension=manual_upload.State, comprehensive=False
                 )
             },
             output_name="POP",
         )
         results = self.query_view(
-            corrections_metrics_by_month.CorrectionsOutputViewBuilder(
+            corrections_metrics.CorrectionsOutputViewBuilder(
                 dataset_id="fake-dataset",
                 metric_to_calculate=prison_population_metric,
                 input_view=SimpleBigQueryViewBuilder(
                     dataset_id="justice_counts",
-                    view_id="metric_by_month",
-                    description="metric_by_month view",
+                    view_id="metric_calculator",
+                    description="metric_calculator view",
                     view_query_template="",
                 ),
             ),
@@ -354,14 +354,14 @@ class CorrectionsOutputViewTest(BaseViewTest):
         )
         self.create_mock_bq_table(
             dataset_id="justice_counts",
-            table_id="metric_by_month",
+            table_id="metric_calculator",
             mock_schema=self.INPUT_SCHEMA,
             mock_data=pd.DataFrame(
                 [
                     row(1, "2021-01-01", "2022-01-01", (FakeState("US_XX"),), [], 3)
-                    + (datetime.date.fromisoformat("2021-01-01"), 0, "US_XX"),
+                    + (datetime.date.fromisoformat("2021-02-01"), 0, "US_XX"),
                     row(1, "2021-01-01", "2021-01-01", (FakeState("US_XX"),), [], 0)
-                    + (datetime.date.fromisoformat("2020-01-01"), 2, "US_XX"),
+                    + (datetime.date.fromisoformat("2020-02-01"), 2, "US_XX"),
                     row(1, "2021-01-01", "2020-01-01", (FakeState("US_XX"),), [], 2)
                     + (None, None, "US_XX"),
                 ],
@@ -371,25 +371,25 @@ class CorrectionsOutputViewTest(BaseViewTest):
 
         # Act
         dimensions = ["state_code", "metric", "year", "month"]
-        parole_population = metric_by_month.CalculatedMetricByMonth(
+        parole_population = metric_calculator.CalculatedMetric(
             system=schema.System.CORRECTIONS,
             metric=schema.MetricType.ADMISSIONS,
             filtered_dimensions=[],
             aggregated_dimensions={
-                "state_code": metric_by_month.Aggregation(
+                "state_code": metric_calculator.Aggregation(
                     dimension=manual_upload.State, comprehensive=False
                 )
             },
             output_name="ADMISSIONS",
         )
         results = self.query_view(
-            corrections_metrics_by_month.CorrectionsOutputViewBuilder(
+            corrections_metrics.CorrectionsOutputViewBuilder(
                 dataset_id="fake-dataset",
                 metric_to_calculate=parole_population,
                 input_view=SimpleBigQueryViewBuilder(
                     dataset_id="justice_counts",
-                    view_id="metric_by_month",
-                    description="metric_by_month view",
+                    view_id="metric_calculator",
+                    description="metric_calculator view",
                     view_query_template="",
                 ),
             ),
@@ -476,7 +476,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
 
 
 @patch("recidiviz.utils.metadata.project_id", Mock(return_value="t"))
-class CorrectionsMetricsByMonthIntegrationTest(BaseViewTest):
+class CorrectionsMetricsIntegrationTest(BaseViewTest):
     """Tests the Justice Counts Prison Population view."""
 
     def test_recent_population(self) -> None:
@@ -639,27 +639,38 @@ class CorrectionsMetricsByMonthIntegrationTest(BaseViewTest):
 
         # Act
         dimensions = ["state_code", "metric", "year", "month"]
-        prison_population_metric = metric_by_month.CalculatedMetricByMonth(
+        prison_population_metric = metric_calculator.CalculatedMetric(
             system=schema.System.CORRECTIONS,
             metric=schema.MetricType.POPULATION,
             filtered_dimensions=[manual_upload.PopulationType.PRISON],
             aggregated_dimensions={
-                "state_code": metric_by_month.Aggregation(
+                "state_code": metric_calculator.Aggregation(
                     dimension=manual_upload.State, comprehensive=False
                 )
             },
             output_name="POP",
         )
-        results = self.query_view_chain(
-            corrections_metrics_by_month.view_chain_for_metric(
-                prison_population_metric
-            ),
-            data_types={"year": int, "month": int, "value": int},
-            dimensions=dimensions,
-        )
+        with patch.object(corrections_metrics, "METRICS", [prison_population_metric]):
+            view_collector = (
+                corrections_metrics.CorrectionsMetricsBigQueryViewCollector()
+            )
+
+            for view in view_collector.collect_view_builders():
+                self.create_view(view)
+
+            monthly_results = self.query_view(
+                view_collector.monthly_unified_builder,
+                data_types={"year": int, "month": int, "value": int},
+                dimensions=dimensions,
+            )
+            annual_results = self.query_view(
+                view_collector.annual_unified_builder,
+                data_types={"year": int, "month": int, "value": int},
+                dimensions=dimensions,
+            )
 
         # Assert
-        expected = pd.DataFrame(
+        monthly_expected = pd.DataFrame(
             [
                 [
                     "US_XX",
@@ -764,5 +775,71 @@ class CorrectionsMetricsByMonthIntegrationTest(BaseViewTest):
                 "percentage_change",
             ],
         )
-        expected = expected.set_index(dimensions)
-        assert_frame_equal(expected, results)
+        monthly_expected = monthly_expected.set_index(dimensions)
+        assert_frame_equal(monthly_expected, monthly_results)
+
+        annual_expected = pd.DataFrame(
+            [
+                [
+                    "US_XX",
+                    "POP",
+                    2020,
+                    12,
+                    datetime.date.fromisoformat("2020-12-31"),
+                    "XX",
+                    "xx.gov",
+                    "_",
+                    datetime.date.fromisoformat("2021-01-01"),
+                    [],
+                    4000,
+                ]
+                + [None] * 4,
+                [
+                    "US_YY",
+                    "POP",
+                    2020,
+                    12,
+                    datetime.date.fromisoformat("2020-12-31"),
+                    "YY",
+                    "yy.gov",
+                    "_",
+                    datetime.date.fromisoformat("2021-01-02"),
+                    [],
+                    1020,
+                ]
+                + [None] * 4,
+                [
+                    "US_ZZ",
+                    "POP",
+                    2020,
+                    12,
+                    datetime.date.fromisoformat("2020-12-31"),
+                    "ZZ",
+                    "zz.gov",
+                    "_",
+                    datetime.date.fromisoformat("2021-01-02"),
+                    [],
+                    500,
+                ]
+                + [None] * 4,
+            ],
+            columns=[
+                "state_code",
+                "metric",
+                "year",
+                "month",
+                "date_reported",
+                "source_name",
+                "source_url",
+                "report_name",
+                "date_published",
+                "raw_source_categories",
+                "value",
+                "compared_to_year",
+                "compared_to_month",
+                "value_change",
+                "percentage_change",
+            ],
+        )
+        annual_expected = annual_expected.set_index(dimensions)
+        assert_frame_equal(annual_expected, annual_results)

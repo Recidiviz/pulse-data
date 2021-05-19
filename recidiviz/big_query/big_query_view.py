@@ -306,7 +306,7 @@ class BigQueryViewBuilder(Generic[BigQueryViewType]):
 BigQueryViewBuilderType = TypeVar("BigQueryViewBuilderType", bound=BigQueryViewBuilder)
 
 
-class SimpleBigQueryViewBuilder(BigQueryViewBuilder):
+class SimpleBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
     """Class that builds a BigQueryView. Can be instantiated as a top-level variable, unlike a BigQueryView, whose
     constructor requires that a project_id has been properly set in the metadata package - something that often happens
     after a file is imported."""
@@ -347,6 +347,39 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder):
 
     def should_build(self) -> bool:
         return not self.should_build_predicate or self.should_build_predicate()
+
+    # TODO(#7453): This functionality should be shared between *View and *ViewBuilder classes.
+    @property
+    def address(self) -> BigQueryAddress:
+        """The (dataset_id, table_id) address for this view"""
+        return BigQueryAddress(dataset_id=self.dataset_id, table_id=self.view_id)
+
+    @property
+    def materialized_address(self) -> Optional[BigQueryAddress]:
+        """The (dataset_id, table_id) for a table that contains the result of the
+        view_query if this view were to be materialized.
+        """
+        if not self.should_materialize:
+            return None
+
+        if self.materialized_address_override:
+            return self.materialized_address_override
+
+        return BigQueryAddress(
+            dataset_id=self.dataset_id,
+            table_id=self.view_id + _DEFAULT_MATERIALIZED_SUFFIX,
+        )
+
+    @property
+    def table_for_query(self) -> BigQueryAddress:
+        """The (dataset_id, table_id) to use when querying from this view.
+
+        Will return the materialized view address when available, otherwise the plain
+        view address."""
+
+        if self.materialized_address:
+            return self.materialized_address
+        return self.address
 
 
 class BigQueryViewBuilderShouldNotBuildError(Exception):

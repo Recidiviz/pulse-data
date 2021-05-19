@@ -25,20 +25,20 @@ from recidiviz.big_query.big_query_view import (
 )
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.calculator.query.justice_counts import dataset_config
-from recidiviz.calculator.query.justice_counts.views import metric_by_month
+from recidiviz.calculator.query.justice_counts.views import metric_calculator
 from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.tools.justice_counts import manual_upload
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_STATE_CODE_AGGREGATION = metric_by_month.Aggregation(
+_STATE_CODE_AGGREGATION = metric_calculator.Aggregation(
     dimension=manual_upload.State, comprehensive=False
 )
-_COUNTY_CODE_AGGREGATION = metric_by_month.Aggregation(
+_COUNTY_CODE_AGGREGATION = metric_calculator.Aggregation(
     dimension=manual_upload.County, comprehensive=False
 )
-_COUNTY_FIPS_AGGREGATION = metric_by_month.Aggregation(
+_COUNTY_FIPS_AGGREGATION = metric_calculator.Aggregation(
     dimension=manual_upload.CountyFIPS, comprehensive=False
 )
 
@@ -55,9 +55,9 @@ SELECT * EXCEPT(with_resident_ordinal)
 FROM (
     SELECT input.*, resident.population as resident_population, resident.year as resident_population_year,
         ROW_NUMBER() OVER (
-            PARTITION BY input.dimensions_string, input.start_of_month
+            PARTITION BY input.dimensions_string, input.date_partition
             -- Get the population for the closest year that we have.
-            ORDER BY ABS(resident.year - EXTRACT(YEAR FROM input.start_of_month)) ASC
+            ORDER BY ABS(resident.year - EXTRACT(YEAR FROM DATE_SUB(input.date_partition, INTERVAL 1 DAY))) ASC
         ) as with_resident_ordinal
     FROM `{project_id}.{input_dataset}.{input_table}` input
     LEFT JOIN `{project_id}.{reference_dataset}.{reference_table}` resident
@@ -70,7 +70,7 @@ WHERE with_resident_ordinal = 1
 class AddResidentPopulationViewBuilder(SimpleBigQueryViewBuilder):
     """Factory class for building a view that adds the county resident population
 
-    Relies on `dimensions_string` and `start_of_month` forming a unique id for the input rows"""
+    Relies on `dimensions_string` and `date_partition` forming a unique id for the input rows"""
 
     def __init__(
         self,
@@ -81,7 +81,7 @@ class AddResidentPopulationViewBuilder(SimpleBigQueryViewBuilder):
     ):
         super().__init__(
             dataset_id=dataset_id,
-            view_id=f"{metric_by_month.view_prefix_for_metric_name(metric_name)}_with_resident",
+            view_id=f"{metric_calculator.view_prefix_for_metric_name(metric_name)}_with_resident",
             view_query_template=ADD_RESIDENT_POPULATION_VIEW_TEMPLATE,
             # Query Format Arguments
             description="",
@@ -114,7 +114,7 @@ class IncarcerationRateViewBuilder(SimpleBigQueryViewBuilder):
     ):
         super().__init__(
             dataset_id=dataset_id,
-            view_id=f"{metric_by_month.view_prefix_for_metric_name(metric_name)}_with_resident",
+            view_id=f"{metric_calculator.view_prefix_for_metric_name(metric_name)}_with_resident",
             view_query_template=INCARCERATION_RATE_VIEW_TEMPLATE,
             # Query Format Arguments
             description="",
@@ -143,7 +143,7 @@ class PercentageCoveredViewBuilder(SimpleBigQueryViewBuilder):
     ):
         super().__init__(
             dataset_id=dataset_id,
-            view_id=f"{metric_by_month.view_prefix_for_metric_name(metric_name)}_percentage_covered",
+            view_id=f"{metric_calculator.view_prefix_for_metric_name(metric_name)}_percentage_covered",
             view_query_template=PERCENTAGE_COVERED_VIEW_TEMPLATE,
             # Query Format Arguments
             description=f"{metric_name} percentage covered",
@@ -155,13 +155,13 @@ class PercentageCoveredViewBuilder(SimpleBigQueryViewBuilder):
 OUTPUT_VIEW_TEMPLATE = """
 SELECT {aggregated_dimension_columns},
        '{metric_output_name}' as metric,
-       EXTRACT(YEAR from start_of_month) as year,
-       EXTRACT(MONTH from start_of_month) as month,
+       EXTRACT(YEAR from DATE_SUB(date_partition, INTERVAL 1 DAY)) as year,
+       EXTRACT(MONTH from DATE_SUB(date_partition, INTERVAL 1 DAY)) as month,
        DATE_SUB(time_window_end, INTERVAL 1 DAY) as date_reported,
        {value_column} as value,
        -- If there is no row at least a year back to compare to, the following columns will be NULL.
-       EXTRACT(YEAR from compare_start_of_month) as compared_to_year,
-       EXTRACT(MONTH from compare_start_of_month) as compared_to_month,
+       EXTRACT(YEAR from DATE_SUB(compare_date_partition, INTERVAL 1 DAY)) as compared_to_year,
+       EXTRACT(MONTH from DATE_SUB(compare_date_partition, INTERVAL 1 DAY)) as compared_to_month,
        {value_column} - compare_{value_column} as value_change,
        -- Note: This can return NULL in the case of divide by zero
        SAFE_DIVIDE(({value_column} - compare_{value_column}), compare_{value_column}) as percentage_change,
@@ -180,7 +180,7 @@ class JailOutputViewBuilder(SimpleBigQueryViewBuilder):
         *,
         dataset_id: str,
         metric_name: str,
-        aggregations: Dict[str, metric_by_month.Aggregation],
+        aggregations: Dict[str, metric_calculator.Aggregation],
         value_column: str,
         input_view: BigQueryViewBuilder,
     ):
@@ -188,7 +188,7 @@ class JailOutputViewBuilder(SimpleBigQueryViewBuilder):
 
         super().__init__(
             dataset_id=dataset_id,
-            view_id=f"{metric_by_month.view_prefix_for_metric_name(metric_name)}_output",
+            view_id=f"{metric_calculator.view_prefix_for_metric_name(metric_name)}_output",
             view_query_template=OUTPUT_VIEW_TEMPLATE,
             should_materialize=True,
             # Query Format Arguments
@@ -205,7 +205,7 @@ class JailOutputViewBuilder(SimpleBigQueryViewBuilder):
 def transform_results_view_chain(
     metric_name: str, value_column: str, view_builder: SimpleBigQueryViewBuilder
 ) -> List[SimpleBigQueryViewBuilder]:
-    comparison_view_builder = metric_by_month.CompareToPriorYearViewBuilder(
+    comparison_view_builder = metric_calculator.CompareToPriorYearViewBuilder(
         dataset_id=dataset_config.JUSTICE_COUNTS_JAILS_DATASET,
         metric_name=metric_name,
         input_view=view_builder,
@@ -216,11 +216,13 @@ def transform_results_view_chain(
         metric_name=metric_name,
         input_view=comparison_view_builder,
     )
-    dimensions_to_columns_view_builder = metric_by_month.DimensionsToColumnsViewBuilder(
-        dataset_id=dataset_config.JUSTICE_COUNTS_JAILS_DATASET,
-        metric_name=metric_name,
-        aggregations=OUTPUT_DIMENSIONS,
-        input_view=percentage_covered_view_builder,
+    dimensions_to_columns_view_builder = (
+        metric_calculator.DimensionsToColumnsViewBuilder(
+            dataset_id=dataset_config.JUSTICE_COUNTS_JAILS_DATASET,
+            metric_name=metric_name,
+            aggregations=OUTPUT_DIMENSIONS,
+            input_view=percentage_covered_view_builder,
+        )
     )
     output_view_builder = JailOutputViewBuilder(
         dataset_id=dataset_config.JUSTICE_COUNTS_JAILS_DATASET,
@@ -238,9 +240,9 @@ def transform_results_view_chain(
 
 
 def get_jail_population_with_resident_chain() -> List[SimpleBigQueryViewBuilder]:
-    jail_pop_view_chain = metric_by_month.calculate_metric_view_chain(
+    jail_pop_view_chain = metric_calculator.calculate_metric_view_chain(
         dataset_id=dataset_config.JUSTICE_COUNTS_JAILS_DATASET,
-        metric_to_calculate=metric_by_month.CalculatedMetricByMonth(
+        metric_to_calculate=metric_calculator.CalculatedMetric(
             system=schema.System.CORRECTIONS,
             metric=schema.MetricType.POPULATION,
             filtered_dimensions=[manual_upload.PopulationType.JAIL],
@@ -251,6 +253,7 @@ def get_jail_population_with_resident_chain() -> List[SimpleBigQueryViewBuilder]
             },
             output_name=POPULATION_METRIC_NAME,
         ),
+        time_aggregation=metric_calculator.TimeAggregation.MONTHLY,
     )
 
     jail_pop_with_resident_view_builder = AddResidentPopulationViewBuilder(
@@ -258,24 +261,27 @@ def get_jail_population_with_resident_chain() -> List[SimpleBigQueryViewBuilder]
         metric_name=POPULATION_METRIC_NAME,
         input_view=jail_pop_view_chain[-1],
     )
-    return [*jail_pop_view_chain, jail_pop_with_resident_view_builder]
+    return [
+        *jail_pop_view_chain,
+        jail_pop_with_resident_view_builder,
+    ]
 
 
 def get_jail_incarceration_rate_chain(
     jail_pop_with_resident_view_builder: SimpleBigQueryViewBuilder,
 ) -> List[SimpleBigQueryViewBuilder]:
-    with_state_totals_builder = metric_by_month.SpatialAggregationViewBuilder(
+    with_state_totals_builder = metric_calculator.SpatialAggregationViewBuilder(
         dataset_id=dataset_config.JUSTICE_COUNTS_JAILS_DATASET,
         metric_name=RATE_METRIC_NAME,
         input_view=jail_pop_with_resident_view_builder,
-        partition_columns={"start_of_month"},
+        partition_columns={"date_partition"},
         partition_dimensions={manual_upload.State},
         context_columns={
-            "source_id": metric_by_month.SpatialAggregationViewBuilder.ContextAggregation.ARRAY,
-            "report_type": metric_by_month.SpatialAggregationViewBuilder.ContextAggregation.ARRAY,
-            "report_ids": metric_by_month.SpatialAggregationViewBuilder.ContextAggregation.ARRAY_CONCAT,
-            "time_window_end": metric_by_month.SpatialAggregationViewBuilder.ContextAggregation.MAX,
-            "publish_date": metric_by_month.SpatialAggregationViewBuilder.ContextAggregation.MAX,
+            "source_id": metric_calculator.SpatialAggregationViewBuilder.ContextAggregation.ARRAY,
+            "report_type": metric_calculator.SpatialAggregationViewBuilder.ContextAggregation.ARRAY,
+            "report_ids": metric_calculator.SpatialAggregationViewBuilder.ContextAggregation.ARRAY_CONCAT,
+            "time_window_end": metric_calculator.SpatialAggregationViewBuilder.ContextAggregation.MAX,
+            "publish_date": metric_calculator.SpatialAggregationViewBuilder.ContextAggregation.MAX,
         },
         value_columns={"resident_population", "value"},
         collapse_dimensions_filter=f"dimension in ('{manual_upload.County.dimension_identifier()}')",
@@ -289,7 +295,7 @@ def get_jail_incarceration_rate_chain(
     return [with_state_totals_builder, rate_builder]
 
 
-class JailsMetricsByMonthBigQueryViewCollector(
+class JailsMetricsBigQueryViewCollector(
     BigQueryViewCollector[SimpleBigQueryViewBuilder]
 ):
     """Builds out the DAG of view builders for jail calculations"""
@@ -321,7 +327,7 @@ class JailsMetricsByMonthBigQueryViewCollector(
 
         self.unified_builder = SimpleBigQueryViewBuilder(
             dataset_id=dataset_config.JUSTICE_COUNTS_DASHBOARD_DATASET,
-            view_id="unified_jails_metrics_by_month",
+            view_id="unified_jails_metrics_monthly",
             view_query_template=" UNION ALL ".join(unified_query_select_clauses) + ";",
             description="Unified view of all calculated jails metrics by month",
             calculation_dataset=dataset_config.JUSTICE_COUNTS_JAILS_DATASET,
@@ -333,6 +339,6 @@ class JailsMetricsByMonthBigQueryViewCollector(
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        collector = JailsMetricsByMonthBigQueryViewCollector()
+        collector = JailsMetricsBigQueryViewCollector()
         for builder in collector.collect_view_builders():
             builder.build_and_print()
