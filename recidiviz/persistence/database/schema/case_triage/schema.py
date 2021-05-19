@@ -29,6 +29,7 @@ from sqlalchemy import (
     Boolean,
     Date,
     DateTime,
+    Enum,
     Integer,
     String,
     Text,
@@ -74,15 +75,40 @@ class ETLClient(CaseTriageBase):
     assessment_score = Column(Integer)
     most_recent_face_to_face_date = Column(Date)
     most_recent_home_visit_date = Column(Date)
+    days_with_current_po = Column(Integer)
 
     case_updates = relationship(
         "CaseUpdate",
         uselist=True,
         foreign_keys=[state_code, person_external_id, supervising_officer_external_id],
+        overlaps="client_info",
         primaryjoin="and_("
         "   ETLClient.state_code == CaseUpdate.state_code,"
         "   ETLClient.person_external_id == CaseUpdate.person_external_id,"
         "   ETLClient.supervising_officer_external_id == CaseUpdate.officer_external_id,"
+        ")",
+    )
+
+    client_info = relationship(
+        "ClientInfo",
+        uselist=False,
+        foreign_keys=[state_code, person_external_id],
+        overlaps="case_updates,client_officer_association",
+        primaryjoin="and_("
+        "   ETLClient.state_code == ClientInfo.state_code,"
+        "   ETLClient.person_external_id == ClientInfo.person_external_id,"
+        ")",
+    )
+
+    client_officer_association = relationship(
+        "ClientOfficerAssociation",
+        uselist=False,
+        foreign_keys=[state_code, person_external_id, supervising_officer_external_id],
+        overlaps="case_updates,client_info",
+        primaryjoin="and_("
+        "   ETLClient.state_code == ClientOfficerAssociation.state_code,"
+        "   ETLClient.person_external_id == ClientOfficerAssociation.person_external_id,"
+        "   ETLClient.supervising_officer_external_id == ClientOfficerAssociation.supervising_officer_external_id,"
         ")",
     )
 
@@ -131,6 +157,7 @@ class ETLClient(CaseTriageBase):
             most_recent_home_visit_date=_get_json_field_as_date(
                 json_client, "most_recent_home_visit_date"
             ),
+            days_with_current_po=json_client.get("days_with_current_po"),
         )
 
 
@@ -218,6 +245,79 @@ class CaseUpdate(CaseTriageBase):
         "   ETLClient.state_code == CaseUpdate.state_code,"
         "   ETLClient.person_external_id == CaseUpdate.person_external_id,"
         "   ETLClient.supervising_officer_external_id == CaseUpdate.officer_external_id,"
+        ")",
+    )
+
+
+class ClientInfo(CaseTriageBase):
+    """We use ClientInfo to encode additional metadata provided by POs about
+    their client. This information is only available in the Case Triage tool
+    and is not otherwise derivable from our ETL pipeline."""
+
+    __tablename__ = "client_info"
+    __table_args__ = (
+        UniqueConstraint(
+            "state_code",
+            "person_external_id",
+            name="unique_person",
+        ),
+    )
+
+    client_info_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    state_code = Column(String(255), nullable=False, index=True)
+    person_external_id = Column(String(255), nullable=False, index=True)
+
+    preferred_name = Column(Text)
+    preferred_contact_method = Column(
+        Enum("EMAIL", "CALL", "TEXT", name="client_into_preferred_contact_method")
+    )
+
+    etl_client = relationship(
+        "ETLClient",
+        foreign_keys=[state_code, person_external_id],
+        viewonly=True,
+        primaryjoin="and_("
+        "   ETLClient.state_code == ClientInfo.state_code,"
+        "   ETLClient.person_external_id == ClientInfo.person_external_id,"
+        ")",
+    )
+
+
+class ClientOfficerAssociation(CaseTriageBase):
+    """This table contains all information that is associated jointly with a client and
+    officer. This information should not "travel", so if a client changes POs, this info stays
+    put."""
+
+    __tablename__ = "client_officer_associations"
+    __table_args__ = (
+        UniqueConstraint(
+            "state_code",
+            "person_external_id",
+            "supervising_officer_external_id",
+            name="unique_person_officer_pair",
+        ),
+    )
+
+    client_officer_association_id = Column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+
+    state_code = Column(String(255), nullable=False, index=True)
+    supervising_officer_external_id = Column(String(255), nullable=False, index=True)
+    person_external_id = Column(String(255), nullable=False, index=True)
+
+    # The notes show up as an array of strings.
+    notes = Column(JSONB)
+
+    etl_client = relationship(
+        "ETLClient",
+        foreign_keys=[state_code, person_external_id, supervising_officer_external_id],
+        viewonly=True,
+        primaryjoin="and_("
+        "   ETLClient.state_code == ClientOfficerAssociation.state_code,"
+        "   ETLClient.person_external_id == ClientOfficerAssociation.person_external_id,"
+        "   ETLClient.supervising_officer_external_id == ClientOfficerAssociation.supervising_officer_external_id,"
         ")",
     )
 

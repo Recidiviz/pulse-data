@@ -17,15 +17,18 @@
 """Implements helper functions for use in Case Triage tests."""
 import json
 from datetime import date, datetime
-from typing import Optional, Dict
+from typing import List, Optional, Dict
 
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
+from recidiviz.case_triage.client_info.types import PreferredContactMethod
 from recidiviz.case_triage.opportunities.types import OpportunityType
 from recidiviz.persistence.database.schema.case_triage.schema import (
+    CaseUpdate,
+    ClientInfo,
+    ClientOfficerAssociation,
     ETLClient,
     ETLOfficer,
     ETLOpportunity,
-    CaseUpdate,
 )
 
 
@@ -98,4 +101,33 @@ def generate_fake_case_update(
         action_ts=action_ts,
         comment=comment,
         last_version=last_version,
+    )
+
+
+def generate_fake_client_info(
+    client: ETLClient,
+    preferred_name: Optional[str] = None,
+    preferred_contact_method: Optional[PreferredContactMethod] = None,
+) -> ClientInfo:
+    preferred_contact_value = (
+        None if not preferred_contact_method else preferred_contact_method.value
+    )
+    return ClientInfo(
+        state_code=client.state_code,
+        etl_client=client,
+        person_external_id=client.person_external_id,
+        preferred_name=preferred_name,
+        preferred_contact_method=preferred_contact_value,
+    )
+
+
+def generate_fake_client_officer_association(
+    client: ETLClient,
+    officer_external_id: str,
+    notes: Optional[List[str]] = None,
+) -> ClientOfficerAssociation:
+    return ClientOfficerAssociation(
+        etl_client=client,
+        supervising_officer_external_id=officer_external_id,
+        notes=notes,
     )

@@ -54,6 +54,12 @@ export interface NeedsMet {
   homeVisitContact: boolean;
 }
 
+export enum PreferredContactMethod {
+  Email = "EMAIL",
+  Call = "CALL",
+  Text = "TEXT",
+}
+
 export interface Client {
   assessmentScore: number | null;
   caseType: CaseType;
@@ -74,6 +80,9 @@ export interface Client {
   nextAssessmentDate: APIDate;
   nextFaceToFaceDate: APIDate;
   nextHomeVisitDate: APIDate;
+  preferredName?: string;
+  preferredContactMethod?: PreferredContactMethod;
+  notes?: string[];
 }
 
 export interface DecoratedClient extends Client {
