@@ -93,7 +93,7 @@ class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
             region_code="us_xx",
             region_module=fake_regions_module,
         )
-        self.assertEqual(10, len(region_config.raw_file_configs))
+        self.assertEqual(11, len(region_config.raw_file_configs))
         self.assertEqual(
             {
                 "file_tag_first",
@@ -103,6 +103,7 @@ class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
                 "tagFullHistoricalExport",
                 "tagInvalidCharacters",
                 "tagNormalizationConflict",
+                "tagCustomLineTerminatorNonUTF8",
                 "tagPipeSeparatedNonUTF8",
                 "tagDoubleDaggerWINDOWS1252",
                 "tagColumnsMissing",
@@ -116,6 +117,7 @@ class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
         self.assertEqual(["col_name_1a", "col_name_1b"], config_1.primary_key_cols)
         self.assertEqual("ISO-456-7", config_1.encoding)
         self.assertEqual(",", config_1.separator)
+        self.assertIsNone(config_1.custom_line_terminator)
         expected_column2_description = (
             "A column description that is long enough to take up\nmultiple lines. This"
             " text block will be interpreted\nliterally and trailing/leading whitespace"
@@ -184,6 +186,18 @@ class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
         self.assertEqual(["PRIMARY_COL1"], config_4.primary_key_cols)
         self.assertEqual("ISO-8859-1", config_4.encoding)
         self.assertEqual("|", config_4.separator)
+
+    def test_custom_line_terminator(self) -> None:
+        region_config = DirectIngestRegionRawFileConfig(
+            region_code="us_xx",
+            region_module=fake_regions_module,
+        )
+        config = region_config.raw_file_configs["tagCustomLineTerminatorNonUTF8"]
+        self.assertEqual("tagCustomLineTerminatorNonUTF8", config.file_tag)
+        self.assertEqual(["PRIMARY_COL1"], config.primary_key_cols)
+        self.assertEqual("ISO-8859-1", config.encoding)
+        self.assertEqual(",", config.separator)
+        self.assertEqual("@", config.custom_line_terminator)
 
     def test_missing_configs_for_region(self) -> None:
         with self.assertRaises(ValueError) as e:
@@ -457,6 +471,45 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
                 self.project_id, "us_xx_raw_data"
             ),
             destination_table_id="tagPipeSeparatedNonUTF8",
+            destination_table_schema=[
+                bigquery.SchemaField("PRIMARY_COL1", "STRING", "NULLABLE"),
+                bigquery.SchemaField("COL2", "STRING", "NULLABLE"),
+                bigquery.SchemaField("COL3", "STRING", "NULLABLE"),
+                bigquery.SchemaField("COL4", "STRING", "NULLABLE"),
+                bigquery.SchemaField("file_id", "INTEGER", "REQUIRED"),
+                bigquery.SchemaField("update_datetime", "DATETIME", "REQUIRED"),
+            ],
+        )
+        self.assertEqual(5, self.num_lines_uploaded)
+        self._check_no_temp_files_remain()
+
+    def test_import_bq_file_with_raw_file_line_terminator(
+        self,
+    ) -> None:
+        file_path = path_for_fixture_file_in_test_gcs_directory(
+            bucket_path=self.ingest_bucket_path,
+            filename="tagCustomLineTerminatorNonUTF8.txt",
+            should_normalize=True,
+            file_type=GcsfsDirectIngestFileType.RAW_DATA,
+        )
+
+        fixture_util.add_direct_ingest_path(
+            self.fs.gcs_file_system, file_path, region_code=self.test_region.region_code
+        )
+
+        self.import_manager.import_raw_file_to_big_query(
+            file_path, self._metadata_for_unprocessed_file_path(file_path)
+        )
+
+        self.assertEqual(1, len(self.fs.gcs_file_system.uploaded_paths))
+        path = one(self.fs.gcs_file_system.uploaded_paths)
+
+        self.mock_big_query_client.insert_into_table_from_cloud_storage_async.assert_called_with(
+            source_uri=path.uri(),
+            destination_dataset_ref=bigquery.DatasetReference(
+                self.project_id, "us_xx_raw_data"
+            ),
+            destination_table_id="tagCustomLineTerminatorNonUTF8",
             destination_table_schema=[
                 bigquery.SchemaField("PRIMARY_COL1", "STRING", "NULLABLE"),
                 bigquery.SchemaField("COL2", "STRING", "NULLABLE"),

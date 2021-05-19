@@ -157,7 +157,11 @@ def collect_file_paths(
 
 
 def create_cache_ingest_file_as_parquet_task(
-    gcs_file: GcsfsFilePath, separator: str, encoding: str, quoting: int
+    gcs_file: GcsfsFilePath,
+    separator: str,
+    encoding: str,
+    quoting: int,
+    custom_line_terminator: Optional[str],
 ) -> None:
     if in_gcp():
         task_manager = (
@@ -167,7 +171,7 @@ def create_cache_ingest_file_as_parquet_task(
         task_manager = DevelopmentAdminPanelDataDiscoveryCloudTaskManager()
 
     task_manager.create_cache_ingest_file_as_parquet_task(
-        gcs_file, separator, encoding, quoting
+        gcs_file, separator, encoding, quoting, custom_line_terminator
     )
 
 
@@ -201,6 +205,7 @@ def prepare_cache(
                     "separator": config.separator,
                     "encoding": config.encoding,
                     "quoting": config.quoting,
+                    "custom_line_terminator": config.custom_line_terminator,
                 }
             )
 

@@ -115,6 +115,7 @@ def update_enum_known_values(
         columns=new_columns,
         encoding=original_config.encoding,
         separator=original_config.separator,
+        custom_line_terminator=original_config.custom_line_terminator,
         ignore_quotes=original_config.ignore_quotes,
         supplemental_order_by_clause=original_config.supplemental_order_by_clause,
         always_historical_export=original_config.always_historical_export,
