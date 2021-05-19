@@ -46,7 +46,7 @@ WITH overdue_lsir AS (
     UNNEST ([compliance.level_1_supervision_location_external_id, 'ALL']) AS level_1_supervision_location_external_id,
     UNNEST ([compliance.level_2_supervision_location_external_id, 'ALL']) AS level_2_supervision_location_external_id,
     UNNEST ([supervising_officer_external_id, 'ALL']) AS supervising_officer_external_id
-    WHERE date_of_supervision > DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 372 DAY)
+    WHERE date_of_supervision > DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 210 DAY)
         AND level_2_supervision_location_external_id IS NOT NULL
     GROUP BY state_code, date_of_supervision, supervising_officer_external_id, level_1_supervision_location_external_id, level_2_supervision_location_external_id
     )
@@ -58,8 +58,8 @@ WITH overdue_lsir AS (
         {vitals_state_specific_district_id},
         {vitals_state_specific_district_name},
         total_overdue,
-        sup_pop.people_under_supervision AS total_under_supervision,
-        SAFE_DIVIDE((sup_pop.people_under_supervision - total_overdue), sup_pop.people_under_supervision) * 100 AS timely_risk_assessment,
+        sup_pop.supervisees_requiring_risk_assessment AS total_requiring_risk_assessment,
+        IFNULL(SAFE_DIVIDE((sup_pop.supervisees_requiring_risk_assessment - total_overdue), sup_pop.supervisees_requiring_risk_assessment), 1) * 100 AS timely_risk_assessment,
     FROM overdue_lsir
     LEFT JOIN `{project_id}.{reference_views_dataset}.supervision_location_ids_to_names` locations
         ON overdue_lsir.state_code = locations.state_code
