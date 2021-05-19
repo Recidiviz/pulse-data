@@ -85,7 +85,7 @@ def generate_entity_documentation() -> bool:
                 "Entity Type",
             ],
             value_matrix=table_matrix,
-            margin=1,
+            margin=0,
         )
         return writer.dumps()
 
