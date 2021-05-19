@@ -1,7 +1,14 @@
 file_tag: ReferralDocket
 file_description: |- 
   This table contains 1 row for each docket number for a referral for an offender.
-primary_key_cols: []
+primary_key_cols:
+  - OffenderID
+  - OrderDate
+  - ReferenceNumber
+  - ConvictionCounty
+  - CaseYear
+  - CaseNumber
+  - CountNumber
 columns:
   - name: OffenderID
     description: |-

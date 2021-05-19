@@ -1,7 +1,9 @@
 file_tag: ReleasePlan
 file_description: |- 
   This table contains one occurrence of each employment plan submitted by the offender for parole consideration.
-primary_key_cols: []
+primary_key_cols:
+  - OffenderID
+  - ParolePlanDate
 columns:
   - name: AddressCity
     description: |-

@@ -1,7 +1,14 @@
 file_tag: SentenceAction
 file_description: |- 
   This table contains one occurrence for sentence action that is posted for the specified sentence.
-primary_key_cols: []
+primary_key_cols:
+  - OffenderID
+  - ConvictionCounty
+  - CaseYear
+  - CaseNumber
+  - CountNumber
+  - ActionDate
+  - SequenceNumber
 columns:
   - name: OffenderID
     description: |-

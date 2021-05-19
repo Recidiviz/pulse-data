@@ -1,7 +1,12 @@
 file_tag: PardonCommutation
 file_description: |- 
   This table contains one occurrance for each board member's recommendation for clemency for the offender.
-primary_key_cols: []
+primary_key_cols:
+  - Offender
+  - CountyofConviction
+  - CaseYear
+  - CaseNumber
+  - CountNumber
 columns:
   - name: Offender
     description: |-

@@ -1,7 +1,11 @@
 file_tag: ReferralDebtandAsset
 file_description: |- 
   This table contains one row for each debt or asset for a referral for an offender.
-primary_key_cols: []
+primary_key_cols:
+  - OffenderID
+  - OrderDate
+  - ReferralSequenceNumber
+  - SequenceNumber
 columns:
   - name: OffenderID
     description: |-
