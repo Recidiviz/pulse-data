@@ -66,6 +66,7 @@ SUPERVISION_SUCCESS_BY_MONTH_VIEW_QUERY_TEMPLATE = """
         *,
         ROUND(IEEE_DIVIDE(successful_termination_count, projected_completion_count), 2) as success_rate
     FROM success_counts
+    WHERE {state_specific_supervision_type_inclusion_filter}
     ORDER BY state_code, projected_year, projected_month, supervision_type
     """
 
@@ -88,6 +89,7 @@ SUPERVISION_SUCCESS_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     ),
     district_dimension=bq_utils.unnest_district(),
     thirty_six_month_filter=bq_utils.thirty_six_month_filter(),
+    state_specific_supervision_type_inclusion_filter=state_specific_query_strings.state_specific_supervision_type_inclusion_filter(),
 )
 
 if __name__ == "__main__":
