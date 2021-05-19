@@ -491,7 +491,7 @@ class CalculationDocumentationGenerator:
         ]
 
         writer = MarkdownTableWriter(
-            headers=headers, value_matrix=table_matrix, margin=1
+            headers=headers, value_matrix=table_matrix, margin=0
         )
         return metrics_header + writer.dumps()
 
@@ -661,7 +661,7 @@ class CalculationDocumentationGenerator:
                 for metric_info in sorted_state_metric_calculations[state_name]
             ]
             writer = MarkdownTableWriter(
-                headers=headers, value_matrix=table_matrix, margin=1
+                headers=headers, value_matrix=table_matrix, margin=0
             )
             return writer.dumps()
         return "_This state has no regularly calculated metrics._"
