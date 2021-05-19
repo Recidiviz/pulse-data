@@ -34,10 +34,14 @@ SUPERVISION_POPULATION_BY_PO_BY_DAY_QUERY_TEMPLATE = """
         date_of_supervision,
         supervising_district_external_id,
         supervising_officer_external_id,
-        COUNT(DISTINCT(person_id)) AS people_under_supervision
+        COUNT(DISTINCT(person_id)) AS people_under_supervision,
+        -- TODO(#7470): Expand contact population here once we process DIVERSION
+        COUNT(DISTINCT(IF(supervision_level in ('MINIMUM', 'MEDIUM', 'MAXIMUM'), person_id, null))) AS supervisees_requiring_contact,
+        COUNT(DISTINCT(IF(supervision_level in ('MINIMUM', 'MEDIUM', 'MAXIMUM'), person_id, null))) AS supervisees_requiring_risk_assessment,
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`,
     UNNEST ([supervising_district_external_id, 'ALL']) AS supervising_district_external_id,
     UNNEST ([supervising_officer_external_id, 'ALL']) AS supervising_officer_external_id
+    WHERE date_of_supervision > DATE_SUB(CURRENT_DATE(), INTERVAL 217 DAY) -- 217 = 210 days back for avgs + 7-day buffer for late data
     GROUP BY state_code, date_of_supervision, supervising_district_external_id, supervising_officer_external_id
     """
 
