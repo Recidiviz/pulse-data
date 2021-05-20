@@ -161,7 +161,8 @@ def add_case_triage_routes(bp: Blueprint) -> None:
                     {
                         "personExternalId": res.person_external_id,
                         "officerExternalId": res.officer_external_id,
-                        "otherText": res.comment,
+                        "actionType": res.action_type,
+                        "comment": res.comment,
                         "timestamp": str(res.action_ts),
                     }
                     for res in results
