@@ -294,13 +294,16 @@ class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
             Tuple[str, ...], Dict[str, int]
         ] = {}
 
+        row: Row
         for row in query_job:
             num_rows += 1
             unique_string_values: Set[str] = set()
 
             # TODO(#7510): Allow the columns used here to be explicitly configured.
             partition_key = tuple(
-                str(row[column]) for column in row if column not in comparison_columns
+                str(row.get(column))
+                for column in row.keys()
+                if column not in comparison_columns
             )
             if partition_key not in non_null_counts_per_column_per_partition:
                 non_null_counts_per_column_per_partition[partition_key] = {
