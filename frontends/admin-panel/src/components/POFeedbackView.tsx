@@ -44,9 +44,14 @@ const POFeedbackView = (): JSX.Element => {
       dataIndex: "personExternalId",
     },
     {
-      title: "Other Text",
-      key: "otherText",
-      dataIndex: "otherText",
+      title: "Action Type",
+      key: "actionType",
+      dataIndex: "actionType",
+    },
+    {
+      title: "Comment",
+      key: "comment",
+      dataIndex: "comment",
     },
     {
       title: "Timestamp",
