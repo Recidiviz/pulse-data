@@ -78,6 +78,16 @@ latest_employment AS (
     ) employments
     WHERE row_num = 1
 ),
+latest_periods AS (
+  SELECT
+    person_id,
+    state_code
+  FROM
+    `{project_id}.state.state_supervision_period`
+  WHERE
+    termination_date IS NULL
+    AND admission_reason != 'ABSCONSION'
+),
 -- TODO(#5943): Make ideal_query the main query body.
 ideal_query AS (
 SELECT
@@ -87,6 +97,9 @@ FROM
 LEFT JOIN
   `{project_id}.state.state_person`
 USING (person_id, gender, state_code)
+INNER JOIN
+  latest_periods
+USING (person_id, state_code)
 -- TODO(#5463): When we ingest employment info, we should replace this joined table with the correct table.
 LEFT JOIN
   latest_employment
