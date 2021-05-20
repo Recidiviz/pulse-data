@@ -52,6 +52,7 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
           IF(latest_supervision_downgrade_date IS NOT NULL, STRUCT(person_id, full_name, latest_supervision_downgrade_date, previous_supervision_level, supervision_level), NULL)
           IGNORE NULLS
         ) AS supervision_downgrade_clients,
+        COUNT(DISTINCT IF(latest_supervision_downgrade_date IS NOT NULL, person_id, NULL)) AS supervision_downgrades,
         COUNT(DISTINCT IF(revocation_violation_type IN ('TECHNICAL'), person_id, NULL)) AS technical_revocations,
         COUNT(DISTINCT IF(revocation_violation_type IN ('NEW_CRIME'), person_id, NULL)) AS crime_revocations,
         ARRAY_AGG(
@@ -93,7 +94,7 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
         district,
         AVG(pos_discharges) AS avg_pos_discharges,
         AVG(earned_discharges) AS avg_earned_discharges,
-        AVG(ARRAY_LENGTH(supervision_downgrade_clients)) AS avg_supervision_downgrades,
+        AVG(supervision_downgrades) AS avg_supervision_downgrades,
         AVG(technical_revocations) AS avg_technical_revocations,
         AVG(crime_revocations) AS avg_crime_revocations,
         AVG(absconsions) AS avg_absconsions
@@ -123,7 +124,9 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
       district_avg.avg_pos_discharges AS pos_discharges_district_average,
       state_avg.avg_pos_discharges AS pos_discharges_state_average,
       report_month.supervision_downgrade_clients,
+      report_month.supervision_downgrades,
       IFNULL(last_month.supervision_downgrade_clients, []) AS supervision_downgrade_clients_last_month,
+      IFNULL(last_month.supervision_downgrades, 0) AS supervision_downgrades_last_month,
       district_avg.avg_supervision_downgrades AS supervision_downgrades_district_average,
       state_avg.avg_supervision_downgrades AS supervision_downgrades_state_average,
       report_month.earned_discharges_clients,
