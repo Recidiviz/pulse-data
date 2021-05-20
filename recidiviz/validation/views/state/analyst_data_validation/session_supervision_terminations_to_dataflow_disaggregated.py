@@ -40,19 +40,29 @@ SESSION_SUPERVISION_TERMINATIONS_TO_DATAFLOW_DISAGGREGATED_DESCRIPTION = """
 
 SESSION_SUPERVISION_TERMINATIONS_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
     /*{description}*/
-    WITH dataflow_session_ends AS 
+    WITH dataflow AS 
     (
     SELECT 
         * EXCEPT(end_date),
-        DATE_SUB(end_date, INTERVAL 1 DAY) AS end_date
+        DATE_SUB(end_date, INTERVAL 1 DAY) AS end_date,
+        'SUPERVISION' AS compartment_level_0,
     FROM `{project_id}.{analyst_dataset}.compartment_session_end_reasons_materialized`
     WHERE end_reason NOT IN ('TRANSFER_WITHIN_STATE', 'INTERNAL_UNKNOWN', 'EXTERNAL_UNKNOWN')
+        AND compartment_level_1 IN ('SUPERVISION','SUPERVISION_OUT_OF_STATE')
+    )
+    ,
+    sessions AS
+    (
+    SELECT 
+        *,
+        'SUPERVISION' AS compartment_level_0,
+    FROM `{project_id}.{analyst_dataset}.compartment_sessions_materialized` 
+    WHERE compartment_level_1 IN ('SUPERVISION','SUPERVISION_OUT_OF_STATE')
     )
     SELECT
         person_id,
         state_code,
         end_date,
-        compartment_level_1,
         sessions.session_id,
         dataflow.end_reason,
         CASE WHEN sessions.person_id IS NOT NULL THEN 1 ELSE 0 END as session_end,
@@ -61,11 +71,10 @@ SESSION_SUPERVISION_TERMINATIONS_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
             THEN 1 ELSE 0 END AS dataflow_termination,
         CASE WHEN dataflow.end_reason IS NOT NULL
             AND sessions.person_id IS NOT NULL THEN 1 ELSE 0 END AS session_termination,
-    FROM `{project_id}.{analyst_dataset}.compartment_sessions_materialized` sessions
-    FULL OUTER JOIN dataflow_session_ends dataflow
-        USING(person_id, end_date, state_code, compartment_level_1)
+    FROM sessions
+    FULL OUTER JOIN dataflow
+        USING(person_id, end_date, state_code, compartment_level_0)
     WHERE end_date IS NOT NULL
-        AND compartment_level_1 = 'SUPERVISION'
         AND EXTRACT(YEAR FROM end_date) > EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 20 YEAR))
     ORDER BY state_code, end_date
     """
