@@ -55,9 +55,7 @@ class TestCaseUpdatePresenter(TestCase):
         affect the values we ultimately get from this."""
         dismiss_actions = [
             CaseUpdateActionType.NOT_ON_CASELOAD,
-            CaseUpdateActionType.DEPRECATED__INFORMATION_DOESNT_MATCH_OMS,
-            CaseUpdateActionType.DEPRECATED__FILED_REVOCATION_OR_VIOLATION,
-            CaseUpdateActionType.DEPRECATED__OTHER_DISMISSAL,
+            CaseUpdateActionType.CURRENTLY_IN_CUSTODY,
         ]
 
         case_updates = [

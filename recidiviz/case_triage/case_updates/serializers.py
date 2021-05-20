@@ -44,9 +44,6 @@ _ACTION_TYPE_TO_MAPPINGS: Dict[CaseUpdateActionType, Dict[str, str]] = {
     CaseUpdateActionType.INCORRECT_SUPERVISION_LEVEL_DATA: supervision_level_mappings,
     CaseUpdateActionType.NOT_ON_CASELOAD: {},
     CaseUpdateActionType.CURRENTLY_IN_CUSTODY: {},
-    CaseUpdateActionType.DEPRECATED__INFORMATION_DOESNT_MATCH_OMS: {},
-    CaseUpdateActionType.DEPRECATED__FILED_REVOCATION_OR_VIOLATION: {},
-    CaseUpdateActionType.DEPRECATED__OTHER_DISMISSAL: {},
 }
 
 
