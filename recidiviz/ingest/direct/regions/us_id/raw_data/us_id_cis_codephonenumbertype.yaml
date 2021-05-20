@@ -1,0 +1,20 @@
+file_tag: cis_codephonenumbertype
+file_description: |-
+  Provides text descriptions for phone number type.
+primary_key_cols:
+  - id
+columns:
+  - name: id
+    description: |-
+      ID of this row
+  - name: codedescription
+    description: |-
+      Plain language description of the phone number type
+  - name: active
+    description: |-
+      Whether or not the phone number type is active
+    known_values:
+      - value: T
+        description: currently active
+      - value: F
+        description: has been deprecated
