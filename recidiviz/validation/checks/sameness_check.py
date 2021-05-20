@@ -18,14 +18,16 @@
 """Models a sameness check, which identifies a validation issue by observing that values in a configured set of
 columns are not the same."""
 from enum import Enum
-from typing import List, Set
+from typing import Dict, Generic, List, Optional, Set, Tuple, TypeVar
 
 import attr
 from google.cloud.bigquery import QueryJob
+from google.cloud.bigquery.table import Row
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.validation.checks.validation_checker import ValidationChecker
 from recidiviz.validation.validation_models import (
+    DataValidationJobResultDetails,
     ValidationCheckType,
     DataValidationCheck,
     DataValidationJob,
@@ -37,10 +39,12 @@ EMPTY_STRING_VALUE = "EMPTY_STRING_VALUE"
 
 
 class SamenessDataValidationCheckType(Enum):
-    # For comparing integers and/or floats
+    # Used for comparing integer and/or float columns. The validation fails if the two
+    # numbers differ by a percentage larger than the threshold for any single row.
     NUMBERS = "NUMBERS"
 
-    # For comparing strings
+    # Used for comparing string columns. The validation fails if the percentage of rows
+    # for which the string columns are not equal is more than the threshold.
     STRINGS = "STRINGS"
 
 
@@ -99,6 +103,89 @@ class SamenessDataValidationCheck(DataValidationCheck):
         return attr.evolve(self, max_allowed_error=max_allowed_error)
 
 
+RowValueType = TypeVar("RowValueType", float, str)
+
+
+@attr.s(frozen=True, kw_only=True)
+class ResultRow(Generic[RowValueType]):
+    # Values from the non-comparison columns
+    label_values: Tuple[str, ...] = attr.ib()
+
+    # Values from the comparison columns
+    comparison_values: Tuple[RowValueType, ...] = attr.ib()
+
+
+@attr.s(frozen=True, kw_only=True)
+class SamenessStringsValidationResultDetails(DataValidationJobResultDetails):
+    """Stores result details for a sameness strings validation check."""
+
+    num_error_rows: int = attr.ib()
+    total_num_rows: int = attr.ib()
+    max_allowed_error: float = attr.ib()
+
+    # This field is not used directly in checking for failures but provides additional
+    # context for analyzing results.
+    #
+    # For each unique set of label column values in the results, this contains the
+    # number of non-null values for each comparison column. For most checks this will
+    # have some logical meaning, such as the internal and external populations for a
+    # single day. E.g. {
+    #     ("US_XX", "2021-01-31"): {"internal_id": 3, "external_id": 3},
+    #     ("US_XX", "2020-12-31"): {"internal_id": 2, "external_id": 3},
+    # }
+    non_null_counts_per_column_per_partition: Dict[
+        Tuple[str, ...], Dict[str, int]
+    ] = attr.ib()
+
+    @property
+    def error_rate(self) -> float:
+        return (
+            (self.num_error_rows / self.total_num_rows)
+            if self.total_num_rows > 0
+            else 0.0
+        )
+
+    def was_successful(self) -> bool:
+        return self.error_rate <= self.max_allowed_error
+
+    def failure_description(self) -> Optional[str]:
+        if self.was_successful():
+            return None
+        return (
+            f"{self.num_error_rows} out of {self.total_num_rows} row(s) did not contain matching "
+            f"strings. The acceptable margin of error is only {self.max_allowed_error}, "
+            f"but the validation returned an error rate of {round(self.error_rate, 4)}."
+        )
+
+
+@attr.s(frozen=True, kw_only=True)
+class SamenessNumbersValidationResultDetails(DataValidationJobResultDetails):
+    # List of failed rows, where each entry is a tuple containing the row and the amount
+    # of error for that row.
+    failed_rows: List[Tuple[ResultRow[float], float]] = attr.ib()
+    max_allowed_error: float = attr.ib()
+
+    @property
+    def highest_error(self) -> Optional[float]:
+        return (
+            round(max(row[1] for row in self.failed_rows), 4)
+            if self.failed_rows
+            else None
+        )
+
+    def was_successful(self) -> bool:
+        return not self.failed_rows
+
+    def failure_description(self) -> Optional[str]:
+        if self.was_successful():
+            return None
+        return (
+            f"{len(self.failed_rows)} row(s) had unacceptable margins of error. The "
+            f"acceptable margin of error is only {self.max_allowed_error}, but the "
+            f"validation returned rows with errors as high as {self.highest_error}."
+        )
+
+
 class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
     """Performs the validation check for sameness check types."""
 
@@ -139,25 +226,29 @@ class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
     ) -> DataValidationJobResult:
         """Performs the validation check for sameness check types, where the values being compares are numbers (either
         ints or floats)."""
-        was_successful = True
-        failed_rows = []
+        failed_rows: List[Tuple[ResultRow[float], float]] = []
 
+        row: Row
         for row in query_job:
+            label_values: List[str] = []
             comparison_values: List[float] = []
-            for column in comparison_columns:
-                if row[column] is None:
-                    raise ValueError(
-                        f"Unexpected None value for column [{column}] in validation "
-                        f"[{validation_job.validation.validation_name}]."
-                    )
-                try:
-                    float_value = float(row[column])
-                except ValueError as e:
-                    raise ValueError(
-                        f"Could not cast value [{row[column]}] in column [{column}] to a float in validation "
-                        f"[{validation_job.validation.validation_name}]."
-                    ) from e
-                comparison_values.append(float_value)
+            for column, value in row.items():
+                if column in comparison_columns:
+                    if value is None:
+                        raise ValueError(
+                            f"Unexpected None value for column [{column}] in validation "
+                            f"[{validation_job.validation.validation_name}]."
+                        )
+                    try:
+                        float_value = float(value)
+                    except ValueError as e:
+                        raise ValueError(
+                            f"Could not cast value [{value}] in column [{column}] to a float in validation "
+                            f"[{validation_job.validation.validation_name}]."
+                        ) from e
+                    comparison_values.append(float_value)
+                else:
+                    label_values.append(str(value))
 
             max_value = max(comparison_values)
             min_value = min(comparison_values)
@@ -172,22 +263,21 @@ class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
 
             error = (max_value - min_value) / max_value
             if error > max_allowed_error:
-                was_successful = False
-                failed_rows.append(error)
+                failed_rows.append(
+                    (
+                        ResultRow(
+                            label_values=tuple(label_values),
+                            comparison_values=tuple(comparison_values),
+                        ),
+                        error,
+                    )
+                )
 
-        highest_error = round(max(failed_rows), 4) if failed_rows else None
-
-        description = (
-            f"{len(failed_rows)} row(s) had unacceptable margins of error. The acceptable "
-            f"margin of error is only {max_allowed_error}, but the validation returned rows with errors "
-            f"as high as {highest_error}."
-            if not was_successful
-            else None
-        )
         return DataValidationJobResult(
             validation_job=validation_job,
-            was_successful=was_successful,
-            failure_description=description,
+            result_details=SamenessNumbersValidationResultDetails(
+                failed_rows=failed_rows, max_allowed_error=max_allowed_error
+            ),
         )
 
     @staticmethod
@@ -200,16 +290,32 @@ class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
         """Performs the validation check for sameness check types, where the values being compared are strings."""
         num_errors = 0
         num_rows = 0
+        non_null_counts_per_column_per_partition: Dict[
+            Tuple[str, ...], Dict[str, int]
+        ] = {}
 
         for row in query_job:
             num_rows += 1
             unique_string_values: Set[str] = set()
+
+            # TODO(#7510): Allow the columns used here to be explicitly configured.
+            partition_key = tuple(
+                str(row[column]) for column in row if column not in comparison_columns
+            )
+            if partition_key not in non_null_counts_per_column_per_partition:
+                non_null_counts_per_column_per_partition[partition_key] = {
+                    column: 0 for column in comparison_columns
+                }
+            non_null_counts_per_column = non_null_counts_per_column_per_partition[
+                partition_key
+            ]
 
             for column in comparison_columns:
                 value = row[column]
                 if value is None:
                     unique_string_values.add(EMPTY_STRING_VALUE)
                 elif isinstance(value, str):
+                    non_null_counts_per_column[column] += 1
                     unique_string_values.add(value)
                 else:
                     raise ValueError(
@@ -222,18 +328,12 @@ class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
                 # Increment the number of errors
                 num_errors += 1
 
-        error_rate = (num_errors / num_rows) if num_rows > 0 else 0.0
-        was_successful = error_rate <= max_allowed_error
-
-        description = (
-            f"{num_errors} out of {num_rows} row(s) did not contain matching strings. The acceptable "
-            f"margin of error is only {max_allowed_error}, but the validation returned an error rate of "
-            f"{error_rate}."
-            if not was_successful
-            else None
-        )
         return DataValidationJobResult(
             validation_job=validation_job,
-            was_successful=was_successful,
-            failure_description=description,
+            result_details=SamenessStringsValidationResultDetails(
+                num_error_rows=num_errors,
+                total_num_rows=num_rows,
+                max_allowed_error=max_allowed_error,
+                non_null_counts_per_column_per_partition=non_null_counts_per_column_per_partition,
+            ),
         )

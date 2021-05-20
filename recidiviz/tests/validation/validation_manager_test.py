@@ -17,8 +17,9 @@
 
 """Tests for validation/validation_manager.py."""
 
-from typing import List, Set
+from typing import List, Optional, Set
 from unittest import TestCase
+import attr
 
 from flask import Flask
 from mock import patch, call, MagicMock
@@ -50,6 +51,7 @@ from recidiviz.validation.validation_manager import (
 from recidiviz.validation.validation_models import (
     DataValidationJob,
     DataValidationJobResult,
+    DataValidationJobResultDetails,
     ValidationCheckType,
 )
 from recidiviz.calculator.query.experiments import (
@@ -115,6 +117,17 @@ def get_test_validations() -> List[DataValidationJob]:
     ]
 
 
+@attr.s(frozen=True, kw_only=True)
+class FakeValidationResultDetails(DataValidationJobResultDetails):
+    passed: bool = attr.ib()
+
+    def was_successful(self) -> bool:
+        return self.passed
+
+    def failure_description(self) -> Optional[str]:
+        return None if self.passed else "FAIL"
+
+
 _API_RESPONSE_IF_NO_FAILURES = "Failed validations:\n"
 
 
@@ -152,8 +165,7 @@ class TestHandleRequest(TestCase):
         mock_fetch_validations.return_value = self._TEST_VALIDATIONS
         mock_run_job.return_value = DataValidationJobResult(
             validation_job=self._TEST_VALIDATIONS[0],
-            was_successful=True,
-            failure_description=None,
+            result_details=FakeValidationResultDetails(passed=True),
         )
 
         headers = {"X-Appengine-Cron": "test-cron"}
@@ -183,19 +195,16 @@ class TestHandleRequest(TestCase):
         mock_fetch_validations.return_value = self._TEST_VALIDATIONS
         first_failure = DataValidationJobResult(
             validation_job=self._TEST_VALIDATIONS[1],
-            was_successful=False,
-            failure_description="Oh no",
+            result_details=FakeValidationResultDetails(passed=False),
         )
         second_failure = DataValidationJobResult(
             validation_job=self._TEST_VALIDATIONS[2],
-            was_successful=False,
-            failure_description="How awful",
+            result_details=FakeValidationResultDetails(passed=False),
         )
         mock_run_job.side_effect = [
             DataValidationJobResult(
                 validation_job=self._TEST_VALIDATIONS[0],
-                was_successful=True,
-                failure_description=None,
+                result_details=FakeValidationResultDetails(passed=True),
             ),
             first_failure,
             second_failure,
@@ -232,26 +241,22 @@ class TestHandleRequest(TestCase):
 
         first_failure = DataValidationJobResult(
             validation_job=self._TEST_VALIDATIONS[1],
-            was_successful=False,
-            failure_description="Oh no",
+            result_details=FakeValidationResultDetails(passed=False),
         )
         second_failure = DataValidationJobResult(
             validation_job=self._TEST_VALIDATIONS[2],
-            was_successful=False,
-            failure_description="How awful",
+            result_details=FakeValidationResultDetails(passed=False),
         )
         mock_run_job.side_effect = [
             DataValidationJobResult(
                 validation_job=self._TEST_VALIDATIONS[0],
-                was_successful=True,
-                failure_description=None,
+                result_details=FakeValidationResultDetails(passed=True),
             ),
             first_failure,
             second_failure,
             DataValidationJobResult(
                 validation_job=self._TEST_VALIDATIONS[3],
-                was_successful=True,
-                failure_description=None,
+                result_details=FakeValidationResultDetails(passed=True),
             ),
         ]
 
