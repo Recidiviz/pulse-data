@@ -18,11 +18,14 @@
 """Models an existence check, which identifies a validation issue by observing that there is any row returned
 in a given validation result set."""
 
+from typing import Optional
 import attr
+import more_itertools
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.validation.checks.validation_checker import ValidationChecker
 from recidiviz.validation.validation_models import (
+    DataValidationJobResultDetails,
     ValidationCheckType,
     DataValidationCheck,
     DataValidationJob,
@@ -57,6 +60,23 @@ class ExistenceDataValidationCheck(DataValidationCheck):
         return attr.evolve(self, num_allowed_rows=num_allowed_rows)
 
 
+@attr.s(frozen=True, kw_only=True)
+class ExistenceValidationResultDetails(DataValidationJobResultDetails):
+    num_invalid_rows: int = attr.ib()
+    num_allowed_rows: int = attr.ib()
+
+    def was_successful(self) -> bool:
+        return self.num_invalid_rows <= self.num_allowed_rows
+
+    def failure_description(self) -> Optional[str]:
+        if self.was_successful():
+            return None
+        return (
+            f"Found [{self.num_invalid_rows}] invalid rows, more than the allowed "
+            f"[{self.num_allowed_rows}]"
+        )
+
+
 class ExistenceValidationChecker(ValidationChecker[ExistenceDataValidationCheck]):
     """Performs the validation check for existence check types."""
 
@@ -64,23 +84,12 @@ class ExistenceValidationChecker(ValidationChecker[ExistenceDataValidationCheck]
     def run_check(
         cls, validation_job: DataValidationJob[ExistenceDataValidationCheck]
     ) -> DataValidationJobResult:
-        was_successful = True
-        invalid_rows = 0
         query_job = BigQueryClientImpl().run_query_async(validation_job.query_str(), [])
-
-        # We need to iterate over the collection to initialize the query result set
-        for _ in query_job:
-            invalid_rows += 1
-            if validation_job.validation.num_allowed_rows < invalid_rows:
-                was_successful = False
-
-        description = None
-        if not was_successful:
-            num_allowed_rows = validation_job.validation.num_allowed_rows
-            description = f"Found [{invalid_rows}] invalid rows, though [{num_allowed_rows}] were expected"
 
         return DataValidationJobResult(
             validation_job=validation_job,
-            was_successful=was_successful,
-            failure_description=description,
+            result_details=ExistenceValidationResultDetails(
+                num_invalid_rows=more_itertools.ilen(query_job),
+                num_allowed_rows=validation_job.validation.num_allowed_rows,
+            ),
         )

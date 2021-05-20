@@ -25,6 +25,7 @@ from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.validation.checks.existence_check import (
     ExistenceValidationChecker,
     ExistenceDataValidationCheck,
+    ExistenceValidationResultDetails,
 )
 from recidiviz.validation.validation_models import (
     ValidationCheckType,
@@ -70,7 +71,10 @@ class TestExistenceValidationChecker(TestCase):
         self.assertEqual(
             result,
             DataValidationJobResult(
-                validation_job=job, was_successful=True, failure_description=None
+                validation_job=job,
+                result_details=ExistenceValidationResultDetails(
+                    num_invalid_rows=0, num_allowed_rows=0
+                ),
             ),
         )
 
@@ -98,8 +102,9 @@ class TestExistenceValidationChecker(TestCase):
             result,
             DataValidationJobResult(
                 validation_job=job,
-                was_successful=False,
-                failure_description="Found [2] invalid rows, though [0] were expected",
+                result_details=ExistenceValidationResultDetails(
+                    num_invalid_rows=2, num_allowed_rows=0
+                ),
             ),
         )
 
@@ -127,6 +132,40 @@ class TestExistenceValidationChecker(TestCase):
         self.assertEqual(
             result,
             DataValidationJobResult(
-                validation_job=job, was_successful=True, failure_description=None
+                validation_job=job,
+                result_details=ExistenceValidationResultDetails(
+                    num_invalid_rows=2, num_allowed_rows=2
+                ),
             ),
+        )
+
+
+class TestExistenceValidationResultDetails(TestCase):
+    """Tests for ExistenceValidationResultDetails."""
+
+    def success(self) -> None:
+        result = ExistenceValidationResultDetails(
+            num_invalid_rows=0, num_allowed_rows=0
+        )
+
+        self.assertTrue(result.was_successful())
+        self.assertIsNone(result.failure_description())
+
+    def success_some_invalid(self) -> None:
+        result = ExistenceValidationResultDetails(
+            num_invalid_rows=2, num_allowed_rows=2
+        )
+
+        self.assertTrue(result.was_successful())
+        self.assertIsNone(result.failure_description())
+
+    def failure(self) -> None:
+        result = ExistenceValidationResultDetails(
+            num_invalid_rows=2, num_allowed_rows=0
+        )
+
+        self.assertFalse(result.was_successful())
+        self.assertEqual(
+            result.failure_description(),
+            "Found [2] invalid rows, though [0] were expected",
         )
