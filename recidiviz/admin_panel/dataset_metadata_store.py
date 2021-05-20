@@ -166,7 +166,7 @@ class DatasetMetadataCountsStore(AdminPanelStore):
                         and result.placeholder_count > max_state_placeholder[state_code]
                     ):
                         max_state_placeholder[state_code] = result.placeholder_count
-            for state_code in max_state_placeholder.keys():
+            for state_code in max_state_total.keys():
                 state_placeholder: Optional[int] = None
                 if max_state_placeholder[state_code] >= 0:
                     state_placeholder = max_state_placeholder[state_code]
@@ -198,7 +198,7 @@ class DatasetMetadataCountsStore(AdminPanelStore):
                     if result.placeholder_count is not None:
                         has_placeholders = True
                         placeholder_count[state_code] += result.placeholder_count
-            for state_code in placeholder_count.keys():
+            for state_code in total_count.keys():
                 results[col][state_code] = DatasetMetadataCounts(
                     total_count=total_count[state_code],
                     placeholder_count=(
