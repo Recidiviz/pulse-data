@@ -76,9 +76,6 @@ _CASE_UPDATE_ACTION_TYPE_TO_PROGRESS_CHECKER: Dict[
     CaseUpdateActionType.INCORRECT_SUPERVISION_LEVEL_DATA: _in_progress_until_changed,
     CaseUpdateActionType.NOT_ON_CASELOAD: _always_in_progress,
     CaseUpdateActionType.CURRENTLY_IN_CUSTODY: _always_in_progress,
-    CaseUpdateActionType.DEPRECATED__INFORMATION_DOESNT_MATCH_OMS: _always_in_progress,
-    CaseUpdateActionType.DEPRECATED__FILED_REVOCATION_OR_VIOLATION: _always_in_progress,
-    CaseUpdateActionType.DEPRECATED__OTHER_DISMISSAL: _always_in_progress,
 }
 
 
