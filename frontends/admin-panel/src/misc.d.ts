@@ -45,6 +45,7 @@ interface DataFreshnessResult {
 interface POFeedbackResponse {
   officerExternalId: string;
   personExternalId: string;
-  otherText: string;
+  actionType: string;
+  comment: string;
   timestamp: string;
 }
