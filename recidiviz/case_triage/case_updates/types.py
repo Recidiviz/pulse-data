@@ -43,10 +43,6 @@ class CaseUpdateActionType(Enum):
     NOT_ON_CASELOAD = "NOT_ON_CASELOAD"
     CURRENTLY_IN_CUSTODY = "CURRENTLY_IN_CUSTODY"
 
-    DEPRECATED__INFORMATION_DOESNT_MATCH_OMS = "INFORMATION_DOESNT_MATCH_OMS"
-    DEPRECATED__FILED_REVOCATION_OR_VIOLATION = "FILED_REVOCATION_OR_VIOLATION"
-    DEPRECATED__OTHER_DISMISSAL = "OTHER_DISMISSAL"
-
 
 class CaseUpdateMetadataKeys:
     LAST_EMPLOYER = "last_employer"
@@ -56,7 +52,7 @@ class CaseUpdateMetadataKeys:
 
 @attr.s
 class CaseActionVersionData:
-    """ Contains logic for denormalizing and serializing a version of client data """
+    """Contains logic for denormalizing and serializing a version of client data"""
 
     last_employer: Optional[str] = attr.ib(default=None)
     last_recorded_date: Optional[date] = attr.ib(default=None)

@@ -130,9 +130,9 @@ class TestCaseTriageAPIRoutes(TestCase):
         self.case_update_3 = generate_fake_case_update(
             self.client_1,
             self.officer.external_id,
-            action_type=CaseUpdateActionType.DEPRECATED__OTHER_DISMISSAL,
+            action_type=CaseUpdateActionType.NOT_ON_CASELOAD,
             last_version=serialize_client_case_version(
-                CaseUpdateActionType.DEPRECATED__OTHER_DISMISSAL, self.client_1
+                CaseUpdateActionType.NOT_ON_CASELOAD, self.client_1
             ).to_json(),
         )
         self.client_2.most_recent_assessment_date = date(2022, 2, 2)
@@ -194,7 +194,7 @@ class TestCaseTriageAPIRoutes(TestCase):
                 client_1_response["caseUpdates"],
                 [
                     CaseUpdateActionType.COMPLETED_ASSESSMENT.value,
-                    CaseUpdateActionType.DEPRECATED__OTHER_DISMISSAL.value,
+                    CaseUpdateActionType.NOT_ON_CASELOAD.value,
                 ],
             )
 
@@ -276,7 +276,7 @@ class TestCaseTriageAPIRoutes(TestCase):
                 "/case_updates",
                 json={
                     "personExternalId": "nonexistent-person",
-                    "actionType": CaseUpdateActionType.DEPRECATED__OTHER_DISMISSAL.value,
+                    "actionType": CaseUpdateActionType.NOT_ON_CASELOAD.value,
                 },
             )
 
@@ -328,7 +328,7 @@ class TestCaseTriageAPIRoutes(TestCase):
             case_update = generate_fake_case_update(
                 self.client_2,
                 self.officer.external_id,
-                action_type=CaseUpdateActionType.DEPRECATED__OTHER_DISMISSAL,
+                action_type=CaseUpdateActionType.NOT_ON_CASELOAD,
                 comment="They are currently in jail.",
             )
             self.session.add(case_update)
@@ -339,7 +339,7 @@ class TestCaseTriageAPIRoutes(TestCase):
                 self.client_2.person_external_id
             )
             self.assertIn(
-                CaseUpdateActionType.DEPRECATED__OTHER_DISMISSAL.value,
+                CaseUpdateActionType.NOT_ON_CASELOAD.value,
                 client["caseUpdates"],
             )
 
@@ -351,7 +351,7 @@ class TestCaseTriageAPIRoutes(TestCase):
                 self.client_2.person_external_id
             )
             self.assertNotIn(
-                CaseUpdateActionType.DEPRECATED__OTHER_DISMISSAL.value,
+                CaseUpdateActionType.NOT_ON_CASELOAD.value,
                 client["caseUpdates"],
             )
 
