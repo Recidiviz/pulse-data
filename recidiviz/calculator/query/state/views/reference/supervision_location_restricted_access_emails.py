@@ -39,7 +39,7 @@ SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_QUERY_TEMPLATE = """
             'US_MO' AS state_code,
             EMAIL AS restricted_user_email,
             # TODO(#7413) Remove allowed_level_1_supervision_location_ids once FE is no longer using it
-            ARRAY_AGG(DISTINCT DISTRICT) AS allowed_level_1_supervision_location_ids,
+            STRING_AGG(DISTINCT DISTRICT, ',') AS allowed_level_1_supervision_location_ids,
             ARRAY_AGG(DISTINCT DISTRICT) AS allowed_supervision_location_ids,
             'level_1_supervision_location' as allowed_supervision_location_level,
             'level_1_access_role' as internal_role
@@ -52,7 +52,7 @@ SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_QUERY_TEMPLATE = """
             'US_ID' AS state_code,
             CONCAT(LOWER(empl_sdesc), '@idoc.idaho.gov') AS restricted_user_email,
             # TODO(#7413) Remove allowed_level_1_supervision_location_ids once FE is no longer using it
-            ARRAY<string>[] AS allowed_level_1_supervision_location_ids,
+            '' AS allowed_level_1_supervision_location_ids,
             ARRAY<string>[] AS allowed_supervision_location_ids,
             'statewide' as allowed_supervision_location_level,
             CASE
