@@ -56,7 +56,6 @@ export const CaseCardIconContainer = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
 `;
 
 export const CaseCardInfo = styled.div`
