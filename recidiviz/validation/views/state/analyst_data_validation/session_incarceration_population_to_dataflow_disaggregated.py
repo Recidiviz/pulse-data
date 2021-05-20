@@ -69,7 +69,7 @@ SESSION_INCARCERATION_POPULATION_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
     FROM `{project_id}.{analyst_dataset}.compartment_sessions_materialized` sessions
     JOIN population_dates 
         ON population_dates.population_date BETWEEN sessions.start_date AND COALESCE(sessions.end_date, '9999-01-01')
-    WHERE sessions.compartment_level_1 = 'INCARCERATION'
+    WHERE sessions.compartment_level_1 IN ('INCARCERATION', 'INCARCERATION_OUT_OF_STATE')
     )
     SELECT 
         state_code,
