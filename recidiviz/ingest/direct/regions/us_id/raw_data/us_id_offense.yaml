@@ -1,6 +1,6 @@
 file_tag: offense
 file_description: |-
-  A code table, that when provided an off_cat, off_cd, and off_deg reveals details abot the offense.
+  A code table, that when provided an off_cat, off_cd, and off_deg reveals details about the offense.
 primary_key_cols:
   - off_cat
   - off_cd
