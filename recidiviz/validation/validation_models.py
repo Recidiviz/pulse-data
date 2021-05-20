@@ -79,24 +79,36 @@ class DataValidationJob(Generic[DataValidationType], BuildableAttr):
         return self.validation.query_str_for_region_code(region_code=self.region_code)
 
 
-@attr.s(frozen=True)
-class DataValidationJobResult(BuildableAttr):
+class DataValidationJobResultDetails(abc.ABC):
+    @abc.abstractmethod
+    def was_successful(self) -> bool:
+        """Whether or not the validation job was successful"""
+
+    @abc.abstractmethod
+    def failure_description(self) -> Optional[str]:
+        """Description of failure, if there was a failure"""
+
+
+@attr.s(frozen=True, kw_only=True)
+class DataValidationJobResult:
     """Models a data validation result that is to be reviewed."""
 
     # The validation which was evaluated
     validation_job: DataValidationJob = attr.ib()
 
-    # Whether or not the validation was successful
-    was_successful: bool = attr.ib()
+    # The result of running that validation
+    result_details: DataValidationJobResultDetails = attr.ib()
 
-    # Description of failure, if there was a failure
-    failure_description: Optional[str] = attr.ib()
+    @property
+    def was_successful(self) -> bool:
+        """Whether or not the validation was successful"""
+        return self.result_details.was_successful()
 
     def __str__(self) -> str:
         return (
             f"DataValidationJobResult["
             f"\n\twas_successful: {self.was_successful},"
-            f"\n\tfailure_description: {self.failure_description},"
+            f"\n\tfailure_description: {self.result_details.failure_description()},"
             f"\n\tvalidation["
             f"\n\t\tregion_code: {self.validation_job.region_code},"
             f"\n\t\tcheck_type: {self.validation_job.validation.validation_type},"
