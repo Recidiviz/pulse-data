@@ -1,0 +1,22 @@
+file_tag: offense_crime_grp
+file_description: |-
+  A code table that matches offenses to crime categories
+primary_key_cols:
+  - ofnse_crm_grp_id
+columns:
+  - name: crm_grp_cd
+    description: |-
+      ID of crime category
+  - name: ofnse_crm_grp_id
+    description: |-
+      Table primary key
+  - name: ucr
+  - name: off_cat
+    description: |-
+      Offense category code
+  - name: off_cd
+    description: |-
+      Offense code
+  - name: off_deg
+    description: |-
+      Offense degree

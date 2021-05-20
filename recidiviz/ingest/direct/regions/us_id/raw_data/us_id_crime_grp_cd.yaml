@@ -1,0 +1,12 @@
+file_tag: crime_grp_cd
+file_description: |-
+  A code table that describes crime type categories
+primary_key_cols:
+  - crm_grp_cd
+columns:
+  - name: crm_grp_cd
+    description: |-
+      ID of crime category
+  - name: crm_grp_desc
+    description: |-
+      Description of crime category
