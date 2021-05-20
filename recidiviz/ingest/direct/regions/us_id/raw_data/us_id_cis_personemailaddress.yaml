@@ -1,0 +1,38 @@
+file_tag: cis_personemailaddress
+file_description: |-
+  Used to fetch the known email addresses of people on supervision.
+primary_key_cols:
+  - id
+columns:
+  - name: id
+    description: |-
+      ID of this row
+  - name: insuser
+    description: |-
+      IDOC username of whoever created this row
+  - name: insdate
+    is_datetime: True
+    description: |-
+      IDOC timestamp for when this row was created
+  - name: upduser
+    description: |-
+      IDOC username of the last person to update this row
+  - name: upddate
+    is_datetime: True
+    description: |-
+      IDOC update date for this row
+  - name: version
+  - name: personid
+    description: |-
+      Id of this person (to join with `cis_offender.id`)
+  - name: email
+    description: |-
+      Email address of this person
+  - name: iscurrent
+    description: |-
+      Whether the email address is current
+    known_values:
+      - value: T
+        description: email address is current
+      - value: F
+        description: email address is not current
