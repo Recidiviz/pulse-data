@@ -16,13 +16,17 @@
 # =============================================================================
 """Streaming read functionality for Google Cloud Storage CSV files."""
 import abc
+import csv
 from contextlib import contextmanager
-from typing import Iterator, List, Optional, Any, TextIO
+from typing import Iterator, List, Optional, Any, TextIO, Union, Dict, Tuple
 
 import gcsfs
 import pandas as pd
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.ingest.direct.controllers.read_only_csv_normalizing_stream import (
+    ReadOnlyCsvNormalizingStream,
+)
 from recidiviz.utils import environment
 
 UTF_8_ENCODING = "UTF-8"
@@ -47,6 +51,15 @@ class GcsfsCsvReaderDelegate:
     def on_start_read_with_encoding(self, encoding: str) -> None:
         """Called when we attempt to start reading the file with a particular encoding. This may get called multiple
         times during the course of a single streaming_read() call if one of the encodings fails.
+        """
+
+    @abc.abstractmethod
+    def on_file_stream_normalization(
+        self, old_encoding: str, new_encoding: str
+    ) -> None:
+        """Called when we recognize a certain set of arguments that mean we need to
+        normalize the file stream with standard encoding, delimiters and line
+        terminators.
         """
 
     @abc.abstractmethod
@@ -100,8 +113,50 @@ class GcsfsCsvReader:
         # `gcloud config set project [PROJECT_ID]`. If we are running in the GCP environment, we should be able to query
         # the internal metadata for credentials.
         token = "google_default" if not environment.in_gcp() else "cloud"
-        with self.gcs_file_system.open(path.uri(), encoding=encoding, token=token) as f:
+        with self.gcs_file_system.open(
+            path.uri(), mode="r", encoding=encoding, token=token
+        ) as f:
             yield f
+
+    def _get_preprocessed_file_stream(
+        self, fp: TextIO, encoding: str, kwargs: Dict[str, Any]
+    ) -> Tuple[Union[ReadOnlyCsvNormalizingStream, TextIO], str, Dict[str, Any]]:
+        """Returns a tuple of (readable stream, encoding, updated kwargs)
+        to pass to pandas.read_csv(). The stream, encoding and kwargs may have been
+        updated to handle certain configurations of arguments that pandas does not
+        support.
+        """
+        line_terminator = kwargs.get(
+            "lineterminator",
+        )
+        if not line_terminator or len(line_terminator.encode(UTF_8_ENCODING)) == 1:
+            return fp, encoding, kwargs
+
+        delimiter = kwargs.get("sep")
+        quoting = kwargs["quoting"]
+        preprocessed_fp: Union[
+            ReadOnlyCsvNormalizingStream, TextIO
+        ] = ReadOnlyCsvNormalizingStream(
+            fp,
+            delimiter=delimiter or ",",
+            line_terminator=line_terminator,
+            quoting=quoting,
+        )
+        # Use the default line terminator (newline)
+        del kwargs["lineterminator"]
+
+        # Use the default separator (comma)
+        del kwargs["sep"]
+
+        # Stream normalizes all fields to be fully quoted
+        kwargs["quoting"] = csv.QUOTE_ALL
+
+        # We should now be able to use the faster "c" engine to parse
+        # the normalized stream.
+        kwargs["engine"] = "c"
+        encoding = UTF_8_ENCODING
+
+        return preprocessed_fp, encoding, kwargs
 
     def streaming_read(
         self,
@@ -134,12 +189,25 @@ class GcsfsCsvReader:
             delegate.on_start_read_with_encoding(encoding)
             try:
                 with self._file_pointer_for_path(path, encoding=encoding) as fp:
+                    (
+                        preprocessed_fp,
+                        updated_encoding,
+                        updated_kwargs,
+                    ) = self._get_preprocessed_file_stream(fp, encoding, kwargs)
+
+                    if encoding != updated_encoding or kwargs != updated_kwargs:
+                        delegate.on_file_stream_normalization(
+                            old_encoding=encoding, new_encoding=updated_encoding
+                        )
+                        encoding = updated_encoding
+                        kwargs = updated_kwargs
+
                     try:
                         reader: Iterator[pd.DataFrame] = pd.read_csv(
                             # Note: Pandas read_csv() also accepts GCS gs:// URIs directly, but it does not properly
                             # close the file stream in the case of an EmptyDataError, which we catch below, so we are
                             # creating and passing in a file pointer instead so that we have control over the scope.
-                            fp,
+                            preprocessed_fp,
                             encoding=encoding,
                             dtype=dtype,
                             chunksize=chunk_size,

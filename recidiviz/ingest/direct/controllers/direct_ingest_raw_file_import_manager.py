@@ -755,13 +755,6 @@ class DirectIngestRawFileImportManager:
             # The python engine is slower but more feature-complete.
             kwargs["engine"] = "python"
 
-        if kwargs.get("lineterminator") and kwargs.get("engine") == "python":
-            # TODO(#5594): Remove this block once we will auto-convert the file stream
-            #  to standard separators / terminators in this case.
-            raise ValueError(
-                "No support yet for custom line terminators with the python engine."
-            )
-
         return kwargs
 
 

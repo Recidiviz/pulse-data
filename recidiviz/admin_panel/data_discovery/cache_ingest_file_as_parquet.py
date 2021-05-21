@@ -119,3 +119,8 @@ class CacheIngestFileAsParquetDelegate(GcsfsCsvReaderDelegate):
 
     def on_start_read_with_encoding(self, encoding: str) -> None:
         pass
+
+    def on_file_stream_normalization(
+        self, old_encoding: str, new_encoding: str
+    ) -> None:
+        pass

@@ -56,7 +56,18 @@ class TestDataDiscoveryRoutes(TestCase):
         self.fakeredis = fakeredis.FakeRedis()
         self.files: Dict[str, str] = {}
         self.mock_gcsfs = create_autospec(gcsfs.GCSFileSystem)
-        self.mock_gcsfs.open = lambda path, encoding, token: StringIO(self.files[path])
+
+        def mock_gcsfs_open(
+            # pylint: disable=unused-argument
+            path: str,
+            *,
+            mode: str,
+            encoding: str,
+            token: str
+        ) -> StringIO:
+            return StringIO(self.files[path])
+
+        self.mock_gcsfs.open = mock_gcsfs_open
 
         self.project_id_patcher = patch(
             "recidiviz.admin_panel.routes.data_discovery.project_id",
