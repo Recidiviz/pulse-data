@@ -14,9 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import * as React from "react";
-import { observer } from "mobx-react-lite";
 import { User } from "@auth0/auth0-spa-js";
+import { observer } from "mobx-react-lite";
+import * as React from "react";
 import { useRootStore } from "../../stores";
 import {
   DropdownContainer,
@@ -67,7 +67,7 @@ const UserComponent = ({ user }: UserProps): JSX.Element => {
       {dropdownOpen ? (
         <DropdownContainer>
           <DropdownLink
-            href="https://docs.google.com/document/d/1iqpKkbsnVpl4bTqSICH4UmwPQ65pOjpIH79L47EquaU/edit?usp=sharing"
+            href="https://drive.google.com/file/d/11e-fmxSlACDzwSm-X6qD1OF7vFi62qOU/view?usp=sharing"
             target="_blank"
           >
             FAQ

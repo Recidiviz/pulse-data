@@ -14,10 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import * as React from "react";
-import moment from "moment";
 import { Icon, IconSVG } from "@recidiviz/design-system";
-
+import moment from "moment";
+import * as React from "react";
+import {
+  CaseUpdateActionType,
+  NotInCaseloadActionType,
+} from "../../stores/CaseUpdatesStore";
 import { DecoratedClient } from "../../stores/ClientsStore";
 import {
   ButtonContainer,
@@ -27,10 +30,6 @@ import {
   CaseCardInfo,
 } from "./CaseCard.styles";
 import { UncheckedButton } from "./CaseCardButtons";
-import {
-  NotInCaseloadActionType,
-  CaseUpdateActionType,
-} from "../../stores/CaseUpdatesStore";
 
 interface NotInCaseloadProps {
   action: NotInCaseloadActionType;
@@ -65,7 +64,6 @@ const NotInCaseload = ({
         <br />
         <Caption>
           <div>Reported on {submissionTime}</div>
-          <div>Once processed, this client will be removed from your list.</div>
         </Caption>
         <ButtonContainer>
           <UncheckedButton
