@@ -47,6 +47,9 @@ INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
       LEFT JOIN
         `{project_id}.{static_reference_dataset}.state_incarceration_facility_capacity`
       USING (state_code, facility)
+    ), facility_mapping AS (
+        SELECT * REPLACE({state_specific_facility_mapping})
+        FROM facility_names
     ), unnested_dimensions AS (
         SELECT 
         state_code,
@@ -57,7 +60,7 @@ INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
         gender,
         age_bucket
       FROM
-        facility_names,
+        facility_mapping,
         {facility_dimension},
         {unnested_race_or_ethnicity_dimension},
         {gender_dimension},
@@ -106,6 +109,7 @@ INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQue
     state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(
         race_or_ethnicity_column="prioritized_race_or_ethnicity"
     ),
+    state_specific_facility_mapping=state_specific_query_strings.spotlight_state_specific_facility(),
 )
 
 if __name__ == "__main__":
