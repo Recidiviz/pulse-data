@@ -42,33 +42,32 @@ _FIXTURE_PATH = os.path.abspath(
         "./fixtures/",
     )
 )
-_FIXTURE_CLIENTS: List[ETLClient] = []
-_FIXTURE_OPPORTUNITIES: List[ETLOpportunity] = []
 
 
 def get_fixture_clients() -> List[ETLClient]:
-    global _FIXTURE_CLIENTS
-
-    if not _FIXTURE_CLIENTS:
-        with open(os.path.join(_FIXTURE_PATH, "demo_clients.json")) as f:
-            clients = json.load(f)
-        _FIXTURE_CLIENTS = [ETLClient.from_json(client) for client in clients]
-
-    return _FIXTURE_CLIENTS
+    with open(os.path.join(_FIXTURE_PATH, "demo_clients.json")) as f:
+        clients = json.load(f)
+    return [ETLClient.from_json(client) for client in clients]
 
 
 def get_fixture_opportunities() -> List[ETLOpportunity]:
-    global _FIXTURE_OPPORTUNITIES
-
-    if not _FIXTURE_OPPORTUNITIES:
-        with open(os.path.join(_FIXTURE_PATH, "demo_opportunities.json")) as f:
-            clients = json.load(f)
-        _FIXTURE_OPPORTUNITIES = [
-            ETLOpportunity.from_json(client) for client in clients
-        ]
-
-    return _FIXTURE_OPPORTUNITIES
+    with open(os.path.join(_FIXTURE_PATH, "demo_opportunities.json")) as f:
+        clients = json.load(f)
+    return [ETLOpportunity.from_json(client) for client in clients]
 
 
 def fake_officer_id_for_demo_user(user_email_address: str) -> str:
     return f"demo::{user_email_address}"
+
+
+def fake_person_id_for_demo_user(
+    user_email_address: str, original_person_external_id: str
+) -> str:
+    return f"demo::{user_email_address}::{original_person_external_id}"
+
+
+def unconvert_fake_person_id_for_demo_user(demo_person_id: str) -> str:
+    DELIMITER = "::"
+    if DELIMITER not in demo_person_id:
+        return demo_person_id
+    return demo_person_id[demo_person_id.rfind(DELIMITER) + len(DELIMITER) :]

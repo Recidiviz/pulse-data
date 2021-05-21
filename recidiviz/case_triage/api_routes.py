@@ -30,6 +30,8 @@ from recidiviz.case_triage.api_schemas import (
     CaseUpdateSchema,
     DeferOpportunitySchema,
     PolicyRequirementsSchema,
+    PreferredContactMethodSchema,
+    PreferredNameSchema,
     requires_api_schema,
 )
 from recidiviz.case_triage.case_updates.interface import (
@@ -38,6 +40,10 @@ from recidiviz.case_triage.case_updates.interface import (
     DemoCaseUpdatesInterface,
 )
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
+from recidiviz.case_triage.client_info.interface import (
+    ClientInfoInterface,
+    DemoClientInfoInterface,
+)
 from recidiviz.case_triage.demo_helpers import DEMO_FROZEN_DATE, DEMO_FROZEN_DATETIME
 from recidiviz.case_triage.exceptions import (
     CaseTriageBadRequestException,
@@ -222,7 +228,7 @@ def create_api_blueprint(
     @api.route("/case_updates", methods=["POST"])
     @requires_api_schema(CaseUpdateSchema)
     def _create_case_update() -> Response:
-        """ Records individual clients actions. Expects JSON body of CaseUpdateSchema """
+        """Records individual clients actions. Expects JSON body of CaseUpdateSchema"""
         etl_client = load_client(g.api_data["person_external_id"])
 
         if _should_see_demo():
@@ -281,6 +287,52 @@ def create_api_blueprint(
             raise CaseTriageBadRequestException(
                 "not_found", "The case update could not be found."
             ) from e
+
+        return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
+
+    @api.route("/set_preferred_name", methods=["POST"])
+    @requires_api_schema(PreferredNameSchema)
+    def _set_preferred_name() -> Response:
+        etl_client = load_client(g.api_data["person_external_id"])
+
+        if _should_see_demo():
+            DemoClientInfoInterface.set_preferred_name(
+                current_session, g.email, etl_client, g.api_data["name"]
+            )
+        else:
+            if g.current_user.external_id != etl_client.supervising_officer_external_id:
+                raise CaseTriageBadRequestException(
+                    code="bad_request",
+                    description={
+                        "personExternalId": ["does not correspond to a known person"]
+                    },
+                )
+            ClientInfoInterface.set_preferred_name(
+                current_session, etl_client, g.api_data["name"]
+            )
+
+        return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
+
+    @api.route("/set_preferred_contact_method", methods=["POST"])
+    @requires_api_schema(PreferredContactMethodSchema)
+    def _set_preferred_contact_method() -> Response:
+        etl_client = load_client(g.api_data["person_external_id"])
+
+        if _should_see_demo():
+            DemoClientInfoInterface.set_preferred_contact_method(
+                current_session, g.email, etl_client, g.api_data["contact_method"]
+            )
+        else:
+            if g.current_user.external_id != etl_client.supervising_officer_external_id:
+                raise CaseTriageBadRequestException(
+                    code="bad_request",
+                    description={
+                        "personExternalId": ["does not correspond to a known person"]
+                    },
+                )
+            ClientInfoInterface.set_preferred_contact_method(
+                current_session, etl_client, g.api_data["contact_method"]
+            )
 
         return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
 

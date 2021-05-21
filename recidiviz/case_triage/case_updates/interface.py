@@ -26,6 +26,7 @@ from recidiviz.case_triage.case_updates.serializers import serialize_client_case
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
 from recidiviz.case_triage.demo_helpers import (
     fake_officer_id_for_demo_user,
+    fake_person_id_for_demo_user,
 )
 from recidiviz.persistence.database.schema.case_triage.schema import (
     CaseUpdate,
@@ -41,6 +42,7 @@ class CaseUpdateDoesNotExistError(ValueError):
 def _update_case_for_person(
     session: Session,
     officer_id: str,
+    person_external_id: str,
     client: ETLClient,
     action_type: CaseUpdateActionType,
     comment: Optional[str] = None,
@@ -56,7 +58,7 @@ def _update_case_for_person(
     insert_statement = (
         insert(CaseUpdate)
         .values(
-            person_external_id=client.person_external_id,
+            person_external_id=person_external_id,
             officer_external_id=officer_id,
             state_code=client.state_code,
             action_type=action_type.value,
@@ -79,7 +81,7 @@ def _update_case_for_person(
     return (
         session.query(CaseUpdate)
         .filter(
-            CaseUpdate.person_external_id == client.person_external_id,
+            CaseUpdate.person_external_id == person_external_id,
             CaseUpdate.officer_external_id == officer_id,
             CaseUpdate.action_type == action_type.value,
         )
@@ -129,6 +131,7 @@ class CaseUpdatesInterface:
         return _update_case_for_person(
             session,
             officer.external_id,
+            client.person_external_id,
             client,
             action,
             comment,
@@ -161,6 +164,7 @@ class DemoCaseUpdatesInterface:
         return _update_case_for_person(
             session,
             fake_officer_id_for_demo_user(user_email),
+            fake_person_id_for_demo_user(user_email, client.person_external_id),
             client,
             action,
             comment,
