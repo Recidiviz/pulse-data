@@ -375,7 +375,7 @@ This view may not be deployed to all environments yet.<br/>
 
 #####Parentage
 [dataset_1.table_1](../dataset_1/table_1.md) <br/>
-|--state.source_table (Source Table) <br/>
+|--state.source_table ([BQ Staging](https://console.cloud.google.com/bigquery?pli=1&p=recidiviz-staging&page=table&project=recidiviz-staging&d=state&t=source_table)) ([BQ Prod](https://console.cloud.google.com/bigquery?pli=1&p=recidiviz-123&page=table&project=recidiviz-123&d=state&t=source_table)) <br/>
 
 
 #####Descendants
