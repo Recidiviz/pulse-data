@@ -27,12 +27,17 @@ from recidiviz.calculator.query.state.views.vitals_report.supervision_population
 from recidiviz.calculator.query.state.views.vitals_report.supervision_population_due_for_release_by_po_by_day import (
     SUPERVISION_POPULATION_DUE_FOR_RELEASE_BY_PO_BY_DAY_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.vitals_report.timely_contact_by_po_by_day import (
+    TIMELY_CONTACT_BY_PO_BY_DAY_VIEW_BUILDER,
+)
 
 
 # NOTE: These views must be listed in order of dependency. For example, if view Y depends on view X, then view X should
 # appear in the list before view Y.
+
 VITALS_REPORT_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     SUPERVISION_POPULATION_BY_PO_BY_DAY_VIEW_BUILDER,
     OVERDUE_LSIR_BY_PO_BY_DAY_VIEW_BUILDER,
     SUPERVISION_POPULATION_DUE_FOR_RELEASE_BY_PO_BY_DAY_VIEW_BUILDER,
+    TIMELY_CONTACT_BY_PO_BY_DAY_VIEW_BUILDER,
 ]
