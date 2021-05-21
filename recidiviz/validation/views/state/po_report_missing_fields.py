@@ -40,6 +40,8 @@ PO_REPORT_REQUIRED_FIELDS = [
     "pos_discharges_district_average",
     "pos_discharges_state_average",
     # supervision downgrades
+    "supervision_downgrades",
+    "supervision_downgrades_last_month",
     "supervision_downgrade_clients",
     "supervision_downgrade_clients_last_month",
     "supervision_downgrades_district_average",

@@ -71,6 +71,7 @@ class PoMonthlyReportContextTests(TestCase):
             "pos_discharges_state_average": "6",
             "pos_discharges_district_average": "6",
             "earned_discharges": "0",
+            "supervision_downgrades": "0",
             "technical_revocations": "3",
             "crime_revocations": "4",
         }
@@ -86,6 +87,7 @@ class PoMonthlyReportContextTests(TestCase):
         recipient_data = {
             "pos_discharges": "0",
             "earned_discharges": "2",
+            "supervision_downgrades": "0",
             "technical_revocations": "3",
             "crime_revocations": "4",
         }
@@ -104,6 +106,7 @@ class PoMonthlyReportContextTests(TestCase):
         recipient_data = {
             "pos_discharges": "0",
             "earned_discharges": "0",
+            "supervision_downgrades": "0",
             "technical_revocations": "3",
             "crime_revocations": "4",
         }
@@ -129,6 +132,15 @@ class PoMonthlyReportContextTests(TestCase):
                     "person_external_id": 321,
                     "full_name": "POLLOCK, JACKSON",
                     "earned_discharge_date": "2020-12-05",
+                }
+            ],
+            "supervision_downgrade_clients": [
+                {
+                    "person_external_id": 246,
+                    "full_name": "GOYA, FRANCISCO",
+                    "latest_supervision_downgrade_date": "2020-12-07",
+                    "previous_supervision_level": "MEDIUM",
+                    "supervision_level": "MINIMUM",
                 }
             ],
             "revocations_clients": [
@@ -175,10 +187,13 @@ class PoMonthlyReportContextTests(TestCase):
             // Early Discharge //
             [321]     Pollock, Jackson     Discharge granted on 12/05/2020    
             
+            // Supervision Downgrades //
+            [246]     Goya, Francisco     Supervision level downgraded on 12/07/2020    
+            
             // Revocations //
             [456]     Munch, Edvard     New Crime          Revocation recommendation staffed on 12/06/2020    
             [111]     Miro, Joan        Technical Only     Revocation recommendation staffed on 12/10/2020    
-            
+
             // Absconsions //
             [789]     Dali, Salvador     Absconsion reported on 12/11/2020    
             
@@ -192,7 +207,6 @@ class PoMonthlyReportContextTests(TestCase):
 
             Please note: people on probation in custody who technically remain on your caseload are currently counted in your Key Supervision Task percentages, including contacts and risk assessments."""
         )
-
         self.assertEqual(expected, actual["attachment_content"])
 
     # pylint:disable=trailing-whitespace
@@ -272,6 +286,18 @@ class PoMonthlyReportContextTests(TestCase):
         expected["earned_discharges_district_average_color"] = red
         expected["earned_discharges_state_average"] = "1.657"
 
+        # [improved] More supervision downgrades than district average
+        # Higher district average compared to state average
+        expected["supervision_downgrades"] = "5"
+        expected["supervision_downgrades_color"] = default_color
+        expected[
+            "supervision_downgrades_change"
+        ] = "2 more than last month. You're on a roll!"
+        expected["supervision_downgrades_change_color"] = gray
+        expected["supervision_downgrades_district_average"] = "2.346"
+        expected["supervision_downgrades_district_average_color"] = default_color
+        expected["supervision_downgrades_state_average"] = "1.765"
+
         # [improved] Less technical revocations
         # [improved] Lower district average than state average
         expected["technical_revocations"] = "0"
@@ -302,6 +328,7 @@ class PoMonthlyReportContextTests(TestCase):
 
         expected["pos_discharges_label"] = "Successful&nbsp;Case Completions"
         expected["earned_discharges_label"] = "Early Discharge"
+        expected["supervision_downgrades_label"] = "Supervision Downgrades"
         expected["total_revocations_label"] = "Revocations"
         expected["absconsions_label"] = "Absconsions"
         expected["assessments_label"] = "Risk Assessments"
@@ -309,8 +336,8 @@ class PoMonthlyReportContextTests(TestCase):
 
         expected["display_congratulations"] = "inherit"
         expected["congratulations_text"] = (
-            "You improved from last month across 3 metrics and out-performed other "
-            "officers like you across 4 metrics."
+            "You improved from last month across 4 metrics and out-performed other "
+            "officers like you across 5 metrics."
         )
 
         for key, value in expected.items():
