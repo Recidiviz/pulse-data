@@ -54,6 +54,9 @@ _METRICS_IMPROVE_ON_INCREASE = [
     "earned_discharges",
     "earned_discharges_district_average",
     "earned_discharges_state_average",
+    "supervision_downgrades",
+    "supervision_downgrades_district_average",
+    "supervision_downgrades_state_average",
 ]
 
 _AVERAGE_METRICS_FOR_DISPLAY = [
@@ -61,6 +64,8 @@ _AVERAGE_METRICS_FOR_DISPLAY = [
     "pos_discharges_state_average",
     "earned_discharges_district_average",
     "earned_discharges_state_average",
+    "supervision_downgrades_district_average",
+    "supervision_downgrades_state_average",
     "technical_revocations_district_average",
     "technical_revocations_state_average",
     "crime_revocations_district_average",
@@ -72,6 +77,7 @@ _AVERAGE_METRICS_FOR_DISPLAY = [
 _BASE_METRICS_FOR_DISPLAY = [
     "pos_discharges",
     "earned_discharges",
+    "supervision_downgrades",
     "technical_revocations",
     "crime_revocations",
     "absconsions",
@@ -82,6 +88,7 @@ _ALL_METRICS_FOR_DISPLAY = _BASE_METRICS_FOR_DISPLAY + _AVERAGE_METRICS_FOR_DISP
 _ALL_LAST_MONTH_METRICS = [
     "pos_discharges_last_month",
     "earned_discharges_last_month",
+    "supervision_downgrades_last_month",
     "technical_revocations_last_month",
     "crime_revocations_last_month",
     "absconsions_last_month",
@@ -90,6 +97,7 @@ _ALL_LAST_MONTH_METRICS = [
 _ALL_CLIENT_FIELDS = [
     "pos_discharges_clients",
     "earned_discharges_clients",
+    "supervision_downgrade_clients",
     "revocations_clients",
     "absconsions_clients",
     "assessments_out_of_date_clients",
@@ -163,7 +171,9 @@ class PoMonthlyReportContext(ReportContext):
         self._set_base_metric_color(_BASE_METRICS_FOR_DISPLAY)
         self._set_averages_metric_color(_AVERAGE_METRICS_FOR_DISPLAY)
 
-        self._set_month_to_month_change_metrics(["pos_discharges", "earned_discharges"])
+        self._set_month_to_month_change_metrics(
+            ["pos_discharges", "earned_discharges", "supervision_downgrades"]
+        )
 
         self._set_congratulations_section()
         self._set_total_revocations()
@@ -357,6 +367,14 @@ class PoMonthlyReportContext(ReportContext):
 
         singular_or_plural(
             self.prepared_data,
+            "supervision_downgrades",
+            "supervision_downgrades_label",
+            "Supervision Downgrade",
+            "Supervision Downgrades",
+        )
+
+        singular_or_plural(
+            self.prepared_data,
             "total_revocations",
             "total_revocations_label",
             "Revocation",
@@ -490,6 +508,10 @@ class PoMonthlyReportContext(ReportContext):
                 elif clients_key == "earned_discharges_clients":
                     additional_columns = [
                         f'Discharge granted on {format_date(client["earned_discharge_date"])}'
+                    ]
+                elif clients_key == "supervision_downgrade_clients":
+                    additional_columns = [
+                        f'Supervision level downgraded on {format_date(client["latest_supervision_downgrade_date"])}'
                     ]
                 elif clients_key == "absconsions_clients":
                     additional_columns = [
