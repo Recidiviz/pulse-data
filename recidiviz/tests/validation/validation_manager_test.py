@@ -155,8 +155,10 @@ class TestHandleRequest(TestCase):
     @patch("recidiviz.validation.validation_manager._emit_failures")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
+    @patch("recidiviz.validation.validation_manager.store_validation_results")
     def test_handle_request_happy_path_no_failures(
         self,
+        mock_store_validation_results: MagicMock,
         mock_fetch_validations: MagicMock,
         mock_run_job: MagicMock,
         mock_emit_failures: MagicMock,
@@ -180,13 +182,18 @@ class TestHandleRequest(TestCase):
 
         mock_rematerialize_views.assert_called()
         mock_emit_failures.assert_not_called()
+        mock_store_validation_results.assert_called_once()
+        ((results,), _kwargs) = mock_store_validation_results.call_args
+        self.assertEqual(4, len(results))
 
     @patch("recidiviz.big_query.view_update_manager.rematerialize_views_for_namespace")
     @patch("recidiviz.validation.validation_manager._emit_failures")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
+    @patch("recidiviz.validation.validation_manager.store_validation_results")
     def test_handle_request_with_job_failures_and_validation_failures(
         self,
+        mock_store_validation_results: MagicMock,
         mock_fetch_validations: MagicMock,
         mock_run_job: MagicMock,
         mock_emit_failures: MagicMock,
@@ -225,13 +232,18 @@ class TestHandleRequest(TestCase):
             UnorderedCollection([self._TEST_VALIDATIONS[3]]),
             UnorderedCollection([first_failure, second_failure]),
         )
+        mock_store_validation_results.assert_called_once()
+        ((results,), _kwargs) = mock_store_validation_results.call_args
+        self.assertEqual(4, len(results))
 
     @patch("recidiviz.big_query.view_update_manager.rematerialize_views_for_namespace")
     @patch("recidiviz.validation.validation_manager._emit_failures")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
+    @patch("recidiviz.validation.validation_manager.store_validation_results")
     def test_handle_request_happy_path_some_failures(
         self,
+        mock_store_validation_results: MagicMock,
         mock_fetch_validations: MagicMock,
         mock_run_job: MagicMock,
         mock_emit_failures: MagicMock,
@@ -274,13 +286,19 @@ class TestHandleRequest(TestCase):
         mock_emit_failures.assert_called_with(
             [], UnorderedCollection([first_failure, second_failure])
         )
+        mock_store_validation_results.assert_called_once()
+        self.assertEqual(1, len(mock_store_validation_results.call_args[0]))
+        ((results,), _kwargs) = mock_store_validation_results.call_args
+        self.assertEqual(4, len(results))
 
     @patch("recidiviz.big_query.view_update_manager.rematerialize_views_for_namespace")
     @patch("recidiviz.validation.validation_manager._emit_failures")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
+    @patch("recidiviz.validation.validation_manager.store_validation_results")
     def test_handle_request_happy_path_nothing_configured(
         self,
+        mock_store_validation_results: MagicMock,
         mock_fetch_validations: MagicMock,
         mock_run_job: MagicMock,
         mock_emit_failures: MagicMock,
@@ -297,13 +315,18 @@ class TestHandleRequest(TestCase):
         mock_rematerialize_views.assert_called()
         mock_run_job.assert_not_called()
         mock_emit_failures.assert_not_called()
+        mock_store_validation_results.assert_called_once()
+        ((results,), _kwargs) = mock_store_validation_results.call_args
+        self.assertEqual(0, len(results))
 
     @patch("recidiviz.big_query.view_update_manager.rematerialize_views_for_namespace")
     @patch("recidiviz.validation.validation_manager._emit_failures")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
+    @patch("recidiviz.validation.validation_manager.store_validation_results")
     def test_handle_request_happy_path_should_update_views(
         self,
+        mock_store_validation_results: MagicMock,
         mock_fetch_validations: MagicMock,
         mock_run_job: MagicMock,
         mock_emit_failures: MagicMock,
@@ -380,6 +403,9 @@ class TestHandleRequest(TestCase):
         self.assertCountEqual(
             mock_rematerialize_views.call_args_list, expected_update_calls
         )
+        mock_store_validation_results.assert_called_once()
+        ((results,), _kwargs) = mock_store_validation_results.call_args
+        self.assertEqual(0, len(results))
 
 
 class TestFetchValidations(TestCase):

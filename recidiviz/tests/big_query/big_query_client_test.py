@@ -396,6 +396,46 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.create_dataset.assert_called()
         self.mock_client.load_table_from_uri.assert_called()
 
+    def test_insert_into_table_streaming(self) -> None:
+        self.mock_client.insert_rows.return_value = None
+
+        self.bq_client.insert_into_table(
+            dataset_ref=self.mock_dataset_ref,
+            table_id=self.mock_table_id,
+            rows=[{"a": 1, "b": "foo"}, {"a": 2, "b": "bar"}],
+        )
+
+        self.mock_client.get_table.assert_called()
+        self.mock_client.insert_rows.assert_called()
+
+    def test_insert_into_table_streaming_invalid_table(self) -> None:
+        self.mock_client.get_table.side_effect = ValueError("!")
+
+        with pytest.raises(ValueError):
+            self.bq_client.insert_into_table(
+                dataset_ref=self.mock_dataset_ref,
+                table_id=self.mock_table_id,
+                rows=[{"a": 1, "b": "foo"}, {"a": 2, "b": "bar"}],
+            )
+
+        self.mock_client.get_table.assert_called()
+        self.mock_client.insert_rows.assert_not_called()
+
+    def test_insert_into_table_streaming_failed_insert(self) -> None:
+        self.mock_client.insert_rows.return_value = [
+            {"index": 1, "errors": "Incorrect columns"}
+        ]
+
+        with pytest.raises(RuntimeError, match="Incorrect columns"):
+            self.bq_client.insert_into_table(
+                dataset_ref=self.mock_dataset_ref,
+                table_id=self.mock_table_id,
+                rows=[{"a": 1, "b": "foo"}, {"a": 2, "b": "bar"}],
+            )
+
+        self.mock_client.get_table.assert_called()
+        self.mock_client.insert_rows.assert_called()
+
     def test_delete_from_table(self) -> None:
         """Tests that the delete_from_table function runs a query."""
         self.bq_client.delete_from_table_async(
