@@ -31,6 +31,7 @@ from recidiviz.calculator.pipeline.utils.metric_utils import (
     RecidivizMetricType,
     AssessmentMetricMixin,
 )
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
@@ -107,6 +108,9 @@ class SupervisionMetric(
 
     # Area of jurisdictional coverage of the court that sentenced the person to this supervision
     judicial_district_code: Optional[str] = attr.ib(default=None)
+
+    # The type of government entity that has responsibility for this period of supervision
+    custodial_authority: Optional[StateCustodialAuthority] = attr.ib(default=None)
 
 
 @attr.s
