@@ -415,6 +415,7 @@ def handle_deliver_emails_for_batch_email_reporting(
     It hits the App Engine endpoint `reporting/deliver_emails_for_batch`. It requires a JSON input containing the
     following keys:
         batch_id: (required) Identifier for this batch
+        state_code: (required) State code needed for this batch to be triggered
         redirect_address: (optional) An email address to which all emails should
         be sent instead of to their actual recipients.
         cc_address: (optional) List of email addresses to include in the CC field.
@@ -444,6 +445,7 @@ def handle_deliver_emails_for_batch_email_reporting(
         request_params,
         [
             "batch_id",
+            "state_code",
             "redirect_address",
             "cc_address",
             "subject_override",
