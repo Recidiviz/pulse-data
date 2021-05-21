@@ -35,6 +35,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_com
     SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS,
     US_ID_SUPERVISION_HOME_VISIT_FREQUENCY_REQUIREMENTS,
 )
+from recidiviz.case_triage.demo_helpers import unconvert_fake_person_id_for_demo_user
 from recidiviz.case_triage.querier.case_update_presenter import CaseUpdatePresenter
 from recidiviz.case_triage.querier.utils import _json_map_dates_to_strings
 from recidiviz.common.constants.person_characteristics import Gender
@@ -73,7 +74,9 @@ class CasePresenter:
             parsed_name = None
 
         base_dict = {
-            "personExternalId": self.etl_client.person_external_id,
+            "personExternalId": unconvert_fake_person_id_for_demo_user(
+                self.etl_client.person_external_id
+            ),
             "fullName": parsed_name,
             "gender": self.etl_client.gender,
             "supervisingOfficerExternalId": self.etl_client.supervising_officer_external_id,

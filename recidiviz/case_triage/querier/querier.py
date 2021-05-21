@@ -24,6 +24,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from recidiviz.case_triage.demo_helpers import (
     fake_officer_id_for_demo_user,
+    fake_person_id_for_demo_user,
     get_fixture_clients,
     get_fixture_opportunities,
 )
@@ -34,6 +35,7 @@ from recidiviz.case_triage.opportunities.types import OpportunityDoesNotExistErr
 from recidiviz.case_triage.querier.case_presenter import CasePresenter
 from recidiviz.case_triage.querier.opportunity_presenter import OpportunityPresenter
 from recidiviz.persistence.database.schema.case_triage.schema import (
+    ClientInfo,
     ETLClient,
     ETLOfficer,
     ETLOpportunity,
@@ -98,6 +100,7 @@ class CaseTriageQuerier:
                 ETLClient.state_code == officer.state_code,
             )
             .options(joinedload(ETLClient.case_updates))
+            .options(joinedload(ETLClient.client_info))
             .all()
         )
 
@@ -171,6 +174,7 @@ class DemoCaseTriageQuerier:
     def clients_for_demo_user(
         session: Session, user_email_address: str
     ) -> List[CasePresenter]:
+        """Retrieves the list of clients for demo users and associates related objects."""
         case_updates = (
             session.query(CaseUpdate)
             .filter(
@@ -186,6 +190,28 @@ class DemoCaseTriageQuerier:
             )
 
         clients = get_fixture_clients()
+        for client in clients:
+            client.person_external_id = fake_person_id_for_demo_user(
+                user_email_address, client.person_external_id
+            )
+
+        client_infos = (
+            session.query(ClientInfo)
+            .filter(
+                ClientInfo.person_external_id.in_(
+                    (client.person_external_id for client in clients)
+                )
+            )
+            .all()
+        )
+        client_ids_to_client_info = {}
+        for client_info in client_infos:
+            client_ids_to_client_info[client_info.person_external_id] = client_info
+
+        for client in clients:
+            if client_info := client_ids_to_client_info.get(client.person_external_id):
+                client.client_info = client_info
+
         return [
             CasePresenter(client, client_ids_to_case_updates[client.person_external_id])
             for client in clients
@@ -224,6 +250,10 @@ class DemoCaseTriageQuerier:
             ] = deferral
 
         opportunities = get_fixture_opportunities()
+        for opportunity in opportunities:
+            opportunity.person_external_id = fake_person_id_for_demo_user(
+                user_email_address, opportunity.person_external_id
+            )
         return [
             OpportunityPresenter(
                 opportunity,

@@ -23,6 +23,7 @@ from sqlalchemy.orm import Session
 
 from recidiviz.case_triage.demo_helpers import (
     fake_officer_id_for_demo_user,
+    fake_person_id_for_demo_user,
 )
 from recidiviz.case_triage.opportunities.types import (
     OpportunityDeferralType,
@@ -47,6 +48,7 @@ class OpportunityDeferralDoesNotExistError(ValueError):
 def _defer_opportunity(
     session: Session,
     officer_id: str,
+    person_external_id: str,
     etl_opportunity: ETLOpportunity,
     deferral_type: OpportunityDeferralType,
     defer_until: datetime,
@@ -58,7 +60,7 @@ def _defer_opportunity(
     insert_statement = (
         insert(OpportunityDeferral)
         .values(
-            person_external_id=etl_opportunity.person_external_id,
+            person_external_id=person_external_id,
             supervising_officer_external_id=officer_id,
             state_code=etl_opportunity.state_code,
             opportunity_type=etl_opportunity.opportunity_type,
@@ -125,6 +127,7 @@ class OpportunitiesInterface:
         _defer_opportunity(
             session,
             officer.external_id,
+            etl_opportunity.person_external_id,
             etl_opportunity,
             deferral_type,
             defer_until,
@@ -159,6 +162,9 @@ class DemoOpportunitiesInterface:
         _defer_opportunity(
             session,
             fake_officer_id_for_demo_user(user_email),
+            fake_person_id_for_demo_user(
+                user_email, etl_opportunity.person_external_id
+            ),
             etl_opportunity,
             deferral_type,
             defer_until,
