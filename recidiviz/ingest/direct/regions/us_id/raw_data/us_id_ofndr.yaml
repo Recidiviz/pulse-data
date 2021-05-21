@@ -1,15 +1,38 @@
 file_tag: ofndr
 file_description: |-
-  Not in use
+  Contains information on all people who have every been tracked by IDOC.
+
+  Rows in this table get created via a trigger from the original `offender` table.
 primary_key_cols:
   - ofndr_num
 columns:
   - name: ofndr_num
+    description: |-
+      ID of the person
   - name: eye_color_cd
   - name: corrective_lenses_cd
   - name: hair_color_cd
   - name: mrtl_stat_cd
   - name: race_cd
+    description: |-
+      Person's race
+    known_values:
+      - value: A
+        description: TODO(#7567) - populate with description
+      - value: B
+        description: TODO(#7567) - populate with description
+      - value: H
+        description: TODO(#7567) - populate with description
+      - value: I
+        description: TODO(#7567) - populate with description
+      - value: O
+        description: TODO(#7567) - populate with description
+      - value: P
+        description: TODO(#7567) - populate with description
+      - value: U
+        description: TODO(#7567) - populate with description
+      - value: W
+        description: TODO(#7567) - populate with description
   - name: rlgn_cd
   - name: sex
   - name: ht_ft
