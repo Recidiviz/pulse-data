@@ -13,6 +13,12 @@ Prepared on {{ prepared_on_date }}, for {{ officer_given_name }}
 
 {% endif -%}
 
+{% if clients['supervision_downgrade_clients'] -%}
+// Supervision Downgrades //
+{{ clients['supervision_downgrade_clients'] }}
+
+{% endif -%}
+
 {% if clients['revocations_clients'] -%}
 // Revocations //
 {{ clients['revocations_clients'] }}
