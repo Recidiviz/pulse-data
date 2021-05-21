@@ -32,6 +32,7 @@ from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     get_supervision_periods_from_sentences,
 )
 from recidiviz.common.common_utils import date_spans_overlap_exclusive
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
 )
@@ -188,12 +189,29 @@ def us_id_supervision_period_is_out_of_state(
 ) -> bool:
     """Returns whether the given supervision time bucket should be considered a supervision period that is being
     served out of state.
+
+    This is true if either:
+    - The supervision district identifier indicates a non-Idaho entity/jurisdiction
+    - The supervision period custodial authority indicates a non-Idaho entity
     """
     # TODO(#4713): Rely on level_2_supervising_district_external_id, once it is populated.
     external_id = supervision_time_bucket.supervising_district_external_id
-    return external_id is not None and external_id.startswith(
+    out_of_state_identifier = external_id is not None and external_id.startswith(
         tuple(_OUT_OF_STATE_EXTERNAL_ID_IDENTIFIERS)
     )
+
+    custodial_authority = supervision_time_bucket.custodial_authority
+    out_of_state_authority = (
+        custodial_authority is not None
+        and custodial_authority
+        in (
+            StateCustodialAuthority.FEDERAL,
+            StateCustodialAuthority.OTHER_COUNTRY,
+            StateCustodialAuthority.OTHER_STATE,
+        )
+    )
+
+    return out_of_state_identifier or out_of_state_authority
 
 
 def us_id_get_supervision_period_admission_override(

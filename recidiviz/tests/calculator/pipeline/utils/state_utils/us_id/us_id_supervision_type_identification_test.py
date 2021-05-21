@@ -36,6 +36,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_typ
 from recidiviz.calculator.pipeline.utils.supervision_period_index import (
     SupervisionPeriodIndex,
 )
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
@@ -705,7 +706,7 @@ class TestSupervisionPeriodIsOutOfState(unittest.TestCase):
         self.assertTrue(
             us_id_supervision_period_is_out_of_state(
                 self.create_time_bucket(
-                    "INTERSTATE PROBATION - remainder of identifier"
+                    "INTERSTATE PROBATION - remainder of identifier", None
                 )
             )
         )
@@ -714,7 +715,7 @@ class TestSupervisionPeriodIsOutOfState(unittest.TestCase):
         self.assertTrue(
             us_id_supervision_period_is_out_of_state(
                 self.create_time_bucket(
-                    "PAROLE COMMISSION OFFICE - remainder of identifier"
+                    "PAROLE COMMISSION OFFICE - remainder of identifier", None
                 )
             )
         )
@@ -722,22 +723,59 @@ class TestSupervisionPeriodIsOutOfState(unittest.TestCase):
     def test_supervision_period_is_out_of_state_with_partial_identifier(self):
         self.assertFalse(
             us_id_supervision_period_is_out_of_state(
-                self.create_time_bucket("INTERSTATE - remainder of identifier")
+                self.create_time_bucket("INTERSTATE - remainder of identifier", None)
             )
         )
 
     def test_supervision_period_is_out_of_state_with_incorrect_identifier(self):
         self.assertFalse(
-            us_id_supervision_period_is_out_of_state(self.create_time_bucket("Invalid"))
+            us_id_supervision_period_is_out_of_state(
+                self.create_time_bucket("Invalid", None)
+            )
         )
 
     def test_supervision_period_is_out_of_state_with_empty_identifier(self):
         self.assertFalse(
-            us_id_supervision_period_is_out_of_state(self.create_time_bucket(None))
+            us_id_supervision_period_is_out_of_state(
+                self.create_time_bucket(None, None)
+            )
+        )
+
+    def test_supervision_period_is_out_of_state_with_federal_authority(self):
+        self.assertTrue(
+            us_id_supervision_period_is_out_of_state(
+                self.create_time_bucket(None, StateCustodialAuthority.FEDERAL)
+            )
+        )
+
+    def test_supervision_period_is_out_of_state_with_other_country_authority(self):
+        self.assertTrue(
+            us_id_supervision_period_is_out_of_state(
+                self.create_time_bucket(None, StateCustodialAuthority.OTHER_COUNTRY)
+            )
+        )
+
+    def test_supervision_period_is_out_of_state_with_other_state_authority(self):
+        self.assertTrue(
+            us_id_supervision_period_is_out_of_state(
+                self.create_time_bucket(None, StateCustodialAuthority.OTHER_STATE)
+            )
+        )
+
+    def test_supervision_period_is_out_of_state_with_supervision_authority(self):
+        self.assertFalse(
+            us_id_supervision_period_is_out_of_state(
+                self.create_time_bucket(
+                    None, StateCustodialAuthority.SUPERVISION_AUTHORITY
+                )
+            )
         )
 
     @staticmethod
-    def create_time_bucket(supervising_district_external_id: Optional[str]):
+    def create_time_bucket(
+        supervising_district_external_id: Optional[str],
+        custodial_authority: Optional[StateCustodialAuthority],
+    ):
         return RevocationReturnSupervisionTimeBucket(
             state_code="US_ID",
             year=2010,
@@ -746,5 +784,6 @@ class TestSupervisionPeriodIsOutOfState(unittest.TestCase):
             is_on_supervision_last_day_of_month=False,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervising_district_external_id=supervising_district_external_id,
+            custodial_authority=custodial_authority,
             projected_end_date=None,
         )
