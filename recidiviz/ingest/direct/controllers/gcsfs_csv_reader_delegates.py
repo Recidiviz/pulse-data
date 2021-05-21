@@ -38,6 +38,11 @@ class SimpleGcsfsCsvReaderDelegate(GcsfsCsvReaderDelegate):
     def on_start_read_with_encoding(self, encoding: str) -> None:
         pass
 
+    def on_file_stream_normalization(
+        self, old_encoding: str, new_encoding: str
+    ) -> None:
+        pass
+
     def on_dataframe(self, encoding: str, chunk_num: int, df: pd.DataFrame) -> bool:
         return True
 
@@ -87,6 +92,15 @@ class SplittingGcsfsCsvReaderDelegate(GcsfsCsvReaderDelegate):
             encoding,
         )
 
+    def on_file_stream_normalization(
+        self, old_encoding: str, new_encoding: str
+    ) -> None:
+        logging.info(
+            "Stream requires normalization. Old encoding: [%s]. New encoding: [%s]",
+            old_encoding,
+            new_encoding,
+        )
+
     def on_dataframe(self, encoding: str, chunk_num: int, df: pd.DataFrame) -> bool:
         logging.info(
             "Loaded DataFrame chunk [%d] has [%d] rows", chunk_num, df.shape[0]
@@ -128,6 +142,7 @@ class SplittingGcsfsCsvReaderDelegate(GcsfsCsvReaderDelegate):
             self.path.abs_path(),
             encoding,
         )
+        logging.exception(e)
         self._delete_temp_output_paths()
         return False
 
