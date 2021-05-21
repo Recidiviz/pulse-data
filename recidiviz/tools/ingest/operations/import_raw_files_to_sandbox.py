@@ -160,7 +160,7 @@ def do_upload(
                 ),
             )
         except Exception as e:
-            logging.error(str(e))
+            logging.exception(e)
             failures_by_exception[str(e)].append(file_path.abs_path())
 
     if failures_by_exception:

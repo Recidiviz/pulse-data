@@ -39,12 +39,18 @@ class _TestGcsfsCsvReaderDelegate(GcsfsCsvReaderDelegate):
     def __init__(self) -> None:
         self.dataframes: List[pd.DataFrame] = []
         self.encodings_attempted: List[str] = []
+        self.normalized_streams = 0
         self.decode_errors = 0
         self.exceptions = 0
         self.successful_encoding: Optional[str] = None
 
     def on_start_read_with_encoding(self, encoding: str) -> None:
         self.encodings_attempted.append(encoding)
+
+    def on_file_stream_normalization(
+        self, old_encoding: str, new_encoding: str
+    ) -> None:
+        self.normalized_streams += 1
 
     def on_dataframe(self, encoding: str, chunk_num: int, df: pd.DataFrame) -> bool:
         self.dataframes.append((encoding, df))
@@ -69,6 +75,7 @@ def _fake_gcsfs_open(
     path_str: str,
     *,
     encoding: str,
+    mode: str,
     # pylint: disable=unused-argument
     token: str,
 ) -> Iterator[IO]:
