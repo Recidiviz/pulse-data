@@ -100,6 +100,9 @@ VITALS_SUMMARIES_QUERY_TEMPLATE = f"""
     ),
     timely_risk_assessment AS (
      {generate_entity_summary_query('timely_risk_assessment', 'overdue_lsir_by_po_by_day')}
+    ),
+    timely_contact AS (
+     {generate_entity_summary_query('timely_contact', 'timely_contact_by_po_by_day')}
     )
 
     SELECT 
@@ -109,15 +112,17 @@ VITALS_SUMMARIES_QUERY_TEMPLATE = f"""
       timely_discharge.entity_id,
       timely_discharge.entity_name,
       timely_discharge.parent_entity_id,
-      ROUND((most_recent_timely_discharge + most_recent_timely_risk_assessment + 80) / 3, 0) as overall,
+      ROUND((most_recent_timely_discharge + most_recent_timely_risk_assessment + most_recent_timely_contact) / 3, 0) as overall,
       ROUND(most_recent_timely_discharge) as timely_discharge,
       ROUND(most_recent_timely_risk_assessment) as timely_risk_assessment,
       # TODO(#6703): update once contact vitals are completed.
-      80 as timely_contact,
-      ROUND((most_recent_timely_discharge + most_recent_timely_risk_assessment + 80) / 3 - (timely_discharge_30_days_before + timely_risk_assessment_30_days_before  + 80) / 3, 0) as overall_30d,
-      ROUND((most_recent_timely_discharge + most_recent_timely_risk_assessment + 80) / 3 - (timely_discharge_90_days_before + timely_risk_assessment_90_days_before + 80) / 3, 0) as overall_90d
+      ROUND(most_recent_timely_contact) as timely_contact,
+      ROUND((most_recent_timely_discharge + most_recent_timely_risk_assessment + most_recent_timely_contact) / 3 - (timely_discharge_30_days_before + timely_risk_assessment_30_days_before + timely_contact_30_days_before) / 3, 0) as overall_30d,
+      ROUND((most_recent_timely_discharge + most_recent_timely_risk_assessment + most_recent_timely_contact) / 3 - (timely_discharge_90_days_before + timely_risk_assessment_90_days_before + timely_contact_90_days_before) / 3, 0) as overall_90d
     FROM timely_discharge
     LEFT JOIN timely_risk_assessment
+      USING (state_code, entity_id, parent_entity_id)
+    LEFT JOIN timely_contact
       USING (state_code, entity_id, parent_entity_id)
     WHERE entity_id is not null
       AND entity_id != 'UNKNOWN'
