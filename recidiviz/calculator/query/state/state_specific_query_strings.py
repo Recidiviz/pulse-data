@@ -295,3 +295,46 @@ def vitals_state_specific_district_display_name(
           ELSE {district_name}
         END
     """
+
+
+def spotlight_state_specific_facility() -> str:
+    """State-specific logic to normalize facility identifiers for Spotlight."""
+    return """
+        CASE
+            WHEN state_code = 'US_PA' THEN
+                (CASE
+                    -- these are the PA correctional institutions
+                    WHEN facility IN (
+                        "ALB",
+                        "CAM",
+                        "BEN",
+                        "CBS",
+                        "CHS",
+                        "COA",
+                        "DAL",
+                        "FRA",
+                        "FRS",
+                        "FYT",
+                        "GRN",
+                        "HOU",
+                        "HUN",
+                        "LAU",
+                        "MAH",
+                        "MER",
+                        "MUN",
+                        "PHX",
+                        "PNG",
+                        "QUE",
+                        "ROC",
+                        "SMI",
+                        "WAM"
+                    ) THEN facility
+                    -- 3-digit codes 1xx, 2xx, 3xx denote Community Correction Centers
+                    WHEN REGEXP_CONTAINS(facility, r"^[123]\d{{2}}\D*") THEN 'CCC'
+                    -- includes out-of-state placements and misc others
+                    ELSE 'OTHER'
+                END)
+            ELSE facility
+        END
+        AS facility
+    """
