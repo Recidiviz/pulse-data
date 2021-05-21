@@ -21,3 +21,88 @@ resource "google_project_service" "bigquery_connection_api" {
   disable_dependent_services = true
   disable_on_destroy         = true
 }
+
+# Storing validation results
+resource "google_bigquery_dataset" "validation_results" {
+  dataset_id  = "validation_results"
+  description = "This dataset contains raw results from data validation runs as well as any views over them."
+  location    = "US"
+}
+
+resource "google_bigquery_table" "validation_results" {
+  dataset_id  = google_bigquery_dataset.validation_results.dataset_id
+  table_id    = "validation_results"
+  description = "This table contains the results from data validation runs."
+
+  schema = <<EOF
+[
+    {
+        "name": "run_id",
+        "type": "STRING",
+        "mode": "REQUIRED",
+        "description": ""
+    },
+    {
+        "name": "run_date",
+        "type": "DATE",
+        "mode": "REQUIRED",
+        "description": ""
+    },
+    {
+        "name": "system_version",
+        "type": "STRING",
+        "mode": "REQUIRED",
+        "description": ""
+    },
+    {
+        "name": "check_type",
+        "type": "STRING",
+        "mode": "REQUIRED",
+        "description": ""
+    },
+    {
+        "name": "validation_name",
+        "type": "STRING",
+        "mode": "REQUIRED",
+        "description": ""
+    },
+    {
+        "name": "region_code",
+        "type": "STRING",
+        "mode": "REQUIRED",
+        "description": ""
+    },
+    {
+        "name": "did_run",
+        "type": "BOOLEAN",
+        "mode": "REQUIRED",
+        "description": ""
+    },
+    {
+        "name": "was_successful",
+        "type": "BOOLEAN",
+        "mode": "NULLABLE",
+        "description": ""
+    },
+    {
+        "name": "result_details_type",
+        "type": "STRING",
+        "mode": "NULLABLE",
+        "description": ""
+    },
+    {
+        "name": "result_details",
+        "type": "STRING",
+        "mode": "NULLABLE",
+        "description": ""
+    },
+    {
+        "name": "failure_description",
+        "type": "STRING",
+        "mode": "NULLABLE",
+        "description": ""
+    }
+]
+EOF
+
+}

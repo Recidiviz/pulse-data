@@ -16,11 +16,13 @@
 # =============================================================================
 
 """Contains the API for automated data validation."""
+import datetime
 import logging
 import re
 from concurrent import futures
 from http import HTTPStatus
 from typing import Any, Dict, List, Optional, Pattern, Tuple
+import uuid
 
 from opencensus.stats import aggregation, measure, view
 
@@ -39,6 +41,10 @@ from recidiviz.validation.configured_validations import (
 from recidiviz.validation.validation_models import (
     DataValidationJob,
     DataValidationJobResult,
+)
+from recidiviz.validation.validation_result_storage import (
+    ValidationResultForStorage,
+    store_validation_results,
 )
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE
@@ -117,11 +123,20 @@ def execute_validation(
         region_code_filter=region_code_filter,
         validation_name_filter=validation_name_filter,
     )
-    logging.info("Performing a total of %s validation jobs...", len(validation_jobs))
+
+    run_date = datetime.date.today()
+    run_id = uuid.uuid4().hex
+    logging.info(
+        "Performing a total of %s validation jobs [run_date: %s, run_id: %s]...",
+        len(validation_jobs),
+        run_date.isoformat(),
+        run_id,
+    )
 
     # Perform all validations and track failures
     failed_to_run_validations: List[DataValidationJob] = []
     failed_validations: List[DataValidationJobResult] = []
+    results_to_store: List[ValidationResultForStorage] = []
     with futures.ThreadPoolExecutor() as executor:
         future_to_jobs = {
             executor.submit(structured_logging.with_context(_run_job), job): job
@@ -131,7 +146,12 @@ def execute_validation(
         for future in futures.as_completed(future_to_jobs):
             job = future_to_jobs[future]
             try:
-                result = future.result()
+                result: DataValidationJobResult = future.result()
+                results_to_store.append(
+                    ValidationResultForStorage.from_validation_result(
+                        run_id=run_id, run_date=run_date, result=result
+                    )
+                )
                 if not result.was_successful:
                     failed_validations.append(result)
                 logging.info(
@@ -145,7 +165,14 @@ def execute_validation(
                     job,
                     e,
                 )
+                results_to_store.append(
+                    ValidationResultForStorage.from_validation_job(
+                        run_id=run_id, run_date=run_date, job=job
+                    )
+                )
                 failed_to_run_validations.append(job)
+
+    store_validation_results(results_to_store)
 
     if failed_validations or failed_to_run_validations:
         logging.error(

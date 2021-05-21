@@ -175,10 +175,14 @@ def in_development() -> bool:
     return os.environ.get("IS_DEV") == "true"
 
 
+def get_version() -> str:
+    return os.getenv("GAE_VERSION", "")
+
+
 class ServiceType(Enum):
     DEFAULT = "default"
     SCRAPERS = "scrapers"
 
 
 def get_service_type() -> ServiceType:
-    return ServiceType(os.getenv("RECIDIVIZ_SERVICE", "default"))
+    return ServiceType(os.getenv("GAE_SERVICE", "default"))
