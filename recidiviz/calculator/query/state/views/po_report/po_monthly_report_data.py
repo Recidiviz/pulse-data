@@ -49,7 +49,7 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
           IGNORE NULLS
         ) AS earned_discharges_clients,
         ARRAY_AGG(
-          IF(latest_supervision_downgrade_date IS NOT NULL, STRUCT(person_id, full_name, latest_supervision_downgrade_date, previous_supervision_level, supervision_level), NULL)
+          IF(latest_supervision_downgrade_date IS NOT NULL, STRUCT(person_external_id, full_name, latest_supervision_downgrade_date, previous_supervision_level, supervision_level), NULL)
           IGNORE NULLS
         ) AS supervision_downgrade_clients,
         COUNT(DISTINCT IF(latest_supervision_downgrade_date IS NOT NULL, person_id, NULL)) AS supervision_downgrades,
