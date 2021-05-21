@@ -271,25 +271,25 @@ class CalculationDocumentationGeneratorTest(unittest.TestCase):
                 )
                 expected_docs = """#TEST PRODUCT
 ##SHIPPED STATES
-  - Test State
+  - [Test State](../../states/test_state.md)
 
 ## STATES IN DEVELOPMENT
-  - Test State
+  - [Test State](../../states/test_state.md)
 
 ##VIEWS
 
 ####dataset_1
-  - table_1
-  - table_2
-  - table_3
+  - [table_1](../../views/dataset_1/table_1.md) <br/>
+  - [table_2](../../views/dataset_1/table_2.md) <br/>
+  - [table_3](../../views/dataset_1/table_3.md) <br/>
 
 ##SOURCE TABLES
 _Reference views that are used by other views. Some need to be updated manually._
 
 ####state
 _Ingested state data. This dataset is a copy of the state postgres database._
-  - table_1
-  - table_2
+  - table_1 ([BQ Staging](https://console.cloud.google.com/bigquery?pli=1&p=recidiviz-staging&page=table&project=recidiviz-staging&d=state&t=table_1)) ([BQ Prod](https://console.cloud.google.com/bigquery?pli=1&p=recidiviz-123&page=table&project=recidiviz-123&d=state&t=table_1)) <br/>
+  - table_2 ([BQ Staging](https://console.cloud.google.com/bigquery?pli=1&p=recidiviz-staging&page=table&project=recidiviz-staging&d=state&t=table_2)) ([BQ Prod](https://console.cloud.google.com/bigquery?pli=1&p=recidiviz-123&page=table&project=recidiviz-123&d=state&t=table_2)) <br/>
 
 ##METRICS
 _All metrics required to support this product and whether or not each state regularly calculates the metric._
@@ -297,9 +297,9 @@ _All metrics required to support this product and whether or not each state regu
 ** DISCLAIMER **
 The presence of all required metrics for a state does not guarantee that this product is ready to launch in that state.
 
-|      **Metric**       |**US_MO**|**US_PA**|
-|-----------------------|---------|---------|
-|INCARCERATION_ADMISSION|X        |         |
+|                                       **Metric**                                        |**US_MO**|**US_PA**|
+|-----------------------------------------------------------------------------------------|---------|---------|
+|[INCARCERATION_ADMISSION](../../metrics/incarceration/incarceration_admission_metrics.md)|X        |         |
 """
                 self.assertEqual(expected_docs, documentation)
 

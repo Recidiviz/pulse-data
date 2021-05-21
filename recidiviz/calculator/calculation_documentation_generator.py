@@ -133,6 +133,8 @@ RAW_DATA_LINKS_TEMPLATE = (
     " ([BQ Prod]({prod_link}))"
 )
 
+SOURCE_TABLE_LINKS_TEMPLATE = " ([BQ Staging]({staging_link})) ([BQ Prod]({prod_link}))"
+
 METRIC_LINKS_TEMPLATE = (
     " ([Metric Doc](../../metrics/{generic_type}/{metric_table}.md))"
 )
@@ -353,14 +355,14 @@ class CalculationDocumentationGenerator:
     def _get_views_summary_str(self) -> str:
         header = "\n- Views"
         bullets = ""
-        for dataset_id, table_id_list in sorted(
-            self._get_views_by_dataset(self.all_views_to_document).items()
-        ):
+        for dataset_id, dag_key_list in self._get_keys_by_dataset(
+            self.all_views_to_document
+        ).items():
             bullets += f"\n  - {dataset_id}\n"
             bullets += self.bulleted_list(
                 [
-                    f"[{table_id.replace('__', ESCAPED_DOUBLE_UNDERSCORE)}](calculation/views/{dataset_id}/{table_id}.md)"
-                    for table_id in sorted(table_id_list)
+                    f"[{dag_key.table_id.replace('__', ESCAPED_DOUBLE_UNDERSCORE)}](calculation/views/{dataset_id}/{dag_key.table_id}.md)"
+                    for dag_key in dag_key_list
                 ],
                 tabs=2,
                 escape_underscores=False,
@@ -443,7 +445,7 @@ class CalculationDocumentationGenerator:
         if environment not in {GCPEnvironment.PRODUCTION, GCPEnvironment.STAGING}:
             raise ValueError(f"Unexpected environment: [{environment.value}]")
         states_list = [
-            str(state_code.get_state())
+            f"[{str(state_code.get_state())}](../../states/{self._normalize_string_for_path(str(state_code.get_state()))}.md)"
             for state_code in self.states_by_product[product.name][environment]
         ]
 
@@ -470,27 +472,39 @@ class CalculationDocumentationGenerator:
         )
 
     @staticmethod
-    def _get_views_by_dataset(dag_keys: Set[DagKey]) -> Dict[str, List[str]]:
-        """Given a set of DagKeys, returns a dictionary of those view IDs, organized by dataset."""
+    def _get_keys_by_dataset(dag_keys: Set[DagKey]) -> Dict[str, List[DagKey]]:
+        """Given a set of DagKeys, returns a sorted dictionary of those keys, organized by dataset."""
         datasets_to_views = defaultdict(list)
-        for key in dag_keys:
-            datasets_to_views[key.dataset_id].append(key.table_id)
+        for key in sorted(
+            dag_keys, key=lambda dag_key: (dag_key.dataset_id, dag_key.table_id)
+        ):
+            datasets_to_views[key.dataset_id].append(key)
         return datasets_to_views
 
     def _get_dataset_headers_to_views_str(
-        self, dag_keys: Set[DagKey], add_descriptions: bool = False
+        self, dag_keys: Set[DagKey], source_tables_section: bool = False
     ) -> str:
         """Given a set of DagKeys, returns a str list of those views, organized by dataset."""
-        datasets_to_views = self._get_views_by_dataset(dag_keys)
+        datasets_to_keys = self._get_keys_by_dataset(dag_keys)
         views_str = ""
-        for dataset, views in sorted(datasets_to_views.items()):
+        for dataset, keys in datasets_to_keys.items():
             views_str += f"####{dataset}\n"
             views_str += (
                 f"_{VIEW_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS[dataset]}_\n"
-                if add_descriptions
+                if source_tables_section
                 else ""
             )
-            views_str += self.bulleted_list(sorted(views)) + "\n\n"
+            views_str += (
+                self.bulleted_list(
+                    [
+                        self._dependency_tree_formatter_for_gitbook(
+                            dag_key, products_section=True
+                        )
+                        for dag_key in keys
+                    ],
+                    escape_underscores=False,
+                )
+            ) + "\n\n"
 
         return views_str
 
@@ -513,7 +527,7 @@ class CalculationDocumentationGenerator:
                 + "*This product does not reference any source tables.*\n\n"
             )
         return source_tables_header + self._get_dataset_headers_to_views_str(
-            source_keys, add_descriptions=True
+            source_keys, source_tables_section=True
         )
 
     def _get_metrics_str_for_product(self, metric_keys: Set[DagKey]) -> str:
@@ -531,10 +545,6 @@ class CalculationDocumentationGenerator:
             return (
                 metrics_header + "*This product does not rely on Dataflow metrics.*\n"
             )
-        metric_types = [
-            DATAFLOW_TABLES_TO_METRIC_TYPES[key.table_id].value for key in metric_keys
-        ]
-
         state_codes = sorted(
             self._get_dataflow_pipeline_enabled_states(), key=lambda code: code.value
         )
@@ -544,10 +554,12 @@ class CalculationDocumentationGenerator:
         ]
 
         table_matrix = [
-            [f"{metric_type}"]
+            [
+                f"[{DATAFLOW_TABLES_TO_METRIC_TYPES[metric_key.table_id].value}](../../metrics/{self.generic_types_by_metric_name[metric_key.table_id].lower()}/{metric_key.table_id}.md)"
+            ]
             + [
                 "X"
-                if metric_type
+                if DATAFLOW_TABLES_TO_METRIC_TYPES[metric_key.table_id].value
                 in [
                     metric.name
                     for metric in self.metric_calculations_by_state[
@@ -557,7 +569,7 @@ class CalculationDocumentationGenerator:
                 else ""
                 for state_code in state_codes
             ]
-            for metric_type in sorted(metric_types)
+            for metric_key in sorted(metric_keys, key=lambda dag_key: dag_key.table_id)
         ]
 
         writer = MarkdownTableWriter(
@@ -778,7 +790,11 @@ class CalculationDocumentationGenerator:
             )
         return anything_modified
 
-    def _dependency_tree_formatter_for_gitbook(self, dag_key: DagKey) -> str:
+    def _dependency_tree_formatter_for_gitbook(
+        self,
+        dag_key: DagKey,
+        products_section: bool = False,
+    ) -> str:
         """Gitbook-specific formatting for the generated dependency tree."""
         is_source_table = dag_key.dataset_id in OTHER_SOURCE_TABLE_DATASETS - {
             DATAFLOW_METRICS_DATASET
@@ -806,9 +822,12 @@ class CalculationDocumentationGenerator:
         )
 
         table_name_str = (
-            f"[{dag_key.dataset_id}.{dag_key.table_id.replace('__', ESCAPED_DOUBLE_UNDERSCORE)}]"
+            # Include brackets if metric or view
+            ("[" if products_section else f"[{dag_key.dataset_id}.")
+            + f"{dag_key.table_id.replace('__', ESCAPED_DOUBLE_UNDERSCORE)}]"
             if is_documented_view or is_metric
-            else f"{dag_key.dataset_id}.{dag_key.table_id.replace('__', ESCAPED_DOUBLE_UNDERSCORE)}"
+            else ("" if products_section else f"{dag_key.dataset_id}.")
+            + f"{dag_key.table_id.replace('__', ESCAPED_DOUBLE_UNDERSCORE)}"
         )
 
         if is_source_table:
@@ -825,7 +844,7 @@ class CalculationDocumentationGenerator:
                 prod_link=prod_link,
             )
         else:
-            table_name_str += f"(../{dag_key.dataset_id}/{dag_key.table_id}.md)"
+            table_name_str += f"(../{'../views/' if products_section else ''}{dag_key.dataset_id}/{dag_key.table_id}.md)"
 
         return table_name_str + " <br/>"
 
