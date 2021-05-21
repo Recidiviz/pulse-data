@@ -89,7 +89,7 @@ REINCARCERATION_SESSIONS_FROM_DATAFLOW_QUERY_TEMPLATE = """
     this is non-rare occurrence in ND. TODO(#5920) - use start and end reasons instead as to be more internally 
     consistent.
     */
-    WHERE release_session.compartment_level_1 = 'INCARCERATION'
+    WHERE release_session.compartment_level_1 IN ('INCARCERATION', 'INCARCERATION_OUT_OF_STATE')
         AND release_session.compartment_level_2 != 'COMMUNITY_PLACEMENT_PROGRAM'
         AND (release_session.outflow_to_level_1 IN ('SUPERVISION','RELEASE','PENDING_SUPERVISION')
         OR release_session.outflow_to_level_2 = 'COMMUNITY_PLACEMENT_PROGRAM')
