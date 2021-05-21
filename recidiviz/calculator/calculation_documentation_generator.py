@@ -20,7 +20,7 @@ import logging
 import os
 import sys
 from collections import defaultdict
-from typing import List, Dict, Set, Optional
+from typing import List, Dict, Set, Optional, Type
 
 import attr
 from pytablewriter import MarkdownTableWriter
@@ -30,6 +30,7 @@ from recidiviz.big_query.big_query_view import (
     BigQueryView,
 )
 from recidiviz.big_query.view_update_manager import _build_views_to_update
+from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
@@ -78,6 +79,9 @@ from recidiviz.view_registry.datasets import (
 from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS
 
 ESCAPED_DOUBLE_UNDERSCORE = r"\__"
+DATASETS_TO_SKIP_VIEW_DOCUMENTATION = LATEST_VIEW_DATASETS | {
+    DATAFLOW_METRICS_MATERIALIZED_DATASET
+}
 CALC_DOCS_PATH = "docs/calculation"
 VIEW_DOCS_TEMPLATE = """##{view_dataset_id}.{view_table_id}
 _{description}_
@@ -89,9 +93,35 @@ This view may not be deployed to all environments yet.<br/>
 [**Production**](https://console.cloud.google.com/bigquery?pli=1&p=recidiviz-123&page=table&project=recidiviz-123&d={view_dataset_id}&t={view_table_id})
 <br/>
 
-####Dependency Tree
+####Dependency Trees
 
-{dfs_tree}
+#####Parentage
+{parent_tree}
+
+#####Descendants
+{child_tree}
+"""
+
+# TODO(#7563): Include more thorough documentation for each metric.
+METRIC_DOCS_TEMPLATE = """##{metric_name}
+
+####Metric attributes in Big Query
+
+* [**Staging**](https://console.cloud.google.com/bigquery?pli=1&p=recidiviz-staging&page=table&project=recidiviz-staging&d=dataflow_metrics&t={metric_table_id})
+<br/>
+* [**Production**](https://console.cloud.google.com/bigquery?pli=1&p=recidiviz-123&page=table&project=recidiviz-123&d=dataflow_metrics&t={metric_table_id})
+<br/>
+
+####Calculation Cadences
+
+{metrics_cadence_table}
+
+####Dependent Views
+
+If you are interested in what views rely on this metric, please run the following script in your shell:
+
+```python -m recidiviz.tools.display_bq_dag_for_view --project_id recidiviz-staging --dataset_id dataflow_metrics_materialized --view_id most_recent_{metric_table_id} --show_downstream_dependencies True```
+
 """
 
 
@@ -100,6 +130,18 @@ class PipelineMetricInfo:
     """Stores info about calculation metric from the pipeline templates config."""
 
     # Metric name
+    name: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # How many months the calculation includes
+    month_count: Optional[int] = attr.ib(validator=attr_validators.is_opt_int)
+    # Frequency of calculation
+    frequency: str = attr.ib(validator=attr_validators.is_non_empty_str)
+
+
+@attr.s
+class StateMetricInfo:
+    """Stores info about a state metric calculation from the pipeline templates config."""
+
+    # State name
     name: str = attr.ib(validator=attr_validators.is_non_empty_str)
     # How many months the calculation includes
     month_count: Optional[int] = attr.ib(validator=attr_validators.is_opt_int)
@@ -153,9 +195,21 @@ class CalculationDocumentationGenerator:
         ).items():
             self.metric_calculations_by_state[name].extend(metric_info_list)
 
-        self.view_addresses_by_parent_metric: Dict[
-            str, List[BigQueryAddress]
+        # Reverse the metric_calculations_by_state dictionary
+        self.state_metric_calculations_by_metric: Dict[
+            str, List[StateMetricInfo]
         ] = defaultdict(list)
+        for state_name, metric_info_list in self.metric_calculations_by_state.items():
+            for metric_info in metric_info_list:
+                self.state_metric_calculations_by_metric[metric_info.name].append(
+                    StateMetricInfo(
+                        name=state_name,
+                        month_count=metric_info.month_count,
+                        frequency=metric_info.frequency,
+                    )
+                )
+
+        self.metrics_by_generic_types = self._get_metrics_by_generic_types()
 
         def _preprocess_views(
             v: BigQueryView, _parent_results: Dict[BigQueryView, None]
@@ -173,17 +227,6 @@ class CalculationDocumentationGenerator:
                 view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS
                 | LATEST_VIEW_DATASETS,
             )
-
-            full_parentage_keys = node.node_family.full_parentage
-
-            # Store views dependent on each metric. We'll use in the metrics section.
-            metric_types = {
-                DATAFLOW_TABLES_TO_METRIC_TYPES[key.table_id].value
-                for key in full_parentage_keys
-                if key.dataset_id == DATAFLOW_METRICS_DATASET
-            }
-            for metric_type in metric_types:
-                self.view_addresses_by_parent_metric[metric_type].append(v.address)
 
         self.dag_walker.process_dag(_preprocess_views)
         self.all_views_to_document = self._get_all_views_to_document()
@@ -222,15 +265,6 @@ class CalculationDocumentationGenerator:
                 for s in string_list
             ]
         )
-
-    def _get_states_to_metrics(self) -> Dict[str, List[str]]:
-        """Returns a dictionary of state code strings to metric types."""
-        states_to_metrics = defaultdict(list)
-        for pipeline in self.daily_pipelines:
-            states_to_metrics[pipeline.peek("state_code", str)].extend(
-                pipeline.peek("metric_types", str).split()
-            )
-        return states_to_metrics
 
     def _get_dataflow_pipeline_enabled_states(self) -> Set[StateCode]:
         """Returns the set of StateCodes for all states present in our production calc
@@ -315,18 +349,18 @@ class CalculationDocumentationGenerator:
         return header + bullets + "\n"
 
     @staticmethod
-    def _get_metric_types() -> Dict[str, List[str]]:
-        metrics_dict = defaultdict(list)
+    def _get_metrics_by_generic_types() -> Dict[str, List[Type[RecidivizMetric]]]:
+        metrics_dict: Dict[str, List[Type[RecidivizMetric]]] = defaultdict(list)
 
         for metric in DATAFLOW_METRICS_TO_TABLES:
             if issubclass(metric, SupervisionMetric):
-                metrics_dict["Supervision"].append(f"{metric.__name__}")
+                metrics_dict["Supervision"].append(metric)
             elif issubclass(metric, ReincarcerationRecidivismMetric):
-                metrics_dict["Recidivism"].append(f"{metric.__name__}")
+                metrics_dict["Recidivism"].append(metric)
             elif issubclass(metric, ProgramMetric):
-                metrics_dict["Program"].append(f"{metric.__name__}")
+                metrics_dict["Program"].append(metric)
             elif issubclass(metric, IncarcerationMetric):
-                metrics_dict["Incarceration"].append(f"{metric.__name__}")
+                metrics_dict["Incarceration"].append(metric)
             else:
                 raise ValueError(
                     f"{metric.__name__} is not a subclass of an expected"
@@ -337,12 +371,21 @@ class CalculationDocumentationGenerator:
 
     def _get_dataflow_metrics_summary_str(self) -> str:
 
-        dataflow_str = "\n- Dataflow Metrics (links to come)\n"
-        headers_to_metrics = self._get_metric_types()
+        dataflow_str = "\n- Dataflow Metrics\n"
 
-        for header, class_list in headers_to_metrics.items():
+        for header, class_list in self.metrics_by_generic_types.items():
             dataflow_str += f"  - {header.upper()}\n"
-            dataflow_str += self.bulleted_list(class_list, 2) + "\n"
+
+            dataflow_str += (
+                self.bulleted_list(
+                    [
+                        f"[{metric.__name__}](calculation/metrics/{header.lower()}/{DATAFLOW_METRICS_TO_TABLES[metric]}.md)"
+                        for metric in class_list
+                    ],
+                    2,
+                )
+                + "\n"
+            )
 
         return dataflow_str
 
@@ -473,18 +516,25 @@ class CalculationDocumentationGenerator:
         ]
 
         state_codes = sorted(
-            [
-                state_code.value
-                for state_code in self._get_dataflow_pipeline_enabled_states()
-            ]
+            self._get_dataflow_pipeline_enabled_states(), key=lambda code: code.value
         )
 
-        headers = ["**Metric**"] + [f"**{state_code}**" for state_code in state_codes]
+        headers = ["**Metric**"] + [
+            f"**{state_code.value}**" for state_code in state_codes
+        ]
 
         table_matrix = [
             [f"{metric_type}"]
             + [
-                "X" if metric_type in self._get_states_to_metrics()[state_code] else ""
+                "X"
+                if metric_type
+                in [
+                    metric.name
+                    for metric in self.metric_calculations_by_state[
+                        str(state_code.get_state())
+                    ]
+                ]
+                else ""
                 for state_code in state_codes
             ]
             for metric_type in sorted(metric_types)
@@ -739,25 +789,37 @@ class CalculationDocumentationGenerator:
         view_node = self.dag_walker.nodes_by_key[
             DagKey(view_address=view_key.view_address)
         ]
+
+        # Gitbook only supports italicizing single lines so we need to ensure multi-line
+        # descriptions format correctly
+        formatted_description = "_<br/>\n_".join(
+            [
+                line.strip()
+                for line in view_node.view.description.splitlines()
+                if line.strip()
+            ]
+        )
         documentation = VIEW_DOCS_TEMPLATE.format(
             view_dataset_id=view_key.dataset_id,
             view_table_id=view_key.table_id,
-            description=view_node.view.description.strip(),
-            dfs_tree=view_node.node_family.parent_dfs_tree_str,
+            description=formatted_description,
+            parent_tree=view_node.node_family.parent_dfs_tree_str
+            if view_node.node_family.full_parentage
+            else "This view has no parent dependencies.",
+            child_tree=view_node.node_family.child_dfs_tree_str
+            if view_node.node_family.full_descendants
+            else "This view has no child dependencies.",
         )
         return documentation
 
     def _get_all_views_to_document(self) -> Set[DagKey]:
-        """Retrieve all DAG Walker views that are relied upon by a product"""
-        all_view_keys: Set[DagKey] = set()
-        for product in self.products:
-            all_view_keys = all_view_keys.union(
-                {
-                    key
-                    for key in self._get_all_parent_keys_for_product(product)
-                    if key in self.dag_walker.nodes_by_key
-                }
-            )
+        """Retrieve all DAG Walker views that we want to document"""
+        all_nodes = self.dag_walker.nodes_by_key.values()
+        all_view_keys = {
+            DagKey(view_address=node.view.address)
+            for node in all_nodes
+            if not node.dag_key.dataset_id in DATASETS_TO_SKIP_VIEW_DOCUMENTATION
+        }
         return all_view_keys
 
     def generate_view_markdowns(self) -> bool:
@@ -773,7 +835,7 @@ class CalculationDocumentationGenerator:
             # Write to markdown files
             dataset_dir = os.path.join(
                 views_dir_path,
-                f"{view_key.dataset_id}",
+                view_key.dataset_id,
             )
             os.makedirs(dataset_dir, exist_ok=True)
 
@@ -784,6 +846,67 @@ class CalculationDocumentationGenerator:
             anything_modified |= persist_file_contents(
                 documentation, view_markdown_path
             )
+        return anything_modified
+
+    def _get_metric_information(self, metric: Type[RecidivizMetric]) -> str:
+        """Returns string contents for a metric markdown."""
+        metric_table_id = DATAFLOW_METRICS_TO_TABLES[metric]
+        metric_type = DATAFLOW_TABLES_TO_METRIC_TYPES[metric_table_id].value
+
+        state_infos_list = sorted(
+            self.state_metric_calculations_by_metric[metric_type],
+            key=lambda info: (info.name, info.month_count),
+        )
+        headers = [
+            "**State**",
+            "**Number of Months Calculated**",
+            "**Calculation Frequency**",
+        ]
+        table_matrix = [
+            [
+                state_info.name,
+                state_info.month_count if state_info.month_count else "N/A",
+                state_info.frequency,
+            ]
+            for state_info in state_infos_list
+        ]
+        writer = MarkdownTableWriter(
+            headers=headers, value_matrix=table_matrix, margin=0
+        )
+        documentation = METRIC_DOCS_TEMPLATE.format(
+            metric_name=metric.__name__,
+            metrics_cadence_table=writer.dumps(),
+            metric_table_id=metric_table_id,
+        )
+
+        return documentation
+
+    def generate_metric_markdowns(self) -> bool:
+        """Generate markdown files for each metric."""
+        anything_modified = False
+        metrics_dir_path = os.path.join(self.root_calc_docs_dir, "metrics")
+        os.makedirs(metrics_dir_path, exist_ok=True)
+
+        for generic_type, class_list in sorted(self.metrics_by_generic_types.items()):
+            generic_type_dir = os.path.join(
+                metrics_dir_path,
+                generic_type.lower(),
+            )
+            os.makedirs(generic_type_dir, exist_ok=True)
+
+            for metric in class_list:
+                # Generate documentation
+                documentation = self._get_metric_information(metric)
+
+                # Write to markdown files
+                metric_markdown_path = os.path.join(
+                    generic_type_dir,
+                    f"{DATAFLOW_METRICS_TO_TABLES[metric]}.md",
+                )
+                anything_modified |= persist_file_contents(
+                    documentation, metric_markdown_path
+                )
+
         return anything_modified
 
 
@@ -800,6 +923,7 @@ def generate_calculation_documentation(
     modified = docs_generator.generate_products_markdowns()
     modified |= docs_generator.generate_states_markdowns()
     modified |= docs_generator.generate_view_markdowns()
+    modified |= docs_generator.generate_metric_markdowns()
     return modified
 
 

@@ -305,7 +305,8 @@ class BigQueryViewDagWalker:
     ) -> None:
         """Populates the BigQueryViewDagNodeFamily for a given node. This includes the
          full set of all parent nodes, the full set of all child nodes, and the string
-        representations of those dependency trees.
+        representations of those dependency trees. If |view_source_table_datasets| are
+        specified, we stop searching for parent nodes when we hit a source dataset.
         """
         # TODO(#7049): refactor most_recent_job_id_by_metric_and_state_code dependencies
         noisy_dependency_keys = [
@@ -351,6 +352,7 @@ class BigQueryViewDagWalker:
                 # Stop if we reached a source view
                 if (
                     view_source_table_datasets
+                    and not descendants
                     and dag_key.dataset_id in view_source_table_datasets
                 ):
                     continue

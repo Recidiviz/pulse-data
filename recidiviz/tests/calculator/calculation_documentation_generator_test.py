@@ -30,6 +30,7 @@ from recidiviz.calculator.calculation_documentation_generator import (
     CalculationDocumentationGenerator,
     CALC_DOCS_PATH,
     PipelineMetricInfo,
+    StateMetricInfo,
 )
 from recidiviz.calculator.pipeline.incarceration.metrics import (
     IncarcerationAdmissionMetric,
@@ -123,6 +124,23 @@ class CalculationDocumentationGeneratorTest(unittest.TestCase):
             self.docs_generator = CalculationDocumentationGenerator(
                 self.product_configs, CALC_DOCS_PATH
             )
+        self.docs_generator.metric_calculations_by_state = {
+            "Pennsylvania": [
+                PipelineMetricInfo(
+                    name="PROGRAM_REFERRAL", month_count=36, frequency="daily"
+                )
+            ],
+            "Missouri": [
+                PipelineMetricInfo(
+                    name="INCARCERATION_ADMISSION", month_count=24, frequency="daily"
+                ),
+                PipelineMetricInfo(
+                    name="INCARCERATION_ADMISSION",
+                    month_count=240,
+                    frequency="triggered by code changes",
+                ),
+            ],
+        }
 
     def tearDown(self) -> None:
         self.project_id_patcher.stop()
@@ -161,6 +179,16 @@ class CalculationDocumentationGeneratorTest(unittest.TestCase):
         mock_pipeline_states.return_value = self.mock_pipeline_states
         mock_product_states.return_value = self.mock_product_states
 
+        self.docs_generator.metrics_by_generic_types = {
+            "Incarceration": [IncarcerationAdmissionMetric],
+            "Program": [ProgramReferralMetric],
+            "Recidivism": [ReincarcerationRecidivismCountMetric],
+            "Supervision": [
+                SupervisionCaseComplianceMetric,
+                SupervisionRevocationMetric,
+            ],
+        }
+
         summary_strings = self.docs_generator.generate_summary_strings()
 
         expected_header_str = "## Calculation Catalog\n\n"
@@ -175,16 +203,16 @@ class CalculationDocumentationGeneratorTest(unittest.TestCase):
   - dataset_1
     - [table_1](calculation/views/dataset_1/table_1.md)
 """
-        expected_metrics_str = """\n- Dataflow Metrics (links to come)
+        expected_metrics_str = """\n- Dataflow Metrics
   - INCARCERATION
-    - IncarcerationAdmissionMetric
+    - [IncarcerationAdmissionMetric](calculation/metrics/incarceration/test_incarceration_admission_metrics.md)
   - PROGRAM
-    - ProgramReferralMetric
+    - [ProgramReferralMetric](calculation/metrics/program/test_program_referral_metrics.md)
   - RECIDIVISM
-    - ReincarcerationRecidivismCountMetric
+    - [ReincarcerationRecidivismCountMetric](calculation/metrics/recidivism/test_recidivism_count_metrics.md)
   - SUPERVISION
-    - SupervisionCaseComplianceMetric
-    - SupervisionRevocationMetric\n"""
+    - [SupervisionCaseComplianceMetric](calculation/metrics/supervision/test_supervision_case_compliance_metrics.md)
+    - [SupervisionRevocationMetric](calculation/metrics/supervision/test_supervision_revocation_metrics.md)\n"""
 
         expected_summary_strings = [
             expected_header_str,
@@ -203,23 +231,14 @@ class CalculationDocumentationGeneratorTest(unittest.TestCase):
     )
     @patch(
         "recidiviz.calculator.calculation_documentation_generator."
-        "CalculationDocumentationGenerator._get_states_to_metrics"
-    )
-    @patch(
-        "recidiviz.calculator.calculation_documentation_generator."
         "CalculationDocumentationGenerator._get_dataflow_pipeline_enabled_states",
     )
     def test_get_product_information(
         self,
         mock_pipeline_states: MagicMock,
-        mock_states_to_metrics: MagicMock,
         mock_view_keys: MagicMock,
     ) -> None:
         mock_pipeline_states.return_value = self.mock_pipeline_states
-        mock_states_to_metrics.return_value = {
-            "US_PA": ["PROGRAM_REFERRAL"],
-            "US_MO": ["INCARCERATION_ADMISSION"],
-        }
 
         mock_view_keys.return_value = {
             DagKey(
@@ -289,8 +308,6 @@ The presence of all required metrics for a state does not guarantee that this pr
         "CalculationDocumentationGenerator._get_sorted_state_metric_info",
     )
     def test_get_state_information(self, mock_metric_calculations: MagicMock) -> None:
-        # Because _get_state_metric_calculations is called twice,
-        # we should end up with double the PipelineMetricInfos
         mock_metric_calculations.return_value = {
             "Missouri": [
                 PipelineMetricInfo(
@@ -354,10 +371,59 @@ This view may not be deployed to all environments yet.<br/>
 [**Production**](https://console.cloud.google.com/bigquery?pli=1&p=recidiviz-123&page=table&project=recidiviz-123&d=dataset_1&t=table_1)
 <br/>
 
-####Dependency Tree
+####Dependency Trees
 
+#####Parentage
 [dataset_1.table_1](../dataset_1/table_1.md) <br/>
 |--state.source_table (Source Table) <br/>
+
+
+#####Descendants
+[dataset_1.table_1](../dataset_1/table_1.md) <br/>
+|--[dataset_3.table_3](../dataset_3/table_3.md) <br/>
+|----[dataset_4.table_4](../dataset_4/table_4.md) <br/>
+|----[dataset_5.table_5](../dataset_5/table_5.md) <br/>
+
+"""
+        self.assertEqual(expected_documentation_string, docs)
+
+    def test_get_metric_information(self) -> None:
+        self.docs_generator.state_metric_calculations_by_metric = {
+            "INCARCERATION_ADMISSION": [
+                StateMetricInfo(name="Missouri", month_count=24, frequency="daily"),
+                StateMetricInfo(
+                    name="Missouri",
+                    month_count=240,
+                    frequency="triggered by code changes",
+                ),
+            ]
+        }
+
+        docs = self.docs_generator._get_metric_information(  # pylint: disable=W0212
+            IncarcerationAdmissionMetric
+        )
+        expected_documentation_string = """##IncarcerationAdmissionMetric
+
+####Metric attributes in Big Query
+
+* [**Staging**](https://console.cloud.google.com/bigquery?pli=1&p=recidiviz-staging&page=table&project=recidiviz-staging&d=dataflow_metrics&t=incarceration_admission_metrics)
+<br/>
+* [**Production**](https://console.cloud.google.com/bigquery?pli=1&p=recidiviz-123&page=table&project=recidiviz-123&d=dataflow_metrics&t=incarceration_admission_metrics)
+<br/>
+
+####Calculation Cadences
+
+|**State**|**Number of Months Calculated**|**Calculation Frequency**|
+|---------|------------------------------:|-------------------------|
+|Missouri |                             24|daily                    |
+|Missouri |                            240|triggered by code changes|
+
+
+####Dependent Views
+
+If you are interested in what views rely on this metric, please run the following script in your shell:
+
+```python -m recidiviz.tools.display_bq_dag_for_view --project_id recidiviz-staging --dataset_id dataflow_metrics_materialized --view_id most_recent_incarceration_admission_metrics --show_downstream_dependencies True```
 
 """
         self.assertEqual(expected_documentation_string, docs)
