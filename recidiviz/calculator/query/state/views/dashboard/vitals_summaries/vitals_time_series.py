@@ -65,15 +65,7 @@ VITALS_TIME_SERIES_TEMPLATE = f"""
   ), risk_assessment AS (
     {generate_time_series_query("risk_assessment", "overdue_lsir_by_po_by_day")}
   ), contact AS (
-    SELECT
-      state_code,
-      date,
-      entity_id,
-      "CONTACT" as metric,
-      # TODO(#6703): update once contact vitals are completed.
-      80 as value,
-      80 as avg_30d
-    FROM risk_assessment
+    {generate_time_series_query("contact", "timely_contact_by_po_by_day")}
   ), summary AS (
     SELECT
       state_code,
@@ -101,6 +93,7 @@ VITALS_TIME_SERIES_TEMPLATE = f"""
     SELECT * FROM summary WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 180 DAY)
   )
   WHERE value != 0
+    OR metric = "contact"
   ORDER BY entity_id, date, metric
 """
 
