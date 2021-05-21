@@ -50,7 +50,7 @@ REVOCATION_SESSIONS_QUERY_TEMPLATE = """
         (
         SELECT 
             *,
-            CASE WHEN outflow_to_level_1 = 'INCARCERATION' THEN DATE_ADD(end_date, INTERVAL 1 DAY) END AS revocation_date
+            CASE WHEN outflow_to_level_1 IN ('INCARCERATION', 'INCARCERATION_OUT_OF_STATE') THEN DATE_ADD(end_date, INTERVAL 1 DAY) END AS revocation_date
         FROM `{project_id}.{analyst_dataset}.supervision_super_sessions_materialized`
         )
     ORDER BY 1,2,3
