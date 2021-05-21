@@ -186,15 +186,15 @@ def should_collapse_transfers_different_purposes_for_incarceration(
     return state_code.upper() != "US_ID"
 
 
-def filter_out_federal_and_other_country_supervision_periods(state_code: str) -> bool:
+def filter_out_federal_and_other_country_supervision_periods(_state_code: str) -> bool:
     """Whether or not only to filter supervision periods whose custodial authority is out of the country or in federal
     prison.
-        - US_ID: True
+        - US_ID: False
         - US_MO: False
         - US_ND: False
         - US_PA: False
     """
-    return state_code.upper() == "US_ID"
+    return False
 
 
 def include_decisions_on_follow_up_responses_for_most_severe_response(

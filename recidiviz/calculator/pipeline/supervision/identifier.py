@@ -507,6 +507,7 @@ def find_time_buckets_for_supervision_period(
                     is_on_supervision_last_day_of_month=is_on_supervision_last_day_of_month,
                     case_compliance=case_compliance,
                     judicial_district_code=judicial_district_code,
+                    custodial_authority=supervision_period.custodial_authority,
                     supervision_level_downgrade_occurred=supervision_level_downgrade_occurred,
                     previous_supervision_level=previous_supervision_level,
                     projected_end_date=projected_end_date,
@@ -633,6 +634,7 @@ def find_supervision_start_bucket(
         level_1_supervision_location_external_id=level_1_supervision_location_external_id,
         level_2_supervision_location_external_id=level_2_supervision_location_external_id,
         judicial_district_code=judicial_district_code,
+        custodial_authority=supervision_period.custodial_authority,
     )
 
 
@@ -748,6 +750,7 @@ def find_supervision_termination_bucket(
             level_1_supervision_location_external_id=level_1_supervision_location_external_id,
             level_2_supervision_location_external_id=level_2_supervision_location_external_id,
             judicial_district_code=judicial_district_code,
+            custodial_authority=supervision_period.custodial_authority,
             response_count=violation_history.response_count,
             most_severe_response_decision=violation_history.most_severe_response_decision,
             most_severe_violation_type=violation_history.most_severe_violation_type,
@@ -1029,6 +1032,7 @@ def find_revocation_return_buckets(
                         #  non-existent since we don't count temporary / board hold periods as revocations.
                         is_on_supervision_last_day_of_month=False,
                         judicial_district_code=judicial_district_code,
+                        custodial_authority=supervision_period.custodial_authority,
                         projected_end_date=projected_end_date,
                     )
 
@@ -1096,6 +1100,7 @@ def find_revocation_return_buckets(
                     #  non-existent since we don't count temporary / board hold periods as revocations.
                     is_on_supervision_last_day_of_month=False,
                     judicial_district_code=None,
+                    custodial_authority=None,
                     projected_end_date=projected_end_date,
                 )
 
@@ -1255,6 +1260,7 @@ def _get_projected_completion_bucket(
         level_1_supervision_location_external_id=level_1_supervision_location_external_id,
         level_2_supervision_location_external_id=level_2_supervision_location_external_id,
         judicial_district_code=judicial_district_code,
+        custodial_authority=supervision_period.custodial_authority,
     )
 
 

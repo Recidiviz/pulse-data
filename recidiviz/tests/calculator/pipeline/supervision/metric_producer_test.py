@@ -48,6 +48,7 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import (
 )
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.common.constants.person_characteristics import Gender, Race, Ethnicity
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentType,
     StateAssessmentLevel,
@@ -2001,11 +2002,11 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         self.assertEqual(expected_count, len(metrics))
 
-    def test_produce_supervision_metrics_supervision_out_of_state_population_metrics_is_out_of_state(
+    def test_produce_supervision_metrics_US_ID_supervision_out_of_state_population_metrics_is_out_of_state(
         self,
     ):
         person = StatePerson.new_with_defaults(
-            state_code="US_XX",
+            state_code="US_ID",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=Gender.FEMALE,
@@ -2064,11 +2065,74 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             for metric in metrics
         )
 
-    def test_produce_supervision_metrics_supervision_out_of_state_population_metrics_not_out_of_state(
+    def test_produce_supervision_metrics_US_ID_supervision_out_of_state_population_metrics_is_out_of_state_by_authority(
         self,
     ):
         person = StatePerson.new_with_defaults(
-            state_code="US_XX",
+            state_code="US_ID",
+            person_id=12345,
+            birthdate=date(1984, 8, 31),
+            gender=Gender.FEMALE,
+        )
+
+        race = StatePersonRace.new_with_defaults(state_code="US_ID", race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code="US_ID", ethnicity=Ethnicity.NOT_HISPANIC
+        )
+
+        person.ethnicities = [ethnicity]
+
+        supervision_time_buckets = [
+            RevocationReturnSupervisionTimeBucket(
+                state_code="US_ID",
+                year=2010,
+                month=1,
+                event_date=date(2010, 1, 1),
+                is_on_supervision_last_day_of_month=False,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                custodial_authority=StateCustodialAuthority.FEDERAL,
+                projected_end_date=None,
+            ),
+        ]
+
+        inclusions_dict = {
+            metric_type: (
+                metric_type == SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION
+            )
+            for metric_type in SupervisionMetricType
+        }
+
+        metrics = metric_producer.produce_supervision_metrics(
+            person,
+            supervision_time_buckets,
+            inclusions_dict,
+            calculation_end_month="2010-12",
+            calculation_month_count=12,
+            person_metadata=_DEFAULT_PERSON_METADATA,
+            pipeline_job_id=_PIPELINE_JOB_ID,
+        )
+
+        expected_count = expected_metrics_count(
+            supervision_time_buckets,
+            include_all_metrics=False,
+            metric_to_include=SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION,
+            out_of_state_population=True,
+        )
+
+        self.assertEqual(expected_count, len(metrics))
+        assert all(
+            isinstance(metric, SupervisionOutOfStatePopulationMetric)
+            for metric in metrics
+        )
+
+    def test_produce_supervision_metrics_US_ID_supervision_out_of_state_population_metrics_not_out_of_state(
+        self,
+    ):
+        person = StatePerson.new_with_defaults(
+            state_code="US_ID",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=Gender.FEMALE,
@@ -2093,6 +2157,60 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 supervising_district_external_id="INVALID - 123",
+                projected_end_date=None,
+            ),
+        ]
+
+        inclusions_dict = {
+            metric_type: (
+                metric_type == SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION
+            )
+            for metric_type in SupervisionMetricType
+        }
+
+        metrics = metric_producer.produce_supervision_metrics(
+            person,
+            supervision_time_buckets,
+            inclusions_dict,
+            calculation_end_month="2010-12",
+            calculation_month_count=12,
+            person_metadata=_DEFAULT_PERSON_METADATA,
+            pipeline_job_id=_PIPELINE_JOB_ID,
+        )
+
+        expected_count = 0
+
+        self.assertEqual(expected_count, len(metrics))
+
+    def test_produce_supervision_metrics_US_ID_supervision_out_of_state_population_metrics_not_out_of_state_by_authority(
+        self,
+    ):
+        person = StatePerson.new_with_defaults(
+            state_code="US_ID",
+            person_id=12345,
+            birthdate=date(1984, 8, 31),
+            gender=Gender.FEMALE,
+        )
+
+        race = StatePersonRace.new_with_defaults(state_code="US_ID", race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code="US_ID", ethnicity=Ethnicity.NOT_HISPANIC
+        )
+
+        person.ethnicities = [ethnicity]
+
+        supervision_time_buckets = [
+            RevocationReturnSupervisionTimeBucket(
+                state_code="US_ID",
+                year=2010,
+                month=1,
+                event_date=date(2010, 1, 1),
+                is_on_supervision_last_day_of_month=False,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
                 projected_end_date=None,
             ),
         ]
