@@ -15,12 +15,12 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import * as React from "react";
+import { useRootStore } from "../../stores";
 import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
 import { DecoratedClient } from "../../stores/ClientsStore";
+import BaseFeedbackForm from "./BaseForm";
 import InCustodyHeader from "./InCustodyHeader";
 import NotOnCaseloadHeader from "./NotOnCaseloadHeader";
-import BaseFeedbackForm from "./BaseForm";
-import { useRootStore } from "../../stores";
 
 interface MoveToProcessingFormProps {
   client: DecoratedClient;
@@ -51,7 +51,7 @@ const MoveToProcessingForm = ({
       client={client}
       actionType={actionType}
       commentPlaceholder="Tell us more details..."
-      description="After you click submit, we will move this person to the bottom of the list. Once processed, this person will be removed from your list."
+      description="After you click submit, we will move this person to the bottom of the list."
       title={title}
       header={header}
       onCancel={onCancel}
