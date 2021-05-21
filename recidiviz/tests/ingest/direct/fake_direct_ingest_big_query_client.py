@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """A fake implementation of BigQueryClient for use in direct ingest tests."""
-from typing import List, Optional, Iterator, Callable
+from typing import Any, Dict, List, Optional, Iterator, Callable, Sequence
 
 from google.cloud import bigquery
 
@@ -217,6 +217,14 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
         allow_field_additions: bool = False,
         write_disposition: bigquery.WriteDisposition = bigquery.WriteDisposition.WRITE_APPEND,
     ) -> bigquery.QueryJob:
+        raise ValueError("Must be implemented for use in tests.")
+
+    def insert_into_table(
+        self,
+        dataset_ref: bigquery.DatasetReference,
+        table_id: str,
+        rows: Sequence[Dict[str, Any]],
+    ) -> None:
         raise ValueError("Must be implemented for use in tests.")
 
     def delete_from_table_async(

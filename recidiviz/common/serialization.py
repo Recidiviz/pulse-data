@@ -24,6 +24,14 @@ import attr
 import cattr
 
 
+def date_to_serializable(dt: datetime.date) -> str:
+    return dt.isoformat()
+
+
+def serializable_to_date(date_str: str) -> datetime.date:
+    return datetime.date.fromisoformat(date_str)
+
+
 def datetime_to_serializable(dt: datetime.datetime) -> str:
     return dt.isoformat()
 
@@ -36,6 +44,10 @@ def with_datetime_hooks(converter: cattr.Converter) -> cattr.Converter:
     converter.register_unstructure_hook(datetime.datetime, datetime_to_serializable)
     converter.register_structure_hook(
         datetime.datetime, lambda date_str, _: serializable_to_datetime(date_str)
+    )
+    converter.register_unstructure_hook(datetime.date, date_to_serializable)
+    converter.register_structure_hook(
+        datetime.date, lambda date_str, _: serializable_to_date(date_str)
     )
     return converter
 

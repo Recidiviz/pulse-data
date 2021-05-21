@@ -65,6 +65,16 @@ class SamenessDataValidationCheck(DataValidationCheck):
                 f"Found only [{len(value)}] comparison columns, expected at least 2."
             )
 
+    # Columns included in the join but not compared
+    partition_columns: Optional[List[str]] = attr.ib(default=None)
+
+    def get_partition_columns(self) -> List[str]:
+        if self.partition_columns is None:
+            raise ValueError(
+                f"Partition columns must be set for check [{self.validation_name}]"
+            )
+        return self.partition_columns
+
     # The type of sameness check this is
     sameness_check_type: SamenessDataValidationCheckType = attr.ib(
         default=SamenessDataValidationCheckType.NUMBERS
@@ -129,12 +139,12 @@ class SamenessStringsValidationResultDetails(DataValidationJobResultDetails):
     # For each unique set of label column values in the results, this contains the
     # number of non-null values for each comparison column. For most checks this will
     # have some logical meaning, such as the internal and external populations for a
-    # single day. E.g. {
-    #     ("US_XX", "2021-01-31"): {"internal_id": 3, "external_id": 3},
-    #     ("US_XX", "2020-12-31"): {"internal_id": 2, "external_id": 3},
-    # }
-    non_null_counts_per_column_per_partition: Dict[
-        Tuple[str, ...], Dict[str, int]
+    # single day. E.g. [
+    #     (("US_XX", "2021-01-31"), {"internal_id": 3, "external_id": 3}),
+    #     (("US_XX", "2020-12-31"), {"internal_id": 2, "external_id": 3})
+    # ]
+    non_null_counts_per_column_per_partition: List[
+        Tuple[Tuple[str, ...], Dict[str, int]]
     ] = attr.ib()
 
     @property
@@ -299,11 +309,9 @@ class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
             num_rows += 1
             unique_string_values: Set[str] = set()
 
-            # TODO(#7510): Allow the columns used here to be explicitly configured.
             partition_key = tuple(
                 str(row.get(column))
-                for column in row.keys()
-                if column not in comparison_columns
+                for column in validation_job.validation.get_partition_columns()
             )
             if partition_key not in non_null_counts_per_column_per_partition:
                 non_null_counts_per_column_per_partition[partition_key] = {
@@ -337,6 +345,8 @@ class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
                 num_error_rows=num_errors,
                 total_num_rows=num_rows,
                 max_allowed_error=max_allowed_error,
-                non_null_counts_per_column_per_partition=non_null_counts_per_column_per_partition,
+                non_null_counts_per_column_per_partition=list(
+                    non_null_counts_per_column_per_partition.items()
+                ),
             ),
         )

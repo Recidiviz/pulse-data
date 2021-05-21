@@ -19,6 +19,7 @@ tables and views.
 """
 import abc
 import datetime
+import json
 import logging
 import time
 from collections import defaultdict
@@ -488,6 +489,23 @@ class BigQueryClient:
 
         Returns:
             A QueryJob which will contain the results once the query is complete.
+        """
+
+    @abc.abstractmethod
+    def insert_into_table(
+        self,
+        dataset_ref: bigquery.DatasetReference,
+        table_id: str,
+        rows: Sequence[Dict[str, Any]],
+    ) -> None:
+        """Inserts the provided rows into the specified table.
+
+        The table must already exist, and the rows must conform to the existing schema.
+
+        Args:
+            dataset_ref: The dataset containing the table into which the rows should be inserted.
+            table_id: The name of the table into which the rows should be inserted.
+            rows: A sequence of dictionaries representing the rows to insert into the table.
         """
 
     @abc.abstractmethod
@@ -1184,6 +1202,30 @@ class BigQueryClientImpl(BigQueryClient):
             destination_table_schema=destination_table_schema,
             write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
         )
+
+    def insert_into_table(
+        self,
+        dataset_ref: bigquery.DatasetReference,
+        table_id: str,
+        rows: Sequence[Dict],
+    ) -> None:
+        logging.info(
+            "Inserting %d rows into %s.%s", len(rows), dataset_ref.dataset_id, table_id
+        )
+
+        # Warn on any large rows
+        for row in rows:
+            json_row = json.dumps(row)
+            estimated_size = len(row)
+            if estimated_size > (100 * 2 ** 10):  # 100 KiB
+                logging.warning("Row is larger than 100 KiB: %s", json_row[:1000])
+
+        errors = self.client.insert_rows(self.get_table(dataset_ref, table_id), rows)
+        if errors:
+            raise RuntimeError(
+                f"Failed to insert rows into {dataset_ref.dataset_id}.{table_id}:\n"
+                + "\n".join(str(error) for error in errors)
+            )
 
     def delete_from_table_async(
         self, dataset_id: str, table_id: str, filter_clause: str

@@ -315,6 +315,7 @@ class TestSamenessValidationChecker(TestCase):
             validation=SamenessDataValidationCheck(
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
+                partition_columns=[],
                 sameness_check_type=SamenessDataValidationCheckType.STRINGS,
                 view=BigQueryView(
                     dataset_id="my_dataset",
@@ -334,9 +335,9 @@ class TestSamenessValidationChecker(TestCase):
                     num_error_rows=0,
                     total_num_rows=1,
                     max_allowed_error=0.0,
-                    non_null_counts_per_column_per_partition={
-                        tuple(): {"a": 1, "b": 1, "c": 1}
-                    },
+                    non_null_counts_per_column_per_partition=[
+                        (tuple(), {"a": 1, "b": 1, "c": 1}),
+                    ],
                 ),
             ),
         )
@@ -351,6 +352,7 @@ class TestSamenessValidationChecker(TestCase):
             validation=SamenessDataValidationCheck(
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
+                partition_columns=[],
                 sameness_check_type=SamenessDataValidationCheckType.STRINGS,
                 view=BigQueryView(
                     dataset_id="my_dataset",
@@ -370,9 +372,9 @@ class TestSamenessValidationChecker(TestCase):
                     num_error_rows=0,
                     total_num_rows=1,
                     max_allowed_error=0.0,
-                    non_null_counts_per_column_per_partition={
-                        tuple(): {"a": 0, "b": 0, "c": 0}
-                    },
+                    non_null_counts_per_column_per_partition=[
+                        (tuple(), {"a": 0, "b": 0, "c": 0})
+                    ],
                 ),
             ),
         )
@@ -439,6 +441,7 @@ class TestSamenessValidationChecker(TestCase):
             validation=SamenessDataValidationCheck(
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
+                partition_columns=[],
                 sameness_check_type=SamenessDataValidationCheckType.STRINGS,
                 view=BigQueryView(
                     dataset_id="my_dataset",
@@ -458,9 +461,9 @@ class TestSamenessValidationChecker(TestCase):
                     num_error_rows=1,
                     total_num_rows=1,
                     max_allowed_error=0.0,
-                    non_null_counts_per_column_per_partition={
-                        tuple(): {"a": 1, "b": 1, "c": 1}
-                    },
+                    non_null_counts_per_column_per_partition=[
+                        (tuple(), {"a": 1, "b": 1, "c": 1}),
+                    ],
                 ),
             ),
         )
@@ -475,6 +478,7 @@ class TestSamenessValidationChecker(TestCase):
             validation=SamenessDataValidationCheck(
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
+                partition_columns=[],
                 sameness_check_type=SamenessDataValidationCheckType.STRINGS,
                 view=BigQueryView(
                     dataset_id="my_dataset",
@@ -494,9 +498,9 @@ class TestSamenessValidationChecker(TestCase):
                     num_error_rows=1,
                     total_num_rows=1,
                     max_allowed_error=0.0,
-                    non_null_counts_per_column_per_partition={
-                        tuple(): {"a": 1, "b": 1, "c": 0}
-                    },
+                    non_null_counts_per_column_per_partition=[
+                        (tuple(), {"a": 1, "b": 1, "c": 0}),
+                    ],
                 ),
             ),
         )
@@ -513,6 +517,7 @@ class TestSamenessValidationChecker(TestCase):
             validation=SamenessDataValidationCheck(
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
+                partition_columns=[],
                 sameness_check_type=SamenessDataValidationCheckType.STRINGS,
                 view=BigQueryView(
                     dataset_id="my_dataset",
@@ -543,6 +548,7 @@ class TestSamenessValidationChecker(TestCase):
             validation=SamenessDataValidationCheck(
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
+                partition_columns=[],
                 sameness_check_type=SamenessDataValidationCheckType.STRINGS,
                 max_allowed_error=max_allowed_error,
                 view=BigQueryView(
@@ -563,9 +569,9 @@ class TestSamenessValidationChecker(TestCase):
                     num_error_rows=2,
                     total_num_rows=100,
                     max_allowed_error=0.02,
-                    non_null_counts_per_column_per_partition={
-                        tuple(): {"a": 100, "b": 100, "c": 100}
-                    },
+                    non_null_counts_per_column_per_partition=[
+                        (tuple(), {"a": 100, "b": 100, "c": 100}),
+                    ],
                 ),
             ),
         )
@@ -582,6 +588,7 @@ class TestSamenessValidationChecker(TestCase):
             validation=SamenessDataValidationCheck(
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
+                partition_columns=[],
                 sameness_check_type=SamenessDataValidationCheckType.STRINGS,
                 max_allowed_error=max_allowed_error,
                 view=BigQueryView(
@@ -602,9 +609,9 @@ class TestSamenessValidationChecker(TestCase):
                     num_error_rows=5,
                     total_num_rows=100,
                     max_allowed_error=0.04,
-                    non_null_counts_per_column_per_partition={
-                        tuple(): {"a": 100, "b": 100, "c": 100}
-                    },
+                    non_null_counts_per_column_per_partition=[
+                        (tuple(), {"a": 100, "b": 100, "c": 100}),
+                    ],
                 ),
             ),
         )
@@ -627,6 +634,7 @@ class TestSamenessValidationChecker(TestCase):
             validation=SamenessDataValidationCheck(
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b"],
+                partition_columns=["region", "date"],
                 sameness_check_type=SamenessDataValidationCheckType.STRINGS,
                 max_allowed_error=0.0,
                 view=BigQueryView(
@@ -647,10 +655,10 @@ class TestSamenessValidationChecker(TestCase):
                     num_error_rows=3,
                     total_num_rows=7,
                     max_allowed_error=0.0,
-                    non_null_counts_per_column_per_partition={
-                        ("US_XX", "2021-01-31"): {"a": 3, "b": 3},
-                        ("US_XX", "2020-12-31"): {"a": 2, "b": 3},
-                    },
+                    non_null_counts_per_column_per_partition=[
+                        (("US_XX", "2021-01-31"), {"a": 3, "b": 3}),
+                        (("US_XX", "2020-12-31"), {"a": 2, "b": 3}),
+                    ],
                 ),
             ),
         )
@@ -709,9 +717,9 @@ class TestSamenessStringsValidationResultDetails(TestCase):
             num_error_rows=0,
             total_num_rows=1,
             max_allowed_error=0.0,
-            non_null_counts_per_column_per_partition={
-                tuple(): {"a": 1, "b": 1, "c": 1}
-            },
+            non_null_counts_per_column_per_partition=[
+                (tuple(), {"a": 1, "b": 1, "c": 1}),
+            ],
         )
 
         self.assertTrue(result.was_successful())
@@ -722,9 +730,9 @@ class TestSamenessStringsValidationResultDetails(TestCase):
             num_error_rows=5,
             total_num_rows=100,
             max_allowed_error=0.05,
-            non_null_counts_per_column_per_partition={
-                tuple(): {"a": 100, "b": 100, "c": 100}
-            },
+            non_null_counts_per_column_per_partition=[
+                (tuple(), {"a": 100, "b": 100, "c": 100}),
+            ],
         )
 
         self.assertTrue(result.was_successful())
@@ -735,9 +743,9 @@ class TestSamenessStringsValidationResultDetails(TestCase):
             num_error_rows=5,
             total_num_rows=100,
             max_allowed_error=0.04,
-            non_null_counts_per_column_per_partition={
-                tuple(): {"a": 100, "b": 100, "c": 100}
-            },
+            non_null_counts_per_column_per_partition=[
+                (tuple(), {"a": 100, "b": 100, "c": 100}),
+            ],
         )
 
         self.assertFalse(result.was_successful())
@@ -753,9 +761,9 @@ class TestSamenessStringsValidationResultDetails(TestCase):
             num_error_rows=1,
             total_num_rows=1,
             max_allowed_error=0.0,
-            non_null_counts_per_column_per_partition={
-                tuple(): {"a": 1, "b": 1, "c": 1}
-            },
+            non_null_counts_per_column_per_partition=[
+                (tuple(), {"a": 1, "b": 1, "c": 1}),
+            ],
         )
 
         self.assertFalse(result.was_successful())
@@ -771,10 +779,10 @@ class TestSamenessStringsValidationResultDetails(TestCase):
             num_error_rows=3,
             total_num_rows=7,
             max_allowed_error=0.0,
-            non_null_counts_per_column_per_partition={
-                ("US_XX", "2021-01-31"): {"a": 3, "b": 3},
-                ("US_XX", "2020-12-31"): {"a": 2, "b": 3},
-            },
+            non_null_counts_per_column_per_partition=[
+                (("US_XX", "2021-01-31"), {"a": 3, "b": 3}),
+                (("US_XX", "2020-12-31"), {"a": 2, "b": 3}),
+            ],
         )
 
         self.assertFalse(result.was_successful())
