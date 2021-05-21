@@ -32,6 +32,7 @@ from recidiviz.case_triage.api_routes import create_api_blueprint
 from recidiviz.case_triage.authorization import AuthorizationStore
 from recidiviz.case_triage.case_updates.serializers import serialize_client_case_version
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
+from recidiviz.case_triage.client_info.types import PreferredContactMethod
 from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.case_triage.opportunities.types import (
     OpportunityDeferralType,
@@ -374,6 +375,77 @@ class TestCaseTriageAPIRoutes(TestCase):
                 "/policy_requirements_for_state", json={"state": "US_ID"}
             )
             self.assertEqual(response.status_code, HTTPStatus.OK)
+
+    def test_set_preferred_name(self) -> None:
+        with self.helpers.as_officer(self.officer):
+            client_info = self.helpers.find_client_in_api_response(
+                self.client_1.person_external_id
+            )
+            self.assertTrue("preferredName" not in client_info)
+
+            # Set preferred name
+            self.helpers.set_preferred_name(
+                self.client_1.person_external_id, "Preferred"
+            )
+            client_info = self.helpers.find_client_in_api_response(
+                self.client_1.person_external_id
+            )
+            self.assertEqual(client_info["preferredName"], "Preferred")
+
+            # Unset preferred name
+            self.helpers.set_preferred_name(self.client_1.person_external_id, None)
+            client_info = self.helpers.find_client_in_api_response(
+                self.client_1.person_external_id
+            )
+            self.assertTrue("preferredName" not in client_info)
+
+    def test_set_preferred_contact(self) -> None:
+        with self.helpers.as_officer(self.officer):
+            client_info = self.helpers.find_client_in_api_response(
+                self.client_1.person_external_id
+            )
+            self.assertTrue("preferredContactMethod" not in client_info)
+
+            # Set preferred name
+            self.helpers.set_preferred_contact_method(
+                self.client_1.person_external_id, PreferredContactMethod.Call
+            )
+            client_info = self.helpers.find_client_in_api_response(
+                self.client_1.person_external_id
+            )
+            self.assertEqual(client_info["preferredContactMethod"], "CALL")
+
+            # Unset preferred contact fails
+            response = self.test_client.post(
+                "/set_preferred_contact_method",
+                json={
+                    "personExternalId": self.client_1.person_external_id,
+                    "contactMethod": None,
+                },
+            )
+            self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+
+    def test_cannot_set_preferred_values_for_non_clients(self) -> None:
+        with self.helpers.as_officer(self.officer_without_clients):
+            # Test that you cannot set preferred contact
+            response = self.test_client.post(
+                "/set_preferred_contact_method",
+                json={
+                    "personExternalId": self.client_1.person_external_id,
+                    "contactMethod": PreferredContactMethod.Call.value,
+                },
+            )
+            self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+
+            # Test that you cannot set preferred name
+            response = self.test_client.post(
+                "/set_preferred_name",
+                json={
+                    "personExternalId": self.client_1.person_external_id,
+                    "name": "Preferred",
+                },
+            )
+            self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
 
 
 class TestUserImpersonation(TestCase):

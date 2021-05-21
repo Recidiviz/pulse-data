@@ -18,19 +18,20 @@
 import contextlib
 from datetime import datetime, timedelta
 from http import HTTPStatus
-from typing import List, Dict, Any, Generator
+from typing import List, Dict, Any, Generator, Optional
 from unittest import TestCase
 
 import attr
 from flask import Flask, g
 from flask.testing import FlaskClient
 
+from recidiviz.case_triage.client_info.types import PreferredContactMethod
 from recidiviz.persistence.database.schema.case_triage.schema import ETLOfficer
 
 
 @attr.s
 class CaseTriageTestHelpers:
-    """ Helpers for our Case Triage API tests"""
+    """Helpers for our Case Triage API tests"""
 
     test: TestCase = attr.ib()
     test_app: Flask = attr.ib()
@@ -117,6 +118,30 @@ class CaseTriageTestHelpers:
                 return data
 
         raise ValueError(f"Could not find client {person_external_id} in response")
+
+    def set_preferred_contact_method(
+        self, person_external_id: str, contact_method: PreferredContactMethod
+    ) -> None:
+        response = self.test_client.post(
+            "/set_preferred_contact_method",
+            json={
+                "personExternalId": person_external_id,
+                "contactMethod": contact_method.value,
+            },
+        )
+
+        self.test.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
+
+    def set_preferred_name(self, person_external_id: str, name: Optional[str]) -> None:
+        response = self.test_client.post(
+            "/set_preferred_name",
+            json={
+                "personExternalId": person_external_id,
+                "name": name,
+            },
+        )
+
+        self.test.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
 
     @staticmethod
     def from_test(test: TestCase, test_app: Flask) -> "CaseTriageTestHelpers":

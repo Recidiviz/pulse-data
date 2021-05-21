@@ -24,9 +24,11 @@ from flask import Flask
 
 from recidiviz.case_triage.api_routes import create_api_blueprint
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
+from recidiviz.case_triage.client_info.types import PreferredContactMethod
 from recidiviz.case_triage.demo_helpers import (
     get_fixture_clients,
     get_fixture_opportunities,
+    unconvert_fake_person_id_for_demo_user,
 )
 from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
@@ -107,11 +109,14 @@ class TestDemoUser(TestCase):
             all_clients = self.helpers.get_clients()
             client_to_modify = None
             for client in all_clients:
-                if client["personExternalId"] != self.client_1.person_external_id:
+                if (
+                    unconvert_fake_person_id_for_demo_user(client["personExternalId"])
+                    != self.client_1.person_external_id
+                ):
                     client_to_modify = client
                     break
             assert client_to_modify is not None
-            self.assertTrue(len(client_to_modify["caseUpdates"]) == 0)
+            self.assertEqual(client_to_modify["caseUpdates"], {})
 
             action = CaseUpdateActionType.FOUND_EMPLOYMENT.value
             self.helpers.create_case_update(
@@ -186,3 +191,54 @@ class TestDemoUser(TestCase):
                 len(self.helpers.get_undeferred_opportunities()),
                 len(self.demo_opportunities),
             )
+
+    def test_set_preferred_name(self) -> None:
+        with self.helpers.as_demo_user():
+            client = self.demo_clients[0]
+
+            client_info = self.helpers.find_client_in_api_response(
+                client.person_external_id
+            )
+            self.assertTrue("preferredName" not in client_info)
+
+            # Set preferred name
+            self.helpers.set_preferred_name(client.person_external_id, "Preferred")
+            client_info = self.helpers.find_client_in_api_response(
+                client.person_external_id
+            )
+            self.assertEqual(client_info["preferredName"], "Preferred")
+
+            # Unset preferred name
+            self.helpers.set_preferred_name(client.person_external_id, None)
+            client_info = self.helpers.find_client_in_api_response(
+                client.person_external_id
+            )
+            self.assertTrue("preferredName" not in client_info)
+
+    def test_set_preferred_contact(self) -> None:
+        with self.helpers.as_demo_user():
+            client = self.demo_clients[0]
+
+            client_info = self.helpers.find_client_in_api_response(
+                client.person_external_id
+            )
+            self.assertTrue("preferredContactMethod" not in client_info)
+
+            # Set preferred name
+            self.helpers.set_preferred_contact_method(
+                client.person_external_id, PreferredContactMethod.Call
+            )
+            client_info = self.helpers.find_client_in_api_response(
+                client.person_external_id
+            )
+            self.assertEqual(client_info["preferredContactMethod"], "CALL")
+
+            # Unset preferred contact fails
+            response = self.test_client.post(
+                "/set_preferred_contact_method",
+                json={
+                    "personExternalId": client.person_external_id,
+                    "contactMethod": None,
+                },
+            )
+            self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)

@@ -23,6 +23,7 @@ from marshmallow.fields import Field
 from marshmallow_enum import EnumField
 
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
+from recidiviz.case_triage.client_info.types import PreferredContactMethod
 from recidiviz.case_triage.opportunities.types import (
     OpportunityDeferralType,
     OpportunityType,
@@ -59,6 +60,16 @@ class DeferOpportunitySchema(CamelCaseSchema):
     deferral_type = EnumField(OpportunityDeferralType, by_value=True, required=True)
     defer_until = fields.DateTime(required=True)
     request_reminder = fields.Boolean(required=True)
+
+
+class PreferredContactMethodSchema(CamelCaseSchema):
+    person_external_id = fields.Str(required=True)
+    contact_method = EnumField(PreferredContactMethod, by_value=True, required=True)
+
+
+class PreferredNameSchema(CamelCaseSchema):
+    person_external_id = fields.Str(required=True)
+    name = fields.Str(required=True, allow_none=True)
 
 
 def requires_api_schema(api_schema: Type[Schema]) -> Callable:
