@@ -83,14 +83,17 @@ DATASETS_TO_SKIP_VIEW_DOCUMENTATION = LATEST_VIEW_DATASETS | {
     DATAFLOW_METRICS_MATERIALIZED_DATASET
 }
 CALC_DOCS_PATH = "docs/calculation"
+
+BQ_LINK_TEMPLATE = """https://console.cloud.google.com/bigquery?pli=1&p={project}&page=table&project={project}&d={dataset_id}&t={table_id}"""
+
 VIEW_DOCS_TEMPLATE = """##{view_dataset_id}.{view_table_id}
 _{description}_
 
 ####View schema in Big Query
 This view may not be deployed to all environments yet.<br/>
-[**Staging**](https://console.cloud.google.com/bigquery?pli=1&p=recidiviz-staging&page=table&project=recidiviz-staging&d={view_dataset_id}&t={view_table_id})
+[**Staging**]({staging_link})
 <br/>
-[**Production**](https://console.cloud.google.com/bigquery?pli=1&p=recidiviz-123&page=table&project=recidiviz-123&d={view_dataset_id}&t={view_table_id})
+[**Production**]({prod_link})
 <br/>
 
 ####Dependency Trees
@@ -107,9 +110,9 @@ METRIC_DOCS_TEMPLATE = """##{metric_name}
 
 ####Metric attributes in Big Query
 
-* [**Staging**](https://console.cloud.google.com/bigquery?pli=1&p=recidiviz-staging&page=table&project=recidiviz-staging&d=dataflow_metrics&t={metric_table_id})
+* [**Staging**]({staging_link})
 <br/>
-* [**Production**](https://console.cloud.google.com/bigquery?pli=1&p=recidiviz-123&page=table&project=recidiviz-123&d=dataflow_metrics&t={metric_table_id})
+* [**Production**]({prod_link})
 <br/>
 
 ####Calculation Cadences
@@ -123,6 +126,16 @@ If you are interested in what views rely on this metric, please run the followin
 ```python -m recidiviz.tools.display_bq_dag_for_view --project_id recidiviz-staging --dataset_id dataflow_metrics_materialized --view_id most_recent_{metric_table_id} --show_downstream_dependencies True```
 
 """
+
+RAW_DATA_LINKS_TEMPLATE = (
+    " ([Raw Data Doc](../../../ingest/{region}/raw_data/{raw_data_table}.md))"
+    " ([BQ Staging]({staging_link}))"
+    " ([BQ Prod]({prod_link}))"
+)
+
+METRIC_LINKS_TEMPLATE = (
+    " ([Metric Doc](../../metrics/{generic_type}/{metric_table}.md))"
+)
 
 
 @attr.s
@@ -210,6 +223,13 @@ class CalculationDocumentationGenerator:
                 )
 
         self.metrics_by_generic_types = self._get_metrics_by_generic_types()
+
+        self.generic_types_by_metric_name = {}
+        for generic_type, metric_list in self.metrics_by_generic_types.items():
+            for metric in metric_list:
+                self.generic_types_by_metric_name[
+                    DATAFLOW_METRICS_TO_TABLES[metric]
+                ] = generic_type
 
         def _preprocess_views(
             v: BigQueryView, _parent_results: Dict[BigQueryView, None]
@@ -758,31 +778,56 @@ class CalculationDocumentationGenerator:
             )
         return anything_modified
 
-    @staticmethod
-    def _dependency_tree_formatter_for_gitbook(dag_key: DagKey) -> str:
+    def _dependency_tree_formatter_for_gitbook(self, dag_key: DagKey) -> str:
+        """Gitbook-specific formatting for the generated dependency tree."""
         is_source_table = dag_key.dataset_id in OTHER_SOURCE_TABLE_DATASETS - {
             DATAFLOW_METRICS_DATASET
         }
         is_raw_data_table = dag_key.dataset_id in LATEST_VIEW_DATASETS
         is_metric = dag_key.dataset_id in DATAFLOW_METRICS_DATASET
         is_documented_view = not (is_source_table or is_raw_data_table or is_metric)
-        return (
-            (
-                f"[{dag_key.dataset_id}.{dag_key.table_id.replace('__', ESCAPED_DOUBLE_UNDERSCORE)}]"
-                if is_documented_view
-                else f"{dag_key.dataset_id}.{dag_key.table_id.replace('__', ESCAPED_DOUBLE_UNDERSCORE)}"
+        if is_raw_data_table and (
+            not dag_key.dataset_id.endswith("_raw_data_up_to_date_views")
+            or not dag_key.table_id.endswith("_latest")
+        ):
+            raise ValueError(
+                f"Unexpected raw data view address: [{dag_key.dataset_id}.{dag_key.table_id}]"
             )
-            + (
-                " (Source Table) "
-                if is_source_table
-                else " (Metric) "
-                if is_metric
-                else " (Raw Data) "
-                if is_raw_data_table
-                else f"(../{dag_key.dataset_id}/{dag_key.table_id}.md) "
-            )
-            + "<br/>"
+
+        staging_link = BQ_LINK_TEMPLATE.format(
+            project="recidiviz-staging",
+            dataset_id=dag_key.dataset_id,
+            table_id=dag_key.table_id,
         )
+        prod_link = BQ_LINK_TEMPLATE.format(
+            project="recidiviz-123",
+            dataset_id=dag_key.dataset_id,
+            table_id=dag_key.table_id,
+        )
+
+        table_name_str = (
+            f"[{dag_key.dataset_id}.{dag_key.table_id.replace('__', ESCAPED_DOUBLE_UNDERSCORE)}]"
+            if is_documented_view or is_metric
+            else f"{dag_key.dataset_id}.{dag_key.table_id.replace('__', ESCAPED_DOUBLE_UNDERSCORE)}"
+        )
+
+        if is_source_table:
+            table_name_str += (
+                f" ([BQ Staging]({staging_link})) ([BQ Prod]({prod_link}))"
+            )
+        elif is_metric:
+            table_name_str += f"(../../metrics/{self.generic_types_by_metric_name[dag_key.table_id].lower()}/{dag_key.table_id}.md)"
+        elif is_raw_data_table:
+            table_name_str += RAW_DATA_LINKS_TEMPLATE.format(
+                region=dag_key.dataset_id[:-26],
+                raw_data_table=dag_key.table_id[:-7],
+                staging_link=staging_link,
+                prod_link=prod_link,
+            )
+        else:
+            table_name_str += f"(../{dag_key.dataset_id}/{dag_key.table_id}.md)"
+
+        return table_name_str + " <br/>"
 
     def _get_view_information(self, view_key: DagKey) -> str:
         """Returns string contents for a view markdown."""
@@ -799,10 +844,22 @@ class CalculationDocumentationGenerator:
                 if line.strip()
             ]
         )
+        staging_link = BQ_LINK_TEMPLATE.format(
+            project="recidiviz-staging",
+            dataset_id=view_key.dataset_id,
+            table_id=view_key.table_id,
+        )
+        prod_link = BQ_LINK_TEMPLATE.format(
+            project="recidiviz-123",
+            dataset_id=view_key.dataset_id,
+            table_id=view_key.table_id,
+        )
         documentation = VIEW_DOCS_TEMPLATE.format(
             view_dataset_id=view_key.dataset_id,
             view_table_id=view_key.table_id,
             description=formatted_description,
+            staging_link=staging_link,
+            prod_link=prod_link,
             parent_tree=view_node.node_family.parent_dfs_tree_str
             if view_node.node_family.full_parentage
             else "This view has no parent dependencies.",
@@ -874,6 +931,16 @@ class CalculationDocumentationGenerator:
             headers=headers, value_matrix=table_matrix, margin=0
         )
         documentation = METRIC_DOCS_TEMPLATE.format(
+            staging_link=BQ_LINK_TEMPLATE.format(
+                project="recidiviz-staging",
+                dataset_id="dataflow_metrics",
+                table_id=metric_table_id,
+            ),
+            prod_link=BQ_LINK_TEMPLATE.format(
+                project="recidiviz-123",
+                dataset_id="dataflow_metrics",
+                table_id=metric_table_id,
+            ),
             metric_name=metric.__name__,
             metrics_cadence_table=writer.dumps(),
             metric_table_id=metric_table_id,
