@@ -57,8 +57,6 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
         'INCARCERATION' as compartment_level_1,
         /* TODO(#6126): Investigate ID missing reason for incarceration */
         CASE 
-            WHEN state_code = 'US_ID' AND specialized_purpose_for_incarceration IN ('GENERAL','PAROLE_BOARD_HOLD','TREATMENT_IN_PRISON') 
-                THEN specialized_purpose_for_incarceration 
             WHEN state_code = 'US_ND' AND facility = 'CPP' 
                 THEN 'COMMUNITY_PLACEMENT_PROGRAM'
             ELSE COALESCE(specialized_purpose_for_incarceration, 'GENERAL') END as compartment_level_2,
@@ -69,6 +67,11 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
     FROM
         `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_materialized`
     WHERE state_code in ('{supported_states}')
+        AND state_code <> 'US_ID'
+    UNION ALL
+    -- Use Idaho preprocessed dataset to deal with state-specific logic
+    SELECT *
+    FROM `{project_id}.{analyst_dataset}.us_id_incarceration_population_metrics_preprocessed_materialized`
     UNION ALL
     SELECT 
         DISTINCT

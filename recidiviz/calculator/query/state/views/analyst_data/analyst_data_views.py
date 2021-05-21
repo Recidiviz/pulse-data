@@ -65,6 +65,9 @@ from recidiviz.calculator.query.state.views.analyst_data.compartment_sessions_un
 from recidiviz.calculator.query.state.views.analyst_data.compartment_sentences import (
     COMPARTMENT_SENTENCES_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_id_incarceration_population_metrics_preprocessed import (
+    US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_ppo_metrics_early_discharges import (
     US_ID_PPO_METRICS_EARLY_DISCHARGES_VIEW_BUILDER,
 )
@@ -158,5 +161,6 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     SUPERVISION_POPULATION_BY_OFFICER_DAILY_WINDOWS_VIEW_BUILDER,
     EVENT_BASED_METRICS_BY_SUPERVISION_OFFICER_VIEW_BUILDER,
     EVENT_BASED_METRICS_BY_DISTRICT_VIEW_BUILDER,
+    US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
     INCARCERATION_SUPER_SESSIONS_VIEW_BUILDER,
 ]
