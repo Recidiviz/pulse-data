@@ -118,6 +118,7 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
       email_address,
       agents.officer_given_name,
       month as review_month,
+      year as review_year,
       report_month.pos_discharges_clients,
       report_month.pos_discharges,
       IFNULL(last_month.pos_discharges, 0) AS pos_discharges_last_month,

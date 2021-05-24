@@ -17,10 +17,7 @@
 """Tests for the wrapper class SendGridClientWrapper"""
 import collections
 from unittest import TestCase
-
-
 from unittest.mock import call, Mock, MagicMock
-
 from unittest.mock import patch
 
 from recidiviz.reporting.sendgrid_client_wrapper import SendGridClientWrapper
@@ -46,6 +43,7 @@ class SendGridClientWrapperTest(TestCase):
         self.mock_client = self.client_patcher.start().return_value
         self.secrets_patcher.get_secret.return_value = "secret"
         self.wrapper = SendGridClientWrapper()
+        self.attachment_title = "2021-05 Recidiviz Monthly Report - Client Details.txt"
 
     def tearDown(self) -> None:
         self.client_patcher.stop()
@@ -69,6 +67,7 @@ class SendGridClientWrapperTest(TestCase):
                 from_email="dev@recidiviz.org",
                 subject=subject,
                 html_content=html_content,
+                attachment_title=self.attachment_title,
                 from_email_name="Recidiviz",
             )
             self.assertTrue(response)
@@ -103,6 +102,7 @@ class SendGridClientWrapperTest(TestCase):
             from_email="dev@recidiviz.org",
             subject="Your monthly Recidiviz Report",
             html_content="<html></html>",
+            attachment_title=self.attachment_title,
             from_email_name="Recidiviz",
             cc_addresses=cc_addresses,
         )
@@ -119,6 +119,7 @@ class SendGridClientWrapperTest(TestCase):
                 from_email="dev@recidiviz.org",
                 subject="Your monthly Recidiviz Report",
                 html_content="<html></html>",
+                attachment_title=self.attachment_title,
                 from_email_name="Recidiviz",
             )
             self.assertFalse(response)
@@ -136,6 +137,7 @@ class SendGridClientWrapperTest(TestCase):
                 from_email="dev@recidiviz.org",
                 subject=subject,
                 html_content="<html></html>",
+                attachment_title=self.attachment_title,
                 from_email_name="Recidiviz",
                 redirect_address=redirect_address,
             )
@@ -155,6 +157,7 @@ class SendGridClientWrapperTest(TestCase):
             from_email="dev@recidiviz.org",
             subject="Your monthly Recidiviz Report",
             html_content="<html></html>",
+            attachment_title=self.attachment_title,
             from_email_name="Recidiviz",
             text_attachment_content=file_content,
         )
@@ -163,7 +166,7 @@ class SendGridClientWrapperTest(TestCase):
                 "Fake email attachment content"
             ),
             file_name=self.mock_mail_helpers.FileName(
-                "Recidiviz Monthly Report - Client Details.txt"
+                "2021-05 Recidiviz Monthly Report - Client Details.txt"
             ),
             file_type=self.mock_mail_helpers.FileType("text/plain"),
             disposition=self.mock_mail_helpers.Disposition("attachment"),
@@ -176,6 +179,7 @@ class SendGridClientWrapperTest(TestCase):
             from_email="dev@recidiviz.org",
             subject="Your monthly Recidiviz Report",
             html_content="<html></html>",
+            attachment_title=self.attachment_title,
             from_email_name="Recidiviz",
             text_attachment_content=None,
         )

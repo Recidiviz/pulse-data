@@ -43,13 +43,15 @@ class SendGridClientWrapper:
             )
         return sendgrid_api_value
 
-    def _create_text_attachment(self, file_content: str) -> mail_helpers.Attachment:
+    def _create_text_attachment(
+        self,
+        file_content: str,
+        attachment_title: Optional[str] = None,
+    ) -> mail_helpers.Attachment:
         encoded_content = base64.b64encode(file_content.encode("ascii")).decode()
         return mail_helpers.Attachment(
             file_content=mail_helpers.FileContent(encoded_content),
-            file_name=mail_helpers.FileName(
-                "Recidiviz Monthly Report - Client Details.txt"
-            ),
+            file_name=mail_helpers.FileName(attachment_title),
             file_type=mail_helpers.FileType("text/plain"),
             disposition=mail_helpers.Disposition("attachment"),
         )
@@ -63,6 +65,7 @@ class SendGridClientWrapper:
         html_content: str,
         cc_addresses: Optional[List[str]] = None,
         text_attachment_content: Optional[str] = None,
+        attachment_title: Optional[str] = None,
     ) -> mail_helpers.Mail:
         """Creates the request body for the email that will be sent. Includes all required data to send a single email.
 
@@ -82,8 +85,11 @@ class SendGridClientWrapper:
                 for cc_email_address in cc_addresses
             ]
 
-        if text_attachment_content:
-            message.attachment = self._create_text_attachment(text_attachment_content)
+        if text_attachment_content and attachment_title:
+            message.attachment = self._create_text_attachment(
+                text_attachment_content,
+                attachment_title,
+            )
 
         return message
 
@@ -104,6 +110,7 @@ class SendGridClientWrapper:
         redirect_address: Optional[str] = None,
         cc_addresses: Optional[List[str]] = None,
         text_attachment_content: Optional[str] = None,
+        attachment_title: Optional[str] = None,
     ) -> bool:
         """Sends the email to the provided address by making a Twilio SendGrid API request.
 
@@ -116,6 +123,7 @@ class SendGridClientWrapper:
             from_email_name: A personalized name for the sender to display in the email client
             subject: The email subject line
             html_content: An string with HTML content for the email body
+            attachment_title: The title of the attachment file
             redirect_address: (Optional) An email address to which all emails will be sent
             instead of the to_email address.
             cc_addresses: (Optional) A list of email addresses to CC
@@ -135,6 +143,7 @@ class SendGridClientWrapper:
             from_email_name=from_email_name,
             subject=subject,
             html_content=html_content,
+            attachment_title=attachment_title,
             cc_addresses=cc_addresses,
             text_attachment_content=text_attachment_content,
         )

@@ -89,6 +89,15 @@ def str_to_bool(bool_str: str, arg_key: Optional[str] = None) -> bool:
     raise ValueError(f"Unexpected value {bool_str} for bool param {arg_key}")
 
 
+def get_int_param_value(arg_key: str, args: MultiDict) -> Optional[int]:
+    str_value = get_str_param_value(arg_key, args)
+
+    if str_value is None or not str_value.isnumeric():
+        return None
+
+    return int(str_value)
+
+
 def get_str_param_values(
     arg_key: str, args: MultiDict, preserve_case: bool = False
 ) -> List[str]:
