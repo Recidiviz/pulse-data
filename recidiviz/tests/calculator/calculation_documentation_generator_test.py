@@ -332,18 +332,18 @@ The presence of all required metrics for a state does not guarantee that this pr
 
 ##Shipped Products
 
-  - Test Product
+  - [Test Product](../products/test_product/test_product_summary.md)
 
 ##Products in Development
 
-  - Test Product Without Exports
+  - [Test Product Without Exports](../products/test_product_without_exports/test_product_without_exports_summary.md)
 
 ##Regularly Calculated Metrics
 
-|      **Metric**       |**Number of Months Calculated**|**Calculation Frequency**|
-|-----------------------|------------------------------:|-------------------------|
-|INCARCERATION_ADMISSION|                             24|daily                    |
-|INCARCERATION_ADMISSION|                            240|triggered by code changes|
+|                                      **Metric**                                      |**Number of Months Calculated**|**Calculation Frequency**|
+|--------------------------------------------------------------------------------------|------------------------------:|-------------------------|
+|[INCARCERATION_ADMISSION](../metrics/incarceration/incarceration_admission_metrics.md)|                             24|daily                    |
+|[INCARCERATION_ADMISSION](../metrics/incarceration/incarceration_admission_metrics.md)|                            240|triggered by code changes|
 """
             documentation = (
                 self.docs_generator._get_state_information(  # pylint: disable=W0212
