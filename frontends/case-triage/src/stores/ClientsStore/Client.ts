@@ -76,6 +76,7 @@ export interface Client {
   mostRecentFaceToFaceDate: APIDate;
   mostRecentHomeVisitDate: APIDate;
   mostRecentAssessmentDate: APIDate;
+  emailAddress?: string;
   needsMet: NeedsMet;
   nextAssessmentDate: APIDate;
   nextFaceToFaceDate: APIDate;

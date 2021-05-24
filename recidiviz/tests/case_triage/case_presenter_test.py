@@ -23,13 +23,15 @@ from freezegun import freeze_time
 
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
 from recidiviz.case_triage.client_info.types import PreferredContactMethod
-from recidiviz.case_triage.querier.case_presenter import CasePresenter
-from recidiviz.case_triage.querier.case_presenter import _json_map_dates_to_strings
+from recidiviz.case_triage.querier.case_presenter import (
+    CasePresenter,
+    _json_map_dates_to_strings,
+)
 from recidiviz.tests.case_triage.case_triage_helpers import (
+    generate_fake_case_update,
     generate_fake_client,
     generate_fake_client_info,
     generate_fake_client_officer_association,
-    generate_fake_case_update,
     generate_fake_officer,
 )
 
@@ -61,6 +63,7 @@ class TestCasePresenter(TestCase):
                     "gender": self.mock_client.gender,
                     "supervisingOfficerExternalId": self.mock_client.supervising_officer_external_id,
                     "currentAddress": self.mock_client.current_address,
+                    "emailAddress": self.mock_client.email_address,
                     "birthdate": self.mock_client.birthdate,
                     "birthdateInferredFromAge": self.mock_client.birthdate_inferred_from_age,
                     "supervisionStartDate": self.mock_client.supervision_start_date,
@@ -114,6 +117,7 @@ class TestCasePresenter(TestCase):
                     "gender": self.mock_client.gender,
                     "supervisingOfficerExternalId": self.mock_client.supervising_officer_external_id,
                     "currentAddress": self.mock_client.current_address,
+                    "emailAddress": self.mock_client.email_address,
                     "birthdate": self.mock_client.birthdate,
                     "birthdateInferredFromAge": self.mock_client.birthdate_inferred_from_age,
                     "supervisionStartDate": self.mock_client.supervision_start_date,
