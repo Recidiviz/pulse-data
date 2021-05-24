@@ -25,8 +25,8 @@ from typing import Any, Dict, Optional
 
 import dateutil.parser
 from sqlalchemy import (
-    Column,
     Boolean,
+    Column,
     Date,
     DateTime,
     Enum,
@@ -76,6 +76,7 @@ class ETLClient(CaseTriageBase):
     most_recent_face_to_face_date = Column(Date)
     most_recent_home_visit_date = Column(Date)
     days_with_current_po = Column(Integer)
+    email_address = Column(Text)
 
     case_updates = relationship(
         "CaseUpdate",
@@ -158,6 +159,7 @@ class ETLClient(CaseTriageBase):
                 json_client, "most_recent_home_visit_date"
             ),
             days_with_current_po=json_client.get("days_with_current_po"),
+            email_address=json_client.get("email_address"),
         )
 
 

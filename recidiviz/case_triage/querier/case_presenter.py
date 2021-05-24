@@ -94,6 +94,7 @@ class CasePresenter:
             "assessmentScore": self.etl_client.assessment_score,
             "mostRecentFaceToFaceDate": self.etl_client.most_recent_face_to_face_date,
             "mostRecentHomeVisitDate": self.etl_client.most_recent_home_visit_date,
+            "emailAddress": self.etl_client.email_address,
             "caseUpdates": {
                 case_update.action_type: CaseUpdatePresenter(
                     self.etl_client, case_update

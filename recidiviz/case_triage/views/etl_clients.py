@@ -105,6 +105,9 @@ LEFT JOIN
   latest_employment
 USING (person_external_id, state_code)
 LEFT JOIN
+  `{project_id}.{case_triage_dataset}.contact_info`
+USING (person_external_id, state_code)
+LEFT JOIN
   `{project_id}.{case_triage_dataset}.last_known_date_of_employment`
 USING (person_external_id, state_code)
 LEFT JOIN
@@ -170,6 +173,7 @@ CLIENT_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "state_code",
         "person_external_id",
         "full_name",
+        "email_address",
         "current_address",
         "gender",
         "birthdate",

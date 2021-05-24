@@ -67,6 +67,7 @@ def csv_row_to_etl_client_json(row: List[str]) -> Dict[str, Any]:
         "most_recent_face_to_face_date": parse_nullable_date(row[12]),
         "most_recent_home_visit_date": parse_nullable_date(row[18]),
         "days_with_current_po": int(row[19]),
+        "email_address": treat_empty_as_null(row[20]),
     }
 
 
