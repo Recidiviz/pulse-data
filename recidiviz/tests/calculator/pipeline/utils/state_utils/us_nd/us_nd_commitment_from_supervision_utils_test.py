@@ -20,8 +20,9 @@ from datetime import date
 import unittest
 
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_commitment_from_supervision_utils import (
-    us_nd_pre_commitment_supervision_periods_if_commitment_from_supervision,
+    us_nd_pre_commitment_supervision_period_if_commitment_from_supervision,
     us_nd_violation_history_window_pre_commitment_from_supervision,
+    _us_nd_pre_commitment_supervision_period,
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -41,7 +42,7 @@ from recidiviz.persistence.entity.state.entities import (
 
 
 class TestPreCommitmentSupervisionPeriodsIfCommitment(unittest.TestCase):
-    """Tests the state-specific us_nd_pre_commitment_supervision_periods_if_commitment function."""
+    """Tests the state-specific us_nd_pre_commitment_supervision_period_if_commitment function."""
 
     def test_revoked_supervision_periods_if_revocation_occurred_US_ND_NewAdmissionNotAfterProbation(
         self,
@@ -73,14 +74,14 @@ class TestPreCommitmentSupervisionPeriodsIfCommitment(unittest.TestCase):
 
         (
             admission_is_revocation,
-            revoked_periods,
-        ) = us_nd_pre_commitment_supervision_periods_if_commitment_from_supervision(
+            pre_commitment_period,
+        ) = us_nd_pre_commitment_supervision_period_if_commitment_from_supervision(
             incarceration_period,
             supervision_periods,
         )
 
         self.assertFalse(admission_is_revocation)
-        self.assertEqual([], revoked_periods)
+        self.assertEqual(None, pre_commitment_period)
 
     def test_revoked_supervision_periods_if_revocation_occurred_US_ND_NewAdmissionNotAfterRevocation(
         self,
@@ -112,14 +113,14 @@ class TestPreCommitmentSupervisionPeriodsIfCommitment(unittest.TestCase):
 
         (
             admission_is_revocation,
-            revoked_periods,
-        ) = us_nd_pre_commitment_supervision_periods_if_commitment_from_supervision(
+            pre_commitment_period,
+        ) = us_nd_pre_commitment_supervision_period_if_commitment_from_supervision(
             incarceration_period,
             supervision_periods,
         )
 
         self.assertFalse(admission_is_revocation)
-        self.assertEqual([], revoked_periods)
+        self.assertEqual(None, pre_commitment_period)
 
     def test_revoked_supervision_periods_if_revocation_occurred_US_ND_NewAdmissionAfterProbationRevocation(
         self,
@@ -151,14 +152,14 @@ class TestPreCommitmentSupervisionPeriodsIfCommitment(unittest.TestCase):
 
         (
             admission_is_revocation,
-            revoked_periods,
-        ) = us_nd_pre_commitment_supervision_periods_if_commitment_from_supervision(
+            pre_commitment_period,
+        ) = us_nd_pre_commitment_supervision_period_if_commitment_from_supervision(
             incarceration_period,
             supervision_periods,
         )
 
         self.assertTrue(admission_is_revocation)
-        self.assertEqual(supervision_periods, revoked_periods)
+        self.assertEqual(supervision_period, pre_commitment_period)
 
     def test_revoked_supervision_periods_if_revocation_occurred_US_ND_NewAdmissionNotDirectlyAfterProbationRevocation(
         self,
@@ -205,14 +206,14 @@ class TestPreCommitmentSupervisionPeriodsIfCommitment(unittest.TestCase):
 
         (
             admission_is_revocation,
-            revoked_periods,
-        ) = us_nd_pre_commitment_supervision_periods_if_commitment_from_supervision(
+            pre_commitment_period,
+        ) = us_nd_pre_commitment_supervision_period_if_commitment_from_supervision(
             incarceration_period,
             supervision_periods,
         )
 
         self.assertFalse(admission_is_revocation)
-        self.assertEqual([], revoked_periods)
+        self.assertEqual(None, pre_commitment_period)
 
     def test_revoked_supervision_periods_if_revocation_occurred_US_ND_RevocationAdmission(
         self,
@@ -244,20 +245,20 @@ class TestPreCommitmentSupervisionPeriodsIfCommitment(unittest.TestCase):
 
         (
             admission_is_revocation,
-            revoked_periods,
-        ) = us_nd_pre_commitment_supervision_periods_if_commitment_from_supervision(
+            pre_commitment_period,
+        ) = us_nd_pre_commitment_supervision_period_if_commitment_from_supervision(
             incarceration_period,
             supervision_periods,
         )
 
         self.assertTrue(admission_is_revocation)
-        self.assertEqual(supervision_periods, revoked_periods)
+        self.assertEqual(supervision_period, pre_commitment_period)
 
     def test_revoked_supervision_periods_if_revocation_occurred_US_ND_RevocationAdmissionNoSupervisionPeriod(
         self,
     ) -> None:
         """Tests that when a REVOCATION admission incarceration follows no supervision period,
-        then this returns True, []."""
+        then this returns True, None."""
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
             external_id="ip2",
@@ -270,14 +271,14 @@ class TestPreCommitmentSupervisionPeriodsIfCommitment(unittest.TestCase):
 
         (
             admission_is_revocation,
-            revoked_periods,
-        ) = us_nd_pre_commitment_supervision_periods_if_commitment_from_supervision(
+            pre_commitment_period,
+        ) = us_nd_pre_commitment_supervision_period_if_commitment_from_supervision(
             incarceration_period,
             [],
         )
 
         self.assertTrue(admission_is_revocation)
-        self.assertEqual([], revoked_periods)
+        self.assertEqual(None, pre_commitment_period)
 
 
 class TestViolationHistoryWindowPreCommitment(unittest.TestCase):
@@ -301,3 +302,340 @@ class TestViolationHistoryWindowPreCommitment(unittest.TestCase):
         )
 
         self.assertEqual(expected_violation_window, violation_window)
+
+
+class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
+    """Tests the _us_nd_pre_commitment_supervision_period function."""
+
+    def test_us_nd_pre_commitment_supervision_period_parole_revocation(self):
+        """Tests that we prioritize the period with the supervision_type that matches
+        the admission reason supervision type."""
+        admission_date = date(2019, 5, 25)
+        admission_reason = StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
+
+        # Overlapping parole period
+        parole_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_ND",
+            start_date=date(2019, 3, 5),
+            termination_date=date(2019, 6, 9),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            supervision_type=StateSupervisionType.PAROLE,
+        )
+
+        # Overlapping probation period
+        probation_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=222,
+            external_id="sp2",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_ND",
+            start_date=date(2019, 3, 5),
+            termination_date=date(2019, 6, 9),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            supervision_type=StateSupervisionType.PROBATION,
+        )
+
+        pre_commitment_supervision_period = _us_nd_pre_commitment_supervision_period(
+            admission_date,
+            admission_reason,
+            supervision_periods=[probation_period, parole_period],
+        )
+
+        self.assertEqual(parole_period, pre_commitment_supervision_period)
+
+    def test_us_nd_pre_commitment_supervision_period_parole_revocation_overlap(self):
+        """Tests that we prioritize the overlapping parole period over the one that
+        was recently terminated because the admission is a PAROLE_REVOCATION."""
+        admission_date = date(2019, 5, 25)
+        admission_reason = StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
+
+        # Overlapping parole period
+        overlapping_parole_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_ND",
+            start_date=date(2019, 3, 5),
+            termination_date=date(2019, 6, 9),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            supervision_type=StateSupervisionType.PAROLE,
+        )
+
+        # Terminated parole period
+        terminated_parole_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=222,
+            external_id="sp2",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_ND",
+            start_date=date(2019, 3, 5),
+            termination_date=date(2019, 5, 1),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            supervision_type=StateSupervisionType.PAROLE,
+        )
+
+        pre_commitment_supervision_period = _us_nd_pre_commitment_supervision_period(
+            admission_date,
+            admission_reason,
+            supervision_periods=[terminated_parole_period, overlapping_parole_period],
+        )
+
+        self.assertEqual(overlapping_parole_period, pre_commitment_supervision_period)
+
+    def test_us_nd_pre_commitment_supervision_period_parole_revocation_rev_term(self):
+        """Tests that we prioritize the overlapping parole period with a termination
+        reason of REVOCATION."""
+        admission_date = date(2019, 5, 25)
+        admission_reason = StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
+
+        # Overlapping revoked parole period
+        revoked_parole_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_ND",
+            start_date=date(2019, 3, 5),
+            termination_date=date(2019, 6, 9),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            supervision_type=StateSupervisionType.PAROLE,
+        )
+
+        # Overlapping parole period
+        expired_parole_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=222,
+            external_id="sp2",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_ND",
+            start_date=date(2019, 3, 5),
+            termination_date=date(2019, 6, 9),
+            termination_reason=StateSupervisionPeriodTerminationReason.EXPIRATION,
+            supervision_type=StateSupervisionType.PAROLE,
+        )
+
+        pre_commitment_supervision_period = _us_nd_pre_commitment_supervision_period(
+            admission_date,
+            admission_reason,
+            supervision_periods=[expired_parole_period, revoked_parole_period],
+        )
+
+        self.assertEqual(revoked_parole_period, pre_commitment_supervision_period)
+
+    def test_us_nd_pre_commitment_supervision_period_parole_revocation_closer(self):
+        """Tests that we prioritize the overlapping parole period with a termination
+        reason of REVOCATION."""
+        admission_date = date(2019, 5, 25)
+        admission_reason = StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
+
+        # Overlapping revoked parole period, 5 days after admission
+        revoked_parole_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_ND",
+            start_date=date(2019, 3, 5),
+            termination_date=date(2019, 6, 9),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            supervision_type=StateSupervisionType.PAROLE,
+        )
+
+        # Overlapping revoked parole period, 1 day after admission
+        closer_revoked_parole_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=222,
+            external_id="sp2",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_ND",
+            start_date=date(2019, 3, 5),
+            termination_date=date(2019, 5, 26),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            supervision_type=StateSupervisionType.PAROLE,
+        )
+
+        pre_commitment_supervision_period = _us_nd_pre_commitment_supervision_period(
+            admission_date,
+            admission_reason,
+            supervision_periods=[closer_revoked_parole_period, revoked_parole_period],
+        )
+
+        self.assertEqual(
+            closer_revoked_parole_period, pre_commitment_supervision_period
+        )
+
+    def test_us_nd_pre_commitment_supervision_period_probation_revocation(self):
+        """Tests that we prioritize the period with the supervision_type that matches
+        the admission reason supervision type."""
+        admission_date = date(2019, 5, 25)
+        admission_reason = StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
+
+        # Overlapping parole period
+        parole_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_ND",
+            start_date=date(2019, 3, 5),
+            termination_date=date(2019, 6, 9),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            supervision_type=StateSupervisionType.PAROLE,
+        )
+
+        # Overlapping probation period
+        probation_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=222,
+            external_id="sp2",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_ND",
+            start_date=date(2019, 3, 5),
+            termination_date=date(2019, 6, 9),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            supervision_type=StateSupervisionType.PROBATION,
+        )
+
+        pre_commitment_supervision_period = _us_nd_pre_commitment_supervision_period(
+            admission_date,
+            admission_reason,
+            supervision_periods=[probation_period, parole_period],
+        )
+
+        self.assertEqual(probation_period, pre_commitment_supervision_period)
+
+    def test_us_nd_pre_commitment_supervision_period_probation_revocation_overlap(self):
+        """Tests that we prioritize the recently terminated probation period over the
+        one that is overlapping because the admission is a PROBATION_REVOCATION."""
+        admission_date = date(2019, 5, 25)
+        admission_reason = StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
+
+        # Overlapping probation period
+        overlapping_probation_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_ND",
+            start_date=date(2019, 3, 5),
+            termination_date=date(2019, 6, 9),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            supervision_type=StateSupervisionType.PROBATION,
+        )
+
+        # Terminated probation period
+        terminated_probation_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=222,
+            external_id="sp2",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_ND",
+            start_date=date(2019, 3, 5),
+            termination_date=date(2019, 5, 1),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            supervision_type=StateSupervisionType.PROBATION,
+        )
+
+        pre_commitment_supervision_period = _us_nd_pre_commitment_supervision_period(
+            admission_date,
+            admission_reason,
+            supervision_periods=[
+                terminated_probation_period,
+                overlapping_probation_period,
+            ],
+        )
+
+        self.assertEqual(terminated_probation_period, pre_commitment_supervision_period)
+
+    def test_us_nd_pre_commitment_supervision_period_probation_revocation_rev_term(
+        self,
+    ):
+        """Tests that we prioritize the probation period with a termination
+        reason of REVOCATION."""
+        admission_date = date(2019, 5, 25)
+        admission_reason = StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
+
+        # Terminated revoked probation period
+        revoked_probation_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_ND",
+            start_date=date(2019, 3, 5),
+            termination_date=date(2019, 5, 9),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            supervision_type=StateSupervisionType.PROBATION,
+        )
+
+        # Expired terminated probation period
+        expired_probation_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=222,
+            external_id="sp2",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_ND",
+            start_date=date(2019, 3, 5),
+            termination_date=date(2019, 5, 9),
+            termination_reason=StateSupervisionPeriodTerminationReason.EXPIRATION,
+            supervision_type=StateSupervisionType.PROBATION,
+        )
+
+        pre_commitment_supervision_period = _us_nd_pre_commitment_supervision_period(
+            admission_date,
+            admission_reason,
+            supervision_periods=[expired_probation_period, revoked_probation_period],
+        )
+
+        self.assertEqual(revoked_probation_period, pre_commitment_supervision_period)
+
+    def test_us_nd_pre_commitment_supervision_period_probation_revocation_closer(
+        self,
+    ):
+        """Tests that we prioritize the overlapping probation period with a termination
+        date that is closer to the admission_date."""
+        admission_date = date(2019, 5, 25)
+        admission_reason = StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
+
+        # Overlapping revoked probation period, 5 days after admission
+        revoked_probation_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_ND",
+            start_date=date(2019, 3, 5),
+            termination_date=date(2019, 6, 9),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            supervision_type=StateSupervisionType.PROBATION,
+        )
+
+        # Overlapping revoked probation period, 1 day after admission
+        closer_revoked_probation_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=222,
+            external_id="sp2",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_ND",
+            start_date=date(2019, 3, 5),
+            termination_date=date(2019, 5, 26),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            supervision_type=StateSupervisionType.PROBATION,
+        )
+
+        pre_commitment_supervision_period = _us_nd_pre_commitment_supervision_period(
+            admission_date,
+            admission_reason,
+            supervision_periods=[
+                closer_revoked_probation_period,
+                revoked_probation_period,
+            ],
+        )
+
+        self.assertEqual(
+            closer_revoked_probation_period, pre_commitment_supervision_period
+        )
+
+    def test_us_nd_pre_commitment_supervision_period_no_periods(
+        self,
+    ):
+        """Tests the situation where the person has no supervision periods."""
+        admission_date = date(2019, 5, 25)
+        admission_reason = StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
+
+        pre_commitment_supervision_period = _us_nd_pre_commitment_supervision_period(
+            admission_date,
+            admission_reason,
+            supervision_periods=[],
+        )
+
+        self.assertIsNone(pre_commitment_supervision_period)

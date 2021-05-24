@@ -833,6 +833,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             start_date=date(2001, 3, 13),
             termination_date=date(2008, 12, 20),
             supervision_site="X",
+            supervision_type=StateSupervisionType.PROBATION,
         )
 
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(

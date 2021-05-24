@@ -17,12 +17,13 @@
 """Utils for validating and manipulating supervision periods for use in calculations."""
 import itertools
 import logging
-from datetime import date
+import datetime
 from typing import List, Optional, Set
 
 from recidiviz.calculator.pipeline.utils.period_utils import (
     sort_periods_by_set_dates_and_statuses,
     find_last_terminated_period_before_date,
+    sort_period_by_external_id,
 )
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
@@ -62,7 +63,7 @@ SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT = 24
 def prepare_supervision_periods_for_calculations(
     supervision_periods: List[StateSupervisionPeriod],
     drop_federal_and_other_country_supervision_periods: bool,
-    earliest_death_date: Optional[date] = None,
+    earliest_death_date: Optional[datetime.date] = None,
 ) -> List[StateSupervisionPeriod]:
     supervision_periods = _drop_placeholder_periods(supervision_periods)
 
@@ -137,7 +138,7 @@ def _infer_missing_dates_and_statuses(
                     sp.termination_reason_raw_text,
                 )
 
-        elif sp.termination_date > date.today():
+        elif sp.termination_date > datetime.date.today():
             # This is an erroneous termination_date in the future. For the purpose of calculations, clear the
             # termination_date and the termination_reason.
             sp.termination_date = None
@@ -147,7 +148,7 @@ def _infer_missing_dates_and_statuses(
         if sp.start_date is None:
             logging.info("Dropping supervision period without start_date: [%s]", sp)
             continue
-        if sp.start_date > date.today():
+        if sp.start_date > datetime.date.today():
             logging.info(
                 "Dropping supervision period with start_date in the future: [%s]", sp
             )
@@ -185,39 +186,97 @@ def _drop_other_country_and_federal_supervision_periods(
     ]
 
 
-def get_relevant_supervision_periods_before_admission_date(
-    admission_date: Optional[date], supervision_periods: List[StateSupervisionPeriod]
-) -> List[StateSupervisionPeriod]:
-    """Returns the relevant supervision periods preceding an admission to prison that can be used to determine
-    supervision type prior to admission.
-    """
+def get_commitment_from_supervision_supervision_period(
+    admission_date: datetime.date,
+    supervision_periods: List[StateSupervisionPeriod],
+    prioritize_overlapping_periods: bool,
+) -> Optional[StateSupervisionPeriod]:
+    """Identifies the supervision period associated with the commitment to supervision
+    admission on the given |admission_date|."""
+    if not supervision_periods:
+        return None
 
-    if not admission_date:
-        logging.warning("Unexpectedly no admission date provided")
-        return []
-
-    relevant_periods = _supervision_periods_overlapping_with_date(
-        admission_date, supervision_periods
+    relevant_periods = get_relevant_supervision_periods_for_commitment_to_supervision(
+        admission_date=admission_date,
+        supervision_periods=supervision_periods,
+        prioritize_overlapping_periods=prioritize_overlapping_periods,
     )
 
     if not relevant_periods:
-        # If there are no overlapping supervision periods, but they had a prison admission, then they
-        # may have been on supervision at some time before this admission. If present within the
-        # |SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT|, find the most recently terminated supervision period.
-        most_recent_supervision_period = find_last_terminated_period_before_date(
-            admission_date,
-            supervision_periods,
-            SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
-        )
+        return None
 
-        if most_recent_supervision_period:
-            relevant_periods.append(most_recent_supervision_period)
+    # In the case where there are multiple relevant SPs at this point, sort and return
+    # the first one
+    return min(
+        relevant_periods,
+        key=lambda e: (
+            # Prioritize terminated periods with a termination_reason of REVOCATION
+            # (False sorts before True)
+            e.termination_reason != StateSupervisionPeriodTerminationReason.REVOCATION,
+            # Prioritize termination_date closest to the admission_date
+            abs(((e.termination_date or datetime.date.today()) - admission_date).days),
+            # Deterministically sort by external_id in the case where there
+            # are two REVOKED periods with the same termination_date
+            e.external_id,
+        ),
+    )
 
-    return relevant_periods
+
+def get_relevant_supervision_periods_for_commitment_to_supervision(
+    admission_date: datetime.date,
+    supervision_periods: List[StateSupervisionPeriod],
+    prioritize_overlapping_periods: bool,
+) -> List[StateSupervisionPeriod]:
+    """Returns the relevant supervision periods at the time of a commitment to
+    supervision admission.
+
+    If |prioritize_overlapping_periods| is True, prioritizes supervision periods that
+    are overlapping with the |admission_date|. Else, prioritizes the period that has
+    most recently terminated within SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT months of
+    the |admission_date|.
+    """
+    overlapping_periods = supervision_periods_overlapping_with_date(
+        admission_date, supervision_periods
+    )
+
+    # If there's more than one recently terminated period with the same
+    # termination_date, prioritize the ones with REVOCATION or RETURN_TO_INCARCERATION
+    # termination_reasons
+    def _same_date_sort_override(
+        period_a: StateSupervisionPeriod, period_b: StateSupervisionPeriod
+    ) -> int:
+        prioritized_termination_reasons = [
+            StateSupervisionPeriodTerminationReason.REVOCATION,
+            StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION,
+        ]
+        prioritize_a = period_a.termination_reason in prioritized_termination_reasons
+        prioritize_b = period_b.termination_reason in prioritized_termination_reasons
+
+        if prioritize_a and prioritize_b:
+            return sort_period_by_external_id(period_a, period_b)
+        return -1 if prioritize_a else 1
+
+    most_recent_terminated_period = find_last_terminated_period_before_date(
+        upper_bound_date=admission_date,
+        periods=supervision_periods,
+        maximum_months_proximity=SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
+        same_date_sort_fn=_same_date_sort_override,
+    )
+
+    if prioritize_overlapping_periods:
+        if overlapping_periods:
+            return overlapping_periods
+        if most_recent_terminated_period:
+            return [most_recent_terminated_period]
+        return []
+
+    if most_recent_terminated_period:
+        return [most_recent_terminated_period]
+    return overlapping_periods
 
 
-def _supervision_periods_overlapping_with_date(
-    intersection_date: date, supervision_periods: List[StateSupervisionPeriod]
+def supervision_periods_overlapping_with_date(
+    intersection_date: datetime.date, supervision_periods: List[StateSupervisionPeriod]
 ) -> List[StateSupervisionPeriod]:
     """Returns the supervision periods that overlap with the intersection_date."""
     overlapping_periods = [
@@ -236,7 +295,7 @@ def _supervision_periods_overlapping_with_date(
 
 def _drop_and_close_open_supervision_periods_for_deceased(
     supervision_periods: List[StateSupervisionPeriod],
-    earliest_death_date: date,
+    earliest_death_date: datetime.date,
 ) -> List[StateSupervisionPeriod]:
     """Updates supervision periods for people who are deceased by
     - Dropping open supervision periods that start after the |earliest_death_date|

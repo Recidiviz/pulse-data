@@ -32,7 +32,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseDecidingBodyType,
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
-    get_relevant_supervision_periods_before_admission_date,
+    get_relevant_supervision_periods_for_commitment_to_supervision,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -82,6 +82,8 @@ def _us_pa_admission_is_commitment_from_supervision(
     )
 
 
+# TODO(#7140): Change the return type to Tuple[bool, Optional[StateSupervisionPeriod]]
+#  once this function deterministically chooses only one pre-commitment SP
 def us_pa_pre_commitment_supervision_periods_if_commitment(
     incarceration_period: StateIncarcerationPeriod,
     supervision_periods: List[StateSupervisionPeriod],
@@ -98,9 +100,19 @@ def us_pa_pre_commitment_supervision_periods_if_commitment(
     if not admission_is_commitment:
         return False, []
 
+    admission_date = incarceration_period.admission_date
+
+    if not admission_date:
+        raise ValueError(
+            "Unexpected null admission_date on incarceration_period: "
+            f"[{incarceration_period}]"
+        )
+
     pre_commitment_supervision_periods = (
-        get_relevant_supervision_periods_before_admission_date(
-            incarceration_period.admission_date, supervision_periods
+        get_relevant_supervision_periods_for_commitment_to_supervision(
+            admission_date,
+            supervision_periods,
+            prioritize_overlapping_periods=True,
         )
     )
 
