@@ -195,7 +195,7 @@ class Region:
         )
 
     def is_ingest_launched_in_production(self) -> bool:
-        """Returns true if ingest can be launched for this region in production. """
+        """Returns true if ingest can be launched for this region in production."""
         return (
             self.environment is not None
             and self.environment.lower() == GCPEnvironment.PRODUCTION.value.lower()
