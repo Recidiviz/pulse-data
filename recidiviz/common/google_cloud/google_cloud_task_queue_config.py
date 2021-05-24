@@ -44,8 +44,8 @@ from recidiviz.utils import metadata, regions, vendors
 
 ADMIN_PANEL_DATA_DISCOVERY_QUEUE_CONFIG = queue_pb2.Queue(
     rate_limits=queue_pb2.RateLimits(
-        max_dispatches_per_second=100,
-        max_concurrent_dispatches=100,
+        max_dispatches_per_second=None,
+        max_concurrent_dispatches=None,
     ),
     retry_config=queue_pb2.RetryConfig(
         max_attempts=0,
