@@ -436,7 +436,12 @@ class CalculationDocumentationGenerator:
         ):
             return "N/A"
 
-        return self.bulleted_list(self.products_by_state[state_code][environment])
+        return self.bulleted_list(
+            [
+                f"[{product}](../products/{self._normalize_string_for_path(product)}/{self._normalize_string_for_path(product)}_summary.md)"
+                for product in self.products_by_state[state_code][environment]
+            ]
+        )
 
     def states_list_for_env(
         self, product: ProductConfig, environment: GCPEnvironment
@@ -727,7 +732,10 @@ class CalculationDocumentationGenerator:
 
     def _get_metrics_table_for_state(self, state_name: str) -> str:
         sorted_state_metric_calculations = self._get_sorted_state_metric_info()
-
+        metric_names_to_tables = {
+            metric.value: table
+            for table, metric in DATAFLOW_TABLES_TO_METRIC_TYPES.items()
+        }
         if state_name in sorted_state_metric_calculations:
             headers = [
                 "**Metric**",
@@ -736,7 +744,7 @@ class CalculationDocumentationGenerator:
             ]
             table_matrix = [
                 [
-                    metric_info.name,
+                    f"[{metric_info.name}](../metrics/{self.generic_types_by_metric_name[metric_names_to_tables[metric_info.name]].lower()}/{metric_names_to_tables[metric_info.name]}.md)",
                     metric_info.month_count if metric_info.month_count else "N/A",
                     metric_info.frequency,
                 ]
