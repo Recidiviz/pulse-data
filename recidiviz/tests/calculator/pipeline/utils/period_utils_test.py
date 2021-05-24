@@ -49,7 +49,7 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
         supervision_period_older = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             start_date=date(2000, 1, 1),
-            termination_date=date(2005, 1, 1),
+            termination_date=date(2010, 8, 30),
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
@@ -278,6 +278,84 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
         )
 
         self.assertIsNone(most_recently_terminated_period)
+
+    def test_find_last_terminated_period_before_date_same_termination_date(
+        self,
+    ):
+        supervision_period_a = StateSupervisionPeriod.new_with_defaults(
+            external_id="a",
+            state_code="US_XX",
+            start_date=date(2006, 1, 1),
+            termination_date=date(2007, 12, 31),
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        supervision_period_b = StateSupervisionPeriod.new_with_defaults(
+            external_id="b",
+            state_code="US_XX",
+            start_date=date(2006, 1, 1),
+            termination_date=date(2007, 12, 31),
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        most_recently_terminated_period = find_last_terminated_period_before_date(
+            upper_bound_date=date(2008, 1, 10),
+            periods=[supervision_period_a, supervision_period_b],
+            maximum_months_proximity=SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
+        )
+
+        self.assertEqual(supervision_period_a, most_recently_terminated_period)
+
+    def test_find_last_terminated_period_before_date_same_termination_date_override(
+        self,
+    ):
+        """Tests the find_last_terminated_period_before_date function when a
+        same_date_sort_fn function is included.
+        """
+        supervision_period_a = StateSupervisionPeriod.new_with_defaults(
+            external_id="a",
+            state_code="US_XX",
+            start_date=date(2006, 1, 1),
+            termination_date=date(2007, 12, 31),
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+        )
+
+        supervision_period_b = StateSupervisionPeriod.new_with_defaults(
+            external_id="b",
+            state_code="US_XX",
+            start_date=date(2006, 1, 1),
+            termination_date=date(2007, 12, 31),
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
+        )
+
+        def _same_date_sort_override(
+            period_a: StateSupervisionPeriod, period_b: StateSupervisionPeriod
+        ) -> int:
+            prioritized_termination_reasons = [
+                StateSupervisionPeriodTerminationReason.ABSCONSION,
+                StateSupervisionPeriodTerminationReason.EXPIRATION,
+            ]
+            prioritize_a = (
+                period_a.termination_reason in prioritized_termination_reasons
+            )
+            prioritize_b = (
+                period_b.termination_reason in prioritized_termination_reasons
+            )
+
+            if prioritize_a and prioritize_b:
+                return 0
+            return -1 if prioritize_a else 1
+
+        most_recently_terminated_period = find_last_terminated_period_before_date(
+            upper_bound_date=date(2008, 1, 10),
+            periods=[supervision_period_a, supervision_period_b],
+            maximum_months_proximity=SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
+            same_date_sort_fn=_same_date_sort_override,
+        )
+
+        self.assertEqual(supervision_period_b, most_recently_terminated_period)
 
 
 class TestEarliestPeriodEndingInDeath(unittest.TestCase):

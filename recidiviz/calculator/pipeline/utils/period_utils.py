@@ -34,6 +34,15 @@ from recidiviz.persistence.entity.state.entities import (
 )
 
 
+def sort_period_by_external_id(p_a: PeriodType, p_b: PeriodType) -> int:
+    """Sorts two periods alphabetically by external_id."""
+    if p_a.external_id is None or p_b.external_id is None:
+        raise ValueError("Expect no placeholder periods in this function.")
+
+    # Alphabetic sort by external_id
+    return -1 if p_a.external_id < p_b.external_id else 1
+
+
 def sort_periods_by_set_dates_and_statuses(
     periods: List[PeriodType],
     is_active_period_function: Callable[[PeriodType], int],
@@ -77,7 +86,7 @@ def sort_periods_by_set_dates_and_statuses(
         period_b_active = is_active_period_function(period_b)
 
         if period_a_active == period_b_active:
-            return 0
+            return sort_period_by_external_id(period_a, period_b)
         # Sort by status of the period. Order periods that are active (no end date) after periods that have ended.
         if period_a_active:
             return 1
@@ -188,6 +197,9 @@ def find_last_terminated_period_before_date(
     upper_bound_date: date,
     periods: Optional[List[PeriodType]],
     maximum_months_proximity: int,
+    same_date_sort_fn: Callable[
+        [PeriodType, PeriodType], int
+    ] = sort_period_by_external_id,
 ) -> Optional[PeriodType]:
     """Looks for the incarceration or supervision period that ended most recently before the upper_bound_date, within
     the month window defined by |maximum_months_proximity|.
@@ -210,8 +222,23 @@ def find_last_terminated_period_before_date(
         and period.start_date_inclusive <= period.end_date_exclusive <= upper_bound_date
     ]
 
+    def _sort_function(period_a: PeriodType, period_b: PeriodType) -> int:
+        p_a_date = period_a.end_date_exclusive
+        p_b_date = period_b.end_date_exclusive
+
+        if not p_a_date or not p_b_date:
+            raise ValueError(
+                "end_date_exclusive should be set on all periods by this point."
+            )
+
+        if p_a_date == p_b_date:
+            return same_date_sort_fn(period_a, period_b)
+        # Sort the more recent termination date first
+        return (p_b_date - p_a_date).days
+
     if previous_periods:
-        return max(previous_periods, key=lambda p: p.end_date_exclusive or date.min)
+        # Sort in date descending order, and take the first one
+        return min(previous_periods, key=cmp_to_key(_sort_function))
 
     return None
 
