@@ -524,7 +524,10 @@ class PoMonthlyReportContext(ReportContext):
                     ]
 
                 clients_by_type[clients_key].append(base_columns + additional_columns)
-
+        # sorting clients of each type by the clients' names
+        for key in clients_by_type:
+            clients = clients_by_type[key]
+            clients.sort(key=lambda x: x[1])
         return clients_by_type
 
     def _prepare_attachment_data(self) -> Dict:
