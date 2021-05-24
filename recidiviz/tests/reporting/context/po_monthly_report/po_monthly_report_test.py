@@ -191,8 +191,8 @@ class PoMonthlyReportContextTests(TestCase):
             [246]     Goya, Francisco     Supervision level downgraded on 12/07/2020    
             
             // Revocations //
-            [456]     Munch, Edvard     New Crime          Revocation recommendation staffed on 12/06/2020    
             [111]     Miro, Joan        Technical Only     Revocation recommendation staffed on 12/10/2020    
+            [456]     Munch, Edvard     New Crime          Revocation recommendation staffed on 12/06/2020    
 
             // Absconsions //
             [789]     Dali, Salvador     Absconsion reported on 12/11/2020    
@@ -238,14 +238,13 @@ class PoMonthlyReportContextTests(TestCase):
             Prepared on 11/05/2020, for Christopher
             
             // Revocations //
-            [456]     Munch, Edvard     New Crime          Revocation recommendation staffed on 12/06/2020    
             [111]     Miro, Joan        Technical Only     Revocation recommendation staffed on 12/10/2020    
-            
+            [456]     Munch, Edvard     New Crime          Revocation recommendation staffed on 12/06/2020    
+                
             Please send questions or data issues to feedback@recidiviz.org
 
             Please note: people on probation in custody who technically remain on your caseload are currently counted in your Key Supervision Task percentages, including contacts and risk assessments."""
         )
-
         self.assertEqual(expected, actual["attachment_content"])
 
     def test_prepare_for_generation(self) -> None:
