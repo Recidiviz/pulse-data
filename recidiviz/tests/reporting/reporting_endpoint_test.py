@@ -38,7 +38,7 @@ FIXTURE_FILE = "po_monthly_report_data_fixture.json"
     MagicMock(return_value=("test-user", "test-user@recidiviz.org", None)),
 )
 class ReportingEndpointTests(TestCase):
-    """ Integration tests of our flask endpoints """
+    """Integration tests of our flask endpoints"""
 
     def setUp(self) -> None:
         self.app = Flask(__name__)
@@ -56,6 +56,8 @@ class ReportingEndpointTests(TestCase):
                 "reporting_endpoint_blueprint.deliver_emails_for_batch"
             )
             self.state_code = "US_ID"
+            self.review_year = 2021
+            self.review_month = 5
 
     def test_start_new_batch_validation(self) -> None:
         with self.app.test_request_context():
@@ -257,6 +259,8 @@ class ReportingEndpointTests(TestCase):
                 query_string={
                     "batch_id": "test_batch_id",
                     "state_code": self.state_code,
+                    "review_month": self.review_month,
+                    "review_year": self.review_year,
                 },
                 headers=self.headers,
             )
@@ -270,6 +274,8 @@ class ReportingEndpointTests(TestCase):
                 query_string={
                     "batch_id": "test_batch_id",
                     "state_code": self.state_code,
+                    "review_month": self.review_month,
+                    "review_year": self.review_year,
                 },
                 headers=self.headers,
             )
@@ -283,6 +289,8 @@ class ReportingEndpointTests(TestCase):
                 query_string={
                     "batch_id": "test_batch_id",
                     "state_code": self.state_code,
+                    "review_month": self.review_month,
+                    "review_year": self.review_year,
                 },
                 headers=self.headers,
             )

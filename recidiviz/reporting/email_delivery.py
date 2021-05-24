@@ -27,6 +27,7 @@ and conform to the following:
 """
 import re
 import logging
+from datetime import date
 from typing import Dict, Optional, List
 
 import recidiviz.reporting.email_reporting_utils as utils
@@ -42,6 +43,7 @@ from recidiviz.reporting.sendgrid_client_wrapper import SendGridClientWrapper
 def deliver(
     batch_id: str,
     state_code: str,
+    report_date: date,
     redirect_address: Optional[str] = None,
     cc_addresses: Optional[List[str]] = None,
     subject_override: Optional[str] = None,
@@ -57,6 +59,7 @@ def deliver(
     Args:
         batch_id: The identifier for the batch
         state_code: (required) A valid state code for which reporting is enabled (ex. "US_ID")
+        report_date: The date of the report (ex. 2021, 5, 31)
         redirect_address: (optional) An email address to which all emails will be sent
         cc_addresses: (optional) A list of email addressed to include on the cc line
         subject_override: (optional) The subject line to override to.
@@ -119,6 +122,10 @@ def deliver(
     failed_email_sends: List[str] = []
     sendgrid = SendGridClientWrapper()
     subject = DEFAULT_EMAIL_SUBJECT if subject_override is None else subject_override
+    report_date_str = report_date.strftime("%Y-%m")
+    attachment_title = (
+        f"{report_date_str} Recidiviz Monthly Report - Client Details.txt"
+    )
 
     for recipient_email_address in html_files:
         sent_successfully = sendgrid.send_message(
@@ -127,6 +134,7 @@ def deliver(
             from_email_name=from_email_name,
             subject=subject,
             html_content=html_files[recipient_email_address],
+            attachment_title=attachment_title,
             redirect_address=redirect_address,
             cc_addresses=cc_addresses,
             text_attachment_content=attachment_files.get(recipient_email_address),

@@ -15,6 +15,7 @@
 # =============================================================================
 
 """Tests for reporting/email_delivery.py."""
+import datetime
 from typing import Dict
 from unittest import TestCase
 from unittest.mock import patch, MagicMock, Mock, call
@@ -34,6 +35,8 @@ class EmailDeliveryTest(TestCase):
         self.redirect_address = "redirect@test.org"
         self.mock_files = {f"{self.to_address}": "<html><body></html>"}
         self.state_code = "US_XX"
+        self.report_date = datetime.date(year=2021, month=5, day=31)
+        self.attachment_title = "2021-05 Recidiviz Monthly Report - Client Details.txt"
 
         self.sendgrid_client_patcher = patch(
             "recidiviz.reporting.email_delivery.SendGridClientWrapper"
@@ -76,7 +79,11 @@ class EmailDeliveryTest(TestCase):
         mock_load_files_from_storage.return_value = self.mock_files
         self.mock_sendgrid_client.send_message.return_value = True
         with self.assertLogs(level="INFO"):
-            result = email_delivery.deliver(self.batch_id, self.state_code)
+            result = email_delivery.deliver(
+                self.batch_id,
+                self.state_code,
+                self.report_date,
+            )
 
         self.assertEqual(len(result.successes), 1)
         self.assertEqual(len(result.failures), 0)
@@ -88,7 +95,11 @@ class EmailDeliveryTest(TestCase):
         """Given a batch_id, test that the deliver returns the fail_count value when it fails"""
         mock_load_files_from_storage.return_value = self.mock_files
         self.mock_sendgrid_client.send_message.return_value = False
-        result = email_delivery.deliver(self.batch_id, self.state_code)
+        result = email_delivery.deliver(
+            self.batch_id,
+            self.state_code,
+            self.report_date,
+        )
 
         self.assertEqual(len(result.successes), 0)
         self.assertEqual(len(result.failures), 1)
@@ -104,13 +115,17 @@ class EmailDeliveryTest(TestCase):
         self.mock_utils.get_email_content_bucket_name.return_value = bucket_name
 
         with self.assertRaises(IndexError):
-            email_delivery.deliver(self.batch_id, self.state_code)
+            email_delivery.deliver(
+                self.batch_id,
+                self.state_code,
+                self.report_date,
+            )
 
     @patch("recidiviz.reporting.email_delivery.load_files_from_storage")
     def test_deliver_no_attachments(
         self, mock_load_files_from_storage: MagicMock
     ) -> None:
-        """ When emails exist, but no attachments exist, an attachment is not delivered to the recipients """
+        """When emails exist, but no attachments exist, an attachment is not delivered to the recipients"""
 
         def fake_load_files(_bucket: str, prefix: str) -> Dict[str, str]:
             if "attachments" not in prefix:
@@ -121,7 +136,11 @@ class EmailDeliveryTest(TestCase):
         mock_load_files_from_storage.side_effect = fake_load_files
 
         with self.assertLogs(level="INFO"):
-            email_delivery.deliver(self.batch_id, self.state_code)
+            email_delivery.deliver(
+                self.batch_id,
+                self.state_code,
+                self.report_date,
+            )
 
         self.mock_sendgrid_client.send_message.assert_called_with(
             to_email=self.to_address,
@@ -129,6 +148,7 @@ class EmailDeliveryTest(TestCase):
             from_email_name=self.mock_env_vars["FROM_EMAIL_NAME"],
             subject="Your monthly Recidiviz report",
             html_content=self.mock_files[self.to_address],
+            attachment_title=self.attachment_title,
             redirect_address=None,
             cc_addresses=None,
             text_attachment_content=None,
@@ -143,7 +163,11 @@ class EmailDeliveryTest(TestCase):
         """
         mock_load_files_from_storage.return_value = self.mock_files
         with self.assertLogs(level="INFO"):
-            email_delivery.deliver(self.batch_id, self.state_code)
+            email_delivery.deliver(
+                self.batch_id,
+                self.state_code,
+                self.report_date,
+            )
 
         self.mock_sendgrid_client.send_message.assert_called_with(
             to_email=self.to_address,
@@ -151,6 +175,7 @@ class EmailDeliveryTest(TestCase):
             from_email_name=self.mock_env_vars["FROM_EMAIL_NAME"],
             subject="Your monthly Recidiviz report",
             html_content=self.mock_files[self.to_address],
+            attachment_title=self.attachment_title,
             redirect_address=None,
             cc_addresses=None,
             text_attachment_content=self.mock_files[self.to_address],
@@ -169,6 +194,7 @@ class EmailDeliveryTest(TestCase):
                 batch_id=self.batch_id,
                 state_code=self.state_code,
                 redirect_address=self.redirect_address,
+                report_date=self.report_date,
             )
 
         mock_load_files_from_storage.assert_has_calls(
@@ -184,6 +210,7 @@ class EmailDeliveryTest(TestCase):
             from_email_name=self.mock_env_vars["FROM_EMAIL_NAME"],
             subject="Your monthly Recidiviz report",
             html_content=self.mock_files[self.to_address],
+            attachment_title=self.attachment_title,
             redirect_address=self.redirect_address,
             cc_addresses=None,
             text_attachment_content=self.mock_files[self.to_address],
@@ -196,7 +223,11 @@ class EmailDeliveryTest(TestCase):
         """Given a batch_id and a redirect_address, test the fail count increases if redirect_address fails to send."""
         mock_load_files_from_storage.return_value = self.mock_files
         self.mock_sendgrid_client.send_message.return_value = False
-        result = email_delivery.deliver(self.batch_id, self.redirect_address)
+        result = email_delivery.deliver(
+            self.batch_id,
+            self.redirect_address,
+            self.report_date,
+        )
         self.assertEqual(len(result.failures), 1)
         self.assertEqual(len(result.successes), 0)
 
@@ -208,7 +239,11 @@ class EmailDeliveryTest(TestCase):
         the redirect_address, and the to address is included in the subject."""
         self.mock_utils.get_env_var.side_effect = KeyError
         with self.assertRaises(KeyError), self.assertLogs(level="ERROR"):
-            email_delivery.deliver(self.batch_id, self.state_code)
+            email_delivery.deliver(
+                self.batch_id,
+                self.state_code,
+                self.report_date,
+            )
 
         mock_load_files_from_storage.assert_not_called()
         self.mock_sendgrid_client.send_message.assert_not_called()
@@ -226,6 +261,7 @@ class EmailDeliveryTest(TestCase):
             result = email_delivery.deliver(
                 batch_id=self.batch_id,
                 state_code=self.state_code,
+                report_date=self.report_date,
                 email_allowlist=[self.to_address],
             )
         self.mock_sendgrid_client.send_message.assert_called_with(
@@ -234,6 +270,7 @@ class EmailDeliveryTest(TestCase):
             from_email_name=self.mock_env_vars["FROM_EMAIL_NAME"],
             subject="Your monthly Recidiviz report",
             html_content=self.mock_files[self.to_address],
+            attachment_title=self.attachment_title,
             redirect_address=None,
             cc_addresses=None,
             text_attachment_content=self.mock_files[self.to_address],
