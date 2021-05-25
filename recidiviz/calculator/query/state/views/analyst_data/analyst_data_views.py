@@ -113,6 +113,12 @@ from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_employment_
 from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_positive_urine_analysis_sessions import (
     US_ID_POSITIVE_URINE_ANALYSIS_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_id_supervision_population_metrics_preprocessed import (
+    US_ID_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_id_supervision_out_of_state_population_metrics_preprocessed import (
+    US_ID_SUPERVISION_OUT_OF_STATE_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.supervision_population_by_officer_daily_windows import (
     SUPERVISION_POPULATION_BY_OFFICER_DAILY_WINDOWS_VIEW_BUILDER,
 )
@@ -158,6 +164,8 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     LOCATION_SESSIONS_VIEW_BUILDER,
     US_ID_EMPLOYMENT_SESSIONS_VIEW_BUILDER,
     US_ID_POSITIVE_URINE_ANALYSIS_SESSIONS_VIEW_BUILDER,
+    US_ID_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
+    US_ID_SUPERVISION_OUT_OF_STATE_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
     SUPERVISION_POPULATION_BY_OFFICER_DAILY_WINDOWS_VIEW_BUILDER,
     EVENT_BASED_METRICS_BY_SUPERVISION_OFFICER_VIEW_BUILDER,
     EVENT_BASED_METRICS_BY_DISTRICT_VIEW_BUILDER,

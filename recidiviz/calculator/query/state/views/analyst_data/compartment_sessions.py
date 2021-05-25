@@ -179,10 +179,11 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
     /*
     The subquery uses start reasons, end reasons, inflows and outflows to categorize people into compartments. 
     Additional compartments include "RELEASE", "ABSCONSION", "DEATH", "ERRONEOUS_RELEASE", "PENDING_CUSTODY",
-    "PENDING_SUPERVISION", "SUSPENSION", "INCARCERATION - OUT_OF_STATE", and "SUPERVISION - OUT_OF_STATE". Gaps where a 
-    person inflows and outflows to the same compartment_level_1 and compartment_level_2 AND has null start and end 
-    reasons are infilled with the same compartment values as the adjacent sessions. Ultimately the "DEATH" compartment 
-    gets dropped downstream as it will always (barring data issues) be an active compartment with no outflows.
+    "PENDING_SUPERVISION", "SUSPENSION", "INCARCERATION - OUT_OF_STATE", and "SUPERVISION - OUT_OF_STATE". The
+    "ABSCONSION" compartment type is also applied to non-inferred sessions that have "ABSCONSION" as the start reason.
+    Gaps where a person inflows and outflows to the same compartment_level_1 and compartment_level_2 AND has null start
+    and end reasons are infilled with the same compartment values as the adjacent sessions. Ultimately the "DEATH"
+    compartment gets dropped downstream as it will always (barring data issues) be an active compartment with no outflows.
     */
     (
     SELECT 
@@ -193,8 +194,8 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         state_code,
         COALESCE(
             CASE WHEN inferred_release THEN 'RELEASE'
-                WHEN inferred_escape THEN 'ABSCONSION'
-                WHEN inferred_death THEN 'DEATH' 
+                WHEN inferred_escape OR start_reason = 'ABSCONSION' THEN LAG(compartment_level_1) OVER(PARTITION BY person_id ORDER BY start_date)
+                WHEN inferred_death THEN 'DEATH'    
                 WHEN inferred_erroneous THEN 'ERRONEOUS_RELEASE'
                 WHEN inferred_missing_data THEN LAG(compartment_level_1) OVER(PARTITION BY person_id ORDER BY start_date)
                 WHEN inferred_pending_custody THEN 'PENDING_CUSTODY' 
@@ -206,7 +207,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
                 ELSE compartment_level_1 END, 'INTERNAL_UNKNOWN') AS compartment_level_1,
         COALESCE(
             CASE WHEN inferred_release THEN 'RELEASE'
-                WHEN inferred_escape THEN 'ABSCONSION'
+                WHEN inferred_escape OR start_reason = 'ABSCONSION' THEN 'ABSCONSION'
                 WHEN inferred_death THEN 'DEATH'
                 WHEN inferred_erroneous THEN 'ERRONEOUS_RELEASE'
                 WHEN inferred_missing_data THEN LAG(compartment_level_2) OVER(PARTITION BY person_id ORDER BY start_date)
