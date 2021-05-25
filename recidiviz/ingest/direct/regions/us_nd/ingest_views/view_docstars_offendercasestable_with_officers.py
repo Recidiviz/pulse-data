@@ -33,6 +33,25 @@ WITH cases_with_terminating_officers AS (
   LEFT JOIN {docstars_officers}
   ON (TERMINATING_OFFICER = OFFICER)
 ),
+ranked_term_dates AS (
+  SELECT
+    SID,
+    TERM_DATE,
+    ROW_NUMBER() OVER (
+      PARTITION BY SID
+      ORDER BY IFNULL(PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', TERM_DATE), CURRENT_DATE()) DESC
+    ) AS rn
+  FROM {docstars_offendercasestable}
+),
+most_recent_term_date_by_sid AS (
+  SELECT
+    SID,
+    TERM_DATE
+  FROM
+    ranked_term_dates
+  WHERE
+    rn = 1
+),
 offendercases_with_terminating_and_recent_pos AS (
   SELECT cases_with_terminating_officers.*,
         {docstars_officers}.OFFICER AS recent_officer_id, 
@@ -40,17 +59,22 @@ offendercases_with_terminating_and_recent_pos AS (
         {docstars_officers}.FNAME AS recent_officer_fname, 
         {docstars_officers}.SITEID AS recent_officer_siteid,
         CASE
-            -- If the period has terminated, we don't pull in a supervision level, since this level may correspond 
-            -- to a later period of supervision
-            WHEN TERM_DATE IS NULL THEN NULL
+            -- Only set the supervision level for either
+            -- the currently open period or the most recently closed one
+            WHEN IFNULL(cases_with_terminating_officers.TERM_DATE, 'NULL')
+                = IFNULL(most_recent_term_date_by_sid.TERM_DATE, 'NULL')
             -- Pick the supervision level override if there is one
-            ELSE COALESCE(SUPER_OVERRIDE, SUP_LVL)
+                THEN COALESCE(SUPER_OVERRIDE, SUP_LVL)
+            -- Set supervision level to null if not the most recent period 
+            ELSE NULL
         END AS current_supervision_level
   FROM cases_with_terminating_officers
   LEFT JOIN {docstars_offenders}
   ON (cases_with_terminating_officers.SID = {docstars_offenders}.SID)
   LEFT JOIN {docstars_officers}
   ON ({docstars_offenders}.AGENT = {docstars_officers}.OFFICER)
+  LEFT JOIN most_recent_term_date_by_sid
+  ON (cases_with_terminating_officers.SID = most_recent_term_date_by_sid.SID)
 )
 SELECT * FROM offendercases_with_terminating_and_recent_pos
 """
