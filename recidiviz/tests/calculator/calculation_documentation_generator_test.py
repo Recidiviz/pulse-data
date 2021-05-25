@@ -413,10 +413,10 @@ This view may not be deployed to all environments yet.<br/>
 
 ####Calculation Cadences
 
-|**State**|**Number of Months Calculated**|**Calculation Frequency**|
-|---------|------------------------------:|-------------------------|
-|Missouri |                             24|daily                    |
-|Missouri |                            240|triggered by code changes|
+|             **State**              |**Number of Months Calculated**|**Calculation Frequency**|
+|------------------------------------|------------------------------:|-------------------------|
+|[Missouri](../../states/missouri.md)|                             24|daily                    |
+|[Missouri](../../states/missouri.md)|                            240|triggered by code changes|
 
 
 ####Dependent Views
