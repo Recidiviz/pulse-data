@@ -14,8 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import * as React from "react";
 import { Button, Card, Col, Descriptions, Row, Statistic } from "antd";
+import * as React from "react";
+import NewTabLink from "../NewTabLink";
 import {
   actionNames,
   DirectIngestInstance,
@@ -53,9 +54,9 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
     >
       <Descriptions bordered>
         <Descriptions.Item label="Ingest Bucket" span={3}>
-          <a href={baseBucketUrl.concat(data.ingest.name)}>
+          <NewTabLink href={baseBucketUrl.concat(data.ingest.name)}>
             {data.ingest.name}
-          </a>
+          </NewTabLink>
         </Descriptions.Item>
         <Descriptions.Item label="Raw Data Files" span={3}>
           <Row gutter={16}>
@@ -90,7 +91,9 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
           </Row>
         </Descriptions.Item>
         <Descriptions.Item label="Storage Bucket" span={3}>
-          <a href={baseBucketUrl.concat(data.storage)}>{data.storage}</a>
+          <NewTabLink href={baseBucketUrl.concat(data.storage)}>
+            {data.storage}
+          </NewTabLink>
         </Descriptions.Item>
         <Descriptions.Item label="Database" span={3}>
           {data.dbName}

@@ -14,8 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import * as React from "react";
 import { Card, Descriptions } from "antd";
+import * as React from "react";
+import NewTabLink from "../NewTabLink";
 
 interface IngestLogsCardProps {
   stateCode: string;
@@ -37,10 +38,10 @@ const IngestLogsCard: React.FC<IngestLogsCardProps> = ({ stateCode, env }) => {
     <Card title="Summary" style={{ width: 1000 }}>
       <Descriptions>
         <Descriptions.Item label="Logs Explorer" span={3}>
-          <a href={logsUrl}>{logsUrl}</a>
+          <NewTabLink href={logsUrl}>{logsUrl}</NewTabLink>
         </Descriptions.Item>
         <Descriptions.Item label="Non-200 Ingest Responses" span={3}>
-          <a href={non200Url}>{non200Url}</a>
+          <NewTabLink href={non200Url}>{non200Url}</NewTabLink>
         </Descriptions.Item>
       </Descriptions>
     </Card>

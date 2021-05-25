@@ -14,16 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import * as React from "react";
 import { Breadcrumb, PageHeader, Spin } from "antd";
+import * as React from "react";
 import { Link, useHistory, useParams } from "react-router-dom";
-
-import MetadataTable from "./MetadataTable";
-
-import MetadataDataset from "../models/MetadataDatasets";
-import * as DatasetMetadata from "../navigation/DatasetMetadata";
 import { fetchColumnObjectCountsByValue } from "../AdminPanelAPI";
 import useFetchedData from "../hooks";
+import MetadataDataset from "../models/MetadataDatasets";
+import * as DatasetMetadata from "../navigation/DatasetMetadata";
+import MetadataTable from "./MetadataTable";
 
 interface MatchParams {
   column: string;
