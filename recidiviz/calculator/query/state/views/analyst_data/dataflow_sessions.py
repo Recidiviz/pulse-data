@@ -89,6 +89,12 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
     FROM
         `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`
     WHERE state_code in ('{supported_states}')
+        AND state_code != 'US_ID'
+    UNION ALL
+    -- Use Idaho preprocessed dataset to deal with state-specific logic
+    SELECT 
+        *
+    FROM `{project_id}.{analyst_dataset}.us_id_supervision_population_metrics_preprocessed_materialized`
     UNION ALL
     SELECT 
         DISTINCT
@@ -105,6 +111,12 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
         case_type
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_out_of_state_population_metrics_materialized`
     WHERE state_code in ('{supported_states}')
+      AND state_code != 'US_ID'
+    UNION ALL
+    -- Use Idaho preprocessed dataset to deal with state-specific logic
+    SELECT 
+        *
+    FROM `{project_id}.{analyst_dataset}.us_id_supervision_out_of_state_population_metrics_preprocessed_materialized`
     )
     ,
     last_day_of_data_by_state_and_source AS
