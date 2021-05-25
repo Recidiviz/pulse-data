@@ -24,7 +24,7 @@ from unittest.case import TestCase
 
 import pytest
 from alembic.autogenerate import render_python_code
-from pytest_alembic import runner  # type: ignore
+from pytest_alembic import runner
 from sqlalchemy import create_engine
 
 from recidiviz.persistence.database.schema_utils import SchemaType
