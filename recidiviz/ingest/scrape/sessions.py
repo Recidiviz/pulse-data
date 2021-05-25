@@ -34,7 +34,7 @@ from recidiviz.utils import environment, regions
 _ds = None
 
 
-def ds():
+def ds() -> datastore.Client:
     global _ds
     if not _ds:
         _ds = environment.get_datastore_client()
@@ -42,7 +42,7 @@ def ds():
 
 
 @environment.test_only
-def clear_ds():
+def clear_ds() -> None:
     global _ds
     _ds = None
 

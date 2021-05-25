@@ -33,7 +33,7 @@ from recidiviz.ingest.scrape import constants, scraper_utils, sessions, tracker
 from recidiviz.ingest.scrape.constants import BATCH_PUBSUB_TYPE
 from recidiviz.ingest.scrape.scraper_cloud_task_manager import ScraperCloudTaskManager
 from recidiviz.ingest.scrape.task_params import QueueRequest, Task
-from recidiviz.utils import regions, pubsub_helper
+from recidiviz.utils import pubsub_helper, regions
 
 
 class FetchPageError(Exception):
@@ -65,7 +65,7 @@ class Scraper(Ingestor, metaclass=abc.ABCMeta):
 
     """
 
-    def __init__(self, region_name):
+    def __init__(self, region_name: str):
         """Initialize the parent scraper object.
 
         Args:
@@ -75,14 +75,14 @@ class Scraper(Ingestor, metaclass=abc.ABCMeta):
 
         # Passing verify=False in the requests produces a warning,
         # disable it here.
-        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)  # type: ignore[attr-defined]
 
         self.region = regions.get_region(region_name)
         self.scraper_work_url = "/scraper/work/{}".format(region_name)
         self.cloud_task_manager = ScraperCloudTaskManager()
 
     @abc.abstractmethod
-    def get_initial_task_method(self):
+    def get_initial_task_method(self) -> str:
         """Abstract method for child classes to specify the name of the first
         task to run in the scraper.
 
@@ -95,7 +95,7 @@ class Scraper(Ingestor, metaclass=abc.ABCMeta):
     def get_initial_task(self) -> Task:
         """Returns the initial task to use for the first call."""
 
-    def get_region(self):
+    def get_region(self) -> regions.Region:
         """Retrieve the region object associated with this scraper.
 
         Returns:
@@ -337,7 +337,7 @@ class Scraper(Ingestor, metaclass=abc.ABCMeta):
 
         return page
 
-    def add_task(self, task_name, request: QueueRequest):
+    def add_task(self, task_name: str, request: QueueRequest):
         """Add a task to the task queue.
 
         Args:

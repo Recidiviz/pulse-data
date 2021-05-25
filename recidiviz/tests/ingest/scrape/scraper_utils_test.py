@@ -18,41 +18,41 @@
 """Tests for ingest/scraper_utils.py."""
 import unittest
 
-from mock import patch
 import pytest
+from mock import Mock, patch
 
-from recidiviz.ingest.scrape import scraper_utils
 from recidiviz.ingest.models.ingest_info import IngestInfo
+from recidiviz.ingest.scrape import scraper_utils
 
 
 class TestOne(unittest.TestCase):
     """Tests for the |one| method in the module."""
 
-    def test_onePerson_passes(self):
+    def test_onePerson_passes(self) -> None:
         ii = IngestInfo()
         p = ii.create_person()
         self.assertIs(p, scraper_utils.one("person", ii))
 
-    def test_twoPeople_raises(self):
+    def test_twoPeople_raises(self) -> None:
         ii = IngestInfo()
         ii.create_person().create_booking()
         ii.create_person()
         with self.assertRaises(ValueError):
             scraper_utils.one("booking", ii)
 
-    def test_noSentence_raises(self):
+    def test_noSentence_raises(self) -> None:
         ii = IngestInfo()
         ii.create_person().create_booking().create_charge().create_bond()
         with self.assertRaises(ValueError):
             scraper_utils.one("sentence", ii)
 
-    def test_oneBooking_passes(self):
+    def test_oneBooking_passes(self) -> None:
         ii = IngestInfo()
         b = ii.create_person().create_booking()
         b.create_arrest()
         self.assertIs(b, scraper_utils.one("booking", ii))
 
-    def test_oneBond_passes(self):
+    def test_oneBond_passes(self) -> None:
         ii = IngestInfo()
         b = ii.create_person().create_booking().create_charge().create_bond()
         self.assertIs(b, scraper_utils.one("bond", ii))
@@ -64,7 +64,9 @@ class TestGetProxies(unittest.TestCase):
     @patch("recidiviz.utils.secrets.get_secret")
     @patch("random.random")
     @patch("recidiviz.utils.environment.in_gcp")
-    def test_get_proxies_prod(self, mock_in_gcp, mock_rand, mock_secret):
+    def test_get_proxies_prod(
+        self, mock_in_gcp: Mock, mock_rand: Mock, mock_secret: Mock
+    ) -> None:
         mock_in_gcp.return_value = True
         mock_rand.return_value = 10
         test_secrets = {
@@ -82,7 +84,9 @@ class TestGetProxies(unittest.TestCase):
 
     @patch("recidiviz.utils.secrets.get_secret")
     @patch("recidiviz.utils.environment.in_gcp")
-    def test_get_proxies_local_no_user(self, mock_in_gcp, mock_secret):
+    def test_get_proxies_local_no_user(
+        self, mock_in_gcp: Mock, mock_secret: Mock
+    ) -> None:
         mock_in_gcp.return_value = True
         test_secrets = {
             "proxy_url": "proxy.net/",
@@ -96,7 +100,7 @@ class TestGetProxies(unittest.TestCase):
 
     @patch("recidiviz.utils.secrets.get_secret")
     @patch("recidiviz.utils.environment.in_gcp")
-    def test_get_proxies_local(self, mock_in_gcp, mock_secret):
+    def test_get_proxies_local(self, mock_in_gcp: Mock, mock_secret: Mock) -> None:
         mock_in_gcp.return_value = False
         test_secrets = {
             "proxy_url": "proxy.biz/",
@@ -114,7 +118,7 @@ class TestGetHeaders:
 
     @patch("recidiviz.utils.secrets.get_secret")
     @patch("recidiviz.utils.environment.in_gcp")
-    def test_get_headers(self, mock_in_gcp, mock_secret):
+    def test_get_headers(self, mock_in_gcp: Mock, mock_secret: Mock) -> None:
         # This is prod behaviour
         mock_in_gcp.return_value = True
         user_agent = "test_user_agent"
@@ -127,7 +131,9 @@ class TestGetHeaders:
 
     @patch("recidiviz.utils.secrets.get_secret")
     @patch("recidiviz.utils.environment.in_gcp")
-    def test_get_headers_missing_user_agent_in_prod(self, mock_in_gcp, mock_secret):
+    def test_get_headers_missing_user_agent_in_prod(
+        self, mock_in_gcp: Mock, mock_secret: Mock
+    ) -> None:
         mock_in_gcp.return_value = True
         mock_secret.return_value = None
         with pytest.raises(Exception) as exception:
@@ -135,7 +141,7 @@ class TestGetHeaders:
         assert str(exception.value) == "No user agent string"
 
     @patch("recidiviz.utils.environment.in_gcp")
-    def test_get_headers_local(self, mock_in_gcp):
+    def test_get_headers_local(self, mock_in_gcp: Mock) -> None:
         mock_in_gcp.return_value = False
         headers = scraper_utils.get_headers()
         assert headers == {

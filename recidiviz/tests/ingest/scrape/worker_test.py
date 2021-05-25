@@ -20,6 +20,7 @@
 
 import datetime
 import json
+from typing import Callable
 
 import pytest
 import pytz
@@ -51,12 +52,12 @@ class TestWorker:
     """Tests for requests to the Worker API."""
 
     # noinspection PyAttributeOutsideInit
-    def setup_method(self, _test_method):
+    def setup_method(self, _test_method: Callable) -> None:
         self.client = app.test_client()
 
     @patch("recidiviz.utils.regions.get_region")
     @patch("recidiviz.ingest.scrape.sessions.get_current_session")
-    def test_post_work(self, mock_session, mock_region):
+    def test_post_work(self, mock_session: Mock, mock_region: Mock) -> None:
         mock_session.return_value = sessions.ScrapeSession.new(
             key=None,
             region="us_ca",
@@ -80,7 +81,7 @@ class TestWorker:
 
     @patch("recidiviz.utils.regions.get_region")
     @patch("recidiviz.ingest.scrape.sessions.get_current_session")
-    def test_post_work_no_session(self, mock_session, mock_region):
+    def test_post_work_no_session(self, mock_session: Mock, mock_region: Mock) -> None:
         mock_session.return_value = None
 
         form = {
@@ -97,7 +98,7 @@ class TestWorker:
 
     @patch("recidiviz.utils.regions.get_region")
     @patch("recidiviz.ingest.scrape.sessions.get_current_session")
-    def test_post_work_error(self, mock_session, mock_region):
+    def test_post_work_error(self, mock_session: Mock, mock_region: Mock) -> None:
         mock_session.return_value = sessions.ScrapeSession.new(
             key=None,
             region="us_ca",
@@ -122,7 +123,7 @@ class TestWorker:
 
     @patch("recidiviz.utils.regions.get_region")
     @patch("recidiviz.ingest.scrape.sessions.get_current_session")
-    def test_post_work_timeout(self, mock_session, mock_region):
+    def test_post_work_timeout(self, mock_session: Mock, mock_region: Mock) -> None:
         mock_session.return_value = sessions.ScrapeSession.new(
             key=None,
             region="us_ca",
@@ -146,14 +147,14 @@ class TestWorker:
         region.get_scraper().fake_task.assert_called_with(FAKE_QUEUE_PARAMS)
 
     @patch("recidiviz.utils.validate_jwt.validate_iap_jwt_from_app_engine")
-    def test_post_work_not_from_task(self, mock_jwt):
+    def test_post_work_not_from_task(self, mock_jwt: Mock) -> None:
         mock_jwt.return_value = ("user", "email", None)
 
         headers = {"x-goog-iap-jwt-assertion": "1234"}
         response = self.client.post(PATH, headers=headers)
         assert response.status_code == 500
 
-    def test_post_work_region_mismatch(self):
+    def test_post_work_region_mismatch(self) -> None:
         form = {
             # different region
             "region": "us_nd",
@@ -164,4 +165,4 @@ class TestWorker:
         headers = {"X-Appengine-QueueName": "test-queue"}
         with pytest.raises(ValueError) as exception:
             self.client.post(PATH, data=form_encoded, headers=headers)
-            assert exception.message.startswith("Region specified")
+            assert str(exception.value).startswith("Region specified")

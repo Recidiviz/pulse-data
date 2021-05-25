@@ -30,7 +30,7 @@ _REGIONS_DIR = os.path.dirname(recidiviz.ingest.scrape.regions.__file__)
 class ManifestValidationTest(unittest.TestCase):
     """Test to ensure manifest files are completely populated"""
 
-    def test_AllSet(self):
+    def test_AllSet(self) -> None:
         manifest_filenames = glob.glob(_REGIONS_DIR + "/**/manifest.yaml")
         for manifest_filename in manifest_filenames:
             with open(manifest_filename, "r") as yaml_file:

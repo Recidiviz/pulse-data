@@ -16,13 +16,14 @@
 # =============================================================================
 
 """Tests for ingest/ingest_utils.py."""
+from typing import List
 
 from mock import Mock, PropertyMock, patch
 
 from recidiviz.ingest.scrape import constants, ingest_utils
 
 
-def fake_modules(*names):
+def fake_modules(*names: str) -> List[Mock]:
     modules = []
     for name in names:
         fake_module = Mock()
@@ -38,14 +39,14 @@ class TestIngestUtils:
         "pkgutil.iter_modules",
         return_value=fake_modules("us_ny", "us_pa", "us_vt", "us_pa_greene"),
     )
-    def test_validate_regions_one_ok(self, _mock_modules):
+    def test_validate_regions_one_ok(self, _mock_modules: Mock) -> None:
         assert ingest_utils.validate_regions(["us_ny"]) == {"us_ny"}
 
     @patch(
         "pkgutil.iter_modules",
         return_value=fake_modules("us_ny", "us_pa", "us_vt", "us_pa_greene"),
     )
-    def test_validate_regions_one_all(self, _mock_modules):
+    def test_validate_regions_one_all(self, _mock_modules: Mock) -> None:
         assert ingest_utils.validate_regions(["all"]) == {
             "us_ny",
             "us_pa",
@@ -57,21 +58,21 @@ class TestIngestUtils:
         "pkgutil.iter_modules",
         return_value=fake_modules("us_ny", "us_pa", "us_vt", "us_pa_greene"),
     )
-    def test_validate_regions_one_invalid(self, _mock_modules):
+    def test_validate_regions_one_invalid(self, _mock_modules: Mock) -> None:
         assert not ingest_utils.validate_regions(["ca_bc"])
 
     @patch(
         "pkgutil.iter_modules",
         return_value=fake_modules("us_ny", "us_pa", "us_vt", "us_pa_greene"),
     )
-    def test_validate_regions_multiple_ok(self, _mock_modules):
+    def test_validate_regions_multiple_ok(self, _mock_modules: Mock) -> None:
         assert ingest_utils.validate_regions(["us_pa", "us_ny"]) == {"us_pa", "us_ny"}
 
     @patch(
         "pkgutil.iter_modules",
         return_value=fake_modules("us_ny", "us_pa", "us_vt", "us_pa_greene"),
     )
-    def test_validate_regions_multiple_invalid(self, _mock_modules):
+    def test_validate_regions_multiple_invalid(self, _mock_modules: Mock) -> None:
         assert not ingest_utils.validate_regions(["us_pa", "invalid"])
 
     @patch(
@@ -80,7 +81,9 @@ class TestIngestUtils:
     )
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.utils.regions.get_region")
-    def test_validate_regions_multiple_all(self, mock_region, mock_env, _mock_modules):
+    def test_validate_regions_multiple_all(
+        self, mock_region: Mock, mock_env: Mock, _mock_modules: Mock
+    ) -> None:
         fake_region = Mock()
         mock_region.return_value = fake_region
         fake_region.environment = "production"
@@ -99,7 +102,9 @@ class TestIngestUtils:
     )
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.utils.regions.get_region")
-    def test_validate_regions_environments(self, mock_region, mock_env, _mock_modules):
+    def test_validate_regions_environments(
+        self, mock_region: Mock, mock_env: Mock, _mock_modules: Mock
+    ) -> None:
         region_prod, region_staging, region_none = Mock(), Mock(), Mock()
         region_prod.environment = "production"
         region_staging.environment = "staging"
@@ -113,55 +118,57 @@ class TestIngestUtils:
         ]
         mock_env.return_value = "production"
 
-        assert len(ingest_utils.validate_regions(["all"])) == 2
+        result = ingest_utils.validate_regions(["all"])
+        assert isinstance(result, set)
+        assert len(result) == 2
 
     @patch(
         "pkgutil.iter_modules",
         return_value=fake_modules("us_ny", "us_pa", "us_vt", "us_pa_greene"),
     )
-    def test_validate_regions_multiple_all_invalid(self, _mock_modules):
+    def test_validate_regions_multiple_all_invalid(self, _mock_modules: Mock) -> None:
         assert not ingest_utils.validate_regions(["all", "invalid"])
 
     @patch(
         "pkgutil.iter_modules",
         return_value=fake_modules("us_ny", "us_pa", "us_vt", "us_pa_greene"),
     )
-    def test_validate_regions_empty(self, _mock_modules):
+    def test_validate_regions_empty(self, _mock_modules: Mock) -> None:
         assert ingest_utils.validate_regions([]) == set()
 
-    def test_validate_scrape_types_one_ok(self):
+    def test_validate_scrape_types_one_ok(self) -> None:
         assert ingest_utils.validate_scrape_types(
             [constants.ScrapeType.SNAPSHOT.value]
         ) == [constants.ScrapeType.SNAPSHOT]
 
-    def test_validate_scrape_types_one_all(self):
+    def test_validate_scrape_types_one_all(self) -> None:
         assert ingest_utils.validate_scrape_types(["all"]) == [
             constants.ScrapeType.BACKGROUND,
             constants.ScrapeType.SNAPSHOT,
         ]
 
-    def test_validate_scrape_types_one_invalid(self):
+    def test_validate_scrape_types_one_invalid(self) -> None:
         assert not ingest_utils.validate_scrape_types(["When You Were Young"])
 
-    def test_validate_scrape_types_multiple_ok(self):
+    def test_validate_scrape_types_multiple_ok(self) -> None:
         assert ingest_utils.validate_scrape_types(
             [constants.ScrapeType.BACKGROUND.value, constants.ScrapeType.SNAPSHOT.value]
         ) == [constants.ScrapeType.BACKGROUND, constants.ScrapeType.SNAPSHOT]
 
-    def test_validate_scrape_types_multiple_invalid(self):
+    def test_validate_scrape_types_multiple_invalid(self) -> None:
         assert not ingest_utils.validate_scrape_types(
             [constants.ScrapeType.BACKGROUND.value, "invalid"]
         )
 
-    def test_validate_scrape_types_multiple_all(self):
+    def test_validate_scrape_types_multiple_all(self) -> None:
         assert ingest_utils.validate_scrape_types(
             [constants.ScrapeType.BACKGROUND.value, "all"]
         ) == [constants.ScrapeType.BACKGROUND, constants.ScrapeType.SNAPSHOT]
 
-    def test_validate_scrape_types_multiple_all_invalid(self):
+    def test_validate_scrape_types_multiple_all_invalid(self) -> None:
         assert not ingest_utils.validate_scrape_types(["all", "invalid"])
 
-    def test_validate_scrape_types_empty(self):
+    def test_validate_scrape_types_empty(self) -> None:
         assert ingest_utils.validate_scrape_types([]) == [
             constants.ScrapeType.BACKGROUND
         ]

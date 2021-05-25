@@ -18,7 +18,7 @@
 import datetime
 from unittest import TestCase
 
-from mock import patch
+from mock import Mock, patch
 from more_itertools import one
 
 from recidiviz.ingest.scrape import constants, scrape_phase, sessions
@@ -44,10 +44,9 @@ class TestScraperStop(TestCase):
     def tearDown(self) -> None:
         fakes.teardown_in_memory_sqlite_databases()
 
-    # pylint:disable=unused-argument
     @patch("google.cloud.datastore.Client")
     @patch("recidiviz.utils.regions.get_region")
-    def test_scraper_success(self, mock_get_region, mock_client):
+    def test_scraper_success(self, mock_get_region: Mock, _mock_client: Mock) -> None:
         mock_get_region.return_value = _mock_region()
 
         session = sessions.ScrapeSession.new(
@@ -68,7 +67,7 @@ class TestScraperStop(TestCase):
         self.assertEqual(result.date, _TODAY)
 
 
-def _mock_region():
+def _mock_region() -> Region:
     return Region(
         region_code=_REGION_CODE,
         shared_queue="queue",

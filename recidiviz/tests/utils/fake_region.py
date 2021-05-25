@@ -16,7 +16,7 @@
 # =============================================================================
 """Helpers for creating fake regions for use in tests."""
 from types import ModuleType
-from typing import Any, Dict, Optional, Callable
+from typing import Any, Callable, Dict, Optional
 
 from mock import create_autospec
 
@@ -35,7 +35,8 @@ def fake_region(
     shared_queue: Optional[str] = None,
     region_module: Optional[ModuleType] = None,
     is_direct_ingest: bool = True,
-    get_queue_name: Optional[Callable[[], str]] = None
+    get_queue_name: Optional[Callable[[], str]] = None,
+    is_stoppable: Optional[bool] = None,
 ) -> Region:
     """Fake Region Object"""
     region = create_autospec(Region)
@@ -46,6 +47,7 @@ def fake_region(
     region.region_module = region_module
     region.get_scraper.return_value = scraper
     region.is_direct_ingest = is_direct_ingest
+    region.is_stoppable = is_stoppable
 
     def fake_is_launched_in_env() -> bool:
         return Region.is_ingest_launched_in_env(region)
