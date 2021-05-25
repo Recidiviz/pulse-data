@@ -36,22 +36,19 @@ class SubSimulation:
     def __init__(
         self,
         simulation_compartments: Dict[str, SparkCompartment],
-        should_scale_populations_after_step: bool,
     ) -> None:
 
         # A DataFrame with total population errors at all time steps with population data
-        self.start_ts_scale_factors = pd.DataFrame()
+        self.end_ts_scale_factors = pd.DataFrame()
 
         # A dict of compartment tag (pre-trial, jail, prison, release...) to the corresponding SparkCompartment object
         self.simulation_compartments = simulation_compartments
-
-        self.should_scale_populations_after_step = should_scale_populations_after_step
 
     def get_error(self, compartment: str = "prison", unit: str = "abs") -> pd.DataFrame:
         return self.simulation_compartments[compartment].get_error(unit=unit)
 
     def get_scale_factors(self) -> pd.DataFrame:
-        return self.start_ts_scale_factors
+        return self.end_ts_scale_factors
 
     def gen_arima_output_df(self) -> pd.DataFrame:
         arima_output_df = pd.concat(
@@ -74,17 +71,16 @@ class SubSimulation:
         if len(scale_factors.compartment.unique()) != len(scale_factors):
             raise ValueError(f"Duplicate compartment scale factors: {scale_factors}")
 
-        if self.should_scale_populations_after_step:
-            for compartment_tag in scale_factors.compartment.unique():
-                compartment_obj = self.simulation_compartments[compartment_tag]
-                if isinstance(compartment_obj, FullCompartment):
-                    scale_factor = (
-                        scale_factors.loc[scale_factors.compartment == compartment_tag]
-                        .iloc[0]
-                        .scale_factor
-                    )
-                    compartment_obj.scale_cohorts(scale_factor)
-                    self.start_ts_scale_factors.loc[ts, compartment_tag] = scale_factor
+        for compartment_tag in scale_factors.compartment.unique():
+            compartment_obj = self.simulation_compartments[compartment_tag]
+            if isinstance(compartment_obj, FullCompartment):
+                scale_factor = (
+                    scale_factors.loc[scale_factors.compartment == compartment_tag]
+                    .iloc[0]
+                    .scale_factor
+                )
+                compartment_obj.scale_cohorts(scale_factor)
+                self.end_ts_scale_factors.loc[ts, compartment_tag] = scale_factor
 
     def create_new_cohort(self) -> None:
         """Create a new cohort from new admissions from other compartments"""

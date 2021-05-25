@@ -15,16 +15,42 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Test the SubSimulation class"""
+# pylint: disable=super-init-not-called, unused-variable
 
 import unittest
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from unittest.mock import patch
 
 import pandas as pd
 from recidiviz.calculator.modeling.population_projection.sub_simulation.sub_simulation_factory import (
     SubSimulationFactory,
 )
+from recidiviz.calculator.modeling.population_projection.full_compartment import (
+    FullCompartment,
+)
+from recidiviz.calculator.modeling.population_projection.sub_simulation.sub_simulation import (
+    SubSimulation,
+)
 from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
+
+
+class FakeCompartment(FullCompartment):
+    """Skeleton compartment for integration tests"""
+
+    def __init__(self) -> None:
+        self.scale_factor: Optional[float] = None
+
+    def scale_cohorts(self, scale_factor: float) -> None:
+        self.scale_factor = scale_factor
+
+    def get_cohort_df(self) -> pd.DataFrame:
+        return pd.DataFrame([[1, 2, 3], [2, 3, 4]])
+
+    def get_per_ts_population(self) -> pd.Series:
+        return pd.Series([1, 2, 3])
+
+    def get_current_population(self) -> float:
+        return 1
 
 
 class TestSubSimulation(unittest.TestCase):
@@ -91,6 +117,11 @@ class TestSubSimulation(unittest.TestCase):
             "speed_run": False,
         }
 
+    def setUp(self) -> None:
+        self.sub_simulation = SubSimulation(
+            {"A": FakeCompartment(), "B": FakeCompartment()}
+        )
+
     def test_dropping_data_raises_warning_or_error(self) -> None:
         """Assert that SubSimulation throws an error when some input data goes unused"""
         typo_transitions = self.test_transitions_data.copy()
@@ -108,7 +139,6 @@ class TestSubSimulation(unittest.TestCase):
                 self.compartment_policies,
                 0,
                 True,
-                True,
                 self.starting_cohort_sizes,
             )
 
@@ -121,11 +151,54 @@ class TestSubSimulation(unittest.TestCase):
                 self.compartment_policies,
                 0,
                 True,
-                True,
                 self.starting_cohort_sizes,
             )
             mock.assert_called_once()
             self.assertEqual(
                 mock.mock_calls[0].args[0],
                 "Some transitions data not fed to a compartment: %s",
+            )
+
+    def test_scale_cohorts_passes_scale_factors_down(self) -> None:
+        """Integration test that SubSimulation passes scale factors down to compartments correctly."""
+        scale_factors = pd.DataFrame(
+            {"compartment": ["A", "B"], "scale_factor": [0.5, 1.0]}
+        )
+        self.sub_simulation.scale_cohorts(scale_factors, 0)
+        self.assertEqual(
+            0.5, self.sub_simulation.simulation_compartments["A"].scale_factor  # type: ignore
+        )
+        self.assertEqual(
+            1, self.sub_simulation.simulation_compartments["B"].scale_factor  # type: ignore
+        )
+
+    def test_cross_flow_passes_cohort_data_up(self) -> None:
+        """Integration test that SubSimulation passes cohort data up to PopulationSimulation correctly."""
+        self.assertEqual(
+            len(self.sub_simulation.cross_flow()),
+            2 * len(self.sub_simulation.simulation_compartments),
+        )
+
+    def test_get_population_projections_passes_populations_up(self) -> None:
+        """Integration test that SubSimulation passes population data up to PopulationSimulation correctly."""
+        self.assertEqual(
+            len(self.sub_simulation.get_population_projections()),
+            3 * len(self.sub_simulation.simulation_compartments),
+        )
+
+    def test_get_current_populations_passes_populations_up(self) -> None:
+        """Integration test that SubSimulation passes current population data up to PopulationSimulation correctly."""
+        current_populations = self.sub_simulation.get_current_populations()
+        self.assertEqual(
+            len(current_populations), len(self.sub_simulation.simulation_compartments)
+        )
+        for (
+            compartment_name,
+            compartment,
+        ) in self.sub_simulation.simulation_compartments.items():
+            self.assertEqual(
+                current_populations[
+                    current_populations.compartment == compartment_name
+                ].total_population.sum(),
+                1,
             )
