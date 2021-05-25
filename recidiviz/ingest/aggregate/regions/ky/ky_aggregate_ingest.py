@@ -120,6 +120,10 @@ def _parse_table(filename: str) -> pd.DataFrame:
             df["Federal Inmates"] = df["Federal Inmates"].replace({"yo": "0"})
         if "pe" in df["Federal Inmates"].values:
             df["Federal Inmates"] = df["Federal Inmates"].replace({"pe": "0"})
+        if "(" in df["Reported Population (Total and Male/Female)"].values:
+            df["Reported Population (Total and Male/Female)"] = df[
+                "Reported Population (Total and Male/Female)"
+            ].replace({"(": "0"})
 
         # Cast everything to int before summing below
         df = df.fillna(0)
