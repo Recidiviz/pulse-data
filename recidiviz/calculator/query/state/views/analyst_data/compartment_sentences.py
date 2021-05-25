@@ -53,6 +53,7 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = """
         is_violent,
         classification_type,
         description,
+        offense_type,
         ncic_code,
         FALSE AS life_sentence,
         'SUPERVISION' AS data_source,
@@ -78,6 +79,7 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = """
       is_violent,
       classification_type,
       description,
+      offense_type,
       ncic_code,
       COALESCE(sis.is_life, FALSE) AS life_sentence,
       'INCARCERATION' AS data_source
@@ -131,7 +133,7 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = """
         COALESCE(projected_completion_date_max, projected_completion_date_min) AS projected_completion_date_max,
         -- Fill in an estimated end date for life sentences in order to determine the longest sentence later
         CASE WHEN life_sentence THEN '9999-01-01'
-            ELSE COALESCE(projected_completion_date_max, projected_completion_date_min)
+            ELSE COALESCE(projected_completion_date_max, projected_completion_date_min,completion_date)
         END AS estimated_end_date,
         completion_date,
         parole_eligibility_date,
@@ -145,7 +147,10 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = """
         LOGICAL_OR(life_sentence) AS life_sentence,
     FROM unioned_sentences_cte
     WHERE start_date IS NOT NULL
-        AND (projected_completion_date_max IS NOT NULL OR projected_completion_date_min IS NOT NULL OR life_sentence)
+        AND (projected_completion_date_max IS NOT NULL 
+            OR projected_completion_date_min IS NOT NULL
+            OR completion_date IS NOT NULL 
+            OR life_sentence)
     GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12
     ORDER BY 1 ASC, 2 ASC, 3 ASC, 4 ASC, 5 ASC, 6 ASC, 7 ASC, 8 ASC, 9 ASC, 10 ASC, 11 ASC, 12 ASC
     )
