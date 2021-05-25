@@ -56,6 +56,7 @@ from recidiviz.persistence.entity.state.entities import (
 
 STATE_CODE = "US_PA"
 
+
 # pylint: disable=protected-access
 class TestIsCommitmentFromSupervision(unittest.TestCase):
     """Tests the us_pa_admission_is_commitment_from_supervision function."""
@@ -100,10 +101,10 @@ class TestIsCommitmentFromSupervision(unittest.TestCase):
         )
 
 
-class TestPreCommitmentSupervisionPeriodsIfCommitment(unittest.TestCase):
-    """Tests the us_pa_pre_commitment_supervision_periods_if_commitment function."""
+class TestPreCommitmentSupervisionPeriodIfCommitment(unittest.TestCase):
+    """Tests the us_pa_pre_commitment_supervision_period_if_commitment function."""
 
-    def test_us_pa_pre_commitment_supervision_periods_if_commitment(self):
+    def test_us_pa_pre_commitment_supervision_period_if_commitment(self):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             state_code=STATE_CODE,
             admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
@@ -120,15 +121,54 @@ class TestPreCommitmentSupervisionPeriodsIfCommitment(unittest.TestCase):
 
         (
             admission_is_revocation,
-            revoked_supervision_periods,
-        ) = us_pa_commitment_from_supervision_utils.us_pa_pre_commitment_supervision_periods_if_commitment(
+            pre_commitment_supervision_period,
+        ) = us_pa_commitment_from_supervision_utils.us_pa_pre_commitment_supervision_period_if_commitment(
             incarceration_period, [revoked_supervision_period]
         )
 
         self.assertTrue(admission_is_revocation)
-        self.assertEqual([revoked_supervision_period], revoked_supervision_periods)
+        self.assertEqual(revoked_supervision_period, pre_commitment_supervision_period)
 
-    def test_us_pa_pre_commitment_supervision_periods_if_commitment_no_revocation(
+    def test_us_pa_pre_commitment_supervision_period_if_commitment_transfer(self):
+        """It's common for people on parole in US_PA to be transferred to a new
+        supervision period on the date of their sanction admission to incarceration
+        for shock incarceration. This tests that the period that ended on the
+        admission_date is chose, and not the one that started on the admission_date."""
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            state_code=STATE_CODE,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+            admission_date=date(2020, 1, 1),
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+        )
+
+        revoked_supervision_period = StateSupervisionPeriod.new_with_defaults(
+            state_code=STATE_CODE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            start_date=date(2010, 12, 1),
+            termination_date=incarceration_period.admission_date,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        supervision_period_while_in_prison = StateSupervisionPeriod.new_with_defaults(
+            state_code=STATE_CODE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            start_date=incarceration_period.admission_date,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        (
+            admission_is_revocation,
+            pre_commitment_supervision_period,
+        ) = us_pa_commitment_from_supervision_utils.us_pa_pre_commitment_supervision_period_if_commitment(
+            incarceration_period,
+            [revoked_supervision_period, supervision_period_while_in_prison],
+        )
+
+        self.assertTrue(admission_is_revocation)
+        self.assertEqual(revoked_supervision_period, pre_commitment_supervision_period)
+
+    def test_us_pa_pre_commitment_supervision_period_if_commitment_no_revocation(
         self,
     ):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -147,13 +187,13 @@ class TestPreCommitmentSupervisionPeriodsIfCommitment(unittest.TestCase):
 
         (
             admission_is_revocation,
-            revoked_supervision_periods,
-        ) = us_pa_commitment_from_supervision_utils.us_pa_pre_commitment_supervision_periods_if_commitment(
+            pre_commitment_supervision_period,
+        ) = us_pa_commitment_from_supervision_utils.us_pa_pre_commitment_supervision_period_if_commitment(
             incarceration_period, [revoked_supervision_period]
         )
 
         self.assertFalse(admission_is_revocation)
-        self.assertEqual([], revoked_supervision_periods)
+        self.assertIsNone(pre_commitment_supervision_period)
 
 
 class TestPurposeForIncarcerationAndSubtype(unittest.TestCase):
@@ -929,3 +969,115 @@ class TestMostSevereRevocationTypeSubtype(unittest.TestCase):
         )
 
         self.assertIsNone(purpose_for_incarceration_subtype)
+
+
+class TestUsPaPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
+    """Tests the us_pa_get_pre_commitment_supervision_type function."""
+
+    def test_us_pa_get_pre_commitment_supervision_type_default(self):
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1112,
+            external_id="2",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code="US_PA",
+            admission_date=date(2008, 12, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            admission_reason_raw_text="ADMN",
+            release_date=date(2010, 12, 21),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+        )
+
+        supervision_type_pre_commitment = us_pa_commitment_from_supervision_utils.us_pa_get_pre_commitment_supervision_type(
+            incarceration_period, None
+        )
+
+        self.assertEqual(
+            StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type_pre_commitment,
+        )
+
+    def test_us_pa_get_pre_commitment_supervision_type_probation_revocation(self):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_PA",
+            start_date=date(2008, 3, 5),
+            termination_date=date(2008, 12, 16),
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1112,
+            external_id="2",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code="US_PA",
+            admission_date=date(2008, 12, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            admission_reason_raw_text="ADMN",
+            release_date=date(2010, 12, 21),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+        )
+
+        supervision_type_pre_commitment = us_pa_commitment_from_supervision_utils.us_pa_get_pre_commitment_supervision_type(
+            incarceration_period, supervision_period
+        )
+
+        self.assertEqual(
+            StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type_pre_commitment,
+        )
+
+    def test_us_pa_get_pre_commitment_supervision_type_sanction_admission_dual(self):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_PA",
+            start_date=date(2008, 3, 5),
+            termination_date=date(2008, 12, 16),
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1112,
+            external_id="2",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code="US_PA",
+            admission_date=date(2008, 12, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+            admission_reason_raw_text="ADMN",
+            release_date=date(2010, 12, 21),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+        )
+
+        supervision_type_pre_commitment = us_pa_commitment_from_supervision_utils.us_pa_get_pre_commitment_supervision_type(
+            incarceration_period, supervision_period
+        )
+
+        self.assertEqual(
+            StateSupervisionPeriodSupervisionType.DUAL,
+            supervision_type_pre_commitment,
+        )
+
+    def test_us_pa_get_pre_commitment_supervision_type_erroneous(self):
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1112,
+            external_id="2",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code="US_PA",
+            admission_date=date(2008, 12, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text="ADMN",
+            release_date=date(2010, 12, 21),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+        )
+
+        with self.assertRaises(ValueError):
+            _ = us_pa_commitment_from_supervision_utils.us_pa_get_pre_commitment_supervision_type(
+                incarceration_period, None
+            )
