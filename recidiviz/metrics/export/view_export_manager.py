@@ -24,7 +24,6 @@ from flask import Blueprint, request
 from opencensus.stats import measure, view as opencensus_view, aggregation
 
 import recidiviz.view_registry.deployed_views
-from recidiviz.common.constants.states import StateCode
 from recidiviz.metrics.export import export_config
 from recidiviz.big_query import view_update_manager
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
@@ -43,7 +42,8 @@ from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.metrics.export.export_config import (
     ExportBigQueryViewConfig,
-    ProductConfig,
+    ProductConfigs,
+    BadProductExportSpecificationError,
     PRODUCTS_CONFIG_PATH,
 )
 from recidiviz.metrics.export.optimized_metric_big_query_view_exporter import (
@@ -92,20 +92,20 @@ monitoring.register_views(
     [failed_metric_export_validation_view, failed_metric_export_view]
 )
 
-
 export_blueprint = Blueprint("export", __name__)
 
 
-@export_blueprint.route("/create_metric_view_data_export_task")
+@export_blueprint.route("/create_metric_view_data_export_tasks")
 @requires_gae_auth
-def create_metric_view_data_export_task() -> Tuple[str, HTTPStatus]:
+def create_metric_view_data_export_tasks() -> Tuple[str, HTTPStatus]:
     """Queues a task to export data in BigQuery metric views to cloud storage buckets.
 
     Example:
         export/create_metric_view_data_export_task?export_job_filter=US_ID
     URL parameters:
-        export_job_filter: (string) Kind of jobs to initiate export for. Can either be an export_name (e.g. LANTERN)
-                                    or a state_code (e.g. US_ND)
+        export_job_filter: Job name to initiate export for (e.g. US_ID or LANTERN).
+                           If state_code, will create tasks for all products that have launched for that state_code.
+                           If product name, will create tasks for all states that have launched for that product.
     Args:
         N/A
     Returns:
@@ -117,13 +117,18 @@ def create_metric_view_data_export_task() -> Tuple[str, HTTPStatus]:
 
     if not export_job_filter:
         return (
-            "missing required export_job_filter URL parameter",
+            "Missing required export_job_filter URL parameter",
             HTTPStatus.BAD_REQUEST,
         )
 
-    ViewExportCloudTaskManager().create_metric_view_data_export_task(
-        export_job_filter=export_job_filter
-    )
+    relevant_product_exports = ProductConfigs.from_file(
+        path=PRODUCTS_CONFIG_PATH
+    ).get_export_configs_for_job_filter(export_job_filter)
+
+    for export in relevant_product_exports:
+        ViewExportCloudTaskManager().create_metric_view_data_export_task(
+            export_job_name=export["export_job_name"], state_code=export["state_code"]
+        )
 
     return "", HTTPStatus.OK
 
@@ -134,10 +139,11 @@ def metric_view_data_export() -> Tuple[str, HTTPStatus]:
     """Exports data in BigQuery metric views to cloud storage buckets.
 
     Example:
-        export/metric_view_data?export_job_filter=US_ID
+        export/metric_view_data?export_job_name=PO_MONTHLY&state_code=US_ID
     URL parameters:
-        export_job_filter: (string) Kind of jobs to initiate export for. Can either be an export_name (e.g. LANTERN)
-                                    or a state_code (e.g. US_ND)
+        export_job_name: Name of job to initiate export for (e.g. PO_MONTHLY).
+        state_code: (Optional) State code to initiate export for (e.g. US_ID)
+                    State code must be present if the job is not state agnostic.
     Args:
         N/A
     Returns:
@@ -145,15 +151,27 @@ def metric_view_data_export() -> Tuple[str, HTTPStatus]:
     """
     logging.info("Attempting to export view data to cloud storage")
 
-    export_job_filter = get_str_param_value("export_job_filter", request.args)
+    export_job_name = get_str_param_value("export_job_name", request.args)
+    state_code = get_str_param_value("state_code", request.args)
 
-    if not export_job_filter:
+    if not export_job_name:
         return (
-            "missing required export_job_filter URL parameter",
+            "Missing required export_job_name URL parameter",
             HTTPStatus.BAD_REQUEST,
         )
 
-    export_view_data_to_cloud_storage(export_job_filter)
+    product_configs = ProductConfigs.from_file(path=PRODUCTS_CONFIG_PATH)
+    try:
+        _ = product_configs.get_export_config(
+            export_job_name=export_job_name, state_code=state_code
+        )
+    except BadProductExportSpecificationError as e:
+        logging.exception(e)
+        return str(e), HTTPStatus.BAD_REQUEST
+
+    export_view_data_to_cloud_storage(
+        export_job_name=export_job_name, state_code=state_code
+    )
 
     return "", HTTPStatus.OK
 
@@ -161,7 +179,7 @@ def metric_view_data_export() -> Tuple[str, HTTPStatus]:
 def get_configs_for_export_name(
     export_name: str,
     project_id: str,
-    state_code_filter: Optional[str] = None,
+    state_code: Optional[str] = None,
     destination_override: Optional[str] = None,
     dataset_overrides: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Sequence[ExportBigQueryViewConfig]]:
@@ -170,6 +188,7 @@ def get_configs_for_export_name(
     relevant_export_collection = export_config.VIEW_COLLECTION_EXPORT_INDEX.get(
         export_name.upper()
     )
+
     if not relevant_export_collection:
         raise ValueError(
             f"No export configs matching export name: [{export_name.upper()}]"
@@ -178,59 +197,20 @@ def get_configs_for_export_name(
     return {
         relevant_export_collection.export_name: relevant_export_collection.export_configs_for_views_to_export(
             project_id=project_id,
-            state_code_filter=state_code_filter,
+            state_code_filter=state_code.upper() if state_code else None,
             destination_override=destination_override,
             dataset_overrides=dataset_overrides,
         )
     }
 
 
-def get_configs_for_state(
-    state_code: Optional[str], project_id: str
-) -> Dict[str, Sequence[ExportBigQueryViewConfig]]:
-    """Collects all products relevant to this state_code and compiles a dictionary relating
-    export names to a sequence of export view configs."""
-    products = ProductConfig.product_configs_from_file(PRODUCTS_CONFIG_PATH)
-
-    if state_code is None:
-        raise ValueError("Unexpected missing state code.")
-
-    # all the products that correspond to this state
-    relevant_product_exports = [
-        product.exports
-        for product in products
-        if state_code.upper() in product.launched_states
-    ]
-
-    export_names = set(
-        itertools.chain.from_iterable(
-            # list of export names for each product
-            relevant_product_exports
-        )
-    )
-
-    state_exports = [
-        collection_config
-        for collection_config in export_config.VIEW_COLLECTION_EXPORT_INDEX.values()
-        if collection_config.export_name in export_names
-    ]
-
-    if not state_exports:
-        raise ValueError(
-            f"No matching export configs for product exports in state: [{state_code}]."
-        )
-
-    return {
-        collection_config.export_name: collection_config.export_configs_for_views_to_export(
-            project_id=project_id, state_code_filter=state_code.upper()
-        )
-        for collection_config in state_exports
-    }
-
-
 def export_view_data_to_cloud_storage(
-    export_job_filter: str,
+    export_job_name: str,
+    state_code: Optional[str] = None,
     override_view_exporter: Optional[BigQueryViewExporter] = None,
+    should_materialize_views: Optional[bool] = True,
+    destination_override: Optional[str] = None,
+    dataset_overrides: Optional[Dict[str, str]] = None,
 ) -> None:
     """Exports data in BigQuery metric views to cloud storage buckets.
 
@@ -241,56 +221,50 @@ def export_view_data_to_cloud_storage(
 
     project_id = metadata.project_id()
 
-    if StateCode.is_state_code(export_job_filter):
-        state_code_filter: Optional[str] = export_job_filter.upper()
-        export_configs_for_filter = get_configs_for_state(
-            state_code=state_code_filter,
-            project_id=project_id,
-        )
-    else:
-        state_code_filter = None
-        export_configs_for_filter = get_configs_for_export_name(
-            export_name=export_job_filter, project_id=project_id
-        )
-
-    state_view_configs = list(
-        itertools.chain.from_iterable(export_configs_for_filter.values())
+    export_configs_for_filter = get_configs_for_export_name(
+        export_name=export_job_name,
+        state_code=state_code,
+        project_id=project_id,
+        destination_override=destination_override,
+        dataset_overrides=dataset_overrides,
     )
 
-    bq_view_namespaces_to_update = {
-        config.bq_view_namespace for config in state_view_configs
-    }
+    if should_materialize_views:
+        state_view_configs = list(
+            itertools.chain.from_iterable(export_configs_for_filter.values())
+        )
 
-    for bq_view_namespace_to_update in bq_view_namespaces_to_update:
-        view_builders_for_views_to_update = (
-            recidiviz.view_registry.deployed_views.DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE[
+        bq_view_namespaces_to_update = {
+            config.bq_view_namespace for config in state_view_configs
+        }
+        for bq_view_namespace_to_update in bq_view_namespaces_to_update:
+            view_builders_for_views_to_update = recidiviz.view_registry.deployed_views.DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE[
                 bq_view_namespace_to_update
             ]
-        )
 
-        # TODO(#5125): Once view update is consistently trivial, always update all views in namespace
-        if (
-            bq_view_namespace_to_update
-            in export_config.NAMESPACES_REQUIRING_FULL_UPDATE
-        ):
-            view_update_manager.create_dataset_and_deploy_views_for_view_builders(
-                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+            # TODO(#5125): Once view update is consistently trivial, always update all views in namespace
+            if (
+                bq_view_namespace_to_update
+                in export_config.NAMESPACES_REQUIRING_FULL_UPDATE
+            ):
+                view_update_manager.create_dataset_and_deploy_views_for_view_builders(
+                    view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+                    bq_view_namespace=bq_view_namespace_to_update,
+                    view_builders_to_update=view_builders_for_views_to_update,
+                )
+
+            # The view deploy will only have rematerialized views that had been updated since the last deploy, this call
+            # will ensure that all materialized tables get refreshed.
+            view_update_manager.rematerialize_views_for_namespace(
                 bq_view_namespace=bq_view_namespace_to_update,
-                view_builders_to_update=view_builders_for_views_to_update,
+                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+                candidate_view_builders=view_builders_for_views_to_update,
             )
-
-        # The view deploy will only have rematerialized views that had been updated since the last deploy, this call
-        # will ensure that all materialized tables get refreshed.
-        view_update_manager.rematerialize_views_for_namespace(
-            bq_view_namespace=bq_view_namespace_to_update,
-            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-            candidate_view_builders=view_builders_for_views_to_update,
-        )
 
     trigger_export_for_configs(
         export_configs=export_configs_for_filter,
         override_view_exporter=override_view_exporter,
-        state_code_filter=state_code_filter,
+        state_code_filter=state_code,
     )
 
 
