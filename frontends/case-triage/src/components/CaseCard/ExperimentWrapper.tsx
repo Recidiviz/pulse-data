@@ -14,6 +14,22 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import CaseCard from "./ExperimentWrapper";
 
-export default CaseCard;
+import React from "react";
+import { useRootStore } from "../../stores";
+import { KNOWN_EXPERIMENTS } from "../../stores/UserStore";
+import CaseCard from "./CaseCard";
+import { CaseCardProps } from "./CaseCard.types";
+import ClientProfileCard from "./ClientProfileCard";
+
+const ExperimentWrapper: React.FC<CaseCardProps> = (props) => {
+  const { userStore } = useRootStore();
+
+  if (userStore.isInExperiment(KNOWN_EXPERIMENTS.ProfileV2)) {
+    return <ClientProfileCard {...props} />;
+  }
+
+  return <CaseCard {...props} />;
+};
+
+export default ExperimentWrapper;

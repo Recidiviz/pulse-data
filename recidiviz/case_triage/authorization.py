@@ -33,7 +33,7 @@ from recidiviz.utils.environment import in_gcp
 from recidiviz.utils.metadata import project_id
 
 
-KNOWN_EXPERIMENTS: List[str] = []
+KNOWN_EXPERIMENTS: List[str] = ["can-see-profile-v2"]
 
 
 @attr.s(auto_attribs=True)

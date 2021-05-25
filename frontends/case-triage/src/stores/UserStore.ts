@@ -28,7 +28,9 @@ interface UserStoreProps {
   authSettings: Auth0ClientOptions;
 }
 
-export enum KNOWN_EXPERIMENTS {}
+export enum KNOWN_EXPERIMENTS {
+  ProfileV2 = "can-see-profile-v2",
+}
 
 export interface FeatureVariants {
   [feature: string]: string;
