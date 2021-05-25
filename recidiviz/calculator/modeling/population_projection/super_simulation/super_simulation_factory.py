@@ -202,7 +202,7 @@ class SuperSimulationFactory:
         if user_inputs_yaml_dict:
             user_inputs_keys = user_inputs_yaml_dict.keys()
             for k in user_inputs_keys:
-                if k not in {"constant_admissions", "speed_run"}:
+                if k not in {"constant_admissions", "speed_run", "cross_flow_function"}:
                     raise ValueError(f"Received unexpected key in user_inputs: {k}")
                 user_inputs[k] = user_inputs_yaml_dict.pop(k, bool)
 

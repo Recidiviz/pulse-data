@@ -16,7 +16,7 @@
 # =============================================================================
 """Composition object for PopulationSimulation."""
 import logging
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Callable, Optional
 from time import time
 from functools import partial
 import pandas as pd
@@ -55,6 +55,7 @@ class PopulationSimulationFactory:
         microsim_data: pd.DataFrame,
         should_initialize_compartment_populations: bool,
         should_scale_populations_after_step: bool,
+        override_cross_flow_function: Optional[Callable],
     ) -> PopulationSimulation:
         """
         Initializes sub-simulations
@@ -79,6 +80,7 @@ class PopulationSimulationFactory:
             start cohort
         `should_scale_populations_after_step` should be True if compartment populations should be scaled to match
             total_population_data after each step forward
+        `override_cross_flow_function` is an optional override function to use for cross-sub-simulation cohort flows
         """
         start = time()
 
@@ -142,12 +144,22 @@ class PopulationSimulationFactory:
             should_scale_populations_after_step,
         )
 
+        # If compartment populations are initialized, the first ts is handled in initialization
+        if should_initialize_compartment_populations:
+            pop_sim_start_ts = first_relevant_ts + 1
+            projection_time_steps = user_inputs["projection_time_steps"] - 1
+        else:
+            pop_sim_start_ts = first_relevant_ts
+            projection_time_steps = user_inputs["projection_time_steps"]
+
         population_simulation = PopulationSimulation(
             sub_simulations,
             sub_group_ids_dict,
             total_population_data,
-            user_inputs["projection_time_steps"],
-            first_relevant_ts,
+            projection_time_steps,
+            pop_sim_start_ts,
+            cross_flow_function=user_inputs.get("cross_flow_function"),
+            override_cross_flow_function=override_cross_flow_function,
         )
 
         # run simulation up to the start_year
