@@ -6,6 +6,14 @@ exclusions:
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: ND ingest constructs one supervision period per supervision sentence - we expect supervision
       periods to overlap
+  - validation_name: case_termination_by_type_comparison_absconsions
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: This validation is currently being used for the PO monthly report, and currently, we do not support
+      the PO monthly report for ND.
+  - validation_name: case_termination_by_type_comparison_discharges
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: This validation is currently being used for the PO monthly report, and currently, we do not support
+      the PO monthly report for ND.
 max_allowed_error_overrides:
   - validation_name: incarceration_population_by_facility_external_comparison
     max_allowed_error_override: 0.05
