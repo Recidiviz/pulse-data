@@ -35,6 +35,7 @@ from recidiviz.case_triage.analytics import (
 )
 from recidiviz.case_triage.api_routes import create_api_blueprint
 from recidiviz.case_triage.authorization import AuthorizationStore, KNOWN_EXPERIMENTS
+from recidiviz.case_triage.e2e_routes import e2e_blueprint
 from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.case_triage.exceptions import (
     CaseTriageAuthorizationError,
@@ -66,7 +67,7 @@ static_folder = os.path.abspath(
 
 app = Flask(__name__, static_folder=static_folder)
 app.secret_key = get_local_secret("case_triage_secret_key")
-CSRFProtect(app)
+CSRFProtect(app).exempt(e2e_blueprint)
 register_error_handlers(app)
 
 if in_development():
@@ -176,6 +177,7 @@ def fetch_user_info() -> None:
 
 
 app.register_blueprint(api, url_prefix="/api")
+app.register_blueprint(e2e_blueprint, url_prefix="/e2e")
 
 app.add_url_rule(
     "/impersonate_user",

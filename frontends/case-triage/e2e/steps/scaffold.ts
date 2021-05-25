@@ -14,10 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
+import { After, BeforeAll, Status } from "@cucumber/cucumber";
+import homePage from "../pages/HomePage";
 
-import { Given } from "@cucumber/cucumber";
-import loginPage from "../pages/LoginPage";
-
-Given("I am on the login page", async () => {
-  await loginPage.open();
-});
+BeforeAll(async () => homePage.setupSuite());
+After(async () => homePage.teardownScenario());

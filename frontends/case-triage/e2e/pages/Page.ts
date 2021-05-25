@@ -16,8 +16,20 @@
 // =============================================================================
 
 /* eslint-disable class-methods-use-this */
+import { setupBrowser } from "@testing-library/webdriverio";
+
+setupBrowser(browser);
+
 export default class Page {
-  open(path: string): void {
-    browser.url(path);
+  async visit(path: string): Promise<string> {
+    return browser.url(path);
+  }
+
+  async setupSuite(): Promise<string> {
+    return this.visit(`http://localhost:5000/e2e/setup_suite`);
+  }
+
+  async teardownScenario(): Promise<string> {
+    return this.visit(`http://localhost:5000/e2e/teardown_scenario`);
   }
 }

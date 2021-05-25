@@ -15,14 +15,18 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import * as React from "react";
-import { ClientCard, FlexCardSection, MainText } from "./ClientList.styles";
+import {
+  ClientListCardElement,
+  FlexCardSection,
+  MainText,
+} from "./ClientList.styles";
 
 const EmptyStateCard = (): JSX.Element => (
-  <ClientCard className="client-card--in-progress">
+  <ClientListCardElement className="client-card--in-progress">
     <FlexCardSection>
       <MainText>No clients can be found who match the search text.</MainText>
     </FlexCardSection>
-  </ClientCard>
+  </ClientListCardElement>
 );
 
 export default EmptyStateCard;

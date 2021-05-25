@@ -29,6 +29,7 @@ import { useRootStore } from "../../stores";
 import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
 import { SupervisionContactFrequency } from "../../stores/PolicyStore/Policy";
 import { NeedsActionFlow } from "../NeedsActionFlow/NeedsActionFlow";
+import TEST_IDS from "../TestIDs";
 
 interface NeedsFaceToFaceContactProps {
   className: string;
@@ -75,7 +76,10 @@ const NeedsFaceToFaceContact: React.FC<NeedsFaceToFaceContactProps> = ({
   const contactFrequency = policyStore.findContactFrequencyForClient(client);
 
   return (
-    <CaseCardBody className={className}>
+    <CaseCardBody
+      className={className}
+      data-testid={TEST_IDS.NEEDS_FACE_TO_FACE_CONTACT}
+    >
       <Need
         kind={IconSVG.NeedsContact}
         state={faceToFaceMet ? NeedState.MET : NeedState.NOT_MET}

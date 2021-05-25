@@ -17,14 +17,55 @@
 
 import { Then } from "@cucumber/cucumber";
 import homePage from "../pages/HomePage";
+import {
+  NEED_TEST_ID_MAP,
+  NEED_TYPE,
+  waitUntilElementHasText,
+} from "./helpers";
 
 Then("I should see my client list", async () => {
   const heading = await homePage.clientListHeading;
-  await heading.waitForExist();
-  expect(heading).toBeDisplayed();
+  await expect(heading).toBeDisplayed();
 });
 
-Then("I should not see my client list", async () => {
-  const heading = await homePage.clientListHeading;
-  expect(heading).not.toExist();
+Then(
+  "the {string} need should have an {string} action {string}",
+  async (need: NEED_TYPE, active: "active" | "inactive", text: string) => {
+    await waitUntilElementHasText(() => homePage.findNeedElement(need), text);
+  }
+);
+
+Then("I should see a modal with text {string}", async (text: string) => {
+  await waitUntilElementHasText(() => homePage.findModal(), text);
 });
+
+Then("I should not see a modal", async () => {
+  await browser.waitUntil(async () => {
+    try {
+      return !(await homePage.findModal()).isVisible();
+    } catch (error) {
+      return true;
+    }
+  });
+});
+
+Then(
+  "the {string} need should say {string}",
+  async (need: NEED_TYPE, text: string) => {
+    await waitUntilElementHasText(() => homePage.findNeedElement(need), text);
+  }
+);
+
+Then(
+  "I should see {string} at the {string} of the {string} list",
+  async (
+    client: string,
+    position: "top" | "bottom" | string,
+    list: "Processing Feedback" | "Up Next"
+  ) => {
+    await waitUntilElementHasText(
+      () => homePage.findClientListCardByPosition(position, list),
+      client
+    );
+  }
+);

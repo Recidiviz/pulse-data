@@ -16,25 +16,26 @@
 // =============================================================================
 
 import Page from "./Page";
+import { waitForElement } from "../steps/helpers";
 
 /* eslint-disable class-methods-use-this */
 class LoginPage extends Page {
-  open(): void {
+  open(): Promise<string> {
     // any page should trigger a redirect to login,
     // which is on the auth0 domain
-    super.open("/");
+    return this.visit("/");
   }
 
   get usernameInput() {
-    return $('input[type="email"]');
+    return waitForElement(() => browser.queryByLabelText("Email"));
   }
 
   get passwordInput() {
-    return $('input[type="password"]');
+    return waitForElement(() => browser.queryByLabelText("Password"));
   }
 
   get submitBtn() {
-    return $('form button[type="submit"]');
+    return waitForElement(() => browser.queryByLabelText("Log In"));
   }
 
   async login(username: string, password: string): Promise<void> {

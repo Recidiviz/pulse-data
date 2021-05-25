@@ -22,15 +22,15 @@ import { autorun } from "mobx";
 import { DecoratedClient } from "../../stores/ClientsStore";
 import { useRootStore } from "../../stores";
 import {
-  ClientCard,
+  ClientListCardElement,
   ClientNeed,
   FirstCardSection,
   InProgressIndicator,
   MainText,
+  NeedsIconsCardSection,
+  NextActionCardSection,
   PendingText,
   SecondaryText,
-  NextActionCardSection,
-  NeedsIconsCardSection,
 } from "./ClientList.styles";
 import { titleCase } from "../../utils";
 import DueDate from "../DueDate";
@@ -133,7 +133,7 @@ const ClientComponent: React.FC<ClientProps> = observer(
     const omsName = policyStore.policies?.omsName || "OMS";
 
     return (
-      <ClientCard
+      <ClientListCardElement
         className={
           clientsStore.activeClient?.personExternalId ===
           client.personExternalId
@@ -217,7 +217,7 @@ const ClientComponent: React.FC<ClientProps> = observer(
             <InProgressIndicator />
           </Tooltip>
         ) : null}
-      </ClientCard>
+      </ClientListCardElement>
     );
   }
 );
