@@ -862,19 +862,11 @@ def find_revocation_return_buckets(
         )
     )
 
-    for index, incarceration_period in enumerate(
-        incarceration_period_index.incarceration_periods
-    ):
+    for incarceration_period in incarceration_period_index.incarceration_periods:
         if not incarceration_period.admission_date:
-            raise ValueError(f"Admission date for null for {incarceration_period}")
+            raise ValueError(f"Admission date is null for {incarceration_period}")
 
         state_code = incarceration_period.state_code
-
-        previous_incarceration_period = (
-            incarceration_period_index.incarceration_periods[index - 1]
-            if index > 0
-            else None
-        )
 
         (
             admission_is_revocation,
@@ -883,7 +875,7 @@ def find_revocation_return_buckets(
             state_code,
             incarceration_period,
             filtered_supervision_periods,
-            previous_incarceration_period,
+            incarceration_period_index,
         )
 
         if not admission_is_revocation:

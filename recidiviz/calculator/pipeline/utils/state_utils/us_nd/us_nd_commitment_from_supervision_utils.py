@@ -21,12 +21,16 @@ from typing import List, Tuple, Optional
 
 from dateutil.relativedelta import relativedelta
 
+from recidiviz.calculator.pipeline.utils.incarceration_period_index import (
+    IncarcerationPeriodIndex,
+)
 from recidiviz.calculator.pipeline.utils.period_utils import (
     find_last_terminated_period_before_date,
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     get_commitment_from_supervision_supervision_period,
 )
+from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     is_commitment_from_supervision,
@@ -51,6 +55,7 @@ _NEW_ADMISSION_PROBATION_COMMITMENT_LOOKBACK_MONTHS = 24
 def us_nd_pre_commitment_supervision_period_if_commitment(
     incarceration_period: StateIncarcerationPeriod,
     supervision_periods: List[StateSupervisionPeriod],
+    incarceration_period_index: IncarcerationPeriodIndex,
 ) -> Tuple[bool, Optional[StateSupervisionPeriod]]:
     """Determines whether the incarceration_period started because of a commitment from
     supervision. If a commitment from supervision did occur, this finds the supervision
@@ -71,11 +76,18 @@ def us_nd_pre_commitment_supervision_period_if_commitment(
     be dealt with here, and 2) we don’t have mass examples of this happening in the data
     for PAROLE like we do for PROBATION.
 
+    Also note that in this PROBATION case, we also ensure that there was not an
+    intermediate period of incarceration in a state prison between the PROBATION
+    REVOCATION and this incarceration period under examination, to make sure we do not
+    mistakenly re-classify what is truly a NEW_ADMISSION as a PROBATION_REVOCATION.
+
     Args:
         - incarceration_period: The StateIncarcerationPeriod being evaluated for an
           instance of commitment from supervision.
         - supervision_periods: A list of the person's StateSupervisionPeriods
           that may be relevant as a commitment.
+        - incarceration_period_index: The index of StateIncarcerationPeriods for this
+          person, to check if previous incarceration periods impact this commitment.
     Returns:
         A tuple in the format [bool, Optional[StateSupervisionPeriod]] representing
         whether or not a commitment from supervision occurred and, if so, the
@@ -119,6 +131,20 @@ def us_nd_pre_commitment_supervision_period_if_commitment(
             and most_recent_supervision_period.supervision_type
             == StateSupervisionType.PROBATION
         ):
+            was_intermediate_state_prison_admission = (
+                _intermediate_state_prison_admission(
+                    most_recent_supervision_period,
+                    incarceration_period,
+                    incarceration_period_index,
+                )
+            )
+
+            # If there was a separate admission to a state prison after the revocation
+            # and before this admission, then it is not accurate to describe *this*
+            # admission as being due to a revocation
+            if was_intermediate_state_prison_admission:
+                return False, None
+
             return True, most_recent_supervision_period
 
     return False, None
@@ -178,6 +204,36 @@ def _us_nd_pre_commitment_supervision_period(
         admission_date=admission_date,
         supervision_periods=periods_matching_admission_type,
         prioritize_overlapping_periods=prioritize_overlapping_periods,
+    )
+
+
+def _intermediate_state_prison_admission(
+    most_recent_supervision_period: StateSupervisionPeriod,
+    incarceration_period: StateIncarcerationPeriod,
+    incarceration_period_index: IncarcerationPeriodIndex,
+) -> bool:
+    """Returns whether or not there was an admission to a state prison after the most
+    recent supervision period ended and before the given incarceration period started,
+    inclusive of the supervision period termination date and exclusive of the
+    incarceration period admission date."""
+    start_date = most_recent_supervision_period.termination_date
+    end_date = incarceration_period.admission_date
+
+    if start_date is None or end_date is None:
+        raise ValueError(
+            "Expected a supervision period termination date and an incarceration period admission date at this point. "
+            f"Termination date: [{start_date}]. Admission date: [{end_date}]."
+        )
+
+    intermediate_incarceration_periods = (
+        incarceration_period_index.incarceration_periods_with_admissions_between_dates(
+            start_date, end_date
+        )
+    )
+
+    return any(
+        ip.incarceration_type == StateIncarcerationType.STATE_PRISON
+        for ip in intermediate_incarceration_periods
     )
 
 

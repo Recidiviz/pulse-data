@@ -26,6 +26,9 @@ from dateutil.relativedelta import relativedelta
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import (
     RevocationReturnSupervisionTimeBucket,
 )
+from recidiviz.calculator.pipeline.utils.incarceration_period_index import (
+    IncarcerationPeriodIndex,
+)
 from recidiviz.calculator.pipeline.utils.state_utils import (
     state_calculation_config_manager,
 )
@@ -74,6 +77,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
         )
 
         supervision_periods: List[StateSupervisionPeriod] = []
+        ip_index = IncarcerationPeriodIndex([incarceration_period])
 
         (
             admission_is_revocation,
@@ -82,7 +86,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
             incarceration_period.state_code,
             incarceration_period,
             supervision_periods,
-            None,
+            ip_index,
         )
 
         self.assertTrue(admission_is_revocation)
@@ -105,6 +109,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
         )
 
         supervision_periods: List[StateSupervisionPeriod] = []
+        ip_index = IncarcerationPeriodIndex([incarceration_period])
 
         (
             admission_is_revocation,
@@ -113,7 +118,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
             incarceration_period.state_code,
             incarceration_period,
             supervision_periods,
-            None,
+            ip_index,
         )
 
         self.assertTrue(admission_is_revocation)
@@ -136,6 +141,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
         )
 
         supervision_periods: List[StateSupervisionPeriod] = []
+        ip_index = IncarcerationPeriodIndex([incarceration_period])
 
         (
             admission_is_revocation,
@@ -144,7 +150,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
             incarceration_period.state_code,
             incarceration_period,
             supervision_periods,
-            None,
+            ip_index,
         )
 
         self.assertTrue(admission_is_revocation)
@@ -182,10 +188,13 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=date(2017, 5, 29),
             admission_reason=AdmissionReason.TRANSFER,
+            release_date=date(2018, 5, 29),
+            release_reason=ReleaseReason.SENTENCE_SERVED,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
         supervision_periods = [supervision_period]
+        ip_index = IncarcerationPeriodIndex([treatment_period, incarceration_period])
 
         (
             admission_is_revocation,
@@ -194,7 +203,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
             incarceration_period.state_code,
             incarceration_period,
             supervision_periods,
-            treatment_period,
+            ip_index,
         )
 
         self.assertFalse(admission_is_revocation)
@@ -219,19 +228,26 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
         supervision_termination_date = supervision_period.termination_date
         if not supervision_termination_date:
             self.fail("Found None supervision period termination date.")
+
+        admission_date = supervision_termination_date + relativedelta(
+            months=SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT + 1
+        )
+        release_date = admission_date + relativedelta(years=1)
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
             external_id="ip2",
             state_code="US_ID",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            admission_date=supervision_termination_date
-            + relativedelta(months=SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT + 1),
+            admission_date=admission_date,
             admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
+            release_date=release_date,
+            release_reason=ReleaseReason.SENTENCE_SERVED,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
         supervision_periods = [supervision_period]
+        ip_index = IncarcerationPeriodIndex([incarceration_period])
 
         (
             admission_is_revocation,
@@ -240,7 +256,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
             incarceration_period.state_code,
             incarceration_period,
             supervision_periods,
-            None,
+            ip_index,
         )
 
         self.assertTrue(admission_is_revocation)
@@ -266,10 +282,14 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=date(2017, 5, 9),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2018, 5, 9),
+            release_reason=ReleaseReason.SENTENCE_SERVED,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
         supervision_periods = [supervision_period]
+        ip_index = IncarcerationPeriodIndex([incarceration_period])
 
         (
             admission_is_revocation,
@@ -278,7 +298,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
             incarceration_period.state_code,
             incarceration_period,
             supervision_periods,
-            None,
+            ip_index,
         )
 
         self.assertFalse(admission_is_revocation)
@@ -309,6 +329,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
         )
 
         supervision_periods = [supervision_period]
+        ip_index = IncarcerationPeriodIndex([incarceration_period])
 
         (
             admission_is_commitment_from_supervision,
@@ -317,7 +338,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
             incarceration_period.state_code,
             incarceration_period,
             supervision_periods,
-            None,
+            ip_index,
         )
 
         self.assertFalse(admission_is_commitment_from_supervision)
@@ -348,6 +369,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
         )
 
         supervision_periods = [supervision_period]
+        ip_index = IncarcerationPeriodIndex([incarceration_period])
 
         (
             admission_is_commitment_from_supervision,
@@ -356,7 +378,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
             incarceration_period.state_code,
             incarceration_period,
             supervision_periods,
-            None,
+            ip_index,
         )
 
         self.assertFalse(admission_is_commitment_from_supervision)
@@ -387,6 +409,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
         )
 
         supervision_periods = [supervision_period]
+        ip_index = IncarcerationPeriodIndex([incarceration_period])
 
         (
             admission_is_commitment_from_supervision,
@@ -395,7 +418,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
             incarceration_period.state_code,
             incarceration_period,
             supervision_periods,
-            None,
+            ip_index,
         )
 
         self.assertTrue(admission_is_commitment_from_supervision)
@@ -426,6 +449,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
         )
 
         supervision_periods = [supervision_period]
+        ip_index = IncarcerationPeriodIndex([incarceration_period])
 
         (
             admission_is_commitment_from_supervision,
@@ -434,7 +458,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
             incarceration_period.state_code,
             incarceration_period,
             supervision_periods,
-            None,
+            ip_index,
         )
 
         self.assertTrue(admission_is_commitment_from_supervision)
@@ -453,6 +477,8 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
         )
 
+        ip_index = IncarcerationPeriodIndex([incarceration_period])
+
         (
             admission_is_commitment_from_supervision,
             pre_commitment_supervision_period,
@@ -460,7 +486,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
             incarceration_period.state_code,
             incarceration_period,
             [],
-            None,
+            ip_index,
         )
 
         self.assertTrue(admission_is_commitment_from_supervision)
