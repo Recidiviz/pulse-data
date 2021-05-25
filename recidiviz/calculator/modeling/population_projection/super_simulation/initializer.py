@@ -17,7 +17,7 @@
 """SuperSimulation composed object for initializing simulations."""
 import logging
 from datetime import datetime
-from typing import Dict, Any, List, Tuple, Optional
+from typing import Dict, Any, List, Tuple, Optional, Callable
 import numpy as np
 import pandas as pd
 from recidiviz.calculator.modeling.population_projection.utils import (
@@ -44,6 +44,7 @@ class Initializer:
         self.time_converter = time_converter
         self.microsim = microsim
         self.data_dict: Dict[str, Any] = dict()
+        self.override_cross_flow_function: Optional[Callable] = None
 
         self._set_user_inputs(yaml_user_inputs)
         self._initialize_data(
@@ -113,6 +114,7 @@ class Initializer:
                 ],
                 "should_initialize_compartment_populations": True,
                 "should_scale_populations_after_step": False,
+                "override_cross_flow_function": self.override_cross_flow_function,
             }
 
         outflows = self._fully_connect_outflows(self.data_dict["outflows_data"])
@@ -125,6 +127,7 @@ class Initializer:
             "microsim_data": pd.DataFrame(),
             "should_initialize_compartment_populations": False,
             "should_scale_populations_after_step": True,
+            "override_cross_flow_function": self.override_cross_flow_function,
         }
 
     def get_user_inputs(self) -> Dict[str, Any]:
@@ -162,6 +165,9 @@ class Initializer:
                 start_date
             ] = self.time_converter.convert_timestamp_to_time_step(start_date)
         return data_input_dict, first_relevant_ts_dict
+
+    def set_override_cross_flow_function(self, cross_flow_function: Callable) -> None:
+        self.override_cross_flow_function = cross_flow_function
 
     def _fully_connect_outflows(self, outflows_data: pd.DataFrame) -> pd.DataFrame:
         """Helper function for get_data_inputs that ensures outflows_data is fully connected."""

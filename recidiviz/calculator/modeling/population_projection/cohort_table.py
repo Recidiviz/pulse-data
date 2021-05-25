@@ -27,6 +27,8 @@ class CohortTable:
 
     def __init__(self) -> None:
         self.cohort_df = pd.DataFrame(dtype=float)
+        self.cohort_df.index.name = "start_ts"
+        self.cohort_df.columns.name = "simulation_ts"
 
     def get_latest_population(self) -> pd.Series:
         if self.cohort_df.empty:

@@ -15,8 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Simulation object that models a given policy scenario"""
+# pylint: disable=unused-argument
 
-from typing import Dict, Any, Tuple, Optional
+from typing import Dict, Any, Tuple, Optional, Callable
 from time import time
 import pandas as pd
 
@@ -35,6 +36,8 @@ class PopulationSimulation:
         total_population_data: pd.DataFrame,
         projection_time_steps: int,
         first_relevant_ts: int,
+        cross_flow_function: Optional[str],
+        override_cross_flow_function: Optional[Callable],
         validation_transitions_data: Optional[pd.DataFrame] = None,
     ) -> None:
         self.sub_simulations = sub_simulations
@@ -42,6 +45,12 @@ class PopulationSimulation:
         self.total_population_data = total_population_data
         self.projection_time_steps = projection_time_steps
         self.current_ts = first_relevant_ts
+        if override_cross_flow_function is not None:
+            self.cross_flow_function = override_cross_flow_function
+        else:
+            self.cross_flow_function = getattr(
+                self, cross_flow_function or "update_attributes_identity"
+            )
         self.validation_transition_data = validation_transitions_data or pd.DataFrame()
         self.population_projections = pd.DataFrame()
 
@@ -97,10 +106,12 @@ class PopulationSimulation:
 
     def _cross_flow(self) -> None:
         """Helper function for step_forward. Transfer cohorts between SubSimulations"""
-        cross_simulation_flows = pd.DataFrame(columns=["sub_group_id", "compartment"])
+        cross_simulation_flows = pd.DataFrame()
         for sub_group_id, simulation_obj in self.sub_simulations.items():
             simulation_cohorts = simulation_obj.cross_flow()
-            simulation_cohorts["sub_group_id"] = sub_group_id
+            simulation_cohorts = self._subgroup_id_to_attributes(
+                simulation_cohorts, sub_group_id
+            )
             cross_simulation_flows = pd.concat(
                 [cross_simulation_flows, simulation_cohorts], sort=True
             )
@@ -113,13 +124,45 @@ class PopulationSimulation:
                 f"cohorts passed up without compartment: {unassigned_cohorts}"
             )
 
-        cross_simulation_flows = self.update_cohort_attributes(cross_simulation_flows)
+        cross_simulation_flows = self.cross_flow_function(
+            cross_simulation_flows, self.current_ts
+        )
+
+        cross_simulation_flows = self._attributes_to_subgroup_id(cross_simulation_flows)
+
+        # collapse cohorts in the same group with the same start_ts
+        cross_simulation_flows.index.name = "start_ts"
+        cross_simulation_flows = (
+            cross_simulation_flows.groupby(["start_ts", "compartment", "sub_group_id"])
+            .sum()
+            .reset_index(["compartment", "sub_group_id"])
+        )
 
         for sub_group_id, simulation_obj in self.sub_simulations.items():
             sub_group_cohorts = cross_simulation_flows[
                 cross_simulation_flows.sub_group_id == sub_group_id
             ].drop("sub_group_id", axis=1)
             simulation_obj.ingest_cross_simulation_cohorts(sub_group_cohorts)
+
+    def _subgroup_id_to_attributes(
+        self, cohorts_df: pd.DataFrame, simulation_id: str
+    ) -> pd.DataFrame:
+        """Helper function for _cross_flow(). Adds columns for each disaggregation axis to a cohorts df"""
+        output_df = cohorts_df.copy()
+        for axis, attribute in self.sub_group_ids_dict[simulation_id].items():
+            output_df[axis] = attribute
+        return output_df
+
+    def _attributes_to_subgroup_id(self, cohorts_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Helper function for _cross_flow().
+        Replaces columns for each disaggregation axis with one column for simulation id.
+        """
+        output_df = cohorts_df.copy()
+        disaggregation_axes = list(self.sub_group_ids_dict.values())[0].keys()
+        output_df["sub_group_id"] = output_df[disaggregation_axes].sum(axis=1)
+        output_df = output_df.drop(disaggregation_axes, axis=1)
+        return output_df
 
     def _scale_populations(self) -> None:
         """Helper function for step_forward. Scale populations in each compartment to match historical data."""
@@ -169,11 +212,6 @@ class PopulationSimulation:
             self.sub_simulations[simulation_id].scale_cohorts(
                 simulation_scale_factors, self.current_ts
             )
-
-    @staticmethod
-    def update_cohort_attributes(cross_simulation_flows: pd.DataFrame) -> pd.DataFrame:
-        """Should change sub_group_id for each row to whatever simulation that cohort should move to in the next ts"""
-        return cross_simulation_flows
 
     def calculate_transition_error(
         self, validation_data: Optional[pd.DataFrame] = None
@@ -345,3 +383,54 @@ class PopulationSimulation:
                 ) / historical_population
 
         return total_population_error.sort_index().dropna()
+
+    def set_cross_flow_function(self, cross_flow_function: Callable) -> None:
+        """Set a custom cross flow function."""
+        self.cross_flow_function = cross_flow_function
+
+    @staticmethod
+    def update_attributes_identity(
+        cross_simulation_flows: pd.DataFrame, current_ts: int
+    ) -> pd.DataFrame:
+        """
+        Change sub_group_id for each row to whatever simulation that cohort should move to in the next ts.
+        identity: all cohorts maintain the same sub_group_id
+        """
+        return cross_simulation_flows
+
+    @staticmethod
+    def update_attributes_age_recidiviz_schema(
+        cross_simulation_flows: pd.DataFrame, current_ts: int
+    ) -> pd.DataFrame:
+        """
+        Change sub_group_id for each row to whatever simulation that cohort should move to in the next ts.
+        recidiviz_schema: assumes use of 'age' disaggregation axis with values that match recidiviz BQ "age" column.
+        Should only be used with a monthly time step
+        """
+        ages = {
+            "0-24": "25-29",
+            "25-29": "30-34",
+            "30-34": "35-39",
+            "35-39": "40+",
+            "40+": "40+",
+        }
+
+        # Only change cohorts that are 5 years since their last change
+        transitioners_idx = [
+            ((i != current_ts) & ((i - current_ts) % 60 == 0))
+            for i in cross_simulation_flows.index
+        ]
+
+        new_cohorts = cross_simulation_flows.copy()
+
+        new_cohorts.loc[transitioners_idx, "age"] = new_cohorts.loc[
+            transitioners_idx, "age"
+        ].map(ages)
+
+        null_value_indices = new_cohorts[new_cohorts.age.isnull()].index
+        if len(null_value_indices) > 0:
+            raise ValueError(
+                f"Unrecognized age groups: {cross_simulation_flows[null_value_indices]}"
+            )
+
+        return new_cohorts

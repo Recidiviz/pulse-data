@@ -16,6 +16,7 @@
 # =============================================================================
 """Test the SuperSimulation object"""
 
+from typing import Optional
 import unittest
 from datetime import datetime
 import os
@@ -26,14 +27,17 @@ from pandas.testing import assert_frame_equal
 
 from recidiviz.calculator.modeling.population_projection.super_simulation.super_simulation_factory import (
     SuperSimulationFactory,
+    SuperSimulation,
 )
 from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
 from recidiviz.calculator.modeling.population_projection.transition_table import (
     TransitionTable,
 )
+from recidiviz.calculator.modeling.population_projection.population_simulation.population_simulation import (
+    PopulationSimulation,
+)
 
 # pylint: disable=unused-argument
-
 
 outflows_data_macro = pd.DataFrame(
     {
@@ -203,6 +207,11 @@ def mock_load_table_from_big_query_no_remaining_data(
 class TestSuperSimulation(unittest.TestCase):
     """Test the SuperSimulation object runs correctly"""
 
+    macrosim: Optional[SuperSimulation] = None
+    microsim: Optional[SuperSimulation] = None
+    microsim_excluded_pop: Optional[SuperSimulation] = None
+
+    @classmethod
     @patch(
         "recidiviz.calculator.modeling.population_projection.utils.spark_bq_utils.load_spark_table_from_big_query",
         mock_load_table_from_big_query_macro,
@@ -211,17 +220,17 @@ class TestSuperSimulation(unittest.TestCase):
         "recidiviz.calculator.modeling.population_projection.utils.ignite_bq_utils.load_ignite_table_from_big_query",
         mock_load_table_from_big_query_micro,
     )
-    def setUp(self) -> None:
-        self.macrosim = SuperSimulationFactory.build_super_simulation(
+    def setUpClass(cls) -> None:
+        cls.macrosim = SuperSimulationFactory.build_super_simulation(
             get_inputs_path("super_simulation_data_ingest.yaml")
         )
-        self.microsim = SuperSimulationFactory.build_super_simulation(
+        cls.microsim = SuperSimulationFactory.build_super_simulation(
             get_inputs_path("super_simulation_microsim_model_inputs.yaml")
         )
-        self.microsim_excluded_pop = SuperSimulationFactory.build_super_simulation(
+        cls.microsim_excluded_pop = SuperSimulationFactory.build_super_simulation(
             get_inputs_path("super_simulation_microsim_excluded_pop_model_inputs.yaml")
         )
-        for sim in [self.microsim, self.microsim_excluded_pop]:
+        for sim in [cls.microsim, cls.microsim_excluded_pop]:
             sim.simulate_baseline(["PRISON"])
 
     def test_simulation_architecture_must_match_compartment_costs(self) -> None:
@@ -251,18 +260,146 @@ class TestSuperSimulation(unittest.TestCase):
     )
     def test_macrosim_data_hydrated(self) -> None:
         """Tests macrosimulation are properly ingesting data from BQ"""
+        assert isinstance(self.macrosim, SuperSimulation)
         self.assertFalse(self.macrosim.initializer.data_dict["outflows_data"].empty)
         self.assertFalse(self.macrosim.initializer.data_dict["transitions_data"].empty)
         self.assertFalse(
             self.macrosim.initializer.data_dict["total_population_data"].empty
         )
 
+    def test_microsim_data_hydrated(self) -> None:
+        """Tests microsimulation are properly ingesting data from BQ"""
+        assert isinstance(self.microsim, SuperSimulation)
+        self.assertFalse(self.microsim.initializer.data_dict["outflows_data"].empty)
+        self.assertFalse(self.microsim.initializer.data_dict["transitions_data"].empty)
+        self.assertFalse(
+            self.microsim.initializer.data_dict["total_population_data"].empty
+        )
+        self.assertFalse(
+            self.microsim.initializer.data_dict["remaining_sentence_data"].empty
+        )
+
+    @patch(
+        "recidiviz.calculator.modeling.population_projection.utils.bq_utils.upload_baseline_simulation_results"
+    )
+    def test_a_microsim_upload(self, mock_store_simulation_results: MagicMock) -> None:
+        assert isinstance(self.microsim, SuperSimulation)
+        assert isinstance(self.microsim_excluded_pop, SuperSimulation)
+        simulations = {
+            "no_excluded_pop": self.microsim,
+            "with_excluded_pop": self.microsim_excluded_pop,
+        }
+        for simulation_name, sim in simulations.items():
+            sim.upload_baseline_simulation_results_to_bq(simulation_tag="baseline")
+            self.assertTrue(
+                mock_store_simulation_results.called,
+                f"Simulation '{simulation_name} did not call `store_simulation_results`",
+            )
+
+    @patch(
+        "recidiviz.calculator.modeling.population_projection.utils.ignite_bq_utils.load_ignite_table_from_big_query",
+        mock_load_table_from_big_query_no_remaining_data,
+    )
+    def test_b_using_remaining_sentences_reduces_prison_population(self) -> None:
+        """Tests microsim is using remaining sentence data in the right way"""
+        assert isinstance(self.microsim, SuperSimulation)
+        microsim = SuperSimulationFactory.build_super_simulation(
+            get_inputs_path("super_simulation_microsim_excluded_pop_model_inputs.yaml")
+        )
+        microsim.simulate_baseline(["PRISON"])
+
+        # get time before starting cohort filters out of prison
+        affected_time_frame = self.microsim.initializer.data_dict["transitions_data"][
+            (
+                self.microsim.initializer.data_dict["transitions_data"].compartment
+                == "PRISON"
+            )
+            & (
+                self.microsim.initializer.data_dict["transitions_data"].total_population
+                > 0
+            )
+        ].compartment_duration.max()
+
+        # get projected prison population from simulation substituting transitions data for remaining sentences
+        substitute_outputs = microsim.simulator.pop_simulations[
+            "baseline_middle"
+        ].population_projections
+        substitute_prison_population = (
+            substitute_outputs[
+                (substitute_outputs.compartment == "PRISON")
+                & (
+                    substitute_outputs.time_step
+                    > microsim.initializer.user_inputs["start_time_step"] + 1
+                )
+                & (
+                    substitute_outputs.time_step
+                    - microsim.initializer.user_inputs["start_time_step"]
+                    < affected_time_frame
+                )
+            ]
+            .groupby("time_step")
+            .sum()
+            .total_population
+        )
+
+        # get projected prison population from regular simulation
+        regular_outputs = self.microsim.validator.pop_simulations[
+            "baseline_middle"
+        ].population_projections
+        regular_prison_population = (
+            regular_outputs[
+                (regular_outputs.compartment == "PRISON")
+                & (
+                    regular_outputs.time_step
+                    > self.microsim.initializer.user_inputs["start_time_step"] + 1
+                )
+                & (
+                    regular_outputs.time_step
+                    - self.microsim.initializer.user_inputs["start_time_step"]
+                    < affected_time_frame
+                )
+            ]
+            .groupby("time_step")
+            .sum()
+            .total_population
+        )
+
+        self.assertTrue(
+            (substitute_prison_population > regular_prison_population).all()
+        )
+
+    @patch(
+        "recidiviz.calculator.modeling.population_projection.utils.ignite_bq_utils.load_ignite_table_from_big_query",
+        mock_load_table_from_big_query_micro,
+    )
+    def test_c_user_inputted_cross_flow_equivalent_to_default(self) -> None:
+        """
+        Tests that the same cross flow function operates the same when accessed through
+            the PopulationSimulation object vs through the user override.
+        """
+        assert isinstance(self.microsim, SuperSimulation)
+        regular_outputs = self.microsim.validator.pop_simulations[
+            "baseline_middle"
+        ].population_projections.copy()
+
+        self.microsim.override_cross_flow_function(
+            PopulationSimulation.update_attributes_identity
+        )
+        self.microsim.simulate_baseline(["PRISON"])
+
+        overridden_outputs = self.microsim.validator.pop_simulations[
+            "baseline_middle"
+        ].population_projections
+
+        assert_frame_equal(regular_outputs, overridden_outputs)
+
     @patch(
         "recidiviz.calculator.modeling.population_projection.utils.bq_utils.upload_policy_simulation_results",
         mock_upload_policy_results,
     )
-    def test_cost_multipliers_multiplicative(self) -> None:
+    def test_d_cost_multipliers_multiplicative(self) -> None:
         # test doubling multiplier doubles costs
+        assert isinstance(self.macrosim, SuperSimulation)
         policy_function = partial(
             TransitionTable.apply_reduction,
             reduction_df=pd.DataFrame(
@@ -346,95 +483,13 @@ class TestSuperSimulation(unittest.TestCase):
             (spending_diff_non_cumulative_double - spending_diff_non_cumulative) * 2,
         )
 
-    def test_microsim_data_hydrated(self) -> None:
-        """Tests microsimulation are properly ingesting data from BQ"""
-        self.assertFalse(self.microsim.initializer.data_dict["outflows_data"].empty)
-        self.assertFalse(self.microsim.initializer.data_dict["transitions_data"].empty)
-        self.assertFalse(
-            self.microsim.initializer.data_dict["total_population_data"].empty
-        )
-        self.assertFalse(
-            self.microsim.initializer.data_dict["remaining_sentence_data"].empty
-        )
-
     @patch(
         "recidiviz.calculator.modeling.population_projection.utils.ignite_bq_utils.load_ignite_table_from_big_query",
-        mock_load_table_from_big_query_no_remaining_data,
+        mock_load_table_from_big_query_micro,
     )
-    def test_using_remaining_sentences_reduces_prison_population(self) -> None:
-        """Tests microsim is using remaining sentence data in the right way"""
-        microsim = SuperSimulationFactory.build_super_simulation(
-            get_inputs_path("super_simulation_microsim_excluded_pop_model_inputs.yaml")
-        )
-        microsim.simulate_baseline(["PRISON"])
-
-        # get time before starting cohort filters out of prison
-        affected_time_frame = self.microsim.initializer.data_dict["transitions_data"][
-            (
-                self.microsim.initializer.data_dict["transitions_data"].compartment
-                == "PRISON"
-            )
-            & (
-                self.microsim.initializer.data_dict["transitions_data"].total_population
-                > 0
-            )
-        ].compartment_duration.max()
-
-        # get projected prison population from simulation substituting transitions data for remaining sentences
-        substitute_outputs = microsim.simulator.pop_simulations[
-            "baseline_middle"
-        ].population_projections
-        substitute_prison_population = (
-            substitute_outputs[
-                (substitute_outputs.compartment == "PRISON")
-                & (
-                    substitute_outputs.time_step
-                    > microsim.initializer.user_inputs["start_time_step"] + 1
-                )
-                & (
-                    substitute_outputs.time_step
-                    - microsim.initializer.user_inputs["start_time_step"]
-                    < affected_time_frame
-                )
-            ]
-            .groupby("time_step")
-            .sum()
-            .total_population
-        )
-
-        # get projected prison population from regular simulation
-        regular_outputs = self.microsim.validator.pop_simulations[
-            "baseline_middle"
-        ].population_projections
-        regular_prison_population = (
-            regular_outputs[
-                (regular_outputs.compartment == "PRISON")
-                & (
-                    regular_outputs.time_step
-                    > self.microsim.initializer.user_inputs["start_time_step"] + 1
-                )
-                & (
-                    regular_outputs.time_step
-                    - self.microsim.initializer.user_inputs["start_time_step"]
-                    < affected_time_frame
-                )
-            ]
-            .groupby("time_step")
-            .sum()
-            .total_population
-        )
-
-        self.assertTrue(
-            (substitute_prison_population > regular_prison_population).all()
-        )
-
-    @patch(
-        "recidiviz.calculator.modeling.population_projection.utils.ignite_bq_utils.load_ignite_table_from_big_query",
-        mock_load_table_from_big_query_no_remaining_data,
-    )
-    def test_microsim_baseline_over_time_zero_error_for_first_ts(self) -> None:
+    def test_e_microsim_baseline_over_time_zero_error_for_first_ts(self) -> None:
         """Tests the microsim is initialized with 0 percent error for each initial time step"""
-
+        assert isinstance(self.microsim, SuperSimulation)
         # Run 2 simulations over different run dates
         run_dates = pd.date_range(
             datetime(2020, 12, 1), datetime(2021, 1, 1), freq="MS"
@@ -452,18 +507,3 @@ class TestSuperSimulation(unittest.TestCase):
             ]
             # Error should be 0 for each compartment/simulation group on the first ts
             self.assertTrue((initial_error == 0).all())
-
-    @patch(
-        "recidiviz.calculator.modeling.population_projection.utils.bq_utils.upload_baseline_simulation_results"
-    )
-    def test_microsim_upload(self, mock_store_simulation_results: MagicMock) -> None:
-        simulations = {
-            "no_excluded_pop": self.microsim,
-            "with_excluded_pop": self.microsim_excluded_pop,
-        }
-        for simulation_name, sim in simulations.items():
-            sim.upload_baseline_simulation_results_to_bq(simulation_tag="baseline")
-            self.assertTrue(
-                mock_store_simulation_results.called,
-                f"Simulation '{simulation_name} did not call `store_simulation_results`",
-            )

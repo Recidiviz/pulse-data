@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Test the PopulationSimulation object"""
+from typing import Any, Dict, Optional
 import unittest
 from copy import deepcopy
 from unittest.mock import patch
@@ -25,6 +26,7 @@ from pandas.testing import assert_index_equal, assert_frame_equal
 
 from recidiviz.calculator.modeling.population_projection.population_simulation.population_simulation_factory import (
     PopulationSimulationFactory,
+    PopulationSimulation,
 )
 from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
 from recidiviz.calculator.modeling.population_projection.transition_table import (
@@ -35,8 +37,17 @@ from recidiviz.calculator.modeling.population_projection.transition_table import
 class TestPopulationSimulation(unittest.TestCase):
     """Test the PopulationSimulation class runs correctly"""
 
-    def setUp(self) -> None:
-        self.test_outflows_data = pd.DataFrame(
+    test_outflows_data = pd.DataFrame()
+    test_transitions_data = pd.DataFrame()
+    test_total_population_data = pd.DataFrame()
+    user_inputs: Dict[str, Any] = dict()
+    simulation_architecture: Dict[str, str] = dict()
+    macro_population_simulation = Optional[PopulationSimulation]
+    macro_projection = pd.DataFrame()
+
+    @classmethod
+    def setUp(cls) -> None:
+        cls.test_outflows_data = pd.DataFrame(
             {
                 "total_population": [4, 2, 2, 4, 3] * 2,
                 "crime": ["NAR"] * 5 + ["BUR"] * 5,
@@ -60,7 +71,7 @@ class TestPopulationSimulation(unittest.TestCase):
             }
         )
 
-        self.test_transitions_data = pd.DataFrame(
+        cls.test_transitions_data = pd.DataFrame(
             {
                 "compartment_duration": [1, 1, 2] * 2,
                 "total_population": [4, 2, 2] * 2,
@@ -71,7 +82,7 @@ class TestPopulationSimulation(unittest.TestCase):
             }
         )
 
-        self.test_total_population_data = pd.DataFrame(
+        cls.test_total_population_data = pd.DataFrame(
             {
                 "total_population": [10] * 10,
                 "compartment": ["prison"] * 10,
@@ -80,34 +91,35 @@ class TestPopulationSimulation(unittest.TestCase):
             }
         )
 
-        self.user_inputs = {
+        cls.user_inputs = {
             "projection_time_steps": 10,
             "start_time_step": 0,
             "constant_admissions": True,
             "speed_run": False,
         }
-        self.simulation_architecture = {
+        cls.simulation_architecture = {
             "pretrial": "shell",
             "prison": "full",
             "supervision": "full",
         }
 
-        self.macro_population_simulation = (
+        cls.macro_population_simulation = (
             PopulationSimulationFactory.build_population_simulation(
-                self.test_outflows_data,
-                self.test_transitions_data,
-                self.test_total_population_data,
-                self.simulation_architecture,
+                cls.test_outflows_data,
+                cls.test_transitions_data,
+                cls.test_total_population_data,
+                cls.simulation_architecture,
                 ["crime"],
-                self.user_inputs,
+                cls.user_inputs,
                 [],
                 -5,
                 pd.DataFrame(),
                 False,
                 True,
+                None,
             )
         )
-        self.macro_projection = self.macro_population_simulation.simulate_policies()
+        cls.macro_projection = cls.macro_population_simulation.simulate_policies()
 
     def test_disaggregation_axes_must_be_in_data_dfs(self) -> None:
         test_outflows_data = self.test_outflows_data.drop("crime", axis=1)
@@ -127,6 +139,7 @@ class TestPopulationSimulation(unittest.TestCase):
                 pd.DataFrame(),
                 False,
                 True,
+                None,
             )
 
         with self.assertRaises(ValueError):
@@ -142,6 +155,7 @@ class TestPopulationSimulation(unittest.TestCase):
                 pd.DataFrame(),
                 False,
                 True,
+                None,
             )
 
         with self.assertRaises(ValueError):
@@ -157,6 +171,7 @@ class TestPopulationSimulation(unittest.TestCase):
                 pd.DataFrame(),
                 False,
                 True,
+                None,
             )
 
     def test_simulation_forces_complete_user_inputs_dict(self) -> None:
@@ -177,6 +192,7 @@ class TestPopulationSimulation(unittest.TestCase):
                     pd.DataFrame(),
                     False,
                     True,
+                    None,
                 )
 
     def test_microsimulation_can_initialize_with_policy_list(self) -> None:
@@ -201,6 +217,7 @@ class TestPopulationSimulation(unittest.TestCase):
             self.test_transitions_data,
             True,
             False,
+            None,
         )
 
         policy_sim.simulate_policies()
@@ -226,11 +243,12 @@ class TestPopulationSimulation(unittest.TestCase):
             self.test_transitions_data,
             True,
             False,
+            None,
         )
         projection = population_simulation.simulate_policies()
 
         assert_index_equal(
-            projection.index.unique().sort_values(), pd.Int64Index(range(11))
+            projection.index.unique().sort_values(), pd.Int64Index(range(10))
         )
 
     def test_dropping_data_raises_warning(self) -> None:
@@ -258,6 +276,7 @@ class TestPopulationSimulation(unittest.TestCase):
                 pd.DataFrame(),
                 False,
                 True,
+                None,
             )
             mock.assert_called_once()
             self.assertEqual(
@@ -278,6 +297,7 @@ class TestPopulationSimulation(unittest.TestCase):
                 pd.DataFrame(),
                 False,
                 True,
+                None,
             )
             mock.assert_called_once()
             self.assertEqual(
@@ -304,6 +324,7 @@ class TestPopulationSimulation(unittest.TestCase):
                 pd.DataFrame(),
                 False,
                 True,
+                None,
             )
         )
 
@@ -346,6 +367,7 @@ class TestPopulationSimulation(unittest.TestCase):
                 pd.DataFrame(),
                 False,
                 True,
+                None,
             )
         )
         coarse_population_projection = (
@@ -353,3 +375,85 @@ class TestPopulationSimulation(unittest.TestCase):
         )
 
         assert_frame_equal(coarse_population_projection, self.macro_projection)
+
+    def test_update_attributes_age_recidiviz_schema_matches_example_by_hand(
+        self,
+    ) -> None:
+        """Validate age cross function works as expected."""
+        age_outflows_data = pd.DataFrame(
+            {
+                "total_population": [0] * 5,
+                "age": ["0-24", "25-29", "30-34", "35-39", "40+"],
+                "compartment": ["pretrial"] * 5,
+                "outflow_to": ["prison"] * 5,
+                "time_step": [0] * 5,
+            }
+        )
+
+        age_transitions_data = pd.DataFrame(
+            {
+                "compartment_duration": [1000, 1000, 1000] * 5,
+                "total_population": [4, 2, 2] * 5,
+                "age": ["0-24"] * 3
+                + ["25-29"] * 3
+                + ["30-34"] * 3
+                + ["35-39"] * 3
+                + ["40+"] * 3,
+                "outflow_to": ["supervision", "prison", "supervision"] * 5,
+                "compartment": ["prison", "supervision", "prison"] * 5,
+                "time_step": [0] * 15,
+            }
+        )
+
+        age_total_population_data = pd.DataFrame(
+            {
+                "total_population": [10, 0, 0, 5, 0],
+                "compartment": ["prison"] * 5,
+                "age": ["0-24", "25-29", "30-34", "35-39", "40+"],
+                "time_step": [0] * 5,
+            }
+        )
+
+        age_user_inputs = {
+            "projection_time_steps": 121,
+            "start_time_step": 0,
+            "constant_admissions": True,
+            "cross_flow_function": "update_attributes_age_recidiviz_schema",
+        }
+
+        population_simulation = PopulationSimulationFactory.build_population_simulation(
+            age_outflows_data,
+            age_transitions_data,
+            age_total_population_data,
+            self.simulation_architecture,
+            ["age"],
+            age_user_inputs,
+            [],
+            0,
+            age_transitions_data,
+            True,
+            False,
+            None,
+        )
+        population_projection = population_simulation.simulate_policies()
+        prison_populations = (
+            population_projection[population_projection.compartment == "prison"]
+            .groupby(["time_step", "simulation_group"])
+            .sum()
+            .unstack("simulation_group")
+        )
+
+        prison_populations.columns = prison_populations.columns.get_level_values(
+            "simulation_group"
+        )
+
+        expected = pd.DataFrame(index=range(121))
+        expected.columns.name = "simulation_group"
+        expected.index.name = "time_step"
+        expected["0-24"] = [10.0] * 60 + [0.0] * 61
+        expected["25-29"] = [0.0] * 60 + [10.0] * 60 + [0.0]
+        expected["30-34"] = [0.0] * 120 + [10.0]
+        expected["35-39"] = [5.0] * 60 + [0.0] * 61
+        expected["40+"] = [0.0] * 60 + [5.0] * 61
+
+        assert_frame_equal(expected, prison_populations)

@@ -17,7 +17,7 @@
 """Test the SubSimulation class"""
 
 import unittest
-from typing import List
+from typing import List, Dict, Any
 from unittest.mock import patch
 
 import pandas as pd
@@ -30,8 +30,16 @@ from recidiviz.calculator.modeling.population_projection.spark_policy import Spa
 class TestSubSimulation(unittest.TestCase):
     """Test the SubSimulation runs correctly"""
 
-    def setUp(self) -> None:
-        self.test_outflow_data = pd.DataFrame(
+    test_outflow_data = pd.DataFrame()
+    test_transitions_data = pd.DataFrame()
+    starting_cohort_sizes = pd.DataFrame()
+    test_architecture: Dict[str, str] = dict()
+    compartment_policies: List[SparkPolicy] = list()
+    test_user_inputs: Dict[str, Any] = dict()
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.test_outflow_data = pd.DataFrame(
             {
                 "total_population": [4, 2, 2, 4, 3],
                 "outflow_to": [
@@ -52,7 +60,7 @@ class TestSubSimulation(unittest.TestCase):
             }
         )
 
-        self.test_transitions_data = pd.DataFrame(
+        cls.test_transitions_data = pd.DataFrame(
             {
                 "compartment_duration": [1, 1, 5],
                 "total_population": [4, 2, 2],
@@ -61,7 +69,7 @@ class TestSubSimulation(unittest.TestCase):
             }
         )
 
-        self.starting_cohort_sizes = pd.DataFrame(
+        cls.starting_cohort_sizes = pd.DataFrame(
             {
                 "total_population": [10],
                 "compartment": ["prison"],
@@ -69,15 +77,13 @@ class TestSubSimulation(unittest.TestCase):
             }
         )
 
-        self.test_architecture = {
+        cls.test_architecture = {
             "pretrial": "shell",
             "supervision": "full",
             "prison": "full",
         }
 
-        self.compartment_policies: List[SparkPolicy] = []
-
-        self.test_user_inputs = {
+        cls.test_user_inputs = {
             "start_time_step": 0,
             "policy_time_step": 5,
             "projection_time_steps": 10,
