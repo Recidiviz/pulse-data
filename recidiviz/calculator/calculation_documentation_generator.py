@@ -38,6 +38,7 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagWalker,
     DagKey,
+    BigQueryViewDagNodeFamily,
 )
 from recidiviz.calculator.dataflow_config import (
     PRODUCTION_TEMPLATES_PATH,
@@ -84,6 +85,11 @@ DATASETS_TO_SKIP_VIEW_DOCUMENTATION = LATEST_VIEW_DATASETS | {
     DATAFLOW_METRICS_MATERIALIZED_DATASET
 }
 CALC_DOCS_PATH = "docs/calculation"
+
+MAX_DEPENDENCY_TREE_LENGTH = 250
+
+DEPENDENCY_TREE_SCRIPT_TEMPLATE = """This dependency tree is too large to display in its entirety. To see the full tree, run the following script in your shell: <br/>
+```python -m recidiviz.tools.display_bq_dag_for_view --project_id recidiviz-staging --dataset_id {dataset_id} --view_id {table_id} --show_downstream_dependencies {descendants}```"""
 
 BQ_LINK_TEMPLATE = """https://console.cloud.google.com/bigquery?pli=1&p={project}&page=table&project={project}&d={dataset_id}&t={table_id}"""
 
@@ -859,11 +865,40 @@ class CalculationDocumentationGenerator:
 
         return table_name_str + " <br/>"
 
+    @staticmethod
+    def _get_view_tree_string(
+        node_family: BigQueryViewDagNodeFamily,
+        dag_key: DagKey,
+        descendants: bool = False,
+    ) -> str:
+        if (node_family.full_parentage and not descendants) or (
+            node_family.full_descendants and descendants
+        ):
+            # Gitbook has a line count limit of ~525 for the view markdowns, so we
+            # only print trees if they are small enough. Otherwise, we direct readers
+            # to a script that prints the tree to console.
+            if descendants:
+                if (
+                    node_family.child_dfs_tree_str.count("<br/>")
+                    < MAX_DEPENDENCY_TREE_LENGTH
+                ):
+                    return node_family.child_dfs_tree_str
+            else:
+                if (
+                    node_family.parent_dfs_tree_str.count("<br/>")
+                    < MAX_DEPENDENCY_TREE_LENGTH
+                ):
+                    return node_family.parent_dfs_tree_str
+            return DEPENDENCY_TREE_SCRIPT_TEMPLATE.format(
+                dataset_id=dag_key.dataset_id,
+                table_id=dag_key.table_id,
+                descendants=descendants,
+            )
+        return f"This view has no {'child' if descendants else 'parent'} dependencies."
+
     def _get_view_information(self, view_key: DagKey) -> str:
         """Returns string contents for a view markdown."""
-        view_node = self.dag_walker.nodes_by_key[
-            DagKey(view_address=view_key.view_address)
-        ]
+        view_node = self.dag_walker.nodes_by_key[view_key]
 
         # Gitbook only supports italicizing single lines so we need to ensure multi-line
         # descriptions format correctly
@@ -890,12 +925,10 @@ class CalculationDocumentationGenerator:
             description=formatted_description,
             staging_link=staging_link,
             prod_link=prod_link,
-            parent_tree=view_node.node_family.parent_dfs_tree_str
-            if view_node.node_family.full_parentage
-            else "This view has no parent dependencies.",
-            child_tree=view_node.node_family.child_dfs_tree_str
-            if view_node.node_family.full_descendants
-            else "This view has no child dependencies.",
+            parent_tree=self._get_view_tree_string(view_node.node_family, view_key),
+            child_tree=self._get_view_tree_string(
+                view_node.node_family, view_key, descendants=True
+            ),
         )
         return documentation
 
@@ -905,7 +938,7 @@ class CalculationDocumentationGenerator:
         all_view_keys = {
             DagKey(view_address=node.view.address)
             for node in all_nodes
-            if not node.dag_key.dataset_id in DATASETS_TO_SKIP_VIEW_DOCUMENTATION
+            if node.dag_key.dataset_id not in DATASETS_TO_SKIP_VIEW_DOCUMENTATION
         }
         return all_view_keys
 
