@@ -38,6 +38,7 @@ class PopulationSimulation:
         first_relevant_ts: int,
         cross_flow_function: Optional[str],
         override_cross_flow_function: Optional[Callable],
+        should_scale_populations: bool,
         validation_transitions_data: Optional[pd.DataFrame] = None,
     ) -> None:
         self.sub_simulations = sub_simulations
@@ -51,6 +52,7 @@ class PopulationSimulation:
             self.cross_flow_function = getattr(
                 self, cross_flow_function or "update_attributes_identity"
             )
+        self.should_scale_populations = should_scale_populations
         self.validation_transition_data = validation_transitions_data or pd.DataFrame()
         self.population_projections = pd.DataFrame()
 
@@ -87,7 +89,8 @@ class PopulationSimulation:
 
             self._cross_flow()
 
-            self._scale_populations()
+            if self.should_scale_populations:
+                self._scale_populations()
 
             for simulation_obj in self.sub_simulations.values():
                 simulation_obj.prepare_for_next_step()

@@ -49,7 +49,6 @@ class SubSimulationFactory:
         user_inputs: Dict[str, Any],
         policy_list: List[SparkPolicy],
         first_relevant_ts: int,
-        should_scale_populations_after_step: bool,
         should_single_cohort_initialize_compartments: bool,
         starting_cohort_sizes: pd.DataFrame,
     ) -> SubSimulation:
@@ -76,7 +75,6 @@ class SubSimulationFactory:
 
         return SubSimulation(
             simulation_compartments,
-            should_scale_populations_after_step,
         )
 
     @classmethod
