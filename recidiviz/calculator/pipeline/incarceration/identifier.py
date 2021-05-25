@@ -649,16 +649,9 @@ def admission_event_for_period(
         incarceration_sentences, supervision_sentences, incarceration_period
     )
 
-    ip_index: int = incarceration_period_index.incarceration_periods.index(
-        incarceration_period
+    preceding_incarceration_period = (
+        incarceration_period_index.preceding_incarceration_period(incarceration_period)
     )
-
-    preceding_incarceration_period: Optional[StateIncarcerationPeriod] = None
-
-    if ip_index > 0:
-        preceding_incarceration_period = (
-            incarceration_period_index.incarceration_periods[ip_index - 1]
-        )
 
     if admission_date and admission_reason:
         admission_reason = state_specific_incarceration_admission_reason_override(
@@ -688,7 +681,7 @@ def admission_event_for_period(
             incarceration_period.state_code,
             incarceration_period,
             filtered_supervision_periods,
-            preceding_incarceration_period,
+            incarceration_period_index,
         )
 
         if admission_is_commitment_from_supervision:
