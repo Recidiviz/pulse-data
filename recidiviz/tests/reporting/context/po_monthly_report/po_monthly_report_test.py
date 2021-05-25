@@ -17,17 +17,17 @@
 
 """Tests for po_monthly_report/context.py."""
 
+import json
 import os
 import textwrap
 from copy import deepcopy
 from unittest import TestCase
-from unittest.mock import patch
-import json
+from unittest.mock import MagicMock, patch
 
-from recidiviz.reporting.recipient import Recipient
-from recidiviz.tests.ingest.fixtures import as_string_from_relative_path
 from recidiviz.reporting.context.po_monthly_report.constants import DEFAULT_MESSAGE_BODY
 from recidiviz.reporting.context.po_monthly_report.context import PoMonthlyReportContext
+from recidiviz.reporting.recipient import Recipient
+from recidiviz.tests.ingest.fixtures import as_string_from_relative_path
 
 # The path is defined relative to recidiviz/tests/ingest, hence the specific path structure below:
 _PROPERTIES = as_string_from_relative_path(
@@ -36,7 +36,11 @@ _PROPERTIES = as_string_from_relative_path(
 
 FIXTURE_FILE = "po_monthly_report_data_fixture.json"
 
+TEST_SECRETS = {"po_report_cdn_static_IP": "123.456.7.8"}
 
+
+@patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="RECIDIVIZ_TEST"))
+@patch("recidiviz.utils.secrets.get_secret", MagicMock(side_effect=TEST_SECRETS.get))
 class PoMonthlyReportContextTests(TestCase):
     """Tests for po_monthly_report/context.py."""
 
@@ -47,22 +51,8 @@ class PoMonthlyReportContextTests(TestCase):
             self.recipient = Recipient.from_report_json(json.loads(fixture_file.read()))
             self.recipient.data["batch_id"] = "20201105123033"
 
-        project_id = "RECIDIVIZ_TEST"
-        cdn_static_ip = "123.456.7.8"
-        test_secrets = {"po_report_cdn_static_IP": cdn_static_ip}
-
-        self.get_secret_patcher = patch("recidiviz.utils.secrets.get_secret")
-        self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
-
-        self.get_secret_patcher.start().side_effect = test_secrets.get
-        self.project_id_patcher.start().return_value = project_id
-
-    def tearDown(self) -> None:
-        self.get_secret_patcher.stop()
-        self.project_id_patcher.stop()
-
     def test_get_report_type(self) -> None:
-        context = PoMonthlyReportContext("us_va", self.recipient)
+        context = PoMonthlyReportContext("US_ID", self.recipient)
         self.assertEqual("po_monthly_report", context.get_report_type())
 
     def test_congratulations_text_only_improved_from_last_month(self) -> None:
@@ -134,7 +124,7 @@ class PoMonthlyReportContextTests(TestCase):
                     "earned_discharge_date": "2020-12-05",
                 }
             ],
-            "supervision_downgrade_clients": [
+            "supervision_downgrades_clients": [
                 {
                     "person_external_id": 246,
                     "full_name": "GOYA, FRANCISCO",
@@ -207,6 +197,7 @@ class PoMonthlyReportContextTests(TestCase):
 
             Please note: people on probation in custody who technically remain on your caseload are currently counted in your Key Supervision Task percentages, including contacts and risk assessments."""
         )
+        self.maxDiff = None
         self.assertEqual(expected, actual["attachment_content"])
 
     # pylint:disable=trailing-whitespace
@@ -322,7 +313,7 @@ class PoMonthlyReportContextTests(TestCase):
         expected["absconsions_state_average"] = "0.14"
 
         expected["total_revocations"] = "2"
-        expected["assessment_percent"] = "73"
+        expected["assessments_percent"] = "73"
         expected["facetoface_percent"] = "N/A"
 
         expected["pos_discharges_label"] = "Successful&nbsp;Case Completions"
@@ -338,6 +329,45 @@ class PoMonthlyReportContextTests(TestCase):
             "You improved from last month across 4 metrics and out-performed other "
             "officers like you across 5 metrics."
         )
+
+        for key, value in expected.items():
+            if key not in actual:
+                print(f"Missing key: {key}")
+            self.assertTrue(key in actual)
+
+        for key, value in actual.items():
+            self.assertEqual(expected[key], value, f"key = {key}")
+
+        # Testing an instance where some metrics are not populated
+        expected[
+            "static_image_path"
+        ] = "http://123.456.7.8/US_PA/po_monthly_report/static"
+        del expected["earned_discharges_color"]
+        del expected["earned_discharges_change"]
+        del expected["earned_discharges_change_color"]
+        del expected["earned_discharges_district_average_color"]
+        del expected["earned_discharges_label"]
+
+        expected["earned_discharges"] = 0
+        expected["earned_discharges_last_month"] = 0
+        expected["earned_discharges_district_average"] = 0.0
+        expected["earned_discharges_state_average"] = 0.0
+
+        expected["congratulations_text"] = (
+            "You improved from last month across 4 metrics and out-performed other "
+            "officers like you across 4 metrics."
+        )
+
+        recipient = self.recipient.create_derived_recipient(
+            {
+                "earned_discharges": 0,
+                "earned_discharges_last_month": 0,
+                "earned_discharges_district_average": 0.0,
+                "earned_discharges_state_average": 0.0,
+            }
+        )
+        context = PoMonthlyReportContext("US_PA", recipient)
+        actual = context.get_prepared_data()
 
         for key, value in expected.items():
             if key not in actual:

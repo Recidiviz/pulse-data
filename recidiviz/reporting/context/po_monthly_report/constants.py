@@ -21,3 +21,22 @@ DEFAULT_MESSAGE_BODY = (
     "We’re here to make your life a bit easier by helping you keep track of "
     + "your caseload's health. You'll receive this email once a month as a customized, personal check-in just for you."
 )
+
+OFFICER_EXTERNAL_ID = "officer_external_id"
+STATE_CODE = "state_code"
+DISTRICT = "district"
+EMAIL_ADDRESS = "email_address"
+OFFICER_GIVEN_NAME = "officer_given_name"
+REVIEW_MONTH = "review_month"
+
+"""Below are metrics constants used by the PO Monthly Reports"""
+POS_DISCHARGES = "pos_discharges"
+EARNED_DISCHARGES = "earned_discharges"
+SUPERVISION_DOWNGRADES = "supervision_downgrades"
+REVOCATIONS_CLIENTS = "revocations_clients"
+TOTAL_REVOCATIONS = "total_revocations"
+TECHNICAL_REVOCATIONS = "technical_revocations"
+CRIME_REVOCATIONS = "crime_revocations"
+ABSCONSIONS = "absconsions"
+ASSESSMENTS = "assessments"
+FACE_TO_FACE = "facetoface"

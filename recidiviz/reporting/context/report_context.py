@@ -18,12 +18,12 @@
 """Abstract base class that encapsulates report-specific context."""
 
 from abc import ABC, abstractmethod
-from string import Template
 from typing import List
 
-from recidiviz.reporting.recipient import Recipient
+from jinja2 import Template
 
 import recidiviz.reporting.email_reporting_utils as utils
+from recidiviz.reporting.recipient import Recipient
 
 
 class ReportContext(ABC):
@@ -94,7 +94,7 @@ class ReportContext(ABC):
 
         with open(self.get_html_template_filepath()) as html_template:
             template = Template(html_template.read())
-            return template.substitute(prepared_data)
+            return template.render(prepared_data)
 
     @abstractmethod
     def prepare_for_generation(self) -> dict:
