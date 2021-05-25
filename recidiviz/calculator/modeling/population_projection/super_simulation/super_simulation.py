@@ -16,7 +16,7 @@
 # =============================================================================
 """Highest level simulation object -- runs various comparative scenarios"""
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Callable
 from datetime import datetime
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -205,3 +205,11 @@ class SuperSimulation:
             step_size * max_sentence,
             unit,
         )
+
+    def override_cross_flow_function(self, cross_flow_function: Callable) -> None:
+        """
+        Replace default cross flow function with a custom function. Once called, will replace for all future
+        simulations.
+        `cross_flow_function` should be a callable that accepts a df as an input
+        """
+        self.initializer.set_override_cross_flow_function(cross_flow_function)

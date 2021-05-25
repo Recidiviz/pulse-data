@@ -16,6 +16,7 @@
 # =============================================================================
 """Test the FullCompartment object"""
 
+from typing import Optional, List
 import unittest
 import pandas as pd
 from recidiviz.calculator.modeling.population_projection.full_compartment import (
@@ -24,13 +25,22 @@ from recidiviz.calculator.modeling.population_projection.full_compartment import
 from recidiviz.calculator.modeling.population_projection.compartment_transitions import (
     CompartmentTransitions,
 )
+from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
 
 
 class TestFullCompartment(unittest.TestCase):
     """Test the FullCompartment runs correctly"""
 
-    def setUp(self) -> None:
-        self.test_supervision_data = pd.DataFrame(
+    test_supervision_data = pd.DataFrame()
+    test_incarceration_data = pd.DataFrame()
+    compartment_policies: List[SparkPolicy] = list()
+    incarceration_transition_table: Optional[CompartmentTransitions] = None
+    release_transition_table: Optional[CompartmentTransitions] = None
+    historical_data = pd.DataFrame()
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.test_supervision_data = pd.DataFrame(
             {
                 "compartment_duration": [1, 1, 2, 2.5, 10],
                 "total_population": [4, 2, 2, 4, 3],
@@ -38,7 +48,7 @@ class TestFullCompartment(unittest.TestCase):
                 "compartment": ["test"] * 5,
             }
         )
-        self.test_incarceration_data = pd.DataFrame(
+        cls.test_incarceration_data = pd.DataFrame(
             {
                 "compartment_duration": [1, 1, 2, 2.5, 10],
                 "total_population": [4, 2, 2, 4, 3],
@@ -53,23 +63,19 @@ class TestFullCompartment(unittest.TestCase):
             }
         )
 
-        self.compartment_policies: list = []
-
-        self.incarceration_transition_table = CompartmentTransitions(
-            self.test_incarceration_data
+        cls.incarceration_transition_table = CompartmentTransitions(
+            cls.test_incarceration_data
         )
-        self.incarceration_transition_table.initialize_transition_tables(
-            self.compartment_policies
+        cls.incarceration_transition_table.initialize_transition_tables(
+            cls.compartment_policies
         )
 
-        self.release_transition_table = CompartmentTransitions(
-            self.test_supervision_data
-        )
-        self.release_transition_table.initialize_transition_tables(
-            self.compartment_policies
+        cls.release_transition_table = CompartmentTransitions(cls.test_supervision_data)
+        cls.release_transition_table.initialize_transition_tables(
+            cls.compartment_policies
         )
 
-        self.historical_data = pd.DataFrame(
+        cls.historical_data = pd.DataFrame(
             {
                 2015: {"jail": 2, "prison": 2},
                 2016: {"jail": 1, "prison": 0},
@@ -79,6 +85,8 @@ class TestFullCompartment(unittest.TestCase):
 
     def test_step_forward_fails_without_initialized_edges(self) -> None:
         """Tests that step_forward() needs the initialize_edges() to have been run"""
+        assert self.release_transition_table is not None
+
         rel_compartment = FullCompartment(
             self.historical_data, self.release_transition_table, 2015, "release"
         )
@@ -87,6 +95,9 @@ class TestFullCompartment(unittest.TestCase):
 
     def test_all_edges_fed_to(self) -> None:
         """Tests that all edges in self.edges are included in self.compartment_transitions"""
+        assert self.incarceration_transition_table is not None
+        assert self.release_transition_table is not None
+
         rel_compartment = FullCompartment(
             self.historical_data, self.release_transition_table, 2015, "release"
         )
