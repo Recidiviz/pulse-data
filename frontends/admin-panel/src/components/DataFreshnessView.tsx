@@ -16,7 +16,6 @@
 // =============================================================================
 import { PageHeader, Spin, Table } from "antd";
 import * as React from "react";
-
 import { fetchDataFreshness } from "../AdminPanelAPI";
 import useFetchedData from "../hooks";
 

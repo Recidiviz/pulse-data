@@ -14,27 +14,23 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import * as React from "react";
 import { Layout, Menu, Typography } from "antd";
+import * as React from "react";
 import { Link, Redirect, Route, Switch, useLocation } from "react-router-dom";
-
-import CloudSQLExportView from "./CloudSQLExportView";
-import CloudSQLImportView from "./CloudSQLImportView";
-import DataDiscoveryView from "./DataDiscoveryView";
-import POFeedbackView from "./POFeedbackView";
-import ColumnView from "./ColumnView";
-import DatasetView from "./DatasetView";
-import DataFreshnessView from "./DataFreshnessView";
-import IngestOperationsView from "./IngestOperationsView";
-import TableView from "./TableView";
-
 import MetadataDataset from "../models/MetadataDatasets";
-
 import * as CaseTriage from "../navigation/CaseTriage";
 import * as DatasetMetadata from "../navigation/DatasetMetadata";
 import * as IngestOperations from "../navigation/IngestOperations";
-
 import "../style/App.css";
+import CloudSQLExportView from "./CloudSQLExportView";
+import CloudSQLImportView from "./CloudSQLImportView";
+import ColumnView from "./ColumnView";
+import DataDiscoveryView from "./DataDiscoveryView";
+import DataFreshnessView from "./DataFreshnessView";
+import DatasetView from "./DatasetView";
+import IngestOperationsView from "./IngestOperationsView";
+import POFeedbackView from "./POFeedbackView";
+import TableView from "./TableView";
 
 const App = (): JSX.Element => {
   const location = useLocation();
@@ -90,7 +86,7 @@ const App = (): JSX.Element => {
           <Menu.ItemGroup title="Ingest Operations">
             <Menu.Item key={IngestOperations.INGEST_ACTIONS_ROUTE}>
               <Link to={IngestOperations.INGEST_ACTIONS_ROUTE}>
-                Actions & Summaries
+                Actions &amp; Summaries
               </Link>
             </Menu.Item>
           </Menu.ItemGroup>

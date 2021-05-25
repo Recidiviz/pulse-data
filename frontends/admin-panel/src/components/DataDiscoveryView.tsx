@@ -14,18 +14,18 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import * as React from "react";
-import { Badge, Button, Card, Form, Space, Steps } from "antd";
 import { LoadingOutlined, SearchOutlined } from "@ant-design/icons";
+import { Badge, Button, Card, Form, Space, Steps } from "antd";
 import { FormInstance } from "antd/es/form";
+import * as React from "react";
 import {
   createDiscovery,
   Message,
   pollDiscoveryStatus,
 } from "../AdminPanelAPI";
-import DataDiscoverySelectStateView from "./DataDiscovery/DataDiscoverySelectStateView";
 import DataDiscoveryFiltersView from "./DataDiscovery/DataDiscoveryFiltersView";
 import DataDiscoverySelectFilesView from "./DataDiscovery/DataDiscoverySelectFilesView";
+import DataDiscoverySelectStateView from "./DataDiscovery/DataDiscoverySelectStateView";
 
 const { Step } = Steps;
 

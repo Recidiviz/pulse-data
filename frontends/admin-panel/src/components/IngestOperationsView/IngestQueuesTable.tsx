@@ -14,8 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import * as React from "react";
 import { Table } from "antd";
+import * as React from "react";
+import NewTabLink from "../NewTabLink";
 import { QueueMetadata } from "./constants";
 
 interface IngestQueueStatusCardProps {
@@ -35,11 +36,11 @@ const IngestQueuesTable: React.FC<IngestQueueStatusCardProps> = ({
       dataIndex: "name",
       key: "name",
       render: (name: string) => (
-        <a
+        <NewTabLink
           href={`https://console.cloud.google.com/cloudtasks/queue/us-east1/${name}/tasks?project=${projectId}`}
         >
           {name}
-        </a>
+        </NewTabLink>
       ),
     },
     {
