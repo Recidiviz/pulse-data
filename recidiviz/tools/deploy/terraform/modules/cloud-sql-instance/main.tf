@@ -99,7 +99,7 @@ locals {
   # Retrieve the last element in the resource identifier
   stripped_cloudsql_instance_id = element(local.split_cloudsql_instance_id, length(local.split_cloudsql_instance_id) - 1)
 
-  database_friendly_name = title(replace(var.instance_key, "_"," "))
+  database_friendly_name = title(replace(var.instance_key, "_", " "))
 
   bq_connection_friendly_name = var.instance_key == "state" ? "LEGACY ${local.database_friendly_name}" : local.database_friendly_name
 }
@@ -141,13 +141,8 @@ resource "google_sql_database_instance" "data" {
   }
 }
 
-resource "google_project_iam_member" "gcs-read-access" {
-  role   = "roles/storage.objectViewer"
-  member = "serviceAccount:${google_sql_database_instance.data.service_account_email_address}"
-}
-
-resource "google_project_iam_member" "gcs-write-access" {
-  role   = "roles/storage.objectCreator"
+resource "google_project_iam_member" "gcs-read-write-access" {
+  role   = "roles/storage.objectAdmin"
   member = "serviceAccount:${google_sql_database_instance.data.service_account_email_address}"
 }
 
@@ -217,8 +212,8 @@ resource "google_bigquery_connection" "default_db_bq_connection" {
   connection_id = "${var.instance_key}_cloudsql"
   friendly_name = "${local.bq_connection_friendly_name} Cloud SQL Postgres"
   # TODO(#7285): Migrate Justice Counts connection to be in same region as instance
-  location      = var.instance_key == "justice_counts" ? "us" : var.region
-  description   = "Connection to the ${local.bq_connection_friendly_name} Cloud SQL database"
+  location    = var.instance_key == "justice_counts" ? "us" : var.region
+  description = "Connection to the ${local.bq_connection_friendly_name} Cloud SQL database"
 
   cloud_sql {
     instance_id = data.google_secret_manager_secret_version.cloudsql_instance_id.secret_data
