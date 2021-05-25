@@ -30,7 +30,6 @@ import {
 import NeedsEmployment from "./NeedsEmployment";
 import NeedsFaceToFaceContact from "./NeedsFaceToFaceContact";
 import NeedsRiskAssessment from "./NeedsRiskAssessment";
-import { DecoratedClient } from "../../stores/ClientsStore";
 import { titleCase } from "../../utils";
 import { useRootStore } from "../../stores";
 import NotInCaseload from "./NotInCaseload";
@@ -41,12 +40,9 @@ import {
 } from "../../stores/CaseUpdatesStore";
 import OpportunitySupervisionLevelReview from "../CaseOpportunities/OpportunitySupervisionLevelReview";
 import TEST_IDS from "../TestIDs";
+import { CaseCardProps } from "./CaseCard.types";
 
-export interface CaseCardProps {
-  client: DecoratedClient;
-}
-
-const CaseCard: React.FC<CaseCardProps> = ({ client }: CaseCardProps) => {
+const CaseCard: React.FC<CaseCardProps> = ({ client }) => {
   const { caseUpdatesStore, clientsStore, opportunityStore } = useRootStore();
 
   const [transitionDuration, setTransitionDuration] = useState("0");

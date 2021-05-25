@@ -14,6 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import CaseCard from "./ExperimentWrapper";
+import React from "react";
+import { Card } from "@recidiviz/design-system";
+import TEST_IDS from "../TestIDs";
+import { CaseCardProps } from "./CaseCard.types";
 
-export default CaseCard;
+const ClientProfileCard: React.FC<CaseCardProps> = ({ client }) => {
+  return <Card data-testid={TEST_IDS.CLIENT_PROFILE_CARD} stacked />;
+};
+
+export default ClientProfileCard;

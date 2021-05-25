@@ -6,6 +6,7 @@ const TEST_IDS = {
   PROCESSING_FEEDBACK_LIST: "ProcessingFeedbackList",
   CORRECTION_MODAL: "CorrectionModal",
   CASE_CARD: "CaseCard",
+  CLIENT_PROFILE_CARD: "ClientProfileCard",
 };
 
 export default TEST_IDS;
