@@ -38,7 +38,7 @@ from recidiviz.persistence.entity.state.entities import (
 )
 
 
-def us_id_pre_commitment_supervision_periods_if_commitment(
+def us_id_pre_commitment_supervision_period_if_commitment(
     incarceration_period: StateIncarcerationPeriod,
     filtered_supervision_periods: List[StateSupervisionPeriod],
     preceding_incarceration_period: Optional[StateIncarcerationPeriod],

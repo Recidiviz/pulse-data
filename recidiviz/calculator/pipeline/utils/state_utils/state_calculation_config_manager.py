@@ -34,7 +34,7 @@ from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd import us_nd_violation_utils
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_commitment_from_supervision_utils import (
-    us_nd_pre_commitment_supervision_period_if_commitment_from_supervision,
+    us_nd_pre_commitment_supervision_period_if_commitment,
     us_nd_violation_history_window_pre_commitment_from_supervision,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_commitment_from_supervision_utils import (
@@ -45,7 +45,7 @@ from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager imp
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_commitment_from_supervision_utils import (
     us_id_filter_sps_for_commitment_from_supervision_identification,
-    us_id_pre_commitment_supervision_periods_if_commitment,
+    us_id_pre_commitment_supervision_period_if_commitment,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_compliance import (
     UsIdSupervisionCaseCompliance,
@@ -76,7 +76,7 @@ from recidiviz.calculator.pipeline.utils.supervision_period_index import (
     SupervisionPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
-    get_relevant_supervision_periods_for_commitment_to_supervision,
+    get_commitment_from_supervision_supervision_period,
 )
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import (
     get_month_supervision_type_default,
@@ -713,27 +713,25 @@ def shorthand_for_violation_subtype(state_code: str, violation_subtype: str) -> 
     return violation_subtype.lower()
 
 
-# TODO(#7140): Change the return type to Tuple[bool, Optional[StateSupervisionPeriod]]
-#  once all states have handled deterministically choosing only one pre-commitment SP
-def pre_commitment_supervision_periods_if_commitment(
+def pre_commitment_supervision_period_if_commitment(
     state_code: str,
     incarceration_period: StateIncarcerationPeriod,
     supervision_periods: List[StateSupervisionPeriod],
     preceding_incarceration_period: Optional[StateIncarcerationPeriod],
-) -> Tuple[bool, List[StateSupervisionPeriod]]:
+) -> Tuple[bool, Optional[StateSupervisionPeriod]]:
     """If the incarceration period was a result of a commitment from supervision, finds
-    the supervision periods that caused the commitment from supervision.
+    the supervision period that caused the commitment from supervision.
 
-    Returns (False, []) if the incarceration period was not a result of a commitment from
-    supervision. Returns True and the list of supervision periods that caused the
+    Returns (False, None) if the incarceration period was not a result of a commitment
+    from supervision. Returns True and the supervision period that caused the
     commitment if the incarceration period was a result of a commitment from
     supervision. In some cases, it's possible for the admission to be a commitment from
-    supervision even though we cannot identify the corresponding supervision periods
+    supervision even though we cannot identify the corresponding supervision period
     that caused the admission (e.g. the person was serving supervision out-of-state).
-    In these instances, this function will return True and an empty list [].
+    In these instances, this function will return (True, None).
     """
-    pre_commitment_supervision_periods: List[StateSupervisionPeriod] = []
     admission_date = incarceration_period.admission_date
+    pre_commitment_supervision_period: Optional[StateSupervisionPeriod] = None
 
     if not admission_date:
         raise ValueError(
@@ -745,22 +743,16 @@ def pre_commitment_supervision_periods_if_commitment(
         (
             admission_is_commitment,
             pre_commitment_supervision_period,
-        ) = us_id_pre_commitment_supervision_periods_if_commitment(
+        ) = us_id_pre_commitment_supervision_period_if_commitment(
             incarceration_period, supervision_periods, preceding_incarceration_period
         )
-
-        if pre_commitment_supervision_period:
-            pre_commitment_supervision_periods = [pre_commitment_supervision_period]
     elif state_code == StateCode.US_ND.value:
         (
             admission_is_commitment,
             pre_commitment_supervision_period,
-        ) = us_nd_pre_commitment_supervision_period_if_commitment_from_supervision(
+        ) = us_nd_pre_commitment_supervision_period_if_commitment(
             incarceration_period, supervision_periods
         )
-
-        if pre_commitment_supervision_period:
-            pre_commitment_supervision_periods = [pre_commitment_supervision_period]
     elif state_code == StateCode.US_PA.value:
         (
             admission_is_commitment,
@@ -768,22 +760,21 @@ def pre_commitment_supervision_periods_if_commitment(
         ) = us_pa_pre_commitment_supervision_period_if_commitment(
             incarceration_period, supervision_periods
         )
-
-        if pre_commitment_supervision_period:
-            pre_commitment_supervision_periods = [pre_commitment_supervision_period]
     else:
         admission_is_commitment = is_commitment_from_supervision(
             incarceration_period.admission_reason
         )
-        pre_commitment_supervision_periods = (
-            get_relevant_supervision_periods_for_commitment_to_supervision(
-                admission_date,
-                supervision_periods,
-                prioritize_overlapping_periods=True,
-            )
-        )
 
-    return admission_is_commitment, pre_commitment_supervision_periods
+        if admission_is_commitment:
+            pre_commitment_supervision_period = (
+                get_commitment_from_supervision_supervision_period(
+                    admission_date=admission_date,
+                    supervision_periods=supervision_periods,
+                    prioritize_overlapping_periods=True,
+                )
+            )
+
+    return admission_is_commitment, pre_commitment_supervision_period
 
 
 def state_specific_purpose_for_incarceration_and_subtype(

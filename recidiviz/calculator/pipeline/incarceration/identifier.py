@@ -58,7 +58,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     drop_temporary_custody_periods,
     drop_non_state_prison_incarceration_type_periods,
     state_specific_specialized_purpose_for_incarceration_override,
-    pre_commitment_supervision_periods_if_commitment,
+    pre_commitment_supervision_period_if_commitment,
     filter_supervision_periods_for_commitment_from_supervision_identification,
     include_decisions_on_follow_up_responses_for_most_severe_response,
     get_commitment_from_supervision_supervision_type,
@@ -683,8 +683,8 @@ def admission_event_for_period(
 
         (
             admission_is_commitment_from_supervision,
-            pre_commitment_supervision_periods,
-        ) = pre_commitment_supervision_periods_if_commitment(
+            pre_commitment_supervision_period,
+        ) = pre_commitment_supervision_period_if_commitment(
             incarceration_period.state_code,
             incarceration_period,
             filtered_supervision_periods,
@@ -696,7 +696,7 @@ def admission_event_for_period(
                 incarceration_sentences=incarceration_sentences,
                 supervision_sentences=supervision_sentences,
                 incarceration_period=incarceration_period,
-                pre_commitment_supervision_periods=pre_commitment_supervision_periods,
+                pre_commitment_supervision_period=pre_commitment_supervision_period,
                 assessments=assessments,
                 sorted_violation_responses=sorted_violation_responses,
                 supervision_period_to_agent_associations=supervision_period_to_agent_associations,
@@ -720,7 +720,7 @@ def _commitment_from_supervision_event_for_period(
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_sentences: List[StateSupervisionSentence],
     incarceration_period: StateIncarcerationPeriod,
-    pre_commitment_supervision_periods: List[StateSupervisionPeriod],
+    pre_commitment_supervision_period: Optional[StateSupervisionPeriod],
     assessments: List[StateAssessment],
     sorted_violation_responses: List[StateSupervisionViolationResponse],
     supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
@@ -806,17 +806,6 @@ def _commitment_from_supervision_event_for_period(
     most_recent_response_decision = get_most_severe_response_decision(
         most_recent_responses
     )
-
-    pre_commitment_supervision_period: Optional[StateSupervisionPeriod] = None
-
-    if pre_commitment_supervision_periods:
-        # TODO(#7140): Handle commitment to incarceration from multiple supervision
-        #  periods
-        # Deterministically sort by supervision_period_id and take the first one
-        pre_commitment_supervision_periods.sort(
-            key=lambda b: b.supervision_period_id or -1
-        )
-        pre_commitment_supervision_period = pre_commitment_supervision_periods[0]
 
     commitment_details = get_commitment_from_supervision_details(
         incarceration_period=incarceration_period,

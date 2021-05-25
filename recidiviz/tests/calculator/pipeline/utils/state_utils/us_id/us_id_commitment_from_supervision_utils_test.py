@@ -19,7 +19,7 @@ import unittest
 from datetime import date
 
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_commitment_from_supervision_utils import (
-    us_id_pre_commitment_supervision_periods_if_commitment,
+    us_id_pre_commitment_supervision_period_if_commitment,
     us_id_filter_sps_for_commitment_from_supervision_identification,
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
@@ -71,7 +71,7 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
         (
             admission_is_revocation,
             revoked_period,
-        ) = us_id_pre_commitment_supervision_periods_if_commitment(
+        ) = us_id_pre_commitment_supervision_period_if_commitment(
             incarceration_revocation_period, supervision_periods, None
         )
 
@@ -105,7 +105,7 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
         (
             admission_is_revocation,
             revoked_period,
-        ) = us_id_pre_commitment_supervision_periods_if_commitment(
+        ) = us_id_pre_commitment_supervision_period_if_commitment(
             incarceration_revocation_period, supervision_periods, None
         )
 
@@ -139,7 +139,7 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
         (
             admission_is_revocation,
             revoked_period,
-        ) = us_id_pre_commitment_supervision_periods_if_commitment(
+        ) = us_id_pre_commitment_supervision_period_if_commitment(
             incarceration_revocation_period, supervision_periods, None
         )
 
@@ -186,7 +186,7 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
         (
             admission_is_revocation,
             revoked_period,
-        ) = us_id_pre_commitment_supervision_periods_if_commitment(
+        ) = us_id_pre_commitment_supervision_period_if_commitment(
             incarceration_revocation_period, supervision_periods, board_hold_period
         )
         self.assertTrue(admission_is_revocation)
@@ -232,7 +232,7 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
         (
             admission_is_revocation,
             revoked_period,
-        ) = us_id_pre_commitment_supervision_periods_if_commitment(
+        ) = us_id_pre_commitment_supervision_period_if_commitment(
             incarceration_revocation_period, supervision_periods, board_hold_period
         )
         self.assertTrue(admission_is_revocation)
@@ -278,7 +278,7 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
         (
             admission_is_revocation,
             revoked_period,
-        ) = us_id_pre_commitment_supervision_periods_if_commitment(
+        ) = us_id_pre_commitment_supervision_period_if_commitment(
             transfer_incarceration_period, supervision_periods, treatment_period
         )
         self.assertFalse(admission_is_revocation)
@@ -314,7 +314,7 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
         (
             admission_is_revocation,
             revoked_period,
-        ) = us_id_pre_commitment_supervision_periods_if_commitment(
+        ) = us_id_pre_commitment_supervision_period_if_commitment(
             incarceration_revocation_period, [], treatment_period
         )
 
@@ -340,7 +340,7 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
         (
             admission_is_revocation,
             revoked_period,
-        ) = us_id_pre_commitment_supervision_periods_if_commitment(
+        ) = us_id_pre_commitment_supervision_period_if_commitment(
             incarceration_period, [], None
         )
 
@@ -366,7 +366,7 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
         (
             admission_is_revocation,
             revoked_period,
-        ) = us_id_pre_commitment_supervision_periods_if_commitment(
+        ) = us_id_pre_commitment_supervision_period_if_commitment(
             incarceration_period, [], None
         )
 
@@ -403,7 +403,7 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
         (
             admission_is_revocation,
             revoked_period,
-        ) = us_id_pre_commitment_supervision_periods_if_commitment(
+        ) = us_id_pre_commitment_supervision_period_if_commitment(
             incarceration_revocation_period, [], board_hold_period
         )
 
@@ -439,7 +439,7 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
         (
             admission_is_revocation,
             revoked_period,
-        ) = us_id_pre_commitment_supervision_periods_if_commitment(
+        ) = us_id_pre_commitment_supervision_period_if_commitment(
             incarceration_revocation_period, supervision_periods, None
         )
 

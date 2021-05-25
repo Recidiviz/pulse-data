@@ -48,7 +48,7 @@ from recidiviz.persistence.entity.state.entities import (
 _NEW_ADMISSION_PROBATION_COMMITMENT_LOOKBACK_MONTHS = 24
 
 
-def us_nd_pre_commitment_supervision_period_if_commitment_from_supervision(
+def us_nd_pre_commitment_supervision_period_if_commitment(
     incarceration_period: StateIncarcerationPeriod,
     supervision_periods: List[StateSupervisionPeriod],
 ) -> Tuple[bool, Optional[StateSupervisionPeriod]]:
