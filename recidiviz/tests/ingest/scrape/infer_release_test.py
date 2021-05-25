@@ -17,6 +17,7 @@
 
 """Tests for ingest/scraper_control.py."""
 from datetime import datetime
+from typing import Callable
 from unittest import TestCase
 
 from flask import Flask
@@ -72,7 +73,7 @@ class TestInferRelease(TestCase):
     """Tests for requests to the infer release API"""
 
     # noinspection PyAttributeOutsideInit
-    def setup_method(self, _test_method):
+    def setup_method(self, _test_method: Callable) -> None:
         self.client = app.test_client()
 
     @patch("recidiviz.persistence.persistence.infer_release_on_open_bookings")
@@ -82,12 +83,12 @@ class TestInferRelease(TestCase):
     @patch("recidiviz.ingest.scrape.infer_release.get_region")
     def test_infer_release(
         self,
-        mock_get_region,
-        mock_validate_regions,
-        mock_update_phase,
-        mock_get_most_recent_session,
-        mock_infer_release,
-    ):
+        mock_get_region: Mock,
+        mock_validate_regions: Mock,
+        mock_update_phase: Mock,
+        mock_get_most_recent_session: Mock,
+        mock_infer_release: Mock,
+    ) -> None:
         headers = {"X-Appengine-Cron": "test-cron"}
         mock_validate_regions.return_value = [r.region_code for r in _REGIONS]
         mock_get_region.side_effect = _REGIONS

@@ -19,14 +19,15 @@
 
 
 from datetime import datetime
+from typing import Callable, Iterable, List, Optional
 
 import pytest
 import pytz
 from google.cloud import datastore
-from mock import patch
+from mock import Mock, patch
 
-from recidiviz.ingest.scrape import constants, sessions, scrape_phase
 from recidiviz.ingest.models.scrape_key import ScrapeKey
+from recidiviz.ingest.scrape import constants, scrape_phase, sessions
 from recidiviz.ingest.scrape.sessions import ScrapeSession
 
 fixed_now = datetime(2000, 1, 1)
@@ -36,15 +37,15 @@ class TestWriteSessions:
     """Tests for the create_session, close_session, and update_session methods
     in the module."""
 
-    def setup_method(self, _test_method):
+    def setup_method(self, _test_method: Callable) -> None:
         sessions.clear_ds()
 
-    def teardown_method(self, _test_method):
+    def teardown_method(self, _test_method: Callable) -> None:
         sessions.clear_ds()
 
     @patch("google.cloud.datastore.Client")
     @patch("recidiviz.ingest.scrape.sessions.datetime")
-    def test_create_session(self, mock_datetime, mock_client):
+    def test_create_session(self, mock_datetime: Mock, mock_client: Mock) -> None:
         mock_datetime.now.return_value = fixed_now
 
         # Must use a full key so that the entities are equal.
@@ -68,7 +69,9 @@ class TestWriteSessions:
     @patch("google.cloud.datastore.Query")
     @patch("google.cloud.datastore.Client")
     @patch("recidiviz.ingest.scrape.sessions.datetime")
-    def test_create_session_with_existing(self, mock_datetime, mock_client, mock_query):
+    def test_create_session_with_existing(
+        self, mock_datetime: Mock, mock_client: Mock, mock_query: Mock
+    ) -> None:
         mock_datetime.now.return_value = fixed_now
 
         existing_session = ScrapeSession.new(
@@ -102,7 +105,9 @@ class TestWriteSessions:
     @patch("google.cloud.datastore.Query")
     @patch("google.cloud.datastore.Client")
     @patch("recidiviz.ingest.scrape.sessions.datetime")
-    def test_update_session(self, mock_datetime, mock_client, mock_query):
+    def test_update_session(
+        self, mock_datetime: Mock, mock_client: Mock, mock_query: Mock
+    ) -> None:
         mock_datetime.now.return_value = fixed_now
 
         key = datastore.key.Key("session", "key", project=0)
@@ -123,14 +128,16 @@ class TestWriteSessions:
         mock_client.return_value.put.assert_called_with(session.to_entity())
 
     @patch("google.cloud.datastore.Client")
-    def test_update_session_nothing_current(self, _mock_client):
+    def test_update_session_nothing_current(self, _mock_client: Mock) -> None:
         scrape_key = ScrapeKey("us_sd", constants.ScrapeType.BACKGROUND)
         assert not sessions.update_session("VONNEGUT, KURT", scrape_key)
 
     @patch("google.cloud.datastore.Query")
     @patch("google.cloud.datastore.Client")
     @patch("recidiviz.ingest.scrape.sessions.datetime")
-    def test_close_session(self, mock_datetime, mock_client, mock_query):
+    def test_close_session(
+        self, mock_datetime: Mock, mock_client: Mock, mock_query: Mock
+    ) -> None:
         mock_datetime.now.return_value = fixed_now
 
         key = datastore.key.Key("session", "key", project=0)
@@ -151,7 +158,7 @@ class TestWriteSessions:
         mock_client.return_value.put.assert_called_with(session.to_entity())
 
     @patch("google.cloud.datastore.Client")
-    def test_close_session_nothing_current(self, _mock_client):
+    def test_close_session_nothing_current(self, _mock_client: Mock) -> None:
         scrape_key = ScrapeKey("us_sd", constants.ScrapeType.BACKGROUND)
         assert not sessions.close_session(scrape_key)
 
@@ -159,15 +166,15 @@ class TestWriteSessions:
 class TestAddDocketItemToCurrentSession:
     """Tests for the add_docket_item_to_current_session method in the module."""
 
-    def setup_method(self, _test_method):
+    def setup_method(self, _test_method: Callable) -> None:
         sessions.clear_ds()
 
-    def teardown_method(self, _test_method):
+    def teardown_method(self, _test_method: Callable) -> None:
         sessions.clear_ds()
 
     @patch("google.cloud.datastore.Query")
     @patch("google.cloud.datastore.Client")
-    def test_add_item_happy_path(self, mock_client, mock_query):
+    def test_add_item_happy_path(self, mock_client: Mock, mock_query: Mock) -> None:
         current_session_key = datastore.key.Key("session", "current", project=0)
         current_session_vars = {
             "region": "us_va",
@@ -199,20 +206,22 @@ class TestAddDocketItemToCurrentSession:
         mock_client.return_value.put.assert_called_with(expected_session.to_entity())
 
     @patch("google.cloud.datastore.Client")
-    def test_add_item_no_open_sessions(self, _mock_client):
+    def test_add_item_no_open_sessions(self, _mock_client: Mock) -> None:
         assert not sessions.add_docket_item_to_current_session(
             "alpha", ScrapeKey("us_va", constants.ScrapeType.SNAPSHOT)
         )
 
 
-def wire_sessions_to_query(mock_client, mock_query, session_list):
+def wire_sessions_to_query(
+    mock_client: Mock, mock_query: Mock, session_list: List[ScrapeSession]
+) -> None:
     client = mock_client.return_value
     query = mock_query.return_value
     client.query.return_value = query
     query.fetch.return_value = (session.to_entity() for session in session_list)
 
 
-def fix_dt(dt):
+def fix_dt(dt: datetime) -> datetime:
     return dt.replace(tzinfo=pytz.UTC)
 
 
@@ -220,13 +229,13 @@ def fix_dt(dt):
 class TestSessionManager:
     """Tests for various query methods in the module."""
 
-    def setup_method(self, _test_method):
-        self.keys_to_delete = []
+    def setup_method(self, _test_method: Callable) -> None:
+        self.keys_to_delete: List[datastore.key.Key] = []
 
-    def teardown_method(self, _test_method):
+    def teardown_method(self, _test_method: Callable) -> None:
         sessions.ds().delete_multi(self.keys_to_delete)
 
-    def test_get_sessions_defaults(self):
+    def test_get_sessions_defaults(self) -> None:
         first = self.create_session(
             region_code="us_ny",
             scrape_type=constants.ScrapeType.BACKGROUND,
@@ -256,7 +265,7 @@ class TestSessionManager:
         results = sessions.get_sessions("us_ny")
         assert to_entities(results) == to_entities([third, second, first])
 
-    def test_get_sessions_defaults_with_order(self):
+    def test_get_sessions_defaults_with_order(self) -> None:
         first = self.create_session(
             region_code="us_ny",
             scrape_type=constants.ScrapeType.BACKGROUND,
@@ -280,7 +289,7 @@ class TestSessionManager:
         results = sessions.get_sessions("us_ny")
         assert to_entities(results) == to_entities([third, second, first])
 
-    def test_get_sessions_most_recent_only(self):
+    def test_get_sessions_most_recent_only(self) -> None:
         # older
         self.create_session(
             region_code="us_ny",
@@ -311,7 +320,7 @@ class TestSessionManager:
         results = sessions.get_sessions("us_ny", most_recent_only=True)
         assert to_entities(results) == to_entities([third])
 
-    def test_get_sessions_open_most_recent_only(self):
+    def test_get_sessions_open_most_recent_only(self) -> None:
         # older
         self.create_session(
             region_code="us_ny",
@@ -345,7 +354,7 @@ class TestSessionManager:
         )
         assert to_entities(results) == to_entities([second])
 
-    def test_get_sessions_open_only(self):
+    def test_get_sessions_open_only(self) -> None:
         first = self.create_session(
             region_code="us_ny",
             scrape_type=constants.ScrapeType.BACKGROUND,
@@ -376,7 +385,7 @@ class TestSessionManager:
         results = sessions.get_sessions("us_ny", include_closed=False)
         assert to_entities(results) == to_entities([second, first])
 
-    def test_get_sessions_background_only(self):
+    def test_get_sessions_background_only(self) -> None:
         first = self.create_session(
             region_code="us_ny",
             scrape_type=constants.ScrapeType.BACKGROUND,
@@ -409,7 +418,7 @@ class TestSessionManager:
         )
         assert to_entities(results) == to_entities([third, first])
 
-    def test_get_sessions_background_and_open_only(self):
+    def test_get_sessions_background_and_open_only(self) -> None:
         first = self.create_session(
             region_code="us_ny",
             scrape_type=constants.ScrapeType.BACKGROUND,
@@ -443,7 +452,7 @@ class TestSessionManager:
         )
         assert to_entities(results) == to_entities([first])
 
-    def test_get_sessions_background_and_open_and_most_recent_only(self):
+    def test_get_sessions_background_and_open_and_most_recent_only(self) -> None:
         first = self.create_session(
             region_code="us_ny",
             scrape_type=constants.ScrapeType.BACKGROUND,
@@ -487,7 +496,7 @@ class TestSessionManager:
         )
         assert to_entities(results) == to_entities([first])
 
-    def test_get_sessions_none_for_region(self):
+    def test_get_sessions_none_for_region(self) -> None:
         self.create_session(
             region_code="us_ny",
             scrape_type=constants.ScrapeType.BACKGROUND,
@@ -516,7 +525,7 @@ class TestSessionManager:
         results = sessions.get_sessions("us_mo")
         assert not to_entities(results)
 
-    def test_get_sessions_none_for_scrape_type(self):
+    def test_get_sessions_none_for_scrape_type(self) -> None:
         self.create_session(
             region_code="us_ny",
             scrape_type=constants.ScrapeType.BACKGROUND,
@@ -547,7 +556,7 @@ class TestSessionManager:
         )
         assert not to_entities(results)
 
-    def test_get_sessions_none_open(self):
+    def test_get_sessions_none_open(self) -> None:
         # different region
         self.create_session(
             region_code="us_ny",
@@ -581,7 +590,7 @@ class TestSessionManager:
         results = sessions.get_sessions("us_fl", include_closed=False)
         assert not to_entities(results)
 
-    def test_get_sessions_none_closed(self):
+    def test_get_sessions_none_closed(self) -> None:
         # open, different region
         self.create_session(
             region_code="us_ny",
@@ -614,11 +623,11 @@ class TestSessionManager:
         results = sessions.get_sessions("us_fl", include_open=False)
         assert not to_entities(results)
 
-    def test_get_sessions_none_at_all(self):
+    def test_get_sessions_none_at_all(self) -> None:
         results = sessions.get_sessions("us_ny")
         assert not to_entities(results)
 
-    def test_get_sessions_not_open_or_closed(self):
+    def test_get_sessions_not_open_or_closed(self) -> None:
         # different region
         self.create_session(
             region_code="us_ny",
@@ -646,7 +655,7 @@ class TestSessionManager:
         )
         assert not to_entities(results)
 
-    def test_get_most_recently_closed_session(self):
+    def test_get_most_recently_closed_session(self) -> None:
         self.create_session(
             region_code="us_ny",
             scrape_type=constants.ScrapeType.BACKGROUND,
@@ -675,9 +684,10 @@ class TestSessionManager:
         )
 
         result = sessions.get_most_recent_completed_session("us_ny")
+        assert result is not None
         assert result.to_entity() == second.to_entity()
 
-    def test_get_most_recently_closed_session_when_empty(self):
+    def test_get_most_recently_closed_session_when_empty(self) -> None:
         self.create_session(
             region_code="us_fl",
             scrape_type=constants.ScrapeType.BACKGROUND,
@@ -700,7 +710,7 @@ class TestSessionManager:
 
         assert not sessions.get_most_recent_completed_session("us_ny")
 
-    def test_get_current_session(self):
+    def test_get_current_session(self) -> None:
         # older
         self.create_session(
             region_code="us_ny",
@@ -741,9 +751,10 @@ class TestSessionManager:
             ScrapeKey("us_ny", constants.ScrapeType.BACKGROUND)
         )
 
+        assert result is not None
         assert result.to_entity() == current.to_entity()
 
-    def test_get_recent_sessions(self):
+    def test_get_recent_sessions(self) -> None:
         first = self.create_session(
             region_code="us_ny",
             scrape_type=constants.ScrapeType.BACKGROUND,
@@ -777,7 +788,7 @@ class TestSessionManager:
         )
         assert to_entities(results) == to_entities([third, first])
 
-    def test_get_sessions_with_leased_happy_path(self):
+    def test_get_sessions_with_leased_happy_path(self) -> None:
         first = self.create_session(
             region_code="us_ny",
             scrape_type=constants.ScrapeType.BACKGROUND,
@@ -819,7 +830,7 @@ class TestSessionManager:
         )
         assert to_entities(results) == to_entities([first, second])
 
-    def test_get_sessions_with_leased_none_for_region(self):
+    def test_get_sessions_with_leased_none_for_region(self) -> None:
         self.create_session(
             region_code="us_ny",
             scrape_type=constants.ScrapeType.BACKGROUND,
@@ -861,7 +872,7 @@ class TestSessionManager:
         )
         assert not to_entities(results)
 
-    def test_get_sessions_with_leased_none_for_scrape_type(self):
+    def test_get_sessions_with_leased_none_for_scrape_type(self) -> None:
         self.create_session(
             region_code="us_ny",
             scrape_type=constants.ScrapeType.BACKGROUND,
@@ -903,7 +914,7 @@ class TestSessionManager:
         )
         assert not to_entities(results)
 
-    def test_get_sessions_with_leased_none_with_docket_ack_id(self):
+    def test_get_sessions_with_leased_none_with_docket_ack_id(self) -> None:
         self.create_session(
             region_code="us_ny",
             scrape_type=constants.ScrapeType.BACKGROUND,
@@ -918,8 +929,14 @@ class TestSessionManager:
         assert not to_entities(results)
 
     def create_session(
-        self, region_code, scrape_type, phase, start, end=None, docket_ack_id=None
-    ):
+        self,
+        region_code: str,
+        scrape_type: constants.ScrapeType,
+        phase: scrape_phase.ScrapePhase,
+        start: datetime,
+        end: Optional[datetime] = None,
+        docket_ack_id: Optional[str] = None,
+    ) -> ScrapeSession:
         session = ScrapeSession.new(
             key=sessions.ds().key("ScrapeSession"),
             region=region_code,
@@ -934,5 +951,5 @@ class TestSessionManager:
         return session
 
 
-def to_entities(session_list):
+def to_entities(session_list: Iterable[ScrapeSession]) -> List:
     return [session.to_entity() for session in session_list]

@@ -19,10 +19,12 @@
 
 import datetime
 import unittest
+from typing import Optional
 
 import pytest
 import requests
-from mock import patch
+from mock import Mock, patch
+from requests.structures import CaseInsensitiveDict
 
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import constants, scrape_phase
@@ -48,7 +50,7 @@ class TestAbstractScraper(unittest.TestCase):
         self.task_manager_patcher.stop()
 
     @patch("recidiviz.utils.regions.get_region")
-    def test_init(self, mock_get_region):
+    def test_init(self, mock_get_region: Mock) -> None:
         region = "us_nd"
         queue_name = "us_nd_scraper"
         initial_task = "buy_it"
@@ -72,12 +74,12 @@ class TestStartScrape(unittest.TestCase):
     @patch("recidiviz.utils.pubsub_helper.create_topic_and_subscription")
     def test_start_scrape_background(
         self,
-        mock_pubsub,
-        mock_get_region,
-        mock_tracker,
-        mock_task_manager,
-        mock_datetime,
-    ):
+        mock_pubsub: Mock,
+        mock_get_region: Mock,
+        mock_tracker: Mock,
+        mock_task_manager: Mock,
+        mock_datetime: Mock,
+    ) -> None:
         docket_item = ("Dog", "Cat")
         region = "us_nd"
         scrape_type = constants.ScrapeType.BACKGROUND
@@ -124,12 +126,12 @@ class TestStartScrape(unittest.TestCase):
     @patch("recidiviz.utils.pubsub_helper.create_topic_and_subscription")
     def test_start_scrape_no_docket_item(
         self,
-        mock_pubsub,
-        mock_get_region,
-        mock_tracker,
-        mock_sessions,
-        mock_task_manager,
-    ):
+        mock_pubsub: Mock,
+        mock_get_region: Mock,
+        mock_tracker: Mock,
+        mock_sessions: Mock,
+        mock_task_manager: Mock,
+    ) -> None:
         region = "us_nd"
         scrape_type = constants.ScrapeType.BACKGROUND
         queue_name = "us_nd_scraper"
@@ -157,7 +159,9 @@ class TestStopScraper(unittest.TestCase):
     @patch("recidiviz.ingest.scrape.scraper.ScraperCloudTaskManager")
     @patch("recidiviz.ingest.scrape.sessions.get_sessions")
     @patch("recidiviz.utils.regions.get_region")
-    def test_stop_scrape(self, mock_get_region, mock_sessions, mock_task_manager):
+    def test_stop_scrape(
+        self, mock_get_region: Mock, mock_sessions: Mock, mock_task_manager: Mock
+    ) -> None:
         region = "us_sd"
         scrape_type = constants.ScrapeType.BACKGROUND
         queue_name = "us_sd_scraper"
@@ -188,8 +192,8 @@ class TestStopScraper(unittest.TestCase):
     @patch("recidiviz.ingest.scrape.sessions.get_sessions")
     @patch("recidiviz.utils.regions.get_region")
     def test_stop_scrape_not_executed(
-        self, mock_get_region, mock_sessions, mock_task_manager
-    ):
+        self, mock_get_region: Mock, mock_sessions: Mock, mock_task_manager: Mock
+    ) -> None:
         region = "us_sd"
         scrape_type = constants.ScrapeType.BACKGROUND
         queue_name = "us_sd_scraper"
@@ -219,8 +223,12 @@ class TestStopScraper(unittest.TestCase):
     @patch("recidiviz.utils.regions.get_region")
     @patch.object(Scraper, "resume_scrape")
     def test_stop_scrape_resume_other_scrapes(
-        self, mock_resume, mock_get_region, mock_sessions, mock_task_manager
-    ):
+        self,
+        mock_resume: Mock,
+        mock_get_region: Mock,
+        mock_sessions: Mock,
+        mock_task_manager: Mock,
+    ) -> None:
         """Tests that the stop_scrape method will launch other scrape types we
         didn't mean to stop."""
         region = "us_sd"
@@ -263,8 +271,12 @@ class TestResumeScrape(unittest.TestCase):
     @patch("recidiviz.ingest.scrape.sessions.get_recent_sessions")
     @patch("recidiviz.utils.regions.get_region")
     def test_resume_scrape_background(
-        self, mock_get_region, mock_sessions, mock_task_manager, mock_datetime
-    ):
+        self,
+        mock_get_region: Mock,
+        mock_sessions: Mock,
+        mock_task_manager: Mock,
+        mock_datetime: Mock,
+    ) -> None:
         """Tests the resume_scrape flow for background scraping."""
         region = "us_nd"
         scrape_type = constants.ScrapeType.BACKGROUND
@@ -316,8 +328,8 @@ class TestResumeScrape(unittest.TestCase):
     @patch("recidiviz.ingest.scrape.sessions.get_recent_sessions")
     @patch("recidiviz.utils.regions.get_region")
     def test_resume_scrape_background_none_scraped(
-        self, mock_get_region, mock_sessions, mock_task_manager
-    ):
+        self, mock_get_region: Mock, mock_sessions: Mock, mock_task_manager: Mock
+    ) -> None:
         region = "us_nd"
         scrape_type = constants.ScrapeType.BACKGROUND
         initial_task = "point_it"
@@ -342,8 +354,8 @@ class TestResumeScrape(unittest.TestCase):
     @patch("recidiviz.ingest.scrape.sessions.get_recent_sessions")
     @patch("recidiviz.utils.regions.get_region")
     def test_resume_scrape_background_no_recent_sessions(
-        self, mock_get_region, mock_sessions, mock_task_manager
-    ):
+        self, mock_get_region: Mock, mock_sessions: Mock, mock_task_manager: Mock
+    ) -> None:
         region = "us_nd"
         scrape_type = constants.ScrapeType.BACKGROUND
         queue_name = "us_nd_scraper"
@@ -364,8 +376,12 @@ class TestResumeScrape(unittest.TestCase):
     @patch("recidiviz.ingest.scrape.tracker.iterate_docket_item")
     @patch("recidiviz.utils.regions.get_region")
     def test_resume_scrape_snapshot(
-        self, mock_get_region, mock_tracker, mock_task_manager, mock_datetime
-    ):
+        self,
+        mock_get_region: Mock,
+        mock_tracker: Mock,
+        mock_task_manager: Mock,
+        mock_datetime: Mock,
+    ) -> None:
         docket_item = (41620, ["daft", "punk"])
         region = "us_nd"
         scrape_type = constants.ScrapeType.SNAPSHOT
@@ -406,8 +422,12 @@ class TestResumeScrape(unittest.TestCase):
     @patch("recidiviz.ingest.scrape.tracker.iterate_docket_item")
     @patch("recidiviz.utils.regions.get_region")
     def test_resume_scrape_snapshot_no_docket_item(
-        self, mock_get_region, mock_tracker, mock_close_session, mock_task_manager
-    ):
+        self,
+        mock_get_region: Mock,
+        mock_tracker: Mock,
+        mock_close_session: Mock,
+        mock_task_manager: Mock,
+    ) -> None:
         region = "us_nd"
         scrape_type = constants.ScrapeType.SNAPSHOT
         initial_task = "snap_it"
@@ -440,7 +460,9 @@ class TestFetchPage(unittest.TestCase):
     @patch("recidiviz.ingest.scrape.scraper_utils.get_headers")
     @patch("recidiviz.ingest.scrape.scraper_utils.get_proxies")
     @patch("recidiviz.utils.regions.get_region")
-    def test_fetch_page(self, mock_get_region, mock_proxies, mock_headers):
+    def test_fetch_page(
+        self, mock_get_region: Mock, mock_proxies: Mock, mock_headers: Mock
+    ) -> None:
         """Tests that fetch_page returns the fetched data payload."""
         url = "/around/the/world"
         region = "us_sd"
@@ -455,11 +477,11 @@ class TestFetchPage(unittest.TestCase):
         scraper = FakeScraper(region, initial_task)
         page = "<blink>Get in on the ground floor</blink>"
         response = requests.Response()
-        response._content = page  # pylint: disable=protected-access
+        response._content = str.encode(page)  # pylint: disable=protected-access
         response.status_code = 200
-        with patch("requests.get", return_value=response):
-            assert scraper.fetch_page(url).content == page
-            requests.get.assert_called_with(
+        with patch("requests.get", return_value=response) as p:
+            assert scraper.fetch_page(url).content == str.encode(page)
+            p.assert_called_with(
                 url,
                 proxies=proxies,
                 headers=headers,
@@ -477,8 +499,12 @@ class TestFetchPage(unittest.TestCase):
     @patch("recidiviz.ingest.scrape.scraper_utils.get_proxies")
     @patch("recidiviz.utils.regions.get_region")
     def test_fetch_page_post(
-        self, mock_get_region, mock_proxies, mock_headers, mock_requests
-    ):
+        self,
+        mock_get_region: Mock,
+        mock_proxies: Mock,
+        mock_headers: Mock,
+        mock_requests: Mock,
+    ) -> None:
         """Tests that fetch_page returns the fetched data payload returned
         from post requests."""
         url = "/around/the/world"
@@ -494,14 +520,14 @@ class TestFetchPage(unittest.TestCase):
         mock_headers.return_value = headers
         page = "<blink>Get in on the ground floor</blink>"
         response = requests.Response()
-        response._content = page  # pylint: disable=protected-access
+        response._content = str.encode(page)  # pylint: disable=protected-access
         response.status_code = 200
         mock_requests.return_value = response
 
         scraper = FakeScraper(region, initial_task)
-        assert (
-            scraper.fetch_page(url, post_data=body, json_data=json_data).content == page
-        )
+        assert scraper.fetch_page(
+            url, post_data=body, json_data=json_data
+        ).content == str.encode(page)
 
         mock_get_region.assert_called_with(region)
         mock_proxies.assert_called_with()
@@ -521,8 +547,12 @@ class TestFetchPage(unittest.TestCase):
     @patch("recidiviz.ingest.scrape.scraper_utils.get_proxies")
     @patch("recidiviz.utils.regions.get_region")
     def test_fetch_page_error(
-        self, mock_get_region, mock_proxies, mock_headers, mock_requests
-    ):
+        self,
+        mock_get_region: Mock,
+        mock_proxies: Mock,
+        mock_headers: Mock,
+        mock_requests: Mock,
+    ) -> None:
         """Tests that fetch_page successfully handles error responses."""
         url = "/around/the/world"
         region = "us_sd"
@@ -531,7 +561,7 @@ class TestFetchPage(unittest.TestCase):
         mock_get_region.return_value = mock_region(region)
         proxies = {"http": "http://user:password@proxy.biz/"}
         mock_proxies.return_value = proxies
-        headers = {"User-Agent": "test_user_agent"}
+        headers = CaseInsensitiveDict({"User-Agent": "test_user_agent"})
         mock_headers.return_value = headers
 
         original_request = requests.PreparedRequest()
@@ -547,7 +577,7 @@ class TestFetchPage(unittest.TestCase):
         }
 
         error_response = requests.Response()
-        error_response.headers = {}
+        error_response.headers = CaseInsensitiveDict()
         error_response.request = original_request
         for code, name in errors.items():
             error_response.status_code = code
@@ -571,7 +601,9 @@ class TestFetchPage(unittest.TestCase):
             )
 
 
-def mock_region(region_code, queue_name=None, is_stoppable=False):
+def mock_region(
+    region_code: str, queue_name: Optional[str] = None, is_stoppable: bool = False
+) -> Region:
     return Region(
         region_code=region_code,
         shared_queue=queue_name or None,
@@ -590,12 +622,12 @@ FAKE_TASK = Task(task_type=constants.TaskType.INITIAL, endpoint="fake")
 
 
 class FakeScraper(Scraper):
-    def __init__(self, region_name, initial_task_method):
+    def __init__(self, region_name: str, initial_task_method: str):
         super().__init__(region_name)
         self.initial_task_method = initial_task_method
 
-    def get_initial_task_method(self):
+    def get_initial_task_method(self) -> str:
         return self.initial_task_method
 
-    def get_initial_task(self):
+    def get_initial_task(self) -> Task:
         return FAKE_TASK
