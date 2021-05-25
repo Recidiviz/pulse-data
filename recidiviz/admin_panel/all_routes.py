@@ -29,12 +29,12 @@ from recidiviz.admin_panel.dataset_metadata_store import (
 )
 from recidiviz.admin_panel.routes.case_triage import add_case_triage_routes
 from recidiviz.admin_panel.routes.data_discovery import add_data_discovery_routes
-from recidiviz.common.constants.states import StateCode
+from recidiviz.admin_panel.routes.ingest_ops import add_ingest_ops_routes
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import (
     in_development,
-    in_gcp_staging,
     in_gcp_production,
+    in_gcp_staging,
 )
 
 logging.getLogger().setLevel(logging.INFO)
@@ -52,6 +52,7 @@ static_folder = os.path.abspath(
 admin_panel = Blueprint("admin_panel", __name__, static_folder=static_folder)
 add_case_triage_routes(admin_panel)
 add_data_discovery_routes(admin_panel)
+add_ingest_ops_routes(admin_panel, admin_stores)
 
 
 def jsonify_dataset_metadata_result(
@@ -63,15 +64,6 @@ def jsonify_dataset_metadata_result(
         for state_code, counts in state_map.items():
             results_dict[name][state_code] = counts.to_json()
     return jsonify(results_dict), HTTPStatus.OK
-
-
-def _get_state_code_from_str(state_code_str: str) -> StateCode:
-    if not StateCode.is_state_code(state_code_str):
-        raise ValueError(
-            f"Unknown region_code [{state_code_str}] received, must be a valid state code."
-        )
-
-    return StateCode[state_code_str.upper()]
 
 
 def _get_metadata_store(metadata_dataset: str) -> DatasetMetadataCountsStore:
@@ -135,69 +127,6 @@ def fetch_ingest_data_freshness() -> Tuple[str, HTTPStatus]:
         jsonify(admin_stores.ingest_data_freshness_store.data_freshness_results),
         HTTPStatus.OK,
     )
-
-
-# Ingest Operations Actions
-@admin_panel.route("/api/ingest_operations/fetch_ingest_state_codes", methods=["POST"])
-@requires_gae_auth
-def fetch_ingest_state_codes() -> Tuple[str, HTTPStatus]:
-    all_state_codes = admin_stores.ingest_operations_store.state_codes_launched_in_env
-    state_code_info = []
-    for state_code in all_state_codes:
-        code_to_name = {"code": state_code.value, "name": state_code.get_state().name}
-        state_code_info.append(code_to_name)
-    return jsonify(state_code_info), HTTPStatus.OK
-
-
-# Start an ingest run for a specific instance
-@admin_panel.route(
-    "/api/ingest_operations/<state_code_str>/start_ingest_run", methods=["POST"]
-)
-@requires_gae_auth
-def start_ingest_run(state_code_str: str) -> Tuple[str, HTTPStatus]:
-    state_code = _get_state_code_from_str(state_code_str)
-    instance = request.json["instance"]
-    admin_stores.ingest_operations_store.start_ingest_run(state_code, instance)
-    return "", HTTPStatus.OK
-
-
-# Update ingest queues
-@admin_panel.route(
-    "/api/ingest_operations/<state_code_str>/update_ingest_queues_state",
-    methods=["POST"],
-)
-@requires_gae_auth
-def update_ingest_queues_state(state_code_str: str) -> Tuple[str, HTTPStatus]:
-    state_code = _get_state_code_from_str(state_code_str)
-    new_queue_state = request.json["new_queue_state"]
-    admin_stores.ingest_operations_store.update_ingest_queues_state(
-        state_code, new_queue_state
-    )
-    return "", HTTPStatus.OK
-
-
-# Get all ingest queues and their state for given state code
-@admin_panel.route("/api/ingest_operations/<state_code_str>/get_ingest_queue_states")
-@requires_gae_auth
-def get_ingest_queue_states(state_code_str: str) -> Tuple[str, HTTPStatus]:
-    state_code = _get_state_code_from_str(state_code_str)
-    ingest_queue_states = admin_stores.ingest_operations_store.get_ingest_queue_states(
-        state_code
-    )
-    return jsonify(ingest_queue_states), HTTPStatus.OK
-
-
-# Get summaries of all ingest instances for state
-@admin_panel.route(
-    "/api/ingest_operations/<state_code_str>/get_ingest_instance_summaries"
-)
-@requires_gae_auth
-def get_ingest_instance_summaries(state_code_str: str) -> Tuple[str, HTTPStatus]:
-    state_code = _get_state_code_from_str(state_code_str)
-    ingest_instance_summaries = (
-        admin_stores.ingest_operations_store.get_ingest_instance_summaries(state_code)
-    )
-    return jsonify(ingest_instance_summaries), HTTPStatus.OK
 
 
 # Frontend configuration
