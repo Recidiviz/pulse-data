@@ -17,13 +17,12 @@ import os
 import sys
 from typing import List, Set
 
-from pytest_alembic import runner  # type: ignore
+from pytest_alembic import runner
 from sqlalchemy import create_engine
 
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tools.postgres import local_postgres_helpers
-
 
 _ALEMBIC_REVISION_COMMAND_TEMPLATE = (
     "alembic -c {config_path} revision -m {migration_name}"
