@@ -26,8 +26,11 @@ from airflow import models
 from airflow.contrib.operators.pubsub_operator import PubSubPublishOperator
 
 try:
-    from recidiviz_dataflow_operator import RecidivizDataflowTemplateOperator  # type: ignore
     from yaml_dict import YAMLDict  # type: ignore
+
+    from recidiviz_dataflow_operator import (  # type: ignore
+        RecidivizDataflowTemplateOperator,
+    )
 except ImportError:
     from recidiviz.airflow.dag.recidiviz_dataflow_operator import (
         RecidivizDataflowTemplateOperator,
@@ -88,7 +91,6 @@ with models.DAG(
 
     pipelines = YAMLDict.from_path(config_file).pop_dicts("daily_pipelines")
 
-    covid_export = trigger_export_operator("COVID_DASHBOARD")
     case_triage_export = trigger_export_operator("CASE_TRIAGE")
 
     states_to_trigger = {pipeline.peek("state_code", str) for pipeline in pipelines}
@@ -124,11 +126,11 @@ with models.DAG(
         # This >> ensures that all the calculation pipelines will run before the Pub / Sub message
         # is published saying the pipelines are done.
         calculation_pipeline >> state_trigger_export_operators[state_code]
-        calculation_pipeline >> covid_export
         if state_code in CASE_TRIAGE_STATES:
             calculation_pipeline >> case_triage_export
 
     # These exports don't depend on pipeline output.
+    _ = trigger_export_operator("COVID_DASHBOARD")
     _ = trigger_export_operator("INGEST_METADATA")
     _ = trigger_export_operator("VALIDATION_METADATA")
     _ = trigger_export_operator("JUSTICE_COUNTS")
