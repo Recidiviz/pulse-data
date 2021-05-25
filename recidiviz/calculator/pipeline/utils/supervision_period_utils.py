@@ -283,7 +283,7 @@ def supervision_periods_overlapping_with_date(
         supervision_period
         for supervision_period in supervision_periods
         if supervision_period.start_date is not None
-        and supervision_period.start_date <= intersection_date
+        and supervision_period.start_date < intersection_date
         and (
             supervision_period.termination_date is None
             or intersection_date <= supervision_period.termination_date

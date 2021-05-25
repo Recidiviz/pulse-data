@@ -38,7 +38,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_commitment_from
     us_nd_violation_history_window_pre_commitment_from_supervision,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_commitment_from_supervision_utils import (
-    us_pa_pre_commitment_supervision_periods_if_commitment,
+    us_pa_pre_commitment_supervision_period_if_commitment,
 )
 from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager import (
     StateSupervisionCaseComplianceManager,
@@ -339,7 +339,7 @@ def get_commitment_from_supervision_supervision_type(
 ) -> Optional[StateSupervisionPeriodSupervisionType]:
     """Returns the supervision type the person was on before they were committed to
     incarceration from supervision."""
-    if incarceration_period.state_code.upper() in ("US_ID", "US_PA"):
+    if incarceration_period.state_code.upper() == "US_ID":
         return get_pre_incarceration_supervision_type_from_supervision_period(
             previous_supervision_period
         )
@@ -350,6 +350,10 @@ def get_commitment_from_supervision_supervision_type(
     if incarceration_period.state_code.upper() == "US_ND":
         return us_nd_get_pre_commitment_supervision_type(
             incarceration_period, previous_supervision_period
+        )
+    if incarceration_period.state_code.upper() == "US_PA":
+        return get_pre_incarceration_supervision_type_from_incarceration_period(
+            incarceration_period
         )
 
     return get_pre_incarceration_supervision_type(
@@ -760,10 +764,13 @@ def pre_commitment_supervision_periods_if_commitment(
     elif state_code == StateCode.US_PA.value:
         (
             admission_is_commitment,
-            pre_commitment_supervision_periods,
-        ) = us_pa_pre_commitment_supervision_periods_if_commitment(
+            pre_commitment_supervision_period,
+        ) = us_pa_pre_commitment_supervision_period_if_commitment(
             incarceration_period, supervision_periods
         )
+
+        if pre_commitment_supervision_period:
+            pre_commitment_supervision_periods = [pre_commitment_supervision_period]
     else:
         admission_is_commitment = is_commitment_from_supervision(
             incarceration_period.admission_reason

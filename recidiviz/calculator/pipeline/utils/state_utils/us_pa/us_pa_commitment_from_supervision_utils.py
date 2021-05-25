@@ -21,18 +21,25 @@ from typing import List, Optional, Tuple, Set
 
 from dateutil.relativedelta import relativedelta
 
+from recidiviz.calculator.pipeline.utils.supervision_type_identification import (
+    get_pre_incarceration_supervision_type_from_incarceration_period,
+    get_pre_incarceration_supervision_type_from_supervision_period,
+)
 from recidiviz.calculator.pipeline.utils.violation_response_utils import (
     responses_on_most_recent_response_date,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodSupervisionType,
+)
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseType,
     StateSupervisionViolationResponseDecidingBodyType,
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
-    get_relevant_supervision_periods_for_commitment_to_supervision,
+    get_commitment_from_supervision_supervision_period,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -74,31 +81,30 @@ def _us_pa_admission_is_commitment_from_supervision(
 ) -> bool:
     """Determines whether the admission to incarceration is due to a commitment from
     supervision using the admission_reason on the |incarceration_period|."""
-    # These are the only two admission reasons in US_PA that indicate a commitment
-    # from supervision
+    # These are the only admission reasons in US_PA that indicate a commitment from
+    # supervision
     return incarceration_period.admission_reason in (
         StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
         StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+        StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
     )
 
 
-# TODO(#7140): Change the return type to Tuple[bool, Optional[StateSupervisionPeriod]]
-#  once this function deterministically chooses only one pre-commitment SP
-def us_pa_pre_commitment_supervision_periods_if_commitment(
+def us_pa_pre_commitment_supervision_period_if_commitment(
     incarceration_period: StateIncarcerationPeriod,
     supervision_periods: List[StateSupervisionPeriod],
-) -> Tuple[bool, List[StateSupervisionPeriod]]:
+) -> Tuple[bool, Optional[StateSupervisionPeriod]]:
     """Determines whether the incarceration_period started because of a commitment from
     supervision. If a commitment from supervision did occur, finds the supervision
-    period(s) that preceded the commitment. If a commitment did not occur, returns False
-    and an empty list.
+    period associated with the commitment. If a commitment did not occur, returns
+    (False, None).
     """
     admission_is_commitment = _us_pa_admission_is_commitment_from_supervision(
         incarceration_period
     )
 
     if not admission_is_commitment:
-        return False, []
+        return False, None
 
     admission_date = incarceration_period.admission_date
 
@@ -108,15 +114,54 @@ def us_pa_pre_commitment_supervision_periods_if_commitment(
             f"[{incarceration_period}]"
         )
 
-    pre_commitment_supervision_periods = (
-        get_relevant_supervision_periods_for_commitment_to_supervision(
-            admission_date,
-            supervision_periods,
+    pre_commitment_supervision_period = (
+        get_commitment_from_supervision_supervision_period(
+            admission_date=admission_date,
+            supervision_periods=supervision_periods,
             prioritize_overlapping_periods=True,
         )
     )
 
-    return admission_is_commitment, pre_commitment_supervision_periods
+    return admission_is_commitment, pre_commitment_supervision_period
+
+
+def us_pa_get_pre_commitment_supervision_type(
+    incarceration_period: StateIncarcerationPeriod,
+    pre_commitment_supervision_period: Optional[StateSupervisionPeriod],
+) -> Optional[StateSupervisionPeriodSupervisionType]:
+    """Determines the supervision type associated with the commitment from supervision.
+
+    If the admission_reason is either PAROLE_REVOCATION or PROBATION_REVOCATION, uses
+    the default mapping to supervision types.
+
+    If the admission_reason is SANCTION_ADMISSION, then uses the
+    pre_commitment_supervision_period to determine the supervision type.
+    """
+    admission_reason = incarceration_period.admission_reason
+
+    if not admission_reason:
+        raise ValueError(
+            "Unexpected null admission_reason on incarceration_period: "
+            f"[{incarceration_period}]"
+        )
+
+    if admission_reason in (
+        StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+        StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+    ):
+        return get_pre_incarceration_supervision_type_from_incarceration_period(
+            incarceration_period
+        )
+
+    if admission_reason != StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION:
+        raise ValueError(
+            "Unexpected admission reason being classified as a"
+            f"commitment from supervision for US_PA: [{admission_reason}]."
+        )
+
+    return get_pre_incarceration_supervision_type_from_supervision_period(
+        pre_commitment_supervision_period
+    )
 
 
 def us_pa_purpose_for_incarceration_and_subtype(
