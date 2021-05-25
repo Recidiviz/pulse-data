@@ -61,11 +61,11 @@ class TestSubSimulation(unittest.TestCase):
             }
         )
 
-        self.test_total_population_data = pd.DataFrame(
+        self.starting_cohort_sizes = pd.DataFrame(
             {
-                "total_population": [10] * 5,
-                "compartment": ["prison"] * 5,
-                "time_step": [-4, -3, -2, -1, 0],
+                "total_population": [10],
+                "compartment": ["prison"],
+                "time_step": [0],
             }
         )
 
@@ -85,23 +85,6 @@ class TestSubSimulation(unittest.TestCase):
             "speed_run": False,
         }
 
-    def test_total_population_data_must_include_start_ts(self) -> None:
-        sparse_total_population_data = self.test_total_population_data[
-            self.test_total_population_data.time_step != 0
-        ]
-        with self.assertRaises(ValueError):
-            _ = SubSimulationFactory.build_sub_simulation(
-                self.test_outflow_data,
-                self.test_transitions_data,
-                sparse_total_population_data,
-                self.test_architecture,
-                self.test_user_inputs,
-                self.compartment_policies,
-                0,
-                True,
-                True,
-            )
-
     def test_dropping_data_raises_warning_or_error(self) -> None:
         """Assert that SubSimulation throws an error when some input data goes unused"""
         typo_transitions = self.test_transitions_data.copy()
@@ -114,26 +97,26 @@ class TestSubSimulation(unittest.TestCase):
             _ = SubSimulationFactory.build_sub_simulation(
                 typo_outflows,
                 self.test_transitions_data,
-                self.test_total_population_data,
                 self.test_architecture,
                 self.test_user_inputs,
                 self.compartment_policies,
                 0,
                 True,
                 True,
+                self.starting_cohort_sizes,
             )
 
         with patch("logging.Logger.warning") as mock:
             _ = SubSimulationFactory.build_sub_simulation(
                 self.test_outflow_data,
                 typo_transitions,
-                self.test_total_population_data,
                 self.test_architecture,
                 self.test_user_inputs,
                 self.compartment_policies,
                 0,
                 True,
                 True,
+                self.starting_cohort_sizes,
             )
             mock.assert_called_once()
             self.assertEqual(

@@ -32,14 +32,16 @@ class PopulationSimulation:
         self,
         sub_simulations: Dict[str, SubSimulation],
         sub_group_ids_dict: Dict[str, Dict[str, Any]],
-        validation_population_data: pd.DataFrame,
+        total_population_data: pd.DataFrame,
         projection_time_steps: int,
+        first_relevant_ts: int,
         validation_transitions_data: Optional[pd.DataFrame] = None,
     ) -> None:
         self.sub_simulations = sub_simulations
         self.sub_group_ids_dict = sub_group_ids_dict
-        self.validation_population_data = validation_population_data
+        self.total_population_data = total_population_data
         self.projection_time_steps = projection_time_steps
+        self.current_ts = first_relevant_ts
         self.validation_transition_data = validation_transitions_data or pd.DataFrame()
         self.population_projections = pd.DataFrame()
 
@@ -71,34 +73,102 @@ class PopulationSimulation:
         for _ in range(num_ts):
             for simulation_obj in self.sub_simulations.values():
                 simulation_obj.step_forward()
+            for simulation_obj in self.sub_simulations.values():
+                simulation_obj.create_new_cohort()
 
-            cross_simulation_flows = pd.DataFrame(
-                columns=["sub_group_id", "compartment"]
+            self._cross_flow()
+
+            self._scale_populations()
+
+            for simulation_obj in self.sub_simulations.values():
+                simulation_obj.prepare_for_next_step()
+
+            self.current_ts += 1
+
+    def _collect_subsimulation_populations(self) -> pd.DataFrame:
+        """Helper function for step_forward(). Collects subgroup populations for total population scaling."""
+        disaggregation_axes = list(list(self.sub_group_ids_dict.values())[0].keys())
+        populations_df = pd.DataFrame()
+        for simulation_id, simulation_attr in self.sub_group_ids_dict.items():
+            sim_pops = self.sub_simulations[simulation_id].get_current_populations()
+            sim_pops[disaggregation_axes] = pd.Series(simulation_attr)
+            populations_df = pd.concat([populations_df, sim_pops])
+        return populations_df
+
+    def _cross_flow(self) -> None:
+        """Helper function for step_forward. Transfer cohorts between SubSimulations"""
+        cross_simulation_flows = pd.DataFrame(columns=["sub_group_id", "compartment"])
+        for sub_group_id, simulation_obj in self.sub_simulations.items():
+            simulation_cohorts = simulation_obj.cross_flow()
+            simulation_cohorts["sub_group_id"] = sub_group_id
+            cross_simulation_flows = pd.concat(
+                [cross_simulation_flows, simulation_cohorts], sort=True
             )
-            for sub_group_id, simulation_obj in self.sub_simulations.items():
-                simulation_cohorts = simulation_obj.cross_flow()
-                simulation_cohorts["sub_group_id"] = sub_group_id
-                cross_simulation_flows = pd.concat(
-                    [cross_simulation_flows, simulation_cohorts], sort=True
-                )
 
-            unassigned_cohorts = cross_simulation_flows[
-                cross_simulation_flows.compartment.isnull()
-            ]
-            if len(unassigned_cohorts) > 0:
-                raise ValueError(
-                    f"cohorts passed up without compartment: {unassigned_cohorts}"
-                )
-
-            cross_simulation_flows = self.update_cohort_attributes(
-                cross_simulation_flows
+        unassigned_cohorts = cross_simulation_flows[
+            cross_simulation_flows.compartment.isnull()
+        ]
+        if len(unassigned_cohorts) > 0:
+            raise ValueError(
+                f"cohorts passed up without compartment: {unassigned_cohorts}"
             )
 
-            for sub_group_id, simulation_obj in self.sub_simulations.items():
-                sub_group_cohorts = cross_simulation_flows[
-                    cross_simulation_flows.sub_group_id == sub_group_id
-                ].drop("sub_group_id", axis=1)
-                simulation_obj.ingest_cross_simulation_cohorts(sub_group_cohorts)
+        cross_simulation_flows = self.update_cohort_attributes(cross_simulation_flows)
+
+        for sub_group_id, simulation_obj in self.sub_simulations.items():
+            sub_group_cohorts = cross_simulation_flows[
+                cross_simulation_flows.sub_group_id == sub_group_id
+            ].drop("sub_group_id", axis=1)
+            simulation_obj.ingest_cross_simulation_cohorts(sub_group_cohorts)
+
+    def _scale_populations(self) -> None:
+        """Helper function for step_forward. Scale populations in each compartment to match historical data."""
+        disaggregation_axes = list(self.sub_group_ids_dict.values())[0].keys()
+        population_disagg_axes = [
+            axis
+            for axis in disaggregation_axes
+            if axis in self.total_population_data.columns
+            and self.total_population_data[axis].notnull().all()
+        ]
+        population_df_sort_indices = ["compartment"] + population_disagg_axes
+
+        ts_population_data = self.total_population_data[
+            self.total_population_data.time_step == self.current_ts
+        ]
+        ts_population_data = (
+            ts_population_data.groupby(population_df_sort_indices)
+            .sum()
+            .total_population
+        )
+
+        subgroup_populations = self._collect_subsimulation_populations()
+        subgroup_populations = (
+            subgroup_populations.groupby(population_df_sort_indices)
+            .sum()
+            .total_population
+        )
+
+        # reorder simulation df and drop compartments to match total_population_data indices
+        subgroup_populations = subgroup_populations.loc[ts_population_data.index]
+
+        scale_factors = ts_population_data / subgroup_populations
+
+        scale_factors = scale_factors.reset_index().rename(
+            {"total_population": "scale_factor"}, axis=1
+        )
+
+        for simulation_id, simulation_attr in self.sub_group_ids_dict.items():
+            agg_simulation_attr = {
+                i: j for i, j in simulation_attr.items() if i in population_disagg_axes
+            }
+            simulation_scale_factors = scale_factors[
+                (scale_factors[population_disagg_axes] == agg_simulation_attr).all(
+                    axis=1
+                )
+            ].drop(population_disagg_axes, axis=1)
+            self.sub_simulations[simulation_id].scale_cohorts(
+                simulation_scale_factors, self.current_ts
+            )
 
     @staticmethod
     def update_cohort_attributes(cross_simulation_flows: pd.DataFrame) -> pd.DataFrame:
@@ -175,9 +245,9 @@ class PopulationSimulation:
             (self.population_projections.compartment == compartment)
             & (self.population_projections.time_step == ts)
         ]
-        historical_population = self.validation_population_data[
-            (self.validation_population_data.compartment == compartment)
-            & (self.validation_population_data.time_step == ts)
+        historical_population = self.total_population_data[
+            (self.total_population_data.compartment == compartment)
+            & (self.total_population_data.time_step == ts)
         ]
 
         return simulation_population, historical_population
@@ -185,8 +255,8 @@ class PopulationSimulation:
     def gen_total_population_error(self) -> pd.DataFrame:
         """Returns the error of the total population projection."""
         total_population_error = pd.DataFrame(
-            index=self.validation_population_data.time_step.unique(),
-            columns=self.validation_population_data.compartment.unique(),
+            index=self.total_population_data.time_step.unique(),
+            columns=self.total_population_data.compartment.unique(),
         )
 
         min_projection_ts = min(self.population_projections["time_step"])
@@ -225,10 +295,10 @@ class PopulationSimulation:
         total_population_error = pd.DataFrame(
             index=pd.MultiIndex.from_product(
                 [
-                    self.validation_population_data.compartment.unique(),
+                    self.total_population_data.compartment.unique(),
                     range(
                         min_projection_ts,
-                        self.validation_population_data.time_step.max() + 1,
+                        self.total_population_data.time_step.max() + 1,
                     ),
                 ],
                 names=["compartment", "time_step"],
