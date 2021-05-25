@@ -63,7 +63,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     include_decisions_on_follow_up_responses_for_most_severe_response,
     second_assessment_on_supervision_is_more_reliable,
     get_supervising_officer_and_location_info_from_supervision_period,
-    pre_commitment_supervision_periods_if_commitment,
+    pre_commitment_supervision_period_if_commitment,
     state_specific_violation_response_pre_processing_function,
     state_specific_supervision_admission_reason_override,
     filter_out_federal_and_other_country_supervision_periods,
@@ -878,8 +878,8 @@ def find_revocation_return_buckets(
 
         (
             admission_is_revocation,
-            revoked_supervision_periods,
-        ) = pre_commitment_supervision_periods_if_commitment(
+            revoked_supervision_period,
+        ) = pre_commitment_supervision_period_if_commitment(
             state_code,
             incarceration_period,
             filtered_supervision_periods,
@@ -958,85 +958,82 @@ def find_revocation_return_buckets(
             most_recent_responses
         )
 
-        if revoked_supervision_periods:
-            # Add a RevocationReturnSupervisionTimeBucket for each supervision period that was revoked
-            for supervision_period in revoked_supervision_periods:
-                revocation_details = get_commitment_from_supervision_details(
+        if revoked_supervision_period:
+            revocation_details = get_commitment_from_supervision_details(
+                incarceration_period,
+                revoked_supervision_period,
+                sorted_violation_responses,
+                supervision_period_to_agent_associations,
+            )
+
+            pre_revocation_supervision_type = (
+                get_commitment_from_supervision_supervision_type(
+                    incarceration_sentences,
+                    supervision_sentences,
                     incarceration_period,
-                    supervision_period,
-                    sorted_violation_responses,
-                    supervision_period_to_agent_associations,
+                    revoked_supervision_period,
                 )
+            )
 
-                pre_revocation_supervision_type = (
-                    get_commitment_from_supervision_supervision_type(
-                        incarceration_sentences,
-                        supervision_sentences,
-                        incarceration_period,
-                        supervision_period,
-                    )
-                )
+            case_type = identify_most_severe_case_type(revoked_supervision_period)
+            supervision_level = revoked_supervision_period.supervision_level
+            supervision_level_raw_text = (
+                revoked_supervision_period.supervision_level_raw_text
+            )
 
-                case_type = identify_most_severe_case_type(supervision_period)
-                supervision_level = supervision_period.supervision_level
-                supervision_level_raw_text = (
-                    supervision_period.supervision_level_raw_text
-                )
+            judicial_district_code = _get_judicial_district_code(
+                revoked_supervision_period,
+                supervision_period_to_judicial_district_associations,
+            )
 
-                judicial_district_code = _get_judicial_district_code(
-                    supervision_period,
-                    supervision_period_to_judicial_district_associations,
+            projected_end_date = _get_projected_end_date(
+                period=revoked_supervision_period,
+                supervision_sentences=supervision_sentences,
+                incarceration_sentences=incarceration_sentences,
+            )
+            if pre_revocation_supervision_type is not None:
+                deprecated_supervising_district_external_id = (
+                    revocation_details.level_2_supervision_location_external_id
+                    or revocation_details.level_1_supervision_location_external_id
                 )
-
-                projected_end_date = _get_projected_end_date(
-                    period=supervision_period,
-                    supervision_sentences=supervision_sentences,
-                    incarceration_sentences=incarceration_sentences,
-                )
-                if pre_revocation_supervision_type is not None:
-                    deprecated_supervising_district_external_id = (
+                revocation_month_bucket = RevocationReturnSupervisionTimeBucket(
+                    state_code=incarceration_period.state_code,
+                    year=admission_year,
+                    month=admission_month,
+                    event_date=admission_date,
+                    supervision_type=pre_revocation_supervision_type,
+                    case_type=case_type,
+                    assessment_score=assessment_score,
+                    assessment_level=assessment_level,
+                    assessment_type=assessment_type,
+                    revocation_type=revocation_details.purpose_for_incarceration,
+                    revocation_type_subtype=revocation_details.purpose_for_incarceration_subtype,
+                    most_severe_violation_type=violation_history.most_severe_violation_type,
+                    most_severe_violation_type_subtype=violation_history.most_severe_violation_type_subtype,
+                    most_severe_response_decision=violation_history.most_severe_response_decision,
+                    most_recent_response_decision=most_recent_response_decision,
+                    response_count=violation_history.response_count,
+                    violation_history_description=violation_history.violation_history_description,
+                    violation_type_frequency_counter=violation_history.violation_type_frequency_counter,
+                    supervising_officer_external_id=revocation_details.supervising_officer_external_id,
+                    supervising_district_external_id=deprecated_supervising_district_external_id,
+                    level_1_supervision_location_external_id=(
+                        revocation_details.level_1_supervision_location_external_id
+                    ),
+                    level_2_supervision_location_external_id=(
                         revocation_details.level_2_supervision_location_external_id
-                        or revocation_details.level_1_supervision_location_external_id
-                    )
-                    revocation_month_bucket = RevocationReturnSupervisionTimeBucket(
-                        state_code=incarceration_period.state_code,
-                        year=admission_year,
-                        month=admission_month,
-                        event_date=admission_date,
-                        supervision_type=pre_revocation_supervision_type,
-                        case_type=case_type,
-                        assessment_score=assessment_score,
-                        assessment_level=assessment_level,
-                        assessment_type=assessment_type,
-                        revocation_type=revocation_details.purpose_for_incarceration,
-                        revocation_type_subtype=revocation_details.purpose_for_incarceration_subtype,
-                        most_severe_violation_type=violation_history.most_severe_violation_type,
-                        most_severe_violation_type_subtype=violation_history.most_severe_violation_type_subtype,
-                        most_severe_response_decision=violation_history.most_severe_response_decision,
-                        most_recent_response_decision=most_recent_response_decision,
-                        response_count=violation_history.response_count,
-                        violation_history_description=violation_history.violation_history_description,
-                        violation_type_frequency_counter=violation_history.violation_type_frequency_counter,
-                        supervising_officer_external_id=revocation_details.supervising_officer_external_id,
-                        supervising_district_external_id=deprecated_supervising_district_external_id,
-                        level_1_supervision_location_external_id=(
-                            revocation_details.level_1_supervision_location_external_id
-                        ),
-                        level_2_supervision_location_external_id=(
-                            revocation_details.level_2_supervision_location_external_id
-                        ),
-                        supervision_level=supervision_level,
-                        supervision_level_raw_text=supervision_level_raw_text,
-                        # Note: This is incorrect in the case where you are revoked, then released by the end of the
-                        #  month to a new supervision period that overlaps with EOM. We expect this case to be rare or
-                        #  non-existent since we don't count temporary / board hold periods as revocations.
-                        is_on_supervision_last_day_of_month=False,
-                        judicial_district_code=judicial_district_code,
-                        custodial_authority=supervision_period.custodial_authority,
-                        projected_end_date=projected_end_date,
-                    )
+                    ),
+                    supervision_level=supervision_level,
+                    supervision_level_raw_text=supervision_level_raw_text,
+                    # Note: This is incorrect in the case where you are revoked, then released by the end of the
+                    #  month to a new supervision period that overlaps with EOM. We expect this case to be rare or
+                    #  non-existent since we don't count temporary / board hold periods as revocations.
+                    is_on_supervision_last_day_of_month=False,
+                    judicial_district_code=judicial_district_code,
+                    projected_end_date=projected_end_date,
+                )
 
-                    revocation_return_buckets.append(revocation_month_bucket)
+                revocation_return_buckets.append(revocation_month_bucket)
         else:
             # There are no overlapping or proximal supervision periods. Add one
             # RevocationReturnSupervisionTimeBucket with as many details as possible about this revocation

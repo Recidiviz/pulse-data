@@ -2665,7 +2665,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
     @staticmethod
     def _run_commitment_from_supervision_event_for_period(
         incarceration_period: StateIncarcerationPeriod,
-        pre_commitment_supervision_periods: List[StateSupervisionPeriod],
+        pre_commitment_supervision_period: Optional[StateSupervisionPeriod],
         supervision_sentences: Optional[List[StateSupervisionSentence]] = None,
         incarceration_sentences: Optional[List[StateIncarcerationSentence]] = None,
         assessments: Optional[List[StateAssessment]] = None,
@@ -2686,7 +2686,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             incarceration_sentences=incarceration_sentences,
             supervision_sentences=supervision_sentences,
             incarceration_period=incarceration_period,
-            pre_commitment_supervision_periods=pre_commitment_supervision_periods,
+            pre_commitment_supervision_period=pre_commitment_supervision_period,
             assessments=assessments,
             sorted_violation_responses=sorted_violation_responses,
             supervision_period_to_agent_associations=_DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
@@ -2808,7 +2808,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
 
         commitment_from_supervision_event = (
             self._run_commitment_from_supervision_event_for_period(
-                pre_commitment_supervision_periods=[supervision_period],
+                pre_commitment_supervision_period=supervision_period,
                 incarceration_period=incarceration_period,
                 violation_responses=violation_responses,
             )
@@ -2935,7 +2935,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
 
         commitment_from_supervision_event = (
             self._run_commitment_from_supervision_event_for_period(
-                pre_commitment_supervision_periods=[supervision_period],
+                pre_commitment_supervision_period=supervision_period,
                 incarceration_period=incarceration_period,
                 violation_responses=violation_responses,
             )
@@ -3110,7 +3110,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
 
         commitment_from_supervision_event = (
             self._run_commitment_from_supervision_event_for_period(
-                pre_commitment_supervision_periods=[supervision_period],
+                pre_commitment_supervision_period=supervision_period,
                 incarceration_period=incarceration_period,
                 violation_responses=violation_responses,
                 supervision_sentences=[supervision_sentence],
@@ -3201,7 +3201,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
 
         commitment_from_supervision_event = (
             self._run_commitment_from_supervision_event_for_period(
-                pre_commitment_supervision_periods=[supervision_period],
+                pre_commitment_supervision_period=supervision_period,
                 incarceration_period=incarceration_period,
                 violation_responses=[ssvr],
                 supervision_sentences=[supervision_sentence],

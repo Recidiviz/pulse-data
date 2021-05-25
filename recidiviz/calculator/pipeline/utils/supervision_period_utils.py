@@ -192,49 +192,16 @@ def get_commitment_from_supervision_supervision_period(
     prioritize_overlapping_periods: bool,
 ) -> Optional[StateSupervisionPeriod]:
     """Identifies the supervision period associated with the commitment to supervision
-    admission on the given |admission_date|."""
-    if not supervision_periods:
-        return None
-
-    relevant_periods = get_relevant_supervision_periods_for_commitment_to_supervision(
-        admission_date=admission_date,
-        supervision_periods=supervision_periods,
-        prioritize_overlapping_periods=prioritize_overlapping_periods,
-    )
-
-    if not relevant_periods:
-        return None
-
-    # In the case where there are multiple relevant SPs at this point, sort and return
-    # the first one
-    return min(
-        relevant_periods,
-        key=lambda e: (
-            # Prioritize terminated periods with a termination_reason of REVOCATION
-            # (False sorts before True)
-            e.termination_reason != StateSupervisionPeriodTerminationReason.REVOCATION,
-            # Prioritize termination_date closest to the admission_date
-            abs(((e.termination_date or datetime.date.today()) - admission_date).days),
-            # Deterministically sort by external_id in the case where there
-            # are two REVOKED periods with the same termination_date
-            e.external_id,
-        ),
-    )
-
-
-def get_relevant_supervision_periods_for_commitment_to_supervision(
-    admission_date: datetime.date,
-    supervision_periods: List[StateSupervisionPeriod],
-    prioritize_overlapping_periods: bool,
-) -> List[StateSupervisionPeriod]:
-    """Returns the relevant supervision periods at the time of a commitment to
-    supervision admission.
+    admission on the given |admission_date|.
 
     If |prioritize_overlapping_periods| is True, prioritizes supervision periods that
     are overlapping with the |admission_date|. Else, prioritizes the period that has
     most recently terminated within SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT months of
     the |admission_date|.
     """
+    if not supervision_periods:
+        return None
+
     overlapping_periods = supervision_periods_overlapping_with_date(
         admission_date, supervision_periods
     )
@@ -263,16 +230,37 @@ def get_relevant_supervision_periods_for_commitment_to_supervision(
         same_date_sort_fn=_same_date_sort_override,
     )
 
-    if prioritize_overlapping_periods:
-        if overlapping_periods:
-            return overlapping_periods
-        if most_recent_terminated_period:
-            return [most_recent_terminated_period]
-        return []
+    terminated_periods = (
+        [most_recent_terminated_period] if most_recent_terminated_period else []
+    )
 
-    if most_recent_terminated_period:
-        return [most_recent_terminated_period]
-    return overlapping_periods
+    if prioritize_overlapping_periods:
+        relevant_periods = (
+            overlapping_periods if overlapping_periods else terminated_periods
+        )
+    else:
+        relevant_periods = (
+            terminated_periods if terminated_periods else overlapping_periods
+        )
+
+    if not relevant_periods:
+        return None
+
+    # In the case where there are multiple relevant SPs at this point, sort and return
+    # the first one
+    return min(
+        relevant_periods,
+        key=lambda e: (
+            # Prioritize terminated periods with a termination_reason of REVOCATION
+            # (False sorts before True)
+            e.termination_reason != StateSupervisionPeriodTerminationReason.REVOCATION,
+            # Prioritize termination_date closest to the admission_date
+            abs(((e.termination_date or datetime.date.today()) - admission_date).days),
+            # Deterministically sort by external_id in the case where there
+            # are two REVOKED periods with the same termination_date
+            e.external_id,
+        ),
+    )
 
 
 def supervision_periods_overlapping_with_date(

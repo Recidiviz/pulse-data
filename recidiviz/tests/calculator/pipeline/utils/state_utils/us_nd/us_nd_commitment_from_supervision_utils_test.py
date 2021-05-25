@@ -20,7 +20,7 @@ from datetime import date
 import unittest
 
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_commitment_from_supervision_utils import (
-    us_nd_pre_commitment_supervision_period_if_commitment_from_supervision,
+    us_nd_pre_commitment_supervision_period_if_commitment,
     us_nd_violation_history_window_pre_commitment_from_supervision,
     _us_nd_pre_commitment_supervision_period,
 )
@@ -75,7 +75,7 @@ class TestPreCommitmentSupervisionPeriodsIfCommitment(unittest.TestCase):
         (
             admission_is_revocation,
             pre_commitment_period,
-        ) = us_nd_pre_commitment_supervision_period_if_commitment_from_supervision(
+        ) = us_nd_pre_commitment_supervision_period_if_commitment(
             incarceration_period,
             supervision_periods,
         )
@@ -114,7 +114,7 @@ class TestPreCommitmentSupervisionPeriodsIfCommitment(unittest.TestCase):
         (
             admission_is_revocation,
             pre_commitment_period,
-        ) = us_nd_pre_commitment_supervision_period_if_commitment_from_supervision(
+        ) = us_nd_pre_commitment_supervision_period_if_commitment(
             incarceration_period,
             supervision_periods,
         )
@@ -153,7 +153,7 @@ class TestPreCommitmentSupervisionPeriodsIfCommitment(unittest.TestCase):
         (
             admission_is_revocation,
             pre_commitment_period,
-        ) = us_nd_pre_commitment_supervision_period_if_commitment_from_supervision(
+        ) = us_nd_pre_commitment_supervision_period_if_commitment(
             incarceration_period,
             supervision_periods,
         )
@@ -207,7 +207,7 @@ class TestPreCommitmentSupervisionPeriodsIfCommitment(unittest.TestCase):
         (
             admission_is_revocation,
             pre_commitment_period,
-        ) = us_nd_pre_commitment_supervision_period_if_commitment_from_supervision(
+        ) = us_nd_pre_commitment_supervision_period_if_commitment(
             incarceration_period,
             supervision_periods,
         )
@@ -246,7 +246,7 @@ class TestPreCommitmentSupervisionPeriodsIfCommitment(unittest.TestCase):
         (
             admission_is_revocation,
             pre_commitment_period,
-        ) = us_nd_pre_commitment_supervision_period_if_commitment_from_supervision(
+        ) = us_nd_pre_commitment_supervision_period_if_commitment(
             incarceration_period,
             supervision_periods,
         )
@@ -272,7 +272,7 @@ class TestPreCommitmentSupervisionPeriodsIfCommitment(unittest.TestCase):
         (
             admission_is_revocation,
             pre_commitment_period,
-        ) = us_nd_pre_commitment_supervision_period_if_commitment_from_supervision(
+        ) = us_nd_pre_commitment_supervision_period_if_commitment(
             incarceration_period,
             [],
         )
