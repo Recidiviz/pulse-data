@@ -25,7 +25,7 @@ import json
 import logging
 from http import HTTPStatus
 from json import JSONDecodeError
-from typing import Tuple, List, Optional
+from typing import List, Optional, Tuple
 
 from flask import Blueprint, request
 
@@ -36,10 +36,12 @@ from recidiviz.reporting import email_reporting_utils
 from recidiviz.reporting.email_reporting_utils import validate_email_address
 from recidiviz.reporting.region_codes import InvalidRegionCodeException
 from recidiviz.utils.auth.gae import requires_gae_auth
+from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_development
+from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import (
+    get_int_param_value,
     get_only_str_param_value,
     get_str_param_values,
-    get_int_param_value,
 )
 
 reporting_endpoint_blueprint = Blueprint("reporting_endpoint_blueprint", __name__)
@@ -108,15 +110,27 @@ def start_new_batch() -> Tuple[str, HTTPStatus]:
 
     try:
         batch_id = email_reporting_utils.generate_batch_id()
-        result: MultiRequestResult[str, str] = data_retrieval.start(
-            state_code=state_code,
-            report_type=report_type,
-            batch_id=batch_id,
-            test_address=test_address,
-            region_code=region_code,
-            email_allowlist=email_allowlist,
-            message_body_override=message_body_override,
-        )
+        if in_development():
+            with local_project_id_override(GCP_PROJECT_STAGING):
+                result: MultiRequestResult[str, str] = data_retrieval.start(
+                    state_code=state_code,
+                    report_type=report_type,
+                    batch_id=batch_id,
+                    test_address=test_address,
+                    region_code=region_code,
+                    email_allowlist=email_allowlist,
+                    message_body_override=message_body_override,
+                )
+        else:
+            result = data_retrieval.start(
+                state_code=state_code,
+                report_type=report_type,
+                batch_id=batch_id,
+                test_address=test_address,
+                region_code=region_code,
+                email_allowlist=email_allowlist,
+                message_body_override=message_body_override,
+            )
     except InvalidRegionCodeException:
         return "Invalid region code provided", HTTPStatus.BAD_REQUEST
     else:

@@ -22,111 +22,47 @@ improve individual outcomes. It aims to promote and increase the usage of measur
 decrease the usage of measures such as revocations.
 """
 
-import os
 import copy
 import json
-from typing import List, Dict
+import os
+from typing import Dict, List
 
 from jinja2 import Template
 
+import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.reporting.context.context_utils import (
-    singular_or_plural,
+    align_columns,
+    format_date,
+    format_greeting,
+    format_name,
+    format_violation_type,
     month_number_to_name,
     round_float_value_to_int,
     round_float_value_to_number_of_digits,
-    format_greeting,
-    format_name,
-    format_date,
-    format_violation_type,
-    align_columns,
+    singular_or_plural,
 )
-import recidiviz.reporting.email_reporting_utils as utils
-from recidiviz.reporting.context.po_monthly_report.constants import DEFAULT_MESSAGE_BODY
+from recidiviz.reporting.context.po_monthly_report.constants import (
+    CRIME_REVOCATIONS,
+    DEFAULT_MESSAGE_BODY,
+    TECHNICAL_REVOCATIONS,
+    TOTAL_REVOCATIONS,
+)
+from recidiviz.reporting.context.po_monthly_report.state_utils.po_monthly_report_metrics_delegate_factory import (
+    PoMonthlyReportMetricsDelegateFactory,
+)
 from recidiviz.reporting.context.report_context import ReportContext
 from recidiviz.reporting.recipient import Recipient
 
 _AVERAGE_VALUES_SIGNIFICANT_DIGITS = 3
-
-_METRICS_IMPROVE_ON_INCREASE = [
-    "pos_discharges",
-    "pos_discharges_district_average",
-    "pos_discharges_state_average",
-    "earned_discharges",
-    "earned_discharges_district_average",
-    "earned_discharges_state_average",
-    "supervision_downgrades",
-    "supervision_downgrades_district_average",
-    "supervision_downgrades_state_average",
-]
-
-_AVERAGE_METRICS_FOR_DISPLAY = [
-    "pos_discharges_district_average",
-    "pos_discharges_state_average",
-    "earned_discharges_district_average",
-    "earned_discharges_state_average",
-    "supervision_downgrades_district_average",
-    "supervision_downgrades_state_average",
-    "technical_revocations_district_average",
-    "technical_revocations_state_average",
-    "crime_revocations_district_average",
-    "crime_revocations_state_average",
-    "absconsions_district_average",
-    "absconsions_state_average",
-]
-
-_BASE_METRICS_FOR_DISPLAY = [
-    "pos_discharges",
-    "earned_discharges",
-    "supervision_downgrades",
-    "technical_revocations",
-    "crime_revocations",
-    "absconsions",
-]
-
-_ALL_METRICS_FOR_DISPLAY = _BASE_METRICS_FOR_DISPLAY + _AVERAGE_METRICS_FOR_DISPLAY
-
-_ALL_LAST_MONTH_METRICS = [
-    "pos_discharges_last_month",
-    "earned_discharges_last_month",
-    "supervision_downgrades_last_month",
-    "technical_revocations_last_month",
-    "crime_revocations_last_month",
-    "absconsions_last_month",
-]
-
-_ALL_CLIENT_FIELDS = [
-    "pos_discharges_clients",
-    "earned_discharges_clients",
-    "supervision_downgrade_clients",
-    "revocations_clients",
-    "absconsions_clients",
-    "assessments_out_of_date_clients",
-    "facetoface_out_of_date_clients",
-]
-
-_ALL_REQUIRED_RECIPIENT_DATA_FIELDS = (
-    _ALL_METRICS_FOR_DISPLAY
-    + _ALL_LAST_MONTH_METRICS
-    + _ALL_CLIENT_FIELDS
-    + [
-        "officer_external_id",
-        "state_code",
-        "district",
-        "email_address",
-        "officer_given_name",
-        "review_month",
-        "assessments",
-        "assessment_percent",
-        "facetoface",
-        "facetoface_percent",
-    ]
-)
 
 
 class PoMonthlyReportContext(ReportContext):
     """Report context for the PO Monthly Report."""
 
     def __init__(self, state_code: str, recipient: Recipient):
+        self.metrics_delegate = PoMonthlyReportMetricsDelegateFactory.build(
+            region_code=state_code
+        )
         super().__init__(state_code, recipient)
         self.recipient_data = recipient.data
         with open(self.get_properties_filepath()) as properties_file:
@@ -139,7 +75,7 @@ class PoMonthlyReportContext(ReportContext):
         return os.path.join(os.path.dirname(__file__), "attachment.txt.jinja2")
 
     def get_required_recipient_data_fields(self) -> List[str]:
-        return _ALL_REQUIRED_RECIPIENT_DATA_FIELDS
+        return self.metrics_delegate.required_recipient_data_fields
 
     def get_report_type(self) -> str:
         return "po_monthly_report"
@@ -150,7 +86,7 @@ class PoMonthlyReportContext(ReportContext):
 
     def get_html_template_filepath(self) -> str:
         """Returns path to the template.html file, assumes it is in the same directory as the context."""
-        return os.path.join(os.path.dirname(__file__), "template.html")
+        return os.path.join(os.path.dirname(__file__), "template.html.jinja2")
 
     def prepare_for_generation(self) -> dict:
         """Executes PO Monthly Report data preparation."""
@@ -168,19 +104,23 @@ class PoMonthlyReportContext(ReportContext):
 
         self._convert_month_to_name("review_month")
 
-        self._set_base_metric_color(_BASE_METRICS_FOR_DISPLAY)
-        self._set_averages_metric_color(_AVERAGE_METRICS_FOR_DISPLAY)
+        self._set_base_metric_color(self.metrics_delegate.base_metrics_for_display)
+        self._set_averages_metric_color(
+            self.metrics_delegate.average_metrics_for_display
+        )
 
         self._set_month_to_month_change_metrics(
-            ["pos_discharges", "earned_discharges", "supervision_downgrades"]
+            self.metrics_delegate.month_to_month_change_metrics
         )
 
         self._set_congratulations_section()
         self._set_total_revocations()
         self._singular_or_plural_section_headers()
-        self._round_float_values_to_ints(["assessment_percent", "facetoface_percent"])
+        self._round_float_values_to_ints(
+            self.metrics_delegate.float_metrics_to_round_to_int
+        )
         self._round_float_values_to_number_of_digits(
-            _AVERAGE_METRICS_FOR_DISPLAY,
+            self.metrics_delegate.average_metrics_for_display,
             number_of_digits=_AVERAGE_VALUES_SIGNIFICANT_DIGITS,
         )
         self._prepare_attachment_content()
@@ -196,20 +136,19 @@ class PoMonthlyReportContext(ReportContext):
             self._prepare_attachment_data()
         )
 
-    @staticmethod
     def _metric_improved(
-        metric_key: str, metric_value: float, comparison_value: float
+        self, metric_key: str, metric_value: float, comparison_value: float
     ) -> bool:
         """Returns True if the value improved when compared to the comparison_value"""
         change_value = float(metric_value - comparison_value)
-        if metric_key in _METRICS_IMPROVE_ON_INCREASE:
+        if metric_key in self.metrics_delegate.metrics_improve_on_increase:
             return change_value > 0
         return change_value < 0
 
     def _get_num_metrics_improved_from_last_month(self) -> int:
         """Returns the number of metrics that performed better than last month"""
         num_metrics_met_goal = 0
-        for metric_key in _BASE_METRICS_FOR_DISPLAY:
+        for metric_key in self.metrics_delegate.base_metrics_for_display:
             metric_value = float(self.recipient_data[metric_key])
             last_month_value = float(self.recipient_data[f"{metric_key}_last_month"])
             if self._metric_improved(metric_key, metric_value, last_month_value):
@@ -230,7 +169,7 @@ class PoMonthlyReportContext(ReportContext):
     def _get_num_metrics_outperformed_region_averages(self) -> int:
         """Returns the number of metrics that performed better than the either district or state averages"""
         num_metrics_outperformed_region_averages = 0
-        for metric_key in _BASE_METRICS_FOR_DISPLAY:
+        for metric_key in self.metrics_delegate.base_metrics_for_display:
             if self._improved_over_district_average(
                 metric_key
             ) or self._improved_over_state_average(metric_key):
@@ -239,9 +178,9 @@ class PoMonthlyReportContext(ReportContext):
         return num_metrics_outperformed_region_averages
 
     def _set_total_revocations(self) -> None:
-        self.prepared_data["total_revocations"] = str(
-            int(self.recipient_data["technical_revocations"])
-            + int(self.recipient_data["crime_revocations"])
+        self.prepared_data[TOTAL_REVOCATIONS] = str(
+            int(self.recipient_data[TECHNICAL_REVOCATIONS])
+            + int(self.recipient_data[CRIME_REVOCATIONS])
         )
 
     def _get_metric_text_singular_or_plural(self, metric_value: int) -> str:
@@ -336,7 +275,9 @@ class PoMonthlyReportContext(ReportContext):
         from last month's value, the color will be gray, otherwise it will be red.
         """
         for metric_key in metrics:
-            metric_improves_on_increase = metric_key in _METRICS_IMPROVE_ON_INCREASE
+            metric_improves_on_increase = (
+                metric_key in self.metrics_delegate.metrics_improve_on_increase
+            )
             base_key = f"{metric_key}_change"
             color_key = f"{metric_key}_change_color"
             metric_value = float(self.recipient_data[metric_key])
@@ -349,8 +290,10 @@ class PoMonthlyReportContext(ReportContext):
 
     def _singular_or_plural_section_headers(self) -> None:
         """Ensures that each of the given labels will be made singular or plural, based on the value it is labelling."""
+        allowed_metrics = self.metrics_delegate.singular_or_plural_metrics
         singular_or_plural(
             self.prepared_data,
+            allowed_metrics,
             "pos_discharges",
             "pos_discharges_label",
             "Successful&nbsp;Case Completion",
@@ -359,6 +302,7 @@ class PoMonthlyReportContext(ReportContext):
 
         singular_or_plural(
             self.prepared_data,
+            allowed_metrics,
             "earned_discharges",
             "earned_discharges_label",
             "Early Discharge",
@@ -367,6 +311,7 @@ class PoMonthlyReportContext(ReportContext):
 
         singular_or_plural(
             self.prepared_data,
+            allowed_metrics,
             "supervision_downgrades",
             "supervision_downgrades_label",
             "Supervision Downgrade",
@@ -375,6 +320,7 @@ class PoMonthlyReportContext(ReportContext):
 
         singular_or_plural(
             self.prepared_data,
+            allowed_metrics,
             "total_revocations",
             "total_revocations_label",
             "Revocation",
@@ -383,6 +329,7 @@ class PoMonthlyReportContext(ReportContext):
 
         singular_or_plural(
             self.prepared_data,
+            allowed_metrics,
             "absconsions",
             "absconsions_label",
             "Absconsion",
@@ -391,6 +338,7 @@ class PoMonthlyReportContext(ReportContext):
 
         singular_or_plural(
             self.prepared_data,
+            allowed_metrics,
             "assessments",
             "assessments_label",
             "Risk Assessment",
@@ -399,6 +347,7 @@ class PoMonthlyReportContext(ReportContext):
 
         singular_or_plural(
             self.prepared_data,
+            allowed_metrics,
             "facetoface",
             "facetoface_label",
             "Face-to-Face Contact",
@@ -476,7 +425,7 @@ class PoMonthlyReportContext(ReportContext):
     def _should_generate_attachment(self) -> bool:
         return any(
             self._should_generate_attachment_section(clients_key)
-            for clients_key in _ALL_CLIENT_FIELDS
+            for clients_key in self.metrics_delegate.client_fields
         )
 
     def _prepare_attachment_clients_tables(self) -> Dict[str, List[List[str]]]:
@@ -486,7 +435,7 @@ class PoMonthlyReportContext(ReportContext):
         """
         clients_by_type: Dict[str, List[List[str]]] = {}
 
-        for clients_key in _ALL_CLIENT_FIELDS:
+        for clients_key in self.metrics_delegate.client_fields:
             clients_by_type[clients_key] = []
 
             if not self._should_generate_attachment_section(clients_key):
@@ -509,7 +458,7 @@ class PoMonthlyReportContext(ReportContext):
                     additional_columns = [
                         f'Discharge granted on {format_date(client["earned_discharge_date"])}'
                     ]
-                elif clients_key == "supervision_downgrade_clients":
+                elif clients_key == "supervision_downgrades_clients":
                     additional_columns = [
                         f'Supervision level downgraded on {format_date(client["latest_supervision_downgrade_date"])}'
                     ]
