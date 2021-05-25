@@ -7,7 +7,7 @@ primary_key_cols:
   - CaseYear
   - CaseNumber
   - CountNumber
-  - RelatedJurisdicationCounty
+  - RelatedJurisidicationCounty
   - RelatedCaseYear
   - RelatedCaseNumber
   - RelatedCountNumber
@@ -27,7 +27,7 @@ columns:
   - name: CountNumber
     description: |-
       A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of an offender.
-  - name: RelatedJurisdicationCounty
+  - name: RelatedJurisidicationCounty
     description: |-
       The related county or jurisdiction of a sentence for an offender.
   - name: RelatedCaseYear
