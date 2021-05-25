@@ -98,6 +98,7 @@ export const NeedsCheckboxButton: React.FC<NeedsCheckboxButtonProps> = ({
               onToggleCheck(false);
             }
           }}
+          aria-label="Remove"
         >
           <Tooltip title="Remove">
             <Icon kind={IconSVG.CloseOutlined} fill={palette.white} size={16} />

@@ -72,10 +72,11 @@ const InnerForm = ({
       {header}
       <FormComponent>
         <H3>{title}</H3>
-        <Description>{description}</Description>
+        <Description htmlFor="feedback_form_comment">{description}</Description>
 
         <Input
           name="comment"
+          id="feedback_form_comment"
           onChange={handleChange}
           value={values.comment}
           placeholder={commentPlaceholder}

@@ -21,6 +21,7 @@ import { Caption, CaseCardBody, CaseCardInfo } from "./CaseCard.styles";
 import { NeedsActionFlow } from "../NeedsActionFlow/NeedsActionFlow";
 import { DecoratedClient } from "../../stores/ClientsStore/Client";
 import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
+import TEST_IDS from "../TestIDs";
 
 interface NeedsEmploymentProps {
   className: string;
@@ -43,7 +44,7 @@ const NeedsEmployment: React.FC<NeedsEmploymentProps> = ({
   }
 
   return (
-    <CaseCardBody className={className}>
+    <CaseCardBody className={className} data-testid={TEST_IDS.NEEDS_EMPLOYMENT}>
       <Need
         kind={IconSVG.NeedsEmployment}
         state={client.needsMet.employment ? NeedState.MET : NeedState.NOT_MET}

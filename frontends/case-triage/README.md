@@ -50,7 +50,12 @@ We have a suite of end-to-end tests built with [WebdriverIO](https://webdriver.i
 
 ### Preparing your test environment
 
-In addition to a locally running backend and frontend serving fixture data, you will need valid login credentials for the "dev" Auth0 tenant.
+We run the test suite against set of services that are separate from the development services. To start the test services, run:
+```bash
+docker-compose -f docker-compose.case-triage.yaml -f docker-compose.case-triage.test.yaml up
+```
+
+You will need valid login credentials for the "dev" Auth0 tenant.
 
 Create a file in this directory called `.env.e2e` to configure your local test environment:
 

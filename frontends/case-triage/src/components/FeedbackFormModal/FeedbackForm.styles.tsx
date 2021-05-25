@@ -37,9 +37,10 @@ export const Input = styled.textarea`
   }
 `;
 
-export const Description = styled.div`
+export const Description = styled.label`
   font-size: ${rem(17)};
   margin: ${rem(spacing.xl)} 0;
+  display: block;
 `;
 
 export const ReasonsContainer = styled.div`

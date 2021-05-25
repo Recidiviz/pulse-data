@@ -26,6 +26,7 @@ import {
 import ClientListCard from "./ClientListCard";
 import EmptyStateCard from "./EmptyStateCard";
 import { CLIENT_LIST_KIND } from "../../stores/ClientsStore/ClientListBuilder";
+import TEST_IDS from "../TestIDs";
 
 interface ClientListProps {
   kind: CLIENT_LIST_KIND;
@@ -50,13 +51,19 @@ const ClientList = observer(
     }
 
     return (
-      <>
+      <div
+        data-testid={
+          kind === CLIENT_LIST_KIND.UP_NEXT
+            ? TEST_IDS.UP_NEXT_LIST
+            : TEST_IDS.PROCESSING_FEEDBACK_LIST
+        }
+      >
         {list.map((client) => {
           return (
             <ClientListCard client={client} key={client.personExternalId} />
           );
         })}
-      </>
+      </div>
     );
   }
 );

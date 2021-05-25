@@ -40,6 +40,7 @@ import {
   NotInCaseloadActionType,
 } from "../../stores/CaseUpdatesStore";
 import OpportunitySupervisionLevelReview from "../CaseOpportunities/OpportunitySupervisionLevelReview";
+import TEST_IDS from "../TestIDs";
 
 export interface CaseCardProps {
   client: DecoratedClient;
@@ -69,22 +70,19 @@ const CaseCard: React.FC<CaseCardProps> = ({ client }: CaseCardProps) => {
   const currentNotOnCaseloadAction = NotInCaseloadActions.find(
     (value: string) => client.caseUpdates[value as NotInCaseloadActionType]
   );
+  let ellipsisDropdownActions: CaseUpdateActionType[] = [];
   let ellipsisDropdown;
   if (!currentNotOnCaseloadAction) {
+    ellipsisDropdownActions =
+      ellipsisDropdownActions.concat(NotInCaseloadActions);
+  } else if (client.hasInProgressUpdate(CaseUpdateActionType.NOT_ON_CASELOAD)) {
+    ellipsisDropdownActions.push(CaseUpdateActionType.NOT_ON_CASELOAD);
+  }
+
+  if (ellipsisDropdownActions.length > 0) {
     ellipsisDropdown = (
       <EllipsisDropdown
-        actions={NotInCaseloadActions}
-        client={client}
-        alignment="right"
-        borderless
-      >
-        <Dropdown.ToggleIcon kind={IconSVG.TripleDot} size={18} />
-      </EllipsisDropdown>
-    );
-  } else if (!client.caseUpdates[CaseUpdateActionType.NOT_ON_CASELOAD]) {
-    ellipsisDropdown = (
-      <EllipsisDropdown
-        actions={[CaseUpdateActionType.NOT_ON_CASELOAD]}
+        actions={ellipsisDropdownActions}
         client={client}
         alignment="right"
         borderless
@@ -100,6 +98,7 @@ const CaseCard: React.FC<CaseCardProps> = ({ client }: CaseCardProps) => {
 
   return (
     <CaseCardComponent
+      data-testid={TEST_IDS.CASE_CARD}
       stacked
       style={{
         transitionDuration,
