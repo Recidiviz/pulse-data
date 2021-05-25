@@ -18,6 +18,7 @@
 
 import datetime
 import uuid
+from typing import Optional
 
 import pytz
 
@@ -38,20 +39,35 @@ class ViewExportCloudTaskManager:
             queue_info_cls=CloudTaskQueueInfo, queue_name=BIGQUERY_QUEUE_V2
         )
 
-    def create_metric_view_data_export_task(self, export_job_filter: str) -> None:
+    def create_metric_view_data_export_task(
+        self,
+        export_job_name: str,
+        state_code: Optional[str] = None,
+    ) -> None:
         """Create a BigQuery table export path.
 
         Args:
-            export_job_filter: Kind of jobs to initiate export for. Can either be an export_name (e.g. LANTERN)
-                or a state_code (e.g. US_ND)
+            export_job_name: Name of job to initiate export for (e.g. LANTERN).
+            state_code: (Optional) State code to initiate export for (e.g. US_MO)
         """
-        uri = f"/export/metric_view_data?export_job_filter={export_job_filter}"
 
-        task_id = "view_export-{}-{}-{}".format(
-            export_job_filter,
-            str(datetime.datetime.now(tz=pytz.UTC).date()),
-            uuid.uuid4(),
-        )
+        if state_code:
+            uri = f"/export/metric_view_data?export_job_name={export_job_name}&state_code={state_code}"
+
+            task_id = "view_export-{}-{}-{}-{}".format(
+                export_job_name,
+                state_code,
+                str(datetime.datetime.now(tz=pytz.UTC).date()),
+                uuid.uuid4(),
+            )
+        else:
+            uri = f"/export/metric_view_data?export_job_name={export_job_name}"
+
+            task_id = "view_export-{}-{}-{}".format(
+                export_job_name,
+                str(datetime.datetime.now(tz=pytz.UTC).date()),
+                uuid.uuid4(),
+            )
 
         self.cloud_task_queue_manager.create_task(
             task_id=task_id,

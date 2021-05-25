@@ -44,7 +44,7 @@ from recidiviz.calculator.pipeline.supervision.metrics import (
     SupervisionRevocationMetric,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.metrics.export.export_config import ProductConfig, PRODUCTS_CONFIG_PATH
+from recidiviz.metrics.export.export_config import PRODUCTS_CONFIG_PATH, ProductConfigs
 from recidiviz.tests.metrics.export import fixtures
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCPEnvironment
 from recidiviz.utils.metadata import local_project_id_override
@@ -63,9 +63,9 @@ class CalculationDocumentationGeneratorTest(unittest.TestCase):
         self.mock_config_path = os.path.join(
             os.path.dirname(fixtures.__file__), "fixture_products.yaml"
         )
-        self.product_configs = ProductConfig.product_configs_from_file(
-            self.mock_config_path
-        )
+        self.product_configs = ProductConfigs.from_file(
+            path=self.mock_config_path
+        ).products
         self.mock_product_states = {StateCode("US_MO")}
         self.mock_pipeline_states = {StateCode("US_MO"), StateCode("US_PA")}
         view_1 = BigQueryView(
@@ -433,7 +433,7 @@ If you are interested in what views rely on this metric, please run the followin
         os.environ.get("TRAVIS") == "true", "docs/ does not exist in Travis"
     )
     def test_generate_markdowns(self) -> None:
-        products = ProductConfig.product_configs_from_file(PRODUCTS_CONFIG_PATH)
+        products = ProductConfigs.from_file(PRODUCTS_CONFIG_PATH).products
 
         with tempfile.TemporaryDirectory() as tmpdirname:
             with local_project_id_override(GCP_PROJECT_STAGING), patch.object(
