@@ -42,8 +42,6 @@ PO_REPORT_REQUIRED_FIELDS = [
     # supervision downgrades
     "supervision_downgrades",
     "supervision_downgrades_last_month",
-    "supervision_downgrade_clients",
-    "supervision_downgrade_clients_last_month",
     "supervision_downgrades_district_average",
     "supervision_downgrades_state_average",
     # earned discharges
@@ -68,7 +66,7 @@ PO_REPORT_REQUIRED_FIELDS = [
     "crime_revocations_state_average",
     # assessments
     "assessments",
-    "assessment_percent",
+    "assessments_percent",
     # face to face contact
     "facetoface",
     "facetoface_percent",

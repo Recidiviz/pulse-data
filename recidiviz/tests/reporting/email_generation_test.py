@@ -16,12 +16,12 @@
 # =============================================================================
 
 """Tests for reporting/email_generation.py."""
-import os
 import json
-from string import Template
-
+import os
 from unittest import TestCase
 from unittest.mock import patch
+
+from jinja2 import Template
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.reporting.context.po_monthly_report.context import PoMonthlyReportContext
@@ -72,7 +72,7 @@ class EmailGenerationTests(TestCase):
         with open(template_path) as html_file:
             prepared_data = self.report_context.get_prepared_data()
             html_template = Template(html_file.read())
-            prepared_html = html_template.substitute(prepared_data)
+            prepared_html = html_template.render(prepared_data)
         generate(self.report_context)
         bucket_name = "recidiviz-test-report-html"
         bucket_filepath = f"{self.state_code}/{self.mock_batch_id}/html/{self.recipient.email_address}.html"

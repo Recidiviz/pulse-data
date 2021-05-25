@@ -17,9 +17,9 @@
 """Data to populate the monthly PO report email."""
 # pylint: disable=trailing-whitespace
 from recidiviz.calculator.query import bq_utils
-from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import PO_REPORT_DATASET
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -51,7 +51,7 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
         ARRAY_AGG(
           IF(latest_supervision_downgrade_date IS NOT NULL, STRUCT(person_external_id, full_name, latest_supervision_downgrade_date, previous_supervision_level, supervision_level), NULL)
           IGNORE NULLS
-        ) AS supervision_downgrade_clients,
+        ) AS supervision_downgrades_clients,
         COUNT(DISTINCT IF(latest_supervision_downgrade_date IS NOT NULL, person_id, NULL)) AS supervision_downgrades,
         COUNT(DISTINCT IF(revocation_violation_type IN ('TECHNICAL'), person_id, NULL)) AS technical_revocations,
         COUNT(DISTINCT IF(revocation_violation_type IN ('NEW_CRIME'), person_id, NULL)) AS crime_revocations,
@@ -124,9 +124,8 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
       IFNULL(last_month.pos_discharges, 0) AS pos_discharges_last_month,
       district_avg.avg_pos_discharges AS pos_discharges_district_average,
       state_avg.avg_pos_discharges AS pos_discharges_state_average,
-      report_month.supervision_downgrade_clients,
+      report_month.supervision_downgrades_clients,
       report_month.supervision_downgrades,
-      IFNULL(last_month.supervision_downgrade_clients, []) AS supervision_downgrade_clients_last_month,
       IFNULL(last_month.supervision_downgrades, 0) AS supervision_downgrades_last_month,
       district_avg.avg_supervision_downgrades AS supervision_downgrades_district_average,
       state_avg.avg_supervision_downgrades AS supervision_downgrades_state_average,
@@ -151,7 +150,7 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
       state_avg.avg_absconsions AS absconsions_state_average,
       report_month.assessments_out_of_date_clients,
       report_month.assessments,
-      IEEE_DIVIDE(report_month.assessments_up_to_date, assessment_compliance_caseload_count) * 100 AS assessment_percent,
+      IEEE_DIVIDE(report_month.assessments_up_to_date, assessment_compliance_caseload_count) * 100 AS assessments_percent,
       report_month.facetoface_out_of_date_clients,
       report_month.facetoface,
       IEEE_DIVIDE(report_month.facetoface_frequencies_sufficient, facetoface_compliance_caseload_count) * 100 as facetoface_percent

@@ -15,7 +15,7 @@
   "earned_discharges_last_month": "3",
   "earned_discharges_district_average": "0.8575756",
   "earned_discharges_state_average": "1.6567567",
-  "supervision_downgrade_clients": null,
+  "supervision_downgrades_clients": null,
   "supervision_downgrades": "5",
   "supervision_downgrades_last_month": "3",
   "supervision_downgrades_district_average": "2.3456789",
@@ -36,7 +36,7 @@
   "crime_revocations_state_average": "3.5423234",
   "assessments_out_of_date_clients": null,
   "assessments": "15",
-  "assessment_percent": "73.3",
+  "assessments_percent": "73.3",
   "facetoface_out_of_date_clients": null,
   "facetoface": "0",
   "facetoface_percent": "NaN"
