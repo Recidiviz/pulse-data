@@ -1414,3 +1414,150 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
         }
 
         self.assertEqual(expected_output, original_admission_reasons_by_period_id)
+
+
+class TestPrecedingIncarcerationPeriod(unittest.TestCase):
+    """Tests the preceding_incarceration_period function."""
+
+    def test_preceding_incarceration_period_first_period(self) -> None:
+        """Tests that this returns None when the given period is the first in the
+        index."""
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            incarceration_period_id=111,
+            admission_date=date(2000, 1, 1),
+            release_date=date(2000, 10, 3),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            incarceration_period_id=222,
+            admission_date=date(2015, 10, 3),
+            release_date=date(2015, 10, 11),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        incarceration_periods = [incarceration_period_1, incarceration_period_2]
+        index = IncarcerationPeriodIndex(incarceration_periods)
+
+        preceding_period = index.preceding_incarceration_period(incarceration_period_1)
+        self.assertIsNone(preceding_period)
+
+    def test_preceding_incarceration_period_second_period(self) -> None:
+        """Tests that this returns the first period when the given period is the
+        second in the index."""
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            incarceration_period_id=111,
+            admission_date=date(2000, 1, 1),
+            release_date=date(2000, 10, 3),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            incarceration_period_id=222,
+            admission_date=date(2015, 10, 3),
+            release_date=date(2015, 10, 11),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        incarceration_periods = [incarceration_period_1, incarceration_period_2]
+        index = IncarcerationPeriodIndex(incarceration_periods)
+
+        preceding_period = index.preceding_incarceration_period(incarceration_period_2)
+        self.assertEqual(incarceration_period_1, preceding_period)
+
+    def test_preceding_incarceration_period_later_period(self) -> None:
+        """Tests that this returns the period directly preceding the given period
+        when it is not the first period."""
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            incarceration_period_id=111,
+            admission_date=date(2000, 1, 1),
+            release_date=date(2000, 10, 3),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            incarceration_period_id=222,
+            admission_date=date(2015, 10, 3),
+            release_date=date(2015, 10, 11),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            incarceration_period_id=333,
+            admission_date=date(2019, 4, 8),
+            release_date=date(2020, 10, 31),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        incarceration_periods = [
+            incarceration_period_1,
+            incarceration_period_2,
+            incarceration_period_3,
+        ]
+        index = IncarcerationPeriodIndex(incarceration_periods)
+
+        preceding_period = index.preceding_incarceration_period(incarceration_period_3)
+        self.assertEqual(incarceration_period_2, preceding_period)
+
+    def test_preceding_incarceration_period_not_in_index(self) -> None:
+        """Tests that this raises a ValueError when the given period is not in the
+        index."""
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            incarceration_period_id=111,
+            admission_date=date(2000, 1, 1),
+            release_date=date(2000, 10, 3),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            incarceration_period_id=222,
+            admission_date=date(2015, 10, 3),
+            release_date=date(2015, 10, 11),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            incarceration_period_id=333,
+            admission_date=date(2019, 4, 8),
+            release_date=date(2020, 10, 31),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        incarceration_periods = [
+            incarceration_period_1,
+            incarceration_period_2,
+        ]
+        index = IncarcerationPeriodIndex(incarceration_periods)
+
+        with pytest.raises(ValueError) as e:
+            index.preceding_incarceration_period(incarceration_period_3)
+        self.assertEqual(
+            "Given incarceration period [333] not found in this incarceration period index",
+            str(e.value),
+        )

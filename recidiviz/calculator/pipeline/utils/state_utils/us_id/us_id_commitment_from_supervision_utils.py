@@ -18,6 +18,9 @@
 in US_ID."""
 from typing import List, Tuple, Optional
 
+from recidiviz.calculator.pipeline.utils.incarceration_period_index import (
+    IncarcerationPeriodIndex,
+)
 from recidiviz.calculator.pipeline.utils.period_utils import (
     find_last_terminated_period_before_date,
 )
@@ -41,7 +44,7 @@ from recidiviz.persistence.entity.state.entities import (
 def us_id_pre_commitment_supervision_period_if_commitment(
     incarceration_period: StateIncarcerationPeriod,
     filtered_supervision_periods: List[StateSupervisionPeriod],
-    preceding_incarceration_period: Optional[StateIncarcerationPeriod],
+    incarceration_period_index: IncarcerationPeriodIndex,
 ) -> Tuple[bool, Optional[StateSupervisionPeriod]]:
     """Determines whether the incarceration_period started because of a commitment from
     supervision, which is either a sanction or a revocation admission. If a commitment
@@ -60,10 +63,11 @@ def us_id_pre_commitment_supervision_period_if_commitment(
             instance of commitment from supervision.
         - filtered_supervision_periods: A list of the person's StateSupervisionPeriods
             that have a set supervision_period_supervision_type.
-        - preceding_incarceration_period: The incarceration period that occurred before
-            the given incarceration_period, if the person has any preceding
-            incarceration periods. Used to determine whether the person was transferred
-            from a parole board hold or treatment.
+        - incarceration_period_index: The index of incarceration periods for this person,
+            including the incarceration period that occurred before the given
+            incarceration_period, if the person has any preceding incarceration periods.
+            Used to determine whether the person was transferred from a parole board
+            hold or treatment.
     Returns:
         A tuple in the format [bool, Optional[StateSupervisionPeriod]] representing
         whether or not a commitment from supervision occurred and, if it did occur,
@@ -77,6 +81,10 @@ def us_id_pre_commitment_supervision_period_if_commitment(
             f"Admission date null for {incarceration_period}. Should be set in "
             f"the prepare_incarceration_periods_for_calculations process."
         )
+
+    preceding_incarceration_period = (
+        incarceration_period_index.preceding_incarceration_period(incarceration_period)
+    )
 
     if not _us_id_admission_is_commitment_from_supervision(
         incarceration_period, preceding_incarceration_period

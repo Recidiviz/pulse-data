@@ -207,6 +207,18 @@ class IncarcerationPeriodIndex:
             for ip in self.incarceration_periods
         )
 
+    def incarceration_periods_with_admissions_between_dates(
+        self, start_date_inclusive: date, end_date_exclusive: date
+    ) -> List[StateIncarcerationPeriod]:
+        """Returns any incarceration periods with admissions between the start_date and end_date, not inclusive of
+        the end date."""
+        return [
+            ip
+            for ip in self.incarceration_periods
+            if ip.admission_date
+            and start_date_inclusive <= ip.admission_date < end_date_exclusive
+        ]
+
     @staticmethod
     def _get_portions_of_range_not_covered_by_periods_subset(
         time_range_to_cover: DateRange,
@@ -300,3 +312,25 @@ class IncarcerationPeriodIndex:
                 most_recent_official_admission_reason_raw_text = None
 
         return original_admission_reasons_by_period_id
+
+    def preceding_incarceration_period(
+        self, incarceration_period: StateIncarcerationPeriod
+    ) -> Optional[StateIncarcerationPeriod]:
+        """Returns the incarceration period which occurred immediately before the given
+        period in this index.
+
+        Returns None if the given period is the first period in this index.
+        Raises a ValueError if the given period is not in this index."""
+        preceding_incarceration_period: Optional[StateIncarcerationPeriod] = None
+
+        if incarceration_period not in self.incarceration_periods:
+            raise ValueError(
+                f"Given incarceration period [{incarceration_period.incarceration_period_id}] "
+                "not found in this incarceration period index"
+            )
+
+        ip_index: int = self.incarceration_periods.index(incarceration_period)
+        if ip_index > 0:
+            preceding_incarceration_period = self.incarceration_periods[ip_index - 1]
+
+        return preceding_incarceration_period

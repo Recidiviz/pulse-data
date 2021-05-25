@@ -717,7 +717,7 @@ def pre_commitment_supervision_period_if_commitment(
     state_code: str,
     incarceration_period: StateIncarcerationPeriod,
     supervision_periods: List[StateSupervisionPeriod],
-    preceding_incarceration_period: Optional[StateIncarcerationPeriod],
+    incarceration_period_index: IncarcerationPeriodIndex,
 ) -> Tuple[bool, Optional[StateSupervisionPeriod]]:
     """If the incarceration period was a result of a commitment from supervision, finds
     the supervision period that caused the commitment from supervision.
@@ -744,14 +744,14 @@ def pre_commitment_supervision_period_if_commitment(
             admission_is_commitment,
             pre_commitment_supervision_period,
         ) = us_id_pre_commitment_supervision_period_if_commitment(
-            incarceration_period, supervision_periods, preceding_incarceration_period
+            incarceration_period, supervision_periods, incarceration_period_index
         )
     elif state_code == StateCode.US_ND.value:
         (
             admission_is_commitment,
             pre_commitment_supervision_period,
         ) = us_nd_pre_commitment_supervision_period_if_commitment(
-            incarceration_period, supervision_periods
+            incarceration_period, supervision_periods, incarceration_period_index
         )
     elif state_code == StateCode.US_PA.value:
         (
