@@ -984,7 +984,7 @@ class CalculationDocumentationGenerator:
         ]
         table_matrix = [
             [
-                state_info.name,
+                f"[{state_info.name}](../../states/{self._normalize_string_for_path(state_info.name)}.md)",
                 state_info.month_count if state_info.month_count else "N/A",
                 state_info.frequency,
             ]
