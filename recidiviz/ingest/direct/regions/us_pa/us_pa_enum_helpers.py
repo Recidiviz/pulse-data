@@ -337,12 +337,34 @@ STR_TO_SUPERVISION_PERIOD_SUPERVISION_TYPE_MAPPINGS: Dict[
 def incarceration_period_admission_reason_mapper(
     concatenated_codes: str,
 ) -> StateIncarcerationPeriodAdmissionReason:
-    _, start_is_new_revocation, start_movement_code = concatenated_codes.split(" ")
+    """Maps key incarceration period start codes to a formal admission reason.
+
+    If start_is_admin_edge indicates that this new period was started only for
+    administrative reasons, then we return STATUS_CHANGE. If start_is_new_revocation is
+    true, then we return PAROLE_REVOCATION. Otherwise we map based on the
+    start_movement_code.
+    """
+
+    if concatenated_codes.startswith("CCIS"):
+        (_, start_is_new_revocation, start_movement_code) = concatenated_codes.split(
+            " "
+        )
+        start_is_admin_edge = "FALSE"
+    else:
+        (
+            _,
+            start_is_new_revocation,
+            start_movement_code,
+            start_is_admin_edge,
+        ) = concatenated_codes.split(" ")
 
     if start_is_new_revocation == "TRUE":
         # Note: These are not always legal revocations. We are currently using the PAROLE_REVOCATION admission_reason
         # for admissions from parole for treatment and shock incarceration as well as for legal revocations
         return StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
+
+    if start_is_admin_edge == "TRUE":
+        return StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE
 
     admission_reason = (
         MOVEMENT_CODE_TO_INCARCERATION_PERIOD_ADMISSION_REASON_MAPPINGS.get(
@@ -373,15 +395,16 @@ def incarceration_period_release_reason_mapper(
     and end_movement_code. They are concatenated together in that order, separated by whitespace, in us_pa_controller.
     Here, we split them up and select a release reason based on the following logic:
 
-    1. If the end_parole_status_code indicates the person was released to parole, we choose a static mapping based on
+    1. If end_is_admin_edge indicates these period was ended for merely administrative reasons, we return STATUS_CHANGE.
+    2. If the end_parole_status_code indicates the person was released to parole, we choose a static mapping based on
     that code specifically
-    2. If the end_sentence_status_code indicates the sentence was just completed,
+    3. If the end_sentence_status_code indicates the sentence was just completed,
     we return SENTENCED_SERVED
-    3. If the end_sentence_status_code indicates a conflict of meaning with the movement code,
+    4. If the end_sentence_status_code indicates a conflict of meaning with the movement code,
     we return INTERNAL_UNKNOWN
-    4. If the end_movement_code is a generic release reason, we choose a static mapping based on the
+    5. If the end_movement_code is a generic release reason, we choose a static mapping based on the
     end_sentence_status_code, which will be more informative
-    5. If none of the above are true, we choose a static mapping based on end_movement_code
+    6. If none of the above are true, we choose a static mapping based on end_movement_code
     """
     if concatenated_codes.startswith("CCIS"):
         # Handle release reason codes from CCIS tables
@@ -392,7 +415,11 @@ def incarceration_period_release_reason_mapper(
             end_sentence_status_code,
             end_parole_status_code,
             end_movement_code,
+            end_is_admin_edge,
         ) = concatenated_codes.split(" ")
+
+        if end_is_admin_edge == "TRUE":
+            return StateIncarcerationPeriodReleaseReason.STATUS_CHANGE
 
         if end_movement_code in (
             "DA",
@@ -546,16 +573,18 @@ def concatenate_sci_incarceration_period_start_codes(row: Dict[str, str]) -> str
     start_parole_status_code = row["start_parole_status_code"] or "None"
     start_is_new_revocation = row["start_is_new_revocation"] or "None"
     start_movement_code = row["start_movement_code"] or "None"
+    start_is_admin_edge = row.get("start_is_admin_edge") or "None"
 
-    return f"{start_parole_status_code}-{start_is_new_revocation}-{start_movement_code}"
+    return f"{start_parole_status_code}-{start_is_new_revocation}-{start_movement_code}-{start_is_admin_edge}"
 
 
 def concatenate_sci_incarceration_period_end_codes(row: Dict[str, str]) -> str:
     end_sentence_status_code = row["end_sentence_status_code"] or "None"
     end_parole_status_code = row["end_parole_status_code"] or "None"
     end_movement_code = row["end_movement_code"] or "None"
+    end_is_admin_edge = row.get("end_is_admin_edge") or "None"
 
-    return f"{end_sentence_status_code}-{end_parole_status_code}-{end_movement_code}"
+    return f"{end_sentence_status_code}-{end_parole_status_code}-{end_movement_code}-{end_is_admin_edge}"
 
 
 def concatenate_ccis_incarceration_period_end_codes(row: Dict[str, str]) -> str:
