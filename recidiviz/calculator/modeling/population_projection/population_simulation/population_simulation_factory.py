@@ -141,7 +141,6 @@ class PopulationSimulationFactory:
             first_relevant_ts,
             sub_group_ids_dict,
             should_initialize_compartment_populations,
-            should_scale_populations_after_step,
         )
 
         # If compartment populations are initialized, the first ts is handled in initialization
@@ -160,6 +159,7 @@ class PopulationSimulationFactory:
             pop_sim_start_ts,
             cross_flow_function=user_inputs.get("cross_flow_function"),
             override_cross_flow_function=override_cross_flow_function,
+            should_scale_populations=should_scale_populations_after_step,
         )
 
         # run simulation up to the start_year
@@ -214,7 +214,6 @@ class PopulationSimulationFactory:
         first_relevant_ts: int,
         sub_group_ids_dict: Dict[str, Dict[str, Any]],
         should_initialize_compartment_populations: bool,
-        should_scale_populations_after_step: bool,
     ) -> Dict[str, SubSimulation]:
         """Helper function for initialize_simulation. Initialize one sub simulation per sub-population."""
         sub_simulations = dict()
@@ -272,7 +271,6 @@ class PopulationSimulationFactory:
                 policy_list=group_policies,
                 first_relevant_ts=first_relevant_ts,
                 should_single_cohort_initialize_compartments=should_initialize_compartment_populations,
-                should_scale_populations_after_step=should_scale_populations_after_step,
                 starting_cohort_sizes=start_cohort_sizes,
             )
 
