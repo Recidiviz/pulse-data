@@ -45,25 +45,15 @@ class SubSimulationFactory:
         cls,
         outflows_data: pd.DataFrame,
         transitions_data: pd.DataFrame,
-        total_population_data: pd.DataFrame,
         compartments_architecture: Dict[str, str],
         user_inputs: Dict[str, Any],
         policy_list: List[SparkPolicy],
         first_relevant_ts: int,
         should_scale_populations_after_step: bool,
         should_single_cohort_initialize_compartments: bool,
+        starting_cohort_sizes: pd.DataFrame,
     ) -> SubSimulation:
         """Build a sub_simulation."""
-        if not total_population_data.empty:
-            if (
-                user_inputs["start_time_step"]
-                not in total_population_data.time_step.values
-            ):
-                raise ValueError(
-                    f"Start time must be included in population data input\n"
-                    f"Expected: {user_inputs['start_time_step']}, "
-                    f"Actual: {total_population_data.time_step.unique()}"
-                )
 
         transitions_per_compartment, shell_policies = cls._initialize_transition_tables(
             transitions_data, compartments_architecture, policy_list
@@ -80,13 +70,12 @@ class SubSimulationFactory:
             user_inputs,
             compartments_architecture,
             first_relevant_ts,
-            total_population_data,
+            starting_cohort_sizes,
             should_single_cohort_initialize_compartments,
         )
 
         return SubSimulation(
             simulation_compartments,
-            total_population_data,
             should_scale_populations_after_step,
         )
 
@@ -199,7 +188,7 @@ class SubSimulationFactory:
         user_inputs: Dict[str, Any],
         simulation_architecture: Dict[str, str],
         first_relevant_ts: int,
-        total_population_data: pd.DataFrame,
+        starting_cohort_sizes: pd.DataFrame,
         should_initialize_compartment_populations: bool,
     ) -> Dict[str, SparkCompartment]:
         """Initialize all the SparkCompartments for the subpopulation simulation"""
@@ -236,13 +225,10 @@ class SubSimulationFactory:
                     tag=compartment,
                 )
 
-        total_pop_data = total_population_data[
-            total_population_data.time_step == user_inputs["start_time_step"]
-        ]
         cls._initialize_edges_and_cohorts(
             simulation_compartments,
-            total_pop_data,
             should_initialize_compartment_populations,
+            starting_cohort_sizes,
         )
 
         return simulation_compartments
@@ -251,10 +237,13 @@ class SubSimulationFactory:
     def _initialize_edges_and_cohorts(
         cls,
         simulation_compartments: Dict[str, SparkCompartment],
-        total_population_data: pd.DataFrame,
         should_initialize_compartment_populations: bool,
+        starting_cohort_sizes: pd.DataFrame,
     ) -> None:
-        """Initializes cohorts and edges"""
+        """
+        Initializes cohorts and edges
+        starting_cohort_sizes should be empty if should_initialize_compartment_populations is false
+        """
         for compartment_tag, compartment_obj in simulation_compartments.items():
             compartment_obj.initialize_edges(list(simulation_compartments.values()))
 
@@ -262,8 +251,8 @@ class SubSimulationFactory:
             if should_initialize_compartment_populations and isinstance(
                 compartment_obj, FullCompartment
             ):
-                compartment_population = total_population_data[
-                    total_population_data.compartment == compartment_tag
+                compartment_population = starting_cohort_sizes[
+                    starting_cohort_sizes.compartment == compartment_tag
                 ]
                 if compartment_population.empty:
                     compartment_population = 0
@@ -277,3 +266,12 @@ class SubSimulationFactory:
                         0
                     ].total_population
                 compartment_obj.single_cohort_intitialize(compartment_population)
+
+            elif (
+                not should_initialize_compartment_populations
+                and not starting_cohort_sizes.empty
+            ):
+                raise ValueError(
+                    "starting cohort populations data passed to simulation that isn't"
+                    " initializing compartment populations"
+                )

@@ -147,6 +147,7 @@ class PopulationSimulationFactory:
             sub_group_ids_dict,
             total_population_data,
             user_inputs["projection_time_steps"],
+            first_relevant_ts,
         )
 
         # run simulation up to the start_year
@@ -222,20 +223,28 @@ class PopulationSimulationFactory:
             disaggregated_outflows_data = outflows_data[
                 (outflows_data[disaggregation_axes] == group_attributes).all(axis=1)
             ]
-            disaggregated_total_population_data = total_population_data[
-                (total_population_data[disaggregation_axes] == group_attributes).all(
-                    axis=1
+
+            if should_initialize_compartment_populations:
+                disaggregated_total_population_data = total_population_data[
+                    (
+                        total_population_data[disaggregation_axes] == group_attributes
+                    ).all(axis=1)
+                ]
+                unused_total_population_data = unused_total_population_data.drop(
+                    disaggregated_total_population_data.index
                 )
-            ]
+                start_cohort_sizes = disaggregated_total_population_data[
+                    disaggregated_total_population_data.time_step
+                    == user_inputs["start_time_step"]
+                ]
+            else:
+                start_cohort_sizes = pd.DataFrame()
 
             unused_transitions_data = unused_transitions_data.drop(
                 disaggregated_transitions_data.index
             )
             unused_outflows_data = unused_outflows_data.drop(
                 disaggregated_outflows_data.index
-            )
-            unused_total_population_data = unused_total_population_data.drop(
-                disaggregated_total_population_data.index
             )
 
             # Select the policies relevant to this simulation group
@@ -246,13 +255,13 @@ class PopulationSimulationFactory:
             sub_simulations[sub_group_id] = SubSimulationFactory.build_sub_simulation(
                 outflows_data=disaggregated_outflows_data,
                 transitions_data=disaggregated_transitions_data,
-                total_population_data=disaggregated_total_population_data,
                 compartments_architecture=simulation_compartments,
                 user_inputs=user_inputs,
                 policy_list=group_policies,
                 first_relevant_ts=first_relevant_ts,
                 should_single_cohort_initialize_compartments=should_initialize_compartment_populations,
                 should_scale_populations_after_step=should_scale_populations_after_step,
+                starting_cohort_sizes=start_cohort_sizes,
             )
 
         if len(unused_transitions_data) > 0:
@@ -261,7 +270,10 @@ class PopulationSimulationFactory:
             )
         if len(unused_outflows_data) > 0:
             logging.warning("Some outflows data left unused: %s", unused_outflows_data)
-        if len(unused_total_population_data) > 0:
+        if (
+            should_initialize_compartment_populations
+            and len(unused_total_population_data) > 0
+        ):
             logging.warning(
                 "Some total population data left unused: %s",
                 unused_total_population_data,
@@ -299,9 +311,25 @@ class PopulationSimulationFactory:
             )
 
         for axis in disaggregation_axes:
-            for df in [outflows_data, transitions_data, total_population_data]:
+            # Unless starting cohorts are required, total_population_data is allowed to be aggregated
+            fully_disaggregated_dfs = [outflows_data, transitions_data]
+            if should_initialize_compartment_populations:
+                fully_disaggregated_dfs.append(total_population_data)
+
+            for df in [outflows_data, transitions_data]:
                 if axis not in df.columns:
                     raise ValueError(
                         f"All disagregation axis must be included in the input dataframe columns\n"
                         f"Expected: {disaggregation_axes}, Actual: {df.columns}"
                     )
+
+        if not total_population_data.empty:
+            if (
+                user_inputs["start_time_step"]
+                not in total_population_data.time_step.values
+            ):
+                raise ValueError(
+                    f"Start time must be included in population data input\n"
+                    f"Expected: {user_inputs['start_time_step']}, "
+                    f"Actual: {total_population_data.time_step.unique()}"
+                )

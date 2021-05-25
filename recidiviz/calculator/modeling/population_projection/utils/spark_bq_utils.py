@@ -78,7 +78,7 @@ TOTAL_POPULATION_SCHEMA = [
 def _validate_schema(
     schema: List[Dict[str, str]], dataframe: pd.DataFrame, title: str
 ) -> None:
-    "Validate that dataframes match schemas"
+    """Validate that dataframes match schemas"""
 
     required_columns = {item["name"] for item in schema if item["mode"] == "REQUIRED"}
     allowed_columns = {item["name"] for item in schema}
@@ -124,11 +124,12 @@ def _validate_data(project_id: str, uploads: List[Dict[str, Any]]) -> None:
             raise ValueError(f"Table '{table_name}' must not contain null values")
 
         # check that dataframe contains at least one of the required disaggregation axes
-        missing_columns = {"crime", "crime_type", "age", "race"}.difference(
-            params["data_df"].columns
-        )
-        if len(missing_columns) >= 4:
-            missing_dissagregation_axis.append(params["table"][:-4])
+        if params["table"] != TOTAL_POPULATION_DATA_TABLE_NAME:
+            missing_columns = {"crime", "crime_type", "age", "race"}.difference(
+                params["data_df"].columns
+            )
+            if len(missing_columns) >= 4:
+                missing_dissagregation_axis.append(params["table"][:-4])
 
     if len(missing_dissagregation_axis) != 0:
         raise ValueError(
@@ -166,12 +167,13 @@ def _validate_yaml(yaml_path: str, uploads: List[Dict[str, Any]]) -> None:
 
     for axis in disaggregation_axes:
         for upload in uploads:
-            df = upload["data_df"]
-            if axis not in df.columns:
-                raise ValueError(
-                    f"All disagregation axes must be included in the input dataframe columns\n"
-                    f"Expected: {disaggregation_axes}, Actual: {df.columns}"
-                )
+            if upload["table"] != "total_population_data_raw":
+                df = upload["data_df"]
+                if axis not in df.columns:
+                    raise ValueError(
+                        f"All disagregation axes must be included in the input dataframe columns\n"
+                        f"Expected: {disaggregation_axes}, Actual: {df.columns}"
+                    )
 
 
 def upload_spark_model_inputs(

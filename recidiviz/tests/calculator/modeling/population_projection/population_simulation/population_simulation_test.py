@@ -20,7 +20,7 @@ from copy import deepcopy
 from unittest.mock import patch
 
 import pandas as pd
-from pandas.testing import assert_index_equal
+from pandas.testing import assert_index_equal, assert_frame_equal
 
 
 from recidiviz.calculator.modeling.population_projection.population_simulation.population_simulation_factory import (
@@ -38,43 +38,45 @@ class TestPopulationSimulation(unittest.TestCase):
     def setUp(self) -> None:
         self.test_outflows_data = pd.DataFrame(
             {
-                "total_population": [4, 2, 2, 4, 3],
-                "crime": ["NAR"] * 5,
+                "total_population": [4, 2, 2, 4, 3] * 2,
+                "crime": ["NAR"] * 5 + ["BUR"] * 5,
                 "outflow_to": [
                     "supervision",
                     "prison",
                     "supervision",
                     "prison",
                     "prison",
-                ],
+                ]
+                * 2,
                 "compartment": [
                     "prison",
                     "supervision",
                     "prison",
                     "pretrial",
                     "pretrial",
-                ],
-                "time_step": [0] * 5,
+                ]
+                * 2,
+                "time_step": [0] * 10,
             }
         )
 
         self.test_transitions_data = pd.DataFrame(
             {
-                "compartment_duration": [1, 1, 2],
-                "total_population": [4, 2, 2],
-                "crime": ["NAR"] * 3,
-                "outflow_to": ["supervision", "prison", "supervision"],
-                "compartment": ["prison", "supervision", "prison"],
-                "time_step": [0] * 3,
+                "compartment_duration": [1, 1, 2] * 2,
+                "total_population": [4, 2, 2] * 2,
+                "crime": ["NAR"] * 3 + ["BUR"] * 3,
+                "outflow_to": ["supervision", "prison", "supervision"] * 2,
+                "compartment": ["prison", "supervision", "prison"] * 2,
+                "time_step": [0] * 6,
             }
         )
 
         self.test_total_population_data = pd.DataFrame(
             {
-                "total_population": [10] * 5,
-                "compartment": ["prison"] * 5,
-                "crime": ["NAR"] * 5,
-                "time_step": range(-4, 1),
+                "total_population": [10] * 10,
+                "compartment": ["prison"] * 10,
+                "crime": ["NAR"] * 5 + ["BUR"] * 5,
+                "time_step": list(range(-4, 1)) * 2,
             }
         )
 
@@ -90,35 +92,33 @@ class TestPopulationSimulation(unittest.TestCase):
             "supervision": "full",
         }
 
+        self.macro_population_simulation = (
+            PopulationSimulationFactory.build_population_simulation(
+                self.test_outflows_data,
+                self.test_transitions_data,
+                self.test_total_population_data,
+                self.simulation_architecture,
+                ["crime"],
+                self.user_inputs,
+                [],
+                -5,
+                pd.DataFrame(),
+                False,
+                True,
+            )
+        )
+        self.macro_projection = self.macro_population_simulation.simulate_policies()
+
     def test_disaggregation_axes_must_be_in_data_dfs(self) -> None:
         test_outflows_data = self.test_outflows_data.drop("crime", axis=1)
 
         test_transitions_data = self.test_transitions_data.drop("crime", axis=1)
 
-        test_total_population_data = self.test_total_population_data.drop(
-            "crime", axis=1
-        )
-
         with self.assertRaises(ValueError):
             _ = PopulationSimulationFactory.build_population_simulation(
                 test_outflows_data,
                 self.test_transitions_data,
-                test_total_population_data,
-                self.simulation_architecture,
-                ["crime"],
-                self.user_inputs,
-                [],
-                -5,
-                pd.DataFrame(),
-                False,
-                True,
-            )
-
-        with self.assertRaises(ValueError):
-            _ = PopulationSimulationFactory.build_population_simulation(
-                self.test_outflows_data,
-                self.test_transitions_data,
-                test_total_population_data,
+                self.test_total_population_data,
                 self.simulation_architecture,
                 ["crime"],
                 self.user_inputs,
@@ -132,7 +132,7 @@ class TestPopulationSimulation(unittest.TestCase):
         with self.assertRaises(ValueError):
             _ = PopulationSimulationFactory.build_population_simulation(
                 test_outflows_data,
-                self.test_transitions_data,
+                test_transitions_data,
                 self.test_total_population_data,
                 self.simulation_architecture,
                 ["crime"],
@@ -207,23 +207,9 @@ class TestPopulationSimulation(unittest.TestCase):
 
     def test_baseline_with_backcast_projection_on(self) -> None:
         """Assert that the simulation results has negative time steps when the back-cast is enabled"""
-        population_simulation = PopulationSimulationFactory.build_population_simulation(
-            self.test_outflows_data,
-            self.test_transitions_data,
-            self.test_total_population_data,
-            self.simulation_architecture,
-            ["crime"],
-            self.user_inputs,
-            [],
-            -5,
-            pd.DataFrame(),
-            False,
-            True,
-        )
-        projection = population_simulation.simulate_policies()
-
         assert_index_equal(
-            projection.index.unique().sort_values(), pd.Int64Index(range(-5, 10))
+            self.macro_projection.index.unique().sort_values(),
+            pd.Int64Index(range(-5, 10)),
         )
 
     def test_baseline_with_backcast_projection_off(self) -> None:
@@ -251,7 +237,6 @@ class TestPopulationSimulation(unittest.TestCase):
         """Assert that PopulationSimulation throws an error when some input data goes unused"""
         non_disaggregated_outflows_data = self.test_outflows_data.copy()
         non_disaggregated_transitions_data = self.test_transitions_data.copy()
-        non_disaggregated_total_population_data = self.test_total_population_data.copy()
 
         non_disaggregated_outflows_data.loc[
             non_disaggregated_outflows_data.compartment != "pretrial", "crime"
@@ -259,27 +244,6 @@ class TestPopulationSimulation(unittest.TestCase):
         non_disaggregated_transitions_data.loc[
             non_disaggregated_transitions_data.index == 0, "crime"
         ] = None
-        non_disaggregated_total_population_data.crime = None
-
-        with patch("logging.Logger.warning") as mock:
-            _ = PopulationSimulationFactory.build_population_simulation(
-                self.test_outflows_data,
-                self.test_transitions_data,
-                non_disaggregated_total_population_data,
-                self.simulation_architecture,
-                ["crime"],
-                self.user_inputs,
-                [],
-                -5,
-                pd.DataFrame(),
-                False,
-                True,
-            )
-            mock.assert_called_once()
-            self.assertEqual(
-                mock.mock_calls[0].args[0],
-                "Some total population data left unused: %s",
-            )
 
         with patch("logging.Logger.warning") as mock:
             _ = PopulationSimulationFactory.build_population_simulation(
@@ -320,3 +284,72 @@ class TestPopulationSimulation(unittest.TestCase):
                 mock.mock_calls[0].args[0],
                 "Some outflows data left unused: %s",
             )
+
+    def test_doubled_populations_doubles_simulation_populations(self) -> None:
+        """Validates population scaling is actually scaling populations"""
+
+        doubled_population_data = self.test_total_population_data.copy()
+        doubled_population_data.total_population *= 2
+
+        doubled_population_simulation = (
+            PopulationSimulationFactory.build_population_simulation(
+                self.test_outflows_data,
+                self.test_transitions_data,
+                doubled_population_data,
+                self.simulation_architecture,
+                ["crime"],
+                self.user_inputs,
+                [],
+                -5,
+                pd.DataFrame(),
+                False,
+                True,
+            )
+        )
+
+        doubled_projection = doubled_population_simulation.simulate_policies()
+
+        for _, row in doubled_population_data.iterrows():
+            baseline_pop = self.macro_projection.loc[
+                (self.macro_projection.compartment == row.compartment)
+                & (self.macro_projection.time_step == row.time_step),
+                "total_population",
+            ].iloc[0]
+            doubled_pop = doubled_projection.loc[
+                (doubled_projection.compartment == row.compartment)
+                & (doubled_projection.time_step == row.time_step),
+                "total_population",
+            ].iloc[0]
+            self.assertEqual(round(baseline_pop * 2), round(doubled_pop))
+
+    def test_coarse_population_data(self) -> None:
+        """
+        Test that PopulationSimulation can handle total_population_data with one less disaggregation axis
+            than other data dfs
+        """
+        coarse_population_data = (
+            self.test_total_population_data.groupby(["compartment", "time_step"])
+            .sum()
+            .reset_index()
+        )
+
+        coarse_macro_population_simulation = (
+            PopulationSimulationFactory.build_population_simulation(
+                self.test_outflows_data,
+                self.test_transitions_data,
+                coarse_population_data,
+                self.simulation_architecture,
+                ["crime"],
+                self.user_inputs,
+                [],
+                -5,
+                pd.DataFrame(),
+                False,
+                True,
+            )
+        )
+        coarse_population_projection = (
+            coarse_macro_population_simulation.simulate_policies()
+        )
+
+        assert_frame_equal(coarse_population_projection, self.macro_projection)
