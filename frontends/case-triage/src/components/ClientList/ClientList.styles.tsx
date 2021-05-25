@@ -35,11 +35,13 @@ interface ClientCardProps {
   active?: boolean;
 }
 
-export const ClientCard = styled(Card).attrs((props: ClientCardProps) => {
-  return {
-    className: `client-card ${props.className}`,
-  };
-})`
+export const ClientListCardElement = styled(Card).attrs(
+  (props: ClientCardProps) => {
+    return {
+      className: `client-card ${props.className}`,
+    };
+  }
+)`
   padding: ${rem(spacing.lg)};
   position: relative;
   min-height: 92px;

@@ -21,7 +21,7 @@ exports.config = {
       acceptInsecureCerts: true,
     },
   ],
-  logLevel: "info",
+  logLevel: "warn",
   bail: 0,
   baseUrl: "http://localhost:3000",
   waitforTimeout: 10000,

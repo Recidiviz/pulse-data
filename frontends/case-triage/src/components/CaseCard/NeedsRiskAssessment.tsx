@@ -28,6 +28,7 @@ import {
 import { titleCase } from "../../utils";
 import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
 import { NeedsActionFlow } from "../NeedsActionFlow/NeedsActionFlow";
+import TEST_IDS from "../TestIDs";
 
 interface NeedsRiskAssessmentProps {
   className: string;
@@ -120,7 +121,10 @@ const NeedsRiskAssessment: React.FC<NeedsRiskAssessmentProps> = ({
   }
 
   return (
-    <CaseCardBody className={className}>
+    <CaseCardBody
+      className={className}
+      data-testid={TEST_IDS.NEEDS_RISK_ASSESSMENT}
+    >
       <Need
         kind={IconSVG.NeedsRiskAssessment}
         state={client.needsMet.assessment ? NeedState.MET : NeedState.NOT_MET}

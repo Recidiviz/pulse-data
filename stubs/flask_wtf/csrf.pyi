@@ -14,11 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+import flask
 from flask import Flask
 from typing import Union
 
 class CSRFProtect:
     def __init__(self, app: Flask): ...
+    def exempt(self, view: flask.Blueprint) -> CSRFProtect: ...
 
 class CSRFError(Exception):
     pass
