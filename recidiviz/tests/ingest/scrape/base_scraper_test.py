@@ -17,10 +17,11 @@
 
 """Tests for base_scraper.py."""
 import datetime
+from typing import Any, Callable, List
 from unittest import TestCase
 
 import flask
-from mock import patch, Mock
+from mock import Mock, patch
 
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
@@ -29,8 +30,8 @@ from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.models.serialization import convert_ingest_info_to_proto
 from recidiviz.ingest.scrape import constants
 from recidiviz.ingest.scrape.base_scraper import BaseScraper
-from recidiviz.ingest.scrape.errors import ScraperGetMoreTasksError, ScraperFetchError
-from recidiviz.ingest.scrape.task_params import QueueRequest, Task, ScrapedData
+from recidiviz.ingest.scrape.errors import ScraperFetchError, ScraperGetMoreTasksError
+from recidiviz.ingest.scrape.task_params import QueueRequest, ScrapedData, Task
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 
@@ -43,19 +44,21 @@ TEST_HTML = "<html><body>test</body></html>"
 
 
 class FakeScraper(BaseScraper):
-    def __init__(self, region_name):  # pylint: disable=super-init-not-called
+    def __init__(self, region_name: str):  # pylint: disable=super-init-not-called
         self.region = Mock()
         self.region.region_code = region_name
-        self.tasks = []
+        self.tasks: List[QueueRequest] = []
 
-    def populate_data(self, content, task, ingest_info):
+    def populate_data(
+        self, content: Any, task: Task, ingest_info: IngestInfo
+    ) -> ScrapedData:
         return super().populate_data(content, task, ingest_info)
 
     #  pylint: disable=arguments-differ
-    def add_task(self, _, task: QueueRequest):
+    def add_task(self, _: str, task: QueueRequest) -> None:
         self.tasks.append(task)
 
-    def get_enum_overrides(self):
+    def get_enum_overrides(self) -> EnumOverrides:
         return EnumOverrides.empty()
 
 
@@ -65,7 +68,7 @@ class FakeScraper(BaseScraper):
 class TestBaseScraper(TestCase):
     """Tests for base_scraper"""
 
-    def setup_method(self, _):
+    def setup_method(self, _: Callable) -> None:
         ii = IngestInfo()
         person = ii.create_person(person_id="test")
         booking = person.create_booking(booking_id="test")
@@ -74,7 +77,9 @@ class TestBaseScraper(TestCase):
 
     @patch.object(BaseScraper, "_fetch_content")
     @patch.object(BaseScraper, "get_more_tasks")
-    def test_get_more_tasks_failure(self, mock_get_more, mock_fetch):
+    def test_get_more_tasks_failure(
+        self, mock_get_more: Mock, mock_fetch: Mock
+    ) -> None:
         mock_fetch.return_value = ("TEST", {})
         mock_get_more.side_effect = ValueError("TEST ERROR")
 
@@ -93,8 +98,12 @@ class TestBaseScraper(TestCase):
     @patch.object(BaseScraper, "get_more_tasks")
     @patch.object(flask, "request")
     def test_get_more_tasks_failure_batch(
-        self, mock_flask, mock_get_more, mock_fetch, mock_batch_error
-    ):
+        self,
+        mock_flask: Mock,
+        mock_get_more: Mock,
+        mock_fetch: Mock,
+        mock_batch_error: Mock,
+    ) -> None:
         mock_fetch.return_value = ("TEST", {})
         mock_get_more.side_effect = ValueError("TEST ERROR")
         mock_flask_get = Mock()
@@ -123,7 +132,7 @@ class TestBaseScraper(TestCase):
         )
 
     @patch.object(BaseScraper, "_fetch_content")
-    def test_fetch_failure(self, mock_fetch):
+    def test_fetch_failure(self, mock_fetch: Mock) -> None:
         mock_fetch.return_value = ValueError("TEST ERROR")
 
         req = QueueRequest(
@@ -138,7 +147,7 @@ class TestBaseScraper(TestCase):
 
     @patch.object(BaseScraper, "_fetch_content")
     @patch.object(BaseScraper, "get_more_tasks")
-    def test_content_no_fetch(self, mock_get_more, mock_fetch):
+    def test_content_no_fetch(self, mock_get_more: Mock, mock_fetch: Mock) -> None:
         t = Task.evolve(TEST_TASK, content=TEST_HTML)
         mock_get_more.return_value = [t]
         start_time = datetime.datetime.now()
@@ -158,7 +167,9 @@ class TestBaseScraper(TestCase):
 
     @patch.object(BaseScraper, "_fetch_content")
     @patch.object(BaseScraper, "get_more_tasks")
-    def test_get_more_and_updates_cookies(self, mock_get_more, mock_fetch):
+    def test_get_more_and_updates_cookies(
+        self, mock_get_more: Mock, mock_fetch: Mock
+    ) -> None:
         mock_get_more.return_value = [TEST_TASK]
         mock_fetch.return_value = (TEST_HTML, {1: 1})
         start_time = datetime.datetime.now()
@@ -186,7 +197,9 @@ class TestBaseScraper(TestCase):
 
     @patch.object(BaseScraper, "_fetch_content")
     @patch.object(BaseScraper, "get_more_tasks")
-    def test_get_more_multiple_tasks_returned(self, mock_get_more, mock_fetch):
+    def test_get_more_multiple_tasks_returned(
+        self, mock_get_more: Mock, mock_fetch: Mock
+    ) -> None:
         mock_get_more.return_value = [TEST_TASK, TEST_TASK]
         mock_fetch.return_value = (TEST_HTML, None)
         start_time = datetime.datetime.now()
@@ -212,7 +225,7 @@ class TestBaseScraper(TestCase):
 
     @patch.object(BaseScraper, "_fetch_content")
     @patch.object(BaseScraper, "get_more_tasks")
-    def test_fetch_sends_all_args(self, mock_get_more, mock_fetch):
+    def test_fetch_sends_all_args(self, mock_get_more: Mock, mock_fetch: Mock) -> None:
         mock_get_more.return_value = [TEST_TASK]
         mock_fetch.return_value = (TEST_HTML, None)
         start_time = datetime.datetime.now()
@@ -258,8 +271,12 @@ class TestBaseScraper(TestCase):
     @patch.object(BaseScraper, "_fetch_content")
     @patch.object(BaseScraper, "get_more_tasks")
     def test_scrape_data_and_more_no_persist(
-        self, mock_get_more, mock_fetch, mock_populate, mock_write
-    ):
+        self,
+        mock_get_more: Mock,
+        mock_fetch: Mock,
+        mock_populate: Mock,
+        mock_write: Mock,
+    ) -> None:
         mock_get_more.return_value = [TEST_TASK]
         mock_fetch.return_value = (TEST_HTML, {})
         mock_populate.return_value = ScrapedData(
@@ -299,8 +316,12 @@ class TestBaseScraper(TestCase):
     @patch.object(BaseScraper, "_fetch_content")
     @patch.object(BaseScraper, "get_more_tasks")
     def test_scrape_data_and_more_no_persist_second_time_persist(
-        self, mock_get_more, mock_fetch, mock_populate, mock_write
-    ):
+        self,
+        mock_get_more: Mock,
+        mock_fetch: Mock,
+        mock_populate: Mock,
+        mock_write: Mock,
+    ) -> None:
         populate_task = Task.evolve(TEST_TASK, task_type=constants.TaskType.SCRAPE_DATA)
         mock_get_more.return_value = [populate_task]
         mock_fetch.return_value = (TEST_HTML, {})
@@ -361,8 +382,12 @@ class TestBaseScraper(TestCase):
     @patch.object(BaseScraper, "_fetch_content")
     @patch.object(BaseScraper, "get_more_tasks")
     def test_scrape_data_and_more_yes_persist(
-        self, mock_get_more, mock_fetch, mock_populate, mock_write
-    ):
+        self,
+        mock_get_more: Mock,
+        mock_fetch: Mock,
+        mock_populate: Mock,
+        mock_write: Mock,
+    ) -> None:
         mock_get_more.return_value = [TEST_TASK]
         mock_fetch.return_value = (TEST_HTML, {})
         mock_populate.return_value = ScrapedData(
@@ -410,8 +435,12 @@ class TestBaseScraper(TestCase):
     @patch.object(BaseScraper, "_fetch_content")
     @patch.object(BaseScraper, "get_more_tasks")
     def test_scrape_data_no_more_tasks(
-        self, mock_get_more, mock_fetch, mock_populate, mock_write
-    ):
+        self,
+        mock_get_more: Mock,
+        mock_fetch: Mock,
+        mock_populate: Mock,
+        mock_write: Mock,
+    ) -> None:
         mock_fetch.return_value = (TEST_HTML, {})
         mock_populate.return_value = ScrapedData(
             ingest_info=self.ii,
@@ -451,8 +480,13 @@ class TestBaseScraper(TestCase):
     @patch.object(BaseScraper, "_fetch_content")
     @patch.object(BaseScraper, "get_more_tasks")
     def test_scrape_data_no_more_tasks_batch(
-        self, mock_get_more, mock_fetch, mock_populate, mock_write, mock_batch_write
-    ):
+        self,
+        mock_get_more: Mock,
+        mock_fetch: Mock,
+        mock_populate: Mock,
+        mock_write: Mock,
+        mock_batch_write: Mock,
+    ) -> None:
         mock_fetch.return_value = (TEST_HTML, {})
         mock_populate.return_value = ScrapedData(
             ingest_info=self.ii,

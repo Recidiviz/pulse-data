@@ -27,17 +27,17 @@ from datetime import datetime, tzinfo
 from enum import Enum, auto
 from itertools import chain
 from types import ModuleType
-from typing import Any, Dict, Optional, Set
-from typing import List
+from typing import Any, Dict, List, Optional, Set
 
 import attr
 import pytz
 import yaml
 
+from recidiviz.common.attr_validators import is_str
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.utils import environment
-from recidiviz.ingest.scrape import regions as scraper_regions_module
 from recidiviz.ingest.direct import regions as direct_ingest_regions_module
+from recidiviz.ingest.scrape import regions as scraper_regions_module
+from recidiviz.utils import environment
 from recidiviz.utils.environment import GCPEnvironment
 
 
@@ -92,13 +92,13 @@ class Region:
     """
 
     region_code: str = attr.ib(converter=_to_lower)
-    jurisdiction_id: str = attr.ib(validator=attr.validators.instance_of(str))
+    jurisdiction_id: str = attr.ib(validator=is_str)
     agency_name: str = attr.ib()
     agency_type: str = attr.ib()
     timezone: tzinfo = attr.ib(converter=pytz.timezone)
     region_module: ModuleType = attr.ib(default=None)
     environment: Optional[str] = attr.ib(default=None)
-    base_url: Optional[str] = attr.ib(default=None)
+    base_url: str = attr.ib(default=None)
     shared_queue: Optional[str] = attr.ib(default=None)
     queue: Optional[Dict[str, Any]] = attr.ib(default=None)
     removed_from_website: RemovedFromWebsite = attr.ib(

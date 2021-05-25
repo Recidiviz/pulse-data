@@ -22,13 +22,13 @@ import unittest
 
 from freezegun import freeze_time
 from google.cloud import tasks_v2
-from mock import patch, call
+from mock import Mock, call, patch
 
-from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
-    SCRAPER_PHASE_QUEUE_V2,
-)
 from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import (
     QUEUES_REGION,
+)
+from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
+    SCRAPER_PHASE_QUEUE_V2,
 )
 from recidiviz.ingest.scrape import scraper_cloud_task_manager
 from recidiviz.ingest.scrape.constants import ScrapeType, TaskType
@@ -41,11 +41,13 @@ CLOUD_TASK_MANAGER_PACKAGE_NAME = scraper_cloud_task_manager.__name__
 class TestScraperCloudTaskManager(unittest.TestCase):
     """Tests for ScraperCloudTaskManager"""
 
-    def task_path(self, project, queues_region, queue, task_id):
+    def task_path(
+        self, project: str, queues_region: str, queue: str, task_id: str
+    ) -> str:
         return f"queue_path/{project}/{queues_region}/{queue}/{task_id}"
 
     @patch("google.cloud.tasks_v2.CloudTasksClient")
-    def test_purge_scrape_tasks(self, mock_client):
+    def test_purge_scrape_tasks(self, mock_client: Mock) -> None:
         # Arrange
         region_code = "us_ca_san_francisco"
         project_id = "recidiviz-456"
@@ -88,7 +90,7 @@ class TestScraperCloudTaskManager(unittest.TestCase):
         )
 
     @patch("google.cloud.tasks_v2.CloudTasksClient")
-    def test_list_scrape_tasks(self, mock_client):
+    def test_list_scrape_tasks(self, mock_client: Mock) -> None:
         # Arrange
         region_code = "us_ca_san_francisco"
         project_id = "recidiviz-456"
@@ -128,7 +130,7 @@ class TestScraperCloudTaskManager(unittest.TestCase):
     @patch(f"{CLOUD_TASK_MANAGER_PACKAGE_NAME}.uuid")
     @patch("google.cloud.tasks_v2.CloudTasksClient")
     @freeze_time("2019-04-14")
-    def test_create_scrape_task(self, mock_client, mock_uuid):
+    def test_create_scrape_task(self, mock_client: Mock, mock_uuid: Mock) -> None:
         # Arrange
         uuid = "random-uuid"
         mock_uuid.uuid4.return_value = uuid
@@ -180,7 +182,9 @@ class TestScraperCloudTaskManager(unittest.TestCase):
 
     @patch(f"{CLOUD_TASK_MANAGER_PACKAGE_NAME}.uuid")
     @patch("google.cloud.tasks_v2.CloudTasksClient")
-    def test_create_scraper_phase_task(self, mock_client, mock_uuid):
+    def test_create_scraper_phase_task(
+        self, mock_client: Mock, mock_uuid: Mock
+    ) -> None:
         # Arrange
         uuid = "random-uuid"
         mock_uuid.uuid4.return_value = uuid

@@ -19,6 +19,7 @@
 import unittest
 
 from flask import Flask
+from flask.testing import FlaskClient
 from mock import Mock, call, create_autospec, patch
 
 from recidiviz.ingest.models.scrape_key import ScrapeKey
@@ -32,7 +33,7 @@ from recidiviz.ingest.scrape import (
 from recidiviz.utils.regions import Region
 
 
-def create_test_client():
+def create_test_client() -> FlaskClient:
     app = Flask(__name__)
     app.register_blueprint(scraper_status.scraper_status)
     # Include so that flask can get the url of `stop`.
@@ -55,8 +56,12 @@ class TestScraperStatus(unittest.TestCase):
     @patch("recidiviz.ingest.scrape.ingest_utils.validate_regions")
     @patch("recidiviz.utils.regions.get_region")
     def test_check_for_finished_scrapers(
-        self, mock_region, mock_validate_regions, mock_session, mock_task_manager
-    ):
+        self,
+        mock_region: Mock,
+        mock_validate_regions: Mock,
+        mock_session: Mock,
+        mock_task_manager: Mock,
+    ) -> None:
         mock_validate_regions.return_value = ["region_x", "region_y", "region_z"]
         mock_session.side_effect = [
             # Session still in START, shouldn't be stopped
@@ -112,8 +117,12 @@ class TestScraperStatus(unittest.TestCase):
     @patch("recidiviz.ingest.scrape.ingest_utils.validate_regions")
     @patch("recidiviz.utils.regions.get_region")
     def test_check_for_finished_scrapers_not_done(
-        self, mock_region, mock_validate_regions, mock_session, mock_task_manager
-    ):
+        self,
+        mock_region: Mock,
+        mock_validate_regions: Mock,
+        mock_session: Mock,
+        mock_task_manager: Mock,
+    ) -> None:
         region_code = "region_x"
 
         mock_session.return_value = sessions.ScrapeSession.new(

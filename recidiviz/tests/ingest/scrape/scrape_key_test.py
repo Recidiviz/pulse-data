@@ -20,46 +20,46 @@
 
 import pytest
 
-from recidiviz.ingest.scrape import constants
 from recidiviz.ingest.models.scrape_key import ScrapeKey
+from recidiviz.ingest.scrape import constants
 
 
-def test_eq_different_regions():
+def test_eq_different_regions() -> None:
     left = ScrapeKey("us_ny", constants.ScrapeType.BACKGROUND)
     right = ScrapeKey("us_fl", constants.ScrapeType.BACKGROUND)
 
     assert left != right
 
 
-def test_eq_different_types():
+def test_eq_different_types() -> None:
     left = ScrapeKey("us_ny", constants.ScrapeType.BACKGROUND)
     right = ScrapeKey("us_ny", constants.ScrapeType.SNAPSHOT)
 
     assert left != right
 
 
-def test_eq_different_everything():
+def test_eq_different_everything() -> None:
     left = ScrapeKey("us_ny", constants.ScrapeType.SNAPSHOT)
     right = ScrapeKey("us_fl", constants.ScrapeType.BACKGROUND)
 
     assert left != right
 
 
-def test_eq_same():
+def test_eq_same() -> None:
     left = ScrapeKey("us_ny", constants.ScrapeType.BACKGROUND)
     right = ScrapeKey("us_ny", constants.ScrapeType.BACKGROUND)
 
     assert left == right
 
 
-def test_eq_different_objects():
+def test_eq_different_objects() -> None:
     left = ScrapeKey("us_ny", constants.ScrapeType.BACKGROUND)
     right = "We don't read the papers, we don't read the news"
 
     assert not left.__eq__(right)
 
 
-def test_repr():
+def test_repr() -> None:
     scrape_key = ScrapeKey("us_ut", constants.ScrapeType.SNAPSHOT)
 
     representation = scrape_key.__repr__()
@@ -70,7 +70,7 @@ def test_repr():
     )
 
 
-def test_no_region():
+def test_no_region() -> None:
     with pytest.raises(ValueError) as exception:
         ScrapeKey(None, constants.ScrapeType.SNAPSHOT)
     assert (
@@ -79,7 +79,7 @@ def test_no_region():
     )
 
 
-def test_no_scrape_type():
+def test_no_scrape_type() -> None:
     with pytest.raises(ValueError) as exception:
         ScrapeKey("us_ut", None)
     assert (

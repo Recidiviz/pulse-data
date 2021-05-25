@@ -17,10 +17,12 @@
 
 """Tests for ingest/scraper_control.py."""
 import unittest
+from typing import List, Optional
 
 import pytz
 from flask import Flask
-from mock import Mock, call, patch, create_autospec
+from flask.testing import FlaskClient
+from mock import Mock, call, create_autospec, patch
 
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import constants, scrape_phase, scraper_control, sessions
@@ -30,7 +32,7 @@ from recidiviz.tests.utils.fake_region import fake_region
 from recidiviz.tests.utils.thread_pool import SerialExecutor
 
 
-def create_test_client():
+def create_test_client() -> FlaskClient:
     app = Flask(__name__)
     app.register_blueprint(scraper_control.scraper_control)
     # Include so that flask can get the url of `infer_release`.
@@ -40,8 +42,10 @@ def create_test_client():
     return app.test_client()
 
 
-def _MockSupported(timezone=None, stripes=None):
-    del stripes  # this is added to match the mocking arguments
+def _MockSupported(
+    timezone: Optional[str] = None,
+    stripes: Optional[List] = None,  # pylint: disable=unused-argument
+) -> List[str]:
     if not timezone:
         regions = ["us_ut", "us_wy"]
     elif timezone == pytz.timezone("America/New_York"):
@@ -71,16 +75,16 @@ class TestScraperStart(unittest.TestCase):
     @patch("recidiviz.utils.pubsub_helper.purge")
     def test_start(
         self,
-        mock_purge,
-        mock_get_sessions,
-        mock_docket,
-        mock_tracker,
-        mock_create_session,
-        mock_update_phase,
-        mock_region,
-        mock_supported,
-        mock_environment,
-    ):
+        mock_purge: Mock,
+        mock_get_sessions: Mock,
+        mock_docket: Mock,
+        mock_tracker: Mock,
+        mock_create_session: Mock,
+        mock_update_phase: Mock,
+        mock_region: Mock,
+        mock_supported: Mock,
+        mock_environment: Mock,
+    ) -> None:
         """Tests that the start operation chains together the correct calls."""
         mock_purge.return_value = None
         mock_docket.return_value = None
@@ -123,16 +127,16 @@ class TestScraperStart(unittest.TestCase):
     @patch("recidiviz.utils.pubsub_helper.purge")
     def test_start_timezone(
         self,
-        mock_purge,
-        mock_get_sessions,
-        mock_docket,
-        mock_tracker,
-        mock_create_session,
-        mock_update_phase,
-        mock_region,
-        mock_supported,
-        mock_environment,
-    ):
+        mock_purge: Mock,
+        mock_get_sessions: Mock,
+        mock_docket: Mock,
+        mock_tracker: Mock,
+        mock_create_session: Mock,
+        mock_update_phase: Mock,
+        mock_region: Mock,
+        mock_supported: Mock,
+        mock_environment: Mock,
+    ) -> None:
         """Tests that the start operation chains together the correct calls."""
         mock_docket.return_value = None
         mock_tracker.return_value = None
@@ -180,15 +184,15 @@ class TestScraperStart(unittest.TestCase):
     @patch("recidiviz.utils.pubsub_helper.purge")
     def test_start_all_diff_environment(
         self,
-        mock_purge,
-        mock_get_sessions,
-        mock_docket,
-        mock_tracker,
-        mock_create_session,
-        mock_region,
-        mock_supported,
-        mock_environment,
-    ):
+        mock_purge: Mock,
+        mock_get_sessions: Mock,
+        mock_docket: Mock,
+        mock_tracker: Mock,
+        mock_create_session: Mock,
+        mock_region: Mock,
+        mock_supported: Mock,
+        mock_environment: Mock,
+    ) -> None:
         """Tests that the start operation chains together the correct calls."""
         mock_environment.return_value = "staging"
         mock_scraper = create_autospec(BaseScraper)
@@ -223,15 +227,15 @@ class TestScraperStart(unittest.TestCase):
     @patch("recidiviz.utils.pubsub_helper.purge")
     def test_start_existing_session(
         self,
-        mock_purge,
-        mock_get_sessions,
-        mock_docket,
-        mock_tracker,
-        mock_create_session,
-        mock_region,
-        mock_supported,
-        mock_environment,
-    ):
+        mock_purge: Mock,
+        mock_get_sessions: Mock,
+        mock_docket: Mock,
+        mock_tracker: Mock,
+        mock_create_session: Mock,
+        mock_region: Mock,
+        mock_supported: Mock,
+        mock_environment: Mock,
+    ) -> None:
         """Tests that the start operation halts if an open session exists."""
         region = "us_ut"
 
@@ -276,16 +280,16 @@ class TestScraperStart(unittest.TestCase):
     @patch("recidiviz.utils.pubsub_helper.purge")
     def test_start_existing_session_release(
         self,
-        mock_purge,
-        mock_get_sessions,
-        mock_docket,
-        mock_tracker,
-        mock_create_session,
-        mock_update_phase,
-        mock_region,
-        mock_supported,
-        mock_environment,
-    ):
+        mock_purge: Mock,
+        mock_get_sessions: Mock,
+        mock_docket: Mock,
+        mock_tracker: Mock,
+        mock_create_session: Mock,
+        mock_update_phase: Mock,
+        mock_region: Mock,
+        mock_supported: Mock,
+        mock_environment: Mock,
+    ) -> None:
         """Tests that the start operation runs when there is a session running
         infer release."""
         region = "us_ut"
@@ -326,7 +330,7 @@ class TestScraperStart(unittest.TestCase):
         mock_supported.assert_called_with(stripes=[], timezone=None)
 
     @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
-    def test_start_unsupported_region(self, mock_supported):
+    def test_start_unsupported_region(self, mock_supported: Mock) -> None:
         mock_supported.return_value = ["us_ny", "us_pa"]
 
         request_args = {"region": "us_ca", "scrape_type": "all"}
@@ -358,13 +362,13 @@ class TestScraperStop(unittest.TestCase):
     @patch("recidiviz.ingest.scrape.sessions.get_current_session")
     def test_stop(
         self,
-        mock_get_session,
-        mock_sessions,
-        mock_phase,
-        mock_task_manager,
-        mock_region,
-        mock_supported,
-    ):
+        mock_get_session: Mock,
+        mock_sessions: Mock,
+        mock_phase: Mock,
+        mock_task_manager: Mock,
+        mock_region: Mock,
+        mock_supported: Mock,
+    ) -> None:
         session = sessions.ScrapeSession.new(
             key=None,
             region="us_xx",
@@ -425,8 +429,12 @@ class TestScraperStop(unittest.TestCase):
     @patch("recidiviz.ingest.scrape.scraper_control.ScraperCloudTaskManager")
     @patch("recidiviz.ingest.scrape.sessions.get_current_session")
     def test_stop_no_session(
-        self, mock_sessions, mock_task_manager, mock_region, mock_supported
-    ):
+        self,
+        mock_sessions: Mock,
+        mock_task_manager: Mock,
+        mock_region: Mock,
+        mock_supported: Mock,
+    ) -> None:
         mock_sessions.return_value = None
         mock_scraper = create_autospec(BaseScraper)
         mock_region.return_value = fake_region(scraper=mock_scraper)
@@ -463,13 +471,13 @@ class TestScraperStop(unittest.TestCase):
     @patch("recidiviz.ingest.scrape.sessions.get_current_session")
     def test_stop_timezone(
         self,
-        mock_sessions,
-        mock_close,
-        mock_phase,
-        mock_task_manager,
-        mock_region,
-        mock_supported,
-    ):
+        mock_sessions: Mock,
+        mock_close: Mock,
+        mock_phase: Mock,
+        mock_task_manager: Mock,
+        mock_region: Mock,
+        mock_supported: Mock,
+    ) -> None:
         session = sessions.ScrapeSession.new(
             key=None,
             region="us_ut",
@@ -514,7 +522,9 @@ class TestScraperStop(unittest.TestCase):
 
     @patch("recidiviz.ingest.scrape.scraper_control.ScraperCloudTaskManager")
     @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
-    def test_stop_unsupported_region(self, mock_supported, mock_task_manager):
+    def test_stop_unsupported_region(
+        self, mock_supported: Mock, mock_task_manager: Mock
+    ) -> None:
         mock_supported.return_value = ["us_ny", "us_pa"]
 
         request_args = {"region": "us_ca", "scrape_type": "all"}
@@ -537,13 +547,13 @@ class TestScraperStop(unittest.TestCase):
     @patch("recidiviz.ingest.scrape.sessions.get_current_session")
     def test_stop_respects_region_is_not_stoppable(
         self,
-        mock_sessions,
-        mock_close,
-        mock_phase,
-        mock_task_manager,
-        mock_region,
-        mock_supported,
-    ):
+        mock_sessions: Mock,
+        mock_close: Mock,
+        mock_phase: Mock,
+        mock_task_manager: Mock,
+        mock_region: Mock,
+        mock_supported: Mock,
+    ) -> None:
         session = sessions.ScrapeSession.new(
             key=None,
             region="us_xx",
@@ -553,8 +563,7 @@ class TestScraperStop(unittest.TestCase):
         mock_sessions.return_value = session
         mock_close.return_value = [session]
         mock_scraper = create_autospec(BaseScraper)
-        mock_region.return_value = fake_region(scraper=mock_scraper)
-        mock_region.return_value.is_stoppable = False
+        mock_region.return_value = fake_region(scraper=mock_scraper, is_stoppable=False)
         mock_supported.return_value = ["us_ca", "us_ut"]
 
         request_args = {"region": "all", "scrape_type": "all"}
@@ -605,7 +614,9 @@ class TestScraperResume(unittest.TestCase):
     @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
     @patch("recidiviz.utils.regions.get_region")
     @patch("recidiviz.ingest.scrape.sessions.create_session")
-    def test_resume(self, mock_sessions, mock_region, mock_supported):
+    def test_resume(
+        self, mock_sessions: Mock, mock_region: Mock, mock_supported: Mock
+    ) -> None:
         mock_sessions.return_value = None
         mock_scraper = create_autospec(BaseScraper)
         mock_region.return_value = fake_region(scraper=mock_scraper)
@@ -630,7 +641,7 @@ class TestScraperResume(unittest.TestCase):
         mock_supported.assert_called_with(stripes=None, timezone=None)
 
     @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
-    def test_resume_unsupported_region(self, mock_supported):
+    def test_resume_unsupported_region(self, mock_supported: Mock) -> None:
         mock_supported.return_value = ["us_ny", "us_pa"]
 
         request_args = {"region": "us_ca", "scrape_type": "all"}
