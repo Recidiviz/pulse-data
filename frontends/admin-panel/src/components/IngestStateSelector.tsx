@@ -14,11 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import * as React from "react";
 import { Select } from "antd";
+import * as React from "react";
+import { fetchIngestStateCodes } from "../AdminPanelAPI";
 import useFetchedData from "../hooks";
 import { StateCodeInfo } from "./IngestOperationsView/constants";
-import { fetchIngestStateCodes } from "../AdminPanelAPI";
 
 interface IngestInstanceCardProps {
   handleStateCodeChange: (stateCode: string) => void;

@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import * as React from "react";
+import { SyncOutlined } from "@ant-design/icons";
 import {
   Alert,
   Button,
@@ -26,7 +26,7 @@ import {
   Row,
   Table,
 } from "antd";
-import { SyncOutlined } from "@ant-design/icons";
+import * as React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import {
@@ -35,7 +35,7 @@ import {
   startIngestRun,
   updateIngestQueuesState,
 } from "../../AdminPanelAPI";
-import IngestActionConfirmationForm from "./IngestActionConfirmationForm";
+import IngestStateSelector from "../IngestStateSelector";
 import {
   actionNames,
   DirectIngestInstance,
@@ -44,10 +44,10 @@ import {
   QueueMetadata,
   QueueState,
 } from "./constants";
-import IngestQueuesTable from "./IngestQueuesTable";
+import IngestActionConfirmationForm from "./IngestActionConfirmationForm";
 import IngestInstanceCard from "./IngestInstanceCard";
-import IngestStateSelector from "../IngestStateSelector";
 import IngestLogsCard from "./IngestLogsCard";
+import IngestQueuesTable from "./IngestQueuesTable";
 
 const IngestOperationsView = (): JSX.Element => {
   const env = window.RUNTIME_GCP_ENVIRONMENT || "unknown env";
@@ -135,20 +135,18 @@ const IngestOperationsView = (): JSX.Element => {
   ) => {
     setIsConfirmationModalVisible(false);
     if (stateCode) {
+      setQueueStatesLoading(true);
       if (
         ingestActionToExecute === IngestActions.StartIngestRun &&
         ingestInstance
       ) {
         await startIngestRun(stateCode, ingestInstance);
       } else if (ingestActionToExecute === IngestActions.PauseIngestQueues) {
-        setQueueStatesLoading(true);
         await updateIngestQueuesState(stateCode, QueueState.PAUSED);
-        await fetchQueueStates(stateCode);
       } else if (ingestActionToExecute === IngestActions.ResumeIngestQueues) {
-        setQueueStatesLoading(true);
         await updateIngestQueuesState(stateCode, QueueState.RUNNING);
-        await fetchQueueStates(stateCode);
       }
+      await fetchQueueStates(stateCode);
     }
   };
 
