@@ -42,6 +42,10 @@ LATEST_VIEW_DATASETS = {
     f"{state_code.value.lower()}_raw_data_up_to_date_views" for state_code in StateCode
 }
 
+SUPPLEMENTAL_DATASETS = {
+    f"{state_code.value.lower()}_supplemental" for state_code in StateCode
+}
+
 OTHER_SOURCE_TABLE_DATASETS = {
     CASE_TRIAGE_SEGMENT_DATASET,
     COUNTY_BASE_DATASET,
@@ -57,10 +61,17 @@ OTHER_SOURCE_TABLE_DATASETS = {
 }
 
 # These datasets should only contain tables that provide the source data for our view graph.
-VIEW_SOURCE_TABLE_DATASETS = OTHER_SOURCE_TABLE_DATASETS | RAW_TABLE_DATASETS
+VIEW_SOURCE_TABLE_DATASETS = (
+    OTHER_SOURCE_TABLE_DATASETS | RAW_TABLE_DATASETS | SUPPLEMENTAL_DATASETS
+)
 
 RAW_DATA_TABLE_DATASETS_TO_DESCRIPTIONS = {
     f"{state_code.value.lower()}_raw_data": f"Raw data tables from {StateCode.get_state(state_code)}"
+    for state_code in StateCode
+}
+
+SUPPLEMENTAL_DATASETS_TO_DESCRIPTIONS = {
+    f"{state_code.value.lower()}_supplemental": f"Contains data provided directly by {StateCode.get_state(state_code)} that is not run through direct ingest, e.g. validation data."
     for state_code in StateCode
 }
 
@@ -89,5 +100,6 @@ OTHER_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS = {
 
 VIEW_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS = {
     **RAW_DATA_TABLE_DATASETS_TO_DESCRIPTIONS,
+    **SUPPLEMENTAL_DATASETS_TO_DESCRIPTIONS,
     **OTHER_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS,
 }
