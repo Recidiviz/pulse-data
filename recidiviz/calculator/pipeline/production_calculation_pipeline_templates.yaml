@@ -33,13 +33,21 @@ daily_pipelines:
     metric_types: PROGRAM_PARTICIPATION PROGRAM_REFERRAL
     region: us-west1
 
-  # Daily US_MO calculations for the dashboard
+  # Daily US_MO supervision calculations for the dashboard
   - pipeline: supervision
     job_name: us-mo-supervision-calculations-36
     state_code: US_MO
     calculation_month_count: 36
     metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION SUPERVISION_TERMINATION
     region: us-west3
+
+  # Daily US_MO incarceration calculations
+  - pipeline: incarceration
+    job_name: us-mo-incarceration-calculations-36
+    state_code: US_MO
+    calculation_month_count: 36
+    metric_types: INCARCERATION_ADMISSION INCARCERATION_POPULATION INCARCERATION_RELEASE
+    region: us-east1
 
   # Daily US_ID supervision calculations for the COVID and PO reports
   - pipeline: supervision
