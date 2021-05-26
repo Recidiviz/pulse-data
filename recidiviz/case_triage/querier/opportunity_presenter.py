@@ -23,6 +23,7 @@ from typing import Any, Dict, Optional
 
 import pytz
 
+from recidiviz.case_triage.demo_helpers import unconvert_fake_person_id_for_demo_user
 from recidiviz.persistence.database.schema.case_triage.schema import (
     ETLOpportunity,
     OpportunityDeferral,
@@ -44,7 +45,9 @@ class OpportunityPresenter:
         if not query_time:
             query_time = datetime.now(tz=pytz.UTC)
         base = {
-            "personExternalId": self.etl_opportunity.person_external_id,
+            "personExternalId": unconvert_fake_person_id_for_demo_user(
+                self.etl_opportunity.person_external_id
+            ),
             "stateCode": self.etl_opportunity.state_code,
             "supervisingOfficerExternalId": self.etl_opportunity.supervising_officer_external_id,
             "opportunityType": self.etl_opportunity.opportunity_type,
