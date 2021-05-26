@@ -1,0 +1,44 @@
+file_tag: OtherID
+file_description: |-
+  This entity stores a record for each offender identification number no longer used by the Department of Correction to track the offender.  This identification number may be an OBSCIS ID or a TOMIS ID that has been deleted because the offender hadanother TOMIS ID.
+primary_key_cols:
+  - OffenderID
+  - OtherID
+columns:
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: OtherID
+    description: |-
+      This is an identifier assigned to a particular offender in the TOMIS system, it is either a deleted duplicate TOMIS ID or an OBSCIS ID.
+  - name: AbbreviatedName
+    description: |-
+      The name of an offender. This is the offender last name first name, and middle initial strung together, Shortened to fit in 30 spaces.
+  - name: Race
+    description: |-
+      The NCIC race code.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
+  - name: Sex
+    description: |-
+      An abbreviation that identifies the sex of an offender.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
+  - name: BirthDate
+    is_datetime: True
+    description: |-
+      The date on which a person was born.
+  - name: OffenderDeletionDate
+    is_datetime: True
+    description: |-
+      The date an offender is deleted.
+  - name: StaffID
+    description: |-
+      This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    is_datetime: True
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.

@@ -1,0 +1,105 @@
+file_tag: Offender
+file_description: |-
+  This table contains one occurrence for each offender in the TOMIS system. It contains location information used throughout the system. It is the "parent" table for associated offender tables.
+primary_key_cols:
+  - OffenderID
+columns:
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: AssignedSiteID
+    description: |-
+      This identifies an organizational/location entity. Sites may include institutions, staff agencies, hospitals, etc. This is a database element.
+  - name: AssignedUnitID
+    description: |-
+      A unique identifier assigned to a particular unit within an institution.
+  - name: AssignedCellID
+    description: |-
+      A unique identifier assigned to a particular cell at an insitutuion.
+  - name: AssignedBedID
+    description: |-
+      A unique identifier assigned to a particular bed.
+  - name: ActualUnitID
+    description: |-
+      A unique identifier assigned to a particular unit within an institution where an offender is actually located.
+  - name: ActualCellID
+    description: |-
+      A unique identifier assigned to a particular cell at an institutuion where an offender is actually located.
+  - name: ActualBedID
+    description: |-
+      A unique identifier assigned to a particular bed where an offender is actually located.
+  - name: CustodyLevel
+    description: |-
+      An abbreviation representing a level of custody of an offender as determined by the classification committee.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
+  - name: NumberOffenderVisitor
+    description: |-
+      The number of visitors entertained by an offender.
+  - name: EscapeFlag
+    description: |-
+      Indicator for an offender that tells whether the offender is escaped.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
+  - name: EscapeHistoryFlag
+    description: |-
+      Indicator for an offender that tells whether the offender has a history of escaping.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
+  - name: Jurisdication
+    description: |-
+      The code for the jurisdiction in which an offender is serving his sentence.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
+  - name: ArchiveDate
+    is_datetime: True
+    description: |-
+      The date on which an offender and his related tables have been archived to tape.
+  - name: AbscondedParoleFlag
+    description: |-
+      Indicator for an offender that tells whether the offender has absconded from parole.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
+  - name: AbscondedProbationFlag
+    description: |-
+      Indicator for an offender that tells whether the offender has absconded from probation.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
+  - name: AbscondedCommunityCorrectionFlag
+    description: |-
+      Indicator for an offender that tells whether the offender has absconded from community corrections.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
+  - name: ParoleOfficeID
+    description: |-
+      This identifies a parole office. Parole offices are a subset of all sites.
+  - name: ProbationOfficeID
+    description: |-
+      This identifies a probation office. Probation offices are also on the site table as sites.
+  - name: CommunityCorrectionOfficeID
+    description: |-
+      This identifies a community corrections grantee. All community corrections grantees are a subset of all sites.
+  - name: NotInCustodyDate
+    is_datetime: True
+    description: |-
+      The date an offender obtains 'NIC' status.
+  - name: NotIncustoryReason
+    description: |-
+      The move reason code for the 'NIC' status.
+  - name: VisitorRelationshipResetDate
+    description: |-
+      The date a movement was made to cause the visitor offender relationship data to be spaced out.
+  - name: PostedByStaffID
+    description: |-
+      The Staff identifier which posted the the row on the table.
+  - name: PostedDate
+    is_datetime: True
+    description: |-
+      This is the date that data is actually posted to the system.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    is_datetime: True
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.
