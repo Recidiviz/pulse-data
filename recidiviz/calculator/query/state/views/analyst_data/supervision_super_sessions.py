@@ -51,10 +51,13 @@ SUPERVISION_SUPER_SESSIONS_QUERY_TEMPLATE = """
             SELECT
                 *,
                 --Identify sessions that are in the supervision super-compartment as well as whether the prior session is
+                -- The compartment_level_2 list here is meant to capture folks that are in temporary holds of some sort,
+                -- where their supervision status doesnt not change, so that we don't count transitions to those compartments
+                -- as revocations
                 compartment_level_1 IN ('SUPERVISION','SUPERVISION_OUT_OF_STATE') 
-                    OR compartment_level_2 IN ('PAROLE_BOARD_HOLD', 'PENDING_CUSTODY', 'TEMPORARY_CUSTODY', 'SUSPENSION') AS supervision_super_compartment,
+                    OR compartment_level_2 IN ('PAROLE_BOARD_HOLD', 'PENDING_CUSTODY', 'TEMPORARY_CUSTODY', 'SUSPENSION','SHOCK_INCARCERATION') AS supervision_super_compartment,
                 LAG(compartment_level_1 IN ('SUPERVISION', 'SUPERVISION_OUT_OF_STATE')
-                    OR compartment_level_2 IN ('PAROLE_BOARD_HOLD','PENDING_CUSTODY', 'TEMPORARY_CUSTODY', 'SUSPENSION'))
+                    OR compartment_level_2 IN ('PAROLE_BOARD_HOLD','PENDING_CUSTODY', 'TEMPORARY_CUSTODY', 'SUSPENSION','SHOCK_INCARCERATION'))
                     OVER(PARTITION BY person_id ORDER BY start_date) AS lag_supervision_super_compartment
             FROM `{project_id}.{analyst_dataset}.compartment_sessions_materialized`
             )

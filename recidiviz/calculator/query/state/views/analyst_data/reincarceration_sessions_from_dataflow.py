@@ -43,6 +43,8 @@ REINCARCERATION_SESSIONS_FROM_DATAFLOW_VIEW_DESCRIPTION = """
 
 REINCARCERATION_SESSIONS_FROM_DATAFLOW_QUERY_TEMPLATE = """
     /*{description}*/
+    # TODO(#7629): Investigate why this view is missing reincarceration events for all states except ND
+    
     WITH recid_metric AS
     /*
     Dedup the dataflow metric which has multiple records for a single reincarceration, taking the record associated with
@@ -82,6 +84,7 @@ REINCARCERATION_SESSIONS_FROM_DATAFLOW_QUERY_TEMPLATE = """
     LEFT JOIN `{project_id}.{analyst_dataset}.compartment_sessions_materialized` reincarceration_session
         ON reincarceration_session.person_id = recid_metric.person_id
         AND reincarceration_session.start_date = recid_metric.reincarceration_date
+        AND reincarceration_session.compartment_level_2 NOT IN ('SHOCK_INCARCERATION')
     /* 
     Made the call below to identify releases based on a transition from incarceration to either supervision or release
     as opposed to leveraging end reasons explicitly identifying releases. With a fully-hydrated session end reason view
@@ -90,10 +93,12 @@ REINCARCERATION_SESSIONS_FROM_DATAFLOW_QUERY_TEMPLATE = """
     consistent.
     */
     WHERE release_session.compartment_level_1 IN ('INCARCERATION', 'INCARCERATION_OUT_OF_STATE')
-        AND release_session.compartment_level_2 != 'COMMUNITY_PLACEMENT_PROGRAM'
+        AND release_session.compartment_level_2 NOT IN ('COMMUNITY_PLACEMENT_PROGRAM','SHOCK_INCARCERATION')
         AND (release_session.outflow_to_level_1 IN ('SUPERVISION','SUPERVISION_OUT_OF_STATE','RELEASE','PENDING_SUPERVISION')
         OR release_session.outflow_to_level_2 = 'COMMUNITY_PLACEMENT_PROGRAM')
+        
     ORDER BY 1,2,3,4
+    
     """
 
 REINCARCERATION_SESSIONS_FROM_DATAFLOW_VIEW_BUILDER = SimpleBigQueryViewBuilder(
