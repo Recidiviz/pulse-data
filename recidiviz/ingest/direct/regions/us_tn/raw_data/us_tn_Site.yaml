@@ -12,10 +12,14 @@ columns:
       This is the name of a shorten site name.
   - name: SiteType
     description: |-
-      The type of site that an offender is assigned.  This code has an associated decode value
+      The type of site that an offender is assigned.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: Status
     description: |-
-      The status of a site to which an offender is assigned.  This code has an associated decode value
+      The status of a site to which an offender is assigned.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: StatusDate
     is_datetime: True
     description: |-
@@ -41,6 +45,8 @@ columns:
   - name: SecurityLevel
     description: |-
       The highest level of inmate security that a particular TDOC institution maintains.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: Region
     description: |-
       A unique geographical location governed by its own administrative unit.
@@ -62,6 +68,8 @@ columns:
   - name: SexTypesAllowed
     description: |-
       This value indicates if males, females, or both can be admitted to a particular institution.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: ContactPerson
     description: |-
       Free form text containing the person to contact at a site.

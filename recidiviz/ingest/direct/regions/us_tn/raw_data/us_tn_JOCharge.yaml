@@ -31,24 +31,34 @@ columns:
   - name: ChargeOffense
     description: |-
       The code for the offense that an offender is originally charged.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: OffenseCounty
     description: |-
       The county in which an offender commits the offense for a judgment order.
   - name: AmendedChargeOffense
     description: |-
       The code for the amended charge of an offender.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: ConvictionOffense
     description: |-
       The conviction offense under which a defendant is sentenced.
   - name: ConvictionClass
     description: |-
       Class code assigned to a particular offense statute that is the conviction offense of an offender.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: IndictmentClass
     description: |-
       Felony class code for the offense that an offender is indicted.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: CrimeType
     description: |-
       Indicator to tell whether a sentence related to a judgment order is a felony or a misdemeanor.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: OffenseDate
     is_datetime: True
     description: |-
@@ -64,57 +74,87 @@ columns:
   - name: SentenceLaw
     description: |-
       This code will be used to post the correct sentence law when inputting the judgment order in TOMIS.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: SentenceOffenderType
     description: |-
       An abbreviation used for one of the types of offenders as desig- nated on the offender's judgement order.  Also the range percent used to calculate an offender's RED date will be tied to the offender type for a particular sentence law.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: SentencedTo
     description: |-
       An abbreviation indicating where an offender sentenced in Tennessee is to serve his time.
   - name: WorkRelease
     description: |-
       Code to indicate that an offender's sentence or a portion of the sentence will be served on work release.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: SuspendedToProbation
     description: |-
       Code to indicate that an offender's sentence for a particular judgment order has been suspended to probation.
   - name: SplitConfinementBalanceType
     description: |-
       The location that an offender is to serve the rest of a split confinement.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: MultipleRapistFlag
     description: |-
       Indicates if a sentence is for a multiple rape offense.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: ChildRapistFlag
     description: |-
       Indicates if a sentence is for rape of a child.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: RepeatViolentOffenderFlag
     description: |-
       Indicator that tells if an offender is a repeat violent offender.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: SchoolZoneFlag
     description: |-
       This flag indicates the offense was committed in a school zone.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: MethRelatedFlag
     description: |-
       Indicates if a sentence is a methamphetamine related offense.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: FirearmFlag
     description: |-
       Indicates if a sentence is involved possession and employment of a firearm.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: GangRelatedFlag
     description: |-
       Indicates if a sentence is gang related offense.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: ChildPredatorFlag
     description: |-
       Indicates if a sentence is a child predator offense.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: AlternatePercentRange
     description: |-
       The alternate percentage amount to be used when the court sentences a specific range percent instead of using the sentence offender type code to determine the range percent.
   - name: AggrevatedRapeFlag
     description: |-
       Indicates if a sentence is for a aggravated rape offense.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: ChildSexAbuseFlag
     description: |-
       NOT FOUND IN SOURCE DOCUMENT
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: MultipleFirearmFlag
     description: |-
       Indicates if a sentence is for a multiple firearm offense.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: LastUpdateUserID
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.

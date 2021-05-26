@@ -18,9 +18,13 @@ columns:
   - name: Relation
     description: |-
       The code of an offender's relationship to a visitor.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: VisitorStatus
     description: |-
       The status of a visitor's priveleges.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: StartDate
     is_datetime: True
     description: |-
@@ -32,12 +36,18 @@ columns:
   - name: VisitorStatusReason1
     description: |-
       The reason the visitation status is changed.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: VisitorStatusReason2
     description: |-
       The reason the visitation status is changed.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: VisitorStatusReason3
     description: |-
       The reason the visitation status is changed.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: IncidentID
     description: |-
       The unique identifier for an incident.

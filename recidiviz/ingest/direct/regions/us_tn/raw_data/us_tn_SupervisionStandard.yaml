@@ -13,6 +13,8 @@ columns:
   - name: SupervisionLevel
     description: |-
       An abbreviation for the level of supervision required to secure an offender.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: StandardStartDate
     is_datetime: True
     description: |-

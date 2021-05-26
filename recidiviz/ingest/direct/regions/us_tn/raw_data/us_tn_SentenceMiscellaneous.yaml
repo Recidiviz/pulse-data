@@ -41,6 +41,8 @@ columns:
   - name: BOPFlag
     description: |-
       An indicator of whether the offender is awaiting a Board of Parole Date.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: StaffID
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.

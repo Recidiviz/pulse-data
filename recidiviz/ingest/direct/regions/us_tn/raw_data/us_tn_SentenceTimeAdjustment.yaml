@@ -39,6 +39,8 @@ columns:
   - name: TimeType
     description: |-
       The type of a sentence time, either dead, delinquent or street, that an offender is serving.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: TimeReason
     description: |-
       The reason an offender is given dead, delinquent or street time.

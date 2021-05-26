@@ -33,6 +33,8 @@ columns:
   - name: PardonCommutationType
     description: |-
       The type of commutation or the pardon for a sentence.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: MaxSentenceDay
     description: |-
       The maximum number of days for an offender's sentence.

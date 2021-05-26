@@ -17,6 +17,8 @@ columns:
   - name: HearingType
     description: |-
       An abbreviation to describe the type of hearing.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: StaffID
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
@@ -26,21 +28,31 @@ columns:
   - name: ParoleCondition1
     description: |-
       An abbreviation representing an condition for parole.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: ParoleCondition2
     description: |-
       An abbreviation representing an condition for parole.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: ParoleCondition3
     description: |-
       An abbreviation representing an condition for parole.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: ParoleCondition4
     description: |-
       An abbreviation representing an condition for parole.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: Comments
     description: |-
       Free form text regarding observations made during an inventory audit, item assignment, etc.
   - name: PresentAtHearing
     description: |-
       An indicator informing whether a staff member is presiding at a meeting.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: PostedDate
     is_datetime: True
     description: |-

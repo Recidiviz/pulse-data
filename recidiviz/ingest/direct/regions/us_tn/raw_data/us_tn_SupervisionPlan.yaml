@@ -16,6 +16,8 @@ columns:
   - name: PlanType
     description: |-
       The type of plan of supvn. that an offender has agreed to follow.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: PlanEndDate
     is_datetime: True
     description: |-
@@ -31,12 +33,16 @@ columns:
   - name: SupervisionLevel
     description: |-
       An abbreviation for the level of supervision required to secure an offender.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: OPIScore
     description: |-
       Used to store OPI score. OPI is the acronym for Offender Profile Index.
   - name: GroupReportFlag
     description: |-
       This flag indicates if group reporting is a requirement on a plan of supervision.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: ProgramID1
     description: |-
       This code represents either a class or a treatment program.
@@ -85,6 +91,8 @@ columns:
   - name: Condition1
     description: |-
       The type of condition for which a standard is defined.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: ConditionFrequency1
     description: |-
       The number of times a condition is to be met.
@@ -94,6 +102,8 @@ columns:
   - name: Condition2
     description: |-
       The type of condition for which a standard is defined.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: ConditionFrequency2
     description: |-
       The number of times a condition is to be met.
@@ -103,6 +113,8 @@ columns:
   - name: Condition3
     description: |-
       The type of condition for which a standard is defined.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: ConditionFrequency3
     description: |-
       The number of times a condition is to be met.
@@ -112,6 +124,8 @@ columns:
   - name: Condition4
     description: |-
       The type of condition for which a standard is defined.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: ConditionFrequency4
     description: |-
       The number of times a condition is to be met.
@@ -121,6 +135,8 @@ columns:
   - name: Condition5
     description: |-
       The type of condition for which a standard is defined.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: ConditionFrequency5
     description: |-
       The number of times a condition is to be met.
@@ -152,18 +168,30 @@ columns:
   - name: SexOffenderSupervisionFlag
     description: |-
       Indicates an offender is to be supervised as a sex offender on his plan of supervision.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: SexOffenderSupervisionType
     description: |-
       An abbreviation for the sex offender supervision type code on a Plan of Supervision.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: GPSSupervisionFlag
     description: |-
       Indicates an offender is to be supervised using IOT on his plan of supervision.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: RFSupervisionFlag
     description: |-
       Indicates an offender is to be supervised using RF on his plan of supervision.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: IOTSupervisionFlag
     description: |-
       Indicates an offender is to be supervised using IOT on his plan of supervision.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: WarrantOnBond
     description: |-
       Indicates whether or not an offender is Warrant on Bond.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []

@@ -18,33 +18,53 @@ columns:
   - name: OffenseSeverity
     description: |-
       A rating of the severity of an offense by TDOC.  Each offense statute will be assigned a severity code.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: FelonyClass
     description: |-
       Class code assigned to a particular offense statute under 1194. For a particular UCR code there can be only one felony class.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: PsychologicalEvaluationRequiredFlag
     description: |-
       Indicates whether or not a psychological evaluation must be done on an offender. This flag is tied to the offense statute.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: DrugOffensesFlag
     description: |-
       Indicates an offense is a drug related offense for which an offender may serve the sentence in boot camp when the sentence length is greater than six years. Tied to offender status.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: AssaultiveOffenseFlag
     description: |-
       Indicator to tell whether an offense was assaultive or not. This information is used for classification.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: SexOffenderFlag
     description: |-
       Indicates the offense is considered to be a sex offense. This flag is tied to the offense status, and is used to determine eligibility for safety-value release.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: FelonyFlag
     description: |-
       An indicator for whether a crime was a felony.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: MisdemeanorFlag
     description: |-
       An indicator for whether a crime was a misdemeanor.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: MisdemeanorClass
     description: |-
       Class code assigned to a particular offense statute under 1194. For a particular UCR code there can be only one misdemeanor class.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: TIBRSOffense
     description: |-
       A categorizing code for felony offenses based on the FBI's National Incident Based Reporting System (NIBRS).
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: LastUpdateUserID
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
