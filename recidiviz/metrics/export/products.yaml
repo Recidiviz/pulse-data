@@ -3,10 +3,10 @@
 
 products:
   - name: Admin Panel
-    is_state_agnostic: True
     exports:
       - INGEST_METADATA
       - VALIDATION_METADATA
+    states: []
     environment: production
   - name: Case Triage
     exports:
@@ -15,9 +15,9 @@ products:
       - state_code: US_ID
         environment: production
   - name: COVID Dashboard
-    is_state_agnostic: True
     exports:
       - COVID_DASHBOARD
+    states: []
     environment: production
   - name: Core Dashboard
     exports:
@@ -26,9 +26,9 @@ products:
       - state_code: US_ND
         environment: production
   - name: Justice Counts
-    is_state_agnostic: True
     exports:
       - JUSTICE_COUNTS
+    states: []
     environment: production
   - name: Lantern Dashboard
     exports:

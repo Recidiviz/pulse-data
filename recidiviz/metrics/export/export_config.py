@@ -16,14 +16,13 @@
 # =============================================================================
 """Config classes for exporting metric views to Google Cloud Storage."""
 import os
-from typing import Optional, Sequence, List, Dict, Set, TypedDict
+from typing import Optional, Sequence, List, Dict, Set
 
 import attr
 
 from recidiviz.calculator.query.state.views.dashboard.vitals_summaries.vitals_views import (
     VITALS_VIEW_BUILDERS,
 )
-from recidiviz.common.constants.states import StateCode
 from recidiviz.metrics import export as export_module
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.export.export_query_config import (
@@ -64,10 +63,6 @@ PRODUCTS_CONFIG_PATH = os.path.join(
 ProductName = str
 
 
-class BadProductExportSpecificationError(ValueError):
-    pass
-
-
 @attr.s
 class ProductStateConfig:
     """Stores a product's status information for a given state"""
@@ -101,15 +96,9 @@ class ProductConfig:
     exports: List[str] = attr.ib(validator=attr_validators.is_list)
     # Product launch environment, only for state agnostic products
     environment: Optional[str] = attr.ib(validator=attr_validators.is_opt_str)
-    # List of relevant state status information for a product. None if product is
+    # List of relevant state status information for a product. Empty list if product is
     # state-agnostic.
-    states: Optional[List[ProductStateConfig]] = attr.ib(
-        validator=attr_validators.is_opt_list
-    )
-    # Identifies product as state agnostic.
-    is_state_agnostic: Optional[bool] = attr.ib(
-        validator=attr_validators.is_bool, default=False
-    )
+    states: List[ProductStateConfig] = attr.ib(validator=attr_validators.is_list)
 
     def __attrs_post_init__(self) -> None:
         if self.states and self.environment is not None:
@@ -118,102 +107,18 @@ class ProductConfig:
                 f" Environment information should be set at the state level, not the"
                 f" product level."
             )
-        if self.is_state_agnostic and self.states is not None:
-            raise ValueError(
-                f"Product with name: [{self.name}] is state agnostic"
-                f" but contains enabled states: [{self.states}] in its config."
-                f" Check the product config."
-            )
-        if not self.is_state_agnostic and self.states is None:
-            raise ValueError(
-                f"Product with name: [{self.name}] is not state agnostic"
-                f" but does not contain enabled states in its config."
-                f" Check the product config."
-            )
 
     @property
-    def launched_states(self) -> Optional[Set[str]]:
-        return (
-            None
-            if self.states is None
-            else {
-                state.state_code.upper()
-                for state in self.states
-                if state.is_state_launched_in_env()
-            }
-        )
-
-
-class ProductExportConfig(TypedDict):
-    export_job_name: str
-    state_code: Optional[str]
-
-
-@attr.s
-class ProductConfigs:
-    """Loads product configs from file, stores them, and finds a product by job name and state code"""
-
-    products: List[ProductConfig] = attr.ib()
-
-    def get_export_configs_for_job_filter(
-        self, export_job_filter: str
-    ) -> List[ProductExportConfig]:
-        """Returns the export configs for the given export_job_filter,
-        which can be either state_code or export job name."""
-        filter_uppercase = export_job_filter.upper()
-        if StateCode.is_state_code(filter_uppercase):
-            return [
-                export
-                for export in self.get_all_export_configs()
-                if export["state_code"] == filter_uppercase
-            ]
-        return [
-            export
-            for export in self.get_all_export_configs()
-            if export["export_job_name"] == filter_uppercase
-        ]
-
-    def get_export_config(
-        self, export_job_name: str, state_code: Optional[str] = None
-    ) -> ProductExportConfig:
-        relevant_product_exports = [
-            product
-            for product in self.products
-            if export_job_name.upper() in product.exports
-        ]
-        if len(relevant_product_exports) != 1:
-            raise BadProductExportSpecificationError(
-                f"Wrong number of products returned for export for export_job_name {export_job_name.upper()}",
-            )
-        if state_code is None and relevant_product_exports[0].states is not None:
-            raise BadProductExportSpecificationError(
-                f"Missing required state_code parameter for export_job_name {export_job_name.upper()}",
-            )
-        return ProductExportConfig(
-            export_job_name=export_job_name, state_code=state_code
-        )
-
-    def get_all_export_configs(self) -> List["ProductExportConfig"]:
-        exports = []
-        for product in self.products:
-            if product.is_state_agnostic:
-                for export in product.exports:
-                    exports.append(self.get_export_config(export_job_name=export))
-            else:
-                for export in product.exports:
-                    if product.states is not None:
-                        for state in product.states:
-                            exports.append(
-                                self.get_export_config(
-                                    export_job_name=export, state_code=state.state_code
-                                )
-                            )
-        return exports
+    def launched_states(self) -> Set[str]:
+        return {
+            state.state_code.upper()
+            for state in self.states
+            if state.is_state_launched_in_env()
+        }
 
     @classmethod
-    def from_file(cls, path: str = PRODUCTS_CONFIG_PATH) -> "ProductConfigs":
+    def product_configs_from_file(cls, path: str) -> List["ProductConfig"]:
         """Reads a product config file and returns a list of corresponding ProductConfig objects."""
-
         product_config = YAMLDict.from_path(path).pop("products", list)
         products = [
             ProductConfig(
@@ -224,15 +129,12 @@ class ProductConfigs:
                         state_code=state["state_code"], environment=state["environment"]
                     )
                     for state in product["states"]
-                ]
-                if "states" in product
-                else None,
+                ],
                 environment=product.get("environment"),
-                is_state_agnostic=product.get("is_state_agnostic", False),
             )
             for product in product_config
         ]
-        return cls(products=products)
+        return products
 
 
 @attr.s(frozen=True)

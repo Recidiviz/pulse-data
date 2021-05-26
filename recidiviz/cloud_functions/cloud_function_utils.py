@@ -36,6 +36,7 @@ import google.oauth2.service_account
 from googleapiclient.discovery import build
 from oauth2client.client import GoogleCredentials
 
+
 IAP_CLIENT_ID = {
     "recidiviz-staging": (
         "984160736970-flbivauv2l7sccjsppe34p7436l6890m.apps." "googleusercontent.com"

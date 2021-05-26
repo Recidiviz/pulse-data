@@ -17,9 +17,7 @@
 """Tests for cloud_function_utils.py."""
 from unittest import TestCase
 
-from recidiviz.cloud_functions.cloud_function_utils import (
-    build_query_param_string,
-)
+from recidiviz.cloud_functions.cloud_function_utils import build_query_param_string
 
 
 class CloudFunctionUtilsTest(TestCase):
