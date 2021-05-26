@@ -2854,6 +2854,11 @@
     "@typescript-eslint/types" "4.23.0"
     eslint-visitor-keys "^2.0.0"
 
+"@w11r/use-breakpoint@^2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@w11r/use-breakpoint/-/use-breakpoint-2.0.0.tgz#0d70d64fd9e54093cdc861212e0989a55521759e"
+  integrity sha512-MsxxNWN7cFfFW7N4EslXI2gvO9jDCnjxKz1Ducw30qfnP1xsioeQLSmGcmy6a9QtaPZawhiwjxCw/mKbLVeLbA==
+
 "@wdio/cli@^7.5.7":
   version "7.5.7"
   resolved "https://registry.yarnpkg.com/@wdio/cli/-/cli-7.5.7.tgz#4fb3702c7b256fdb7e62f2193a419f0f36c99db4"

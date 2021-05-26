@@ -24,6 +24,10 @@ import { Integrations } from "@sentry/tracing";
 import styled from "styled-components/macro";
 import { Router } from "@reach/router";
 import ReactModal from "react-modal";
+import {
+  BreakpointProvider,
+  setup as setupUseBreakpoint,
+} from "@w11r/use-breakpoint";
 
 import { GlobalStyle } from "@recidiviz/design-system";
 
@@ -32,6 +36,7 @@ import Verify from "./routes/Verify";
 
 import { trackScrolledToBottom } from "./analytics";
 import StoreProvider from "./stores";
+import { breakpoints } from "./components/styles";
 
 if (process.env.NODE_ENV !== "development") {
   Sentry.init({
@@ -58,19 +63,29 @@ window.onscroll = function () {
   }
 };
 
+// configure breakpoint hook with custom values
+setupUseBreakpoint({
+  breakpoints: {
+    mobile: [0, breakpoints.mobilePx],
+    tablet: [breakpoints.mobilePx + 1, breakpoints.tabletPx],
+  },
+});
+
 const RoutingContainer = styled(Router)`
   margin: 0 auto;
   height: 100%;
 `;
 
 ReactDOM.render(
-  <StoreProvider>
-    <GlobalStyle />
-    <RoutingContainer>
-      <Verify path="verify" />
-      <Home path="/" />
-    </RoutingContainer>
-  </StoreProvider>,
+  <BreakpointProvider>
+    <StoreProvider>
+      <GlobalStyle />
+      <RoutingContainer>
+        <Verify path="verify" />
+        <Home path="/" />
+      </RoutingContainer>
+    </StoreProvider>
+  </BreakpointProvider>,
   document.getElementById("root"),
   () => {
     ReactModal.setAppElement("#root");

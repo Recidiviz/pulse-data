@@ -15,13 +15,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import * as React from "react";
-import { useEffect, useState } from "react";
-import { Dropdown, H3, Icon, IconSVG } from "@recidiviz/design-system";
+import { Card, Dropdown, H3, Icon, IconSVG } from "@recidiviz/design-system";
 import { observer } from "mobx-react-lite";
-import { autorun } from "mobx";
 import {
   Caption,
-  CaseCard as CaseCardComponent,
   CaseCardHeading,
   ClientNameRow,
   CloseButton,
@@ -44,24 +41,6 @@ import { CaseCardProps } from "./CaseCard.types";
 
 const CaseCard: React.FC<CaseCardProps> = ({ client }) => {
   const { caseUpdatesStore, clientsStore, opportunityStore } = useRootStore();
-
-  const [transitionDuration, setTransitionDuration] = useState("0");
-  const [translateY, setTranslateY] = useState(clientsStore.activeClientOffset);
-
-  useEffect(() => {
-    return autorun(() => {
-      if (clientsStore.activeClientOffset !== translateY) {
-        if (clientsStore.clientPendingAnimation) {
-          clientsStore.setClientPendingAnimation(false);
-          setTransitionDuration("1s");
-        } else {
-          setTransitionDuration("0s");
-        }
-
-        setTranslateY(clientsStore.activeClientOffset);
-      }
-    });
-  });
 
   const currentNotOnCaseloadAction = NotInCaseloadActions.find(
     (value: string) => client.caseUpdates[value as NotInCaseloadActionType]
@@ -93,15 +72,7 @@ const CaseCard: React.FC<CaseCardProps> = ({ client }) => {
   );
 
   return (
-    <CaseCardComponent
-      data-testid={TEST_IDS.CASE_CARD}
-      stacked
-      style={{
-        transitionDuration,
-        transitionProperty: "transform",
-        transform: `translateY(${translateY}px)`,
-      }}
-    >
+    <Card stacked data-testid={TEST_IDS.CASE_CARD}>
       <CaseCardHeading className="fs-exclude">
         <ClientNameRow>
           <H3 as="div">{client.name}</H3>
@@ -143,7 +114,7 @@ const CaseCard: React.FC<CaseCardProps> = ({ client }) => {
       <NeedsEmployment client={client} className="fs-exclude" />
       <NeedsRiskAssessment client={client} className="fs-exclude" />
       <NeedsFaceToFaceContact client={client} className="fs-exclude" />
-    </CaseCardComponent>
+    </Card>
   );
 };
 

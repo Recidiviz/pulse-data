@@ -1,9 +1,13 @@
 import { rem } from "polished";
 
-// Specifies the maximum width of the viewport for a given breakpoint
+const MOBILE = 768;
+const TABLET = 1152;
+
 export const breakpoints = {
-  mobile: rem(768),
-  tablet: rem(1152),
+  mobile: rem(MOBILE),
+  mobilePx: MOBILE,
+  tablet: rem(TABLET),
+  tabletPx: TABLET,
 };
 
 export const device = {

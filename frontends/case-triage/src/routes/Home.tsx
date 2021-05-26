@@ -28,8 +28,12 @@ import {
 import { rem } from "polished";
 import { observer } from "mobx-react-lite";
 
+import useBreakpoint from "@w11r/use-breakpoint";
 import AuthWall from "../components/AuthWall";
-import CaseCard from "../components/CaseCard";
+import CaseCard, {
+  CaseCardModal,
+  CaseCardPopout,
+} from "../components/CaseCard";
 import ClientList from "../components/ClientList";
 import UserSection from "../components/UserSection";
 import { useRootStore } from "../stores";
@@ -57,12 +61,7 @@ const Left = styled.div`
 
 const Right = styled.div`
   padding-left: ${rem(spacing.xl)};
-  display: none;
-
-  @media ${device.desktop} {
-    display: block;
-    width: 555px;
-  }
+  width: 555px;
 `;
 
 const ReloadButton = styled(Button)`
@@ -71,6 +70,8 @@ const ReloadButton = styled(Button)`
 
 const Home = (props: RouteComponentProps): ReactElement => {
   const { clientsStore, userStore } = useRootStore();
+
+  const isDesktop = useBreakpoint(true, ["tablet-", false]);
 
   const ClientCard =
     clientsStore.activeClient &&
@@ -106,7 +107,16 @@ const Home = (props: RouteComponentProps): ReactElement => {
         <Left>
           <ClientList />
         </Left>
-        <Right>{ClientCard}</Right>
+        {isDesktop && (
+          <Right>
+            {ClientCard && <CaseCardPopout>{ClientCard}</CaseCardPopout>}
+          </Right>
+        )}
+        {!isDesktop && (
+          <CaseCardModal isOpen={Boolean(ClientCard)}>
+            {ClientCard}
+          </CaseCardModal>
+        )}
       </Container>
       <Modal
         isOpen={userStore.shouldReload}

@@ -14,6 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
+
 import CaseCard from "./ExperimentWrapper";
+
+export * from "./CaseCardContainers";
 
 export default CaseCard;

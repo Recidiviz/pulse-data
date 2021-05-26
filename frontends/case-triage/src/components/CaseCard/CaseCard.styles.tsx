@@ -17,7 +17,6 @@
 import styled from "styled-components/macro";
 import {
   Button,
-  Card,
   CardSection,
   palette,
   spacing,
@@ -25,34 +24,12 @@ import {
 import { rem } from "polished";
 import NeedsCorrectionDropdown from "../NeedsActionFlow/NeedsCorrectionDropdown";
 
-export const CaseCard = styled(Card)`
-  // Override base <Card/> shadow
-  && {
-    box-shadow: 0px 15px 40px rgba(53, 83, 98, 0.3),
-      inset 0px -1px 1px rgba(19, 44, 82, 0.2);
-  }
-`;
-
 export const CaseCardSection = styled(CardSection)`
   padding: ${rem(spacing.xl)};
 `;
 
 export const CaseCardHeading = styled(CaseCardSection)`
   padding-bottom: ${rem(spacing.lg)};
-
-  position: relative;
-  &:before {
-    position: absolute;
-    display: block;
-    content: "";
-    width: 0;
-    height: 0;
-    border-top: 16px solid transparent;
-    border-bottom: 16px solid transparent;
-    border-right: 16px solid white;
-    left: -15px;
-    top: 38px;
-  }
 `;
 
 export const CaseCardIconContainer = styled.div`
