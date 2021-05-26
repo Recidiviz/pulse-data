@@ -23,8 +23,8 @@ import attr
 
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.state.state_assessment import (
-    StateAssessmentType,
     StateAssessmentLevel,
+    StateAssessmentType,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -70,6 +70,31 @@ class ViolationHistoryMixin(BuildableAttr):
 
     # The most severe decision on the responses that were included in determining the
     # most severe type/subtype
+    most_severe_response_decision: Optional[
+        StateSupervisionViolationResponseDecision
+    ] = attr.ib(default=None)
+
+
+@attr.s(frozen=True)
+class ViolationResponseMixin(BuildableAttr):
+    """Set of attributes to store information about a violation and response at a point in time."""
+
+    # Earliest response date associated with the supervision_violation_id
+    response_date: datetime.date = attr.ib(default=None)
+
+    # Violation type
+    violation_type: StateSupervisionViolationType = attr.ib(default=None)
+
+    # A string subtype that provides further insight into the violation_type above.
+    violation_type_subtype: Optional[str] = attr.ib(default=None)
+
+    # Whether the violation_type recorded on this metric is the most severe out of all violation types that share the same supervision_violation_id
+    is_most_severe_violation_type: Optional[bool] = attr.ib(default=None)
+
+    # Violation date - the date the violating behavior occurred, if recorded
+    violation_date: Optional[datetime.date] = attr.ib(default=None)
+
+    # The most severe decision on the response to the associated StateSupervisionViolation
     most_severe_response_decision: Optional[
         StateSupervisionViolationResponseDecision
     ] = attr.ib(default=None)
