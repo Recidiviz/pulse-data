@@ -33,9 +33,13 @@ columns:
   - name: JOStatus
     description: |-
       Code used to indicate if the judgment order is illegal, incomplete, or complete/legal.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: OverridenToLegalFlag
     description: |-
       Indicator for a judgment order to tell if the judgment order has been overriden to legal.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: JOEntryDate
     is_datetime: True
     description: |-

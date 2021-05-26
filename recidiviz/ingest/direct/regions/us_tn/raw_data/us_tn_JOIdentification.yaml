@@ -63,6 +63,8 @@ columns:
   - name: DefenseAttorneyType
     description: |-
       The type of defense attorney that a defendant has during his trial.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: SIDNumber
     description: |-
       An alphanumeric identifier assigned by the state of Tennesse which uniquely identifies an offender. 8 characters.

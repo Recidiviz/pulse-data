@@ -35,9 +35,13 @@ columns:
   - name: NoteType
     description: |-
       A specific type of notification which an interested party requests about an offender.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: PartyType
     description: |-
       The type of party which would be interested in information concerning an offender's parole.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: ParoleStatement
     description: |-
       Free form text submitted by an interested party to the Board of Parole regarding the parole of an offender.
@@ -51,6 +55,8 @@ columns:
   - name: NewLetterFlag
     description: |-
       This flag indicates a new victim letter is to be produced informing the victim or victim family member of VOICE information.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: LastUpdateUserID
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.

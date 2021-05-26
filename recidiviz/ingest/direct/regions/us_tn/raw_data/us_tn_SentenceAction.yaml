@@ -35,6 +35,8 @@ columns:
   - name: SentenceAction
     description: |-
       The actions that can occur to a sentence.  Sentence actions also include all things that can occur to the judgment order.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: StaffID
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.

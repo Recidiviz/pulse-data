@@ -26,9 +26,13 @@ columns:
   - name: DiversionType
     description: |-
       The type of diversion that an offender is being supervised under. This will either be a standard diversion or a memorandum of understanding.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: DiversionStatus
     description: |-
       The status of an offender's diversion.  A valid status is either open or closed.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: StatusDate
     is_datetime: True
     description: |-
@@ -40,6 +44,8 @@ columns:
   - name: Offense
     description: |-
       The offense codes as defined by the UNIFORM CRIME REPORTING AGENCY.  This code is tied directly to the offense code TCA.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: ExpirationDate
     is_datetime: True
     description: |-

@@ -13,6 +13,8 @@ columns:
   - name: FindingType
     description: |-
       The type of finding about an offender as observed by the arresting officer or TDOC staff.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: StaffID
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.

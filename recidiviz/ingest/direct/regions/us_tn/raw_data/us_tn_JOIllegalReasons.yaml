@@ -29,6 +29,8 @@ columns:
   - name: ReasonType
     description: |-
       Indicator to tell whether a judgment order illegal/incomplete reason is either illegal or incomplete.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: LastUpdateUserID
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.

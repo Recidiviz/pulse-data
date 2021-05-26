@@ -22,12 +22,18 @@ columns:
   - name: WarrantType
     description: |-
       The type of warrant that is requested and/or issued for an offender.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: WarrantReason
     description: |-
       The reason specified for issuing a warrant for an offender.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: BOPApprovedFlag
     description: |-
       The indicator for a warrant approved by Board of Paroles.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: PersonID
     description: |-
       This is a unique identifier assigned to a particular person. This database element will be displayed on screen and reports as either TOMIS-ID or STAFF-ID depending on the functional requirements.
@@ -37,6 +43,8 @@ columns:
   - name: WarrantStatus
     description: |-
       The status of a warrant that has been issued for an offender.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: WarrantStatusDate
     is_datetime: True
     description: |-

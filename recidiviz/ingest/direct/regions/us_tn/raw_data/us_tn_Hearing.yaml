@@ -16,6 +16,8 @@ columns:
   - name: HearingType
     description: |-
       An abbreviation to describe the type of hearing.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: CertificateReleaseDate
     is_datetime: True
     description: |-
@@ -27,39 +29,61 @@ columns:
   - name: RecommendedDecision
     description: |-
       An abbreviated recommendation that describes a suggested parole hearing decision.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: RecommendedReason1
     description: |-
       A code value defining a reason for a particular recommendation concerning an offender's parole decision.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: RecommendedReason2
     description: |-
       A code value defining a reason for a particular recommendation concerning an offender's parole decision.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: RecommendedReason3
     description: |-
       A code value defining a reason for a particular recommendation concerning an offender's parole decision.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: RecommendedReason4
     description: |-
       A code value defining a reason for a particular recommendation concerning an offender's parole decision.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: RecommendedParoleCondition1
     description: |-
       An abbreviation representing an condition for parole.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: RecommendedParoleCondition2
     description: |-
       An abbreviation representing an condition for parole.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: RecommendedParoleCondition3
     description: |-
       An abbreviation representing an condition for parole.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: RecommendedParoleCondition4
     description: |-
       An abbreviation representing an condition for parole.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: RecommendedParoleCondition5
     description: |-
       An abbreviation representing an condition for parole.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: RecommendationComments
     description: |-
       Free form text regarding observations made during an inventory audit, item assignment, etc.
   - name: ParoleDecision
     description: |-
       An abbreviated recommendation that describes a suggested decision on a parole case.  This information is incorporated into the final decision process.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: ParoleDecisionDate
     is_datetime: True
     description: |-
@@ -67,33 +91,53 @@ columns:
   - name: ParoleCondition1
     description: |-
       An abbreviation representing an condition for parole.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: ParoleCondition2
     description: |-
       An abbreviation representing an condition for parole.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: ParoleCondition3
     description: |-
       An abbreviation representing an condition for parole.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: ParoleCondition4
     description: |-
       An abbreviation representing an condition for parole.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: ParoleCondition5
     description: |-
       An abbreviation representing an condition for parole.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: DecisionReason1
     description: |-
       A code value defining the final reason which the board members have agreed upon to deny an offender parole.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: DecisionReason2
     description: |-
       A code value defining the final reason which the board members have agreed upon to deny an offender parole.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: DecisionReason3
     description: |-
       A code value defining the final reason which the board members have agreed upon to deny an offender parole.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: DecisionReason4
     description: |-
       A code value defining the final reason which the board members have agreed upon to deny an offender parole.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: FutureActionType
     description: |-
       An abbreviation used to describe an event which is to take place in the future.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: FutureActionDate
     is_datetime: True
     description: |-
@@ -117,15 +161,23 @@ columns:
     is_datetime: True
     description: |-
       The recomnmended date on which some future action will be taken.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: Pre1998HearingFlag
     description: |-
       This flag indicates the hearing is a pre 1998 hearing.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: TechnicalViolatorFlag
     description: |-
       The code to indicate the type of technical violator an offender is.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: NotEligibleReason
     description: |-
       The reason an offender is not eligible for technical violator diversion program.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: HearingOfficerStaffID
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.

@@ -13,6 +13,8 @@ columns:
   - name: UserClass
     description: |-
       The user class is a group of users with the same security access. A user class is made up of many users.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: UserClassDate
     is_datetime: True
     description: |-
@@ -20,6 +22,8 @@ columns:
   - name: SecurityStatus
     description: |-
       This field describes the security status code for a user ID.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: SecurityStatusDate
     is_datetime: True
     description: |-
@@ -36,9 +40,13 @@ columns:
   - name: Race
     description: |-
       The NCIC race code.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: Sex
     description: |-
       An abbreviation that identifies the sex of an offender.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: DriverLicenseNumber
     description: |-
       A unique identifier assigned to a driver's license by the state issuing the license.
@@ -55,6 +63,8 @@ columns:
   - name: Status
     description: |-
       The status of a staff person in the TOMIS system. This status will change over the career of the individual, and can be changed at any time.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: StatusDate
     is_datetime: True
     description: |-
