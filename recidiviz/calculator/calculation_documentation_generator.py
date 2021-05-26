@@ -61,7 +61,6 @@ from recidiviz.metrics.export.export_config import (
     ProductConfig,
     VIEW_COLLECTION_EXPORT_INDEX,
     ProductName,
-    ProductConfigs,
 )
 from recidiviz.tools.docs.summary_file_generator import update_summary_file
 from recidiviz.tools.docs.utils import persist_file_contents
@@ -276,11 +275,10 @@ class CalculationDocumentationGenerator:
             ProductName, Dict[GCPEnvironment, List[StateCode]]
         ] = defaultdict(lambda: defaultdict(list))
         for product in self.products:
-            if product.states is not None:
-                for state in product.states:
-                    environment = GCPEnvironment(state.environment)
-                    state_code = StateCode(state.state_code)
-                    states_by_product[product.name][environment].append(state_code)
+            for state in product.states:
+                environment = GCPEnvironment(state.environment)
+                state_code = StateCode(state.state_code)
+                states_by_product[product.name][environment].append(state_code)
 
         return states_by_product
 
@@ -321,8 +319,7 @@ class CalculationDocumentationGenerator:
     def _get_product_enabled_states(self) -> Set[StateCode]:
         states: Set[str] = set()
         for product in self.products:
-            if product.states is not None:
-                states = states.union({state.state_code for state in product.states})
+            states = states.union({state.state_code for state in product.states})
 
         for state_code in states:
             if not StateCode.is_state_code(state_code):
@@ -1059,7 +1056,7 @@ def generate_calculation_documentation(
 
 def main() -> int:
     with local_project_id_override(GCP_PROJECT_STAGING):
-        products = ProductConfigs.from_file(PRODUCTS_CONFIG_PATH).products
+        products = ProductConfig.product_configs_from_file(PRODUCTS_CONFIG_PATH)
         docs_generator = CalculationDocumentationGenerator(products, CALC_DOCS_PATH)
         modified = generate_calculation_documentation(docs_generator)
         if modified:

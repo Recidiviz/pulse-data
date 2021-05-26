@@ -35,11 +35,10 @@ from typing import List, Tuple, Optional
 from recidiviz.common.constants import states
 from recidiviz.metrics.export.export_config import (
     VIEW_COLLECTION_EXPORT_INDEX,
-    ProductConfigs,
-    PRODUCTS_CONFIG_PATH,
 )
 from recidiviz.metrics.export.view_export_manager import (
-    export_view_data_to_cloud_storage,
+    trigger_export_for_configs,
+    get_configs_for_export_name,
 )
 from recidiviz.tools.utils.dataset_overrides import (
     dataset_overrides_for_deployed_view_datasets,
@@ -80,23 +79,19 @@ def export_metrics_from_dataset_to_gcs(
             f"Protected buckets are: {get_protected_buckets(project_id)}"
         )
 
-    product_configs = ProductConfigs.from_file(path=PRODUCTS_CONFIG_PATH)
-    _ = product_configs.get_export_config(
-        export_job_name=export_name, state_code=state_code
-    )
-
-    export_view_data_to_cloud_storage(
-        export_job_name=export_name,
-        state_code=state_code,
-        should_materialize_views=False,
+    # build the view export configs list given the export name and state_code filter
+    # args, as well as the overridden destination bucket
+    export_configs_for_filter = get_configs_for_export_name(
+        export_name=export_name,
+        project_id=project_id,
+        state_code_filter=state_code,
         destination_override=destination_bucket,
         dataset_overrides=sandbox_dataset_overrides,
     )
 
-    logging.info(
-        "Done exporting metrics from sandbox with prefix [%s] to GCS bucket [%s].",
-        sandbox_dataset_prefix,
-        destination_bucket,
+    trigger_export_for_configs(
+        export_configs=export_configs_for_filter,
+        state_code_filter=state_code,
     )
 
 
