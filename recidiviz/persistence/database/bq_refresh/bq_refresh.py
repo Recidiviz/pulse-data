@@ -31,9 +31,10 @@ from recidiviz.utils import metadata
 
 _BQ_LOAD_WAIT_TIMEOUT_SECONDS = 300
 
+# TODO(#7397): Delete this function once federated export ships to production.
 TEMP_TABLE_NAME = "{table_name}_temp"
 
-
+# TODO(#7397): Delete this function once federated export ships to production.
 def refresh_bq_table_from_gcs_export_synchronous(
     big_query_client: BigQueryClient,
     table_name: str,
@@ -122,6 +123,7 @@ def refresh_bq_table_from_gcs_export_synchronous(
     )
 
 
+# TODO(#7397): Delete this function once federated export ships to production.
 def load_rows_excluded_from_refresh_into_temp_table_and_wait(
     big_query_client: BigQueryClient,
     table_name: str,
@@ -169,6 +171,7 @@ def load_rows_excluded_from_refresh_into_temp_table_and_wait(
         )
 
 
+# TODO(#7397): Delete this function once federated export ships to production.
 def load_table_from_gcs_and_wait(
     big_query_client: BigQueryClient,
     table_name: str,
@@ -266,6 +269,7 @@ def wait_for_table_load(
         return False
 
 
+# TODO(#7397): Delete this function once federated export ships to production.
 def delete_temp_table_if_exists(
     big_query_client: BigQueryClient,
     temp_table_name: str,

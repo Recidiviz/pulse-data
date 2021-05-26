@@ -37,7 +37,6 @@ from typing import Dict, List, Optional
 import yaml
 import sqlalchemy
 from sqlalchemy import Table
-from sqlalchemy.ext.declarative import DeclarativeMeta
 from google.cloud import bigquery
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.big_query_view import BigQueryAddress
@@ -99,6 +98,7 @@ from recidiviz.persistence.database.schema_utils import (
     get_region_code_col,
     schema_has_region_code_query_support,
     SchemaType,
+    schema_type_to_schema_base,
 )
 from recidiviz.persistence.database.schema_table_region_filtered_query_builder import (
     CloudSqlSchemaTableRegionFilteredQueryBuilder,
@@ -110,7 +110,6 @@ from recidiviz.persistence.database.schema_table_region_filtered_query_builder i
 class CloudSqlToBQConfig:
     """Configuration class for exporting tables from Cloud SQL to BigQuery
     Args:
-        metadata_base: The base schema for the config
         columns_to_exclude: An optional dictionary of table names and the columns
             to exclude from the export.
         history_tables_to_include: An optional List of history tables to include
@@ -123,7 +122,6 @@ class CloudSqlToBQConfig:
 
     def __init__(
         self,
-        metadata_base: DeclarativeMeta,
         schema_type: SchemaType,
         columns_to_exclude: Optional[Dict[str, List[str]]] = None,
         history_tables_to_include: Optional[List[str]] = None,
@@ -135,9 +133,9 @@ class CloudSqlToBQConfig:
             columns_to_exclude = {}
         if region_codes_to_exclude is None:
             region_codes_to_exclude = []
-        self.metadata_base = metadata_base
         self.schema_type = schema_type
-        self.sorted_tables: List[Table] = metadata_base.metadata.sorted_tables
+        self.metadata_base = schema_type_to_schema_base(schema_type)
+        self.sorted_tables: List[Table] = self.metadata_base.metadata.sorted_tables
         self.columns_to_exclude = columns_to_exclude
         self.history_tables_to_include = history_tables_to_include
         self.region_codes_to_exclude = region_codes_to_exclude
@@ -314,6 +312,7 @@ class CloudSqlToBQConfig:
             if column.name not in self.columns_to_exclude.get(table.name, [])
         )
 
+    # TODO(#7397): Delete this function once federated export ships to production.
     def get_bq_schema_for_table(self, table_name: str) -> List[bigquery.SchemaField]:
         """Return a List of SchemaField objects for a given table name
         If it is an association table for a schema that includes the region code, a region code schema field
@@ -348,6 +347,7 @@ class CloudSqlToBQConfig:
 
         return columns
 
+    # TODO(#7397): Delete this function once federated export ships to production.
     def get_gcs_export_uri_for_table(self, table_name: str) -> str:
         """Return export URI location in Google Cloud Storage given a table name."""
         project_id = self._get_project_id()
@@ -356,6 +356,7 @@ class CloudSqlToBQConfig:
         uri = gcs_export_uri_format.format(bucket=bucket, table_name=table_name)
         return uri
 
+    # TODO(#7397): Delete this function once federated export ships to production.
     def get_table_export_query(self, table_name: str) -> str:
         """Return a formatted SQL query for a given table name
 
@@ -437,6 +438,7 @@ class CloudSqlToBQConfig:
             if table not in self._get_tables_to_exclude()
         )
 
+    # TODO(#7397): Delete this function once federated export ships to production.
     def get_dataset_ref(
         self, big_query_client: BigQueryClient
     ) -> Optional[bigquery.DatasetReference]:
@@ -444,11 +446,13 @@ class CloudSqlToBQConfig:
         Gets created if it does not already exist."""
         return big_query_client.dataset_ref_for_id(self.dataset_id)
 
+    # TODO(#7397): Delete this property once federated export ships to production.
     @property
     def dataset_id(self) -> str:
         """Returns the dataset for legacy refresh."""
         return self.unioned_multi_region_dataset(dataset_override_prefix=None)
 
+    # TODO(#7397): Delete this function once federated export ships to production.
     def get_stale_bq_rows_for_excluded_regions_query_builder(
         self, table_name: str
     ) -> BigQuerySchemaTableRegionFilteredQueryBuilder:
@@ -487,8 +491,8 @@ class CloudSqlToBQConfig:
         if schema_type in (SchemaType.JAILS, SchemaType.STATE, SchemaType.OPERATIONS):
             return True
         if schema_type in (
-            # Justice Counts views currently rely on federated queries directly to Postgres instead of this refresh.
-            # TODO(#5081): Re-enable this once arrays are removed from the Justice Counts schema.
+            # TODO(#7285): Enable for justice counts once standardized federated export
+            #  has shipped to prod and support for Justice Counts schema is in place.
             SchemaType.JUSTICE_COUNTS,
             # Case Triage does not need to be exported to BigQuery
             SchemaType.CASE_TRIAGE,
@@ -518,19 +522,16 @@ class CloudSqlToBQConfig:
 
         if schema_type == SchemaType.JAILS:
             return CloudSqlToBQConfig(
-                metadata_base=base_schema.JailsBase,
                 schema_type=SchemaType.JAILS,
                 columns_to_exclude=yaml_config.get("county_columns_to_exclude", {}),
             )
         if schema_type == SchemaType.OPERATIONS:
             return CloudSqlToBQConfig(
-                metadata_base=base_schema.OperationsBase,
                 schema_type=SchemaType.OPERATIONS,
                 region_codes_to_exclude=yaml_config.get("region_codes_to_exclude", []),
             )
         if schema_type == SchemaType.STATE:
             return CloudSqlToBQConfig(
-                metadata_base=base_schema.StateBase,
                 schema_type=SchemaType.STATE,
                 region_codes_to_exclude=yaml_config.get("region_codes_to_exclude", []),
                 history_tables_to_include=yaml_config.get(
