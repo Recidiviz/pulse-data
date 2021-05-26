@@ -43,17 +43,17 @@ daily_pipelines:
 
   # Daily US_ID supervision calculations for the COVID and PO reports
   - pipeline: supervision
-    job_name: us-id-supervision-calculations-24
+    job_name: us-id-supervision-calculations-36
     state_code: US_ID
-    calculation_month_count: 24
+    calculation_month_count: 36
     metric_types: SUPERVISION_POPULATION SUPERVISION_OUT_OF_STATE_POPULATION SUPERVISION_REVOCATION SUPERVISION_COMPLIANCE SUPERVISION_TERMINATION SUPERVISION_START SUPERVISION_DOWNGRADE
     region: us-central1
 
   # Daily US_ID incarceration calculations for the COVID report
   - pipeline: incarceration
-    job_name: us-id-incarceration-calculations-24
+    job_name: us-id-incarceration-calculations-36
     state_code: US_ID
-    calculation_month_count: 24
+    calculation_month_count: 36
     metric_types: INCARCERATION_ADMISSION INCARCERATION_POPULATION INCARCERATION_RELEASE
     region: us-west3
 
