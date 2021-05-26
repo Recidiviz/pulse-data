@@ -99,10 +99,10 @@ export const FlexCardSection = styled(BaseCardSection)`
 
 export const FirstCardSection = styled(FlexCardSection)`
   display: flex;
-  justify-content: space-between
+  justify-content: space-between;
   flex: 0 0 30% !important;
   border-bottom: 1px solid ${palette.slate20};
-  
+
   @media ${device.desktop} {
     border-bottom: none;
   }
