@@ -10,6 +10,8 @@ columns:
   - name: SupervisionLevel
     description: |-
       An abbreviation for the level of supervision required to secure an offender.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: StandardStartDate
     is_datetime: True
     description: |-
@@ -17,6 +19,8 @@ columns:
   - name: StandardType
     description: |-
       An abbreviation for available supervision standard type codes for a particular supervision standard.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: StandardFrequency
     description: |-
       The number of times supervision standard is required to be met.

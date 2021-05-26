@@ -42,12 +42,18 @@ columns:
   - name: RelatedSentenceType
     description: |-
       Indicator to tell whether a sentence related to a judgment order is concurrent or consecutive.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: CrimeType
     description: |-
       Indicator to tell whether a sentence related to a judgment order is a felony or a misdemeanor.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: OriginalSentence
     description: |-
       Indicator to tell whether a related sentence is a Tennessee sentence or an ISC sentence.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: LastUpdateUserID
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.

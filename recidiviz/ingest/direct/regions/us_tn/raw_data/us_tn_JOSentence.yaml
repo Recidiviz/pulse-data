@@ -61,6 +61,8 @@ columns:
   - name: RenderedInfamousFlag
     description: |-
       Indicates whether a defendant has been rendered infamous. This is captured on the judgment order.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: EnhancementYears
     description: |-
       The length of an enhancement in years for an offender's sentence.
@@ -127,6 +129,8 @@ columns:
   - name: LifeDeathHabitual
     description: |-
       Indicator to tell if an offender was sentenced on the judgment order to a life or death sentence.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: UnpaidCommunityServiceHours
     description: |-
       The number of hours of unpaid community service of an offender according to the judgment order.
@@ -145,12 +149,18 @@ columns:
   - name: DrugCourtFlag
     description: |-
       Indicates if a sentence is to a Drug Court.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: UnsupervisedPrivateProbationFlag
     description: |-
       Indicates if a sentence is to private or unsupervised probation.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: HIVSpecimenFlag
     description: |-
       Indicates if a sentence indicates the offender needs to provide a specimen for a HIV test.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: SexOffenderTaxAmount
     description: |-
       The amount an offender is to pay for sex offender tax according to the judgment order.
@@ -161,6 +171,8 @@ columns:
   - name: AbuseRegisterFlag
     description: |-
       Indicates if a sentence indicates TCA 68-11-10 Abuse Registry.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: StayExecutionDate
     is_datetime: True
     description: |-

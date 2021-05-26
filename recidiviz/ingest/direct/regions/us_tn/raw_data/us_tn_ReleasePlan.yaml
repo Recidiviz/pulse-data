@@ -50,6 +50,8 @@ columns:
   - name: EmployerVerified
     description: |-
       A code value describing the status of an employer contained in a parole plan or transfer in request.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: JobTitle
     description: |-
       The first name of the offender's job.
@@ -69,27 +71,39 @@ columns:
   - name: ParolePlanFlag
     description: |-
       A field that decribes whether an offender's release plan is for release on parole.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: ParolePlanStatus
     description: |-
       The indication of whether an offender's parole plan has been approved or denied based on the status of the address and employment.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: PayPeriod
     description: |-
       The code of the pay period of an offender for a job in the free world.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: PhoneNumber
     description: |-
       The number at which someone can be reached.
   - name: ProbationPlanFlag
     description: |-
       A field that decribes whether an offender's release plan is for probation release.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: RatePayAmount
     description: |-
       Rate of Pay
   - name: Relation1
     description: |-
       The code of an offender's relationship to a visitor.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: Relation2
     description: |-
       An abbreviation representing an offender's relationship to a visitor or another party.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: RelationName1
     description: |-
       The name of a person related to or involved with an offender on a release plan.
@@ -105,9 +119,13 @@ columns:
   - name: ReleasedRelation1
     description: |-
       An abbreviation representing an offender's proposed relationship to visitor or another party.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: ReleasedRelation2
     description: |-
       An abbreviation representing an offender's proposed relationship to visitor or another party.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: ReleasedRelationName1
     description: |-
       The name of a person related to or involved with an offender on a release plan.
@@ -135,9 +153,13 @@ columns:
   - name: ResidenceVerified
     description: |-
       A code value describing the status of an address contained in a parole plan.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: ResidenceVerified2
     description: |-
       A code value describing the status of an address contained in a parole plan.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: StaffID
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.

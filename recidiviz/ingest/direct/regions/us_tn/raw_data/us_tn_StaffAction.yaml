@@ -20,6 +20,8 @@ columns:
   - name: StaffActionType
     description: |-
       An abbreviation describing the type of action a staff member may take in regards to a parole or other type hearing.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: StaffAction
     description: |-
       Free form text giving reasons for a particular action taken by a staff member.

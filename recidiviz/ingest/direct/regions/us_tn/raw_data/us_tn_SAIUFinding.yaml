@@ -18,12 +18,18 @@ columns:
   - name: SAIUVolunteerFlag
     description: |-
       Indicates whether or not the offender has volunteered to participate in the SAIU program (boot camp).
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: RecommendedByJudgeFlag
     description: |-
       Indicates whether or not a sentencing judge recommends the offender to SAIU.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: EligibleFlag
     description: |-
       Indicates whether or not an offender is considered eligible for 7IU after the screening.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: StaffID
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.

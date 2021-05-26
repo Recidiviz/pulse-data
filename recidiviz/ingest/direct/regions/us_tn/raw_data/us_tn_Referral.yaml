@@ -19,6 +19,8 @@ columns:
   - name: ReferralType
     description: |-
       An abbreviation for the type of referral given to an offender.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: DueDate
     is_datetime: True
     description: |-
@@ -36,6 +38,8 @@ columns:
   - name: BondCondition
     description: |-
       A code value defining a reason for the conditions of Bond for a offender awaiting sentencing.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: CoOffenderID1
     description: |-
       The first codefendant TOMIS ID for an offender.
@@ -63,15 +67,21 @@ columns:
   - name: DefenseAttorneyType
     description: |-
       The type of defense attorney that a defendant has during his trial.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: County
     description: |-
       The code name of a territorial division for local government within a state.
   - name: WeaponFlag
     description: |-
       Indicator to tell whether an offender used weapons in committing his offense.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: Violence
     description: |-
       Indicator for an offense statute that tells whether the particular offense was violent.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: OfficeID
     description: |-
       The identifying code for a probation, parole or community corrections office.

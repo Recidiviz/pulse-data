@@ -39,6 +39,8 @@ columns:
   - name: ISCSentencyType
     description: |-
       Indicates if an offender's ISC sentence is an incarceration, pro_ bation or parole sentence.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: WarrantNumber
     description: |-
       A unique identifier number assigned to a warrant for a particular judgment order.
@@ -52,6 +54,8 @@ columns:
   - name: DispositionCase
     description: |-
       Code that tells how a case was decided, such as by guilty plea or jury verdict.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
   - name: JudgeName
     description: |-
       The name for a judge. This element is only 30 characters instead of 50 characters used for JUDGE-NAME.
