@@ -28,7 +28,7 @@ from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config im
 
 from recidiviz.persistence.database.schema_utils import SchemaType
 
-
+# TODO(#7397): Delete this whole file once federated export ships to production.
 def export_table_then_load_table(
     big_query_client: BigQueryClient,
     table: str,

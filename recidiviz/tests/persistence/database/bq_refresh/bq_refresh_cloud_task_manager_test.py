@@ -211,3 +211,46 @@ class TestBQRefreshCloudTaskManager(unittest.TestCase):
         mock_client.return_value.create_task.assert_called_with(
             parent=queue_path, task=expected_task
         )
+
+    @patch(f"{CLOUD_TASK_MANAGER_PACKAGE_NAME}.uuid")
+    @patch("google.cloud.tasks_v2.CloudTasksClient")
+    @freeze_time("2019-04-12")
+    def test_create_refresh_bq_schema_task(
+        self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock
+    ) -> None:
+        # Arrange
+        uuid = "random-uuid"
+        mock_uuid.uuid4.return_value = uuid
+
+        schema_type = SchemaType.JAILS.value
+        queue_path = f"queue_path/{self.mock_project_id}/{QUEUES_REGION}"
+        task_id = f"{schema_type}-2019-04-12-random-uuid"
+        task_path = f"{queue_path}/{task_id}"
+
+        task = tasks_v2.types.task_pb2.Task(
+            name=task_path,
+            app_engine_http_request={
+                "http_method": "POST",
+                "relative_uri": "/cloud_sql_to_bq/refresh_bq_schema/JAILS",
+                "body": json.dumps({}).encode(),
+            },
+        )
+
+        mock_client.return_value.task_path.return_value = task_path
+        mock_client.return_value.queue_path.return_value = queue_path
+
+        # Act
+        BQRefreshCloudTaskManager().create_refresh_bq_schema_task(
+            schema_type=SchemaType.JAILS
+        )
+
+        # Assert
+        mock_client.return_value.queue_path.assert_called_with(
+            self.mock_project_id, QUEUES_REGION, BIGQUERY_QUEUE_V2
+        )
+        mock_client.return_value.task_path.assert_called_with(
+            self.mock_project_id, QUEUES_REGION, BIGQUERY_QUEUE_V2, task_id
+        )
+        mock_client.return_value.create_task.assert_called_with(
+            parent=queue_path, task=task
+        )

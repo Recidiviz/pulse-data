@@ -38,7 +38,7 @@ from recidiviz.utils import metadata
 
 SECONDS_BETWEEN_OPERATION_STATUS_CHECKS = 3
 
-
+# TODO(#7397): Delete this whole file once federated export ships to production.
 def create_export_context(
     schema_type: SchemaType, export_uri: str, export_query: str
 ) -> dict:

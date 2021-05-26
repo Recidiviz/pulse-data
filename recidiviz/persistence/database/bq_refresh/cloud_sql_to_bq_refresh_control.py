@@ -25,6 +25,7 @@ import flask
 from flask import request
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockDoesNotExist
 from recidiviz.ingest.direct.direct_ingest_control import kick_all_schedulers
 from recidiviz.persistence.database.bq_refresh.bq_refresh_cloud_task_manager import (
     BQRefreshCloudTaskManager,
@@ -38,9 +39,13 @@ from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config im
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_runner import (
     export_table_then_load_table,
 )
+from recidiviz.persistence.database.bq_refresh.federated_cloud_sql_to_bq_refresh import (
+    federated_bq_schema_refresh,
+)
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.utils import pubsub_helper
 from recidiviz.utils.auth.gae import requires_gae_auth
+from recidiviz.utils import environment
 
 cloud_sql_to_bq_blueprint = flask.Blueprint("export_manager", __name__)
 
@@ -154,21 +159,13 @@ def wait_for_ingest_to_create_tasks(schema_arg: str) -> Tuple[str, HTTPStatus]:
             HTTPStatus.BAD_REQUEST,
         )
 
-    task_manager = BQRefreshCloudTaskManager()
-    json_data_text = request.get_data(as_text=True)
-    try:
-        json_data = json.loads(json_data_text)
-    except (TypeError, json.decoder.JSONDecodeError):
-        json_data = {}
-    if "lock_id" not in json_data:
-        lock_id = str(uuid.uuid4())
-    else:
-        lock_id = json_data["lock_id"]
+    lock_id = get_or_create_lock_id()
     logging.info("Request lock id: %s", lock_id)
 
     lock_manager = CloudSqlToBQLockManager()
     lock_manager.acquire_lock(schema_type=schema_type, lock_id=lock_id)
 
+    task_manager = BQRefreshCloudTaskManager()
     if not lock_manager.can_proceed(schema_type):
         logging.info("Regions running, renqueuing this task.")
         task_manager.create_reattempt_create_refresh_tasks_task(
@@ -176,11 +173,16 @@ def wait_for_ingest_to_create_tasks(schema_arg: str) -> Tuple[str, HTTPStatus]:
         )
         return "", HTTPStatus.OK
 
-    logging.info("No regions running, calling create_refresh_bq_tasks")
-    create_all_bq_refresh_tasks_for_schema(schema_type)
+    logging.info("No regions running, triggering BQ refresh.")
+    if environment.in_gcp_production():
+        # TODO(#7397): Ship federated export to production and delete this code.
+        create_all_bq_refresh_tasks_for_schema(schema_type)
+    else:
+        task_manager.create_refresh_bq_schema_task(schema_type=schema_type)
     return "", HTTPStatus.OK
 
 
+# TODO(#7397): Ship federated export to production and delete this code.
 def create_all_bq_refresh_tasks_for_schema(schema_type: SchemaType) -> None:
     """Creates an export task for each table to be exported.
 
@@ -207,3 +209,82 @@ def create_all_bq_refresh_tasks_for_schema(schema_type: SchemaType) -> None:
     task_manager.create_bq_refresh_monitor_task(
         schema_type.value, pub_sub_topic, pub_sub_message
     )
+
+
+@cloud_sql_to_bq_blueprint.route(
+    "/refresh_bq_schema/<schema_arg>", methods=["GET", "POST"]
+)
+@requires_gae_auth
+def refresh_bq_schema(schema_arg: str) -> Tuple[str, HTTPStatus]:
+    """Performs a full refresh of BigQuery data for a given schema, pulling data from
+    the appropriate CloudSQL Postgres instance.
+
+    On completion, triggers Dataflow pipelines (when necessary), releases the refresh
+    lock and restarts any paused ingest work.
+    """
+    try:
+        schema_type = SchemaType(schema_arg.upper())
+    except ValueError:
+        return (
+            f"Unexpected value for schema_arg: [{schema_arg}]",
+            HTTPStatus.BAD_REQUEST,
+        )
+    if not CloudSqlToBQConfig.is_valid_schema_type(schema_type):
+        return (
+            f"Unsuppported schema type: [{schema_type}]",
+            HTTPStatus.BAD_REQUEST,
+        )
+
+    lock_manager = CloudSqlToBQLockManager()
+
+    try:
+        can_proceed = lock_manager.can_proceed(schema_type)
+    except GCSPseudoLockDoesNotExist as e:
+        logging.exception(e)
+        return (
+            f"Expected lock for [{schema_arg}] BQ refresh to already exist.",
+            HTTPStatus.EXPECTATION_FAILED,
+        )
+
+    if not can_proceed:
+        return (
+            f"Expected to be able to proceed with refresh before this endpoint was "
+            f"called for [{schema_arg}].",
+            HTTPStatus.EXPECTATION_FAILED,
+        )
+
+    federated_bq_schema_refresh(schema_type=schema_type)
+
+    # Publish a message to the Pub/Sub topic once state BQ export is complete
+    if schema_type is SchemaType.STATE:
+        pubsub_helper.publish_message_to_topic(
+            message="State export to BQ complete",
+            topic="v1.calculator.trigger_daily_pipelines",
+        )
+
+    # Unlock export lock when all BQ exports complete
+    lock_manager = CloudSqlToBQLockManager()
+    lock_manager.release_lock(schema_type)
+    logging.info(
+        "Done running refresh for [%s], unlocking Postgres to BigQuery export",
+        schema_type.value,
+    )
+
+    # Kick scheduler to restart ingest
+    kick_all_schedulers()
+
+    return "", HTTPStatus.OK
+
+
+def get_or_create_lock_id() -> str:
+    json_data_text = request.get_data(as_text=True)
+    try:
+        json_data = json.loads(json_data_text)
+    except (TypeError, json.decoder.JSONDecodeError):
+        json_data = {}
+    if "lock_id" not in json_data:
+        lock_id = str(uuid.uuid4())
+    else:
+        lock_id = json_data["lock_id"]
+
+    return lock_id

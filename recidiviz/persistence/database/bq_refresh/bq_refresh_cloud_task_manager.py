@@ -43,6 +43,9 @@ class BQRefreshCloudTaskManager:
         self.bq_cloud_task_queue_manager = CloudTaskQueueManager(
             queue_info_cls=CloudTaskQueueInfo, queue_name=BIGQUERY_QUEUE_V2
         )
+
+        # TODO(#7397): Delete this variable and queue once federated export ships to
+        #  prod.
         self.job_monitor_cloud_task_queue_manager = CloudTaskQueueManager(
             queue_info_cls=CloudTaskQueueInfo, queue_name=JOB_MONITOR_QUEUE_V2
         )
@@ -50,6 +53,7 @@ class BQRefreshCloudTaskManager:
     def get_bq_queue_info(self) -> CloudTaskQueueInfo:
         return self.bq_cloud_task_queue_manager.get_queue_info()
 
+    # TODO(#7397): Delete this once federated export ships to prod
     def create_refresh_bq_table_task(
         self, table_name: str, schema_type: SchemaType
     ) -> None:
@@ -75,6 +79,7 @@ class BQRefreshCloudTaskManager:
             body=body,
         )
 
+    # TODO(#7397): Delete this once federated export ships to prod
     def create_bq_refresh_monitor_task(
         self, schema: str, topic: str, message: str
     ) -> None:
@@ -119,4 +124,22 @@ class BQRefreshCloudTaskManager:
             body=body,
             relative_uri=f"/cloud_sql_to_bq/create_refresh_bq_tasks/{schema}",
             schedule_delay_seconds=60,
+        )
+
+    def create_refresh_bq_schema_task(self, schema_type: SchemaType) -> None:
+        """Queues a task to refresh the given schema in BQ.
+
+        Args:
+            schema_type: The SchemaType of the table being exported.
+        """
+        task_id = "{}-{}-{}".format(
+            schema_type.value,
+            str(datetime.datetime.now(tz=pytz.UTC).date()),
+            uuid.uuid4(),
+        )
+
+        self.bq_cloud_task_queue_manager.create_task(
+            task_id=task_id,
+            relative_uri=f"/cloud_sql_to_bq/refresh_bq_schema/{schema_type.value}",
+            body={},
         )

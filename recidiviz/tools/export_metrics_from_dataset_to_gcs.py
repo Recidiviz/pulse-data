@@ -40,7 +40,7 @@ from recidiviz.metrics.export.view_export_manager import (
     trigger_export_for_configs,
     get_configs_for_export_name,
 )
-from recidiviz.tools.utils.dataset_overrides import (
+from recidiviz.view_registry.dataset_overrides import (
     dataset_overrides_for_deployed_view_datasets,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
