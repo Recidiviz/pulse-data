@@ -1,0 +1,131 @@
+file_tag: OffenderAttributes
+file_description: |-
+  This table contains miscellaneous information about an offender, such as height, weight, hair color, etc.
+primary_key_cols:
+  - OffenderID
+columns:
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: Weight
+    description: |-
+      The weight of an individual, measured in pounds.
+  - name: HeightFeet
+    description: |-
+      A unit of measure describing an inmate's height.
+  - name: HeightInches
+    description: |-
+      The inches portion of an offender's height.
+  - name: EyeColor
+    description: |-
+      The predominant eye color of an offender.
+  - name: HairColor
+    description: |-
+      The predominant hair color classification of an offender.
+  - name: Complexion
+    description: |-
+      The predominant skin color of an offender.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
+  - name: MaritalStatus
+    description: |-
+      The abbreviation of the marital status of an offender.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
+  - name: DriverLicenseState
+    description: |-
+      The state issuing a driver's license.
+  - name: DriverLicenseNumber
+    description: |-
+      A unique identifier assigned to a driver's license by the state issuing the license.
+  - name: ScarsMarksTattoos
+    description: |-
+      The data reported on a criminal history report of distinguishing scars, marks, or tattoos that an offender might be identified by.
+  - name: Religion
+    description: |-
+      An abbreviation of the type of Religion practiced by an offender.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
+  - name: BirthCounty
+    description: |-
+      The county in which an offender was born.
+  - name: BirthState
+    description: |-
+      The state in which an offender was born.
+  - name: NCICFingerprintID
+    description: |-
+      An alphanumeric identified assigned by NCIC which uniquely identifies an offender.
+  - name: TennesseeFingerprintID
+    description: |-
+      An alphanumeric identified assigned by the state of Tennesse which uniquely identifies an offender.
+  - name: DeathType
+    description: |-
+      The abbreviation for the cause of death of an offender.
+  - name: DeathDate
+    is_datetime: True
+    description: |-
+      The date of the death of an offender.
+  - name: DeathLocation
+    description: |-
+      The exact location (address, building number, cell number) at which an inmate died.
+  - name: DisposalType
+    description: |-
+      This indicates how the remains of a dead inmate were disposed.
+    known_values: []
+  - name: DisposalDate
+    is_datetime: True
+    description: |-
+      The date on which an inmate's remains were disposed. The date on which damaged or scrap merchandise is disposed of.
+  - name: DisposalLocation
+    description: |-
+      The exact location (address, burial plot, or medical facility) at which disposal of an inmate's remains were made.
+  - name: DeathPostedByStaffID
+    description: |-
+      The staff id of the individual who initially posted the death of an offender.
+  - name: OBSCISID
+    description: |-
+      This is the offender ID used on the OBSCIS system.
+  - name: RestoreDate
+    is_datetime: True
+    description: |-
+      The date on which an offender and his related tables have been restored from tape.
+  - name: DeathSiteID
+    description: |-
+      This identifies the organizational/location entity which reports an offender as dead.
+  - name: DeathCertificateFlag
+    description: |-
+      This flag signifies that a death certificate was obtained as proof of death.
+  - name: OldFBINumber
+    description: |-
+      The old FBI number associated with the offender.
+  - name: OldSTGAffiliation
+    description: |-
+      This code is no longer used.  It was replaced by the STG (Security Threat Group) conversation.
+  - name: OldSTG
+    description: |-
+      The code to represent a security threat group name.
+  - name: OldSTGComments
+    description: |-
+      Comment line for Offender STG (Security Threat Group) information.
+  - name: CitizenshipCountry
+    description: |-
+      The country in which an offender is a citizen.
+  - name: BirthPlace
+    description: |-
+      This element will contain an offender's place of birth (city) for an offender whose citizenship is other than the USA.
+  - name: AlienID
+    description: |-
+      An identifier which uniquely identifies an offender with respect to immigration authorities.
+  - name: FBINumber
+    description: |-
+      The FBI number for an offender's attributes. This field differs from TENBF013 by having a different length. This field replaces the old NBR-FBI field.
+  - name: SIDNumber
+    description: |-
+      An alphanumeric identifier assigned by the state of Tennesse which uniquely identifies an offender.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    is_datetime: True
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.
