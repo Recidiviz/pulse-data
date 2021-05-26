@@ -52,7 +52,9 @@ from recidiviz.persistence.database.schema_utils import (
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
-from recidiviz.tools.utils.dataset_overrides import dataset_overrides_for_view_builders
+from recidiviz.view_registry.dataset_overrides import (
+    dataset_overrides_for_view_builders,
+)
 from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 
 

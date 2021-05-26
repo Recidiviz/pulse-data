@@ -33,7 +33,9 @@ from recidiviz.persistence.database.sqlalchemy_database_key import (
     SQLAlchemyDatabaseKey,
     SQLAlchemyStateDatabaseVersion,
 )
-from recidiviz.tools.utils.dataset_overrides import dataset_overrides_for_view_builders
+from recidiviz.view_registry.dataset_overrides import (
+    dataset_overrides_for_view_builders,
+)
 
 
 class FederatedCloudSQLTableBigQueryViewTest(unittest.TestCase):

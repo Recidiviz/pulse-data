@@ -28,7 +28,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
-from recidiviz.tools.utils.dataset_overrides import (
+from recidiviz.view_registry.dataset_overrides import (
     dataset_overrides_for_deployed_view_datasets,
     dataset_overrides_for_view_builders,
 )
